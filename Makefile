@@ -13,8 +13,9 @@ TARGET = core/test core/aligner modules/module data/container data/nucSeq
 
 #flags
 CC=gcc
-CCFLAGS= -Wall -fPIC
-LDFLAGS= -shared -Wl,--export-dynamic -L$(BOOST_LIB) -lboost_python -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
+CCFLAGS= -Wall -fPIC -std=c++11
+LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 -L$(BOOST_LIB) -lboost_python -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
+LDFLAGS2= -L$(BOOST_LIB) -lboost_python -std=c++11 -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
 
 aligner/%.so: obj/%.o
 	$(CC) $(LDFLAGS) $< -o $@
@@ -22,7 +23,7 @@ aligner/%.so: obj/%.o
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) -I$(BOOST_INC) -Iinc -c $< -o $@
 
-all: $(addprefix aligner/,$(addsuffix .so,$(TARGET)))
+all: $(addprefix aligner/,$(addsuffix .so,$(TARGET))) $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 
 clean:
 	rm -f -r $(addprefix aligner/,$(addsuffix .so,$(TARGET))) $(addprefix obj/,$(addsuffix .o,$(TARGET)))

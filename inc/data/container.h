@@ -1,3 +1,6 @@
+#ifndef CONTAINER_H
+#define CONTAINER_H
+
 #include <vector>
 
 class Container
@@ -6,18 +9,21 @@ class Container
 
 };
 
-template <Container C>
-class ContainerVector<C> : public Container
+template<class C>
+class ContainerVector : public Container
 {
 private:
-    std::vector<C> elements;
+    std::vector<C> vElements;
 
 public:
     ContainerVector() 
         : 
-        elements() 
+        vElements() 
     {}
 
-    std::vector<C> elements() {return elements;}
+    std::vector<C> elements() {return vElements;}
 
 };
+
+
+#endif

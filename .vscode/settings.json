@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.H": "cpp"
+    },
+    "python.linting.pylintEnabled": false
+}
