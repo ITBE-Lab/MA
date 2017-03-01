@@ -30,4 +30,4 @@ all: $(TARGET)
 clean:
 	rm -f -r *.so *.o 
 
-.phony all clean
+.Phony: all clean
