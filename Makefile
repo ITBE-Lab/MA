@@ -1,6 +1,6 @@
 # location of the Python header files
  
-PYTHON_VERSION = 2.7.9
+PYTHON_VERSION = 2.7
 PYTHON_INCLUDE = /usr/include/python$(PYTHON_VERSION)
  
 # location of the Boost Python include files and library
@@ -14,20 +14,17 @@ TARGET = core/test core/aligner modules/module data/container data/nucSeq
 #flags
 CC=gcc
 CCFLAGS= -Wall -fPIC
-LDFLAGS= -shared -Wl --export-dynamic -L$(BOOST_LIB) -lboost_python-$(PYTHON_VERSION) -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
-INCLUDES= $(wildcard ./inc/*) $(PYTHON_INCLUDE) $(BOOST_INC)
-OBJECTS= $(SOURCES:.cpp=.o) 
+LDFLAGS= -shared -Wl,--export-dynamic -L$(BOOST_LIB) -lboost_python -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
 
+aligner/%.so: obj/%.o
+	$(CC) $(LDFLAGS) $< -o $@
  
-$(TARGET).so: $(TARGET).o
-	$(CC) $(LDFLAGS) obj/$(TARGET).o -o aligner/_$(TARGET).so
- 
-$(TARGET).o: $(TARGET).cpp
-	$(CC) -I$(INCLUDES) -c src/$(TARGET).cpp -o obj/$(TARGET).o
+obj/%.o: src/%.cpp inc/%.h
+	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) -I$(BOOST_INC) -Iinc -c $< -o $@
 
-all: $(TARGET)
+all: $(addprefix aligner/,$(addsuffix .so,$(TARGET)))
 
 clean:
-	rm -f -r *.so *.o 
+	rm -f -r $(addprefix aligner/,$(addsuffix .so,$(TARGET))) $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 
 .Phony: all clean
