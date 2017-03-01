@@ -9,7 +9,7 @@ BOOST_INC = /usr/include
 BOOST_LIB = /usr/lib
  
 # target files
-TARGET = core/test core/aligner modules/module data/container
+TARGET = core/test core/aligner modules/module data/container data/nucSeq
 
 #flags
 CC=gcc
@@ -25,3 +25,9 @@ $(TARGET).so: $(TARGET).o
 $(TARGET).o: $(TARGET).cpp
 	$(CC) -I$(INCLUDES) -c src/$(TARGET).cpp -o obj/$(TARGET).o
 
+all: $(TARGET)
+
+clean:
+	rm -f -r *.so *.o 
+
+.phony all clean
