@@ -9,7 +9,7 @@ BOOST_INC = /usr/include
 BOOST_LIB = /usr/lib
  
 # target files
-TARGET = core/test
+TARGET = core/test core/aligner modules/module data/container
 
 #flags
 CC=gcc
