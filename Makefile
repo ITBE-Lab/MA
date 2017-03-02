@@ -9,7 +9,8 @@ BOOST_INC = /usr/include
 BOOST_LIB = /usr/lib
  
 # target files
-TARGET = core/aligner modules/module data/container data/nucSeq
+TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
+TARGET_OBJ = $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 
 #flags
 CC=gcc
@@ -17,8 +18,8 @@ CCFLAGS= -Wall -fPIC -std=c++11
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 -L$(BOOST_LIB) -lboost_python -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
 LDFLAGS2= -L$(BOOST_LIB) -lboost_python -std=c++11 -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
 
-aligner.so: $(addprefix obj/,$(addsuffix .o,$(TARGET)))
-	$(CC) $(LDFLAGS) $(addprefix obj/,$(addsuffix .o,$(TARGET))) -o $@
+aligner.so: $(TARGET_OBJ)
+	$(CC) $(LDFLAGS) $(TARGET_OBJ) -o $@
  
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) -I$(BOOST_INC) -Iinc -c $< -o $@
@@ -26,6 +27,6 @@ obj/%.o: src/%.cpp inc/%.h
 all: aligner.so
 
 clean:
-	rm -f -r $(addprefix aligner/,$(addsuffix .so,$(TARGET))) $(addprefix obj/,$(addsuffix .o,$(TARGET)))
+	rm -f -r $(wildcard obj/*/*.o) aligner.so
 
 .Phony: all clean
