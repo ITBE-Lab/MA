@@ -1,5 +1,5 @@
 
-from aligner import *
+from LAuS_Aligner import *
 
 a = Aligner()
 

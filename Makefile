@@ -18,15 +18,23 @@ CCFLAGS= -Wall -fPIC -std=c++11
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 -L$(BOOST_LIB) -lboost_python -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
 LDFLAGS2= -L$(BOOST_LIB) -lboost_python -std=c++11 -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION)
 
-aligner.so: $(TARGET_OBJ)
+LAuS_Aligner.so: $(TARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) -o $@
  
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) -I$(BOOST_INC) -Iinc -c $< -o $@
 
-all: aligner.so
+all: LAuS_Aligner.so
+
+install:
+	pip install . --upgrade
+
+distrib:
+	python setup.py sdist
+	python setup.py bdist_wheel
 
 clean:
-	rm -f -r $(wildcard obj/*/*.o) aligner.so
+	rm -f -r $(wildcard obj/*.o) *.so
+	rm -r -f dist *.egg-info build
 
-.Phony: all clean
+.Phony: all clean install distrib
