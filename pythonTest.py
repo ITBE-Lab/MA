@@ -1,9 +1,8 @@
 
-import aligner
-#from aligner.modules import module
+from aligner import *
 
-a = aligner.Aligner()
+a = Aligner()
 
-a.addModule()
+a.addModule(Printer())
 
 a.step()

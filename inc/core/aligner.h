@@ -12,25 +12,20 @@
 class Aligner
 {
 private:
-    std::list<Module> lModules;
+    std::list<std::shared_ptr<Module>> lpModules;
     std::shared_ptr<Container> pCurrent;
 
 public:
     Aligner()
         :
-        lModules(), pCurrent()
+        lpModules(), pCurrent()
     {}
 
     void setData(std::shared_ptr<Container> pC){pCurrent = pC;}
-    void addModule(/*Module xM*/){/*lModules.push_back(xM);*/std::cout << "added Module" << std::endl;}
-    void step(){if(lModules.empty())return; pCurrent = lModules.front().execute(pCurrent); lModules.pop_front();}
-    void steps(){while(!lModules.empty())step();}
-
-    void test()
-    {
-       // addModule(Printer());
-        step();
-    }
+    /* pyhton will take care of the deletion the the given pointer */
+    void addModule(std::shared_ptr<Module> pM){lpModules.push_back(pM);}
+    void step(){if(lpModules.empty())return; pCurrent = lpModules.front()->execute(pCurrent); lpModules.pop_front();}
+    void steps(){while(!lpModules.empty())step();}
 
 };
 

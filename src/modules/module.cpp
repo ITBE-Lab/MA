@@ -1,20 +1,13 @@
 #include "modules/module.h"
 
-std::shared_ptr<Container> Module::execute(std::shared_ptr<Container> pInput) 
-{
-    std::cout << "i should not be called" << std::endl; 
-    return pInput;
-}
-
-
-std::shared_ptr<Container> Printer::execute(std::shared_ptr<Container> pInput) 
-{
-    std::cout << "printer" << std::endl; 
-    return pInput;
-}
-
 void exportModule()
 {
-	boost::python::class_<Module>("Module");
-	boost::python::class_<Printer, boost::python::bases<Module>>("Printer");
+    //module is an abstract class and should never be initialized
+	boost::python::class_<Module, std::shared_ptr<Module>>("Module", boost::python::no_init);
+    //test class
+	boost::python::class_<Printer, boost::python::bases<Module>, std::shared_ptr<Printer>>("Printer");
+
+    //tell boost python that it's possible to convert shared pointers with these classes
+    boost::python::implicitly_convertible<std::shared_ptr<Printer>,std::shared_ptr<Module>>();
+
 }

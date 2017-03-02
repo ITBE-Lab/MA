@@ -1,5 +1,6 @@
 #include "core/aligner.h"
 
+//function called in order to export this module
 void exportAligner()
 {
         boost::python::class_<Aligner>("Aligner")
@@ -10,7 +11,7 @@ void exportAligner()
         ;
 }
 
-
+//this creates our main function
 BOOST_PYTHON_MODULE(aligner)
 {
 	exportAligner();
