@@ -19,4 +19,6 @@ class Printer : public Module
      std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput) override;
 };
 
+void exportModule();
+
 #endif

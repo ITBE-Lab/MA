@@ -1,5 +1,5 @@
 
-from aligner.core import aligner
+import aligner
 #from aligner.modules import module
 
 a = aligner.Aligner()

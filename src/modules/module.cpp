@@ -13,7 +13,7 @@ std::shared_ptr<Container> Printer::execute(std::shared_ptr<Container> pInput)
     return pInput;
 }
 
-BOOST_PYTHON_MODULE(module)
+void exportModule()
 {
 	boost::python::class_<Module>("Module");
 	boost::python::class_<Printer, boost::python::bases<Module>>("Printer");
