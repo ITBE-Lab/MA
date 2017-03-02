@@ -1,7 +1,7 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include <data/container.h>
+#include <container.h>
 #include <memory>
 #include <boost/python.hpp>
 #include <Python.h>

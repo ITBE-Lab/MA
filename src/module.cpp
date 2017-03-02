@@ -1,4 +1,4 @@
-#include "modules/module.h"
+#include "module.h"
 
 void exportModule()
 {

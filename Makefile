@@ -9,7 +9,7 @@ BOOST_INC = /usr/include
 BOOST_LIB = /usr/lib
  
 # target files
-TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
+TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp)))
 TARGET_OBJ = $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 
 #flags

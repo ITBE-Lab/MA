@@ -1,4 +1,4 @@
-#include "core/aligner.h"
+#include "aligner.h"
 
 //function called in order to export this module
 void exportAligner()
