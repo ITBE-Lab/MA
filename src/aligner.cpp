@@ -12,7 +12,7 @@ void exportAligner()
 }
 
 //this creates our main function
-BOOST_PYTHON_MODULE(LAuS_Aligner)
+BOOST_PYTHON_MODULE(LAuS)
 {
 	exportAligner();
         exportModule();

@@ -2,8 +2,8 @@
 from setuptools import setup, Extension
  
 setup(
-    name='LAuS_Aligner',
-    version='0.0.1',
+    name='LAuS',
+    version='0.0.2',
     description='An aligner for Nucleotide Sequences.',
     author='Markus Schmidt',
  
@@ -34,26 +34,21 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure 
         # that you indicate whether you support Python 2, Python 3 or both. 
-        'Programming Language :: Python :: 2', 
         'Programming Language :: Python :: 2.7', 
-        'Programming Language :: Python :: 3', 
-        'Programming Language :: Python :: 3.3', 
-        'Programming Language :: Python :: 3.4', 
-        'Programming Language :: Python :: 3.5', 
     ], 
 
     keywords='aligner nucleotide sequence',
 
     ext_modules=[
-        Extension('LAuS_Aligner',
-                 ['src/aligner.cpp',
-                 'src/module.cpp',
-                 'src/container.cpp',
-                 'src/nucSeq.cpp',],
-                  include_dirs=['inc'], # assuming your project include files are there
-                  library_dirs=['/usr/lib'], # optional
-                  libraries=['boost_python'], # those are the linked libs
-                  extra_compile_args=['-std=c++11'] # some other compile args
-                  ),
+        Extension('LAuS',
+            ['src/aligner.cpp',
+            'src/module.cpp',
+            'src/container.cpp',
+            'src/nucSeq.cpp',],
+            include_dirs=['inc'], # assuming your project include files are there
+            library_dirs=['/usr/lib'], # optional
+            libraries=['boost_python'], # those are the linked libs
+            extra_compile_args=['-std=c++11'] # some other compile args
+            ),
         ]
 )
