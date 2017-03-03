@@ -41,7 +41,7 @@ setup(
 
     ext_modules=[
         Extension('LAuS',
-            ['src/aligner.cpp',
+            ['src/aligner.cpp', #TODO check if this can be automated to pick all .cpp files
             'src/module.cpp',
             'src/container.cpp',
             'src/nucSeq.cpp',],
