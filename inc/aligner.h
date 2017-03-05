@@ -9,6 +9,11 @@
 #include <Python.h>
 #include <iostream>
 
+/*
+*	implements the alignment
+*/
+
+
 class Aligner
 {
 private:
