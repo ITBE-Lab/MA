@@ -1,5 +1,4 @@
 #include "sequence.h"
-#include "exception.h"
 
 /* Delivers a slice that spans over the complete sequence.
  */
@@ -344,3 +343,14 @@ void AtomLevelCount::addAminoAcid( uint8_t uiAACode )
 		uiPackedCount = uiPackedCount >> 5;
 	} // for
 } // method
+
+void exportSequence()
+{
+	 //export the nucleotidesequence class
+	boost::python::class_<NucleotideSequence, boost::noncopyable, boost::python::bases<Container>>("NucSeq")
+		.def(boost::python::init<const std::string>())
+        .def("at", &NucleotideSequence::charAt)
+        .def("append", &NucleotideSequence::vAppendWrapper);
+
+
+}//function

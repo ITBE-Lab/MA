@@ -16,4 +16,7 @@ BOOST_PYTHON_MODULE(LAuS)
 {
 	exportAligner();
         exportModule();
+        exportContainer();
+        exportFM_index();
+        exportSequence();
 }

@@ -16,6 +16,9 @@
 #include "interval.h"
 
 #include <boost/log/trivial.hpp>
+#include <boost/python.hpp>
+#include "container.h"
+
 
 /* 32bit rounding to the next exponent as define
  */
@@ -41,7 +44,7 @@ void reverse(T word[], size_t length)
  * Special string class, for sequence handling. 
  */
 template <class ELEMENT_TYPE>
-class PlainSequence 
+class PlainSequence: public Container 
 {
 private :
 	friend GeneticSequence;
@@ -541,6 +544,9 @@ public :
 		vAppend( rsInitialText.c_str() );
 	} // constructor
 
+	/* is implicitly deleted by geneticSequence but boost python needs to know */
+	NucleotideSequence(const NucleotideSequence&) = delete;
+
 	/* The full sequence as nucleotide sequence slice.
 	 */
 	NucleotideSequenceSlice fullSequenceAsSlice() const;
@@ -668,6 +674,12 @@ public :
 
 		vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
 	} // method
+
+	/* wrapping vAppend in order to make it acessible from boost python */
+	void vAppendWrapper(std::string &sSequence)
+	{
+		vAppend(sSequence.c_str());
+	}
 
 	/* Appends a slice of some other sequence to our current sequence. (Only Prototype)
 	 */
@@ -1309,3 +1321,7 @@ void vForAllTranslationsDo( int64_t iGeneId,
 							const std::function< void( const NucleotideSequence& ) > functor
 							// Functor &&functor
 							);
+
+
+/* export this module to boost python */
+void exportSequence();

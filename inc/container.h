@@ -2,6 +2,7 @@
 #define CONTAINER_H
 
 #include <vector>
+#include <boost/python.hpp>
 
 class Container
 {
@@ -25,5 +26,6 @@ public:
 
 };
 
-
+/* function to export this module to boost python */
+void exportContainer();
 #endif

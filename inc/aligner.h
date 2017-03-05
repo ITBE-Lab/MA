@@ -3,6 +3,10 @@
 
 #include "module.h"
 #include "container.h"
+#include "segmentation.h"
+#include "FM_index.h"
+#include "container.h"
+#include "sequence.h"
 #include <list>
 #include <memory>
 #include <boost/python.hpp>

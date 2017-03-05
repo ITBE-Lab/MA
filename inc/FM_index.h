@@ -17,6 +17,8 @@
 #include "pack.h"
 #include "ksw.h" // Later we should create our own aligner
 #include "configure.h"
+#include "container.h"
+#include <boost/python.hpp>
 
 
 extern Configuration xGlobalConfiguration;
@@ -202,7 +204,7 @@ extern std::tuple< uint64_t, uint64_t, std::vector<uint64_t>, std::vector<unsign
  * FM-indices are central with the alignment process.
  * The original data-structure was part of the BWA-code.
  */
-class FM_Index 
+class FM_Index : public Container
 {
 public :
 	/* C(), cumulative counts (part of the FM index)
@@ -1151,6 +1153,7 @@ public :
 		return	   boost::filesystem::exists( rsPrefix + ".bwt" )
 				&& boost::filesystem::exists( rsPrefix + ".sa" );
 	} // method
+	
 
 	/* Dump the current FM-Index to two separated files for BWT and SA.
 	 */
@@ -1170,6 +1173,12 @@ public :
 			xOutputStream.close();
 		} // scope
 	} // method
+
+	/* wrap the function in oder to make it acessible to pyhton */
+	void vStoreFM_IndexWrapper( const std::string &sPath )
+	{
+		vStoreFM_Index(sPath);
+	}//function
 
 //markus
 
@@ -1270,6 +1279,13 @@ public :
 		} // scope
 	} // method
 
+
+	/* wrap the function in oder to make it acessible to pyhton */
+	void vLoadFM_indexWrapper(const std::string &sPath)
+	{
+		vLoadFM_Index(sPath);
+	}//function
+
 	/* Debug function for comparing BWT.
 	 * BWT can be build by several different functions. Here we can check for correctness.
 	 * So long it does not compare the BWT sequence itself.
@@ -1361,3 +1377,7 @@ public :
 #endif
 	} // destructor
 }; // class FM_Index
+
+
+//function called in order to export this module
+void exportFM_index();

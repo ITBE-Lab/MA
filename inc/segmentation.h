@@ -5,14 +5,17 @@
 #include "intervalTree.h"
 #include "FM_index.h"
 #include <condition_variable>
-#include "GraphicalMethod.h"
+#include "graphicalMethod.h"
+#include "threadPool.h"
+#include "module.h"
+#include "container.h"
 #include <system.h>
 
 
 
 typedef DoublyLinkedList<SegmentTreeInterval>::Iterator SegTreeItt;
 
-class Segmentation{
+class Segmentation : public Module{
 private:
 	SegmentTree xSegmentTree;
 	std::shared_ptr<FM_Index> pxFM_index, pxRev_FM_Index;
@@ -83,6 +86,8 @@ public:
 	void segment();
 
 	void printSegmentTree(std::ostream &xOut) { xSegmentTree.print(xOut); xOut << std::endl; }//function
+
+	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
 
 };
 
