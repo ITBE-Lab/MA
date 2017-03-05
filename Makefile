@@ -5,9 +5,9 @@ PYTHON_INCLUDE = /usr/include/python$(PYTHON_VERSION)
  
 # location of the Boost Python include files and library
  
-BOOST_INC = /usr/include
-BOOST_LIB_PATH = /usr/lib /opt/dev/boost_1_60_0/stage/lib /opt/dev/lib
-BOOST_LIB = boost_python dl rt z boost_system-mt boost_thread-mt boost_log-mt lboost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt
+BOOST_INC = /opt/dev/boost_1_60_0
+BOOST_LIB_PATH = /opt/dev/boost_1_60_0/stage/lib /opt/dev/lib
+BOOST_LIB = boost_python dl rt z boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp)))

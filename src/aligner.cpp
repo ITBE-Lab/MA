@@ -19,4 +19,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportContainer();
         exportFM_index();
         exportSequence();
+        exportSegmentation();
 }

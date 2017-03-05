@@ -97,9 +97,14 @@ public:
 	class Download_Exeption : public annotated_exception<6>
 	{
 	public:
-		Download_Exeption(const char* info) : annotated_exception(info)
-		{}
+		Download_Exeption(const char* info) : annotated_exception(info){}
 	};
+
+class ModuleIO_Exception : public annotated_exception<7>
+{
+public:
+		ModuleIO_Exception(const char* info) : annotated_exception(info){}
+};
 //end markus
 
 

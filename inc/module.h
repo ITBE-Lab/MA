@@ -5,6 +5,7 @@
 #include <memory>
 #include <boost/python.hpp>
 #include <Python.h>
+#include "exception.h"
 #include <iostream>
 
 
@@ -16,6 +17,21 @@ class Module
 {
 public:
     virtual std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput){return pInput;}
+    virtual Container getInputType(){return Container();}
+    virtual Container getOutputType(){return Container();}
+    std::shared_ptr<Container> saveExecute(std::shared_ptr<Container> pInput)
+    {
+        if(getInputType().sameTypeAs(pInput))
+        {
+            auto pOutput = execute(pInput);
+            if(getOutputType().sameTypeAs(pOutput))
+                return pOutput;
+            else
+                throw ModuleIO_Exception("wrong output type");
+        }
+        else
+            throw ModuleIO_Exception("wrong input type");
+    }
 };
 
 class Printer : public Module

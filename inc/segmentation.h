@@ -80,11 +80,16 @@ public:
 #endif
 	{}//constructor
 
+	//default constructor
+	Segmentation()
+	{}
+
 	void printSegmentTree(std::ostream &xOut) { xSegmentTree.print(xOut); xOut << std::endl; }//function
 
 	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
 
 };
 
+void exportSegmentation();
 
 #endif

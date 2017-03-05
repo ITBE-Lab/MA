@@ -37,7 +37,7 @@ public:
     {
         if(lpModules.empty())
             return; 
-        pCurrent = lpModules.front()->execute(pCurrent); 
+        pCurrent = lpModules.front()->saveExecute(pCurrent); 
         lpModules.pop_front();
     }
     void steps()
