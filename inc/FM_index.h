@@ -219,7 +219,7 @@ public :
 
 
 	/*used to identify the FM_index datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::vector;}
+    ContainerType getType(){return ContainerType::FM_index;}
 protected :
 	typedef int64_t bwtint_t; // changed from uint64_t to int64_t
 	
