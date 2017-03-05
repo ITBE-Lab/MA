@@ -45,7 +45,7 @@ setup(
             'src/module.cpp',
             'src/container.cpp',
             'src/nucSeq.cpp',],
-            include_dirs=['inc'], # assuming your project include files are there
+            include_dirs=['inc', 'usr/include'], # assuming your project include files are there
             library_dirs=['/usr/lib'], # optional
             libraries=['boost_python'], # those are the linked libs
             extra_compile_args=['-std=c++11'] # some other compile args

@@ -80,11 +80,6 @@ public:
 #endif
 	{}//constructor
 
-	/*
-	*	performs the entire segmentation process
-	*/ 
-	void segment();
-
 	void printSegmentTree(std::ostream &xOut) { xSegmentTree.print(xOut); xOut << std::endl; }//function
 
 	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
