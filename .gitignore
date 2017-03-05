@@ -4,3 +4,4 @@ obj/*
 build/*
 dist/*
 *.egg-info/*
+core

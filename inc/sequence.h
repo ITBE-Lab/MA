@@ -584,6 +584,10 @@ public :
 #endif
 	} // constructor
 
+	
+	/*used to identify the nucleotide sequence datatype in the aligner pipeline*/
+    ContainerType getType(){return ContainerType::nucSeq;}
+
 	/* Delivers the complement of a single nucleotide.
 	 */
 	static inline char nucleotideComplement( char iNucleotide )
