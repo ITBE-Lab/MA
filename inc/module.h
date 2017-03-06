@@ -17,14 +17,14 @@ class Module
 {
 public:
     virtual std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput){return pInput;}
-    virtual Container getInputType(){return Container();}
-    virtual Container getOutputType(){return Container();}
+    virtual std::shared_ptr<Container> getInputType(){return std::shared_ptr<Container>(new Container());}
+    virtual std::shared_ptr<Container> getOutputType(){return std::shared_ptr<Container>(new Container());}
     std::shared_ptr<Container> saveExecute(std::shared_ptr<Container> pInput)
     {
-        if(getInputType().sameTypeAs(pInput))
+        if(getInputType()->sameTypeAs(pInput))
         {
             auto pOutput = execute(pInput);
-            if(getOutputType().sameTypeAs(pOutput))
+            if(getOutputType()->sameTypeAs(pOutput))
                 return pOutput;
             else
                 throw ModuleIO_Exception("wrong output type");

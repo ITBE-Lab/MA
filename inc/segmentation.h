@@ -88,6 +88,8 @@ public:
 
 	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
 
+	std::shared_ptr<Container> getInputType();
+    std::shared_ptr<Container> getOutputType();
 };
 
 void exportSegmentation();

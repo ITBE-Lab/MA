@@ -347,10 +347,12 @@ void AtomLevelCount::addAminoAcid( uint8_t uiAACode )
 void exportSequence()
 {
 	 //export the nucleotidesequence class
-	boost::python::class_<NucleotideSequence, boost::noncopyable, boost::python::bases<Container>>("NucSeq")
+	boost::python::class_<NucleotideSequence, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<NucleotideSequence>>("NucSeq")
 		.def(boost::python::init<const std::string>())
         .def("at", &NucleotideSequence::charAt)
         .def("append", &NucleotideSequence::vAppendWrapper);
 
+	//tell boost python that it's possible to convert shared pointers with these classes
+    boost::python::implicitly_convertible<std::shared_ptr<NucleotideSequence>,std::shared_ptr<Container>>();
 
 }//function

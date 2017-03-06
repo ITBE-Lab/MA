@@ -380,8 +380,13 @@ void Segmentation::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode, size_t 
 
 std::shared_ptr<Container> Segmentation::execute(std::shared_ptr<Container> pInput)
 {
+	ContainerVector *pvInput = (ContainerVector*)pInput.get();
+	FM_Index *pFM_index = (FM_Index*)pvInput->elements().at(0).get();
+	FM_Index *pFM_indexReversed = (FM_Index*)pvInput->elements().at(1).get();
+	NucleotideSequence *pNuqSecQuerry = (NucleotideSequence*)pvInput->elements().at(2).get();
+	//TODO: 3 == packed reference sequence
 
-
+#if 0
     assert(*xSegmentTree.begin() != nullptr);
 
 	{//scope for xPool
@@ -432,9 +437,27 @@ std::shared_ptr<Container> Segmentation::execute(std::shared_ptr<Container> pInp
 	);
 	pxQuality->uiAmountAnchorSegments = uiNumSegmentsAsAnchors;
 #endif
-
+#endif
     return pInput;
 }//function
+
+
+std::shared_ptr<Container> Segmentation::getInputType()
+{
+	std::shared_ptr<ContainerVector> pRet(new ContainerVector());
+	//the forward fm_index
+	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
+	//the reversed fm_index
+	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
+	//the querry sequence
+	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
+	//the reference sequence (packed since it could be really long)
+	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
+	return pRet;
+}
+std::shared_ptr<Container> Segmentation::getOutputType(){
+	return std::shared_ptr<Container>(new Container());
+}
 
 void exportSegmentation()
 {

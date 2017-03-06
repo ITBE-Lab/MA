@@ -79,20 +79,13 @@ extern unsigned char nst_nt4_table[256];
 /* TODO: study http://stackoverflow.com/questions/3180268/why-are-c-stl-iostreams-not-exception-friendly
  *       study http://gehrcke.de/2011/06/reading-files-in-c-using-ifstream-dealing-correctly-with-badbit-failbit-eofbit-and-perror/
  */
-class BWACompatiblePackedNucleotideSequencesCollection
+class BWACompatiblePackedNucleotideSequencesCollection : public Container
 {
 	/* Delete implicit copy constructor.
 	 * For performance reasons we do not want to risk unwanted copies of packs, although it is safe to make such copies using the implicit constructor definitions.
 	 * According the C++ standard this should effect all other implicit constructors as well.
 	 */
 	BWACompatiblePackedNucleotideSequencesCollection(const BWACompatiblePackedNucleotideSequencesCollection& ) = delete; 
-
-//markus
-public:
-	//FIXME : DELETE ME!!!!
-	//used for the construction of an fm_index for forward search
-	void setbPackComprisesReverseStrand() { bPackComprisesReverseStrand = true; }//function
-//end markus
 
 private:
 	/* In the original BWA code the reverse strand is stored as part of the pack as well.
@@ -619,7 +612,19 @@ private:
 		} // if
 	} // method
 
-public :
+public:
+
+//markus
+	//FIXME: DELETE ME!!!!
+	//used for the construction of an fm_index for forward search
+	void setbPackComprisesReverseStrand() { bPackComprisesReverseStrand = true; }//function
+//end markus
+
+	ContainerType getType() 
+	{
+		return ContainerType::packedNucSeq;
+	}//function
+
 	friend void vTextSequenceCollectionClass();
 
 	/* Check method, in oder to see whether everything is fine
@@ -780,6 +785,13 @@ public :
 		assert( uiUnpackedSizeForwardStrand == uiInitialUnpackedSize + rxSequence.length() );
 	} // method
 
+	/*
+	*	wraps vAppendSequence in order to make it acessible for boost python
+	*/
+	void vAppendSequenceWrapper(const std::string sName, const std::string sComment, const std::shared_ptr<NucleotideSequence> pSequence)
+	{
+		vAppendSequence(sName, sComment, *pSequence);
+	}//function
 
 	/* Appends a single FASTA record to the collection and pack.
 	 */
@@ -806,6 +818,15 @@ public :
 		vStorePack( rsPackPrefix, xPackedNucleotideSequences, uiUnpackedSizeForwardStrand );
 		vStoreCollectionDescripton( rsPackPrefix );
 	} // method
+
+
+	/*
+	* wraps vStoreCollection in order to make it acessible to boost python
+	*/
+	void vStoreCollectionWrapper( const std::string sPackPrefix )
+	{
+		vStoreCollection(sPackPrefix);
+	}
 
 	/* This method is only required in the context of BWT-large, an old code part from the original BWA code.
 	 * Here we simply store the pure pack together with its reverse strand.
@@ -851,6 +872,14 @@ public :
 				&& boost::filesystem::exists( rsPrefix + ".ann" )
 				&& boost::filesystem::exists( rsPrefix + ".amb" );
 	} // method
+	
+	/*
+	* wraps packExistsOnFileSystem in order to make it acessible to boost python
+	*/
+	static bool packExistsOnFileSystemWrapper( const std::string sPrefix )
+	{
+		return packExistsOnFileSystem(sPrefix);
+	}
 
 	/* Entry point, for the construction of packs.
 	 * pcPackPrefix is some prefix for the pack-files.
@@ -949,6 +978,14 @@ public :
 
 		assert( debugCheckSequenceDescriptorVector( ) );
 	} // method
+
+	/*
+	* wraps vLoadCollection in order to make it acessible to boost python
+	*/
+	void vLoadCollectionWrapper( const std::string sFileNamePrefix )
+	{
+		vLoadCollection(sFileNamePrefix);
+	}
 
 	/* The index of the first element that belongs to the reverse strand.
 	 */
@@ -1143,6 +1180,14 @@ public :
 		} // else
 	} // method
 
+	/*
+	* wraps vExtractSubsection in order to make it acessible to boost python
+	*/
+	void vExtractSubsectionWrapper(const int64_t iBegin, const int64_t iEnd, std::shared_ptr<NucleotideSequence> pSequence)
+	{
+		vExtractSubsection(iBegin, iEnd, *pSequence/*, false*/);
+	}//function
+
 	/* Unpacks the complete collection (forward as well as revers strand) as a single sequence into rxSequence.
 	 */
 	void vColletionAsNucleotideSequence( NucleotideSequence &rxSequence ) const
@@ -1151,12 +1196,29 @@ public :
 		vExtractSubsection( uiStartOfReverseStrand(), uiUnpackedSizeForwardPlusReverse(), rxSequence, true ); // get the reverse strand (true triggers appending)
 	} // method
 
+	
+	/*
+	* wraps vColletionAsNucleotideSequence in order to make it acessible to boost python
+	*/
+	void vColletionAsNucleotideSequenceWrapper(std::shared_ptr<NucleotideSequence> pSequence) const
+	{
+		vColletionAsNucleotideSequence(*pSequence);
+	}//function
+
 	/* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
 	*/
 	void vColletionWithoutReverseStrandAsNucleotideSequence(NucleotideSequence &rxSequence) const
 	{
 		vExtractSubsection(0, uiStartOfReverseStrand(), rxSequence); // get the forward strand
 	} // method
+	
+	/*
+	* wraps vColletionWithoutReverseStrandAsNucleotideSequence in order to make it acessible to boost python
+	*/
+	void vColletionWithoutReverseStrandAsNucleotideSequenceWrapper(std::shared_ptr<NucleotideSequence> pSequence) const
+	{
+		vColletionWithoutReverseStrandAsNucleotideSequence(*pSequence);
+	}//function
 //markus
 	/* Unpacks the reverse strand sequences of the collection as a single sequence into rxSequence.
 	*/
@@ -1164,10 +1226,18 @@ public :
 	{
 		vExtractSubsection(uiStartOfReverseStrand(), uiUnpackedSizeForwardPlusReverse(), rxSequence, true); // get the reverse strand (true triggers appending)
 	} // method
+
+	/*
+	* wraps vColletionOnlyReverseStrandAsNucleotideSequence in order to make it acessible to boost python
+	*/
+	void vColletionOnlyReverseStrandAsNucleotideSequenceWrapper(std::shared_ptr<NucleotideSequence> pSequence) const
+	{
+		vColletionOnlyReverseStrandAsNucleotideSequence(*pSequence);
+	}//function
 //end markus
 
 	/* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.
-	 * If riBegin and riEnd are already with the sequence indicated by middle we do not change the value.
+	 * If riBegin and riEnd are already with the sequence indicated by middle we do not change their values.
 	 */
 	void vAlignPositions( int64_t &riBegin, const int64_t iMiddle, int64_t &riEnd ) const
 	{
@@ -1202,4 +1272,4 @@ public :
 	} // method
 }; // class
 
-
+void exportPack();

@@ -530,6 +530,7 @@ class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>{
 public:
 	/*
 	*	sets up the interval tree with two leaves and one initial interval comprising the whole query
+	*	note that the tree is internally represented as a DoublyLinkedList since only the leaves are of relevance
 	*/
 	SegmentTree(const nucSeqIndex uiQuerryLength)
 		:
