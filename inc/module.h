@@ -21,18 +21,14 @@ public:
     virtual std::shared_ptr<Container> getOutputType(){return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));}
     std::shared_ptr<Container> saveExecute(std::shared_ptr<Container> pInput)
     {
-        std::cout << "Module.saveExecute()" << std::endl;
         if(this == nullptr) 
                 throw ModuleIO_Exception("this is a nullptr WTF !?!");
         if(getInputType() == nullptr) 
                 throw ModuleIO_Exception("expected input of module is a nullptr - use DummyContainer(nothing) instead");
-        std::cout << "Module.saveExecute() - 0" << std::endl;
         if(pInput == nullptr)
                 throw ModuleIO_Exception("given input is a nullptr");
-        std::cout << "Module.saveExecute() - 1" << std::endl;
         if(getInputType()->sameTypeAs(pInput))
         {
-        std::cout << "Module.saveExecute() - 2" << std::endl;
             auto pOutput = execute(pInput);
             if(getOutputType() == nullptr) 
                 throw ModuleIO_Exception("expected output of module is a nullptr - use DummyContainer(nothing) instead");

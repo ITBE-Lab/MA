@@ -31,10 +31,10 @@ public:
     {}
 
     void setData(std::shared_ptr<Container> pC){pCurrent = pC;}
-    /* pyhton will take care of the deletion the the given pointer */
-    void addModule(std::shared_ptr<Module> pM)
+   
+    void addModule(Module xM)
     {
-        lpModules.push_back(pM);
+        lpModules.push_back(std::make_shared<Module>(xM));
     }
     bool stepPossible() 
     {
@@ -48,7 +48,6 @@ public:
     }
     void step()
     {
-        std::cout << "Aligner.step()" << std::endl;
         if(!stepPossible())
             return; 
         pCurrent = lpModules.front()->saveExecute(pCurrent); 
@@ -62,7 +61,7 @@ public:
 
     void test()
     {
-        addModule(std::shared_ptr<Module>(new Printer()));
+        addModule(Printer());
         steps();
     }
 

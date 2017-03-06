@@ -11,8 +11,6 @@ a.addModule(p)
 
 a.step()
 
-p.getInputType()
-
 print "generating FM_index object"
 fm_index = FM_index()
 try:
