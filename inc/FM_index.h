@@ -491,7 +491,7 @@ protected :
 		bwtint_t n;
 		uint32_t *p, *end;
 	
-		if ( k == uiRefSeqLength )
+		if ( k == (t_bwtIndex) uiRefSeqLength )
 		{
 			return L2[c+1] - L2[c];
 		} // if

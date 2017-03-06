@@ -1,4 +1,4 @@
-#incldue "graphicalMethod.h"
+#include "graphicalMethod.h"
 
 
 void exportGraphicalMethod()

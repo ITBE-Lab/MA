@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "segmentation.h"
 #include "threadPool.h"
+#include <boost/python.hpp>
 
 #if REMOVE_INTERFERING_MATCHES_USING_GRAPH
 #include "boost/graph/adjacency_list.hpp"
@@ -214,10 +215,10 @@ public:
 
 class StripOfConsideration{
 private:
-	//contains all matches that belong into this bucket
-	//buckets are overlapping so the buckets to the left and right of this one will (partially) contain the same matches
-	std::vector<PerfectMatchContainer> apxPerfectMatches;
-	std::list<std::shared_ptr<PerfectMatchBucket>> lpxPerfectMatcheBuckets;
+	/*the array the buckets lie in will get sorted so each bucket needs to remember it's position
+	*/
+	nucSeqIndex uiBegin;
+	nucSeqIndex uiEnd;
 
 	/*the summed up value of the content.
 	* this value gets modified while processing the bucket.
@@ -225,10 +226,11 @@ private:
 	* but initially this is just the plain sum of all matches lying in this bucket
 	*/
 	nucSeqIndex uiValueOfContent;
-	/*the array the buckets lie in will get sorted so each bucket needs to remember it's position
-	*/
-	nucSeqIndex uiBegin;
-	nucSeqIndex uiEnd;
+
+	//contains all matches that belong into this bucket
+	//buckets are overlapping so the buckets to the left and right of this one will (partially) contain the same matches
+	std::vector<PerfectMatchContainer> apxPerfectMatches;
+	std::list<std::shared_ptr<PerfectMatchBucket>> lpxPerfectMatcheBuckets;
 
 #if REMOVE_INTERFERING_MATCHES_USING_GRAPH
 
@@ -1385,7 +1387,7 @@ public:
 };
 
 
-class AnchorMatchList{
+class AnchorMatchList : public Container{
 private:
 	typedef std::vector<std::shared_ptr<PerfectMatchBucket>> PerfectMatchBuckets;
 	typedef std::list<std::shared_ptr<PerfectMatch>> AnchorSegments;
@@ -1481,3 +1483,5 @@ public:
 };//class
 
 #endif
+
+void exportGraphicalMethod();

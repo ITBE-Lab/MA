@@ -260,7 +260,7 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	if (pxNode->getStartIndex() + uiMinIntervalSize <= uiFrom)
 	{
 		//create a new list element and insert it before the current node
-		auto pxPrevNode = xSegmentTree.insertBefore(std::shared_ptr<SegmentTreeInterval>(
+		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
 			new SegmentTreeInterval(pxNode->getStartIndex(), uiFrom)), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue(
@@ -277,7 +277,7 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	if (pxNode->getEndIndex() >= uiTo + uiMinIntervalSize)
 	{
 		//create a new list element and insert it after the current node
-		auto pxNextNode = xSegmentTree.insertAfter(std::shared_ptr<SegmentTreeInterval>(
+		auto pxNextNode = pSegmentTree->insertAfter(std::shared_ptr<SegmentTreeInterval>(
 			new SegmentTreeInterval(uiTo, pxNode->getEndIndex())), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue(
@@ -309,12 +309,13 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	assert(uiReachedUntil <= pxNode->getCenter());
 
 
-	if (pxNode->length() > uiMinIntervalSize)
-		saveHits(*pxNode, uiThreadId);
-	else
-		xSegmentTree.removeNode(pxNode);
+	//if (pxNode->length() > uiMinIntervalSize)
+	//	saveHits(*pxNode, uiThreadId); deprecated see @saveHits
+	//else
+	if (pxNode->length() < uiMinIntervalSize)
+		pSegmentTree->removeNode(pxNode);
 
-	//TODO if we need to generate more hits we could split intervals longer than x even if we find matches in them, just to search from different starting positions.
+	//TODO: if we need to generate more hits we could split intervals longer than x even if we find matches in them, just to search from different starting positions.
 	//in this case we should limit the splitting to n numbers of iterations though, otherwise the procedure will degenerate to a bwa-like search
 }//function
 
@@ -364,6 +365,12 @@ void Segmentation::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInt
 	);//for each
 }//function
 
+#if 0
+/*
+*	deprecated since the anchor matches will be extracted after the segmentation process.
+* 	the finding achor matches process will have it's own module
+*/
+
 /* transfer the saved hits into the clustering
  * if DEBUG_CHECK_INTERVALS is activated the hits are verified before storing
 */
@@ -378,16 +385,11 @@ void Segmentation::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode, size_t 
 	);//for each
 }///function
 
-std::shared_ptr<Container> Segmentation::execute(std::shared_ptr<Container> pInput)
-{
-	ContainerVector *pvInput = (ContainerVector*)pInput.get();
-	FM_Index *pFM_index = (FM_Index*)pvInput->elements().at(0).get();
-	FM_Index *pFM_indexReversed = (FM_Index*)pvInput->elements().at(1).get();
-	NucleotideSequence *pNuqSecQuerry = (NucleotideSequence*)pvInput->elements().at(2).get();
-	//TODO: 3 == packed reference sequence
+#endif
 
-#if 0
-    assert(*xSegmentTree.begin() != nullptr);
+void Segmentation::segment()
+{
+    assert(*pSegmentTree->begin() != nullptr);
 
 	{//scope for xPool
 		ThreadPoolAllowingRecursiveEnqueues xPool(NUM_THREADS_ALIGNER);
@@ -400,12 +402,13 @@ std::shared_ptr<Container> Segmentation::execute(std::shared_ptr<Container> pInp
 			{
 				pxAligner->procesInterval(uiThreadId, pxRoot, pxPool);
 			},//lambda
-			xSegmentTree.begin(), this, &xPool
+			pSegmentTree->begin(), this, &xPool
 		);//enqueue
 
 	}//end of scope xPool
 
-	xSegmentTree.getTheNLongestIntervals(uiNumSegmentsAsAnchors).forEach(
+	/* TODO: move me into my own module
+	pSegmentTree->getTheNLongestIntervals(uiNumSegmentsAsAnchors).forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxInterval)
 		{
 			forEachNonBridgingPerfectMatch(pxInterval, true,
@@ -416,16 +419,16 @@ std::shared_ptr<Container> Segmentation::execute(std::shared_ptr<Container> pInp
 			);
 		}//lambda
 	);
-
+	*/
 
 #if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-	pxQuality->uiAmountSegments = xSegmentTree.length();
+	pxQuality->uiAmountSegments = pSegmentTree->length();
 	pxQuality->uiLongestSegment = 0;
 	nucSeqIndex uiEndLast = 0;
-	if(*xSegmentTree.end() != nullptr)
-		uiEndLast = xSegmentTree.end()->getStartIndex();
+	if(*pSegmentTree->end() != nullptr)
+		uiEndLast = pSegmentTree->end()->getStartIndex();
 	pxQuality->uiLongestGapBetweenSegments = 0;
-	xSegmentTree.forEach(
+	pSegmentTree->forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxInterval)
 		{
 			if (pxQuality->uiLongestGapBetweenSegments < pxInterval->getStartIndex() - uiEndLast)
@@ -437,12 +440,10 @@ std::shared_ptr<Container> Segmentation::execute(std::shared_ptr<Container> pInp
 	);
 	pxQuality->uiAmountAnchorSegments = uiNumSegmentsAsAnchors;
 #endif
-#endif
-    return pInput;
 }//function
 
 
-std::shared_ptr<Container> Segmentation::getInputType()
+std::shared_ptr<Container> SegmentationBridge::getInputType()
 {
 	std::shared_ptr<ContainerVector> pRet(new ContainerVector());
 	//the forward fm_index
@@ -453,18 +454,37 @@ std::shared_ptr<Container> Segmentation::getInputType()
 	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
 	//the reference sequence (packed since it could be really long)
 	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
+
 	return pRet;
 }
-std::shared_ptr<Container> Segmentation::getOutputType(){
-	return std::shared_ptr<Container>(new Container());
+std::shared_ptr<Container> SegmentationBridge::getOutputType()
+{
+	return std::shared_ptr<Container>(new DummyContainer(ContainerType::segmentList));
 }
+
+
+std::shared_ptr<Container> SegmentationBridge::execute(std::shared_ptr<Container> pInput)
+{
+
+	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
+	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(pCastedInput->elements().at(0));
+	std::shared_ptr<FM_Index> pFM_indexReversed = std::static_pointer_cast<FM_Index>(pCastedInput->elements().at(1));
+	std::shared_ptr<NucleotideSequence> pQuerrySeq = std::static_pointer_cast<NucleotideSequence>(pCastedInput->elements().at(2));
+	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(pCastedInput->elements().at(3));
+
+	Segmentation xS(pFM_index, pFM_indexReversed, pQuerrySeq, true, true, 10, 10000, pRefSeq);
+	xS.segment();
+
+	return xS.pSegmentTree;
+}//function
+
 
 void exportSegmentation()
 {
     //segmentation class
-	boost::python::class_<Segmentation, boost::python::bases<Module>, std::shared_ptr<Segmentation>>("Printer");
+	boost::python::class_<SegmentationBridge, boost::python::bases<Module>, std::shared_ptr<SegmentationBridge>>("Segmentation");
 
     //tell boost python that it's possible to convert shared pointers with these classes
-    boost::python::implicitly_convertible<std::shared_ptr<Segmentation>,std::shared_ptr<Module>>();
+    boost::python::implicitly_convertible<std::shared_ptr<SegmentationBridge>,std::shared_ptr<Module>>();
 
 }//function

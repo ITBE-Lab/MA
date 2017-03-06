@@ -18,7 +18,7 @@
 #define USE_BUCKET_CLUTERING ( 0 )
 
 #define confMETA_MEASURE_DURATION ( 1 )
-#define confGENEREATE_ALIGNMENT_QUALITY_OUTPUT ( 1 )
+#define confGENEREATE_ALIGNMENT_QUALITY_OUTPUT ( 0 )
 
 #ifdef DEBUG_CHECK_INTERVALS
 static std::mutex xMutexDebugCheckIntervals;
@@ -221,10 +221,10 @@ class DoublyLinkedList
 {
 
 private:
-	/* points to the right leaf of the list; used to determine the end of the list. */
-	std::shared_ptr<DoublyLinkedListEnd<Content>> pxLastLeaf = nullptr;
 	/* points to the left leaf of the list; used to determine the beginning of the list.*/
 	std::shared_ptr<DoublyLinkedListEnd<Content>> pxFrirstLeaf = nullptr;
+	/* points to the right leaf of the list; used to determine the end of the list. */
+	std::shared_ptr<DoublyLinkedListEnd<Content>> pxLastLeaf = nullptr;
 
 	/* returns the first element (containing data) of the list;*/
 	const std::shared_ptr<DoublyLinkedListElement<Content>> getRoot() const { return pxFrirstLeaf->getNextNode(); }
@@ -528,7 +528,7 @@ public:
 	}//function
 };
 
-class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>{
+class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>, public Container{
 
 public:
 	/*
@@ -570,6 +570,9 @@ public:
 
 		return xRet;
 	}//function
+
+	
+    volatile ContainerType getType(){return ContainerType::segmentList;}
 };
 
 std::ostream& operator<<(std::ostream& xOs, const SegmentTree& rxTree);

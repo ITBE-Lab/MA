@@ -31,4 +31,15 @@ void exportIntervalTree()
 	//tell boost python that it's possible to convert shared pointers with these classes
     boost::python::implicitly_convertible<std::shared_ptr<SegmentTreeInterval>,std::shared_ptr<Container>>();
 
+	
+	 //export the SegmentTree class
+	boost::python::class_<
+			SegmentTree, 
+			boost::noncopyable, 
+			boost::python::bases<Container>, 
+			std::shared_ptr<SegmentTree>
+		>("SegmentList")
+			.def(boost::python::init<const nucSeqIndex>())
+			.def("getAnchors", &SegmentTree::getTheNLongestIntervals);
+
 }//function

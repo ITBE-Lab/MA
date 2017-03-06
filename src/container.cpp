@@ -39,4 +39,12 @@ void exportContainer()
     
 	//tell boost python that it's possible to convert shared pointers with these classes
     boost::python::implicitly_convertible<std::shared_ptr<DummyContainer>,std::shared_ptr<Container>>();
+
+    
+    //export contianer vector
+	boost::python::class_<ContainerVector, boost::python::bases<Container>, std::shared_ptr<ContainerVector>>("ContainerVector", boost::python::init<ContainerType>())
+        .def();
+    
+	//tell boost python that it's possible to convert shared pointers with these classes
+    boost::python::implicitly_convertible<std::shared_ptr<ContainerVector>,std::shared_ptr<Container>>();
 }

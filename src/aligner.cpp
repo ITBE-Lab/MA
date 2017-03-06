@@ -24,4 +24,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportSegmentation();
         exportPack();
         exportIntervalTree();
+        exportGraphicalMethod();
 }

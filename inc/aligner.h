@@ -7,6 +7,7 @@
 #include "FM_index.h"
 #include "container.h"
 #include "sequence.h"
+#include "graphicalMethod.h"
 #include <list>
 #include <memory>
 #include <boost/python.hpp>
