@@ -10,6 +10,7 @@
 #include "FM_index.h"
 #include <list>
 #include <thread>
+#include <boost/python.hpp>
 
 //#define DEBUG_ALIGNER 
 //#define DEBUG_CHECK_INTERVALS 
@@ -367,7 +368,7 @@ public:
 
 };//class
 
-class SegmentTreeInterval{
+class SegmentTreeInterval : public Container{
 private:
 	struct PerfectMatch{
 		t_bwtIndex uiBwtIntervalIndex;
@@ -404,6 +405,8 @@ public:
 
 	nucSeqIndex getStartIndex() const { return uiStartIndex; }//function
 	nucSeqIndex getEndIndex() const { return uiEndIndex; }//function
+
+	ContainerType getType(){return ContainerType::segment;}
 
 	/* prints information about this node; thread save */
 	void print(std::ostream& xOs) const
@@ -574,6 +577,9 @@ std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode);
 
 #if 0
 
+/* depreceated stuff */
+
+
 /*
 *	A node of the interval tree;
 *	the tree is internally represented as a linked list,
@@ -708,3 +714,6 @@ public:
 #endif
 
 #endif
+
+
+void exportIntervalTree();

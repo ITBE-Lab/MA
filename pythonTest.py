@@ -3,10 +3,15 @@ from LAuS import *
 
 a = Aligner()
 
-a.addModule(Printer())
+a.test()
+
+p = Printer()
+
+a.addModule(p)
 
 a.step()
 
+p.getInputType()
 
 print "generating FM_index object"
 fm_index = FM_index()

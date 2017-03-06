@@ -29,9 +29,10 @@ void exportContainer()
         .value("vector", ContainerType::vector)
         .value("FM_index", ContainerType::fM_index)
         .value("nucSeq", ContainerType::nucSeq)
-        .value("bwtIntervalList", ContainerType::bwtIntervalList)
-        .value("bwtInterval", ContainerType::bwtInterval)
-        .value("packedNucSeq", ContainerType::packedNucSeq);
+        .value("segmentList", ContainerType::segmentList)
+        .value("segment", ContainerType::segment)
+        .value("packedNucSeq", ContainerType::packedNucSeq)
+        .value("nothing", ContainerType::nothing);
 
     //export dummy contianer
 	boost::python::class_<DummyContainer, boost::python::bases<Container>, std::shared_ptr<DummyContainer>>("DummyContainer", boost::python::init<ContainerType>());

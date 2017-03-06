@@ -8,10 +8,11 @@ enum ContainerType{
     fM_index,
     nucSeq,
     packedNucSeq,
-    bwtIntervalList,
-    bwtInterval,
+    segmentList,
+    segment,
     vector,
     unknown,
+    nothing,
 };//enum
 
 class Container

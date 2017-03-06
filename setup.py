@@ -14,7 +14,7 @@ setup(
  
     zip_safe=False,
  
-    #license='MIT', #TODO lookup correct license
+    #license='MIT', #TODO: lookup correct license
 
     classifiers=[ 
         # How mature is this project? Common values are 
@@ -29,7 +29,7 @@ setup(
         'Topic :: Scientific/Engineering :: Bio-Informatics', 
 
         # Pick your license as you wish (should match "license" above) 
-        #'License :: OSI Approved :: MIT License', #TODO lookup correct license
+        #'License :: OSI Approved :: MIT License', #TODO: lookup correct license
 
 
         # Specify the Python versions you support here. In particular, ensure 
@@ -41,14 +41,42 @@ setup(
 
     ext_modules=[
         Extension('LAuS',
-            ['src/aligner.cpp', #TODO check if this can be automated to pick all .cpp files
-            'src/module.cpp',
+            ['src/aligner.cpp', #TODO: check if this can be automated to pick all .cpp files
+            'src/configure.cpp',
             'src/container.cpp',
-            'src/nucSeq.cpp',],
-            include_dirs=['inc', 'usr/include'], # assuming your project include files are there
-            library_dirs=['/usr/lib'], # optional
-            libraries=['boost_python'], # those are the linked libs
-            extra_compile_args=['-std=c++11'] # some other compile args
+            'src/FM_index.cpp',
+            'src/intervalTree.cpp',
+            'src/ksw.c',
+            'src/module.cpp',
+            'src/nucSeq.cpp',
+            'src/pack.cpp',
+            'src/segmentation.cpp',
+            'src/sequence.cpp',
+            'src/support.cpp',
+            'src/threadPool.cpp',],
+            include_dirs=['inc', 'usr/include', '/opt/dev/boost_1_60_0'], # assuming your project include files are there
+            library_dirs=[
+                '/usr/lib',
+                '/opt/dev/boost_1_60_0/stage/lib', 
+                '/opt/dev/lib',
+            ], # optional
+            libraries=[
+                'boost_python', 
+                'dl',
+                'rt',
+                'z',
+                'boost_system-mt',
+                'boost_thread-mt', 
+                'boost_log-mt', 
+                'boost_log_setup-mt' ,
+                'boost_filesystem-mt' ,
+                'boost_program_options-mt' ,
+                'boost_regex-mt',
+                'boost_iostreams',
+                ], # those are the linked libs
+            extra_compile_args=[
+                '-std=c++11'
+                ] # some other compile args
             ),
         ]
 )

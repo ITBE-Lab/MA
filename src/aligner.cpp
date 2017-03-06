@@ -8,6 +8,8 @@ void exportAligner()
                 .def("addModule", &Aligner::addModule)
                 .def("step", &Aligner::step)
                 .def("steps", &Aligner::steps)
+                .def("stepPossible", &Aligner::stepPossible)
+                .def("test", &Aligner::test)
         ;
 }
 
@@ -21,4 +23,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportSequence();
         exportSegmentation();
         exportPack();
+        exportIntervalTree();
 }

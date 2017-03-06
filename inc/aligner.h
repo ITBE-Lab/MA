@@ -27,23 +27,43 @@ private:
 public:
     Aligner()
         :
-        lpModules(), pCurrent()
+        lpModules(), pCurrent(new DummyContainer(ContainerType::nothing))
     {}
 
     void setData(std::shared_ptr<Container> pC){pCurrent = pC;}
     /* pyhton will take care of the deletion the the given pointer */
-    void addModule(std::shared_ptr<Module> pM){lpModules.push_back(pM);}
-    void step()
+    void addModule(std::shared_ptr<Module> pM)
+    {
+        lpModules.push_back(pM);
+    }
+    bool stepPossible() 
     {
         if(lpModules.empty())
+            return false; 
+        if(pCurrent == nullptr)
+            return false;
+        if(lpModules.front() == nullptr)
+            return false;
+        return true; 
+    }
+    void step()
+    {
+        std::cout << "Aligner.step()" << std::endl;
+        if(!stepPossible())
             return; 
         pCurrent = lpModules.front()->saveExecute(pCurrent); 
         lpModules.pop_front();
     }
     void steps()
     {
-        while(!lpModules.empty())
+        while(stepPossible())
             step();
+    }
+
+    void test()
+    {
+        addModule(std::shared_ptr<Module>(new Printer()));
+        steps();
     }
 
 };
