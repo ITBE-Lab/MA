@@ -443,7 +443,7 @@ void Segmentation::segment()
 }//function
 
 
-std::shared_ptr<Container> SegmentationBridge::getInputType()
+std::shared_ptr<Container> SegmentationContainer::getInputType()
 {
 	std::shared_ptr<ContainerVector> pRet(new ContainerVector());
 	//the forward fm_index
@@ -457,22 +457,22 @@ std::shared_ptr<Container> SegmentationBridge::getInputType()
 
 	return pRet;
 }
-std::shared_ptr<Container> SegmentationBridge::getOutputType()
+std::shared_ptr<Container> SegmentationContainer::getOutputType()
 {
 	return std::shared_ptr<Container>(new DummyContainer(ContainerType::segmentList));
 }
 
 
-std::shared_ptr<Container> SegmentationBridge::execute(std::shared_ptr<Container> pInput)
+std::shared_ptr<Container> SegmentationContainer::execute(std::shared_ptr<Container> pInput)
 {
 
 	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
-	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(pCastedInput->elements().at(0));
-	std::shared_ptr<FM_Index> pFM_indexReversed = std::static_pointer_cast<FM_Index>(pCastedInput->elements().at(1));
-	std::shared_ptr<NucleotideSequence> pQuerrySeq = std::static_pointer_cast<NucleotideSequence>(pCastedInput->elements().at(2));
-	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(pCastedInput->elements().at(3));
+	std::shared_ptr<FM_IndexContainer> pFM_index = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->elements().at(0));
+	std::shared_ptr<FM_IndexContainer> pFM_indexReversed = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->elements().at(1));
+	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->elements().at(2));
+	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->elements().at(3));
 
-	Segmentation xS(pFM_index, pFM_indexReversed, pQuerrySeq, true, true, 10, 10000, pRefSeq);
+	Segmentation xS(pFM_index->pIndex, pFM_indexReversed->pIndex, pQuerrySeq->pSeq, true, true, 10, 10000, pRefSeq->pPack);
 	xS.segment();
 
 	return xS.pSegmentTree;
@@ -482,9 +482,6 @@ std::shared_ptr<Container> SegmentationBridge::execute(std::shared_ptr<Container
 void exportSegmentation()
 {
     //segmentation class
-	boost::python::class_<SegmentationBridge, boost::python::bases<Module>, std::shared_ptr<SegmentationBridge>>("Segmentation");
-
-    //tell boost python that it's possible to convert shared pointers with these classes
-    boost::python::implicitly_convertible<std::shared_ptr<SegmentationBridge>,std::shared_ptr<Module>>();
+	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>("Segmentation");
 
 }//function

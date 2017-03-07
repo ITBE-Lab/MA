@@ -3,7 +3,8 @@
 void exportModule()
 {
     //module is an abstract class and should never be initialized
-	boost::python::class_<Module, std::shared_ptr<Module>>("Module", boost::python::no_init);
+	boost::python::class_<Module, std::shared_ptr<Module>>("Module", boost::python::no_init)
+        .def("execute", &Module::saveExecute);
     //test class
 	boost::python::class_<Printer, boost::python::bases<Module>, std::shared_ptr<Printer>>("Printer");
 

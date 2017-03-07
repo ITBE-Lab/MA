@@ -17,29 +17,28 @@ void exportIntervalTree()
 {
 	 //export the SegmentTreeInterval class
 	boost::python::class_<
-			SegmentTreeInterval, 
-			boost::noncopyable, 
-			boost::python::bases<Container>, 
-			std::shared_ptr<SegmentTreeInterval>
+			SegmentContainer, 
+			boost::python::bases<Container>
 		>("Segment", boost::python::init<const nucSeqIndex, const nucSeqIndex>())
-			.def("start", &SegmentTreeInterval::getStartIndex)
-			.def("end", &SegmentTreeInterval::getEndIndex)
-			.def("pushBackBWT", &SegmentTreeInterval::pushBackBwtInterval)
-			.def("length", &SegmentTreeInterval::length)
-			.def("setInterval", &SegmentTreeInterval::setInterval);
+			.def("start", &SegmentContainer::getStartIndex)
+			.def("end", &SegmentContainer::getEndIndex)
+			.def("pushBackBWT", &SegmentContainer::pushBackBwtInterval)
+			.def("length", &SegmentContainer::length)
+			.def("setInterval", &SegmentContainer::setInterval);
 
-	//tell boost python that it's possible to convert shared pointers with these classes
-    boost::python::implicitly_convertible<std::shared_ptr<SegmentTreeInterval>,std::shared_ptr<Container>>();
-
+	//tell boost python that pointers of these classes can be converted implicitly
+	boost::python::implicitly_convertible< std::shared_ptr<SegmentContainer>, std::shared_ptr<Container> >(); 
 	
 	 //export the SegmentTree class
 	boost::python::class_<
-			SegmentTree, 
-			boost::noncopyable, 
-			boost::python::bases<Container>, 
-			std::shared_ptr<SegmentTree>
+			SegmentTreeContainer, 
+			boost::python::bases<Container>,
+			std::shared_ptr<SegmentTreeContainer>
 		>("SegmentList")
 			.def(boost::python::init<const nucSeqIndex>())
-			.def("getAnchors", &SegmentTree::getTheNLongestIntervals);
+			.def("getAnchors", &SegmentTreeContainer::getTheNLongestIntervals);
+
+	//tell boost python that pointers of these classes can be converted implicitly
+	boost::python::implicitly_convertible< std::shared_ptr<SegmentTreeContainer>, std::shared_ptr<Container> >(); 
 
 }//function

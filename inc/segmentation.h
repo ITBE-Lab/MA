@@ -85,7 +85,7 @@ public:
 	void segment();
 };//class
 
-class SegmentationBridge : public Module
+class SegmentationContainer : public Module
 {
 	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
 

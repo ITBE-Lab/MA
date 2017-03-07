@@ -48,7 +48,7 @@ public:
 
     ContainerType getType(){return ContainerType::vector;}
     std::vector<std::shared_ptr<Container>> elements() {return vElements;}
-    void append(Container c) {}//TODO: refractor all container classes to container decorators using pointers internally, so that you cann call a custom release() function...
+    void append(std::shared_ptr<Container> pC) {vElements.push_back(pC);}
     bool sameTypeAs(std::shared_ptr<Container> pOther);
 };//class
 

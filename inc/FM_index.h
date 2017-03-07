@@ -204,7 +204,7 @@ extern std::tuple< uint64_t, uint64_t, std::vector<uint64_t>, std::vector<unsign
  * FM-indices are central with the alignment process.
  * The original data-structure was part of the BWA-code.
  */
-class FM_Index : public Container
+class FM_Index
 {
 public :
 	/* C(), cumulative counts (part of the FM index)
@@ -218,8 +218,6 @@ public :
 	t_bwtIndex primary; 
 
 
-	/*used to identify the FM_index datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::fM_index;}
 protected :
 	typedef int64_t bwtint_t; // changed from uint64_t to int64_t
 	
@@ -1162,11 +1160,6 @@ public :
 				&& boost::filesystem::exists( std::string(rsPrefix).append(".sa") );
 #endif
 	} // method
-
-	static bool packExistsOnFileSystemWrapper(const std::string sPrefix )
-	{
-		return packExistsOnFileSystem(sPrefix);
-	} // method
 	
 
 	/* Dump the current FM-Index to two separated files for BWT and SA.
@@ -1188,13 +1181,6 @@ public :
 		} // scope
 	} // method
 
-
-	/* wrap the function in oder to make it acessible to pyhton */
-	void vStoreFM_IndexWrapper(  std::string sPrefix  )
-	{
-		std::string sPath(sPrefix);
-		vStoreFM_Index(sPath);
-	}//function
 
 //markus
 
@@ -1296,13 +1282,6 @@ public :
 	} // method
 
 
-	/* wrap the function in oder to make it acessible to pyhton */
-	void vLoadFM_IndexWrapper( std::string sPrefix  )
-	{
-		std::string sPath(sPrefix);
-		vLoadFM_Index(sPath);
-	}//function
-
 	/* Debug function for comparing BWT.
 	 * BWT can be build by several different functions. Here we can check for correctness.
 	 * So long it does not compare the BWT sequence itself.
@@ -1395,6 +1374,47 @@ public :
 	} // destructor
 }; // class FM_Index
 
+
+class FM_IndexContainer: public Container
+{
+public:
+	std::shared_ptr<FM_Index> pIndex;
+
+	FM_IndexContainer()
+			:
+		pIndex(new FM_Index())
+	{}//constructor
+
+	FM_IndexContainer(const FM_IndexContainer &rCpyFrom)
+			:
+		pIndex(rCpyFrom.pIndex)
+	{}//copy constructor
+
+	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
+    ContainerType getType(){return ContainerType::fM_index;}
+	
+
+	void vLoadFM_Index( std::string sPrefix  )
+	{
+		std::string sPath(sPrefix);
+		pIndex->vLoadFM_Index(sPath);
+	}//function
+
+	static bool packExistsOnFileSystem(const std::string sPrefix )
+	{
+		return FM_Index::packExistsOnFileSystem(sPrefix);
+	} // method
+	
+
+	/* wrap the function in oder to make it acessible to pyhton */
+	void vStoreFM_Index(  std::string sPrefix  )
+	{
+		std::string sPath(sPrefix);
+		pIndex->vStoreFM_Index(sPath);
+	}//function
+
+
+};//class
 
 //function called in order to export this module
 void exportFM_index();

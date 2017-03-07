@@ -16,12 +16,14 @@ bool ContainerVector::sameTypeAs(std::shared_ptr<Container> pOther)
         xIttOther++;
     }
     return true;
-} 
+}//function
 
 void exportContainer()
 {
     //contianer is an abstract class and should never be initialized
 	boost::python::class_<Container, std::shared_ptr<Container>>("Container", boost::python::no_init);
+    boost::python::register_ptr_to_python< std::shared_ptr<Container> >();
+
 
     //export the containertype enum
     boost::python::enum_<ContainerType>("ContainerType")
@@ -36,15 +38,14 @@ void exportContainer()
 
     //export dummy contianer
 	boost::python::class_<DummyContainer, boost::python::bases<Container>, std::shared_ptr<DummyContainer>>("DummyContainer", boost::python::init<ContainerType>());
-    
-	//tell boost python that it's possible to convert shared pointers with these classes
-    boost::python::implicitly_convertible<std::shared_ptr<DummyContainer>,std::shared_ptr<Container>>();
 
+	//tell boost python that pointers of these classes can be converted implicitly
+	boost::python::implicitly_convertible< std::shared_ptr<DummyContainer>, std::shared_ptr<Container> >(); 
     
     //export contianer vector
-	boost::python::class_<ContainerVector, boost::python::bases<Container>, std::shared_ptr<ContainerVector>>("ContainerVector", boost::python::init<ContainerType>())
-        .def();
-    
-	//tell boost python that it's possible to convert shared pointers with these classes
-    boost::python::implicitly_convertible<std::shared_ptr<ContainerVector>,std::shared_ptr<Container>>();
-}
+	boost::python::class_<ContainerVector, boost::python::bases<Container>, std::shared_ptr<ContainerVector>>("ContainerVector")
+        .def("append", &ContainerVector::append);
+
+	//tell boost python that pointers of these classes can be converted implicitly
+	boost::python::implicitly_convertible< std::shared_ptr<ContainerVector>, std::shared_ptr<Container> >(); 
+}//function

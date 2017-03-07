@@ -368,7 +368,7 @@ public:
 
 };//class
 
-class SegmentTreeInterval : public Container{
+class SegmentTreeInterval{
 private:
 	struct PerfectMatch{
 		t_bwtIndex uiBwtIntervalIndex;
@@ -406,7 +406,6 @@ public:
 	nucSeqIndex getStartIndex() const { return uiStartIndex; }//function
 	nucSeqIndex getEndIndex() const { return uiEndIndex; }//function
 
-	ContainerType getType(){return ContainerType::segment;}
 
 	/* prints information about this node; thread save */
 	void print(std::ostream& xOs) const
@@ -526,7 +525,51 @@ public:
 			}//for
 		}//for
 	}//function
-};
+};//class
+
+class SegmentContainer: public Container
+{
+private:
+	std::shared_ptr<SegmentTreeInterval> pInterval;
+public:
+
+	SegmentContainer(const nucSeqIndex uiStartIndex, const nucSeqIndex uiEndIndex)
+			:
+		pInterval(new SegmentTreeInterval(uiStartIndex, uiEndIndex))
+	{}//constructor
+
+	SegmentContainer(const SegmentContainer &rCpyFrom)
+			:
+		pInterval(rCpyFrom.pInterval)
+	{}//copy constructor
+	
+	ContainerType getType(){return ContainerType::segment;}//function
+
+	
+	nucSeqIndex getStartIndex() const { return pInterval->getStartIndex(); }//function
+	nucSeqIndex getEndIndex() const { return pInterval->getEndIndex(); }//function
+
+	void pushBackBwtInterval(
+		t_bwtIndex uiPosInBwt, t_bwtIndex uiLengthInBwt, 
+		nucSeqIndex uiStartOfIntervalOnQuery, nucSeqIndex uiEndOfIntervalOnQuery, 
+		bool bForwHit, bool bAnchor)
+	{
+		pInterval->pushBackBwtInterval(
+			uiPosInBwt, uiLengthInBwt, uiStartOfIntervalOnQuery, 
+			uiEndOfIntervalOnQuery, bForwHit, bAnchor
+		);
+	}//function
+
+	unsigned int length() const
+	{
+		return pInterval->length();
+	}//function
+	
+	void setInterval(nucSeqIndex uiStart, nucSeqIndex uiEnd) 
+	{
+		pInterval->setInterval(uiStart, uiEnd);
+	}//function
+};//class
 
 class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>, public Container{
 
@@ -552,28 +595,63 @@ public:
 	}//function
 
 
-	SegmentTree getTheNLongestIntervals(unsigned int uiN)
+	std::shared_ptr<SegmentTree> getTheNLongestIntervals(unsigned int uiN)
 	{
-		SegmentTree xRet;
+		std::shared_ptr<SegmentTree> pRet(new SegmentTree());
 
 		forEach(
-			[&xRet, &uiN](std::shared_ptr<SegmentTreeInterval> pxNode)
+			[&pRet, &uiN](std::shared_ptr<SegmentTreeInterval> pxNode)
 			{
-				auto pxIterator = xRet.begin();
+				auto pxIterator = pRet->begin();
 				while (pxIterator.isListElement() && pxIterator->length() > pxNode->length())
 					++pxIterator;
-				xRet.insertBefore(pxNode, pxIterator);
-				if (xRet.length() > uiN)
-					xRet.removeNode(xRet.end());
+				pRet->insertBefore(pxNode, pxIterator);
+				if (pRet->length() > uiN)
+					pRet->removeNode(pRet->end());
 			}//lambda
 		);//forEach
 
-		return xRet;
+		return pRet;
 	}//function
 
 	
     volatile ContainerType getType(){return ContainerType::segmentList;}
 };
+
+class SegmentTreeContainer: public Container
+{
+private:
+	std::shared_ptr<SegmentTree> pTree;
+public:
+
+	SegmentTreeContainer()
+			:
+		pTree(new SegmentTree())
+	{}//constructor
+
+	SegmentTreeContainer(std::shared_ptr<SegmentTree> pTree)
+			:
+		pTree(pTree)
+	{}//constructor
+
+	SegmentTreeContainer(const nucSeqIndex uiQuerryLength)
+			:
+		pTree(new SegmentTree(uiQuerryLength))
+	{}//constructor
+
+	SegmentTreeContainer(const SegmentTreeContainer &rCpyFrom)
+			:
+		pTree(rCpyFrom.pTree)
+	{}//copy constructor
+	
+	ContainerType getType(){return ContainerType::segmentList;}//function
+
+	std::shared_ptr<SegmentTreeContainer> getTheNLongestIntervals(unsigned int uiN)
+	{
+		return std::shared_ptr<SegmentTreeContainer>(new SegmentTreeContainer(pTree->getTheNLongestIntervals(uiN)));
+	}//function
+	
+};//class
 
 std::ostream& operator<<(std::ostream& xOs, const SegmentTree& rxTree);
 std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode);

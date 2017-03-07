@@ -44,7 +44,7 @@ void reverse(T word[], size_t length)
  * Special string class, for sequence handling. 
  */
 template <class ELEMENT_TYPE>
-class PlainSequence: public Container 
+class PlainSequence
 {
 private :
 	friend GeneticSequence;
@@ -584,9 +584,6 @@ public :
 #endif
 	} // constructor
 
-	
-	/*used to identify the nucleotide sequence datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::nucSeq;}
 
 	/* Delivers the complement of a single nucleotide.
 	 */
@@ -678,12 +675,6 @@ public :
 
 		vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
 	} // method
-
-	/* wrapping vAppend in order to make it acessible from boost python */
-	void vAppendWrapper(std::string &sSequence)
-	{
-		vAppend(sSequence.c_str());
-	}
 
 	/* Appends a slice of some other sequence to our current sequence. (Only Prototype)
 	 */
@@ -1326,6 +1317,43 @@ void vForAllTranslationsDo( int64_t iGeneId,
 							// Functor &&functor
 							);
 
+
+class NucSeqContainer: public Container
+{
+public:
+	std::shared_ptr<NucleotideSequence> pSeq;
+
+	NucSeqContainer()
+			:
+		pSeq(new NucleotideSequence())
+	{}//constructor
+
+	NucSeqContainer(const std::string &rsInitialText)
+			:
+		pSeq(new NucleotideSequence(rsInitialText))
+	{}//constructor
+
+	NucSeqContainer(const NucSeqContainer &rCpyFrom)
+			:
+		pSeq(rCpyFrom.pSeq)
+	{}//copy constructor
+	
+	
+	/*used to identify the nucleotide sequence datatype in the aligner pipeline*/
+    ContainerType getType(){return ContainerType::nucSeq;}
+
+	/*wrap charAt to make it acessible to python */
+	inline char charAt( size_t uxPosition )
+	{
+		pSeq->charAt(uxPosition);
+	}
+
+	/* wrapping vAppend in order to make it acessible from boost python */
+	void vAppend(std::string sSequence)
+	{
+		pSeq->vAppend(sSequence.c_str());
+	}
+};//class
 
 /* export this module to boost python */
 void exportSequence();

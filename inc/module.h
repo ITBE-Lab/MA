@@ -21,8 +21,6 @@ public:
     virtual std::shared_ptr<Container> getOutputType(){return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));}
     std::shared_ptr<Container> saveExecute(std::shared_ptr<Container> pInput)
     {
-        if(this == nullptr) 
-                throw ModuleIO_Exception("this is a nullptr WTF !?!");
         if(getInputType() == nullptr) 
                 throw ModuleIO_Exception("expected input of module is a nullptr - use DummyContainer(nothing) instead");
         if(pInput == nullptr)
