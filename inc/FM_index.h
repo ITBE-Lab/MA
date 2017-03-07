@@ -1385,9 +1385,9 @@ public:
 		pIndex(new FM_Index())
 	{}//constructor
 
-	FM_IndexContainer(const FM_IndexContainer &rCpyFrom)
+	FM_IndexContainer(const FM_IndexContainer *pCpyFrom)
 			:
-		pIndex(rCpyFrom.pIndex)
+		pIndex(pCpyFrom->pIndex)
 	{}//copy constructor
 
 	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
@@ -1413,7 +1413,10 @@ public:
 		pIndex->vStoreFM_Index(sPath);
 	}//function
 
-
+	std::shared_ptr<Container> copy()
+    {
+		return std::shared_ptr<Container>(new FM_IndexContainer(this));
+	}//function
 };//class
 
 //function called in order to export this module

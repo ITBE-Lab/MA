@@ -8,7 +8,6 @@
 #include "exception.h"
 #include <iostream>
 
-
 /*
     Module is an abstract class, but boost python requires the functions to exist,
     however we can remove the ability to initialize this class for python
@@ -17,8 +16,11 @@ class Module
 {
 public:
     virtual std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput){return pInput;}
+
     virtual std::shared_ptr<Container> getInputType(){return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));}
+
     virtual std::shared_ptr<Container> getOutputType(){return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));}
+
     std::shared_ptr<Container> saveExecute(std::shared_ptr<Container> pInput)
     {
         if(getInputType() == nullptr) 
@@ -36,32 +38,32 @@ public:
                 return pOutput;
             else
                 throw ModuleIO_Exception("wrong output type");
-        }
+        }//if
         else
             throw ModuleIO_Exception("wrong input type");
-    }
+    }//function
 };
 
 class Printer : public Module
 {
 public:
-    Printer(){std::cout << "Printer()" << std::endl;}
-    // printing deconstructor to verify the livetime of the object
-    ~Printer(){std::cout << "~Printer()" << std::endl;}
+    Printer(){}
     // overwrite the execute frunction from Module
     std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput) override
     {
-        std::cout << "Printer.execute()" << std::endl; 
+        if(pInput != nullptr)
+            pInput->print();
+        else
+            std::cout << "nullptr" << std::endl;
         return pInput;
     }
     std::shared_ptr<Container> getInputType()
     {
-        std::cout << "Printer.getInputType()" << std::endl;
-        return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));
+        return std::shared_ptr<Container>(new DummyContainer(ContainerType::any));
     }
     std::shared_ptr<Container> getOutputType()
     {
-        return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));
+        return std::shared_ptr<Container>(new DummyContainer(ContainerType::any));
     }
 };
 

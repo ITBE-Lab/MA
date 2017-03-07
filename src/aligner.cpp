@@ -25,4 +25,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportPack();
         exportIntervalTree();
         exportGraphicalMethod();
+        exportExceptions();
 }

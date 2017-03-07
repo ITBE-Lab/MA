@@ -466,16 +466,20 @@ std::shared_ptr<Container> SegmentationContainer::getOutputType()
 std::shared_ptr<Container> SegmentationContainer::execute(std::shared_ptr<Container> pInput)
 {
 
+	return std::shared_ptr<Container>();
+
 	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
 	std::shared_ptr<FM_IndexContainer> pFM_index = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->elements().at(0));
 	std::shared_ptr<FM_IndexContainer> pFM_indexReversed = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->elements().at(1));
 	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->elements().at(2));
 	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->elements().at(3));
 
+	std::cout << "actual segmentation is running" << std::endl;
+
 	Segmentation xS(pFM_index->pIndex, pFM_indexReversed->pIndex, pQuerrySeq->pSeq, true, true, 10, 10000, pRefSeq->pPack);
 	xS.segment();
 
-	return xS.pSegmentTree;
+	return std::shared_ptr<SegmentTreeContainer>(new SegmentTreeContainer(xS.pSegmentTree));
 }//function
 
 

@@ -1214,9 +1214,9 @@ public:
 		pPack(new BWACompatiblePackedNucleotideSequencesCollection())
 	{}//constructor
 
-	PackContainer(const PackContainer &rCpyFrom)
+	PackContainer(const PackContainer *pCpyFrom)
 			:
-		pPack(rCpyFrom.pPack)
+		pPack(pCpyFrom->pPack)
 	{}//copy constructor
 
 
@@ -1300,6 +1300,11 @@ public:
 	{
 		return pPack->uiUnpackedSizeForwardStrand;
 	} // method
+
+	std::shared_ptr<Container> copy()
+    {
+		return std::shared_ptr<Container>(new PackContainer(this));
+	}//function
 };//class
 
 void exportPack();

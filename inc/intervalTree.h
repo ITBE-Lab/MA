@@ -538,9 +538,9 @@ public:
 		pInterval(new SegmentTreeInterval(uiStartIndex, uiEndIndex))
 	{}//constructor
 
-	SegmentContainer(const SegmentContainer &rCpyFrom)
+	SegmentContainer(const SegmentContainer *pCpyFrom)
 			:
-		pInterval(rCpyFrom.pInterval)
+		pInterval(pCpyFrom->pInterval)
 	{}//copy constructor
 	
 	ContainerType getType(){return ContainerType::segment;}//function
@@ -569,9 +569,14 @@ public:
 	{
 		pInterval->setInterval(uiStart, uiEnd);
 	}//function
+
+	std::shared_ptr<Container> copy()
+    {
+		return std::shared_ptr<Container>(new SegmentContainer(this));
+	}//function
 };//class
 
-class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>, public Container{
+class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>{
 
 public:
 	/*
@@ -613,9 +618,6 @@ public:
 
 		return pRet;
 	}//function
-
-	
-    volatile ContainerType getType(){return ContainerType::segmentList;}
 };
 
 class SegmentTreeContainer: public Container
@@ -639,9 +641,9 @@ public:
 		pTree(new SegmentTree(uiQuerryLength))
 	{}//constructor
 
-	SegmentTreeContainer(const SegmentTreeContainer &rCpyFrom)
+	SegmentTreeContainer(const SegmentTreeContainer *pCpyFrom)
 			:
-		pTree(rCpyFrom.pTree)
+		pTree(pCpyFrom->pTree)
 	{}//copy constructor
 	
 	ContainerType getType(){return ContainerType::segmentList;}//function
@@ -649,6 +651,17 @@ public:
 	std::shared_ptr<SegmentTreeContainer> getTheNLongestIntervals(unsigned int uiN)
 	{
 		return std::shared_ptr<SegmentTreeContainer>(new SegmentTreeContainer(pTree->getTheNLongestIntervals(uiN)));
+	}//function
+
+	void print()
+	{
+		pTree->print(std::cout);
+		std::cout << std::endl;
+	}//function
+
+	std::shared_ptr<Container> copy()
+    {
+		return std::shared_ptr<Container>(new SegmentTreeContainer(this));
 	}//function
 	
 };//class

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <boost/python.hpp>
 
 /* An annotated exception class on the foundation of std::exception.
  */
@@ -21,7 +22,8 @@ public :
 							(N == 3) ? "Null Pointer"				:
 							(N == 4) ? "NCBI XML"					:
 							(N == 5) ? "Boost ASIO"					:
-							(N == 6) ? "FTP Download"
+							(N == 6) ? "FTP Download"				:
+							(N == 7) ? "Module In/Out"					
 									 : "Unknown Source"
 						  );
 		((text += " (") += info) += ")";
@@ -92,13 +94,13 @@ public:
 };
 
 //markus
-	/* Exceptions for Download
-	 */
-	class Download_Exeption : public annotated_exception<6>
-	{
-	public:
-		Download_Exeption(const char* info) : annotated_exception(info){}
-	};
+/* Exceptions for Download
+	*/
+class Download_Exeption : public annotated_exception<6>
+{
+public:
+	Download_Exeption(const char* info) : annotated_exception(info){}
+};
 
 class ModuleIO_Exception : public annotated_exception<7>
 {
@@ -118,3 +120,8 @@ T notNull( T pointer )
 		throw NullPointerException( "" );
 	} // if
 } // generic function
+
+
+
+
+void exportExceptions();

@@ -1,44 +1,58 @@
 
 from LAuS import *
 
-# load the fm_index for the human genome
-print "loading fm_index for the human genome..."
-fm_index = FM_index()
-fm_index.load("../BioSolution/assemblies/fm-indices/GCA_000001405.22") 
-print "done"
+try:
+    # load the fm_index for the human genome
+    print "loading fm_index for the human genome..."
+    fm_index = FM_index()
+    fm_index.load("../BioSolution/assemblies/fm-indices/GCA_000001405.22") 
+    print "done"
 
-# load the reversed fm_index for the human genome
-print "loading fm_index for the reversed human genome..."
-rev_fm_index = FM_index()
-rev_fm_index.load("../BioSolution/Application/rev_GCA_000001405.22")
-print "done"
+    # load the reversed fm_index for the human genome
+    print "loading fm_index for the reversed human genome..."
+    rev_fm_index = FM_index()
+    rev_fm_index.load("../BioSolution/Application/rev_GCA_000001405.22")
+    print "done"
 
 
-# load the nucleotide sequence pack for the human genome
-print "loading the human genome pack..."
-refSeq = BWAPack()
-refSeq.load("../BioSolution/Application/rev_GCA_000001405.22")
-print "done"
+    # load the nucleotide sequence pack for the human genome
+    print "loading the human genome pack..."
+    refSeq = BWAPack()
+    refSeq.load("../BioSolution/Application/rev_GCA_000001405.22")
+    print "done"
 
-#create simulated querry
-print "creating querry sequence..."
-querrySeq = NucSeq()
-querrySeq.append("cgtaactatagaatga") 
-print "done"
+    #create simulated querry
+    print "creating querry sequence..."
+    querrySeq = NucSeq()
+    querrySeq.append("cgtaactatagaatga") 
+    print "done"
 
-#create a container for all the required input
-print "setting up input vector..."
-input1 = ContainerVector()
+    #create a container for all the required input
+    print "setting up input vector..."
+    input1 = ContainerVector()
 
-input1.append(fm_index)
-input1.append(rev_fm_index)
-input1.append(querrySeq)
-input1.append(refSeq)
-print "done"
+    input1.append(fm_index)
+    input1.append(rev_fm_index)
+    input1.append(querrySeq)
+    input1.append(refSeq)
+    print "done"
 
-print "running the segmentation step..."
-seg = Segmentation()
-output1 = seg.execute(input1)
-print "done"
+    input1.print_()
+    input1.printType()
 
-print "test successful"
+    p = Printer()
+    #p.execute(input1)
+
+    print "running the segmentation step..."
+    seg = Segmentation()
+
+    seg.getInputType().printType()
+
+    output1 = seg.execute(input1)
+    print "done"
+
+    p.execute(output1)
+
+    print "test successful"
+except Exception as ex:
+    print ex

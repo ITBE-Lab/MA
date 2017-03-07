@@ -1333,9 +1333,9 @@ public:
 		pSeq(new NucleotideSequence(rsInitialText))
 	{}//constructor
 
-	NucSeqContainer(const NucSeqContainer &rCpyFrom)
+	NucSeqContainer(const NucSeqContainer *pCpyFrom)
 			:
-		pSeq(rCpyFrom.pSeq)
+		pSeq(pCpyFrom->pSeq)
 	{}//copy constructor
 	
 	
@@ -1353,6 +1353,11 @@ public:
 	{
 		pSeq->vAppend(sSequence.c_str());
 	}
+
+	std::shared_ptr<Container> copy()
+    {
+		return std::shared_ptr<Container>(new NucSeqContainer(this));
+	}//function
 };//class
 
 /* export this module to boost python */

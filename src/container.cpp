@@ -1,7 +1,27 @@
 #include "container.h"
 
+std::string containerTypeNames[] =
+{
+    "fM_index",
+    "nucSeq",
+    "packedNucSeq",
+    "segmentList",
+    "segment",
+    "vector",
+    "unknown",
+    "nothing",
+    "any",
+};//array
+
+void Container::printType()
+{
+    std::cout << containerTypeNames[getType()];
+}//function
+
 bool ContainerVector::sameTypeAs(std::shared_ptr<Container> pOther)
 {
+    if(pOther->getType() == ContainerType::any)
+        return true;
     if(pOther->getType() != getType())
         return false;
     if(elements().size() != ((ContainerVector*)pOther.get())->elements().size())
@@ -21,7 +41,9 @@ bool ContainerVector::sameTypeAs(std::shared_ptr<Container> pOther)
 void exportContainer()
 {
     //contianer is an abstract class and should never be initialized
-	boost::python::class_<Container, std::shared_ptr<Container>>("Container", boost::python::no_init);
+	boost::python::class_<Container, std::shared_ptr<Container>>("Container", boost::python::no_init)
+        .def("print_", &Container::print)
+        .def("printType", &Container::printType);
     boost::python::register_ptr_to_python< std::shared_ptr<Container> >();
 
 
