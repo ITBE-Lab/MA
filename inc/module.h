@@ -37,10 +37,16 @@ public:
             if(getOutputType()->sameTypeAs(pOutput))
                 return pOutput;
             else
-                throw ModuleIO_Exception("wrong output type");
+                throw ModuleIO_Exception(
+                        std::string("wrong output type. Expected: ").append(getOutputType()->getTypeInfo())
+                        .append(", but got: ").append(pOutput->getTypeInfo())
+                        .c_str() );
         }//if
         else
-            throw ModuleIO_Exception("wrong input type");
+            throw ModuleIO_Exception(
+                        std::string("wrong input type. Expected: ").append(getInputType()->getTypeInfo())
+                        .append(", but got: ").append(pInput->getTypeInfo())
+                        .c_str() );
     }//function
 };
 

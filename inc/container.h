@@ -37,7 +37,7 @@ public:
         std::cout << "no print function defined" << std::endl;
     }//function
     
-    virtual void printType();
+    virtual std::string getTypeInfo();
 
     //this should always be overwritten
     virtual std::shared_ptr<Container> copy()
@@ -58,16 +58,15 @@ public:
 
 class ContainerVector : public Container
 {
-private:
-    std::vector<std::shared_ptr<Container>> vElements;
 public:
+    std::vector<std::shared_ptr<Container>> vElements;
+    
     ContainerVector() 
         : 
         vElements() 
     {}
 
     ContainerType getType(){return ContainerType::vector;}
-    std::vector<std::shared_ptr<Container>> elements() {return vElements;}
     /*
     *   it's importent to coy the here since the python garbage collection will otherwise delete the data mid execution
     *   the copy call will copy the CONTAINER not the actual data (python wil then delete the old container)
@@ -88,18 +87,20 @@ public:
         std::cout << "}" << std::endl;
     }//function
     
-    void printType()
+    std::string getTypeInfo()
     {
-        std::cout << "vector{";
+        std::string sRet("vector(");
+        sRet.append(std::to_string(vElements.size())).append("){");
         for(auto pElem : vElements)
         {
             if(pElem != nullptr)
-                pElem->printType();
+                sRet.append(pElem->getTypeInfo());
             else
-                std::cout << "nullptr" << std::endl;
-            std::cout << "," << std::endl;
+                sRet.append("nullptr");
+            sRet.append(",");
         }//for
-        std::cout << "}";
+        sRet.append("}");
+        return sRet;
     }//function
 };//class
 

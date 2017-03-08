@@ -1,6 +1,6 @@
 #include "container.h"
 
-std::string containerTypeNames[] =
+std::vector<std::string> vContainerTypeNames =
 {
     "fM_index",
     "nucSeq",
@@ -13,9 +13,11 @@ std::string containerTypeNames[] =
     "any",
 };//array
 
-void Container::printType()
+std::string Container::getTypeInfo()
 {
-    std::cout << containerTypeNames[getType()];
+    if(vContainerTypeNames.size() > getType())
+        return std::string(vContainerTypeNames[getType()]);
+    return std::string("unknown");
 }//function
 
 bool ContainerVector::sameTypeAs(std::shared_ptr<Container> pOther)
@@ -24,11 +26,11 @@ bool ContainerVector::sameTypeAs(std::shared_ptr<Container> pOther)
         return true;
     if(pOther->getType() != getType())
         return false;
-    if(elements().size() != ((ContainerVector*)pOther.get())->elements().size())
+    if(vElements.size() != ((ContainerVector*)pOther.get())->vElements.size())
         return false;
-    auto xItt = elements().begin();
-    auto xIttOther = ((ContainerVector*)pOther.get())->elements().begin();
-    while(xItt != elements().end())
+    auto xItt = vElements.begin();
+    auto xIttOther = ((ContainerVector*)pOther.get())->vElements.begin();
+    while(xItt != vElements.end())
     {
         if( !(*xItt)->sameTypeAs(*xIttOther) )
             return false;
@@ -43,7 +45,7 @@ void exportContainer()
     //contianer is an abstract class and should never be initialized
 	boost::python::class_<Container, std::shared_ptr<Container>>("Container", boost::python::no_init)
         .def("print_", &Container::print)
-        .def("printType", &Container::printType);
+        .def("getTypeInfo", &Container::getTypeInfo);
     boost::python::register_ptr_to_python< std::shared_ptr<Container> >();
 
 

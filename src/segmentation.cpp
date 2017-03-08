@@ -447,14 +447,13 @@ std::shared_ptr<Container> SegmentationContainer::getInputType()
 {
 	std::shared_ptr<ContainerVector> pRet(new ContainerVector());
 	//the forward fm_index
-	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
 	//the reversed fm_index
-	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
 	//the querry sequence
-	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
 	//the reference sequence (packed since it could be really long)
-	pRet->elements().push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
-
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
 	return pRet;
 }
 std::shared_ptr<Container> SegmentationContainer::getOutputType()
@@ -466,15 +465,12 @@ std::shared_ptr<Container> SegmentationContainer::getOutputType()
 std::shared_ptr<Container> SegmentationContainer::execute(std::shared_ptr<Container> pInput)
 {
 
-	return std::shared_ptr<Container>();
-
 	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
-	std::shared_ptr<FM_IndexContainer> pFM_index = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->elements().at(0));
-	std::shared_ptr<FM_IndexContainer> pFM_indexReversed = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->elements().at(1));
-	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->elements().at(2));
-	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->elements().at(3));
+	std::shared_ptr<FM_IndexContainer> pFM_index = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->vElements.at(0));
+	std::shared_ptr<FM_IndexContainer> pFM_indexReversed = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->vElements.at(1));
+	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->vElements.at(2));
+	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->vElements.at(3));
 
-	std::cout << "actual segmentation is running" << std::endl;
 
 	Segmentation xS(pFM_index->pIndex, pFM_indexReversed->pIndex, pQuerrySeq->pSeq, true, true, 10, 10000, pRefSeq->pPack);
 	xS.segment();

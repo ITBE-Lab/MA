@@ -37,22 +37,16 @@ try:
     input1.append(refSeq)
     print "done"
 
-    input1.print_()
-    input1.printType()
-
-    p = Printer()
-    #p.execute(input1)
-
     print "running the segmentation step..."
     seg = Segmentation()
-
-    seg.getInputType().printType()
 
     output1 = seg.execute(input1)
     print "done"
 
-    p.execute(output1)
+    output1.print_()
+
+    print output1.getTypeInfo()
 
     print "test successful"
 except Exception as ex:
-    print ex
+    print "An Exception occured: " + ex
