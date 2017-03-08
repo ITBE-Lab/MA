@@ -11,6 +11,8 @@ enum ContainerType{
     packedNucSeq,
     segmentList,
     segment,
+    stripOfConsideration,
+    stripOfConsiderationList,
     vector,
     unknown,
     nothing,

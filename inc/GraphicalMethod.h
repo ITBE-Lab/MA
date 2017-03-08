@@ -169,7 +169,8 @@ public:
 };
 
 
-class PerfectMatchBucket{
+class PerfectMatchBucket
+{
 private:
 	nucSeqIndex uiTotalScore;
 
@@ -443,7 +444,7 @@ private:
 				ppxSurroundingCurrPosItt++;
 			}//for
 			/*end check list for consistency*/
-#endif
+#endif //DEBUG
 
 
 			pxCurrShadowIntervalIterator++;
@@ -669,7 +670,7 @@ private:
 			axShadows[uiI*2] = apxPerfectMatches[uiI].pxPerfectMatch->getLeftShadow(uiBegin, apxPerfectMatches[uiI], uiEnd - uiBegin, uiQueryLength);
 			axShadows[uiI * 2 + 1] = apxPerfectMatches[uiI].pxPerfectMatch->getRightShadow(uiBegin, apxPerfectMatches[uiI], uiEnd - uiBegin, uiQueryLength);
 		}//for
-	}
+	}//function
 
 	/*sorts the shadows by their beginnings (increasingly). if 2 matches start at the exact same position they will be sorted by their end (decreasingly)
 	*/
@@ -936,7 +937,7 @@ private:
 	* therefore the shadows cast by the matches against the left & right wall of the current bucket are used
 	* two helper functions are used disableIntervalsBefore() , addInvalidMarkers()
 	* the function expects calculateShadows() and sortShadows() to be called beforehand.
-	* check the according ppt slides to understand the algorithm.s
+	* check the according ppt slides to understand the algorithm.
 	*/
 	void lineSweep()
 	{
@@ -1108,7 +1109,7 @@ public:
 	}//function
 
 	/* this returns the score of the bucket.
-	* before calling process() this will retunr the maximal possible score.
+	* before calling process() this will return the maximal possible score.
 	* after calling process the actual score will be returned.
 	* it might not be necessary to process each bucket (depending on the possible maximum score)
 	*/
@@ -1198,12 +1199,59 @@ public:
 		//calculate the actual score, considering disabled AND overlapping matches
 		calculateScore();
 	}//function
-};
+};//class
+
+
+class StripOfConsiderationContainer: public Container
+{
+public:
+	std::shared_ptr<StripOfConsideration> pIndex;
+
+	FM_IndexContainer()
+			:
+		pIndex(new FM_Index())
+	{}//constructor
+
+	FM_IndexContainer(const FM_IndexContainer *pCpyFrom)
+			:
+		pIndex(pCpyFrom->pIndex)
+	{}//copy constructor
+
+	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
+    ContainerType getType(){return ContainerType::fM_index;}
+	
+
+	void vLoadFM_Index( std::string sPrefix  )
+	{
+		std::string sPath(sPrefix);
+		pIndex->vLoadFM_Index(sPath);
+	}//function
+
+	static bool packExistsOnFileSystem(const std::string sPrefix )
+	{
+		return FM_Index::packExistsOnFileSystem(sPrefix);
+	} // method
+	
+
+	/* wrap the function in oder to make it acessible to pyhton */
+	void vStoreFM_Index(  std::string sPrefix  )
+	{
+		std::string sPath(sPrefix);
+		pIndex->vStoreFM_Index(sPath);
+	}//function
+
+	std::shared_ptr<Container> copy()
+    {
+		return std::shared_ptr<Container>(new FM_IndexContainer(this));
+	}//function
+};//class
+
 
 /*given the perfect matches this can be used to find the matches that represent the optimal solution
 * this is an alternative to chaining
 */
-class GraphicalMethod{
+class GraphicalMethod
+{
 private:
 	/*the matches are stored in buckets depending on their position on the reference - the position on the query
 	* this speeds up the process significantly, since the lineSweep algorithm that is used requires ~O(n^2) 
@@ -1482,8 +1530,26 @@ public:
 
 };//class
 
+class Bucketing : public Module
+{
+public:
+
+	Bucketing(){}//constructor
+
+	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
+
+    std::shared_ptr<Container> getInputType();
+
+    std::shared_ptr<Container> getOutputType();
+};//class
+
 class LineSweepContainer : public Module
 {
+public:
+	std::shared_ptr<GraphicalMethod> pLineSweep;
+
+	LineSweepContainer(){}//constructor
+
 	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
 
     std::shared_ptr<Container> getInputType();

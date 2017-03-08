@@ -7,6 +7,8 @@ std::vector<std::string> vContainerTypeNames =
     "packedNucSeq",
     "segmentList",
     "segment",
+    "stripOfConsideration",
+    "stripOfConsiderationList",
     "vector",
     "unknown",
     "nothing",

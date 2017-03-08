@@ -38,7 +38,7 @@ try:
     print "done"
 
     print "running the segmentation step..."
-    seg = Segmentation(True, True, 2, 100000)
+    seg = Segmentation(True, True, 10, 100000)
     seg.bSkipLongBWTIntervals = False
 
     step2 = seg.execute(step1)
