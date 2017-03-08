@@ -542,6 +542,11 @@ public:
 			:
 		pInterval(pCpyFrom->pInterval)
 	{}//copy constructor
+
+	SegmentContainer(std::shared_ptr<SegmentTreeInterval> pInterval)
+			:
+		pInterval(pInterval)
+	{}//constructor
 	
 	ContainerType getType(){return ContainerType::segment;}//function
 
@@ -574,6 +579,8 @@ public:
     {
 		return std::shared_ptr<Container>(new SegmentContainer(this));
 	}//function
+
+
 };//class
 
 class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>{
@@ -599,7 +606,7 @@ public:
 		forEach([&xOut](std::shared_ptr<SegmentTreeInterval> pxNode){ pxNode->print(xOut); });
 	}//function
 
-
+	//TODO: this function belongs in it's own module
 	std::shared_ptr<SegmentTree> getTheNLongestIntervals(unsigned int uiN)
 	{
 		std::shared_ptr<SegmentTree> pRet(new SegmentTree());
@@ -619,6 +626,43 @@ public:
 		return pRet;
 	}//function
 };
+
+
+class SegmentListIteratorContainer
+{
+public:
+	SegmentTree::Iterator xIt;
+
+	SegmentListIteratorContainer(SegmentTree::Iterator xIt)
+		:
+		xIt(xIt)
+	{}//constructor
+
+	void next()
+	{
+		++xIt;
+	}//function
+
+	void prev()
+	{
+		--xIt;
+	}//function
+
+	std::shared_ptr<SegmentContainer> get()
+	{
+		return std::shared_ptr<SegmentContainer>(new SegmentContainer(*xIt));
+	}//function
+
+	bool exits()
+	{
+		return xIt.isListElement();
+	}//function
+
+	SegmentListIteratorContainer getCopy()
+	{
+		return SegmentListIteratorContainer(xIt.getCopy());
+	}//function
+};//class
 
 class SegmentTreeContainer: public Container
 {
@@ -648,15 +692,14 @@ public:
 	
 	ContainerType getType(){return ContainerType::segmentList;}//function
 
-	std::shared_ptr<SegmentTreeContainer> getTheNLongestIntervals(unsigned int uiN)
+	SegmentListIteratorContainer begin()
 	{
-		return std::shared_ptr<SegmentTreeContainer>(new SegmentTreeContainer(pTree->getTheNLongestIntervals(uiN)));
+		return SegmentListIteratorContainer(pTree->begin());
 	}//function
 
-	void print()
+	SegmentListIteratorContainer end()
 	{
-		pTree->print(std::cout);
-		std::cout << std::endl;
+		return SegmentListIteratorContainer(pTree->end());
 	}//function
 
 	std::shared_ptr<Container> copy()

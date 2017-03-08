@@ -32,9 +32,9 @@ public:
         return pOther->getType() == getType();
     }//function
 
-    virtual void print()
+    virtual std::string toString()
     {
-        std::cout << "no print function defined" << std::endl;
+        return std::string("no print function defined");
     }//function
     
     virtual std::string getTypeInfo();
@@ -60,7 +60,7 @@ class ContainerVector : public Container
 {
 public:
     std::vector<std::shared_ptr<Container>> vElements;
-    
+
     ContainerVector() 
         : 
         vElements() 
@@ -73,18 +73,20 @@ public:
     */
     void append(std::shared_ptr<Container> pC) {vElements.push_back(pC->copy());}
     bool sameTypeAs(std::shared_ptr<Container> pOther);
-    void print() override
+    std::string toString() override
     {
-        std::cout << "vector{" << std::endl;
+        std::string sRet("vector(");
+        sRet.append(std::to_string(vElements.size())).append("){");
         for(auto pElem : vElements)
         {
             if(pElem != nullptr)
-                pElem->print();
+                sRet.append(pElem->toString());
             else
-                std::cout << "nullptr" << std::endl;
-            std::cout << "," << std::endl;
+                sRet.append("nullptr");
+            sRet.append(",");
         }//for
-        std::cout << "}" << std::endl;
+        sRet.append("}");
+        return sRet;
     }//function
     
     std::string getTypeInfo()

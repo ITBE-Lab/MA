@@ -58,7 +58,7 @@ public:
     std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput) override
     {
         if(pInput != nullptr)
-            pInput->print();
+            std::cout << pInput->toString() << std::endl;
         else
             std::cout << "nullptr" << std::endl;
         return pInput;

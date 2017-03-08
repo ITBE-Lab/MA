@@ -87,6 +87,26 @@ public:
 
 class SegmentationContainer : public Module
 {
+public:
+	bool bBreakOnAmbiguousBase;
+	bool bSkipLongBWTIntervals;
+	nucSeqIndex uiMinIntervalSize;
+	unsigned int uiMaxHitsPerInterval;
+
+	SegmentationContainer
+	(
+		bool bBreakOnAmbiguousBase = true,
+		bool bSkipLongBWTIntervals = true,
+		nucSeqIndex uiMinIntervalSize = 10,
+		unsigned int uiMaxHitsPerInterval = 10000
+	)
+			:
+		bBreakOnAmbiguousBase(bBreakOnAmbiguousBase),
+		bSkipLongBWTIntervals(bSkipLongBWTIntervals),
+		uiMinIntervalSize(uiMinIntervalSize),
+		uiMaxHitsPerInterval(uiMaxHitsPerInterval)
+	{}//constructor
+
 	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
 
 	std::shared_ptr<Container> getInputType();

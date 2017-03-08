@@ -44,7 +44,7 @@ void exportContainer()
 {
     //contianer is an abstract class and should never be initialized
 	boost::python::class_<Container, std::shared_ptr<Container>>("Container", boost::python::no_init)
-        .def("print_", &Container::print)
+        .def("toString", &Container::toString)
         .def("getTypeInfo", &Container::getTypeInfo);
     boost::python::register_ptr_to_python< std::shared_ptr<Container> >();
 

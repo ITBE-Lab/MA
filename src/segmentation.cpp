@@ -472,7 +472,7 @@ std::shared_ptr<Container> SegmentationContainer::execute(std::shared_ptr<Contai
 	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->vElements.at(3));
 
 
-	Segmentation xS(pFM_index->pIndex, pFM_indexReversed->pIndex, pQuerrySeq->pSeq, true, true, 10, 10000, pRefSeq->pPack);
+	Segmentation xS(pFM_index->pIndex, pFM_indexReversed->pIndex, pQuerrySeq->pSeq, bBreakOnAmbiguousBase, bSkipLongBWTIntervals, uiMinIntervalSize, uiMaxHitsPerInterval, pRefSeq->pPack);
 	xS.segment();
 
 	return std::shared_ptr<SegmentTreeContainer>(new SegmentTreeContainer(xS.pSegmentTree));
@@ -481,7 +481,13 @@ std::shared_ptr<Container> SegmentationContainer::execute(std::shared_ptr<Contai
 
 void exportSegmentation()
 {
-    //segmentation class
-	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>("Segmentation");
+
+    //export the segmentation class
+	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>("Segmentation",boost::python::init<boost::python::optional<bool, bool, nucSeqIndex, unsigned int>>())
+		.add_property("bBreakOnAmbiguousBase", &SegmentationContainer::bBreakOnAmbiguousBase, &SegmentationContainer::bBreakOnAmbiguousBase)
+		.add_property("bSkipLongBWTIntervals", &SegmentationContainer::bSkipLongBWTIntervals, &SegmentationContainer::bSkipLongBWTIntervals)
+		.add_property("uiMinIntervalSize", &SegmentationContainer::uiMinIntervalSize, &SegmentationContainer::uiMinIntervalSize)
+		.add_property("uiMaxHitsPerInterval", &SegmentationContainer::uiMaxHitsPerInterval, &SegmentationContainer::uiMaxHitsPerInterval)
+		;
 
 }//function

@@ -24,7 +24,7 @@ try:
     #create simulated querry
     print "creating querry sequence..."
     querrySeq = NucSeq()
-    querrySeq.append("cgtaactatagaatga") 
+    querrySeq.append("cgtaactatagaatgatagaatgatagaatgatagaatgatagaatga") 
     print "done"
 
     #create a container for all the required input
@@ -38,15 +38,28 @@ try:
     print "done"
 
     print "running the segmentation step..."
-    seg = Segmentation()
+    seg = Segmentation(True, True, 3, 10000)
+    seg.bSkipLongBWTIntervals = False
 
     output1 = seg.execute(input1)
     print "done"
 
-    output1.print_()
+    iterator = output1.begin()
+    while iterator.exits():
+        start = iterator.get().start()
+        end = iterator.get().end()
+        sequence = ""
+        for i in range(start, end):
+            sequence = sequence + querrySeq.at(i)
+        print "segment: (" + str(start) + "," + str(end) + ") = " + sequence
+        iterator.next()
+
+    print "printing segment List:"
+    print output1.toString()
 
     print output1.getTypeInfo()
 
     print "test successful"
 except Exception as ex:
-    print "An Exception occured: " + ex
+    print "An Exception occured: "
+    print ex
