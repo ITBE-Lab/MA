@@ -407,7 +407,7 @@ void Segmentation::segment()
 
 	}//end of scope xPool
 
-	/* TODO: move me into my own module
+	/* TODO: move me into my own module -> moved to getAnchorsw
 	pSegmentTree->getTheNLongestIntervals(uiNumSegmentsAsAnchors).forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxInterval)
 		{

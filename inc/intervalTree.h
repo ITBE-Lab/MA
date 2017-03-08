@@ -605,26 +605,6 @@ public:
 	{
 		forEach([&xOut](std::shared_ptr<SegmentTreeInterval> pxNode){ pxNode->print(xOut); });
 	}//function
-
-	//TODO: this function belongs in it's own module
-	std::shared_ptr<SegmentTree> getTheNLongestIntervals(unsigned int uiN)
-	{
-		std::shared_ptr<SegmentTree> pRet(new SegmentTree());
-
-		forEach(
-			[&pRet, &uiN](std::shared_ptr<SegmentTreeInterval> pxNode)
-			{
-				auto pxIterator = pRet->begin();
-				while (pxIterator.isListElement() && pxIterator->length() > pxNode->length())
-					++pxIterator;
-				pRet->insertBefore(pxNode, pxIterator);
-				if (pRet->length() > uiN)
-					pRet->removeNode(pRet->end());
-			}//lambda
-		);//forEach
-
-		return pRet;
-	}//function
 };
 
 
@@ -666,9 +646,8 @@ public:
 
 class SegmentTreeContainer: public Container
 {
-private:
-	std::shared_ptr<SegmentTree> pTree;
 public:
+	std::shared_ptr<SegmentTree> pTree;
 
 	SegmentTreeContainer()
 			:
@@ -678,7 +657,7 @@ public:
 	SegmentTreeContainer(std::shared_ptr<SegmentTree> pTree)
 			:
 		pTree(pTree)
-	{}//constructor
+	{}//constructor 
 
 	SegmentTreeContainer(const nucSeqIndex uiQuerryLength)
 			:
@@ -705,6 +684,11 @@ public:
 	std::shared_ptr<Container> copy()
     {
 		return std::shared_ptr<Container>(new SegmentTreeContainer(this));
+	}//function
+
+	std::string toString() override
+	{
+		return std::string("toString not defined");
 	}//function
 	
 };//class

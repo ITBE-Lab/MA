@@ -1387,7 +1387,7 @@ public:
 };
 
 
-class AnchorMatchList : public Container{
+class AnchorMatchList{
 private:
 	typedef std::vector<std::shared_ptr<PerfectMatchBucket>> PerfectMatchBuckets;
 	typedef std::list<std::shared_ptr<PerfectMatch>> AnchorSegments;
@@ -1480,6 +1480,15 @@ public:
 		}//for
 	}//function
 
+};//class
+
+class LineSweepContainer : public Module
+{
+	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
+
+    std::shared_ptr<Container> getInputType();
+
+    std::shared_ptr<Container> getOutputType();
 };//class
 
 #endif

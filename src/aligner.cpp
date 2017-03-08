@@ -26,4 +26,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportIntervalTree();
         exportGraphicalMethod();
         exportExceptions();
+        exportGetAnchors();
 }

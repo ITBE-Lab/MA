@@ -24,40 +24,56 @@ try:
     #create simulated querry
     print "creating querry sequence..."
     querrySeq = NucSeq()
-    querrySeq.append("cgtaactatagaatgatagaatgatagaatgatagaatgatagaatga") 
+    querrySeq.append("cgtaactatagaatgatagaatgatatagaatgacgtaactatagaatgatagaatgataatgatagaatgatagaatgacgtaactatagaatgatagaatgattgatagaatgactatagaatgatagaatgatagaataatgatagatga") 
     print "done"
 
     #create a container for all the required input
     print "setting up input vector..."
-    input1 = ContainerVector()
+    step1 = ContainerVector()
 
-    input1.append(fm_index)
-    input1.append(rev_fm_index)
-    input1.append(querrySeq)
-    input1.append(refSeq)
+    step1.append(fm_index)
+    step1.append(rev_fm_index)
+    step1.append(querrySeq)
+    step1.append(refSeq)
     print "done"
 
     print "running the segmentation step..."
-    seg = Segmentation(True, True, 3, 10000)
+    seg = Segmentation(True, True, 2, 100000)
     seg.bSkipLongBWTIntervals = False
 
-    output1 = seg.execute(input1)
+    step2 = seg.execute(step1)
     print "done"
 
-    iterator = output1.begin()
+    iterator = step2.begin()
     while iterator.exits():
         start = iterator.get().start()
         end = iterator.get().end()
         sequence = ""
         for i in range(start, end):
             sequence = sequence + querrySeq.at(i)
-        print "segment: (" + str(start) + "," + str(end) + ") = " + sequence
+        print "segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
         iterator.next()
 
-    print "printing segment List:"
-    print output1.toString()
+    #print "printing segment List:"
+    #print step2.toString()
+    #print "something in the print function is segfaulting... TODO: fixme"
 
-    print output1.getTypeInfo()
+
+    print "searching anchor matches..."
+    anchors = NlongestIntervalsAsAnchors(2)
+    step3 = anchors.execute(step2)
+    print "done"
+
+    
+    iterator = step3.begin()
+    while iterator.exits():
+        start = iterator.get().start()
+        end = iterator.get().end()
+        sequence = ""
+        for i in range(start, end):
+            sequence = sequence + querrySeq.at(i)
+        print "anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
+        iterator.next()
 
     print "test successful"
 except Exception as ex:

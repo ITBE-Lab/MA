@@ -9,6 +9,7 @@
 #include "sequence.h"
 #include "exception.h"
 #include "graphicalMethod.h"
+#include "getAnchors.h"
 #include <list>
 #include <memory>
 #include <boost/python.hpp>
