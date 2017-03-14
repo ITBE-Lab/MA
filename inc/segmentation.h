@@ -5,8 +5,8 @@
 #include "intervalTree.h"
 #include "FM_index.h"
 #include <condition_variable>
-#include "graphicalMethod.h"
 #include "threadPool.h"
+#include "graphicalMethod.h"
 #include "module.h"
 #include "container.h"
 #include <system.h>

@@ -8,18 +8,136 @@ std::shared_ptr<Container> Bucketing::getInputType()
 	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::segmentList)));
 	//the anchors
 	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::segmentList)));
+	//the querry
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
+	//the reference
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
 	return pRet;
 }//function
 
 std::shared_ptr<Container> Bucketing::getOutputType()
 {
-	return std::shared_ptr<ContainerVector> pRet(new DummyContainer(ContainerType::stripOfConsiderationList));
+	return std::shared_ptr<Container>(new DummyContainer(ContainerType::stripOfConsiderationList));
+}//function
+
+
+void Bucketing::forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
+	std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo)
+{//TODO: check git and continue here
+	pxNode->forEachHitOnTheRefSeq(
+		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals, bAnchorOnly,
+#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
+	    pxQuality,
+#endif
+		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
+		{
+			int64_t iSequenceId;
+			//check if the match is bridging the forward/reverse strand or bridging between two chromosomes
+			/* we have to make sure that the match does not start before or end after the reference sequence
+			* this can happen since we can find parts on the end of the query at the very beginning of the reference or vis versa.
+			* in this case we will replace the out of bounds index with 0 or the length of the reference sequence respectively.
+			*/
+			if (pxRefSequence->bridingSubsection(
+				ulIndexOnRefSeq > uiQuerryBegin ? (uint64_t)ulIndexOnRefSeq - (uint64_t)uiQuerryBegin : 0,
+				ulIndexOnRefSeq + pxQuerySeq->length() >= pxFM_index->getRefSeqLength() + uiQuerryBegin ? pxFM_index->getRefSeqLength() - ulIndexOnRefSeq : pxQuerySeq->length(),
+				iSequenceId)
+				)
+			{
+#ifdef DEBUG_CHECK_INTERVALS
+			BOOST_LOG_TRIVIAL(info) << "skipping hit on bridging section (" << ulIndexOnRefSeq - uiQuerryBegin << ") for the interval " << *pxNode;
+#endif
+				//if so ignore this hit
+				return;
+			}//if
+			fDo(ulIndexOnRefSeq, uiQuerryBegin, uiQuerryEnd);
+		}//lambda
+	);
+}//function
+
+void Bucketing::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
+	std::function<void(std::shared_ptr<PerfectMatch>)> fDo)
+{
+	forEachNonBridgingHitOnTheRefSeq(
+		pxNode, bAnchorOnly,
+		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
+		{
+			fDo(std::shared_ptr<PerfectMatch>(new PerfectMatch(uiQuerryEnd - uiQuerryBegin, ulIndexOnRefSeq, uiQuerryBegin)));
+		}//lambda
+	);//for each
+}//function
+
+/* transfer the saved hits into the clustering
+ * if DEBUG_CHECK_INTERVALS is activated the hits are verified before storing
+*/
+void Bucketing::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode)
+{
+	forEachNonBridgingPerfectMatch(
+		pxNode, false,
+		[&](std::shared_ptr<PerfectMatch> pxMatch)
+		{
+			pxAnchorMatchList->addMatch(std::shared_ptr<PerfectMatch>(pxMatch));
+		}//lambda
+	);//for each
+}///function
+
+std::shared_ptr<Container> Bucketing::execute(std::shared_ptr<Container> pInput)
+{
+	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
+	std::shared_ptr<SegmentTreeContainer> pSegments = std::static_pointer_cast<SegmentTreeContainer>(pCastedInput->vElements.at(0));
+	std::shared_ptr<SegmentTreeContainer> pAnchors = std::static_pointer_cast<SegmentTreeContainer>(pCastedInput->vElements.at(1));
+	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->vElements.at(2));
+	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->vElements.at(3));
+
+	std::shared_ptr<StripOfConsiderationListContainer> pRet(new StripOfConsiderationListContainer());
+
+	AnchorMatchList xA(uiNumThreads, uiStripSize, pQuerrySeq->size(), pRefSeq->getUnpackedSize());
+
+	/*
+	*	extract all seeds from the segment tree intervals
+	*/
+	pSegments->pTree->forEach(
+		[this](std::shared_ptr<SegmentTreeInterval> pxNode)
+		{
+			saveHits(pxNode);
+		}//lambda
+	);//forEach
+
+	return pRet;
 }//function
 
 
 void exportGraphicalMethod()
 {
-    //export the segmentation class
+	//export the StripOfConsideration class
+	boost::python::class_<
+        StripOfConsiderationContainer, 
+        boost::python::bases<Container>, 
+        std::shared_ptr<StripOfConsiderationContainer>
+    >("StripOfConsideration")
+		;
+
+	//tell boost python that pointers of these classes can be converted implicitly
+	boost::python::implicitly_convertible< std::shared_ptr<StripOfConsiderationContainer>, std::shared_ptr<Container> >(); 
+
+	//export the StripOfConsiderationList class
+	boost::python::class_<
+        StripOfConsiderationListContainer, 
+        boost::python::bases<Container>, 
+        std::shared_ptr<StripOfConsiderationListContainer>
+    >("StripOfConsiderationList")
+		.def("size", &StripOfConsiderationListContainer::size)
+		.def("at", &StripOfConsiderationListContainer::at)
+		.def("append", &StripOfConsiderationListContainer::push_back)
+		.def("remove", &StripOfConsiderationListContainer::remove)
+		;
+
+	//tell boost python that pointers of these classes can be converted implicitly
+	boost::python::implicitly_convertible< std::shared_ptr<StripOfConsiderationListContainer>, std::shared_ptr<Container> >(); 
+
+    //export the LineSweepContainer class
 	boost::python::class_<LineSweepContainer, boost::python::bases<Module>>("LineSweep")
+		;
+    //export the Bucketing class
+	boost::python::class_<Bucketing, boost::python::bases<Module>>("Bucketing")
 		;
 }

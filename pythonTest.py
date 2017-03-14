@@ -75,6 +75,8 @@ try:
         print "anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
         iterator.next()
 
+    
+
     print "test successful"
 except Exception as ex:
     print "An Exception occured: "

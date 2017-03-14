@@ -350,7 +350,8 @@ void exportSequence()
 	boost::python::class_<NucSeqContainer, boost::python::bases<Container>, std::shared_ptr<NucSeqContainer>>("NucSeq")
 		.def(boost::python::init<const std::string>())
         .def("at", &NucSeqContainer::charAt)
-        .def("append", &NucSeqContainer::vAppend);
+        .def("append", &NucSeqContainer::vAppend)
+        .def("size", &NucSeqContainer::size);
 
 	//tell boost python that pointers of these classes can be converted implicitly
 	boost::python::implicitly_convertible< std::shared_ptr<NucSeqContainer>, std::shared_ptr<Container> >(); 

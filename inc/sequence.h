@@ -1358,6 +1358,11 @@ public:
     {
 		return std::shared_ptr<Container>(new NucSeqContainer(this));
 	}//function
+
+	unsigned int size()
+	{
+		return pSeq->length();
+	}//function
 };//class
 
 /* export this module to boost python */

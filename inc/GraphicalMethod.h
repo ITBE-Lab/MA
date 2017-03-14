@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "segmentation.h"
 #include "threadPool.h"
+#include "module.h"
 #include <boost/python.hpp>
 
 #if REMOVE_INTERFERING_MATCHES_USING_GRAPH
@@ -1205,44 +1206,86 @@ public:
 class StripOfConsiderationContainer: public Container
 {
 public:
-	std::shared_ptr<StripOfConsideration> pIndex;
+	std::shared_ptr<StripOfConsideration> pStrip;
 
-	FM_IndexContainer()
+	StripOfConsiderationContainer()
 			:
-		pIndex(new FM_Index())
+		pStrip(new StripOfConsideration())
 	{}//constructor
 
-	FM_IndexContainer(const FM_IndexContainer *pCpyFrom)
+	StripOfConsiderationContainer(std::shared_ptr<StripOfConsideration> pStrip)
 			:
-		pIndex(pCpyFrom->pIndex)
+		pStrip(pStrip)
+	{}//constructor
+
+	StripOfConsiderationContainer(const StripOfConsiderationContainer *pCpyFrom)
+			:
+		pStrip(pCpyFrom->pStrip)
 	{}//copy constructor
 
 	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::fM_index;}
-	
-
-	void vLoadFM_Index( std::string sPrefix  )
-	{
-		std::string sPath(sPrefix);
-		pIndex->vLoadFM_Index(sPath);
-	}//function
-
-	static bool packExistsOnFileSystem(const std::string sPrefix )
-	{
-		return FM_Index::packExistsOnFileSystem(sPrefix);
-	} // method
-	
-
-	/* wrap the function in oder to make it acessible to pyhton */
-	void vStoreFM_Index(  std::string sPrefix  )
-	{
-		std::string sPath(sPrefix);
-		pIndex->vStoreFM_Index(sPath);
-	}//function
+    ContainerType getType(){return ContainerType::stripOfConsideration;}
 
 	std::shared_ptr<Container> copy()
     {
-		return std::shared_ptr<Container>(new FM_IndexContainer(this));
+		return std::shared_ptr<Container>(new StripOfConsiderationContainer(this));
+	}//function
+};//class
+
+
+class StripOfConsiderationListContainer: public Container
+{
+public:
+	std::vector<std::shared_ptr<StripOfConsiderationContainer>> pList;
+
+	StripOfConsiderationListContainer()
+			:
+		pList()
+	{}//constructor
+
+	StripOfConsiderationListContainer(const StripOfConsiderationListContainer *pCpyFrom)
+			:
+		pList(pCpyFrom->pList)
+	{}//copy constructor
+
+	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
+    ContainerType getType(){return ContainerType::stripOfConsiderationList;}
+
+	std::shared_ptr<Container> copy()
+    {
+		return std::shared_ptr<Container>(new StripOfConsiderationListContainer(this));
+	}//function
+
+	/*
+	*	wrapper for boost python
+	*/
+	void remove(unsigned int iI)
+	{
+		pList.erase(pList.begin() + iI);
+	}//function
+
+	/*
+	*	wrapper for boost python
+	*/
+	unsigned int size()
+	{
+		return pList.size();
+	}//function
+
+	/*
+	*	wrapper for boost python
+	*/
+	std::shared_ptr<StripOfConsiderationContainer> at(unsigned int iI)
+	{
+		return pList.at(iI);
+	}//function
+
+	/*
+	*	wrapper for boost python
+	*/
+	void push_back(std::shared_ptr<StripOfConsiderationContainer> pC)
+	{
+		pList.push_back(pC);
 	}//function
 };//class
 
@@ -1442,7 +1485,6 @@ private:
 
 	PerfectMatchBuckets apxPerfectMatchBuckets;
 	AnchorSegments lpxAnchorMatches;
-	std::shared_ptr<GraphicalMethod> pxGraphical;
 	nucSeqIndex uiStripSize; 
 	nucSeqIndex uiQueryLength;
 #if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
@@ -1450,7 +1492,7 @@ private:
 #endif
 
 
-	void collectStripOfConsideration(std::shared_ptr<const PerfectMatch> pxAnchorMatch, std::shared_ptr<GraphicalMethod> pxGraphical)
+	std::shared_ptr<StripOfConsideration> collectStripOfConsideration(std::shared_ptr<const PerfectMatch> pxAnchorMatch)
 	{
 		std::shared_ptr<StripOfConsideration> pxNew(new StripOfConsideration(pxAnchorMatch, uiQueryLength, uiStripSize));
 		//BOOST_LOG_TRIVIAL(info) << "			starting to collect " << uiThreadId;
@@ -1459,7 +1501,7 @@ private:
 			pxNew->addElement(apxPerfectMatchBuckets[uiC]);
 		}//for
 
-		pxGraphical->addStripOfConsideration(pxNew);
+		return pxNew;
 	}//function
 
 	static void sortMatches(size_t uiThreadId, std::vector<std::shared_ptr<const PerfectMatch>> *papxPerfectMatches)
@@ -1485,7 +1527,7 @@ private:
 	}//function
 
 public: 
-	AnchorMatchList(size_t uiNumThreads, std::shared_ptr<GraphicalMethod> pxGraphical, nucSeqIndex uiStripSize, nucSeqIndex uiQueryLength, nucSeqIndex uiRefLength
+	AnchorMatchList(size_t uiNumThreads, nucSeqIndex uiStripSize, nucSeqIndex uiQueryLength, nucSeqIndex uiRefLength
 #if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
 		, AlignmentQuality *pxQuality
 #endif
@@ -1493,7 +1535,6 @@ public:
 		:
 		apxPerfectMatchBuckets( (uiQueryLength + uiRefLength)/uiStripSize ),
 		lpxAnchorMatches(),
-		pxGraphical(pxGraphical),
 		uiStripSize(uiStripSize),
 		uiQueryLength(uiQueryLength)
 #if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
@@ -1506,7 +1547,7 @@ public:
 		}//for
 	}//constructor
 
-	void addMatch(std::shared_ptr<const PerfectMatch> pxNew, size_t uiThreadId)
+	void addMatch(std::shared_ptr<const PerfectMatch> pxNew)
 	{
 		apxPerfectMatchBuckets[pxNew->getPositionForBucketing(uiQueryLength) / uiStripSize]->addMatch(pxNew);
 	}//function
@@ -1518,21 +1559,26 @@ public:
 
 	void findAnchors()
 	{
+		std::vector<std::shared_ptr<StripOfConsideration>> aRet;
 		for (auto pxAnchorMatch : lpxAnchorMatches)
 		{
 			if (apxPerfectMatchBuckets[pxAnchorMatch->getPositionForBucketing(uiQueryLength) / uiStripSize]->isUsed())
 				continue;
 
 			apxPerfectMatchBuckets[pxAnchorMatch->getPositionForBucketing(uiQueryLength) / uiStripSize]->setUsed();
-			collectStripOfConsideration(pxAnchorMatch, pxGraphical);
+			aRet.push_back(collectStripOfConsideration(pxAnchorMatch));
 		}//for
+
+		return aRet;
 	}//function
 
 };//class
 
-class Bucketing : public Module
+class Bucketing: public Module
 {
 public:
+	unsigned int uiNumThreads = 8;
+	nucSeqIndex uiStripSize;
 
 	Bucketing(){}//constructor
 
@@ -1541,9 +1587,16 @@ public:
     std::shared_ptr<Container> getInputType();
 
     std::shared_ptr<Container> getOutputType();
+	
+	void Bucketing::forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly, std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo);
+
+	void Bucketing::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
+	std::function<void(std::shared_ptr<PerfectMatch>)> fDo);
+	
+	void Bucketing::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode);
 };//class
 
-class LineSweepContainer : public Module
+class LineSweepContainer: public Module
 {
 public:
 	std::shared_ptr<GraphicalMethod> pLineSweep;
@@ -1557,6 +1610,6 @@ public:
     std::shared_ptr<Container> getOutputType();
 };//class
 
-#endif
-
 void exportGraphicalMethod();
+
+#endif
