@@ -1607,7 +1607,6 @@ public:
 class LineSweepContainer: public Module
 {
 public:
-	std::shared_ptr<GraphicalMethod> pLineSweep;
 
 	LineSweepContainer(){}//constructor
 

@@ -152,6 +152,45 @@ std::shared_ptr<Container> Bucketing::execute(std::shared_ptr<Container> pInput)
 	return pRet;
 }//function
 
+std::shared_ptr<Container> LineSweepContainer::getInputType()
+{
+	std::shared_ptr<ContainerVector> pRet(new ContainerVector());
+	//the querry
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
+	//the reference
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
+	//the stips of consideration
+	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::stripOfConsiderationList)));
+	return pRet;
+}//function
+
+std::shared_ptr<Container> LineSweepContainer::getOutputType()
+{
+	return std::shared_ptr<Container>(new DummyContainer(ContainerType::stripOfConsideration));
+}//function
+
+
+std::shared_ptr<Container> LineSweepContainer::execute(std::shared_ptr<Container> pInput)
+{
+	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
+	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->vElements.at(0));
+	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->vElements.at(1));
+	std::shared_ptr<StripOfConsiderationListContainer> pStrips = std::static_pointer_cast<StripOfConsiderationListContainer>(pCastedInput->vElements.at(2));
+
+	GraphicalMethod xG(pRefSeq->getUnpackedSize(), pQuerrySeq->size());
+
+	/*
+	*	extract the strips of consideration
+	*/
+	for(std::shared_ptr<StripOfConsiderationContainer> pContainer : pStrips->pList)
+	{
+		xG.addStripOfConsideration(pContainer->pStrip);
+	}//for
+
+	xG.smartProcess();
+
+	return std::shared_ptr<StripOfConsiderationContainer>(new StripOfConsiderationContainer(xG.getNthBestBucket(0)));
+}//function
 
 void exportGraphicalMethod()
 {
@@ -188,8 +227,8 @@ void exportGraphicalMethod()
 	boost::python::implicitly_convertible< std::shared_ptr<StripOfConsiderationListContainer>, std::shared_ptr<Container> >(); 
 
     //export the LineSweepContainer class
-	//boost::python::class_<LineSweepContainer, boost::python::bases<Module>>("LineSweep")
-	//	;
+	boost::python::class_<LineSweepContainer, boost::python::bases<Module>>("LineSweep")
+		;
     //export the Bucketing class
 	boost::python::class_<Bucketing, boost::python::bases<Module>>("Bucketing")
 		;

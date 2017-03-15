@@ -86,15 +86,41 @@ try:
     vector2.append(rev_fm_index)
     print "done"
 
-    bucketing = Bucketing()
 
     print "collecting strips of consideration..."
+    bucketing = Bucketing()
     stripsOfConsideration = bucketing.execute(vector2)
     print "done"
 
+    print "found " + str(stripsOfConsideration.size()) + " strips of consideration."
+    print "querry length is " + str(querrySeq.size())
     for i in range(0,stripsOfConsideration.size()):
         strip = stripsOfConsideration.at(i)
         print "strip of consideration (" + str(i) + "): " + str(strip.getScore())
+
+    print "setting up input vector..."
+    vector3 = ContainerVector()
+    vector3.append(querrySeq)
+    vector3.append(refSeq)
+    vector3.append(stripsOfConsideration)
+    print "done"
+
+    
+    print "running line sweep..."
+    liesweep = LineSweep()
+    bestStrip = liesweep.execute(vector3)
+    print "done"
+
+    
+    print "reprinting " + str(stripsOfConsideration.size()) + " strips of consideration."
+    print "querry length is " + str(querrySeq.size())
+    for i in range(0,stripsOfConsideration.size()):
+        strip = stripsOfConsideration.at(i)
+        print "strip of consideration (" + str(i) + "): " + str(strip.getScore())
+    
+    print ""
+    
+    print "best score: " + str(bestStrip.getScore())
 
     print "test successful"
 except Exception as ex:
