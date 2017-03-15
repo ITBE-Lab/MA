@@ -29,22 +29,22 @@ try:
 
     #create a container for all the required input
     print "setting up input vector..."
-    step1 = ContainerVector()
+    vector1 = ContainerVector()
 
-    step1.append(fm_index)
-    step1.append(rev_fm_index)
-    step1.append(querrySeq)
-    step1.append(refSeq)
+    vector1.append(fm_index)
+    vector1.append(rev_fm_index)
+    vector1.append(querrySeq)
+    vector1.append(refSeq)
     print "done"
 
     print "running the segmentation step..."
     seg = Segmentation(True, True, 10, 100000)
     seg.bSkipLongBWTIntervals = False
 
-    step2 = seg.execute(step1)
+    segments = seg.execute(vector1)
     print "done"
 
-    iterator = step2.begin()
+    iterator = segments.begin()
     while iterator.exits():
         start = iterator.get().start()
         end = iterator.get().end()
@@ -55,17 +55,17 @@ try:
         iterator.next()
 
     #print "printing segment List:"
-    #print step2.toString()
+    #print segments.toString()
     #print "something in the print function is segfaulting... TODO: fixme"
 
 
     print "searching anchor matches..."
-    anchors = NlongestIntervalsAsAnchors(2)
-    step3 = anchors.execute(step2)
+    anc = NlongestIntervalsAsAnchors(2)
+    anchors = anc.execute(segments)
     print "done"
 
     
-    iterator = step3.begin()
+    iterator = anchors.begin()
     while iterator.exits():
         start = iterator.get().start()
         end = iterator.get().end()
@@ -76,6 +76,25 @@ try:
         iterator.next()
 
     
+    print "setting up input vector..."
+    vector2 = ContainerVector()
+    vector2.append(segments)
+    vector2.append(anchors)
+    vector2.append(querrySeq)
+    vector2.append(refSeq)
+    vector2.append(fm_index)
+    vector2.append(rev_fm_index)
+    print "done"
+
+    bucketing = Bucketing()
+
+    print "collecting strips of consideration..."
+    stripsOfConsideration = bucketing.execute(vector2)
+    print "done"
+
+    for i in range(0,stripsOfConsideration.size()):
+        strip = stripsOfConsideration.at(i)
+        print "strip of consideration (" + str(i) + "): " + str(strip.getScore())
 
     print "test successful"
 except Exception as ex:

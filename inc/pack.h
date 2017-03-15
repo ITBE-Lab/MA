@@ -139,7 +139,7 @@ private:
 	 */
 	bool debugCheckSequenceDescriptorVector()
 	{
-		BOOST_LOG_TRIVIAL( info ) << "Check description vector for consistency.";
+		BOOST_LOG_TRIVIAL( trace ) << "Check description vector for consistency.";
 
 		decltype( SequenceInPack::uiStartOffsetUnpacked ) uiRunningStartOffsetUnpacked = 0;
 

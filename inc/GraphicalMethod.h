@@ -1230,6 +1230,11 @@ public:
     {
 		return std::shared_ptr<Container>(new StripOfConsiderationContainer(this));
 	}//function
+
+	nucSeqIndex getValueOfContet() 
+	{ 
+		return pStrip->getValueOfContet(); 
+	}//function
 };//class
 
 
@@ -1532,7 +1537,7 @@ public:
 		, AlignmentQuality *pxQuality
 #endif
 		)
-		:
+			:
 		apxPerfectMatchBuckets( (uiQueryLength + uiRefLength)/uiStripSize ),
 		lpxAnchorMatches(),
 		uiStripSize(uiStripSize),
@@ -1557,7 +1562,7 @@ public:
 		lpxAnchorMatches.push_back(pxNew);
 	}//function
 
-	void findAnchors()
+	std::vector<std::shared_ptr<StripOfConsideration>> findAnchors()
 	{
 		std::vector<std::shared_ptr<StripOfConsideration>> aRet;
 		for (auto pxAnchorMatch : lpxAnchorMatches)
@@ -1578,7 +1583,9 @@ class Bucketing: public Module
 {
 public:
 	unsigned int uiNumThreads = 8;
-	nucSeqIndex uiStripSize;
+	nucSeqIndex uiStripSize = 1000;
+	unsigned int uiMaxHitsPerInterval = 1000;
+	bool bSkipLongBWTIntervals = true;
 
 	Bucketing(){}//constructor
 
@@ -1587,13 +1594,14 @@ public:
     std::shared_ptr<Container> getInputType();
 
     std::shared_ptr<Container> getOutputType();
-	
-	void Bucketing::forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly, std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo);
 
-	void Bucketing::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
-	std::function<void(std::shared_ptr<PerfectMatch>)> fDo);
+	void forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,  std::shared_ptr<NucleotideSequence> pxQuerySeq, std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo);
 	
-	void Bucketing::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode);
+	void forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, std::shared_ptr<NucleotideSequence> pxQuerySeq, std::function<void(std::shared_ptr<PerfectMatch>)> fDo);
+	
+	void saveHits(std::shared_ptr<SegmentTreeInterval> pxNode, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, std::shared_ptr<NucleotideSequence> pxQuerySeq, AnchorMatchList &rList);
+	
+	void saveAnchors(std::shared_ptr<SegmentTreeInterval> pxNode, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, std::shared_ptr<NucleotideSequence> pxQuerySeq, AnchorMatchList &rList);
 };//class
 
 class LineSweepContainer: public Module
