@@ -55,10 +55,10 @@ setup(
             'src/sequence.cpp',
             'src/support.cpp',
             'src/threadPool.cpp',],
-            include_dirs=['inc', 'usr/include', '/opt/dev/boost_1_60_0'], # assuming your project include files are there
+            include_dirs=['inc', 'usr/include', '/opt/dev/boost_1_60_0__'], # assuming your project include files are there
             library_dirs=[
                 '/usr/lib',
-                '/opt/dev/boost_1_60_0/stage/lib', 
+                '/opt/dev/boost_1_60_0__/stage/lib', 
                 '/opt/dev/lib',
             ], # optional
             libraries=[

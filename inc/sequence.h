@@ -1345,7 +1345,7 @@ public:
 	/*wrap charAt to make it acessible to python */
 	inline char charAt( size_t uxPosition )
 	{
-		pSeq->charAt(uxPosition);
+		return pSeq->charAt(uxPosition);
 	}
 
 	/* wrapping vAppend in order to make it acessible from boost python */
