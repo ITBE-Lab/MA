@@ -19,7 +19,7 @@
 * ik[2] == size of interval (equal for I(P) and I'(P'), due to symmetry)
 */
 void bwt_extend_backward(const SA_IndexInterval &ik,	// (input) single interval
-						SA_IndexInterval ok[4],		// (output) 4 intervals, for each symbol 1 (ok[0] <-> A, ok[1] <-> C, ok[2] <-> G, ok[3] <-> T
+						SA_IndexInterval ok[4],			// (output) 4 intervals, for each symbol 1 (ok[0] <-> A, ok[1] <-> C, ok[2] <-> G, ok[3] <-> T
 						std::shared_ptr<FM_Index> pxFM_Index // the FM index by reference
 					)
 {
@@ -27,11 +27,16 @@ void bwt_extend_backward(const SA_IndexInterval &ik,	// (input) single interval
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
 	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
-	pxFM_Index->bwt_2occ4(ik.x[0] - 1,				// until start of SA index interval (-1, because we count the characters in front of the index)
-		ik.x[0] + ik.x[2] - 1,	// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
+	pxFM_Index->bwt_2occ4(
+		// until start of SA index interval 
+		// (-1, because we count the characters in front of the index)
+		ik.x[0] - 1,
+		// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
+		ik.x[0] + ik.x[2] - 1,
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
-		);
+	);
+
 
 	/* Standard backward extension for the 4 symbols A, C, G, T.
 	* So, we get I(cP) in ok[c] for all c in {A, C, G, T}.
@@ -39,12 +44,29 @@ void bwt_extend_backward(const SA_IndexInterval &ik,	// (input) single interval
 	for (int c = 0; c < 4; ++c)
 	{
 		//// xSavePrint << "xFM_Index.L2[c] is " << c << " " << xFM_Index.L2[c] << " " << cntk[c] << "" << cntl[c] << "\n";
+
+
+		//TODO: wierd why L2[c] + 1 should rather be L2[c+1]...
+		//		it works since L2[0] == 1 always
+		//		but wierd code...
+
+
 		ok[c].x[0] = pxFM_Index->L2[c] + 1 + cntk[c]; // start of Interval I(cP)  
 
 		ok[c].x[2] = cntl[c] - cntk[c]; // size of Interval I(cP) == size of Interval I'(P'c')
 		//// xSavePrint << "ok[c].x[2] is " << ok[c].x[2] << " " << cntl[c] << " " << cntk[c] << "\n";
 	} // for
 } // method
+
+
+void bwt_ectend_forward(const SA_IndexInterval &ik,// (input) single interval
+						// (output) 4 intervals, for each symbol 1 (ok[0] <-> A, 
+						// ok[1] <-> C, ok[2] <-> G, ok[3] <-> T
+						SA_IndexInterval ok[4],
+						std::shared_ptr<FM_Index> pxFM_Index // the FM index by reference
+						)
+{
+} //funcion
 
 bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength)
 {
@@ -326,7 +348,7 @@ void Segmentation::forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeI
 	pxNode->forEachHitOnTheRefSeq(
 		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals, bAnchorOnly,
 #if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-	    pxQuality,
+		pxQuality,
 #endif
 		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
 		{
@@ -368,7 +390,7 @@ void Segmentation::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInt
 #if 0
 /*
 *	deprecated since the anchor matches will be extracted after the segmentation process.
-* 	the finding achor matches process will have it's own module
+*	 the finding achor matches process will have it's own module
 */
 
 /* transfer the saved hits into the clustering
@@ -389,7 +411,7 @@ void Segmentation::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode, size_t 
 
 void Segmentation::segment()
 {
-    assert(*pSegmentTree->begin() != nullptr);
+	assert(*pSegmentTree->begin() != nullptr);
 
 	{//scope for xPool
 		ThreadPoolAllowingRecursiveEnqueues xPool(NUM_THREADS_ALIGNER);
@@ -482,7 +504,7 @@ std::shared_ptr<Container> SegmentationContainer::execute(std::shared_ptr<Contai
 void exportSegmentation()
 {
 
-    //export the segmentation class
+	//export the segmentation class
 	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>("Segmentation",boost::python::init<boost::python::optional<bool, bool, nucSeqIndex, unsigned int>>())
 		.add_property("bBreakOnAmbiguousBase", &SegmentationContainer::bBreakOnAmbiguousBase, &SegmentationContainer::bBreakOnAmbiguousBase)
 		.add_property("bSkipLongBWTIntervals", &SegmentationContainer::bSkipLongBWTIntervals, &SegmentationContainer::bSkipLongBWTIntervals)
