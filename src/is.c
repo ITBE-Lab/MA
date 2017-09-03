@@ -25,6 +25,8 @@
  */
 #include "is.h"
 
+#define chr(i) (cs == sizeof(int) ? ((const int *)T)[i]:((const unsigned char *)T)[i])
+
 /* find the start or end of each bucket */
 static void getCounts(const unsigned char *T, int *C, int n, int k, int cs)
 {

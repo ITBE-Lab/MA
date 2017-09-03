@@ -7,7 +7,6 @@
 #endif
 
 typedef unsigned char ubyte_t;
-#define chr(i) (cs == sizeof(int) ? ((const int *)T)[i]:((const unsigned char *)T)[i])
 
 
 static void getCounts(const unsigned char *T, int *C, int n, int k, int cs);
