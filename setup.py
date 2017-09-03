@@ -42,7 +42,6 @@ setup(
     ext_modules=[
         Extension('LAuS',
             ['src/aligner.cpp', #TODO: check if this can be automated to pick all .cpp files
-            'src/configure.cpp',
             'src/container.cpp',
             'src/exception.cpp',
             'src/FM_index.cpp',

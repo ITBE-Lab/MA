@@ -349,6 +349,7 @@ void exportSequence()
 	 //export the nucleotidesequence class
 	boost::python::class_<NucSeqContainer, boost::python::bases<Container>, std::shared_ptr<NucSeqContainer>>("NucSeq")
 		.def(boost::python::init<const std::string>())
+		.def(boost::python::init<const char*>())
         .def("at", &NucSeqContainer::charAt)
         .def("append", &NucSeqContainer::vAppend)
         .def("size", &NucSeqContainer::size);

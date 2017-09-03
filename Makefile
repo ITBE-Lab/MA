@@ -13,16 +13,16 @@ BOOST_LIB = boost_python dl rt z boost_system-mt boost_thread-mt boost_log-mt bo
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp)))
 CTARGET = $(subst .c,,$(subst src/,,$(wildcard src/*.c)))
 TARGET_OBJ = $(addprefix obj/,$(addsuffix .o,$(TARGET)))
-CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(TARGET)))
+CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
 CC=gcc
 CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK
-LDFLAGS= -shared -Wl,--no-undefined -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
+LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
 
-LAuS.so: $(TARGET_OBJ)
-	$(CC) $(LDFLAGS) $(TARGET_OBJ) -o $@
+LAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
+	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
  
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -I,$(BOOST_INC)) -Iinc -c $< -o $@

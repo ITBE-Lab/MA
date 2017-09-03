@@ -12,7 +12,6 @@
 #include "sequence.h"
 #include "pack.h"
 #include "ksw.h" // Later we should create our own aligner
-#include "configure.h"
 #include "container.h"
 #include "meta_programming.h"
 #include <boost/python.hpp>
@@ -20,7 +19,7 @@
 #include "BWT_large.h"
 
 
-extern Configuration xGlobalConfiguration;
+//extern Configuration xGlobalConfiguration;
 
 typedef uint64_t bwt64bitCounter;
 typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occurrence counting.
@@ -32,6 +31,7 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
 #define OCC_INTV_SHIFT 7
 #define OCC_INTERVAL   (1LL<<OCC_INTV_SHIFT)
 #define OCC_INTV_MASK  (OCC_INTERVAL - 1)
+
 
 //TODO: get rid of me?!
 /* The BWT interval class represents intervals with respect the suffix array!
@@ -820,7 +820,7 @@ public:
 	
 
 	/* wrap the function in oder to make it acessible to pyhton */
-	void vStoreFM_Index(  std::string sPrefix  )
+	void vStoreFM_Index(  const char * sPrefix  )
 	{
 		std::string sPath(sPrefix);
 		pIndex->vStoreFM_Index(sPath);

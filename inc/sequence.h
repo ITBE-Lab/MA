@@ -1333,6 +1333,11 @@ public:
 		pSeq(new NucleotideSequence(rsInitialText))
 	{}//constructor
 
+	NucSeqContainer(const char* rsInitialText)
+			:
+		pSeq(new NucleotideSequence(std::string(rsInitialText)))
+	{}//constructor
+
 	NucSeqContainer(const NucSeqContainer *pCpyFrom)
 			:
 		pSeq(pCpyFrom->pSeq)
@@ -1349,7 +1354,7 @@ public:
 	}
 
 	/* wrapping vAppend in order to make it acessible from boost python */
-	void vAppend(std::string sSequence)
+	void vAppend(const std::string sSequence)
 	{
 		pSeq->vAppend(sSequence.c_str());
 	}

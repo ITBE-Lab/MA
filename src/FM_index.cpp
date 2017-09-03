@@ -1,6 +1,5 @@
 #include "FM_index.h"
 
-
 void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac_arg, bool bIncludeReverse )
 {	
     NucleotideSequence fn_pac;
@@ -209,17 +208,18 @@ void FM_Index::build_FM_Index(
         // set seq_len, so that it represents the size of forward plus reverse strand
         uiRefSeqLength = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse(); 
 
+        std::string tempDir = "~/.tempdir";
         // Check existence / create directory for storage of temporary data.
-        boost::filesystem::create_directories( xGlobalConfiguration.getTemporaryDataFolder() ); 
+        boost::filesystem::create_directories( tempDir ); 
 
         // Create temporary filename for pack export.
-        const auto xTempFileName =	xGlobalConfiguration.getTemporaryDataFolder() 
-                            /= (  std::to_string( std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() ) ) // current time as string
+        const auto xTempFileName =	tempDir.append(  
+                                std::to_string( std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() ) ) // current time as string
                                 .append("-")
                                 .append(std::to_string( rxSequenceCollection.uiUnpackedSizeForwardStrand )) // pack size as string
                             ); // temporary filename construction 
         // pac file construction adds a suffix
-        const auto sTempFileNameWithSuffix = std::string( xTempFileName.string() )
+        const auto sTempFileNameWithSuffix = std::string( xTempFileName )
                                         .append(".pac");
 
         /* Store the dynamically created pack on the filesystem.
