@@ -2,6 +2,17 @@
 
 #include <boost/log/trivial.hpp>
 
+
+/* Overloading of the operator "<<" for arrays, so that we get automatic formated output for arrays.
+ * From: http://stackoverflow.com/questions/19152178/printing-an-stdarray
+ */
+ template <class T, std::size_t N>
+ std::ostream& operator<< ( std::ostream& rxOstream, const std::array<T, N> &raArray )
+ {
+	 std::copy( raArray.cbegin(), raArray.cend(), std::ostream_iterator<T>( rxOstream, " " ) );
+	 return rxOstream;
+ } // template function
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++
  * 1. Application of some function f to all elements of some tuple.
  * Iteration starts with index 0.

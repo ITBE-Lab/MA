@@ -65,7 +65,7 @@ private :
 #if 1
 	/* Sophisticated copy constructor that takes additionally and interval and predicate as argument.
 	 * The predicate gets a relative index as input and has to decided whether the element of this index makes it into the result.
-	 * TO DO: range check for the interval.
+	 * TODO: range check for the interval.
 	 */
 	PlainSequence( const PlainSequence &rSequence, 
 				   const DeprecatedIntervalDescriptor &rInterval, 

@@ -19,57 +19,41 @@
 * ik[2] == size of interval (equal for I(P) and I'(P'), due to symmetry)
 */
 SA_IndexInterval bwt_extend_backward(
-									 const SA_IndexInterval &ik,// (input) single interval
-									 const uint8_t c,// the character to extend with
-									 std::shared_ptr<FM_Index> pxFM_Index // the FM index by reference
-					)
+									// current interval
+									const SA_IndexInterval &ik,
+									// the character to extend with
+									const uint8_t c,
+									// the FM index by reference
+									std::shared_ptr<FM_Index> pxFM_Index
+									)
 {
-	//// xSavePrint << "bwt_extend with ik: " << ik.endIndexOfMatchInQuery() << " [" << ik.x[0] << " ," << ik.x[1] << " ," << ik.x[2] << "]\n";
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
 	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
 	pxFM_Index->bwt_2occ4(
 		// until start of SA index interval 
 		// (-1, because we count the characters in front of the index)
-		ik.x[0] - 1,
+		ik.getStart() - 1,
 		// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
-		ik.x[0] + ik.x[2] - 1,
+		ik.getEnd() - 1,
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
 	);
 
-
-	/* Standard backward extension for the 4 symbols A, C, G, T.
-	* So, we get I(cP) in ok[c] for all c in {A, C, G, T}.
-	*/
-	for (int c = 0; c < 4; ++c)
-	{
-		//// xSavePrint << "xFM_Index.L2[c] is " << c << " " << xFM_Index.L2[c] << " " << cntk[c] << "" << cntl[c] << "\n";
-
-
-		//TODO: wierd why L2[c] + 1 should rather be L2[c+1]...
-		//		it works since L2[0] == 1 always
-		//		but wierd code...
-
-
-		ok[c].x[0] = pxFM_Index->L2[c] + 1 + cntk[c]; // start of Interval I(cP)  
-
-		ok[c].x[2] = cntl[c] - cntk[c]; // size of Interval I(cP) == size of Interval I'(P'c')
-		//// xSavePrint << "ok[c].x[2] is " << ok[c].x[2] << " " << cntl[c] << " " << cntk[c] << "\n";
-	} // for
+	return SA_IndexInterval(pxFM_Index->L2[c] + 1 + cntk[c], cntl[c] - cntk[c]);
 } // method
 
 
-void bwt_extend_forward(
-						// (input) the current interval on the bwt
-						const SA_IndexInterval &ik,
-						// (output) 4 intervals, for each symbol 1 (ok[0] <-> A, 
-						// ok[1] <-> C, ok[2] <-> G, ok[3] <-> T
-						SA_IndexInterval ok[4],
-						// the FM index by reference
-						std::shared_ptr<FM_Index> pxFM_Index 
-						)
+SA_IndexInterval bwt_extend_forward(
+									// current interval
+									const SA_IndexInterval &ik,
+									// the character to extend with
+									const uint8_t c,
+									// the FM index by reference
+									std::shared_ptr<FM_Index> pxFM_Index
+									)
 {
+	return SA_IndexInterval(0,0);
 } //funcion
 
 bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength)
@@ -127,10 +111,6 @@ nucSeqIndex Segmentation::extend(
 
 	const uint8_t *q = pxQuerySeq->pGetSequenceRef(); // query sequence itself
 
-	/* BIDI BWT intervals. Input interval and 4 output intervals for A/C/G/T.
-	*/
-	SA_IndexInterval ik, ok[4];
-
 	//select the correct fm_index based on the direction of the extension
 	std::shared_ptr<FM_Index> pxUsedFmIndex;
 	if (!bBackwards)
@@ -139,11 +119,16 @@ nucSeqIndex Segmentation::extend(
 		pxUsedFmIndex = pxFM_index;
 	
 	/* Initialize ik on the foundation of the single base q[x].
-	* Original code: bwt_set_intv(bwt, q[x], ik);
-	* In order to understand this initialization you should have a look to the corresponding PowerPoint slide.
-	*/
-	ik.x[0] = pxUsedFmIndex->L2[(int)q[i]] + 1;								// start I(q[x]) in T (start in BWT used for backward search) + 1, because very first string in SA-array starts with $
-	ik.x[2] = pxUsedFmIndex->L2[(int)q[i] + 1] - pxUsedFmIndex->L2[(int)q[i]];	// size in T and T' is equal due to symmetry
+	 * In order to understand this initialization you should have a look 
+	 *to the corresponding PowerPoint slide.
+	 */
+	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
+	// because very first string in SA-array starts with $
+	// size in T and T' is equal due to symmetry
+	SA_IndexInterval ik(
+						pxUsedFmIndex->L2[(int)q[i]] + 1, 
+						pxUsedFmIndex->L2[(int)q[i] + 1] - pxUsedFmIndex->L2[(int)q[i]]
+					);
 
 	if (!bBackwards)
 		i++;
@@ -152,71 +137,64 @@ nucSeqIndex Segmentation::extend(
 	else
 		i--;
 
-	//std::cout << "extending: (" << i << ") " << std::endl;
-
-	//while we can extend further
-	while (canExtendFurther(pxNode,i,bBackwards,pxQuerySeq->length()))
+	// while we can extend further
+	while ( canExtendFurther(pxNode ,i ,bBackwards ,pxQuerySeq->length()) )
 	{
 		assert(i >= 0 && i < pxQuerySeq->length());
 		if (q[i] >= 4 && bBreakOnAmbiguousBase) // An ambiguous base
 		{
-#ifdef DEBUG_ALIGNER
-			BOOST_LOG_TRIVIAL( info ) << "break on ambiguous base";
-#endif
 			break; // break if the parameter is set.
 		}//if
 
-		//perform one step of the extension
-		bwt_extend_backward(ik, ok, pxUsedFmIndex);
-
 		const uint8_t c = q[i]; // character at position i in the query
 
-#if 0
-		NucleotideSequence xSec;
-		auto iBegin = pxUsedFmIndex->bwt_sa(ik.x[0]);
-		auto iEnd = iBegin + (bBackwards ? uiStartIndex - i : i - uiStartIndex);
-		std::cout << "query: " << *pxQuerySeq->fromTo(bBackwards ? i + 1 : uiStartIndex, !bBackwards ? i : uiStartIndex + 1).asSequenceOfACGT() << " " << ik.x[2] << std::endl;
-		if (bBackwards)
-			pxRefSequence->vExtractSubsection(iBegin, iEnd, xSec);
-		else
-			pxRefSequence->vExtractSubsection(
-					pxRefSequence->uiUnpackedSizeForwardPlusReverse() - iEnd, 
-					pxRefSequence->uiUnpackedSizeForwardPlusReverse() - iBegin,
-					xSec
-				);
-		
-		std::cout << "reference:" << *xSec.fullSequenceAsSlice().asSequenceOfACGT() << std::endl;
-		std::cout << iBegin << " " << iEnd << " \n"
-			<< pxRefSequence->uiUnpackedSizeForwardPlusReverse() - iEnd << " " << pxRefSequence->uiUnpackedSizeForwardPlusReverse() - iBegin << std::endl;
-#endif
-		
+		// perform one step of the extension
+		SA_IndexInterval ok = bwt_extend_backward(ik, c, pxUsedFmIndex);
 
-		/* Pick the extension interval for character c and check with respect to changing interval size.
-		*/
-		if (ok[c].x[2] != ik.x[2])
+		/* 
+		 * Pick the extension interval for character c 
+		 * and check with respect to changing interval size.
+		 */
+		if (ok.getSize() != ik.getSize())
 		{
 			/*
-			* In fact, if ok[c].x[2] is zero, then there are no matches any more.
+			* In fact, if ok.getSize is zero, then there are no matches any more.
 			*/
-			if (ok[c].x[2] == 0)
+			if (ok.getSize() == 0)
 			{
 				break; // the SA-index interval size is too small to be extended further
 			} // if
 
-			//once the min interval size is reached, record the matches every time we lose some by extending further.
+			// once the min interval size is reached, 
+			// record the matches every time we lose some by extending further.
 			if (isMinIntervalSizeReached(uiStartIndex, i, uiMinIntervalSize) && isFurtherThan(bBackwards, i, uiOnlyRecordHitsFurtherThan))
 			{
-				//record the current match
+				// record the current match
 				if (!bBackwards)
-					pxNode->pushBackBwtInterval(ik.x[0], ik.x[2], uiStartIndex, i, true, false);
+					//TODO: use only one class to represents BWT intervals
+					pxNode->pushBackBwtInterval(
+												ik.getStart(),
+												ik.getSize(),
+												uiStartIndex,
+												i,
+												true,
+												false
+											);
 				else
-					pxNode->pushBackBwtInterval(ik.x[0], ik.x[2], i + 1, uiStartIndex + 1, false, false);
+					pxNode->pushBackBwtInterval(
+												ik.getStart(),
+												ik.getSize(),
+												i + 1,
+												uiStartIndex + 1,
+												false,
+												false
+											);
 			}//if
 		}//if
 
 		/* Set input interval for the next iteration.
 		*/
-		ik = ok[c];
+		ik = ok;
 
 		if (!bBackwards)
 			i++;
@@ -232,12 +210,26 @@ nucSeqIndex Segmentation::extend(
 	{
 		//record the current match
 		if (!bBackwards)
-			pxNode->pushBackBwtInterval(ik.x[0], ik.x[2], uiStartIndex, i, true, true);
+			//TODO: use only one class to represents BWT intervals
+			pxNode->pushBackBwtInterval(
+										ik.getStart(),
+										ik.getSize(),
+										uiStartIndex,
+										i,
+										true,
+										true
+									);
 		else
-			pxNode->pushBackBwtInterval(ik.x[0], ik.x[2], i + 1, uiStartIndex + 1, false, true);
+			pxNode->pushBackBwtInterval(
+										ik.getStart(),
+										ik.getSize(),
+										i + 1,
+										uiStartIndex + 1,
+										false,
+										true
+									);
 	}//if
 
-	//std::cout << " (" << i + 1 << ")" << std::endl;
 	if (!bBackwards)
 		return i-1;
 	else
@@ -398,28 +390,6 @@ void Segmentation::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInt
 		}//lambda
 	);//for each
 }//function
-
-#if 0
-/*
-*	deprecated since the anchor matches will be extracted after the segmentation process.
-*	 the finding achor matches process will have it's own module
-*/
-
-/* transfer the saved hits into the clustering
- * if DEBUG_CHECK_INTERVALS is activated the hits are verified before storing
-*/
-void Segmentation::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode, size_t uiThreadId)
-{
-	forEachNonBridgingPerfectMatch(
-		pxNode, false,
-		[&](std::shared_ptr<PerfectMatch> pxMatch)
-		{
-			pxAnchorMatchList->addMatch(std::shared_ptr<PerfectMatch>(pxMatch), uiThreadId);
-		}//lambda
-	);//for each
-}///function
-
-#endif
 
 void Segmentation::segment()
 {
