@@ -18,9 +18,10 @@
 * ik[1] is unused
 * ik[2] == size of interval (equal for I(P) and I'(P'), due to symmetry)
 */
-void bwt_extend_backward(const SA_IndexInterval &ik,	// (input) single interval
-						SA_IndexInterval ok[4],			// (output) 4 intervals, for each symbol 1 (ok[0] <-> A, ok[1] <-> C, ok[2] <-> G, ok[3] <-> T
-						std::shared_ptr<FM_Index> pxFM_Index // the FM index by reference
+SA_IndexInterval bwt_extend_backward(
+									 const SA_IndexInterval &ik,// (input) single interval
+									 const uint8_t c,// the character to extend with
+									 std::shared_ptr<FM_Index> pxFM_Index // the FM index by reference
 					)
 {
 	//// xSavePrint << "bwt_extend with ik: " << ik.endIndexOfMatchInQuery() << " [" << ik.x[0] << " ," << ik.x[1] << " ," << ik.x[2] << "]\n";
@@ -59,11 +60,14 @@ void bwt_extend_backward(const SA_IndexInterval &ik,	// (input) single interval
 } // method
 
 
-void bwt_ectend_forward(const SA_IndexInterval &ik,// (input) single interval
+void bwt_extend_forward(
+						// (input) the current interval on the bwt
+						const SA_IndexInterval &ik,
 						// (output) 4 intervals, for each symbol 1 (ok[0] <-> A, 
 						// ok[1] <-> C, ok[2] <-> G, ok[3] <-> T
 						SA_IndexInterval ok[4],
-						std::shared_ptr<FM_Index> pxFM_Index // the FM index by reference
+						// the FM index by reference
+						std::shared_ptr<FM_Index> pxFM_Index 
 						)
 {
 } //funcion
@@ -91,7 +95,8 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 	}//else
 }//function
 
-bool isMinIntervalSizeReached(nucSeqIndex uiStartIndex, nucSeqIndex uiCurrIndex, nucSeqIndex uiMinIntervalSize)
+bool isMinIntervalSizeReached(nucSeqIndex uiStartIndex, nucSeqIndex uiCurrIndex, 
+							  nucSeqIndex uiMinIntervalSize)
 {
 	if (uiStartIndex > uiCurrIndex)
 		return uiStartIndex - uiCurrIndex >= uiMinIntervalSize;
@@ -100,7 +105,10 @@ bool isMinIntervalSizeReached(nucSeqIndex uiStartIndex, nucSeqIndex uiCurrIndex,
 	return false;
 }//function
 
-bool isFurtherThan(bool bBackwards, nucSeqIndex uiCurrIndex, nucSeqIndex uiOnlyRecordHitsFurtherThan)
+bool isFurtherThan(
+					bool bBackwards, nucSeqIndex uiCurrIndex, 
+					nucSeqIndex uiOnlyRecordHitsFurtherThan
+				  )
 {
 	if (bBackwards)
 		return uiCurrIndex < uiOnlyRecordHitsFurtherThan;
@@ -108,7 +116,11 @@ bool isFurtherThan(bool bBackwards, nucSeqIndex uiCurrIndex, nucSeqIndex uiOnlyR
 		return uiCurrIndex > uiOnlyRecordHitsFurtherThan;
 }//function
 
-nucSeqIndex Segmentation::extend(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiStartIndex, bool bBackwards, nucSeqIndex uiOnlyRecordHitsFurtherThan)
+nucSeqIndex Segmentation::extend(
+								 std::shared_ptr<SegmentTreeInterval> pxNode, 
+								 nucSeqIndex uiStartIndex, bool bBackwards, 
+								 nucSeqIndex uiOnlyRecordHitsFurtherThan
+								)
 {
 	nucSeqIndex i = uiStartIndex;
 	assert(i >= 0 && i < pxQuerySeq->length());
