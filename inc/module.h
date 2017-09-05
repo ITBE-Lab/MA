@@ -15,38 +15,29 @@
 class Module
 {
 public:
-    virtual std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput){return pInput;}
-
-    virtual std::shared_ptr<Container> getInputType(){return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));}
-
-    virtual std::shared_ptr<Container> getOutputType(){return std::shared_ptr<Container>(new DummyContainer(ContainerType::nothing));}
-
-    std::shared_ptr<Container> saveExecute(std::shared_ptr<Container> pInput)
+    virtual std::vector<std::shared_ptr<Container>> execute(
+            std::vector<std::shared_ptr<Container>> pInput
+        )
     {
-        if(getInputType() == nullptr) 
-                throw ModuleIO_Exception("expected input of module is a nullptr - use DummyContainer(nothing) instead");
-        if(pInput == nullptr)
-                throw ModuleIO_Exception("given input is a nullptr");
-        if(getInputType()->sameTypeAs(pInput))
-        {
-            auto pOutput = execute(pInput);
-            if(getOutputType() == nullptr) 
-                throw ModuleIO_Exception("expected output of module is a nullptr - use DummyContainer(nothing) instead");
-            if(pOutput == nullptr)
-                throw ModuleIO_Exception("module returned a nullptr");
-            if(getOutputType()->sameTypeAs(pOutput))
-                return pOutput;
-            else
-                throw ModuleIO_Exception(
-                        std::string("wrong output type. Expected: ").append(getOutputType()->getTypeInfo())
-                        .append(", but got: ").append(pOutput->getTypeInfo())
-                        .c_str() );
-        }//if
-        else
-            throw ModuleIO_Exception(
-                        std::string("wrong input type. Expected: ").append(getInputType()->getTypeInfo())
-                        .append(", but got: ").append(pInput->getTypeInfo())
-                        .c_str() );
+        return pInput;
+    }
+
+    virtual std::ContainerType<ContainerType> getInputType()
+    {
+        return std::ContainerType<ContainerType>(ContainerType::nothing);
+    }
+
+    virtual std::vector<ContainerType> getOutputType()
+    {
+        return std::vector<Container>(ContainerType::nothing);
+    }
+
+    std::vector<std::shared_ptr<Container>> saveExecute(
+            std::vector<std::shared_ptr<Container>> pInput
+        )
+    {
+        std::cout << "TODO: save exec disabled" << std::endl;
+        return execute(pInput);
     }//function
 };
 
@@ -55,21 +46,23 @@ class Printer : public Module
 public:
     Printer(){}
     // overwrite the execute frunction from Module
-    std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput) override
+    std::vector<std::shared_ptr<Container>> execute(
+            std::vector<std::shared_ptr<Container>> pInput
+        ) override
     {
-        if(pInput != nullptr)
-            std::cout << pInput->toString() << std::endl;
-        else
-            std::cout << "nullptr" << std::endl;
+        
+        std::cout << "TODO: printer disabled" << std::endl;
         return pInput;
     }
-    std::shared_ptr<Container> getInputType()
+
+    virtual std::ContainerType<ContainerType> getInputType()
     {
-        return std::shared_ptr<Container>(new DummyContainer(ContainerType::any));
+        return std::ContainerType<ContainerType>(ContainerType::any);
     }
-    std::shared_ptr<Container> getOutputType()
+
+    virtual std::vector<ContainerType> getOutputType()
     {
-        return std::shared_ptr<Container>(new DummyContainer(ContainerType::any));
+        return std::vector<Container>(ContainerType::any);
     }
 };
 

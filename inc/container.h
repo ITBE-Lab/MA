@@ -58,56 +58,6 @@ public:
     ContainerType getType(){return iType;}
 };//class
 
-class ContainerVector : public Container
-{
-public:
-    std::vector<std::shared_ptr<Container>> vElements;
-
-    ContainerVector() 
-        : 
-        vElements() 
-    {}
-
-    ContainerType getType(){return ContainerType::vector;}
-    /*
-    *   it's importent to coy the here since the python garbage collection will otherwise delete the data mid execution
-    *   the copy call will copy the CONTAINER not the actual data (python wil then delete the old container)
-    */
-    void append(std::shared_ptr<Container> pC) {vElements.push_back(pC->copy());}
-    bool sameTypeAs(std::shared_ptr<Container> pOther);
-    std::string toString() override
-    {
-        std::string sRet("vector(");
-        sRet.append(std::to_string(vElements.size())).append("){");
-        for(auto pElem : vElements)
-        {
-            if(pElem != nullptr)
-                sRet.append(pElem->toString());
-            else
-                sRet.append("nullptr");
-            sRet.append(",");
-        }//for
-        sRet.append("}");
-        return sRet;
-    }//function
-    
-    std::string getTypeInfo()
-    {
-        std::string sRet("vector(");
-        sRet.append(std::to_string(vElements.size())).append("){");
-        for(auto pElem : vElements)
-        {
-            if(pElem != nullptr)
-                sRet.append(pElem->getTypeInfo());
-            else
-                sRet.append("nullptr");
-            sRet.append(",");
-        }//for
-        sRet.append("}");
-        return sRet;
-    }//function
-};//class
-
 /* function to export this module to boost python */
 void exportContainer();
 #endif
