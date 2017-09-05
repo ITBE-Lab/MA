@@ -6,7 +6,6 @@
 #include <vector>
 #include <array>
 #include <numeric>
-// #include <math.h>
 #include <cmath>
 #include <cstring>
 #include <functional>
@@ -62,7 +61,6 @@ private :
 		vAppend( rSequence.pGetSequenceRef(), rSequence.uxGetSequenceSize() );
 	} // copy constructor
 
-#if 1
 	/* Sophisticated copy constructor that takes additionally and interval and predicate as argument.
 	 * The predicate gets a relative index as input and has to decided whether the element of this index makes it into the result.
 	 * TODO: range check for the interval.
@@ -85,7 +83,6 @@ private :
 			} // if
 		} // for
 	} // copy constructor
-#endif
 
 	/* Copy constructor that copies some subsection indicated by the interval.
 	 * The interval will not be ranged-checked!
@@ -162,21 +159,6 @@ protected :
 		pxSequenceRef = pxReallocRef;
 		uxCapacity = uxRequestedSize;
 	} // method
-
-	/* Internal method for range checking.
-	 */
-	//// inline void vPerformRangeCheck( const size_t uiBegin, const size_t uiEnd ) const // throws exception
-	//// {
-	//// 	if ( uiBegin > uiSize )
-	//// 	{
-	//// 		throw runtime_error( std::string( "Out of range error. Requested begin: " ) + std::to_string( uiBegin ) + ( " Max is: " ) + std::to_string( uiSize - 1 ) );
-	//// 	} // if
-	//// 	if (uiBegin > uiEnd)
-	//// 	{
-	//// 		throw runtime_error( std::string( "Out of range error. Requested end: " ) + std::to_string( uiBegin ) + ( " Max is: " ) + std::to_string( uiSize ) );
-	//// 	} // if
-	//// } // method
-
 	
 public :
 	PlainSequence() 
@@ -390,42 +372,6 @@ class DoubleStrandedSequence;
 class GeneticSequence : public PlainSequence<uint8_t>
 {
 public :
-#if 0
-	typedef enum 
-	{
-		SEQUENCE_IS_NUCLEOTIDE,
-		SEQUENCE_IS_PEPTIDE
-	} SequenceType;
-#endif
-private :
-#if 0
-	/* Creates the reverse strand if the sequence represents a forward strand.
-	 * Creates the forward strand if the sequence represents a reverse strand.
-	 * Works only for nucleotides.
-	 */
-	GeneticSequence& vDeprecatedInverseStrand()
-	{
-		/* First we reverse the sequence itself
-		 */
-		reverse( pxSequenceRef, uiSize );
-
-		/* And in a second step we invert the nucleotides itself
-		 *					   0  1  2  3
-		 */
-		const char chars[4] = {3, 2, 1, 0};
-
-		for( size_t uxIterator = 0; uxIterator < uiSize; uxIterator++ )
-		{
-			if ( pxSequenceRef[uxIterator] < 4 )
-			{
-				pxSequenceRef[uxIterator] = chars[ pxSequenceRef[uxIterator] ];
-			} // if
-		} // for
-
-		return *this;
-	} // function
-#endif
-public :
 	/* The type of elements represented by our sequence.
 	 * (the type has to be decided in the context of the construction)
 	 */
@@ -438,25 +384,10 @@ public :
 	GeneticSequence( ) // : eContentType( SEQUENCE_IS_NUCLEOTIDE )
 	{
 	} // default constructor
-#if 1
+
 	GeneticSequence (GeneticSequence && g) // : eContentType( SEQUENCE_IS_NUCLEOTIDE )
 	{
 	} // default constructor
-#endif
-
-#if 0
-	/* This constructor is required in the context of the construction of double stranded sequences.
-	 */
-	GeneticSequence( const GeneticSequence &sequence, bool doReverse ) 
-		: PlainSequence( sequence ), // forward call to the copy constructor of base class
-		  eContentType( SEQUENCE_IS_NUCLEOTIDE )
-	{
-		if ( doReverse == true )
-		{
-			vDeprecatedInverseStrand();
-		} // if
-	} // tailored copy constructor
-#endif
 
 	/* Deprecated constructor, don't use it any longer!.
 	 * Takes all elements of the interval for which the predicate is true.
@@ -475,12 +406,6 @@ public :
 		: PlainSequence( rxSequence, rxInterval ) // forward call to the copy constructor of base class
 		// eContentType( SEQUENCE_IS_NUCLEOTIDE )
 	{} // tailored copy constructor
-
-#if 0
-	GeneticSequence( SequenceType eContentType ) : eContentType( eContentType )
-	{
-	} // constructor
-#endif
 
 	/* The full sequence as slice.
 	 */
@@ -567,12 +492,6 @@ public :
 	 */
 	NucleotideSequence( TextSequence &rSequence ) 
 	{
-#if 0
-		/* Code that we should use, if Textsequence is std::string.
-		 */
-		vAppend( rSequence.c_str() );
-		
-#else
 		/* We strip the given sequence of its content and move it to our new sequence.
 		 * WARNING: Here we assume that the sizes for the types char and uint8_t are equal.
 		 */
@@ -581,7 +500,6 @@ public :
 		/* The given PlainSequence should be in textual, we have to translate it.
 		 */
 		vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, 0 );
-#endif
 	} // constructor
 
 
@@ -632,7 +550,6 @@ public :
 		} // for
 	} // method
 
-#if 1
 	/* Gives the textual representation for some numeric representation.
 	 * Important: Keep this inline, so that it is not compiled into a function of its own. 
 	 */
@@ -648,7 +565,6 @@ public :
 			return 'N';
 		} // else
 	} // static method
-#endif
 
 	/* The symbol on some position in textual form.
 	 * We count starting from 0.
@@ -691,139 +607,6 @@ public :
 				   NucleotideSequence &rxNucleotideSequence
 				 ) const;
 }; // class NucleotideSequence
-
-class AtomLevelCount 
-{	
-public :
-	static const uint32_t aCHNOS_CountingTable[23];
-
-	/* index atom
-	 * 0	 C (carbon)
-	 * 1	 H (hydrogen)
-	 * 2	 N (nitrogen)
-	 * 3	 O (oxygen)
-	 * 4	 S (sulfur)
-	 */
-	std::array<uint64_t, 5> aAtomCounters;
-
-	/* Adds the atoms of the given amino-acid code to the counters
-	 * We could create a faster type of addition by relying on parallel additions.
-	 * Externally defined.
-	 */
-	void addAminoAcid( uint8_t uiAACode );
-
-	/* Textual serialization of the counter object.
-	 */
-	std::string toString( void )
-	{
-		uint64_t uiTotalAtoms = std::accumulate( begin( aAtomCounters ), end( aAtomCounters ), (uint64_t)0, std::plus<uint64_t>() );
-		
-		std::string sRelative =
-			std::string( "carbon: " )	.append( std::to_string( (double)( aAtomCounters[0] * 100 ) / uiTotalAtoms ) ).append( "%" )
-				.append( " hydrogen: " ).append( std::to_string( (double)( aAtomCounters[1] * 100 ) / uiTotalAtoms ) ).append( "%" )
-				.append( " nitrogen: " ).append( std::to_string( (double)( aAtomCounters[2] * 100 ) / uiTotalAtoms ) ).append( "%" )
-				.append( " oxygen: " )	.append( std::to_string( (double)( aAtomCounters[3] * 100 ) / uiTotalAtoms ) ).append( "%" )
-				.append( " sulfur: " )	.append( std::to_string( (double)( aAtomCounters[4] * 100 ) / uiTotalAtoms ) ).append( "%" );
-		std::string sAbolsute =
-			std::string( "carbon: " )	.append( std::to_string( aAtomCounters[0] ) )
-				.append( " hydrogen: " ).append( std::to_string( aAtomCounters[1] ) )
-				.append( " nitrogen: " ).append( std::to_string( aAtomCounters[2] ) )
-				.append( " oxygen: " )	.append( std::to_string( aAtomCounters[3] ) )
-				.append( " sulfur: " )	.append( std::to_string( aAtomCounters[4] ) );
-
-		return sAbolsute.append( "[" ).append( sRelative ).append( "]" );
-	} // method
-
-	/* Default constructor
-	 */
-	 AtomLevelCount()
-		: aAtomCounters({ { 0, 0, 0, 0, 0 } })
-	 {} 
-}; // AtomLevelCount
-
-/* Class for peptide sequence: 21 Symbols for 21 AA.
- * 0	A	Alanine
- * 1	C	Cysteine
- * 2	D	Aspartic acid
- * 3	E	Glutamic acid
- * 4	F	Phenylalanine
- * 5	G	Glycine
- * 6	H	Histidine
- * 7	I	Isoleucine
- * 8	K	Lysine
- * 9	L	Leucine
- * 10	M	Methionine
- * 11	N	Asparagine
- * 12	O	Pyrrolysine
- * 13	P	Proline
- * 14	Q	Glutamine
- * 15	R	Arginine
- * 16	S	Serine
- * 17	T	Threonine
- * 18	U	Selenocysteine
- * 19	V	Valine
- * 20	W	Tryptophan
- * 21	Y	Tyrosine
- * 22	$	Stop codon�
- */
-class AminoAcidSequence : public GeneticSequence
-{
-private :
-	/* The table used to translate from base pairs to numeric codes for nucleotides
-	 */
-	static const char xCodeToSymbolTranslationArray[23];
-	
-	/* Translation table for translating a packed 3 letter code in to a Amino Acid code
-	 */
-	static const char xNTpackedTripleToAACodeTranslationArray[64];
-
-	/* Appending a NT-sequence to an AA-sequence.
-	 * TO DO: Improve me, so that is is a real append.
-	 * External Definition.
-	 */
-	void vAppendNucleoditeSequence( const NucleotideSequence &xNucleotideSequence ); // throws Exception
-
-public :
-	/* Counts the 5 atoms occurring in an AA-sequence
-	 */
-	AtomLevelCount vCountAtoms( void );
-
-	/* Creates a string representation of the current AA sequence using the 1-letter code.
-	 */
-	std::string toString()
-	{
-		std::string sReturnedAAText;
-		
-		/* Reserve enough memory in the string, so that we avoid later reallocations.
-		 */
-		sReturnedAAText.reserve( this->uiSize );
-		
-		/* Map each AA-element into the returned string.
-		 */
-		for( size_t uiIndex = 0; uiIndex < this->uiSize; uiIndex++ )
-		{
-			assert ( this->pxSequenceRef[uiIndex] < 23 ); // table comprises only 23 symbols
-			sReturnedAAText.push_back( xCodeToSymbolTranslationArray[ this->pxSequenceRef[uiIndex] ] );
-		} // for
-		
-		return sReturnedAAText;
-	} // method
-
-	/* Forward call to the constructor of the superclass
-	 */
-	AminoAcidSequence( const NucleotideSequence &xNucleotideSequence )
-		: GeneticSequence()
-	{ 
-		this->vAppendNucleoditeSequence( xNucleotideSequence );
-	} // constructor
-
-	/* Default constructor, creates empty sequence.
-	 */
-	AminoAcidSequence()
-		: GeneticSequence()
-	{ } // default constructor
-
-}; // class AminoAcidSequence
 
 /* Takes a sequence slice and creates a vector with virtual contigs
  * TYPE should be GeneticSequenceSlice, NucleotideSequenceSlice or NucleotideSequenceSliceHavingSelectedStrand
@@ -912,16 +695,6 @@ public :
 	 */
 	const ZeroBasedIntervalDescriptor xInterval;
 
-#if 0	
-	/* The offset from the start of the Host section.
-	 */
-	const size_t uxOffsetInHostSection;
-
-	/* The size of the slice.
-	 */
-	const size_t uxSliceSize;
-#endif
-
 public :
 	friend class NCBIGeneLocusDescriptor;
 
@@ -978,16 +751,6 @@ public :
 		return TYPE( hostObject, xInterval.uxOffsetInHostSection + uxStartOffsetInSlice, xInterval.uxOffsetInHostSection + uxEndOffsetInSlice );
 	} // method
 
-#if 0
-	/* Get a copy of the slice. (Quite expensive, so take it with care!)
-	 */
-	std::shared_ptr<GeneticSequence> deprecatedGetCopyUsingPredicate( const std::function<bool (size_t)>& predciateFunction ) const
-	{
-		DeprecatedIntervalDescriptor interval( xInterval.uxOffsetInHostSection, xInterval.uxOffsetInHostSection + xInterval.uxSize );
-		
-		return std::make_shared<GeneticSequence>( hostObject, interval, predciateFunction );
-	} // method
-#endif
 	/* Copy the slice as genetic sequence using forward order.
 	 */
 	std::shared_ptr<GeneticSequence> makeSequenceUsingForwardOrder() const
@@ -1296,19 +1059,6 @@ public :
 		  ( hostObject, uxStartOffsetInHostSection, uxEndOffsetInHostSection, tSelectedStrand )
 	{ } // constructor
 
-#if 0
-	/* Get a subsection of the current slice. Has to be overloaded here, because we have to copy the strand as well.
-	 * The method is generic and adapts its return type.
-	 */
-	NucleotideSequenceSliceHavingSelectedStrand getSubSliceFromTo( size_t uxStartOffsetInSlice, size_t uxEndOffsetInSlice ) const
-	{
-		return NucleotideSequenceSliceHavingSelectedStrand( hostObject, 
-					 xInterval.uxOffsetInHostSection + uxStartOffsetInSlice,
-					 xInterval.uxOffsetInHostSection + uxEndOffsetInSlice,
-					 tSelectedStrand
-				   );
-	} // method
-#endif
 }; // class
 
 void vForAllTranslationsDo( int64_t iGeneId,

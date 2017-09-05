@@ -39,7 +39,9 @@ SA_IndexInterval bwt_extend_backward(
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
 	);
-
+	//pxFM_Index->L2[c] start of nuc c in BWT
+	//cntk[c] + 1 offset of new interval
+	//cntl[c] length of new interval
 	return SA_IndexInterval(pxFM_Index->L2[c] + 1 + cntk[c], cntl[c] - cntk[c]);
 } // method
 
@@ -53,6 +55,20 @@ SA_IndexInterval bwt_extend_forward(
 									std::shared_ptr<FM_Index> pxFM_Index
 									)
 {
+	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
+	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
+
+	pxFM_Index->bwt_2occ4(
+		// until start of SA index interval 
+		// (-1, because we count the characters in front of the index)
+		ik.getStart() - 1,
+		// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
+		ik.getEnd() - 1,
+		cntk,						// output: Number of A, C, G, T until start of interval
+		cntl						// output: Number of A, C, G, T until end of interval
+	);
+	//doesnt work?
+
 	return SA_IndexInterval(0,0);
 } //funcion
 
