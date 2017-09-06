@@ -147,7 +147,7 @@ std::shared_ptr<Container> Bucketing::execute(
 	*	the actual work is hidden here:
 	*		for each strip we pick up all hits lying in the respective buckets
 	*/
-	xA.findAnchors(pRet->x)
+	xA.findAnchors(pRet->x);
 
 	return pRet;
 }//function
