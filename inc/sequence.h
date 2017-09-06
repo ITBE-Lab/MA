@@ -541,6 +541,11 @@ public :
 		} // for
 	} // function
 
+/*	void vReverse()
+	{
+		PlainSequence.vReverse();
+	}*/
+
 	/* transforms the character representation into a representation on the foundation of digits.
 	 */
 	void vTranslateToNumericFormUsingTable( const unsigned char *alphabetTranslationTable,

@@ -168,7 +168,8 @@ void exportSequence()
 			.def(boost::python::init<const std::string>())
 			.def("at", &NucleotideSequence::charAt)
 			.def("append", &NucleotideSequence::vAppend_boost)
-			.def("length", &NucleotideSequence::length);
+			.def("length", &NucleotideSequence::length)
+			.def("reverse", &NucleotideSequence::vReverse);
 
 	//tell boost python that pointers of these classes can be converted implicitly
 	boost::python::implicitly_convertible< 

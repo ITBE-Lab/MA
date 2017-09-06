@@ -9,7 +9,7 @@ void exportPack()
             std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>
         >("BWAPack")
         .def("unpackedSize", &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardPlusReverse)
-        .def("append", &BWACompatiblePackedNucleotideSequencesCollection::vAppendSequence)
+        .def("append", &BWACompatiblePackedNucleotideSequencesCollection::vAppendSequence_boost)
         .def("store", &BWACompatiblePackedNucleotideSequencesCollection::vStoreCollection)
         .def("exists", &BWACompatiblePackedNucleotideSequencesCollection::packExistsOnFileSystem)
         .staticmethod("exists")

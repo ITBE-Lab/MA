@@ -786,6 +786,18 @@ public:
 		assert( uiUnpackedSizeForwardStrand == uiInitialUnpackedSize + rxSequence.length() );
 	} // method
 
+	/*
+	*	wrapper for boost
+	*/
+	void vAppendSequence_boost( 
+			const char* rsName,			// name of the sequence within the collection
+			const char* rsComment,			// comment for the sequence
+			const std::shared_ptr<NucleotideSequence> pxSequence	// sequence itself (The sequence will be copied and is not referred after method termination.)
+		)
+	{
+		vAppendSequence(std::string(rsName), std::string(rsComment), *pxSequence);
+	}
+
 	/* Appends a single FASTA record to the collection and pack.
 	 */
 	void vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor ) 
