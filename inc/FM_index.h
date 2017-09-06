@@ -92,7 +92,7 @@ typedef unsigned char ubyte_t;
  * FM-indices are central with the alignment process.
  * The original data-structure was part of the BWA-code.
  */
-class FM_Index
+class FM_Index : public Container
 {
 public :
 	/* C(), cumulative counts (part of the FM index)
@@ -674,7 +674,7 @@ public :
 
 	/* Dump the current FM-Index to two separated files for BWT and SA.
 	 */
-	void vStoreFM_Index( const boost::filesystem::path &rxFileNamePrefix )
+	void vStoreFM_Index_boost( const boost::filesystem::path &rxFileNamePrefix )
 	{
 		{	/* Save burrow wheeler transform
 			 */
@@ -690,11 +690,18 @@ public :
 			xOutputStream.close();
 		} // scope
 	} // method
+	
+	/* wrap the function in oder to make it acessible to pyhton */
+	void vStoreFM_Index( const char* sPrefix )
+	{
+		std::string sPath(sPrefix);
+		vStoreFM_Index_boost(sPath);
+	}//function
 
 
 	/* Load an FM-Index previously stored by vStoreFM_Index.
 	 */
-	void vLoadFM_Index( const boost::filesystem::path &rxFileNamePrefix )
+	void vLoadFM_Index_boost( const boost::filesystem::path &rxFileNamePrefix )
 	{
 		{	if ( !boost::filesystem::exists( rxFileNamePrefix.string() + ".bwt" ) )
 			{
@@ -723,6 +730,12 @@ public :
 		} // scope
 	} // method
 
+	void vLoadFM_Index( std::string sPrefix )
+	{
+		std::string sPath(sPrefix);
+		vLoadFM_Index_boost(sPath);
+	}//function
+
 
 	/* Debug function for comparing BWT.
 	 * BWT can be build by several different functions. Here we can check for correctness.
@@ -749,6 +762,9 @@ public :
 		return sErrorText == "";
 	} // method
 
+	/*used to identify the FM_index datatype in the aligner pipeline*/
+    ContainerType getType(){return ContainerType::fM_index;}
+
 	/* Default constructor. (Initializes the fix count-table)
 	 */
 	FM_Index()
@@ -761,11 +777,19 @@ public :
 
 	/* FM-Index constructor. Builds a FM index on foundation of rxSequence. 
 	 */
-	FM_Index( const NucleotideSequence &rxSequence ) 
-		: FM_Index() // call the default constructor
-	{
-		build_FM_Index( rxSequence );
-	} // constructor
+	 FM_Index( const NucleotideSequence &rxSequence ) 
+	 : FM_Index() // call the default constructor
+ {
+	 build_FM_Index( rxSequence );
+ } // constructor
+
+ /* FM-Index constructor. Builds a FM index on foundation of pxSequence. 
+  */
+ FM_Index( const std::shared_ptr<NucleotideSequence> pxSequence ) 
+	 : FM_Index() // call the default constructor
+ {
+	 build_FM_Index( *pxSequence );
+ } // constructor
 
 	/* FM-Index constructor. Builds a FM index on foundation of a given sequence collection. 
 	 */
@@ -778,59 +802,6 @@ public :
 	} // constructor
 
 }; // class FM_Index
-
-
-class FM_IndexContainer: public Container
-{
-public:
-	std::shared_ptr<FM_Index> pIndex;
-	
-	/*
-	 * constructor to generate a FM_index from a nuc Seq
-	 */
-	FM_IndexContainer(NucSeqContainer generateFrom)
-			:
-		pIndex(new FM_Index(*generateFrom.pSeq))
-	{}//constructor
-	
-	FM_IndexContainer()
-			:
-		pIndex(new FM_Index())
-	{}//constructor
-
-	FM_IndexContainer(const FM_IndexContainer *pCpyFrom)
-			:
-		pIndex(pCpyFrom->pIndex)
-	{}//copy constructor
-
-	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::fM_index;}
-	
-
-	void vLoadFM_Index( std::string sPrefix  )
-	{
-		std::string sPath(sPrefix);
-		pIndex->vLoadFM_Index(sPath);
-	}//function
-
-	static bool packExistsOnFileSystem(const std::string sPrefix )
-	{
-		return FM_Index::packExistsOnFileSystem(sPrefix);
-	} // method
-	
-
-	/* wrap the function in oder to make it acessible to pyhton */
-	void vStoreFM_Index(  const char * sPrefix  )
-	{
-		std::string sPath(sPrefix);
-		pIndex->vStoreFM_Index(sPath);
-	}//function
-
-	std::shared_ptr<Container> copy()
-    {
-		return std::shared_ptr<Container>(new FM_IndexContainer(this));
-	}//function
-};//class
 
 //function called in order to export this module
 void exportFM_index();

@@ -3,22 +3,25 @@
 void exportPack()
 {
     boost::python::class_<
-            PackContainer, 
+            BWACompatiblePackedNucleotideSequencesCollection, 
             boost::python::bases<Container>,
-            std::shared_ptr<PackContainer>
+            std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>
         >("BWAPack")
-        .def("unpackedSize", &PackContainer::getUnpackedSize)
-        .def("append", &PackContainer::vAppendSequence)
-        .def("store", &PackContainer::vStoreCollection)
-        .def("exists", &PackContainer::packExistsOnFileSystem)
+        .def("unpackedSize", &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardPlusReverse)
+        .def("append", &BWACompatiblePackedNucleotideSequencesCollection::vAppendSequence)
+        .def("store", &BWACompatiblePackedNucleotideSequencesCollection::vStoreCollection)
+        .def("exists", &BWACompatiblePackedNucleotideSequencesCollection::packExistsOnFileSystem)
         .staticmethod("exists")
-        .def("load", &PackContainer::vLoadCollection)
-        .def("extractFromTo", &PackContainer::vExtractSubsection)
-        .def("extractComplete", &PackContainer::vColletionAsNucleotideSequence)
-        .def("extractForwardStrand", &PackContainer::vColletionWithoutReverseStrandAsNucleotideSequence)
-        .def("extractReverseStrand", &PackContainer::vColletionOnlyReverseStrandAsNucleotideSequence)
-        .def("unpackedSizeSingleStrand", &PackContainer::uiStartOfReverseStrand);
+        .def("load", &BWACompatiblePackedNucleotideSequencesCollection::vLoadCollection)
+        .def("extractFromTo", &BWACompatiblePackedNucleotideSequencesCollection::vExtract)
+        .def("extractComplete", &BWACompatiblePackedNucleotideSequencesCollection::vColletionAsNucleotideSequence)
+        .def("extractForwardStrand", &BWACompatiblePackedNucleotideSequencesCollection::vColletionWithoutReverseStrandAsNucleotideSequence)
+        .def("extractReverseStrand", &BWACompatiblePackedNucleotideSequencesCollection::vColletionOnlyReverseStrandAsNucleotideSequence)
+        .def("unpackedSizeSingleStrand", &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardStrand);
 
 	//tell boost python that pointers of these classes can be converted implicitly
-	boost::python::implicitly_convertible< std::shared_ptr<PackContainer>, std::shared_ptr<Container> >(); 
+    boost::python::implicitly_convertible<
+            std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>,
+            std::shared_ptr<Container>
+        >();
 }//function

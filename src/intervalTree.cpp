@@ -17,44 +17,50 @@ void exportIntervalTree()
 {
 	 //export the SegmentTreeInterval class
 	boost::python::class_<
-			SegmentContainer, 
+			SegmentTreeInterval, 
 			boost::python::bases<Container>,
-			std::shared_ptr<SegmentContainer>
+			std::shared_ptr<SegmentTreeInterval>
 		>("Segment", boost::python::init<const nucSeqIndex, const nucSeqIndex>())
-			.def("start", &SegmentContainer::getStartIndex)
-			.def("end", &SegmentContainer::getEndIndex)
-			.def("pushBackBWT", &SegmentContainer::pushBackBwtInterval)
-			.def("length", &SegmentContainer::length)
-			.def("setInterval", &SegmentContainer::setInterval);
+			.def("start", &SegmentTreeInterval::getStartIndex)
+			.def("end", &SegmentTreeInterval::getEndIndex)
+			.def("pushBackBWT", &SegmentTreeInterval::pushBackBwtInterval)
+			.def("length", &SegmentTreeInterval::length)
+			.def("setInterval", &SegmentTreeInterval::setInterval);
 
 	//tell boost python that pointers of these classes can be converted implicitly
-	boost::python::implicitly_convertible< std::shared_ptr<SegmentContainer>, std::shared_ptr<Container> >();  
-    boost::python::register_ptr_to_python< std::shared_ptr<SegmentContainer> >();
+	boost::python::implicitly_convertible< 
+			std::shared_ptr<SegmentTreeInterval>,
+			std::shared_ptr<Container> 
+		>();  
+    boost::python::register_ptr_to_python< std::shared_ptr<SegmentTreeInterval> >();
 	
 	 //export the SegmentTree class
 	boost::python::class_<
-			SegmentTreeContainer, 
+			SegmentTree, 
 			boost::python::bases<Container>,
-			std::shared_ptr<SegmentTreeContainer>
+			std::shared_ptr<SegmentTree>
 		>("SegmentList")
 			.def(boost::python::init<const nucSeqIndex>())
-			.def("begin", &SegmentTreeContainer::begin)
-			.def("end", &SegmentTreeContainer::end)
+			.def("begin", &SegmentTree::begin)
+			.def("end", &SegmentTree::end)
 	;
 
 	//tell boost python that pointers of these classes can be converted implicitly
-	boost::python::implicitly_convertible< std::shared_ptr<SegmentTreeContainer>, std::shared_ptr<Container> >(); 
-    boost::python::register_ptr_to_python< std::shared_ptr<SegmentTreeContainer> >();
+	boost::python::implicitly_convertible< 
+			std::shared_ptr<SegmentTree>,
+			std::shared_ptr<Container> 
+		>(); 
+    boost::python::register_ptr_to_python< std::shared_ptr<SegmentTree> >();
 	
 	 //export the SegmentTree iterator class
 	boost::python::class_<
-			SegmentListIteratorContainer
+			SegmentTree::Iterator
 		>("SegmentListIterator", boost::python::no_init)
-			.def("next", &SegmentListIteratorContainer::next)
-			.def("prev", &SegmentListIteratorContainer::prev)
-			.def("get", &SegmentListIteratorContainer::get)
-			.def("exits", &SegmentListIteratorContainer::exits)
-			.def("getCopy", &SegmentListIteratorContainer::getCopy)
+			.def("next", &SegmentTree::Iterator::operator++)
+			.def("prev", &SegmentTree::Iterator::operator--)
+			.def("get", &SegmentTree::Iterator::operator*)
+			.def("exits", &SegmentTree::Iterator::isListElement)
+			.def("getCopy", &SegmentTree::Iterator::getCopy)
 	;
 
 }//function

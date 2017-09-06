@@ -439,7 +439,7 @@ class NucleotideSequenceSliceHavingSelectedStrand;
 /* Class for genetic sequence that consist of nucleotides. (A, C, G, T)
  * TO DO: Create a move constructor!
  */
-class NucleotideSequence : public GeneticSequence
+class NucleotideSequence : public GeneticSequence, public Container
 {
 private :
 
@@ -471,6 +471,9 @@ public :
 
 	/* is implicitly deleted by geneticSequence but boost python needs to know */
 	NucleotideSequence(const NucleotideSequence&) = delete;
+
+	/*used to identify the nucleotide sequence datatype in the aligner pipeline*/
+    ContainerType getType(){return ContainerType::nucSeq;}
 
 	/* The full sequence as nucleotide sequence slice.
 	 */
@@ -1066,59 +1069,6 @@ void vForAllTranslationsDo( int64_t iGeneId,
 							const std::function< void( const NucleotideSequence& ) > functor
 							// Functor &&functor
 							);
-
-
-class NucSeqContainer: public Container
-{
-public:
-	std::shared_ptr<NucleotideSequence> pSeq;
-
-	NucSeqContainer()
-			:
-		pSeq(new NucleotideSequence())
-	{}//constructor
-
-	NucSeqContainer(const std::string &rsInitialText)
-			:
-		pSeq(new NucleotideSequence(rsInitialText))
-	{}//constructor
-
-	NucSeqContainer(const char* rsInitialText)
-			:
-		pSeq(new NucleotideSequence(std::string(rsInitialText)))
-	{}//constructor
-
-	NucSeqContainer(const NucSeqContainer *pCpyFrom)
-			:
-		pSeq(pCpyFrom->pSeq)
-	{}//copy constructor
-	
-	
-	/*used to identify the nucleotide sequence datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::nucSeq;}
-
-	/*wrap charAt to make it acessible to python */
-	inline char charAt( size_t uxPosition )
-	{
-		return pSeq->charAt(uxPosition);
-	}
-
-	/* wrapping vAppend in order to make it acessible from boost python */
-	void vAppend(const std::string sSequence)
-	{
-		pSeq->vAppend(sSequence.c_str());
-	}
-
-	std::shared_ptr<Container> copy()
-    {
-		return std::shared_ptr<Container>(new NucSeqContainer(this));
-	}//function
-
-	unsigned int size()
-	{
-		return pSeq->length();
-	}//function
-};//class
 
 /* export this module to boost python */
 void exportSequence();

@@ -79,7 +79,7 @@ extern unsigned char nst_nt4_table[256];
 /* TODO: study http://stackoverflow.com/questions/3180268/why-are-c-stl-iostreams-not-exception-friendly
  *       study http://gehrcke.de/2011/06/reading-files-in-c-using-ifstream-dealing-correctly-with-badbit-failbit-eofbit-and-perror/
  */
-class BWACompatiblePackedNucleotideSequencesCollection
+class BWACompatiblePackedNucleotideSequencesCollection: public Container
 {
 	/* Delete implicit copy constructor.
 	 * For performance reasons we do not want to risk unwanted copies of packs, although it is safe to make such copies using the implicit constructor definitions.
@@ -671,6 +671,12 @@ public:
 		 */
 		srand( seed );
 	} // default constructor
+
+	
+	ContainerType getType() 
+	{
+		return ContainerType::packedNucSeq;
+	}//function
 	
 	/* Appends a single nucleotide sequence to the collection.
 	 * TO DO: uiOffsetDistance seems not be required any longer.
@@ -1084,12 +1090,14 @@ public:
 	 * Bridging between forward strand and reverse strand is not allowed.
 	 * FIX ME: Here we have to integrate ambiguous base pairs, by restoring data form the "hole section".
 	 */
-	void vExtractSubsection( const int64_t iBegin,			 // begin of extraction
-							 const int64_t iEnd,			 // end of extraction
-							 NucleotideSequence &rxSequence, // receiver of the extraction process
-							 bool bAppend = false			 // deliver true, if you would like to append to an existing nucleotide sequence
-						   ) const
-	{	/* Do range-check for begin and end of extraction.
+	std::shared_ptr<NucleotideSequence> vExtractSubsection(
+			const int64_t iBegin,			 // begin of extraction
+			const int64_t iEnd,			 	// end of extraction
+			NucleotideSequence &rxSequence, // receiver of the extraction process
+			bool bAppend = false			 // deliver true, if you would like to append to an existing nucleotide sequence
+		) const
+	{	
+		/* Do range-check for begin and end of extraction.
 		 */
 		vRangeCheckAndThrowExclusive( "(vExtractSubsection)", static_cast<int64_t>(0), iBegin, static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse() ) );
 		vRangeCheckAndThrowInclusive( "(vExtractSubsection)", static_cast<int64_t>(0), iEnd, static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse() ) );
@@ -1145,26 +1153,66 @@ public:
 
 	/* Unpacks the complete collection (forward as well as revers strand) as a single sequence into rxSequence.
 	 */
-	void vColletionAsNucleotideSequence( NucleotideSequence &rxSequence ) const
+	std::shared_ptr<NucleotideSequence> vColletionAsNucleotideSequence() const
 	{
-		vExtractSubsection( 0, uiStartOfReverseStrand(), rxSequence ); // get the forward strand
-		vExtractSubsection( uiStartOfReverseStrand(), uiUnpackedSizeForwardPlusReverse(), rxSequence, true ); // get the reverse strand (true triggers appending)
+		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		vExtractSubsection( 
+				0, 
+				uiStartOfReverseStrand(), 
+				*pRet 
+			); // get the forward strand
+		vExtractSubsection( 
+				uiStartOfReverseStrand(), 
+				uiUnpackedSizeForwardPlusReverse(), 
+				*pRet, 
+				true 
+			); // get the reverse strand (true triggers appending)
+		return pRet;
 	} // method
 
 	/* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
 	*/
-	void vColletionWithoutReverseStrandAsNucleotideSequence(NucleotideSequence &rxSequence) const
+	std::shared_ptr<NucleotideSequence> vColletionWithoutReverseStrandAsNucleotideSequence() const
 	{
-		vExtractSubsection(0, uiStartOfReverseStrand(), rxSequence); // get the forward strand
+		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		vExtractSubsection(
+				0, 
+				uiStartOfReverseStrand(), 
+				*pRet
+			); // get the forward strand
+		return pRet;
+	} // method
+
+	
+	/* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
+	*/
+	std::shared_ptr<NucleotideSequence> vExtract(
+			const int64_t iBegin,			 // begin of extraction
+			const int64_t iEnd			 	// end of extraction
+		) const
+	{
+		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		vExtractSubsection(
+				iBegin, 
+				iEnd, 
+				*pRet
+			); // get the forward strand
+		return pRet;
 	} // method
 	
 //markus
-	/* Unpacks the reverse strand sequences of the collection as a single sequence into rxSequence.
-	*/
-	void vColletionOnlyReverseStrandAsNucleotideSequence(NucleotideSequence &rxSequence) const
+	
+	std::shared_ptr<NucleotideSequence> vColletionOnlyReverseStrandAsNucleotideSequence() const
 	{
-		vExtractSubsection(uiStartOfReverseStrand(), uiUnpackedSizeForwardPlusReverse(), rxSequence, true); // get the reverse strand (true triggers appending)
-	} // method
+		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		vExtractSubsection(
+				uiStartOfReverseStrand(), 
+				uiUnpackedSizeForwardPlusReverse(), 
+				*pRet, 
+				true
+			); // get the reverse strand (true triggers appending)
+		return pRet;
+	}//function
 //end markus
 
 	/* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.
@@ -1202,109 +1250,5 @@ public:
 		} // else
 	} // method
 }; // class
-
-
-class PackContainer: public Container
-{
-public:
-	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pPack;
-
-	PackContainer()
-			:
-		pPack(new BWACompatiblePackedNucleotideSequencesCollection())
-	{}//constructor
-
-	PackContainer(const PackContainer *pCpyFrom)
-			:
-		pPack(pCpyFrom->pPack)
-	{}//copy constructor
-
-
-	ContainerType getType() 
-	{
-		return ContainerType::packedNucSeq;
-	}//function
-
-	const uint64_t getUnpackedSize()
-	{
-		return pPack->uiUnpackedSizeForwardPlusReverse();
-	}
-
-	/*
-	*	wraps vAppendSequence in order to make it acessible for boost python
-	*/
-	void vAppendSequence(const std::string sName, const std::string sComment, const std::shared_ptr<NucleotideSequence> pSequence)
-	{
-		pPack->vAppendSequence(sName, sComment, *pSequence);
-	}//function
-	
-	/*
-	* wraps vStoreCollection in order to make it acessible to boost python
-	*/
-	void vStoreCollection( const std::string sPackPrefix )
-	{
-		pPack->vStoreCollection(sPackPrefix);
-	}	
-
-	/*
-	* wraps packExistsOnFileSystem in order to make it acessible to boost python
-	*/
-	static bool packExistsOnFileSystem( const std::string sPrefix )
-	{
-		return BWACompatiblePackedNucleotideSequencesCollection::packExistsOnFileSystem(sPrefix);
-	}
-
-	/*
-	* wraps vLoadCollection in order to make it acessible to boost python
-	*/
-	void vLoadCollection( const std::string sFileNamePrefix )
-	{
-		pPack->vLoadCollection(sFileNamePrefix);
-	}
-	
-	/*
-	* wraps vExtractSubsection in order to make it acessible to boost python
-	*/
-	void vExtractSubsection(const int64_t iBegin, const int64_t iEnd, std::shared_ptr<NucleotideSequence> pSequence)
-	{
-		pPack->vExtractSubsection(iBegin, iEnd, *pSequence/*, false*/);
-	}//function
-
-	/*
-	* wraps vColletionAsNucleotideSequence in order to make it acessible to boost python
-	*/
-	void vColletionAsNucleotideSequence(std::shared_ptr<NucleotideSequence> pSequence) const
-	{
-		pPack->vColletionAsNucleotideSequence(*pSequence);
-	}//function
-
-	/*
-	* wraps vColletionWithoutReverseStrandAsNucleotideSequence in order to make it acessible to boost python
-	*/
-	void vColletionWithoutReverseStrandAsNucleotideSequence(std::shared_ptr<NucleotideSequence> pSequence) const
-	{
-		pPack->vColletionWithoutReverseStrandAsNucleotideSequence(*pSequence);
-	}//function
-
-	/*
-	* wraps vColletionOnlyReverseStrandAsNucleotideSequence in order to make it acessible to boost python
-	*/
-	void vColletionOnlyReverseStrandAsNucleotideSequence(std::shared_ptr<NucleotideSequence> pSequence) const
-	{
-		pPack->vColletionOnlyReverseStrandAsNucleotideSequence(*pSequence);
-	}//function
-	
-	/* The index of the first element that belongs to the reverse strand.
-	 */
-	inline uint64_t uiStartOfReverseStrand() const
-	{
-		return pPack->uiUnpackedSizeForwardStrand;
-	} // method
-
-	std::shared_ptr<Container> copy()
-    {
-		return std::shared_ptr<Container>(new PackContainer(this));
-	}//function
-};//class
 
 void exportPack();

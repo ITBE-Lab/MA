@@ -15,11 +15,11 @@ public:
         uiN(uiN)
     {}//constructor
 
-    std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
+    std::vector<std::shared_ptr<Container>> execute(std::vector<std::shared_ptr<Container>) vpInput);
 
-    std::shared_ptr<Container> getInputType();
+    std::vector<ContainerType> getInputType();
 
-    std::shared_ptr<Container> getOutputType();
+    std::vector<ContainerType> getOutputType();
 
 };//class
 

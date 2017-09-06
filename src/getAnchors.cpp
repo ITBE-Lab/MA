@@ -1,27 +1,28 @@
 #include "getAnchors.h"
 
 
-std::shared_ptr<Container> NlongestIntervalsAsAnchors::getInputType()
+std::vector<ContainerType> NlongestIntervalsAsAnchors::getInputType()
 {
-    return std::shared_ptr<DummyContainer>(new DummyContainer(ContainerType::segmentList));
+    return std::vector<ContainerType>{ContainerType::segmentList};
 }//function
 
-std::shared_ptr<Container> NlongestIntervalsAsAnchors::getOutputType()
+std::vecotr<ContainerType> NlongestIntervalsAsAnchors::getOutputType()
 {
-    return std::shared_ptr<DummyContainer>(new DummyContainer(ContainerType::segmentList));
+    return std::vector<ContainerType>{ContainerType::segmentList};
 }//function
 
 
-std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(std::shared_ptr<Container> pInput)
+std::vector<std::shared_ptr<Container>> NlongestIntervalsAsAnchors::execute(
+        std::vector<std::shared_ptr<Container>> vpInput
+    )
 {
     std::shared_ptr<SegmentTree> pRet(new SegmentTree());
 
-    
-	std::shared_ptr<SegmentTreeContainer> pCastedInput = std::static_pointer_cast<SegmentTreeContainer>(pInput);
+    std::shared_ptr<SegmentTree> pCastedInput = std::static_pointer_cast<SegmentTree>(vpInput[0]);
     /*
     *   get the n longest intervals
     */
-    pCastedInput->pTree->forEach(
+    pCastedInput->forEach(
         [&pRet, this](std::shared_ptr<SegmentTreeInterval> pxNode)
         {
             auto pxIterator = pRet->begin();
@@ -35,18 +36,18 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(std::shared_ptr<C
 
     //TODO: achors need to be extracted
 
-    return std::shared_ptr<SegmentTreeContainer>(new SegmentTreeContainer(pRet));
+    return std::vector<std::shared_ptr<Container>>{pRet};
 
 }//function
 
 void exportGetAnchors()
 {
      //export the segmentation class
-	boost::python::class_<
+    boost::python::class_<
         NlongestIntervalsAsAnchors, 
         boost::python::bases<Module>
     >("NlongestIntervalsAsAnchors", boost::python::init<boost::python::optional<unsigned int>>())
-		.add_property("uiN", &NlongestIntervalsAsAnchors::uiN, &NlongestIntervalsAsAnchors::uiN)
+        .add_property("uiN", &NlongestIntervalsAsAnchors::uiN, &NlongestIntervalsAsAnchors::uiN)
     ;
 
 }//function

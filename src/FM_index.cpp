@@ -192,9 +192,8 @@ void FM_Index::build_FM_Index(
         * For small packs we transform the pack into a single sequence 
         * with reverse strand and apply the algorithm for small inputs.
         */
-        NucleotideSequence xSequence;
-        rxSequenceCollection.vColletionWithoutReverseStrandAsNucleotideSequence( xSequence ); // unpack the pack into a single nucleotide sequence
-        bwt_pac2bwt_step1( xSequence, true ); // construct with build in function
+        auto pSequence = rxSequenceCollection.vColletionWithoutReverseStrandAsNucleotideSequence(); // unpack the pack into a single nucleotide sequence
+        bwt_pac2bwt_step1( *pSequence, true ); // construct with build in function
     } // if
     else
     {
@@ -252,19 +251,19 @@ void exportFM_index()
 {
     //export the FM_index class
 	boost::python::class_<
-        FM_IndexContainer, 
+        FM_Index, 
         boost::python::bases<Container>, 
-        std::shared_ptr<FM_IndexContainer>
+        std::shared_ptr<FM_Index>
     >("FM_index")
-        .def(boost::python::init<NucSeqContainer>())
-        .def("load", &FM_IndexContainer::vLoadFM_Index)
-        .def("exists", &FM_IndexContainer::packExistsOnFileSystem)
+        .def(boost::python::init<std::shared_ptr<NucleotideSequence>>())
+        .def("load", &FM_Index::vLoadFM_Index)
+        .def("exists", &FM_Index::packExistsOnFileSystem)
         .staticmethod("exists")
-        .def("store", &FM_IndexContainer::vStoreFM_Index);
+        .def("store", &FM_Index::vStoreFM_Index);
 
 	//tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 
-                                            std::shared_ptr<FM_IndexContainer>,
+                                            std::shared_ptr<FM_Index>,
                                             std::shared_ptr<Container> 
                                         >();
 }//function

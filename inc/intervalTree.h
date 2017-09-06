@@ -368,7 +368,8 @@ public:
 
 };//class
 
-class SegmentTreeInterval{
+class SegmentTreeInterval: public Container
+{
 private:
 	struct PerfectMatch{
 		t_bwtIndex uiBwtIntervalIndex;
@@ -402,6 +403,8 @@ public:
 		uiEndIndex(uiEndIndex),
 		lxBwtintervals()
 	{}//constructor
+	
+	ContainerType getType(){return ContainerType::segment;}//function
 
 	nucSeqIndex getStartIndex() const { return uiStartIndex; }//function
 	nucSeqIndex getEndIndex() const { return uiEndIndex; }//function
@@ -527,63 +530,7 @@ public:
 	}//function
 };//class
 
-class SegmentContainer: public Container
-{
-private:
-	std::shared_ptr<SegmentTreeInterval> pInterval;
-public:
-
-	SegmentContainer(const nucSeqIndex uiStartIndex, const nucSeqIndex uiEndIndex)
-			:
-		pInterval(new SegmentTreeInterval(uiStartIndex, uiEndIndex))
-	{}//constructor
-
-	SegmentContainer(const SegmentContainer *pCpyFrom)
-			:
-		pInterval(pCpyFrom->pInterval)
-	{}//copy constructor
-
-	SegmentContainer(std::shared_ptr<SegmentTreeInterval> pInterval)
-			:
-		pInterval(pInterval)
-	{}//constructor
-	
-	ContainerType getType(){return ContainerType::segment;}//function
-
-	
-	nucSeqIndex getStartIndex() const { return pInterval->getStartIndex(); }//function
-	nucSeqIndex getEndIndex() const { return pInterval->getEndIndex(); }//function
-
-	void pushBackBwtInterval(
-		t_bwtIndex uiPosInBwt, t_bwtIndex uiLengthInBwt, 
-		nucSeqIndex uiStartOfIntervalOnQuery, nucSeqIndex uiEndOfIntervalOnQuery, 
-		bool bForwHit, bool bAnchor)
-	{
-		pInterval->pushBackBwtInterval(
-			uiPosInBwt, uiLengthInBwt, uiStartOfIntervalOnQuery, 
-			uiEndOfIntervalOnQuery, bForwHit, bAnchor
-		);
-	}//function
-
-	unsigned int length() const
-	{
-		return pInterval->length();
-	}//function
-	
-	void setInterval(nucSeqIndex uiStart, nucSeqIndex uiEnd) 
-	{
-		pInterval->setInterval(uiStart, uiEnd);
-	}//function
-
-	std::shared_ptr<Container> copy()
-    {
-		return std::shared_ptr<Container>(new SegmentContainer(this));
-	}//function
-
-
-};//class
-
-class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>{
+class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>, public Container{
 
 public:
 	/*
@@ -599,6 +546,8 @@ public:
 	}//constructor
 	SegmentTree()
 	{}//constructor
+	
+	ContainerType getType(){return ContainerType::segmentList;}//function
 
 	/*not thread save; prints basic information about the segment tree*/
 	void print(std::ostream &xOut) const
@@ -606,92 +555,6 @@ public:
 		forEach([&xOut](std::shared_ptr<SegmentTreeInterval> pxNode){ pxNode->print(xOut); });
 	}//function
 };
-
-
-class SegmentListIteratorContainer
-{
-public:
-	SegmentTree::Iterator xIt;
-
-	SegmentListIteratorContainer(SegmentTree::Iterator xIt)
-		:
-		xIt(xIt)
-	{}//constructor
-
-	void next()
-	{
-		++xIt;
-	}//function
-
-	void prev()
-	{
-		--xIt;
-	}//function
-
-	std::shared_ptr<SegmentContainer> get()
-	{
-		return std::shared_ptr<SegmentContainer>(new SegmentContainer(*xIt));
-	}//function
-
-	bool exits()
-	{
-		return xIt.isListElement();
-	}//function
-
-	SegmentListIteratorContainer getCopy()
-	{
-		return SegmentListIteratorContainer(xIt.getCopy());
-	}//function
-};//class
-
-class SegmentTreeContainer: public Container
-{
-public:
-	std::shared_ptr<SegmentTree> pTree;
-
-	SegmentTreeContainer()
-			:
-		pTree(new SegmentTree())
-	{}//constructor
-
-	SegmentTreeContainer(std::shared_ptr<SegmentTree> pTree)
-			:
-		pTree(pTree)
-	{}//constructor 
-
-	SegmentTreeContainer(const nucSeqIndex uiQuerryLength)
-			:
-		pTree(new SegmentTree(uiQuerryLength))
-	{}//constructor
-
-	SegmentTreeContainer(const SegmentTreeContainer *pCpyFrom)
-			:
-		pTree(pCpyFrom->pTree)
-	{}//copy constructor
-	
-	ContainerType getType(){return ContainerType::segmentList;}//function
-
-	SegmentListIteratorContainer begin()
-	{
-		return SegmentListIteratorContainer(pTree->begin());
-	}//function
-
-	SegmentListIteratorContainer end()
-	{
-		return SegmentListIteratorContainer(pTree->end());
-	}//function
-
-	std::shared_ptr<Container> copy()
-    {
-		return std::shared_ptr<Container>(new SegmentTreeContainer(this));
-	}//function
-
-	std::string toString() override
-	{
-		return std::string("toString not defined");
-	}//function
-	
-};//class
 
 std::ostream& operator<<(std::ostream& xOs, const SegmentTree& rxTree);
 std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode);

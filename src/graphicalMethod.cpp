@@ -1,27 +1,28 @@
 #include "graphicalMethod.h"
 
 
-std::shared_ptr<Container> Bucketing::getInputType()
+std::vector<ContainerType> Bucketing::getInputType()
 {
-	std::shared_ptr<ContainerVector> pRet(new ContainerVector());
-	//all segments
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::segmentList)));
-	//the anchors
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::segmentList)));
-	//the querry
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
-	//the reference
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
-	//the forward fm_index
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
-	//the reversed fm_index
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
-	return pRet;
+	return std::vector<ContainerType>
+	{
+		//all segments
+		ContainerType::segmentList,
+		//the anchors
+		ContainerType::segmentList,
+		//the querry
+		ContainerType::nucSeq,
+		//the reference
+		ContainerType::packedNucSeq,
+		//the forward fm_index
+		ContainerType::fM_index,
+		//the reversed fm_index
+		ContainerType::fM_index
+	};
 }//function
 
-std::shared_ptr<Container> Bucketing::getOutputType()
+std::vector<ContainerType> Bucketing::getOutputType()
 {
-	return std::shared_ptr<Container>(new DummyContainer(ContainerType::stripOfConsiderationList));
+	return std::vector<ContainerType>{ContainerType::stripOfConsiderationList};
 }//function
 
 
@@ -100,13 +101,16 @@ void Bucketing::saveAnchors(std::shared_ptr<SegmentTreeInterval> pxNode, std::sh
 	);//for each
 }///function
 
-std::shared_ptr<Container> Bucketing::execute(std::shared_ptr<Container> pInput)
+std::vector<std::shared_ptr<Container>> Bucketing::execute(
+		std::vector<std::shared_ptr<Container>> vpInput
+	)
 {
-	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
-	std::shared_ptr<SegmentTreeContainer> pSegments = std::static_pointer_cast<SegmentTreeContainer>(pCastedInput->vElements.at(0));
-	std::shared_ptr<SegmentTreeContainer> pAnchors = std::static_pointer_cast<SegmentTreeContainer>(pCastedInput->vElements.at(1));
-	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->vElements.at(2));
-	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->vElements.at(3));
+	std::shared_ptr<SegmentTree> pSegments = std::static_pointer_cast<SegmentTree>(vpInput[0]);
+	std::shared_ptr<SegmentTree> pAnchors = std::static_pointer_cast<SegmentTree>(vpInput[1]);
+	std::shared_ptr<NucleotideSequence> pQuerrySeq = std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
+	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
+		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
+	//TODO: continue here
 	std::shared_ptr<FM_IndexContainer> pFM_index = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->vElements.at(4));
 	std::shared_ptr<FM_IndexContainer> pFM_indexReversed = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->vElements.at(5));
 
@@ -196,18 +200,18 @@ void exportGraphicalMethod()
 {
 	//export the StripOfConsideration class
 	boost::python::class_<
-        StripOfConsiderationContainer, 
+        StripOfConsideration, 
         boost::python::bases<Container>, 
-        std::shared_ptr<StripOfConsiderationContainer>
+        std::shared_ptr<StripOfConsideration>
     >("StripOfConsideration")
-		.def("getScore", &StripOfConsiderationContainer::getValueOfContet)
+		.def("getScore", &StripOfConsideration::getValueOfContet)
 		;
 
-	//register a pointer to StripOfConsiderationContainer as return value to boost python
-    boost::python::register_ptr_to_python< std::shared_ptr<StripOfConsiderationContainer> >();
+	//register a pointer to StripOfConsideration as return value to boost python
+    boost::python::register_ptr_to_python< std::shared_ptr<StripOfConsideration> >();
 
 	//tell boost python that pointers of these classes can be converted implicitly
-	boost::python::implicitly_convertible< std::shared_ptr<StripOfConsiderationContainer>, std::shared_ptr<Container> >(); 
+	boost::python::implicitly_convertible< std::shared_ptr<StripOfConsideration>, std::shared_ptr<Container> >(); 
 
 	//export the StripOfConsiderationList class
 	boost::python::class_<

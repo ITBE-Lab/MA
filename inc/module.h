@@ -22,14 +22,14 @@ public:
         return pInput;
     }
 
-    virtual std::ContainerType<ContainerType> getInputType()
+    virtual std::vector<ContainerType> getInputType()
     {
-        return std::ContainerType<ContainerType>(ContainerType::nothing);
+        return std::vector<ContainerType>{ContainerType::nothing};
     }
 
     virtual std::vector<ContainerType> getOutputType()
     {
-        return std::vector<Container>(ContainerType::nothing);
+        return std::vector<ContainerType>{ContainerType::nothing};
     }
 
     std::vector<std::shared_ptr<Container>> saveExecute(
@@ -50,19 +50,18 @@ public:
             std::vector<std::shared_ptr<Container>> pInput
         ) override
     {
-        
         std::cout << "TODO: printer disabled" << std::endl;
         return pInput;
     }
 
-    virtual std::ContainerType<ContainerType> getInputType()
+    virtual std::vector<ContainerType> getInputType()
     {
-        return std::ContainerType<ContainerType>(ContainerType::any);
+        return std::vector<ContainerType>{ContainerType::any};
     }
 
     virtual std::vector<ContainerType> getOutputType()
     {
-        return std::vector<Container>(ContainerType::any);
+        return std::vector<ContainerType>{ContainerType::any};
     }
 };
 

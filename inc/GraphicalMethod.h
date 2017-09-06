@@ -215,7 +215,8 @@ public:
 	void setUsed() { bUsed = true; }//function
 };//class
 
-class StripOfConsideration{
+class StripOfConsideration : public Container
+{
 private:
 	/*the array the buckets lie in will get sorted so each bucket needs to remember it's position
 	*/
@@ -1092,6 +1093,11 @@ public:
 		apxPerfectMatches()
 	{}//constructor
 
+	
+	/*used to identify the strip of cinsideration datatype in the aligner pipeline*/
+	ContainerType getType(){return ContainerType::stripOfConsideration;}
+	
+
 	/*adds a match to the current bucket. 
 	* will add the length of the match to the score of the bucket.
 	* note that the sum of all matches is not a good score for the bucket, since 2 matches might contradict or overlap.
@@ -1203,70 +1209,26 @@ public:
 };//class
 
 
-class StripOfConsiderationContainer: public Container
-{
-public:
-	std::shared_ptr<StripOfConsideration> pStrip;
-
-	StripOfConsiderationContainer()
-			:
-		pStrip(new StripOfConsideration())
-	{}//constructor
-
-	StripOfConsiderationContainer(std::shared_ptr<StripOfConsideration> pStrip)
-			:
-		pStrip(pStrip)
-	{}//constructor
-
-	StripOfConsiderationContainer(const StripOfConsiderationContainer *pCpyFrom)
-			:
-		pStrip(pCpyFrom->pStrip)
-	{}//copy constructor
-
-	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::stripOfConsideration;}
-
-	std::shared_ptr<Container> copy()
-    {
-		return std::shared_ptr<Container>(new StripOfConsiderationContainer(this));
-	}//function
-
-	nucSeqIndex getValueOfContet() 
-	{ 
-		return pStrip->getValueOfContet(); 
-	}//function
-};//class
-
-
 class StripOfConsiderationListContainer: public Container
 {
 public:
-	std::vector<std::shared_ptr<StripOfConsiderationContainer>> pList;
+	//TODO: check what this actually wraps
+	std::vector<std::shared_ptr<StripOfConsiderationContainer>> vpList;
 
 	StripOfConsiderationListContainer()
 			:
 		pList()
 	{}//constructor
 
-	StripOfConsiderationListContainer(const StripOfConsiderationListContainer *pCpyFrom)
-			:
-		pList(pCpyFrom->pList)
-	{}//copy constructor
-
 	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
     ContainerType getType(){return ContainerType::stripOfConsiderationList;}
-
-	std::shared_ptr<Container> copy()
-    {
-		return std::shared_ptr<Container>(new StripOfConsiderationListContainer(this));
-	}//function
 
 	/*
 	*	wrapper for boost python
 	*/
 	void remove(unsigned int iI)
 	{
-		pList.erase(pList.begin() + iI);
+		vpList.erase(pList.begin() + iI);
 	}//function
 
 	/*
@@ -1274,7 +1236,7 @@ public:
 	*/
 	unsigned int size()
 	{
-		return pList.size();
+		return vpList.size();
 	}//function
 
 	/*
@@ -1282,7 +1244,7 @@ public:
 	*/
 	std::shared_ptr<StripOfConsiderationContainer> at(unsigned int iI)
 	{
-		return pList.at(iI);
+		return vpList.at(iI);
 	}//function
 
 	/*
@@ -1290,7 +1252,7 @@ public:
 	*/
 	void push_back(std::shared_ptr<StripOfConsiderationContainer> pC)
 	{
-		pList.push_back(pC);
+		vpList.push_back(pC);
 	}//function
 };//class
 
@@ -1589,11 +1551,11 @@ public:
 
 	Bucketing(){}//constructor
 
-	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
+	std::vector<std::shared_ptr<Container>> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
-    std::shared_ptr<Container> getInputType();
+    std::vector<ContainerType> getInputType();
 
-    std::shared_ptr<Container> getOutputType();
+    std::vector<ContainerType> getOutputType();
 
 	void forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,  std::shared_ptr<NucleotideSequence> pxQuerySeq, std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo);
 	
