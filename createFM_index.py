@@ -4,7 +4,7 @@ import random
 seq = ""
 q = ""
 
-for _ in range(100000):
+for _ in range(1000000):
     char = random.randint(1,4)
     if char == 1:
         seq += "a"
@@ -15,7 +15,7 @@ for _ in range(100000):
     else:
         seq += "g"
 
-for _ in range(100):
+for _ in range(1000):
     char = random.randint(1,4)
     if char == 1:
         q += "a"
