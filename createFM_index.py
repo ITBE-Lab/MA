@@ -43,6 +43,6 @@ ref_seq.append("name", "no comment",ref)
 seg = Segmentation(True, True, 10, 100000)
 seg.bSkipLongBWTIntervals = False
 
-segments = seg.execute([fm_index, rev_fm_index, query, ref_seq])
+segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))
 
 print("done")

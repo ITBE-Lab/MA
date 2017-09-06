@@ -251,15 +251,43 @@ void exportFM_index()
 {
     //export the FM_index class
 	boost::python::class_<
-        FM_Index, 
-        boost::python::bases<Container>, 
-        std::shared_ptr<FM_Index>
-    >("FM_index")
+            FM_Index, 
+            boost::python::bases<Container>, 
+            std::shared_ptr<FM_Index>
+        >(
+                "FMIndex",
+                "class: FMIndex\n"
+                "   contains the BWT of a nucleotide sequence\n"
+            )
         .def(boost::python::init<std::shared_ptr<NucleotideSequence>>())
-        .def("load", &FM_Index::vLoadFM_Index)
-        .def("exists", &FM_Index::packExistsOnFileSystem)
+        .def(
+                "load", 
+                &FM_Index::vLoadFM_Index,
+                "method: load(file_prefix)\n"
+                "   file_prefix: the path an filename of the FM Index that shall be loaded\n"
+                "   returns: nil\n"
+                "\n"
+                "   load the FMIndex from the given file\n"
+            )
+        .def(
+                "exists", 
+                &FM_Index::packExistsOnFileSystem,
+                "method: exists(file_prefix) static\n"
+                "   file_prefix: the path an filename of the FM Index that shall be checked\n"
+                "   returns: nil\n"
+                "\n"
+                "   check weather a FM index file exists on disk.\n"
+            )
         .staticmethod("exists")
-        .def("store", &FM_Index::vStoreFM_Index);
+        .def(
+                "store", 
+                &FM_Index::vStoreFM_Index,
+                "method: store(file_prefix)\n"
+                "   file_prefix: the path an filename the FM Index shall be stored at\n"
+                "   returns: nil\n"
+                "\n"
+                "   save this FM Inedx on disc.\n"
+            );
 
 	//tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 

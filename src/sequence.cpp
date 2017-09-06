@@ -164,12 +164,45 @@ void exportSequence()
 			boost::noncopyable,
 			boost::python::bases<Container>, 
 			std::shared_ptr<NucleotideSequence>
-		>("NucSeq", boost::python::init<const char*>())
+		>(
+			"NucSeq", 
+			"class: NucSeq\n"
+			"	Holds a single nucleotide sequence.\n",
+			boost::python::init<const char*>()
+		)
 			.def(boost::python::init<const std::string>())
-			.def("at", &NucleotideSequence::charAt)
-			.def("append", &NucleotideSequence::vAppend_boost)
-			.def("length", &NucleotideSequence::length)
-			.def("reverse", &NucleotideSequence::vReverse);
+			.def(
+					"at", 
+					&NucleotideSequence::charAt,
+					"method: at(ind)\n"
+					"	ind: index at which to look\n"
+					"	returns: the char at the given index.\n"
+				)
+			.def(
+					"append", 
+					&NucleotideSequence::vAppend_boost,
+					"method: append(str)\n"
+					"	str: sequence to append\n"
+					"	returns: nil\n"
+					"\n"
+					"appends the given string to the end of the sequence.\n"
+					"any character other than A,C,T,G,a,c,t and g "
+					"will result in an N beeing appended.\n"
+				)
+			.def(
+					"length", 
+					&NucleotideSequence::length,
+					"method: length()\n"
+					"	returns: the length of the sequence\n"
+				)
+			.def(
+					"reverse", 
+					&NucleotideSequence::vReverse,
+					"method: reverse()\n"
+					"	returns: nil\n"
+					"\n"
+					"Reverses the sequence.\n"
+				);
 
 	//tell boost python that pointers of these classes can be converted implicitly
 	boost::python::implicitly_convertible< 

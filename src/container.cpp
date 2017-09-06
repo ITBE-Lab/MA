@@ -89,14 +89,27 @@ struct iterable_converter
 void exportContainer()
 {
     //contianer is an abstract class and should never be initialized
-	boost::python::class_<Container, std::shared_ptr<Container>>("Container", boost::python::no_init)
-        .def("getTypeInfo", &Container::getTypeInfo);
+	boost::python::class_<Container, std::shared_ptr<Container>>(
+            "Container", 
+            "class: Container abstract\n"
+            "   Any class holding data should inherit Container.\n",
+            boost::python::no_init
+        )
+        .def(
+                "get_type_info", 
+                &Container::getTypeInfo,
+                "method: get_type_info()\n"
+                "   returns: an enum describing the type of data stored.\n"
+                "\n"
+                "   Used to check weather a module can work with the given containers.\n"
+            );
+
     boost::python::register_ptr_to_python< std::shared_ptr<Container> >();
 
     //make vectors of container-pointers a thing
     iterable_converter()
-        // Build-in type.
-        .from_python<std::vector<std::shared_ptr<Container>> >();
+        .from_python<std::vector<std::shared_ptr<Container>>>()
+        .from_python<std::vector<ContainerType>>();
 
     //export the containertype enum
     boost::python::enum_<ContainerType>("ContainerType")
