@@ -1209,51 +1209,26 @@ public:
 };//class
 
 
-class StripOfConsiderationListContainer: public Container
+class StripOfConsiderationVector: public Container
 {
 public:
-	//TODO: check what this actually wraps
-	std::vector<std::shared_ptr<StripOfConsiderationContainer>> vpList;
-
-	StripOfConsiderationListContainer()
+	std::vector<std::shared_ptr<StripOfConsideration>> x;
+	
+	StripOfConsiderationVector(std::vector<std::shared_ptr<StripOfConsideration>> x)
 			:
-		pList()
+		x(x)
+	{}//constructor
+	
+	StripOfConsiderationVector(std::shared_ptr<StripOfConsideration> x)
+			:
+		x(std::vector<std::shared_ptr<StripOfConsideration>>{x})
+	{}//constructor
+
+	StripOfConsiderationVector()
 	{}//constructor
 
 	/*used to identify the FM_indexWrapper datatype in the aligner pipeline*/
     ContainerType getType(){return ContainerType::stripOfConsiderationList;}
-
-	/*
-	*	wrapper for boost python
-	*/
-	void remove(unsigned int iI)
-	{
-		vpList.erase(pList.begin() + iI);
-	}//function
-
-	/*
-	*	wrapper for boost python
-	*/
-	unsigned int size()
-	{
-		return vpList.size();
-	}//function
-
-	/*
-	*	wrapper for boost python
-	*/
-	std::shared_ptr<StripOfConsiderationContainer> at(unsigned int iI)
-	{
-		return vpList.at(iI);
-	}//function
-
-	/*
-	*	wrapper for boost python
-	*/
-	void push_back(std::shared_ptr<StripOfConsiderationContainer> pC)
-	{
-		vpList.push_back(pC);
-	}//function
 };//class
 
 
@@ -1524,9 +1499,8 @@ public:
 		lpxAnchorMatches.push_back(pxNew);
 	}//function
 
-	std::vector<std::shared_ptr<StripOfConsideration>> findAnchors()
+	void findAnchors(std::vector<std::shared_ptr<StripOfConsideration>> &aRet)
 	{
-		std::vector<std::shared_ptr<StripOfConsideration>> aRet;
 		for (auto pxAnchorMatch : lpxAnchorMatches)
 		{
 			if (apxPerfectMatchBuckets[pxAnchorMatch->getPositionForBucketing(uiQueryLength) / uiStripSize]->isUsed())
@@ -1535,8 +1509,6 @@ public:
 			apxPerfectMatchBuckets[pxAnchorMatch->getPositionForBucketing(uiQueryLength) / uiStripSize]->setUsed();
 			aRet.push_back(collectStripOfConsideration(pxAnchorMatch));
 		}//for
-
-		return aRet;
 	}//function
 
 };//class
@@ -1551,7 +1523,7 @@ public:
 
 	Bucketing(){}//constructor
 
-	std::vector<std::shared_ptr<Container>> execute(std::vector<std::shared_ptr<Container>> vpInput);
+	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
     std::vector<ContainerType> getInputType();
 
@@ -1572,11 +1544,11 @@ public:
 
 	LineSweepContainer(){}//constructor
 
-	std::shared_ptr<Container> execute(std::shared_ptr<Container> pInput);
+	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput);
 
-    std::shared_ptr<Container> getInputType();
+    std::vector<ContainerType> getInputType();
 
-    std::shared_ptr<Container> getOutputType();
+    std::vector<ContainerType> getOutputType();
 };//class
 
 void exportGraphicalMethod();

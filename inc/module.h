@@ -15,11 +15,9 @@
 class Module
 {
 public:
-    virtual std::vector<std::shared_ptr<Container>> execute(
-            std::vector<std::shared_ptr<Container>> pInput
-        )
+    virtual std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput)
     {
-        return pInput;
+        return nullptr;
     }
 
     virtual std::vector<ContainerType> getInputType()
@@ -32,9 +30,7 @@ public:
         return std::vector<ContainerType>{ContainerType::nothing};
     }
 
-    std::vector<std::shared_ptr<Container>> saveExecute(
-            std::vector<std::shared_ptr<Container>> pInput
-        )
+    std::shared_ptr<Container> saveExecute(std::vector<std::shared_ptr<Container>> pInput)
     {
         std::cout << "TODO: save exec disabled" << std::endl;
         return execute(pInput);
@@ -46,12 +42,10 @@ class Printer : public Module
 public:
     Printer(){}
     // overwrite the execute frunction from Module
-    std::vector<std::shared_ptr<Container>> execute(
-            std::vector<std::shared_ptr<Container>> pInput
-        ) override
+    std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput) override
     {
         std::cout << "TODO: printer disabled" << std::endl;
-        return pInput;
+        return nullptr;
     }
 
     virtual std::vector<ContainerType> getInputType()

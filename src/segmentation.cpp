@@ -463,51 +463,61 @@ void Segmentation::segment()
 }//function
 
 
-std::shared_ptr<Container> SegmentationContainer::getInputType()
+std::vector<ContainerType> SegmentationContainer::getInputType()
 {
-	std::shared_ptr<ContainerVector> pRet(new ContainerVector());
-	//the forward fm_index
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
-	//the reversed fm_index
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::fM_index)));
-	//the querry sequence
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::nucSeq)));
-	//the reference sequence (packed since it could be really long)
-	pRet->vElements.push_back(std::shared_ptr<Container>(new DummyContainer(ContainerType::packedNucSeq)));
-	return pRet;
+	return std::vector<ContainerType>{
+			//the forward fm_index
+			ContainerType::fM_index,
+			//the reversed fm_index
+			ContainerType::fM_index,
+			//the querry sequence
+			ContainerType::nucSeq,
+			//the reference sequence (packed since it could be really long)
+			ContainerType::packedNucSeq,
+		};
 }
-std::shared_ptr<Container> SegmentationContainer::getOutputType()
+std::vector<ContainerType> SegmentationContainer::getOutputType()
 {
-	return std::shared_ptr<Container>(new DummyContainer(ContainerType::segmentList));
+	return std::vector<ContainerType>{ContainerType::segmentList};
 }
 
 
-std::shared_ptr<Container> SegmentationContainer::execute(std::shared_ptr<Container> pInput)
+std::shared_ptr<Container> SegmentationContainer::execute(
+		std::vector<std::shared_ptr<Container>> vpInput
+	)
 {
+	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
+	std::shared_ptr<FM_Index> pFM_indexReversed = std::static_pointer_cast<FM_Index>(vpInput[1]);
+	std::shared_ptr<NucleotideSequence> pQuerrySeq = 
+		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
+	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
+		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
 
-	std::shared_ptr<ContainerVector> pCastedInput = std::static_pointer_cast<ContainerVector>(pInput);
-	std::shared_ptr<FM_IndexContainer> pFM_index = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->vElements.at(0));
-	std::shared_ptr<FM_IndexContainer> pFM_indexReversed = std::static_pointer_cast<FM_IndexContainer>(pCastedInput->vElements.at(1));
-	std::shared_ptr<NucSeqContainer> pQuerrySeq = std::static_pointer_cast<NucSeqContainer>(pCastedInput->vElements.at(2));
-	std::shared_ptr<PackContainer> pRefSeq = std::static_pointer_cast<PackContainer>(pCastedInput->vElements.at(3));
 
-
-	Segmentation xS(pFM_index->pIndex, pFM_indexReversed->pIndex, pQuerrySeq->pSeq, bBreakOnAmbiguousBase, bSkipLongBWTIntervals, uiMinIntervalSize, uiMaxHitsPerInterval, pRefSeq->pPack);
+	Segmentation xS(
+			pFM_index, 
+			pFM_indexReversed, 
+			pQuerrySeq, 
+			bBreakOnAmbiguousBase,
+			bSkipLongBWTIntervals,
+			uiMinIntervalSize,
+			uiMaxHitsPerInterval,
+			pRefSeq
+		);
 	xS.segment();
 
-	return std::shared_ptr<SegmentTreeContainer>(new SegmentTreeContainer(xS.pSegmentTree));
+	return xS.pSegmentTree;
 }//function
 
 
 void exportSegmentation()
 {
-
 	//export the segmentation class
 	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>("Segmentation",boost::python::init<boost::python::optional<bool, bool, nucSeqIndex, unsigned int>>())
-		.add_property("bBreakOnAmbiguousBase", &SegmentationContainer::bBreakOnAmbiguousBase, &SegmentationContainer::bBreakOnAmbiguousBase)
-		.add_property("bSkipLongBWTIntervals", &SegmentationContainer::bSkipLongBWTIntervals, &SegmentationContainer::bSkipLongBWTIntervals)
-		.add_property("uiMinIntervalSize", &SegmentationContainer::uiMinIntervalSize, &SegmentationContainer::uiMinIntervalSize)
-		.add_property("uiMaxHitsPerInterval", &SegmentationContainer::uiMaxHitsPerInterval, &SegmentationContainer::uiMaxHitsPerInterval)
+		.def_readwrite("bBreakOnAmbiguousBase", &SegmentationContainer::bBreakOnAmbiguousBase)
+		.def_readwrite("bSkipLongBWTIntervals", &SegmentationContainer::bSkipLongBWTIntervals)
+		.def_readwrite("uiMinIntervalSize", &SegmentationContainer::uiMinIntervalSize)
+		.def_readwrite("uiMaxHitsPerInterval", &SegmentationContainer::uiMaxHitsPerInterval)
 		;
 
 }//function

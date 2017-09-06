@@ -595,6 +595,13 @@ public :
 		vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
 	} // method
 
+	/* wrapper for boost
+	 */
+	void vAppend_boost( const char* pcString )
+	{
+		vAppend(pcString);
+	} // method
+
 	/* Appends a slice of some other sequence to our current sequence. (Only Prototype)
 	 */
 	void vAppend( const NucleotideSequenceSlice & );

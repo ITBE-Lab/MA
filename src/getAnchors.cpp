@@ -6,13 +6,13 @@ std::vector<ContainerType> NlongestIntervalsAsAnchors::getInputType()
     return std::vector<ContainerType>{ContainerType::segmentList};
 }//function
 
-std::vecotr<ContainerType> NlongestIntervalsAsAnchors::getOutputType()
+std::vector<ContainerType> NlongestIntervalsAsAnchors::getOutputType()
 {
     return std::vector<ContainerType>{ContainerType::segmentList};
 }//function
 
 
-std::vector<std::shared_ptr<Container>> NlongestIntervalsAsAnchors::execute(
+std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
         std::vector<std::shared_ptr<Container>> vpInput
     )
 {
@@ -36,7 +36,7 @@ std::vector<std::shared_ptr<Container>> NlongestIntervalsAsAnchors::execute(
 
     //TODO: achors need to be extracted
 
-    return std::vector<std::shared_ptr<Container>>{pRet};
+    return pRet;
 
 }//function
 

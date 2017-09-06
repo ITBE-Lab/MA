@@ -15,7 +15,7 @@ public:
         uiN(uiN)
     {}//constructor
 
-    std::vector<std::shared_ptr<Container>> execute(std::vector<std::shared_ptr<Container>) vpInput);
+    std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
     std::vector<ContainerType> getInputType();
 
