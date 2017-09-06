@@ -37,7 +37,7 @@ void exportModule()
     ;
     //test class
 	boost::python::class_<Printer, boost::python::bases<Module>>(
-            "Printer"
+            "Printer",
             "class: Printer\n"
             "   prints the given Containers to std::out\n"
         );

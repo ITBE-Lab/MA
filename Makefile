@@ -21,6 +21,8 @@ CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
 
+all: LAuS.so LAuS.html
+
 LAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
  
@@ -30,9 +32,11 @@ obj/%.o: src/%.cpp inc/%.h
 obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -I,$(BOOST_INC)) -Iinc -c $< -o $@
 
-all: LAuS.so
+LAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
+	pydoc -w LAuS
 
-install: all
+
+install: LAuS.so
 	pip install . --upgrade
 
 distrib:
@@ -42,4 +46,6 @@ clean:
 	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) *.so
 	rm -r -f dist *.egg-info build
 
-.Phony: all clean install distrib
+docs: LAuS.html
+
+.Phony: all clean install distrib docs

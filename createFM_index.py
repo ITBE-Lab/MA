@@ -4,7 +4,7 @@ import random
 seq = ""
 q = ""
 
-for _ in range(1000):
+for _ in range(100000):
     char = random.randint(1,4)
     if char == 1:
         seq += "a"
@@ -15,7 +15,7 @@ for _ in range(1000):
     else:
         seq += "g"
 
-for _ in range(10):
+for _ in range(100):
     char = random.randint(1,4)
     if char == 1:
         q += "a"
@@ -34,8 +34,8 @@ rev_ref.reverse()
 
 query = NucSeq(q)
 
-fm_index = FM_index(ref)
-rev_fm_index = FM_index(rev_ref)
+fm_index = FMIndex(ref)
+rev_fm_index = FMIndex(rev_ref)
 
 ref_seq = BWAPack()
 ref_seq.append("name", "no comment",ref)
@@ -45,4 +45,40 @@ seg.bSkipLongBWTIntervals = False
 
 segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))
 
-print("done")
+iterator = segments.begin()
+while iterator.exits():
+    start = iterator.get().start()
+    end = iterator.get().end()
+    sequence = ""
+    for i in range(start, end):
+        sequence = sequence + query.at(i)
+    print "segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
+    iterator.next()
+
+
+
+anc = NlongestIntervalsAsAnchors(2)
+anchors = anc.execute((segments,))
+    
+iterator = anchors.begin()
+while iterator.exits():
+    start = iterator.get().start()
+    end = iterator.get().end()
+    sequence = ""
+    for i in range(start, end):
+        sequence = sequence + query.at(i)
+    print "anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
+    iterator.next()
+
+bucketing = Bucketing()
+strips_of_consideration = bucketing.execute((
+    segments,
+    anchors,
+    query,
+    ref_seq,
+    fm_index,
+    rev_fm_index)).x
+
+print "found " + str(len(strips_of_consideration)) + " strips of consideration with the scores:"
+for strip in strips_of_consideration:
+    print strip.get_score()

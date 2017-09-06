@@ -530,5 +530,5 @@ void exportSegmentation()
 		.def_readwrite("uiMinIntervalSize", &SegmentationContainer::uiMinIntervalSize)
 		.def_readwrite("uiMaxHitsPerInterval", &SegmentationContainer::uiMaxHitsPerInterval)
 		;
-
+	
 }//function

@@ -230,12 +230,26 @@ void exportGraphicalMethod()
 			std::shared_ptr<Container>
 		>(); 
 
+	//register return values of vectors of strips
+	boost::python::class_<std::vector<std::shared_ptr<StripOfConsideration>>>("VecRetStrip")
+		.def(boost::python::vector_indexing_suite<
+				std::vector<std::shared_ptr<StripOfConsideration>>,
+				/*
+				*	true = noproxy this means that the content of the vector is already exposed by
+				*	boost python. 
+				*	if this is kept as false, StripOfConsideration would be exposed a second time.
+				*	the two StripOfConsiderations would be different and not intercastable.
+				*	=> keep this as true
+				*/
+				true
+			>());
+
 	//export the StripOfConsiderationVector class
 	boost::python::class_<
-		StripOfConsiderationVector, 
-		boost::python::bases<Container>, 
-		std::shared_ptr<StripOfConsiderationVector>
-	>(
+			StripOfConsiderationVector, 
+			boost::python::bases<Container>, 
+			std::shared_ptr<StripOfConsiderationVector>
+		>(
 			"StripOfConsiderationVector",
 			"class: StripOfConsiderationVector\n"
 			"	x: the vector holding the strips\n."
