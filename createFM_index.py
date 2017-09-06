@@ -77,8 +77,17 @@ strips_of_consideration = bucketing.execute((
     query,
     ref_seq,
     fm_index,
-    rev_fm_index)).x
+    rev_fm_index))
 
-print "found " + str(len(strips_of_consideration)) + " strips of consideration with the scores:"
-for strip in strips_of_consideration:
+print "found " + str(len(strips_of_consideration.x)) + " strips of consideration with the scores:"
+for strip in strips_of_consideration.x:
     print strip.get_score()
+
+liesweep = LineSweep()
+best_strip = liesweep.execute((query, ref_seq, strips_of_consideration))
+
+print "scores after linesweep:"
+for strip in strips_of_consideration.x:
+    print strip.get_score()
+
+print "best score: " + str(best_strip.x[0].get_score())
