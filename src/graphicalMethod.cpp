@@ -205,19 +205,18 @@ void exportGraphicalMethod()
         std::shared_ptr<StripOfConsideration>
     >(
 			"StripOfConsideration",
-			"class: StripOfConsideration\n"
-			"	Holds the matches close to a selected anchor match\n"
+			"Holds the matches close to a selected anchor match\n"
 		)
 		.def(
 				"get_score", 
 				&StripOfConsideration::getValueOfContet,
-				"method: get_score()\n"
+				"	arg1: self\n"
 				"	returns: the score as integer\n"
 				"\n"
-				"	Gives the current score of the strip.\n"
-				"	Depending on how processed the strip is, "
+				"Gives the current score of the strip.\n"
+				"Depending on how processed the strip is, "
 				"the score might be more or less acurate.\n"
-				"	The returned score is however always and upper bound of the final score.\n"
+				"The returned score is however always and upper bound of the final score.\n"
 			)
 		;
 
@@ -251,10 +250,9 @@ void exportGraphicalMethod()
 			std::shared_ptr<StripOfConsiderationVector>
 		>(
 			"StripOfConsiderationVector",
-			"class: StripOfConsiderationVector\n"
 			"	x: the vector holding the strips\n."
 			"\n"
-			"	Contains multiple strips of consideration.\n"
+			"Contains multiple strips of consideration.\n"
 		)
 		.def_readwrite("x", &StripOfConsiderationVector::x);
 	
@@ -270,10 +268,9 @@ void exportGraphicalMethod()
     //export the LineSweepContainer class
 	boost::python::class_<LineSweepContainer, boost::python::bases<Module>>(
 			"LineSweep",
-			"class: LineSweep\n"
-			"	Uses linesweeping to remove contradicting "
+			"Uses linesweeping to remove contradicting "
 			"matches within one strip of consideration.\n"
-			"	Execution:\n"
+			"Execution:\n"
 			"	Expects querry, ref, strip_vec as input.\n"
 			"		querry: the querry as NucleotideSequence\n"
 			"		ref: the reference seqeuence as Pack\n"
@@ -284,8 +281,7 @@ void exportGraphicalMethod()
     //export the Bucketing class
 	boost::python::class_<Bucketing, boost::python::bases<Module>>(
 			"Bucketing",
-			"class: Bucketing\n"
-			"	Throws seeds into buckets in order to speed up the extraction "
+			"Throws seeds into buckets in order to speed up the extraction "
 			"of strips of consideration.\n"
 			"	Execution:\n"
 			"	Expects anchor, seeds, query, ref, ind, rev_ind as input.\n"

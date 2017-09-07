@@ -293,6 +293,13 @@ public:
 		removeNode(pxItt.getElement());
 	}//function
 
+	//boost python does not like overloaded functions.
+	//create a unoverloaded function for boost
+	void removeNode_boost(Iterator pxItt)
+	{
+		removeNode(pxItt.getElement());
+	}//function
+
 	void removeNode(std::shared_ptr<DoublyLinkedListElement<Content>> pxNode)
 	{
 		//lock the last, this and the next node
@@ -326,6 +333,13 @@ public:
 		return insertBefore(pxContent, pxItt.getElement());
 	}//function
 
+	//boost python does not like overloaded functions.
+	//create a unoverloaded function for boost
+	Iterator insertBefore_boost(std::shared_ptr<Content> pxContent, Iterator pxItt)
+	{
+		return insertBefore(pxContent, pxItt.getElement());
+	}//function
+
 	Iterator insertAfter(std::shared_ptr<Content> pxContent, std::shared_ptr<DoublyLinkedListElement<Content>> pxNode)
 	{
 		//lock the next and this node
@@ -343,6 +357,13 @@ public:
 	}//function
 
 	Iterator insertAfter(std::shared_ptr<Content> pxContent, Iterator pxItt)
+	{
+		return insertAfter(pxContent, pxItt.getElement());
+	}//function
+
+	//boost python does not like overloaded functions.
+	//create a unoverloaded function for boost
+	Iterator insertAfter_boost(std::shared_ptr<Content> pxContent, Iterator pxItt)
 	{
 		return insertAfter(pxContent, pxItt.getElement());
 	}//function
@@ -440,9 +461,23 @@ public:
 	{
 		return uiEndIndex - uiStartIndex + 1;
 	}//function
-	nucSeqIndex getCenter() const { return (uiStartIndex + uiEndIndex + 1) / 2; }//function
-	void setInterval(nucSeqIndex uiStart, nucSeqIndex uiEnd) { uiStartIndex = uiStart; uiEndIndex = uiEnd; }//function
-	unsigned int getValue() const { return (unsigned int)length(); }//function
+
+	nucSeqIndex getCenter() const 
+	{
+		return (uiStartIndex + uiEndIndex + 1) / 2; 
+	}//function
+
+	void setInterval(nucSeqIndex uiStart, nucSeqIndex uiEnd) 
+	{
+		uiStartIndex = uiStart; 
+		uiEndIndex = uiEnd; 
+	}//function
+
+	unsigned int getValue() const 
+	{
+		return (unsigned int)length(); 
+	}//function
+
 	/* calls fDo for all recorded hits.
 	*  Note that pushBackBwtInterval records an interval of hits
 	*  ulHit: the position of the hit on the reference sequence

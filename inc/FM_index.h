@@ -747,7 +747,7 @@ public :
 								 ?  "Different L2"
 								 :	( primary != rxOtherFM_Index.primary ) 
 									?  "Different primary"
-									:	( uiRefSeqLength != uiRefSeqLength )
+									:	( uiRefSeqLength != rxOtherFM_Index.uiRefSeqLength )
 										? "Different seq_len"
 										:	( bwt != rxOtherFM_Index.bwt )
 											?	"Different bwt_size"

@@ -166,23 +166,22 @@ void exportSequence()
 			std::shared_ptr<NucleotideSequence>
 		>(
 			"NucSeq", 
-			"class: NucSeq\n"
-			"	Holds a single nucleotide sequence.\n",
+			"Holds a single nucleotide sequence.\n",
 			boost::python::init<const char*>()
 		)
 			.def(boost::python::init<const std::string>())
 			.def(
 					"at", 
 					&NucleotideSequence::charAt,
-					"method: at(ind)\n"
-					"	ind: index at which to look\n"
+					"	arg1: self\n"
+					"	arg2: index at which to look\n"
 					"	returns: the char at the given index.\n"
 				)
 			.def(
 					"append", 
 					&NucleotideSequence::vAppend_boost,
-					"method: append(str)\n"
-					"	str: sequence to append\n"
+					"	arg1: self\n"
+					"	arg2: sequence to append\n"
 					"	returns: nil\n"
 					"\n"
 					"appends the given string to the end of the sequence.\n"
@@ -192,13 +191,13 @@ void exportSequence()
 			.def(
 					"length", 
 					&NucleotideSequence::length,
-					"method: length()\n"
+					"	arg1: self\n"
 					"	returns: the length of the sequence\n"
 				)
 			.def(
 					"reverse", 
 					&NucleotideSequence::vReverse,
-					"method: reverse()\n"
+					"	arg1: self\n"
 					"	returns: nil\n"
 					"\n"
 					"Reverses the sequence.\n"

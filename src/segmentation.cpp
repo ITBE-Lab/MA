@@ -515,13 +515,12 @@ void exportSegmentation()
 	//export the segmentation class
 	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>(
 			"Segmentation",
-			"class: Segmentation\n"
 			"	bBreakOnAmbiguousBase: weather the extension of "
 			"intervalls shall be stopped at N's\n"
 			"	bSkipLongBWTIntervals: skip seeds that have more than "
 			"uiMaxHitsPerInterval matches on the reference\n"
 			"	uiMinIntervalSize: only record intervals greater than uiMinIntervalSize\n"
-			"uiMaxHitsPerInterval: skip seeds that have more than "
+			"	uiMaxHitsPerInterval: skip seeds that have more than "
 			"uiMaxHitsPerInterval matches on the reference if bSkipLongBWTIntervals is set\n",
 			boost::python::init<boost::python::optional<bool, bool, nucSeqIndex, unsigned int>>()
 		)
