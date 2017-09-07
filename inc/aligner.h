@@ -10,6 +10,8 @@
 #include "exception.h"
 #include "graphicalMethod.h"
 #include "getAnchors.h"
+#include "alignment.h"
+#include "smithWaterman.h"
 #include <list>
 #include <memory>
 #include <boost/python.hpp>

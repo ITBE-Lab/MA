@@ -27,4 +27,6 @@ BOOST_PYTHON_MODULE(LAuS)
         exportGraphicalMethod();
         exportExceptions();
         exportGetAnchors();
+        exportAlignment();
+        exportSmithWaterman();
 }

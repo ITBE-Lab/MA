@@ -9,6 +9,7 @@
 enum ContainerType{
     fM_index,
     nucSeq,
+    alignment,
     packedNucSeq,
     segmentList,
     segment,

@@ -1,15 +1,7 @@
 #ifndef GRAPHICAL_METHOD_H
 #define GRAPHICAL_METHOD_H
 
-
-// do not activate both
-#define REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP 1
-// the graph method is very slow and not fully implemented either
-// maybe the code should be deleted once git is working
-#define REMOVE_INTERFERING_MATCHES_USING_GRAPH 0
-
 #define NUM_THREADS_ALIGNER 6
-
 
 #include "intervalTree.h"
 #include <algorithm>
@@ -17,14 +9,6 @@
 #include "threadPool.h"
 #include "module.h"
 #include <boost/python.hpp>
-
-#if REMOVE_INTERFERING_MATCHES_USING_GRAPH
-#include "boost/graph/adjacency_list.hpp"
-#include <boost/graph/connected_components.hpp>
-#include <boost/graph/filtered_graph.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/range/iterator_range.hpp>
-#endif
 
 class PerfectMatch;
 
@@ -42,15 +26,7 @@ struct PerfectMatchContainer{
 	//is the match enabled in this bucket?
 	bool bDisabled;
 };
-#if REMOVE_INTERFERING_MATCHES_USING_GRAPH
-struct ShadowInterval{
-	nucSeqIndex uiStart;
-	nucSeqIndex uiEnd;
-	uint16_t uiCorrespondingPerfectMatchId;
-};
-#endif //REMOVE_INTERFERING_MATCHES_USING_GRAPH
 
-#if REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
 /* each perfect match "casts a shadow" at the left and right border of the bucket
  * each shadow is stored in one of these data structures.
 */
@@ -67,7 +43,6 @@ struct ShadowInterval{
 	//while swiping the interfering shadows will get stored in this list
 	std::list<ShadowInterval*> lpxInterferingIntervals;
 };
-#endif //REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
 
 /* a perfect match calculated in the segmentation process
 */
@@ -108,7 +83,6 @@ public:
 		xOut << "(" << uiPosOnReference + uiQueryLenght + uiBucketSize - uiBucketBegin << "," << uiPosOnQuery << "," << uiLength << ")";
 	}//function
 
-#if REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
 	/*determine the start and end positions this match casts on the left border of the given bucket
 	  pxMatch is the container this match is stored in.
 	*/
@@ -134,34 +108,6 @@ public:
 		xRet.uiCorrespondingPerfectMatchId = pxMatch.uiId;
 		return xRet;
 	}
-#endif //REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
-
-#if REMOVE_INTERFERING_MATCHES_USING_GRAPH
-	ShadowInterval getLeftShadow(nucSeqIndex uiBucketStart, PerfectMatchContainer pxMatch, nucSeqIndex uiBucketSize, nucSeqIndex uiQueryLength) const
-	{
-		ShadowInterval xRet;
-		xRet.uiStart = uiPosOnQuery + uiBucketStart;
-		xRet.uiEnd = uiPosOnReference + uiLength + uiQueryLength + uiBucketSize;
-
-		xRet.uiCorrespondingPerfectMatchId = pxMatch.uiId;
-
-		assert(xRet.uiStart <= xRet.uiEnd);
-
-		return xRet;
-	}//function
-	ShadowInterval getRightShadow(nucSeqIndex uiBucketStart, PerfectMatchContainer pxMatch, nucSeqIndex uiBucketSize, nucSeqIndex uiQueryLength) const
-	{
-		ShadowInterval xRet;
-		xRet.uiStart = uiPosOnReference;
-		xRet.uiEnd = uiPosOnQuery + uiLength + uiBucketStart + uiQueryLength + uiBucketSize*2; 
-
-		xRet.uiCorrespondingPerfectMatchId = pxMatch.uiId;
-
-		assert(xRet.uiStart <= xRet.uiEnd);
-
-		return xRet;
-	}//function
-#endif //REMOVE_INTERFERING_MATCHES_USING_GRAPH
 
 	//getters
 	const nucSeqIndex getLength() const { return uiLength; }//function
@@ -235,26 +181,10 @@ private:
 	std::vector<PerfectMatchContainer> apxPerfectMatches;
 	std::list<std::shared_ptr<PerfectMatchBucket>> lpxPerfectMatcheBuckets;
 
-#if REMOVE_INTERFERING_MATCHES_USING_GRAPH
-
-	std::vector<ShadowInterval> axLeftShadows, axRightShadows;
-
-	//templates:: container for edges, container for vertices, directedEdges?, datatype of the nodes
-	typedef boost::adjacency_list <boost::listS, boost::vecS, boost::undirectedS, uint16_t> UndirGraph;
-	typedef boost::filtered_graph<UndirGraph, std::function<bool(UndirGraph::edge_descriptor)>, std::function<bool(UndirGraph::vertex_descriptor)> > ComponentGraph;
-	typedef std::shared_ptr<std::vector<unsigned long>> vertex_component_map;
-
-	std::unique_ptr<UndirGraph> pxGraph;
-
-#endif //REMOVE_INTERFERING_MATCHES_USING_GRAPH
-
-#if REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
 
 	/*the line sweep algorithm will run over the shadows of the matches, these are stored in this vector
 	*/
 	std::vector<ShadowInterval> axShadows;
-
-#endif //REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
 
 	/* disables one match and subtracts its value from  uiValueOfContent
 	*/
@@ -264,400 +194,6 @@ private:
 		uiValueOfContent -= apxPerfectMatches[uiId].pxPerfectMatch->getLength();
 		apxPerfectMatches[uiId].bDisabled = true;
 	}//function
-
-
-#if REMOVE_INTERFERING_MATCHES_USING_GRAPH
-	// the graph method is very slow and not fully implemented either
-	// maybe the code should be deleted once git is working
-	std::tuple<int, std::vector<uint16_t> > getAllConnectedComponents_(UndirGraph const&g) const
-	{
-		//figures the connected components out and gives each node an index
-		std::vector<uint16_t> mapping(boost::num_vertices(g));
-		int num = boost::connected_components(g, &mapping[0]);
-
-		return std::make_tuple(num, mapping);
-	}
-	//snipped form here http://stackoverflow.com/questions/26763193/return-a-list-of-connected-component-subgraphs-in-boost-graph
-	std::vector<ComponentGraph> getAllConnectedComponents(UndirGraph const&g)
-	{
-		std::vector<uint16_t> mapping(boost::num_vertices(g));
-		size_t num = boost::connected_components(g, &mapping[0]);
-
-		std::vector<ComponentGraph> component_graphs;
-
-		for (size_t i = 0; i < num; i++)
-			component_graphs.emplace_back(
-				g,
-				[mapping, i, &g](UndirGraph::edge_descriptor e) {
-					return mapping[boost::source(e, g)] == i
-						|| mapping[boost::target(e, g)] == i;
-				},//lambda
-				[mapping, i](UndirGraph::vertex_descriptor v) {
-					return mapping[v] == i;
-				}//lambda
-			);//function call
-		//end for 
-
-		return component_graphs;
-	}//function
-	void calculateShadows(nucSeqIndex uiBucketSize, nucSeqIndex uiQueryLength, bool bLeftShadow)
-	{
-		auto pxUsedVector = &axRightShadows;
-		if (bLeftShadow)
-			pxUsedVector = &axLeftShadows;
-
-		pxUsedVector->clear();
-
-		//TODO it would be more efficient to allocate the memory in one step
-
-		for (auto pxMatch : apxPerfectMatches)
-		{
-			if (bLeftShadow)
-				pxUsedVector->emplace_back(pxMatch.pxPerfectMatch->getLeftShadow(uiBegin, pxMatch, uiBucketSize, uiQueryLength));
-			else
-				pxUsedVector->emplace_back(pxMatch.pxPerfectMatch->getRightShadow(uiBegin, pxMatch, uiBucketSize, uiQueryLength));
-		}//for
-	}//function
-
-	void sortShadows(bool bLeftShadow)
-	{
-		auto pxUsedVector = &axRightShadows;
-		if (bLeftShadow)
-			pxUsedVector = &axLeftShadows;
-
-		if (pxUsedVector->size() <= 1)
-			return;
-
-		//sort (decreasingly) by start coordinate of the strip
-		std::sort(pxUsedVector->begin(), pxUsedVector->end(),
-			[](const ShadowInterval xA, const ShadowInterval xB)
-		{
-			assert(xA.uiCorrespondingPerfectMatchId != xB.uiCorrespondingPerfectMatchId);
-			if (xA.uiStart == xB.uiStart)
-				return xA.uiEnd < xB.uiEnd;
-			return xA.uiStart < xB.uiStart;
-		}//lambda
-		);//sort function call
-
-		auto xItEnd = pxUsedVector->end();
-		xItEnd--;
-		assert(pxUsedVector->begin()->uiStart < xItEnd->uiStart ||
-			(pxUsedVector->begin()->uiStart == xItEnd->uiStart && pxUsedVector->begin()->uiEnd <= xItEnd->uiEnd)
-			);
-	}//function
-
-
-	void shadowsToGraph(bool bLeftShadow)
-	{
-		auto pxUsedVector = &axRightShadows;
-		if (bLeftShadow)
-			pxUsedVector = &axLeftShadows;
-
-		std::list<ShadowInterval*> lpxShadowIntervalsSurroundingCurrPos;
-
-		auto pxCurrShadowIntervalIterator = pxUsedVector->begin();
-		while (pxCurrShadowIntervalIterator != pxUsedVector->end())
-		{
-			auto uiFrom = pxCurrShadowIntervalIterator->uiCorrespondingPerfectMatchId;
-
-			if (apxPerfectMatches[uiFrom].bDisabled)
-			{
-				pxCurrShadowIntervalIterator++;
-				continue;
-			}//if
-
-			auto ppxSurroundingCurrPosItt = lpxShadowIntervalsSurroundingCurrPos.begin();
-			assert(ppxSurroundingCurrPosItt == lpxShadowIntervalsSurroundingCurrPos.end() || pxCurrShadowIntervalIterator->uiStart >= (*ppxSurroundingCurrPosItt)->uiStart);
-			//remove all intervals at the beginning of the list that we passed when jumping to the beginning of this interval
-			while (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.end() && (*ppxSurroundingCurrPosItt)->uiEnd < pxCurrShadowIntervalIterator->uiStart)
-			{
-				lpxShadowIntervalsSurroundingCurrPos.erase(ppxSurroundingCurrPosItt++);
-			}//while
-
-			//add edges between the current and all elements in the list that end after the current.
-			ppxSurroundingCurrPosItt = lpxShadowIntervalsSurroundingCurrPos.end();
-			while (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.begin() && (*--ppxSurroundingCurrPosItt)->uiEnd >= pxCurrShadowIntervalIterator->uiEnd)
-			{
-				auto uiTo = (*ppxSurroundingCurrPosItt)->uiCorrespondingPerfectMatchId;
-
-				if (apxPerfectMatches[uiTo].bDisabled)
-					continue;
-
-				//TODO this can be done more efficiently since the intervals are always sorted
-				nucSeqIndex uiAposOnQuery = apxPerfectMatches[(*ppxSurroundingCurrPosItt)->uiCorrespondingPerfectMatchId].pxPerfectMatch->getPosOnQuery();
-				nucSeqIndex uiBposOnQuery = apxPerfectMatches[pxCurrShadowIntervalIterator->uiCorrespondingPerfectMatchId].pxPerfectMatch->getPosOnQuery();
-				nucSeqIndex uiAposOnRef = apxPerfectMatches[(*ppxSurroundingCurrPosItt)->uiCorrespondingPerfectMatchId].pxPerfectMatch->getPosOnReference();
-				nucSeqIndex uiBposOnRef = apxPerfectMatches[pxCurrShadowIntervalIterator->uiCorrespondingPerfectMatchId].pxPerfectMatch->getPosOnReference();
-				nucSeqIndex uiALength = apxPerfectMatches[(*ppxSurroundingCurrPosItt)->uiCorrespondingPerfectMatchId].pxPerfectMatch->getLength();
-				nucSeqIndex uiBLength = apxPerfectMatches[pxCurrShadowIntervalIterator->uiCorrespondingPerfectMatchId].pxPerfectMatch->getLength();
-				//if a surrounds b
-				if (uiAposOnQuery <= uiBposOnQuery && uiAposOnQuery + uiALength >= uiBposOnQuery + uiBLength &&
-					uiAposOnRef <= uiBposOnRef && uiAposOnRef + uiALength >= uiBposOnRef + uiBLength)
-				{
-					//disable b
-					disableMatch(uiFrom);
-					boost::clear_vertex(uiFrom, *pxGraph);
-					break;
-				}//if
-				//if b surrounds a
-				else if (uiAposOnQuery >= uiBposOnQuery && uiAposOnQuery + uiALength <= uiBposOnQuery + uiBLength &&
-					uiAposOnRef >= uiBposOnRef && uiAposOnRef + uiALength <= uiBposOnRef + uiBLength)
-				{
-					//disable a
-					disableMatch(uiTo);
-					boost::clear_vertex(uiTo, *pxGraph);
-					continue;
-				}//else if
-
-				assert(uiFrom != uiTo);
-				boost::add_edge(uiFrom, uiTo, *pxGraph);
-
-				//iterator gets decreased in the second condition of the while loop
-			}//while
-
-			if (apxPerfectMatches[pxCurrShadowIntervalIterator->uiCorrespondingPerfectMatchId].bDisabled)
-			{
-				pxCurrShadowIntervalIterator++;
-				continue;
-			}//if
-
-			//increment the iterator because insert will insert BEFORE the current element, but we want to insert after.
-			//there a two special cases where we do not want to increment:
-			// 1) the iterator currently points to the past-the-end position (e.g. if the list was empty from the beginning)
-			// 2) the iterator points the the very first element and the element we want to insert has to go before the first one
-			if (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.end() &&
-				!(ppxSurroundingCurrPosItt == lpxShadowIntervalsSurroundingCurrPos.begin()
-				&& (*ppxSurroundingCurrPosItt)->uiEnd >= pxCurrShadowIntervalIterator->uiEnd)
-				)
-				ppxSurroundingCurrPosItt++;
-			//end if; end if
-			lpxShadowIntervalsSurroundingCurrPos.insert(ppxSurroundingCurrPosItt, &*pxCurrShadowIntervalIterator);
-
-#ifdef DEBUG
-			/*check the list for consistency*/
-			ppxSurroundingCurrPosItt = lpxShadowIntervalsSurroundingCurrPos.begin();
-			auto pxDragpointer = *ppxSurroundingCurrPosItt;
-			if (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.end())
-				ppxSurroundingCurrPosItt++;
-			while (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.end())
-			{
-				assert(pxDragpointer->uiEnd <= (*ppxSurroundingCurrPosItt)->uiEnd);
-				pxDragpointer = *ppxSurroundingCurrPosItt;
-				ppxSurroundingCurrPosItt++;
-			}//for
-			/*end check list for consistency*/
-#endif //DEBUG
-
-
-			pxCurrShadowIntervalIterator++;
-		}//for
-
-	}//function
-
-	bool noShadowsOverlap(bool bLeftShadow)
-	{
-		auto pxUsedVector = &axRightShadows;
-		if (bLeftShadow)
-			pxUsedVector = &axLeftShadows;
-
-		std::list<ShadowInterval*> lpxShadowIntervalsSurroundingCurrPos;
-
-		auto pxCurrShadowIntervalIterator = pxUsedVector->begin();
-		while (pxCurrShadowIntervalIterator != pxUsedVector->end())
-		{
-			if (apxPerfectMatches[pxCurrShadowIntervalIterator->uiCorrespondingPerfectMatchId].bDisabled)
-			{
-				pxCurrShadowIntervalIterator++;
-				continue;
-			}//if
-
-			auto ppxSurroundingCurrPosItt = lpxShadowIntervalsSurroundingCurrPos.begin();
-			assert(ppxSurroundingCurrPosItt == lpxShadowIntervalsSurroundingCurrPos.end() || pxCurrShadowIntervalIterator->uiStart >= (*ppxSurroundingCurrPosItt)->uiStart);
-			//remove all intervals at the beginning of the list that we passed when jumping to the beginning of this interval
-			while (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.end() && (*ppxSurroundingCurrPosItt)->uiEnd < pxCurrShadowIntervalIterator->uiStart)
-			{
-				lpxShadowIntervalsSurroundingCurrPos.erase(ppxSurroundingCurrPosItt++);
-			}//while
-
-			//add edges between the current and all elements in the list that end after the current.
-			ppxSurroundingCurrPosItt = lpxShadowIntervalsSurroundingCurrPos.end();
-			auto uiFrom = pxCurrShadowIntervalIterator->uiCorrespondingPerfectMatchId;
-			while (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.begin() && (*--ppxSurroundingCurrPosItt)->uiEnd >= pxCurrShadowIntervalIterator->uiEnd)
-			{
-				auto uiTo = (*ppxSurroundingCurrPosItt)->uiCorrespondingPerfectMatchId;
-				assert(uiFrom != uiTo);
-
-				BOOST_LOG_TRIVIAL(error) << "found two interfering intervals (disabled,query,ref,length) : ("
-					<< apxPerfectMatches[uiFrom].bDisabled << ", "
-					<< apxPerfectMatches[uiFrom].pxPerfectMatch->getPosOnQuery() << ", "
-					<< apxPerfectMatches[uiFrom].pxPerfectMatch->getPosOnReference() << ", "
-					<< apxPerfectMatches[uiFrom].pxPerfectMatch->getLength() << ")("
-					<< apxPerfectMatches[uiTo].bDisabled << ", "
-					<< apxPerfectMatches[uiTo].pxPerfectMatch->getPosOnQuery() << ", "
-					<< apxPerfectMatches[uiTo].pxPerfectMatch->getPosOnReference() << ", "
-					<< apxPerfectMatches[uiTo].pxPerfectMatch->getLength() << ")";
-
-				return false;
-				//iterator gets decreased in the second condition of the while loop
-			}//while
-			if (ppxSurroundingCurrPosItt != lpxShadowIntervalsSurroundingCurrPos.end())
-				ppxSurroundingCurrPosItt++;
-			lpxShadowIntervalsSurroundingCurrPos.insert(ppxSurroundingCurrPosItt, &*pxCurrShadowIntervalIterator);
-
-			pxCurrShadowIntervalIterator++;
-		}//for
-
-		return true;
-	}//function
-
-	void removeAllButBiggestVertex(ComponentGraph &xComponent)
-	{
-		uint16_t uiBiggestVertexId = *boost::make_iterator_range(boost::vertices(xComponent)).begin();
-		for (auto uiCurr : boost::make_iterator_range(boost::vertices(xComponent)))
-			if (!apxPerfectMatches[uiCurr].bDisabled && apxPerfectMatches[uiCurr].pxPerfectMatch->getLength() > apxPerfectMatches[uiBiggestVertexId].pxPerfectMatch->getLength())
-				uiBiggestVertexId = uiCurr;
-		//end if; end for
-
-
-		for (auto uiCurr : boost::make_iterator_range(boost::vertices(xComponent)))
-		{
-			if (uiCurr != uiBiggestVertexId && !apxPerfectMatches[uiCurr].bDisabled)
-			{
-				disableMatch(uiCurr);
-			}//if
-		}//for
-	}//function
-
-	void helperRemoveOptimalVertices(ComponentGraph &xComponent, std::vector<bool> &abVertexEnabled, unsigned int uiI,
-		std::map<uint16_t, unsigned int> &mVertexIndecies, std::vector<std::vector<bool>> &aabSolutions)
-	{
-		if (uiI >= abVertexEnabled.size())
-			return;
-
-		abVertexEnabled[uiI] = false;
-
-
-		bool bGraphOk = true;
-		for (auto uiCurr : boost::make_iterator_range(boost::vertices(xComponent)))
-		{
-			if (!apxPerfectMatches[uiCurr].bDisabled && abVertexEnabled[mVertexIndecies[uiCurr]])
-			{
-				for (auto uiOther : boost::make_iterator_range(boost::adjacent_vertices(uiCurr, xComponent)))
-				{
-					if (!apxPerfectMatches[uiOther].bDisabled && abVertexEnabled[mVertexIndecies[uiOther]])
-					{
-						bGraphOk = false;
-						break;
-					}//if
-				}//for
-			}//if
-			if (!bGraphOk)
-				break;
-		}//for
-
-		if (bGraphOk)
-		{
-			//copy the current solution
-			aabSolutions.push_back(std::vector<bool>(abVertexEnabled));
-			abVertexEnabled[uiI] = true;
-			helperRemoveOptimalVertices(xComponent, abVertexEnabled, uiI + 1, mVertexIndecies, aabSolutions);
-		}//if
-		else
-		{
-			helperRemoveOptimalVertices(xComponent, abVertexEnabled, uiI + 1, mVertexIndecies, aabSolutions);
-			abVertexEnabled[uiI] = true;
-			helperRemoveOptimalVertices(xComponent, abVertexEnabled, uiI + 1, mVertexIndecies, aabSolutions);
-		}//else
-	}//function
-
-	/*slow approach*/
-	void removeOptimalVertecies(ComponentGraph &xComponent)
-	{
-
-		std::vector<bool> abVertexEnabled;
-		std::vector<uint16_t> auiVertexIndicies;
-		std::map<uint16_t, unsigned int> mVertexIndecies;
-
-		unsigned int uiI = 0;
-		for (auto uiCurr : boost::make_iterator_range(boost::vertices(xComponent)))
-			if (!apxPerfectMatches[uiCurr].bDisabled)
-			{
-				abVertexEnabled.push_back(true);
-				auiVertexIndicies.push_back(uiCurr);
-				mVertexIndecies[uiCurr] = uiI;
-				uiI++;
-			}//for
-		//end for
-
-		if (uiI <= 1)
-			return;
-		BOOST_LOG_TRIVIAL(info) << "trying to cut " << uiI << " nodes";
-
-
-		std::vector<std::vector<bool>> aabSolutions;
-
-		helperRemoveOptimalVertices(xComponent, abVertexEnabled, 0, mVertexIndecies, aabSolutions);
-
-		std::string s = "";
-		if (aabSolutions.size() == 0)
-		{
-			s.append(":\n");
-			for (auto uiCurr : boost::make_iterator_range(boost::vertices(xComponent)))
-			{
-				s.append(" (").append(std::to_string(uiCurr)).append(",").append(std::to_string(apxPerfectMatches[uiCurr].bDisabled)).append(")->");
-				for (auto uiOther : boost::make_iterator_range(boost::adjacent_vertices(uiCurr, xComponent)))
-				{
-					s.append(std::to_string(uiOther)).append(",");
-				}//for
-				s.append("\n");
-			}//for
-		}//if
-		BOOST_LOG_TRIVIAL(info) << "found " << aabSolutions.size() << " possible ways to cut the graph" << s;
-
-		nucSeqIndex uiBestSolution = 0;
-		unsigned int uiIndexBestSolution = 0;
-		for (unsigned int uiCurrIndex = 0; uiCurrIndex < aabSolutions.size(); uiCurrIndex++)
-		{
-			nucSeqIndex uiCurrSolution = 0;
-			for (unsigned int uiI = 0; uiI < aabSolutions[uiCurrIndex].size(); uiI++)
-			{
-				if (aabSolutions[uiCurrIndex][uiI])
-					uiCurrSolution += apxPerfectMatches[auiVertexIndicies[uiI]].pxPerfectMatch->getLength();
-			}//for
-
-			if (uiCurrSolution > uiBestSolution)
-			{
-				uiBestSolution = uiCurrSolution;
-				uiIndexBestSolution = uiCurrIndex;
-			}//if
-		}//for
-
-		//in this case the graph was already disconnected.
-		if (aabSolutions.size() == 0)
-			return;
-
-		for (unsigned int uiI = 0; uiI < aabSolutions[uiIndexBestSolution].size(); uiI++)
-			disableMatch(auiVertexIndicies[uiI]);
-		//end for
-	}//function
-
-	void disconnectComponent(ComponentGraph &xComponent)
-	{
-		removeAllButBiggestVertex(xComponent);
-		//removeOptimalVertecies(xComponent);
-	}//function
-
-	void disconnectGraph()
-	{
-		for (auto xComponent : getAllConnectedComponents(*pxGraph))
-		{
-			disconnectComponent(xComponent);
-		}//for
-	}//function
-
-#endif //REMOVE_INTERFERING_MATCHES_USING_GRAPH
-
-#if REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
 
 	/*"cast" the "shadows" of all matches against the left and right border of the bucket, will store the outcome in axShadows
 	*/
@@ -717,7 +253,6 @@ private:
 				return xA.pxPerfectMatch->getPosOnQuery() < xB.pxPerfectMatch->getPosOnQuery();
 			}//lambda
 		);//sort function call
-
 
 		/*what we do:
 		*	walk over the matches which are sorted by their beginnings.
@@ -1055,8 +590,6 @@ private:
 
 		return true;
 	}//function
-
-#endif //REMOVE_INTERFERING_MATCHES_USING_LINE_SWEEP
 
 
 public:
