@@ -661,11 +661,11 @@ public:
 	 */
 	BWACompatiblePackedNucleotideSequencesCollection() :
 		bPackComprisesReverseStrand( false ),
-		seed( uint32_t( time( NULL ) ) ),	// random number generator initial value
-		uiUnpackedSizeForwardStrand( 0 ),
-		xPackedNucleotideSequences(),
+		xVectorOfSequenceDescriptors(),
 		xVectorOfHoleDescriptors(),
-		xVectorOfSequenceDescriptors()
+		xPackedNucleotideSequences(),
+		seed( uint32_t( time( NULL ) ) ),	// random number generator initial value
+		uiUnpackedSizeForwardStrand( 0 )
 	{
 		/* Initialize the random number generator
 		 */
