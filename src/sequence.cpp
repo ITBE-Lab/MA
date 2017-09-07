@@ -167,9 +167,15 @@ void exportSequence()
 		>(
 			"NucSeq", 
 			"Holds a single nucleotide sequence.\n",
-			boost::python::init<const char*>()
+			boost::python::init<const char*>(
+				"arg1: self\n"
+				"arg2: string to initialize the sequence from\n"
+			)
 		)
-			.def(boost::python::init<const std::string>())
+			.def(boost::python::init<const std::string>(
+				"arg1: self\n"
+				"arg2: string to initialize the sequence from\n"
+			))
 			.def(
 					"at", 
 					&NucleotideSequence::charAt,

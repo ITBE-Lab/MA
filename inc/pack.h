@@ -1102,7 +1102,7 @@ public:
 	 * Bridging between forward strand and reverse strand is not allowed.
 	 * FIX ME: Here we have to integrate ambiguous base pairs, by restoring data form the "hole section".
 	 */
-	std::shared_ptr<NucleotideSequence> vExtractSubsection(
+	void vExtractSubsection(
 			const int64_t iBegin,			 // begin of extraction
 			const int64_t iEnd,			 	// end of extraction
 			NucleotideSequence &rxSequence, // receiver of the extraction process

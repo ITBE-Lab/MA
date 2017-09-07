@@ -23,7 +23,11 @@ void exportIntervalTree()
 		>(
 			"Segment",
 			"A interval on the querry.\n",
-			boost::python::init<const nucSeqIndex, const nucSeqIndex>()
+			boost::python::init<const nucSeqIndex, const nucSeqIndex>(
+				"arg1: self\n"
+				"arg2: start index of the segment\n"
+				"arg2: end index of the segment\n"
+			)
 		)
 			.def(
 					"start", 
@@ -83,7 +87,10 @@ void exportIntervalTree()
 			"SegmentList",
 			"A doubly linked list holding Sements.\n"
 		)
-			.def(boost::python::init<const nucSeqIndex>())
+			.def(boost::python::init<const nucSeqIndex>(
+				"arg1: self\n"
+				"arg2: size of the query\n"
+			))
 			.def(
 					"begin", 
 					&SegmentTree::begin,

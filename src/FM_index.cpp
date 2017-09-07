@@ -258,7 +258,10 @@ void exportFM_index()
                 "FMIndex",
                 "contains the BWT of a nucleotide sequence\n"
             )
-        .def(boost::python::init<std::shared_ptr<NucleotideSequence>>())
+        .def(boost::python::init<std::shared_ptr<NucleotideSequence>>(
+            "arg1: self\n"
+            "arg2: the nucleotide sequence to create the BWT Index from.\n"
+        ))
         .def(
                 "load", 
                 &FM_Index::vLoadFM_Index,

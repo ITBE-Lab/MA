@@ -522,7 +522,16 @@ void exportSegmentation()
 			"uiMinIntervalSize: only record intervals greater than uiMinIntervalSize\n"
 			"uiMaxHitsPerInterval: skip seeds that have more than "
 			"uiMaxHitsPerInterval matches on the reference if bSkipLongBWTIntervals is set\n",
-			boost::python::init<boost::python::optional<bool, bool, nucSeqIndex, unsigned int>>()
+			boost::python::init<boost::python::optional<bool, bool, nucSeqIndex, unsigned int>>(
+				"arg1: self\n"
+				"arg2: weather the extension of "
+				"intervalls shall be stopped at N's\n"
+				"arg3: skip seeds that have more than "
+				"arg5 matches on the reference\n"
+				"arg4: only record intervals greater than arg4\n"
+				"arg5: skip seeds that have more than "
+				"arg5 matches on the reference if arg3 is set\n"
+			)
 		)
 		.def_readwrite("bBreakOnAmbiguousBase", &SegmentationContainer::bBreakOnAmbiguousBase)
 		.def_readwrite("bSkipLongBWTIntervals", &SegmentationContainer::bSkipLongBWTIntervals)
