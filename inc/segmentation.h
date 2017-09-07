@@ -34,7 +34,7 @@ private:
 
 	/*
 	*	performs backwards extension in the given interval
-	*	returns the position where the backwards extension breaks
+	*returns the position where the backwards extension breaks
 	*/
 	bool canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength);
 	/* perform forward or backwards extension (depending on bBackwards) int the given interval pxNode

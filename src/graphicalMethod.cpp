@@ -210,8 +210,8 @@ void exportGraphicalMethod()
 		.def(
 				"get_score", 
 				&StripOfConsideration::getValueOfContet,
-				"	arg1: self\n"
-				"	returns: the score as integer\n"
+				"arg1: self\n"
+				"returns: the score as integer\n"
 				"\n"
 				"Gives the current score of the strip.\n"
 				"Depending on how processed the strip is, "
@@ -270,12 +270,13 @@ void exportGraphicalMethod()
 			"LineSweep",
 			"Uses linesweeping to remove contradicting "
 			"matches within one strip of consideration.\n"
+			"\n"
 			"Execution:\n"
 			"	Expects querry, ref, strip_vec as input.\n"
 			"		querry: the querry as NucleotideSequence\n"
 			"		ref: the reference seqeuence as Pack\n"
 			"		strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
-			"	Returns strip_vec.\n"
+			"	returns strip_vec.\n"
 			"		strip_vec: the evaluated areas\n"
 		);
     //export the Bucketing class
@@ -283,6 +284,7 @@ void exportGraphicalMethod()
 			"Bucketing",
 			"Throws seeds into buckets in order to speed up the extraction "
 			"of strips of consideration.\n"
+			"\n"
 			"	Execution:\n"
 			"	Expects anchor, seeds, query, ref, ind, rev_ind as input.\n"
 			"		anchor: the seeds that shall be used as anchors for the strips\n"
@@ -291,7 +293,7 @@ void exportGraphicalMethod()
 			"		ref: the reference seqeuence as Pack\n"
 			"		ind: the forward FM Index\n"
 			"		rev_ind: the reversed FM Index\n"
-			"	Returns strip_vec.\n"
+			"	returns strip_vec.\n"
 			"		strip_vec: a strip of consideration for each anchor "
 			"as StripOfConsiderationVector\n"
 		);

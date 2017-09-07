@@ -98,8 +98,8 @@ void exportContainer()
         .def(
                 "get_type_info", 
                 &Container::getTypeInfo,
-                "   arg1: self\n"
-                "   returns: an enum describing the type of data stored.\n"
+                "arg1: self\n"
+                "returns: an enum describing the type of data stored.\n"
                 "\n"
                 "Used to check weather a module can work with the given containers.\n"
             );

@@ -11,10 +11,10 @@ void exportModule()
         .def(
                 "execute",
                 &Module::saveExecute,
-                "   arg1: self\n"
-                "   arg2: tuple/vector of containers. "
+                "arg1: self\n"
+                "arg2: tuple/vector of containers. "
                 "Their types must match the input type of this module\n"
-                "   returns: a container holding the results of the "
+                "returns: a container holding the results of the "
                 "computations done by this module. Must match the output type of the module.\n"
                 "\n"
                 "perform the task implemented by the respective instance.\n"
@@ -22,14 +22,14 @@ void exportModule()
         .def(
                 "get_input_type",
                 &Module::getInputType,
-                "   arg1: self\n"
-                "   returns: the type of containers that is expected as input by this module\n"
+                "arg1: self\n"
+                "returns: the type of containers that is expected as input by this module\n"
             )
         .def(
                 "get_output_type",
                 &Module::getOutputType,
-                "   arg1: self\n"
-                "   returns: the type of containers that is expected as output from this module\n"
+                "arg1: self\n"
+                "returns: the type of containers that is expected as output from this module\n"
             )
     ;
     //test class

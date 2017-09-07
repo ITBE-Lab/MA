@@ -523,7 +523,7 @@ public :
 	 */
 	NucleotideSequenceSlice fromTo(size_t from, size_t end) const;
 	/* by markus
-	*	returns a sequence slice of the index from while checking if from >= 0
+	*returns a sequence slice of the index from while checking if from >= 0
 	*		with the length of uiSize while checking if the end of the slice is bigger than sequence length
 	*	if the slice is out of bounds a slice of the size 0 is returned
 	*	uses fromTo

@@ -262,18 +262,18 @@ void exportFM_index()
         .def(
                 "load", 
                 &FM_Index::vLoadFM_Index,
-                "   arg1: self\n"
-                "   arg2: the path an filename of the FM Index that shall be loaded\n"
-                "   returns: nil\n"
+                "arg1: self\n"
+                "arg2: the path an filename of the FM Index that shall be loaded\n"
+                "returns: nil\n"
                 "\n"
                 "load the FMIndex from the given file\n"
             )
         .def(
                 "exists", 
                 &FM_Index::packExistsOnFileSystem,
-                "   arg1: self\n"
-                "   arg2: the path an filename of the FM Index that shall be checked\n"
-                "   returns: nil\n"
+                "arg1: self\n"
+                "arg2: the path an filename of the FM Index that shall be checked\n"
+                "returns: nil\n"
                 "\n"
                 "check weather a FM index file exists on disk.\n"
             )
@@ -281,9 +281,9 @@ void exportFM_index()
         .def(
                 "store", 
                 &FM_Index::vStoreFM_Index,
-                "   arg1: self\n"
-                "   arg2: the path an filename the FM Index shall be stored at\n"
-                "   returns: nil\n"
+                "arg1: self\n"
+                "arg2: the path an filename the FM Index shall be stored at\n"
+                "returns: nil\n"
                 "\n"
                 "save this FM Inedx on disc.\n"
             );

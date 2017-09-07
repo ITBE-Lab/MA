@@ -46,7 +46,22 @@ void exportGetAnchors()
     boost::python::class_<
         NlongestIntervalsAsAnchors, 
         boost::python::bases<Module>
-    >("NlongestIntervalsAsAnchors", boost::python::init<boost::python::optional<unsigned int>>())
+    >(
+        "NlongestIntervalsAsAnchors", 
+        "uiN: number of intervals to extract as anchors\n"
+        "\n"
+        "Picks a set of anchors for the strips of consideration.\n"
+        "\n"
+        "Execution:\n"
+        "   Expects seg_list\n"
+        "       seg_list: the list of segments to pick the anchors from\n"
+        "   returns segList.\n"
+        "       seg_list: the anchors\n",
+        boost::python::init<boost::python::optional<unsigned int>>(
+            "arg1: self\n"
+            "arg2: number of intervals to extract as anchors\n"
+        )
+    )
         .add_property("uiN", &NlongestIntervalsAsAnchors::uiN, &NlongestIntervalsAsAnchors::uiN)
     ;
 

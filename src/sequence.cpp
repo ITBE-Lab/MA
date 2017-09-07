@@ -107,7 +107,7 @@ void NucleotideSequence::catenate( const DeprecatedIntervalVector<DeprecatedDoub
 } // method
 
 /* by markus
-*	returns a sequence slice of the index from while checking if from >= 0 
+*returns a sequence slice of the index from while checking if from >= 0 
 *		with the length of uiSize while checking if the end of the slice is bigger than the sequence length
 *	if the slice is out of bounds a slice of the size 0 is returned
 */
@@ -173,32 +173,32 @@ void exportSequence()
 			.def(
 					"at", 
 					&NucleotideSequence::charAt,
-					"	arg1: self\n"
-					"	arg2: index at which to look\n"
-					"	returns: the char at the given index.\n"
+					"arg1: self\n"
+					"arg2: index at which to look\n"
+					"returns: the char at the given index\n"
 				)
 			.def(
 					"append", 
 					&NucleotideSequence::vAppend_boost,
-					"	arg1: self\n"
-					"	arg2: sequence to append\n"
-					"	returns: nil\n"
+					"arg1: self\n"
+					"arg2: sequence to append\n"
+					"returns: nil\n"
 					"\n"
-					"appends the given string to the end of the sequence.\n"
-					"any character other than A,C,T,G,a,c,t and g "
+					"Appends the given string to the end of the sequence.\n"
+					"Any character other than A,C,T,G,a,c,t and g "
 					"will result in an N beeing appended.\n"
 				)
 			.def(
 					"length", 
 					&NucleotideSequence::length,
-					"	arg1: self\n"
-					"	returns: the length of the sequence\n"
+					"arg1: self\n"
+					"returns: the length of the sequence\n"
 				)
 			.def(
 					"reverse", 
 					&NucleotideSequence::vReverse,
-					"	arg1: self\n"
-					"	returns: nil\n"
+					"arg1: self\n"
+					"returns: nil\n"
 					"\n"
 					"Reverses the sequence.\n"
 				);
