@@ -184,6 +184,13 @@ void exportSequence()
 					"returns: the char at the given index\n"
 				)
 			.def(
+					"__getitem__", 
+					&NucleotideSequence::charAt,
+					"arg1: self\n"
+					"arg2: index at which to look\n"
+					"returns: the char at the given index\n"
+				)
+			.def(
 					"append", 
 					&NucleotideSequence::vAppend_boost,
 					"arg1: self\n"
@@ -214,4 +221,7 @@ void exportSequence()
 			std::shared_ptr<NucleotideSequence>, 
 			std::shared_ptr<Container>
 		>(); 
+
+	//register nucseq as return value
+	boost::python::register_ptr_to_python< std::shared_ptr<NucleotideSequence> >();
 }//function

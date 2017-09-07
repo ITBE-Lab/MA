@@ -110,9 +110,9 @@ public:
 	}
 
 	//getters
-	const nucSeqIndex getLength() const { return uiLength; }//function
-	const nucSeqIndex getPosOnQuery() const { return uiPosOnQuery; }//function
-	const nucSeqIndex getPosOnReference() const { return uiPosOnReference; }//function
+	nucSeqIndex getLength() const { return uiLength; }//function
+	nucSeqIndex getPosOnQuery() const { return uiPosOnQuery; }//function
+	nucSeqIndex getPosOnReference() const { return uiPosOnReference; }//function
 };
 
 
@@ -739,6 +739,22 @@ public:
 		//calculate the actual score, considering disabled AND overlapping matches
 		calculateScore();
 	}//function
+
+	unsigned int numMatches()
+	{
+		return apxPerfectMatches.size();
+	}//function
+
+	std::shared_ptr<const PerfectMatch> getMatch(unsigned int at)
+	{
+		return apxPerfectMatches[at].pxPerfectMatch;
+	}//function
+
+	bool matchEnabled(unsigned int at)
+	{
+		return !apxPerfectMatches[at].bDisabled;
+	}//function
+
 };//class
 
 

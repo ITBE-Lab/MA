@@ -1,15 +1,18 @@
-#ifndef SMITH_WATERMAN_H
-#define SMITH_WATERMAN_H
+#ifndef NEEDLEMAN_WUNSCH_H
+#define NEEDLEMAN_WUNSCH_H
 
 #include "boost/python.hpp"
 #include "intervalTree.h"
 #include "module.h"
+#include "sequence.h"
+#include "aligner.h"
+#include <memory>
 
-class SmithWaterman : public Module
+class NeedlemanWunsch : public Module
 {
 public:
 
-    SmithWaterman()
+    NeedlemanWunsch()
     {}//constructor
 
     std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
@@ -20,6 +23,6 @@ public:
 
 };//class
 
-void exportSmithWaterman();
+void exportNeedlemanWunsch();
 
 #endif

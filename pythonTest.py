@@ -1,10 +1,11 @@
 from LAuS import *
+from alignmentPrinter import AlignmentPrinter
 import random
 
 seq = ""
 q = ""
 
-for _ in range(1000000):
+for _ in range(100000):
     char = random.randint(1,4)
     if char == 1:
         seq += "a"
@@ -51,7 +52,7 @@ while iterator.exists():
     end = iterator.get().end()
     sequence = ""
     for i in range(start, end):
-        sequence = sequence + query.at(i)
+        sequence = sequence + query[i]
     print "segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
     iterator.next()
 
@@ -66,7 +67,7 @@ while iterator.exists():
     end = iterator.get().end()
     sequence = ""
     for i in range(start, end):
-        sequence = sequence + query.at(i)
+        sequence = sequence + query[i]
     print "anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
     iterator.next()
 
@@ -91,3 +92,12 @@ for strip in strips_of_consideration.x:
     print strip.get_score()
 
 print "best score: " + str(best_strip.x[0].get_score())
+
+nmw = NeedlemanWunsch()
+
+align = nmw.execute((best_strip.x[0], query, ref_seq))
+
+printer = AlignmentPrinter()
+
+printer.execute((align, query, ref_seq))
+

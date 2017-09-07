@@ -28,5 +28,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportExceptions();
         exportGetAnchors();
         exportAlignment();
-        exportSmithWaterman();
+        exportNeedlemanWunsch();
 }
