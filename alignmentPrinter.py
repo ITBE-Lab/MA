@@ -29,7 +29,7 @@ Execution:
         query = input[1]
         ref_pack = input[2]
 
-        ref = ref_pack.extract_from_to(align.begin_on_ref(), len(align) + align.begin_on_ref())
+        ref = ref_pack.extract_from_to(align.begin_on_ref(), align.end_on_ref())
 
         lines = [
             "some desc for aligment here...:"
@@ -38,6 +38,11 @@ Execution:
         ind_query = 0
         ind_ref = 0
 
+        print "query:"
+        print query
+        print "\nreference:"
+        print ref
+
         while counter < len(align):
             #append three more lines if the current lines are full
             if counter % self.nuc_per_line == 0:
@@ -45,8 +50,7 @@ Execution:
                 lines.extend(["", desc, "", "", ""])
 
             #check for match or missmatch
-            print ind_ref
-            print ind_query
+            #print str(ind_ref) + " of " + str(align.end_on_ref() - align.begin_on_ref())
             if align[counter] is MatchType.match:
                 lines[-3] += ref[ind_ref]
                 lines[-2] += '|'

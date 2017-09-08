@@ -18,6 +18,7 @@ private:
     std::vector<std::tuple<MatchType, nucSeqIndex>> data;
     nucSeqIndex uiLength;
     nucSeqIndex uiBeginOnRef;
+    nucSeqIndex uiEndOnRef;
 
 public:
     Alignment()
@@ -26,11 +27,12 @@ public:
         uiLength(0),
         uiBeginOnRef(0)
     {}//constructor
-    Alignment(nucSeqIndex uiLength, nucSeqIndex uiBeginOnRef)
+    Alignment(nucSeqIndex uiBeginOnRef, nucSeqIndex uiEndOnRef)
             :
         data(),
-        uiLength(uiLength),
-        uiBeginOnRef(uiBeginOnRef)
+        uiLength(0),
+        uiBeginOnRef(uiBeginOnRef),
+        uiEndOnRef(uiEndOnRef)
     {}//constructor
 
 
@@ -39,19 +41,15 @@ public:
     MatchType at(nucSeqIndex i)
     {
         //everything after the query is a deletion
-        if(i > uiLength)
+        if(i >= uiLength)
             return MatchType::deletion;
 
         //the MatchType match type is stored in a compressed format -> extract it
         nucSeqIndex j = 0;
         unsigned int k = 0;
-        while(j < i)
-        {
-            j += std::get<1>(data[k]);
-            k++;
-        }//while
+        while(k < data.size() && (j += std::get<1>(data[k++])) <= i);
 
-        return std::get<0>(data[k]);
+        return std::get<0>(data[k-1]);
     }//function
 
     MatchType operator[](nucSeqIndex i)
@@ -61,11 +59,11 @@ public:
 
     void append(MatchType type, nucSeqIndex size)
     {
-        uiLength++;
         if(data.size() != 0 && std::get<0>(data.back()) == type)
-            std::get<1>(data.back())+= size;
+            std::get<1>(data.back()) += size;
         else
-            data.push_back(std::make_tuple(type,size));
+            data.push_back(std::make_tuple(type, size));
+        uiLength += size;
     }//function
 
     void append(MatchType type)
@@ -91,6 +89,11 @@ public:
     nucSeqIndex beginOnRef()
     {
         return uiBeginOnRef;
+    }//function
+
+    nucSeqIndex endOnRef()
+    {
+        return uiEndOnRef;
     }//function
 };//class
 

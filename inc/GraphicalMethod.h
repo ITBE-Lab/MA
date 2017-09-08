@@ -138,6 +138,8 @@ public:
 
 	void addMatch(std::shared_ptr<const PerfectMatch> pxNew)
 	{
+		if(pxNew == nullptr)
+			return;
 		std::lock_guard<std::mutex> xGuard(xMutex);
 		lpxContent.push_back(pxNew);
 		uiTotalScore += pxNew->getLength();
@@ -639,6 +641,8 @@ public:
 	*/
 	void addElement(std::shared_ptr<PerfectMatchBucket> pxNew)
 	{
+		if(pxNew == nullptr)
+			return;
 		uiValueOfContent += pxNew->getValue();
 		lpxPerfectMatcheBuckets.push_back(pxNew);
 	}//function
@@ -1040,6 +1044,8 @@ public:
 
 	void addMatch(std::shared_ptr<const PerfectMatch> pxNew)
 	{
+		if(pxNew == nullptr)
+			return;
 		apxPerfectMatchBuckets[pxNew->getPositionForBucketing(uiQueryLength) / uiStripSize]->addMatch(pxNew);
 	}//function
 

@@ -621,6 +621,14 @@ public :
 	void catenate( const DeprecatedIntervalVector<DeprecatedDoubleStrandIntervalDescriptor> &rxIntervalVector,
 				   NucleotideSequence &rxNucleotideSequence
 				 ) const;
+
+	std::string toString()
+	{
+		std::string ret = "";
+		for (unsigned int i = 0; i < length(); i++)
+			ret += charAt(i);
+		return ret;
+	}
 }; // class NucleotideSequence
 
 /* Takes a sequence slice and creates a vector with virtual contigs

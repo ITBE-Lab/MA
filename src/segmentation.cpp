@@ -45,33 +45,6 @@ SA_IndexInterval bwt_extend_backward(
 	return SA_IndexInterval(pxFM_Index->L2[c] + 1 + cntk[c], cntl[c] - cntk[c]);
 } // method
 
-
-SA_IndexInterval bwt_extend_forward(
-									// current interval
-									const SA_IndexInterval &ik,
-									// the character to extend with
-									const uint8_t c,
-									// the FM index by reference
-									std::shared_ptr<FM_Index> pxFM_Index
-									)
-{
-	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
-	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
-
-	pxFM_Index->bwt_2occ4(
-		// until start of SA index interval 
-		// (-1, because we count the characters in front of the index)
-		ik.getStart() - 1,
-		// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
-		ik.getEnd() - 1,
-		cntk,						// output: Number of A, C, G, T until start of interval
-		cntl						// output: Number of A, C, G, T until end of interval
-	);
-	//doesnt work?
-
-	return SA_IndexInterval(0,0);
-} //funcion
-
 bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength)
 {
 	if (!bBackwards)
@@ -80,7 +53,7 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 	}//if
 	else
 	{
-		return uiCurrIndex >= 0;
+		return uiCurrIndex > 0;
 	}//else
 
 	return true;
@@ -187,6 +160,7 @@ nucSeqIndex Segmentation::extend(
 			{
 				// record the current match
 				if (!bBackwards)
+				{
 					//TODO: use only one class to represents BWT intervals
 					pxNode->pushBackBwtInterval(
 												ik.getStart(),
@@ -196,7 +170,9 @@ nucSeqIndex Segmentation::extend(
 												true,
 												false
 											);
+				}
 				else
+				{
 					pxNode->pushBackBwtInterval(
 												ik.getStart(),
 												ik.getSize(),
@@ -205,6 +181,7 @@ nucSeqIndex Segmentation::extend(
 												false,
 												false
 											);
+				}
 			}//if
 		}//if
 
@@ -226,6 +203,7 @@ nucSeqIndex Segmentation::extend(
 	{
 		//record the current match
 		if (!bBackwards)
+		{
 			//TODO: use only one class to represents BWT intervals
 			pxNode->pushBackBwtInterval(
 										ik.getStart(),
@@ -235,7 +213,9 @@ nucSeqIndex Segmentation::extend(
 										true,
 										true
 									);
+		}
 		else
+		{
 			pxNode->pushBackBwtInterval(
 										ik.getStart(),
 										ik.getSize(),
@@ -244,6 +224,7 @@ nucSeqIndex Segmentation::extend(
 										false,
 										true
 									);
+		}
 	}//if
 
 	if (!bBackwards)

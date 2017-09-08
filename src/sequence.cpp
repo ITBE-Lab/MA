@@ -208,6 +208,18 @@ void exportSequence()
 					"returns: the length of the sequence\n"
 				)
 			.def(
+					"__len__", 
+					&NucleotideSequence::length,
+					"arg1: self\n"
+					"returns: the length of the sequence\n"
+				)
+			.def(
+					"__str__", 
+					&NucleotideSequence::toString,
+					"arg1: self\n"
+					"returns: the sequence as string\n"
+				)
+			.def(
 					"reverse", 
 					&NucleotideSequence::vReverse,
 					"arg1: self\n"
@@ -221,6 +233,20 @@ void exportSequence()
 			std::shared_ptr<NucleotideSequence>, 
 			std::shared_ptr<Container>
 		>(); 
+
+	//register return values of vectors of nucseqs
+	boost::python::class_<std::vector<std::shared_ptr<NucleotideSequence>>>("VecRetNuc")
+	.def(boost::python::vector_indexing_suite<
+			std::vector<std::shared_ptr<NucleotideSequence>>,
+			/*
+			*	true = noproxy this means that the content of the vector is already exposed by
+			*	boost python. 
+			*	if this is kept as false, StripOfConsideration would be exposed a second time.
+			*	the two StripOfConsiderations would be different and not intercastable.
+			*	=> keep this as true
+			*/
+			true
+		>());
 
 	//register nucseq as return value
 	boost::python::register_ptr_to_python< std::shared_ptr<NucleotideSequence> >();

@@ -46,6 +46,12 @@ void exportAlignment()
                 "returns: starting position of the aligment on the reference\n"
             )
         .def(
+                "end_on_ref", 
+                &Alignment::endOnRef,
+                "arg1: self\n"
+                "returns: ending position of the aligment on the reference\n"
+            )
+        .def(
                 "__len__", 
                 &Alignment::lenght,
                 "arg1: self\n"

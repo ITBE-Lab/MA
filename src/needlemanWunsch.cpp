@@ -33,34 +33,47 @@ void needlemanWunsch(
         std::shared_ptr<Alignment> pAlignment
     )
 {
-    if(toQuery <= fromQuery-2)
+    std::cout << toQuery-fromQuery << std::endl;
+    for(unsigned int i = fromQuery; i < toQuery; i++)
+        std::cout << pQuery->charAt(i);
+    std::cout << std::endl;
+    std::cout << toRef-fromRef << std::endl;
+    for(unsigned int i = fromRef; i < toRef; i++)
+        std::cout << pRef->charAt(i);
+    std::cout << std::endl;
+    if(toRef <= fromRef)
+        if(toQuery <= fromQuery)
+            return;
+    if(toQuery <= fromQuery)
     {
-        int iY = toRef-fromRef-2;
+        int iY = toRef-fromRef;
         while(iY > 0)
         {
             pAlignment->append(Alignment::MatchType::deletion);
+            std::cout << "D";
             iY--;
         }//while
         return;
     }//if
-    if(toRef <= fromRef-2)
+    if(toRef <= fromRef)
     {
-        int iX = toQuery-fromQuery-2;
+        int iX = toQuery-fromQuery;
         while(iX > 0)
         {
             pAlignment->append(Alignment::MatchType::insertion);
+            std::cout << "I";
             iX--;
         }//while
         return;
     }//if
-    int s[toQuery-fromQuery-1][toRef-fromRef-1];
-    for(unsigned int uiI = 0; uiI < toQuery-fromQuery-1; uiI++)
+    int s[toQuery-fromQuery+1][toRef-fromRef+1];
+    for(unsigned int uiI = 0; uiI < toQuery-fromQuery+1; uiI++)
         s[uiI][0] = -uiI;
-    for(unsigned int uiI = 0; uiI < toRef-fromRef-1; uiI++)
+    for(unsigned int uiI = 0; uiI < toRef-fromRef+1; uiI++)
         s[0][uiI] = -uiI;
-    for(unsigned int uiI = 1; uiI < toQuery-fromQuery-1; uiI++)
+    for(unsigned int uiI = 1; uiI < toQuery-fromQuery+1; uiI++)
     {
-        for(unsigned int uiJ = 1; uiJ < toRef-fromRef-1; uiJ++)
+        for(unsigned int uiJ = 1; uiJ < toRef-fromRef+1; uiJ++)
         {
             //insertion
             s[uiI][uiJ] = s[uiI - 1][uiJ - 1] + iInsertion;
@@ -69,53 +82,64 @@ void needlemanWunsch(
             int newScore = s[uiI][uiJ - 1] + iDeletion;
             if(newScore > s[uiI][uiJ])
                 s[uiI][uiJ] = newScore;
-
             //match / missmatch
             newScore = s[uiI - 1][uiJ - 1];
-            if( (*pQuery)[uiI] == (*pRef)[uiJ] )
+            if( (*pQuery)[toQuery - uiI] == (*pRef)[toRef - uiJ] )
                 newScore += iMatch;
             else
                 newScore += iMissMatch;
             if(newScore > s[uiI][uiJ])
                 s[uiI][uiJ] = newScore;
-
         }//for
     }//for
 
-    int iX = toQuery-fromQuery-2;
-    int iY = toRef-fromRef-2;
-    while(iX != 0 || iY != 0)
+    int iX = toQuery-fromQuery;
+    int iY = toRef-fromRef;
+    while(iX > 0 && iY > 0)
     {
-        if(s[iX-1][iY-1] <= s[iX-1][iY] && s[iX-1][iY-1] <= s[iX][iY-1])
+        //std::cout << pQuery->charAt(toQuery - iX) << ":" << pRef->charAt(toRef - iY) << std::endl;
+        if(s[iX-1][iY-1] >= s[iX-1][iY] && s[iX-1][iY-1] >= s[iX][iY-1])
         {
-            if( (*pQuery)[iX] == (*pRef)[iY] )
+            if( (*pQuery)[toQuery - iX] == (*pRef)[toRef - iY] )
+            {
                 pAlignment->append(Alignment::MatchType::match);
+                std::cout << "M";
+            }
             else
+            {
                 pAlignment->append(Alignment::MatchType::missmatch);
+                std::cout << "W";
+            }
             iX--;
             iY--;
         }//if
-        else if(s[iX][iY-1] <= s[iX-1][iY])
+        else if(s[iX][iY-1] >= s[iX-1][iY])
         {
             pAlignment->append(Alignment::MatchType::deletion);
             iY--;
+            std::cout << "D";
         }//if
         else
         {
             pAlignment->append(Alignment::MatchType::insertion);
             iX--;
+            std::cout << "I";
         }//if
+        //std::cout << std::endl;
     }//while
-    while(iX != 0)
+    while(iX > 0)
     {
         pAlignment->append(Alignment::MatchType::insertion);
         iX--;
+        std::cout << "I";
     }//while
-    while(iY != 0)
+    while(iY > 0)
     {
         pAlignment->append(Alignment::MatchType::deletion);
         iY--;
+        std::cout << "D";
     }//while
+    std::cout << std::endl;
 }//function
 
 std::shared_ptr<Container> NeedlemanWunsch::execute(
@@ -136,22 +160,19 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     while(!pStrip->matchEnabled(uiEnd))
         uiEnd--;
 
-    nucSeqIndex beginQuery = pStrip->getMatch(uiBegin)->getPosOnQuery();
-    nucSeqIndex beginRef = pStrip->getMatch(uiBegin)->getPosOnReference();
+    nucSeqIndex beginRef = pStrip->getMatch(uiBegin)->getPosOnReference() - 10;
     nucSeqIndex len = pStrip->getMatch(uiEnd)->getLength();
     nucSeqIndex endQuery = pStrip->getMatch(uiEnd)->getPosOnQuery() + len;
-    nucSeqIndex endRef = pStrip->getMatch(uiEnd)->getPosOnReference() + len;
+    nucSeqIndex endRef = pStrip->getMatch(uiEnd)->getPosOnReference() + len + 10;
 
     std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
 
-    nucSeqIndex totalSize = std::max(endQuery - beginQuery, endRef - beginRef);
-
-    std::shared_ptr<Alignment> pRet(new Alignment(totalSize, beginRef));
+    std::shared_ptr<Alignment> pRet(new Alignment(beginRef, endRef));
 
     nucSeqIndex endOfLastSeedQuery = 0;
     nucSeqIndex endOfLastSeedReference = 0;
 
-    for(unsigned int uiI = uiBegin; uiI < uiEnd; uiI++)
+    for(unsigned int uiI = uiBegin; uiI <= uiEnd; uiI++)
     {
         if(pStrip->matchEnabled(uiI))
         {
@@ -164,15 +185,50 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                     pStrip->getMatch(uiI)->getPosOnReference() - beginRef,
                     pRet
                 );
-            unsigned int len = pStrip->getMatch(uiI)->getLength();
-            pRet->append(Alignment::MatchType::match, len);
+            unsigned int ovQ = endOfLastSeedQuery - pStrip->getMatch(uiI)->getPosOnQuery();
+            if(pStrip->getMatch(uiI)->getPosOnQuery() > endOfLastSeedQuery)
+                ovQ = 0;
+            unsigned int ovR = endOfLastSeedReference - (pStrip->getMatch(uiI)->getPosOnReference() - beginRef);
+            if(pStrip->getMatch(uiI)->getPosOnReference() - beginRef > endOfLastSeedReference)
+                ovR = 0;
+            unsigned int len = pStrip->getMatch(uiI)->getLength() - 1;
+            pRet->append(Alignment::MatchType::deletion, ovQ);
+            //for(unsigned int i = 0; i < ovQ; i++)
+            //    std::cout << "d";
+            pRet->append(Alignment::MatchType::insertion, ovR);
+            //for(unsigned int i = 0; i < ovR; i++)
+            //    std::cout << "i";
+            if(len > ovQ + ovR)
+            {
+                pRet->append(Alignment::MatchType::match, len - ovQ - ovR);
+                std::cout << len - ovQ - ovR << std::endl;
+                for(unsigned int i = 0; i < len - ovQ - ovR; i++)
+                    std::cout << pQuery->charAt(i + pStrip->getMatch(uiI)->getPosOnQuery());
+                std::cout << std::endl;
+                for(unsigned int i = 0; i < len - ovQ - ovR; i++)
+                    std::cout << pRef->charAt(i + pStrip->getMatch(uiI)->getPosOnReference() - beginRef);
+                std::cout << std::endl;
+                for(unsigned int i = 0; i < len - ovQ - ovR; i++)
+                    std::cout << "m";
+                std::cout << std::endl;
+            }//if
+            std::cout << std::endl;
             endOfLastSeedQuery = pStrip->getMatch(uiI)->getPosOnQuery() + len;
-            endOfLastSeedReference = pStrip->getMatch(uiI)->getPosOnReference() + len;
+            endOfLastSeedReference = pStrip->getMatch(uiI)->getPosOnReference() + len - beginRef;
         }//if
     }//for
 
-    //TODO: missig last needleman wunsch
+    needlemanWunsch(
+        pQuery,
+        pRef,
+        endOfLastSeedQuery,
+        endQuery,
+        endOfLastSeedReference,
+        endRef - beginRef,
+        pRet
+    );
 
+    std::cout << std::endl;
     return pRet;
 
 }//function

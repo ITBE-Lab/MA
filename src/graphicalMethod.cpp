@@ -296,5 +296,8 @@ void exportGraphicalMethod()
 			"	returns strip_vec.\n"
 			"		strip_vec: a strip of consideration for each anchor "
 			"as StripOfConsiderationVector\n"
-		);
+		)
+			.def_readwrite("strip_size", &Bucketing::uiStripSize)
+			.def_readwrite("max_hits", &Bucketing::uiMaxHitsPerInterval)
+			.def_readwrite("skip_long", &Bucketing::bSkipLongBWTIntervals);
 }

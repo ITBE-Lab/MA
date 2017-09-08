@@ -11,6 +11,7 @@
 #include <list>
 #include <thread>
 #include <boost/python.hpp>
+//#include <csignal>
 
 //#define DEBUG_ALIGNER 
 //#define DEBUG_CHECK_INTERVALS 
@@ -441,20 +442,7 @@ public:
 	 * bForwHit is required because we need to extract the starting positions of every single match in the interval using the same fm_index used to calculate the interval
 	 * since we use 2 fm_indecies one for forward one for reverse we need to remember which of the two was used
 	*/
-	void pushBackBwtInterval(t_bwtIndex uiPosInBwt, t_bwtIndex uiLengthInBwt, nucSeqIndex uiStartOfIntervalOnQuery, nucSeqIndex uiEndOfIntervalOnQuery, bool bForwHit, bool bAnchor)
-	{
-		PerfectMatch xMatch =
-		{
-			uiPosInBwt, // uiBwtIntervalIndex
-			uiLengthInBwt, // uiBwtIntervalLength
-			uiStartOfIntervalOnQuery, // uiStartIndexOnQuerry
-			uiEndOfIntervalOnQuery, // uiEndIndexOnQuerry
-			bForwHit, // bForwHit
-		};
-		lxBwtintervals.push_back(xMatch);
-		if (bAnchor)
-			lxBwtAnchorintervals.push_back(xMatch);
-	}//function
+	void pushBackBwtInterval(t_bwtIndex uiPosInBwt, t_bwtIndex uiLengthInBwt, nucSeqIndex uiStartOfIntervalOnQuery, nucSeqIndex uiEndOfIntervalOnQuery, bool bForwHit, bool bAnchor);
 
 	/* calculates the length of the interval */
 	nucSeqIndex length() const
@@ -562,6 +550,31 @@ public:
 				fDo(ulIndexOnRefSeq, xCurrBwtInterval.uiStartIndexOnQuerry, xCurrBwtInterval.uiEndIndexOnQuerry);
 			}//for
 		}//for
+	}//function
+
+	std::vector<std::shared_ptr<NucleotideSequence>> getRefHits(
+			std::shared_ptr<FM_Index> pxFM_Index, 
+			std::shared_ptr<FM_Index> pxRev_FM_Index,
+			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefPack
+		)
+	{
+		std::vector<std::shared_ptr<NucleotideSequence>> vpRet = 
+			std::vector<std::shared_ptr<NucleotideSequence>>();
+		forEachHitOnTheRefSeq(
+			pxFM_Index,
+			pxRev_FM_Index,
+			100000,
+			false,
+			false,
+			[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)
+			{
+				vpRet.push_back(pxRefPack->vExtract(
+						ulIndexOnRefSeq, 
+						ulIndexOnRefSeq + uiQueryEnd - uiQueryBegin - 1
+					));
+			}//lambda
+		);//forall
+		return vpRet;
 	}//function
 };//class
 

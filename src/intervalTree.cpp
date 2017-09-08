@@ -1,5 +1,24 @@
 #include "intervalTree.h"
 
+void SegmentTreeInterval::pushBackBwtInterval(t_bwtIndex uiPosInBwt, t_bwtIndex uiLengthInBwt, nucSeqIndex uiStartOfIntervalOnQuery, nucSeqIndex uiEndOfIntervalOnQuery, bool bForwHit, bool bAnchor)
+{
+	std::cout << bForwHit << " " << bAnchor << std::endl;
+	if(bForwHit)
+		return;
+	//std::raise(SIGINT);
+	PerfectMatch xMatch =
+	{
+		uiPosInBwt, // uiBwtIntervalIndex
+		uiLengthInBwt, // uiBwtIntervalLength
+		uiStartOfIntervalOnQuery, // uiStartIndexOnQuerry
+		uiEndOfIntervalOnQuery, // uiEndIndexOnQuerry
+		bForwHit, // bForwHit
+	};
+	lxBwtintervals.push_back(xMatch);
+	if (bAnchor)
+		lxBwtAnchorintervals.push_back(xMatch);
+}//function
+
 std::ostream& operator<<(std::ostream& xOs, const SegmentTree& xTree)
 {
 	xTree.print(xOs);
@@ -57,6 +76,17 @@ void exportIntervalTree()
 					"use uiStartOfIntervalOnQuery and uiEndOfIntervalOnQuery to record the actual "
 					"size of the match\n"
 				)
+			.def(
+				"get_ref_hits", 
+				&SegmentTreeInterval::getRefHits,
+				"arg1: self\n"
+				"arg2: forward FM Index\n"
+				"arg2: backward FM Index\n"
+				"arg3: packed reference sequence\n"
+				"returns: list of NucSeq\n"
+				"\n"
+				"extract all hits on the reference\n"
+			)
 			.def(
 					"length", 
 					&SegmentTreeInterval::length,
