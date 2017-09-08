@@ -5,7 +5,7 @@ import random
 seq = ""
 q = ""
 
-for _ in range(200):
+for _ in range(10000):
     char = random.randint(1,4)
     if char == 1:
         seq += "a"
@@ -16,10 +16,10 @@ for _ in range(200):
     else:
         seq += "g"
 
-q_from = random.randint(0, len(seq)-100)
-q_to = q_from + 100
+q_from = random.randint(0, len(seq)-200)
+q_to = q_from + 200
 q = seq[q_from:q_to]
-for _ in range(3):
+for _ in range(10):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
@@ -31,11 +31,11 @@ for _ in range(3):
     else:
         q = q[:pos-1] + "g" + q[pos:]
 
-for _ in range(3):
+for _ in range(10):
     pos = random.randint(1,len(q)-1)
     q = q[:pos-1] + q[pos:]
 
-for _ in range(3):
+for _ in range(10):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
