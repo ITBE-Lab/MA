@@ -21,15 +21,21 @@ enum ContainerType{
     any,
 };//enum
 
-
+/**
+*   all classes containing data should inherit from this class
+*/
 class Container
 {
 public:
+    /** 
+    *   return the type of the container as enum
+    *   used by Module for type checking the inputs
+    */
     virtual ContainerType getType(){return ContainerType::unknown;}
     
     virtual std::string getTypeInfo();
 };//class
 
-/* function to export this module to boost python */
+/** function to export this module to boost python */
 void exportContainer();
 #endif

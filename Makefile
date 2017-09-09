@@ -17,9 +17,9 @@ CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
 CC=gcc
-CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -fprofile-arcs -ftest-coverage
-CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror -fprofile-arcs -ftest-coverage
-LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread -fprofile-arcs
+CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror
+CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror
+LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
 
 all: LAuS.so LAuS.html
 
