@@ -89,6 +89,7 @@ void NucleotideSequence::vAppend( const NucleotideSequenceSliceHavingSelectedStr
 	} // else
 } // method
 
+#ifdef DEPREC
 /* Catenate all intervals of the interval vector.
  * Write the outcome in the sequence given as second argument. 
  */
@@ -105,6 +106,7 @@ void NucleotideSequence::catenate( const DeprecatedIntervalVector<DeprecatedDoub
 		} // lambda
 	); // function call
 } // method
+#endif
 
 /* by markus
 *returns a sequence slice of the index from while checking if from >= 0 

@@ -12,7 +12,7 @@
 #include <string>
 #include "exception.h"
 #include "support.h"
-#include "interval.h"
+//#include "interval.h"
 
 #include <boost/log/trivial.hpp>
 #include <boost/python.hpp>
