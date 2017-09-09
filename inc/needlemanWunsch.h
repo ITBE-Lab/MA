@@ -7,6 +7,7 @@
 #include "sequence.h"
 #include "aligner.h"
 #include <memory>
+#include <iostream>
 
 class NeedlemanWunsch : public Module
 {

@@ -272,7 +272,7 @@ protected :
 	{
 		/* Construction of core BWT.
 		 */
-		bwt_pac2bwt_step1( fn_pac, true );
+		bwt_pac2bwt_step1( fn_pac, false );
 
 		/* Step 2 and step 3 of FM-index creation
 		 */
@@ -621,10 +621,6 @@ public :
 			cntk[3] += x >> 24        ; cntl[3] += y >> 24;			// T
 		} // else
 	} // method
-
-	//markus
-	const inline unsigned int getRefSeqLength() const { return uiRefSeqLength; }//function
-	//end markus
 
 	/* We keep the reference length private in order to avoid unexpected trouble.
 	 * Delivers the length of the reference (pack) that belongs to the current FM-index.

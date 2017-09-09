@@ -46,8 +46,23 @@ Execution:
         while counter < len(align):
             #append three more lines if the current lines are full
             if counter % self.nuc_per_line == 0:
+                if counter > 0:
+                    lines[-3] += "\treference"
+                    lines[-1] += "\tquery"
                 desc = str(counter) + "-" + str(counter + self.nuc_per_line)
                 lines.extend(["", desc, "", "", ""])
+
+            #perform double check for messup:
+            if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.deletion):
+                print "This should not happen... (ref)"
+                print ind_ref
+                print len(ref)
+                break
+            if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.insertion):
+                print "This should not happen... (query)"
+                print ind_query
+                print len(query)
+                break
 
             #check for match or missmatch
             #print str(ind_ref) + " of " + str(align.end_on_ref() - align.begin_on_ref())
@@ -74,6 +89,13 @@ Execution:
                 lines[-1] += '-'
                 ind_ref += 1
             counter += 1
+
+        while len(lines[-1]) < 100:
+            lines[-3] += '-'
+            lines[-2] += ' '
+            lines[-1] += '-'
+        lines[-3] += "\treference"
+        lines[-1] += "\tquery"
 
         for line in lines:
             print line
