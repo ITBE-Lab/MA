@@ -28,12 +28,10 @@ class Container
 {
 public:
     /** 
-    *   return the type of the container as enum
-    *   used by Module for type checking the inputs
+    *   returns the type of the container as enum.
+    *   Used by Module for type checking its Inputs.
     */
-    virtual ContainerType getType(){return ContainerType::unknown;}
-    
-    virtual std::string getTypeInfo();
+    virtual ContainerType getType(){return ContainerType::unknown;}\
 };//class
 
 /** function to export this module to boost python */
