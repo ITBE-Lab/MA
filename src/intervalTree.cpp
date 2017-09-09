@@ -2,9 +2,6 @@
 
 void SegmentTreeInterval::pushBackBwtInterval(t_bwtIndex uiPosInBwt, t_bwtIndex uiLengthInBwt, nucSeqIndex uiStartOfIntervalOnQuery, nucSeqIndex uiEndOfIntervalOnQuery, bool bForwHit, bool bAnchor)
 {
-	/*if(bForwHit)//TODO: why are forw hits broken!?!? this line should not be here
-		return;*/
-	//std::raise(SIGINT);
 	PerfectMatch xMatch =
 	{
 		uiPosInBwt, // uiBwtIntervalIndex

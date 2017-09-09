@@ -2,6 +2,11 @@
 
 #include <boost/log/trivial.hpp>
 
+#ifdef DEBUG_ENDABLED
+#define DEBUG(x) x
+#else 
+#define DEBUG(x)
+#endif
 
 /* Overloading of the operator "<<" for arrays, so that we get automatic formated output for arrays.
  * From: http://stackoverflow.com/questions/19152178/printing-an-stdarray

@@ -195,109 +195,6 @@ private:
 	 */
 	uint32_t seed;
 
-#if 0 // deprecated faulty version
-	/* Appends a single FASTA record to the collection and pack.
-	 * Similar to vAppendSequence. (FIX ME: Both methods should share more code)
-	 */
-	void vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor ) 
-	{
-		/* The initial offset of the current sequence, if we see all nucleotides as some contiguous sequence.
-		 */
-		uint64_t uiOffsetDistance = xVectorOfSequenceDescriptors.empty()
-										? 0
-										: xVectorOfSequenceDescriptors.back().uiStartOffsetUnpacked + xVectorOfSequenceDescriptors.back().uiLengthUnpacked;
-		
-		/* TO DO: Put this into the vector of sequence descriptions.
-		 */
-		SequenceInPack xPackedSequenceDescriptor 
-		(	rxFastaDescriptor.sName, // Name of the embedded sequence
-			rxFastaDescriptor.sComment,  // Comments for the sequence
-			uiOffsetDistance, //  Offset (number of nucleotides from begin) of the embedded sequence
-#ifdef USE_STL
-			rxFastaDescriptor.pSequenceRef->length() // length of the sequence
-#else
-			rxFastaDescriptor.pSequenceRef->uxGetSequenceSize() // length of the sequence
-#endif
-		); // struct initialization
-
-		char cPreviousSymbol = 0; // lasts -> iPreviousSymbol
-
-		/* We iterate over the fresh sequence.
-		 */
-#ifdef USE_STL
-		for ( char cCurrentSymbol : *rxFastaDescriptor.pSequenceRef )
-#else
-		for ( size_t i = 0; i < rxFastaDescriptor.pSequenceRef->uxGetSequenceSize();  i++ )
-#endif
-		{
-			const char cCurrentSymbol = rxFastaDescriptor.pSequenceRef->pGetSequenceRef()[i];
-			unsigned int uiSymbolCode = NucleotideSequence::xNucleotideTranslationTable[(int)cCurrentSymbol];
-
-			/* seq->seq.s[i] is our current symbol.
-			 * For holes we have some special list, that has to be maintained.
-			 */
-			if (uiSymbolCode >= 4) 
-			{	/* Found something like N. 
-				 */
-				if ( cPreviousSymbol == cCurrentSymbol ) 
-				{	/* We see the same symbol once again. => Contiguous hole(N). 
-					 * We increase the size of the current hole in the list of holes. (*q brings us to the current hole record.)
-					 */
-					xVectorOfHoleDescriptors.back().length += 1;
-				} // if
-				else 
-				{	/* First N seen. We append a fresh record to vector of holes and initialize the record.
-					 * We have to double the capacity if there is no space anymore.
-					 */
-					xVectorOfHoleDescriptors.emplace_back(
-						HoleDescriptor(  uiOffsetDistance, // offset
-										 cCurrentSymbol	// character
-									  ) 
-					); // vector insertion
-
-					/* Our current sequence has one hole more ..
-					 */
-					xPackedSequenceDescriptor.uiNumberOfHoles += 1;
-				} // else
-			} // if (not 'A', 'G', 'C', 'T')
-			
-			cPreviousSymbol = cCurrentSymbol;
-
-			/* We create random characters, for N's in the FASTA input.
-			 * Create random number and map the last 2 bits.
-			 */
-			if (uiSymbolCode >= 4) 
-			{
-				uiSymbolCode = rand() & (int)3;
-			} // if
-		
-			/* Fill the buffer - Put the fresh symbol c into the buffer
-			 */
-			/* Maps code into the pack and increments the size of the pack.
-			 * ( _set_pac divides bns->i64PacSize by 4 combined with the trick of mapping the last 2 bits )
-			 */
-			unsigned char uiShift = ((~( uiUnpackedSizeForwardStrand )&3)<<1);
-			if ( uiShift == 6 )
-			{	/* Start fresh symbol.
-				 */
-				xPackedNucleotideSequences.emplace_back( uiSymbolCode << uiShift );
-			} // if
-			else
-			{	/* We insert our base pair by shifting into the last vector element.
-				 */
-				xPackedNucleotideSequences.back() |= ( uiSymbolCode << uiShift );
-			} // else
-			
-			uiUnpackedSizeForwardStrand++;
-			uiOffsetDistance++;
-		} // for
-
-		/* Finally we store the descriptor in the collection vector.
-		 */
-		xVectorOfSequenceDescriptors.emplace_back( xPackedSequenceDescriptor );
-	} // method
-#endif
-
 	/* The 6 leading bits of uiValue should be zero.
 	 * Keep this function inline, so that the compiler can optimize.
 	 * Works only for the virtual forward strand.
@@ -316,36 +213,6 @@ private:
 		 */
 		return xPackedNucleotideSequences[(size_t)(uiPosition >> 2)] >> ((~uiPosition & 3UL) << 1) & 3;
 	} // inline method
-
-	/* Appends the reverse strand to an already existing forward strand.
-	 * WARNING: After appending the reverse strand the inclusion of further forward sequences is not possible.
-	 * Idea: The performance could be boosted by using a table based approach.
-	 */
-	//// void vAppendReverseStrand()
-	//// {
-	//// 	if( !bPackComprisesReverseStrand )
-	//// 	{
-	//// 		uint64_t uiRequiredSize = (uiUnpackedSizeForwardPlusReverse() + 3) / 4; // required size of packed sequence
-	//// 
-	//// 		/* We adapt the size of the container and set all fresh elements to zero.
-	//// 		 */
-	//// 		xPackedNucleotideSequences.resize( (size_t)uiRequiredSize, 0 );
-	//// 
-	//// 		/* Appends the reverse sequence.
-	//// 		 * WARNING: forward iterator becomes negative.
-	//// 		 */
-	//// 		int64_t iReversePosition = (int64_t)uiUnpackedSizeForwardStrand;
-	//// 		for ( int64_t iForwardPosition = iReversePosition - 1; iForwardPosition >= 0; --iForwardPosition )
-	//// 		{
-	//// 			/* 3 - ... creates the complement base pair.
-	//// 			 */
-	//// 			vSetNucleotideOnPos( iReversePosition, 3 - getNucleotideOnPos( iForwardPosition ) );
-	//// 			++iReversePosition;
-	//// 		} // for
-	//// 		
-	//// 		bPackComprisesReverseStrand = true;
-	//// 	} // if
-	//// } // method
 
 	/* Method can throw exception if I/O operation fails.
 	 * Writes the isolated content of the pack-vector to the file-system.
@@ -613,12 +480,6 @@ private:
 	} // method
 
 public:
-
-//markus
-	//FIXME: DELETE ME!!!!
-	//used for the construction of an fm_index for forward search
-	void setbPackComprisesReverseStrand() { bPackComprisesReverseStrand = true; }//function
-//end markus
 
 	friend void vTextSequenceCollectionClass();
 

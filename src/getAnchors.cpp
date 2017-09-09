@@ -34,8 +34,6 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
         }//lambda
     );//forEach
 
-    //TODO: achors need to be extracted
-
     return pRet;
 
 }//function

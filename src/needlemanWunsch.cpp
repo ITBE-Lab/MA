@@ -1,12 +1,7 @@
 #include "needlemanWunsch.h"
 
-#define DEBUG_ENDABLED
 
-#ifdef DEBUG_ENDABLED 
-    #define DEBUG(x) x
-#else 
-    #define DEBUG(x)
-#endif
+
 
 std::vector<ContainerType> NeedlemanWunsch::getInputType()
 {
@@ -128,7 +123,7 @@ void needlemanWunsch(
                 newScore += iMatch;
             else
                 newScore += iMissMatch;
-            if(newScore > s[uiI][uiJ])
+            if(newScore >= s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
                 dir[uiI][uiJ] = 1;
