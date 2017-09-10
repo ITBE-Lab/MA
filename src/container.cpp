@@ -91,13 +91,17 @@ void exportContainer()
 
     //export the containertype enum
     boost::python::enum_<ContainerType>("ContainerType")
-        .value("unknown", ContainerType::unknown)
-        .value("vector", ContainerType::vector)
-        .value("alignment", ContainerType::alignment)
         .value("fM_index", ContainerType::fM_index)
         .value("nucSeq", ContainerType::nucSeq)
+        .value("alignment", ContainerType::alignment)
+        .value("packedNucSeq", ContainerType::packedNucSeq)
         .value("segmentList", ContainerType::segmentList)
         .value("segment", ContainerType::segment)
-        .value("packedNucSeq", ContainerType::packedNucSeq)
-        .value("nothing", ContainerType::nothing);
+        .value("stripOfConsideration", ContainerType::stripOfConsideration)
+        .value("stripOfConsiderationList", ContainerType::stripOfConsiderationList)
+        .value("vector", ContainerType::vector)
+        .value("sa_interval", ContainerType::sa_interval)
+        .value("unknown", ContainerType::unknown)
+        .value("nothing", ContainerType::nothing)
+        .value("any", ContainerType::any);
 }//function

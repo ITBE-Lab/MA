@@ -33,55 +33,16 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
 #define OCC_INTV_MASK  (OCC_INTERVAL - 1)
 
 
-//TODO: get rid of me?!
 /* The BWT interval class represents intervals with respect the suffix array!
  * See http://en.wikipedia.org/wiki/FM-index (intervals within the F-L matrix )
  */
-class SA_IndexInterval {
-private :
-	// start position of interval in BWT
-	t_bwtIndex uiStart; // uint64
-	// size of interval in BWT
-	t_bwtIndex uiSize; // uint64
+class SA_IndexInterval: public Container, public Interval<t_bwtIndex> {
 public:
-	SA_IndexInterval(t_bwtIndex uiStart, t_bwtIndex uiSize)
-		:
-		uiStart(uiStart),
-		uiSize(uiSize)
-	{
-	}// constructor
-
-	inline t_bwtIndex getStart() const
-	{
-		return uiStart;
-	}// function
-
-	inline void setStart(t_bwtIndex uiVal)
-	{
-		uiStart = uiVal;
-	}// function
-
-	inline t_bwtIndex getEnd() const
-	{
-		return uiStart + uiSize;
-	}// function
-
-	inline void setSize(t_bwtIndex uiVal)
-	{
-		uiSize = uiVal;
-	}// function
-
-	inline t_bwtIndex getSize() const
-	{
-		return uiSize;
-	}// function
-
-	SA_IndexInterval& operator=(const SA_IndexInterval& rxOther)
-	{
-		uiStart = rxOther.uiStart;
-		uiSize = rxOther.uiSize;
-		return *this;
-	}// operator
+	SA_IndexInterval(t_bwtIndex start, t_bwtIndex size)
+			:
+		Interval(start, size)
+	{}//constructor
+	ContainerType getType(){return ContainerType::sa_interval;}
 }; // class ( SA_IndexInterval )
 
 
@@ -128,36 +89,34 @@ protected :
 	 */
 	std::vector<bwtint_t> sa;
 
-	/* Core BWT construction for short sequences.
+	/** Core BWT construction for short sequences.
 	 * Initializes the BWT using the given nucleotide sequence.
 	 * We have a serious problem with ambiguous bases over here, because the (compressed) BWT can't represent them.
 	 * WARNING: Do not pass sequences comprising ambiguous symbols (e.g. symbol 'N').
 	 */
-	void bwt_pac2bwt_step1( const NucleotideSequence &fn_pac_arg, 
-							bool bIncludeReverse // In the context of the BWT construction generate and include data for the reverse strand as well.
-						  );
+	void bwt_pac2bwt_step1( const NucleotideSequence &fn_pac_arg );
 	
 
-	/* Retrieve character at position k from the $-removed packed BWT without occurrence counter.
+	/** Retrieve character at position k from the $-removed packed BWT without occurrence counter.
 	 * Used in the context of step 2 (bwt_bwtupdate_core_step2) for retrieving characters.
 	 * REMARK: Only correct in the case of OCC_INTERVAL==0x80
 	 */
 	#define bwt_B00(k) (bwt[(k)>>4]>>((~(k)&0xf)<<1)&3)
 
-	/* Injection of counting blocks into the BWT.
+	/** Injection of counting blocks into the BWT.
 	 * Inserts the required space for 4 uint_64 counters each 8 uint_32 blocks and initializes the counters according to the counting.
 	 * FIX ME: If we get exception over here, we have a memory leak -> use unique poiters are vectors
 	 */
 	void bwt_bwtupdate_core_step2();
 
-	/* Retrieve character at position k from the $-removed packed BWT, which comprises occurrence counter.
+	/** Retrieve character at position k from the $-removed packed BWT, which comprises occurrence counter.
 	 * (Note that bwt_t::bwt is not exactly the BWT string and therefore this macro is called bwt_B0 instead of bwt_B.)
 	 * REMARK: Only correct in the case of OCC_INTERVAL==0x80
 	 */
 	#define bwt_bwt(k) (bwt[((k)>>7<<4) + sizeof(bwtint_t) + (((k)&0x7f)>>4)])
 	#define bwt_B0(k) (bwt_bwt(k)>>((~(k)&0xf)<<1)&3)
 	
-	/* The function Occ(c, k) is the number of occurrences of character c in the prefix L[1..k]. 
+	/** The function Occ(c, k) is the number of occurrences of character c in the prefix L[1..k]. 
 	 * Ferragina and Manzini showed[1] that it is possible to compute Occ(c, k) in constant time.
 	 * ( Paolo Ferragina and Giovanni Manzini (2000). "Opportunistic Data Structures with Applications". 
 	 *   Proceedings of the 41st Annual Symposium on Foundations of Computer Science. p.390. )
@@ -177,7 +136,7 @@ protected :
 		return ((y + (y >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
 	} // method
 	
-	/* Counts the number of occurrences of the character c in the BWT until position k.
+	/** Counts the number of occurrences of the character c in the BWT until position k.
 	 * bwt_occ counts for a single character, while bwt_occ counts for all 4 characters (A/C/G/T) simultaneously.
 	 * k should be within [0..seqlen], the value of k shall be not equal to primary (if you want to get the value at primary position deliver (bwtint_t)(-1)
 	 */
@@ -223,7 +182,7 @@ protected :
 		return n;
 	} // method
 
-	/* Computes the inverse CSA. (Back to front projection in BWT)
+	/** Computes the inverse CSA. (Back to front projection in BWT)
 	 * @param k Position in BWT
 	 * @return Position of the character at k in F
 	 */
@@ -243,19 +202,19 @@ protected :
 		return (k == primary) ? 0 : x;
 	} // method
 	
-	/* Small helper function used in the context of some assertion.
+	/** Small helper function used in the context of some assertion.
 	 */
 	bool ispowerof2( unsigned int x )
 	{
 		return x && !(x & (x - 1));
 	} // method
 
-	/* Creation of the suffix array (SA is organized on the foundation of 64 bit counters)
+	/** Creation of the suffix array (SA is organized on the foundation of 64 bit counters)
 	 * @param intv Interval size for suffix array (must be a power of 2)
 	 */
 	void bwt_cal_sa_step3( unsigned int intv );
 
-	/* BWT construction for packs. Is is possible to choose among two different algorithms.
+	/** BWT construction for packs. Is is possible to choose among two different algorithms.
 	 * uiAlgorithmSelection : 0 manually selected algorithm for small inputs
 	 *						  1 manually selected algorithm for large inputs
 	 *						  2 automatic selection on foundation of input size
@@ -265,21 +224,21 @@ protected :
 						unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
 					   );
 
-	/* Builds up a FM_Index for the given input sequence. 
+	/** Builds up a FM_Index for the given input sequence. 
 	 * REMARK: The sequence should be free of ambiguous bases (character N).
 	 */
-	void build_FM_Index( const NucleotideSequence &fn_pac )
-	{
-		/* Construction of core BWT.
-		 */
-		bwt_pac2bwt_step1( fn_pac, false );
+	 void build_FM_Index( const NucleotideSequence &fn_pac )
+	 {
+		 /* Construction of core BWT.
+		  */
+		 bwt_pac2bwt_step1( fn_pac );
+ 
+		 /* Step 2 and step 3 of FM-index creation
+		  */
+		 vPostProcessBWTAndCreateSA();
+	 } // method
 
-		/* Step 2 and step 3 of FM-index creation
-		 */
-		vPostProcessBWTAndCreateSA();
-	} // method
-
-	/* Step 2 and step 3 of FM-index creation.
+	/** Step 2 and step 3 of FM-index creation.
 	 */
 	void vPostProcessBWTAndCreateSA( void )
 	{
@@ -293,7 +252,7 @@ protected :
 		bwt_cal_sa_step3( 32 );
 	} // method
 
-	/* Initializes the array _aCountTable.
+	/** Initializes the array _aCountTable.
 	 */
 	void _vInitCountTable()
 	{
@@ -320,7 +279,7 @@ protected :
 		} // for
 	} // method
 
-	/* Counts A,C,G,T (00, 01, 10, 11) in ux16symbols .
+	/** Counts A,C,G,T (00, 01, 10, 11) in ux16symbols .
 	 * ux16symbols represents 16 nucleotides encoded using 2 bit each.
 	 * The returned uint32_t represents 4 unsigned 8 bit values.
 	 */
@@ -332,7 +291,7 @@ protected :
 			   + _aCountTable[(ux16symbols) >> 24];			// parallel add of 4 bytes
 	} // method
 
-	/* The following two lines are ONLY correct when OCC_INTERVAL==0x80 (OCC_INTERVAL == 128, 2^7)
+	/** The following two lines are ONLY correct when OCC_INTERVAL==0x80 (OCC_INTERVAL == 128, 2^7)
 	 * Delivers pointer to the first 32 bit-block of interval.
 	 * FIX ME: In the context of the BWT as vector this is not nice at all. (Work with references over here)
 	 */
@@ -341,7 +300,7 @@ protected :
 		return &bwt[0] + ( ( k >> 7 ) << 4 ); // (k / 128) * 16  (we take 16, because we need twice the size)
 	} // method
 
-	/* k (input) is the position of some nucleotide within the BWT.
+	/** k (input) is the position of some nucleotide within the BWT.
 	 * Represents count function within the BWT.
 	 * cnt[4] (output) delivers the number of A's, C's, G's and T's that are in front of nucleotide number k.
 	 * Special case k = -1: initialize cnt[4] with 0.
@@ -406,7 +365,7 @@ protected :
 		//// std::cout << "GOT for k:" << k << " " << cnt[0] << " " << cnt[1] << " " << cnt[2] << " " << cnt[3] << "\n"; 
 	} // method
 
-	/* Writes the BWT of the FM-Index to the stream given as argument.
+	/** Writes the BWT of the FM-Index to the stream given as argument.
 	 * WARNING: The given stream should be opened with flag ios::binary.
 	 */
 	void vSaveBWT( std::ostream &rxOutputStream )
@@ -420,7 +379,7 @@ protected :
 		rxOutputStream.flush();
 	} // method
 
-	/* Writes the Suffix Array to the given stream.
+	/** Writes the Suffix Array to the given stream.
 	 */
 	void vSaveSuffixArray( std::ostream &rxOutputStream )
 	{
@@ -436,7 +395,7 @@ protected :
 		rxOutputStream.flush();
 	} // method
 
-	/* Reads the BWT from the given stream.
+	/** Reads the BWT from the given stream.
 	 * IMPROVEMENT: The original BWA design for BWT storage is quite crappy. Store the size of the BWT as part of the data.
 	 */
 	void vRestoreBWT( std::ifstream &rxInputStream )
@@ -481,7 +440,7 @@ protected :
 		L2[0] = 0; // clean L2[0]
 	} // method
 
-	/* Restore suffix array by using the given input stream.
+	/** Restore suffix array by using the given input stream.
 	 */
 	void vRestoreSuffixArray( std::istream &rxInputStream )
 	{
@@ -539,7 +498,7 @@ protected :
 	} // method
 
 public :
-	/* Like bwt_occ4, but it computes the counters for two indices simultaneously. 
+	/** Like bwt_occ4, but it computes the counters for two indices simultaneously. 
 	 * If k and l belong to the same internal interval (the FM index has a block structure), bwt_2occ4 is more efficient than bwt_occ4.
 	 * IMPORTANT: The indices are inclusive, i. e. we count 
 	 * IMPORTANT: Requires k <= l
@@ -622,7 +581,7 @@ public :
 		} // else
 	} // method
 
-	/* We keep the reference length private in order to avoid unexpected trouble.
+	/** We keep the reference length private in order to avoid unexpected trouble.
 	 * Delivers the length of the reference (pack) that belongs to the current FM-index.
 	 */
 	uint64_t getRefSeqLength( void )
@@ -630,7 +589,7 @@ public :
 		return uiRefSeqLength;
 	} // method
 
-	/* Delivers the Position in the reference sequence T that belongs to the position k in the BWT.
+	/** Delivers the Position in the reference sequence T that belongs to the position k in the BWT.
 	 * Uses the suffix array cache ...
 	 */
 	bwtint_t bwt_sa( bwtint_t uiBWTposition )
@@ -658,7 +617,7 @@ public :
 		return uiReturnedPosition;
 	} // method
 
-	/* Checks whether the files required for loading a pack does exist on the file system.
+	/** Checks whether the files required for loading a pack does exist on the file system.
 	 */
 	static bool packExistsOnFileSystem( const std::string &rsPrefix )
 	{
@@ -668,7 +627,7 @@ public :
 	} // method
 	
 
-	/* Dump the current FM-Index to two separated files for BWT and SA.
+	/** Dump the current FM-Index to two separated files for BWT and SA.
 	 */
 	void vStoreFM_Index_boost( const boost::filesystem::path &rxFileNamePrefix )
 	{
@@ -687,7 +646,7 @@ public :
 		} // scope
 	} // method
 	
-	/* wrap the function in oder to make it acessible to pyhton */
+	/** wrap the vStoreFM_Index function in oder to make it acessible to pyhton */
 	void vStoreFM_Index( const char* sPrefix )
 	{
 		std::string sPath(sPrefix);
@@ -695,7 +654,7 @@ public :
 	}//function
 
 
-	/* Load an FM-Index previously stored by vStoreFM_Index.
+	/** Load an FM-Index previously stored by vStoreFM_Index.
 	 */
 	void vLoadFM_Index_boost( const boost::filesystem::path &rxFileNamePrefix )
 	{
@@ -775,17 +734,17 @@ public :
 	 */
 	 FM_Index( const NucleotideSequence &rxSequence ) 
 	 : FM_Index() // call the default constructor
- {
-	 build_FM_Index( rxSequence );
- } // constructor
+	{
+		build_FM_Index( rxSequence );
+	} // constructor
 
- /* FM-Index constructor. Builds a FM index on foundation of pxSequence. 
-  */
- FM_Index( const std::shared_ptr<NucleotideSequence> pxSequence ) 
-	 : FM_Index() // call the default constructor
- {
-	 build_FM_Index( *pxSequence );
- } // constructor
+	/* FM-Index constructor. Builds a FM index on foundation of pxSequence. 
+	*/
+	FM_Index( const std::shared_ptr<NucleotideSequence> pxSequence ) 
+		: FM_Index() // call the default constructor
+	{
+		build_FM_Index( *pxSequence );
+	} // constructor
 
 	/* FM-Index constructor. Builds a FM index on foundation of a given sequence collection. 
 	 */
@@ -795,6 +754,18 @@ public :
 		: FM_Index() // call the default constructor
 	{
 		build_FM_Index( rxSequenceCollection, uiAlgorithmSelection );
+	} // constructor
+	
+
+	/* FM-Index constructor. Builds a FM index on foundation of a given sequence collection. 
+	 */
+	 FM_Index( 
+			// the pack for which we require a BWT
+			const std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxSequenceCollection 
+		)
+		: FM_Index() // call the default constructor
+	{
+		build_FM_Index( *pxSequenceCollection, 2 );
 	} // constructor
 
 }; // class FM_Index

@@ -33,9 +33,9 @@ SA_IndexInterval bwt_extend_backward(
 	pxFM_Index->bwt_2occ4(
 		// until start of SA index interval 
 		// (-1, because we count the characters in front of the index)
-		ik.getStart() - 1,
+		ik.start() - 1,
 		// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
-		ik.getEnd() - 1,
+		ik.end() - 1,
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
 	);
@@ -60,11 +60,11 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 	//we want to allow extension past the interval borders
 	if (!bBackwards)
 	{
-		return uiCurrIndex <= pxNode->getEndIndex();
+		return uiCurrIndex <= pxNode->end();
 	}//if
 	else
 	{
-		return uiCurrIndex >= pxNode->getStartIndex();
+		return uiCurrIndex >= pxNode->start();
 	}//else
 }//function
 
@@ -144,44 +144,28 @@ nucSeqIndex Segmentation::extend(
 		 * Pick the extension interval for character c 
 		 * and check with respect to changing interval size.
 		 */
-		if (ok.getSize() != ik.getSize())
+		if (ok.size() != ik.size())
 		{
 			/*
 			* In fact, if ok.getSize is zero, then there are no matches any more.
 			*/
-			if (ok.getSize() == 0)
+			if (ok.size() == 0)
 			{
 				break; // the SA-index interval size is too small to be extended further
 			} // if
 
 			// once the min interval size is reached, 
 			// record the matches every time we lose some by extending further.
-			if (isMinIntervalSizeReached(uiStartIndex, i, uiMinIntervalSize) && isFurtherThan(bBackwards, i, uiOnlyRecordHitsFurtherThan))
+			if (
+					isMinIntervalSizeReached(uiStartIndex, i, uiMinIntervalSize) && 
+					isFurtherThan(bBackwards, i, uiOnlyRecordHitsFurtherThan)
+				)
 			{
 				// record the current match
 				if (!bBackwards)
-				{
-					//TODO: use only one class to represents BWT intervals
-					pxNode->pushBackBwtInterval(
-												ik.getStart(),
-												ik.getSize(),
-												uiStartIndex,
-												i,
-												true,
-												false
-											);
-				}
+					pxNode->push_back(SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true), false);
 				else
-				{
-					pxNode->pushBackBwtInterval(
-												ik.getStart(),
-												ik.getSize(),
-												i + 1,
-												uiStartIndex + 1,
-												false,
-												false
-											);
-				}
+					pxNode->push_back(SaSegment(i + 1, uiStartIndex - i - 1, ik, false), false);
 			}//if
 		}//if
 
@@ -199,32 +183,16 @@ nucSeqIndex Segmentation::extend(
 
 
 	//once the min interval size is reached, record the matches every time we lose some by extending further.
-	if (isMinIntervalSizeReached(uiStartIndex, i, uiMinIntervalSize) && isFurtherThan(bBackwards, i, uiOnlyRecordHitsFurtherThan))
+	if (
+			isMinIntervalSizeReached(uiStartIndex, i, uiMinIntervalSize) && 
+			isFurtherThan(bBackwards, i, uiOnlyRecordHitsFurtherThan)
+		)
 	{
-		//record the current match
+		// record the current match
 		if (!bBackwards)
-		{
-			//TODO: use only one class to represents BWT intervals
-			pxNode->pushBackBwtInterval(
-										ik.getStart(),
-										ik.getSize(),
-										uiStartIndex,
-										i,
-										true,
-										true
-									);
-		}
+			pxNode->push_back(SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true), true);
 		else
-		{
-			pxNode->pushBackBwtInterval(
-										ik.getStart(),
-										ik.getSize(),
-										i + 1,
-										uiStartIndex + 1,
-										false,
-										true
-									);
-		}
+			pxNode->push_back(SaSegment(i + 1, uiStartIndex - i - 1, ik, false), true);
 	}//if
 
 	if (!bBackwards)
@@ -280,11 +248,11 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	}//else
 
 	//if the prev interval is longer than uiMinIntervalSize
-	if (pxNode->getStartIndex() + uiMinIntervalSize <= uiFrom)
+	if (pxNode->start() + uiMinIntervalSize <= uiFrom)
 	{
 		//create a new list element and insert it before the current node
 		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(pxNode->getStartIndex(), uiFrom)), pxNode);
+			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start())), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue(
 			[/*WARNING: do not catch anything here: the lambda function is enqueued to into a thread pool, 
@@ -297,11 +265,11 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 		);//enqueue
 	}//if
 	//if the post interval is longer than uiMinIntervalSize
-	if (pxNode->getEndIndex() >= uiTo + uiMinIntervalSize)
+	if (pxNode->end() >= uiTo + uiMinIntervalSize)
 	{
 		//create a new list element and insert it after the current node
 		auto pxNextNode = pSegmentTree->insertAfter(std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(uiTo, pxNode->getEndIndex())), pxNode);
+			new SegmentTreeInterval(uiTo, pxNode->end() - uiTo)), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue(
 			[/*WARNING: do not catch anything here: the lambda function is enqueued to into a thread pool,
@@ -313,79 +281,14 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 			pxNextNode, this, pxPool
 		);//enqueue
 	}//if
-#ifdef DEBUG_ALIGNER
-	BOOST_LOG_TRIVIAL(info) << "splitting interval " << *pxNode << " at (" << uiFrom << "," << uiTo << ")";
-#endif //DEBUG_ALIGNER
-	pxNode->setInterval(uiFrom, uiTo);
+	DEBUG(
+		std::cout << "splitting interval " << *pxNode << " at (" << uiFrom << "," << uiTo << ")" << std::endl;
+	)
+	pxNode->start(uiFrom);
+	pxNode->end(uiTo);
 
-	/*
-	 *	try to perform backwards extension from 3/4 of the interval
-	 *	as well as forwards extension from 1/4 of the interval
-	 */
-	nucSeqIndex uiThreeQuaterOfTheInterval = pxNode->getStartIndex() + pxNode->length() * 3 / 4;
-	nucSeqIndex uiOneQuaterOfTheInterval = pxNode->getStartIndex() + pxNode->length() / 4;
-
-	nucSeqIndex uiReachedUntil = extend(*pxNode, uiOneQuaterOfTheInterval, false, uiOneQuaterOfTheInterval);
-	assert(uiReachedUntil >= pxNode->getCenter());
-
-	uiReachedUntil = extend(*pxNode, uiThreeQuaterOfTheInterval, true, uiThreeQuaterOfTheInterval);
-	assert(uiReachedUntil <= pxNode->getCenter());
-
-
-	//if (pxNode->length() > uiMinIntervalSize)
-	//	saveHits(*pxNode, uiThreadId); deprecated see @saveHits
-	//else
-	if (pxNode->length() < uiMinIntervalSize)
+	if (pxNode->size() < uiMinIntervalSize)
 		pSegmentTree->removeNode(pxNode);
-
-	//TODO: if we need to generate more hits we could split intervals longer than x even if we find matches in them, just to search from different starting positions.
-	//in this case we should limit the splitting to n numbers of iterations though, otherwise the procedure will degenerate to a bwa-like search
-}//function
-
-
-void Segmentation::forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
-	std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo)
-{
-	pxNode->forEachHitOnTheRefSeq(
-		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals, bAnchorOnly,
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-		pxQuality,
-#endif
-		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
-		{
-			int64_t iSequenceId;
-			//check if the match is bridging the forward/reverse strand or bridging between two chromosomes
-			/* we have to make sure that the match does not start before or end after the reference sequence
-			* this can happen since we can find parts on the end of the query at the very beginning of the reference or vis versa.
-			* in this case we will replace the out of bounds index with 0 or the length of the reference sequence respectively.
-			*/
-			if (pxRefSequence->bridingSubsection(
-				ulIndexOnRefSeq > uiQuerryBegin ? (uint64_t)ulIndexOnRefSeq - (uint64_t)uiQuerryBegin : 0,
-				ulIndexOnRefSeq + pxQuerySeq->length() >= pxFM_index->getRefSeqLength() + uiQuerryBegin ? pxFM_index->getRefSeqLength() - ulIndexOnRefSeq : pxQuerySeq->length(),
-				iSequenceId)
-				)
-			{
-#ifdef DEBUG_CHECK_INTERVALS
-			BOOST_LOG_TRIVIAL(info) << "skipping hit on bridging section (" << ulIndexOnRefSeq - uiQuerryBegin << ") for the interval " << *pxNode;
-#endif
-				//if so ignore this hit
-				return;
-			}//if
-			fDo(ulIndexOnRefSeq, uiQuerryBegin, uiQuerryEnd);
-		}//lambda
-	);
-}//function
-
-void Segmentation::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
-	std::function<void(std::shared_ptr<PerfectMatch>)> fDo)
-{
-	forEachNonBridgingHitOnTheRefSeq(
-		pxNode, bAnchorOnly,
-		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
-		{
-			fDo(std::shared_ptr<PerfectMatch>(new PerfectMatch(uiQuerryEnd - uiQuerryBegin, ulIndexOnRefSeq, uiQuerryBegin)));
-		}//lambda
-	);//for each
 }//function
 
 void Segmentation::segment()
@@ -407,40 +310,6 @@ void Segmentation::segment()
 		);//enqueue
 
 	}//end of scope xPool
-
-	/* TODO: move me into my own module -> moved to getAnchorsw
-	pSegmentTree->getTheNLongestIntervals(uiNumSegmentsAsAnchors).forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxInterval)
-		{
-			forEachNonBridgingPerfectMatch(pxInterval, true,
-				[&](std::shared_ptr<PerfectMatch> pxMatch)
-				{
-					pxAnchorMatchList->addAnchorSegment(pxMatch);
-				}//lambda
-			);
-		}//lambda
-	);
-	*/
-
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-	pxQuality->uiAmountSegments = pSegmentTree->length();
-	pxQuality->uiLongestSegment = 0;
-	nucSeqIndex uiEndLast = 0;
-	if(*pSegmentTree->end() != nullptr)
-		uiEndLast = pSegmentTree->end()->getStartIndex();
-	pxQuality->uiLongestGapBetweenSegments = 0;
-	pSegmentTree->forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxInterval)
-		{
-			if (pxQuality->uiLongestGapBetweenSegments < pxInterval->getStartIndex() - uiEndLast)
-				pxQuality->uiLongestGapBetweenSegments = pxInterval->getStartIndex() - uiEndLast;
-			if (pxInterval->length() > pxQuality->uiLongestSegment)
-				pxQuality->uiLongestSegment = pxInterval->length();
-			uiEndLast = pxInterval->getEndIndex();
-		}//lambda
-	);
-	pxQuality->uiAmountAnchorSegments = uiNumSegmentsAsAnchors;
-#endif
 }//function
 
 

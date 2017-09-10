@@ -1,3 +1,4 @@
+#define GET_ANCHORS_H
 #ifndef GET_ANCHORS_H
 #define GET_ANCHORS_H
 

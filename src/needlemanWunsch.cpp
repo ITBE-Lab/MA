@@ -1,3 +1,5 @@
+#if 0
+
 #include "needlemanWunsch.h"
 
 
@@ -317,3 +319,5 @@ void exportNeedlemanWunsch()
     );
 
 }//function
+
+#endif

@@ -1,5 +1,6 @@
 #include "graphicalMethod.h"
 
+#if 0
 
 std::vector<ContainerType> Bucketing::getInputType()
 {
@@ -26,31 +27,39 @@ std::vector<ContainerType> Bucketing::getOutputType()
 }//function
 
 
-void Bucketing::forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, std::shared_ptr<NucleotideSequence> pxQuerySeq,
-	std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo)
-{//TODO: check git and continue here
+void Bucketing::forEachNonBridgingHitOnTheRefSeq(
+		std::shared_ptr<SegmentTreeInterval> pxNode,
+		bool bAnchorOnly,
+		std::shared_ptr<FM_Index> pxFM_index,
+		std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
+		std::shared_ptr<NucleotideSequence> pxQuerySeq,
+		std::function<void(
+				nucSeqIndex ulIndexOnRefSeq,
+				nucSeqIndex uiQueryBegin,
+				nucSeqIndex uiQueryEnd)> fDo
+			)
+{
 	pxNode->forEachHitOnTheRefSeq(
 		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals, bAnchorOnly,
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-	    pxQuality,
-#endif
 		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
 		{
-			int64_t iSequenceId;
 			//check if the match is bridging the forward/reverse strand or bridging between two chromosomes
 			/* we have to make sure that the match does not start before or end after the reference sequence
 			* this can happen since we can find parts on the end of the query at the very beginning of the reference or vis versa.
 			* in this case we will replace the out of bounds index with 0 or the length of the reference sequence respectively.
 			*/
-			if (pxRefSequence->bridingSubsection(
-				ulIndexOnRefSeq > uiQuerryBegin ? (uint64_t)ulIndexOnRefSeq - (uint64_t)uiQuerryBegin : 0,
-				ulIndexOnRefSeq + pxQuerySeq->length() >= pxFM_index->getRefSeqLength() + uiQuerryBegin ? pxFM_index->getRefSeqLength() - ulIndexOnRefSeq : pxQuerySeq->length(),
-				iSequenceId)
+			nucSeqIndex uiStart = (uint64_t)ulIndexOnRefSeq - (uint64_t)uiQuerryBegin;
+			if( ulIndexOnRefSeq < uiQuerryBegin )
+				uiStart = 0;
+			nucSeqIndex uiEnd = pxFM_index->getRefSeqLength() - ulIndexOnRefSeq;
+			if(
+					ulIndexOnRefSeq + pxQuerySeq->length() - uiQuerryBegin
+						> 
+					pxFM_index->getRefSeqLength()
 				)
+				uiEnd = pxFM_index->getRefSeqLength();
+			if ( pxRefSequence->bridingSubsection(uiStart, uiEnd) )
 			{
-#ifdef DEBUG_CHECK_INTERVALS
-			BOOST_LOG_TRIVIAL(info) << "skipping hit on bridging section (" << ulIndexOnRefSeq - uiQuerryBegin << ") for the interval " << *pxNode;
-#endif
 				//if so ignore this hit
 				return;
 			}//if
@@ -59,44 +68,67 @@ void Bucketing::forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInte
 	);
 }//function
 
-void Bucketing::forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, std::shared_ptr<NucleotideSequence> pxQuerySeq, 
-	std::function<void(std::shared_ptr<PerfectMatch>)> fDo)
+void Bucketing::forEachNonBridgingSeed(
+		std::shared_ptr<SegmentTreeInterval> pxNode,
+		bool bAnchorOnly,
+		std::shared_ptr<FM_Index> pxFM_index,
+		std::shared_ptr<FM_Index> pxRev_FM_Index,
+		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
+		std::shared_ptr<NucleotideSequence> pxQuerySeq,
+		std::function<void(std::shared_ptr<Seed>)> fDo
+	)
 {
 	forEachNonBridgingHitOnTheRefSeq(
 		pxNode, bAnchorOnly, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
 		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
 		{
-			fDo(std::shared_ptr<PerfectMatch>(new PerfectMatch(uiQuerryEnd - uiQuerryBegin, ulIndexOnRefSeq, uiQuerryBegin)));
+			fDo(std::shared_ptr<Seed>(new Seed(
+					uiQuerryBegin,
+					uiQuerryEnd - uiQuerryBegin,
+					ulIndexOnRefSeq
+				)));
 		}//lambda
 	);//for each
 }//function
 
-/* transfer the saved hits into the clustering
+/** transfer the saved hits into the clustering
  * if DEBUG_CHECK_INTERVALS is activated the hits are verified before storing
 */
-void Bucketing::saveHits(std::shared_ptr<SegmentTreeInterval> pxNode, std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, std::shared_ptr<NucleotideSequence> pxQuerySeq, AnchorMatchList &rList)
+void Bucketing::saveSeeds(
+		std::shared_ptr<SegmentTreeInterval> pxNode,
+		std::shared_ptr<FM_Index> pxFM_index,
+		std::shared_ptr<FM_Index> pxRev_FM_Index,
+		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
+		std::shared_ptr<NucleotideSequence> pxQuerySeq
+	)
 {
 	//bAnchorOnly = false since we also want to collet not maximally extended seeds
-	forEachNonBridgingPerfectMatch(
+	forEachNonBridgingSeed(
 		pxNode, false, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
-		[&](std::shared_ptr<PerfectMatch> pxMatch)
+		[&](std::shared_ptr<Seed> pxSeed)
 		{
-			rList.addMatch(std::shared_ptr<PerfectMatch>(pxMatch));
+			addSeed(std::shared_ptr<Seed>(pxSeed));
 		}//lambda
 	);//for each
 }///function
 
-/* transfer the anchors into the clustering
+/** transfer the anchors into the clustering
  * if DEBUG_CHECK_INTERVALS is activated the hits are verified before storing
 */
-void Bucketing::saveAnchors(std::shared_ptr<SegmentTreeInterval> pxNode, std::shared_ptr<FM_Index> pxFM_index,  std::shared_ptr<FM_Index> pxRev_FM_Index, std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, std::shared_ptr<NucleotideSequence> pxQuerySeq, AnchorMatchList &rList)
+void Bucketing::saveAnchors(
+		std::shared_ptr<SegmentTreeInterval> pxNode,
+		std::shared_ptr<FM_Index> pxFM_index,  
+		std::shared_ptr<FM_Index> pxRev_FM_Index, 
+		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence, 
+		std::shared_ptr<NucleotideSequence> pxQuerySeq
+	)
 {
 	//bAnchorOnly = true since we only want the maximally extended seeds
-	forEachNonBridgingPerfectMatch(
+	forEachNonBridgingSeed(
 		pxNode, true, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
-		[&](std::shared_ptr<PerfectMatch> pxMatch)
+		[&](std::shared_ptr<Seed> pxSeed)
 		{
-			rList.addAnchorSegment(std::shared_ptr<PerfectMatch>(pxMatch));
+			addAnchorSegment(std::shared_ptr<PerfectMatch>(pxSeed));
 		}//lambda
 	);//for each
 }///function
@@ -301,3 +333,5 @@ void exportGraphicalMethod()
 			.def_readwrite("max_hits", &Bucketing::uiMaxHitsPerInterval)
 			.def_readwrite("skip_long", &Bucketing::bSkipLongBWTIntervals);
 }
+
+#endif

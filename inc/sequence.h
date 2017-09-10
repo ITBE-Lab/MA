@@ -18,14 +18,16 @@
 #include <boost/python.hpp>
 #include "container.h"
 
+class GeneticSequence;
+class NucleotideSequence;
 
-/* 32bit rounding to the next exponent as define
+/** 32bit rounding to the next exponent as define
  */
 #ifndef kroundup32
 #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 #endif
 
-/* Generic reverse function, as it occurs in std::algorithms
+/** Generic reverse function, as it occurs in std::algorithms
  */
 template <class T>
 void reverse(T word[], size_t length)
@@ -39,7 +41,7 @@ void reverse(T word[], size_t length)
 	} // for
 } // reverse
 
-/* Class for the management of sequences (genetic or text)
+/** Class for the management of sequences (genetic or text)
  * Special string class, for sequence handling. 
  */
 template <class ELEMENT_TYPE>
@@ -48,81 +50,37 @@ class PlainSequence
 private :
 	friend GeneticSequence;
 
-	/* Normally we avoid the copy of PlainSequence Objects, except in the context of the GeneticSequence class.
+	/** Normally we avoid the copy of PlainSequence Objects, except in the context of the GeneticSequence class.
 	 */
 	PlainSequence( const PlainSequence &rSequence )
 	{
-		/* We reset all attributes of our fresh sequence object.
+		/** We reset all attributes of our fresh sequence object.
 		 */
 		vResetProtectedAttributes();
 
-		/* Now we copy all elements from the source sequence to the current sequence.
+		/** Now we copy all elements from the source sequence to the current sequence.
 		 */
 		vAppend( rSequence.pGetSequenceRef(), rSequence.uxGetSequenceSize() );
 	} // copy constructor
 
-	/* Sophisticated copy constructor that takes additionally and interval and predicate as argument.
-	 * The predicate gets a relative index as input and has to decided whether the element of this index makes it into the result.
-	 * TODO: range check for the interval.
-	 */
-	PlainSequence( const PlainSequence &rSequence, 
-				   const DeprecatedIntervalDescriptor &rInterval, 
-				   const std::function<bool (size_t)>& predciateFunction )
-	{
-		/* We reset all attributes of our fresh sequence object.
-		 */
-		vResetProtectedAttributes();
-
-		/* We iterate over the complete interval and apply the predicate to each element of the interval.
-		 */
-		for (size_t uxIterator = rInterval.uxStart; uxIterator < rInterval.uxEnd; uxIterator++ )
-		{
-			if ( predciateFunction( uxIterator - rInterval.uxStart ) == true )
-			{
-				vAppend( rSequence.pxSequenceRef + uxIterator, 1 );
-			} // if
-		} // for
-	} // copy constructor
-
-	/* Copy constructor that copies some subsection indicated by the interval.
-	 * The interval will not be ranged-checked!
-	 */
-	PlainSequence( const PlainSequence &rSequence, // the sequence that is taken as copy source
-				   const ZeroBasedIntervalDescriptor &rInterval
-				 )
-	{
-		/* We reset all attributes of our fresh sequence object.
-		 */
-		vResetProtectedAttributes();
-
-		//// BOOST_LOG_TRIVIAL( warning ) << "rInterval : " << rInterval.uxSize << " " << rInterval.uxOffsetInHostSection << " " << rSequence.uiSize;
-
-		/* We iterate over the complete interval and apply the predicate to each element of the interval.
-		 */
-		for ( size_t uxIterator = 0; uxIterator < rInterval.uxSize; uxIterator++ )
-		{
-			vAppend( rSequence.pxSequenceRef + ( rInterval.uxOffsetInHostSection + uxIterator ), 1 );
-		} // for
-	} // copy constructor
-
 protected :
-	/* The encapsulated sequence
+	/** The encapsulated sequence
 	 */
 	ELEMENT_TYPE *pxSequenceRef;
 
-	/* Current size of the content of the encapsulated sequence
+	/** Current size of the content of the encapsulated sequence
 	 */
 	size_t uiSize;
 
-	/* Current size of the buffer.
+	/** Current size of the buffer.
 	 */
 	size_t uxCapacity;
 
-	/* Resets all protected attributes to its initial values.
+	/** Resets all protected attributes to its initial values.
 	 */
 	inline void vReleaseMemory()
 	{
-		/* Allocated memory will be released!
+		/** Allocated memory will be released!
 		 */
 		if ( pxSequenceRef != NULL ) 
 		{
@@ -137,7 +95,7 @@ protected :
 		uxCapacity = 0;
 	} // protected method
 	
-	/* Tries to allocate the requested amount of memory and throws an exception if this process fails.
+	/** Tries to allocate the requested amount of memory and throws an exception if this process fails.
 	 * uxRequestedSize is expressed in "number of requested elements.
 	 */
 	void vReserveMemory( size_t uxRequestedSize )
@@ -173,7 +131,7 @@ public :
 		vReleaseMemory();
 	} // destructor
 
-	/* This moves the ownership of the protected attributes to another object.
+	/** This moves the ownership of the protected attributes to another object.
 	 * The receiver of pxSequenceRef is responsible for its deletion.
 	 */
 	void vTransferOwnership( PlainSequence &rReceivingSequence )
@@ -189,14 +147,14 @@ public :
 		vResetProtectedAttributes();
 	} // protected method
 
-	/* Clears the inner sequence, but does not deallocate the memory.
+	/** Clears the inner sequence, but does not deallocate the memory.
 	 */
 	inline void vClear()
 	{
 		uiSize = 0;
 	} // method
 
-	/* Returns whether the sequence is empty or not.
+	/** Returns whether the sequence is empty or not.
 	 */
 	inline bool bEmpty()
 	{
@@ -208,7 +166,7 @@ public :
 		return uiSize == 0;
 	} // method
 
-	/* Fast getter and setter for element access.
+	/** Fast getter and setter for element access.
 	 * If assertions activated we do a range check.
 	 */
 	inline ELEMENT_TYPE operator[]( size_t uiSubscript ) const
@@ -222,7 +180,7 @@ public :
 		return pxSequenceRef[uiSubscript];
 	} // method (set)
 
-	/* Resizes the internal buffer of the sequence to the requested value.
+	/** Resizes the internal buffer of the sequence to the requested value.
 	 */
 	inline void resize( size_t uiRequestedSize ) // throws exception
 	{	/* Check, whether we have enough capacity, if not reserve memory
@@ -235,7 +193,7 @@ public :
 		uiSize = uiRequestedSize;
 	} // method
 
-	/* Because we want the reference to the sequence private we offer a getter method.
+	/** Because we want the reference to the sequence private we offer a getter method.
 	 * WARNING! Here you can get a null-pointer.
 	 */
 	inline const ELEMENT_TYPE* const pGetSequenceRef() const
@@ -243,7 +201,7 @@ public :
 		return this->pxSequenceRef;
 	} // method
 
-	/* Because we want to keep the size private we offer a getter method.
+	/** Because we want to keep the size private we offer a getter method.
 	 */
 	inline const size_t uxGetSequenceSize() const
 	{
@@ -255,14 +213,14 @@ public :
 		return this->uiSize;
 	} // method
 
-	/* Reverse the elements of the plain sequence.
+	/** Reverse the elements of the plain sequence.
 	 */
 	inline void vReverse()
 	{
 		reverse( pxSequenceRef, uiSize );
 	} // method
 	
-	/* WARNING: the inner string might not null-terminated after this operation.
+	/** WARNING: the inner string might not null-terminated after this operation.
 	 */
 	inline PlainSequence& vAppend( const ELEMENT_TYPE* pSequence, size_t uxNumberOfElements )
 	{
@@ -273,7 +231,7 @@ public :
 			vReserveMemory ( uxRequestedSize );
 		} // if
 
-		/* WARNING: If we work later with non 8-bit data we have to be careful here
+		/** WARNING: If we work later with non 8-bit data we have to be careful here
 		 */
 		memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof(ELEMENT_TYPE) );
 
@@ -282,7 +240,7 @@ public :
 		return *this;
 	} // method
 
-	/* Push back of a single symbol.
+	/** Push back of a single symbol.
 	 */
 	inline void push_back( const ELEMENT_TYPE xElement )
 	{
@@ -295,7 +253,7 @@ public :
 		uiSize++;
 	} // method
 
-	/* Compares two sequences for equality
+	/** Compares two sequences for equality
 	 */
 	inline bool equal(const PlainSequence &rOtherSequence)
 	{
@@ -308,7 +266,7 @@ public :
 	} // method
 }; // class PlainSequence
 
-/* This call was exclusively build for the fasta-reader.
+/** This call was exclusively build for the fasta-reader.
  * It shall boost performance for long inputs.
  */
 class TextSequence : public PlainSequence<char>
@@ -323,7 +281,7 @@ public :
                vAppend(pcString );
        } // text constructor
 
-       /* Terminates the inner string in the C-style using a null-character and
+       /** Terminates the inner string in the C-style using a null-character and
         * returns a reference to the location of the inner string.
         */
        inline char* cString()
@@ -358,7 +316,7 @@ public :
 }; // class
 
 
-/* Special Class for Genetic Sequences
+/** Special Class for Genetic Sequences
  * IDEA: BioSequence objects use numbers instead of characters for sequence representation
  * Supports:
  *  - translation from textual representation to representation as sequence of numbers.
@@ -368,7 +326,7 @@ public :
 class GeneticSequence : public PlainSequence<uint8_t>
 {
 public :
-	/* The type of elements represented by our sequence.
+	/** The type of elements represented by our sequence.
 	 * (the type has to be decided in the context of the construction)
 	 */
 	// const SequenceType eContentType; 
@@ -393,14 +351,9 @@ public :
 		 */
 		return 5; // eContentType == SEQUENCE_IS_NUCLEOTIDE ? 5 : 20;
 	} // method
-
-	/* Appends a slice of some other sequence to our current sequence. 
-	 * Externally defined.
-	 */
-	void vAppend( const GeneticSequenceSlice & );
 }; // class
 
-/* Class for genetic sequence that consist of nucleotides. (A, C, G, T)
+/** Class for genetic sequence that consist of nucleotides. (A, C, G, T)
  * TO DO: Create a move constructor!
  */
 class NucleotideSequence : public GeneticSequence, public Container
@@ -408,17 +361,17 @@ class NucleotideSequence : public GeneticSequence, public Container
 private :
 
 public :
-	/* The table used to translate from base pairs to numeric codes for nucleotides
+	/** The table used to translate from base pairs to numeric codes for nucleotides
 	 */
 	static const unsigned char xNucleotideTranslationTable[256];
 
-	/* Default constructor
+	/** Default constructor
 	 */
 	NucleotideSequence()
 		: GeneticSequence()
 	{ } // default constructor
 
-	/* Constructor that get the initial content of the sequence in text form.
+	/** Constructor that get the initial content of the sequence in text form.
 	 * FIX ME: This can be done a bit more efficient via the GeneticSequence class.
 	 */
 	NucleotideSequence( const std::string &rsInitialText )
@@ -443,13 +396,13 @@ public :
 	} // constructor
 
 
-	/* is implicitly deleted by geneticSequence but boost python needs to know */
+	/** is implicitly deleted by geneticSequence but boost python needs to know */
 	NucleotideSequence(const NucleotideSequence&) = delete;
 
-	/*used to identify the nucleotide sequence datatype in the aligner pipeline*/
+	/** used to identify the nucleotide sequence datatype in the aligner pipeline*/
     ContainerType getType(){return ContainerType::nucSeq;}
 
-	/* Delivers the complement of a single nucleotide.
+	/** Delivers the complement of a single nucleotide.
 	 */
 	static inline char nucleotideComplement( char iNucleotide )
 	{
@@ -461,7 +414,7 @@ public :
 		return ( iNucleotide < 4 ) ? chars[(int)iNucleotide] : 5;
 	} // static method
 
-	/* Iterates over all base pairs in the sequence and creates the complement. 
+	/** Iterates over all base pairs in the sequence and creates the complement. 
 	 * (A -> T, T -> A, C -> G, G -> C)
 	 */
 	void vSwitchAllBasePairsToComplement()
@@ -472,12 +425,7 @@ public :
 		} // for
 	} // function
 
-/*	void vReverse()
-	{
-		PlainSequence.vReverse();
-	}*/
-
-	/* transforms the character representation into a representation on the foundation of digits.
+	/** transforms the character representation into a representation on the foundation of digits.
 	 */
 	void vTranslateToNumericFormUsingTable( const unsigned char *alphabetTranslationTable,
 											size_t uxStartIndex
@@ -489,7 +437,7 @@ public :
 		} // for
 	} // method
 
-	/* Gives the textual representation for some numeric representation.
+	/** Gives the textual representation for some numeric representation.
 	 * Important: Keep this inline, so that it is not compiled into a function of its own. 
 	 */
 	static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
@@ -505,7 +453,7 @@ public :
 		} // else
 	} // static method
 
-	/* The symbol on some position in textual form.
+	/** The symbol on some position in textual form.
 	 * We count starting from 0.
 	 */
 	inline char charAt( size_t uxPosition )
@@ -518,7 +466,7 @@ public :
 		return translateACGTCodeToCharacter( pxSequenceRef[uxPosition] );
 	} // method
 
-	/* Appends a string containing nucleotides as text and automatically translates the symbols.
+	/** Appends a string containing nucleotides as text and automatically translates the symbols.
 	 */
 	void vAppend( const char* pcString )
 	{
@@ -531,7 +479,7 @@ public :
 		vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
 	} // method
 
-	/* wrapper for boost
+	/** wrapper for boost
 	 */
 	void vAppend_boost( const char* pcString )
 	{
@@ -549,5 +497,5 @@ public :
 	
 }; // class NucleotideSequence
 
-/* export this module to boost python */
+/** export this module to boost python */
 void exportSequence();

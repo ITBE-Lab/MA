@@ -1,3 +1,4 @@
+#if 0
 #include "getAnchors.h"
 
 
@@ -64,3 +65,5 @@ void exportGetAnchors()
     ;
 
 }//function
+
+#endif

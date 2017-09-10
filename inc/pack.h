@@ -483,7 +483,7 @@ public:
 
 	friend void vTextSequenceCollectionClass();
 
-	/** Check method, in oder to see whether everything is fine
+	/* Check method, in oder to see whether everything is fine
 	 */
 	bool checkForDefect()
 	{
@@ -506,7 +506,7 @@ public:
 		return uiRunningStartOffsetUnpacked == this->uiUnpackedSizeForwardStrand;
 	} // verification method
 
-	/** The number of base pairs stored in the pack. 
+	/* The number of base pairs stored in the pack. 
 	 * (Expressed in forward strand bp)
 	 */
 	uint64_t uiUnpackedSizeForwardStrand; // initialized in constructor
@@ -939,8 +939,9 @@ public:
 		return uiMid;
 	} // method
 
-	/* Returns true if the section defined by both arguments has bridging properties.
+	/** Returns true if the section defined by both arguments has bridging properties.
 	 * Returns false for a non-bridging section, where the sequence id belonging to the section is transferred via the reference variable.
+	 * Returns the sequence id additionally.
 	 */
 	bool bridingSubsection( const uint64_t uiBegin, 
 							const uint64_t uiSize, 
@@ -949,6 +950,24 @@ public:
 		if ( uiSize > 0 )
 		{
 			riSequenceId = uiSequenceIdForPosition( uiBegin );
+			return    ( bPositionIsOnReversStrand( uiBegin ) != bPositionIsOnReversStrand( (uiBegin + uiSize) - 1 ) ) // bridging forward reverse border
+				   || ( riSequenceId != uiSequenceIdForPosition( (uiBegin + uiSize) - 1 ) ); // section crosses different sequences
+		} // if
+		else
+		{
+			return true;
+		} // else
+	} // method
+	
+	/** Returns true if the section defined by both arguments has bridging properties.
+	 * Returns false for a non-bridging section, where the sequence id belonging to the section is transferred via the reference variable.
+	 */
+	bool bridingSubsection( const uint64_t uiBegin, 
+							const uint64_t uiSize) const
+	{
+		if ( uiSize > 0 )
+		{
+			int64_t riSequenceId = uiSequenceIdForPosition( uiBegin );
 			return    ( bPositionIsOnReversStrand( uiBegin ) != bPositionIsOnReversStrand( (uiBegin + uiSize) - 1 ) ) // bridging forward reverse border
 				   || ( riSequenceId != uiSequenceIdForPosition( (uiBegin + uiSize) - 1 ) ); // section crosses different sequences
 		} // if

@@ -16,6 +16,7 @@ enum ContainerType{
     stripOfConsideration,
     stripOfConsiderationList,
     vector,
+    sa_interval,
     unknown,
     nothing,
     any,
@@ -31,7 +32,7 @@ public:
     *   returns the type of the container as enum.
     *   Used by Module for type checking its Inputs.
     */
-    virtual ContainerType getType(){return ContainerType::unknown;}\
+    virtual ContainerType getType(){return ContainerType::unknown;}
 };//class
 
 /** function to export this module to boost python */

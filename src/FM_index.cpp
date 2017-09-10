@@ -1,6 +1,6 @@
 #include "FM_index.h"
 
-void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac, bool bIncludeReverse )
+void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac )
 {	
     
     /* Size of the reference sequence
@@ -9,7 +9,7 @@ void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac, bool bInclud
     
     /* The sequence length is doubled if we have the reverse sequence in th BWT.
      */
-    uiRefSeqLength = bIncludeReverse ? uiRefSeqLength * 2 : uiRefSeqLength;
+    uiRefSeqLength =  uiRefSeqLength;
 
     /* Buffer for BWT construction. The BWT will be finally inside the buffer.
      */
@@ -17,28 +17,11 @@ void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac, bool bInclud
 
     /* Initialize the buffer with the reference sequence and prepare the cumulative count.
      */
-    for ( uint64_t i = 0; i < ( bIncludeReverse ? uiRefSeqLength / 2 : uiRefSeqLength ); ++i )
+    for ( uint64_t i = 0; i < ( uiRefSeqLength ); ++i )
     {
         buf[i] = fn_pac[i]; // buf2[i >> 2] >> ((3 - (i & 3)) << 1) & 3;
         ++L2[1 + buf[i]];
     } // for
-#if 0
-    //we dont need this anymore
-    if ( bIncludeReverse )
-    {
-        /* Old form of computing the reverse strand...
-         */
-        for ( uint64_t i = 0; i < uiRefSeqLength / 2; ++i )
-        {
-            buf[uiRefSeqLength - i - 1] = 3 - fn_pac[i]; // buf2[i >> 2] >> ((3 - (i & 3)) << 1) & 3;
-            ++L2[1 + buf[uiRefSeqLength - i - 1]];
-        } // for
-
-        /* Give the reference sequence bigger size
-         */
-        fn_pac.vAppend( fn_pac.fullSequenceAsSlice().makeComplementSequenceUsingReverseOrder()->fullSequenceAsSlice() );
-    } // if
-#endif
     
     /* Complete cumulative count
      */
@@ -193,7 +176,7 @@ void FM_Index::build_FM_Index(
         * with reverse strand and apply the algorithm for small inputs.
         */
         auto pSequence = rxSequenceCollection.vColletionWithoutReverseStrandAsNucleotideSequence(); // unpack the pack into a single nucleotide sequence
-        bwt_pac2bwt_step1( *pSequence, true ); // construct with build in function
+        bwt_pac2bwt_step1( *pSequence ); // construct with build in function
     } // if
     else
     {
@@ -260,7 +243,11 @@ void exportFM_index()
             )
         .def(boost::python::init<std::shared_ptr<NucleotideSequence>>(
             "arg1: self\n"
-            "arg2: the nucleotide sequence to create the BWT Index from.\n"
+            "arg2: the NucSeq to create the BWT Index from\n"
+        ))
+        .def(boost::python::init<std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>>(
+            "arg1: self\n"
+            "arg2: the Pack to create the BWT Index from\n"
         ))
         .def(
                 "load", 
@@ -289,6 +276,26 @@ void exportFM_index()
                 "returns: nil\n"
                 "\n"
                 "save this FM Inedx on disc.\n"
+            )
+        .def(
+                "bwt_sa", 
+                &FM_Index::bwt_sa,
+                "arg1: self\n"
+                "arg2: the BWT position to extract\n"
+                "returns: nil\n"
+                "\n"
+                "Delivers the Position in the reference sequence T "
+                "that belongs to the position k in the BWT.\n"
+            )
+        .def(
+                "bwt_2occ4", 
+                &FM_Index::bwt_2occ4,
+                "arg1: self\n"
+                "arg2: the BWT position to extract\n"
+                "returns: nil\n"
+                "\n"
+                "Delivers the Position in the reference sequence T "
+                "that belongs to the position k in the BWT.\n"
             );
 
 	//tell boost python that pointers of these classes can be converted implicitly

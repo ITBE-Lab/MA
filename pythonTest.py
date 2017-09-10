@@ -78,7 +78,7 @@ while iterator.exists():
         print "ref:\t" + str(seq_ref)
     iterator.next()
 
-
+exit()
 
 anc = NlongestIntervalsAsAnchors(2)
 anchors = anc.execute((segments,))

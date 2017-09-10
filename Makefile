@@ -35,8 +35,8 @@ obj/%.co: src/%.c inc/%.h
 LAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
 	pydoc -w LAuS
 
-doxygen/html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
-	doxygen . doxygen.config
+html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
+	doxygen doxygen.config
 
 install: LAuS.so
 	pip install . --upgrade
@@ -48,6 +48,6 @@ clean:
 	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) *.so
 	rm -r -f dist *.egg-info build
 
-docs: LAuS.html doxygen/html/index.html
+docs: LAuS.html html/index.html
 
 .Phony: all clean install distrib docs

@@ -14,6 +14,7 @@
 
 class PerfectMatch;
 
+
 typedef DoublyLinkedList<SegmentTreeInterval>::Iterator SegTreeItt;
 
 class Segmentation{
@@ -49,15 +50,6 @@ private:
 	*/
 	void procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPoolAllowingRecursiveEnqueues *pxPool);
 
-	/*
-	*	deprecated since the anchor matches will be extracted after the segmentation process.
-	* 	the finding achor matches process will have it's own module
-	*/
-	//void saveHits(std::shared_ptr<SegmentTreeInterval> pxNode, size_t uiThreadId);
-	void forEachNonBridgingHitOnTheRefSeq(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
-		std::function<void(nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQueryBegin, nucSeqIndex uiQueryEnd)> fDo);
-	void forEachNonBridgingPerfectMatch(std::shared_ptr<SegmentTreeInterval> pxNode, bool bAnchorOnly,
-		std::function<void(std::shared_ptr<PerfectMatch>)> fDo);
 
 public:
 	Segmentation(std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_index, std::shared_ptr<NucleotideSequence> pxQuerySeq,
