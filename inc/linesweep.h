@@ -3,6 +3,7 @@
 #define LINESWEEP
 
 #include "module.h"
+#include "interval.h"
 
 class LineSweep: public Module
 {

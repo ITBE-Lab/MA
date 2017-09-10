@@ -1,7 +1,5 @@
-#if 0
-
 #include "linesweep.h"
-
+#if 0
 
 /** each perfect match "casts a shadow" at the left and right border of the strip
  * each shadow is stored in one of these data structures.
@@ -83,5 +81,4 @@ void exportLinesweep()
 {
 
 }//function
-
 #endif

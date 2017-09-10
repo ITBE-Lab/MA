@@ -1,6 +1,5 @@
 #include "graphicalMethod.h"
 
-#if 0
 
 std::vector<ContainerType> Bucketing::getInputType()
 {
@@ -27,33 +26,31 @@ std::vector<ContainerType> Bucketing::getOutputType()
 }//function
 
 
-void Bucketing::forEachNonBridgingHitOnTheRefSeq(
+void Bucketing::forEachNonBridgingSeed(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		bool bAnchorOnly,
 		std::shared_ptr<FM_Index> pxFM_index,
 		std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 		std::shared_ptr<NucleotideSequence> pxQuerySeq,
-		std::function<void(
-				nucSeqIndex ulIndexOnRefSeq,
-				nucSeqIndex uiQueryBegin,
-				nucSeqIndex uiQueryEnd)> fDo
-			)
+		std::function<void(Seed rxS)> fDo
+	)
 {
-	pxNode->forEachHitOnTheRefSeq(
+	pxNode->forEachSeed(
 		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals, bAnchorOnly,
-		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
+		[&](Seed xS)
 		{
 			//check if the match is bridging the forward/reverse strand or bridging between two chromosomes
 			/* we have to make sure that the match does not start before or end after the reference sequence
 			* this can happen since we can find parts on the end of the query at the very beginning of the reference or vis versa.
 			* in this case we will replace the out of bounds index with 0 or the length of the reference sequence respectively.
 			*/
-			nucSeqIndex uiStart = (uint64_t)ulIndexOnRefSeq - (uint64_t)uiQuerryBegin;
-			if( ulIndexOnRefSeq < uiQuerryBegin )
+			std::cout << "TODO: check bridging!" << std::endl;
+			/*nucSeqIndex uiStart = xS.start_ref() - xS.start();
+			if( xS.start_ref() < xS.start() )
 				uiStart = 0;
 			nucSeqIndex uiEnd = pxFM_index->getRefSeqLength() - ulIndexOnRefSeq;
 			if(
-					ulIndexOnRefSeq + pxQuerySeq->length() - uiQuerryBegin
+					ulIndexOnRefSeq + pxQuerySeq->length() - xS.start()
 						> 
 					pxFM_index->getRefSeqLength()
 				)
@@ -62,56 +59,33 @@ void Bucketing::forEachNonBridgingHitOnTheRefSeq(
 			{
 				//if so ignore this hit
 				return;
-			}//if
-			fDo(ulIndexOnRefSeq, uiQuerryBegin, uiQuerryEnd);
+			}//if*/
+			fDo(xS);
 		}//lambda
 	);
 }//function
 
-void Bucketing::forEachNonBridgingSeed(
-		std::shared_ptr<SegmentTreeInterval> pxNode,
-		bool bAnchorOnly,
-		std::shared_ptr<FM_Index> pxFM_index,
-		std::shared_ptr<FM_Index> pxRev_FM_Index,
-		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
-		std::shared_ptr<NucleotideSequence> pxQuerySeq,
-		std::function<void(std::shared_ptr<Seed>)> fDo
-	)
-{
-	forEachNonBridgingHitOnTheRefSeq(
-		pxNode, bAnchorOnly, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
-		[&](nucSeqIndex ulIndexOnRefSeq, nucSeqIndex uiQuerryBegin, nucSeqIndex uiQuerryEnd)
-		{
-			fDo(std::shared_ptr<Seed>(new Seed(
-					uiQuerryBegin,
-					uiQuerryEnd - uiQuerryBegin,
-					ulIndexOnRefSeq
-				)));
-		}//lambda
-	);//for each
-}//function
-
-/** transfer the saved hits into the clustering
- * if DEBUG_CHECK_INTERVALS is activated the hits are verified before storing
-*/
+/** transfer the saved hits into the clustering*/
 void Bucketing::saveSeeds(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		std::shared_ptr<FM_Index> pxFM_index,
 		std::shared_ptr<FM_Index> pxRev_FM_Index,
 		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
-		std::shared_ptr<NucleotideSequence> pxQuerySeq
+		std::shared_ptr<NucleotideSequence> pxQuerySeq,
+		std::vector<SeedBucket>& raxSeedBuckets
 	)
 {
 	//bAnchorOnly = false since we also want to collet not maximally extended seeds
 	forEachNonBridgingSeed(
 		pxNode, false, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
-		[&](std::shared_ptr<Seed> pxSeed)
+		[&](Seed xSeed)
 		{
-			addSeed(std::shared_ptr<Seed>(pxSeed));
+			addSeed(pxQuerySeq->length(), xSeed, raxSeedBuckets);
 		}//lambda
 	);//for each
 }///function
 
+#if 0
 /** transfer the anchors into the clustering
  * if DEBUG_CHECK_INTERVALS is activated the hits are verified before storing
 */
@@ -126,12 +100,13 @@ void Bucketing::saveAnchors(
 	//bAnchorOnly = true since we only want the maximally extended seeds
 	forEachNonBridgingSeed(
 		pxNode, true, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
-		[&](std::shared_ptr<Seed> pxSeed)
+		[&](const Seed xSeed)
 		{
-			addAnchorSegment(std::shared_ptr<PerfectMatch>(pxSeed));
+			addAnchor(xSeed);
 		}//lambda
 	);//for each
 }///function
+#endif
 
 std::shared_ptr<Container> Bucketing::execute(
 		std::vector<std::shared_ptr<Container>> vpInput
@@ -146,12 +121,9 @@ std::shared_ptr<Container> Bucketing::execute(
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[4]);
 	std::shared_ptr<FM_Index> pFM_indexReversed = std::static_pointer_cast<FM_Index>(vpInput[5]);
 
-	AnchorMatchList xA(
-			uiNumThreads, 
-			uiStripSize,
-			pQuerrySeq->length(),
-			pRefSeq->uiUnpackedSizeForwardPlusReverse()
-		);
+	
+	std::vector<SeedBucket> axSeedBuckets((pQuerrySeq->length() + pRefSeq->uiUnpackedSizeForwardStrand)/uiStripSize);
+
 
 	/*
 	*	extract all seeds from the segment tree intervals
@@ -160,30 +132,45 @@ std::shared_ptr<Container> Bucketing::execute(
 	pSegments->forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
 		{
-			saveHits(pxNode, pFM_index, pFM_indexReversed, pRefSeq, pQuerrySeq, xA);
+			saveSeeds(pxNode, pFM_index, pFM_indexReversed, pRefSeq, pQuerrySeq, axSeedBuckets);
 		}//lambda
 	);//forEach
 
+
+	std::shared_ptr<StripOfConsiderationVector> pRet(new StripOfConsiderationVector());
 	/*
-	*	extract all anchor sequences
+	*	return one strip of consideration for each anchor
 	*/
 	pAnchors->forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
 		{
-			saveAnchors(pxNode, pFM_index, pFM_indexReversed, pRefSeq, pQuerrySeq, xA);
+			
+			//bAnchorOnly = true since we want to collet maximally extended seeds
+			forEachNonBridgingSeed(
+				pxNode, true, pFM_index, pFM_indexReversed, pRefSeq, pQuerrySeq,
+				[&](Seed xAnchor)
+				{
+					nucSeqIndex uiStart = getPositionForBucketing(pQuerrySeq->length(), xAnchor) - uiStripSize/2;
+					std::shared_ptr<StripOfConsideration> pxNew(
+							new StripOfConsideration(
+								uiStart, 
+								uiStripSize
+							)
+						);
+					for (unsigned int uiC = pxNew->start() / uiStripSize - 1; uiC <= pxNew->end() / uiStripSize; uiC++)
+					{
+						pxNew->addElement(axSeedBuckets[uiC]);
+					}//for
+				}//lambda
+			);//for each
+
+			
 		}//lambda
 	);//forEach
 
-	std::shared_ptr<StripOfConsiderationVector> pRet(new StripOfConsiderationVector());
-	/*
-	*	the actual work is hidden here:
-	*		for each strip we pick up all hits lying in the respective buckets
-	*/
-	xA.findAnchors(pRet->x);
-
 	return pRet;
 }//function
-
+#if 0
 std::vector<ContainerType> LineSweepContainer::getInputType()
 {
 	return std::vector<ContainerType>{
@@ -227,7 +214,7 @@ std::shared_ptr<Container> LineSweepContainer::execute(
 
 	return std::shared_ptr<StripOfConsiderationVector>(new StripOfConsiderationVector(xG.getNthBestBucket(0)));
 }//function
-
+#endif
 void exportGraphicalMethod()
 {
 	//export the StripOfConsideration class
@@ -238,19 +225,7 @@ void exportGraphicalMethod()
     >(
 			"StripOfConsideration",
 			"Holds the matches close to a selected anchor match\n"
-		)
-		.def(
-				"get_score", 
-				&StripOfConsideration::getValueOfContet,
-				"arg1: self\n"
-				"returns: the score as integer\n"
-				"\n"
-				"Gives the current score of the strip.\n"
-				"Depending on how processed the strip is, "
-				"the score might be more or less acurate.\n"
-				"The returned score is however always and upper bound of the final score.\n"
-			)
-		;
+		);
 
 	//register a pointer to StripOfConsideration as return value to boost python
     boost::python::register_ptr_to_python< std::shared_ptr<StripOfConsideration> >();
@@ -296,7 +271,7 @@ void exportGraphicalMethod()
 			std::shared_ptr<StripOfConsiderationVector>, 
 			std::shared_ptr<Container>
 		>(); 
-
+#if 0
     //export the LineSweepContainer class
 	boost::python::class_<LineSweepContainer, boost::python::bases<Module>>(
 			"LineSweep",
@@ -311,6 +286,7 @@ void exportGraphicalMethod()
 			"	returns strip_vec.\n"
 			"		strip_vec: the evaluated areas\n"
 		);
+#endif
     //export the Bucketing class
 	boost::python::class_<Bucketing, boost::python::bases<Module>>(
 			"Bucketing",
@@ -333,5 +309,3 @@ void exportGraphicalMethod()
 			.def_readwrite("max_hits", &Bucketing::uiMaxHitsPerInterval)
 			.def_readwrite("skip_long", &Bucketing::bSkipLongBWTIntervals);
 }
-
-#endif

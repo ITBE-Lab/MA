@@ -10,9 +10,9 @@ BOOST_PYTHON_MODULE(LAuS)
         exportSegmentation();
         exportPack();
         exportIntervalTree();
-        //exportGraphicalMethod();
+        exportGraphicalMethod();
         exportExceptions();
-        //exportGetAnchors();
+        exportGetAnchors();
         exportAlignment();
         //exportNeedlemanWunsch();
 }

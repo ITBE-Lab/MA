@@ -30,27 +30,3 @@ public:
         return uiPosOnReference + size();
     }//function
 }; //class
-
-
-class SeedContainer: public Container{
-private:
-	//the actual seed from the segmentation step
-	std::shared_ptr<const Seed> pxSeed;
-	//is the seed enabled in this bucket?
-    bool bEnabled;
-public:
-    SeedContainer(std::shared_ptr<const Seed> pxSeed)
-            :
-        pxSeed(pxSeed),
-        bEnabled(true)
-    {}//constructor
-    
-    inline const Seed& operator*() const
-    {
-        return *pxSeed;
-    }//operator
-    inline const Seed& operator->() const
-    {
-        return *pxSeed;
-    }//operator
-};//class

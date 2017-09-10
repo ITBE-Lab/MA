@@ -1,7 +1,6 @@
 
 #define NUM_THREADS_ALIGNER 6
 
-#define GRAPHICAL_METHOD_H
 #ifndef GRAPHICAL_METHOD_H
 #define GRAPHICAL_METHOD_H
 
@@ -15,7 +14,7 @@
 #include <boost/python.hpp>
 
 
-
+#if 0
 class PerfectMatch;//TODO: replace perfect match by seed
 
 /* container for the perfect matches.
@@ -32,6 +31,7 @@ struct PerfectMatchContainer{
 	//is the match enabled in this bucket?
 	bool bDisabled;
 };
+#endif
 
 /* each perfect match "casts a shadow" at the left and right border of the bucket
  * each shadow is stored in one of these data structures.
@@ -46,6 +46,7 @@ class ShadowInterval: public Interval<nucSeqIndex>{
 	std::list<ShadowInterval*> lpxInterferingIntervals;
 };
 
+#if 0
 /* a perfect match calculated in the segmentation process
 */
 class PerfectMatch{
@@ -116,35 +117,35 @@ public:
 	nucSeqIndex getPosOnQuery() const { return uiPosOnQuery; }//function
 	nucSeqIndex getPosOnReference() const { return uiPosOnReference; }//function
 };
-
+#endif
 
 class SeedBucket
 {
 private:
 	nucSeqIndex uiTotalScore;
 
-	std::list<std::shared_ptr<const Seed>> lpxContent;
+	std::list<Seed> lxContent;
 
 	std::mutex xMutex;
 
-	bool bUsed;
+	//bool bUsed;
 
 public:
 	SeedBucket()
 		:
 		uiTotalScore(0),
-		lpxContent(),
-		xMutex(),
-		bUsed(false)
+		lxContent(),
+		xMutex()
+		//,bUsed(false)
 	{}//constructor
 
-	void addSeed(std::shared_ptr<const Seed> pxNew)
+	SeedBucket(const SeedBucket&) = delete;
+
+	void addSeed(const Seed xNew)
 	{
-		if(pxNew == nullptr)
-			return;
 		std::lock_guard<std::mutex> xGuard(xMutex);
-		lpxContent.push_back(pxNew);
-		uiTotalScore += pxNew->getLength();
+		lxContent.push_back(xNew);
+		uiTotalScore += xNew.size();
 		//end of scope xGuard
 	}//function
 
@@ -153,52 +154,33 @@ public:
 		return uiTotalScore;
 	}//function
 
-	void forall(std::function<void(std::shared_ptr<const Seed>)> fDo)
+	void forall(std::function<void(const Seed&)> fDo)
 	{
-		for (auto pxSeed : lpxContent)
+		for (auto xSeed : lxContent)
 		{
-			fDo(pxSeed);
+			fDo(xSeed);
 		}//for
 	}//function
 
-	bool isUsed() const { return bUsed; }//function
-	void setUsed() { bUsed = true; }//function
+	//bool isUsed() const { return bUsed; }//function
+	//void setUsed() { bUsed = true; }//function
 };//class
 
-class StripOfConsideration : public Container
+class StripOfConsideration : public Container, public Interval<nucSeqIndex>
 {
 private:
-	/*the array the buckets lie in will get sorted so each bucket needs to remember it's position
-	*/
-	nucSeqIndex uiBegin;
-	nucSeqIndex uiEnd;
 
 	/*the summed up value of the content.
 	* this value gets modified while processing the bucket.
 	* for example we might detect that two matches contradict each other, then we will disable one of them and subtract it's value
 	* but initially this is just the plain sum of all matches lying in this bucket
 	*/
-	nucSeqIndex uiValueOfContent;
+	//nucSeqIndex uiValueOfContent;
 
 	//contains all matches that belong into this bucket
-	//buckets are overlapping so the buckets to the left and right of this one will (partially) contain the same matches
-	std::vector<PerfectMatchContainer> apxPerfectMatches;
-	std::list<std::shared_ptr<PerfectMatchBucket>> lpxPerfectMatcheBuckets;
+	std::vector<Seed> axSeeds;
 
-
-	/*the line sweep algorithm will run over the shadows of the matches, these are stored in this vector
-	*/
-	std::vector<ShadowInterval> axShadows;
-
-	/* disables one match and subtracts its value from  uiValueOfContent
-	*/
-	void disableMatch(uint16_t uiId)
-	{
-		assert(!apxPerfectMatches[uiId].bDisabled);
-		uiValueOfContent -= apxPerfectMatches[uiId].pxPerfectMatch->getLength();
-		apxPerfectMatches[uiId].bDisabled = true;
-	}//function
-
+#if 0
 	/*"cast" the "shadows" of all matches against the left and right border of the bucket, will store the outcome in axShadows
 	*/
 	void calculateShadows(nucSeqIndex uiQueryLength)
@@ -282,12 +264,6 @@ private:
 				nucSeqIndex uiThisPosOnQuery = apxPerfectMatches[uiI].pxPerfectMatch->getPosOnQuery();
 				nucSeqIndex uiThisPosOnRef = apxPerfectMatches[uiI].pxPerfectMatch->getPosOnReference();
 				nucSeqIndex uiThisLength = apxPerfectMatches[uiI].pxPerfectMatch->getLength();
-
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-				uiAmountOfSeedsInAligment++;
-				if (uiThisLength > uiLongestSeedInALignment)
-					uiLongestSeedInALignment = uiThisLength;
-#endif
 
 				uiValueOfContent += apxPerfectMatches[uiI].pxPerfectMatch->getLength();
 				if (uiLastLength != 0)
@@ -595,61 +571,51 @@ private:
 		return true;
 	}//function
 
+	#endif
 
 public:
 
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-	nucSeqIndex uiLongestGapInALignment = 0;
-	nucSeqIndex uiLongestSeedInALignment = 0;
-	unsigned int uiAmountOfGapsInAligment = 0;
-	unsigned int uiAmountOfSeedsInAligment = 0;
-	nucSeqIndex uiAmountOfOverlapsInAligment = 0;
-#endif
-
-	StripOfConsideration(nucSeqIndex uiBegin, nucSeqIndex uiEnd)
-		:
-		uiBegin(uiBegin),
-		uiEnd(uiEnd),
-		uiValueOfContent(0),
-		apxPerfectMatches()
-	{}//constructor
-
 	StripOfConsideration()
-		:
-		uiBegin(0),
-		uiEnd(0),
-		uiValueOfContent(0),
-		apxPerfectMatches()
+			:
+		Interval(0, 0),
+		axSeeds()
 	{}//constructor
 
-	StripOfConsideration(const std::shared_ptr<const PerfectMatch> pxAnchorMatch, const nucSeqIndex uiQueryLength, const nucSeqIndex uiStripSize)
+	StripOfConsideration(nucSeqIndex uiStart, nucSeqIndex uiSize)
 		:
-		uiBegin(uiStripSize > pxAnchorMatch->getPositionForBucketing(uiQueryLength) ? 0 : pxAnchorMatch->getPositionForBucketing(uiQueryLength) - uiStripSize),
-		uiEnd(pxAnchorMatch->getPositionForBucketing(uiQueryLength) + uiStripSize),
-		uiValueOfContent(0),
-		apxPerfectMatches()
+		Interval(uiStart, uiSize),
+		axSeeds()
 	{}//constructor
 
 	
 	/*used to identify the strip of cinsideration datatype in the aligner pipeline*/
 	ContainerType getType(){return ContainerType::stripOfConsideration;}
 	
-
+	void addElement(SeedBucket& rxBucket)
+	{
+		rxBucket.forall(
+			[&](const Seed& rxSeed)
+			{
+				axSeeds.push_back(rxSeed);
+			}//lambda
+		);
+	}//function
+#if 0
 	/*adds a match to the current bucket. 
 	* will add the length of the match to the score of the bucket.
 	* note that the sum of all matches is not a good score for the bucket, since 2 matches might contradict or overlap.
 	* the sum should rather be seen as the maximal possible score for this bucket.
 	* call process() to calculate the actual score.
 	*/
-	void addElement(std::shared_ptr<PerfectMatchBucket> pxNew)
+	void addElement(std::shared_ptr<SeedBucket> pxNew)
 	{
 		if(pxNew == nullptr)
 			return;
 		uiValueOfContent += pxNew->getValue();
-		lpxPerfectMatcheBuckets.push_back(pxNew);
+		lpxSeedBuckets.push_back(pxNew);
 	}//function
 
-	bool withinBucket(std::shared_ptr<const PerfectMatch> pxNew, nucSeqIndex uiQueryLength)
+	bool withinBucket(std::shared_ptr<const Seed> pxNew, nucSeqIndex uiQueryLength)
 	{
 		return uiBegin <= pxNew->getPositionForBucketing(uiQueryLength) && uiEnd >= pxNew->getPositionForBucketing(uiQueryLength);
 	}//function
@@ -760,12 +726,12 @@ public:
 	{
 		return !apxPerfectMatches[at].bDisabled;
 	}//function
-
+#endif
 };//class
 
 
 class StripOfConsiderationVector: public Container
-{
+{//TODO: get rid of this wierd class
 public:
 	std::vector<std::shared_ptr<StripOfConsideration>> x;
 	
@@ -786,7 +752,7 @@ public:
     ContainerType getType(){return ContainerType::stripOfConsiderationList;}
 };//class
 
-
+#if 0
 /*given the perfect matches this can be used to find the matches that represent the optimal solution
 * this is an alternative to chaining
 */
@@ -974,7 +940,6 @@ public:
 
 };
 
-
 class AnchorMatchList{
 private:
 	typedef std::vector<std::shared_ptr<PerfectMatchBucket>> PerfectMatchBuckets;
@@ -1059,15 +1024,11 @@ public:
 	}//function
 
 };//class
+#endif
 
 class Bucketing: public Module
 {
 private:
-	typedef std::vector<std::shared_ptr<SeedBucket>> SeedBuckets;
-	typedef std::list<std::shared_ptr<Seed>> AnchorSegments;
-
-	SeedBuckets apxSeedBuckets;
-	AnchorSegments lpxAnchorMatches;
 
 public:
 	unsigned int uiNumThreads = 8;
@@ -1076,68 +1037,37 @@ public:
 	bool bSkipLongBWTIntervals = true;
 	
 private:
-	std::shared_ptr<StripOfConsideration> collectStripOfConsideration(std::shared_ptr<const PerfectMatch> pxAnchorMatch)
-	{
-		std::shared_ptr<StripOfConsideration> pxNew(new StripOfConsideration(pxAnchorMatch, uiQueryLength, uiStripSize));
-		//BOOST_LOG_TRIVIAL(info) << "			starting to collect " << uiThreadId;
-		for (unsigned int uiC = pxNew->getBegin() / uiStripSize - 1; uiC <= pxNew->getEnd() / uiStripSize; uiC++)
-		{
-			pxNew->addElement(apxPerfectMatchBuckets[uiC]);
-		}//for
-
-		return pxNew;
+	nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS) const 
+	{ 
+		return xS.start_ref() + (uiQueryLength - xS.start()); 
 	}//function
 
-	
-	void addSeed(std::shared_ptr<const Seed> pxNew)
+	void addSeed(
+			nucSeqIndex uiQueryLength, 
+			const Seed xNew, 
+			std::vector<SeedBucket>& raxSeedBuckets
+		)
 	{
-		if(pxNew == nullptr)
-			return;
-		apxPerfectMatchBuckets[pxNew->getPositionForBucketing(uiQueryLength) / uiStripSize]->addMatch(pxNew);
+		raxSeedBuckets[getPositionForBucketing(uiQueryLength, xNew) / uiStripSize].addSeed(xNew);
 	}//function
 
-	void addAnchorSegment(std::shared_ptr<PerfectMatch> pxNew)
-	{
-		lpxAnchorMatches.push_back(pxNew);
-	}//function
-
-	void forEachNonBridgingHitOnTheRefSeq(
-			std::shared_ptr<SegmentTreeInterval> pxNode,
-			bool bAnchorOnly,
-			std::shared_ptr<FM_Index> pxFM_index,
-			std::shared_ptr<FM_Index> pxRev_FM_Index,
-			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
-			std::shared_ptr<NucleotideSequence> pxQuerySeq,
-			std::function<void(
-					nucSeqIndex ulIndexOnRefSeq,
-					nucSeqIndex uiQueryBegin,
-					nucSeqIndex uiQueryEnd
-				)> fDo
-		);
-	
 	void forEachNonBridgingSeed(
 			std::shared_ptr<SegmentTreeInterval> pxNode,
 			bool bAnchorOnly,
 			std::shared_ptr<FM_Index> pxFM_index,
 			std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
-			std::function<void(std::shared_ptr<PerfectMatch>)> fDo
+			std::function<void(Seed)> fDo
 		);
 	
-	void saveHits(
+	void saveSeeds(
 			std::shared_ptr<SegmentTreeInterval> pxNode,
 			std::shared_ptr<FM_Index> pxFM_index,
 			std::shared_ptr<FM_Index> pxRev_FM_Index,
 			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
-			std::shared_ptr<NucleotideSequence> pxQuerySeq
+			std::shared_ptr<NucleotideSequence> pxQuerySeq,
+			std::vector<SeedBucket>& raxSeedBuckets
 		);
-	
-	void saveAnchors(
-			std::shared_ptr<SegmentTreeInterval> pxNode,
-			std::shared_ptr<FM_Index> pxFM_index,
-			std::shared_ptr<FM_Index> pxRev_FM_Index,
-			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
-			std::shared_ptr<NucleotideSequence> pxQuerySeq);
 
 public:
 
@@ -1149,7 +1079,7 @@ public:
 
 	std::vector<ContainerType> getOutputType();
 };//class
-
+#if 0
 class LineSweepContainer: public Module
 {
 public:
@@ -1162,7 +1092,7 @@ public:
 
     std::vector<ContainerType> getOutputType();
 };//class
-
+#endif
 void exportGraphicalMethod();
 
 #endif

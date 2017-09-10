@@ -78,7 +78,6 @@ while iterator.exists():
         print "ref:\t" + str(seq_ref)
     iterator.next()
 
-exit()
 
 anc = NlongestIntervalsAsAnchors(2)
 anchors = anc.execute((segments,))
@@ -111,6 +110,7 @@ print "found " + str(len(strips_of_consideration.x)) + " strips of consideration
 for strip in strips_of_consideration.x:
     print strip.get_score()
 
+exit()
 liesweep = LineSweep()
 best_strip = liesweep.execute((query, ref_seq, strips_of_consideration))
 

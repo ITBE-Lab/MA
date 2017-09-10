@@ -1,4 +1,3 @@
-#if 0
 #include "getAnchors.h"
 
 
@@ -27,7 +26,7 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
         [&pRet, this](std::shared_ptr<SegmentTreeInterval> pxNode)
         {
             auto pxIterator = pRet->begin();
-            while (pxIterator.isListElement() && pxIterator->length() > pxNode->length())
+            while (pxIterator.isListElement() && pxIterator->size() > pxNode->size())
                 ++pxIterator;
             pRet->insertBefore(pxNode, pxIterator);
             if (pRet->length() > uiN)
@@ -65,5 +64,3 @@ void exportGetAnchors()
     ;
 
 }//function
-
-#endif
