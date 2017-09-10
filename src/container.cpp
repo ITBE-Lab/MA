@@ -1,27 +1,5 @@
 #include "container.h"
 
-std::vector<std::string> vContainerTypeNames =
-{
-    "fM_index",
-    "nucSeq",
-    "packedNucSeq",
-    "segmentList",
-    "segment",
-    "stripOfConsideration",
-    "stripOfConsiderationList",
-    "vector",
-    "unknown",
-    "nothing",
-    "any",
-};//array
-
-std::string Container::getTypeInfo()
-{
-    if(vContainerTypeNames.size() > getType())
-        return std::string(vContainerTypeNames[getType()]);
-    return std::string("unknown");
-}//function
-
 //Taken from : https://stackoverflow.com/questions/15842126/feeding-a-python-list-into-a-function-taking-in-a-vector-with-boost-python
 /// @brief Type that allows for registration of conversions from
 ///        python iterable types.
@@ -97,7 +75,7 @@ void exportContainer()
         )
         .def(
                 "get_type_info", 
-                &Container::getTypeInfo,
+                &Container::getType,
                 "arg1: self\n"
                 "returns: an enum describing the type of data stored.\n"
                 "\n"

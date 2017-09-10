@@ -1,9 +1,7 @@
 #include "FM_index.h"
 
-void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac_arg, bool bIncludeReverse )
+void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac, bool bIncludeReverse )
 {	
-    NucleotideSequence fn_pac;
-    fn_pac.vAppend( fn_pac_arg.fullSequenceAsSlice() );
     
     /* Size of the reference sequence
      */
@@ -24,7 +22,8 @@ void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac_arg, bool bIn
         buf[i] = fn_pac[i]; // buf2[i >> 2] >> ((3 - (i & 3)) << 1) & 3;
         ++L2[1 + buf[i]];
     } // for
-
+#if 0
+    //we dont need this anymore
     if ( bIncludeReverse )
     {
         /* Old form of computing the reverse strand...
@@ -39,6 +38,7 @@ void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac_arg, bool bIn
          */
         fn_pac.vAppend( fn_pac.fullSequenceAsSlice().makeComplementSequenceUsingReverseOrder()->fullSequenceAsSlice() );
     } // if
+#endif
     
     /* Complete cumulative count
      */

@@ -483,7 +483,7 @@ public:
 
 	friend void vTextSequenceCollectionClass();
 
-	/* Check method, in oder to see whether everything is fine
+	/** Check method, in oder to see whether everything is fine
 	 */
 	bool checkForDefect()
 	{
@@ -506,7 +506,7 @@ public:
 		return uiRunningStartOffsetUnpacked == this->uiUnpackedSizeForwardStrand;
 	} // verification method
 
-	/* The number of base pairs stored in the pack. 
+	/** The number of base pairs stored in the pack. 
 	 * (Expressed in forward strand bp)
 	 */
 	uint64_t uiUnpackedSizeForwardStrand; // initialized in constructor

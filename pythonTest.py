@@ -19,7 +19,7 @@ for _ in range(10000):
 q_from = random.randint(0, len(seq)-200)
 q_to = q_from + 200
 q = seq[q_from:q_to]
-for _ in range(10):
+for _ in range(25):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
@@ -31,11 +31,11 @@ for _ in range(10):
     else:
         q = q[:pos-1] + "g" + q[pos:]
 
-for _ in range(10):
+for _ in range(25):
     pos = random.randint(1,len(q)-1)
     q = q[:pos-1] + q[pos:]
 
-for _ in range(10):
+for _ in range(25):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:

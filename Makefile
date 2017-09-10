@@ -21,7 +21,7 @@ CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
 
-all: LAuS.so LAuS.html
+all: LAuS.so
 
 LAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
@@ -35,6 +35,8 @@ obj/%.co: src/%.c inc/%.h
 LAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
 	pydoc -w LAuS
 
+doxygen/html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
+	doxygen . doxygen.config
 
 install: LAuS.so
 	pip install . --upgrade
@@ -46,6 +48,6 @@ clean:
 	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) *.so
 	rm -r -f dist *.egg-info build
 
-docs: LAuS.html
+docs: LAuS.html doxygen/html/index.html
 
 .Phony: all clean install distrib docs
