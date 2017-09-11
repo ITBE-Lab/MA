@@ -33,16 +33,16 @@ SA_IndexInterval bwt_extend_backward(
 	pxFM_Index->bwt_2occ4(
 		// until start of SA index interval 
 		// (-1, because we count the characters in front of the index)
-		ik.start() - 1,
+		ik.start(),
 		// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
-		ik.end() - 1,
+		ik.end(),
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
 	);
 	//pxFM_Index->L2[c] start of nuc c in BWT
 	//cntk[c] + 1 offset of new interval
-	//cntl[c] length of new interval
-	return SA_IndexInterval(pxFM_Index->L2[c] + 1 + cntk[c], cntl[c] - cntk[c]);
+	//cntl[c] end of new interval
+	return SA_IndexInterval(pxFM_Index->L2[c] + cntk[c], cntl[c] - cntk[c]);
 } // method
 
 bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength)
@@ -58,11 +58,6 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 
 	//we want to allow extension past the interval borders
 	return true;
-	
-	if (!bBackwards)
-		return uiCurrIndex <= pxNode->end();
-	else
-		return uiCurrIndex >= pxNode->start();
 }//function
 
 bool isMinIntervalSizeReached(
@@ -132,14 +127,15 @@ nucSeqIndex Segmentation::extend(
 	{
 		assert(i >= 0 && i < pxQuerySeq->length());
 		if (q[i] >= 4 && bBreakOnAmbiguousBase) // An ambiguous base
-		{
 			break; // break if the parameter is set.
-		}//if
 
 		const uint8_t c = q[i]; // character at position i in the query
 
 		// perform one step of the extension
 		SA_IndexInterval ok = bwt_extend_backward(ik, c, pxUsedFmIndex);
+
+		std::cout << ok.start() << "," << ok.end() << ":" << ok.size() << std::endl;
+		std::cout << uiStartIndex << "->" << i << std::endl;
 
 		/* 
 		 * Pick the extension interval for character c 
@@ -151,9 +147,7 @@ nucSeqIndex Segmentation::extend(
 			* In fact, if ok.getSize is zero, then there are no matches any more.
 			*/
 			if (ok.size() == 0)
-			{
 				break; // the SA-index interval size is too small to be extended further
-			} // if
 
 			// once the min interval size is reached, 
 			// record the matches every time we lose some by extending further.
@@ -224,6 +218,7 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	*  therefore we know that the next extension will reach at least as far as the center of the node.
 	*  we might be able to extend our matches further though.
 	*/
+	//TODO: last parameter is wrong!
 	nucSeqIndex uiBackwardsForwardsExtensionReachedUntil = extend(*pxNode, uiBackwardsExtensionReachedUntil, false, uiBackwardsExtensionReachedUntil);
 	assert(uiBackwardsForwardsExtensionReachedUntil >= pxNode->getCenter());
 

@@ -5,6 +5,8 @@ import random
 seq = ""
 q = ""
 
+random.seed(1)
+
 for _ in range(10000):
     char = random.randint(1,4)
     if char == 1:
