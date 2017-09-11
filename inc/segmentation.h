@@ -1,6 +1,7 @@
 #ifndef SEGMENTATION_H
 #define SEGMENTATION_H
 
+#define DEBUG_ENABLED
 
 #include "intervalTree.h"
 #include "FM_index.h"
@@ -9,6 +10,7 @@
 #include "graphicalMethod.h"
 #include "module.h"
 #include "container.h"
+#include "meta_programming.h"
 #include <system.h>
 
 
@@ -60,7 +62,7 @@ public:
 #endif
 		)
 		:
-		pSegmentTree(new SegmentTree(pxQuerySeq->length() - 2)),
+		pSegmentTree(new SegmentTree(pxQuerySeq->length())),
 		pxFM_index(pxFM_index),
 		pxRev_FM_Index(pxRev_FM_index),
 		pxQuerySeq(pxQuerySeq),

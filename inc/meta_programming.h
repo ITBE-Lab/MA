@@ -2,7 +2,7 @@
 
 #include <boost/log/trivial.hpp>
 
-#ifdef DEBUG_ENDABLED
+#ifdef DEBUG_ENABLED
 #define DEBUG(x) x
 #else 
 #define DEBUG(x)

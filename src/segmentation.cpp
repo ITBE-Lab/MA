@@ -56,20 +56,20 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 		return uiCurrIndex > 0;
 	}//else
 
-	return true;
 	//we want to allow extension past the interval borders
+	return true;
+	
 	if (!bBackwards)
-	{
 		return uiCurrIndex <= pxNode->end();
-	}//if
 	else
-	{
 		return uiCurrIndex >= pxNode->start();
-	}//else
 }//function
 
-bool isMinIntervalSizeReached(nucSeqIndex uiStartIndex, nucSeqIndex uiCurrIndex, 
-							  nucSeqIndex uiMinIntervalSize)
+bool isMinIntervalSizeReached(
+		nucSeqIndex uiStartIndex,
+		nucSeqIndex uiCurrIndex,
+		nucSeqIndex uiMinIntervalSize
+	)
 {
 	if (uiStartIndex > uiCurrIndex)
 		return uiStartIndex - uiCurrIndex >= uiMinIntervalSize;
@@ -79,9 +79,10 @@ bool isMinIntervalSizeReached(nucSeqIndex uiStartIndex, nucSeqIndex uiCurrIndex,
 }//function
 
 bool isFurtherThan(
-					bool bBackwards, nucSeqIndex uiCurrIndex, 
-					nucSeqIndex uiOnlyRecordHitsFurtherThan
-				  )
+		bool bBackwards,
+		nucSeqIndex uiCurrIndex,
+		nucSeqIndex uiOnlyRecordHitsFurtherThan
+	)
 {
 	if (bBackwards)
 		return uiCurrIndex < uiOnlyRecordHitsFurtherThan;
@@ -284,7 +285,7 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 
 
 	DEBUG(
-		std::cout << "splitting interval " << *pxNode << " at (" << uiFrom << "," << uiTo << ")" << std::endl;
+		std::cout << "splitting interval (" << pxNode->start() << "," << pxNode->end() << ") at (" << uiFrom << "," << uiTo << ")" << std::endl;
 	)
 	pxNode->start(uiFrom);
 	pxNode->end(uiTo);

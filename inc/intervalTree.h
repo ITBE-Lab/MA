@@ -23,6 +23,10 @@ private:
 	SA_IndexInterval xSaInterval;
 	bool bForw;
 public:
+	/**
+	*	start and end on querry
+	*	sa index interval holds the bwt interval
+	*/
 	SaSegment(nucSeqIndex uiStart, nucSeqIndex uiSize, SA_IndexInterval xSaInterval, bool bForw)
 			:
 		Interval(uiStart, uiSize),
