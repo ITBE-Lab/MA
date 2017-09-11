@@ -177,16 +177,6 @@ std::shared_ptr<Container> Bucketing::execute(
 		}//lambda
 	);//forEach
 
-
-	DEBUG(
-		std::cout << "num seeds in strips: ";
-		for(auto pStrip : pRet->x)
-		{
-			std::cout << pStrip->numSeeds() << " ";
-		}//for
-		std::cout << std::endl;
-	)//DEBUG
-
 	return pRet;
 }//function
 #if 0
@@ -244,6 +234,16 @@ void exportGraphicalMethod()
     >(
 			"StripOfConsideration",
 			"Holds the matches close to a selected anchor match\n"
+		)
+		.def(
+			"get_score",
+			&StripOfConsideration::getValue,
+			"arg1: self\n"
+			"returns: value of the content within the strip\n"
+			"\n"
+			"Note that the actual value of the content gets calculated over multiple steps.\n"
+			"Therefore the returned value is not always correct.\n"
+			"The returned value is however always higher than the actual score.\n"
 		);
 
 	//register a pointer to StripOfConsideration as return value to boost python

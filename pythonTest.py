@@ -109,21 +109,30 @@ if len(strips_of_consideration.x) == 0:
     exit()
 
 print "found " + str(len(strips_of_consideration.x)) + " strips of consideration"
-
-liesweep = LineSweep()
-best_strip = liesweep.execute((query, ref_seq, strips_of_consideration))
-
-exit()
-
-print "scores after linesweep:"
+print "scores before linesweep:"
 for strip in strips_of_consideration.x:
     print strip.get_score()
 
-print "best score: " + str(best_strip.x[0].get_score())
+best_strip = []
+liesweep = LineSweep()
+for strip in strips_of_consideration.x:
+    best_strip.append(liesweep.execute((query, ref_seq, strip)))
+
+
+print "scores after linesweep:"
+for strip in best_strip:
+    print strip.get_score()
+
+best = 0
+for index, strip in enumerate(best_strip):
+    if strip.get_score() > best_strip[best].get_score():
+        best = index
+
+print "best score: " + str(best_strip[best].get_score())
 
 nmw = NeedlemanWunsch()
 
-align = nmw.execute((best_strip.x[0], query, ref_seq))
+align = nmw.execute((best_strip[best], query, ref_seq))
 
 printer = AlignmentPrinter()
 

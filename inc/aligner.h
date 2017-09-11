@@ -12,6 +12,7 @@
 #include "getAnchors.h"
 #include "alignment.h"
 #include "needlemanWunsch.h"
+#include "linesweep.h"
 #include <list>
 #include <memory>
 #include <boost/python.hpp>

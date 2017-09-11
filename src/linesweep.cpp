@@ -1,42 +1,4 @@
 #include "linesweep.h"
-#if 0
-
-/** each perfect match "casts a shadow" at the left and right border of the strip
- * each shadow is stored in one of these data structures.
-*/
-class ShadowInterval: public Interval<nucSeqIndex>{
-private:
-	////while swiping the interfering shadows will get stored in this list
-    std::list<ShadowInterval*> lpxInterferingIntervals;
-    ////the seed container this interval corresponds to
-    std::shared_ptr<SeedContainer> pxSeed;
-	////the total score of the interfering shadows
-    unsigned int uiScoreInterfering = 0;
-public:
-    ShadowInterval(
-            nucSeqIndex uiBegin, 
-            nucSeqIndex uiEnd, 
-            std::shared_ptr<SeedContainer> pxSeed
-        )
-            :
-        Interval(uiBegin, uiEnd),
-        pxSeed(pxSeed)
-    {}//constructor
-
-    void addInterferingInterval(ShadowInterval* pInterval)
-    {
-
-    }//function
-
-    inline const Seed& operator*() const
-    {
-        return *pxSeed;
-    }//operator
-    inline const Seed& operator->() const
-    {
-        return *pxSeed;
-    }//operator
-};//class
 
 std::vector<ContainerType> LineSweep::getInputType()
 {
@@ -55,30 +17,127 @@ std::vector<ContainerType> LineSweep::getOutputType()
 	return std::vector<ContainerType>{ContainerType::stripOfConsideration};
 }//function
 
+/**
+ * determine the start and end positions this match casts on the left border of the given bucket
+ * pxMatch is the container this match is stored in.
+ */
+ShadowInterval LineSweep::getLeftShadow(
+        nucSeqIndex uiBucketStart,
+        std::list<Seed>::iterator pSeed,
+        nucSeqIndex uiBucketSize,
+        nucSeqIndex uiQueryLength
+    ) const
+{
+    return ShadowInterval(
+            pSeed->start() + uiBucketStart,
+            pSeed->start_ref() + pSeed->size() + uiQueryLength + uiBucketSize,
+            pSeed
+        );
+}//function
+
+/**
+ * determine the start and end positions this match casts on the right border of the given bucket
+ * pxMatch is the container this match is stored in.
+ */
+ShadowInterval LineSweep::getRightShadow(
+    nucSeqIndex iBucketStart,
+    std::list<Seed>::iterator pSeed,
+    nucSeqIndex iBucketSize,
+    nucSeqIndex iQueryLength) const
+{
+    return ShadowInterval(
+            pSeed->start_ref(),
+            pSeed->start() + pSeed->size() + iQueryLength + iBucketSize * 2 + iBucketStart,
+            pSeed
+        );
+}//function
+
+void LineSweep::linesweep(std::vector<ShadowInterval>& vShadows, std::list<Seed>& rSeeds)
+{
+    //sort shadows (increasingly) by start coordinate of the match
+    std::sort(
+        vShadows.begin(),
+        vShadows.end(),
+        [](ShadowInterval xA, ShadowInterval xB)
+        {
+            return xA.start() < xB.start();
+        }//lambda
+    );//sort function call
+
+    //records the interval ends
+    SelfBalancingBinarySearchTree<ShadowInterval*> xItervalEnds = SelfBalancingBinarySearchTree<ShadowInterval*>();
+
+    //this is the line sweeping part
+    for(ShadowInterval& rInterval : vShadows)
+    {
+        //TODO: remove the stack markers
+        while(true)
+        {
+            ShadowInterval* pFirstEnding = xItervalEnds.first();
+            //check if we really need to remove the first interval in the tree
+            if(pFirstEnding == nullptr)
+                break;
+            if(pFirstEnding->end() >= rInterval.start())
+                break;
+
+            //when reaching here we actually have to remove the intervall
+            pFirstEnding->removeSeedIfNecessary(rSeeds);
+            xItervalEnds.deleteFirst();
+        }//while
+
+        //work on the current interval
+        ShadowInterval** ppNextShadow = xItervalEnds.insert(&rInterval);
+        if(ppNextShadow != nullptr)
+            (*ppNextShadow)->addInterferingInterval(&rInterval);
+    }//for
+}//function
+
 std::shared_ptr<Container> LineSweep::execute(
-        std::vector<std::shared_ptr<Container>> pInput
+        std::vector<std::shared_ptr<Container>> vpInput
     )
 {
-    std::shared_ptr<NucleotideSequence> pQuerrySeq = 
-    std::static_pointer_cast<NucleotideSequence>(vpInput[0]);
+    std::shared_ptr<NucleotideSequence> pQuerrySeq =
+        std::static_pointer_cast<NucleotideSequence>(vpInput[0]);
     std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq =
         std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[1]);
     std::shared_ptr<StripOfConsideration> pStrip =
         std::static_pointer_cast<StripOfConsideration>(vpInput[2]);
 
-    //sort (increasingly) by start coordinate of the match
-		std::sort(apxPerfectMatches.begin(), apxPerfectMatches.end(),
-        [](const PerfectMatchContainer xA, const PerfectMatchContainer xB)
+    std::vector<ShadowInterval> vLeftShadows = {};
+
+    //get the left shadows
+    pStrip->forAllSeeds(
+        [&](std::list<Seed>::iterator pSeed)
         {
-            return xA.pxPerfectMatch->getPosOnQuery() < xB.pxPerfectMatch->getPosOnQuery();
+            vLeftShadows.push_back(getLeftShadow(
+                    pStrip->start(), 
+                    pSeed, 
+                    pStrip->size(), 
+                    pQuerrySeq->length()
+                ));
         }//lambda
-    );//sort function call
+    );
+
+    //perform the line sweep algorithm on the left shadows
+    linesweep(vLeftShadows, pStrip->seeds());
 
     return pStrip;
 }//function
 
 void exportLinesweep()
 {
-
+    //export the LineSweepContainer class
+	boost::python::class_<LineSweep, boost::python::bases<Module>>(
+        "LineSweep",
+        "Uses linesweeping to remove contradicting "
+        "matches within one strip of consideration.\n"
+        "\n"
+        "Execution:\n"
+        "	Expects querry, ref, strip_vec as input.\n"
+        "		querry: the querry as NucleotideSequence\n"
+        "		ref: the reference seqeuence as Pack\n"
+        "		strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
+        "	returns strip_vec.\n"
+        "		strip_vec: the evaluated areas\n"
+    );
 }//function
-#endif

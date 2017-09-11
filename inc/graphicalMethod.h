@@ -34,7 +34,6 @@ struct PerfectMatchContainer{
 	//is the match enabled in this bucket?
 	bool bDisabled;
 };
-#endif
 
 /* each perfect match "casts a shadow" at the left and right border of the bucket
  * each shadow is stored in one of these data structures.
@@ -49,7 +48,6 @@ class ShadowInterval: public Interval<nucSeqIndex>{
 	std::list<ShadowInterval*> lpxInterferingIntervals;
 };
 
-#if 0
 /* a perfect match calculated in the segmentation process
 */
 class PerfectMatch{
@@ -178,10 +176,10 @@ private:
 	* for example we might detect that two matches contradict each other, then we will disable one of them and subtract it's value
 	* but initially this is just the plain sum of all matches lying in this bucket
 	*/
-	//nucSeqIndex uiValueOfContent;
+	nucSeqIndex uiValueOfContent;
 
 	//contains all matches that belong into this bucket
-	std::vector<Seed> axSeeds;
+	std::list<Seed> axSeeds;
 
 #if 0
 	/*"cast" the "shadows" of all matches against the left and right border of the bucket, will store the outcome in axShadows
@@ -600,13 +598,30 @@ public:
 			[&](const Seed& rxSeed)
 			{
 				axSeeds.push_back(rxSeed);
+				uiValueOfContent += rxSeed.getValue();
 			}//lambda
 		);
 	}//function
 
-	inline unsigned int numSeeds() const
+	inline nucSeqIndex getValue() const
 	{
-		return axSeeds.size();
+		return uiValueOfContent;
+	}//function
+
+	inline void setValue(const nucSeqIndex uiNewVal)
+	{
+		uiValueOfContent = uiNewVal;
+	}//function
+
+	std::list<Seed>& seeds()
+	{
+		return axSeeds;
+	}//function
+
+	void forAllSeeds(std::function<void(std::list<Seed>::iterator pSeed)> fDo)
+	{
+		for(std::list<Seed>::iterator pSeed = axSeeds.begin(); pSeed != axSeeds.end(); pSeed++)
+			fDo(pSeed);
 	}//function
 #if 0
 	/*adds a match to the current bucket. 
