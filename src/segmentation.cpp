@@ -281,6 +281,8 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 			pxNextNode, this, pxPool
 		);//enqueue
 	}//if
+
+
 	DEBUG(
 		std::cout << "splitting interval " << *pxNode << " at (" << uiFrom << "," << uiTo << ")" << std::endl;
 	)
