@@ -63,7 +63,7 @@ rev_fm_index = FMIndex(rev_ref)
 ref_seq = BWAPack()
 ref_seq.append("name", "no comment",ref)
 
-seg = Segmentation(True, True, 10, 100000)
+seg = Segmentation(True, True, 5, 100000)
 seg.bSkipLongBWTIntervals = False
 
 segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))
@@ -76,8 +76,8 @@ while iterator.exists():
     for i in range(start, end):
         sequence = sequence + query[i]
     print "segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
-    for seq_ref in iterator.get().get_ref_hits(fm_index, rev_fm_index, ref_seq):
-        print "ref:\t" + str(seq_ref)
+    #for seq_ref in iterator.get().get_ref_hits(fm_index, rev_fm_index, ref_seq):
+    #    print "ref:\t" + str(seq_ref)
     iterator.next()
 
 
@@ -108,14 +108,12 @@ if len(strips_of_consideration.x) == 0:
     print "no match found"
     exit()
 
-print "found " + str(len(strips_of_consideration.x)) + " strips of consideration with the scores:"
-for strip in strips_of_consideration.x:
-    print strip.get_score()
+print "found " + str(len(strips_of_consideration.x)) + " strips of consideration"
 
-exit()
 liesweep = LineSweep()
 best_strip = liesweep.execute((query, ref_seq, strips_of_consideration))
 
+exit()
 
 print "scores after linesweep:"
 for strip in strips_of_consideration.x:

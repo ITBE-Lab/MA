@@ -44,7 +44,7 @@ void Bucketing::forEachNonBridgingSeed(
 			* this can happen since we can find parts on the end of the query at the very beginning of the reference or vis versa.
 			* in this case we will replace the out of bounds index with 0 or the length of the reference sequence respectively.
 			*/
-			std::cout << "TODO: check bridging!" << std::endl;
+			//TODO: check bridging!
 			/*nucSeqIndex uiStart = xS.start_ref() - xS.start();
 			if( xS.start_ref() < xS.start() )
 				uiStart = 0;
@@ -136,6 +136,14 @@ std::shared_ptr<Container> Bucketing::execute(
 		}//lambda
 	);//forEach
 
+	DEBUG(
+		std::cout << "values of buckets: ";
+		for(auto& bucket : axSeedBuckets)
+		{
+			std::cout << bucket.getValue() << " ";
+		}//for
+		std::cout << std::endl;
+	)//DEBUG
 
 	std::shared_ptr<StripOfConsiderationVector> pRet(new StripOfConsiderationVector());
 	/*
@@ -161,12 +169,23 @@ std::shared_ptr<Container> Bucketing::execute(
 					{
 						pxNew->addElement(axSeedBuckets[uiC]);
 					}//for
+					pRet->x.push_back(pxNew);
 				}//lambda
 			);//for each
 
 			
 		}//lambda
 	);//forEach
+
+
+	DEBUG(
+		std::cout << "num seeds in strips: ";
+		for(auto pStrip : pRet->x)
+		{
+			std::cout << pStrip->numSeeds() << " ";
+		}//for
+		std::cout << std::endl;
+	)//DEBUG
 
 	return pRet;
 }//function

@@ -12,6 +12,7 @@
 #include "container.h"
 #include "meta_programming.h"
 #include <system.h>
+#include <algorithm>
 
 
 class PerfectMatch;

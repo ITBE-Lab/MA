@@ -6,9 +6,12 @@
 
 #define NUM_THREADS_ALIGNER 6
 
+#define DEBUG_ENABLED
+
 #include "intervalTree.h"
 #include <algorithm>
 #include "segmentation.h"
+#include "meta_programming.h"
 #include "threadPool.h"
 #include "module.h"
 #include <boost/python.hpp>
@@ -599,6 +602,11 @@ public:
 				axSeeds.push_back(rxSeed);
 			}//lambda
 		);
+	}//function
+
+	inline unsigned int numSeeds() const
+	{
+		return axSeeds.size();
 	}//function
 #if 0
 	/*adds a match to the current bucket. 

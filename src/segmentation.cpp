@@ -11,12 +11,9 @@
 //#include "assembly.h"
  
 
-/* Emergency fix for broken forward search in original BWA code.
+/**
 * Delivers 4 intervals for a single input interval.
 * Here we use only two fields in the BWT_Interval.
-* ik[0] == start I(P) in T	(start in BWT with backward search)
-* ik[1] is unused
-* ik[2] == size of interval (equal for I(P) and I'(P'), due to symmetry)
 */
 SA_IndexInterval bwt_extend_backward(
 									// current interval
@@ -31,18 +28,17 @@ SA_IndexInterval bwt_extend_backward(
 	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
 	pxFM_Index->bwt_2occ4(
-		// until start of SA index interval 
-		// (-1, because we count the characters in front of the index)
-		ik.start(),
-		// until end of SA index interval (-1, because bwt_occ4 counts inclusive)
-		ik.end(),
+		// until start of SA index interval (-1 due to $ in BWT)
+		ik.start() - 1,
+		// until end of SA index interval (end is inclusive => -1)
+		ik.end() - 1,
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
 	);
 	//pxFM_Index->L2[c] start of nuc c in BWT
-	//cntk[c] + 1 offset of new interval
+	//cntk[c] offset of new interval
 	//cntl[c] end of new interval
-	return SA_IndexInterval(pxFM_Index->L2[c] + cntk[c], cntl[c] - cntk[c]);
+	return SA_IndexInterval(pxFM_Index->L2[c] + 1 + cntk[c], cntl[c] - cntk[c]);
 } // method
 
 bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength)
@@ -134,8 +130,44 @@ nucSeqIndex Segmentation::extend(
 		// perform one step of the extension
 		SA_IndexInterval ok = bwt_extend_backward(ik, c, pxUsedFmIndex);
 
+		#if 0
 		std::cout << ok.start() << "," << ok.end() << ":" << ok.size() << std::endl;
 		std::cout << uiStartIndex << "->" << i << std::endl;
+		for(auto k = std::max(ok.start(),2L)-1; k <= ok.start(); k++)
+		{
+			auto index = pxUsedFmIndex->bwt_sa(k);
+			auto seq = pxRefSequence->vExtract(std::max(index,10L) - 10, index + 10);
+			for(unsigned int j = 0; j < 20; j++)
+			{
+				std::cout << seq->charAt(j);
+			}
+			std::cout << std::endl;
+		}//for
+		std::cout << std::endl;
+		for(auto k = ok.end()-1; k <= ok.end(); k++)
+		{
+			auto index = pxUsedFmIndex->bwt_sa(k);
+			auto seq = pxRefSequence->vExtract(index - 10, index + 10);
+			for(unsigned int j = 0; j < 20; j++)
+			{
+				std::cout << seq->charAt(j);
+			}
+			std::cout << std::endl;
+		}//for
+		for(unsigned int j = 0; j < 20; j++)
+		{
+			if(j == 10)
+				std::cout << "^";
+			else
+				std::cout << " ";
+		}
+		std::cout << std::endl;
+		for(unsigned int j = i-10; j < i+10; j++)
+		{
+			std::cout << pxQuerySeq->charAt(j);
+		}
+		std::cout << std::endl;
+		#endif
 
 		/* 
 		 * Pick the extension interval for character c 
