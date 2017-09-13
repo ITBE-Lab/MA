@@ -1,5 +1,3 @@
-#if 0
-
 #include "needlemanWunsch.h"
 
 
@@ -133,7 +131,7 @@ void needlemanWunsch(
         }//for
     }//for
 
-    DEBUG(
+    DEBUG_3(
         for(unsigned int uiI = 0; uiI < toRef-fromRef+1; uiI++)
         {
             if(uiI == 0)
@@ -203,85 +201,81 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::vector<std::shared_ptr<Container>> vpInput
     )
 {
-
     std::shared_ptr<StripOfConsideration> pStrip = std::static_pointer_cast<StripOfConsideration>(vpInput[0]);
     std::shared_ptr<NucleotideSequence> pQuery 
         = std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
     std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefPack = 
         std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
 
-    unsigned int uiBegin = 0;
-    unsigned int uiEnd = pStrip->numMatches()-1;
-    while(!pStrip->matchEnabled(uiBegin))
-        uiBegin++;
-    while(!pStrip->matchEnabled(uiEnd))
-        uiEnd--;
+    std::list<Seed>* pSeeds = &pStrip->seeds();
 
-    nucSeqIndex beginQuery = pStrip->getMatch(uiBegin)->getPosOnQuery();
-    nucSeqIndex beginRef = pStrip->getMatch(uiBegin)->getPosOnReference() - beginQuery*2;
-    nucSeqIndex len = pStrip->getMatch(uiEnd)->getLength();
-    nucSeqIndex endQuery = pStrip->getMatch(uiEnd)->getPosOnQuery() + len;
-    nucSeqIndex endRef = pStrip->getMatch(uiEnd)->getPosOnReference() + len + (pQuery->length()-endQuery)*2;
+    nucSeqIndex beginQuery = pSeeds->front().start();
+    nucSeqIndex beginRef = pSeeds->front().start_ref() - beginQuery*2;
+    nucSeqIndex endQuery = pSeeds->back().end();
+    nucSeqIndex endRef = pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2;
+
+    std::shared_ptr<Alignment> pRet(new Alignment(beginRef, endRef));
 
     std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
 
-    std::shared_ptr<Alignment> pRet(new Alignment(beginRef, endRef));
+    for(Seed& rSeed : *pSeeds)
+    {
+        std::cout << rSeed.start_ref() << " " << rSeed.end_ref() << std::endl;
+    }//for
+    return pRet;
 
     nucSeqIndex endOfLastSeedQuery = 0;
     nucSeqIndex endOfLastSeedReference = 0;
 
-    for(unsigned int uiI = uiBegin; uiI <= uiEnd; uiI++)
+    for(Seed& rSeed : *pSeeds)
     {
-        if(pStrip->matchEnabled(uiI))
+        needlemanWunsch(
+                pQuery,
+                pRef,
+                endOfLastSeedQuery,
+                rSeed.start(),
+                endOfLastSeedReference,
+                rSeed.start_ref() - beginRef,
+                pRet
+            );
+        unsigned int ovQ = endOfLastSeedQuery - rSeed.start_ref();
+        if(rSeed.start_ref() > endOfLastSeedQuery)
+            ovQ = 0;
+        unsigned int ovR = endOfLastSeedReference - (rSeed.start_ref() - beginRef);
+        if(rSeed.start_ref() - beginRef > endOfLastSeedReference)
+            ovR = 0;
+        unsigned int len = rSeed.size();
+        nucSeqIndex overlap = std::max(ovQ, ovR);
+        if(len > overlap)
         {
-            needlemanWunsch(
-                    pQuery,
-                    pRef,
-                    endOfLastSeedQuery,
-                    pStrip->getMatch(uiI)->getPosOnQuery(),
-                    endOfLastSeedReference,
-                    pStrip->getMatch(uiI)->getPosOnReference() - beginRef,
-                    pRet
-                );
-            unsigned int ovQ = endOfLastSeedQuery - pStrip->getMatch(uiI)->getPosOnQuery();
-            if(pStrip->getMatch(uiI)->getPosOnQuery() > endOfLastSeedQuery)
-                ovQ = 0;
-            unsigned int ovR = endOfLastSeedReference - (pStrip->getMatch(uiI)->getPosOnReference() - beginRef);
-            if(pStrip->getMatch(uiI)->getPosOnReference() - beginRef > endOfLastSeedReference)
-                ovR = 0;
-            unsigned int len = pStrip->getMatch(uiI)->getLength() - 1;
-            nucSeqIndex overlap = std::max(ovQ, ovR);
-            if(len > overlap)
-            {
-                pRet->append(Alignment::MatchType::match, len - overlap);
-                DEBUG(
-                    std::cout << len - overlap << std::endl;
-                    for(unsigned int i = 0; i < len - overlap; i++)
-                        std::cout << pQuery->charAt(i + pStrip->getMatch(uiI)->getPosOnQuery());
-                    std::cout << std::endl;
-                    for(unsigned int i = 0; i < len - overlap; i++)
-                        std::cout << pRef->charAt(i + pStrip->getMatch(uiI)->getPosOnReference() - beginRef);
-                    std::cout << std::endl;
-                    for(unsigned int i = 0; i < len - overlap; i++)
-                        std::cout << "m";
-                )//DEBUG
-            }//if
-            if(ovQ > ovR)
-                pRet->append(Alignment::MatchType::deletion, ovQ - ovR);
+            pRet->append(Alignment::MatchType::match, len - overlap);
             DEBUG(
-                for(unsigned int i = ovR; i < ovQ; i++)
-                    std::cout << "d";
-            )
-            if(ovR > ovQ)
-                pRet->append(Alignment::MatchType::insertion, ovR - ovQ);
-            DEBUG(
-                for(unsigned int i = ovQ; i < ovR; i++)
-                    std::cout << "i";
+                std::cout << len - overlap << std::endl;
+                for(unsigned int i = 0; i < len - overlap; i++)
+                    std::cout << pQuery->charAt(i + rSeed.start());
                 std::cout << std::endl;
+                for(unsigned int i = 0; i < len - overlap; i++)
+                    std::cout << pRef->charAt(i + rSeed.start_ref() - beginRef);
+                std::cout << std::endl;
+                for(unsigned int i = 0; i < len - overlap; i++)
+                    std::cout << "m";
             )//DEBUG
-            endOfLastSeedQuery = pStrip->getMatch(uiI)->getPosOnQuery() + len;
-            endOfLastSeedReference = pStrip->getMatch(uiI)->getPosOnReference() + len - beginRef;
         }//if
+        if(ovQ > ovR)
+            pRet->append(Alignment::MatchType::deletion, ovQ - ovR);
+        DEBUG(
+            for(unsigned int i = ovR; i < ovQ; i++)
+                std::cout << "d";
+        )
+        if(ovR > ovQ)
+            pRet->append(Alignment::MatchType::insertion, ovR - ovQ);
+        DEBUG(
+            for(unsigned int i = ovQ; i < ovR; i++)
+                std::cout << "i";
+            std::cout << std::endl;
+        )//DEBUG
+        endOfLastSeedQuery = rSeed.end();
+        endOfLastSeedReference = rSeed.end_ref() - beginRef;
     }//for
 
     needlemanWunsch(
@@ -319,5 +313,3 @@ void exportNeedlemanWunsch()
     );
 
 }//function
-
-#endif

@@ -50,13 +50,13 @@ public:
     {}//constructor
 
     /* Function to check if tree is empty */
-    bool isEmpty()
+    bool isEmpty() const
     {
         return pRoot == nullptr;
     }
 
         /* Function to get height of node */
-    int height(std::shared_ptr<SBBSTNode<T>> t)
+    int height(std::shared_ptr<SBBSTNode<T>> t) const
     {
         return t == nullptr ? -1 : t->height;
     }
@@ -64,6 +64,8 @@ public:
     /* Rotate binary tree node with pLeft child */
     std::shared_ptr<SBBSTNode<T>> rotateWithLeftChild(std::shared_ptr<SBBSTNode<T>> k2)
     {
+        if(k2->pLeft == nullptr)
+            return k2;
         std::shared_ptr<SBBSTNode<T>> k1 = k2->pLeft;
         k2->pLeft = k1->pRight;
         k1->pRight = k2;
@@ -75,6 +77,8 @@ public:
     /* Rotate binary tree node with pRight child */
     std::shared_ptr<SBBSTNode<T>> rotateWithRightChild(std::shared_ptr<SBBSTNode<T>> k1)
     {
+        if(k1->pRight == nullptr)
+            return k1;
         std::shared_ptr<SBBSTNode<T>> k2 = k1->pRight;
         k1->pRight = k2->pLeft;
         k2->pLeft = k1;
@@ -104,12 +108,15 @@ public:
     }
 
     /* Function to insert data recursively */
-    std::shared_ptr<SBBSTNode<T>> insert(T x, std::shared_ptr<SBBSTNode<T>> t, T* pNext)
+    std::shared_ptr<SBBSTNode<T>> insert(T x, std::shared_ptr<SBBSTNode<T>> t, T*& pNext)
     {
         if (t == nullptr)
             t = std::shared_ptr<SBBSTNode<T>>(new SBBSTNode<T>(x));
-        else if (x < t->data)
+        else if (x <= t->data)
         {
+            DEBUG_3(
+                std::cout << "\tinserting left" << std::endl;
+            )
             t->pLeft = insert(x, t->pLeft, pNext);
             if(pNext == nullptr)
                 pNext = &t->data;
@@ -121,8 +128,11 @@ public:
                     t = doubleWithLeftChild(t);
             }
         }
-        else if (x > t->data)
+        else
         {
+            DEBUG_3(
+                std::cout << "\tinserting right" << std::endl;
+            )
             t->pRight = insert(x, t->pRight, pNext);
             if (height(t->pRight) - height(t->pLeft) == 2)
             {
@@ -143,6 +153,7 @@ public:
     {
         T* pRet = nullptr;
         pRoot = insert(data, pRoot, pRet);
+        assert(pRoot != nullptr);
         return pRet;
     }
 
@@ -171,18 +182,15 @@ public:
         pRoot = deleteFirst(pRoot);
     }
 
-
     /* Functions to search for an element */
-    T first()
+    T& first() const
     {
         std::shared_ptr<SBBSTNode<T>> r = pRoot;
-        if(r == nullptr)
-            return nullptr;
         while (r->pLeft != nullptr)
                 r = r->pLeft;
         return r->data;
     }
-
+#if 0
     T search(std::shared_ptr<SBBSTNode<T>> r, int val)
     {
         while (r != nullptr)
@@ -202,6 +210,7 @@ public:
     {
         return search(pRoot, val);
     }
+#endif
 };//class
 
 #endif

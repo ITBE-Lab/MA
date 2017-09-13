@@ -15,5 +15,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportGetAnchors();
         exportAlignment();
         exportLinesweep();
-        //exportNeedlemanWunsch();
+        exportNeedlemanWunsch();
 }

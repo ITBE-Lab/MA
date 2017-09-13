@@ -7,7 +7,8 @@
 typedef uint64_t nucSeqIndex;
 
 
-class Seed: public Container, public Interval<nucSeqIndex>{
+class Seed: public Container, public Interval<nucSeqIndex>
+{
 private:
     ////the beginning of the match on the reference
     nucSeqIndex uiPosOnReference;

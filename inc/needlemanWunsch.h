@@ -1,6 +1,7 @@
-#define NEEDLEMAN_WUNSCH_H
 #ifndef NEEDLEMAN_WUNSCH_H
 #define NEEDLEMAN_WUNSCH_H
+
+#define DEBUG_LEVEL 1
 
 #include "boost/python.hpp"
 #include "intervalTree.h"

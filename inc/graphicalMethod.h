@@ -15,6 +15,7 @@
 #include "threadPool.h"
 #include "module.h"
 #include <boost/python.hpp>
+#include <memory>
 
 
 #if 0
@@ -125,7 +126,7 @@ class SeedBucket
 private:
 	nucSeqIndex uiTotalScore;
 
-	std::list<Seed> lxContent;
+	std::list<std::shared_ptr<Seed>> lContent;
 
 	std::mutex xMutex;
 
@@ -135,18 +136,19 @@ public:
 	SeedBucket()
 		:
 		uiTotalScore(0),
-		lxContent(),
+		lContent(),
 		xMutex()
 		//,bUsed(false)
 	{}//constructor
 
+	////disable copying of buckets
 	SeedBucket(const SeedBucket&) = delete;
 
-	void addSeed(const Seed xNew)
+	void addSeed(const std::shared_ptr<Seed> pNew)
 	{
 		std::lock_guard<std::mutex> xGuard(xMutex);
-		lxContent.push_back(xNew);
-		uiTotalScore += xNew.size();
+		lContent.push_back(pNew);
+		uiTotalScore += pNew->size();
 		//end of scope xGuard
 	}//function
 
@@ -155,11 +157,11 @@ public:
 		return uiTotalScore;
 	}//function
 
-	void forall(std::function<void(const Seed&)> fDo)
+	void forall(std::function<void(const std::shared_ptr<Seed>)> fDo)
 	{
-		for (auto xSeed : lxContent)
+		for (auto pSeed : lContent)
 		{
-			fDo(xSeed);
+			fDo(pSeed);
 		}//for
 	}//function
 
@@ -179,7 +181,7 @@ private:
 	nucSeqIndex uiValueOfContent;
 
 	//contains all matches that belong into this bucket
-	std::list<Seed> axSeeds;
+	std::list<std::shared_ptr<Seed>> lSeeds;
 
 #if 0
 	/*"cast" the "shadows" of all matches against the left and right border of the bucket, will store the outcome in axShadows
@@ -579,13 +581,13 @@ public:
 	StripOfConsideration()
 			:
 		Interval(0, 0),
-		axSeeds()
+		lSeeds()
 	{}//constructor
 
 	StripOfConsideration(nucSeqIndex uiStart, nucSeqIndex uiSize)
 		:
 		Interval(uiStart, uiSize),
-		axSeeds()
+		lSeeds()
 	{}//constructor
 
 	
@@ -595,10 +597,10 @@ public:
 	void addElement(SeedBucket& rxBucket)
 	{
 		rxBucket.forall(
-			[&](const Seed& rxSeed)
+			[&](const std::shared_ptr<Seed> pSeed)
 			{
-				axSeeds.push_back(rxSeed);
-				uiValueOfContent += rxSeed.getValue();
+				lSeeds.push_back(pSeed);
+				uiValueOfContent += pSeed->getValue();
 			}//lambda
 		);
 	}//function
@@ -613,14 +615,19 @@ public:
 		uiValueOfContent = uiNewVal;
 	}//function
 
-	std::list<Seed>& seeds()
+	inline void subtractFromValue(const nucSeqIndex uiNewVal)
 	{
-		return axSeeds;
+		uiValueOfContent -= uiNewVal;
 	}//function
 
-	void forAllSeeds(std::function<void(std::list<Seed>::iterator pSeed)> fDo)
+	std::list<std::shared_ptr<Seed>>& seeds()
 	{
-		for(std::list<Seed>::iterator pSeed = axSeeds.begin(); pSeed != axSeeds.end(); pSeed++)
+		return lSeeds;
+	}//function
+
+	void forAllSeeds(std::function<void(std::list<std::shared_ptr<Seed>>::iterator pSeed)> fDo)
+	{
+		for(std::list<std::shared_ptr<Seed>>::iterator pSeed = lSeeds.begin(); pSeed != lSeeds.end(); pSeed++)
 			fDo(pSeed);
 	}//function
 #if 0
@@ -1060,18 +1067,18 @@ public:
 	bool bSkipLongBWTIntervals = true;
 	
 private:
-	nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS) const 
+	nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const std::shared_ptr<Seed> pS) const 
 	{ 
-		return xS.start_ref() + (uiQueryLength - xS.start()); 
+		return pS->start_ref() + (uiQueryLength - pS->start()); 
 	}//function
 
 	void addSeed(
 			nucSeqIndex uiQueryLength, 
-			const Seed xNew, 
+			const std::shared_ptr<Seed> pNew, 
 			std::vector<SeedBucket>& raxSeedBuckets
 		)
 	{
-		raxSeedBuckets[getPositionForBucketing(uiQueryLength, xNew) / uiStripSize].addSeed(xNew);
+		raxSeedBuckets[getPositionForBucketing(uiQueryLength, pNew) / uiStripSize].addSeed(pNew);
 	}//function
 
 	void forEachNonBridgingSeed(
@@ -1080,7 +1087,7 @@ private:
 			std::shared_ptr<FM_Index> pxFM_index,
 			std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
-			std::function<void(Seed)> fDo
+			std::function<void(std::shared_ptr<Seed>)> fDo
 		);
 	
 	void saveSeeds(

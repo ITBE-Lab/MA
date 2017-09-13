@@ -129,7 +129,6 @@ for index, strip in enumerate(best_strip):
         best = index
 
 print "best score: " + str(best_strip[best].get_score())
-
 nmw = NeedlemanWunsch()
 
 align = nmw.execute((best_strip[best], query, ref_seq))

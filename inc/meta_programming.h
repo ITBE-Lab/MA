@@ -2,11 +2,27 @@
 
 #include <boost/log/trivial.hpp>
 
-#ifdef DEBUG_ENABLED
-#define DEBUG(x) x
-#else 
-#define DEBUG(x)
+#ifndef DEBUG_LEVEL
+	#define DEBUG_LEVEL 0
 #endif
+
+#if DEBUG_LEVEL >= 1
+#define DEBUG(x) x
+#else //DEBUG_LEVEL
+#define DEBUG(x)
+#endif //DEBUG_LEVEL
+
+#if DEBUG_LEVEL >= 2
+#define DEBUG_2(x) x
+#else //DEBUG_LEVEL
+#define DEBUG_2(x)
+#endif //DEBUG_LEVEL
+
+#if DEBUG_LEVEL >= 3
+#define DEBUG_3(x) x
+#else //DEBUG_LEVEL
+#define DEBUG_3(x)
+#endif //DEBUG_LEVEL
 
 /* Overloading of the operator "<<" for arrays, so that we get automatic formated output for arrays.
  * From: http://stackoverflow.com/questions/19152178/printing-an-stdarray
