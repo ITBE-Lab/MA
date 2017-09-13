@@ -24,13 +24,12 @@ std::vector<ContainerType> LineSweep::getOutputType()
 ShadowInterval LineSweep::getLeftShadow(
         nucSeqIndex uiBucketStart,
         std::list<Seed>::iterator pSeed,
-        nucSeqIndex uiBucketSize,
         nucSeqIndex uiQueryLength
     ) const
 {
     return ShadowInterval(
-            pSeed->start() + uiBucketStart,
-            pSeed->start_ref() + pSeed->size() + uiQueryLength + uiBucketSize,
+            pSeed->start() /*+ uiBucketStart*/,
+            pSeed->end_ref() - pSeed->start() + uiQueryLength,
             pSeed
         );
 }//function
@@ -40,14 +39,14 @@ ShadowInterval LineSweep::getLeftShadow(
  * pxMatch is the container this match is stored in.
  */
 ShadowInterval LineSweep::getRightShadow(
-    nucSeqIndex iBucketStart,
-    std::list<Seed>::iterator pSeed,
-    nucSeqIndex iBucketSize,
-    nucSeqIndex iQueryLength) const
+        nucSeqIndex iBucketStart,
+        std::list<Seed>::iterator pSeed,
+        nucSeqIndex iRefSize
+    ) const
 {
     return ShadowInterval(
             pSeed->start_ref(),
-            pSeed->start() + pSeed->size() + iQueryLength + iBucketSize * 2 + iBucketStart,
+            pSeed->end() - pSeed->start_ref() + iRefSize,
             pSeed
         );
 }//function
@@ -60,13 +59,19 @@ void LineSweep::linesweep(
 {
     //sort shadows (increasingly) by start coordinate of the match
     std::sort(
-        vShadows.begin(),
-        vShadows.end(),
-        [](ShadowInterval xA, ShadowInterval xB)
-        {
-            return xA.start() < xB.start();
-        }//lambda
-    );//sort function call
+            vShadows.begin(),
+            vShadows.end(),
+            [](ShadowInterval xA, ShadowInterval xB)
+            {
+                /*
+                * sort by the interval starts
+                * if two intervals start at the same point the larger one shall be treated first
+                */
+                if(xA.start() == xB.start())
+                    return xA.end() > xB.end();
+                return xA.start() < xB.start();
+            }//lambda
+        );//sort function call
 
     //records the interval ends
     SelfBalancingBinarySearchTree<ShadowInterval> xItervalEnds =
@@ -99,6 +104,9 @@ void LineSweep::linesweep(
             std::cout << "Current Sweep position: " << rInterval.start() << std::endl;
             std::cout << "\tstart of interval " << rInterval.start() <<
                 ", " << rInterval.end() << std::endl;
+            std::cout << "\t(start_ref, end_ref; start_query, end_query) " 
+                << rInterval->start_ref() << ", " << rInterval->end_ref() << "; "
+                << rInterval->start() << ", " << rInterval->end() << std::endl;
         )
 
         //work on the current interval
@@ -150,7 +158,6 @@ std::shared_ptr<Container> LineSweep::execute(
             vShadows.push_back(getLeftShadow(
                     pStrip->start(),
                     pSeed,
-                    pStrip->size(),
                     pQuerrySeq->length()
                 ));
         }//lambda
@@ -168,8 +175,7 @@ std::shared_ptr<Container> LineSweep::execute(
             vShadows.push_back(getRightShadow(
                     pStrip->start(),
                     pSeed,
-                    pStrip->size(),
-                    pQuerrySeq->length()
+                    pRefSeq->uiUnpackedSizeForwardPlusReverse()
                 ));
         }//lambda
     );

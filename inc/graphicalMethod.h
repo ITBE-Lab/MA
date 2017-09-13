@@ -580,12 +580,14 @@ public:
 	StripOfConsideration()
 			:
 		Interval(0, 0),
+		uiValueOfContent(0),
 		axSeeds()
 	{}//constructor
 
 	StripOfConsideration(nucSeqIndex uiStart, nucSeqIndex uiSize)
 		:
 		Interval(uiStart, uiSize),
+		uiValueOfContent(0),
 		axSeeds()
 	{}//constructor
 

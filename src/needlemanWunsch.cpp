@@ -20,12 +20,12 @@ std::vector<ContainerType> NeedlemanWunsch::getOutputType()
     return std::vector<ContainerType>{ContainerType::alignment};
 }//function
 
-int iDeletion = -15;
-int iInsertion = -15;
+int iDeletion = -50;
+int iInsertion = -50;
 int iDeletionContinued = -1;
 int iInsertionContinued = -1;
-int iMatch = 10;
-int iMissMatch = -2;
+int iMatch = 20;
+int iMissMatch = -5;
 
 void needlemanWunsch(
         std::shared_ptr<NucleotideSequence> pQuery, 
@@ -42,11 +42,11 @@ void needlemanWunsch(
             return;
     DEBUG_2(
         std::cout << toQuery-fromQuery << std::endl;
-        for(unsigned int i = fromQuery; i < toQuery; i++)
+        for(nucSeqIndex i = fromQuery; i < toQuery; i++)
             std::cout << pQuery->charAt(i);
         std::cout << std::endl;
         std::cout << toRef-fromRef << std::endl;
-        for(unsigned int i = fromRef; i < toRef; i++)
+        for(nucSeqIndex i = fromRef; i < toRef; i++)
             std::cout << pRef->charAt(i);
         std::cout << std::endl;
     )//DEBUG
@@ -84,19 +84,19 @@ void needlemanWunsch(
     dir[1][0] = 2;
     s[0][1] = iDeletion;
     dir[0][1] = 3;
-    for(unsigned int uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
+    for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
     {
         s[uiI][0] = s[uiI - 1][0] + iInsertionContinued;
         dir[uiI][0] = 2;
     }//for
-    for(unsigned int uiI = 2; uiI < toRef-fromRef+1; uiI++)
+    for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
     {
         s[0][uiI] = s[0][uiI - 1] + iDeletionContinued;
         dir[0][uiI] = 3;
     }//for
-    for(unsigned int uiI = 1; uiI < toQuery-fromQuery+1; uiI++)
+    for(nucSeqIndex uiI = 1; uiI < toQuery-fromQuery+1; uiI++)
     {
-        for(unsigned int uiJ = 1; uiJ < toRef-fromRef+1; uiJ++)
+        for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef+1; uiJ++)
         {
             int newScore;
             //insertion
@@ -112,6 +112,10 @@ void needlemanWunsch(
                 newScore = s[uiI][uiJ - 1] + iDeletionContinued;
             else
                 newScore = s[uiI][uiJ - 1] + iDeletion;
+            // for the first alignment we dont want to have a malus for an
+            // deletion of the reference at the beginning
+            if(fromQuery == 0 && uiI == toQuery-fromQuery)
+                newScore = s[uiI][uiJ - 1];
             if(newScore > s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
@@ -132,7 +136,7 @@ void needlemanWunsch(
     }//for
 
     DEBUG_3(
-        for(unsigned int uiI = 0; uiI < toRef-fromRef+1; uiI++)
+        for(nucSeqIndex uiI = 0; uiI < toRef-fromRef+1; uiI++)
         {
             if(uiI == 0)
                 std::cout << " \t \t";
@@ -140,20 +144,20 @@ void needlemanWunsch(
                 std::cout << pRef->charAt(toRef - uiI) << "\t";
         }//for
         std::cout << std::endl;
-        for(unsigned int uiI = 0; uiI < toQuery-fromQuery+1; uiI++)
+        for(nucSeqIndex uiI = 0; uiI < toQuery-fromQuery+1; uiI++)
         {
             if(uiI == 0)
                 std::cout << " \t";
             else
                 std::cout << pQuery->charAt(toQuery - uiI) << "\t";
-            for(unsigned int uiJ = 0; uiJ < toRef-fromRef+1; uiJ++)
+            for(nucSeqIndex uiJ = 0; uiJ < toRef-fromRef+1; uiJ++)
                 std::cout << s[uiI][uiJ] << "\t";
             std::cout << std::endl;
         }//for
     )//DEBUG
 
-    int iX = toQuery-fromQuery;
-    int iY = toRef-fromRef;
+    nucSeqIndex iX = toQuery-fromQuery;
+    nucSeqIndex iY = toRef-fromRef;
     while(iX > 0 || iY > 0)
     {
         if(dir[iX][iY] == 1)
@@ -209,20 +213,39 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     std::list<Seed>* pSeeds = &pStrip->seeds();
 
+    //sort shadows (increasingly) by start coordinate of the match
+    pSeeds->sort(
+            [](Seed xA, Seed xB)
+            {
+                if(xA.start() == xB.start())
+                    return xA.start_ref() < xB.start_ref();
+                return xA.start() < xB.start();
+            }//lambda
+        );//sort function call
+
     nucSeqIndex beginQuery = pSeeds->front().start();
-    nucSeqIndex beginRef = pSeeds->front().start_ref() - beginQuery*2;
+    nucSeqIndex beginRef = 0;
+    if( pSeeds->front().start_ref() >  beginQuery*2)
+        beginRef = pSeeds->front().start_ref() - beginQuery*2;
     nucSeqIndex endQuery = pSeeds->back().end();
-    nucSeqIndex endRef = pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2;
+    //TODO: can only do forward hits so far...
+    nucSeqIndex endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()/2;
+    if( 
+            pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2 <
+            pRefPack->uiUnpackedSizeForwardPlusReverse()/2
+        )
+        endRef = pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2;
 
     std::shared_ptr<Alignment> pRet(new Alignment(beginRef, endRef));
 
     std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
 
     DEBUG_2(
-        std::cout << "seedlist: (start_ref, end_ref)" << std::endl;
+        std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
         for(Seed& rSeed : *pSeeds)
         {
-            std::cout << rSeed.start_ref() << " " << rSeed.end_ref() << std::endl;
+            std::cout << rSeed.start_ref() << ", " << rSeed.end_ref() << "; "
+                << rSeed.start() << ", " << rSeed.end() << std::endl;
         }//for
     )
 
@@ -240,49 +263,53 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                 rSeed.start_ref() - beginRef,
                 pRet
             );
-        unsigned int ovQ = endOfLastSeedQuery - rSeed.start_ref();
-        if(rSeed.start_ref() > endOfLastSeedQuery)
+        nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start();
+        if(rSeed.start() > endOfLastSeedQuery)
             ovQ = 0;
-        unsigned int ovR = endOfLastSeedReference - (rSeed.start_ref() - beginRef);
-        if(rSeed.start_ref() - beginRef > endOfLastSeedReference)
+        nucSeqIndex ovR = endOfLastSeedReference - (rSeed.start_ref() - beginRef);
+        if(rSeed.start_ref() > endOfLastSeedReference + beginRef)
             ovR = 0;
-        unsigned int len = rSeed.size();
+        nucSeqIndex len = rSeed.size();
         nucSeqIndex overlap = std::max(ovQ, ovR);
+        DEBUG(
+            std::cout << "overlap: " << overlap << std::endl;
+        )//DEBUG
         if(len > overlap)
         {
             pRet->append(Alignment::MatchType::match, len - overlap);
             DEBUG_2(
                 std::cout << len - overlap << std::endl;
-            )
+            )//DEBUG_2
             DEBUG(
-                for(unsigned int i = 0; i < len - overlap; i++)
+                for(nucSeqIndex i = overlap; i < len; i++)
                     std::cout << pQuery->charAt(i + rSeed.start());
                 std::cout << std::endl;
-                for(unsigned int i = 0; i < len - overlap; i++)
+                for(nucSeqIndex i = overlap; i < len; i++)
                     std::cout << pRef->charAt(i + rSeed.start_ref() - beginRef);
-                std::cout << std::endl;
                 std::cout << std::endl;
             )//DEBUG
             DEBUG_2(
-                for(unsigned int i = 0; i < len - overlap; i++)
+                for(nucSeqIndex i = 0; i < len - overlap; i++)
                     std::cout << "m";
-            )//DEBUG
+            )//DEBUG_2
         }//if
         if(ovQ > ovR)
             pRet->append(Alignment::MatchType::deletion, ovQ - ovR);
         DEBUG_2(
-            for(unsigned int i = ovR; i < ovQ; i++)
+            for(nucSeqIndex i = ovR; i < ovQ; i++)
                 std::cout << "d";
         )
         if(ovR > ovQ)
             pRet->append(Alignment::MatchType::insertion, ovR - ovQ);
         DEBUG_2(
-            for(unsigned int i = ovQ; i < ovR; i++)
+            for(nucSeqIndex i = ovQ; i < ovR; i++)
                 std::cout << "i";
             std::cout << std::endl;
         )//DEBUG
-        endOfLastSeedQuery = rSeed.end();
-        endOfLastSeedReference = rSeed.end_ref() - beginRef;
+        if(rSeed.end() > endOfLastSeedQuery)
+            endOfLastSeedQuery = rSeed.end();
+        if(rSeed.end_ref() > endOfLastSeedReference + beginRef)
+            endOfLastSeedReference = rSeed.end_ref() - beginRef;
     }//for
 
     needlemanWunsch(

@@ -25,11 +25,11 @@ private:
 public:
     ShadowInterval(
             nucSeqIndex iBegin, 
-            nucSeqIndex iEnd, 
+            nucSeqIndex iSize, 
             std::list<Seed>::iterator pSeed
         )
             :
-        Interval(iBegin, iEnd),
+        Interval(iBegin, iSize),
         pInterferingIntervals(new std::list<ShadowInterval*>()),
         pIInterferWith(),
         pSeed(pSeed),
@@ -76,6 +76,8 @@ public:
             std::shared_ptr<StripOfConsideration> pStrip
         )
     {
+        for(ShadowInterval* pInterval : *pInterferingIntervals)
+            pInterval->removeInterferingIntervals(rSeeds, pStrip);
         //reached an already invalidated itterator
         if(pSeed == rSeeds.end())
         {
@@ -84,17 +86,12 @@ public:
             )
             return;
         }
-        for(ShadowInterval* pInterval : *pInterferingIntervals)
-            pInterval->removeInterferingIntervals(rSeeds, pStrip);
-        pStrip->subtractFromValue(pSeed->getValue());
         DEBUG(
             std::cout << "\terasing: " << start() << ", " << end();
             std::cout << " seed: " << pSeed->start() << ", " << pSeed->end() << std::endl;
         )
+        pStrip->subtractFromValue(pSeed->getValue());
         rSeeds.erase(pSeed);
-        DEBUG(
-            std::cerr << "\terased" << std::endl;
-        )
         pSeed = rSeeds.end();
         pInterferingIntervals->clear();
     }//function
@@ -187,15 +184,13 @@ private:
     ShadowInterval getRightShadow(
             nucSeqIndex iBucketStart,
             std::list<Seed>::iterator pSeed,
-            nucSeqIndex iBucketSize,
             nucSeqIndex iQueryLength
         ) const;
 
     ShadowInterval getLeftShadow(
             nucSeqIndex uiBucketStart,
             std::list<Seed>::iterator pSeed,
-            nucSeqIndex uiBucketSize,
-            nucSeqIndex uiQueryLength
+            nucSeqIndex iRefSize
         ) const;
 public:
 

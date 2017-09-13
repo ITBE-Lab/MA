@@ -5,9 +5,9 @@ import random
 seq = ""
 q = ""
 
-random.seed(1)
+#random.seed(1)
 
-for _ in range(10000):
+for _ in range(100000):
     char = random.randint(1,4)
     if char == 1:
         seq += "a"
@@ -18,10 +18,10 @@ for _ in range(10000):
     else:
         seq += "g"
 
-q_from = random.randint(0, len(seq)-200)
-q_to = q_from + 200
+q_from = random.randint(0, len(seq)-1000)
+q_to = q_from + 1000
 q = seq[q_from:q_to]
-for _ in range(25):
+for _ in range(100):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
@@ -33,21 +33,24 @@ for _ in range(25):
     else:
         q = q[:pos-1] + "g" + q[pos:]
 
-for _ in range(25):
-    pos = random.randint(1,len(q)-1)
-    q = q[:pos-1] + q[pos:]
+for _ in range(100):
+    pos = random.randint(1,len(q)-11)
+    l = random.randint(1,10)
+    q = q[:pos-1] + q[pos + l:]
 
-for _ in range(25):
+for _ in range(100):
     pos = random.randint(1,len(q)-1)
-    char = random.randint(1,4)
-    if char == 1:
-        q = q[:pos] + "a" + q[pos:]
-    elif char == 2:
-        q = q[:pos] + "c" + q[pos:]
-    elif char == 3:
-        q = q[:pos] + "t" + q[pos:]
-    else:
-        q = q[:pos] + "g" + q[pos:]
+    l = random.randint(1,10)
+    for _ in range(l):
+        char = random.randint(1,4)
+        if char == 1:
+            q = q[:pos] + "a" + q[pos:]
+        elif char == 2:
+            q = q[:pos] + "c" + q[pos:]
+        elif char == 3:
+            q = q[:pos] + "t" + q[pos:]
+        else:
+            q = q[:pos] + "g" + q[pos:]
 
 
 ref = NucSeq(seq)
@@ -63,7 +66,7 @@ rev_fm_index = FMIndex(rev_ref)
 ref_seq = BWAPack()
 ref_seq.append("name", "no comment",ref)
 
-seg = Segmentation(True, True, 5, 100000)
+seg = Segmentation(True, True, 7, 100000)
 seg.bSkipLongBWTIntervals = False
 
 segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))
