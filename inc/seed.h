@@ -14,6 +14,7 @@ private:
     nucSeqIndex uiPosOnReference;
 
 public:
+    
     Seed(
             const nucSeqIndex uiPosOnQuery, 
             const nucSeqIndex uiLenght, 

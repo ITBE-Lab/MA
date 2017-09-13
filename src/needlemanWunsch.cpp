@@ -40,7 +40,7 @@ void needlemanWunsch(
     if(toRef <= fromRef)
         if(toQuery <= fromQuery)
             return;
-    DEBUG(
+    DEBUG_2(
         std::cout << toQuery-fromQuery << std::endl;
         for(unsigned int i = fromQuery; i < toQuery; i++)
             std::cout << pQuery->charAt(i);
@@ -56,7 +56,7 @@ void needlemanWunsch(
         while(iY > 0)
         {
             pAlignment->append(Alignment::MatchType::deletion);
-            DEBUG(
+            DEBUG_2(
                 std::cout << "D";
             )//DEBUG
             iY--;
@@ -69,7 +69,7 @@ void needlemanWunsch(
         while(iX > 0)
         {
             pAlignment->append(Alignment::MatchType::insertion);
-            DEBUG(  
+            DEBUG_2(  
                 std::cout << "I";
             )//DEBUG
             iX--;
@@ -161,14 +161,14 @@ void needlemanWunsch(
             if( (*pQuery)[toQuery - iX] == (*pRef)[toRef - iY] )
             {
                 pAlignment->append(Alignment::MatchType::match);
-                DEBUG(
+                DEBUG_2(
                     std::cout << "M";
                 )//DEBUG
             }
             else
             {
                 pAlignment->append(Alignment::MatchType::missmatch);
-                DEBUG(
+                DEBUG_2(
                     std::cout << "W";
                 )//DEBUG
             }
@@ -179,7 +179,7 @@ void needlemanWunsch(
         {
             pAlignment->append(Alignment::MatchType::deletion);
             iY--;
-            DEBUG(
+            DEBUG_2(
                 std::cout << "D";
             )//DEBUG        
         }//if
@@ -187,12 +187,12 @@ void needlemanWunsch(
         {
             pAlignment->append(Alignment::MatchType::insertion);
             iX--;
-            DEBUG(
+            DEBUG_2(
                 std::cout << "I";
             )//DEBUG
         }//if
     }//while
-    DEBUG(
+    DEBUG_2(
         std::cout << std::endl;
     )//DEBUG
 }//function
@@ -218,11 +218,13 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
 
-    for(Seed& rSeed : *pSeeds)
-    {
-        std::cout << rSeed.start_ref() << " " << rSeed.end_ref() << std::endl;
-    }//for
-    return pRet;
+    DEBUG_2(
+        std::cout << "seedlist: (start_ref, end_ref)" << std::endl;
+        for(Seed& rSeed : *pSeeds)
+        {
+            std::cout << rSeed.start_ref() << " " << rSeed.end_ref() << std::endl;
+        }//for
+    )
 
     nucSeqIndex endOfLastSeedQuery = 0;
     nucSeqIndex endOfLastSeedReference = 0;
@@ -249,27 +251,32 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         if(len > overlap)
         {
             pRet->append(Alignment::MatchType::match, len - overlap);
-            DEBUG(
+            DEBUG_2(
                 std::cout << len - overlap << std::endl;
+            )
+            DEBUG(
                 for(unsigned int i = 0; i < len - overlap; i++)
                     std::cout << pQuery->charAt(i + rSeed.start());
                 std::cout << std::endl;
                 for(unsigned int i = 0; i < len - overlap; i++)
                     std::cout << pRef->charAt(i + rSeed.start_ref() - beginRef);
                 std::cout << std::endl;
+                std::cout << std::endl;
+            )//DEBUG
+            DEBUG_2(
                 for(unsigned int i = 0; i < len - overlap; i++)
                     std::cout << "m";
             )//DEBUG
         }//if
         if(ovQ > ovR)
             pRet->append(Alignment::MatchType::deletion, ovQ - ovR);
-        DEBUG(
+        DEBUG_2(
             for(unsigned int i = ovR; i < ovQ; i++)
                 std::cout << "d";
         )
         if(ovR > ovQ)
             pRet->append(Alignment::MatchType::insertion, ovR - ovQ);
-        DEBUG(
+        DEBUG_2(
             for(unsigned int i = ovQ; i < ovR; i++)
                 std::cout << "i";
             std::cout << std::endl;
@@ -288,7 +295,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         pRet
     );
 
-    std::cout << std::endl;
+    DEBUG_2(
+        std::cout << std::endl;
+    )
     return pRet;
 
 }//function

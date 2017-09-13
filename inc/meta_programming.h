@@ -3,7 +3,7 @@
 #include <boost/log/trivial.hpp>
 
 #ifndef DEBUG_LEVEL
-	#define DEBUG_LEVEL 0
+	#define DEBUG_LEVEL 1
 #endif
 
 #if DEBUG_LEVEL >= 1

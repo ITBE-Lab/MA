@@ -79,19 +79,19 @@ void LineSweep::linesweep(
         while(!xItervalEnds.isEmpty())
         {
 
-            ShadowInterval rFirstEnding = xItervalEnds.first();
+            ShadowInterval* pFirstEnding = xItervalEnds.first();
             //check if we really need to remove the first interval in the tree
-            if(rFirstEnding.end() > rInterval.start())
+            if(pFirstEnding->end() > rInterval.start())
                 break;
 
             DEBUG(
-                std::cout << "Current Sweep position: " << rFirstEnding.end() << std::endl;
-                std::cout << "\tend of interval " << rFirstEnding.start() << ", "
-                    << rFirstEnding.end() << std::endl;
+                std::cout << "Current Sweep position: " << pFirstEnding->end() << std::endl;
+                std::cout << "\tend of interval " << pFirstEnding->start() << ", "
+                    << pFirstEnding->end() << std::endl;
             )
 
             //when reaching here we actually have to remove the intervall
-            rFirstEnding.removeSeedIfNecessary(rSeeds, pStrip);
+            pFirstEnding->removeSeedIfNecessary(rSeeds, pStrip);
             xItervalEnds.deleteFirst();
         }//while
 
@@ -102,7 +102,7 @@ void LineSweep::linesweep(
         )
 
         //work on the current interval
-        ShadowInterval* pNextShadow = xItervalEnds.insert(rInterval);
+        ShadowInterval* pNextShadow = xItervalEnds.insert(&rInterval);
         if(pNextShadow != nullptr)
             pNextShadow->addInterferingInterval(rInterval);
         DEBUG(
@@ -115,16 +115,16 @@ void LineSweep::linesweep(
     while(!xItervalEnds.isEmpty())
     {
 
-        ShadowInterval rFirstEnding = xItervalEnds.first();
+        ShadowInterval* pFirstEnding = xItervalEnds.first();
 
         DEBUG(
-            std::cout << "Current Sweep position: " << rFirstEnding.end() << std::endl;
-            std::cout << "\tend of interval (cleanup) " << rFirstEnding.start() << ", " 
-                << rFirstEnding.end() << std::endl;
+            std::cout << "Current Sweep position: " << pFirstEnding->end() << std::endl;
+            std::cout << "\tend of interval (cleanup) " << pFirstEnding->start() << ", " 
+                << pFirstEnding->end() << std::endl;
         )
 
         //when reaching here we actually have to remove the intervall
-        rFirstEnding.removeSeedIfNecessary(rSeeds, pStrip);
+        pFirstEnding->removeSeedIfNecessary(rSeeds, pStrip);
         xItervalEnds.deleteFirst();
     }//while
 

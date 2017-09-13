@@ -138,6 +138,8 @@ public:
 				 * we acquire the index of the beginning of the match on the reversed sequence by calling bwt_sa()
 				 * but we actually want the beginning of the match on the normal sequence, so we need to subtract the END of the match from the reference sequence length
 				 */
+				if (xSegment.isForward())//TODO: this should not be here
+					continue;
 				if (xSegment.isForward())
 					ulIndexOnRefSeq = pxUsedFmIndex->getRefSeqLength() - (ulIndexOnRefSeq + xSegment.size());
 				//call the given function

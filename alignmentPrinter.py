@@ -43,22 +43,25 @@ Execution:
         print "\nreference:"
         print ref
 
+        desc = str(0) + "-" + str(0 + self.nuc_per_line)
+        lines.extend(["", desc, "", "", ""])
+
         while counter < len(align):
             #append three more lines if the current lines are full
             if counter % self.nuc_per_line == 0:
                 if counter > 0:
                     lines[-3] += "\treference"
                     lines[-1] += "\tquery"
-                desc = str(counter) + "-" + str(counter + self.nuc_per_line)
-                lines.extend(["", desc, "", "", ""])
+                    desc = str(counter) + "-" + str(counter + self.nuc_per_line)
+                    lines.extend(["", desc, "", "", ""])
 
             #perform double check for messup:
-            if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.deletion):
+            if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.deletion or align[counter] == MatchType.missmatch):
                 print "This should not happen... (ref)"
                 print ind_ref
                 print len(ref)
                 break
-            if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.insertion):
+            if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
                 print "This should not happen... (query)"
                 print ind_query
                 print len(query)

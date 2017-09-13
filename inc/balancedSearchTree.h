@@ -14,7 +14,7 @@ class SBBSTNode
 {
 public:
     int height;
-    T data;
+    T* data;
     std::shared_ptr<SBBSTNode<T>> pLeft, pRight;
 
     SBBSTNode()
@@ -25,7 +25,7 @@ public:
         pRight()
     {}//constructor
 
-    SBBSTNode(T n)
+    SBBSTNode(T* n)
             :
         height(0),
         data(n),
@@ -108,21 +108,21 @@ public:
     }
 
     /* Function to insert data recursively */
-    std::shared_ptr<SBBSTNode<T>> insert(T x, std::shared_ptr<SBBSTNode<T>> t, T*& pNext)
+    std::shared_ptr<SBBSTNode<T>> insert(T* x, std::shared_ptr<SBBSTNode<T>> t, T*& pNext)
     {
         if (t == nullptr)
             t = std::shared_ptr<SBBSTNode<T>>(new SBBSTNode<T>(x));
-        else if (x <= t->data)
+        else if (*x <= *t->data)
         {
             DEBUG_3(
                 std::cout << "\tinserting left" << std::endl;
             )
             t->pLeft = insert(x, t->pLeft, pNext);
             if(pNext == nullptr)
-                pNext = &t->data;
+                pNext = t->data;
             if (height(t->pLeft) - height(t->pRight) == 2)
             {
-                if (x < t->pLeft->data)
+                if (*x < *t->pLeft->data)
                     t = rotateWithLeftChild(t);
                 else
                     t = doubleWithLeftChild(t);
@@ -136,7 +136,7 @@ public:
             t->pRight = insert(x, t->pRight, pNext);
             if (height(t->pRight) - height(t->pLeft) == 2)
             {
-                if (x > t->pRight->data)
+                if (*x > *t->pRight->data)
                     t = rotateWithRightChild(t);
                 else
                     t = doubleWithRightChild(t);
@@ -149,7 +149,7 @@ public:
     /* Function to insert data 
      * returns the next element of the tree
      */
-    T* insert(T data)
+    T* insert(T* data)
     {
         T* pRet = nullptr;
         pRoot = insert(data, pRoot, pRet);
@@ -183,7 +183,7 @@ public:
     }
 
     /* Functions to search for an element */
-    T& first() const
+    T* first() const
     {
         std::shared_ptr<SBBSTNode<T>> r = pRoot;
         while (r->pLeft != nullptr)

@@ -1,8 +1,6 @@
 #ifndef LINESWEEP
 #define LINESWEEP
 
-#define DEBUG_LEVEL 1
-
 #include "module.h"
 #include "interval.h"
 #include "seed.h"
@@ -50,12 +48,12 @@ public:
     nucSeqIndex non_overlap(ShadowInterval rInterval)
     {
         return std::max(
-                pInterferingIntervals->back()->pSeed->end_ref() > rInterval.pSeed->start_ref() ?
-                pInterferingIntervals->back()->pSeed->end_ref() - rInterval.pSeed->start_ref() :
+                (*pInterferingIntervals->back())->end_ref() > rInterval->start_ref() ?
+                (*pInterferingIntervals->back())->end_ref() - rInterval->start_ref() :
                 0
                 ,
-                pInterferingIntervals->back()->pSeed->end() > rInterval.pSeed->start() ?
-                pInterferingIntervals->back()->pSeed->end() - rInterval.pSeed->start() :
+                (*pInterferingIntervals->back())->end() > rInterval->start() ?
+                (*pInterferingIntervals->back())->end() - rInterval->start() :
                 0
             );
     }//function
@@ -120,10 +118,10 @@ public:
             //update the score of the interval outside this one
             if(pIInterferWith != nullptr)
                 pIInterferWith->iScoreInterfering += iScoreInterfering - pSeed->getValue();
+            pStrip->subtractFromValue(pSeed->getValue());
             //remove this seed
             rSeeds.erase(pSeed);
             pSeed = rSeeds.end();
-            pStrip->subtractFromValue(pSeed->getValue());
             DEBUG(
                 std::cout << "\tis less valuable than interfering ones" << std::endl;
             )
@@ -140,13 +138,13 @@ public:
         }//else
     }//function
 
-    inline const Seed& operator*() const
+    inline const std::list<Seed>::iterator operator*() const
     {
-        return *pSeed;
+        return pSeed;
     }//operator
-    inline const Seed& operator->() const
+    inline const std::list<Seed>::iterator operator->() const
     {
-        return *pSeed;
+        return pSeed;
     }//operator
 
     inline ShadowInterval& operator=(const ShadowInterval& rxOther)
