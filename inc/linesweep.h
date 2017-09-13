@@ -21,14 +21,14 @@ private:
     ////the interval this one interfers with
     ShadowInterval* pIInterferWith;
     ////the seed this interval corresponds to (used to delete the seed in case this is necessary)
-    std::list<std::shared_ptr<Seed>>::iterator pSeed;
+    std::list<Seed>::iterator pSeed;
 	////the total score of the interfering shadows
     unsigned int iScoreInterfering;
 public:
     ShadowInterval(
             nucSeqIndex iBegin, 
             nucSeqIndex iEnd, 
-            std::list<std::shared_ptr<Seed>>::iterator pSeed
+            std::list<Seed>::iterator pSeed
         )
             :
         Interval(iBegin, iEnd),
@@ -49,15 +49,13 @@ public:
 
     nucSeqIndex non_overlap(ShadowInterval rInterval)
     {
-        //NOTE: the -> operator on a shadow interval returns the Seed within 
-        //(not the std::shared_ptr<Seed>)
         return std::max(
-                (*pInterferingIntervals->back())->end_ref() > rInterval->start_ref() ?
-                (*pInterferingIntervals->back())->end_ref() - rInterval->start_ref() :
+                pInterferingIntervals->back()->pSeed->end_ref() > rInterval.pSeed->start_ref() ?
+                pInterferingIntervals->back()->pSeed->end_ref() - rInterval.pSeed->start_ref() :
                 0
                 ,
-                (*pInterferingIntervals->back())->end() > rInterval->start() ?
-                (*pInterferingIntervals->back())->end() - rInterval->start() :
+                pInterferingIntervals->back()->pSeed->end() > rInterval.pSeed->start() ?
+                pInterferingIntervals->back()->pSeed->end() - rInterval.pSeed->start() :
                 0
             );
     }//function
@@ -68,7 +66,7 @@ public:
             std::cout << "\tis Interfering with interval: " << start() << ", " << end() << std::endl;
         )
         if(pInterferingIntervals->empty())
-            iScoreInterfering += rInterval->getValue();
+            iScoreInterfering += rInterval.pSeed->getValue();
         else
             iScoreInterfering += non_overlap(rInterval);
         pInterferingIntervals->push_back(&rInterval);
@@ -76,12 +74,12 @@ public:
     }//function
 
     void removeInterferingIntervals(
-            std::list<std::shared_ptr<Seed>>& rSeeds,
+            std::list<Seed>& rSeeds,
             std::shared_ptr<StripOfConsideration> pStrip
         )
     {
         //reached an already invalidated itterator
-        if((*pSeed) == *rSeeds.end())
+        if(pSeed == rSeeds.end())
         {
             DEBUG(
                 std::cout << "\treached invalid itterator" << std::endl;
@@ -90,23 +88,26 @@ public:
         }
         for(ShadowInterval* pInterval : *pInterferingIntervals)
             pInterval->removeInterferingIntervals(rSeeds, pStrip);
-        pStrip->subtractFromValue((*pSeed)->getValue());
+        pStrip->subtractFromValue(pSeed->getValue());
         DEBUG(
             std::cout << "\terasing: " << start() << ", " << end();
-            std::cout << " seed: " << (*pSeed)->start() << ", " << (*pSeed)->end() << std::endl;
+            std::cout << " seed: " << pSeed->start() << ", " << pSeed->end() << std::endl;
         )
         rSeeds.erase(pSeed);
+        DEBUG(
+            std::cerr << "\terased" << std::endl;
+        )
         pSeed = rSeeds.end();
         pInterferingIntervals->clear();
     }//function
 
     void removeSeedIfNecessary(
-            std::list<std::shared_ptr<Seed>>& rSeeds, 
+            std::list<Seed>& rSeeds, 
             std::shared_ptr<StripOfConsideration> pStrip
         )
     {
         //reached an already invalidated itterator
-        if(*pSeed == *rSeeds.end())
+        if(pSeed == rSeeds.end())
         {
             DEBUG(
                 std::cout << "\treached invalid itterator" << std::endl;
@@ -114,18 +115,18 @@ public:
             return;
         }
         //the many interfering intervals are more valuable => remove this interval
-        if((*pSeed)->getValue() < iScoreInterfering)
+        if(pSeed->getValue() < iScoreInterfering)
         {
             //update the score of the interval outside this one
             if(pIInterferWith != nullptr)
-                pIInterferWith->iScoreInterfering += iScoreInterfering - (*pSeed)->getValue();
-            pStrip->subtractFromValue((*pSeed)->getValue());
-            DEBUG(
-                std::cout << "\tis less valuable than interfering ones" << std::endl;
-            )
+                pIInterferWith->iScoreInterfering += iScoreInterfering - pSeed->getValue();
             //remove this seed
             rSeeds.erase(pSeed);
             pSeed = rSeeds.end();
+            pStrip->subtractFromValue(pSeed->getValue());
+            DEBUG(
+                std::cout << "\tis less valuable than interfering ones" << std::endl;
+            )
         }//if
         //this interval is more valuable than the interfering ones => remove the interfering ones
         else
@@ -139,39 +140,11 @@ public:
         }//else
     }//function
 
-    /**
-     * Makes the seed acessible if the shadow interval is treated as a pointer
-     *
-     * Note: this works since: 
-     * The operator->() is a bit of an odd-ball: although it can return a non-pointer type, the
-     * resulting type would need to overload the operator->(), too! Basically, when the compiler
-     * sees a use of an overloaded operator->() it will keep applying operator->()s until the
-     * result is a pointer. Once a pointer is obtained, it knows how to access the corresponding
-     * member.
-     *
-     * It is an error if repeated application of operator->() leads to a non-pointer type which
-     * doesn't overload operator->().
-     * Source: https://stackoverflow.com/questions/20688066/result-of-operator-yields-non-pointer-result
-     */
-    inline const std::shared_ptr<Seed>& operator*() const
+    inline const Seed& operator*() const
     {
         return *pSeed;
     }//operator
-    /**
-     * Makes the seed acessible if the shadow interval is treated as a pointer
-     *
-     * Note: this works since: 
-     * The operator->() is a bit of an odd-ball: although it can return a non-pointer type, the
-     * resulting type would need to overload the operator->(), too! Basically, when the compiler
-     * sees a use of an overloaded operator->() it will keep applying operator->()s until the
-     * result is a pointer. Once a pointer is obtained, it knows how to access the corresponding
-     * member.
-     *
-     * It is an error if repeated application of operator->() leads to a non-pointer type which
-     * doesn't overload operator->().
-     * Source: https://stackoverflow.com/questions/20688066/result-of-operator-yields-non-pointer-result
-     */
-    inline const std::shared_ptr<Seed>& operator->() const
+    inline const Seed& operator->() const
     {
         return *pSeed;
     }//operator
@@ -209,20 +182,20 @@ class LineSweep: public Module
 private:
     void linesweep(
             std::vector<ShadowInterval>& vShadows, 
-            std::list<std::shared_ptr<Seed>>& rSeeds,
+            std::list<Seed>& rSeeds,
             std::shared_ptr<StripOfConsideration> pStrip
         );
 
     ShadowInterval getRightShadow(
             nucSeqIndex iBucketStart,
-            std::list<std::shared_ptr<Seed>>::iterator pSeed,
+            std::list<Seed>::iterator pSeed,
             nucSeqIndex iBucketSize,
             nucSeqIndex iQueryLength
         ) const;
 
     ShadowInterval getLeftShadow(
             nucSeqIndex uiBucketStart,
-            std::list<std::shared_ptr<Seed>>::iterator pSeed,
+            std::list<Seed>::iterator pSeed,
             nucSeqIndex uiBucketSize,
             nucSeqIndex uiQueryLength
         ) const;

@@ -99,7 +99,7 @@ public:
 			unsigned int uiMaxNumHitsPerInterval,
 			bool bSkipLongerIntervals,
 			bool bAnchorOnly,
-			std::function<void(std::shared_ptr<Seed> pS)> fDo
+			std::function<void(Seed s)> fDo
 		)
 	{
 		//iterate over all the intervals that have been recorded using pushBackBwtInterval()
@@ -141,11 +141,7 @@ public:
 				if (xSegment.isForward())
 					ulIndexOnRefSeq = pxUsedFmIndex->getRefSeqLength() - (ulIndexOnRefSeq + xSegment.size());
 				//call the given function
-				fDo(std::shared_ptr<Seed>(new Seed(
-						xSegment.start(),
-						xSegment.size(),
-						ulIndexOnRefSeq
-					)));
+				fDo(Seed(xSegment.start(), xSegment.size(), ulIndexOnRefSeq));
 			}//for
 		}//for
 	}//function
@@ -164,9 +160,9 @@ public:
 			100000,
 			false,
 			false,
-			[&](std::shared_ptr<Seed> pS)
+			[&](Seed xS)
 			{
-				vpRet.push_back(pxRefPack->vExtract(pS->start_ref(), pS->end_ref()));
+				vpRet.push_back(pxRefPack->vExtract(xS.start_ref(), xS.end_ref()));
 			}//lambda
 		);//forall
 		return vpRet;

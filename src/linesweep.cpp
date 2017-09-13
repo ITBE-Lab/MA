@@ -23,14 +23,14 @@ std::vector<ContainerType> LineSweep::getOutputType()
  */
 ShadowInterval LineSweep::getLeftShadow(
         nucSeqIndex uiBucketStart,
-        std::list<std::shared_ptr<Seed>>::iterator pSeed,
+        std::list<Seed>::iterator pSeed,
         nucSeqIndex uiBucketSize,
         nucSeqIndex uiQueryLength
     ) const
 {
     return ShadowInterval(
-            (*pSeed)->start() + uiBucketStart,
-            (*pSeed)->start_ref() + (*pSeed)->size() + uiQueryLength + uiBucketSize,
+            pSeed->start() + uiBucketStart,
+            pSeed->start_ref() + pSeed->size() + uiQueryLength + uiBucketSize,
             pSeed
         );
 }//function
@@ -41,20 +41,20 @@ ShadowInterval LineSweep::getLeftShadow(
  */
 ShadowInterval LineSweep::getRightShadow(
     nucSeqIndex iBucketStart,
-    std::list<std::shared_ptr<Seed>>::iterator pSeed,
+    std::list<Seed>::iterator pSeed,
     nucSeqIndex iBucketSize,
     nucSeqIndex iQueryLength) const
 {
     return ShadowInterval(
-            (*pSeed)->start_ref(),
-            (*pSeed)->start() + (*pSeed)->size() + iQueryLength + iBucketSize * 2 + iBucketStart,
+            pSeed->start_ref(),
+            pSeed->start() + pSeed->size() + iQueryLength + iBucketSize * 2 + iBucketStart,
             pSeed
         );
 }//function
 
 void LineSweep::linesweep(
         std::vector<ShadowInterval>& vShadows, 
-        std::list<std::shared_ptr<Seed>>& rSeeds, 
+        std::list<Seed>& rSeeds, 
         std::shared_ptr<StripOfConsideration> pStrip
     )
 {
@@ -145,7 +145,7 @@ std::shared_ptr<Container> LineSweep::execute(
 
     //get the left shadows
     pStrip->forAllSeeds(
-        [&](std::list<std::shared_ptr<Seed>>::iterator pSeed)
+        [&](std::list<Seed>::iterator pSeed)
         {
             vShadows.push_back(getLeftShadow(
                     pStrip->start(),
@@ -163,7 +163,7 @@ std::shared_ptr<Container> LineSweep::execute(
     
     //get the right shadows
     pStrip->forAllSeeds(
-        [&](std::list<std::shared_ptr<Seed>>::iterator pSeed)
+        [&](std::list<Seed>::iterator pSeed)
         {
             vShadows.push_back(getRightShadow(
                     pStrip->start(),

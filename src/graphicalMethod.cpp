@@ -32,12 +32,12 @@ void Bucketing::forEachNonBridgingSeed(
 		std::shared_ptr<FM_Index> pxFM_index,
 		std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 		std::shared_ptr<NucleotideSequence> pxQuerySeq,
-		std::function<void(std::shared_ptr<Seed> pS)> fDo
+		std::function<void(Seed rxS)> fDo
 	)
 {
 	pxNode->forEachSeed(
 		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals, bAnchorOnly,
-		[&](std::shared_ptr<Seed> pS)
+		[&](Seed xS)
 		{
 			//check if the match is bridging the forward/reverse strand or bridging between two chromosomes
 			/* we have to make sure that the match does not start before or end after the reference sequence
@@ -60,7 +60,7 @@ void Bucketing::forEachNonBridgingSeed(
 				//if so ignore this hit
 				return;
 			}//if*/
-			fDo(pS);
+			fDo(xS);
 		}//lambda
 	);
 }//function
@@ -78,9 +78,9 @@ void Bucketing::saveSeeds(
 	//bAnchorOnly = false since we also want to collet not maximally extended seeds
 	forEachNonBridgingSeed(
 		pxNode, false, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
-		[&](std::shared_ptr<Seed> pSeed)
+		[&](Seed xSeed)
 		{
-			addSeed(pxQuerySeq->length(), pSeed, raxSeedBuckets);
+			addSeed(pxQuerySeq->length(), xSeed, raxSeedBuckets);
 		}//lambda
 	);//for each
 }///function
@@ -156,9 +156,9 @@ std::shared_ptr<Container> Bucketing::execute(
 			//bAnchorOnly = true since we want to collet maximally extended seeds
 			forEachNonBridgingSeed(
 				pxNode, true, pFM_index, pFM_indexReversed, pRefSeq, pQuerrySeq,
-				[&](std::shared_ptr<Seed> pAnchor)
+				[&](Seed xAnchor)
 				{
-					nucSeqIndex uiStart = getPositionForBucketing(pQuerrySeq->length(), pAnchor) - uiStripSize/2;
+					nucSeqIndex uiStart = getPositionForBucketing(pQuerrySeq->length(), xAnchor) - uiStripSize/2;
 					std::shared_ptr<StripOfConsideration> pxNew(
 							new StripOfConsideration(
 								uiStart, 
