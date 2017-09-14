@@ -73,7 +73,6 @@ GzipInputFileStream::~GzipInputFileStream()
 } // virtual destructor
 
 #if 0
-//TODO: this might be worth to keep
 /* The Implementations for the gzip-input related classes GzipInputStream and GzipInputFileStream
  */
 void GzipOutputStream::vInitialize( std::ostream &xOutputStream )

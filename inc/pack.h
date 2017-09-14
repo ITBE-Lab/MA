@@ -35,6 +35,7 @@ typedef struct {
 	char xHoleCharacter; // The character 
 } HoleDescriptor; // bntamb1_t -> HoleDescriptor
 
+#if 0
 struct PackedSequenceCollectionDescriptorDEP {
 	int64_t i64PacSize; // l_pac to i64PacSize / the number of bytes used in the pac
 	int32_t n_seqs;
@@ -69,7 +70,7 @@ int bns_intv2rid( const PackedSequenceCollectionDescriptorDEP *bns, int64_t rb, 
 PackedSequenceCollectionDescriptorDEP *bns_restore(const char *prefix);
 
 void bns_destroy(PackedSequenceCollectionDescriptorDEP *bns);
-
+#endif
 /* The translation table.
  */
 extern unsigned char nst_nt4_table[256];

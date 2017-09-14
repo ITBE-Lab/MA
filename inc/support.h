@@ -107,8 +107,6 @@ public :
 }; // class
 
 #if 0
-
-//TODO: this might be worth to keep
 /* The counterparts for gzip-file output.
  * Main difference:
  * If it has mode output, data flows in the opposite direction; from the beginning of the chain,
@@ -150,3 +148,29 @@ public :
 }; // class
 
 #endif
+
+/* Function for range checking.
+ * Checks: Whether val is between min and max.
+ */
+template<typename ParameterType>
+void vRangeCheckAndThrowInclusive(
+		const std::string &sText,
+		const ParameterType &xRangeMin,
+		const ParameterType &xVal,
+		const ParameterType &xRangeMax
+	)
+{
+       if ( xVal < xRangeMin || xVal > xRangeMax )
+       {
+               throw std::runtime_error(   (((((((std::string( sText ) += "Out of range for value : ") += std::to_string( xVal )) += " range : [ ") += std::to_string( xRangeMin )) += "..") += std::to_string( xRangeMax )) += "]") ); // runtime error
+       } // if
+} // template function
+
+template<typename ParameterType>
+void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType &xRangeMin, const ParameterType &xVal, const ParameterType &xRangeMax )
+{
+       if ( xVal < xRangeMin || xVal >= xRangeMax )
+       {
+               throw std::runtime_error(   (((((((std::string( sText ) += "Out of range for value : ") += std::to_string( xVal )) += " range : [ ") += std::to_string( xRangeMin )) += "..") += std::to_string( xRangeMax )) += ")") ); // runtime error
+       } // if
+} // template function
