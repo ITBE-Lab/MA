@@ -11,7 +11,7 @@
 #include <chrono> // time required for temporary filename construction
 #include "sequence.h"
 #include "pack.h"
-#include "ksw.h" // Later we should create our own aligner
+//#include "ksw.h" // Later we should create our own aligner
 #include "container.h"
 #include "meta_programming.h"
 #include <boost/python.hpp>
