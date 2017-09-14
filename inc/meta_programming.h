@@ -24,6 +24,7 @@
 #define DEBUG_3(x)
 #endif //DEBUG_LEVEL
 
+#if 0
 /* Overloading of the operator "<<" for arrays, so that we get automatic formated output for arrays.
  * From: http://stackoverflow.com/questions/19152178/printing-an-stdarray
  */
@@ -304,7 +305,6 @@ void metaTryAndCatch( Functor&& functor )
 
 /* The following code belongs to sqlite.h but is "parked" over here.
  */
-#if 0
 /* From http://stackoverflow.com/questions/687490/how-do-i-expand-a-tuple-into-variadic-template-functions-arguments
  */
 /**

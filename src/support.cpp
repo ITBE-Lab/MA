@@ -1,7 +1,7 @@
 #include <vector>
 #include "support.h"
 
-
+#if 0
 /* Splits rsString according to cDelimiter and stores th outcome in rResultVector.
  */
 void split( std::vector<std::string> &rResultVector, const std::string &rsString, const char cDelimiter )
@@ -16,7 +16,7 @@ void split( std::vector<std::string> &rResultVector, const std::string &rsString
 	); // function call
 } // function
 
-#if 0 // deprecated
+ // deprecated
 /* taken from http://stackoverflow.com/questions/236129/how-to-split-a-string-in-c
  * There are efficient BOOST solutions for splitting as well.
  */
@@ -173,6 +173,8 @@ GzipInputFileStream::~GzipInputFileStream()
 	xFileInputStream.close();
 } // virtual destructor
 
+#if 0
+//TODO: this might be worth to keep
 /* The Implementations for the gzip-input related classes GzipInputStream and GzipInputFileStream
  */
 void GzipOutputStream::vInitialize( std::ostream &xOutputStream )
@@ -208,6 +210,9 @@ GzipOutputFileStream::~GzipOutputFileStream()
 	xFileOutputStream.close();
 } // virtual destructor
 
+#endif
+
+#if 0
 /* Heat diagram color computation scheme.
  */
 RGB_Color GetColour( double dValue, double dMinValue, double dMaxValue )
@@ -245,7 +250,6 @@ RGB_Color GetColour( double dValue, double dMinValue, double dMaxValue )
 
 	return( xRGB_Color );
 } // function
-
 
 /* ******************************************
  * Deprecated C I/O functions originating from BWA code
@@ -469,3 +473,4 @@ int err_gzclose(gzFile file)
 
 	return ret;
 }
+#endif

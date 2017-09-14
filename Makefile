@@ -47,6 +47,8 @@ distrib:
 clean:
 	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) *.so
 	rm -r -f dist *.egg-info build
+	rm -r -f html
+	rm -r -f LAuS.html
 
 docs: LAuS.html html/index.html
 

@@ -104,6 +104,9 @@ public :
 	virtual ~GzipInputFileStream();
 }; // class
 
+#if 0
+
+//TODO: this might be worth to keep
 /* The counterparts for gzip-file output.
  * Main difference:
  * If it has mode output, data flows in the opposite direction; from the beginning of the chain,
@@ -143,6 +146,26 @@ public :
 
 	virtual ~GzipOutputFileStream();
 }; // class
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /************************************************************************/
 /* Splitter functions for parsing purposes                              */
@@ -386,6 +409,7 @@ void vSplitAndSet(	const std::string &rsStringToSplit,				// string to split by 
 		std::forward<Args>(args)...																				// arguments iterated over
 	);
 }; // function
+#endif
 
 /* Function for range checking.
  * Checks: Whether val is between min and max.
@@ -412,6 +436,7 @@ void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType
 	} // if
 } // template function 
 
+#if 0
 /* Color related stuff
  */
 
@@ -516,3 +541,4 @@ static inline uint64_t hash_64( uint64_t key )
 	key ^= (key >> 31);
 	return key;
 }
+#endif
