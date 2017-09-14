@@ -7,7 +7,7 @@
 #include "graphicalMethod.h"
 #include <memory>
 #include "balancedSearchTree.h"
-#include "meta_programming.h"
+#include "debug.h"
 
 /** each perfect match "casts a shadow" at the left and right border of the strip
  * each shadow is stored in one of these data structures.

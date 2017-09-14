@@ -8,7 +8,7 @@
 #include "aligner.h"
 #include <memory>
 #include <iostream>
-#include "meta_programming.h"
+#include "debug.h"
 
 class NeedlemanWunsch : public Module
 {

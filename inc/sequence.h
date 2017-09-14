@@ -11,7 +11,6 @@
 #include <functional>
 #include <string>
 #include "exception.h"
-#include "support.h"
 #include "interval.h"
 
 #include <boost/log/trivial.hpp>

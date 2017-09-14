@@ -6,12 +6,10 @@
 
 #define NUM_THREADS_ALIGNER 6
 
-#define DEBUG_ENABLED
-
 #include "intervalTree.h"
 #include <algorithm>
 #include "segmentation.h"
-#include "meta_programming.h"
+#include "debug.h"
 #include "threadPool.h"
 #include "module.h"
 #include <boost/python.hpp>
