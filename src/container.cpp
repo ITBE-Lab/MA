@@ -1,11 +1,12 @@
 #include "container.h"
 
-//Taken from : https://stackoverflow.com/questions/15842126/feeding-a-python-list-into-a-function-taking-in-a-vector-with-boost-python
+/// @note: Taken from : https://stackoverflow.com/questions/15842126/feeding-a-python-list-into-a-function-taking-in-a-vector-with-boost-python
+///
 /// @brief Type that allows for registration of conversions from
 ///        python iterable types.
 struct iterable_converter
 {
-    /// @note Registers converter from a python interable type to the
+    /// @brief Registers converter from a python interable type to the
     ///       provided type.
     template <typename Container>
     iterable_converter&
@@ -66,7 +67,7 @@ struct iterable_converter
 
 void exportContainer()
 {
-    //contianer is an abstract class and should never be initialized
+    // container is an abstract class and should never be initialized
 	boost::python::class_<Container, std::shared_ptr<Container>>(
             "Container", 
             "abstract\n"

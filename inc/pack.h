@@ -11,9 +11,7 @@
 #include <algorithm>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
-#include "exception.h"
 #include "support.h"
-#include "sequence.h"
 #include "fasta_reader.h"
 
 /* --- BEGIN DEPRECATED ---

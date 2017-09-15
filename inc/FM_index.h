@@ -9,9 +9,7 @@
 #include <utility>
 #include <mutex>
 #include <chrono> // time required for temporary filename construction
-#include "sequence.h"
 #include "pack.h"
-#include "container.h"
 #include "debug.h"
 #include <boost/python.hpp>
 #include "is.h"

@@ -1,4 +1,4 @@
-#include "FM_index.h"
+#include "fm_index.h"
 
 void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac )
 {	

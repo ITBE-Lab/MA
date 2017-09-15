@@ -6,13 +6,13 @@
 
 #define NUM_THREADS_ALIGNER 6
 
-#include "intervalTree.h"
 #include <algorithm>
 #include "segmentation.h"
 #include "debug.h"
 #include "threadPool.h"
 #include "module.h"
 #include <boost/python.hpp>
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 
 #if 0

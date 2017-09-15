@@ -4,12 +4,11 @@
 #define DEBUG_ENABLED
 
 #include "intervalTree.h"
-#include "FM_index.h"
+#include "fm_index.h"
 #include <condition_variable>
 #include "threadPool.h"
 #include "graphicalMethod.h"
 #include "module.h"
-#include "container.h"
 #include "debug.h"
 #include <system.h>
 #include <algorithm>

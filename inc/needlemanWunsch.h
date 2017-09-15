@@ -2,10 +2,9 @@
 #define NEEDLEMAN_WUNSCH_H
 
 #include "boost/python.hpp"
-#include "intervalTree.h"
-#include "module.h"
-#include "sequence.h"
-#include "aligner.h"
+#include "seed.h"
+#include "alignment.h"
+#include "graphicalMethod.h"
 #include <memory>
 #include <iostream>
 #include "debug.h"

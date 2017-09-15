@@ -3,7 +3,6 @@
 #include <memory>
 #include <iostream>
 #include <array>
-#include "exception.h"
 #include "support.h"
 #include "sequence.h"
 

@@ -1,6 +1,12 @@
 #include "aligner.h"
 
-//this creates our main function
+/**
+ * @brief The boost-python main method.
+ *
+ * A main function that exposes all Containers and Modules to python
+ * by calling the respective export*() fonctions.
+ * The main method is generated using boost-python.
+ */
 BOOST_PYTHON_MODULE(LAuS)
 {
         exportModule();

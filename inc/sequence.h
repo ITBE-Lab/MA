@@ -10,7 +10,6 @@
 #include <cstring>
 #include <functional>
 #include <string>
-#include "exception.h"
 #include "interval.h"
 
 #include <boost/log/trivial.hpp>

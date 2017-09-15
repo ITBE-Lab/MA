@@ -2,6 +2,7 @@
 #define SEED_H
 
 #include "container.h"
+#include "interval.h"
 
 //any index on the query or reference nucleotide sequence is given in this datatype
 typedef uint64_t nucSeqIndex;

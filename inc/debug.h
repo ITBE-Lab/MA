@@ -1,3 +1,8 @@
+/** 
+ * @file debug.h
+ * @brief provides some handy defines for debug purposes
+ */
+
 #ifndef DEBUG_H
 #define DEBUG_H
 

@@ -1,31 +1,36 @@
+/** 
+ * @file intervalTree.h
+ * @brief Implements a the IntervalTree used for segmentation and various other related classes.
+ * @author Markus Schmidt
+ */
 #ifndef INTERVALTREE_H
 #define INTERVALTREE_H
 
-#include <memory>
-#include <assert.h>
-#include "string"
-#include <iostream>
-#include <mutex> 
-#include <vector>
-#include "FM_index.h"
+#include "fm_index.h"
 #include <list>
 #include <thread>
-#include <boost/python.hpp>
 #include "doublyLinkedList.h"
 #include "seed.h"
 
 #define confMETA_MEASURE_DURATION ( 1 )
 
 
-
+/**
+ * @brief A Suffix Array Segment.
+ * @details
+ * A Suffix Array Segment is made up of two Intervals.
+ * @li @c a SA_IndexInterval.
+ * @li @c a Interval representing the position of the sequence on the query.
+ */
 class SaSegment: public Container, public Interval<nucSeqIndex> {
 private:
 	SA_IndexInterval xSaInterval;
 	bool bForw;
 public:
 	/**
-	*	start and end on querry
-	*	sa index interval holds the bwt interval
+	* @brief Creates a new SaSegment.
+	* @details Creates a new SaSegment on the base of a SA_IndexInterval and the 
+	* respective indices on the quey.
 	*/
 	SaSegment(nucSeqIndex uiStart, nucSeqIndex uiSize, SA_IndexInterval xSaInterval, bool bForw)
 			:
@@ -34,26 +39,47 @@ public:
 		bForw(bForw)
 	{}//constructor
 
+	//overload
 	ContainerType getType() const {return ContainerType::segment;}
+	/**
+	 * @brief The bwt interval within.
+	 * @returns the bwt interval within.
+	 */
 	const SA_IndexInterval& saInterval() const
 	{
 		return xSaInterval;
 	}//function
+	/**
+	 * @brief Weather the segment was created by a forward extension or a backawards extension.
+	 * @returns true if the segment was created by forward extension.
+	 * @details
+	 * The forwards extension is implemented by backwards extension on an reversed FM_Index.
+	 */
 	bool isForward() const
 	{
 		return bForw;
 	}//function
 }; // class ( Segment )
 
+/**
+ * @brief A Interval in the Segment Tree.
+ */
 class SegmentTreeInterval: public Container, public Interval<nucSeqIndex>
 {
 private:
-	/** list of the perfect matches found through backwards / forward extension */
+	/** 
+	 * @brief list of the perfect matches found through backwards / forward extension 
+	 */
 	std::list<SaSegment> lxSaSegment;
-	/** list of the longest perfect matches found through backwards / forward extension */
+	/** 
+	 * @brief list of the longest perfect matches found through backwards / forward extension 
+	 */
 	std::list<SaSegment> lxSaAnchorSegment;
 
 public:
+	/**
+	 * @brief Creates a new interval with a start and size.
+	 */
 	SegmentTreeInterval(const nucSeqIndex uiStart, const nucSeqIndex uiSize)
 		:
 		Interval(uiStart, uiSize),
@@ -61,21 +87,30 @@ public:
 		lxSaAnchorSegment()
 	{}//constructor
 	
+	//overload
 	ContainerType getType(){return ContainerType::segment;}//function
 
 
-	/* prints information about this node; thread save */
+	/**
+	 * @brief Prints information about this node.
+	 * @note Thread save.
+	 */
 	void print(std::ostream& xOs) const
 	{
 		xOs << "(" << std::to_string(this->start()) << "," << std::to_string(this->end()) << ")";
 	}//function
-	/* push back an interval of perfect matches
-	 * the interval contains uiLengthInBwt individual perfect matches of (uiStartOfIntervalOnQuery, uiEndOfIntervalOnQuery) on the reference sequence
-	 * bForwHit is required because we need to extract the starting positions of every single match in the interval using the same fm_index used to calculate the interval
-	 * since we use 2 fm_indecies one for forward one for reverse we need to remember which of the two was used
-	*/
+	/**
+	 * @brief Push back an interval of perfect matches.
+	 * @details
+	 * The interval contains uiLengthInBwt individual perfect matches of 
+	 * (uiStartOfIntervalOnQuery, uiEndOfIntervalOnQuery) on the reference sequence.
+	 */
 	void push_back(SaSegment interval, bool bAnchor);
 
+	/**
+	 * @brief The center of the segment.
+	 * @returns the center of the segment.
+	 */
 	nucSeqIndex getCenter() const 
 	{
 		return start() + size() / 2; 

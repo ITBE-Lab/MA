@@ -2,7 +2,6 @@
 #define LINESWEEP
 
 #include "module.h"
-#include "interval.h"
 #include "seed.h"
 #include "graphicalMethod.h"
 #include <memory>

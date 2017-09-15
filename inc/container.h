@@ -1,11 +1,20 @@
+/** 
+ * @file container.h
+ * @brief Implements Container.
+ * @author Markus Schmidt
+ */
+
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
-#include <vector>
 #include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <iostream>
+#include <vector>
 
+/**
+ * @brief Used to describe the type of the Container.
+ * @details
+ * required by module for type checking the inputs before casting and using them.
+ */
 enum ContainerType{
     fM_index,
     nucSeq,
@@ -23,18 +32,22 @@ enum ContainerType{
 };//enum
 
 /**
-*   all classes containing data should inherit from this class
-*/
+ * @brief Abstract class intended to hold data objects used by Modules.
+ * @details
+ * all classes containing data should inherit from this class
+ */
 class Container
 {
 public:
     /** 
-    *   returns the type of the container as enum.
-    *   Used by Module for type checking its Inputs.
+    * @returns the type of the container as enum.
+    * @brief Used by Module for type checking its Inputs.
     */
     virtual ContainerType getType(){return ContainerType::unknown;}
 };//class
 
-/** function to export this module to boost python */
+/** 
+ * @brief function to export Container to boost python
+ */
 void exportContainer();
 #endif

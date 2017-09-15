@@ -53,13 +53,13 @@ void exportAlignment()
             )
         .def(
                 "__len__", 
-                &Alignment::lenght,
+                &Alignment::length,
                 "arg1: self\n"
                 "returns: length of the alignmen\n"
             )
         .def(
                 "length", 
-                &Alignment::lenght,
+                &Alignment::length,
                 "arg1: self\n"
                 "returns: length of the alignmen\n"
             )

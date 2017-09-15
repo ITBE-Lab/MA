@@ -1,14 +1,15 @@
+/** 
+ * @file aligner.h
+ * @brief Provides the boost-python main method.
+ * @author Markus Schmidt
+ * @details 
+ * Calls the export functions of the various Modules and Containers.
+ */
+
 #ifndef ALIGNER_H
 #define ALIGNER_H
 
-#include "module.h"
-#include "container.h"
 #include "segmentation.h"
-#include "FM_index.h"
-#include "container.h"
-#include "sequence.h"
-#include "exception.h"
-#include "graphicalMethod.h"
 #include "getAnchors.h"
 #include "alignment.h"
 #include "needlemanWunsch.h"
