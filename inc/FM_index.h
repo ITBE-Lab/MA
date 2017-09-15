@@ -6,17 +6,11 @@
 #pragma once
 
 #include <cstdint>
-#include <cstring>
-#include <vector>
-#include <algorithm>
-#include <array>
 #include <set>
 #include <utility>
 #include <mutex>
 #include <chrono> // time required for temporary filename construction
 #include "pack.h"
-#include "debug.h"
-#include <boost/python.hpp>
 #include "is.h"
 #include "BWT_large.h"
 

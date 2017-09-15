@@ -1,8 +1,10 @@
+/** 
+ * @file fasta_reader.h
+ * @brief Implements various FileReaders
+ * @author Arne Kutzner
+ */
 #pragma once
 
-#include <memory>
-#include <iostream>
-#include <array>
 #include "support.h"
 #include "sequence.h"
 

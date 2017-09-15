@@ -1,3 +1,9 @@
+/** 
+ * @file pack.h
+ * @brief Implements the BWACompatiblePackedNucleotideSequencesCollection class.
+ * @author Arne Kutzner
+ */
+
 /* Revisison:
  * We only store the forward strand with the pack. 
  * The reverse strand is imaginary and its content developed on demand by using the forward strand.
@@ -5,13 +11,9 @@
 
 #pragma once
 
-#include <memory>
-#include <iostream>
-#include <array>
 #include <algorithm>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
-#include "support.h"
 #include "fasta_reader.h"
 
 /* --- BEGIN DEPRECATED ---

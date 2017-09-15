@@ -1,19 +1,19 @@
+/** 
+ * @file sequence.h
+ * @brief Implements NucleotideSequence.
+ * @author Arne Kutzner
+ */
 #pragma once
 
 #include <memory>
-#include <iostream>
 #include <algorithm>
-#include <vector>
 #include <array>
 #include <numeric>
 #include <cmath>
 #include <cstring>
-#include <functional>
-#include <string>
 #include "interval.h"
 
 #include <boost/log/trivial.hpp>
-#include <boost/python.hpp>
 #include "container.h"
 
 class GeneticSequence;
