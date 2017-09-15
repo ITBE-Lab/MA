@@ -8,9 +8,10 @@
 
 #define DEBUG_ENABLED
 
-#include "intervalTree.h"
-#include "graphicalMethod.h"
 #include <system.h>
+#include "module.h"
+#include "intervalTree.h"
+#include "threadPool.h"
 
 
 class PerfectMatch;

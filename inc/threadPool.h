@@ -15,6 +15,8 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
+#define NUM_THREADS_ALIGNER 6
+
 #include <vector>
 #include <queue>
 #include <memory>

@@ -8,6 +8,7 @@
 
 #include "graphicalMethod.h"
 #include "balancedSearchTree.h"
+#include "module.h"
 
 /**
  * @brief The shadow of a Seed.

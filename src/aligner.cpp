@@ -22,4 +22,5 @@ BOOST_PYTHON_MODULE(LAuS)
         exportAlignment();
         exportLinesweep();
         exportNeedlemanWunsch();
+        exportBucketing();
 }

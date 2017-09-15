@@ -8,6 +8,7 @@
 
 #include "alignment.h"
 #include "graphicalMethod.h"
+#include "module.h"
 
 /**
  * @brief implements NMW
