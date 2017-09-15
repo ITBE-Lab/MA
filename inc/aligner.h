@@ -11,7 +11,6 @@
 
 #include "segmentation.h"
 #include "getAnchors.h"
-#include "alignment.h"
 #include "needlemanWunsch.h"
 #include "linesweep.h"
 #include <list>

@@ -1,27 +1,37 @@
+/** 
+ * @file linesweep.h
+ * @brief Implements the linesweep module
+ * @author Markus Schmidt
+ */
 #ifndef LINESWEEP
 #define LINESWEEP
 
-#include "module.h"
-#include "seed.h"
 #include "graphicalMethod.h"
-#include <memory>
 #include "balancedSearchTree.h"
-#include "debug.h"
 
-/** each perfect match "casts a shadow" at the left and right border of the strip
- * each shadow is stored in one of these data structures.
-*/
+/**
+ * @brief The shadow of a Seed.
+ * @details
+ * Each perfect match "casts a shadow" at the left and right border of the strip.
+ * Each shadow is stored in one of these data structures.
+ */
 class ShadowInterval: public Interval<nucSeqIndex>{
 private:
-	////while swiping the interfering shadows will get stored in this list
+	/// @brief While swiping the interfering shadows will get stored in this list.
     std::shared_ptr<std::list<ShadowInterval*>> pInterferingIntervals;
-    ////the interval this one interfers with
+    /// @brief The interval this one interferes with.
     ShadowInterval* pIInterferWith;
-    ////the seed this interval corresponds to (used to delete the seed in case this is necessary)
+    /// @brief The seed this interval corresponds to (used to delete the seed in case this is necessary).
     std::list<Seed>::iterator pSeed;
-	////the total score of the interfering shadows
+	/// @brief The total score of the interfering shadows.
     unsigned int iScoreInterfering;
 public:
+    /**
+     * @brief Creates a new shadow.
+     * @details
+     * The linesweep algorithm disables seeds.
+     * Therefore the iterator is required in order to delete the respective seed from its list.
+     */
     ShadowInterval(
             nucSeqIndex iBegin, 
             nucSeqIndex iSize, 
@@ -35,6 +45,9 @@ public:
         iScoreInterfering(0)
     {}//constructor
 
+    /**
+     * @brief Copy constructor
+     */
     ShadowInterval( const ShadowInterval& rOther )
             :
         Interval(rOther),
@@ -42,8 +55,11 @@ public:
         pIInterferWith(rOther.pIInterferWith),
         pSeed(rOther.pSeed),
         iScoreInterfering(rOther.iScoreInterfering)
-    {}//constructor
+    {}//copy constructor
 
+    /**
+     * @brief Returns the length of this interval that is not overlapped by the given one.
+     */
     nucSeqIndex non_overlap(ShadowInterval rInterval)
     {
         return std::max(
@@ -57,6 +73,12 @@ public:
             );
     }//function
     
+    /**
+     * @brief Records a Interval that interferes with this interval.
+     * @details
+     * Since the value of all interfering intervals is stored within this interval the score needs
+     * to be updated.
+     */
     void addInterferingInterval(ShadowInterval& rInterval)
     {
         DEBUG(
@@ -70,6 +92,11 @@ public:
         
     }//function
 
+    /**
+     * @brief Removes all intervals that are registered to be interfering with this interval.
+     * @details
+     * This process is recursive.
+     */
     void removeInterferingIntervals(
             std::list<Seed>& rSeeds,
             std::shared_ptr<StripOfConsideration> pStrip
@@ -77,7 +104,7 @@ public:
     {
         for(ShadowInterval* pInterval : *pInterferingIntervals)
             pInterval->removeInterferingIntervals(rSeeds, pStrip);
-        //reached an already invalidated itterator
+        //reached an already invalidated iterator
         if(pSeed == rSeeds.end())
         {
             DEBUG(
@@ -95,16 +122,22 @@ public:
         pInterferingIntervals->clear();
     }//function
 
+    /**
+     * @brief Removes this or all interfering seeds.
+     * @details
+     * Checks weather this seed is more valuable than the interfering ones.
+     * Then removes the less valuable ones.
+     */
     void removeSeedIfNecessary(
             std::list<Seed>& rSeeds, 
             std::shared_ptr<StripOfConsideration> pStrip
         )
     {
-        //reached an already invalidated itterator
+        //reached an already invalidated iterator
         if(pSeed == rSeeds.end())
         {
             DEBUG(
-                std::cout << "\treached invalid itterator" << std::endl;
+                std::cout << "\treached invalid iterator" << std::endl;
             )
             return;
         }
@@ -134,15 +167,26 @@ public:
         }//else
     }//function
 
+    /**
+     * @brief Provides easy access to the seed within this shadow.
+     */
     inline const std::list<Seed>::iterator operator*() const
     {
         return pSeed;
     }//operator
+
+    /**
+     * @brief Provides easy access to the seed within this shadow.
+     */
     inline const std::list<Seed>::iterator operator->() const
     {
         return pSeed;
     }//operator
 
+    
+    /**
+     * @brief Copys everything from another shadow.
+     */
     inline ShadowInterval& operator=(const ShadowInterval& rxOther)
     {
         Interval::operator=(rxOther);
@@ -152,40 +196,71 @@ public:
         return *this;
     }// operator
 
-    //required for the search tree
+    /**
+     * @brief Compares the Interval ends.
+     * @details
+     * Required for the search tree.
+     */
     inline bool operator<=(const ShadowInterval rOther) const
     {
         return end() <= rOther.end();
     }//operator
 
-    //required for the search tree
+    /**
+     * @brief Compares the Interval ends.
+     * @details
+     * Required for the search tree.
+     */
     inline bool operator<(const ShadowInterval rOther) const
     {
         return end() < rOther.end();
     }//operator
 
-    //required for the search tree
+    /**
+     * @brief Compares the Interval ends.
+     * @details
+     * Required for the search tree.
+     */
     inline bool operator>(const ShadowInterval rOther) const
     {
         return end() > rOther.end();
     }//operator
 };//class
 
+/**
+ * @brief Implements the linesweep algorithm.
+ */
 class LineSweep: public Module
 {
 private:
+    /**
+    * @brief Implements the linesweep algorithm.
+    * @details
+    * The algorithm has to be run on left and right shadows,
+    * therefore it is provided as individual function.
+    */
     void linesweep(
             std::vector<ShadowInterval>& vShadows, 
             std::list<Seed>& rSeeds,
             std::shared_ptr<StripOfConsideration> pStrip
         );
 
+    /**
+    * @brief Returns the right shadow of a seed.
+    * @details
+    * "Casts" the shadow against the border of the considered area.
+    */
     ShadowInterval getRightShadow(
             nucSeqIndex iBucketStart,
             std::list<Seed>::iterator pSeed,
             nucSeqIndex iQueryLength
         ) const;
 
+    /**
+    * @brief Returns the left shadow of a seed.
+    * @details
+    * "Casts" the shadow against the border of the considered area.
+    */
     ShadowInterval getLeftShadow(
             nucSeqIndex uiBucketStart,
             std::list<Seed>::iterator pSeed,
@@ -193,15 +268,19 @@ private:
         ) const;
 public:
 
-	LineSweep(){}//constructor
-
+    //overload
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput);
 
+    //overload
     std::vector<ContainerType> getInputType();
 
+    //overload
     std::vector<ContainerType> getOutputType();
 };//class
 
+/**
+ * @brief Exposes the LineSweep Module to boost python.
+ */
 void exportLinesweep();
 
 #endif

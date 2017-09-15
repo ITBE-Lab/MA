@@ -1,3 +1,8 @@
+/** 
+ * @file fm_index.h
+ * @brief Implements the FM_index class.
+ * @author Arne Kutzner
+ */
 #pragma once
 
 #include <cstdint>

@@ -34,7 +34,7 @@ enum ContainerType{
 /**
  * @brief Abstract class intended to hold data objects used by Modules.
  * @details
- * all classes containing data should inherit from this class
+ * All classes containing data should inherit from this class.
  */
 class Container
 {
@@ -47,7 +47,7 @@ public:
 };//class
 
 /** 
- * @brief function to export Container to boost python
+ * @brief Function to export Container to boost python.
  */
 void exportContainer();
 #endif

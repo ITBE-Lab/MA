@@ -1,28 +1,4 @@
-/*
- * sais.c for sais-lite
- * Copyright (c) 2008 Yuta Mori All Rights Reserved.
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
+
 #include <stdlib.h>
 
 #ifdef USE_MALLOC_WRAPPERS
@@ -33,7 +9,7 @@ typedef unsigned char ubyte_t;
 
 #define chr(i) (cs == sizeof(int) ? ((const int *)T)[i]:((const unsigned char *)T)[i])
 
-/* find the start or end of each bucket */
+/** @brief find the start or end of each bucket */
 static void getCounts(const unsigned char *T, int *C, int n, int k, int cs)
 {
 	int i;
@@ -56,7 +32,7 @@ static void getBuckets(const int *C, int *B, int k, int end)
 	}
 }
 
-/* compute SA */
+/** @brief compute SA */
 static void induceSA(const unsigned char *T, int *SA, int *C, int *B, int n, int k, int cs)
 {
 	int *b, i, j;
@@ -93,7 +69,7 @@ static void induceSA(const unsigned char *T, int *SA, int *C, int *B, int n, int
 	}
 }
 
-/*
+/**
  * find the suffix array SA of T[0..n-1] in {0..k-1}^n use a working
  * space (excluding T and SA) of at most 2n+O(1) for a constant alphabet
  */
@@ -181,13 +157,7 @@ static int sais_main(const unsigned char *T, int *SA, int fs, int n, int k, int 
 	return 0;
 }
 
-/**
- * Constructs the suffix array of a given string.
- * @param T[0..n-1] The input string.
- * @param SA[0..n] The output array of suffixes.
- * @param n The length of the given string.
- * @return 0 if no error occurred
- */
+
 int is_sa(const ubyte_t *T, int *SA, int n)
 {
 	if ((T == NULL) || (SA == NULL) || (n < 0)) return -1;
@@ -199,12 +169,7 @@ int is_sa(const ubyte_t *T, int *SA, int n)
 	return sais_main(T, SA+1, 0, n, 256, 1);
 }
 
-/**
- * Constructs the burrows-wheeler transformed string of a given string.
- * @param T[0..n-1] The input string.
- * @param n The length of the given string.
- * @return The primary index if no error occurred, -1 or -2 otherwise.
- */
+
 int is_bwt(ubyte_t *T, int n)
 {
 	int *SA, i, primary = 0;

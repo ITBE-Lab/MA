@@ -116,18 +116,12 @@ public:
 		return start() + size() / 2; 
 	}//function
 
-	nucSeqIndex getValue() const 
-	{
-		return size(); 
-	}//function
-
-	/* calls fDo for all recorded hits.
-	*  Note that pushBackBwtInterval records an interval of hits
-	*  ulHit: the position of the hit on the reference sequence
-	*  uiQueryBegin: the position of the hit on the query sequence
-	*  uiQueryEnd: the end of the hit on the query sequence
-	*  bForwHit: true if this hit was produced through forward extension
-	*/
+	/**
+	 * @brief Extracts all seeds from the tree.
+	 * @details
+	 * Calls fDo for all recorded hits.
+	 * @Note pushBackBwtInterval records an interval of hits
+	 */
 	void forEachSeed(
 			std::shared_ptr<FM_Index> pxFM_Index,
 			std::shared_ptr<FM_Index> pxRev_FM_Index,
@@ -182,6 +176,11 @@ public:
 		}//for
 	}//function
 
+	/**
+	 * @brief Returns all seeds from the tree.
+	 * @details
+	 * As opposed to forEachSeed the seeds get collected and returned in a vector.
+	 */
 	std::vector<std::shared_ptr<NucleotideSequence>> getRefHits(
 			std::shared_ptr<FM_Index> pxFM_Index, 
 			std::shared_ptr<FM_Index> pxRev_FM_Index,
@@ -205,12 +204,23 @@ public:
 	}//function
 };//class
 
+/**
+ * @brief The segment tree.
+ * @details
+ * The segment "tree" is actually a doubly linked list.
+ * The tree only exists logically,
+ * meaning that the segments within the list represent the first layer of the tree initally.
+ * Then after each iteration, the segments within the list represent the next layer down of the 
+ * tree.
+ */
 class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>, public Container{
 
 public:
-	/*
-	*	sets up the interval tree with two leaves and one initial interval comprising the whole query
-	*	note that the tree is internally represented as a DoublyLinkedList since only the leaves are of relevance
+	/**
+	* @brief Creates a new tree containing one initial segment as root.
+	* @details
+	* Sets up the interval tree with two leaves and one initial interval comprising the whole query
+	* note that the tree is internally represented as a DoublyLinkedList since only the leaves are of relevance
 	*/
 	SegmentTree(const nucSeqIndex uiQuerryLength)
 		:
@@ -222,19 +232,32 @@ public:
 	SegmentTree()
 	{}//constructor
 	
+	//overload
 	ContainerType getType(){return ContainerType::segmentList;}//function
 
-	/*not thread save; prints basic information about the segment tree*/
+	/**
+	 * @brief Prints basic information about the segment tree.
+	 * @details
+	 * Not thread save.
+	 */
 	void print(std::ostream &xOut) const
 	{
 		forEach([&xOut](std::shared_ptr<SegmentTreeInterval> pxNode){ pxNode->print(xOut); });
 	}//function
 };
 
+/**
+ * @brief Simple printer function for the SegmentTree.
+ */
 std::ostream& operator<<(std::ostream& xOs, const SegmentTree& rxTree);
+/**
+ * @brief Simple printer function for a SegmentTreeInterval.
+ */
 std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode);
 
-
+/**
+ * @brief Exposes the SegmentTree to boost python.
+ */
 void exportIntervalTree();
 
 

@@ -1,17 +1,16 @@
+/** 
+ * @file segmentation.h
+ * @brief Implements the segmentation algorithm.
+ * @author Markus Schmidt
+ */
 #ifndef SEGMENTATION_H
 #define SEGMENTATION_H
 
 #define DEBUG_ENABLED
 
 #include "intervalTree.h"
-#include "fm_index.h"
-#include <condition_variable>
-#include "threadPool.h"
 #include "graphicalMethod.h"
-#include "module.h"
-#include "debug.h"
 #include <system.h>
-#include <algorithm>
 
 
 class PerfectMatch;
