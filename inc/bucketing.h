@@ -6,8 +6,6 @@
 #ifndef BUCKETING_H
 #define BUCKETING_H
 
-#include "seed.h"
-#include "pack.h"
 #include "intervalTree.h"
 #include "module.h"
 

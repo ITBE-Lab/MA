@@ -7,7 +7,7 @@ q = ""
 
 #random.seed(1)
 
-for _ in range(100000):
+for _ in range(1000000):
     char = random.randint(1,4)
     if char == 1:
         seq += "a"
@@ -21,7 +21,7 @@ for _ in range(100000):
 q_from = random.randint(0, len(seq)-1000)
 q_to = q_from + 1000
 q = seq[q_from:q_to]
-for _ in range(100):
+for _ in range(25):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
@@ -33,12 +33,12 @@ for _ in range(100):
     else:
         q = q[:pos-1] + "g" + q[pos:]
 
-for _ in range(100):
+for _ in range(25):
     pos = random.randint(1,len(q)-11)
     l = random.randint(1,10)
     q = q[:pos-1] + q[pos + l:]
 
-for _ in range(100):
+for _ in range(25):
     pos = random.randint(1,len(q)-1)
     l = random.randint(1,10)
     for _ in range(l):
@@ -71,6 +71,8 @@ seg.bSkipLongBWTIntervals = False
 
 segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))
 
+seeds = Seeds()
+
 iterator = segments.begin()
 while iterator.exists():
     start = iterator.get().start()
@@ -79,9 +81,28 @@ while iterator.exists():
     for i in range(start, end):
         sequence = sequence + query[i]
     print "segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
-    #for seq_ref in iterator.get().get_ref_hits(fm_index, rev_fm_index, ref_seq):
-    #    print "ref:\t" + str(seq_ref)
+    seeds.append(iterator.get().get_seeds(fm_index, rev_fm_index))
     iterator.next()
+
+liesweep = LineSweep()
+
+print "scores before linesweep:"
+print seeds.get_score()
+
+seeds = liesweep.execute((query, ref_seq, seeds))
+
+print "scores after linesweep:"
+print seeds.get_score()
+
+nmw = NeedlemanWunsch()
+
+align = nmw.execute((seeds, query, ref_seq))
+
+printer = AlignmentPrinter()
+
+printer.execute((align, query, ref_seq))
+
+exit()
 
 anc = NlongestIntervalsAsAnchors(2)
 anchors = anc.execute((segments,))

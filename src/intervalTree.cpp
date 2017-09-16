@@ -79,16 +79,24 @@ void exportIntervalTree()
 					"size of the match\n"
 				)
 			.def(
-				"get_ref_hits", 
-				&SegmentTreeInterval::getRefHits,
-				"arg1: self\n"
-				"arg2: forward FM Index\n"
-				"arg2: backward FM Index\n"
-				"arg3: packed reference sequence\n"
-				"returns: list of NucSeq\n"
-				"\n"
-				"extract all hits on the reference\n"
-			)
+					"get_ref_hits", 
+					&SegmentTreeInterval::getRefHits,
+					"arg1: self\n"
+					"arg2: forward FM Index\n"
+					"arg2: backward FM Index\n"
+					"arg3: packed reference sequence\n"
+					"returns: list of NucSeq\n"
+					"\n"
+					"extract all hits on the reference\n"
+				)
+			.def(
+					"get_seeds", 
+					&SegmentTreeInterval::getSeeds,
+					"arg1: self\n"
+					"arg2: the fm_index.\n"
+					"arg2: the reversed fm_index.\n"
+					"returns: all seeds within the segment.\n"
+				)
 			.def(
 					"size",
 					&SegmentTreeInterval::size_boost1,

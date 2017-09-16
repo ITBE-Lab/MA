@@ -6,6 +6,7 @@
 #ifndef LINESWEEP
 #define LINESWEEP
 
+#include "intervalTree.h"
 #include "balancedSearchTree.h"
 #include "module.h"
 

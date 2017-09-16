@@ -101,6 +101,12 @@ public Container
             iRet += rS.getValue();
         return iRet;
     }//function
+    /*append a copy of another list*/
+    void append(std::shared_ptr<Seeds> pOther)
+    {
+        for(Seed& rS : *pOther)
+            push_back(rS);
+    }//function
 };//class
 
 class SeedsVector:

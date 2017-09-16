@@ -75,6 +75,12 @@ Execution:
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
+            if align[counter] is MatchType.seed:
+                lines[-3] += ref[ind_ref]
+                lines[-2] += 'I'
+                lines[-1] += query[ind_query]
+                ind_ref += 1
+                ind_query += 1
             elif align[counter] is MatchType.missmatch:
                 lines[-3] += ref[ind_ref]
                 lines[-2] += ' '

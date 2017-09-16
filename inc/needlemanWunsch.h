@@ -7,7 +7,6 @@
 #define NEEDLEMAN_WUNSCH_H
 
 #include "alignment.h"
-#include "seed.h"
 #include "module.h"
 
 /**

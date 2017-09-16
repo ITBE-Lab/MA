@@ -274,7 +274,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         )//DEBUG
         if(len > overlap)
         {
-            pRet->append(Alignment::MatchType::match, len - overlap);
+            pRet->append(Alignment::MatchType::seed, len - overlap);
             DEBUG_2(
                 std::cout << len - overlap << std::endl;
             )//DEBUG_2

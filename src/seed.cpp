@@ -23,6 +23,14 @@ void exportSeed()
             &Seeds::getScore,
             "arg1: self\n"
             "returns: sum off all scores within the list\n"
+        )
+    .def(
+            "append",
+            &Seeds::append,
+            "arg1: self\n"
+            "arg1: other Seed\n"
+            "\n"
+            "Appends a copy of the other list to this list.\n"
         );
 
     //register a pointer to Seeds as return value to boost python

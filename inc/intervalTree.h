@@ -175,6 +175,30 @@ public:
 		}//for
 	}//function
 
+
+	/**
+	 * @brief Extracts all seeds from the segment.
+	 */
+	std::shared_ptr<Seeds> getSeeds(
+			std::shared_ptr<FM_Index> pxFM_Index, 
+			std::shared_ptr<FM_Index> pxRev_FM_Index
+		)
+	{
+		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
+		forEachSeed(
+				pxFM_Index,
+				pxRev_FM_Index,
+				100000,
+				false,
+				false,
+				[&](Seed xS)
+				{
+					pRet->push_back(xS);
+				}//lambda
+			);//forall
+		return pRet;
+	}//function
+
 	/**
 	 * @brief Returns all seeds from the tree.
 	 * @details
@@ -189,16 +213,16 @@ public:
 		std::vector<std::shared_ptr<NucleotideSequence>> vpRet = 
 			std::vector<std::shared_ptr<NucleotideSequence>>();
 		forEachSeed(
-			pxFM_Index,
-			pxRev_FM_Index,
-			100000,
-			false,
-			false,
-			[&](Seed xS)
-			{
-				vpRet.push_back(pxRefPack->vExtract(xS.start_ref(), xS.end_ref()));
-			}//lambda
-		);//forall
+				pxFM_Index,
+				pxRev_FM_Index,
+				100000,
+				false,
+				false,
+				[&](Seed xS)
+				{
+					vpRet.push_back(pxRefPack->vExtract(xS.start_ref(), xS.end_ref()));
+				}//lambda
+			);//forall
 		return vpRet;
 	}//function
 };//class

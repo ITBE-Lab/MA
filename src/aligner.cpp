@@ -4,7 +4,7 @@
  * @brief The boost-python main method.
  *
  * A main function that exposes all Containers and Modules to python
- * by calling the respective export*() fonctions.
+ * by calling the respective export*() functions.
  * The main method is generated using boost-python.
  */
 BOOST_PYTHON_MODULE(LAuS)
@@ -16,7 +16,6 @@ BOOST_PYTHON_MODULE(LAuS)
         exportSegmentation();
         exportPack();
         exportIntervalTree();
-        exportStripOfConsideration();
         exportExceptions();
         exportGetAnchors();
         exportAlignment();
