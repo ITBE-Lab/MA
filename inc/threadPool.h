@@ -1,15 +1,13 @@
-/* Code originates from:
+/** 
+ * @file threadPool.h
+ * @brief A thread pool.
+ * @details
+ * Code originates from:
  * https://github.com/progschj/ThreadPool
- * The thread id extension was added by Arne Kutzner
  *
- * // create thread pool with 4 worker threads
- * ThreadPool pool(4);
  *
- * // enqueue and store future
- * auto result = pool.enqueue( [](int answer) { return answer; }, 42 );
- *
- * // get result from future
- * std::cout << result.get() << std::endl;
+ * The thread id extension was added by Arne Kutzner.
+ * ThreadPoolAllowingRecursiveEnqueues was added by Markus Schmidt.
  */
 
 #ifndef THREAD_POOL_H
@@ -27,6 +25,18 @@
 #include <functional>
 #include <stdexcept>
 
+/**
+ * @brief A Threadpool.
+ * @details
+ * // create thread pool with 4 worker threads\n
+ * ThreadPool pool(4);\n
+ *
+ * // enqueue and store future\n
+ * auto result = pool.enqueue( [](int answer) { return answer; }, 42 );\n
+ *
+ * // get result from future\n
+ * std::cout << result.get() << std::endl;\n
+ */
 class ThreadPool {
 public:
 	/* External definition
@@ -163,10 +173,20 @@ inline ThreadPool::~ThreadPool()
 }
 
 
-
-
-
-
+/**
+ * @brief A Threadpool.
+ * @details
+ * // create thread pool with 4 worker threads\n
+ * ThreadPool pool(4);\n
+ *
+ * // enqueue and store future\n
+ * auto result = pool.enqueue( [](int answer) { return answer; }, 42 );\n
+ *
+ * // get result from future\n
+ * std::cout << result.get() << std::endl;\n
+ *
+ * @note This pool allows enqueues from within a worker thread.
+ */
 class ThreadPoolAllowingRecursiveEnqueues {
 public:
 	/* External definition
@@ -185,8 +205,10 @@ public:
 	{
 		typedef typename std::result_of<F(size_t, Args...)>::type return_type;
 
-		/* std::placeholders::_1 and represents some future value (this value will be only known during function definition.
-		*/
+		/* 
+		 * std::placeholders::_1 and represents some future value 
+		 * (this value will be only known during function definition.
+		 */
 		auto task = std::make_shared< std::packaged_task< return_type(size_t) > >
 			(
 			std::bind(std::forward<F>(f), std::placeholders::_1, std::forward<Args>(args)...)

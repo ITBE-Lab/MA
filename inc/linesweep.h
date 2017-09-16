@@ -6,7 +6,6 @@
 #ifndef LINESWEEP
 #define LINESWEEP
 
-#include "graphicalMethod.h"
 #include "balancedSearchTree.h"
 #include "module.h"
 
@@ -99,14 +98,13 @@ public:
      * This process is recursive.
      */
     void removeInterferingIntervals(
-            std::list<Seed>& rSeeds,
-            std::shared_ptr<StripOfConsideration> pStrip
+            std::shared_ptr<Seeds> pSeeds
         )
     {
         for(ShadowInterval* pInterval : *pInterferingIntervals)
-            pInterval->removeInterferingIntervals(rSeeds, pStrip);
+            pInterval->removeInterferingIntervals(pSeeds);
         //reached an already invalidated iterator
-        if(pSeed == rSeeds.end())
+        if(pSeed == pSeeds->end())
         {
             DEBUG(
                 std::cout << "\treached invalid itterator" << std::endl;
@@ -117,9 +115,8 @@ public:
             std::cout << "\terasing: " << start() << ", " << end();
             std::cout << " seed: " << pSeed->start() << ", " << pSeed->end() << std::endl;
         )
-        pStrip->subtractFromValue(pSeed->getValue());
-        rSeeds.erase(pSeed);
-        pSeed = rSeeds.end();
+        pSeeds->erase(pSeed);
+        pSeed = pSeeds->end();
         pInterferingIntervals->clear();
     }//function
 
@@ -130,12 +127,11 @@ public:
      * Then removes the less valuable ones.
      */
     void removeSeedIfNecessary(
-            std::list<Seed>& rSeeds, 
-            std::shared_ptr<StripOfConsideration> pStrip
+            std::shared_ptr<Seeds> pSeeds
         )
     {
         //reached an already invalidated iterator
-        if(pSeed == rSeeds.end())
+        if(pSeed == pSeeds->end())
         {
             DEBUG(
                 std::cout << "\treached invalid iterator" << std::endl;
@@ -148,10 +144,9 @@ public:
             //update the score of the interval outside this one
             if(pIInterferWith != nullptr)
                 pIInterferWith->iScoreInterfering += iScoreInterfering - pSeed->getValue();
-            pStrip->subtractFromValue(pSeed->getValue());
             //remove this seed
-            rSeeds.erase(pSeed);
-            pSeed = rSeeds.end();
+            pSeeds->erase(pSeed);
+            pSeed = pSeeds->end();
             DEBUG(
                 std::cout << "\tis less valuable than interfering ones" << std::endl;
             )
@@ -163,7 +158,7 @@ public:
                 std::cout << "\tis more valuable than interfering ones" << std::endl;
             )
             for(ShadowInterval* pInterval : *pInterferingIntervals)
-                pInterval->removeInterferingIntervals(rSeeds, pStrip);
+                pInterval->removeInterferingIntervals(pSeeds);
             pInterferingIntervals->clear();
         }//else
     }//function
@@ -242,8 +237,7 @@ private:
     */
     void linesweep(
             std::vector<ShadowInterval>& vShadows, 
-            std::list<Seed>& rSeeds,
-            std::shared_ptr<StripOfConsideration> pStrip
+            std::shared_ptr<Seeds> pSeeds
         );
 
     /**
@@ -251,10 +245,9 @@ private:
     * @details
     * "Casts" the shadow against the border of the considered area.
     */
-    ShadowInterval getRightShadow(
-            nucSeqIndex iBucketStart,
+    ShadowInterval getLeftShadow(
             std::list<Seed>::iterator pSeed,
-            nucSeqIndex iQueryLength
+            nucSeqIndex uiQueryLength
         ) const;
 
     /**
@@ -262,8 +255,7 @@ private:
     * @details
     * "Casts" the shadow against the border of the considered area.
     */
-    ShadowInterval getLeftShadow(
-            nucSeqIndex uiBucketStart,
+    ShadowInterval getRightShadow(
             std::list<Seed>::iterator pSeed,
             nucSeqIndex iRefSize
         ) const;

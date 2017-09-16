@@ -12,7 +12,7 @@
 #include <chrono> // time required for temporary filename construction
 #include "pack.h"
 #include "is.h"
-#include "BWT_large.h"
+#include "bwt_large.h"
 
 
 //extern Configuration xGlobalConfiguration;

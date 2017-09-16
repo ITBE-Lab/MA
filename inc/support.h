@@ -1,3 +1,8 @@
+/** 
+ * @file support.h
+ * @brief Implements GzipInputStream, vRangeCheckAndThrowInclusive and vRangeCheckAndThrowExclusive
+ * @author Arne Kutzner
+ */
 #pragma once
 
 #include <string>
@@ -32,38 +37,23 @@
 	typedef unsigned __int64 uint64_t;
 #endif
 
-#if 0
-/* This can be replaced by std::to_string(...) with C++11
-	*/
-template <typename TP>
-std::string numberToStringDeprecated( TP number )
-{
-	std::ostringstream ss;
-	ss << number;
-	return ss.str();
-}
-/* split 
- * Definition in .cpp file
- * ( Split that alters the input )
- */
-void split( std::vector<std::string> &result, std::string str, char delim );
-
-void vDump__m128i( __m128i value );
-#endif
 
 /* Constructs the full filename for a prefix, suffix combination.
  */
 std::string fullFileName( const char *pcFileNamePrefix, const char *pcSuffix );
 
-#if 0
-void vWriteStringToFile( const char* pcFileName, std::string &sString );
-#endif
-/* The order of the base classes is significant here, because we must initialize filtering_streambuf prior to std::istream
+/**
+ * @brief reads gzip files from disk
+ * @details
+ * The order of the base classes is significant here,
+ * because we must initialize filtering_streambuf prior to std::istream
  * According to ISO/IEC 14882:2003(E) section 12.6.2:
- * Then, direct base classes shall be initialized in declaration order as they appear in the base-specifier-list 
+ * Then, direct base classes shall be initialized in 
+ * declaration order as they appear in the base-specifier-list 
  * (regardless of the order of the mem-initializers).
  *
- * If a filtering_streambuf or filtering_stream has mode input, data flows from the chain's end to its beginning.
+ * If a filtering_streambuf or filtering_stream has mode input,
+ * data flows from the chain's end to its beginning.
  * So, here the data flow towards the current (objects) istream.
  */
 class GzipInputStream : protected boost::iostreams::filtering_streambuf<boost::iostreams::input>,
@@ -106,50 +96,9 @@ public :
 	virtual ~GzipInputFileStream();
 }; // class
 
-#if 0
-/* The counterparts for gzip-file output.
- * Main difference:
- * If it has mode output, data flows in the opposite direction; from the beginning of the chain,
- * through zero or more OutputFilters, towards Sink at the end of the chain.
- */
-class GzipOutputStream : boost::iostreams::filtering_streambuf<boost::iostreams::output>,
-						 public std::ostream
-{
-protected :
-	void vInitialize( std::ostream &xOutputStream );
-
-public :
-	/* The argument of the constructor could be an std::ifstream.
-	 * WARNING: The stream must have been opened using the mode std::ios::binary.
-	 *          xOutputStream has to exist along with the lifetime of the current object.
-	 */
-	GzipOutputStream( std::ostream &xOutputStream );
-
-protected :
-	/* This constructor is only for derived classes so that these classes can call vInitialize after creating some input stream.
-	 */
-	GzipOutputStream( );
-
-	virtual ~GzipOutputStream();
-}; // class
-
-/* An extend form of GzipOutputStream for file writing.
- * Documentation: See GzipInputFileStream.
- */
-class GzipOutputFileStream : public GzipOutputStream
-{
-private :
-	std::ofstream xFileOutputStream;
-
-public :
-	GzipOutputFileStream( const char* pcFileName );
-
-	virtual ~GzipOutputFileStream();
-}; // class
-
-#endif
-
-/* Function for range checking.
+/**
+ * @brief Function for range checking.
+ * @details
  * Checks: Whether val is between min and max.
  */
 template<typename ParameterType>
@@ -166,6 +115,11 @@ void vRangeCheckAndThrowInclusive(
        } // if
 } // template function
 
+/**
+ * @brief Function for range checking.
+ * @details
+ * Checks: Whether val is between min and max.
+ */
 template<typename ParameterType>
 void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType &xRangeMin, const ParameterType &xVal, const ParameterType &xRangeMax )
 {

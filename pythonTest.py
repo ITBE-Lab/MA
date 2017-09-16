@@ -83,7 +83,6 @@ while iterator.exists():
     #    print "ref:\t" + str(seq_ref)
     iterator.next()
 
-
 anc = NlongestIntervalsAsAnchors(2)
 anchors = anc.execute((segments,))
     
@@ -107,18 +106,18 @@ strips_of_consideration = bucketing.execute((
     fm_index,
     rev_fm_index))
 
-if len(strips_of_consideration.x) == 0:
+if len(strips_of_consideration) == 0:
     print "no match found"
     exit()
 
-print "found " + str(len(strips_of_consideration.x)) + " strips of consideration"
+print "found " + str(len(strips_of_consideration)) + " strips of consideration"
 print "scores before linesweep:"
-for strip in strips_of_consideration.x:
+for strip in strips_of_consideration:
     print strip.get_score()
 
 best_strip = []
 liesweep = LineSweep()
-for strip in strips_of_consideration.x:
+for strip in strips_of_consideration:
     best_strip.append(liesweep.execute((query, ref_seq, strip)))
 
 

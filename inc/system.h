@@ -1,3 +1,8 @@
+/** 
+ * @file system.h
+ * @brief Implements some analysis functions.
+ * @author Markus Schmidt
+ */
 #pragma once
 #include <string>
 #include <chrono> // required for getting the high resulotion clock

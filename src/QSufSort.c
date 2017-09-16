@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include "QSufSort.h"
+#include "qSufSort.h"
 
 #if !_MSC_VER
 	#define min(value1, value2)						( ((value1) < (value2)) ? (value1) : (value2) )

@@ -16,11 +16,12 @@ BOOST_PYTHON_MODULE(LAuS)
         exportSegmentation();
         exportPack();
         exportIntervalTree();
-        exportGraphicalMethod();
+        exportStripOfConsideration();
         exportExceptions();
         exportGetAnchors();
         exportAlignment();
         exportLinesweep();
         exportNeedlemanWunsch();
+        exportSeed();
         exportBucketing();
 }

@@ -7,7 +7,6 @@
 #define INTERVALTREE_H
 
 #include "fm_index.h"
-#include <list>
 #include <thread>
 #include "doublyLinkedList.h"
 #include "seed.h"

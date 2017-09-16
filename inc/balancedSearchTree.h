@@ -1,14 +1,24 @@
+/** 
+ * @file balancedSearchTree.h
+ * @brief C++ Program to Implement Self Balancing Binary Search Tree
+ * @note taken from: http://www.sanfoundry.com/cpp-program-implement-self-balancing-binary-tree/
+ * @details
+ *
+ * The original code used pointers and did not care about free-ing anything.
+ * Also only ints could be used as data before.
+ * @note The data has to implement operator<= operator< and operator>.
+ */
+
 #ifndef BALANCED_SEARCH_TREE
 #define BALANCED_SEARCH_TREE
-//teken from: http://www.sanfoundry.com/cpp-program-implement-self-balancing-binary-tree/
-/*
- *  C++ Program to Implement Self Balancing Binary Search Tree
- */
+
 #include <iostream>
 #include <cstdlib>
 #include <memory>
 
-/* Class SBBSTNode */
+/*
+ * @brief Self balancing binary search tree node.
+ */
 template<class T>
 class SBBSTNode
 {
@@ -35,30 +45,36 @@ public:
 };//class
 
 /*
- * Class SelfBalancingBinarySearchTree
+ * @brief Self balancing binary search tree.
  */
-
 template<class T>
 class SelfBalancingBinarySearchTree
 {
 private:
     std::shared_ptr<SBBSTNode<T>> pRoot;
-public:
-    SelfBalancingBinarySearchTree()
-            :
-        pRoot()
-    {}//constructor
 
-    /* Function to check if tree is empty */
-    bool isEmpty() const
-    {
-        return pRoot == nullptr;
-    }
 
-        /* Function to get height of node */
+
+    /* Function to get height of node */
     int height(std::shared_ptr<SBBSTNode<T>> t) const
     {
         return t == nullptr ? -1 : t->height;
+    }
+
+    /* Function to insert data recursively */
+    std::shared_ptr<SBBSTNode<T>> deleteFirst(std::shared_ptr<SBBSTNode<T>> t)
+    {
+        if (t == nullptr)
+            return nullptr;
+        else if (t->pLeft == nullptr)
+            return t->pRight;
+        else
+        {
+            //TODO: no rotation needed?
+            t->pLeft = deleteFirst(t->pLeft);
+        }
+        t->height = std::max(height(t->pLeft), height(t->pRight)) + 1;
+        return t;
     }
 
     /* Rotate binary tree node with pLeft child */
@@ -146,8 +162,22 @@ public:
         return t;
     }
 
-    /* Function to insert data 
-     * returns the next element of the tree
+
+public:
+    SelfBalancingBinarySearchTree()
+            :
+        pRoot()
+    {}//constructor
+
+    /** @brief Function to check if tree is empty */
+    bool isEmpty() const
+    {
+        return pRoot == nullptr;
+    }
+
+    /**
+     * @brief Function to insert data.
+     * @returns the next element of the tree.
      */
     T* insert(T* data)
     {
@@ -157,32 +187,15 @@ public:
         return pRet;
     }
 
-    
-    /* Function to insert data recursively */
-    std::shared_ptr<SBBSTNode<T>> deleteFirst(std::shared_ptr<SBBSTNode<T>> t)
-    {
-        if (t == nullptr)
-            return nullptr;
-        else if (t->pLeft == nullptr)
-            return t->pRight;
-        else
-        {
-            //TODO: no rotation needed?
-            t->pLeft = deleteFirst(t->pLeft);
-        }
-        t->height = std::max(height(t->pLeft), height(t->pRight)) + 1;
-        return t;
-    }
-
-    /* Function to insert data 
-     * returns the next element of the tree
+    /**
+     * @brief Delete the leftmost element of the tree.
      */
     void deleteFirst()
     {
         pRoot = deleteFirst(pRoot);
     }
 
-    /* Functions to search for an element */
+    /* @brief returns the leftmost element of the Tree. */
     T* first() const
     {
         std::shared_ptr<SBBSTNode<T>> r = pRoot;
@@ -190,27 +203,6 @@ public:
                 r = r->pLeft;
         return r->data;
     }
-#if 0
-    T search(std::shared_ptr<SBBSTNode<T>> r, int val)
-    {
-        while (r != nullptr)
-        {
-            if (r->data > val)
-                r = r->pLeft;
-            else if (r->data < val)
-                r = r->pRight;
-            else
-                return r->data;
-        }//while
-        return nullptr;
-    }
-
-    /* Functions to search for an element */
-    T search(int val)
-    {
-        return search(pRoot, val);
-    }
-#endif
 };//class
 
 #endif

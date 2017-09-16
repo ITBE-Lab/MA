@@ -6,8 +6,62 @@
 #ifndef BUCKETING_H
 #define BUCKETING_H
 
-#include "graphicalMethod.h"
+#include "seed.h"
+#include "pack.h"
+#include "intervalTree.h"
 #include "module.h"
+
+/**
+ * @brief a bucket for the seeds
+ * @note TODO: remove me!
+ */
+ class SeedBucket
+ {
+ private:
+	 nucSeqIndex uiTotalScore;
+ 
+	 std::list<Seed> lxContent;
+ 
+	 std::mutex xMutex;
+ 
+ public:
+	SeedBucket()
+		:
+		uiTotalScore(0),
+		lxContent(),
+		xMutex()
+		//,bUsed(false)
+	{}//constructor
+
+	////disable copying of buckets
+	SeedBucket(const SeedBucket&) = delete;
+
+	void addSeed(const Seed xNew)
+	{
+		std::lock_guard<std::mutex> xGuard(xMutex);
+		lxContent.push_back(xNew);
+		uiTotalScore += xNew.size();
+		//end of scope xGuard
+	}//function
+
+	nucSeqIndex getValue()
+	{
+		return uiTotalScore;
+	}//function
+
+	void forall(std::function<void(const Seed&)> fDo)
+	{
+		for (auto xSeed : lxContent)
+		{
+			fDo(xSeed);
+		}//for
+	}//function
+
+	const std::list<Seed>& seeds() const
+	{
+		return lxContent;
+	}//function
+ };//class
 
 class Bucketing: public Module
 {

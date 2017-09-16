@@ -7,7 +7,7 @@ std::vector<ContainerType> NeedlemanWunsch::getInputType()
 {
     return std::vector<ContainerType>{
         //the sound strip of consideration
-        ContainerType::stripOfConsideration,
+        ContainerType::seeds,
         //the query sequence
         ContainerType:nucSeq,
         //the reference sequence
@@ -205,13 +205,11 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::vector<std::shared_ptr<Container>> vpInput
     )
 {
-    std::shared_ptr<StripOfConsideration> pStrip = std::static_pointer_cast<StripOfConsideration>(vpInput[0]);
+    std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);
     std::shared_ptr<NucleotideSequence> pQuery 
         = std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
     std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefPack = 
         std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
-
-    std::list<Seed>* pSeeds = &pStrip->seeds();
 
     //sort shadows (increasingly) by start coordinate of the match
     pSeeds->sort(

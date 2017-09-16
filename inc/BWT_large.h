@@ -1,14 +1,18 @@
+/** 
+ * @file bwt_large.h
+ * @brief BWT-Index Construction for large inputs
+ * @author Arne Kutzner
+ */
 #pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stdint.h>
 #include <errno.h>
 
 #include <boost/log/trivial.hpp>
-#include "QSufSort.h"
+#include "qSufSort.h"
 
 /* C++ includes
  */
@@ -33,7 +37,8 @@ typedef uint64_t bgint_t;
 typedef int64_t sbgint_t;
 
 
-/* New function for interfacing with the FM_Index class
+/**
+ * @brief BWT-Index Construction for large inputs
  */
  std::tuple<
             bgint_t,

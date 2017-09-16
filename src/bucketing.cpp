@@ -23,7 +23,7 @@ std::vector<ContainerType> Bucketing::getInputType()
 
 std::vector<ContainerType> Bucketing::getOutputType()
 {
-	return std::vector<ContainerType>{ContainerType::stripOfConsiderationList};
+	return std::vector<ContainerType>{ContainerType::seedsVector};
 }//function
 
 
@@ -123,7 +123,7 @@ std::shared_ptr<Container> Bucketing::execute(
 		std::cout << std::endl;
 	)//DEBUG
 
-	std::shared_ptr<StripOfConsiderationVector> pRet(new StripOfConsiderationVector());
+	std::shared_ptr<SeedsVector> pRet(new SeedsVector());
 	/*
 	*	return one strip of consideration for each anchor
 	*/
@@ -137,21 +137,19 @@ std::shared_ptr<Container> Bucketing::execute(
 				[&](Seed xAnchor)
 				{
 					nucSeqIndex uiStart = getPositionForBucketing(pQuerrySeq->length(), xAnchor) - uiStripSize/2;
-					std::shared_ptr<StripOfConsideration> pxNew(
-							new StripOfConsideration(
-								uiStart, 
-								uiStripSize
-							)
-						);
-					for (unsigned int uiC = pxNew->start() / uiStripSize - 1; uiC <= pxNew->end() / uiStripSize; uiC++)
+					std::shared_ptr<Seeds> pxNew(new Seeds());
+					for (
+							unsigned int uiC = uiStart / uiStripSize - 1; 
+							uiC <= (uiStart + uiStripSize) / uiStripSize; 
+							uiC++
+						)
 					{
-						pxNew->addElement(axSeedBuckets[uiC]);
+						for(const Seed& rS : axSeedBuckets[uiC].seeds())
+							pxNew->push_back(rS);
 					}//for
-					pRet->x.push_back(pxNew);
+					pRet->push_back(pxNew);
 				}//lambda
 			);//for each
-
-			
 		}//lambda
 	);//forEach
 

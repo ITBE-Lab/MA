@@ -3,18 +3,18 @@
 std::vector<ContainerType> LineSweep::getInputType()
 {
 	return std::vector<ContainerType>{
-			//the querry
+			//the query
 			ContainerType::nucSeq,
 			//the reference
 			ContainerType::packedNucSeq,
-			//the stips of consideration
-			ContainerType::stripOfConsideration,
+			//the strips of consideration
+			ContainerType::seeds,
 		};
 }//function
 
 std::vector<ContainerType> LineSweep::getOutputType()
 {
-	return std::vector<ContainerType>{ContainerType::stripOfConsideration};
+	return std::vector<ContainerType>{ContainerType::seeds};
 }//function
 
 /**
@@ -22,13 +22,12 @@ std::vector<ContainerType> LineSweep::getOutputType()
  * pxMatch is the container this match is stored in.
  */
 ShadowInterval LineSweep::getLeftShadow(
-        nucSeqIndex uiBucketStart,
         std::list<Seed>::iterator pSeed,
         nucSeqIndex uiQueryLength
     ) const
 {
     return ShadowInterval(
-            pSeed->start() /*+ uiBucketStart*/,
+            pSeed->start(),
             pSeed->end_ref() - pSeed->start() + uiQueryLength,
             pSeed
         );
@@ -39,7 +38,6 @@ ShadowInterval LineSweep::getLeftShadow(
  * pxMatch is the container this match is stored in.
  */
 ShadowInterval LineSweep::getRightShadow(
-        nucSeqIndex iBucketStart,
         std::list<Seed>::iterator pSeed,
         nucSeqIndex iRefSize
     ) const
@@ -53,8 +51,7 @@ ShadowInterval LineSweep::getRightShadow(
 
 void LineSweep::linesweep(
         std::vector<ShadowInterval>& vShadows, 
-        std::list<Seed>& rSeeds, 
-        std::shared_ptr<StripOfConsideration> pStrip
+        std::shared_ptr<Seeds> pSeeds
     )
 {
     //sort shadows (increasingly) by start coordinate of the match
@@ -96,7 +93,7 @@ void LineSweep::linesweep(
             )
 
             //when reaching here we actually have to remove the intervall
-            pFirstEnding->removeSeedIfNecessary(rSeeds, pStrip);
+            pFirstEnding->removeSeedIfNecessary(pSeeds);
             xItervalEnds.deleteFirst();
         }//while
 
@@ -132,7 +129,7 @@ void LineSweep::linesweep(
         )
 
         //when reaching here we actually have to remove the intervall
-        pFirstEnding->removeSeedIfNecessary(rSeeds, pStrip);
+        pFirstEnding->removeSeedIfNecessary(pSeeds);
         xItervalEnds.deleteFirst();
     }//while
 
@@ -146,44 +143,34 @@ std::shared_ptr<Container> LineSweep::execute(
         std::static_pointer_cast<NucleotideSequence>(vpInput[0]);
     std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq =
         std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[1]);
-    std::shared_ptr<StripOfConsideration> pStrip =
-        std::static_pointer_cast<StripOfConsideration>(vpInput[2]);
+    std::shared_ptr<Seeds> pSeeds =
+        std::static_pointer_cast<Seeds>(vpInput[2]);
 
     std::vector<ShadowInterval> vShadows = {};
 
     //get the left shadows
-    pStrip->forAllSeeds(
-        [&](std::list<Seed>::iterator pSeed)
-        {
-            vShadows.push_back(getLeftShadow(
-                    pStrip->start(),
-                    pSeed,
-                    pQuerrySeq->length()
-                ));
-        }//lambda
-    );
+    for(std::list<Seed>::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
+        vShadows.push_back(getLeftShadow(
+                pSeed,
+                pQuerrySeq->length()
+            ));
 
     //perform the line sweep algorithm on the left shadows
-    linesweep(vShadows, pStrip->seeds(), pStrip);
+    linesweep(vShadows, pSeeds);
     
     vShadows.clear();
     
     //get the right shadows
-    pStrip->forAllSeeds(
-        [&](std::list<Seed>::iterator pSeed)
-        {
-            vShadows.push_back(getRightShadow(
-                    pStrip->start(),
-                    pSeed,
-                    pRefSeq->uiUnpackedSizeForwardPlusReverse()
-                ));
-        }//lambda
-    );
+    for(std::list<Seed>::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
+        vShadows.push_back(getRightShadow(
+                pSeed,
+                pRefSeq->uiUnpackedSizeForwardPlusReverse()
+            ));
 
     //perform the line sweep algorithm on the right shadows
-    linesweep(vShadows, pStrip->seeds(), pStrip);
+    linesweep(vShadows, pSeeds);
 
-    return pStrip;
+    return pSeeds;
 }//function
 
 void exportLinesweep()
@@ -195,9 +182,9 @@ void exportLinesweep()
         "matches within one strip of consideration.\n"
         "\n"
         "Execution:\n"
-        "	Expects querry, ref, strip_vec as input.\n"
-        "		querry: the querry as NucleotideSequence\n"
-        "		ref: the reference seqeuence as Pack\n"
+        "	Expects query, ref, strip_vec as input.\n"
+        "		query: the query as NucleotideSequence\n"
+        "		ref: the reference sequence as Pack\n"
         "		strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
         "	returns strip_vec.\n"
         "		strip_vec: the evaluated areas\n"
