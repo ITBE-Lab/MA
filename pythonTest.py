@@ -7,7 +7,7 @@ q = ""
 
 #random.seed(1)
 
-for _ in range(1000000):
+for _ in range(100000):
     char = random.randint(1,4)
     if char == 1:
         seq += "a"
@@ -66,7 +66,7 @@ rev_fm_index = FMIndex(rev_ref)
 ref_seq = BWAPack()
 ref_seq.append("name", "no comment",ref)
 
-seg = Segmentation(True, True, 7, 100000)
+seg = Segmentation(True, True, 10, 100000)
 seg.bSkipLongBWTIntervals = False
 
 segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))

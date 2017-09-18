@@ -26,6 +26,8 @@ private:
     std::list<Seed>::iterator pSeed;
 	/// @brief The total score of the interfering shadows.
     unsigned int iScoreInterfering;
+	/// @brief The score added by this interval to the outer interfering one
+    unsigned int iInterferingSelf;
 public:
     /**
      * @brief Creates a new shadow.
@@ -43,7 +45,8 @@ public:
         pInterferingIntervals(new std::list<ShadowInterval*>()),
         pIInterferWith(),
         pSeed(pSeed),
-        iScoreInterfering(0)
+        iScoreInterfering(0),
+        iInterferingSelf(0)
     {}//constructor
 
     /**
@@ -55,7 +58,8 @@ public:
         pInterferingIntervals(rOther.pInterferingIntervals),
         pIInterferWith(rOther.pIInterferWith),
         pSeed(rOther.pSeed),
-        iScoreInterfering(rOther.iScoreInterfering)
+        iScoreInterfering(rOther.iScoreInterfering),
+        iInterferingSelf(rOther.iInterferingSelf)
     {}//copy constructor
 
     /**
@@ -86,9 +90,10 @@ public:
             std::cout << "\tis Interfering with interval: " << start() << ", " << end() << std::endl;
         )
         if(pInterferingIntervals->empty())
-            iScoreInterfering += rInterval.pSeed->getValue();
+            rInterval.iInterferingSelf = rInterval.pSeed->getValue();
         else
-            iScoreInterfering += non_overlap(rInterval);
+            rInterval.iInterferingSelf = non_overlap(rInterval);
+        iScoreInterfering += rInterval.iInterferingSelf;
         pInterferingIntervals->push_back(&rInterval);
         
     }//function
@@ -108,7 +113,7 @@ public:
         if(pSeed == pSeeds->end())
         {
             DEBUG(
-                std::cout << "\treached invalid itterator" << std::endl;
+                std::cout << "\treached invalid iterator" << std::endl;
             )
             return;
         }
@@ -144,7 +149,7 @@ public:
         {
             //update the score of the interval outside this one
             if(pIInterferWith != nullptr)
-                pIInterferWith->iScoreInterfering += iScoreInterfering - pSeed->getValue();
+                pIInterferWith->iScoreInterfering += iScoreInterfering - iInterferingSelf;
             //remove this seed
             pSeeds->erase(pSeed);
             pSeed = pSeeds->end();

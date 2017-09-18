@@ -38,13 +38,10 @@ Execution:
         ind_query = 0
         ind_ref = 0
 
-        print "query:"
-        print query
-        print "\nreference:"
-        print ref
-
         desc = str(0) + "-" + str(0 + self.nuc_per_line)
         lines.extend(["", desc, "", "", ""])
+
+        atLeastOneMistake = False
 
         while counter < len(align):
             #append three more lines if the current lines are full
@@ -71,7 +68,11 @@ Execution:
             #print str(ind_ref) + " of " + str(align.end_on_ref() - align.begin_on_ref())
             if align[counter] is MatchType.match:
                 lines[-3] += ref[ind_ref]
-                lines[-2] += '|'
+                if ref[ind_ref] != query[ind_query]:
+                    lines[-2] += 'X'
+                    atLeastOneMistake = True
+                else:
+                    lines[-2] += '|'
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
@@ -108,5 +109,7 @@ Execution:
 
         for line in lines:
             print line
+        if atLeastOneMistake:
+            print "WARNING: the alignment contains errors!"
 
         return None

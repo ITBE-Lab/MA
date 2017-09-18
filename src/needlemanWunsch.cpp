@@ -221,6 +221,45 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             }//lambda
         );//sort function call
 
+    //remove dangeling fronts and backs
+    if(pSeeds->size() >= 2)
+    {
+        nucSeqIndex iQuery = pSeeds->front().end();
+        nucSeqIndex iRef = pSeeds->front().end_ref();
+        unsigned int iCurPos = 0;
+        unsigned int iPopFront = 0;
+        unsigned int iPopBack = 0;
+        nucSeqIndex iMaxDist = 500;
+        for(Seed& rSeed : *pSeeds)
+        {
+            if(rSeed.start() > iQuery + iMaxDist || rSeed.start_ref() > iRef + iMaxDist)
+            {
+                if(iCurPos < pSeeds->size()/2)
+                    iPopFront = iCurPos + 1;
+                else
+                {
+                    iPopBack = pSeeds->size() - iCurPos;
+                    break;
+                }//else
+            }//if
+            iQuery = rSeed.end();
+            iRef = rSeed.end_ref();
+            iCurPos++;
+        }//for
+        if(iPopFront > 0)
+        {
+            std::cout << "WARNING: removed dangeling front" << std::endl;
+            while(iPopFront-- > 0 && pSeeds->size() > 1)
+                pSeeds->pop_front();
+        }//if
+        if(iPopBack > 0)
+        {
+            std::cout << "WARNING: removed dangeling back" << std::endl;
+            while(iPopBack-- > 0 && pSeeds->size() > 1)
+                pSeeds->pop_back();
+        }//if
+    }//if
+
     nucSeqIndex beginQuery = pSeeds->front().start();
     nucSeqIndex beginRef = 0;
     if( pSeeds->front().start_ref() >  beginQuery*2)
@@ -247,6 +286,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         }//for
     )
 
+    //create the actual alignment
     nucSeqIndex endOfLastSeedQuery = 0;
     nucSeqIndex endOfLastSeedReference = 0;
 
@@ -272,6 +312,19 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         DEBUG(
             std::cout << "overlap: " << overlap << std::endl;
         )//DEBUG
+        if(ovQ > ovR)
+            pRet->append(Alignment::MatchType::deletion, ovQ - ovR);
+        DEBUG_2(
+            for(nucSeqIndex i = ovR; i < ovQ; i++)
+                std::cout << "d";
+        )
+        if(ovR > ovQ)
+            pRet->append(Alignment::MatchType::insertion, ovR - ovQ);
+        DEBUG_2(
+            for(nucSeqIndex i = ovQ; i < ovR; i++)
+                std::cout << "i";
+            std::cout << std::endl;
+        )//DEBUG
         if(len > overlap)
         {
             pRet->append(Alignment::MatchType::seed, len - overlap);
@@ -291,19 +344,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                     std::cout << "m";
             )//DEBUG_2
         }//if
-        if(ovQ > ovR)
-            pRet->append(Alignment::MatchType::deletion, ovQ - ovR);
-        DEBUG_2(
-            for(nucSeqIndex i = ovR; i < ovQ; i++)
-                std::cout << "d";
-        )
-        if(ovR > ovQ)
-            pRet->append(Alignment::MatchType::insertion, ovR - ovQ);
-        DEBUG_2(
-            for(nucSeqIndex i = ovQ; i < ovR; i++)
-                std::cout << "i";
-            std::cout << std::endl;
-        )//DEBUG
         if(rSeed.end() > endOfLastSeedQuery)
             endOfLastSeedQuery = rSeed.end();
         if(rSeed.end_ref() > endOfLastSeedReference + beginRef)
@@ -319,6 +359,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         endRef - beginRef,
         pRet
     );
+
+    //cleanup the alignment
+    pRet->removeDangelingDeletions();
 
     DEBUG_2(
         std::cout << std::endl;

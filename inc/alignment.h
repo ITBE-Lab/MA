@@ -40,6 +40,8 @@ private:
     std::vector<std::tuple<MatchType, nucSeqIndex>> data;
     /// The length of the alignment.
     nucSeqIndex uiLength;
+    /// Where the actual alignment starts within data.
+    nucSeqIndex uiDataStart;
     /// The start of the alignment on the reference sequence.
     nucSeqIndex uiBeginOnRef;
     /// The end of the alignment on the reference sequence.
@@ -53,7 +55,9 @@ public:
             :
         data(),
         uiLength(0),
-        uiBeginOnRef(0)
+        uiDataStart(0),
+        uiBeginOnRef(0),
+        uiEndOnRef(0)
     {}//constructor
     /**
      * @brief Creates an empty aligment, 
@@ -63,6 +67,7 @@ public:
             :
         data(),
         uiLength(0),
+        uiDataStart(0),
         uiBeginOnRef(uiBeginOnRef),
         uiEndOnRef(uiEndOnRef)
     {}//constructor
@@ -82,7 +87,7 @@ public:
 
         //the MatchType match type is stored in a compressed format -> extract it
         nucSeqIndex j = 0;
-        unsigned int k = 0;
+        unsigned int k = uiDataStart;
         while(k < data.size() && (j += std::get<1>(data[k++])) <= i);
 
         return std::get<0>(data[k-1]);
@@ -151,6 +156,29 @@ public:
     nucSeqIndex endOnRef()
     {
         return uiEndOnRef;
+    }//function
+
+    /**
+     * @brief Remove dangeling deletions.
+     * @details
+     * Removes parts of the reference at the front and back that overhang the aligned query.
+     */
+    void removeDangelingDeletions()
+    {
+        if(data.size() <= 2)
+            return;
+        if(std::get<0>(data[uiDataStart]) == MatchType::deletion)
+        {
+            uiBeginOnRef += std::get<1>(data[uiDataStart]);
+            uiLength -= std::get<1>(data[uiDataStart]);
+            uiDataStart++;
+        }//if
+        if(std::get<0>(data.back()) == MatchType::deletion)
+        {
+            uiEndOnRef -= std::get<1>(data.back());
+            uiLength -= std::get<1>(data.back());
+            data.pop_back();
+        }//if
     }//function
 };//class
 
