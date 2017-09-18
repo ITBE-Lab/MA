@@ -6,6 +6,7 @@
 #ifndef DOUBLY_LINKED_LIST
 #define DOUBLY_LINKED_LIST
 
+#include <boost/python/errors.hpp>
 
 template <typename Content>
 class DoublyLinkedList;
@@ -226,7 +227,6 @@ public:
 		 * @brief Get the content of the iterator.
 		 */
 		std::shared_ptr<Content> operator*() const { return pxPos->getContent(); }//function
-
 		/**
 		 * @brief Get the content of the iterator.
 		 */
@@ -236,6 +236,23 @@ public:
 		 * @brief Returns true if the iterator is actually sitting on a list element at the moment.
 		 */
 		bool isListElement() const { return pxPos->isListElement(); }//function
+		
+		/**
+		 * @brief python iterator next function for boost python
+		 */
+		std::shared_ptr<Content> next_boost()
+		{
+			if(!isListElement())
+			{
+				PyErr_SetNone(PyExc_StopIteration);
+				boost::python::throw_error_already_set();
+				return nullptr;
+			}//if
+			std::shared_ptr<Content> pRet = **this;
+			++(*this);
+			return pRet;
+		}//function
+
 	};
 
 	/**

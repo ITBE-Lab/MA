@@ -73,25 +73,23 @@ segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))
 
 seeds = Seeds()
 
-iterator = segments.begin()
-while iterator.exists():
-    start = iterator.get().start()
-    end = iterator.get().end()
+for segment in segments:
+    start = segment.start()
+    end = segment.end()
     sequence = ""
     for i in range(start, end):
         sequence = sequence + query[i]
     print "segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
-    seeds.append(iterator.get().get_seeds(fm_index, rev_fm_index))
-    iterator.next()
+    seeds.append(segment.get_seeds(fm_index, rev_fm_index))
 
 liesweep = LineSweep()
 
-print "scores before linesweep:"
+print "score before linesweep:"
 print seeds.get_score()
 
 seeds = liesweep.execute((query, ref_seq, seeds))
 
-print "scores after linesweep:"
+print "score after linesweep:"
 print seeds.get_score()
 
 nmw = NeedlemanWunsch()
@@ -103,6 +101,8 @@ printer = AlignmentPrinter()
 printer.execute((align, query, ref_seq))
 
 exit()
+
+#===================== unused code from here on =====================
 
 anc = NlongestIntervalsAsAnchors(2)
 anchors = anc.execute((segments,))
