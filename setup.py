@@ -34,7 +34,7 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure 
         # that you indicate whether you support Python 2, Python 3 or both. 
-        'Programming Language :: Python :: 2.7', 
+        'Programming Language :: Python :: 3.5', 
     ], 
 
     keywords='aligner nucleotide sequence',
@@ -57,14 +57,14 @@ setup(
             'src/support.cpp',
             'src/BWT_large.cpp',
             'src/threadPool.cpp',],
-            include_dirs=['inc', 'usr/include', '/opt/dev/boost_1_60_0__'], # assuming your project include files are there
+            include_dirs=['inc', 'usr/include', '/opt/dev/boost_1_65_1_'], # assuming your project include files are there
             library_dirs=[
                 '/usr/lib',
-                '/opt/dev/boost_1_60_0__/stage/lib', 
+                '/opt/dev/boost_1_65_1_/stage/lib', 
                 '/opt/dev/lib',
             ], # optional
             libraries=[
-                'boost_python', 
+                'boost_python-mt', 
                 'dl',
                 'rt',
                 'z',
@@ -75,7 +75,7 @@ setup(
                 'boost_filesystem-mt' ,
                 'boost_program_options-mt' ,
                 'boost_regex-mt',
-                'boost_iostreams',
+                'boost_iostreams-mt',
                 ], # those are the linked libs
             extra_compile_args=[
                 '-std=c++11'

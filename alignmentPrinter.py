@@ -54,14 +54,14 @@ Execution:
 
             #perform double check for messup:
             if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.deletion or align[counter] == MatchType.missmatch):
-                print "This should not happen... (ref)"
-                print ind_ref
-                print len(ref)
+                print("This should not happen... (ref)")
+                print(ind_ref)
+                print(len(ref))
                 break
             if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
-                print "This should not happen... (query)"
-                print ind_query
-                print len(query)
+                print("This should not happen... (query)")
+                print(ind_query)
+                print(len(query))
                 break
 
             #check for match or missmatch
@@ -108,8 +108,8 @@ Execution:
         lines[-1] += "\tquery"
 
         for line in lines:
-            print line
+            print(line)
         if atLeastOneMistake:
-            print "WARNING: the alignment contains errors!"
+            print("WARNING: the alignment contains errors!")
 
         return None

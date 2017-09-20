@@ -83,8 +83,6 @@ void exportContainer()
                 "Used to check weather a module can work with the given containers.\n"
             );
 
-    boost::python::register_ptr_to_python< std::shared_ptr<Container> >();
-
     //make vectors of container-pointers a thing
     iterable_converter()
         .from_python<std::vector<std::shared_ptr<Container>>>()

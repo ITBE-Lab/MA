@@ -116,6 +116,4 @@ void exportSequence()
 			true
 		>());
 
-	//register nucseq as return value
-	boost::python::register_ptr_to_python< std::shared_ptr<NucleotideSequence> >();
 }//function

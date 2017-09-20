@@ -32,9 +32,6 @@ void exportSeed()
             "\n"
             "Appends a copy of the other list to this list.\n"
         );
-
-    //register a pointer to Seeds as return value to boost python
-    boost::python::register_ptr_to_python< std::shared_ptr<Seeds> >();
     
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<
@@ -62,9 +59,6 @@ void exportSeed()
             */
             true
         >());
-
-    //register a pointer to StripOfConsideration as return value to boost python
-    boost::python::register_ptr_to_python< std::shared_ptr<SeedsVector> >();
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 

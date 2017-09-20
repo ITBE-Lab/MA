@@ -123,7 +123,6 @@ void exportIntervalTree()
 			std::shared_ptr<SegmentTreeInterval>,
 			std::shared_ptr<Container> 
 		>();  
-    boost::python::register_ptr_to_python< std::shared_ptr<SegmentTreeInterval> >();
 	
 	 //export the SegmentTree class
 	boost::python::class_<
@@ -202,7 +201,6 @@ void exportIntervalTree()
 			std::shared_ptr<SegmentTree>,
 			std::shared_ptr<Container> 
 		>(); 
-    boost::python::register_ptr_to_python< std::shared_ptr<SegmentTree> >();
 	
 	 //export the SegmentTree iterator class
 	boost::python::class_<
@@ -215,7 +213,7 @@ void exportIntervalTree()
 			boost::python::no_init
 		)
 		.def(
-				"next", 
+				"__next__", 
 				&SegmentTree::Iterator::next_boost,
 				"arg1: self\n"
 				"returns: the current element\n"

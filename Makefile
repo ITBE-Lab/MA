@@ -1,13 +1,13 @@
 # location of the Python header files
  
-PYTHON_VERSION = 2.7
+PYTHON_VERSION = 3.5
 PYTHON_INCLUDE = /usr/include/python$(PYTHON_VERSION)
  
 # location of the Boost Python include files and library
  
-BOOST_INC = /opt/dev/boost_1_60_0__
-BOOST_LIB_PATH = /opt/dev/boost_1_60_0__/stage/lib /opt/dev/boost_1_60_0__/lib
-BOOST_LIB = boost_python dl rt z boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams
+BOOST_INC = /opt/dev/boost_1_65_1
+BOOST_LIB_PATH = /opt/dev/boost_1_65_1/stage/lib
+BOOST_LIB = boost_python3-mt dl rt z boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams-mt
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp)))
@@ -33,7 +33,7 @@ obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
 LAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
-	pydoc -w LAuS
+	pydoc3 -w LAuS
 
 html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
 	doxygen doxygen.config

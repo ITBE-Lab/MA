@@ -2,26 +2,52 @@ from LAuS import *
 from alignmentPrinter import AlignmentPrinter
 import random
 
-seq = ""
 q = ""
 
 #random.seed(1)
 
-for _ in range(100000):
-    char = random.randint(1,4)
-    if char == 1:
-        seq += "a"
-    elif char == 2:
-        seq += "c"
-    elif char == 3:
-        seq += "t"
-    else:
-        seq += "g"
+def create_and_store():
+    seq = ""
+    for _ in range(1000000):
+        char = random.randint(1,4)
+        if char == 1:
+            seq += "a"
+        elif char == 2:
+            seq += "c"
+        elif char == 3:
+            seq += "t"
+        else:
+            seq += "g"
 
-q_from = random.randint(0, len(seq)-1000)
+            
+    ref = NucSeq(seq)
+
+    rev_ref = NucSeq(seq)
+    rev_ref.reverse()
+
+    query = NucSeq(q)
+
+    fm_index = FMIndex(ref)
+    fm_index.store("test")
+    rev_fm_index = FMIndex(rev_ref)
+    rev_fm_index.store("rev_test")
+
+    ref_seq = BWAPack()
+    ref_seq.append("name", "no comment",ref)
+    ref_seq.store("test_pack")
+
+
+ref_seq = BWAPack()
+ref_seq.load("test_pack")
+fm_index = FMIndex()
+fm_index.load("test")
+rev_fm_index = FMIndex()
+rev_fm_index.load("rev_test")
+
+q_from = random.randint(0, 1000)
 q_to = q_from + 1000
-q = seq[q_from:q_to]
-for _ in range(25):
+q = str(ref_seq.extract_from_to(q_from, q_to))
+for _ in range(1):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
@@ -33,12 +59,12 @@ for _ in range(25):
     else:
         q = q[:pos-1] + "g" + q[pos:]
 
-for _ in range(25):
+for _ in range(1):
     pos = random.randint(1,len(q)-11)
     l = random.randint(1,10)
     q = q[:pos-1] + q[pos + l:]
 
-for _ in range(25):
+for _ in range(1):
     pos = random.randint(1,len(q)-1)
     l = random.randint(1,10)
     for _ in range(l):
@@ -53,18 +79,8 @@ for _ in range(25):
             q = q[:pos] + "g" + q[pos:]
 
 
-ref = NucSeq(seq)
-
-rev_ref = NucSeq(seq)
-rev_ref.reverse()
 
 query = NucSeq(q)
-
-fm_index = FMIndex(ref)
-rev_fm_index = FMIndex(rev_ref)
-
-ref_seq = BWAPack()
-ref_seq.append("name", "no comment",ref)
 
 seg = Segmentation(True, True, 10, 100000)
 seg.bSkipLongBWTIntervals = False
@@ -79,18 +95,18 @@ for segment in segments:
     sequence = ""
     for i in range(start, end):
         sequence = sequence + query[i]
-    print "segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
+    print("segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence)
     seeds.append(segment.get_seeds(fm_index, rev_fm_index))
 
 liesweep = LineSweep()
 
-print "score before linesweep:"
-print seeds.get_score()
+print("score before linesweep:")
+print(seeds.get_score())
 
 seeds = liesweep.execute((query, ref_seq, seeds))
 
-print "score after linesweep:"
-print seeds.get_score()
+print("score after linesweep:")
+print(seeds.get_score())
 
 nmw = NeedlemanWunsch()
 
@@ -114,7 +130,7 @@ while iterator.exists():
     sequence = ""
     for i in range(start, end):
         sequence = sequence + query[i]
-    print "anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence
+    print("anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence)
     iterator.next()
 
 bucketing = Bucketing()
@@ -128,13 +144,13 @@ strips_of_consideration = bucketing.execute((
     rev_fm_index))
 
 if len(strips_of_consideration) == 0:
-    print "no match found"
+    print("no match found")
     exit()
 
-print "found " + str(len(strips_of_consideration)) + " strips of consideration"
-print "scores before linesweep:"
+print("found " + str(len(strips_of_consideration)) + " strips of consideration")
+print("scores before linesweep:")
 for strip in strips_of_consideration:
-    print strip.get_score()
+    print(strip.get_score())
 
 best_strip = []
 liesweep = LineSweep()
@@ -142,16 +158,16 @@ for strip in strips_of_consideration:
     best_strip.append(liesweep.execute((query, ref_seq, strip)))
 
 
-print "scores after linesweep:"
+print("scores after linesweep:")
 for strip in best_strip:
-    print strip.get_score()
+    print(strip.get_score())
 
 best = 0
 for index, strip in enumerate(best_strip):
     if strip.get_score() > best_strip[best].get_score():
         best = index
 
-print "best score: " + str(best_strip[best].get_score())
+print("best score: " + str(best_strip[best].get_score()))
 nmw = NeedlemanWunsch()
 
 align = nmw.execute((best_strip[best], query, ref_seq))

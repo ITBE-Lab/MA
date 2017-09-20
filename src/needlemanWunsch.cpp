@@ -215,54 +215,41 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     pSeeds->sort(
             [](Seed xA, Seed xB)
             {
-                if(xA.start() == xB.start())
-                    return xA.start_ref() < xB.start_ref();
-                return xA.start() < xB.start();
+                if(xA.start_ref() == xB.start_ref())
+                    return xA.start() < xB.start();
+                return xA.start_ref() < xB.start_ref();
             }//lambda
         );//sort function call
 
     //remove dangeling fronts and backs
     if(pSeeds->size() >= 2)
     {
-        nucSeqIndex iQuery = pSeeds->front().end();
-        nucSeqIndex iRef = pSeeds->front().end_ref();
-        unsigned int iCurPos = 0;
-        unsigned int iPopFront = 0;
-        unsigned int iPopBack = 0;
-        nucSeqIndex iMaxDist = 500;
+        nucSeqIndex iCenter = 0;
+        nucSeqIndex iSize = 0;
+        nucSeqIndex iMaxDist = 10000;
         for(Seed& rSeed : *pSeeds)
         {
-            if(rSeed.start() > iQuery + iMaxDist || rSeed.start_ref() > iRef + iMaxDist)
+            if(rSeed.size() > iSize)
             {
-                if(iCurPos < pSeeds->size()/2)
-                    iPopFront = iCurPos + 1;
-                else
-                {
-                    iPopBack = pSeeds->size() - iCurPos;
-                    break;
-                }//else
-            }//if
-            iQuery = rSeed.end();
-            iRef = rSeed.end_ref();
-            iCurPos++;
-        }//for
-        if(iPopFront > 0)
+                iSize = rSeed.size();
+                iCenter = rSeed.start_ref() + rSeed.size()/2;
+            }
+        }
+        while(pSeeds->size() > 0 && pSeeds->front().end_ref() + iMaxDist < iCenter)
         {
             std::cout << "WARNING: removed dangeling front" << std::endl;
-            while(iPopFront-- > 0 && pSeeds->size() > 1)
-                pSeeds->pop_front();
+            pSeeds->pop_front();
         }//if
-        if(iPopBack > 0)
+        while(pSeeds->size() > 0 && pSeeds->back().start_ref() > iCenter + iMaxDist)
         {
             std::cout << "WARNING: removed dangeling back" << std::endl;
-            while(iPopBack-- > 0 && pSeeds->size() > 1)
-                pSeeds->pop_back();
-        }//if
+            pSeeds->pop_back();
+        }//while
     }//if
 
     nucSeqIndex beginQuery = pSeeds->front().start();
     nucSeqIndex beginRef = 0;
-    if( pSeeds->front().start_ref() >  beginQuery*2)
+    if( pSeeds->front().start_ref() > beginQuery*2)
         beginRef = pSeeds->front().start_ref() - beginQuery*2;
     nucSeqIndex endQuery = pSeeds->back().end();
     //TODO: can only do forward hits so far...
@@ -275,6 +262,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     std::shared_ptr<Alignment> pRet(new Alignment(beginRef, endRef));
 
+    std::cout << beginRef << " " << endRef << std::endl;
     std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
 
     DEBUG_2(
