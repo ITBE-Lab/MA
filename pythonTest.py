@@ -47,7 +47,7 @@ rev_fm_index.load("rev_test")
 q_from = random.randint(0, 1000)
 q_to = q_from + 1000
 q = str(ref_seq.extract_from_to(q_from, q_to))
-for _ in range(1):
+for _ in range(10):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
@@ -59,12 +59,12 @@ for _ in range(1):
     else:
         q = q[:pos-1] + "g" + q[pos:]
 
-for _ in range(1):
+for _ in range(10):
     pos = random.randint(1,len(q)-11)
     l = random.randint(1,10)
     q = q[:pos-1] + q[pos + l:]
 
-for _ in range(1):
+for _ in range(10):
     pos = random.randint(1,len(q)-1)
     l = random.randint(1,10)
     for _ in range(l):
@@ -98,40 +98,18 @@ for segment in segments:
     print("segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence)
     seeds.append(segment.get_seeds(fm_index, rev_fm_index))
 
-liesweep = LineSweep()
-
-print("score before linesweep:")
-print(seeds.get_score())
-
-seeds = liesweep.execute((query, ref_seq, seeds))
-
-print("score after linesweep:")
-print(seeds.get_score())
-
-nmw = NeedlemanWunsch()
-
-align = nmw.execute((seeds, query, ref_seq))
-
-printer = AlignmentPrinter()
-
-printer.execute((align, query, ref_seq))
-
-exit()
-
 #===================== unused code from here on =====================
 
 anc = NlongestIntervalsAsAnchors(2)
 anchors = anc.execute((segments,))
     
-iterator = anchors.begin()
-while iterator.exists():
-    start = iterator.get().start()
-    end = iterator.get().end()
+for anchor in anchors:
+    start = anchor.start()
+    end = anchor.end()
     sequence = ""
     for i in range(start, end):
         sequence = sequence + query[i]
     print("anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence)
-    iterator.next()
 
 bucketing = Bucketing()
 bucketing.strip_size = 50

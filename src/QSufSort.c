@@ -33,6 +33,10 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "qSufSort.h"
+#include <stdint.h>
+
+
+#define QSINT_MAX +9223372036854775807LL
 
 #if !_MSC_VER
 	#define min(value1, value2)						( ((value1) < (value2)) ? (value1) : (value2) )

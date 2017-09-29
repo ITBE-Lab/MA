@@ -3,7 +3,8 @@
  * @brief Implements the FM_index class.
  * @author Arne Kutzner
  */
-#pragma once
+#ifndef FM_INDEX_H
+#define FM_INDEX_H
 
 #include <cstdint>
 #include <set>
@@ -768,3 +769,5 @@ public :
 
 //function called in order to export this module
 void exportFM_index();
+
+#endif

@@ -1,13 +1,16 @@
 # location of the Python header files
  
 PYTHON_VERSION = 3.5
-PYTHON_INCLUDE = /usr/include/python$(PYTHON_VERSION)
+PYTHON_INCLUDE = C:\Python35-64\include
  
 # location of the Boost Python include files and library
  
-BOOST_INC = /opt/dev/boost_1_65_1
-BOOST_LIB_PATH = /opt/dev/boost_1_65_1/stage/lib
-BOOST_LIB = boost_python3-mt dl rt z boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams-mt
+BOOST_INC = C:/boost/boost_1_65_1  C:/Python35-32/include
+BOOST_LIB_PATH = C:/boost/boost_1_65_1/stage/lib
+BOOST_LIB_PRE = boost_system boost_python3 boost_thread boost_log boost_log_setup boost_filesystem boost_program_options boost_regex boost_iostreams
+BOOST_LIB = $(addsuffix -mgw48-mt-1_65_1,$(BOOST_LIB_PRE))
+LIB = python35
+LIB_PATH = C:\Python35-64 C:\cpp-tools\lib64
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp)))
@@ -16,10 +19,10 @@ TARGET_OBJ = $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
-CC=gcc
-CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror
-CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror
-LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
+CC=g++
+CCFLAGS= -Wall -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -fno-threadsafe-statics
+CFLAGS= -Wall -DBOOST_ALL_DYN_LINK -Werror
+LDFLAGS= -shared -std=c++11 $(addprefix -L,$(LIB_PATH)) $(addprefix -l,$(LIB)) $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -pthread
 
 all: LAuS.so
 
@@ -33,7 +36,7 @@ obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
 LAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
-	pydoc3 -w LAuS
+	python -m pydoc -w LAuS
 
 html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
 	doxygen doxygen.config
@@ -50,6 +53,6 @@ clean:
 	rm -r -f html
 	rm -r -f LAuS.html
 
-docs: LAuS.html html/index.html
+docs: html/index.html LAuS.html
 
 .Phony: all clean install distrib docs

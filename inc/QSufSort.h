@@ -39,11 +39,11 @@
 #define INSERT_SORT_NUM_ITEM	16
 
 typedef int64_t qsint_t;
-#define QSINT_MAX INT64_MAX
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /**
  * @brief Makes suffix array p of x.
  * @details

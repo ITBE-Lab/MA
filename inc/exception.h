@@ -10,6 +10,7 @@
 #pragma once
 
 #include <string>
+#include <cmath>
 #include <boost/python.hpp>
 
 /** 
@@ -28,9 +29,9 @@ private :
 
 public :
 	/**
-	 * @brief takes the string that shall be printet in case the exception is thrown.
+	 * @brief takes the string that shall be printed in case the exception is thrown.
 	 * @details
-	 * prepends information about the excetion type to the string.
+	 * prepends information about the exception type to the string.
 	 */
 	Annotated_exception( const char* info )  
 	{

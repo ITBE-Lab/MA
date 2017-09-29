@@ -56,19 +56,6 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 	return true;
 }//function
 
-bool isMinIntervalSizeReached(
-		nucSeqIndex uiStartIndex,
-		nucSeqIndex uiCurrIndex,
-		nucSeqIndex uiMinIntervalSize
-	)
-{
-	if (uiStartIndex > uiCurrIndex)
-		return uiStartIndex - uiCurrIndex >= uiMinIntervalSize;
-	else if (uiStartIndex < uiCurrIndex)
-		return uiCurrIndex - uiStartIndex >= uiMinIntervalSize;
-	return false;
-}//function
-
 bool isFurtherThan(
 		bool bBackwards,
 		nucSeqIndex uiCurrIndex,
