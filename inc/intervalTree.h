@@ -70,10 +70,6 @@ private:
 	 * @brief list of the perfect matches found through backwards / forward extension 
 	 */
 	std::list<SaSegment> lxSaSegment;
-	/** 
-	 * @brief list of the longest perfect matches found through backwards / forward extension 
-	 */
-	std::list<SaSegment> lxSaAnchorSegment;
 
 public:
 	/**
@@ -82,8 +78,7 @@ public:
 	SegmentTreeInterval(const nucSeqIndex uiStart, const nucSeqIndex uiSize)
 		:
 		Interval(uiStart, uiSize),
-		lxSaSegment(),
-		lxSaAnchorSegment()
+		lxSaSegment()
 	{}//constructor
 	
 	//overload
@@ -104,7 +99,7 @@ public:
 	 * The interval contains uiLengthInBwt individual perfect matches of 
 	 * (uiStartOfIntervalOnQuery, uiEndOfIntervalOnQuery) on the reference sequence.
 	 */
-	void push_back(SaSegment interval, bool bAnchor);
+	void push_back(SaSegment interval);
 
 	/**
 	 * @brief The center of the segment.
@@ -126,12 +121,11 @@ public:
 			std::shared_ptr<FM_Index> pxRev_FM_Index,
 			unsigned int uiMaxNumHitsPerInterval,
 			bool bSkipLongerIntervals,
-			bool bAnchorOnly,
 			std::function<void(Seed s)> fDo
 		)
 	{
 		//iterate over all the intervals that have been recorded using pushBackBwtInterval()
-		for (SaSegment xSegment : bAnchorOnly ? lxSaAnchorSegment : lxSaSegment)
+		for (SaSegment xSegment : lxSaSegment)
 		{
 			//if the interval contains more than uiMaxNumHitsPerInterval hits it's of no importance and will produce nothing but noise
 
@@ -188,8 +182,7 @@ public:
 		forEachSeed(
 				pxFM_Index,
 				pxRev_FM_Index,
-				100000,
-				false,
+				10000,
 				false,
 				[&](Seed xS)
 				{
@@ -215,8 +208,7 @@ public:
 		forEachSeed(
 				pxFM_Index,
 				pxRev_FM_Index,
-				100000,
-				false,
+				10000,
 				false,
 				[&](Seed xS)
 				{

@@ -37,7 +37,7 @@ void Bucketing::forEachNonBridgingSeed(
 	)
 {
 	pxNode->forEachSeed(
-		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals, bAnchorOnly,
+		pxFM_index, pxRev_FM_Index, uiMaxHitsPerInterval, bSkipLongBWTIntervals,
 		[&](Seed xS)
 		{
 			//check if the match is bridging the forward/reverse strand or bridging between two chromosomes

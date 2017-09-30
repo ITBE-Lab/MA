@@ -56,22 +56,9 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 	return true;
 }//function
 
-bool isFurtherThan(
-		bool bBackwards,
-		nucSeqIndex uiCurrIndex,
-		nucSeqIndex uiOnlyRecordHitsFurtherThan
-	)
-{
-	if (bBackwards)
-		return uiCurrIndex < uiOnlyRecordHitsFurtherThan;
-	else
-		return uiCurrIndex > uiOnlyRecordHitsFurtherThan;
-}//function
-
-nucSeqIndex Segmentation::extend(
+SaSegment Segmentation::extend(
 								 std::shared_ptr<SegmentTreeInterval> pxNode, 
-								 nucSeqIndex uiStartIndex, bool bBackwards, 
-								 nucSeqIndex uiOnlyRecordHitsFurtherThan
+								 nucSeqIndex uiStartIndex, bool bBackwards
 								)
 {
 	nucSeqIndex i = uiStartIndex;
@@ -101,7 +88,7 @@ nucSeqIndex Segmentation::extend(
 	if (!bBackwards)
 		i++;
 	else if (i == 0)// unsigned int
-		return 0;
+		return SaSegment(0,0,ik,true);
 	else
 		i--;
 
@@ -117,71 +104,11 @@ nucSeqIndex Segmentation::extend(
 		// perform one step of the extension
 		SA_IndexInterval ok = bwt_extend_backward(ik, c, pxUsedFmIndex);
 
-		#if 0
-		std::cout << ok.start() << "," << ok.end() << ":" << ok.size() << std::endl;
-		std::cout << uiStartIndex << "->" << i << std::endl;
-		for(auto k = std::max(ok.start(),2L)-1; k <= ok.start(); k++)
-		{
-			auto index = pxUsedFmIndex->bwt_sa(k);
-			auto seq = pxRefSequence->vExtract(std::max(index,10L) - 10, index + 10);
-			for(unsigned int j = 0; j < 20; j++)
-			{
-				std::cout << seq->charAt(j);
-			}
-			std::cout << std::endl;
-		}//for
-		std::cout << std::endl;
-		for(auto k = ok.end()-1; k <= ok.end(); k++)
-		{
-			auto index = pxUsedFmIndex->bwt_sa(k);
-			auto seq = pxRefSequence->vExtract(index - 10, index + 10);
-			for(unsigned int j = 0; j < 20; j++)
-			{
-				std::cout << seq->charAt(j);
-			}
-			std::cout << std::endl;
-		}//for
-		for(unsigned int j = 0; j < 20; j++)
-		{
-			if(j == 10)
-				std::cout << "^";
-			else
-				std::cout << " ";
-		}
-		std::cout << std::endl;
-		for(unsigned int j = i-10; j < i+10; j++)
-		{
-			std::cout << pxQuerySeq->charAt(j);
-		}
-		std::cout << std::endl;
-		#endif
-
-		/* 
-		 * Pick the extension interval for character c 
-		 * and check with respect to changing interval size.
-		 */
-		if (ok.size() != ik.size())
-		{
-			/*
-			* In fact, if ok.getSize is zero, then there are no matches any more.
-			*/
-			if (ok.size() == 0)
-				break; // the SA-index interval size is too small to be extended further
-
-			// once the min interval size is reached, 
-			// record the matches every time we lose some by extending further.
-			if (
-					isMinIntervalSizeReached(uiStartIndex, i, uiMinIntervalSize) && 
-					isFurtherThan(bBackwards, i, uiOnlyRecordHitsFurtherThan)
-				)
-			{
-				// record the current match
-				if (!bBackwards)
-					pxNode->push_back(SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true), false);
-				else
-					pxNode->push_back(SaSegment(i + 1, uiStartIndex - i - 1, ik, false), false);
-			}//if
-		}//if
+		/*
+		* In fact, if ok.getSize is zero, then there are no matches any more.
+		*/
+		if (ok.size() == 0)
+			break; // the SA-index interval size is too small to be extended further
 
 		/* Set input interval for the next iteration.
 		*/
@@ -195,24 +122,10 @@ nucSeqIndex Segmentation::extend(
 			i--;
 	}//while
 
-
-	//once the min interval size is reached, record the matches every time we lose some by extending further.
-	if (
-			isMinIntervalSizeReached(uiStartIndex, i, uiMinIntervalSize) && 
-			isFurtherThan(bBackwards, i, uiOnlyRecordHitsFurtherThan)
-		)
-	{
-		// record the current match
-		if (!bBackwards)
-			pxNode->push_back(SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true), true);
-		else
-			pxNode->push_back(SaSegment(i + 1, uiStartIndex - i - 1, ik, false), true);
-	}//if
-
 	if (!bBackwards)
-		return i-1;
+		return SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true);
 	else
-		return i+1;
+		return SaSegment(i + 1, uiStartIndex - i - 1, ik, false);
 }//function
 
 /* this function implements the segmentation of the query
@@ -232,38 +145,39 @@ nucSeqIndex Segmentation::extend(
 void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPoolAllowingRecursiveEnqueues *pxPool)
 {
 	//performs backwards extension and records any perfect matches
-	nucSeqIndex uiBackwardsExtensionReachedUntil = extend(*pxNode, pxNode->getCenter(), true, pxNode->getCenter());
+	SaSegment xBack = extend(*pxNode, pxNode->getCenter(), true);
 	/* we could already extend our matches from the center of the node to  uiBackwardsExtensionReachedUntil
 	*  therefore we know that the next extension will reach at least as far as the center of the node.
 	*  we might be able to extend our matches further though.
 	*/
-	//TODO: last parameter is wrong!
-	nucSeqIndex uiBackwardsForwardsExtensionReachedUntil = extend(*pxNode, uiBackwardsExtensionReachedUntil, false, uiBackwardsExtensionReachedUntil);
-	assert(uiBackwardsForwardsExtensionReachedUntil >= pxNode->getCenter());
+	SaSegment xBackForw = extend(*pxNode, xBack.start(), false);
+	assert(xBackForw.end() >= pxNode->getCenter());
 
 	//performs forward extension and records any perfect matches
-	nucSeqIndex uiForwardsExtensionReachedUntil = extend(*pxNode, pxNode->getCenter(), false, pxNode->getCenter());
+	SaSegment xForw = extend(*pxNode, pxNode->getCenter(), false);
 	/* we could already extend our matches from the center of the node to  uiForwardExtensionReachedUntil
 	*  therefore we know that the next extension will reach at least as far as the center of the node.
 	*  we might be able to extend our matches further though.
 	*/
-	nucSeqIndex uiForwardsBackwardsExtensionReachedUntil = extend(*pxNode, uiForwardsExtensionReachedUntil, true, uiForwardsExtensionReachedUntil);
-	assert(uiForwardsBackwardsExtensionReachedUntil <= pxNode->getCenter());
+	SaSegment xForwBack = extend(*pxNode, xForw.end(), true);
+	assert(xForwBack.start() <= pxNode->getCenter());
 
 	nucSeqIndex uiFrom, uiTo;
-	if (uiBackwardsForwardsExtensionReachedUntil - uiBackwardsExtensionReachedUntil > uiForwardsExtensionReachedUntil - uiForwardsBackwardsExtensionReachedUntil)
+	if (xBackForw.size() > xForwBack.size())
 	{
-		uiFrom = uiBackwardsExtensionReachedUntil;
-		uiTo = uiBackwardsForwardsExtensionReachedUntil;
+		uiFrom = xBackForw.start();
+		uiTo = xBackForw.end();
+		pxNode->push_back(xBackForw);
 	}//if
 	else
 	{
-		uiFrom = uiForwardsBackwardsExtensionReachedUntil;
-		uiTo = uiForwardsExtensionReachedUntil;
+		uiFrom = xForwBack.start();
+		uiTo = xForwBack.end();
+		pxNode->push_back(xForwBack);
 	}//else
 
 	//if the prev interval is longer than uiMinIntervalSize
-	if (pxNode->start() + uiMinIntervalSize <= uiFrom)
+	if (pxNode->start() < uiFrom)
 	{
 		//create a new list element and insert it before the current node
 		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
@@ -280,7 +194,7 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 		);//enqueue
 	}//if
 	//if the post interval is longer than uiMinIntervalSize
-	if (pxNode->end() >= uiTo + uiMinIntervalSize)
+	if (pxNode->end() > uiTo)
 	{
 		//create a new list element and insert it after the current node
 		auto pxNextNode = pSegmentTree->insertAfter(std::shared_ptr<SegmentTreeInterval>(
@@ -303,9 +217,6 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	)
 	pxNode->start(uiFrom);
 	pxNode->end(uiTo);
-
-	if (pxNode->size() < uiMinIntervalSize)
-		pSegmentTree->removeNode(pxNode);
 }//function
 
 void Segmentation::segment()
@@ -366,9 +277,6 @@ std::shared_ptr<Container> SegmentationContainer::execute(
 			pFM_indexReversed, 
 			pQuerrySeq, 
 			bBreakOnAmbiguousBase,
-			bSkipLongBWTIntervals,
-			uiMinIntervalSize,
-			uiMaxHitsPerInterval,
 			pRefSeq
 		);
 	xS.segment();
@@ -376,34 +284,272 @@ std::shared_ptr<Container> SegmentationContainer::execute(
 	return xS.pSegmentTree;
 }//function
 
+void run()
+{
+    std::cout << "blub" << std::endl;
+	std::shared_ptr<FM_Index> xIndex(new FM_Index());
+	xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");
+	std::string searchFor[] = 
+	{
+			"CGTCAGACTTACTTGGTAGG",
+			"ACAGAATTTGCAACACAGGA",
+			"ACCCGTCAGACTTACTTGGT",
+			"GTCAGACTTACTTGGTAGGA",
+			"GTTTACAGAATTTGCAACAC"
+	};
+	std::vector<std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>> results;
+    {
+        ThreadPool xPool(48);
+		/*BWACompatiblePackedNucleotideSequencesCollection xPack;
+		std::string pref("/mnt/ssd0/chrom/mouse/");
+		for(unsigned int i = 1; i <= 19; i++)
+			xPack.vAppendFASTA(std::string(pref).append("chr").append(std::to_string(i)).append(".fna"));
+        xPack.vAppendFASTA(std::string(pref).append("chrX.fna"));
+        xPack.vAppendFASTA(std::string(pref).append("chrY.fna"));*/
+
+		std::mutex m;
+		unsigned int pos = 0;
+
+        for(std::string& sequence : searchFor)
+        {
+				results.push_back(std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>());
+                std::cout << sequence << std::endl;
+                for(unsigned int i = 0; i < sequence.size(); i++)
+                {
+                for(unsigned int i_mut = (i == 0 ? 0 : 1); i_mut < 4; i_mut++)
+                {
+                        for(unsigned int j = i; j < sequence.size(); j++)
+                        {
+                        for(unsigned int j_mut = (j == i ? 0 : 1); j_mut < 4; j_mut++)
+                        {
+                                for(unsigned int k = j; k < sequence.size(); k++)
+                                {
+                                for(unsigned int k_mut = (k == j ? 0 : 1); k_mut < 4; k_mut++)
+                                {
+                                        xPool.enqueue(
+												[&]
+												(
+													size_t tID,
+													unsigned int i,
+													unsigned int j,
+													unsigned int k,
+													unsigned int i_mut,
+													unsigned int j_mut,
+													unsigned int k_mut,
+													unsigned int pos,
+													std::string sequence
+												)
+                                                {
+        uint8_t q[sequence.size()];
+        for(int x = sequence.size()-1; x >=0; x--)
+        {
+                if(sequence.at(x) == 'A')
+                        q[x] = 0;
+                if(sequence.at(x) == 'C')
+                        q[x] = 1;
+                if(sequence.at(x) == 'G')
+                        q[x] = 2;
+                if(sequence.at(x) == 'T')
+                        q[x] = 3;
+        }//for
+		q[k] = (q[k] + k_mut) % 4;
+        q[j] = (q[j] + j_mut) % 4;
+		q[i] = (q[i] + i_mut) % 4;
+		{
+			SA_IndexInterval ik(
+					xIndex->L2[(int)q[sequence.size()-1]] + 1, 
+					xIndex->L2[(int)q[sequence.size()-1] + 1] - xIndex->L2[(int)q[sequence.size()-1]]
+			);
+			
+			
+			for(int x = sequence.size()-2; x >=0; x--)
+			{
+				const uint8_t c = q[x]; // character at position i in the query
+				
+				// perform one step of the extension
+				ik = bwt_extend_backward(ik, c, xIndex);
+
+				if(ik.size() == 0)
+					break;
+			}//for
+			
+			if(ik.size() != 0)
+			{
+			
+				std::string seq("");
+				for(unsigned int x = 0; x < sequence.size(); x++)
+				{
+					if(q[x] == 0)
+						seq.append("A");
+					if(q[x] == 1)
+						seq.append("C");
+					if(q[x] == 2)
+						seq.append("G");
+					if(q[x] == 3)
+						seq.append("T");
+				}//for
+				int missmatchAmount = 0;
+				if(i_mut != 0)
+					missmatchAmount++;
+				if(j_mut != 0)
+					missmatchAmount++;
+				if(k_mut != 0)
+					missmatchAmount++;
+				std::list<int64_t> list = std::list<int64_t>();
+				for(auto p = ik.start(); p < ik.end(); p++)
+				{
+					auto ulIndexOnRefSeq = xIndex->bwt_sa(p);
+					ulIndexOnRefSeq = xIndex->getRefSeqLength() - (ulIndexOnRefSeq + sequence.size()) - 1;
+					list.push_back(ulIndexOnRefSeq);
+				}//for
+				m.lock();
+				//std::tuple<std::string, unsigned int, std::list<bwtint_t>>
+				results[pos].push_back(std::make_tuple(seq, missmatchAmount, list));
+				m.unlock();
+			}
+		}
+
+		//===========reversed=============
+		{
+			SA_IndexInterval ik(
+				xIndex->L2[(int)q[0]] + 1, 
+				xIndex->L2[(int)q[0] + 1] - xIndex->L2[(int)q[0]]
+			);
+			
+			
+			for(unsigned int x = 1; x < sequence.size(); x++)
+			{
+				const uint8_t c = q[x]; // character at position i in the query
+				
+				// perform one step of the extension
+				ik = bwt_extend_backward(ik, c, xIndex);
+
+				if(ik.size() == 0)
+					break;
+			}//for
+			
+			if(ik.size() == 0)
+				return;
+			
+			std::string seq("");
+			for(int x = sequence.size()-1; x >=0; x--)
+			{
+				if(q[x] == 0)
+					seq.append("A");
+				if(q[x] == 1)
+					seq.append("C");
+				if(q[x] == 2)
+					seq.append("G");
+				if(q[x] == 3)
+					seq.append("T");
+			}//for
+			int missmatchAmount = 0;
+			if(i_mut != 0)
+				missmatchAmount++;
+			if(j_mut != 0)
+				missmatchAmount++;
+			if(k_mut != 0)
+				missmatchAmount++;
+			std::list<int64_t> list = std::list<int64_t>();
+			for(auto p = ik.start(); p < ik.end(); p++)
+			{
+				auto ulIndexOnRefSeq = xIndex->bwt_sa(p);
+				ulIndexOnRefSeq = xIndex->getRefSeqLength() - (ulIndexOnRefSeq + sequence.size()) - 1;
+				list.push_back(ulIndexOnRefSeq);
+			}//for
+			m.lock();
+			//std::tuple<std::string, unsigned int, std::list<bwtint_t>>
+			results[pos].push_back(std::make_tuple(seq, missmatchAmount, list));
+			m.unlock();
+		}
+												},//lambda
+												i, j, k, i_mut, j_mut, k_mut, pos, sequence
+                                        );
+                            
+								if(k == j || k == i)
+									break;
+								}
+                                }//for
+						if(i == j)
+							break;
+						}
+                        }//for
+                }
+				}//for
+			pos++;
+        }//for
+	}//scope for xPool
+	
+	for( auto& result : results)
+		std::sort(result.begin(), result.end(), 
+			[](std::tuple<std::string, unsigned int, std::list<int64_t>> a,
+				std::tuple<std::string, unsigned int, std::list<int64_t>> b)
+			{
+				return std::get<1>(a) < std::get<1>(b);
+			}
+		);
+		
+	
+	std::sort(results.begin(), results.end(), 
+		[](std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>> a,
+			std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>> b)
+		{
+			unsigned int tota[] = {0,0,0,0};
+			unsigned int totb[] = {0,0,0,0};
+			for(auto entry : a)
+			{
+				tota[std::get<1>(entry)] += std::get<2>(entry).size();
+			}
+			for(auto entry : b)
+			{
+				totb[std::get<1>(entry)] += std::get<2>(entry).size();
+			}
+			if(tota[2] == totb[2] && tota[1] == totb[1])
+				return tota[3] < totb[3];
+			if(tota[1] == totb[1])
+				return tota[2] < totb[2];
+			return tota[1] < totb[1];
+		}
+	);
+
+	for( auto result : results)
+	{
+		std::cout << "=================" << std::endl;
+		unsigned int tot[] = {0,0,0,0};
+		for(auto entry : result)
+		{
+			tot[std::get<1>(entry)] += std::get<2>(entry).size();
+		}
+		std::cout << tot[0] << " " << tot[1] << " " << tot[2] << " " << tot[3]
+		<< std::endl;
+		/*
+		for( auto entry : result)
+		{
+			std::cout << std::get<0>(entry) << " (" << std::get<1>(entry) << ") ";
+			for( auto blub : std::get<2>(entry))
+			{
+				std::cout << blub << " ";
+			}
+			std::cout << std::endl;
+		}*/
+	}
+}//main
 
 void exportSegmentation()
 {
+	boost::python::def("run", run);
 	//export the segmentation class
 	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>(
 			"Segmentation",
 			"bBreakOnAmbiguousBase: weather the extension of "
-			"intervalls shall be stopped at N's\n"
-			"bSkipLongBWTIntervals: skip seeds that have more than "
-			"uiMaxHitsPerInterval matches on the reference\n"
-			"uiMinIntervalSize: only record intervals greater than uiMinIntervalSize\n"
-			"uiMaxHitsPerInterval: skip seeds that have more than "
-			"uiMaxHitsPerInterval matches on the reference if bSkipLongBWTIntervals is set\n",
-			boost::python::init<boost::python::optional<bool, bool, nucSeqIndex, unsigned int>>(
+			"intervals shall be stopped at N's\n",
+			boost::python::init<boost::python::optional<bool>>(
 				"arg1: self\n"
 				"arg2: weather the extension of "
-				"intervalls shall be stopped at N's\n"
-				"arg3: skip seeds that have more than "
-				"arg5 matches on the reference\n"
-				"arg4: only record intervals greater than arg4\n"
-				"arg5: skip seeds that have more than "
-				"arg5 matches on the reference if arg3 is set\n"
+				"intervals shall be stopped at N's\n"
 			)
 		)
 		.def_readwrite("bBreakOnAmbiguousBase", &SegmentationContainer::bBreakOnAmbiguousBase)
-		.def_readwrite("bSkipLongBWTIntervals", &SegmentationContainer::bSkipLongBWTIntervals)
-		.def_readwrite("uiMinIntervalSize", &SegmentationContainer::uiMinIntervalSize)
-		.def_readwrite("uiMaxHitsPerInterval", &SegmentationContainer::uiMaxHitsPerInterval)
 		;
 	
 }//function

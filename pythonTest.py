@@ -2,6 +2,9 @@ from LAuS import *
 from alignmentPrinter import AlignmentPrinter
 import random
 
+run()
+exit()
+
 q = ""
 
 #random.seed(1)

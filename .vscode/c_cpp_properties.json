@@ -50,11 +50,11 @@
                 "C:/Program Files (x86)/Windows Kits/8.1/Include/winrt",
                 "${workspaceRoot}",
                 "C:/cpp-tools/include/c++/4.8.3",
-                "C:/cpp-tools/include/c++/4.8.3/x86_64-w64-mingw32",
                 "C:/cpp-tools/include/c++/4.8.3/tr1",
                 "${workspaceRoot}/inc",
                 "C:/cpp-tools/x86_64-w64-mingw32/include",
-                "C:/boost/boost_1_65_1"
+                "C:/boost/boost_1_65_1",
+                "C:/Python35-64/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -70,7 +70,6 @@
                     "C:/cpp-tools/include",
                     "C:/cpp-tools/include/c++/4.8.3",
                     "C:/cpp-tools/include/c++/4.8.3",
-                    "C:/cpp-tools/x86_64-w64-mingw32/include",
                     "C:/boost/boost_1_65_1",
                     "C:/Python35-64/include",
                     "${workspaceRoot}"

@@ -1,10 +1,8 @@
 #include "intervalTree.h"
 
-void SegmentTreeInterval::push_back(SaSegment xSaSegment, bool bAnchor)
+void SegmentTreeInterval::push_back(SaSegment xSaSegment)
 {
 	lxSaSegment.push_back(xSaSegment);
-	if (bAnchor)
-		lxSaAnchorSegment.push_back(xSaSegment);
 }//function
 
 std::ostream& operator<<(std::ostream& xOs, const SegmentTree& xTree)
