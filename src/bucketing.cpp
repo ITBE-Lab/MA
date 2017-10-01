@@ -29,7 +29,6 @@ std::vector<ContainerType> Bucketing::getOutputType()
 
 void Bucketing::forEachNonBridgingSeed(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
-		bool bAnchorOnly,
 		std::shared_ptr<FM_Index> pxFM_index,
 		std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 		std::shared_ptr<NucleotideSequence> pxQuerySeq,
@@ -76,9 +75,8 @@ void Bucketing::saveSeeds(
 		std::vector<SeedBucket>& raxSeedBuckets
 	)
 {
-	//bAnchorOnly = false since we also want to collet not maximally extended seeds
 	forEachNonBridgingSeed(
-		pxNode, false, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
+		pxNode, pxFM_index, pxRev_FM_Index, pxRefSequence, pxQuerySeq,
 		[&](Seed xSeed)
 		{
 			addSeed(pxQuerySeq->length(), xSeed, raxSeedBuckets);
@@ -130,10 +128,8 @@ std::shared_ptr<Container> Bucketing::execute(
 	pAnchors->forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
 		{
-			
-			//bAnchorOnly = true since we want to collet maximally extended seeds
 			forEachNonBridgingSeed(
-				pxNode, true, pFM_index, pFM_indexReversed, pRefSeq, pQuerrySeq,
+				pxNode, pFM_index, pFM_indexReversed, pRefSeq, pQuerrySeq,
 				[&](Seed xAnchor)
 				{
 					nucSeqIndex uiStart = getPositionForBucketing(pQuerrySeq->length(), xAnchor) - uiStripSize/2;

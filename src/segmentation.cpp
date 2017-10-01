@@ -44,13 +44,7 @@ SA_IndexInterval bwt_extend_backward(
 bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength)
 {
 	if (!bBackwards)
-	{
 		return uiCurrIndex < uiQueryLength;
-	}//if
-	else
-	{
-		return uiCurrIndex > 0;
-	}//else
 
 	//we want to allow extension past the interval borders
 	return true;
@@ -62,7 +56,8 @@ SaSegment Segmentation::extend(
 								)
 {
 	nucSeqIndex i = uiStartIndex;
-	assert(i >= 0 && i < pxQuerySeq->length());
+	assert(i >= 0);
+	assert(i < pxQuerySeq->length());
 
 	const uint8_t *q = pxQuerySeq->pGetSequenceRef(); // query sequence itself
 
@@ -116,16 +111,14 @@ SaSegment Segmentation::extend(
 
 		if (!bBackwards)
 			i++;
-		else if (i == 0)// unsigned int
+		else if (i-- == 0)// unsigned int
 			break;
-		else
-			i--;
 	}//while
 
 	if (!bBackwards)
 		return SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true);
 	else
-		return SaSegment(i + 1, uiStartIndex - i - 1, ik, false);
+		return SaSegment(i + 1, uiStartIndex - (i + 1), ik, false);
 }//function
 
 /* this function implements the segmentation of the query
@@ -144,20 +137,23 @@ SaSegment Segmentation::extend(
 */
 void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPoolAllowingRecursiveEnqueues *pxPool)
 {
+	DEBUG(
+		std::cout << "interval (" << pxNode->start() << "," << pxNode->end() << ")" << std::endl;
+	)
 	//performs backwards extension and records any perfect matches
 	SaSegment xBack = extend(*pxNode, pxNode->getCenter(), true);
 	/* we could already extend our matches from the center of the node to  uiBackwardsExtensionReachedUntil
-	*  therefore we know that the next extension will reach at least as far as the center of the node.
-	*  we might be able to extend our matches further though.
+	* therefore we know that the next extension will reach at least as far as the center of the node.
+	* we might be able to extend our matches further though.
 	*/
 	SaSegment xBackForw = extend(*pxNode, xBack.start(), false);
 	assert(xBackForw.end() >= pxNode->getCenter());
 
 	//performs forward extension and records any perfect matches
 	SaSegment xForw = extend(*pxNode, pxNode->getCenter(), false);
-	/* we could already extend our matches from the center of the node to  uiForwardExtensionReachedUntil
-	*  therefore we know that the next extension will reach at least as far as the center of the node.
-	*  we might be able to extend our matches further though.
+	/* we could already extend our matches from the center of the node to uiForwardExtensionReachedUntil
+	* therefore we know that the next extension will reach at least as far as the center of the node.
+	* we might be able to extend our matches further though.
 	*/
 	SaSegment xForwBack = extend(*pxNode, xForw.end(), true);
 	assert(xForwBack.start() <= pxNode->getCenter());
@@ -177,11 +173,11 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	}//else
 
 	//if the prev interval is longer than uiMinIntervalSize
-	if (pxNode->start() < uiFrom)
+	if (uiFrom != 0 && pxNode->start() < uiFrom - 1)
 	{
 		//create a new list element and insert it before the current node
 		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start())), pxNode);
+			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start() - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue(
 			[/*WARNING: do not catch anything here: the lambda function is enqueued to into a thread pool, 
@@ -194,11 +190,11 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 		);//enqueue
 	}//if
 	//if the post interval is longer than uiMinIntervalSize
-	if (pxNode->end() > uiTo)
+	if (pxNode->end() > uiTo + 1)
 	{
 		//create a new list element and insert it after the current node
 		auto pxNextNode = pSegmentTree->insertAfter(std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(uiTo, pxNode->end() - uiTo)), pxNode);
+			new SegmentTreeInterval(uiTo + 1, pxNode->end() - uiTo - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue(
 			[/*WARNING: do not catch anything here: the lambda function is enqueued to into a thread pool,
@@ -224,7 +220,7 @@ void Segmentation::segment()
 	assert(*pSegmentTree->begin() != nullptr);
 
 	{//scope for xPool
-		ThreadPoolAllowingRecursiveEnqueues xPool(NUM_THREADS_ALIGNER);
+		ThreadPoolAllowingRecursiveEnqueues xPool(1);
 
 		//enqueue the root interval for processing
 		xPool.enqueue(
@@ -284,17 +280,23 @@ std::shared_ptr<Container> SegmentationContainer::execute(
 	return xS.pSegmentTree;
 }//function
 
-void run()
+void analyseCRISPER()
 {
-    std::cout << "blub" << std::endl;
 	std::shared_ptr<FM_Index> xIndex(new FM_Index());
-	xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");
+	/*xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");
 	std::string searchFor[] = 
 	{
 			"CGTCAGACTTACTTGGTAGG",
 			"ACAGAATTTGCAACACAGGA",
 			"ACCCGTCAGACTTACTTGGT",
 			"GTCAGACTTACTTGGTAGGA",
+			"GTTTACAGAATTTGCAACAC"
+	};*/
+	xIndex->vLoadFM_Index("/mnt/ssd0/chrom/human/index");
+	std::string searchFor[] = 
+	{
+			"ACAGAATTTGCAACACAGGA",
+			"GTCCTTGAAACTACAAATGT",
 			"GTTTACAGAATTTGCAACAC"
 	};
 	std::vector<std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>> results;
@@ -313,7 +315,6 @@ void run()
         for(std::string& sequence : searchFor)
         {
 				results.push_back(std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>());
-                std::cout << sequence << std::endl;
                 for(unsigned int i = 0; i < sequence.size(); i++)
                 {
                 for(unsigned int i_mut = (i == 0 ? 0 : 1); i_mut < 4; i_mut++)
@@ -512,32 +513,37 @@ void run()
 		}
 	);
 
+	std::cout << "0\t1\t2\t3\tmissmatch hits" << std::endl;
+	std::cout << "===================================================================" << std::endl;
 	for( auto result : results)
 	{
-		std::cout << "=================" << std::endl;
 		unsigned int tot[] = {0,0,0,0};
 		for(auto entry : result)
 		{
 			tot[std::get<1>(entry)] += std::get<2>(entry).size();
 		}
-		std::cout << tot[0] << " " << tot[1] << " " << tot[2] << " " << tot[3]
-		<< std::endl;
-		/*
+		std::cout << tot[0] << "\t" << tot[1] << "\t" << tot[2] << "\t" << tot[3]
+		<< "\t";
+		
 		for( auto entry : result)
 		{
-			std::cout << std::get<0>(entry) << " (" << std::get<1>(entry) << ") ";
-			for( auto blub : std::get<2>(entry))
+			if(std::get<1>(entry) == 0)
+			{
+				std::cout << std::get<0>(entry) << std::endl;
+				break;
+			}
+			/*for( auto blub : std::get<2>(entry))
 			{
 				std::cout << blub << " ";
 			}
-			std::cout << std::endl;
-		}*/
+			std::cout << std::endl;*/
+		}
 	}
 }//main
 
 void exportSegmentation()
 {
-	boost::python::def("run", run);
+	boost::python::def("analyse_crisper", analyseCRISPER);
 	//export the segmentation class
 	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>(
 			"Segmentation",

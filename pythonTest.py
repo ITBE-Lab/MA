@@ -2,8 +2,8 @@ from LAuS import *
 from alignmentPrinter import AlignmentPrinter
 import random
 
-run()
-exit()
+#analyse_crisper()
+#exit()
 
 q = ""
 
@@ -47,10 +47,10 @@ fm_index.load("test")
 rev_fm_index = FMIndex()
 rev_fm_index.load("rev_test")
 
-q_from = random.randint(0, 1000)
-q_to = q_from + 1000
+q_from = random.randint(0, 2000)
+q_to = q_from + 2000
 q = str(ref_seq.extract_from_to(q_from, q_to))
-for _ in range(10):
+for _ in range(50):
     pos = random.randint(1,len(q)-1)
     char = random.randint(1,4)
     if char == 1:
@@ -62,12 +62,12 @@ for _ in range(10):
     else:
         q = q[:pos-1] + "g" + q[pos:]
 
-for _ in range(10):
+for _ in range(50):
     pos = random.randint(1,len(q)-11)
     l = random.randint(1,10)
     q = q[:pos-1] + q[pos + l:]
 
-for _ in range(10):
+for _ in range(50):
     pos = random.randint(1,len(q)-1)
     l = random.randint(1,10)
     for _ in range(l):
@@ -82,10 +82,11 @@ for _ in range(10):
             q = q[:pos] + "g" + q[pos:]
 
 
+print(len(q))
 
 query = NucSeq(q)
 
-seg = Segmentation(True, True, 10, 100000)
+seg = Segmentation(True)
 seg.bSkipLongBWTIntervals = False
 
 segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))

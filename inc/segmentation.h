@@ -26,12 +26,8 @@ public:
 private:
 	std::shared_ptr<FM_Index> pxFM_index, pxRev_FM_Index;
 	std::shared_ptr<NucleotideSequence> pxQuerySeq;
-	//std::shared_ptr<AnchorMatchList> pxAnchorMatchList;  TODO: move me into my own module
 	bool bBreakOnAmbiguousBase;
 	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence;
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-	AlignmentQuality *pxQuality;
-#endif
 
 	/*
 	*	performs backwards extension in the given interval
@@ -55,9 +51,6 @@ public:
 	Segmentation(std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_index, std::shared_ptr<NucleotideSequence> pxQuerySeq,
 		bool bBreakOnAmbiguousBase,
 		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-		,AlignmentQuality *pxQuality
-#endif
 		)
 		:
 		pSegmentTree(new SegmentTree(pxQuerySeq->length())),
@@ -66,9 +59,6 @@ public:
 		pxQuerySeq(pxQuerySeq),
 		bBreakOnAmbiguousBase(bBreakOnAmbiguousBase),
 		pxRefSequence(pxRefSequence)
-#if confGENEREATE_ALIGNMENT_QUALITY_OUTPUT
-		,pxQuality(pxQuality)
-#endif
 	{}//constructor
 
 	void segment();

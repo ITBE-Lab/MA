@@ -237,11 +237,12 @@ public:
 	* Sets up the interval tree with two leaves and one initial interval comprising the whole query
 	* note that the tree is internally represented as a DoublyLinkedList since only the leaves are of relevance
 	*/
-	SegmentTree(const nucSeqIndex uiQuerryLength)
+	SegmentTree(const nucSeqIndex uiQueryLength)
 		:
 		DoublyLinkedList()
 	{
-		std::shared_ptr<SegmentTreeInterval> pxRoot(new SegmentTreeInterval(0, uiQuerryLength));
+		//the intervals are inclusive in the tree...
+		std::shared_ptr<SegmentTreeInterval> pxRoot(new SegmentTreeInterval(0, uiQueryLength-1));
 		push_back(pxRoot);
 	}//constructor
 	SegmentTree()

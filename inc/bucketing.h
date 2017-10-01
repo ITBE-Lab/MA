@@ -88,7 +88,6 @@ private:
 
 	void forEachNonBridgingSeed(
 			std::shared_ptr<SegmentTreeInterval> pxNode,
-			bool bAnchorOnly,
 			std::shared_ptr<FM_Index> pxFM_index,
 			std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
