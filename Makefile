@@ -5,9 +5,9 @@ PYTHON_INCLUDE = C:\Python35-64\include
  
 # location of the Boost Python include files and library
  
-BOOST_INC = C:/boost/boost_1_65_1  C:/Python35-32/include
+BOOST_INC = C:/boost/boost_1_65_1  C:/Python35-64/include
 BOOST_LIB_PATH = C:/boost/boost_1_65_1/stage/lib
-BOOST_LIB_PRE = boost_system boost_python3 boost_thread boost_log boost_log_setup boost_filesystem boost_program_options boost_regex boost_iostreams
+BOOST_LIB_PRE = boost_python3 boost_system boost_thread boost_log boost_log_setup boost_filesystem boost_program_options boost_regex boost_iostreams
 BOOST_LIB = $(addsuffix -mgw48-mt-1_65_1,$(BOOST_LIB_PRE))
 LIB = python35
 LIB_PATH = C:\Python35-64 C:\cpp-tools\lib64
@@ -22,12 +22,13 @@ CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 CC=g++
 CCFLAGS= -Wall -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -fno-threadsafe-statics
 CFLAGS= -Wall -DBOOST_ALL_DYN_LINK -Werror
-LDFLAGS= -shared -std=c++11 $(addprefix -L,$(LIB_PATH)) $(addprefix -l,$(LIB)) $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -pthread
+LDFLAGS= -shared -std=c++11 
+LIBS = $(addprefix -L,$(LIB_PATH)) $(addprefix -l,$(LIB)) $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -pthread
 
 all: LAuS.so
 
 LAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
-	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
+	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LIBS) -o $@
  
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
