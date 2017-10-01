@@ -46,9 +46,9 @@ public:
      * @details
      * Used for type checking weather the module returns expected data.
      */
-    virtual std::vector<ContainerType> getOutputType()
+    virtual ContainerType getOutputType()
     {
-        return std::vector<ContainerType>{ContainerType::nothing};
+        return ContainerType::nothing;
     }
 
     /**
@@ -61,6 +61,12 @@ public:
     {
         std::cout << "TODO: save exec disabled" << std::endl;
         return execute(pInput);
+    }//function
+
+    FutureContainer promiseMe(std::vector<FutureContainer> vInput)
+    {
+        //TODO: check types
+        return FutureContainer(this, getOutputType(), vInput);
     }//function
 };
 

@@ -21,9 +21,9 @@ std::vector<ContainerType> Bucketing::getInputType()
 	};
 }//function
 
-std::vector<ContainerType> Bucketing::getOutputType()
+ContainerType Bucketing::getOutputType()
 {
-	return std::vector<ContainerType>{ContainerType::seedsVector};
+	return ContainerType::seedsVector;
 }//function
 
 

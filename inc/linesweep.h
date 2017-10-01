@@ -274,7 +274,7 @@ public:
     std::vector<ContainerType> getInputType();
 
     //overload
-    std::vector<ContainerType> getOutputType();
+    ContainerType getOutputType();
 };//class
 
 /**

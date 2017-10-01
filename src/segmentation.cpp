@@ -250,9 +250,9 @@ std::vector<ContainerType> SegmentationContainer::getInputType()
 			ContainerType::packedNucSeq,
 		};
 }
-std::vector<ContainerType> SegmentationContainer::getOutputType()
+ContainerType SegmentationContainer::getOutputType()
 {
-	return std::vector<ContainerType>{ContainerType::segmentList};
+	return ContainerType::segmentList;
 }
 
 

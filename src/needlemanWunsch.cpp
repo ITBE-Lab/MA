@@ -15,9 +15,9 @@ std::vector<ContainerType> NeedlemanWunsch::getInputType()
     };
 }//function
 
-std::vector<ContainerType> NeedlemanWunsch::getOutputType()
+ContainerType NeedlemanWunsch::getOutputType()
 {
-    return std::vector<ContainerType>{ContainerType::alignment};
+    return ContainerType::alignment;
 }//function
 
 int iDeletion = -50;

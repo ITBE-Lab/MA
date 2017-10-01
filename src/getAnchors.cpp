@@ -6,9 +6,9 @@ std::vector<ContainerType> NlongestIntervalsAsAnchors::getInputType()
     return std::vector<ContainerType>{ContainerType::segmentList};
 }//function
 
-std::vector<ContainerType> NlongestIntervalsAsAnchors::getOutputType()
+ContainerType NlongestIntervalsAsAnchors::getOutputType()
 {
-    return std::vector<ContainerType>{ContainerType::segmentList};
+    return ContainerType::segmentList;
 }//function
 
 

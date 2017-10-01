@@ -12,9 +12,9 @@ std::vector<ContainerType> LineSweep::getInputType()
 		};
 }//function
 
-std::vector<ContainerType> LineSweep::getOutputType()
+ContainerType LineSweep::getOutputType()
 {
-	return std::vector<ContainerType>{ContainerType::seeds};
+	return ContainerType::seeds;
 }//function
 
 /**

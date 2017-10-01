@@ -111,7 +111,7 @@ public:
 
     std::vector<ContainerType> getInputType();
 
-	std::vector<ContainerType> getOutputType();
+	ContainerType getOutputType();
 };//class
 
 void exportBucketing();
