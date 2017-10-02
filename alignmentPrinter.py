@@ -1,4 +1,4 @@
-from LAuS import *
+from aligner import *
 
 
 class AlignmentPrinter(Module):
@@ -12,18 +12,17 @@ Execution:
     """
 
     def __init__(self, nuc_per_line = 100):
-        #Module.__init__()
         self.nuc_per_line = nuc_per_line
 
-    #overrride
+    #override
     def get_input_type(self):
         return [ContainerType.alignment, ContainerType.nucSeq, ContainerType.packedNucSeq]
 
-    #overrride
+    #override
     def get_output_type(self):
         return [ContainerType.nothing]
 
-    #overrride
+    #override
     def execute(self, input):
         align = input[0]
         query = input[1]

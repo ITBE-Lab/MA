@@ -1,11 +1,23 @@
 from LAuS import *
-from alignmentPrinter import AlignmentPrinter
+from setupaligner import set_up_aligner
 import random
 
-analyse_crisper()
-exit()
+#analyse_crisper()
+#exit()
 
 q = ""
+
+query_pledge = Pledge(ContainerType.nucSeq)
+reference_pledge = Pledge(ContainerType.packedNucSeq)
+fm_index_pledge = Pledge(ContainerType.fM_index)
+rev_fm_index_pledge = Pledge(ContainerType.fM_index)
+
+result_pledge = set_up_aligner(
+    query_pledge,
+    reference_pledge,
+    fm_index_pledge,
+    rev_fm_index_pledge
+)
 
 #random.seed(1)
 
@@ -28,7 +40,6 @@ def create_and_store():
     rev_ref = NucSeq(seq)
     rev_ref.reverse()
 
-    query = NucSeq(q)
 
     fm_index = FMIndex(ref)
     fm_index.store("test")
@@ -39,6 +50,7 @@ def create_and_store():
     ref_seq.append("name", "no comment",ref)
     ref_seq.store("test_pack")
 
+query = NucSeq(q)
 
 ref_seq = BWAPack()
 ref_seq.load("test_pack")
@@ -81,80 +93,9 @@ for _ in range(50):
         else:
             q = q[:pos] + "g" + q[pos:]
 
+query_pledge.set(query)
+reference_pledge.set(ref_seq)
+fm_index_pledge.set(fm_index)
+rev_fm_index_pledge.set(rev_fm_index)
 
-print(len(q))
-
-query = NucSeq(q)
-
-seg = Segmentation(True)
-seg.bSkipLongBWTIntervals = False
-
-segments = seg.execute((fm_index, rev_fm_index, query, ref_seq))
-
-seeds = Seeds()
-
-for segment in segments:
-    start = segment.start()
-    end = segment.end()
-    sequence = ""
-    for i in range(start, end):
-        sequence = sequence + query[i]
-    print("segment: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence)
-    seeds.append(segment.get_seeds(fm_index, rev_fm_index))
-
-#===================== unused code from here on =====================
-
-anc = NlongestIntervalsAsAnchors(2)
-anchors = anc.execute((segments,))
-    
-for anchor in anchors:
-    start = anchor.start()
-    end = anchor.end()
-    sequence = ""
-    for i in range(start, end):
-        sequence = sequence + query[i]
-    print("anchor: (" + str(start) + "," + str(end) + ";" + str(end - start) + ") := " + sequence)
-
-bucketing = Bucketing()
-bucketing.strip_size = 50
-strips_of_consideration = bucketing.execute((
-    segments,
-    anchors,
-    query,
-    ref_seq,
-    fm_index,
-    rev_fm_index))
-
-if len(strips_of_consideration) == 0:
-    print("no match found")
-    exit()
-
-print("found " + str(len(strips_of_consideration)) + " strips of consideration")
-print("scores before linesweep:")
-for strip in strips_of_consideration:
-    print(strip.get_score())
-
-best_strip = []
-liesweep = LineSweep()
-for strip in strips_of_consideration:
-    best_strip.append(liesweep.execute((query, ref_seq, strip)))
-
-
-print("scores after linesweep:")
-for strip in best_strip:
-    print(strip.get_score())
-
-best = 0
-for index, strip in enumerate(best_strip):
-    if strip.get_score() > best_strip[best].get_score():
-        best = index
-
-print("best score: " + str(best_strip[best].get_score()))
-nmw = NeedlemanWunsch()
-
-align = nmw.execute((best_strip[best], query, ref_seq))
-
-printer = AlignmentPrinter()
-
-printer.execute((align, query, ref_seq))
-
+result_pledge.next()

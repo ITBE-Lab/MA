@@ -10,6 +10,7 @@
 #include <memory>
 #include <Python.h>
 #include <iostream>
+#include <boost/python/list.hpp>
 
 class Pledge;
 
@@ -78,7 +79,7 @@ public:
         return pRet;
     }//function
 
-    Pledge promiseMe(std::vector<std::shared_ptr<Pledge>> vInput);
+    std::shared_ptr<Pledge> promiseMe(std::vector<std::shared_ptr<Pledge>> vInput);
 };
 
 /**
@@ -88,9 +89,11 @@ class Pledge : public Container
 {
 private:
     Module* pledger;
+    PyObject* py_pledger;
     std::shared_ptr<Container> content;
     ContainerType type;
     unsigned int iLastCallNum = 0;
+    static unsigned int iCurrentCallNum;
     std::vector<std::shared_ptr<Pledge>> vPredecessors;
 public:
     Pledge(
@@ -115,9 +118,21 @@ public:
         vPredecessors(vPredecessors)
     {}//constructor
 
-    void set(std::shared_ptr<Container> c, unsigned int iCallNum)
+    Pledge(
+            PyObject* py_pledger,
+            ContainerType type,
+            std::vector<std::shared_ptr<Pledge>> vPredecessors
+        )
+            :
+        py_pledger(py_pledger),
+        content(),
+        type(type),
+        vPredecessors(vPredecessors)
+    {}//constructor
+
+    void set(std::shared_ptr<Container> c)
     {
-        iLastCallNum = iCallNum;
+        iLastCallNum = iCurrentCallNum+1;
         content = c;
     }//function
 
@@ -125,13 +140,27 @@ public:
     {
         if(iLastCallNum < iCallNum)
         {
-            if(pledger == nullptr)
+            if(pledger == nullptr && py_pledger == nullptr)
                 throw ModuleIO_Exception("No pledger known");
             iLastCallNum = iCallNum;
-            std::vector<std::shared_ptr<Container>> vInput;
-            for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                vInput.push_back(pFuture->fullfill(iCallNum));
-            content = pledger->execute(vInput);
+            if(pledger != nullptr)
+            {
+                std::vector<std::shared_ptr<Container>> vInput;
+                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                    vInput.push_back(pFuture->fullfill(iCallNum));
+                content = pledger->execute(vInput);
+            }//if
+            else
+            {
+                boost::python::list vInput;
+                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                    vInput.append(pFuture->fullfill(iCallNum));
+                content = boost::python::call<std::shared_ptr<Container>>(
+                        py_pledger,
+                        "execute",
+                        vInput
+                    );
+            }//else
             assert(content->getType());
         }//if
         return content;
@@ -139,7 +168,12 @@ public:
     
     std::shared_ptr<Container> get()
     {
-        return fullfill(iLastCallNum);
+        return fullfill(iCurrentCallNum);
+    }//function
+    
+    std::shared_ptr<Container> next()
+    {
+        return fullfill(++iCurrentCallNum);
     }//function
 
     //overload

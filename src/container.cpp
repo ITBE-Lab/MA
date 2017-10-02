@@ -65,6 +65,8 @@ struct iterable_converter
     }
 };
 
+class Pledge;
+
 void exportContainer()
 {
     // container is an abstract class and should never be initialized
@@ -86,6 +88,7 @@ void exportContainer()
     //make vectors of container-pointers a thing
     iterable_converter()
         .from_python<std::vector<std::shared_ptr<Container>>>()
+        .from_python<std::vector<std::shared_ptr<Pledge>>>()
         .from_python<std::vector<ContainerType>>();
 
     //export the containertype enum
