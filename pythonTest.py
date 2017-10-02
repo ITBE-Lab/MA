@@ -2,8 +2,8 @@ from LAuS import *
 from alignmentPrinter import AlignmentPrinter
 import random
 
-#analyse_crisper()
-#exit()
+analyse_crisper()
+exit()
 
 q = ""
 

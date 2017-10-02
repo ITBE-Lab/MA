@@ -48,68 +48,6 @@ public:
     virtual ContainerType getType(){return ContainerType::unknown;}
 };//class
 
-/**
- * @brief Abstract class intended to hold promises to data objects used by Modules.
- */
-class FutureContainer
-{
-private:
-    Module* pledger;
-    std::shared_ptr<Container> content;
-    ContainerType type;
-    unsigned int iLastCallNum = 0;
-    std::vector<FutureContainer> vPredecessors;
-public:
-    FutureContainer(
-            ContainerType type
-        )
-            :
-        pledger(),
-        content(),
-        type(type),
-        vPredecessors()
-    {}//constructor
-
-    FutureContainer(
-            Module* pledger,
-            ContainerType type,
-            std::vector<FutureContainer> vPredecessors
-        )
-            :
-        pledger(pledger),
-        content(),
-        type(type),
-        vPredecessors(vPredecessors)
-    {}//constructor
-
-    void set(std::shared_ptr<Container> c, unsigned int iCallNum)
-    {
-        iLastCallNum = iCallNum;
-        content = c;
-    }//function
-
-    std::shared_ptr<Container> fullfill(unsigned int iCallNum)
-    {
-        if(pledger == nullptr)
-            throw ModuleIO_Exception("No pledger and no data for future provided");
-        if(iLastCallNum < iCallNum)
-        {
-            iLastCallNum = iCallNum;
-            std::vector<std::shared_ptr<Container>> vInput;
-            for(FutureContainer xFuture : vPredecessors)
-                vInput.push_back(xFuture.fullfill(iCallNum));
-            content = pledger.execute(vInput);
-        }//if
-        if(content == nullptr)
-            throw ModuleIO_Exception("pledger did not hold his promise");
-        return content;
-    }//function
-    
-    std::shared_ptr<Container> get()
-    {
-        return fullfill(iLastCallNum);
-    }//function
-};//class
 
 /** 
  * @brief Function to export Container to boost python.

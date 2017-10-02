@@ -283,8 +283,18 @@ std::shared_ptr<Container> SegmentationContainer::execute(
 void analyseCRISPER()
 {
 	std::shared_ptr<FM_Index> xIndex(new FM_Index());
-	/*xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");
-	std::string searchFor[] = 
+
+	BWACompatiblePackedNucleotideSequencesCollection xPack;
+	std::string pref("/mnt/ssd0/chrom/human/");
+	for(unsigned int i = 1; i <= 22; i++)
+		xPack.vAppendFASTA(std::string(pref).append("chr").append(std::to_string(i)).append(".fna"));
+	xPack.vAppendFASTA(std::string(pref).append("chrX.fna"));
+	xPack.vAppendFASTA(std::string(pref).append("chrY.fna"));
+	xIndex = std::shared_ptr<FM_Index>(new FM_Index(xPack));
+	xIndex->vStoreFM_Index("/mnt/ssd0/chrom/human/index");
+
+	/*xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");*/
+	/*std::string searchFor[] = 
 	{
 			"CGTCAGACTTACTTGGTAGG",
 			"ACAGAATTTGCAACACAGGA",
@@ -292,7 +302,7 @@ void analyseCRISPER()
 			"GTCAGACTTACTTGGTAGGA",
 			"GTTTACAGAATTTGCAACAC"
 	};*/
-	xIndex->vLoadFM_Index("/mnt/ssd0/chrom/human/index");
+	/*xIndex->vLoadFM_Index("/mnt/ssd0/chrom/human/index");*/
 	std::string searchFor[] = 
 	{
 			"ACAGAATTTGCAACACAGGA",
@@ -301,13 +311,7 @@ void analyseCRISPER()
 	};
 	std::vector<std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>> results;
     {
-        ThreadPool xPool(48);
-		/*BWACompatiblePackedNucleotideSequencesCollection xPack;
-		std::string pref("/mnt/ssd0/chrom/mouse/");
-		for(unsigned int i = 1; i <= 19; i++)
-			xPack.vAppendFASTA(std::string(pref).append("chr").append(std::to_string(i)).append(".fna"));
-        xPack.vAppendFASTA(std::string(pref).append("chrX.fna"));
-        xPack.vAppendFASTA(std::string(pref).append("chrY.fna"));*/
+        ThreadPool xPool(48);		
 
 		std::mutex m;
 		unsigned int pos = 0;
@@ -319,13 +323,13 @@ void analyseCRISPER()
                 {
                 for(unsigned int i_mut = (i == 0 ? 0 : 1); i_mut < 4; i_mut++)
                 {
-                        for(unsigned int j = i; j < sequence.size(); j++)
+                        for(unsigned int j = i+1; j < sequence.size(); j++)
                         {
-                        for(unsigned int j_mut = (j == i ? 0 : 1); j_mut < 4; j_mut++)
+                        for(unsigned int j_mut = (j == i+1 && i_mut == 0 ? 0 : 1); j_mut < 4; j_mut++)
                         {
-                                for(unsigned int k = j; k < sequence.size(); k++)
+                                for(unsigned int k = j+1; k < sequence.size(); k++)
                                 {
-                                for(unsigned int k_mut = (k == j ? 0 : 1); k_mut < 4; k_mut++)
+                                for(unsigned int k_mut = (k == j+1 && j_mut == 0  ? 0 : 1); k_mut < 4; k_mut++)
                                 {
                                         xPool.enqueue(
 												[&]
@@ -341,22 +345,22 @@ void analyseCRISPER()
 													std::string sequence
 												)
                                                 {
-        uint8_t q[sequence.size()];
-        for(int x = sequence.size()-1; x >=0; x--)
-        {
-                if(sequence.at(x) == 'A')
-                        q[x] = 0;
-                if(sequence.at(x) == 'C')
-                        q[x] = 1;
-                if(sequence.at(x) == 'G')
-                        q[x] = 2;
-                if(sequence.at(x) == 'T')
-                        q[x] = 3;
-        }//for
-		q[k] = (q[k] + k_mut) % 4;
-        q[j] = (q[j] + j_mut) % 4;
-		q[i] = (q[i] + i_mut) % 4;
 		{
+			uint8_t q[sequence.size()];
+			for(int x = sequence.size()-1; x >=0; x--)
+			{
+					if(sequence.at(x) == 'A')
+							q[x] = 0;
+					if(sequence.at(x) == 'C')
+							q[x] = 1;
+					if(sequence.at(x) == 'G')
+							q[x] = 2;
+					if(sequence.at(x) == 'T')
+							q[x] = 3;
+			}//for
+			q[k] = (q[k] + k_mut) % 4;
+			q[j] = (q[j] + j_mut) % 4;
+			q[i] = (q[i] + i_mut) % 4;
 			SA_IndexInterval ik(
 					xIndex->L2[(int)q[sequence.size()-1]] + 1, 
 					xIndex->L2[(int)q[sequence.size()-1] + 1] - xIndex->L2[(int)q[sequence.size()-1]]
@@ -380,14 +384,28 @@ void analyseCRISPER()
 				std::string seq("");
 				for(unsigned int x = 0; x < sequence.size(); x++)
 				{
-					if(q[x] == 0)
-						seq.append("A");
-					if(q[x] == 1)
-						seq.append("C");
-					if(q[x] == 2)
-						seq.append("G");
-					if(q[x] == 3)
-						seq.append("T");
+					if( (i == x && i_mut != 0) || (j == x && j_mut != 0) || (k == x && k_mut != 0))
+					{
+						if(q[x] == 0)
+							seq.append("a");
+						if(q[x] == 1)
+							seq.append("c");
+						if(q[x] == 2)
+							seq.append("g");
+						if(q[x] == 3)
+							seq.append("t");
+					}
+					else
+					{
+						if(q[x] == 0)
+							seq.append("A");
+						if(q[x] == 1)
+							seq.append("C");
+						if(q[x] == 2)
+							seq.append("G");
+						if(q[x] == 3)
+							seq.append("T");
+					}
 				}//for
 				int missmatchAmount = 0;
 				if(i_mut != 0)
@@ -410,8 +428,23 @@ void analyseCRISPER()
 			}
 		}
 
-		//===========reversed=============
+		//===========reversed complement=============
 		{
+			uint8_t q[sequence.size()];
+			for(int x = sequence.size()-1; x >=0; x--)
+			{
+					if(sequence.at(x) == 'T')
+							q[x] = 0;
+					if(sequence.at(x) == 'G')
+							q[x] = 1;
+					if(sequence.at(x) == 'C')
+							q[x] = 2;
+					if(sequence.at(x) == 'A')
+							q[x] = 3;
+			}//for
+			q[k] = (q[k] + k_mut) % 4;
+			q[j] = (q[j] + j_mut) % 4;
+			q[i] = (q[i] + i_mut) % 4;
 			SA_IndexInterval ik(
 				xIndex->L2[(int)q[0]] + 1, 
 				xIndex->L2[(int)q[0] + 1] - xIndex->L2[(int)q[0]]
@@ -435,14 +468,28 @@ void analyseCRISPER()
 			std::string seq("");
 			for(int x = sequence.size()-1; x >=0; x--)
 			{
-				if(q[x] == 0)
-					seq.append("A");
-				if(q[x] == 1)
-					seq.append("C");
-				if(q[x] == 2)
-					seq.append("G");
-				if(q[x] == 3)
-					seq.append("T");
+				if( ((int)i == x && i_mut != 0) || ((int)j == x && j_mut != 0) || ((int)k == x && k_mut != 0))
+				{
+					if(q[x] == 0)
+						seq.append("a");
+					if(q[x] == 1)
+						seq.append("c");
+					if(q[x] == 2)
+						seq.append("g");
+					if(q[x] == 3)
+						seq.append("t");
+				}
+				else
+				{
+					if(q[x] == 0)
+						seq.append("A");
+					if(q[x] == 1)
+						seq.append("C");
+					if(q[x] == 2)
+						seq.append("G");
+					if(q[x] == 3)
+						seq.append("T");
+				}
 			}//for
 			int missmatchAmount = 0;
 			if(i_mut != 0)
@@ -466,13 +513,8 @@ void analyseCRISPER()
 												},//lambda
 												i, j, k, i_mut, j_mut, k_mut, pos, sequence
                                         );
-                            
-								if(k == j || k == i)
-									break;
 								}
                                 }//for
-						if(i == j)
-							break;
 						}
                         }//for
                 }
@@ -524,19 +566,19 @@ void analyseCRISPER()
 		}
 		std::cout << tot[0] << "\t" << tot[1] << "\t" << tot[2] << "\t" << tot[3]
 		<< "\t";
+			std::cout << std::endl;
 		
 		for( auto entry : result)
 		{
-			if(std::get<1>(entry) == 0)
+			if(std::get<1>(entry) <= 1)
 			{
-				std::cout << std::get<0>(entry) << std::endl;
-				break;
+				std::cout << std::get<0>(entry) << ": ";
+				for( auto blub : std::get<2>(entry))
+				{
+					std::cout << blub << " ";
+				}
+				std::cout << std::endl;
 			}
-			/*for( auto blub : std::get<2>(entry))
-			{
-				std::cout << blub << " ";
-			}
-			std::cout << std::endl;*/
 		}
 	}
 }//main

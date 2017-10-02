@@ -166,6 +166,8 @@ void FM_Index::build_FM_Index(
         uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() < 50000000 ? 0 : 1; // automatic selection depending on size of pack
     } // if
 
+    uiAlgorithmSelection = 0;
+
     /*
     * Step 1: Create the basic BWT.
     */
@@ -180,6 +182,7 @@ void FM_Index::build_FM_Index(
     } // if
     else
     {
+        assert(false);
         /*
         * In this case we build the BWT using the BWA C-code for large inputs. 
         * For delivering the pack to the BWA code we have to rely on an 
