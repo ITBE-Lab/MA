@@ -2,8 +2,9 @@
 
 unsigned int Pledge::iCurrentCallNum = 0;
 
+
 bool typeCheck(
-        std::shared_ptr<Container> pData, 
+        ContainerType xData, 
         ContainerType xExpected
     )
 {
@@ -11,9 +12,17 @@ bool typeCheck(
         return true;
     if(xExpected == ContainerType::unknown)
         return false;
-    if(xExpected == ContainerType::nothing)
-        return pData == nullptr;
-    return pData->getType() == xExpected;
+    return xData == xExpected;
+}//function
+
+bool typeCheck(
+        std::shared_ptr<Container> pData, 
+        ContainerType xExpected
+    )
+{
+    if(xExpected == ContainerType::nothing && pData == nullptr)
+        return true;
+    return typeCheck(pData->getType(), xExpected);
 }//function
 
 bool typeCheck(
@@ -41,7 +50,7 @@ void exportModule()
 {
     //module is an abstract class and should never be initialized
 	boost::python::class_<Module>(
-            "__Module",
+            "Module__",
             "Any class implementing a algorithm should inherit Module\n",
             boost::python::no_init
         )
@@ -71,6 +80,7 @@ void exportModule()
         .def(
                 "promise_me",
                 &Module::promiseMe,
+                boost::python::with_custodian_and_ward_postcall<0,1>(),
                 "arg1: self\n"
                 "arg2: a list of pledges that are required as inputs\n"
                 "returns: a promise to create a container of the type getOutputType\n"
@@ -83,19 +93,25 @@ void exportModule()
             boost::python::bases<Container>, 
             std::shared_ptr<Pledge>
         >(
-            "__Pledge",
+            "Pledge",
             "Represents the pledge to deliver some container.\n"
             "Content may be provided by a Module (use promiseMe function) or by calling set.\n",
-            boost::python::init<ContainerType>(
-                "arg1: self\n"
-                "arg2: Type of the promised container\n"
-            )
-        )
-            .def(boost::python::init<PyObject*, ContainerType, std::vector<std::shared_ptr<Pledge>>>(
+            boost::python::init<
+                    boost::python::object, 
+                    ContainerType, 
+                    std::vector<std::shared_ptr<Pledge>>
+                >
+            (
                 "arg1: self\n"
                 "arg2: py_pledger\n"
                 "arg3: type\n"
                 "arg4: vPredecessors\n"
+            )
+            [boost::python::with_custodian_and_ward_postcall<0,1>()]
+        )
+            .def(boost::python::init<ContainerType>(
+                "arg1: self\n"
+                "arg2: Type of the promised container\n"
             ))
             .def(
                     "set",
@@ -130,4 +146,7 @@ void exportModule()
                                             std::shared_ptr<Pledge>,
                                             std::shared_ptr<Container> 
                                         >();
+
+    iterable_converter()
+        .from_python<std::vector<std::shared_ptr<Pledge>>>();
 }

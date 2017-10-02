@@ -1,5 +1,5 @@
 from aligner import *
-
+from alignmentPrinter import *
 
 def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge, rev_fm_index_pledge):
     seg = Segmentation(True)
@@ -41,10 +41,10 @@ def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge, rev_fm_index
         reference_pledge
     ))
 
-    algn_pledge = nmw.promise_me((
+    align_pledge = nmw.promise_me((
         best_pledge,
         query_pledge,
         reference_pledge
     ))
 
-    return printer.promise_me((algn_pledge, query_pledge, reference_pledge))
+    return printer.promise_me((align_pledge, query_pledge, reference_pledge))

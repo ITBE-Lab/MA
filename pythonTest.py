@@ -50,7 +50,6 @@ def create_and_store():
     ref_seq.append("name", "no comment",ref)
     ref_seq.store("test_pack")
 
-query = NucSeq(q)
 
 ref_seq = BWAPack()
 ref_seq.load("test_pack")
@@ -92,6 +91,9 @@ for _ in range(50):
             q = q[:pos] + "t" + q[pos:]
         else:
             q = q[:pos] + "g" + q[pos:]
+
+
+query = NucSeq(q)
 
 query_pledge.set(query)
 reference_pledge.set(ref_seq)

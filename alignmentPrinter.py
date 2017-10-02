@@ -20,7 +20,7 @@ Execution:
 
     #override
     def get_output_type(self):
-        return [ContainerType.nothing]
+        return ContainerType.nothing
 
     #override
     def execute(self, input):

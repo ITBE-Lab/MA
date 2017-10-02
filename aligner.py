@@ -1,23 +1,18 @@
 from LAuS import *
 
-class Module(__Module):
+class Module(Module__):
     def get_input_type(self):
         return [ContainerType.nothing]
 
     #override
     def get_output_type(self):
-        return [ContainerType.nothing]
+        return ContainerType.nothing
 
     #override
     def execute(self, input):
-        return None
-
-    def save_execute(self):
-        print("python save execute disabled!")
-        return self.execute()
+        return Module__.execute(input)
 
     def promise_me(self, input):
-        print("python save execute disabled!")
         return Pledge(self, self.get_output_type(), input)
 
 
@@ -26,7 +21,7 @@ class SweepAllReturnBest(Module):
     """
 
     def __init__(self):
-        self.liesweep = LineSweep()
+        self.linesweep = LineSweep()
 
     #override
     def get_input_type(self):
@@ -34,14 +29,15 @@ class SweepAllReturnBest(Module):
 
     #override
     def get_output_type(self):
-        return [ContainerType.seeds]
+        return ContainerType.seeds
 
     #override
     def execute(self, input):
         strips, query, ref_seq = input
         best_strip = []
         for strip in strips:
-            best_strip.append(liesweep.execute((query, ref_seq, strip)))
+            app = self.linesweep.execute((query, ref_seq, strip))
+            best_strip.append(app)
 
         best = 0
         for index, strip in enumerate(best_strip):

@@ -6,6 +6,10 @@
  * Calls the export functions of the various Modules and Containers.
  */
 
+/**
+ * @mainpage Module -ar LineSweep -ing Aligner using Segmentation
+ */
+
 #ifndef ALIGNER_H
 #define ALIGNER_H
 

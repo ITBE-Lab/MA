@@ -7,10 +7,9 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
-#include <cmath>
-#include <boost/python.hpp>
 #include <vector>
 #include "exception.h"
+#include "iterableConverter.h"
 
 /**
  * @brief Used to describe the type of the Container.
