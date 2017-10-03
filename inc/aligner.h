@@ -8,6 +8,13 @@
 
 /**
  * @mainpage Module -ar LineSweep -ing Aligner using Segmentation
+ * @section intro_sec Introduction
+ *
+ * LAuS is a ....
+ *
+ * @section install_sec Installation
+ * 
+ * pip install LAuS
  */
 
 #ifndef ALIGNER_H
