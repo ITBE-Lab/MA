@@ -2,8 +2,8 @@ from LAuS import *
 from setupaligner import set_up_aligner
 import random
 
-#analyse_crisper()
-#exit()
+analyse_crisper()
+exit()
 
 q = ""
 

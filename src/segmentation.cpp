@@ -284,31 +284,33 @@ void analyseCRISPER()
 {
 	std::shared_ptr<FM_Index> xIndex(new FM_Index());
 
-	BWACompatiblePackedNucleotideSequencesCollection xPack;
+	/*BWACompatiblePackedNucleotideSequencesCollection xPack;
 	std::string pref("/mnt/ssd0/chrom/human/");
 	for(unsigned int i = 1; i <= 22; i++)
 		xPack.vAppendFASTA(std::string(pref).append("chr").append(std::to_string(i)).append(".fna"));
 	xPack.vAppendFASTA(std::string(pref).append("chrX.fna"));
 	xPack.vAppendFASTA(std::string(pref).append("chrY.fna"));
 	xIndex = std::shared_ptr<FM_Index>(new FM_Index(xPack));
-	xIndex->vStoreFM_Index("/mnt/ssd0/chrom/human/index");
-
-	/*xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");*/
-	/*std::string searchFor[] = 
-	{
-			"CGTCAGACTTACTTGGTAGG",
-			"ACAGAATTTGCAACACAGGA",
-			"ACCCGTCAGACTTACTTGGT",
-			"GTCAGACTTACTTGGTAGGA",
-			"GTTTACAGAATTTGCAACAC"
-	};*/
-	/*xIndex->vLoadFM_Index("/mnt/ssd0/chrom/human/index");*/
+	xIndex->vStoreFM_Index("/mnt/ssd0/chrom/human/index");*/
+#if 1
+	xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");
 	std::string searchFor[] = 
 	{
-			"ACAGAATTTGCAACACAGGA",
-			"GTCCTTGAAACTACAAATGT",
-			"GTTTACAGAATTTGCAACAC"
+			"CGTCAGACTTACTTGGTAGGAGG",
+			"ACAGAATTTGCAACACAGGATGG",
+			"ACCCGTCAGACTTACTTGGTAGG",
+			"GTCAGACTTACTTGGTAGGAGGG",
+			"GTTTACAGAATTTGCAACACAGG"
 	};
+#else
+	xIndex->vLoadFM_Index("/mnt/ssd0/chrom/human/index");
+	std::string searchFor[] = 
+	{
+			"ACAGAATTTGCAACACAGGATGG",
+			"GTCCTTGAAACTACAAATGTTGG",
+			"GTTTACAGAATTTGCAACACAGG"
+	};
+#endif
 	std::vector<std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>> results;
     {
         ThreadPool xPool(48);		
@@ -319,18 +321,20 @@ void analyseCRISPER()
         for(std::string& sequence : searchFor)
         {
 				results.push_back(std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>());
-                for(unsigned int i = 0; i < sequence.size(); i++)
+                for(unsigned int i = 0; i < sequence.size()-3; i++)
                 {
                 for(unsigned int i_mut = (i == 0 ? 0 : 1); i_mut < 4; i_mut++)
                 {
-                        for(unsigned int j = i+1; j < sequence.size(); j++)
+                        for(unsigned int j = i+1; j < sequence.size()-3; j++)
                         {
                         for(unsigned int j_mut = (j == i+1 && i_mut == 0 ? 0 : 1); j_mut < 4; j_mut++)
                         {
-                                for(unsigned int k = j+1; k < sequence.size(); k++)
+                                for(unsigned int k = j+1; k < sequence.size()-3; k++)
                                 {
                                 for(unsigned int k_mut = (k == j+1 && j_mut == 0  ? 0 : 1); k_mut < 4; k_mut++)
                                 {
+									for(unsigned int l_mut = 0; l_mut < 4; l_mut++)
+									{
                                         xPool.enqueue(
 												[&]
 												(
@@ -341,6 +345,7 @@ void analyseCRISPER()
 													unsigned int i_mut,
 													unsigned int j_mut,
 													unsigned int k_mut,
+													unsigned int l_mut,
 													unsigned int pos,
 													std::string sequence
 												)
@@ -361,6 +366,7 @@ void analyseCRISPER()
 			q[k] = (q[k] + k_mut) % 4;
 			q[j] = (q[j] + j_mut) % 4;
 			q[i] = (q[i] + i_mut) % 4;
+			q[sequence.size()-3] = (q[sequence.size()-3] + l_mut) % 4;
 			SA_IndexInterval ik(
 					xIndex->L2[(int)q[sequence.size()-1]] + 1, 
 					xIndex->L2[(int)q[sequence.size()-1] + 1] - xIndex->L2[(int)q[sequence.size()-1]]
@@ -387,17 +393,6 @@ void analyseCRISPER()
 					if( (i == x && i_mut != 0) || (j == x && j_mut != 0) || (k == x && k_mut != 0))
 					{
 						if(q[x] == 0)
-							seq.append("a");
-						if(q[x] == 1)
-							seq.append("c");
-						if(q[x] == 2)
-							seq.append("g");
-						if(q[x] == 3)
-							seq.append("t");
-					}
-					else
-					{
-						if(q[x] == 0)
 							seq.append("A");
 						if(q[x] == 1)
 							seq.append("C");
@@ -405,6 +400,17 @@ void analyseCRISPER()
 							seq.append("G");
 						if(q[x] == 3)
 							seq.append("T");
+					}
+					else
+					{
+						if(q[x] == 0)
+							seq.append("a");
+						if(q[x] == 1)
+							seq.append("c");
+						if(q[x] == 2)
+							seq.append("g");
+						if(q[x] == 3)
+							seq.append("t");
 					}
 				}//for
 				int missmatchAmount = 0;
@@ -428,6 +434,9 @@ void analyseCRISPER()
 			}
 		}
 
+		return;
+		//there is no need to look for that since the fm index contains the reverse complement..
+		//thus should be changed in order to half the ram requirements
 		//===========reversed complement=============
 		{
 			uint8_t q[sequence.size()];
@@ -471,17 +480,6 @@ void analyseCRISPER()
 				if( ((int)i == x && i_mut != 0) || ((int)j == x && j_mut != 0) || ((int)k == x && k_mut != 0))
 				{
 					if(q[x] == 0)
-						seq.append("a");
-					if(q[x] == 1)
-						seq.append("c");
-					if(q[x] == 2)
-						seq.append("g");
-					if(q[x] == 3)
-						seq.append("t");
-				}
-				else
-				{
-					if(q[x] == 0)
 						seq.append("A");
 					if(q[x] == 1)
 						seq.append("C");
@@ -489,6 +487,17 @@ void analyseCRISPER()
 						seq.append("G");
 					if(q[x] == 3)
 						seq.append("T");
+				}
+				else
+				{
+					if(q[x] == 0)
+						seq.append("a");
+					if(q[x] == 1)
+						seq.append("c");
+					if(q[x] == 2)
+						seq.append("g");
+					if(q[x] == 3)
+						seq.append("t");
 				}
 			}//for
 			int missmatchAmount = 0;
@@ -511,13 +520,14 @@ void analyseCRISPER()
 			m.unlock();
 		}
 												},//lambda
-												i, j, k, i_mut, j_mut, k_mut, pos, sequence
-                                        );
-								}
+												i, j, k, i_mut, j_mut, k_mut, l_mut, pos, sequence
+											);
+									}//for
+								}//for
                                 }//for
-						}
+						}//for
                         }//for
-                }
+                }//for
 				}//for
 			pos++;
         }//for
@@ -555,7 +565,21 @@ void analyseCRISPER()
 		}
 	);
 
-	std::cout << "0\t1\t2\t3\tmissmatch hits" << std::endl;
+	std::cout << "num mismatches\tsequence\tlocation" << std::endl;
+	for( auto result : results)
+	{
+		for( auto entry : result)
+		{
+			std::cout << std::get<1>(entry) << ": " << std::get<0>(entry) << ": ";
+			for( auto blub : std::get<2>(entry))
+			{
+				std::cout << blub << " ";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "---------------------------------------------------------------" << std::endl;
+	}//for
+	std::cout << "0\t1\t2\t3\tmismatch hits" << std::endl;
 	std::cout << "===================================================================" << std::endl;
 	for( auto result : results)
 	{
@@ -566,21 +590,16 @@ void analyseCRISPER()
 		}
 		std::cout << tot[0] << "\t" << tot[1] << "\t" << tot[2] << "\t" << tot[3]
 		<< "\t";
-			std::cout << std::endl;
-		
-		for( auto entry : result)
+		for(auto entry : result)
 		{
-			if(std::get<1>(entry) <= 1)
+			if(std::get<1>(entry) == 0)
 			{
-				std::cout << std::get<0>(entry) << ": ";
-				for( auto blub : std::get<2>(entry))
-				{
-					std::cout << blub << " ";
-				}
-				std::cout << std::endl;
+				std::cout << std::get<0>(entry);
+				break;
 			}
 		}
-	}
+		std::cout << std::endl;
+	}//for
 }//main
 
 void exportSegmentation()
