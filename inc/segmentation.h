@@ -9,7 +9,6 @@
 #define DEBUG_ENABLED
 
 #include <system.h>
-#include <mutex>
 #include "module.h"
 #include "intervalTree.h"
 #include "threadPool.h"

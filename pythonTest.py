@@ -1,7 +1,35 @@
 from LAuS import *
 from setupaligner import set_up_aligner
 import random
+"""
+before = "AATTTTATGACTTTTTATTTTCAG"
+actual = "GTGTAAACGTCCTACTTTGGGGCAACTTGCCAGAGATAGAAGAGAGTACAGATGAAGATGTGTTAAATATCTCAGCAGAGGAGTGTATTAGATAA"
+after = "ATGGAATTATGATATATATGATATACAA"
 
+sequence = before + actual + after
+
+start = len(before) - 20
+end = len(before) + len(actual) + 20
+
+for index in range(start, end):
+    if sequence[index] == sequence[index+1] == 'G':
+        print( "\"" + sequence[index-21:index-1] + "\"," )
+    if sequence[index] == sequence[index+1] == 'C':
+        s = sequence[index+2:index+23]
+        s2 = ""
+        for index in range(20):
+            if s[index] == "G":
+                s2 = "C" + s2
+            if s[index] == "C":
+                s2 = "G" + s2
+            if s[index] == "A":
+                s2 = "T" + s2
+            if s[index] == "T":
+                s2 = "A" + s2
+        print( "\"" + s2 + "\"," )
+
+exit()
+"""
 analyse_crisper()
 exit()
 
