@@ -297,7 +297,7 @@ void analyseCRISPER()
 	xPack.vAppendFASTA(std::string(pref).append("chrY.fna"));
 	xIndex = std::shared_ptr<FM_Index>(new FM_Index(xPack));
 	xIndex->vStoreFM_Index("/mnt/ssd0/chrom/human/index");*/
-#if 1
+#if 0
 	xIndex->vLoadFM_Index("/mnt/ssd0/chrom/mouse/index");
 	std::string searchFor[] = 
 	{
@@ -486,6 +486,33 @@ void analyseCRISPER()
 		"TGTGTTAAATATCTCAGCAG",
 		"AGAGGAGTGTATTAGATAAA"
 		*/
+
+				
+		"TACCAAGTAAGTCATGCTAG",
+		"AGCATGACTTACTTGGTAGG",
+		"CAAGTAAGTCATGCTAGTGG",
+		"ACTAGCATGACTTACTTGGT",
+		"GTCGCAGGAAGGATGAGGTG",
+		"GTAGACATGGCGTCGCAGGA",
+		"TCGCAGGAAGGATGAGGTGT",
+		"ACTACAAATGTTGGTAGACA",
+		"ATGGCGTCGCAGGAAGGATG",
+		"AAGTAAGTCATGCTAGTGGC",
+		"ACAGAATTTGCAACACAGGA",
+		"GCTCAGCTCTAGGGGAATGA",
+		"GCATGACTTACTTGGTAGGA",
+		"AAACAAGTGCTCAGCTCTAG",
+		"GTAAACAAGTGCTCAGCTCT",
+		"ACATTTGTAGTTTCAAGGAC",
+		"GTCCTTGAAACTACAAATGT",
+		"GTTTACAGAATTTGCAACAC",
+		"GTTGGTAGACATGGCGTCGC",
+		"GAGGGATGTCTGTAGAGAAA",
+		"GAGGTGTGGGATTTTGAAAA",
+		"CGCCACTAGCATGACTTACT",
+		"TAAACAAGTGCTCAGCTCTA",
+		"GGGAATGAAGGCTGTTTTGC",
+		"TACCAACATTTGTAGTTTCA"
 	};
 #endif
 	std::vector<std::vector<std::tuple<std::string, unsigned int, std::list<int64_t>>>> results;

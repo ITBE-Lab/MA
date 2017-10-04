@@ -9,6 +9,7 @@
 #include <boost/log/trivial.hpp> 
 
 #if _MSC_VER
+
 	/* Avoids problems with the nasty min-max define-macros of windows.
 	 */
 	#ifndef NOMINMAX

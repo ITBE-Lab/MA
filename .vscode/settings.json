@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.H": "cpp",
+        "*.h": "cpp",
         "*.ipp": "cpp",
         "thread": "cpp",
         "array": "cpp",

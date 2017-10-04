@@ -45,8 +45,7 @@
         {
             "name": "Win32",
             "includePath": [
-                "C:/cpp-tools/x86_64-w64-mingw32/include",
-                "C:/cpp-tools/include/c++/4.8.3",
+                "C:/GCC-64/lib/gcc/x86_64-w64-mingw32/5.1.0/include/c++",
                 "C:/boost/boost_1_65_1",
                 "C:/Python35-64/include",
                 "${workspaceRoot}/inc"
@@ -58,8 +57,7 @@
             "intelliSenseMode": "msvc-x64",
             "browse": {
                 "path": [
-                    "C:/cpp-tools/x86_64-w64-mingw32/include",
-                    "C:/cpp-tools/include/c++/4.8.3",
+                    "C:/GCC-64/lib/gcc/x86_64-w64-mingw32/5.1.0/include/c++",
                     "C:/boost/boost_1_65_1",
                     "C:/Python35-64/include",
                     "${workspaceRoot}/inc"
