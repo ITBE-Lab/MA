@@ -1,4 +1,4 @@
-from aligner import *
+from .aligner import *
 
 
 class AlignmentPrinter(Module):

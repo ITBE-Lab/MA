@@ -1,4 +1,4 @@
-from LAuS import *
+from libLAuS import *
 
 class Module(Module__):
     def get_input_type(self):

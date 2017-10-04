@@ -29,9 +29,11 @@ for index in range(start, end):
         print( "\"" + s2 + "\"," )
 
 exit()
-"""
+
+
 analyse_crisper()
 exit()
+"""
 
 q = ""
 
