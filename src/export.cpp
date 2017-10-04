@@ -1,4 +1,4 @@
-#include "aligner.h"
+#include "export.h"
 
 /**
  * @brief The boost-python main method.
@@ -7,7 +7,7 @@
  * by calling the respective export*() functions.
  * The main method is generated using boost-python.
  */
-BOOST_PYTHON_MODULE(LAuS)
+BOOST_PYTHON_MODULE(libLAuS)
 {
         exportContainer();
         exportModule();

@@ -1,5 +1,4 @@
-from aligner import *
-from alignmentPrinter import *
+from LAuS import *
 
 def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge, rev_fm_index_pledge):
     seg = Segmentation(True)

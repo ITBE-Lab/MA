@@ -17,8 +17,8 @@
  * pip install LAuS
  */
 
-#ifndef ALIGNER_H
-#define ALIGNER_H
+#ifndef EXPORT_H
+#define EXPORT_H
 
 #include "getAnchors.h"
 #include "needlemanWunsch.h"

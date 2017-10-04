@@ -1,9 +1,12 @@
 
 from setuptools import setup, Extension
- 
+from os import listdir
+
+src_files = list(map(lambda x: "src/"+x, listdir("src")))
+
 setup(
     name='LAuS',
-    version='0.0.2',
+    version='0.0.3',
     description='An aligner for Nucleotide Sequences.',
     author='Markus Schmidt',
  
@@ -13,6 +16,7 @@ setup(
     include_package_data=True,
  
     zip_safe=False,
+    python_requires='>=3',
  
     #license='MIT', #TODO: lookup correct license
 
@@ -40,31 +44,17 @@ setup(
     keywords='aligner nucleotide sequence',
 
     ext_modules=[
-        Extension('LAuS',
-            ['src/aligner.cpp', #TODO: check if this can be automated to pick all .cpp files
-            'src/container.cpp',
-            'src/exception.cpp',
-            'src/FM_index.cpp',
-            'src/intervalTree.cpp',
-            'src/ksw.c',
-            'src/is.c',
-            'src/QSufSort.c',
-            'src/module.cpp',
-            'src/nucSeq.cpp',
-            'src/pack.cpp',
-            'src/segmentation.cpp',
-            'src/sequence.cpp',
-            'src/support.cpp',
-            'src/BWT_large.cpp',
-            'src/threadPool.cpp',],
-            include_dirs=['inc', 'usr/include', '/opt/dev/boost_1_65_1_'], # assuming your project include files are there
+        Extension(
+            'libLAuS',
+            src_files,
+            include_dirs=['inc', '/opt/dev/boost_1_65_1'], # project include files
             library_dirs=[
                 '/usr/lib',
-                '/opt/dev/boost_1_65_1_/stage/lib', 
+                '/opt/dev/boost_1_65_1/stage/lib', 
                 '/opt/dev/lib',
             ], # optional
             libraries=[
-                'boost_python-mt', 
+                'boost_python3-mt', 
                 'dl',
                 'rt',
                 'z',
@@ -78,8 +68,10 @@ setup(
                 'boost_iostreams-mt',
                 ], # those are the linked libs
             extra_compile_args=[
-                '-std=c++11'
+                '-std=c++11',
+                '-DBOOST_ALL_DYN_LINK'
                 ] # some other compile args
             ),
-        ]
+        ],
+    packages=["LAuS"]
 )
