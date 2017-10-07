@@ -45,8 +45,6 @@ bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode,
 {
 	if (!bBackwards)
 		return uiCurrIndex < uiQueryLength;
-
-	//we want to allow extension past the interval borders
 	return true;
 }//function
 
@@ -63,10 +61,10 @@ SaSegment Segmentation::extend(
 
 	//select the correct fm_index based on the direction of the extension
 	std::shared_ptr<FM_Index> pxUsedFmIndex;
-	if (!bBackwards)
-		pxUsedFmIndex = pxRev_FM_Index;
-	else
+	if (bBackwards)
 		pxUsedFmIndex = pxFM_index;
+	else
+		pxUsedFmIndex = pxRev_FM_Index;
 	
 	/* Initialize ik on the foundation of the single base q[x].
 	 * In order to understand this initialization you should have a look 
@@ -99,26 +97,31 @@ SaSegment Segmentation::extend(
 		// perform one step of the extension
 		SA_IndexInterval ok = bwt_extend_backward(ik, c, pxUsedFmIndex);
 
+		std::cout << i << " " << ik.size() << " -> " << ok.size();
+		std::cout << " (" << ok.start() << ", " << ok.end() << ")" << std::endl;
+			
 		/*
 		* In fact, if ok.getSize is zero, then there are no matches any more.
 		*/
 		if (ok.size() == 0)
 			break; // the SA-index interval size is too small to be extended further
+			
+		
+		if (!bBackwards)
+			i++;
+		else if (i-- == 0)// unsigned int
+			break;
 
 		/* Set input interval for the next iteration.
 		*/
 		ik = ok;
 
-		if (!bBackwards)
-			i++;
-		else if (i-- == 0)// unsigned int
-			break;
 	}//while
 
-	if (!bBackwards)
-		return SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true);
-	else
+	if (bBackwards)
 		return SaSegment(i + 1, uiStartIndex - (i + 1), ik, false);
+	else
+		return SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true);
 }//function
 
 /* this function implements the segmentation of the query
@@ -140,14 +143,6 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	DEBUG(
 		std::cout << "interval (" << pxNode->start() << "," << pxNode->end() << ")" << std::endl;
 	)
-	//performs backwards extension and records any perfect matches
-	SaSegment xBack = extend(*pxNode, pxNode->getCenter(), true);
-	/* we could already extend our matches from the center of the node to  uiBackwardsExtensionReachedUntil
-	* therefore we know that the next extension will reach at least as far as the center of the node.
-	* we might be able to extend our matches further though.
-	*/
-	SaSegment xBackForw = extend(*pxNode, xBack.start(), false);
-	assert(xBackForw.end() >= pxNode->getCenter());
 
 	//performs forward extension and records any perfect matches
 	SaSegment xForw = extend(*pxNode, pxNode->getCenter(), false);
@@ -157,6 +152,17 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	*/
 	SaSegment xForwBack = extend(*pxNode, xForw.end(), true);
 	assert(xForwBack.start() <= pxNode->getCenter());
+	
+	//performs backwards extension and records any perfect matches
+	SaSegment xBack = extend(*pxNode, pxNode->getCenter(), true);
+	/* we could already extend our matches from the center of the node to  uiBackwardsExtensionReachedUntil
+	* therefore we know that the next extension will reach at least as far as the center of the node.
+	* we might be able to extend our matches further though.
+	*/
+	SaSegment xBackForw = extend(*pxNode, xBack.start(), false);
+	std::cout << xBackForw.end() << std::endl;
+	std::cout << pxNode->getCenter() << std::endl;
+	assert(xBackForw.end() >= pxNode->getCenter());
 
 	nucSeqIndex uiFrom, uiTo;
 	if (xBackForw.size() > xForwBack.size())
@@ -172,8 +178,7 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 		pxNode->push_back(xForwBack);
 	}//else
 
-	//if the prev interval is longer than uiMinIntervalSize
-	if (uiFrom != 0 && pxNode->start() < uiFrom - 1)
+	if (uiFrom != 0 && pxNode->start() + 1 < uiFrom)
 	{
 		//create a new list element and insert it before the current node
 		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
@@ -189,7 +194,6 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 			pxPrevNode, this, pxPool
 		);//enqueue
 	}//if
-	//if the post interval is longer than uiMinIntervalSize
 	if (pxNode->end() > uiTo + 1)
 	{
 		//create a new list element and insert it after the current node
@@ -220,7 +224,7 @@ void Segmentation::segment()
 	assert(*pSegmentTree->begin() != nullptr);
 
 	{//scope for xPool
-		ThreadPoolAllowingRecursiveEnqueues xPool(1);
+		ThreadPoolAllowingRecursiveEnqueues xPool( 1 );//NUM_THREADS_ALIGNER);
 
 		//enqueue the root interval for processing
 		xPool.enqueue(
@@ -244,7 +248,7 @@ std::vector<ContainerType> SegmentationContainer::getInputType()
 			ContainerType::fM_index,
 			//the reversed fm_index
 			ContainerType::fM_index,
-			//the querry sequence
+			//the query sequence
 			ContainerType::nucSeq,
 			//the reference sequence (packed since it could be really long)
 			ContainerType::packedNucSeq,
@@ -262,7 +266,7 @@ std::shared_ptr<Container> SegmentationContainer::execute(
 {
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
 	std::shared_ptr<FM_Index> pFM_indexReversed = std::static_pointer_cast<FM_Index>(vpInput[1]);
-	std::shared_ptr<NucleotideSequence> pQuerrySeq = 
+	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
 	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
 		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
@@ -271,7 +275,7 @@ std::shared_ptr<Container> SegmentationContainer::execute(
 	Segmentation xS(
 			pFM_index, 
 			pFM_indexReversed, 
-			pQuerrySeq, 
+			pQuerySeq, 
 			bBreakOnAmbiguousBase,
 			pRefSeq
 		);

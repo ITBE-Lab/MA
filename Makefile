@@ -21,9 +21,9 @@ CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
 
-all: libLAuS.so
+all: test/libLAuS.so
 
-libLAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
+test/libLAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
  
 obj/%.o: src/%.cpp inc/%.h
@@ -33,19 +33,19 @@ obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
 libLAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
-	pydoc3 -w libLAuS
+	pydoc3 -w LAuS
 
 html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
 	doxygen doxygen.config
 
-install: libLAuS.so
+install:
 	pip3 install . --upgrade
 
 distrib:
 	python setup.py sdist bdist_egg bdist_wheel
 
 clean:
-	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) *.so
+	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) test/libLAuS.so
 	rm -r -f dist *.egg-info build
 	rm -r -f html
 	rm -r -f libLAuS.html

@@ -1,6 +1,27 @@
 from LAuS import *
 from setupaligner import set_up_aligner
 import random
+
+
+def mutate(char):
+    num = 0
+    if char == "c":
+        num = 1
+    elif char == "t":
+        num = 2
+    else:
+        num = 3
+    num += random.randint(1,3)
+    num %= 4
+    if num == 0:
+        return 'a'
+    elif num == 2:
+        return 'c'
+    elif num == 3:
+        return 't'
+    else:
+        return 'g'
+
 """
 before = "AATTTTATGACTTTTTATTTTCAG"
 actual = "GTGTAAACGTCCTACTTTGGGGCAACTTGCCAGAGATAGAAGAGAGTACAGATGAAGATGTGTTAAATATCTCAGCAGAGGAGTGTATTAGATAA"
@@ -49,68 +70,40 @@ result_pledge = set_up_aligner(
     rev_fm_index_pledge
 )
 
-#random.seed(1)
 
-def create_and_store():
-    seq = ""
-    for _ in range(1000000):
-        char = random.randint(1,4)
-        if char == 1:
-            seq += "a"
-        elif char == 2:
-            seq += "c"
-        elif char == 3:
-            seq += "t"
-        else:
-            seq += "g"
-
-            
-    ref = NucSeq(seq)
-
-    rev_ref = NucSeq(seq)
-    rev_ref.reverse()
-
-
-    fm_index = FMIndex(ref)
-    fm_index.store("test")
-    rev_fm_index = FMIndex(rev_ref)
-    rev_fm_index.store("rev_test")
-
-    ref_seq = BWAPack()
-    ref_seq.append("name", "no comment",ref)
-    ref_seq.store("test_pack")
 
 
 ref_seq = BWAPack()
-ref_seq.load("test_pack")
+ref_seq.load("/mnt/ssd0/chrom/random/pack")
 fm_index = FMIndex()
-fm_index.load("test")
+fm_index.load("/mnt/ssd0/chrom/random/index")
 rev_fm_index = FMIndex()
-rev_fm_index.load("rev_test")
+rev_fm_index.load("/mnt/ssd0/chrom/random/rev_index")
 
-q_from = random.randint(0, 2000)
-q_to = q_from + 2000
+
+
+del_ins_size = 10
+q_len = 2000
+mutation_amount = 20
+
+q = ""
+
+
+q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
+q_to = q_from + q_len
 q = str(ref_seq.extract_from_to(q_from, q_to))
-for _ in range(50):
+for _ in range(mutation_amount):
     pos = random.randint(1,len(q)-1)
-    char = random.randint(1,4)
-    if char == 1:
-        q = q[:pos-1] + "a" + q[pos:]
-    elif char == 2:
-        q = q[:pos-1] + "c" + q[pos:]
-    elif char == 3:
-        q = q[:pos-1] + "t" + q[pos:]
-    else:
-        q = q[:pos-1] + "g" + q[pos:]
+    q = q[:pos-1] + mutate(q[pos]) + q[pos:]
 
-for _ in range(50):
+for _ in range(mutation_amount):
     pos = random.randint(1,len(q)-11)
-    l = random.randint(1,10)
+    l = random.randint(1,del_ins_size)
     q = q[:pos-1] + q[pos + l:]
 
-for _ in range(50):
+for _ in range(mutation_amount):
     pos = random.randint(1,len(q)-1)
-    l = random.randint(1,10)
+    l = random.randint(1,del_ins_size)
     for _ in range(l):
         char = random.randint(1,4)
         if char == 1:
@@ -121,6 +114,7 @@ for _ in range(50):
             q = q[:pos] + "t" + q[pos:]
         else:
             q = q[:pos] + "g" + q[pos:]
+
 
 
 query = NucSeq(q)

@@ -82,6 +82,32 @@ public:
     ContainerType getType(){return ContainerType::seed;}
 }; //class
 
+class SeedIter{
+private:
+    std::list<Seed>::iterator it;
+    std::list<Seed>::iterator end;
+
+public:
+    SeedIter(std::list<Seed>* pList)
+            :
+        it(pList->begin()),
+        end(pList->end())
+    {}//constructor
+    
+    Seed next_boost()
+    {
+        if(it == end)
+        {
+            PyErr_SetNone(PyExc_StopIteration);
+            boost::python::throw_error_already_set();
+            return Seed(0,0,0);
+        }//if
+        Seed xRet = *it;
+        ++it;
+        return xRet;
+    }//function
+};//class
+
 class Seeds:
 public std::list<Seed>,
 public Container
@@ -107,6 +133,12 @@ public Container
         for(Seed& rS : *pOther)
             push_back(rS);
     }//function
+
+    SeedIter boost_python_iterator()
+    {
+        return SeedIter(this);
+    }//function
+
 };//class
 
 class SeedsVector:

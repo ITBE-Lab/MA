@@ -143,6 +143,8 @@ void FM_Index::bwt_cal_sa_step3( unsigned int intv )
         /* Core iteration step
          */
         isa = bwt_invPsi( isa );
+
+        assert(isa >= 0);
     } // for
     
     /* Do not forget the last block, if necessary.
@@ -163,10 +165,8 @@ void FM_Index::build_FM_Index(
 
     if ( uiAlgorithmSelection > 1) 
     {
-        uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() < 50000000 ? 0 : 1; // automatic selection depending on size of pack
+        uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardStrand < 50000000 ? 0 : 1; // automatic selection depending on size of pack
     } // if
-
-    uiAlgorithmSelection = 0;
 
     /*
     * Step 1: Create the basic BWT.
@@ -182,7 +182,6 @@ void FM_Index::build_FM_Index(
     } // if
     else
     {
-        assert(false);
         /*
         * In this case we build the BWT using the BWA C-code for large inputs. 
         * For delivering the pack to the BWA code we have to rely on an 
@@ -191,7 +190,7 @@ void FM_Index::build_FM_Index(
         */
 
         // set seq_len, so that it represents the size of forward plus reverse strand
-        uiRefSeqLength = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse(); 
+        uiRefSeqLength = rxSequenceCollection.uiUnpackedSizeForwardStrand;
 
         std::string tempDir = "~/.tempdir";
         // Check existence / create directory for storage of temporary data.

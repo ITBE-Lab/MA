@@ -169,24 +169,35 @@ public:
 		}//for
 	}//function
 
+	
+	/**
+	 * @brief returns the number of seeds
+	 */
+	unsigned int numSeeds()
+	{
+		return lxSaSegment.size();
+	}//function
+
 
 	/**
 	 * @brief Extracts all seeds from the segment.
 	 */
 	std::shared_ptr<Seeds> getSeeds(
 			std::shared_ptr<FM_Index> pxFM_Index, 
-			std::shared_ptr<FM_Index> pxRev_FM_Index
+			std::shared_ptr<FM_Index> pxRev_FM_Index,
+			unsigned int min_length
 		)
 	{
 		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
 		forEachSeed(
 				pxFM_Index,
 				pxRev_FM_Index,
-				10000,
-				false,
+				1000,//parameter has become irrelevant
+				true,//parameter has become irrelevant
 				[&](Seed xS)
 				{
-					pRet->push_back(xS);
+					if(xS.size() >= min_length)
+						pRet->push_back(xS);
 				}//lambda
 			);//forall
 		return pRet;
@@ -259,6 +270,46 @@ public:
 	void print(std::ostream &xOut) const
 	{
 		forEach([&xOut](std::shared_ptr<SegmentTreeInterval> pxNode){ pxNode->print(xOut); });
+	}//function
+
+	
+	/**
+	 * @brief Extracts all seeds from the segment.
+	 */
+	std::shared_ptr<Seeds> getSeeds(
+			std::shared_ptr<FM_Index> pxFM_Index, 
+			std::shared_ptr<FM_Index> pxRev_FM_Index,
+			unsigned int min_length
+		)
+	{
+		
+		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
+		forEach(
+			[&]
+			(std::shared_ptr<SegmentTreeInterval> pxNode)
+			{ 
+				pRet->append(pxNode->getSeeds(pxFM_Index, pxRev_FM_Index, min_length));
+			}//lambda
+		);
+		return pRet;
+	}//function
+
+	
+	/**
+	 * @brief returns the number of seeds
+	 */
+	unsigned int numSeeds()
+	{
+		
+		unsigned int uiTotal = 0;
+		forEach(
+			[&]
+			(std::shared_ptr<SegmentTreeInterval> pxNode)
+			{ 
+				uiTotal += pxNode->numSeeds();
+			}//lambda
+		);
+		return uiTotal;
 	}//function
 };
 

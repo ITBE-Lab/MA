@@ -192,6 +192,20 @@ void exportIntervalTree()
 					"\n"
 					"Invalidates the iterator.\n"
 				)
+			.def(
+					"get_seeds", 
+					&SegmentTree::getSeeds,
+					"arg1: self\n"
+					"arg2: the fm_index.\n"
+					"arg2: the reversed fm_index.\n"
+					"returns: all seeds.\n"
+				)
+			.def(
+					"num_seeds", 
+					&SegmentTree::numSeeds,
+					"arg1: self\n"
+					"returns: number of seeds.\n"
+				)
 	;
 
 	//tell boost python that pointers of these classes can be converted implicitly
