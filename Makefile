@@ -21,9 +21,9 @@ CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread
 
-all: test/libLAuS.so
+all: libLAuS.so
 
-test/libLAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
+libLAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
  
 obj/%.o: src/%.cpp inc/%.h
@@ -45,7 +45,7 @@ distrib:
 	python setup.py sdist bdist_egg bdist_wheel
 
 clean:
-	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) test/libLAuS.so
+	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) libLAuS.so
 	rm -r -f dist *.egg-info build
 	rm -r -f html
 	rm -r -f libLAuS.html
