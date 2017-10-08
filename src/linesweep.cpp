@@ -107,9 +107,20 @@ void LineSweep::linesweep(
         )
 
         //work on the current interval
-        ShadowInterval* pNextShadow = xItervalEnds.insert(&rInterval);
+        auto pNextShadow = xItervalEnds.insert(&rInterval)->next();
         if(pNextShadow != nullptr)
-            pNextShadow->addInterferingInterval(rInterval);
+        {
+            pNextShadow->get()->addInterferingInterval(rInterval);
+            auto pFollowingShadows = pNextShadow->next();
+            while(
+                    pFollowingShadows != nullptr && 
+                    pFollowingShadows->get() != pNextShadow->get()->getIInterferWith()
+                )
+            {
+                pFollowingShadows->get()->add2ndOrderInterferingInterval(rInterval);
+                pFollowingShadows = pFollowingShadows->next();
+            }//while
+        }//if
         DEBUG(
             else
                 std::cout << "\tno interference" << std::endl;

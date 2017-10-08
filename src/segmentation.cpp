@@ -97,8 +97,10 @@ SaSegment Segmentation::extend(
 		// perform one step of the extension
 		SA_IndexInterval ok = bwt_extend_backward(ik, c, pxUsedFmIndex);
 
-		std::cout << i << " " << ik.size() << " -> " << ok.size();
-		std::cout << " (" << ok.start() << ", " << ok.end() << ")" << std::endl;
+		DEBUG_2(
+			std::cout << i << " " << ik.size() << " -> " << ok.size();
+			std::cout << " (" << ok.start() << ", " << ok.end() << ")" << std::endl;
+		)
 			
 		/*
 		* In fact, if ok.getSize is zero, then there are no matches any more.
@@ -160,8 +162,10 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	* we might be able to extend our matches further though.
 	*/
 	SaSegment xBackForw = extend(*pxNode, xBack.start(), false);
-	std::cout << xBackForw.end() << std::endl;
-	std::cout << pxNode->getCenter() << std::endl;
+	DEBUG_2(
+		std::cout << xBackForw.end() << std::endl;
+		std::cout << pxNode->getCenter() << std::endl;
+	)
 	assert(xBackForw.end() >= pxNode->getCenter());
 
 	nucSeqIndex uiFrom, uiTo;

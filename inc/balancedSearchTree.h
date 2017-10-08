@@ -16,23 +16,31 @@
 #include <cstdlib>
 #include <memory>
 
+//forward declaration
+template<class T>
+class SelfBalancingBinarySearchTree;
+
 /*
  * @brief Self balancing binary search tree node.
  */
 template<class T>
 class SBBSTNode
 {
-public:
+private:
+    //allow the tree class to access all private stuff.
+    friend class SelfBalancingBinarySearchTree<T>;
     int height;
     T* data;
     std::shared_ptr<SBBSTNode<T>> pLeft, pRight;
+    std::weak_ptr<SBBSTNode<T>> pUp;
 
     SBBSTNode()
             :
         height(0),
         data(nullptr),
         pLeft(),
-        pRight()
+        pRight(),
+        pUp()
     {}//constructor
 
     SBBSTNode(T* n)
@@ -40,8 +48,40 @@ public:
         height(0),
         data(n),
         pLeft(),
-        pRight()
+        pRight(),
+        pUp()
     {}//constructor
+public:
+    std::shared_ptr<SBBSTNode<T>> next()
+    {
+        if(pRight == nullptr && pUp.expired())
+            return nullptr;
+        std::shared_ptr<SBBSTNode<T>> pRet = nullptr;
+        if(pRight == nullptr)
+        {
+            SBBSTNode<T>* pDrag = this;
+            pRet = pUp.lock();
+            while(!pRet->pUp.expired() && (pRet->pRight == nullptr || pRet->pRight.get() == pDrag))
+            {
+                pDrag = pRet.get();
+                pRet = pRet->pUp.lock();
+            }//while
+            if(pRet->pRight == nullptr || pRet->pRight.get() == pDrag)
+                return nullptr;
+            pRet = pRet->pRight;
+        }//if
+        else
+            pRet = pRight;
+        while(pRet != nullptr && pRet->pLeft != nullptr)
+            pRet = pRet->pLeft;
+        assert(pRet.get() != this);
+        return pRet;
+    }//function
+
+    T* get()
+    {
+        return data;
+    }//function
 };//class
 
 /*
@@ -84,7 +124,10 @@ private:
             return k2;
         std::shared_ptr<SBBSTNode<T>> k1 = k2->pLeft;
         k2->pLeft = k1->pRight;
+        if(k1->pRight != nullptr)
+            k1->pRight->pUp = k2;
         k1->pRight = k2;
+        k2->pUp = k1;
         k2->height = std::max(height(k2->pLeft), height(k2->pRight)) + 1;
         k1->height = std::max(height(k1->pLeft), k2->height) + 1;
         return k1;
@@ -97,7 +140,10 @@ private:
             return k1;
         std::shared_ptr<SBBSTNode<T>> k2 = k1->pRight;
         k1->pRight = k2->pLeft;
+        if(k2->pLeft != nullptr)
+            k2->pLeft->pUp = k1;
         k2->pLeft = k1;
+        k1->pUp = k2;
         k1->height = std::max(height(k1->pLeft), height(k1->pRight)) + 1;
         k2->height = std::max(height(k2->pRight), k1->height) + 1;
         return k2;
@@ -124,18 +170,24 @@ private:
     }
 
     /* Function to insert data recursively */
-    std::shared_ptr<SBBSTNode<T>> insert(T* x, std::shared_ptr<SBBSTNode<T>> t, T*& pNext)
+    std::shared_ptr<SBBSTNode<T>> insert(
+            T* x,
+            std::shared_ptr<SBBSTNode<T>> t,
+            std::shared_ptr<SBBSTNode<T>>& pNewNode
+        )
     {
         if (t == nullptr)
+        {
             t = std::shared_ptr<SBBSTNode<T>>(new SBBSTNode<T>(x));
+            pNewNode = t;
+        }
         else if (*x <= *t->data)
         {
             DEBUG_3(
                 std::cout << "\tinserting left" << std::endl;
             )
-            t->pLeft = insert(x, t->pLeft, pNext);
-            if(pNext == nullptr)
-                pNext = t->data;
+            t->pLeft = insert(x, t->pLeft, pNewNode);
+            t->pLeft->pUp = t;
             if (height(t->pLeft) - height(t->pRight) == 2)
             {
                 if (*x < *t->pLeft->data)
@@ -149,7 +201,8 @@ private:
             DEBUG_3(
                 std::cout << "\tinserting right" << std::endl;
             )
-            t->pRight = insert(x, t->pRight, pNext);
+            t->pRight = insert(x, t->pRight, pNewNode);
+            t->pRight->pUp = t;
             if (height(t->pRight) - height(t->pLeft) == 2)
             {
                 if (*x > *t->pRight->data)
@@ -179,11 +232,12 @@ public:
      * @brief Function to insert data.
      * @returns the next element of the tree.
      */
-    T* insert(T* data)
+    std::shared_ptr<SBBSTNode<T>> insert(T* data)
     {
-        T* pRet = nullptr;
+        std::shared_ptr<SBBSTNode<T>> pRet = nullptr;
         pRoot = insert(data, pRoot, pRet);
         assert(pRoot != nullptr);
+        assert(pRet->pUp.lock() != pRet);
         return pRet;
     }
 

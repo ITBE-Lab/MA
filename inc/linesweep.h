@@ -20,12 +20,18 @@ class ShadowInterval: public Interval<nucSeqIndex>{
 private:
 	/// @brief While swiping the interfering shadows will get stored in this list.
     std::shared_ptr<std::list<ShadowInterval*>> pInterferingIntervals;
+	/// @brief TODO:
+    std::shared_ptr<std::list<ShadowInterval*>> pInterferingIntervals2ndOrder;
     /// @brief The interval this one interferes with.
     ShadowInterval* pIInterferWith;
+    /// @brief TODO:
+    std::list<std::tuple<ShadowInterval*, unsigned int>> lIInterferWith2ndOrder;
     /// @brief The seed this interval corresponds to (used to delete the seed in case this is necessary).
     std::list<Seed>::iterator pSeed;
 	/// @brief The total score of the interfering shadows.
     unsigned int iScoreInterfering;
+	/// @brief TODO:
+    unsigned int iScoreInterfering2ndOrder;
 	/// @brief The score added by this interval to the outer interfering one
     unsigned int iInterferingSelf;
 public:
@@ -43,9 +49,12 @@ public:
             :
         Interval(iBegin, iSize),
         pInterferingIntervals(new std::list<ShadowInterval*>()),
+        pInterferingIntervals2ndOrder(new std::list<ShadowInterval*>()),
         pIInterferWith(),
+        lIInterferWith2ndOrder(),
         pSeed(pSeed),
         iScoreInterfering(0),
+        iScoreInterfering2ndOrder(0),
         iInterferingSelf(0)
     {}//constructor
 
@@ -56,9 +65,12 @@ public:
             :
         Interval(rOther),
         pInterferingIntervals(rOther.pInterferingIntervals),
+        pInterferingIntervals2ndOrder(rOther.pInterferingIntervals2ndOrder),
         pIInterferWith(rOther.pIInterferWith),
+        lIInterferWith2ndOrder(rOther.lIInterferWith2ndOrder),
         pSeed(rOther.pSeed),
         iScoreInterfering(rOther.iScoreInterfering),
+        iScoreInterfering2ndOrder(rOther.iScoreInterfering2ndOrder),
         iInterferingSelf(rOther.iInterferingSelf)
     {}//copy constructor
 
@@ -67,6 +79,7 @@ public:
      */
     nucSeqIndex non_overlap(ShadowInterval rInterval)
     {
+        //TODO: fixmee
         return std::max(
                 (*pInterferingIntervals->back())->end_ref() > rInterval->start_ref() ?
                 (*pInterferingIntervals->back())->end_ref() - rInterval->start_ref() :
@@ -95,7 +108,24 @@ public:
             rInterval.iInterferingSelf = non_overlap(rInterval);
         iScoreInterfering += rInterval.iInterferingSelf;
         pInterferingIntervals->push_back(&rInterval);
-        
+        rInterval.pIInterferWith = this;
+    }//function
+
+    
+    void add2ndOrderInterferingInterval(ShadowInterval& rInterval)
+    {
+        DEBUG(
+            std::cout << "\tis Interfering with interval (2nd order): " << start() << ", ";
+            std::cout << end() << std::endl;
+        )
+        unsigned int adding = 0;
+        if(pInterferingIntervals2ndOrder->empty())
+            adding = rInterval.pSeed->getValue();
+        else
+            adding = non_overlap(rInterval);
+        iScoreInterfering2ndOrder += adding;
+        pInterferingIntervals2ndOrder->push_back(&rInterval);
+        rInterval.lIInterferWith2ndOrder.push_back(std::make_tuple(this, adding));
     }//function
 
     /**
@@ -107,8 +137,13 @@ public:
             std::shared_ptr<Seeds> pSeeds
         )
     {
+        assert(pInterferingIntervals != nullptr);
         for(ShadowInterval* pInterval : *pInterferingIntervals)
+        {
+            assert(pInterval != nullptr);
+            assert(pInterval != this);
             pInterval->removeInterferingIntervals(pSeeds);
+        }//for
         //reached an already invalidated iterator
         if(pSeed == pSeeds->end())
         {
@@ -126,11 +161,45 @@ public:
         pInterferingIntervals->clear();
     }//function
 
+    
+    void removeInterferingIntervals2ndOrder(
+            std::shared_ptr<Seeds> pSeeds
+        )
+    {
+        for(ShadowInterval* pInterval : *pInterferingIntervals2ndOrder)
+            pInterval->removeInterferingIntervals2ndOrder(pSeeds);
+        //reached an already invalidated iterator
+        if(pSeed == pSeeds->end())
+        {
+            DEBUG(
+                std::cout << "\treached invalid iterator (2nd order)" << std::endl;
+            )
+            return;
+        }
+        DEBUG(
+            std::cout << "\terasing (2nd order): " << start() << ", " << end();
+            std::cout << " seed (2nd order): " << pSeed->start() << ", " << pSeed->end() << std::endl;
+        )
+        pSeeds->erase(pSeed);
+        pSeed = pSeeds->end();
+        pInterferingIntervals2ndOrder->clear();
+        //adjust scores for outer intervals
+        for(std::tuple<ShadowInterval*, unsigned int> tup : lIInterferWith2ndOrder)
+        {
+            std::get<0>(tup)->iScoreInterfering2ndOrder -= std::get<1>(tup);
+        }//for
+        //adjust 2nd order score
+        if(pIInterferWith != nullptr && pIInterferWith->pIInterferWith != nullptr)
+            //pIInterferWith MUST be deactivated already!
+            //but if it interfers with another interval we have to update the score of the outer one
+            pIInterferWith->pIInterferWith->iScoreInterfering -= iInterferingSelf;
+    }//function
+
+
     /**
      * @brief Removes this or all interfering seeds.
      * @details
      * Checks weather this seed is more valuable than the interfering ones.
-     * Then removes the less valuable ones.
      */
     void removeSeedIfNecessary(
             std::shared_ptr<Seeds> pSeeds
@@ -145,7 +214,7 @@ public:
             return;
         }
         //the many interfering intervals are more valuable => remove this interval
-        if(pSeed->getValue() < iScoreInterfering)
+        if(pSeed->getValue() < iScoreInterfering + iScoreInterfering2ndOrder)
         {
             //update the score of the interval outside this one
             if(pIInterferWith != nullptr)
@@ -162,11 +231,25 @@ public:
         {
             DEBUG(
                 std::cout << "\tis more valuable than interfering ones" << std::endl;
+                std::cout << "\tremoving " << pInterferingIntervals->size() << " + ";
+                std::cout << pInterferingIntervals2ndOrder->size() << " intervals." << std::endl;
             )
             for(ShadowInterval* pInterval : *pInterferingIntervals)
                 pInterval->removeInterferingIntervals(pSeeds);
+            std::cout << "a" << std::endl;
             pInterferingIntervals->clear();
+            std::cout << "a" << std::endl;
+            for(ShadowInterval* pInterval : *pInterferingIntervals2ndOrder)
+                pInterval->removeInterferingIntervals2ndOrder(pSeeds);
+            std::cout << "a" << std::endl;
+            pInterferingIntervals2ndOrder->clear();
+            std::cout << "a" << std::endl;
         }//else
+    }//function
+
+    inline const ShadowInterval* getIInterferWith() const
+    {
+        return pIInterferWith;
     }//function
 
     /**
