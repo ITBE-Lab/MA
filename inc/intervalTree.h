@@ -24,18 +24,16 @@
 class SaSegment: public Container, public Interval<nucSeqIndex> {
 private:
 	SA_IndexInterval xSaInterval;
-	bool bForw;
 public:
 	/**
 	* @brief Creates a new SaSegment.
 	* @details Creates a new SaSegment on the base of a SA_IndexInterval and the 
 	* respective indices on the quey.
 	*/
-	SaSegment(nucSeqIndex uiStart, nucSeqIndex uiSize, SA_IndexInterval xSaInterval, bool bForw)
+	SaSegment(nucSeqIndex uiStart, nucSeqIndex uiSize, SA_IndexInterval xSaInterval)
 			:
 		Interval(uiStart, uiSize),
-		xSaInterval(xSaInterval),
-		bForw(bForw)
+		xSaInterval(xSaInterval)
 	{}//constructor
 
 	//overload
@@ -48,17 +46,8 @@ public:
 	{
 		return xSaInterval;
 	}//function
-	/**
-	 * @brief Weather the segment was created by a forward extension or a backawards extension.
-	 * @returns true if the segment was created by forward extension.
-	 * @details
-	 * The forwards extension is implemented by backwards extension on an reversed FM_Index.
-	 */
-	bool isForward() const
-	{
-		return bForw;
-	}//function
-}; // class ( Segment )
+
+}; // class ( SaSegment )
 
 /**
  * @brief A Interval in the Segment Tree.
@@ -118,7 +107,6 @@ public:
 	 */
 	void forEachSeed(
 			std::shared_ptr<FM_Index> pxFM_Index,
-			std::shared_ptr<FM_Index> pxRev_FM_Index,
 			unsigned int uiMaxNumHitsPerInterval,
 			bool bSkipLongerIntervals,
 			std::function<void(Seed s)> fDo
@@ -139,29 +127,21 @@ public:
 				uiJumpBy = xSegment.saInterval().size() / uiMaxNumHitsPerInterval; 
 			}//if
 
-			//if the hit was generated using the reversed fm_index we should use the according fm_index in order to 
-			//extract the index of the hit on the reference sequence. same for the forward fm_index
-			std::shared_ptr<FM_Index> pxUsedFmIndex;
-			if (xSegment.isForward())
-				pxUsedFmIndex = pxRev_FM_Index;
-			else
-				pxUsedFmIndex = pxFM_Index;
-
 			//iterate over the interval in the BWT
 			for (
-					auto ulCurrPos = xSegment.saInterval().start(); 
-					ulCurrPos < xSegment.saInterval().end(); 
+					auto ulCurrPos = xSegment.saInterval().start()+1; 
+					ulCurrPos <= xSegment.saInterval().end(); 
 					ulCurrPos += uiJumpBy
 				)
 			{
 				//calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
-				auto ulIndexOnRefSeq = pxUsedFmIndex->bwt_sa(ulCurrPos);
+				auto ulIndexOnRefSeq = pxFM_Index->bwt_sa(ulCurrPos);
 				/* if the match was calculated using the fm-index of the reversed sequence:
 				 * we acquire the index of the beginning of the match on the reversed sequence by calling bwt_sa()
 				 * but we actually want the beginning of the match on the normal sequence, so we need to subtract the END of the match from the reference sequence length
 				 */
-				if (xSegment.isForward())
-					ulIndexOnRefSeq = pxUsedFmIndex->getRefSeqLength() - (ulIndexOnRefSeq + xSegment.size()) - 1;
+				//TODO: do i need to throw that away?
+				//ulIndexOnRefSeq = pxFM_Index->getRefSeqLength() - (ulIndexOnRefSeq + xSegment.size()) - 1;
 				assert(xSegment.start() < xSegment.end());
 				//call the given function
 				fDo(Seed(xSegment.start(), xSegment.size() + 1, ulIndexOnRefSeq));
@@ -184,14 +164,12 @@ public:
 	 */
 	std::shared_ptr<Seeds> getSeeds(
 			std::shared_ptr<FM_Index> pxFM_Index, 
-			std::shared_ptr<FM_Index> pxRev_FM_Index,
 			unsigned int min_length
 		)
 	{
 		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
 		forEachSeed(
 				pxFM_Index,
-				pxRev_FM_Index,
 				1000,//parameter has become irrelevant
 				true,//parameter has become irrelevant
 				[&](Seed xS)
@@ -210,7 +188,6 @@ public:
 	 */
 	std::vector<std::shared_ptr<NucleotideSequence>> getRefHits(
 			std::shared_ptr<FM_Index> pxFM_Index, 
-			std::shared_ptr<FM_Index> pxRev_FM_Index,
 			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefPack
 		)
 	{
@@ -218,7 +195,6 @@ public:
 			std::vector<std::shared_ptr<NucleotideSequence>>();
 		forEachSeed(
 				pxFM_Index,
-				pxRev_FM_Index,
 				10000,
 				false,
 				[&](Seed xS)
@@ -278,7 +254,6 @@ public:
 	 */
 	std::shared_ptr<Seeds> getSeeds(
 			std::shared_ptr<FM_Index> pxFM_Index, 
-			std::shared_ptr<FM_Index> pxRev_FM_Index,
 			unsigned int min_length
 		)
 	{
@@ -288,7 +263,7 @@ public:
 			[&]
 			(std::shared_ptr<SegmentTreeInterval> pxNode)
 			{ 
-				pRet->append(pxNode->getSeeds(pxFM_Index, pxRev_FM_Index, min_length));
+				pRet->append(pxNode->getSeeds(pxFM_Index, min_length));
 			}//lambda
 		);
 		return pRet;

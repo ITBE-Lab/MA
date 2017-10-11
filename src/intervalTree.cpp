@@ -3,6 +3,9 @@
 void SegmentTreeInterval::push_back(SaSegment xSaSegment)
 {
 	lxSaSegment.push_back(xSaSegment);
+	DEBUG_2(
+		std::cout << "found segment:" << xSaSegment.saInterval().start() << " " << xSaSegment.saInterval().end() << std::endl;
+	)
 }//function
 
 std::ostream& operator<<(std::ostream& xOs, const SegmentTree& xTree)

@@ -77,6 +77,15 @@ public:
         uiPosOnReference = rxOther.uiPosOnReference;
         return *this;
     }// operator
+    
+	/*
+	 * @brief compares two Seeds.
+	 * @returns true if start and size are equal, false otherwise.
+	 */
+	inline bool operator==(const Seed& rxOther)
+	{
+		return Interval::operator==(rxOther) && uiPosOnReference == rxOther.uiPosOnReference;
+	}// operator
 
     /*used to identify the Seed datatype in the aligner pipeline*/
     ContainerType getType(){return ContainerType::seed;}

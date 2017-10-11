@@ -23,7 +23,7 @@ class Segmentation{
 public:
 	std::shared_ptr<SegmentTree> pSegmentTree;
 private:
-	std::shared_ptr<FM_Index> pxFM_index, pxRev_FM_Index;
+	std::shared_ptr<FM_Index> pxFM_index;
 	std::shared_ptr<NucleotideSequence> pxQuerySeq;
 	bool bBreakOnAmbiguousBase;
 	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence;
@@ -37,7 +37,7 @@ private:
 	*  starts at uiStartIndex and will save any matches longer than uiMinIntervalSize in pxNode if the
 	*  current extension could reach further than uiOnlyRecordHitsFurtherThan
 	*/
-	SaSegment extend(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiStartIndex, bool bBackwards);
+	SaSegment extend(std::shared_ptr<SegmentTreeInterval> pxNode);
 	/*
 	*	does nothing if the given interval can be found entirely on the genome.
 	*	if the interval cannot be found this method splits the interval in half and repeats the step with the first half,
@@ -45,16 +45,17 @@ private:
 	*/
 	void procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPoolAllowingRecursiveEnqueues *pxPool);
 
+	SA_IndexInterval extend_backward(const SA_IndexInterval &ik, const uint8_t c);
 
 public:
-	Segmentation(std::shared_ptr<FM_Index> pxFM_index, std::shared_ptr<FM_Index> pxRev_FM_index, std::shared_ptr<NucleotideSequence> pxQuerySeq,
+	Segmentation(std::shared_ptr<FM_Index> pxFM_index,
+		std::shared_ptr<NucleotideSequence> pxQuerySeq,
 		bool bBreakOnAmbiguousBase,
 		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence
 		)
 		:
 		pSegmentTree(new SegmentTree(pxQuerySeq->length())),
 		pxFM_index(pxFM_index),
-		pxRev_FM_Index(pxRev_FM_index),
 		pxQuerySeq(pxQuerySeq),
 		bBreakOnAmbiguousBase(bBreakOnAmbiguousBase),
 		pxRefSequence(pxRefSequence)

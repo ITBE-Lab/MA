@@ -34,12 +34,56 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
  * See http://en.wikipedia.org/wiki/FM-index (intervals within the F-L matrix )
  */
 class SA_IndexInterval: public Container, public Interval<t_bwtIndex> {
+private:
+	t_bwtIndex startOfComplement;
 public:
-	SA_IndexInterval(t_bwtIndex start, t_bwtIndex size)
+	SA_IndexInterval(t_bwtIndex start, t_bwtIndex startOfComplement, t_bwtIndex size)
 			:
-		Interval(start, size)
+		Interval(start, size),
+		startOfComplement(startOfComplement)
 	{}//constructor
 	ContainerType getType(){return ContainerType::sa_interval;}
+
+	/**
+	 * @brief Switch to the respective reverse complement.
+	 * @details
+	 * A SA_IndexInterval is the same size as the interval for the reverse complement sequence.
+	 * This fact can be used to implement forward extension.
+	 * @Note This only works when combined with FMD-indices.
+	 */
+	SA_IndexInterval revComp() const
+	{
+		return SA_IndexInterval(startOfComplement, start(), size());
+	}//function
+
+	/**
+	 * @brief returns the start position of the SA_IndexInterval created using the reverse
+	 * complement of the sequence used for this interval.
+	 */
+	t_bwtIndex startRevComp() const
+	{
+		return startOfComplement;
+	}//function
+
+	
+	/*
+	 * @brief copys from another SA_IndexInterval.
+	 */
+	inline SA_IndexInterval& operator=(const SA_IndexInterval& rxOther)
+	{
+        Interval::operator=(rxOther);
+        startOfComplement = rxOther.startOfComplement;
+        return *this;
+	}// operator
+
+	/*
+	 * @brief compares two Intervals.
+	 * @returns true if start and size are equal, false otherwise.
+	 */
+	inline bool operator==(const SA_IndexInterval& rxOther)
+	{
+		return Interval::operator==(rxOther) && startOfComplement == rxOther.startOfComplement;
+	}// operator
 }; // class ( SA_IndexInterval )
 
 

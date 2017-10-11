@@ -83,13 +83,13 @@ private:
 			std::vector<SeedBucket>& raxSeedBuckets
 		)
 	{
+		assert(getPositionForBucketing(uiQueryLength, xNew) / uiStripSize <raxSeedBuckets.size());
 		raxSeedBuckets[getPositionForBucketing(uiQueryLength, xNew) / uiStripSize].addSeed(xNew);
 	}//function
 
 	void forEachNonBridgingSeed(
 			std::shared_ptr<SegmentTreeInterval> pxNode,
-			std::shared_ptr<FM_Index> pxFM_index,
-			std::shared_ptr<FM_Index> pxRev_FM_Index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
+			std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
 			std::function<void(Seed)> fDo
 		);
@@ -97,7 +97,6 @@ private:
 	void saveSeeds(
 			std::shared_ptr<SegmentTreeInterval> pxNode,
 			std::shared_ptr<FM_Index> pxFM_index,
-			std::shared_ptr<FM_Index> pxRev_FM_Index,
 			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
 			std::vector<SeedBucket>& raxSeedBuckets

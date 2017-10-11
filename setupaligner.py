@@ -1,6 +1,6 @@
 from LAuS import *
 
-def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge, rev_fm_index_pledge):
+def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge):
     seg = Segmentation(True)
     seg.bSkipLongBWTIntervals = False
 
@@ -18,7 +18,6 @@ def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge, rev_fm_index
 
     segment_pledge = seg.promise_me((
         fm_index_pledge,
-        rev_fm_index_pledge,
         query_pledge,
         reference_pledge
     ))
@@ -30,8 +29,7 @@ def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge, rev_fm_index
         anchors_pledge,
         query_pledge,
         reference_pledge,
-        fm_index_pledge,
-        rev_fm_index_pledge
+        fm_index_pledge
     ))
 
     best_pledge = sweep.promise_me((

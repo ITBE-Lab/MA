@@ -695,13 +695,12 @@ public:
 		 */
 		decltype(xPackedNucleotideSequences) xPackedSequence = xPackedNucleotideSequences;
 		
-		//uint64_t uiRequiredSize = (uiUnpackedSizeForwardStrand + 3) / 4; // required size of packed sequence
+		uint64_t uiRequiredSize = (uiUnpackedSizeForwardPlusReverse() + 3) / 4; // required size of packed sequence
 
 		/* We adapt the size of the container and set all fresh elements to zero.
 		 */
-		//xPackedSequence.resize( (size_t)uiRequiredSize, 0 );
+		xPackedSequence.resize( (size_t)uiRequiredSize, 0 );
 
-#if 0
 		/* Appends the reverse sequence directly in compressed form.
 		 * WARNING: forward iterator becomes negative.
 		 */
@@ -717,11 +716,10 @@ public:
 			xPackedSequence[(size_t)(iReversePosition >> 2)] |= (3 - uiValue) << ((~iReversePosition & 3UL) << 1); // set complement on reverse strand
 			++iReversePosition;
 		} // for
-#endif
 
 		/* Store the pack filesystem.
 		 */
-		vStorePack( rxFilePath.string(), xPackedSequence, uiUnpackedSizeForwardStrand );
+		vStorePack( rxFilePath.string(), xPackedSequence, uiUnpackedSizeForwardPlusReverse() );
 	} // method
 
 	/* Checks whether the files required for loading a pack does exist on the file system.

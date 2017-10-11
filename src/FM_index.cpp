@@ -165,7 +165,7 @@ void FM_Index::build_FM_Index(
 
     if ( uiAlgorithmSelection > 1) 
     {
-        uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardStrand < 50000000 ? 0 : 1; // automatic selection depending on size of pack
+        uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() < 50000000 ? 0 : 1; // automatic selection depending on size of pack
     } // if
 
     /*
@@ -177,7 +177,7 @@ void FM_Index::build_FM_Index(
         * For small packs we transform the pack into a single sequence 
         * with reverse strand and apply the algorithm for small inputs.
         */
-        auto pSequence = rxSequenceCollection.vColletionWithoutReverseStrandAsNucleotideSequence(); // unpack the pack into a single nucleotide sequence
+        auto pSequence = rxSequenceCollection.vColletionAsNucleotideSequence(); // unpack the pack into a single nucleotide sequence
         bwt_pac2bwt_step1( *pSequence ); // construct with build in function
     } // if
     else
@@ -190,7 +190,7 @@ void FM_Index::build_FM_Index(
         */
 
         // set seq_len, so that it represents the size of forward plus reverse strand
-        uiRefSeqLength = rxSequenceCollection.uiUnpackedSizeForwardStrand;
+        uiRefSeqLength = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse();
 
         std::string tempDir = "~/.tempdir";
         // Check existence / create directory for storage of temporary data.
@@ -200,7 +200,7 @@ void FM_Index::build_FM_Index(
         const auto xTempFileName =	tempDir.append(  
                                 std::to_string( std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() ) ) // current time as string
                                 .append("-")
-                                .append(std::to_string( rxSequenceCollection.uiUnpackedSizeForwardStrand )) // pack size as string
+                                .append(std::to_string( rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() )) // pack size as string
                             ); // temporary filename construction 
         // pac file construction adds a suffix
         const auto sTempFileNameWithSuffix = std::string( xTempFileName )

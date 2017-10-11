@@ -61,24 +61,22 @@ q = ""
 query_pledge = Pledge(ContainerType.nucSeq)
 reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
-rev_fm_index_pledge = Pledge(ContainerType.fM_index)
 
 result_pledge = set_up_aligner(
     query_pledge,
     reference_pledge,
-    fm_index_pledge,
-    rev_fm_index_pledge
+    fm_index_pledge
 )
 
 
 
 
 ref_seq = BWAPack()
+#ref_seq.append("no name", "no desc", NucSeq("AACG"))
 ref_seq.load("/mnt/ssd0/chrom/random/pack")
+#fm_index = FMIndex(ref_seq)
 fm_index = FMIndex()
 fm_index.load("/mnt/ssd0/chrom/random/index")
-rev_fm_index = FMIndex()
-rev_fm_index.load("/mnt/ssd0/chrom/random/rev_index")
 
 
 
@@ -115,13 +113,10 @@ for _ in range(mutation_amount):
         else:
             q = q[:pos] + "g" + q[pos:]
 
-
-
 query = NucSeq(q)
 
 query_pledge.set(query)
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
-rev_fm_index_pledge.set(rev_fm_index)
 
 result_pledge.next()
