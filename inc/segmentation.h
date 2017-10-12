@@ -17,69 +17,40 @@
 class PerfectMatch;
 
 
-typedef DoublyLinkedList<SegmentTreeInterval>::Iterator SegTreeItt;
-
-class Segmentation{
-public:
-	std::shared_ptr<SegmentTree> pSegmentTree;
+class Segmentation : public Module{
 private:
-	std::shared_ptr<FM_Index> pxFM_index;
-	std::shared_ptr<NucleotideSequence> pxQuerySeq;
-	bool bBreakOnAmbiguousBase;
-	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence;
+	static SA_IndexInterval extend_backward(
+			const SA_IndexInterval &ik, 
+			const uint8_t c, 
+			std::shared_ptr<FM_Index> pFM_index
+		);
 
-	/*
-	*	performs backwards extension in the given interval
-	*returns the position where the backwards extension breaks
-	*/
-	bool canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength);
 	/* perform forward or backwards extension (depending on bBackwards) int the given interval pxNode
 	*  starts at uiStartIndex and will save any matches longer than uiMinIntervalSize in pxNode if the
 	*  current extension could reach further than uiOnlyRecordHitsFurtherThan
 	*/
-	SaSegment extend(std::shared_ptr<SegmentTreeInterval> pxNode);
+	static SaSegment extend(
+			std::shared_ptr<SegmentTreeInterval> pxNode,
+			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<NucleotideSequence> pQuerySeq
+		);
 	/*
 	*	does nothing if the given interval can be found entirely on the genome.
 	*	if the interval cannot be found this method splits the interval in half and repeats the step with the first half,
 	*	while queuing the second half as a task in the thread pool.
 	*/
-	void procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPoolAllowingRecursiveEnqueues *pxPool);
+	static void procesInterval(
+			size_t uiThreadId, 
+			DoublyLinkedList<SegmentTreeInterval>::Iterator pxNode, 
+			std::shared_ptr<SegmentTree> pSegmentTree,
+			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<NucleotideSequence> pQuerySeq,
+			ThreadPoolAllowingRecursiveEnqueues* pxPool
+		);
 
-	SA_IndexInterval extend_backward(const SA_IndexInterval &ik, const uint8_t c);
 
 public:
-	Segmentation(std::shared_ptr<FM_Index> pxFM_index,
-		std::shared_ptr<NucleotideSequence> pxQuerySeq,
-		bool bBreakOnAmbiguousBase,
-		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence
-		)
-		:
-		pSegmentTree(new SegmentTree(pxQuerySeq->length())),
-		pxFM_index(pxFM_index),
-		pxQuerySeq(pxQuerySeq),
-		bBreakOnAmbiguousBase(bBreakOnAmbiguousBase),
-		pxRefSequence(pxRefSequence)
-	{}//constructor
-
-	void segment();
-};//class
-
-class SegmentationContainer : public Module
-{
-public:
-	bool bBreakOnAmbiguousBase;
-	unsigned int uiMaxHitsPerInterval;
-
-	SegmentationContainer
-	(
-		bool bBreakOnAmbiguousBase = true,
-		unsigned int uiMaxHitsPerInterval = 10000
-	)
-			:
-		bBreakOnAmbiguousBase(bBreakOnAmbiguousBase),
-		uiMaxHitsPerInterval(uiMaxHitsPerInterval)
-	{}//constructor
-
+	
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
 	std::vector<ContainerType> getInputType();

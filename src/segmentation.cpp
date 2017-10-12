@@ -17,17 +17,18 @@
 * Here we use only two fields in the BWT_Interval.
 */
 SA_IndexInterval Segmentation::extend_backward( 
-									// current interval
-									const SA_IndexInterval &ik,
-									// the character to extend with
-									const uint8_t c
-									)
+		// current interval
+		const SA_IndexInterval &ik,
+		// the character to extend with
+		const uint8_t c,
+		std::shared_ptr<FM_Index> pFM_index
+	)
 {
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
 	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
 	//TODO: here the intervals seem to be (a,b] while mine are [a,b) (?)... [a,b] seems nicer
-	pxFM_index->bwt_2occ4(
+	pFM_index->bwt_2occ4(
 		// start of SA index interval
 		ik.start(),
 		// end of SA index interval
@@ -47,27 +48,23 @@ SA_IndexInterval Segmentation::extend_backward(
 		cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
 
 	//TODO: BWAs SA intervals seem to be (a,b] while mine are [a,b]... [a,b] seems nicer
-	//pxFM_Index->L2[c] start of nuc c in BWT
+	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval
-	return SA_IndexInterval(pxFM_index->L2[c] + cntk[c], cntk_2[complement(c)], cnts[c] - 1);
+	return SA_IndexInterval(pFM_index->L2[c] + cntk[c], cntk_2[complement(c)], cnts[c] - 1);
 } // method
 
-bool Segmentation::canExtendFurther(std::shared_ptr<SegmentTreeInterval> pxNode, nucSeqIndex uiCurrIndex, bool bBackwards, nucSeqIndex uiQueryLength)
-{
-	if (!bBackwards)
-		return uiCurrIndex < uiQueryLength;
-	return true;
-}//function
 
 SaSegment Segmentation::extend(
-								 std::shared_ptr<SegmentTreeInterval> pxNode
-								)
+		std::shared_ptr<SegmentTreeInterval> pxNode,
+		std::shared_ptr<FM_Index> pFM_index,
+		std::shared_ptr<NucleotideSequence> pQuerySeq
+	)
 {
 	nucSeqIndex center = pxNode->start() + pxNode->size()/2;
 
 	// query sequence itself
-	const uint8_t *q = pxQuerySeq->pGetSequenceRef(); 
+	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
 	
 	/* Initialize ik on the foundation of the single base q[x].
 	 * In order to understand this initialization you should have a look 
@@ -77,24 +74,24 @@ SaSegment Segmentation::extend(
 	// because very first string in SA-array starts with $
 	// size in T and T' is equal due to symmetry
 	SA_IndexInterval ik(
-						pxFM_index->L2[complement(q[center])], 
-						pxFM_index->L2[(int)q[center]], 
-						pxFM_index->L2[(int)q[center] + 1] - pxFM_index->L2[(int)q[center]]
+						pFM_index->L2[complement(q[center])], 
+						pFM_index->L2[(int)q[center]], 
+						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
 					);
 
 	std::list<SaSegment> curr = std::list<SaSegment>();
-	for(nucSeqIndex i = center+1; i < pxQuerySeq->length(); i++)
+	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
 	{
 		DEBUG_2(
 			std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
 			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
 		)
 		assert(ik.size() > 0);
-		SA_IndexInterval ok = extend_backward(ik, complement(q[i]));
+		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
 		if(ok.size() != ik.size()) 
 			curr.push_back(SaSegment(center, i-center+1, ik.revComp()));
-		if(i == pxQuerySeq->length()-1)
+		if(i == pQuerySeq->length()-1)
 			curr.push_back(SaSegment(center, i-center+1, ok.revComp()));
 
 		DEBUG_2(
@@ -127,7 +124,7 @@ SaSegment Segmentation::extend(
 					std::cout << i+1 << " -> " << ik.saInterval().start() << " " << ik.saInterval().end() << std::endl;
 					std::cout << i+1 << " ~> " << ik.saInterval().revComp().start() << " " << ik.saInterval().revComp().end() << std::endl;
 				)
-				SA_IndexInterval ok = extend_backward(ik.saInterval(), q[i]);
+				SA_IndexInterval ok = extend_backward(ik.saInterval(), q[i], pFM_index);
 				DEBUG_2(
 					std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
 					std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
@@ -190,14 +187,21 @@ SaSegment Segmentation::extend(
  *		queue the prev and post intervals into the thread pool
  *		save the perfect match for later clustering
 */
-void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPoolAllowingRecursiveEnqueues *pxPool)
+void Segmentation::procesInterval(
+			size_t uiThreadId,
+			DoublyLinkedList<SegmentTreeInterval>::Iterator pxNode,
+			std::shared_ptr<SegmentTree> pSegmentTree,
+			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<NucleotideSequence> pQuerySeq,
+			ThreadPoolAllowingRecursiveEnqueues* pxPool
+		)
 {
 	DEBUG(
 		std::cout << "interval (" << pxNode->start() << "," << pxNode->end() << ")" << std::endl;
 	)
 
 	//performs extension and records any perfect matches
-	SaSegment xLongest = extend(*pxNode);
+	SaSegment xLongest = extend(*pxNode, pFM_index, pQuerySeq);
 
 	nucSeqIndex uiFrom, uiTo;
 	uiFrom = xLongest.start();
@@ -212,14 +216,9 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
 			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start() - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
-		pxPool->enqueue(
-			[/*WARNING: do not catch anything here: the lambda function is enqueued to into a thread pool, 
-			 local variables might not exist anymore during it's execution*/]
-			(size_t uiThreadId, SegTreeItt pxPrevNode, Segmentation *pxAligner, ThreadPoolAllowingRecursiveEnqueues *pxPool)
-			{
-				pxAligner->procesInterval(uiThreadId, pxPrevNode, pxPool);
-			},//lambda
-			pxPrevNode, this, pxPool
+		pxPool->enqueue( 
+			Segmentation::procesInterval,
+			pxPrevNode, pSegmentTree, pFM_index, pQuerySeq, pxPool
 		);//enqueue
 	}//if
 	if (pxNode->end() > uiTo + 1)
@@ -228,14 +227,9 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 		auto pxNextNode = pSegmentTree->insertAfter(std::shared_ptr<SegmentTreeInterval>(
 			new SegmentTreeInterval(uiTo + 1, pxNode->end() - uiTo - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
-		pxPool->enqueue(
-			[/*WARNING: do not catch anything here: the lambda function is enqueued to into a thread pool,
-			 local variables might not exist anymore during it's execution*/]
-			(size_t uiThreadId, SegTreeItt pxNextNode, Segmentation *pxAligner, ThreadPoolAllowingRecursiveEnqueues *pxPool)
-			{
-				pxAligner->procesInterval(uiThreadId, pxNextNode, pxPool);
-			},//lambda
-			pxNextNode, this, pxPool
+		pxPool->enqueue( 
+			Segmentation::procesInterval,
+			pxNextNode, pSegmentTree, pFM_index, pQuerySeq, pxPool
 		);//enqueue
 	}//if
 
@@ -244,8 +238,38 @@ void Segmentation::procesInterval(size_t uiThreadId, SegTreeItt pxNode, ThreadPo
 	pxNode->end(uiTo);
 }//function
 
-void Segmentation::segment()
+
+std::vector<ContainerType> Segmentation::getInputType()
 {
+	return std::vector<ContainerType>{
+			//the forward fm_index
+			ContainerType::fM_index,
+			//the query sequence
+			ContainerType::nucSeq,
+			//the reference sequence (packed since it could be really long)
+			ContainerType::packedNucSeq,
+		};
+}
+ContainerType Segmentation::getOutputType()
+{
+	return ContainerType::segmentList;
+}
+
+
+std::shared_ptr<Container> Segmentation::execute(
+		std::vector<std::shared_ptr<Container>> vpInput
+	)
+{
+	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
+	std::shared_ptr<NucleotideSequence> pQuerySeq = 
+		std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
+	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
+		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
+
+		
+	std::shared_ptr<SegmentTree> pSegmentTree(new SegmentTree(pQuerySeq->length()));
+
+
 	assert(*pSegmentTree->begin() != nullptr);
 
 	{//scope for xPool
@@ -257,57 +281,14 @@ void Segmentation::segment()
 		#endif
 
 		//enqueue the root interval for processing
-		xPool.enqueue(
-			[/*WARNING: do not catch anything here: the lambda function is enqueued to into a thread pool,
-			 local variables might not exist anymore during it's execution*/]
-			(size_t uiThreadId, SegTreeItt pxRoot, Segmentation *pxAligner, ThreadPoolAllowingRecursiveEnqueues *pxPool)
-			{
-				pxAligner->procesInterval(uiThreadId, pxRoot, pxPool);
-			},//lambda
-			pSegmentTree->begin(), this, &xPool
+		xPool.enqueue( 
+			Segmentation::procesInterval,
+			pSegmentTree->begin(), pSegmentTree, pFM_index, pQuerySeq, &xPool
 		);//enqueue
 
 	}//end of scope xPool
-}//function
 
-
-std::vector<ContainerType> SegmentationContainer::getInputType()
-{
-	return std::vector<ContainerType>{
-			//the forward fm_index
-			ContainerType::fM_index,
-			//the query sequence
-			ContainerType::nucSeq,
-			//the reference sequence (packed since it could be really long)
-			ContainerType::packedNucSeq,
-		};
-}
-ContainerType SegmentationContainer::getOutputType()
-{
-	return ContainerType::segmentList;
-}
-
-
-std::shared_ptr<Container> SegmentationContainer::execute(
-		std::vector<std::shared_ptr<Container>> vpInput
-	)
-{
-	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
-	std::shared_ptr<NucleotideSequence> pQuerySeq = 
-		std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
-	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
-		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
-
-
-	Segmentation xS(
-			pFM_index, 
-			pQuerySeq, 
-			bBreakOnAmbiguousBase,
-			pRefSeq
-		);
-	xS.segment();
-
-	return xS.pSegmentTree;
+	return pSegmentTree;
 }//function
 
 #if 0
@@ -1144,17 +1125,11 @@ void exportSegmentation()
 
 
 	//export the segmentation class
-	boost::python::class_<SegmentationContainer, boost::python::bases<Module>>(
+	boost::python::class_<Segmentation, boost::python::bases<Module>>(
 			"Segmentation",
 			"bBreakOnAmbiguousBase: weather the extension of "
-			"intervals shall be stopped at N's\n",
-			boost::python::init<boost::python::optional<bool>>(
-				"arg1: self\n"
-				"arg2: weather the extension of "
-				"intervals shall be stopped at N's\n"
-			)
+			"intervals shall be stopped at N's\n"
 		)
-		.def_readwrite("bBreakOnAmbiguousBase", &SegmentationContainer::bBreakOnAmbiguousBase)
 		;
 	
 }//function

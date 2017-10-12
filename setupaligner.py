@@ -1,8 +1,7 @@
 from LAuS import *
 
 def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge):
-    seg = Segmentation(True)
-    seg.bSkipLongBWTIntervals = False
+    seg = Segmentation()
 
     anc = NlongestIntervalsAsAnchors(2)
 

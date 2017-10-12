@@ -50,6 +50,6 @@ clean:
 	rm -r -f html
 	rm -r -f libLAuS.html
 
-docs: libLAuS.html html/index.html
+docs: html/index.html libLAuS.html
 
 .Phony: all clean install distrib docs

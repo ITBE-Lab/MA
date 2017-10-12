@@ -82,7 +82,7 @@ fm_index.load("/mnt/ssd0/chrom/random/index")
 
 del_ins_size = 10
 q_len = 2000
-mutation_amount = 20
+mutation_amount = 100
 
 q = ""
 
