@@ -1,5 +1,38 @@
 #include "seed.h"
 
+
+class SeedIter{
+private:
+    std::list<Seed>::iterator it;
+    std::list<Seed>::iterator end;
+
+public:
+    SeedIter(std::list<Seed>* pList)
+            :
+        it(pList->begin()),
+        end(pList->end())
+    {}//constructor
+    
+    Seed next_boost()
+    {
+        if(it == end)
+        {
+            PyErr_SetNone(PyExc_StopIteration);
+            boost::python::throw_error_already_set();
+            return Seed(0,0,0);
+        }//if
+        Seed xRet = *it;
+        ++it;
+        return xRet;
+    }//function
+};//class
+
+
+SeedIter boost_python_iterator(std::shared_ptr<Seeds> seeds)
+{
+    return SeedIter(seeds.get());
+}//function
+
 void exportSeed()
 {
 
@@ -80,7 +113,7 @@ void exportSeed()
         )
     .def(
             "__iter__",
-            &Seeds::boost_python_iterator,
+            &boost_python_iterator,
             "arg1: self\n"
             "returns: list size\n"
         )

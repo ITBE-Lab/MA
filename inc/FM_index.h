@@ -30,8 +30,12 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
 #define OCC_INTV_MASK  (OCC_INTERVAL - 1)
 
 
-/* The BWT interval class represents intervals with respect the suffix array!
+/** 
+ * @brief A suffix array interval.
+ * @details
+ * The BWT interval class represents intervals with respect the suffix array!
  * See http://en.wikipedia.org/wiki/FM-index (intervals within the F-L matrix )
+ * @ingroup container
  */
 class SA_IndexInterval: public Container, public Interval<t_bwtIndex> {
 private:
@@ -90,9 +94,12 @@ public:
 typedef unsigned char ubyte_t;
 
 
-/* Creation of FM-indices.
+/**
+ * @brief A Suffix array.
+ * @details
  * FM-indices are central with the alignment process.
  * The original data-structure was part of the BWA-code.
+ * @ingroup container
  */
 class FM_Index : public Container
 {
@@ -811,7 +818,10 @@ public :
 
 }; // class FM_Index
 
-//function called in order to export this module
+/**
+ * @brief function called in order to export this module
+ * @ingroup export
+ */
 void exportFM_index();
 
 #endif

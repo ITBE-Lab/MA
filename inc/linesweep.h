@@ -310,6 +310,7 @@ public:
 
 /**
  * @brief Implements the linesweep algorithm.
+ * @ingroup module
  */
 class LineSweep: public Module
 {
@@ -358,6 +359,7 @@ public:
 
 /**
  * @brief Exposes the LineSweep Module to boost python.
+ * @ingroup export
  */
 void exportLinesweep();
 

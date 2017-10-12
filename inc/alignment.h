@@ -13,6 +13,7 @@
  * @brief Holds a finished alignment.
  * @details
  * Contains a list of MatchTypes (match, missmatch, insertion, deletion).
+ * @ingroup container
  */
 class Alignment : public Container
 {
@@ -184,6 +185,7 @@ public:
 
 /**
  * @brief Exposes the Alignment container to boost python.
+ * @ingroup export
  */
 void exportAlignment();
 

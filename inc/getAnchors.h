@@ -12,8 +12,9 @@
 /**
  * @brief Extract the n longes seeds.
  * @details
- * Extracts the n longest seeds.
+ * Extracts the n longest Seed -s.
  * These can then be used as anchors for StripOfConsiderations.
+ * @ingroup module
  */
 class NlongestIntervalsAsAnchors : public Module
 {
@@ -36,6 +37,7 @@ public:
 
 /**
  * @brief Exposes the Alignment container to boost python.
+ * @ingroup export
  */
 void exportGetAnchors();
 

@@ -81,7 +81,8 @@ public :
 	virtual ~GzipInputStream();
 }; // class
 
-/* An extend form of GzipInputStream for file reading.
+/**
+ * @brief An extend form of GzipInputStream for file reading.
  */
 class GzipInputFileStream : public GzipInputStream
 {

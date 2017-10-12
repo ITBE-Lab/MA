@@ -12,6 +12,7 @@
 /**
  * @brief a bucket for the seeds
  * @note TODO: remove me!
+ * @ingroup container
  */
  class SeedBucket
  {
@@ -61,6 +62,10 @@
 	}//function
  };//class
 
+/**
+ * @brief Used to quickly find areas with high density of Seed -s.
+ * @ingroup module
+ */
 class Bucketing: public Module
 {
 private:
@@ -113,6 +118,10 @@ public:
 	ContainerType getOutputType();
 };//class
 
+/**
+ * @brief export the bucketing Module to python.
+ * @ingroup export
+ */
 void exportBucketing();
 
 #endif

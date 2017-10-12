@@ -20,6 +20,7 @@ typedef uint64_t nucSeqIndex;
  * A extracted seed, that comprises two intervals, one on the query one on the reference.
  * Both intervals are equal in size.
  * @note the overloaded functions of Interval refer to the Interval on the query.
+ * @ingroup container
  */
 class Seed: public Container, public Interval<nucSeqIndex>
 {
@@ -91,32 +92,12 @@ public:
     ContainerType getType(){return ContainerType::seed;}
 }; //class
 
-class SeedIter{
-private:
-    std::list<Seed>::iterator it;
-    std::list<Seed>::iterator end;
-
-public:
-    SeedIter(std::list<Seed>* pList)
-            :
-        it(pList->begin()),
-        end(pList->end())
-    {}//constructor
-    
-    Seed next_boost()
-    {
-        if(it == end)
-        {
-            PyErr_SetNone(PyExc_StopIteration);
-            boost::python::throw_error_already_set();
-            return Seed(0,0,0);
-        }//if
-        Seed xRet = *it;
-        ++it;
-        return xRet;
-    }//function
-};//class
-
+/**
+ * @brief A list where one element is a Seed.
+ * @details
+ * Also holds the summed up score of the seeds within the list.
+ * @ingroup Container
+ */
 class Seeds:
 public std::list<Seed>,
 public Container
@@ -143,13 +124,13 @@ public Container
             push_back(rS);
     }//function
 
-    SeedIter boost_python_iterator()
-    {
-        return SeedIter(this);
-    }//function
-
 };//class
 
+/**
+ * @brief a std::vector of seeds.
+ * @details
+ * This class is necessary in order to inherit from Container.
+ */
 class SeedsVector:
     public std::vector<std::shared_ptr<Seeds>>,
     public Container
@@ -163,6 +144,11 @@ public:
     ContainerType getType(){return ContainerType::seedsVector;}
 };//class
 
+
+/**
+ * @brief exports the Seed and Seedlist classes to python.
+ * @ingroup export
+ */
 void exportSeed();
 
 #endif

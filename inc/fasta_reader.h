@@ -14,7 +14,8 @@
 	typedef std::string TextSequence;
 #endif
 
-/* Structure that describes single FASTA Record.
+/**
+ * @brief Structure that describes single FASTA Record.
  */
 class FastaDescriptor
 {
@@ -32,7 +33,8 @@ public :
 	{ } // default constructor
 }; // class
 
-/* StreamType can be GzipInputStream or GzipInputFileStream.
+/**
+ * @brief StreamType can be GzipInputStream or GzipInputFileStream.
  */
 template<int BUFFER_SIZE, typename StreamType>
 class BufferedStreamer
@@ -206,7 +208,10 @@ public :
 	} // method
 }; // class
 
-/* A FastaStreamReader can read a FASTA-file and creates the appropriate FASTA record.
+/**
+ * @brief A stream reader for FASTA streams.
+ * @details
+ * A FastaStreamReader can read a FASTA-file and creates the appropriate FASTA record.
  * Requires as template argument a stream type:
  * E.g.: std::istream, std::ifstream, GzipInputFileStream, GzipInputStream
  * FIX ME: Rethink the design of the FASTA reader. The current version is not really well made.
@@ -421,7 +426,10 @@ public :
 	} // destructor	
 }; // class
 
-/* Use this a FASTA rader for file streams. (GzipInputFileStream and std::ifstream)
+/**
+ * @brief a FASTA rader for file streams.
+ * @details
+ * Use this a FASTA rader for file streams. (GzipInputFileStream and std::ifstream)
  * The constructor checks, whether the file could be successfully opened.
  */
 template<typename StreamType>
@@ -442,7 +450,8 @@ public :
 	} // constructor
 }; // class FastaFileStreamReader
 
-/* Reads a single FASTA record from a file
+/**
+ * @brief Reads a single FASTA record from a file
  */
 class FastaReader : public FastaDescriptor
 {                                                                                    

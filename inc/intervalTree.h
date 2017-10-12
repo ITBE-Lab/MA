@@ -20,6 +20,7 @@
  * A Suffix Array Segment is made up of two Intervals.
  * @li @c a SA_IndexInterval.
  * @li @c a Interval representing the position of the sequence on the query.
+ * @ingroup container
  */
 class SaSegment: public Container, public Interval<nucSeqIndex> {
 private:
@@ -51,6 +52,7 @@ public:
 
 /**
  * @brief A Interval in the Segment Tree.
+ * @ingroup container
  */
 class SegmentTreeInterval: public Container, public Interval<nucSeqIndex>
 {
@@ -214,6 +216,7 @@ public:
  * meaning that the segments within the list represent the first layer of the tree initally.
  * Then after each iteration, the segments within the list represent the next layer down of the 
  * tree.
+ * @ingroup container
  */
 class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>, public Container{
 
@@ -299,6 +302,7 @@ std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode);
 
 /**
  * @brief Exposes the SegmentTree to boost python.
+ * @ingroup export
  */
 void exportIntervalTree();
 

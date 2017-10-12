@@ -16,7 +16,10 @@
 
 class PerfectMatch;
 
-
+/**
+ * @brief Computes a set of maximal non-enclosed seeds.
+ * @ingroup module
+ */
 class Segmentation : public Module{
 private:
 	static SA_IndexInterval extend_backward(
@@ -57,6 +60,11 @@ public:
     ContainerType getOutputType();
 };//class
 
+
+/**
+ * @brief exports the Segmentation Module to python.
+ * @ingroup export
+ */
 void exportSegmentation();
 
 #endif

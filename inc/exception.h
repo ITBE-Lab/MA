@@ -7,6 +7,14 @@
  * The exceptions are exposed to python.
  */
 
+/**
+ * @defgroup exception
+ * @brief several classes that deal with exceptions within the cpp code.
+ * @details
+ * Annotated_exception provides a way for printing the specific error.
+ * @{
+ */
+
 #pragma once
 
 #include <string>
@@ -154,10 +162,12 @@ T notNull( T pointer )
 } // generic function
 
 
+/**
+ * @} 
+ */
 
 /**
  * @brief Boost-python export function.
- * @details
- * Exports all exceptions to make them available in python.
+ * @ingroup export
  */
 void exportExceptions();

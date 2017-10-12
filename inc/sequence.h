@@ -39,7 +39,9 @@ void reverse(T word[], size_t length)
 	} // for
 } // reverse
 
-/** Class for the management of sequences (genetic or text)
+/** 
+ * @brief Class for the management of sequences (genetic or text).
+ * @details
  * Special string class, for sequence handling. 
  */
 template <class ELEMENT_TYPE>
@@ -264,7 +266,10 @@ public :
 	} // method
 }; // class PlainSequence
 
-/** This call was exclusively build for the fasta-reader.
+/** 
+ * @brief a sequence of chars.
+ * @details
+ * This call was exclusively build for the fasta-reader.
  * It shall boost performance for long inputs.
  */
 class TextSequence : public PlainSequence<char>
@@ -314,7 +319,9 @@ public :
 }; // class
 
 
-/** Special Class for Genetic Sequences
+/** 
+ * @brief Special Class for Genetic Sequences
+ * @details
  * IDEA: BioSequence objects use numbers instead of characters for sequence representation
  * Supports:
  *  - translation from textual representation to representation as sequence of numbers.
@@ -351,8 +358,11 @@ public :
 	} // method
 }; // class
 
-/** Class for genetic sequence that consist of nucleotides. (A, C, G, T)
- * TO DO: Create a move constructor!
+/** 
+ * @brief Contains a genetic sequence made out of nucleotides (A, C, G, T).
+ * @details
+ * Class for genetic sequence that consist of nucleotides. (A, C, G, T)
+ * @ingroup container
  */
 class NucleotideSequence : public GeneticSequence, public Container
 {
@@ -495,5 +505,8 @@ public :
 	
 }; // class NucleotideSequence
 
-/** export this module to boost python */
+/**
+ * @brief export this module to boost python 
+ * @ingroup export
+ */
 void exportSequence();

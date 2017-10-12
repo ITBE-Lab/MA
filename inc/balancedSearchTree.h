@@ -20,7 +20,7 @@
 template<class T>
 class SelfBalancingBinarySearchTree;
 
-/*
+/**
  * @brief Self balancing binary search tree node.
  */
 template<class T>
@@ -84,7 +84,7 @@ public:
     }//function
 };//class
 
-/*
+/**
  * @brief Self balancing binary search tree.
  */
 template<class T>
@@ -251,7 +251,7 @@ public:
         pRoot = deleteFirst(pRoot);
     }
 
-    /* @brief returns the leftmost element of the Tree. */
+    /** @brief returns the leftmost element of the Tree. */
     T* first() const
     {
         std::shared_ptr<SBBSTNode<T>> r = pRoot;

@@ -33,9 +33,18 @@ enum ContainerType{
 };//enum
 
 /**
+ * @defgroup container
+ * @brief All classes containing data elements.
+ * @details
+ * All classes that store data should inherit from Container.
+ * These classes are then added to this Group.
+ */
+
+/**
  * @brief Abstract class intended to hold data objects used by Modules.
  * @details
  * All classes containing data should inherit from this class.
+ * @ingroup container
  */
 class Container
 {
@@ -47,9 +56,9 @@ public:
     virtual ContainerType getType(){return ContainerType::unknown;}
 };//class
 
-
 /** 
  * @brief Function to export Container to boost python.
+ * @ingroup export
  */
 void exportContainer();
 #endif

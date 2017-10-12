@@ -13,6 +13,14 @@
 #include <iostream>
 #include <boost/python/list.hpp>
 
+
+/**
+ * @defgroup module
+ * @brief All classes implementing some algorithm.
+ * @details
+ * These classes should all inherit from Module.
+ */
+
 class Pledge;
 
 /**
@@ -49,6 +57,7 @@ bool typeCheck(
  * @brief Abstract class intended for the implementaiton of various algorithms.
  * @details
  * All computing on data should inherit from this class
+ * @ingroup module
  */
 class Module
 {
@@ -120,6 +129,7 @@ public:
  *
  * @note The advantage of the computational graph is that there is no unnecessary 
  * jumping between python and cpp code.
+ * @ingroup container
  */
 class Pledge : public Container
 {
@@ -260,8 +270,11 @@ public:
     }//function
 };//class
 
+
+
 /**
  * @brief Exposes the Module class to boost python.
+ * @ingroup export
  */
 void exportModule();
 

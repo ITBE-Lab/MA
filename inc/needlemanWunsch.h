@@ -13,6 +13,7 @@
  * @brief implements NMW
  * @details
  * Returns a finished alignment if given a sound selection of seeds.
+ * @ingroup module
  */
 class NeedlemanWunsch : public Module
 {
@@ -34,6 +35,7 @@ public:
 
 /**
  * @brief Exposes the Alignment container to boost python.
+ * @ingroup export
  */
 void exportNeedlemanWunsch();
 
