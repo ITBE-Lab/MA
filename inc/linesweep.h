@@ -159,6 +159,11 @@ public:
         pSeeds->erase(pSeed);
         pSeed = pSeeds->end();
         pInterferingIntervals->clear();
+        for(std::tuple<ShadowInterval*, unsigned int> tup : lIInterferWith2ndOrder)
+        {
+            std::get<0>(tup)->iScoreInterfering2ndOrder -= std::get<1>(tup);
+        }//for
+        lIInterferWith2ndOrder.clear();
     }//function
 
     
@@ -193,6 +198,7 @@ public:
             //pIInterferWith MUST be deactivated already!
             //but if it interfers with another interval we have to update the score of the outer one
             pIInterferWith->pIInterferWith->iScoreInterfering -= iInterferingSelf;
+        lIInterferWith2ndOrder.clear();
     }//function
 
 

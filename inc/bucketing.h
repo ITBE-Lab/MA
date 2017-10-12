@@ -11,7 +11,6 @@
 
 /**
  * @brief a bucket for the seeds
- * @note TODO: remove me!
  * @ingroup container
  */
  class SeedBucket

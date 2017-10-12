@@ -27,7 +27,7 @@ SA_IndexInterval Segmentation::extend_backward(
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
 	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
-	//TODO: here the intervals seem to be (a,b] while mine are [a,b) (?)... [a,b] seems nicer
+	//here the intervals seem to be (a,b] while mine are [a,b)
 	pFM_index->bwt_2occ4(
 		// start of SA index interval
 		ik.start() - 1,
@@ -47,7 +47,7 @@ SA_IndexInterval Segmentation::extend_backward(
 	for(unsigned int i = 1; i < 4; i++)
 		cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
 
-	//TODO: BWAs SA intervals seem to be (a,b] while mine are [a,b]... [a,b] seems nicer
+	//BWAs SA intervals seem to be (a,b] while mine are [a,b]
 	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval
