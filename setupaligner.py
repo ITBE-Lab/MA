@@ -17,8 +17,7 @@ def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge):
 
     segment_pledge = seg.promise_me((
         fm_index_pledge,
-        query_pledge,
-        reference_pledge
+        query_pledge
     ))
 
     anchors_pledge = anc.promise_me((segment_pledge,))

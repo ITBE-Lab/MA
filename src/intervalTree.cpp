@@ -198,9 +198,9 @@ void exportIntervalTree()
 			.def(
 					"get_seeds", 
 					&SegmentTree::getSeeds,
+					boost::python::with_custodian_and_ward_postcall<1,0>(),
 					"arg1: self\n"
 					"arg2: the fm_index.\n"
-					"arg2: the reversed fm_index.\n"
 					"returns: all seeds.\n"
 				)
 			.def(

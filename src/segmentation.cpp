@@ -90,9 +90,9 @@ SaSegment Segmentation::extend(
 		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
 		if(ok.size() != ik.size()) 
-			curr.push_back(SaSegment(center, i-center+1, ik.revComp()));
+			curr.push_back(SaSegment(center, i-center, ik.revComp()));
 		if(i == pQuerySeq->length()-1)
-			curr.push_back(SaSegment(center, i-center+1, ok.revComp()));
+			curr.push_back(SaSegment(center, i-center, ok.revComp()));
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -246,8 +246,6 @@ std::vector<ContainerType> Segmentation::getInputType()
 			ContainerType::fM_index,
 			//the query sequence
 			ContainerType::nucSeq,
-			//the reference sequence (packed since it could be really long)
-			ContainerType::packedNucSeq,
 		};
 }
 ContainerType Segmentation::getOutputType()
@@ -263,8 +261,6 @@ std::shared_ptr<Container> Segmentation::execute(
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
-	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
-		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
 
 		
 	std::shared_ptr<SegmentTree> pSegmentTree(new SegmentTree(pQuerySeq->length()));

@@ -120,3 +120,11 @@ reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
 result_pledge.next()
+exit()
+
+seg = Segmentation()
+seeds = seg.execute((fm_index, query,)).get_seeds(fm_index, 0)
+
+printer = SeedPrinter()
+
+printer.execute((seeds, query, ref_seq,))

@@ -33,7 +33,7 @@ obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
 libLAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
-	pydoc3 -w LAuS
+	pydoc3 -w libLAuS
 
 html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
 	doxygen doxygen.config
