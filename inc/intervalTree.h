@@ -47,6 +47,17 @@ public:
 	{
 		return xSaInterval;
 	}//function
+	
+    /**
+     * @brief Copys from another SaSegment.
+	 * @note override
+     */
+    inline SaSegment& operator=(const SaSegment& rxOther)
+    {
+        Interval::operator=(rxOther);
+        xSaInterval = rxOther.xSaInterval;
+        return *this;
+    }// operator
 
 }; // class ( SaSegment )
 
@@ -131,13 +142,22 @@ public:
 
 			//iterate over the interval in the BWT
 			for (
-					auto ulCurrPos = xSegment.saInterval().start()+1; 
-					ulCurrPos <= xSegment.saInterval().end(); 
+					auto ulCurrPos = xSegment.saInterval().start(); 
+					ulCurrPos < xSegment.saInterval().end(); 
 					ulCurrPos += uiJumpBy
 				)
 			{
 				//calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
-				auto ulIndexOnRefSeq = pxFM_Index->bwt_sa(ulCurrPos);
+				nucSeqIndex ulIndexOnRefSeq = pxFM_Index->bwt_sa(ulCurrPos);
+
+				//TODO: check if this is correct
+				//check bridging:
+				if(
+						ulIndexOnRefSeq*2 < pxFM_Index->getRefSeqLength() && 
+						(ulIndexOnRefSeq + xSegment.size() + 1)*2 >= pxFM_Index->getRefSeqLength()
+					)
+					continue;
+
 				/* if the match was calculated using the fm-index of the reversed sequence:
 				 * we acquire the index of the beginning of the match on the reversed sequence by calling bwt_sa()
 				 * but we actually want the beginning of the match on the normal sequence, so we need to subtract the END of the match from the reference sequence length

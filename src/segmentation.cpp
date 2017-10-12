@@ -30,16 +30,16 @@ SA_IndexInterval Segmentation::extend_backward(
 	//TODO: here the intervals seem to be (a,b] while mine are [a,b) (?)... [a,b] seems nicer
 	pFM_index->bwt_2occ4(
 		// start of SA index interval
-		ik.start(),
+		ik.start() - 1,
 		// end of SA index interval
-		ik.end(),
+		ik.end() - 1,
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
 	);
 	bwt64bitCounter cnts[4]; // Number of A, C, G, T in BWT until end of interval ik
 	
 	for(unsigned int i = 0; i < 4; i++)
-		cnts[i] = cntl[i] - cntk[i] + 1;
+		cnts[i] = cntl[i] - cntk[i];
 
 	bwt64bitCounter cntk_2[4];
 	//for all nucleotides
@@ -51,7 +51,7 @@ SA_IndexInterval Segmentation::extend_backward(
 	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval
-	return SA_IndexInterval(pFM_index->L2[c] + cntk[c], cntk_2[complement(c)], cnts[c] - 1);
+	return SA_IndexInterval(pFM_index->L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
 } // method
 
 
@@ -74,8 +74,8 @@ SaSegment Segmentation::extend(
 	// because very first string in SA-array starts with $
 	// size in T and T' is equal due to symmetry
 	SA_IndexInterval ik(
-						pFM_index->L2[complement(q[center])], 
-						pFM_index->L2[(int)q[center]], 
+						pFM_index->L2[complement(q[center])] + 1, 
+						pFM_index->L2[(int)q[center]] + 1, 
 						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
 					);
 
@@ -90,9 +90,9 @@ SaSegment Segmentation::extend(
 		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
 		if(ok.size() != ik.size()) 
-			curr.push_back(SaSegment(center, i-center, ik.revComp()));
-		if(i == pQuerySeq->length()-1)
-			curr.push_back(SaSegment(center, i-center, ok.revComp()));
+			curr.push_front(SaSegment(center, i-center-1, ik.revComp()));
+		if(i == pQuerySeq->length()-1 && ok.size() != 0)
+			curr.push_front(SaSegment(center, i-center, ok.revComp()));
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -117,9 +117,12 @@ SaSegment Segmentation::extend(
 	{
 		for(nucSeqIndex i = center-1; i >= 0; i--)
 		{
+			assert(pCurr->empty());
+
+			bool bHaveOne = false;
+
 			for(SaSegment ik : *pPrev)
 			{
-				
 				DEBUG_2(
 					std::cout << i+1 << " -> " << ik.saInterval().start() << " " << ik.saInterval().end() << std::endl;
 					std::cout << i+1 << " ~> " << ik.saInterval().revComp().start() << " " << ik.saInterval().revComp().end() << std::endl;
@@ -129,13 +132,17 @@ SaSegment Segmentation::extend(
 					std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
 					std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
 				)
-				if( ok.size() == 0 && pCurr->empty())
+				DEBUG(
+					std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
+				)
+				if(ok.size() == 0 && !bHaveOne)
 				{
 					pxNode->push_back(ik);
 					if(ik.size() > longest.size())
 						longest = ik;
+					bHaveOne = true;
 				}//if
-				if(ok.size() != 0)
+				else if(ok.size() != 0)
 					pCurr->push_back(SaSegment(i, ik.size()+1, ok));
 			}//for
 			pTemp = pPrev;
@@ -155,14 +162,16 @@ SaSegment Segmentation::extend(
 	
 	if(!pPrev->empty())
 	{
-		pxNode->push_back(pPrev->back());
+		assert(pPrev->front().size() >= pPrev->back().size());
+
+		pxNode->push_back(pPrev->front());
 		
 		DEBUG_2(
-			std::cout << pPrev->back().start() << ":" << pPrev->back().end() << std::endl;
+			std::cout << pPrev->front().start() << ":" << pPrev->front().end() << std::endl;
 		)
 
-		if(pPrev->back().size() > longest.size())
-			longest = pPrev->back();
+		if(pPrev->front().size() > longest.size())
+			longest = pPrev->front();
 	}//if
 
 	return longest;

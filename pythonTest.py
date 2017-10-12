@@ -81,8 +81,8 @@ fm_index.load("/mnt/ssd0/chrom/random/index")
 
 
 del_ins_size = 10
-q_len = 2000
-mutation_amount = 100
+q_len = 6
+mutation_amount = 0
 
 q = ""
 
@@ -119,8 +119,8 @@ query_pledge.set(query)
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-result_pledge.next()
-exit()
+#result_pledge.next()
+#exit()
 
 seg = Segmentation()
 seeds = seg.execute((fm_index, query,)).get_seeds(fm_index, 0)

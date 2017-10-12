@@ -75,7 +75,8 @@ public:
 	 */
 	inline SA_IndexInterval& operator=(const SA_IndexInterval& rxOther)
 	{
-        Interval::operator=(rxOther);
+		Interval::operator=(rxOther);
+		assert(size() == rxOther.size());
         startOfComplement = rxOther.startOfComplement;
         return *this;
 	}// operator
