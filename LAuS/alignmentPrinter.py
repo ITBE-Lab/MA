@@ -11,7 +11,7 @@ Execution:
    returns: nothing
     """
 
-    def __init__(self, nuc_per_line = 100):
+    def __init__(self, nuc_per_line = 80):
         self.nuc_per_line = nuc_per_line
 
     #override
@@ -99,7 +99,7 @@ Execution:
                 ind_ref += 1
             counter += 1
 
-        while len(lines[-1]) < 100:
+        while len(lines[-1]) < self.nuc_per_line:
             lines[-3] += '-'
             lines[-2] += ' '
             lines[-1] += '-'

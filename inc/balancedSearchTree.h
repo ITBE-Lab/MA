@@ -127,6 +127,7 @@ private:
         if(k1->pRight != nullptr)
             k1->pRight->pUp = k2;
         k1->pRight = k2;
+        k1->pUp = k2->pUp;
         k2->pUp = k1;
         k2->height = std::max(height(k2->pLeft), height(k2->pRight)) + 1;
         k1->height = std::max(height(k1->pLeft), k2->height) + 1;
@@ -143,6 +144,7 @@ private:
         if(k2->pLeft != nullptr)
             k2->pLeft->pUp = k1;
         k2->pLeft = k1;
+        k2->pUp = k1->pUp;
         k1->pUp = k2;
         k1->height = std::max(height(k1->pLeft), height(k1->pRight)) + 1;
         k2->height = std::max(height(k2->pRight), k1->height) + 1;

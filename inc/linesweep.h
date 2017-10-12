@@ -236,14 +236,10 @@ public:
             )
             for(ShadowInterval* pInterval : *pInterferingIntervals)
                 pInterval->removeInterferingIntervals(pSeeds);
-            std::cout << "a" << std::endl;
             pInterferingIntervals->clear();
-            std::cout << "a" << std::endl;
             for(ShadowInterval* pInterval : *pInterferingIntervals2ndOrder)
                 pInterval->removeInterferingIntervals2ndOrder(pSeeds);
-            std::cout << "a" << std::endl;
             pInterferingIntervals2ndOrder->clear();
-            std::cout << "a" << std::endl;
         }//else
     }//function
 
