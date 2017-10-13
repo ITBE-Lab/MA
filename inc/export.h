@@ -7,15 +7,16 @@
  */
 
 /**
- * @mainpage @ref CppModule "Modular" @ref LineSweep "LineSweeping" Aligner using Segmentation
+ * @mainpage @ref CppModule "Modular" @ref LineSweep "Linesweeping" Aligner using Segmentation
  * @tableofcontents
  * @section intro_sec Introduction
  *
  * LAuS is a Modular alignment tool build using C++11 and Boost Python.
  * The alignment process has been seperated into several @ref CppModule "modules".
  * The execution order of the @ref CppModule "modules" is set up using Python.
- * @ref CppModule "modules" can be implemented in Python or C++. <br>
- * The Pledge class allows setting up a computational Graph, that avoids unnecessary jumps between 
+ * @ref CppModule "Modules" can be implemented in Python or C++. <br>
+ * The Pledge class allows setting up a @ref comp_graph_sec "computational graph", 
+ * that avoids unnecessary jumps between 
  * Python and C++.
  *
  *
@@ -41,7 +42,10 @@
  * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentTree,
  * NucleotideSequence, BWACompatiblePackedNucleotideSequencesCollection <td> Alignment
  * </table>
- * 
+ *
+ * @note The python classes can be easily identified by the prefix "LAuS." 
+ * while C++ classes have no specific prefix.
+ *
  * @section install_sec Installation
  * 
  * The easiest way to install the LAuS library is using pip:
@@ -76,7 +80,7 @@
  * fm_index.load("filename")
  * 
  * # Setup a container for the packed reference
- * ref = BWAPack()
+ * ref = Pack()
  * # Load the pack from a file.
  * ref.load("filename")
  * 
@@ -107,6 +111,10 @@
  * @note for a quick start on how to setup a computational graph,
  * this setup of @ref CppModule "modules" using a
  * computation graph can be seen in the @ref comp_graph_sec "Pledge" class.
+ * 
+ * @section about_us_sec About Us
+ * 
+ * Here is the <a href="http://itbe.hanyang.ac.kr/">webpage of the IT-BE lab</a>.
  */
 
 /**

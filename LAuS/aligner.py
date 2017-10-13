@@ -1,5 +1,9 @@
 ##
 # @package LAuS
+# @brief The Python part of the library is within this package
+# @package LAuS.aligner
+# @brief Implements @ref LAuS.aligner.Module "Module" and 
+# @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @file aligner.py
 # @brief Implements @ref LAuS.aligner.Module "Module" and 
 # @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest".
@@ -14,7 +18,7 @@ from libLAuS import *
 # The module overrides the @ref promiseMe "promise_me" function.
 # Thus telling the C++ code that any module inheriting from this class is written in python.
 # @see the C++ implementation of @ref CppModule "module".
-# @ingroup module
+# @ingroup module 
 #
 class Module(CppModule):
 

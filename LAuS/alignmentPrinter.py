@@ -1,5 +1,6 @@
 ##
-# @package LAuS
+# @package LAuS.alignmentPrinter
+# @brief Implements @ref LAuS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
 # @file alignmentPrinter.py
 # @brief Implements @ref LAuS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
 # @author Markus Schmidt

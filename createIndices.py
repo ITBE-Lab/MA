@@ -47,7 +47,7 @@ file_all.close()
 
 
 print("b")
-ref_seq = BWAPack()
+ref_seq = Pack()
 ref_seq.append("name", "no comment",ref)
 ref_seq.store("/mnt/ssd0/chrom/random/pack")
 

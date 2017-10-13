@@ -71,7 +71,7 @@ result_pledge = set_up_aligner(
 
 
 
-ref_seq = BWAPack()
+ref_seq = Pack()
 #ref_seq.append("no name", "no desc", NucSeq("AACG"))
 ref_seq.load("/mnt/ssd0/chrom/random/pack")
 #fm_index = FMIndex(ref_seq)

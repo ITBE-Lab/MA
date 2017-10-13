@@ -186,7 +186,7 @@ public:
  * fm_index.load("filename")
  * 
  * # Setup a container for the packed reference
- * ref = BWAPack()
+ * ref = Pack()
  * # Load the pack from a file.
  * ref.load("filename")
  * 

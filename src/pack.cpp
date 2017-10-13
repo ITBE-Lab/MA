@@ -8,7 +8,7 @@ void exportPack()
             boost::python::bases<Container>,
             std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>
         >(
-                "BWAPack",
+                "Pack",
                 "unpacked_size_single_strand: the size of one strand\n"
                 "\n"
                 "Holds a packed sequence.\n"
@@ -36,7 +36,7 @@ void exportPack()
                 "arg2: the folder and filename on disk\n"
                 "returns: nil\n"
                 "\n"
-                "Stores this pack at the given loacation.\n"
+                "Stores this pack at the given location.\n"
             )
         .def(
                 "exists", 
