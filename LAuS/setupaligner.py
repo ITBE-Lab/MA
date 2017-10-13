@@ -1,5 +1,26 @@
-from LAuS import *
+##
+# @package LAuS
+# @file setupaligner.py
+# @brief Implements @ref LAuS.set_up_aligner "set_up_aligner".
+# @author Markus Schmidt
 
+from .aligner import *
+
+##
+# @brief Setup the @ref comp_graph_sec "computational graph" 
+# with the standard aligner comfiguration.
+# @details 
+# Uses following Modules in this order:
+# - Segmentation
+# - NlongestIntervalsAsAnchors
+# - Bucketing
+# - @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest"
+# - NeedlemanWunsch
+# - @ref LAuS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter"
+#
+# @returns the pledge of the alignment Printer.
+# @ingroup module
+#
 def set_up_aligner(query_pledge, reference_pledge, fm_index_pledge):
     seg = Segmentation()
 

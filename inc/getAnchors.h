@@ -7,7 +7,7 @@
 #define GET_ANCHORS_H
 
 #include "intervalTree.h"
-#include "module.h"
+#include "cppModule.h"
 
 /**
  * @brief Extract the n longes seeds.
@@ -16,7 +16,7 @@
  * These can then be used as anchors for StripOfConsiderations.
  * @ingroup module
  */
-class NlongestIntervalsAsAnchors : public Module
+class NlongestIntervalsAsAnchors : public CppModule
 {
 public:
     ///@brief number of seeds to extract

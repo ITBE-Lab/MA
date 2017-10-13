@@ -32,10 +32,7 @@ obj/%.o: src/%.cpp inc/%.h
 obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
-libLAuS.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
-	pydoc3 -w libLAuS
-
-html/index.html: $(wildcard src/*.cpp) $(wildcard inc/*.h)
+html/index.html: $(wildcard inc/*.h) $(wildcard LAuS/*.py)
 	doxygen doxygen.config
 
 install:
@@ -48,8 +45,7 @@ clean:
 	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) libLAuS.so
 	rm -r -f dist *.egg-info build
 	rm -r -f html
-	rm -r -f libLAuS.html
 
-docs: html/index.html libLAuS.html
+docs: html/index.html
 
 .Phony: all clean install distrib docs

@@ -150,7 +150,7 @@ std::shared_ptr<Container> Bucketing::execute(
 void exportBucketing()
 {
     //export the Bucketing class
-	boost::python::class_<Bucketing, boost::python::bases<Module>>(
+	boost::python::class_<Bucketing, boost::python::bases<CppModule>>(
         "Bucketing",
         "Throws seeds into buckets in order to speed up the extraction "
         "of strips of consideration.\n"

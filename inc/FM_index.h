@@ -820,7 +820,7 @@ public :
 }; // class FM_Index
 
 /**
- * @brief function called in order to export this module
+ * @brief function called in order to export this @ref CppModule "module"
  * @ingroup export
  */
 void exportFM_index();

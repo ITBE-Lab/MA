@@ -7,7 +7,7 @@
 #define BUCKETING_H
 
 #include "intervalTree.h"
-#include "module.h"
+#include "cppModule.h"
 
 /**
  * @brief a bucket for the seeds
@@ -62,10 +62,10 @@
  };//class
 
 /**
- * @brief Used to quickly find areas with high density of Seed -s.
+ * @brief Used to quickly find areas with high density of @ref Seed "seeds".
  * @ingroup module
  */
-class Bucketing: public Module
+class Bucketing: public CppModule
 {
 private:
 
@@ -118,7 +118,7 @@ public:
 };//class
 
 /**
- * @brief export the bucketing Module to python.
+ * @brief export the bucketing @ref CppModule "module" to python.
  * @ingroup export
  */
 void exportBucketing();

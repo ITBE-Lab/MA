@@ -7,7 +7,7 @@
 #define NEEDLEMAN_WUNSCH_H
 
 #include "alignment.h"
-#include "module.h"
+#include "cppModule.h"
 
 /**
  * @brief implements NMW
@@ -15,7 +15,7 @@
  * Returns a finished alignment if given a sound selection of seeds.
  * @ingroup module
  */
-class NeedlemanWunsch : public Module
+class NeedlemanWunsch : public CppModule
 {
 public:
 

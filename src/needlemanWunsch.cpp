@@ -363,7 +363,7 @@ void exportNeedlemanWunsch()
      //export the segmentation class
     boost::python::class_<
         NeedlemanWunsch, 
-        boost::python::bases<Module>
+        boost::python::bases<CppModule>
     >(
         "NeedlemanWunsch", 
         "Picks a set of anchors for the strips of consideration.\n"

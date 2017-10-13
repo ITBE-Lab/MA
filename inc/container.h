@@ -14,7 +14,7 @@
 /**
  * @brief Used to describe the type of the Container.
  * @details
- * required by module for type checking the inputs before casting and using them.
+ * required by CppModule for type checking the inputs before casting and using them.
  */
 enum ContainerType{
     fM_index,
@@ -41,7 +41,7 @@ enum ContainerType{
  */
 
 /**
- * @brief Abstract class intended to hold data objects used by Modules.
+ * @brief Abstract class intended to hold data objects used by @ref CppModule "modules".
  * @details
  * All classes containing data should inherit from this class.
  * @ingroup container
@@ -51,7 +51,7 @@ class Container
 public:
     /** 
     * @returns the type of the container as enum.
-    * @brief Used by Module for type checking its Inputs.
+    * @brief Used by @ref CppModule "module" for type checking its Inputs.
     */
     virtual ContainerType getType(){return ContainerType::unknown;}
 };//class

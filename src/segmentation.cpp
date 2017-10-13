@@ -1130,7 +1130,7 @@ void exportSegmentation()
 
 
 	//export the segmentation class
-	boost::python::class_<Segmentation, boost::python::bases<Module>>(
+	boost::python::class_<Segmentation, boost::python::bases<CppModule>>(
 			"Segmentation",
 			"bBreakOnAmbiguousBase: weather the extension of "
 			"intervals shall be stopped at N's\n"

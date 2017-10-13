@@ -1,28 +1,41 @@
+##
+# @package LAuS
+# @file alignmentPrinter.py
+# @brief Implements @ref LAuS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
+# @author Markus Schmidt
+
 from .aligner import *
 
 
+##
+# @brief Print the given Alignment.
+# @details 
+# Prints the alignment to the console.
+# @ingroup module
+#
 class AlignmentPrinter(Module):
-    """prints a Alignment.
-Execution:
-   Expects align, query, ref
-       align: the Alignment
-       query: the query as NucSeq
-       ref: the reference as Pack
-   returns: nothing
-    """
 
     def __init__(self, nuc_per_line = 80):
         self.nuc_per_line = nuc_per_line
 
-    #override
+    ##
+    # @brief returns the @ref ContainerType "container types" alignment, nucSeq, packedNucSeq.
+    # @details
+    # Reimplemented from LAuS.aligner.Module.get_input_type.
     def get_input_type(self):
         return [ContainerType.alignment, ContainerType.nucSeq, ContainerType.packedNucSeq]
 
-    #override
+    ##
+    # @brief returns the @ref ContainerType "container type" nothing.
+    # @details
+    # Reimplemented from LAuS.aligner.Module.get_output_type.
     def get_output_type(self):
         return ContainerType.nothing
 
-    #override
+    ##
+    # @brief Execute LineSweep for all given seeds.
+    # @details
+    # Reimplemented from LAuS.aligner.Module.execute.
     def execute(self, input):
         align = input[0]
         query = input[1]

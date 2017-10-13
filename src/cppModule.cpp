@@ -1,4 +1,4 @@
-#include "module.h"
+#include "cppModule.h"
 
 unsigned int Pledge::iCurrentCallNum = 0;
 
@@ -38,7 +38,7 @@ bool typeCheck(
     return true;
 }//function
 
-std::shared_ptr<Pledge> Module::promiseMe(std::vector<std::shared_ptr<Pledge>> vInput)
+std::shared_ptr<Pledge> CppModule::promiseMe(std::vector<std::shared_ptr<Pledge>> vInput)
 {
     std::vector<std::shared_ptr<Container>> vCastInput(vInput.begin(), vInput.end());
     if(!typeCheck(vCastInput, getInputType()))
@@ -49,14 +49,14 @@ std::shared_ptr<Pledge> Module::promiseMe(std::vector<std::shared_ptr<Pledge>> v
 void exportModule()
 {
     //module is an abstract class and should never be initialized
-	boost::python::class_<Module>(
-            "Module__",
+	boost::python::class_<CppModule>(
+            "CppModule",
             "Any class implementing a algorithm should inherit Module\n",
             boost::python::no_init
         )
         .def(
                 "execute",
-                &Module::saveExecute,
+                &CppModule::saveExecute,
                 "arg1: self\n"
                 "arg2: tuple/vector of containers. "
                 "Their types must match the input type of this module\n"
@@ -67,19 +67,19 @@ void exportModule()
             )
         .def(
                 "get_input_type",
-                &Module::getInputType,
+                &CppModule::getInputType,
                 "arg1: self\n"
                 "returns: the type of containers that is expected as input by this module\n"
             )
         .def(
                 "get_output_type",
-                &Module::getOutputType,
+                &CppModule::getOutputType,
                 "arg1: self\n"
                 "returns: the type of containers that is expected as output from this module\n"
             )
         .def(
                 "promise_me",
-                &Module::promiseMe,
+                &CppModule::promiseMe,
                 boost::python::with_custodian_and_ward_postcall<0,1>(),
                 "arg1: self\n"
                 "arg2: a list of pledges that are required as inputs\n"

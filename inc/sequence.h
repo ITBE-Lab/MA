@@ -506,7 +506,7 @@ public :
 }; // class NucleotideSequence
 
 /**
- * @brief export this module to boost python 
+ * @brief export this @ref CppModule "modules" to boost python 
  * @ingroup export
  */
 void exportSequence();

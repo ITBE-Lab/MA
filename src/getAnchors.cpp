@@ -43,7 +43,7 @@ void exportGetAnchors()
      //export the segmentation class
     boost::python::class_<
         NlongestIntervalsAsAnchors, 
-        boost::python::bases<Module>
+        boost::python::bases<CppModule>
     >(
         "NlongestIntervalsAsAnchors", 
         "uiN: number of intervals to extract as anchors\n"

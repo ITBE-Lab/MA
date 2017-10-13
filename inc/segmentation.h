@@ -9,7 +9,7 @@
 #define DEBUG_ENABLED
 
 #include "system.h"
-#include "module.h"
+#include "cppModule.h"
 #include "intervalTree.h"
 #include "threadPool.h"
 
@@ -20,7 +20,7 @@ class PerfectMatch;
  * @brief Computes a set of maximal non-enclosed seeds.
  * @ingroup module
  */
-class Segmentation : public Module{
+class Segmentation : public CppModule{
 private:
 	static SA_IndexInterval extend_backward(
 			const SA_IndexInterval &ik, 
@@ -62,7 +62,7 @@ public:
 
 
 /**
- * @brief exports the Segmentation Module to python.
+ * @brief exports the Segmentation @ref CppModule "module" to python.
  * @ingroup export
  */
 void exportSegmentation();

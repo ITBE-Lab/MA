@@ -1,6 +1,6 @@
 /** 
  * @file linesweep.h
- * @brief Implements the linesweep module
+ * @brief Implements the linesweep @ref CppModule "module"
  * @author Markus Schmidt
  */
 #ifndef LINESWEEP
@@ -8,7 +8,7 @@
 
 #include "intervalTree.h"
 #include "balancedSearchTree.h"
-#include "module.h"
+#include "cppModule.h"
 
 /**
  * @brief The shadow of a Seed.
@@ -318,7 +318,7 @@ public:
  * @brief Implements the linesweep algorithm.
  * @ingroup module
  */
-class LineSweep: public Module
+class LineSweep: public CppModule
 {
 private:
     /**
@@ -364,7 +364,7 @@ public:
 };//class
 
 /**
- * @brief Exposes the LineSweep Module to boost python.
+ * @brief Exposes the LineSweep @ref CppModule "module" to boost python.
  * @ingroup export
  */
 void exportLinesweep();

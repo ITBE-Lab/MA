@@ -1,5 +1,5 @@
 /** 
- * @file module.h
+ * @file cppModule.h
  * @brief Implements a abstract Module class.
  * @author Markus Schmidt
  */
@@ -57,13 +57,14 @@ bool typeCheck(
  * @brief Abstract class intended for the implementaiton of various algorithms.
  * @details
  * All computing on data should inherit from this class
+ * @see the Python implementation of @ref LAuS.aligner.Module "module".
  * @ingroup module
  */
-class Module
+class CppModule
 {
 public:
     /**
-     * @brief Execute the implemented algorithm
+     * @brief Execute the implemented algorithm.
      * @details
      * Expects the given containers to have the correct types.
      */
@@ -93,7 +94,7 @@ public:
     }
 
     /**
-     * @brief Execute the implemented algorithm
+     * @brief Execute the implemented algorithm.
      * @details
      * Internally calls execute after checking the input types.
      * Also checks the result returned by Execute.
@@ -129,12 +130,97 @@ public:
  *
  * @note The advantage of the computational graph is that there is no unnecessary 
  * jumping between python and cpp code.
+ * 
+ * @section comp_graph_sec Computational Graph Quick Start
+ * 
+ * Here is some python code that sets up the three main @ref Module "Modules" 
+ * reqired for alignment, using a computation graph: <br>
+ * Note that this setup mimics the one given in the @ref quick_start_sec "quick start" section
+ * @code{.py}
+ * # A module that creates seeds.
+ * seg = Segmentation()
+ * # A module that removes inconsistent seeds.
+ * sweep = SweepAllReturnBest()
+ * # A module that creates local alignments in the gaps between the seeds.
+ * nmw = NeedlemanWunsch()
+ * # A module that prints the alignment to the console.
+ * printer = AlignmentPrinter()
+ * @endcode
+ *
+ * Here we set up the @ref Module "modules" we need for the alignment process.
+ * The @ref Module "modules" themselves do not store data. They can be used multiple times.
+ *
+ * @code{.py}
+ * # Setup a pledge for the suffix array
+ * fm_index_pledge = Pledge(ContainerType.fM_index)
+ *
+ * # Setup a pledge for the packed reference
+ * ref_pledge = Pledge(ContainerType.packedNucSeq)
+ *
+ * # Setup a pledge for the query sequence.
+ * query_pledge = Pledge(ContainerType.nucSeq)
+ * @endcode
+ *
+ * Here we setup the @ref Pledge "pledges", promising that we will deliver some data.
+ *
+ * @code{.py}
+ * # Add the segmentation module to the computation graph.
+ * segments_pledge = seg.promise_me((fm_index_pledge, query_pledge)) #(*)
+ * # Call the line sweep module.
+ * seeds_pledge = sweep.promise_me((segments_pledge,)) #(*)
+ * # Call the local alignment module.
+ * alignment_pledge = nmw.promise_me((seeds_pledge, query_pledge, ref_pledge)) #(*)
+ * 
+ * # Print the alignment
+ * print_pledge = printer.promise_me((alignment_pledge, )) #(*)
+ * @endcode
+ *
+ * Here we make add out modules to our computation graph. <br>
+ * (*) All @ref Module "modules" use a tuple or list of @ref Pledge "pledges" as input.
+ * Therefore the @ref Module::promiseMe "promise_me" function calls use the syntax shown above.
+ *
+ * @code{.py}
+ * # Setup a container for the suffix array
+ * fm_index = FMIndex()
+ * # Load the array from a file.
+ * fm_index.load("filename")
+ * 
+ * # Setup a container for the packed reference
+ * ref = BWAPack()
+ * # Load the pack from a file.
+ * ref.load("filename")
+ * 
+ * # Create a query string.
+ * query_string = "ACCTAA"
+ * # Setup a container for the query sequence.
+ * query = NucSeq(query_string)
+ * @endcode
+ *
+ * Here we load our actual data.
+ *
+ * @code{.py}
+ * #fullfill the FM-Index pledge we gave.
+ * fm_index_pledge.set(fm_index)
+ * #fullfill the reference pledge we gave.
+ * ref_pledge.set(ref)
+ * #fullfill the query pledge we gave.
+ * query_pledge.set(query)
+ * 
+ * # Trigger the aligment process.
+ * print_pledge.next()
+ * @endcode
+ * 
+ * Here we fullfill the pledges we made and then trigger the alignment process.
+ * Note that the AlignmentPrinter and SweepAllReturnBest modules are implemented in Python,
+ * while all other modules are implemented in C++.
+ * The computational graph is able to jump between python and C++ modules and containers as needed.
+ *
  * @ingroup container
  */
 class Pledge : public Container
 {
 private:
-    Module* pledger;
+    CppModule* pledger;
     boost::python::object py_pledger;
     std::shared_ptr<Container> content;
     ContainerType type;
@@ -164,7 +250,7 @@ public:
      * This means that this Pledge can be automatically fullfilled by the given module.
      */
     Pledge(
-            Module* pledger,
+            CppModule* pledger,
             ContainerType type,
             std::vector<std::shared_ptr<Pledge>> vPredecessors
         )

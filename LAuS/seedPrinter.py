@@ -1,3 +1,7 @@
+##@package LAuS
+#@file seedPrinter.py
+#@brief Implements @ref LAuS.seedPrinter.SeedPrinter "SeedPrinter".
+#@author Markus Schmidt
 from .aligner import *
 
 class SeedPrinter(Module):

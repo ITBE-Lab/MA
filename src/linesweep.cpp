@@ -187,7 +187,7 @@ std::shared_ptr<Container> LineSweep::execute(
 void exportLinesweep()
 {
     //export the LineSweepContainer class
-	boost::python::class_<LineSweep, boost::python::bases<Module>>(
+	boost::python::class_<LineSweep, boost::python::bases<CppModule>>(
         "LineSweep",
         "Uses linesweeping to remove contradicting "
         "matches within one strip of consideration.\n"
