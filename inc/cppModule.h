@@ -381,7 +381,7 @@ public:
         return content;
     }//function
 
-    static inline void /*std::vector<std::shared_ptr<Container>>*/ simultaneousGet(
+    static inline std::vector<std::shared_ptr<Container>> simultaneousGet(
             std::vector<std::shared_ptr<Pledge>> vPledges,
             unsigned int numThreads
         )
@@ -404,7 +404,7 @@ public:
             }//for
         }//scope xPool
 
-        //return vRet;
+        return vRet;
     }//function
 
     //overload

@@ -20,6 +20,12 @@ void exportContainer()
                 "Used to check weather a module can work with the given containers.\n"
             );
 
+            
+    boost::python::class_<std::vector<std::shared_ptr<Container>>>(
+            "ContainerVector"
+        )
+        ;
+
     //make vectors of container-pointers a thing
     iterable_converter()
         .from_python<std::vector<std::shared_ptr<Container>>>()

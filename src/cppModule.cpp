@@ -105,7 +105,6 @@ void exportModule()
                 "arg1: self\n"
                 "arg2: Type of the promised container\n"
             )
-            [boost::python::with_custodian_and_ward_postcall<0,1>()]
         )
             .def(
                     "make_pledge",
