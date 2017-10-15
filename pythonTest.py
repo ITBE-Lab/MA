@@ -1,5 +1,4 @@
 from LAuS import *
-from setupaligner import set_up_aligner
 import random
 
 
@@ -58,16 +57,17 @@ exit()
 
 q = ""
 
-query_pledge = Pledge(ContainerType.nucSeq)
+query_pledge = [Pledge(ContainerType.nucSeq)] * 100
 reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
 
-result_pledge = set_up_aligner(
+result_pledges = set_up_aligner(
     query_pledge,
     reference_pledge,
     fm_index_pledge
 )
 
+print(query_pledge)
 
 
 
@@ -84,47 +84,42 @@ del_ins_size = 10
 q_len = 1000
 mutation_amount = 50
 
-q = ""
 
-
-q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
-q_to = q_from + q_len
-q = str(ref_seq.extract_from_to(q_from, q_to))
-for _ in range(mutation_amount):
-    pos = random.randint(1,len(q)-1)
-    q = q[:pos-1] + mutate(q[pos]) + q[pos:]
-
-for _ in range(mutation_amount):
-    pos = random.randint(1,len(q)-11)
-    l = random.randint(1,del_ins_size)
-    q = q[:pos-1] + q[pos + l:]
-
-for _ in range(mutation_amount):
-    pos = random.randint(1,len(q)-1)
-    l = random.randint(1,del_ins_size)
-    for _ in range(l):
-        char = random.randint(1,4)
-        if char == 1:
-            q = q[:pos] + "a" + q[pos:]
-        elif char == 2:
-            q = q[:pos] + "c" + q[pos:]
-        elif char == 3:
-            q = q[:pos] + "t" + q[pos:]
-        else:
-            q = q[:pos] + "g" + q[pos:]
-
-query = NucSeq(q)
-
-query_pledge.set(query)
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-result_pledge.next()
-exit()
+for i in range(100):
+    q = ""
 
-seg = Segmentation()
-seeds = seg.execute((fm_index, query,)).get_seeds(fm_index, 0)
 
-printer = SeedPrinter()
+    q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
+    q_to = q_from + q_len
+    q = str(ref_seq.extract_from_to(q_from, q_to))
+    for _ in range(mutation_amount):
+        pos = random.randint(1,len(q)-1)
+        q = q[:pos-1] + mutate(q[pos]) + q[pos:]
 
-printer.execute((seeds, query, ref_seq,))
+    for _ in range(mutation_amount):
+        pos = random.randint(1,len(q)-11)
+        l = random.randint(1,del_ins_size)
+        q = q[:pos-1] + q[pos + l:]
+
+    for _ in range(mutation_amount):
+        pos = random.randint(1,len(q)-1)
+        l = random.randint(1,del_ins_size)
+        for _ in range(l):
+            char = random.randint(1,4)
+            if char == 1:
+                q = q[:pos] + "a" + q[pos:]
+            elif char == 2:
+                q = q[:pos] + "c" + q[pos:]
+            elif char == 3:
+                q = q[:pos] + "t" + q[pos:]
+            else:
+                q = q[:pos] + "g" + q[pos:]
+
+    query = NucSeq(q)
+
+    query_pledge[i].set(query)
+
+Pledge.simultaneous_get(result_pledges, 48)

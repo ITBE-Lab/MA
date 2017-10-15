@@ -1,7 +1,6 @@
 #include "cppModule.h"
 
-unsigned int Pledge::iCurrentCallNum = 0;
-
+std::mutex Pledge::xPythonMutex;
 
 bool typeCheck(
         ContainerType xData, 
@@ -38,12 +37,15 @@ bool typeCheck(
     return true;
 }//function
 
-std::shared_ptr<Pledge> CppModule::promiseMe(std::vector<std::shared_ptr<Pledge>> vInput)
+std::shared_ptr<Pledge> CppModule::promiseMe(
+        std::shared_ptr<CppModule> pThis, 
+        std::vector<std::shared_ptr<Pledge>> vInput
+    )
 {
     std::vector<std::shared_ptr<Container>> vCastInput(vInput.begin(), vInput.end());
-    if(!typeCheck(vCastInput, getInputType()))
+    if(!typeCheck(vCastInput, pThis->getInputType()))
         throw new ModuleIO_Exception("Input type and expected input type did not match.");
-    return std::shared_ptr<Pledge>(new Pledge(this, getOutputType(), vInput));
+    return Pledge::makePledge(pThis, vInput);
 }//function
 
 void exportModule()
@@ -80,9 +82,11 @@ void exportModule()
         .def(
                 "promise_me",
                 &CppModule::promiseMe,
-                boost::python::with_custodian_and_ward_postcall<0,1>(),
+                boost::python::with_custodian_and_ward_postcall<0,1,
+                boost::python::with_custodian_and_ward_postcall<0,2>
+                >(),
                 "arg1: self\n"
-                "arg2: a list of pledges that are required as inputs\n"
+                "arg3: a list of pledges that are required as inputs\n"
                 "returns: a promise to create a container of the type getOutputType\n"
                 "\n"
                 "The module will only hold the pledge if all inputs are delivered."
@@ -90,45 +94,38 @@ void exportModule()
     ;
     boost::python::class_<
             Pledge, 
+            boost::noncopyable,
             boost::python::bases<Container>, 
             std::shared_ptr<Pledge>
         >(
             "Pledge",
             "Represents the pledge to deliver some container.\n"
             "Content may be provided by a Module (use promiseMe function) or by calling set.\n",
-            boost::python::init<
-                    boost::python::object, 
-                    ContainerType, 
-                    std::vector<std::shared_ptr<Pledge>>
-                >
-            (
+            boost::python::init<ContainerType>(
                 "arg1: self\n"
-                "arg2: py_pledger\n"
-                "arg3: type\n"
-                "arg4: vPredecessors\n"
+                "arg2: Type of the promised container\n"
             )
             [boost::python::with_custodian_and_ward_postcall<0,1>()]
         )
-            .def(boost::python::init<ContainerType>(
-                "arg1: self\n"
-                "arg2: Type of the promised container\n"
-            ))
+            .def(
+                    "make_pledge",
+                    &Pledge::makePyPledge,
+                    boost::python::with_custodian_and_ward_postcall<0,1,
+                    boost::python::with_custodian_and_ward_postcall<0,3>
+                    >(),
+                    "arg1: self\n"
+                    "arg3: a list of pledges that are required as inputs\n"
+                    "returns: a promise to create a container of the type getOutputType\n"
+                    "\n"
+                    "The module will only hold the pledge if all inputs are delivered."
+                )
+            .staticmethod("make_pledge")
             .def(
                     "set",
                     &Pledge::set,
                     "arg1: self\n"
                     "arg2: the container that shall be stored\n"
                     "returns: nil\n"
-                )
-            .def(
-                    "next",
-                    &Pledge::next,
-                    "arg1: self\n"
-                    "returns: the pledged container\n"
-                    "/n"
-                    "This call will trigger all containers to invalidate their content.\n"
-                    "Then every part of the computational graph that is needed to fullfill " 
-                    "this pledge will be computed.\n"
                 )
             .def(
                     "get",
@@ -139,6 +136,16 @@ void exportModule()
                     "Every part of the computational graph that is needed to fullfill " 
                     "this pledge will be computed.\n"
                 )
+            .def(
+                    "simultaneous_get",
+                    &Pledge::simultaneousGet,
+                    boost::python::with_custodian_and_ward_postcall<0,1>(),
+                    "arg1: self\n"
+                    "arg2: pledges\n"
+                    "arg1: num_threads\n"
+                    "/n"
+                )
+            .staticmethod("simultaneous_get")
         ;
 
 	//tell boost python that pointers of these classes can be converted implicitly

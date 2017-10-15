@@ -26,7 +26,7 @@ void exportContainer()
         .from_python<std::vector<ContainerType>>();
 
     //export the containertype enum
-    boost::python::enum_<ContainerType>("ContainerType")
+    boost::python::enum_<ContainerType>("CppContainerType")
         .value("fM_index", ContainerType::fM_index)
         .value("nucSeq", ContainerType::nucSeq)
         .value("alignment", ContainerType::alignment)

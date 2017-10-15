@@ -12,6 +12,7 @@
 #include <Python.h>
 #include <iostream>
 #include <boost/python/list.hpp>
+#include "threadPool.h"
 
 
 /**
@@ -115,7 +116,10 @@ public:
      * see Pledge for more information about the computational graph that can be build using 
      * promiseMe and Pledge.
      */
-    std::shared_ptr<Pledge> promiseMe(std::vector<std::shared_ptr<Pledge>> vInput);
+    static std::shared_ptr<Pledge> promiseMe(
+            std::shared_ptr<CppModule> pThis,
+            std::vector<std::shared_ptr<Pledge>> vInput
+        );
 };
 
 /**
@@ -220,29 +224,14 @@ public:
 class Pledge : public Container
 {
 private:
-    CppModule* pledger;
+    std::shared_ptr<CppModule> pledger;
     boost::python::object py_pledger;
     std::shared_ptr<Container> content;
     ContainerType type;
-    unsigned int iLastCallNum = 0;
-    static unsigned int iCurrentCallNum;
     std::vector<std::shared_ptr<Pledge>> vPredecessors;
-public:
-    /**
-     * @brief Create a new pledge without a module giving the pledge.
-     * @details
-     * This means that this Pledge has to be fullfilled by calling set manually.
-     */
-    Pledge(
-            ContainerType type
-        )
-            :
-        pledger(nullptr),
-        py_pledger(),
-        content(),
-        type(type),
-        vPredecessors()
-    {}//constructor
+    std::vector<std::weak_ptr<Pledge>> vSuccessors;
+    std::mutex xMutex;
+    static std::mutex xPythonMutex;
 
     /**
      * @brief Create a new pledge with a cpp module responsible to fullfill it.
@@ -250,7 +239,7 @@ public:
      * This means that this Pledge can be automatically fullfilled by the given module.
      */
     Pledge(
-            CppModule* pledger,
+            std::shared_ptr<CppModule> pledger,
             ContainerType type,
             std::vector<std::shared_ptr<Pledge>> vPredecessors
         )
@@ -259,7 +248,9 @@ public:
         py_pledger(),
         content(),
         type(type),
-        vPredecessors(vPredecessors)
+        vPredecessors(vPredecessors),
+        vSuccessors(),
+        xMutex()
     {}//constructor
 
     /**
@@ -277,76 +268,143 @@ public:
         py_pledger(py_pledger),
         content(),
         type(type),
-        vPredecessors(vPredecessors)
+        vPredecessors(vPredecessors),
+        vSuccessors(),
+        xMutex()
+    {}//constructor
+public:
+    /**
+     * @brief Create a new pledge without a module giving the pledge.
+     * @details
+     * This means that this Pledge has to be fullfilled by calling set manually.
+     */
+    Pledge(
+            ContainerType type
+        )
+            :
+        pledger(nullptr),
+        py_pledger(),
+        content(),
+        type(type),
+        vPredecessors(),
+        vSuccessors(),
+        xMutex()
     {}//constructor
 
     /**
+     * @brief this is required due to the use of mutex 
+    */
+    Pledge(const Pledge&) = delete;//copy constructor
+
+    static inline std::shared_ptr<Pledge> makePledge(
+            std::shared_ptr<CppModule> pledger,
+            std::vector<std::shared_ptr<Pledge>> vPredecessors
+        )
+    {
+        std::shared_ptr<Pledge> pRet = std::shared_ptr<Pledge>(
+            new Pledge(pledger, pledger->getOutputType(), vPredecessors)
+        );
+        
+        for(std::shared_ptr<Pledge> pPredecessor : vPredecessors)
+            pPredecessor->vSuccessors.push_back(std::weak_ptr<Pledge>(pRet));
+
+        return pRet;
+    }//contructor function
+
+    static inline std::shared_ptr<Pledge> makePyPledge(
+            boost::python::object py_pledger,
+            ContainerType type,
+            std::vector<std::shared_ptr<Pledge>> vPredecessors
+        )
+    {
+        std::shared_ptr<Pledge> pRet = std::shared_ptr<Pledge>(
+            new Pledge(py_pledger, type, vPredecessors)
+        );
+        
+        for(std::shared_ptr<Pledge> pPredecessor : vPredecessors)
+            pPredecessor->vSuccessors.push_back(std::weak_ptr<Pledge>(pRet));
+
+        return pRet;
+    }//contructor function
+
+    /**
      * @brief Manually fullfill this pledge.
+     * @details
+     * Invalidates the content of all following pledges.
      * @note It would be better to have a "constant" or "variable" class instead of this function.
      */
     void set(std::shared_ptr<Container> c)
     {
-        iLastCallNum = iCurrentCallNum+1;
         content = c;
+        for(std::weak_ptr<Pledge> pSuccessor : vSuccessors)
+            pSuccessor.lock()->set(nullptr);
     }//function
 
     /**
-     * @brief automatically fullfill this pledge.
+     * @brief Get the promised container.
      * @details
      * Checks weather the pledge has already been fullfilled for this call.
      * If necessary, uses the python or cpp module to fullfill the pledge,
      * and returns the respective container.
      */
-    std::shared_ptr<Container> fullfill(unsigned int iCallNum)
+    std::shared_ptr<Container> get()
     {
-        if(iLastCallNum < iCallNum)
+        //multithreading is possible thus a guard is required here.
+        //deadlock prevention is trivial, since the computational graphs are essentially trees.
+        std::lock_guard<std::mutex> xGuard(xMutex);
+        if(content != nullptr)
+            return content;
+        if(pledger == nullptr && py_pledger.is_none())
+            throw ModuleIO_Exception("No pledger known");
+        if(pledger != nullptr)
         {
-            if(pledger == nullptr && py_pledger.is_none())
-                throw ModuleIO_Exception("No pledger known");
-            iLastCallNum = iCallNum;
-            if(pledger != nullptr)
-            {
-                std::vector<std::shared_ptr<Container>> vInput;
-                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    vInput.push_back(pFuture->fullfill(iCallNum));
-                content = (std::shared_ptr<Container>)pledger->execute(vInput);
-            }//if
-            else
-            {
-                boost::python::list vInput;
-                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    vInput.append(pFuture->fullfill(iCallNum));
-                /*
-                 * here we jump to python code to call a function and resume the cpp code 
-                 * once python is done...
-                 */ 
-                content = boost::python::extract<std::shared_ptr<Container>>(py_pledger.attr("execute")(vInput));
-            }//else
-            assert(typeCheck(content, type));
+            std::vector<std::shared_ptr<Container>> vInput;
+            for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                vInput.push_back(pFuture->get());
+            content = (std::shared_ptr<Container>)pledger->execute(vInput);
         }//if
+        else
+        {
+            boost::python::list vInput;
+            for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                vInput.append(pFuture->get());
+            /*
+            * here we jump to python code to call a function and resume the cpp code 
+            * once python is done...
+            */
+            std::lock_guard<std::mutex> xGuard(xPythonMutex);
+            content = boost::python::extract<std::shared_ptr<Container>>(
+                    py_pledger.attr("execute")(vInput)
+                );
+        }//else
+        assert(typeCheck(content, type));
         return content;
     }//function
 
-    /**
-     * @brief Get the promised container.
-     * @details
-     * Tries to automatically fullfill the pledge, if necessary.
-     */
-    std::shared_ptr<Container> get()
+    static inline void /*std::vector<std::shared_ptr<Container>>*/ simultaneousGet(
+            std::vector<std::shared_ptr<Pledge>> vPledges,
+            unsigned int numThreads
+        )
     {
-        return fullfill(iCurrentCallNum);
-    }//function
-    
-    /**
-     * @brief Get the promised container.
-     * @details
-     * Invalidates the content of all pledges that have not been manually set.
-     * Then fullfills all necessary pledges to return the promised content of this pledge.
-     * If multiple alignments shall be done, this can be used to do so.
-     */
-    std::shared_ptr<Container> next()
-    {
-        return fullfill(++iCurrentCallNum);
+        std::vector<std::shared_ptr<Container>> vRet = std::vector<std::shared_ptr<Container>>(
+                vPledges.size()
+            );
+        {
+            ThreadPool xPool(numThreads);
+            for(unsigned int i = 0; i < vPledges.size(); i++)
+            {
+                xPool.enqueue(
+                    []
+                    (size_t, std::shared_ptr<Pledge> pPledge, std::shared_ptr<Container> pResult)
+                    {
+                        pResult = pPledge->get();
+                    },//lambda
+                    vPledges[i], vRet[i]
+                );
+            }//for
+        }//scope xPool
+
+        //return vRet;
     }//function
 
     //overload
