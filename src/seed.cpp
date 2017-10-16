@@ -87,6 +87,7 @@ void exportSeed()
         .def(
                 "__next__", 
                 &SeedIter::next_boost,
+                boost::python::with_custodian_and_ward_postcall<1,0>(),
                 "arg1: self\n"
                 "returns: the current element\n"
                 "\n"
@@ -114,6 +115,7 @@ void exportSeed()
     .def(
             "__iter__",
             &boost_python_iterator,
+            boost::python::with_custodian_and_ward_postcall<1,0>(),
             "arg1: self\n"
             "returns: list size\n"
         )

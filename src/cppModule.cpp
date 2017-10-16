@@ -1,6 +1,6 @@
 #include "cppModule.h"
 
-std::mutex Pledge::xPythonMutex;
+std::mutex xPythonMutex;
 
 bool typeCheck(
         ContainerType xData, 
@@ -21,6 +21,8 @@ bool typeCheck(
 {
     if(xExpected == ContainerType::nothing && pData == nullptr)
         return true;
+    else if(pData == nullptr)
+        return false;
     return typeCheck(pData->getType(), xExpected);
 }//function
 
@@ -58,7 +60,7 @@ void exportModule()
         )
         .def(
                 "execute",
-                &CppModule::saveExecute,
+                &CppModule::pyExecute,
                 "arg1: self\n"
                 "arg2: tuple/vector of containers. "
                 "Their types must match the input type of this module\n"

@@ -48,5 +48,6 @@ class SweepAllReturnBest(Module):
             if strip.get_score() > best_strip[best].get_score():
                 best = index
 
+        print("blub")
         return best_strip[best]
 

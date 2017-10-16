@@ -121,7 +121,7 @@ for _ in range(100):
 
         query_pledge[i].set(query)
 
-    Pledge.simultaneous_get(result_pledges, 48)
+    Pledge.simultaneous_get(result_pledges, 2)
 print("done")
 gc.collect()
 print(gc.garbage)

@@ -14,6 +14,7 @@
 #include <boost/python/list.hpp>
 #include "threadPool.h"
 
+extern std::mutex xPythonMutex;
 
 /**
  * @defgroup module
@@ -113,6 +114,20 @@ public:
         std::shared_ptr<Container> pRet = execute(vInput);
         if(!typeCheck(pRet, getOutputType()))
             throw new ModuleIO_Exception("Module produced output of wrong type.");
+        return pRet;
+    }//function
+
+    /**
+     * @brief Execute the implemented algorithm.
+     * @details
+     * Internally calls execute after checking the input types.
+     * Also checks the result returned by Execute.
+     */
+    std::shared_ptr<Container> pyExecute(std::vector<std::shared_ptr<Container>> vInput)
+    {
+        xPythonMutex.unlock();
+        std::shared_ptr<Container> pRet = saveExecute(vInput);
+        xPythonMutex.lock();
         return pRet;
     }//function
 
@@ -237,7 +252,6 @@ private:
     std::vector<std::shared_ptr<Pledge>> vPredecessors;
     std::vector<std::weak_ptr<Pledge>> vSuccessors;
     std::mutex xMutex;
-    static std::mutex xPythonMutex;
 
     /**
      * @brief Create a new pledge with a cpp module responsible to fullfill it.
@@ -385,6 +399,7 @@ public:
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
                 vInput.push_back(pFuture->get());
             content = (std::shared_ptr<Container>)pledger->execute(vInput);
+            assert(typeCheck(content, type));
         }//if
         else
         {
@@ -407,8 +422,8 @@ public:
                 std::cout << e.what() << std::endl;
             } catch (...) {}//catch
             xPythonMutex.unlock();
+            assert(typeCheck(content, type));
         }//else
-        assert(typeCheck(content, type));
         return content;
     }//function
 
@@ -428,6 +443,7 @@ public:
                     []
                     (size_t, std::shared_ptr<Pledge> pPledge, std::shared_ptr<Container> pResult)
                     {
+                        assert(pPledge != nullptr);
                         pResult = pPledge->get();
                     },//lambda
                     vPledges[i], vRet[i]
