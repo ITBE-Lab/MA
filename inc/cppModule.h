@@ -290,6 +290,11 @@ public:
         vSuccessors(),
         xMutex()
     {}//constructor
+    
+    ~Pledge()
+    {
+        std::cout << "Pledge destroyed " << type << std::endl;
+    }//destructor
 
     /**
      * @brief this is required due to the use of mutex 

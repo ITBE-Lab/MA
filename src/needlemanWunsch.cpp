@@ -262,7 +262,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     std::shared_ptr<Alignment> pRet(new Alignment(beginRef, endRef));
 
-    std::cout << beginRef << " " << endRef << std::endl;
+    DEBUG(
+        std::cout << beginRef << " " << endRef << std::endl;
+    )
     std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
 
     DEBUG_2(

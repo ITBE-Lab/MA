@@ -67,8 +67,6 @@ result_pledges = set_up_aligner(
     fm_index_pledge
 )
 
-print(query_pledge)
-
 
 
 ref_seq = Pack()
@@ -122,4 +120,4 @@ for i in range(100):
 
     query_pledge[i].set(query)
 
-Pledge.simultaneous_get(result_pledges, 48)
+Pledge.simultaneous_get(result_pledges, 5)

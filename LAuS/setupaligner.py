@@ -72,6 +72,9 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
             reference_pledge
         ))
 
+        printer_pledges.append(align_pledge)
+        continue
+
         printer_pledges.append(
             printer.promise_me((align_pledge, query_pledge, reference_pledge))
         )
