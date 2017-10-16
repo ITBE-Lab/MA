@@ -64,6 +64,12 @@ bool typeCheck(
 class CppModule
 {
 public:
+
+    ~CppModule()
+    {
+        std::cerr << "Module destroyed" << std::endl;
+    }
+
     /**
      * @brief Execute the implemented algorithm.
      * @details
@@ -251,7 +257,9 @@ private:
         vPredecessors(vPredecessors),
         vSuccessors(),
         xMutex()
-    {}//constructor
+    {
+        std::cerr << "Pledge created " << type << std::endl;
+    }//constructor
 
     /**
      * @brief Create a new pledge with a Python module responsible to fullfill it.
@@ -271,7 +279,9 @@ private:
         vPredecessors(vPredecessors),
         vSuccessors(),
         xMutex()
-    {}//constructor
+    {
+        std::cerr << "Pledge created " << type << std::endl;
+    }//constructor
 public:
     /**
      * @brief Create a new pledge without a module giving the pledge.
@@ -289,11 +299,13 @@ public:
         vPredecessors(),
         vSuccessors(),
         xMutex()
-    {}//constructor
+    {
+        std::cerr << "Pledge created " << type << std::endl;
+    }//constructor
     
     ~Pledge()
     {
-        std::cout << "Pledge destroyed " << type << std::endl;
+        std::cerr << "Pledge destroyed " << type << std::endl;
     }//destructor
 
     /**
@@ -342,7 +354,11 @@ public:
     {
         content = c;
         for(std::weak_ptr<Pledge> pSuccessor : vSuccessors)
-            pSuccessor.lock()->set(nullptr);
+        {
+            std::shared_ptr<Pledge> lock = pSuccessor.lock();
+            if(lock != nullptr)
+                lock->set(nullptr);
+        }//for
     }//function
 
     /**
@@ -356,7 +372,9 @@ public:
     {
         //multithreading is possible thus a guard is required here.
         //deadlock prevention is trivial, since the computational graphs are essentially trees.
+        std::cout << "waiting on local mutex" << std::endl;
         std::lock_guard<std::mutex> xGuard(xMutex);
+        std::cout << "passed local mutex" << std::endl;
         if(content != nullptr)
             return content;
         if(pledger == nullptr && py_pledger.is_none())
@@ -377,10 +395,18 @@ public:
             * here we jump to python code to call a function and resume the cpp code 
             * once python is done...
             */
-            std::lock_guard<std::mutex> xGuard(xPythonMutex);
-            content = boost::python::extract<std::shared_ptr<Container>>(
-                    py_pledger.attr("execute")(vInput)
-                );
+            std::cout << "waiting on global mutex" << std::endl;
+            xPythonMutex.lock();
+            std::cout << "passed local mutex" << std::endl;
+            try
+            {
+                content = boost::python::extract<std::shared_ptr<Container>>(
+                        py_pledger.attr("execute")(vInput)
+                    );
+            } catch (const std::exception& e) {
+                std::cout << e.what() << std::endl;
+            } catch (...) {}//catch
+            xPythonMutex.unlock();
         }//else
         assert(typeCheck(content, type));
         return content;

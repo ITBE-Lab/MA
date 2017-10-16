@@ -52,6 +52,7 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
 
         anchors_pledge = anc.promise_me((segment_pledge,))
 
+
         strips_pledge = bucketing.promise_me((
             segment_pledge,
             anchors_pledge,
@@ -65,15 +66,14 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
             query_pledge,
             reference_pledge
         ))
+        printer_pledges.append(best_pledge)
+        continue
 
         align_pledge = nmw.promise_me((
             best_pledge,
             query_pledge,
             reference_pledge
         ))
-
-        printer_pledges.append(align_pledge)
-        continue
 
         printer_pledges.append(
             printer.promise_me((align_pledge, query_pledge, reference_pledge))

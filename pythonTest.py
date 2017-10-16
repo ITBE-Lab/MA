@@ -1,5 +1,6 @@
 from LAuS import *
 import random
+import gc
 
 
 def mutate(char):
@@ -54,10 +55,9 @@ exit()
 analyse_crisper()
 exit()
 """
-
 q = ""
 
-query_pledge = [Pledge(ContainerType.nucSeq)] * 100
+query_pledge = [Pledge(ContainerType.nucSeq)] * 10
 reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
 
@@ -86,38 +86,47 @@ mutation_amount = 50
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-for i in range(100):
-    q = ""
+for _ in range(100):
+    for i in range(10):
+        q = ""
 
 
-    q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
-    q_to = q_from + q_len
-    q = str(ref_seq.extract_from_to(q_from, q_to))
-    for _ in range(mutation_amount):
-        pos = random.randint(1,len(q)-1)
-        q = q[:pos-1] + mutate(q[pos]) + q[pos:]
+        q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
+        q_to = q_from + q_len
+        q = str(ref_seq.extract_from_to(q_from, q_to))
+        for _ in range(mutation_amount):
+            pos = random.randint(1,len(q)-1)
+            q = q[:pos-1] + mutate(q[pos]) + q[pos:]
 
-    for _ in range(mutation_amount):
-        pos = random.randint(1,len(q)-11)
-        l = random.randint(1,del_ins_size)
-        q = q[:pos-1] + q[pos + l:]
+        for _ in range(mutation_amount):
+            pos = random.randint(1,len(q)-11)
+            l = random.randint(1,del_ins_size)
+            q = q[:pos-1] + q[pos + l:]
 
-    for _ in range(mutation_amount):
-        pos = random.randint(1,len(q)-1)
-        l = random.randint(1,del_ins_size)
-        for _ in range(l):
-            char = random.randint(1,4)
-            if char == 1:
-                q = q[:pos] + "a" + q[pos:]
-            elif char == 2:
-                q = q[:pos] + "c" + q[pos:]
-            elif char == 3:
-                q = q[:pos] + "t" + q[pos:]
-            else:
-                q = q[:pos] + "g" + q[pos:]
+        for _ in range(mutation_amount):
+            pos = random.randint(1,len(q)-1)
+            l = random.randint(1,del_ins_size)
+            for _ in range(l):
+                char = random.randint(1,4)
+                if char == 1:
+                    q = q[:pos] + "a" + q[pos:]
+                elif char == 2:
+                    q = q[:pos] + "c" + q[pos:]
+                elif char == 3:
+                    q = q[:pos] + "t" + q[pos:]
+                else:
+                    q = q[:pos] + "g" + q[pos:]
 
-    query = NucSeq(q)
+        query = NucSeq(q)
 
-    query_pledge[i].set(query)
+        query_pledge[i].set(query)
 
-Pledge.simultaneous_get(result_pledges, 5)
+    Pledge.simultaneous_get(result_pledges, 48)
+print("done")
+gc.collect()
+print(gc.garbage)
+del(result_pledges)
+print(gc.garbage)
+gc.collect()
+print(gc.garbage)
+print("gc.collect - done")
