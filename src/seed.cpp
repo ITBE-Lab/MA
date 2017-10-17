@@ -106,6 +106,7 @@ void exportSeed()
         "Seeds",
         "Contains multiple strips of consideration.\n"
     )
+    .def(boost::python::init<std::shared_ptr<Seeds>>())
     .def(
             "__len__",
             &Seeds::size,

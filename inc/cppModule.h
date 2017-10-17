@@ -14,7 +14,6 @@
 #include <boost/python/list.hpp>
 #include "threadPool.h"
 
-extern std::mutex xPythonMutex;
 
 /**
  * @defgroup module
@@ -125,9 +124,7 @@ public:
      */
     std::shared_ptr<Container> pyExecute(std::vector<std::shared_ptr<Container>> vInput)
     {
-        xPythonMutex.unlock();
         std::shared_ptr<Container> pRet = saveExecute(vInput);
-        xPythonMutex.lock();
         return pRet;
     }//function
 
@@ -386,9 +383,7 @@ public:
     {
         //multithreading is possible thus a guard is required here.
         //deadlock prevention is trivial, since the computational graphs are essentially trees.
-        std::cout << "waiting on local mutex" << std::endl;
         std::lock_guard<std::mutex> xGuard(xMutex);
-        std::cout << "passed local mutex" << std::endl;
         if(content != nullptr)
             return content;
         if(pledger == nullptr && py_pledger.is_none())
@@ -410,18 +405,22 @@ public:
             * here we jump to python code to call a function and resume the cpp code 
             * once python is done...
             */
-            std::cout << "waiting on global mutex" << std::endl;
-            xPythonMutex.lock();
-            std::cout << "passed local mutex" << std::endl;
             try
             {
-                content = boost::python::extract<std::shared_ptr<Container>>(
+                content = boost::python::extract<
+                        std::shared_ptr<Container>
+                    >(
                         py_pledger.attr("execute")(vInput)
                     );
+            } catch (const std::system_error& e) {
+                std::cerr << e.what() << std::endl;
             } catch (const std::exception& e) {
-                std::cout << e.what() << std::endl;
-            } catch (...) {}//catch
-            xPythonMutex.unlock();
+                std::cerr << e.what() << std::endl;
+            } catch (const std::string& e) {
+                std::cerr << e << std::endl;
+            } /*catch (...) {
+                std::cerr << "unknown exception" << std::endl;
+            }//catch*/
             assert(typeCheck(content, type));
         }//else
         return content;

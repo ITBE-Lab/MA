@@ -22,6 +22,7 @@ class PerfectMatch;
  */
 class Segmentation : public CppModule{
 private:
+
 	static SA_IndexInterval extend_backward(
 			const SA_IndexInterval &ik, 
 			const uint8_t c, 
@@ -53,6 +54,11 @@ private:
 
 
 public:
+
+	~Segmentation()
+	{
+		std::cout << "Segmentation destroyed" << std::endl;
+	}
 	
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 

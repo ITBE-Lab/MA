@@ -108,6 +108,11 @@ private:
 
 public:
 
+	~Bucketing()
+	{
+		std::cout << "Segmentation destroyed" << std::endl;
+	}
+
 	Bucketing(){}//constructor
 
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);

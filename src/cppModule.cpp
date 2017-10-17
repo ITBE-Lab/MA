@@ -1,7 +1,5 @@
 #include "cppModule.h"
 
-std::mutex xPythonMutex;
-
 bool typeCheck(
         ContainerType xData, 
         ContainerType xExpected
@@ -10,8 +8,18 @@ bool typeCheck(
     if(xExpected == ContainerType::any)
         return true;
     if(xExpected == ContainerType::unknown)
+    {
+        std::cerr << "types did not match. Got:" << xData;
+        std::cerr << " but expected type is unknown " << std::endl;
         return false;
-    return xData == xExpected;
+    }//if
+    if(xData != xExpected)
+    {
+        std::cerr << "types did not match. Got:" << xData;
+        std::cerr << " but expected: " << xExpected << std::endl;
+        return false;
+    }//if
+    return true;
 }//function
 
 bool typeCheck(
@@ -21,8 +29,12 @@ bool typeCheck(
 {
     if(xExpected == ContainerType::nothing && pData == nullptr)
         return true;
-    else if(pData == nullptr)
+    else if(pData == nullptr && xExpected != ContainerType::nothing)
+    {
+        std::cerr << "types did not match. Got: nullptr";
+        std::cerr << " but expected: " << xExpected << std::endl;
         return false;
+    }//if
     return typeCheck(pData->getType(), xExpected);
 }//function
 
@@ -35,7 +47,11 @@ bool typeCheck(
         return false;
     for(unsigned int i = 0; i < vData.size(); i++)
         if(!typeCheck(vData[i], vExpected[i]))
+        {
+            std::cerr << "types of vectors did not match." << std::endl;
+            std::cerr << "-> element " << i << "s type is incorrect." << std::endl;
             return false;
+        }//if
     return true;
 }//function
 

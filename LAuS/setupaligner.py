@@ -33,9 +33,9 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
 
     sweep = SweepAllReturnBest()
 
-    nmw = NeedlemanWunsch()
+    #nmw = NeedlemanWunsch()
 
-    printer = AlignmentPrinter()
+    #printer = AlignmentPrinter()
 
     query_pledges_ = []
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):

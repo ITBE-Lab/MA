@@ -107,6 +107,19 @@ public Container
     using list::list;
     //inherit the constructors from Container
     using Container::Container;
+
+    Seeds(std::shared_ptr<Seeds> pOther)
+        :
+        list(*pOther),
+        Container()
+    {}//copy constructor
+
+    Seeds()
+        :
+        list(),
+        Container()
+    {}//default constructor
+
     /*used to identify the Seeds datatype in the aligner pipeline*/
     ContainerType getType(){return ContainerType::seeds;}
     /*returns the sum off all scores within the list*/

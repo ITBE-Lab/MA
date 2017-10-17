@@ -18,6 +18,9 @@ class SweepAllReturnBest(Module):
     def __init__(self):
         self.__linesweep = LineSweep()
 
+    def __del__(self):
+        print("SweepAllReturnBest destroyed")
+
     ##
     # @brief returns the @ref ContainerType "container types" seedsVector, query, ref_seq.
     # @details
@@ -37,17 +40,27 @@ class SweepAllReturnBest(Module):
     # @details
     # Reimplemented from LAuS.aligner.Module.execute.
     def execute(self, input):
+        print("a")
+        best_strips = []
+        if input is None:
+            print("whaaa")
         strips, query, ref_seq = input
-        best_strip = []
+        if len(strips) == 0:
+            return Seeds()
+        print("b")
         for strip in strips:
+            print("b.1")
             app = self.__linesweep.execute((query, ref_seq, strip))
-            best_strip.append(app)
+            print("b.2")
+            best_strips.append(app)
 
+        print("c")
         best = 0
-        for index, strip in enumerate(best_strip):
-            if strip.get_score() > best_strip[best].get_score():
+        for index, strip in enumerate(best_strips):
+            if strip.get_score() > best_strips[best].get_score():
                 best = index
 
-        print("blub")
-        return best_strip[best]
+        print("d")
+        #it's crucial that we return a new copy of the output since the input may be deleted
+        return Seeds(best_strips[best])
 
