@@ -41,7 +41,8 @@ class Module(CppModule):
     # @details
     # Reimplemented from @ref CppModule::saveExecute.
     def execute(self, input):
-        return Module.execute(input)
+        self.__store_result = Module.execute(input)
+        return self.__store_result
 
     ##
     # @brief Make this module promise to execute it's function on the provided data.

@@ -15,6 +15,7 @@
 #include "threadPool.h"
 
 
+extern std::mutex xPython;
 /**
  * @defgroup module
  * @brief All classes implementing some algorithm.
@@ -124,7 +125,12 @@ public:
      */
     std::shared_ptr<Container> pyExecute(std::vector<std::shared_ptr<Container>> vInput)
     {
+        std::cerr << "CALLED BY PYTHON" << std::endl;
+        xPython.unlock();
         std::shared_ptr<Container> pRet = saveExecute(vInput);
+        std::cerr << "TRYING TO RETURN TO PYTHON" << std::endl;
+        xPython.lock();
+        std::cerr << "RETURNING TO PYTHON" << std::endl;
         return pRet;
     }//function
 
@@ -400,27 +406,42 @@ public:
         {
             boost::python::list vInput;
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                vInput.append(pFuture->get());
+            {
+                std::shared_ptr<Container> pInput = pFuture->get();
+                assert(pInput != nullptr);
+                vInput.append(pInput);
+            }
             /*
             * here we jump to python code to call a function and resume the cpp code 
             * once python is done...
             */
             try
             {
-                content = boost::python::extract<
-                        std::shared_ptr<Container>
+                std::cerr << "WAITING ON PYTHON LOCK" << std::endl;
+                xPython.lock();
+                std::cerr << "CALLING PYTHON" << std::endl;
+                Container* extract = boost::python::extract<
+                        Container*
                     >(
                         py_pledger.attr("execute")(vInput)
-                    );
+                    ); 
+                std::cerr << "PYTHON RETURNED" << std::endl;
+                assert(extract != nullptr);
+                content = std::shared_ptr<Container>(extract);
             } catch (const std::system_error& e) {
                 std::cerr << e.what() << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
+                xPython.unlock();
             } catch (const std::string& e) {
                 std::cerr << e << std::endl;
-            } /*catch (...) {
+            } catch (...) {
                 std::cerr << "unknown exception" << std::endl;
-            }//catch*/
+                boost::python::handle_exception();
+                exit(0);
+            }//catch
+            xPython.unlock();
+            std::cerr << "PYTHON RETURNED" << std::endl;
             assert(typeCheck(content, type));
         }//else
         return content;

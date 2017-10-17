@@ -57,7 +57,7 @@ exit()
 """
 q = ""
 
-query_pledge = [Pledge(ContainerType.nucSeq)] * 10
+query_pledge = [Pledge(ContainerType.nucSeq)] * 2
 reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
 
@@ -87,7 +87,7 @@ reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
 for _ in range(100):
-    for i in range(10):
+    for i in range(2):
         q = ""
 
 
@@ -121,7 +121,7 @@ for _ in range(100):
 
         query_pledge[i].set(query)
 
-    Pledge.simultaneous_get(result_pledges, 2)
+    Pledge.simultaneous_get(result_pledges, 10)
 print("done")
 gc.collect()
 print(gc.garbage)

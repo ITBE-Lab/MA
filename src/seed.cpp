@@ -101,7 +101,7 @@ void exportSeed()
         Seeds, 
         boost::python::bases<Container>, 
         boost::python::bases<std::list<Seed>>, 
-        std::shared_ptr<Seeds>
+        Seeds*
     >(
         "Seeds",
         "Contains multiple strips of consideration.\n"
@@ -134,6 +134,7 @@ void exportSeed()
             "\n"
             "Appends a copy of the other list to this list.\n"
         );
+    boost::python::register_ptr_to_python< std::shared_ptr<Seeds> >();
     
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<

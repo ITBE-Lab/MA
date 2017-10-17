@@ -40,27 +40,32 @@ class SweepAllReturnBest(Module):
     # @details
     # Reimplemented from LAuS.aligner.Module.execute.
     def execute(self, input):
-        print("a")
+        print("PYTHON GOT CALLED")
         best_strips = []
         if input is None:
             print("whaaa")
+        print("a")
         strips, query, ref_seq = input
         if len(strips) == 0:
             return Seeds()
+        print("b...:")
+        #print(str(strips[0] is None))
         print("b")
         for strip in strips:
             print("b.1")
             app = self.__linesweep.execute((query, ref_seq, strip))
             print("b.2")
             best_strips.append(app)
-
+        
         print("c")
+
         best = 0
         for index, strip in enumerate(best_strips):
             if strip.get_score() > best_strips[best].get_score():
                 best = index
 
         print("d")
+        print("PYTHON RETURNING")
         #it's crucial that we return a new copy of the output since the input may be deleted
         return Seeds(best_strips[best])
 

@@ -1,5 +1,7 @@
 #include "cppModule.h"
 
+std::mutex xPython;
+
 bool typeCheck(
         ContainerType xData, 
         ContainerType xExpected
