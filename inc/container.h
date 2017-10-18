@@ -17,19 +17,19 @@
  * required by CppModule for type checking the inputs before casting and using them.
  */
 enum ContainerType{
-    fM_index,
-    nucSeq,
-    alignment,
-    packedNucSeq,
-    segmentList,
-    segment,
-    seed,
-    seeds,
-    seedsVector,
-    sa_interval,
-    unknown,
-    nothing,
-    any,
+    fM_index,//0
+    nucSeq,//1
+    alignment,//2
+    packedNucSeq,//3
+    segmentList,//4
+    segment,//5
+    seed,//6
+    seeds,//7
+    seedsVector,//8
+    sa_interval,//9
+    unknown,//10
+    nothing,//11
+    any,//12
 };//enum
 
 /**

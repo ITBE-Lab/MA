@@ -33,9 +33,9 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
 
     sweep = SweepAllReturnBest()
 
-    #nmw = NeedlemanWunsch()
+    nmw = NeedlemanWunsch()
 
-    #printer = AlignmentPrinter()
+    printer = AlignmentPrinter()
 
     query_pledges_ = []
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
@@ -66,8 +66,6 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
             query_pledge,
             reference_pledge
         ))
-        printer_pledges.append(best_pledge)
-        continue
 
         align_pledge = nmw.promise_me((
             best_pledge,
@@ -79,7 +77,7 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
             printer.promise_me((align_pledge, query_pledge, reference_pledge))
         )
 
-    if isinstance(query_pledges, list):
+    if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
         return printer_pledges 
     else:
         return printer_pledges[0]

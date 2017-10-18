@@ -57,7 +57,10 @@ exit()
 """
 q = ""
 
-query_pledge = [Pledge(ContainerType.nucSeq)] * 2
+query_pledge = []
+for _ in range(100):
+    query_pledge.append(Pledge(ContainerType.nucSeq))
+
 reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
 
@@ -86,10 +89,9 @@ mutation_amount = 50
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-for _ in range(100):
-    for i in range(2):
+for _ in range(1):
+    for i in range(100):
         q = ""
-
 
         q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
         q_to = q_from + q_len
@@ -121,7 +123,7 @@ for _ in range(100):
 
         query_pledge[i].set(query)
 
-    Pledge.simultaneous_get(result_pledges, 10)
+    Pledge.simultaneous_get(result_pledges, 1)
 print("done")
 gc.collect()
 print(gc.garbage)

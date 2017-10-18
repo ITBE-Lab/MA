@@ -14,6 +14,7 @@
 #include <boost/python/list.hpp>
 #include "threadPool.h"
 
+#define PYTHON_MODULES_IN_COMP_GRAPH ( false )
 
 extern std::mutex xPython;
 /**
@@ -125,13 +126,27 @@ public:
      */
     std::shared_ptr<Container> pyExecute(std::vector<std::shared_ptr<Container>> vInput)
     {
-        std::cerr << "CALLED BY PYTHON" << std::endl;
-        xPython.unlock();
-        std::shared_ptr<Container> pRet = saveExecute(vInput);
-        std::cerr << "TRYING TO RETURN TO PYTHON" << std::endl;
-        xPython.lock();
-        std::cerr << "RETURNING TO PYTHON" << std::endl;
-        return pRet;
+#if 1
+        try
+        {
+            std::shared_ptr<Container> pRet = saveExecute(vInput);
+            return pRet;
+        } catch(ModuleIO_Exception e) {
+            std::cerr << e.what() << std::endl;
+            std::cerr << "cant return to python - cpp module failed" << std::endl;
+            exit(0);
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+        } catch (const std::string& e) {
+            std::cerr << e << std::endl;
+        } catch (...) {
+            std::cerr << "unknown exception" << std::endl;
+            boost::python::handle_exception();
+        }//catch
+        return nullptr;
+#else
+        throw AlignerException("python modules are not allowed to call cpp modules currently - sorry");
+#endif
     }//function
 
     /**
@@ -145,6 +160,39 @@ public:
             std::vector<std::shared_ptr<Pledge>> vInput
         );
 };
+
+
+/** 
+ * @brief Guard that will acquire the GIL upon construction, and
+ * restore its state upon destruction.
+ * @details
+ * Taken from: https://stackoverflow.com/questions/41240610/how-to-call-python-from-a-boost-thread
+ * <br>
+ * Stack overflow Answer:
+ * he GIL is a mutex around the CPython interpreter. This mutex prevents parallel operations to be
+ * performed on Python objects. Thus, at any point in time, a max of one thread, the one that has
+ * acquired the GIL, is allowed to perform operations on Python objects. When multiple threads are
+ * present, invoking Python code whilst not holding the GIL results in undefined behavior.
+ * 
+ * C or C++ threads are sometimes referred to as alien threads in the Python documentation. The 
+ * Python interpreter has no ability to control the alien thread. Therefore, alien threads are 
+ * responsible for managing the GIL to permit concurrent or parallel execution with Python threads. 
+ * One must meticulously consider:
+ * - The stack unwinding, as Boost.Python may throw an exception.
+ * - Indirect calls to Python, such as copy-constructors or destructors
+ * One solution is to wrap Python callbacks with a custom type that is aware of GIL management.
+ */
+class With_gil
+{
+public:
+  With_gil()  { state_ = PyGILState_Ensure(); }
+  ~With_gil() { PyGILState_Release(state_);   }
+
+  With_gil(const With_gil&)            = delete;
+  With_gil& operator=(const With_gil&) = delete;
+private:
+  PyGILState_STATE state_;
+};//class
 
 /**
  * @brief Abstract class intended to hold promises to data objects used by Modules.
@@ -274,9 +322,7 @@ private:
         vPredecessors(vPredecessors),
         vSuccessors(),
         xMutex()
-    {
-        std::cerr << "Pledge created " << type << std::endl;
-    }//constructor
+    {}//constructor
 
     /**
      * @brief Create a new pledge with a Python module responsible to fullfill it.
@@ -296,9 +342,7 @@ private:
         vPredecessors(vPredecessors),
         vSuccessors(),
         xMutex()
-    {
-        std::cerr << "Pledge created " << type << std::endl;
-    }//constructor
+    {}//constructor
 public:
     /**
      * @brief Create a new pledge without a module giving the pledge.
@@ -316,14 +360,10 @@ public:
         vPredecessors(),
         vSuccessors(),
         xMutex()
-    {
-        std::cerr << "Pledge created " << type << std::endl;
-    }//constructor
+    {}//constructor
     
     ~Pledge()
-    {
-        std::cerr << "Pledge destroyed " << type << std::endl;
-    }//destructor
+    {}//destructor
 
     /**
      * @brief this is required due to the use of mutex 
@@ -398,7 +438,11 @@ public:
         {
             std::vector<std::shared_ptr<Container>> vInput;
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                vInput.push_back(pFuture->get());
+            {
+                std::shared_ptr<Container> pGet = pFuture->get();
+                assert(pGet != nullptr);
+                vInput.push_back(pGet);
+            }//for
             content = (std::shared_ptr<Container>)pledger->execute(vInput);
             assert(typeCheck(content, type));
         }//if
@@ -410,38 +454,31 @@ public:
                 std::shared_ptr<Container> pInput = pFuture->get();
                 assert(pInput != nullptr);
                 vInput.append(pInput);
-            }
+            }//for
             /*
             * here we jump to python code to call a function and resume the cpp code 
             * once python is done...
             */
             try
             {
-                std::cerr << "WAITING ON PYTHON LOCK" << std::endl;
-                xPython.lock();
-                std::cerr << "CALLING PYTHON" << std::endl;
-                Container* extract = boost::python::extract<
-                        Container*
+                std::lock_guard<std::mutex> xGuard(xPython);
+                With_gil gil();
+                content = boost::python::extract<
+                        std::shared_ptr<Container>
                     >(
-                        py_pledger.attr("execute")(vInput)
+                        py_pledger.attr("save_execute")(vInput)
                     ); 
-                std::cerr << "PYTHON RETURNED" << std::endl;
-                assert(extract != nullptr);
-                content = std::shared_ptr<Container>(extract);
+                //scope of gil
             } catch (const std::system_error& e) {
                 std::cerr << e.what() << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
-                xPython.unlock();
             } catch (const std::string& e) {
                 std::cerr << e << std::endl;
             } catch (...) {
                 std::cerr << "unknown exception" << std::endl;
                 boost::python::handle_exception();
-                exit(0);
             }//catch
-            xPython.unlock();
-            std::cerr << "PYTHON RETURNED" << std::endl;
             assert(typeCheck(content, type));
         }//else
         return content;
@@ -459,14 +496,15 @@ public:
             ThreadPool xPool(numThreads);
             for(unsigned int i = 0; i < vPledges.size(); i++)
             {
+                vRet[i] = std::shared_ptr<Container>();
                 xPool.enqueue(
                     []
-                    (size_t, std::shared_ptr<Pledge> pPledge, std::shared_ptr<Container> pResult)
+                    (size_t, std::shared_ptr<Pledge> pPledge, std::shared_ptr<Container>* pResult)
                     {
                         assert(pPledge != nullptr);
-                        pResult = pPledge->get();
+                        (*pResult) = pPledge->get();
                     },//lambda
-                    vPledges[i], vRet[i]
+                    vPledges[i], &vRet[i]
                 );
             }//for
         }//scope xPool

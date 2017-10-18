@@ -150,13 +150,12 @@ std::shared_ptr<Container> LineSweep::execute(
         std::vector<std::shared_ptr<Container>> vpInput
     )
 {
-    std::cout << "linesweep" << std::endl;
     std::shared_ptr<NucleotideSequence> pQuerySeq =
         std::static_pointer_cast<NucleotideSequence>(vpInput[0]);
     std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq =
         std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[1]);
-    std::shared_ptr<Seeds> pSeeds = 
-        std::static_pointer_cast<Seeds>(vpInput[2]);
+    std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
+        std::static_pointer_cast<Seeds>(vpInput[2])));
 
     std::vector<ShadowInterval> vShadows = {};
 
@@ -181,10 +180,9 @@ std::shared_ptr<Container> LineSweep::execute(
 
     //perform the line sweep algorithm on the right shadows
     linesweep(vShadows, pSeeds);
-    std::cout << "linesweep end" << std::endl;
 
     //copy pSeeds since we want to return it
-    return std::shared_ptr<Seeds>(new Seeds(pSeeds));
+    return pSeeds;
 }//function
 
 void exportLinesweep()

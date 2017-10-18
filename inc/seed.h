@@ -110,7 +110,7 @@ public Container
 
     Seeds(std::shared_ptr<Seeds> pOther)
         :
-        list(*pOther),
+        list(pOther != nullptr ? *pOther : std::list<Seed>()),
         Container()
     {}//copy constructor
 

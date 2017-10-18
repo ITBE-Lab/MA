@@ -11,6 +11,7 @@
 #
 
 from libLAuS import *
+import traceback
 
 ##
 # @brief the Python implementation of @ref CppModule "module".
@@ -45,13 +46,24 @@ class Module(CppModule):
         return self.__store_result
 
     ##
+    # @brief call the execute function with a try catch block
+    # @details
+    # Reimplemented from @ref CppModule::saveExecute.
+    def save_execute(self, input):
+        try:
+            return self.execute(input)
+        except Exception as e:
+            traceback.print_exc()
+            return None
+
+    ##
     # @brief Make this module promise to execute it's function on the provided data.
     # @details
     # Reimplemented from @ref CppModule::promiseMe.
     def promise_me(self, input):
         return Pledge.make_pledge(self, self.get_output_type(), input)
 
-
+"""
 class ContainerType(CppContainerType):
     alignment = CppContainerType.alignment
     any = CppContainerType.any
@@ -68,3 +80,4 @@ class ContainerType(CppContainerType):
     unknown = CppContainerType.unknown
     #from here the new python definitions start
     #whatever = len(CppContainerType.values)
+"""
