@@ -43,7 +43,7 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
     else:
         query_pledges_.append(query_pledges)
 
-    printer_pledges = []
+    return_pledges = []
     for query_pledge in query_pledges_:
         segment_pledge = seg.promise_me((
             fm_index_pledge,
@@ -72,12 +72,14 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
             query_pledge,
             reference_pledge
         ))
+        return_pledges.append(align_pledge)
+        continue
 
-        printer_pledges.append(
+        return_pledges.append(
             printer.promise_me((align_pledge, query_pledge, reference_pledge))
         )
 
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
-        return printer_pledges 
+        return return_pledges 
     else:
-        return printer_pledges[0]
+        return return_pledges[0]

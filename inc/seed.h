@@ -8,7 +8,6 @@
 
 #include "container.h"
 #include "interval.h"
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <list>
 
 ///@brief any index on the query or reference nucleotide sequence is given in this datatype

@@ -3,6 +3,10 @@ import random
 import gc
 
 
+def near(index, index_2):
+    return index + 100 > index_2 and index - 100 < index_2
+
+
 def mutate(char):
     num = 0
     if char == "c":
@@ -58,7 +62,7 @@ exit()
 q = ""
 
 query_pledge = []
-for _ in range(100):
+for _ in range(10):
     query_pledge.append(Pledge(ContainerType.nucSeq))
 
 reference_pledge = Pledge(ContainerType.packedNucSeq)
@@ -74,10 +78,10 @@ result_pledges = set_up_aligner(
 
 ref_seq = Pack()
 #ref_seq.append("no name", "no desc", NucSeq("AACG"))
-ref_seq.load("/mnt/ssd0/chrom/random/pack")
+ref_seq.load("/mnt/ssd0/chrom/human/pack")
 #fm_index = FMIndex(ref_seq)
 fm_index = FMIndex()
-fm_index.load("/mnt/ssd0/chrom/random/index")
+fm_index.load("/mnt/ssd0/chrom/human/index")
 
 
 
@@ -89,12 +93,17 @@ mutation_amount = 50
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-for _ in range(1):
-    for i in range(100):
+for _ in range(100):
+    starts = []
+    ends = []
+    hits = 0
+    for i in range(10):
         q = ""
 
         q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
+        starts.append(q_from)
         q_to = q_from + q_len
+        ends.append(q_to)
         q = str(ref_seq.extract_from_to(q_from, q_to))
         for _ in range(mutation_amount):
             pos = random.randint(1,len(q)-1)
@@ -123,7 +132,16 @@ for _ in range(1):
 
         query_pledge[i].set(query)
 
-    Pledge.simultaneous_get(result_pledges, 1)
+    results = Pledge.simultaneous_get(result_pledges, 1)
+
+    for i, alignment in enumerate(results):
+        if alignment is None:
+            continue
+        if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):
+            hits += 1
+
+    print(hits/10)
+
 print("done")
 gc.collect()
 print(gc.garbage)

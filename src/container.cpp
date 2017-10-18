@@ -24,7 +24,16 @@ void exportContainer()
     boost::python::class_<std::vector<std::shared_ptr<Container>>>(
             "ContainerVector"
         )
-        ;
+        .def(boost::python::vector_indexing_suite<
+                std::vector<std::shared_ptr<Container>>,
+                /*
+                *	true = noproxy this means that the content of the vector is already exposed by
+                *	boost python. 
+                *	if this is kept as false, SeedsVector would be exposed a second time.
+                *	the two SeedsVector would be different and not inter castable.
+                */
+                true
+            >());
 
     //make vectors of container-pointers a thing
     iterable_converter()
