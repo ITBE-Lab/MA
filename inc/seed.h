@@ -34,11 +34,11 @@ public:
      */
     Seed(
             const nucSeqIndex uiPosOnQuery, 
-            const nucSeqIndex uiLenght, 
+            const nucSeqIndex uiLength, 
             const nucSeqIndex uiPosOnReference
         )
             :
-        Interval(uiPosOnQuery, uiLenght),
+        Interval(uiPosOnQuery, uiLength),
         uiPosOnReference(uiPosOnReference)
     {}//constructor
     
