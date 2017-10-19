@@ -353,11 +353,6 @@ private:
         ) const;
 public:
 
-    ~LineSweep()
-    {
-        std::cout << "LineSweep destroyed" << std::endl;
-    }
-
     //overload
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput);
 

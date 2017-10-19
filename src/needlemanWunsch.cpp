@@ -37,6 +37,8 @@ void needlemanWunsch(
         std::shared_ptr<Alignment> pAlignment
     )
 {
+    if( (toRef - fromRef) * (toQuery - fromQuery) > 10000)
+        return;
     if(toRef <= fromRef)
         if(toQuery <= fromQuery)
             return;

@@ -23,4 +23,5 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportNeedlemanWunsch();
         exportSeed();
         exportBucketing();
+        exportSweepAll();
 }

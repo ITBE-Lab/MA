@@ -29,7 +29,6 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
     anc = NlongestIntervalsAsAnchors(2)
 
     bucketing = Bucketing()
-    bucketing.strip_size = 50
 
     sweep = SweepAllReturnBest()
 

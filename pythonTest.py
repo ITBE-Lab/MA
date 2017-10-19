@@ -61,8 +61,9 @@ exit()
 """
 q = ""
 
+num_test = 200
 query_pledge = []
-for _ in range(10):
+for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
 
 reference_pledge = Pledge(ContainerType.packedNucSeq)
@@ -87,17 +88,17 @@ fm_index.load("/mnt/ssd0/chrom/human/index")
 
 del_ins_size = 10
 q_len = 1000
-mutation_amount = 50
+mutation_amount = 10
 
 
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-for _ in range(100):
+for _ in range(1):
     starts = []
     ends = []
     hits = 0
-    for i in range(10):
+    for i in range(num_test):
         q = ""
 
         q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
@@ -132,7 +133,7 @@ for _ in range(100):
 
         query_pledge[i].set(query)
 
-    results = Pledge.simultaneous_get(result_pledges, 1)
+    results = Pledge.simultaneous_get(result_pledges, 100)
 
     for i, alignment in enumerate(results):
         if alignment is None:
@@ -140,13 +141,6 @@ for _ in range(100):
         if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):
             hits += 1
 
-    print(hits/10)
+    print(hits/num_test)
 
 print("done")
-gc.collect()
-print(gc.garbage)
-del(result_pledges)
-print(gc.garbage)
-gc.collect()
-print(gc.garbage)
-print("gc.collect - done")

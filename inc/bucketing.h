@@ -72,7 +72,7 @@ private:
 public:
 	unsigned int uiNumThreads = 8;
 	nucSeqIndex uiStripSize = 1000;
-	unsigned int uiMaxHitsPerInterval = 1000;
+	unsigned int uiMaxHitsPerInterval = 500;
 	bool bSkipLongBWTIntervals = true;
 	
 private:
@@ -107,11 +107,6 @@ private:
 		);
 
 public:
-
-	~Bucketing()
-	{
-		std::cout << "Segmentation destroyed" << std::endl;
-	}
 
 	Bucketing(){}//constructor
 

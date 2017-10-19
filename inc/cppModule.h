@@ -67,11 +67,6 @@ class CppModule
 {
 public:
 
-    ~CppModule()
-    {
-        std::cerr << "Module destroyed" << std::endl;
-    }
-
     /**
      * @brief Execute the implemented algorithm.
      * @details
@@ -160,39 +155,6 @@ public:
             std::vector<std::shared_ptr<Pledge>> vInput
         );
 };
-
-
-/** 
- * @brief Guard that will acquire the GIL upon construction, and
- * restore its state upon destruction.
- * @details
- * Taken from: https://stackoverflow.com/questions/41240610/how-to-call-python-from-a-boost-thread
- * <br>
- * Stack overflow Answer:
- * he GIL is a mutex around the CPython interpreter. This mutex prevents parallel operations to be
- * performed on Python objects. Thus, at any point in time, a max of one thread, the one that has
- * acquired the GIL, is allowed to perform operations on Python objects. When multiple threads are
- * present, invoking Python code whilst not holding the GIL results in undefined behavior.
- * 
- * C or C++ threads are sometimes referred to as alien threads in the Python documentation. The 
- * Python interpreter has no ability to control the alien thread. Therefore, alien threads are 
- * responsible for managing the GIL to permit concurrent or parallel execution with Python threads. 
- * One must meticulously consider:
- * - The stack unwinding, as Boost.Python may throw an exception.
- * - Indirect calls to Python, such as copy-constructors or destructors
- * One solution is to wrap Python callbacks with a custom type that is aware of GIL management.
- */
-class With_gil
-{
-public:
-  With_gil()  { state_ = PyGILState_Ensure(); }
-  ~With_gil() { PyGILState_Release(state_);   }
-
-  With_gil(const With_gil&)            = delete;
-  With_gil& operator=(const With_gil&) = delete;
-private:
-  PyGILState_STATE state_;
-};//class
 
 /**
  * @brief Abstract class intended to hold promises to data objects used by Modules.
@@ -438,11 +400,7 @@ public:
         {
             std::vector<std::shared_ptr<Container>> vInput;
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-            {
-                std::shared_ptr<Container> pGet = pFuture->get();
-                assert(pGet != nullptr);
-                vInput.push_back(pGet);
-            }//for
+                vInput.push_back(pFuture->get());
             content = (std::shared_ptr<Container>)pledger->execute(vInput);
             assert(typeCheck(content, type));
         }//if
@@ -450,35 +408,16 @@ public:
         {
             boost::python::list vInput;
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-            {
-                std::shared_ptr<Container> pInput = pFuture->get();
-                assert(pInput != nullptr);
-                vInput.append(pInput);
-            }//for
+                vInput.append(pFuture->get());
             /*
              * here we jump to python code to call a function and resume the cpp code 
              * once python is done...
              */
-            try
-            {
-                std::lock_guard<std::mutex> xGuard(xPython);
-                With_gil gil();
-                content = boost::python::extract<
-                        std::shared_ptr<Container>
-                    >(
-                        py_pledger.attr("save_execute")(vInput)
-                    ); 
-                //scope of gil
-            } catch (const std::system_error& e) {
-                std::cerr << e.what() << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << e.what() << std::endl;
-            } catch (const std::string& e) {
-                std::cerr << e << std::endl;
-            } catch (...) {
-                std::cerr << "unknown exception" << std::endl;
-                boost::python::handle_exception();
-            }//catch
+            content = boost::python::extract<
+                    std::shared_ptr<Container>
+                >(
+                    py_pledger.attr("save_execute")(vInput)
+                ); 
             assert(typeCheck(content, type));
         }//else
         return content;
@@ -489,6 +428,7 @@ public:
             unsigned int numThreads
         )
     {
+        std::cout << "will cause crashes if used on python modules" << std::endl;
         std::vector<std::shared_ptr<Container>> vRet = std::vector<std::shared_ptr<Container>>(
                 vPledges.size()
             );

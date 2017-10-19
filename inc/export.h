@@ -133,6 +133,7 @@
 #include "linesweep.h"
 #include "segmentation.h"
 #include "bucketing.h"
+#include "sweepAllReturnBest.h"
 
 
 #endif
