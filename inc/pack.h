@@ -513,6 +513,16 @@ public:
 					   );
 	} // method
 
+	/* Appends a single FASTA record to the collection and pack.
+	 */
+	void vAppendFastaFile( const char *pcFileName ) 
+	{
+		
+		FastaReader xReader;
+		xReader.vLoadFastaFile(pcFileName);
+		vAppendFastaSequence(xReader);
+	} // method
+
 	/* Creates the reverse strand a saves the collection on the disk.
 	 * After finishing a collection it is impossible to add further sequences.
 	 */

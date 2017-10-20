@@ -1,10 +1,10 @@
 from LAuS import *
 import random
     
-file_all = open("/mnt/ssd0/chrom/random/all", "w")
+file_all = open("/mnt/ssd0/chrom/human/all", "w")
+ref_seq = Pack()
 
-ref = NucSeq("")
-
+"""
 file_all.write(">blub/n")
 seq = ""
 for index in range(1000000):
@@ -25,33 +25,24 @@ for index in range(1000000):
         file_all.write("\n")
 ref = NucSeq(seq)
 rev_ref = NucSeq(seq)
-
 """
+
 for index in range(1,25):
     name = str(index)
     if index == 23:
         name = "X"
     if index == 24:
         name = "Y"
+    ref_seq.append_fasta_file("/mnt/ssd0/chrom/human/chr" + name + ".fna")
     file = open("/mnt/ssd0/chrom/human/chr" + name + ".fna", "r")
-    line = file.readline()#ignore first line
-    #file_all.write(line)
     line = file.readline()
     while line:
-        ref.append(line)
-        #file_all.write(line)
+        file_all.write(line)
         line = file.readline()
-"""
+    file.close()
 file_all.close()
 
+ref_seq.store("/mnt/ssd0/chrom/human/pack")
 
-
-print("b")
-ref_seq = Pack()
-ref_seq.append("name", "no comment",ref)
-ref_seq.store("/mnt/ssd0/chrom/random/pack")
-
-print("c")
 fm_index = FMIndex(ref_seq)
-print("d")
-fm_index.store("/mnt/ssd0/chrom/random/index")
+fm_index.store("/mnt/ssd0/chrom/human/index")

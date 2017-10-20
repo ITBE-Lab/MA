@@ -30,6 +30,15 @@ void exportPack()
                 "Appends seq at the end of the pack.\n"
             )
         .def(
+                "append_fasta_file", 
+                &BWACompatiblePackedNucleotideSequencesCollection::vAppendFastaFile,
+                "arg1: self\n"
+                "arg2: the filename\n"
+                "returns: nil\n"
+                "\n"
+                "Appends seq at the end of the pack.\n"
+            )
+        .def(
                 "store", 
                 &BWACompatiblePackedNucleotideSequencesCollection::vStoreCollection,
                 "arg1: self\n"
