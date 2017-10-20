@@ -4,7 +4,7 @@
  * @author Arne Kutzner
  */
 
-/* Revisison:
+/* Revision:
  * We only store the forward strand with the pack. 
  * The reverse strand is imaginary and its content developed on demand by using the forward strand.
  */
@@ -17,6 +17,9 @@
 #include "fasta_reader.h"
 
 /* --- BEGIN DEPRECATED ---
+ */
+/**
+ * @brief contains descriptive information about the sequences within the pack.
  */
 typedef struct {
 	int64_t i64OffsetInPac; 
@@ -79,6 +82,12 @@ extern unsigned char nst_nt4_table[256];
 
 /* TODO: study http://stackoverflow.com/questions/3180268/why-are-c-stl-iostreams-not-exception-friendly
  *       study http://gehrcke.de/2011/06/reading-files-in-c-using-ifstream-dealing-correctly-with-badbit-failbit-eofbit-and-perror/
+ */
+/**
+ * @brief A packed NucleotideSequence.
+ * @details
+ * Compresses the sequence.
+ * @ingroup container
  */
 class BWACompatiblePackedNucleotideSequencesCollection: public Container
 {
@@ -666,10 +675,19 @@ public:
 	{
 		/* This is a bit inefficient. We could boost performance by allowing a move for the sequence
 		 */
-		vAppendSequence( rxFastaDescriptor.sName,		// Name of the embedded sequence
-						 rxFastaDescriptor.sComment,	// Comments for the sequence
-						 NucleotideSequence( *rxFastaDescriptor.pSequenceRef )
-					   );
+		vAppendSequence( 
+				rxFastaDescriptor.sName,		// Name of the embedded sequence
+				rxFastaDescriptor.sComment,	// Comments for the sequence
+				NucleotideSequence( *rxFastaDescriptor.pSequenceRef )
+			);
+	} // method	
+	/* Appends a single FASTA record to the collection and pack.
+	 */
+	void vAppendFastaFile( const char *pcFileName ) 
+	{
+		FastaReader xReader;
+		xReader.vLoadFastaFile(pcFileName);
+		vAppendFastaSequence(xReader);
 	} // method
 
 	/* Creates the reverse strand a saves the collection on the disk.
@@ -1144,4 +1162,8 @@ public:
 	} // method
 }; // class
 
+/**
+ * @brief exports the Pack class to python.
+ * @ingroup export
+ */
 void exportPack();
