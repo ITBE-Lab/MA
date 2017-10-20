@@ -4,7 +4,7 @@
  * @author Arne Kutzner
  */
 
-/* Revision:
+/* Revisison:
  * We only store the forward strand with the pack. 
  * The reverse strand is imaginary and its content developed on demand by using the forward strand.
  */
@@ -18,9 +18,6 @@
 
 /* --- BEGIN DEPRECATED ---
  */
-/**
- * @brief contains descriptive information about the sequences within the pack.
- */
 typedef struct {
 	int64_t i64OffsetInPac; 
 	size_t len; // length of the sequence (int32_t -> size_t)
@@ -30,20 +27,58 @@ typedef struct {
 	char *anno;
 } SequenceDescriptor; // bntann1_t -> SequenceDescriptor
 
+/* Hole ('N'-symbol) descriptor annotation
+ */
+typedef struct {
+	int64_t offset; // Offset of the hole
+	int32_t len; // The size of the hole 
+	char xHoleCharacter; // The character 
+} HoleDescriptor; // bntamb1_t -> HoleDescriptor
+
+#if 0
+struct PackedSequenceCollectionDescriptorDEP {
+	int64_t i64PacSize; // l_pac to i64PacSize / the number of bytes used in the pac
+	int32_t n_seqs;
+	uint32_t seed;
+	SequenceDescriptor *pAnchorSequenceDescriptorVector; // anns -> n_seqs elements
+	int32_t n_holes; // the number of holes ?
+	HoleDescriptor *ambs; // ambs -> pHolesArrayAnchor / Reference to the first element of the array of holes (n_holes elements)
+	FILE *fp_pac;
+};
+
+static inline int64_t bns_depos( const PackedSequenceCollectionDescriptorDEP *bns, int64_t pos, int *is_rev )
+{
+	return (*is_rev = (pos >= bns->i64PacSize)) ? (bns->i64PacSize << 1) - 1 - pos : pos;
+}
+
+/* pac[l] = c with respect to the packed array.
+ */
+#define _set_pac(pac, l, c) ((pac)[(l)>>2] |= (c)<<((~(l)&3)<<1))
+
+/* returns pac[l] with respect to the packed array
+ */
+#define _get_pac(pac, l) ((pac)[(l)>>2]>>((~(l)&3)<<1)&3)
+
+/* Prototypes of older functions. 
+ */
+int bns_pos2rid( const PackedSequenceCollectionDescriptorDEP *bns, int64_t pos_f );
+int bns_cnt_ambi( const PackedSequenceCollectionDescriptorDEP *bns, int64_t pos_f, int len, int *ref_id );
+uint8_t *bns_get_seq( int64_t l_pac, const uint8_t *pac, int64_t beg, int64_t end, int64_t *len );
+uint8_t *bns_fetch_seq( const PackedSequenceCollectionDescriptorDEP *bns, const uint8_t *pac, int64_t *beg, int64_t mid, int64_t *end, int *rid );
+int bns_intv2rid( const PackedSequenceCollectionDescriptorDEP *bns, int64_t rb, int64_t re );
+
+PackedSequenceCollectionDescriptorDEP *bns_restore(const char *prefix);
+
+void bns_destroy(PackedSequenceCollectionDescriptorDEP *bns);
+#endif
 /* The translation table.
  */
 extern unsigned char nst_nt4_table[256];
 /* --- END DEPRECATED ---
  */
 
-/* http://stackoverflow.com/questions/3180268/why-are-c-stl-iostreams-not-exception-friendly
+/* TODO: study http://stackoverflow.com/questions/3180268/why-are-c-stl-iostreams-not-exception-friendly
  *       study http://gehrcke.de/2011/06/reading-files-in-c-using-ifstream-dealing-correctly-with-badbit-failbit-eofbit-and-perror/
- */
-/**
- * @brief A packed NucleotideSequence.
- * @details
- * Compresses the sequence.
- * @ingroup container
  */
 class BWACompatiblePackedNucleotideSequencesCollection: public Container
 {
@@ -124,6 +159,32 @@ private:
 		return true;
 	} // debug method
 
+	/* A 'hole' is an area of an packed sequence, where we have 'N' symbols or similar (not 'A', 'C', 'G', 'T').  
+	 * Holes require some special memorizing, because we can not directly represent them in the 2-bit format.
+	 */
+	struct HoleDescriptor
+	{
+		uint64_t offset; // Offset of the hole (with respect to the complete collection)
+		int32_t length; // The size of the hole 
+		char xHoleCharacter; // The character 
+
+		/* Initializing constructor.
+		 */
+		HoleDescriptor( uint64_t offset, char xHoleCharacter ) :
+			offset( offset ),
+			length( 1 ),
+			xHoleCharacter( xHoleCharacter )
+		{} // initializing constructor
+
+		/* Default constructor.
+		 */
+		HoleDescriptor()
+		{} // non initializing default constructor
+	}; // inner struct
+
+	/* Vector with information about holes of all sequences in the pack.
+	 */
+	std::vector<HoleDescriptor> xVectorOfHoleDescriptors;
 
 	/* All sequences in the collection stored in one long vector of bytes.
 	 * Compressed in 2 bit format. 0 -> A, 1 -> C, 2 -> G, 3 -> T
@@ -228,6 +289,23 @@ private:
 			} // for
 		} // end of scope -> xFileOutputStream closed
 
+		/* Write records for all hole entries.
+		 */
+		{
+			std::string sFileName( rsFileNamePrefix + ".amb" );
+			std::ofstream xFileOutputStream( sFileName, std::ios::out ); // 0x0D -> CRLF
+			
+			/* Write Head line.
+			 */
+			xFileOutputStream << uiUnpackedSizeForwardStrand << " "  // Store the size of the forward strand only.
+						      << xVectorOfSequenceDescriptors.size() << " " // Number of sequences is the pack.
+							  << xVectorOfHoleDescriptors.size() << "\n"; // number of holes in the pack.
+
+			for ( const auto &rxEntry : xVectorOfHoleDescriptors )
+			{
+				xFileOutputStream << rxEntry.offset << " " << rxEntry.length << " " << rxEntry.xHoleCharacter << "\n";
+			} // for
+		} // end of scope -> xFileOutputStream closed
 	} // method
 
 	/* Method can throw exception if I/O operation fails.
@@ -353,6 +431,55 @@ private:
 		} // if
 	} // method
 
+	/* WARNING! Never do this for some already used (filled) sequence collection.
+	
+	 * Throws an exception, if something goes wrong.
+	 * Deserialization of the vector for hole descriptors.
+	 * TO DO: Insert code for throwing some exception.
+	 */
+	void vLoadHoleDescriptorVector( const char *pcFileNamePrefix )
+	{
+		size_t uiExpectedSequenceDescriptorVectorSize = 0;
+		size_t uiExpectedHoleDescriptorVectorSize = 0;
+		
+		/* TO DO insert a file open check over here!! 
+		 */
+		GzipInputFileStream xGzipInputStream( fullFileName( pcFileNamePrefix, "amb" ).c_str() );
+		
+		/* Read the headline 
+		 */
+		uint64_t uiSizeOfSingleStrand; // we got this value already in the context of the descriptor loading.
+		xGzipInputStream >> uiSizeOfSingleStrand >> uiExpectedSequenceDescriptorVectorSize >> uiExpectedHoleDescriptorVectorSize;
+
+		while( true )
+		{
+			HoleDescriptor rxEntry;
+			
+			/* We read two lines containing sequence descriptor data.
+			 * The comment(annotation) might contain white-spaces, so we read it using getline.
+			 */
+			xGzipInputStream >> rxEntry.offset >> rxEntry.length >> rxEntry.xHoleCharacter;
+			
+			if ( !xGzipInputStream.fail() )
+			{
+				 /* Looks good, we add our Sequence descriptor to the vector
+				  */
+				xVectorOfHoleDescriptors.emplace_back( std::move( rxEntry ) );
+			} // if
+			else
+			{
+				break;
+			} // else
+		} // while
+		
+		/* Some very basic test, whether something went wrong.
+		 */
+		if ( !xGzipInputStream.eof()  || uiExpectedHoleDescriptorVectorSize != xVectorOfHoleDescriptors.size() )
+		{
+			throw std::runtime_error( "Loading pack failed. Inconsistent or incomplete hole descriptor data." );
+		} // if
+	} // method
+
 public:
 
 	friend void vTextSequenceCollectionClass();
@@ -397,6 +524,7 @@ public:
 	BWACompatiblePackedNucleotideSequencesCollection() :
 		bPackComprisesReverseStrand( false ),
 		xVectorOfSequenceDescriptors(),
+		xVectorOfHoleDescriptors(),
 		xPackedNucleotideSequences(),
 		seed( uint32_t( time( NULL ) ) ),	// random number generator initial value
 		uiUnpackedSizeForwardStrand( 0 )
@@ -445,11 +573,42 @@ public:
 			rxSequence.length() // length of the sequence
 		); // struct construction
 
+		unsigned int uiPreviousSymbolCode = 0; 
+
 		/* We iterate over the fresh sequence.
 		 */
 		for ( size_t i = 0; i < rxSequence.length();  i++ )
 		{
 			unsigned int uiSymbolCode = rxSequence[i];
+
+			/* seq->seq.s[i] is our current symbol.
+			 * For holes we have some special list, that has to be maintained.
+			 */
+			if ( uiSymbolCode >= 4 ) 
+			{	/* Found something like N. 
+				 */
+				if ( uiPreviousSymbolCode == uiSymbolCode ) 
+				{	/* We see the same symbol once again. => Contiguous hole(N). 
+					 * We increase the size of the current hole in the list of holes. (*q brings us to the current hole record.)
+					 */
+					xVectorOfHoleDescriptors.back().length += 1;
+				} // if
+				else 
+				{	/* First N seen. We append a fresh record to vector of holes and initialize the record.
+					 * We have to double the capacity if there is no space anymore.
+					 */
+					xVectorOfHoleDescriptors.emplace_back(
+						HoleDescriptor(  uiOffsetDistance, // offset
+										 'N'			   // character
+									  ) 
+					); // vector insertion
+
+					/* Our current sequence has one hole more ..
+					 */
+					xPackedSequenceDescriptor.uiNumberOfHoles += 1;
+				} // else
+			} // if
+			uiPreviousSymbolCode = uiSymbolCode;
 
 			/* We create random characters, for N's.
 			 * Create random number and map the last 2 bits.
@@ -511,16 +670,6 @@ public:
 						 rxFastaDescriptor.sComment,	// Comments for the sequence
 						 NucleotideSequence( *rxFastaDescriptor.pSequenceRef )
 					   );
-	} // method
-
-	/* Appends a single FASTA record to the collection and pack.
-	 */
-	void vAppendFastaFile( const char *pcFileName ) 
-	{
-		
-		FastaReader xReader;
-		xReader.vLoadFastaFile(pcFileName);
-		vAppendFastaSequence(xReader);
 	} // method
 
 	/* Creates the reverse strand a saves the collection on the disk.
@@ -676,6 +825,7 @@ public:
 
 		vLoadSequenceDescriptorVector( rsFileNamePrefix.c_str() ); // load the .ann file
 		vLoadPackedSequence( rsFileNamePrefix, uiUnpackedSizeForwardStrand ); // load the .pac file
+		vLoadHoleDescriptorVector( rsFileNamePrefix.c_str() ); // load the .amb file
 
 		assert( debugCheckSequenceDescriptorVector( ) );
 	} // method
@@ -994,8 +1144,4 @@ public:
 	} // method
 }; // class
 
-/**
- * @brief exports the Pack class to python.
- * @ingroup export
- */
 void exportPack();
