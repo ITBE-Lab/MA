@@ -35,8 +35,9 @@ obj/%.co: src/%.c inc/%.h
 html/index.html: $(wildcard inc/*.h) $(wildcard LAuS/*.py)
 	doxygen doxygen.config
 
-install:
+install: all
 	pip3 install . --upgrade
+
 
 distrib:
 	python setup.py sdist bdist_egg bdist_wheel

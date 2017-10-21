@@ -112,6 +112,13 @@
  * this setup of @ref CppModule "modules" using a
  * computation graph can be seen in the @ref comp_graph_sec "Pledge" class.
  * 
+ * @section todos TODOs
+ * 
+ * - implement regular chaining
+ * - implement fixed chaining
+ * - dig up the old seeding and put it into a module
+ * - make the BWA modules compatible with our stuff
+ * 
  * @section about_us_sec About Us
  * 
  * Here is the <a href="http://itbe.hanyang.ac.kr/">webpage of the IT-BE lab</a>.

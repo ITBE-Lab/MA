@@ -428,7 +428,9 @@ public:
             unsigned int numThreads
         )
     {
-        std::cout << "will cause crashes if used on python modules" << std::endl;
+        DEBUG(
+            std::cout << "will cause crashes if used on python modules" << std::endl;
+        )
         std::vector<std::shared_ptr<Container>> vRet = std::vector<std::shared_ptr<Container>>(
                 vPledges.size()
             );

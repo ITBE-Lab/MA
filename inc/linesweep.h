@@ -79,7 +79,9 @@ public:
      */
     nucSeqIndex non_overlap(ShadowInterval rInterval)
     {
-        //TODO: fixmee
+        if(pInterferingIntervals->empty())
+            return size();
+        //TODO: fixme
         return std::max(
                 (*pInterferingIntervals->back())->end_ref() > rInterval->start_ref() ?
                 (*pInterferingIntervals->back())->end_ref() - rInterval->start_ref() :

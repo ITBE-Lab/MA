@@ -61,7 +61,7 @@ exit()
 """
 q = ""
 
-num_test = 200
+num_test = 1000
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
