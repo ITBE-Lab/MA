@@ -141,6 +141,7 @@
 #include "longestNonEnclosedSegments.h"
 #include "bucketing.h"
 #include "sweepAllReturnBest.h"
+#include "longestLRSegments.h"
 
 
 #endif

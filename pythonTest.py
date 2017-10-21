@@ -69,7 +69,7 @@ for _ in range(num_test):
 reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
 
-result_pledges = set_up_aligner(
+result_pledges = set_up_aligner_lr_segmentation(
     query_pledge,
     reference_pledge,
     fm_index_pledge
