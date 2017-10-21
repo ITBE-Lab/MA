@@ -1,4 +1,4 @@
-#include "segmentation.h"
+#include "longestNonEnclosedSegments.h"
 
 #define INCLUDE_SELF_TESTS (  1 )
 
@@ -16,7 +16,7 @@
 * Delivers 4 intervals for a single input interval.
 * Here we use only two fields in the BWT_Interval.
 */
-SA_IndexInterval Segmentation::extend_backward( 
+SA_IndexInterval LongestNonEnclosedSegments::extend_backward( 
 		// current interval
 		const SA_IndexInterval &ik,
 		// the character to extend with
@@ -55,7 +55,7 @@ SA_IndexInterval Segmentation::extend_backward(
 } // method
 
 
-SaSegment Segmentation::extend(
+SaSegment LongestNonEnclosedSegments::extend(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		std::shared_ptr<FM_Index> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq
@@ -196,7 +196,7 @@ SaSegment Segmentation::extend(
  *		queue the prev and post intervals into the thread pool
  *		save the perfect match for later clustering
 */
-void Segmentation::procesInterval(
+void LongestNonEnclosedSegments::procesInterval(
 			size_t uiThreadId,
 			DoublyLinkedList<SegmentTreeInterval>::Iterator pxNode,
 			std::shared_ptr<SegmentTree> pSegmentTree,
@@ -226,7 +226,7 @@ void Segmentation::procesInterval(
 			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start() - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
-			Segmentation::procesInterval,
+			LongestNonEnclosedSegments::procesInterval,
 			pxPrevNode, pSegmentTree, pFM_index, pQuerySeq, pxPool
 		);//enqueue
 	}//if
@@ -237,7 +237,7 @@ void Segmentation::procesInterval(
 			new SegmentTreeInterval(uiTo + 1, pxNode->end() - uiTo - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
-			Segmentation::procesInterval,
+			LongestNonEnclosedSegments::procesInterval,
 			pxNextNode, pSegmentTree, pFM_index, pQuerySeq, pxPool
 		);//enqueue
 	}//if
@@ -248,7 +248,7 @@ void Segmentation::procesInterval(
 }//function
 
 
-std::vector<ContainerType> Segmentation::getInputType()
+std::vector<ContainerType> LongestNonEnclosedSegments::getInputType()
 {
 	return std::vector<ContainerType>{
 			//the forward fm_index
@@ -257,13 +257,13 @@ std::vector<ContainerType> Segmentation::getInputType()
 			ContainerType::nucSeq,
 		};
 }
-ContainerType Segmentation::getOutputType()
+ContainerType LongestNonEnclosedSegments::getOutputType()
 {
 	return ContainerType::segmentList;
 }
 
 
-std::shared_ptr<Container> Segmentation::execute(
+std::shared_ptr<Container> LongestNonEnclosedSegments::execute(
 		std::vector<std::shared_ptr<Container>> vpInput
 	)
 {
@@ -287,7 +287,7 @@ std::shared_ptr<Container> Segmentation::execute(
 
 		//enqueue the root interval for processing
 		xPool.enqueue( 
-			Segmentation::procesInterval,
+			LongestNonEnclosedSegments::procesInterval,
 			pSegmentTree->begin(), pSegmentTree, pFM_index, pQuerySeq, &xPool
 		);//enqueue
 
@@ -296,15 +296,15 @@ std::shared_ptr<Container> Segmentation::execute(
 	return pSegmentTree;
 }//function
 
-void exportSegmentation()
+void exportLongestNonEnclosedSegments()
 {
 	//boost::python::def("analyse_crisper", analyseCRISPER);
 
 
 
-	//export the segmentation class
-	boost::python::class_<Segmentation, boost::python::bases<CppModule>>(
-			"Segmentation",
+	//export the LongestNonEnclosedSegments class
+	boost::python::class_<LongestNonEnclosedSegments, boost::python::bases<CppModule>>(
+			"LongestNonEnclosedSegments",
 			"bBreakOnAmbiguousBase: weather the extension of "
 			"intervals shall be stopped at N's\n"
 		)

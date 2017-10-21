@@ -27,7 +27,7 @@
  * 
  * 
  * A C++ Module is available for each of these tasks, respectively:
- * - Segmentation
+ * - LongestNonEnclosedSegments
  * - LineSweep
  * - NeedlemanWunsch
  * 
@@ -59,7 +59,7 @@
  * Here is some python code that sets up the three main @ref CppModule "modules" reqired for alignment:
  * @code{.py}
  * # A module that creates seeds.
- * seg = Segmentation()
+ * seg = LongestNonEnclosedSegments()
  * # A module that removes inconsistent seeds.
  * sweep = SweepAllReturnBest()
  * # A module that creates local alignments in the gaps between the seeds.
@@ -70,7 +70,7 @@
  *
  * Here we set up the @ref Module "modules" we need for the alignment process.
  * The @ref Module "modules" themselves do not store data. They can be used multiple times.
- * Note that while Segmentation and NeedlemanWunsch are C++ modules,
+ * Note that while LongestNonEnclosedSegments and NeedlemanWunsch are C++ modules,
  * SweepAllReturnBest and AlignmentPrinter are implemented in Python.
  *
  * @code{.py}
@@ -138,7 +138,7 @@
 #include "getAnchors.h"
 #include "needlemanWunsch.h"
 #include "linesweep.h"
-#include "segmentation.h"
+#include "longestNonEnclosedSegments.h"
 #include "bucketing.h"
 #include "sweepAllReturnBest.h"
 

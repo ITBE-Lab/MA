@@ -40,7 +40,6 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
 
 void exportGetAnchors()
 {
-     //export the segmentation class
     boost::python::class_<
         NlongestIntervalsAsAnchors, 
         boost::python::bases<CppModule>

@@ -176,7 +176,7 @@ public:
  * Note that this setup mimics the one given in the @ref quick_start_sec "quick start" section
  * @code{.py}
  * # A module that creates seeds.
- * seg = Segmentation()
+ * seg = LongestNonEnclosedSegments()
  * # A module that removes inconsistent seeds.
  * sweep = SweepAllReturnBest()
  * # A module that creates local alignments in the gaps between the seeds.
@@ -202,7 +202,7 @@ public:
  * Here we setup the @ref Pledge "pledges", promising that we will deliver some data.
  *
  * @code{.py}
- * # Add the segmentation module to the computation graph.
+ * # Add a segmentation module to the computation graph.
  * segments_pledge = seg.promise_me((fm_index_pledge, query_pledge)) #(*)
  * # Call the line sweep module.
  * seeds_pledge = sweep.promise_me((segments_pledge,)) #(*)

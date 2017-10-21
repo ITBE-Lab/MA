@@ -1,10 +1,10 @@
 /** 
- * @file segmentation.h
- * @brief Implements the segmentation algorithm.
+ * @file longestNonEnclosedSegments.h
+ * @brief Implements a segmentation algorithm.
  * @author Markus Schmidt
  */
-#ifndef SEGMENTATION_H
-#define SEGMENTATION_H
+#ifndef LONGEST_NON_ENCLOSED_SEGMENTS_H
+#define LONGEST_NON_ENCLOSED_SEGMENTS_H
 
 #define DEBUG_ENABLED
 
@@ -20,7 +20,7 @@ class PerfectMatch;
  * @brief Computes a set of maximal non-enclosed seeds.
  * @ingroup module
  */
-class Segmentation : public CppModule{
+class LongestNonEnclosedSegments : public CppModule{
 private:
 
 	static SA_IndexInterval extend_backward(
@@ -54,11 +54,6 @@ private:
 
 
 public:
-
-	~Segmentation()
-	{
-		std::cout << "Segmentation destroyed" << std::endl;
-	}
 	
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
@@ -71,6 +66,6 @@ public:
  * @brief exports the Segmentation @ref CppModule "module" to python.
  * @ingroup export
  */
-void exportSegmentation();
+void exportLongestNonEnclosedSegments();
 
 #endif

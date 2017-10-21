@@ -11,7 +11,7 @@ from .__init__ import *
 # with the standard aligner comfiguration.
 # @details 
 # Uses following Modules in this order:
-# - Segmentation
+# - LongestNonEnclosedSegments
 # - NlongestIntervalsAsAnchors
 # - Bucketing
 # - @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest"
@@ -24,7 +24,7 @@ from .__init__ import *
 # @ingroup module
 #
 def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
-    seg = Segmentation()
+    seg = LongestNonEnclosedSegments()
 
     anc = NlongestIntervalsAsAnchors(2)
 

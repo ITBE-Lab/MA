@@ -750,16 +750,16 @@ class NlongestIntervalsAsAnchors_(NlongestIntervalsAsAnchors):
         pass
 
 ##
-# @brief The Segmentation Module.
+# @brief The LongestNonEnclosedSegments Module.
 # @details
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup module
 #
-class Segmentation_(Segmentation):
+class LongestNonEnclosedSegments_(LongestNonEnclosedSegments):
     ##
     # @brief Create a new Module.
     # @details
-    # Reimplemented from @ref Segmentation.
+    # Reimplemented from @ref LongestNonEnclosedSegments.
     #
     def __init__(self):
         pass
@@ -767,14 +767,14 @@ class Segmentation_(Segmentation):
     ##
     # @brief returns the @ref ContainerType "container types" fm_index, nucSeq.
     # @details
-    # Reimplemented from @ref Segmentation::getInputType.
+    # Reimplemented from @ref LongestNonEnclosedSegments::getInputType.
     def get_input_type(self):
         pass
 
     ##
     # @brief returns the @ref ContainerType "container type" segmentList.
     # @details
-    # Reimplemented from @ref Segmentation::getOutputType.
+    # Reimplemented from @ref LongestNonEnclosedSegments::getOutputType.
     def get_output_type(self):
         pass
 
