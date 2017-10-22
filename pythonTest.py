@@ -90,7 +90,7 @@ exit()
 """
 q = ""
 
-num_test = 5000
+num_test = 100
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -125,7 +125,7 @@ reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
 while True:
-    mutation_amount = random.randint(1, 100)
+    mutation_amount = random.randint(0, 30)
     starts = []
     ends = []
     hits = 0

@@ -95,7 +95,8 @@ private:
 			std::shared_ptr<SegmentTreeInterval> pxNode,
 			std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
-			std::function<void(Seed)> fDo
+			std::function<void(Seed)> fDo,
+			nucSeqIndex addSize// = 0 (default)
 		);
 	
 	void saveSeeds(

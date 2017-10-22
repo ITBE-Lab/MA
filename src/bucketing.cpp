@@ -29,30 +29,25 @@ void Bucketing::forEachNonBridgingSeed(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 		std::shared_ptr<NucleotideSequence> pxQuerySeq,
-		std::function<void(Seed rxS)> fDo
+		std::function<void(Seed rxS)> fDo,
+		nucSeqIndex addSize = 0
 	)
 {
 	pxNode->forEachSeed(
 		pxFM_index, uiMaxHitsPerInterval, bSkipLongBWTIntervals,
 		[&](Seed xS)
 		{
-			//check if the match is bridging the forward/reverse strand or bridging between two chromosomes
-			/* we have to make sure that the match does not start before or end after the reference sequence
-			* this can happen since we can find parts on the end of the query at the very beginning of the reference or vis versa.
-			* in this case we will replace the out of bounds index with 0 or the length of the reference sequence respectively.
-			*/
-			//TODO: check bridging!
-			/*nucSeqIndex uiStart = xS.start_ref() - xS.start();
-			if( xS.start_ref() < xS.start() )
-				uiStart = 0;
-			nucSeqIndex uiEnd = pxFM_index->getRefSeqLength() - ulIndexOnRefSeq;
-			if(
-					ulIndexOnRefSeq + pxQuerySeq->length() - xS.start()
-						> 
-					pxFM_index->getRefSeqLength()
+			// check if the match is bridging the forward/reverse strand 
+			// or bridging between two chromosomes
+			if ( pxRefSequence->bridingSubsection(
+					//prevent negative index
+					xS.start_ref() > addSize ? xS.start_ref() - addSize : 0,//from
+					//prevent index larger than reference
+					xS.end_ref() + addSize < pxFM_index->getRefSeqLength() ?
+						xS.size() + addSize :
+						pxFM_index->getRefSeqLength() - xS.start_ref() 
+					) //to
 				)
-				uiEnd = pxFM_index->getRefSeqLength();
-			if ( pxRefSequence->bridingSubsection(uiStart, uiEnd) )
 			{
 				//if so ignore this hit
 				return;
@@ -93,7 +88,7 @@ std::shared_ptr<Container> Bucketing::execute(
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[4]);
 
 	
-	std::vector<SeedBucket> axSeedBuckets((pQuerySeq->length() + pRefSeq->uiUnpackedSizeForwardPlusReverse() + 1)/uiStripSize);
+	std::vector<SeedBucket> axSeedBuckets((pQuerySeq->length() + pRefSeq->uiUnpackedSizeForwardPlusReverse())/uiStripSize + 1);
 
 
 	/*
@@ -139,7 +134,8 @@ std::shared_ptr<Container> Bucketing::execute(
 							pxNew->push_back(rS);
 					}//for
 					pRet->push_back(pxNew);
-				}//lambda
+				},//lambda
+				uiStripSize/2
 			);//for each
 		}//lambda
 	);//forEach
