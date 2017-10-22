@@ -1,7 +1,36 @@
 from LAuS import *
 import random
 import gc
+import os
 
+_proc_status = '/proc/%d/status' % os.getpid()
+
+_scale = {'kB': 1024.0, 'mB': 1024.0*1024.0,
+          'KB': 1024.0, 'MB': 1024.0*1024.0}
+
+def _VmB(VmKey):
+    '''Private.
+    '''
+    global _proc_status, _scale
+     # get pseudo file  /proc/<pid>/status
+    try:
+        t = open(_proc_status)
+        v = t.read()
+        t.close()
+    except:
+        return 0.0  # non-Linux?
+     # get VmKey line e.g. 'VmRSS:  9999  kB\n ...'
+    i = v.index(VmKey)
+    v = v[i:].split(None, 3)  # whitespace
+    if len(v) < 3:
+        return 0.0  # invalid format?
+     # convert Vm value to bytes
+    return float(v[1]) * _scale[v[2]]
+
+def get_memory(since=0.0):
+    '''Return memory usage in bytes.
+    '''
+    return _VmB('VmSize:') - since
 
 def near(index, index_2):
     return index + 100 > index_2 and index - 100 < index_2
@@ -61,7 +90,7 @@ exit()
 """
 q = ""
 
-num_test = 1000
+num_test = 5000
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -85,19 +114,25 @@ fm_index = FMIndex()
 fm_index.load("/mnt/ssd0/chrom/human/index")
 
 
+memory = open("memory_usage.txt", "w")
+memory.close()
 
 del_ins_size = 10
 q_len = 1000
-mutation_amount = 10
 
 
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-for _ in range(1):
+while True:
+    mutation_amount = random.randint(1, 100)
     starts = []
     ends = []
     hits = 0
+    memory = open("memory_usage.txt", "a")
+    gc.collect()
+    memory.write(str(get_memory()) + "\n")
+    memory.close()
     for i in range(num_test):
         q = ""
 
@@ -133,7 +168,7 @@ for _ in range(1):
 
         query_pledge[i].set(query)
 
-    results = Pledge.simultaneous_get(result_pledges, 100)
+    results = Pledge.simultaneous_get(result_pledges, 48)
 
     for i, alignment in enumerate(results):
         if alignment is None:
@@ -142,5 +177,6 @@ for _ in range(1):
             hits += 1
 
     print(hits/num_test)
+
 
 print("done")

@@ -37,6 +37,8 @@ void needlemanWunsch(
         std::shared_ptr<Alignment> pAlignment
     )
 {
+    assert(toQuery <= pQuery->length());
+    assert(toRef <= pRef->length());
     if( (toRef - fromRef) * (toQuery - fromQuery) > 10000)
         return;
     if(toRef <= fromRef)
@@ -254,6 +256,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     if( pSeeds->front().start_ref() > beginQuery*2)
         beginRef = pSeeds->front().start_ref() - beginQuery*2;
     nucSeqIndex endQuery = pSeeds->back().end();
+    assert(endQuery <= pQuery->length());
     //TODO: can only do forward hits so far...
     nucSeqIndex endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()/2;
     if( 

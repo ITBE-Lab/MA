@@ -85,9 +85,17 @@ SaSegment LongestLRSegments::extend(
 	nucSeqIndex end = center;
 	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
 	{
+		DEBUG_2(
+			std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+		)
 		assert(ik.size() > 0);
 		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
+		DEBUG_2(
+			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+			std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+		)
 		/*
 		* In fact, if ok.getSize is zero, then there are no matches any more.
 		*/
@@ -96,30 +104,50 @@ SaSegment LongestLRSegments::extend(
 		end = i;
 		ik = ok;
 	}//for
+	DEBUG_2(
+		std::cout << "swap" << std::endl;
+	)
 	//this is required in order to extend the other way
 	ik = ik.revComp();
 	nucSeqIndex start = center;
 	/*
 	 * extend ik left, until there are no more matches
 	 */
-	for(nucSeqIndex i = center-1; i >= 0; i--)
+	if(center > 0)
 	{
-		assert(ik.size() > 0);
-		SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+		for(nucSeqIndex i = center-1; i >= 0; i--)
+		{
+			DEBUG_2(
+				std::cout << i+1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+				std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+			)
+			assert(ik.size() > 0);
+			SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+			DEBUG_2(
+				std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+				std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+			)
 
-		/*
-		* In fact, if ok.getSize is zero, then there are no matches any more.
-		*/
-		if (ok.size() == 0)
-			break; // the SA-index interval size is too small to be extended further
-		start = i;
-		ik = ok;
-		//cause nuxSeqIndex is unsigned
-		if(i == 0)
-			break;
-	}//for
-	SaSegment rightLeft(start,end,ik);
+			/*
+			* In fact, if ok.getSize is zero, then there are no matches any more.
+			*/
+			if (ok.size() == 0)
+				break; // the SA-index interval size is too small to be extended further
+			start = i;
+			ik = ok;
+			//cause nuxSeqIndex is unsigned
+			if(i == 0)
+				break;
+		}//for
+	}//if
+	SaSegment rightLeft(start,end-start,ik);
+	assert(start >= 0);
+	assert(end < pQuerySeq->length());
+	assert(rightLeft.end() < pQuerySeq->length());
 	pxNode->push_back(rightLeft);
+	DEBUG_2(
+		std::cout << "--other way--" << std::endl;
+	)
 	/* Initialize ik on the foundation of the single base q[x].
 	 * In order to understand this initialization you should have a look 
 	 *to the corresponding PowerPoint slide.
@@ -136,22 +164,36 @@ SaSegment LongestLRSegments::extend(
 	/*
 	 * extend ik left, until there are no more matches
 	 */
-	for(nucSeqIndex i = center-1; i >= 0; i--)
+	if(center > 0)
 	{
-		assert(ik.size() > 0);
-		SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+		for(nucSeqIndex i = center-1; i >= 0; i--)
+		{
+			DEBUG_2(
+				std::cout << i+1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+				std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+			)
+			assert(ik.size() > 0);
+			SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+			DEBUG_2(
+				std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+				std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+			)
 
-		/*
-		* In fact, if ok.getSize is zero, then there are no matches any more.
-		*/
-		if (ok.size() == 0)
-			break; // the SA-index interval size is too small to be extended further
-		start = i;
-		ik = ok;
-		//cause nuxSeqIndex is unsigned
-		if(i == 0)
-			break;
-	}//for
+			/*
+			* In fact, if ok.getSize is zero, then there are no matches any more.
+			*/
+			if (ok.size() == 0)
+				break; // the SA-index interval size is too small to be extended further
+			start = i;
+			ik = ok;
+			//cause nuxSeqIndex is unsigned
+			if(i == 0)
+				break;
+		}//for
+	}//if
+	DEBUG_2(
+		std::cout << "swap" << std::endl;
+	)
 	//this is required in order to extend the other way
 	ik = ik.revComp();
 	end = center;
@@ -160,8 +202,17 @@ SaSegment LongestLRSegments::extend(
 	 */
 	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
 	{
+		DEBUG_2(
+			std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+		)
 		assert(ik.size() > 0);
 		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
+
+		DEBUG_2(
+			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+			std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+		)
 
 		/*
 		* In fact, if ok.getSize is zero, then there are no matches any more.
@@ -171,7 +222,10 @@ SaSegment LongestLRSegments::extend(
 		end = i;
 		ik = ok;
 	}//for
-	SaSegment leftRight(start,end,ik);
+	SaSegment leftRight(start,end-start,ik);
+	assert(start >= 0);
+	assert(end < pQuerySeq->length());
+	assert(leftRight.end() < pQuerySeq->length());
 	pxNode->push_back(leftRight);
 
 	SaSegment longest = rightLeft;

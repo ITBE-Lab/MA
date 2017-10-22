@@ -116,8 +116,9 @@
  * 
  * - implement regular chaining
  * - implement fixed chaining
- * - dig up the old seeding and put it into a module
  * - make the BWA modules compatible with our stuff
+ * - update this page... (the example has to be changed)
+ * - rename classes and files aproproately
  * 
  * @section about_us_sec About Us
  * 

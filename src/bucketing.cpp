@@ -86,14 +86,14 @@ std::shared_ptr<Container> Bucketing::execute(
 {
 	std::shared_ptr<SegmentTree> pSegments = std::static_pointer_cast<SegmentTree>(vpInput[0]);
 	std::shared_ptr<SegmentTree> pAnchors = std::static_pointer_cast<SegmentTree>(vpInput[1]);
-	std::shared_ptr<NucleotideSequence> pQuerrySeq = 
+	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
 	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
 		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[4]);
 
 	
-	std::vector<SeedBucket> axSeedBuckets((pQuerrySeq->length() + pRefSeq->uiUnpackedSizeForwardPlusReverse())/uiStripSize);
+	std::vector<SeedBucket> axSeedBuckets((pQuerySeq->length() + pRefSeq->uiUnpackedSizeForwardPlusReverse() + 1)/uiStripSize);
 
 
 	/*
@@ -103,7 +103,7 @@ std::shared_ptr<Container> Bucketing::execute(
 	pSegments->forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
 		{
-			saveSeeds(pxNode, pFM_index, pRefSeq, pQuerrySeq, axSeedBuckets);
+			saveSeeds(pxNode, pFM_index, pRefSeq, pQuerySeq, axSeedBuckets);
 		}//lambda
 	);//forEach
 
@@ -124,10 +124,10 @@ std::shared_ptr<Container> Bucketing::execute(
 		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
 		{
 			forEachNonBridgingSeed(
-				pxNode, pFM_index, pRefSeq, pQuerrySeq,
+				pxNode, pFM_index, pRefSeq, pQuerySeq,
 				[&](Seed xAnchor)
 				{
-					nucSeqIndex uiStart = getPositionForBucketing(pQuerrySeq->length(), xAnchor) - uiStripSize/2;
+					nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
 					std::shared_ptr<Seeds> pxNew(new Seeds());
 					for (
 							unsigned int uiC = uiStart / uiStripSize - 1; 

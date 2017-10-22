@@ -87,7 +87,7 @@ private:
 			std::vector<SeedBucket>& raxSeedBuckets
 		)
 	{
-		assert(getPositionForBucketing(uiQueryLength, xNew) / uiStripSize <raxSeedBuckets.size());
+		assert(getPositionForBucketing(uiQueryLength, xNew) / uiStripSize < raxSeedBuckets.size());
 		raxSeedBuckets[getPositionForBucketing(uiQueryLength, xNew) / uiStripSize].addSeed(xNew);
 	}//function
 
