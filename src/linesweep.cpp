@@ -71,8 +71,7 @@ void LineSweep::linesweep(
         );//sort function call
 
     //records the interval ends
-    SelfBalancingBinarySearchTree<ShadowInterval> xItervalEnds =
-        SelfBalancingBinarySearchTree<ShadowInterval>();
+    SearchTree<ShadowInterval*> xItervalEnds;
 
     //this is the line sweeping part
     for(ShadowInterval& rInterval : vShadows)
@@ -107,18 +106,21 @@ void LineSweep::linesweep(
         )
 
         //work on the current interval
-        auto pNextShadow = xItervalEnds.insert(&rInterval)->next();
-        if(pNextShadow != nullptr)
+        ShadowInterval* insertptr = &rInterval;
+        SearchTree<ShadowInterval*>::Iterator pNextShadow = xItervalEnds.insert(insertptr);
+        ++pNextShadow;
+        if(*pNextShadow != nullptr)
         {
-            pNextShadow->get()->addInterferingInterval(rInterval);
-            auto pFollowingShadows = pNextShadow->next();
+            pNextShadow->addInterferingInterval(rInterval);
+            SearchTree<ShadowInterval*>::Iterator pFollowingShadows = pNextShadow;
+            ++pFollowingShadows;
             while(
-                    pFollowingShadows != nullptr && 
-                    pFollowingShadows->get() != pNextShadow->get()->getIInterferWith()
+                    *pFollowingShadows != nullptr && 
+                    *pFollowingShadows != pNextShadow->getIInterferWith()
                 )
             {
-                pFollowingShadows->get()->add2ndOrderInterferingInterval(rInterval);
-                pFollowingShadows = pFollowingShadows->next();
+                pFollowingShadows->add2ndOrderInterferingInterval(rInterval);
+                ++pFollowingShadows;
             }//while
         }//if
         DEBUG(
