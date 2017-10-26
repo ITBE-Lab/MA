@@ -145,9 +145,21 @@ inline ThreadPool::ThreadPool( size_t threads )
 					
                     lock.unlock();
 
-					/* Execute the task (that we received as top of the queue)
-					 */
-                    task( i );
+					try
+					{
+						/* Execute the task (that we received as top of the queue)
+						*/
+						task( i );
+					} 
+					catch(std::exception e) 
+					{
+						std::cerr << "exception when executing task:" << std::endl;
+						std::cerr << e.what() << std::endl;
+					}
+					catch(...) 
+					{
+						std::cerr << "unknown exception when executing task" << std::endl;
+					}
                 } // for
             } // lambda
         ); // function call

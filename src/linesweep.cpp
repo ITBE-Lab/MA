@@ -109,13 +109,13 @@ void LineSweep::linesweep(
         ShadowInterval* insertptr = &rInterval;
         SearchTree<ShadowInterval*>::Iterator pNextShadow = xItervalEnds.insert(insertptr);
         ++pNextShadow;
-        if(*pNextShadow != nullptr)
+        if(pNextShadow.exists())
         {
             pNextShadow->addInterferingInterval(rInterval);
             SearchTree<ShadowInterval*>::Iterator pFollowingShadows = pNextShadow;
             ++pFollowingShadows;
             while(
-                    *pFollowingShadows != nullptr && 
+                    pFollowingShadows.exists() && 
                     *pFollowingShadows != pNextShadow->getIInterferWith()
                 )
             {

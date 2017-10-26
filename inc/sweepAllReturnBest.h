@@ -10,6 +10,7 @@
 #define SWEEP_ALL_RETURN_BEST
 
 #include "linesweep.h"
+#include "threadPool.h"
 
 /**
  * @brief Execute LineSweep for all given seeds.
@@ -23,6 +24,10 @@ private:
     static LineSweep xLineSweep;
 
 public:
+    SweepAllReturnBest()
+            :
+        CppModule()
+    {}//default constructor
 
     //overload
     std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput)
@@ -37,40 +42,62 @@ public:
         SeedsVector vTempResults = SeedsVector(pSeedsVector->size());
         {
             ThreadPool xPool(8);
-            for(unsigned int i = 0; i < pSeedsVector->size(); i++)
+            for(unsigned int i = 0; i < vTempResults.size(); i++)
             {
                 vTempResults[i] = std::shared_ptr<Seeds>();
                 xPool.enqueue(
                     []
                     (
                         size_t, 
-                        std::shared_ptr<Seeds> pSeeds,
+                        std::shared_ptr<SeedsVector> pSeedsVector,
                         std::shared_ptr<NucleotideSequence> pQuerySeq,
                         std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq,
-                        std::shared_ptr<Seeds>* pResult,
-                        LineSweep& rLineSweep
+                        SeedsVector* vTempResults,
+                        LineSweep& rLineSweep,
+                        unsigned int i
                     )
                     {
                         std::vector<std::shared_ptr<Container>> vInput = {
                                 pQuerySeq, 
                                 pRefSeq, 
-                                pSeeds
+                                (*pSeedsVector)[i]
                             };
-                        (*pResult) = std::static_pointer_cast<Seeds>(rLineSweep.execute(vInput));
-                        assert((*pResult) != nullptr);
+                        try
+                        {
+                            (*vTempResults)[i] = std::static_pointer_cast<Seeds>(
+                                    rLineSweep.execute(vInput));
+                        }
+                        catch(NullPointerException e) 
+                        {
+                            std::cerr << e.what() << std::endl;
+                        }
+                        catch(std::exception e) 
+                        {
+                            std::cerr << e.what() << std::endl;
+                        }
+                        catch(...) 
+                        {
+                            std::cerr << "unknown exception when executing" << std::endl;
+                        }
+                        if((*vTempResults)[i] == nullptr)
+                            throw NullPointerException("linesweep deleviered nullpointer as result");
                     },//lambda
-                    (*pSeedsVector)[i], pQuerySeq, pRefSeq, &vTempResults[i], xLineSweep
+                    pSeedsVector, pQuerySeq, pRefSeq, &vTempResults, xLineSweep, i
                 );
             }//for
         }//scope xPool
 
         if(vTempResults.empty())
             return std::shared_ptr<Seeds>(new Seeds());
-        
+
         std::shared_ptr<Seeds> pRet = vTempResults[0];
+        assert(pRet != nullptr);
         for(std::shared_ptr<Seeds> pSeeds : vTempResults)
+        {
+            assert(pSeeds != nullptr);
             if(pSeeds->getScore() > pRet->getScore())
                 pRet = pSeeds;
+        }//for
 
         return pRet;
     }//function
