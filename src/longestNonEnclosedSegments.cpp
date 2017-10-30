@@ -76,7 +76,7 @@ SaSegment LongestNonEnclosedSegments::extend(
 	SA_IndexInterval ik(
 						pFM_index->L2[complement(q[center])] + 1, 
 						pFM_index->L2[(int)q[center]] + 1, 
-						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
+						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]] + 1
 					);
 
 	std::list<SaSegment> curr = std::list<SaSegment>();

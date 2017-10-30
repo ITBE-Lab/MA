@@ -45,7 +45,7 @@ SA_IndexInterval LongestLRSegments::extend_backward(
 	//for all nucleotides
 	cntk_2[0] = ik.startRevComp();
 	for(unsigned int i = 1; i < 4; i++)
-		cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
+		cntk_2[i] = cntk_2[i-1] + cnts[complement(i)];//TODO: i -1 or i (consider that 0? A C T G N?)
 
 	//BWAs SA intervals seem to be (a,b] while mine are [a,b]
 	//pFM_index->L2[c] start of nuc c in BWT
@@ -76,7 +76,7 @@ SaSegment LongestLRSegments::extend(
 	SA_IndexInterval ik(
 						pFM_index->L2[complement(q[center])] + 1, 
 						pFM_index->L2[(int)q[center]] + 1, 
-						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
+						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]] + 1
 					);
 
 	/*
@@ -158,7 +158,7 @@ SaSegment LongestLRSegments::extend(
 	ik = SA_IndexInterval(
 						pFM_index->L2[q[center]] + 1, 
 						pFM_index->L2[(int)complement(q[center])] + 1, 
-						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
+						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]] + 1
 					);
 	start = center;
 	/*
@@ -222,7 +222,7 @@ SaSegment LongestLRSegments::extend(
 		end = i;
 		ik = ok;
 	}//for
-	SaSegment leftRight(start,end-start,ik);
+	SaSegment leftRight(start,end-start,ik.revComp());
 	assert(start >= 0);
 	assert(end < pQuerySeq->length());
 	assert(leftRight.end() < pQuerySeq->length());

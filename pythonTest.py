@@ -90,7 +90,7 @@ exit()
 """
 q = ""
 
-num_test = 100
+num_test = 1#100
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -118,14 +118,14 @@ memory = open("memory_usage.txt", "w")
 memory.close()
 
 del_ins_size = 10
-q_len = 1000
+q_len = 20
 
 
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
 while True:
-    mutation_amount = random.randint(0, 30)
+    mutation_amount = 0#random.randint(0, 30)
     starts = []
     ends = []
     hits = 0
@@ -163,12 +163,14 @@ while True:
                     q = q[:pos] + "t" + q[pos:]
                 else:
                     q = q[:pos] + "g" + q[pos:]
+        print(q)
 
         query = NucSeq(q)
 
         query_pledge[i].set(query)
 
     results = Pledge.simultaneous_get(result_pledges, 48)
+    break
 
     for i, alignment in enumerate(results):
         if alignment is None:
@@ -177,6 +179,7 @@ while True:
             hits += 1
 
     print(hits/num_test)
+
 
 
 print("done")

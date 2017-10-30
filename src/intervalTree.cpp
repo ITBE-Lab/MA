@@ -4,7 +4,7 @@ void SegmentTreeInterval::push_back(SaSegment xSaSegment)
 {
 	lxSaSegment.push_back(xSaSegment);
 	DEBUG(
-		std::cout << "found segment:" << xSaSegment.saInterval().start() << " " << xSaSegment.saInterval().end() << std::endl;
+		std::cout << "found segment: " << xSaSegment.saInterval().start() << " " << xSaSegment.saInterval().end() << std::endl;
 	)
 }//function
 
