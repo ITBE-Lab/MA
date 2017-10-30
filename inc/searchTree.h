@@ -425,7 +425,12 @@ public:
         assert(!isEmpty());
         std::shared_ptr<Node> pCurr = pRoot;
         while(pCurr->getHeight() > 1)
-            pCurr = pCurr->getLeft();
+        {
+            if(pCurr->getLeft()->getHeight() > 0)
+                pCurr = pCurr->getLeft();
+            else
+                pCurr = pCurr->getRight();
+        }
         return pCurr->get();
     }
 };//class
