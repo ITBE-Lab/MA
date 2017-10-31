@@ -90,7 +90,7 @@ exit()
 """
 q = ""
 
-num_test = 1#100
+num_test = 100
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -118,7 +118,7 @@ memory = open("memory_usage.txt", "w")
 memory.close()
 
 del_ins_size = 10
-q_len = 20
+q_len = 100
 
 
 reference_pledge.set(ref_seq)
@@ -170,15 +170,16 @@ while True:
         query_pledge[i].set(query)
 
     results = Pledge.simultaneous_get(result_pledges, 48)
-    break
 
     for i, alignment in enumerate(results):
         if alignment is None:
             continue
         if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):
             hits += 1
+            print("hit")
 
     print(hits/num_test)
+    break
 
 
 

@@ -102,7 +102,7 @@ std::shared_ptr<Container> Bucketing::execute(
 		}//lambda
 	);//forEach
 
-	DEBUG(
+	DEBUG_3(
 		std::cout << "values of buckets: ";
 		for(auto& bucket : axSeedBuckets)
 		{

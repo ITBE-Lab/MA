@@ -48,8 +48,8 @@ def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
             fm_index_pledge,
             query_pledge
         ))
-        return_pledges.append(segment_pledge)
-        break
+        #return_pledges.append(segment_pledge)
+        #break
 
         anchors_pledge = anc.promise_me((segment_pledge,))
 
@@ -123,8 +123,8 @@ def set_up_aligner_lr_segmentation(query_pledges, reference_pledge, fm_index_ple
             fm_index_pledge,
             query_pledge
         ))
-        return_pledges.append(segment_pledge)
-        break
+        #return_pledges.append(segment_pledge)
+        #break
 
         anchors_pledge = anc.promise_me((segment_pledge,))
 

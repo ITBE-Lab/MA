@@ -27,6 +27,9 @@ SA_IndexInterval LongestNonEnclosedSegments::extend_backward(
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
 	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
+	assert(ik.start() < ik.end());
+	assert(ik.start() > 0);
+
 	//here the intervals seem to be (a,b] while mine are [a,b)
 	pFM_index->bwt_2occ4(
 		// start of SA index interval
@@ -36,16 +39,54 @@ SA_IndexInterval LongestNonEnclosedSegments::extend_backward(
 		cntk,						// output: Number of A, C, G, T until start of interval
 		cntl						// output: Number of A, C, G, T until end of interval
 	);
-	bwt64bitCounter cnts[4]; // Number of A, C, G, T in BWT until end of interval ik
-	
+
+	for(unsigned int i = 0; i < 4; i++)
+		assert(cntk[i] <= cntl[i]);
+
+	bwt64bitCounter cnts[4]; // Number of A, C, G, T in BWT interval ik
+	//the cnts calculated here might be off by one
 	for(unsigned int i = 0; i < 4; i++)
 		cnts[i] = cntl[i] - cntk[i];
 
+	DEBUG_2(
+		std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " << cnts[3] << " = " 
+				  << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= " 
+				  << ik.size() << "(-1)" << std::endl;
+	)
+
 	bwt64bitCounter cntk_2[4];
-	//for all nucleotides
 	cntk_2[0] = ik.startRevComp();
+	/*
+	 * PROBLEM:
+	 * 
+	 * the representation of the $ in the count part of the FM_index is indirect
+	 * 		done by storing the position of the $
+	 * if have two bwt indices k and l
+	 * the counts do not return the $ obviously...
+	 * 
+	 * The result may be off by one since sometimes we have a $ before the current pos 
+	 * sometimes we do not...
+	 *
+	 * lets adjust the sizes of the smaller intervals accordingly
+	 */
+	if(
+			ik.start() - 1 <= pFM_index->primary && 
+			ik.end() - 1 > pFM_index->primary
+		)
+	{
+		cntk_2[0]++;
+		DEBUG_2(
+			std::cout << "adjusted cntk_2[0] because of primary" << std::endl;
+		)
+		assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() - 1 );
+	}//if
+	else
+		assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() );
+	//for all nucleotides
 	for(unsigned int i = 1; i < 4; i++)
 		cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
+
+
 
 	//BWAs SA intervals seem to be (a,b] while mine are [a,b]
 	//pFM_index->L2[c] start of nuc c in BWT
@@ -76,7 +117,7 @@ SaSegment LongestNonEnclosedSegments::extend(
 	SA_IndexInterval ik(
 						pFM_index->L2[complement(q[center])] + 1, 
 						pFM_index->L2[(int)q[center]] + 1, 
-						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]] + 1
+						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
 					);
 
 	std::list<SaSegment> curr = std::list<SaSegment>();

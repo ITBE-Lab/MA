@@ -370,7 +370,10 @@ protected :
 		
 		/* Adjust k, because $ is not in bwt
 		 */
-		k -= (k >= primary); 
+		k -= (k >= primary);
+		DEBUG_3(
+			std::cout << "primary: " << (k >= primary) << " " << primary << std::endl; 
+		)
 		
 		/* Step 1.
 		 * Retrieve Occ at k/OCC_INTERVAL. (These are accumulated data, precomputed in the context of the construction process)
@@ -379,8 +382,10 @@ protected :
 		p = bwt_occ_intv( k );
 		std::memcpy( cnt, p, 4 * sizeof(bwt64bitCounter) ); // TO DO: Better C++ sizeof for arrays
 
-		//// std::cout << "bwt_size : " << bwt_size << " k: " << k << " " << (k < bwt_size) << "\n";
-		//// std::cout << "cnt after copy" << cnt[0] << " " << cnt[1] << " " << cnt[2] << " " << cnt[3] << "\n"; 
+		DEBUG_3(
+			//std::cout << "bwt_size : " << bwt_size << " k: " << k << " " << (k < bwt_size) << "\n";
+			std::cout << "cnt after copy " << cnt[0] << " " << cnt[1] << " " << cnt[2] << " " << cnt[3] << "\n"; 
+		)
 		
 		/* Step 2. Jump (4(==sizeof(uint_32)) * 8 bytes(==sizeof(uint_64))) to the start of the first BWT cell (nucleotide) (see bwt_bwtupdate_core)
 		 * This line is dirty, works only if the counter a 8 byte values.
@@ -409,9 +414,11 @@ protected :
 		cnt[0] += x       & 0xff; // A
 		cnt[1] += x >> 8  & 0xff; // C
 		cnt[2] += x >> 16 & 0xff; // G
-		cnt[3] += x >> 24;        // T
+		cnt[3] += x >> 24 & 0xff; // T
 
-		//// std::cout << "GOT for k:" << k << " " << cnt[0] << " " << cnt[1] << " " << cnt[2] << " " << cnt[3] << "\n"; 
+		DEBUG_3(
+			std::cout << "GOT for k: " << k << " => " << cnt[0] << " " << cnt[1] << " " << cnt[2] << " " << cnt[3] << "\n";
+		)
 	} // method
 
 	/** Writes the BWT of the FM-Index to the stream given as argument.
@@ -564,8 +571,10 @@ public :
 		if (   _l >> OCC_INTV_SHIFT != _k >> OCC_INTV_SHIFT // l and k belong to different intervals
 			|| k == (t_bwtIndex)(-1)						// 
 			|| l == (t_bwtIndex)(-1)						// 
+			|| true
 		   ) 
-		{	/* Interval decomposition step by two calls of bwt_occ4
+		{	
+			/* Interval decomposition step by two calls of bwt_occ4
 			 */
 			//// std::cout << "2 calls of bwt_occ4 with " << " k:" << k << " l:" << l << "\n";
 			bwt_occ4( k, cntk );
@@ -586,12 +595,16 @@ public :
 			 */
 			p = bwt_occ_intv(k);
 			
-			//// std::cout << "k is " << k << "p is " << p << "\n";
+			DEBUG_3(
+				std::cout << "k is " << k << " p is " << p << "\n";
+			)
 			memcpy( cntk, p, 4 * sizeof(bwt64bitCounter) );
 			
-			//// for ( int i = 0; i < 4; ++i )
-			//// 	std::cout << "cntk[" << i << "]=" << cntk[i] << "  ";
-			//// std::cout << "\n";
+			DEBUG_3(
+				for ( int i = 0; i < 4; ++i )
+					std::cout << "cntk[" << i << "]=" << cntk[i] << "  ";
+				std::cout << "\n";
+			)
 			
 			/* Step 2. (see bwt_occ4)
 			 */
@@ -600,7 +613,9 @@ public :
 			endk = p + ((k >> 4) - ((k&~OCC_INTV_MASK) >> 4));
 			endl = p + ((l >> 4) - ((l&~OCC_INTV_MASK) >> 4));
 
-			//// std::cout << "endk - p:" << endk - p << " endl - p:" << endl - p << "\n";
+			DEBUG_3(
+				std::cout << "endk - p:" << endk - p << " endl - p:" << endl - p << "\n";
+			)
 			
 			for (x = 0; p < endk; ++p)
 			{
@@ -626,7 +641,8 @@ public :
 			cntk[0] += x	   & 0xff ; cntl[0] += y       & 0xff;	// A
 			cntk[1] += x >> 8  & 0xff ; cntl[1] += y >> 8  & 0xff;	// C
 			cntk[2] += x >> 16 & 0xff ; cntl[2] += y >> 16 & 0xff;	// G
-			cntk[3] += x >> 24        ; cntl[3] += y >> 24;			// T
+			cntk[3] += x >> 24 & 0xff ; cntl[3] += y >> 24 & 0xff;	// T
+
 		} // else
 	} // method
 
