@@ -392,10 +392,6 @@ std::shared_ptr<Container> LongestLRSegments::execute(
 
 void exportLongestLRSegments()
 {
-	//boost::python::def("analyse_crisper", analyseCRISPER);
-
-
-
 	//export the LongestLRSegments class
 	boost::python::class_<LongestLRSegments, boost::python::bases<CppModule>>(
 			"LongestLRSegments",

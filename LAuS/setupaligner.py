@@ -23,12 +23,14 @@ from .__init__ import *
 # @returns the pledge of the alignment Printer.
 # @ingroup module
 #
-def set_up_aligner(query_pledges, reference_pledge, fm_index_pledge):
+def set_up_aligner(query_pledges, reference_pledge, 
+        fm_index_pledge, segmentation=LongestNonEnclosedSegments(), max_hits=500):
     seg = LongestNonEnclosedSegments()
 
     anc = NlongestIntervalsAsAnchors(2)
 
     bucketing = Bucketing()
+    bucketing.max_hits = max_hits
 
     sweep = SweepAllReturnBest()
 

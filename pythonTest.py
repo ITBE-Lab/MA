@@ -98,11 +98,6 @@ for _ in range(num_test):
 reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
 
-result_pledges = set_up_aligner_lr_segmentation(
-    query_pledge,
-    reference_pledge,
-    fm_index_pledge
-)
 
 
 
@@ -118,68 +113,78 @@ memory = open("memory_usage.txt", "w")
 memory.close()
 
 del_ins_size = 10
-q_len = 100
+q_len = 1000
 
 
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-while True:
-    mutation_amount = 0#random.randint(0, 30)
-    starts = []
-    ends = []
-    hits = 0
-    memory = open("memory_usage.txt", "a")
-    gc.collect()
-    memory.write(str(get_memory()) + "\n")
-    memory.close()
-    for i in range(num_test):
-        q = ""
+for max_h in range(10,1000, 10):
+    print("max_hits = " + str(max_h))
+    result_pledges = set_up_aligner(
+        query_pledge,
+        reference_pledge,
+        fm_index_pledge,
+        max_hits=max_h
+    )
 
-        q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
-        starts.append(q_from)
-        q_to = q_from + q_len
-        ends.append(q_to)
-        q = str(ref_seq.extract_from_to(q_from, q_to))
-        for _ in range(mutation_amount):
-            pos = random.randint(1,len(q)-1)
-            q = q[:pos-1] + mutate(q[pos]) + q[pos:]
+    #while True:
+    for mutation_amount in range(0,30):
+        #mutation_amount = 0#random.randint(0, 30)
+        starts = []
+        ends = []
+        hits = 0
+        memory = open("memory_usage.txt", "a")
+        gc.collect()
+        memory.write(str(get_memory()) + "\n")
+        memory.close()
+        for i in range(num_test):
+            q = ""
 
-        for _ in range(mutation_amount):
-            pos = random.randint(1,len(q)-11)
-            l = random.randint(1,del_ins_size)
-            q = q[:pos-1] + q[pos + l:]
+            q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
+            starts.append(q_from)
+            q_to = q_from + q_len
+            ends.append(q_to)
+            q = str(ref_seq.extract_from_to(q_from, q_to))
+            for _ in range(mutation_amount * 10):
+                pos = random.randint(1,len(q)-1)
+                q = q[:pos-1] + mutate(q[pos]) + q[pos:]
 
-        for _ in range(mutation_amount):
-            pos = random.randint(1,len(q)-1)
-            l = random.randint(1,del_ins_size)
-            for _ in range(l):
-                char = random.randint(1,4)
-                if char == 1:
-                    q = q[:pos] + "a" + q[pos:]
-                elif char == 2:
-                    q = q[:pos] + "c" + q[pos:]
-                elif char == 3:
-                    q = q[:pos] + "t" + q[pos:]
-                else:
-                    q = q[:pos] + "g" + q[pos:]
-        print(q)
+            for _ in range(mutation_amount):
+                pos = random.randint(1,len(q)-11)
+                l = del_ins_size
+                q = q[:pos-1] + q[pos + l:]
 
-        query = NucSeq(q)
+            for _ in range(mutation_amount):
+                pos = random.randint(1,len(q)-1)
+                l = del_ins_size
+                for _ in range(l):
+                    char = random.randint(1,4)
+                    if char == 1:
+                        q = q[:pos] + "a" + q[pos:]
+                    elif char == 2:
+                        q = q[:pos] + "c" + q[pos:]
+                    elif char == 3:
+                        q = q[:pos] + "t" + q[pos:]
+                    else:
+                        q = q[:pos] + "g" + q[pos:]
+            #print(q)
 
-        query_pledge[i].set(query)
+            query = NucSeq(q)
 
-    results = Pledge.simultaneous_get(result_pledges, 48)
+            query_pledge[i].set(query)
 
-    for i, alignment in enumerate(results):
-        if alignment is None:
-            continue
-        if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):
-            hits += 1
-            print("hit")
+        results = Pledge.simultaneous_get(result_pledges, 48)
 
-    print(hits/num_test)
-    break
+        for i, alignment in enumerate(results):
+            if alignment is None:
+                continue
+            if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):
+                hits += 1
+                #print("hit")
+
+        print(hits/num_test)
+    #break
 
 
 

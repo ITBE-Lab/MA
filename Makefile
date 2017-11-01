@@ -36,7 +36,9 @@ html/index.html: $(wildcard inc/*.h) $(wildcard LAuS/*.py)
 	doxygen doxygen.config
 
 install: all
-	pip3 install . --upgrade
+	pip3 install . --upgrade --no-cache-dir
+	cp /usr/home/markus/aligner/libLAuS.so /usr/lib
+	pip3 show LAuS
 
 
 distrib:
