@@ -149,6 +149,7 @@ void exportModule()
             .def(
                     "get",
                     &Pledge::get,
+                    boost::python::return_internal_reference<>(),
                     "arg1: self\n"
                     "returns: the pledged container\n"
                     "/n"
@@ -158,8 +159,7 @@ void exportModule()
             .def(
                     "simultaneous_get",
                     &Pledge::simultaneousGet,
-                    boost::python::with_custodian_and_ward_postcall<0,1>(),
-                    "arg1: self\n"
+                    "arg1: class\n"
                     "arg2: pledges\n"
                     "arg1: num_threads\n"
                     "/n"

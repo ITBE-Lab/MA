@@ -8,8 +8,14 @@ void exportAlignment()
             std::shared_ptr<Alignment>
         >(
                 "Alignment",
-                "contains the final output of the aligner\n"
+                "contains the final output of the aligner\n",
+                boost::python::init<>()
             )
+        .def(
+                "cast",
+                &Alignment::cast
+        )
+        .staticmethod("cast")
         .def(
                 "at", 
                 &Alignment::at,

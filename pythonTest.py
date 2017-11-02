@@ -189,7 +189,9 @@ for max_h in range(100,1000, 100):
 
         Pledge.simultaneous_get(result_trigger, 48)
 
-        for i, alignment in enumerate(result_trigger):
+        for i, result in enumerate(result_trigger):
+            print(result)
+            alignment = Alignment.cast(result.get())
             if alignment is None:
                 continue
             if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):

@@ -73,6 +73,11 @@ public:
         uiEndOnRef(uiEndOnRef)
     {}//constructor
 
+    static std::shared_ptr<Alignment> cast(std::shared_ptr<Container> p)
+    {
+        return std::dynamic_pointer_cast<Alignment>(p);
+    }
+
     //overload
     ContainerType getType(){return ContainerType::alignment;}
 

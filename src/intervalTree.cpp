@@ -127,6 +127,11 @@ void exportIntervalTree()
 				"arg2: size of the query\n"
 			))
 			.def(
+					"cast",
+					&SegmentTree::cast
+			)
+			.staticmethod("cast")
+			.def(
 					"__iter__", 
 					&SegmentTree::begin,
 					"arg1: self\n"

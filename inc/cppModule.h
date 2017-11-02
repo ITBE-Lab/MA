@@ -386,8 +386,11 @@ public:
      * Checks weather the pledge has already been fullfilled for this call.
      * If necessary, uses the python or cpp module to fullfill the pledge,
      * and returns the respective container.
+     * @note it's important to return the container as ptr reference 
+     * since the memory is managed internally, 
+     * thus we do not want python to screw with our memory management
      */
-    std::shared_ptr<Container> get()
+    std::shared_ptr<Container>& get()
     {
         //multithreading is possible thus a guard is required here.
         //deadlock prevention is trivial, since the computational graphs are essentially trees.
