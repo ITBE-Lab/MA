@@ -70,8 +70,8 @@ SA_IndexInterval LongestNonEnclosedSegments::extend_backward(
 	 * lets adjust the sizes of the smaller intervals accordingly
 	 */
 	if(
-			ik.start() - 1 <= pFM_index->primary && 
-			ik.end() - 1 > pFM_index->primary
+			ik.start() < pFM_index->primary && 
+			ik.end() >= pFM_index->primary
 		)
 	{
 		cntk_2[0]++;
@@ -80,15 +80,23 @@ SA_IndexInterval LongestNonEnclosedSegments::extend_backward(
 		)
 		assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() - 1 );
 	}//if
-	else
+	else{
+		if( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) != ik.size() )
+		{
+			std::cout << ik.start() << " " << ik.end() << " " << pFM_index->primary << std::endl;
+			std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " <<
+				cnts[3] << " = " << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= "
+				<< ik.size() << "(-1)" << std::endl;
+		}//if
 		assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() );
+	}//else
 	//for all nucleotides
 	for(unsigned int i = 1; i < 4; i++)
 		cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
 
 
 
-	//BWAs SA intervals seem to be (a,b] while mine are [a,b]
+	//BWAs SA intervals seem to be (a,b] while mine are [a,b)
 	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval

@@ -128,12 +128,13 @@ fm_index_pledge.set(fm_index)
 
 for max_h in range(100,1000, 100):
     print("max_hits = " + str(max_h))
-    result_pledges = set_up_aligner(
+    result_pledges, result_trigger = set_up_aligner(
         query_pledge,
         reference_pledge,
         fm_index_pledge,
         max_hits=max_h
     )
+
     x = []
     y = []
 
@@ -186,9 +187,9 @@ for max_h in range(100,1000, 100):
 
             query_pledge[i].set(query)
 
-        results = Pledge.simultaneous_get(result_pledges, 48)
+        Pledge.simultaneous_get(result_trigger, 48)
 
-        for i, alignment in enumerate(results):
+        for i, alignment in enumerate(result_trigger):
             if alignment is None:
                 continue
             if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):

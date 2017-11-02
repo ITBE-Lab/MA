@@ -70,8 +70,8 @@ SA_IndexInterval LongestLRSegments::extend_backward(
 	 * lets adjust the sizes of the smaller intervals accordingly
 	 */
 	if(
-			ik.start() - 1 <= pFM_index->primary && 
-			ik.end() - 1 > pFM_index->primary
+			ik.start() < pFM_index->primary && 
+			ik.end() >= pFM_index->primary
 		)
 	{
 		cntk_2[0]++;
@@ -88,7 +88,7 @@ SA_IndexInterval LongestLRSegments::extend_backward(
 
 
 
-	//BWAs SA intervals seem to be (a,b] while mine are [a,b]
+	//BWAs SA intervals seem to be (a,b] while mine are [a,b)
 	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval

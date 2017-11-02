@@ -423,7 +423,7 @@ public:
         return content;
     }//function
 
-    static inline std::vector<std::shared_ptr<Container>> simultaneousGet(
+    static inline void simultaneousGet(
             std::vector<std::shared_ptr<Pledge>> vPledges,
             unsigned int numThreads
         )
@@ -431,27 +431,21 @@ public:
         DEBUG(
             std::cout << "will cause crashes if used on python modules" << std::endl;
         )
-        std::vector<std::shared_ptr<Container>> vRet = std::vector<std::shared_ptr<Container>>(
-                vPledges.size()
-            );
         {
             ThreadPool xPool(numThreads);
             for(unsigned int i = 0; i < vPledges.size(); i++)
             {
-                vRet[i] = std::shared_ptr<Container>();
                 xPool.enqueue(
                     []
-                    (size_t, std::shared_ptr<Pledge> pPledge, std::shared_ptr<Container>* pResult)
+                    (size_t, std::shared_ptr<Pledge> pPledge)
                     {
                         assert(pPledge != nullptr);
-                        (*pResult) = pPledge->get();
+                        pPledge->get();
                     },//lambda
-                    vPledges[i], &vRet[i]
+                    vPledges[i]
                 );
             }//for
         }//scope xPool
-
-        return vRet;
     }//function
 
     //overload
