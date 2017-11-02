@@ -116,9 +116,11 @@
  * 
  * - implement regular chaining
  * - implement fixed chaining
- * - make the BWA modules compatible with our stuff
  * - update this page... (the example has to be changed)
  * - rename classes and files aproproately
+ * - reduce the time threads are stuck in locks
+ * - move backwards extension into fm_index class
+ * - STOP ADDING ITEMS TO THIS LIST
  * 
  * @section about_us_sec About Us
  * 

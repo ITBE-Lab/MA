@@ -41,7 +41,7 @@ public:
 
         SeedsVector vTempResults = SeedsVector(pSeedsVector->size());
         {
-            ThreadPool xPool(8);
+            ThreadPool xPool( NUM_THREADS_ALIGNER );
             for(unsigned int i = 0; i < vTempResults.size(); i++)
             {
                 vTempResults[i] = std::shared_ptr<Seeds>();

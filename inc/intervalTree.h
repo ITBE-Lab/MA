@@ -175,9 +175,19 @@ public:
 	/**
 	 * @brief returns the number of seeds
 	 */
-	unsigned int numSeeds()
+	unsigned int numSeeds(std::shared_ptr<FM_Index> pxFM_Index, unsigned int max_size)
 	{
-		return lxSaSegment.size();
+		unsigned int iRet = 0;
+		forEachSeed(
+				pxFM_Index,
+				max_size,
+				true,
+				[&](Seed xS)
+				{
+					iRet++;
+				}//lambda
+			);//forall
+		return iRet;
 	}//function
 
 
@@ -296,7 +306,7 @@ public:
 	/**
 	 * @brief returns the number of seeds
 	 */
-	unsigned int numSeeds()
+	unsigned int numSeeds(std::shared_ptr<FM_Index> pxFM_Index, unsigned int max_size)
 	{
 		
 		unsigned int uiTotal = 0;
@@ -304,7 +314,7 @@ public:
 			[&]
 			(std::shared_ptr<SegmentTreeInterval> pxNode)
 			{ 
-				uiTotal += pxNode->numSeeds();
+				uiTotal += pxNode->numSeeds(pxFM_Index, max_size);
 			}//lambda
 		);
 		return uiTotal;

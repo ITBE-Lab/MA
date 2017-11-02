@@ -181,7 +181,6 @@ for max_h in range(100,1000, 100):
                         q = q[:pos] + "t" + q[pos:]
                     else:
                         q = q[:pos] + "g" + q[pos:]
-            #print(q)
 
             query = NucSeq(q)
 
