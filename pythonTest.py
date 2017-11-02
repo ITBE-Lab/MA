@@ -92,7 +92,7 @@ exit()
 """
 q = ""
 
-num_test = 1000
+num_test = 1
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -115,7 +115,7 @@ memory = open("memory_usage.txt", "w")
 memory.close()
 
 del_ins_size = 10
-q_len = 1000
+q_len = 20
 
 # output to static HTML file
 output_file("result.html")
@@ -189,9 +189,10 @@ for max_h in range(100,1000, 100):
 
         Pledge.simultaneous_get(result_trigger, 48)
 
-        for i, result in enumerate(result_trigger):
+        for i, result in enumerate(result_pledges):
             print(result)
-            alignment = Alignment.cast(result.get())
+            alignment = result[-1].get()
+            print(alignment)
             if alignment is None:
                 continue
             if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):

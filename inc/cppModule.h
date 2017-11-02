@@ -386,17 +386,19 @@ public:
      * Checks weather the pledge has already been fullfilled for this call.
      * If necessary, uses the python or cpp module to fullfill the pledge,
      * and returns the respective container.
-     * @note it's important to return the container as ptr reference 
-     * since the memory is managed internally, 
-     * thus we do not want python to screw with our memory management
      */
-    std::shared_ptr<Container>& get()
+    std::shared_ptr<Container> get()
     {
         //multithreading is possible thus a guard is required here.
         //deadlock prevention is trivial, since the computational graphs are essentially trees.
         std::lock_guard<std::mutex> xGuard(xMutex);
+        std::cout << "get" << std::endl;
         if(content != nullptr)
+        {
+            std::cout << "present" << std::endl;
             return content;
+        }//if
+        std::cout << "compute" << std::endl;
         if(pledger == nullptr && py_pledger.is_none())
             throw ModuleIO_Exception("No pledger known");
         if(pledger != nullptr)

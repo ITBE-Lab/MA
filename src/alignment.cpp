@@ -8,14 +8,8 @@ void exportAlignment()
             std::shared_ptr<Alignment>
         >(
                 "Alignment",
-                "contains the final output of the aligner\n",
-                boost::python::init<>()
+                "contains the final output of the aligner\n"
             )
-        .def(
-                "cast",
-                &Alignment::cast
-        )
-        .staticmethod("cast")
         .def(
                 "at", 
                 &Alignment::at,
@@ -49,13 +43,13 @@ void exportAlignment()
                 "begin_on_ref", 
                 &Alignment::beginOnRef,
                 "arg1: self\n"
-                "returns: starting position of the aligment on the reference\n"
+                "returns: starting position of the alignment on the reference\n"
             )
         .def(
                 "end_on_ref", 
                 &Alignment::endOnRef,
                 "arg1: self\n"
-                "returns: ending position of the aligment on the reference\n"
+                "returns: ending position of the alignment on the reference\n"
             )
         .def(
                 "__len__", 

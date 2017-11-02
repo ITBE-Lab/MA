@@ -257,13 +257,7 @@ public:
 	}//constructor
 	SegmentTree()
 	{}//constructor
-	
 
-    static std::shared_ptr<SegmentTree> cast(std::shared_ptr<Container> p)
-    {
-        return std::dynamic_pointer_cast<SegmentTree>(p);
-    }
-	
 	//overload
 	ContainerType getType(){return ContainerType::segmentList;}//function
 

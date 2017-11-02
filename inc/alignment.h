@@ -61,7 +61,7 @@ public:
         uiEndOnRef(0)
     {}//constructor
     /**
-     * @brief Creates an empty aligment, 
+     * @brief Creates an empty alignment, 
      * where the interval of the reference that is used is already known.
      */
     Alignment(nucSeqIndex uiBeginOnRef, nucSeqIndex uiEndOnRef)
@@ -72,11 +72,6 @@ public:
         uiBeginOnRef(uiBeginOnRef),
         uiEndOnRef(uiEndOnRef)
     {}//constructor
-
-    static std::shared_ptr<Alignment> cast(std::shared_ptr<Container> p)
-    {
-        return std::dynamic_pointer_cast<Alignment>(p);
-    }
 
     //overload
     ContainerType getType(){return ContainerType::alignment;}

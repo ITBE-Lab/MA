@@ -149,7 +149,7 @@ void exportModule()
             .def(
                     "get",
                     &Pledge::get,
-                    boost::python::return_internal_reference<>(),
+                    boost::python::with_custodian_and_ward_postcall<1,0>(),
                     "arg1: self\n"
                     "returns: the pledged container\n"
                     "/n"
