@@ -24,8 +24,7 @@ from .__init__ import *
 # @ingroup module
 #
 def set_up_aligner(query_pledges, reference_pledge, 
-        fm_index_pledge, segmentation=LongestNonEnclosedSegments(), max_hits=500):
-    seg = LongestNonEnclosedSegments()
+        fm_index_pledge, seg=LongestNonEnclosedSegments(), max_hits=500):
 
     anc = NlongestIntervalsAsAnchors(2)
 

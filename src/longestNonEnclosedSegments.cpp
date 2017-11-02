@@ -179,12 +179,17 @@ SaSegment LongestNonEnclosedSegments::extend(
 				if(ok.size() == 0 && !bHaveOne)
 				{
 					pxNode->push_back(ik);
+					assert(ik.end() <= pQuerySeq->length());
 					if(ik.size() > longest.size())
 						longest = ik;
 					bHaveOne = true;
 				}//if
 				else if(ok.size() != 0)
-					pCurr->push_back(SaSegment(i, ik.size()+1, ok));
+				{
+					SaSegment xSeg = SaSegment(i, ik.size()+1, ok);
+					pCurr->push_back(xSeg);
+					assert(xSeg.end() <= pQuerySeq->length());
+				}//if
 			}//for
 			pTemp = pPrev;
 			pPrev = pCurr;
@@ -206,6 +211,7 @@ SaSegment LongestNonEnclosedSegments::extend(
 		assert(pPrev->front().size() >= pPrev->back().size());
 
 		pxNode->push_back(pPrev->front());
+		assert(pPrev->front().end() <= pQuerySeq->length());
 		
 		DEBUG_2(
 			std::cout << pPrev->front().start() << ":" << pPrev->front().end() << std::endl;

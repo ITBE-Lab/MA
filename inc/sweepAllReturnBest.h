@@ -97,7 +97,7 @@ public:
             assert(pSeeds != nullptr);
             if(pSeeds->getScore() > pRet->getScore())
                 pRet = pSeeds;
-        }//for
+            }//for
 
         return pRet;
     }//function

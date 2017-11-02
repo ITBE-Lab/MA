@@ -41,6 +41,15 @@ public:
         Interval(uiPosOnQuery, uiLength),
         uiPosOnReference(uiPosOnReference)
     {}//constructor
+
+    /**
+     * @brief Copys from a Seed.
+     */
+    Seed(const Seed& rOther)
+            :
+        Interval(rOther),
+        uiPosOnReference(rOther.uiPosOnReference)
+    {}//copy constructor
     
     /**
      * @brief Returns the beginning of the seed on the reference.

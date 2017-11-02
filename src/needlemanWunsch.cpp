@@ -215,6 +215,13 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefPack = 
         std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
 
+    if(pSeeds->empty())
+    {
+        std::shared_ptr<Alignment> pRet(new Alignment(0, pQuery->length()));
+        pRet->append(Alignment::MatchType::deletion, pQuery->length());
+        return pRet;
+    }//if
+
     //sort shadows (increasingly) by start coordinate of the match
     pSeeds->sort(
             [](Seed xA, Seed xB)
@@ -250,6 +257,16 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             pSeeds->pop_back();
         }//while
     }//if
+    assert(pSeeds->size() > 0);
+
+    DEBUG_2(
+        std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
+        for(Seed& rSeed : *pSeeds)
+        {
+            std::cout << rSeed.start_ref() << ", " << rSeed.end_ref() << "; "
+                << rSeed.start() << ", " << rSeed.end() << std::endl;
+        }//for
+    )
 
     nucSeqIndex beginQuery = pSeeds->front().start();
     nucSeqIndex beginRef = 0;
@@ -271,15 +288,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::cout << beginRef << " " << endRef << std::endl;
     )
     std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
-
-    DEBUG_2(
-        std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
-        for(Seed& rSeed : *pSeeds)
-        {
-            std::cout << rSeed.start_ref() << ", " << rSeed.end_ref() << "; "
-                << rSeed.start() << ", " << rSeed.end() << std::endl;
-        }//for
-    )
 
     //create the actual alignment
     nucSeqIndex endOfLastSeedQuery = 0;

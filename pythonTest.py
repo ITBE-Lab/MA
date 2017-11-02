@@ -2,6 +2,8 @@ from LAuS import *
 import random
 import gc
 import os
+import math
+from bokeh.plotting import figure, output_file, show
 
 _proc_status = '/proc/%d/status' % os.getpid()
 
@@ -90,7 +92,7 @@ exit()
 """
 q = ""
 
-num_test = 100
+num_test = 1000
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -115,11 +117,16 @@ memory.close()
 del_ins_size = 10
 q_len = 1000
 
+# output to static HTML file
+output_file("result.html")
+
+# create a new plot with a title and axis labels
+p = figure(title="quality comparison BWA", x_axis_label='genetic distance', y_axis_label='hit rate')
 
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-for max_h in range(10,1000, 10):
+for max_h in range(100,1000, 100):
     print("max_hits = " + str(max_h))
     result_pledges = set_up_aligner(
         query_pledge,
@@ -127,10 +134,13 @@ for max_h in range(10,1000, 10):
         fm_index_pledge,
         max_hits=max_h
     )
+    x = []
+    y = []
 
     #while True:
     for mutation_amount in range(0,30):
         #mutation_amount = 0#random.randint(0, 30)
+        x.append(mutation_amount)
         starts = []
         ends = []
         hits = 0
@@ -151,7 +161,9 @@ for max_h in range(10,1000, 10):
                 q = q[:pos-1] + mutate(q[pos]) + q[pos:]
 
             for _ in range(mutation_amount):
-                pos = random.randint(1,len(q)-11)
+                if len(q) <= del_ins_size:
+                    break
+                pos = random.randint(1,len(q)-del_ins_size - 1)
                 l = del_ins_size
                 q = q[:pos-1] + q[pos + l:]
 
@@ -182,10 +194,20 @@ for max_h in range(10,1000, 10):
             if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):
                 hits += 1
                 #print("hit")
-
+        y.append(hits/num_test)
         print(hits/num_test)
+
+    cdgt1 = math.floor(10*max_h/1000)
+    cdgt2 = math.floor(100*max_h/1000)%10
+        
+    # add a line renderer with legend and line thickness
+    p.line(x, y, legend=str(max_h), color="#A0A0" + str(cdgt1) + str(cdgt2), line_width=3)
     #break
 
 
+
+
+# show the results
+show(p)
 
 print("done")
