@@ -392,13 +392,10 @@ public:
         //multithreading is possible thus a guard is required here.
         //deadlock prevention is trivial, since the computational graphs are essentially trees.
         std::lock_guard<std::mutex> xGuard(xMutex);
-        std::cout << "get" << std::endl;
         if(content != nullptr)
         {
-            std::cout << "present" << std::endl;
             return content;
         }//if
-        std::cout << "compute" << std::endl;
         if(pledger == nullptr && py_pledger.is_none())
             throw ModuleIO_Exception("No pledger known");
         if(pledger != nullptr)
@@ -406,8 +403,14 @@ public:
             std::vector<std::shared_ptr<Container>> vInput;
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
                 vInput.push_back(pFuture->get());
-            content = (std::shared_ptr<Container>)pledger->execute(vInput);
-            assert(typeCheck(content, type));
+            try
+            {
+                content = (std::shared_ptr<Container>)pledger->execute(vInput);
+                assert(typeCheck(content, type));
+            } catch(...)
+            {
+                std::cerr << "unknown exception during execution" << std::endl;
+            }
         }//if
         else
         {
@@ -434,11 +437,11 @@ public:
         )
     {
         DEBUG(
-            std::cout << "will cause crashes if used on python modules" << std::endl;
+            std::cout <<"will cause crashes if used on python modules (TODO: fix that)"<< std::endl;
         )
         {
             ThreadPool xPool(numThreads);
-            for(unsigned int i = 0; i < vPledges.size(); i++)
+            for(std::shared_ptr<Pledge> pPledge : vPledges)
             {
                 xPool.enqueue(
                     []
@@ -447,7 +450,7 @@ public:
                         assert(pPledge != nullptr);
                         pPledge->get();
                     },//lambda
-                    vPledges[i]
+                    pPledge
                 );
             }//for
         }//scope xPool

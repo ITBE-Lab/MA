@@ -47,15 +47,16 @@ def set_up_aligner(query_pledges, reference_pledge,
     else:
         query_pledges_.append(query_pledges)
 
-    return_pledges = []
-    return_trigger = []
+    return_pledges = ([], [], [], [], [])
     for query_pledge in query_pledges_:
         segment_pledge = seg.promise_me((
             fm_index_pledge,
             query_pledge
         ))
+        return_pledges[0].append(segment_pledge)
 
         anchors_pledge = anc.promise_me((segment_pledge,))
+        return_pledges[1].append(anchors_pledge)
 
 
         strips_pledge = bucketing.promise_me((
@@ -65,30 +66,23 @@ def set_up_aligner(query_pledges, reference_pledge,
             reference_pledge,
             fm_index_pledge
         ))
+        return_pledges[2].append(strips_pledge)
 
         best_pledge = sweep.promise_me((
             strips_pledge,
             query_pledge,
             reference_pledge
         ))
+        return_pledges[3].append(best_pledge)
 
         align_pledge = nmw.promise_me((
             best_pledge,
             query_pledge,
             reference_pledge
         ))
-
-        return_pledges.append((
-            segment_pledge,
-            anchors_pledge,
-            strips_pledge,
-            best_pledge,
-            align_pledge
-        ))
-
-        return_trigger.append(align_pledge)
+        return_pledges[4].append(align_pledge)
 
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
-        return return_pledges, return_trigger
+        return return_pledges
     else:
-        return return_pledges[0], return_trigger[0]
+        return return_pledges[0]

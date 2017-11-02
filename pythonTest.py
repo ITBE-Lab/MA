@@ -92,7 +92,7 @@ exit()
 """
 q = ""
 
-num_test = 1
+num_test = 1000
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -115,7 +115,7 @@ memory = open("memory_usage.txt", "w")
 memory.close()
 
 del_ins_size = 10
-q_len = 20
+q_len = 1000
 
 # output to static HTML file
 output_file("result.html")
@@ -128,7 +128,7 @@ fm_index_pledge.set(fm_index)
 
 for max_h in range(100,1000, 100):
     print("max_hits = " + str(max_h))
-    result_pledges, result_trigger = set_up_aligner(
+    result_pledges = set_up_aligner(
         query_pledge,
         reference_pledge,
         fm_index_pledge,
@@ -187,12 +187,10 @@ for max_h in range(100,1000, 100):
 
             query_pledge[i].set(query)
 
-        Pledge.simultaneous_get(result_trigger, 48)
+        Pledge.simultaneous_get(result_pledges[-1], 48)
 
-        for i, result in enumerate(result_pledges):
-            print(result)
-            alignment = result[-1].get()
-            print(alignment)
+        for i, pledge in enumerate(result_pledges[-1]):
+            alignment = pledge.get()
             if alignment is None:
                 continue
             if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):

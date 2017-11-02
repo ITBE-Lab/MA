@@ -215,10 +215,10 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefPack = 
         std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
 
+    //no seeds => no spot found at all...
     if(pSeeds->empty())
     {
-        std::shared_ptr<Alignment> pRet(new Alignment(0, pQuery->length()));
-        pRet->append(Alignment::MatchType::deletion, pQuery->length());
+        std::shared_ptr<Alignment> pRet(new Alignment(0, 0));
         return pRet;
     }//if
 
@@ -287,7 +287,15 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     DEBUG(
         std::cout << beginRef << " " << endRef << std::endl;
     )
-    std::shared_ptr<NucleotideSequence> pRef = pRefPack->vExtract(beginRef, endRef);
+    std::shared_ptr<NucleotideSequence> pRef;
+    try
+    {
+        pRef = pRefPack->vExtract(beginRef, endRef);
+    } catch(std::runtime_error e)
+    {
+        std::shared_ptr<Alignment> pRet(new Alignment(0, 0));
+        return pRet;
+    }
 
     //create the actual alignment
     nucSeqIndex endOfLastSeedQuery = 0;
