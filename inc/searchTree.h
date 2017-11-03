@@ -93,6 +93,28 @@ private:
             return pThis;
         }//function
 
+        virtual std::shared_ptr<Node> insertOrGet(
+                T& data, 
+                std::shared_ptr<Node> pThis,
+                std::shared_ptr<Branch> pLastPrev,
+                std::shared_ptr<Branch> pLastNext,
+                std::shared_ptr<Branch>& pNew
+            )
+        {
+            std::shared_ptr<Branch> pThis_c = std::dynamic_pointer_cast<Branch>(pThis);
+            if(*pThis == data)
+            {
+                pNew = pThis_c;
+                return pThis;
+            }//if
+            else if(*pThis < data)
+                pRight = pRight->insert(data, pRight, pThis_c, pLastNext, pNew);
+            else
+                pLeft = pLeft->insert(data, pLeft, pLastPrev, pThis_c, pNew);
+            reCalcHeight();
+            return pThis;
+        }//function
+
         virtual std::shared_ptr<Node> rotateWithRightChild(std::shared_ptr<Node> pThis)
         {
             std::shared_ptr<Node> pSwapWith = getRightOrLeaf(pThis);
@@ -310,6 +332,17 @@ private:
             assert(pNew->getLeft() != nullptr);
             return pNew;
         }//function
+        
+        std::shared_ptr<Node> insertOrGet(
+                T& data,
+                std::shared_ptr<Node> pThis,
+                std::shared_ptr<Branch> pLastPrev,
+                std::shared_ptr<Branch> pLastNext,
+                std::shared_ptr<Branch>& pNew
+            )
+        {
+            return insert(data, pThis, pLastPrev, pLastNext, pNew);
+        }//function
 
         const std::shared_ptr<Node> getLeft() const
         {
@@ -400,7 +433,7 @@ public:
 
     /**
      * @brief Function to insert data.
-     * @returns the next element of the tree.
+     * @returns the new tree element.
      */
     Iterator insert(T& data)
     {
@@ -412,12 +445,25 @@ public:
     }
 
     /**
+     * @brief Function to insert a new element if not already present.
+     * @returns the element with the given value if present; the new element otherwise.
+     */
+    Iterator insertOrGet(T& data)
+    {
+        std::shared_ptr<Branch> pRet = nullptr;
+        pRoot = pRoot->insertOrGet(data, pRoot, nullptr, nullptr, pRet);
+        assert(pRoot != nullptr);
+        assert(pRet != nullptr);
+        return Iterator(pRet);
+    }
+
+    /**
      * @brief Delete the leftmost element of the tree.
      */
     void deleteFirst()
     {
         pRoot = pRoot->deleteFirst(pRoot);
-    }
+    }//function
 
     /** @brief returns the leftmost element of the Tree. */
     const T& first() const
@@ -432,7 +478,14 @@ public:
                 pCurr = pCurr->getRight();
         }
         return pCurr->get();
-    }
+    }//function
+
+    /** @brief returns the root element of the Tree. */
+    const T& root() const
+    {
+        assert(!isEmpty());
+        return pRoot->get();
+    }//function
 };//class
 
 #endif
