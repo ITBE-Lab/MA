@@ -39,6 +39,13 @@ public:
 		iSize(c.iSize)
 	{}// copy constructor
 
+	inline static Interval start_end(T start, T end)
+	{
+		Interval xRet(start, 0);
+		xRet.end(end);
+		return xRet;
+	}//function
+
 	/**
 	 * @returns the start of the interval.
 	 * @brief Interval start.
@@ -111,6 +118,15 @@ public:
 	inline void size_boost2(const T iVal)
 	{
 		iSize = iVal;
+	}// function
+
+	/**
+	 * @returns the center of the interval.
+	 * @brief The center of the interval.
+	 */
+	inline const T center() const
+	{
+		return start() + size()/2;
 	}// function
 
 	/**

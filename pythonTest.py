@@ -4,6 +4,8 @@ import gc
 import os
 import math
 from bokeh.plotting import figure, output_file, show
+from bokeh.layouts import row, column
+
 
 _proc_status = '/proc/%d/status' % os.getpid()
 
@@ -57,39 +59,79 @@ def mutate(char):
     else:
         return 'g'
 
-"""
-before = "AATTTTATGACTTTTTATTTTCAG"
-actual = "GTGTAAACGTCCTACTTTGGGGCAACTTGCCAGAGATAGAAGAGAGTACAGATGAAGATGTGTTAAATATCTCAGCAGAGGAGTGTATTAGATAA"
-after = "ATGGAATTATGATATATATGATATACAA"
+def test_chaining():
+    output_file("test_chaining.html")
+    seeds = Seeds()
+    chaining = Chaining()
+    for _ in range(25):
+        seeds.append(Seed(
+            random.randint(0,200),#query
+            random.randint(50,50),#length
+            random.randint(0,200)))#ref
 
-sequence = before + actual + after
+    p1 = figure(
+            title="chaining", 
+            x_axis_label='reference', 
+            y_axis_label='query',
+            plot_width = 800,
+            plot_height = 800)
 
-start = len(before) - 20
-end = len(before) + len(actual) + 20
+    listx = []
+    listy = []
+    linex = []
+    liney = []
+    for seed in seeds:
+        listx.append( seed.end_ref() )
+        listy.append( seed.end() )
+        linex.append( seed.start_ref() )
+        liney.append( seed.start() )
+        linex.append( seed.end_ref() )
+        liney.append( seed.end() )
+        linex.append( float('nan') )
+        liney.append( float('nan') )
 
-for index in range(start, end):
-    if sequence[index] == sequence[index+1] == 'G':
-        print( "\"" + sequence[index-21:index-1] + "\"," )
-    if sequence[index] == sequence[index+1] == 'C':
-        s = sequence[index+2:index+23]
-        s2 = ""
-        for index in range(20):
-            if s[index] == "G":
-                s2 = "C" + s2
-            if s[index] == "C":
-                s2 = "G" + s2
-            if s[index] == "A":
-                s2 = "T" + s2
-            if s[index] == "T":
-                s2 = "A" + s2
-        print( "\"" + s2 + "\"," )
+    p1.circle(listx, listy, size=5, color="black")
+    p1.line(linex, liney, line_width=3 ,color="black")
 
+    print("==================chaining==================")
+
+    listx = []
+    listy = []
+    listx_ = []
+    listy_ = []
+    first = True
+    firstofchain = True
+    for seed in chaining.execute((seeds,)):
+        if firstofchain:
+            listx.append(seed.start_ref())
+            listy.append(seed.start())
+            if first:
+                listx_.append(seed.start_ref())
+                listy_.append(seed.start())
+            firstofchain = False
+        if seed.size() == 0:
+            listx.append(float('nan'))
+            listy.append(float('nan'))
+            first = False
+            firstofchain = True
+        elif not first:
+            listx.append(seed.end_ref())
+            listy.append(seed.end())
+        if first:
+            listx_.append(seed.end_ref())
+            listy_.append(seed.end())
+    p1.line(listx, listy, color="red")
+    p1.circle(listx, listy, size=3, color="red")
+    p1.line(listx_, listy_, line_width=3, color="green")
+    p1.circle(listx_, listy_, size=5, color="green")
+
+    print("==================done==================")
+    show(p1)
+
+
+test_chaining()
 exit()
 
-
-analyse_crisper()
-exit()
-"""
 q = ""
 
 num_test = 1000

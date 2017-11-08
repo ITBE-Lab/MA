@@ -138,6 +138,13 @@ public Container
             iRet += rS.getValue();
         return iRet;
     }//function
+
+    /*append a Seed*/
+    void push_back(Seed x)
+    {
+        list::push_back(x);
+    }//function
+
     /*append a copy of another list*/
     void append(std::shared_ptr<Seeds> pOther)
     {

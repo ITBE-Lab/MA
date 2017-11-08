@@ -290,7 +290,7 @@ public:
      * @details
      * Required for the search tree.
      */
-    inline bool operator<=(const ShadowInterval rOther) const
+    inline bool operator<=(const ShadowInterval& rOther) const
     {
         return end() <= rOther.end();
     }//operator
@@ -300,7 +300,7 @@ public:
      * @details
      * Required for the search tree.
      */
-    inline bool operator<(const ShadowInterval rOther) const
+    inline bool operator<(const ShadowInterval& rOther) const
     {
         return end() < rOther.end();
     }//operator
@@ -310,7 +310,7 @@ public:
      * @details
      * Required for the search tree.
      */
-    inline bool operator>(const ShadowInterval rOther) const
+    inline bool operator>(const ShadowInterval& rOther) const
     {
         return end() > rOther.end();
     }//operator

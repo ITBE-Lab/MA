@@ -126,7 +126,8 @@ std::shared_ptr<Container> Bucketing::execute(
 					std::shared_ptr<Seeds> pxNew(new Seeds());
 					for (
 							unsigned int uiC = uiStart / uiStripSize - 1; 
-							uiC <= (uiStart + uiStripSize) / uiStripSize; 
+							uiC <= (uiStart + uiStripSize) / uiStripSize 
+							&& uiC < axSeedBuckets.size(); 
 							uiC++
 						)
 					{

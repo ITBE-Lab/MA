@@ -17,7 +17,7 @@ CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
 CC=gcc
-CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -g
+CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -g -mavx2
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror -g
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread -g
 

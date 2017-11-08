@@ -9,6 +9,9 @@
  */
 BOOST_PYTHON_MODULE(libLAuS)
 {
+        DEBUG_3(
+                std::cout.setf(std::ios::unitbuf);
+        )
         exportContainer();
         exportModule();
         exportFM_index();
@@ -25,4 +28,6 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportSeed();
         exportBucketing();
         exportSweepAll();
+        exportChaining();
+        exportSMW();
 }

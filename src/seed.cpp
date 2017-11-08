@@ -42,7 +42,7 @@ void exportSeed()
         >(
             "Seed",
             "A single seed.\n",
-            boost::python::no_init
+            boost::python::init<nucSeqIndex, nucSeqIndex, nucSeqIndex>()
         )
         .def(
                 "start", 
@@ -87,7 +87,7 @@ void exportSeed()
         .def(
                 "__next__", 
                 &SeedIter::next_boost,
-                boost::python::with_custodian_and_ward_postcall<1,0>(),
+                boost::python::with_custodian_and_ward_postcall<0,1>(),
                 "arg1: self\n"
                 "returns: the current element\n"
                 "\n"
@@ -116,7 +116,7 @@ void exportSeed()
     .def(
             "__iter__",
             &boost_python_iterator,
-            boost::python::with_custodian_and_ward_postcall<1,0>(),
+            boost::python::with_custodian_and_ward_postcall<0,1>(),
             "arg1: self\n"
             "returns: list size\n"
         )
@@ -130,9 +130,17 @@ void exportSeed()
             "append",
             &Seeds::append,
             "arg1: self\n"
-            "arg1: other Seed\n"
+            "arg1: other Seeds\n"
             "\n"
             "Appends a copy of the other list to this list.\n"
+        )
+    .def(
+            "append",
+            &Seeds::push_back,
+            "arg1: self\n"
+            "arg1: a Seed\n"
+            "\n"
+            "Appends a seed to this list.\n"
         );
     //boost::python::register_ptr_to_python< std::shared_ptr<Seeds> >();
     

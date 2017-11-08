@@ -45,11 +45,6 @@ private:
             setHeight(std::max(pLeft->getHeight(), pRight->getHeight())+1);
         }//function
 
-        virtual bool operator<(T& data) const
-        {
-            throw NullPointerException("there should never be an instance of the node class");
-        }
-
     public:
         Node() = delete;
         Node(
@@ -85,10 +80,28 @@ private:
             )
         {
             std::shared_ptr<Branch> pThis_c = std::dynamic_pointer_cast<Branch>(pThis);
-            if(*pThis < data)
+            if(pThis->get() < data)
+            {
                 pRight = pRight->insert(data, pRight, pThis_c, pLastNext, pNew);
+                /*if(pRight->getHeight() - pLeft->getHeight() == 2)
+                {
+                    if(pThis->get() < pLeft->get())
+                        return rotateWithRightChild(pThis);
+                    else
+                        return doubleWithRightChild(pThis);
+                }//if*/
+            }//if
             else
+            {
                 pLeft = pLeft->insert(data, pLeft, pLastPrev, pThis_c, pNew);
+                /*if(pLeft->getHeight() - pRight->getHeight() == 2)
+                {
+                    if(pRight->get() < get())
+                        return rotateWithLeftChild(pThis);
+                    else
+                        return doubleWithLeftChild(pThis);
+                }//if*/
+            }//else
             reCalcHeight();
             return pThis;
         }//function
@@ -102,12 +115,12 @@ private:
             )
         {
             std::shared_ptr<Branch> pThis_c = std::dynamic_pointer_cast<Branch>(pThis);
-            if(*pThis == data)
+            if(pThis->get() == data)
             {
                 pNew = pThis_c;
                 return pThis;
             }//if
-            else if(*pThis < data)
+            else if(pThis->get() < data)
                 pRight = pRight->insert(data, pRight, pThis_c, pLastNext, pNew);
             else
                 pLeft = pLeft->insert(data, pLeft, pLastPrev, pThis_c, pNew);
@@ -228,11 +241,6 @@ private:
         {
             height = h;
         }//function
-
-        virtual bool operator<(T& other) const
-        {
-            return data < other;
-        }//operator
 
     public:
         Branch(T& data, std::shared_ptr<Branch> pPrev, std::shared_ptr<Branch> pNext,       std::shared_ptr<Node> pLeaf)

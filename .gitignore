@@ -6,3 +6,5 @@ dist/*
 *.egg-info/*
 core
 html/*
+*.pyc
+.tempdir*

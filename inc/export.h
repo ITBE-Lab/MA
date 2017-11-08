@@ -121,6 +121,7 @@
  * - reduce the time threads are stuck in locks
  * - move backwards extension into fm_index class
  * - STOP ADDING ITEMS TO THIS LIST
+ * - reintroduce rotations to searchTree
  * 
  * @section about_us_sec About Us
  * 
@@ -145,6 +146,8 @@
 #include "bucketing.h"
 #include "sweepAllReturnBest.h"
 #include "longestLRSegments.h"
+#include "chaining.h"
+#include "smith_waterman.h"
 
 
 #endif
