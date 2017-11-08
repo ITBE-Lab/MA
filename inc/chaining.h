@@ -44,14 +44,16 @@ private:
 
     inline int64_t gc1(Seed s) const
     {
-        return (COST_POSS_MATCH - COST_INS_DEL)*abs( (int64_t)s.end_ref()- (int64_t)s.end() ) 
-            + COST_INS_DEL*abs( (int64_t)s.end_ref() );
+        int64_t x = abs((int64_t)s.end_ref()-(int64_t)s.end());
+        int64_t y = s.end();
+        return COST_INS_DEL * x + COST_POSS_MATCH * y;
     }//function
 
     inline int64_t gc2(Seed s) const
     {
-        return COST_INS_DEL *abs( (int64_t)s.end_ref() - (int64_t)s.end() )
-            + (COST_POSS_MATCH - COST_INS_DEL)*abs( (int64_t)s.end() );
+        int64_t x = s.end_ref();
+        int64_t y = abs((int64_t)s.end()-(int64_t)s.end_ref());
+        return COST_POSS_MATCH * x + COST_INS_DEL * y;
     }//function
 
     inline RMQ<int64_t>::RMQData t1(Seed seed, std::shared_ptr<Chain> chain) const
@@ -60,7 +62,7 @@ private:
                 (int64_t)seed.end_ref()-(int64_t)seed.end(),
                 seed.end(),
                 chain,
-                chain->score - gc1(seed)
+                chain->score + gc1(seed)
             );
     }//function
 
@@ -70,7 +72,7 @@ private:
                 seed.end_ref(),
                 (int64_t)seed.end()-(int64_t)seed.end_ref(),
                 chain,
-                chain->score - gc2(seed)
+                chain->score + gc2(seed)
             );
     }//function
 

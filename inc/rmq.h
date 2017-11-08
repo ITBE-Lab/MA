@@ -17,7 +17,7 @@
 
 #define COST_INS_DEL 2//lambda in the paper
 #define COST_POSS_MATCH 1
-#define SCORE_MATCH 10
+#define SCORE_MATCH 30
 
 class Chain;
 
@@ -104,9 +104,9 @@ private:
 			)
 		{
 			assert(yArray.size() > 0);
-			if(y2 < data[yArray.back()].y)
+			if(y2 < data[yArray.front()].y)
 				return data[0];
-			if(y1 > data[yArray.front()].y)
+			if(y1 > data[yArray.back()].y)
 				return data[0];
 			unsigned int start = 0, end = yArray.size()-1;
 			DEBUG_3(
@@ -129,7 +129,7 @@ private:
 			}//while
 			assert(data[yArray[start]].y >= y1);
 			assert(start == 0 || data[yArray[start - 1]].y < y1);
-			if(data[yArray[start]].y >= y2)
+			if(data[yArray[start]].y > y2)
 				return data[0];//here we assume that the first element is equal to a nullptr...
 			unsigned int max = yArray[start];
 			unsigned int i = start + 1;

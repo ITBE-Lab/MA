@@ -33,12 +33,12 @@ std::shared_ptr<Container> Chaining::execute(
         data1.push_back(t1(seed, chain));
         data2.push_back(t2(seed, chain));
     }//for
-    for(RMQ<int64_t>::RMQData& d : data1)
-        if(d.pChain != nullptr)
-            d.pChain->t1 = &d;
-    for(RMQ<int64_t>::RMQData& d : data2)
-        if(d.pChain != nullptr)
-            d.pChain->t2 = &d;
+    for(unsigned int i = 0; i < data1.size(); i++)
+        if(data1[i].pChain != nullptr)
+            data1[i].pChain->t1 = &data1[i];
+    for(unsigned int i = 0; i < data2.size(); i++)
+        if(data2[i].pChain != nullptr)
+            data2[i].pChain->t2 = &data2[i];
     std::shared_ptr<Chain> bestChain = chains[0];
 
     //first octant
@@ -67,16 +67,16 @@ std::shared_ptr<Container> Chaining::execute(
                     << chain->s.size() << std::endl;
         )
         RMQ<int64_t>::RMQData& a = d1.rmq(
-                -1000000,0,
-                (int64_t)chain->s.end_ref()-(int64_t)chain->s.end(), chain->s.end()//TODO: replace with function
+                -1000000,-1,
+                (int64_t)chain->s.start_ref()-(int64_t)chain->s.start() - 1, chain->s.start() - 1//TODO: replace with function
             );
         RMQ<int64_t>::RMQData& b = d2.rmq(
-                0,(int64_t)chain->s.end()-(int64_t)chain->s.end_ref(),
-                chain->s.end_ref(),-1000000 //TODO: replace with function
+                -1,(int64_t)chain->s.start()-(int64_t)chain->s.start_ref() - 1,
+                chain->s.start_ref() - 1,-1000000 //TODO: replace with function
             );
         //using the RMQdata's to check for smaller insted of the chains
         //since we do not have to check for nullptrs this way
-        if(a < b)
+        if(a.score - gc1(chain->s) < b.score - gc2(chain->s))
             chain->pred = b.pChain;
         else
             chain->pred = a.pChain;
@@ -101,8 +101,8 @@ std::shared_ptr<Container> Chaining::execute(
         int64_t insOrDls = std::max(x,y) - std::min(x,y);
 
         //set the score for the new chain
-        int64_t addScore = certainMatches * SCORE_MATCH
-                - possibleMatches * COST_POSS_MATCH
+        int64_t addScore = (certainMatches * SCORE_MATCH
+                - possibleMatches * COST_POSS_MATCH)
                 - insOrDls * COST_INS_DEL;
 
         DEBUG_2(
@@ -121,8 +121,8 @@ std::shared_ptr<Container> Chaining::execute(
         }//if
         else{
             chain->score = addScore + chain->pred->score;
-            chain->t1->score = chain->score - gc1(chain->s);
-            chain->t2->score = chain->score - gc2(chain->s);
+            chain->t1->score = chain->score + gc1(chain->s);
+            chain->t2->score = chain->score + gc2(chain->s);
         }//else
 
 
@@ -137,6 +137,8 @@ std::shared_ptr<Container> Chaining::execute(
     }//for
 
     std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
+//toggle for generating debug output
+#if 1
     for(std::shared_ptr<Chain> chain : chains)
     {
         if(chain->pred != nullptr)
@@ -146,6 +148,7 @@ std::shared_ptr<Container> Chaining::execute(
             pRet->push_front(Seed(0,0,0));
         }
     }//for
+#endif
     while(bestChain != nullptr)
     {
         DEBUG_2(

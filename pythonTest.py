@@ -59,14 +59,32 @@ def mutate(char):
     else:
         return 'g'
 
+
+def make_list_pretty(lx, ly):
+    lastx = 0
+    lasty = 0
+    for i in range(len(lx)):
+        if lx[i] is float('nan'):
+            lastx = 0
+            lasty = 0
+            continue
+        if lx[i] < lastx or ly[i] < lasty:
+            add = max(lastx - lx[i], lasty - ly[i])
+            lx[i] += add
+            ly[i] += add
+        else:
+            lastx = lx[i]
+            lasty = ly[i]
+    return lx, ly
+
 def test_chaining():
     output_file("test_chaining.html")
     seeds = Seeds()
     chaining = Chaining()
-    for _ in range(25):
+    for _ in range(10):
         seeds.append(Seed(
             random.randint(0,200),#query
-            random.randint(50,50),#length
+            random.randint(10,10),#length
             random.randint(0,200)))#ref
 
     p1 = figure(
@@ -83,6 +101,7 @@ def test_chaining():
     for seed in seeds:
         listx.append( seed.end_ref() )
         listy.append( seed.end() )
+
         linex.append( seed.start_ref() )
         liney.append( seed.start() )
         linex.append( seed.end_ref() )
@@ -90,8 +109,8 @@ def test_chaining():
         linex.append( float('nan') )
         liney.append( float('nan') )
 
-    p1.circle(listx, listy, size=5, color="black")
-    p1.line(linex, liney, line_width=3 ,color="black")
+    p1.circle(listx, listy, size=7, color="black")
+    p1.line(linex, liney, line_width=5 ,color="black")
 
     print("==================chaining==================")
 
@@ -100,30 +119,29 @@ def test_chaining():
     listx_ = []
     listy_ = []
     first = True
-    firstofchain = True
     for seed in chaining.execute((seeds,)):
-        if firstofchain:
-            listx.append(seed.start_ref())
-            listy.append(seed.start())
-            if first:
-                listx_.append(seed.start_ref())
-                listy_.append(seed.start())
-            firstofchain = False
         if seed.size() == 0:
             listx.append(float('nan'))
             listy.append(float('nan'))
             first = False
-            firstofchain = True
         elif not first:
+            listx.append(seed.start_ref())
+            listy.append(seed.start())
             listx.append(seed.end_ref())
             listy.append(seed.end())
         if first:
+            listx_.append(seed.start_ref())
+            listy_.append(seed.start())
+
             listx_.append(seed.end_ref())
             listy_.append(seed.end())
+
+    listx, listy = make_list_pretty(listx, listy)
+    listx_, listy_ = make_list_pretty(listx_, listy_)
     p1.line(listx, listy, color="red")
-    p1.circle(listx, listy, size=3, color="red")
+    #p1.circle(listx, listy, size=3, color="red")
     p1.line(listx_, listy_, line_width=3, color="green")
-    p1.circle(listx_, listy_, size=5, color="green")
+    #p1.circle(listx_, listy_, size=5, color="green")
 
     print("==================done==================")
     show(p1)
