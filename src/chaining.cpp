@@ -20,6 +20,9 @@ std::shared_ptr<Container> Chaining::execute(
 {
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);
 
+    if(pSeeds->size() == 1)
+        return std::shared_ptr<Seeds>(new Seeds());
+
     std::vector<RMQ<int64_t>::RMQData> data1;
     std::vector<RMQ<int64_t>::RMQData> data2;
     data1.push_back(RMQ<int64_t>::RMQData(-100000,0,nullptr, -1000000));
@@ -193,7 +196,7 @@ std::shared_ptr<Container> Chaining::execute(
         pRet->push_front(bestChain->s);
         bestChain = bestChain->pred;
     }//while
-    DEBUG_2(
+    DEBUG(
         std::cout << "done" << std::endl;
     )
     return pRet;
@@ -202,7 +205,11 @@ std::shared_ptr<Container> Chaining::execute(
 void exportChaining()
 {
     //export the LineSweepContainer class
-	boost::python::class_<Chaining, boost::python::bases<CppModule>>(
+	boost::python::class_<
+        Chaining, 
+        boost::python::bases<CppModule>,
+        std::shared_ptr<Chaining>
+        >(
         "Chaining",
         "Uses chaining to remove contradicting "
         "matches within one strip of consideration.\n"
@@ -215,4 +222,8 @@ void exportChaining()
         "	returns strip_vec.\n"
         "		strip_vec: the evaluated areas\n"
     );
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<Chaining>,
+		std::shared_ptr<CppModule> 
+	>();
 }//function

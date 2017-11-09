@@ -70,8 +70,6 @@ def set_up_aligner(query_pledges, reference_pledge,
 
         best_pledge = execall.promise_me((
             strips_pledge,
-            query_pledge,
-            reference_pledge
         ))
         return_pledges[3].append(best_pledge)
 

@@ -393,10 +393,19 @@ std::shared_ptr<Container> LongestLRSegments::execute(
 void exportLongestLRSegments()
 {
 	//export the LongestLRSegments class
-	boost::python::class_<LongestLRSegments, boost::python::bases<CppModule>>(
+	boost::python::class_<
+			LongestLRSegments, 
+			boost::python::bases<CppModule>,
+			std::shared_ptr<LongestLRSegments>
+		>(
 			"LongestLRSegments",
 			"bBreakOnAmbiguousBase: weather the extension of "
 			"intervals shall be stopped at N's\n"
 		);
+
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<LongestLRSegments>,
+		std::shared_ptr<CppModule> 
+	>();
 	
 }//function

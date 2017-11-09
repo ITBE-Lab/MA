@@ -42,7 +42,8 @@ void exportGetAnchors()
 {
     boost::python::class_<
         NlongestIntervalsAsAnchors, 
-        boost::python::bases<CppModule>
+        boost::python::bases<CppModule>,
+		std::shared_ptr<NlongestIntervalsAsAnchors>
     >(
         "NlongestIntervalsAsAnchors", 
         "uiN: number of intervals to extract as anchors\n"
@@ -62,4 +63,8 @@ void exportGetAnchors()
         .add_property("uiN", &NlongestIntervalsAsAnchors::uiN, &NlongestIntervalsAsAnchors::uiN)
     ;
 
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<NlongestIntervalsAsAnchors>,
+		std::shared_ptr<CppModule> 
+	>();
 }//function

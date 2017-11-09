@@ -358,11 +358,19 @@ void exportLongestNonEnclosedSegments()
 
 
 	//export the LongestNonEnclosedSegments class
-	boost::python::class_<LongestNonEnclosedSegments, boost::python::bases<CppModule>>(
+	boost::python::class_<
+			LongestNonEnclosedSegments, 
+			boost::python::bases<CppModule>,
+        	std::shared_ptr<LongestNonEnclosedSegments>
+		>(
 			"LongestNonEnclosedSegments",
 			"bBreakOnAmbiguousBase: weather the extension of "
 			"intervals shall be stopped at N's\n"
 		)
 		;
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<LongestNonEnclosedSegments>,
+		std::shared_ptr<CppModule> 
+	>();
 	
 }//function

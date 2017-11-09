@@ -189,7 +189,11 @@ std::shared_ptr<Container> LineSweep::execute(
 void exportLinesweep()
 {
     //export the LineSweepContainer class
-	boost::python::class_<LineSweep, boost::python::bases<CppModule>>(
+	boost::python::class_<
+        LineSweep, 
+        boost::python::bases<CppModule>,
+        std::shared_ptr<LineSweep>
+    >(
         "LineSweep",
         "Uses linesweeping to remove contradicting "
         "matches within one strip of consideration.\n"
@@ -202,4 +206,8 @@ void exportLinesweep()
         "	returns strip_vec.\n"
         "		strip_vec: the evaluated areas\n"
     );
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<LineSweep>,
+		std::shared_ptr<CppModule> 
+	>();
 }//function

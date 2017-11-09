@@ -387,7 +387,8 @@ void exportNeedlemanWunsch()
      //export the segmentation class
     boost::python::class_<
         NeedlemanWunsch, 
-        boost::python::bases<CppModule>
+        boost::python::bases<CppModule>,
+        std::shared_ptr<NeedlemanWunsch>
     >(
         "NeedlemanWunsch", 
         "Picks a set of anchors for the strips of consideration.\n"
@@ -400,5 +401,9 @@ void exportNeedlemanWunsch()
         "   returns alignment.\n"
         "       alignment: the final alignment\n"
     );
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<NeedlemanWunsch>,
+		std::shared_ptr<CppModule> 
+	>();
 
 }//function

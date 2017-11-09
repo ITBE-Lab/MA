@@ -144,8 +144,8 @@ def test_chaining():
     show(p1)
 
 
-test_chaining()
-exit()
+#test_chaining()
+#exit()
 
 q = ""
 
@@ -189,7 +189,8 @@ for max_h in range(100,1000, 100):
         query_pledge,
         reference_pledge,
         fm_index_pledge,
-        max_hits=max_h
+        max_hits=max_h,
+        chain=Chaining()
     )
 
     x = []

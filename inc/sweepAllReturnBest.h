@@ -21,13 +21,13 @@
 class SweepAllReturnBest: public CppModule
 {
 private:
-    CppModule xModule;
+    std::shared_ptr<CppModule> pModule;
 
 public:
-    SweepAllReturnBest(CppModule xModule)
+    SweepAllReturnBest(std::shared_ptr<CppModule> pModule)
             :
         CppModule(),
-        xModule(xModule)
+        pModule(pModule)
     {}//default constructor
 
     //overload
@@ -43,12 +43,11 @@ public:
             {
                 vTempResults[i] = std::shared_ptr<Seeds>();
                 xPool.enqueue(
-                    []
+                    [&vTempResults]
                     (
                         size_t, 
                         std::shared_ptr<SeedsVector> pSeedsVector,
-                        SeedsVector* vTempResults,
-                        CppModule& rModule,
+                        std::shared_ptr<CppModule> pModule,
                         unsigned int i
                     )
                     {
@@ -57,8 +56,8 @@ public:
                             };
                         try
                         {
-                            (*vTempResults)[i] = std::static_pointer_cast<Seeds>(
-                                    rModule.execute(vInput));
+                            vTempResults[i] = std::static_pointer_cast<Seeds>(
+                                    pModule->execute(vInput));
                         }
                         catch(NullPointerException e) 
                         {
@@ -72,10 +71,12 @@ public:
                         {
                             std::cerr << "unknown exception when executing" << std::endl;
                         }
-                        if((*vTempResults)[i] == nullptr)
+                        if(vTempResults[i] == nullptr)
+                            std::cerr << "linesweep deleviered nullpointer as result" << std::endl;
+                        if(vTempResults[i] == nullptr)
                             throw NullPointerException("linesweep deleviered nullpointer as result");
                     },//lambda
-                    pSeedsVector, &vTempResults, xModule, i
+                    pSeedsVector, pModule, i
                 );
             }//for
         }//scope xPool
@@ -90,7 +91,7 @@ public:
             assert(pSeeds != nullptr);
             if(pSeeds->getScore() > pRet->getScore())
                 pRet = pSeeds;
-            }//for
+        }//for
 
         return pRet;
     }//function

@@ -147,7 +147,11 @@ std::shared_ptr<Container> Bucketing::execute(
 void exportBucketing()
 {
     //export the Bucketing class
-	boost::python::class_<Bucketing, boost::python::bases<CppModule>>(
+	boost::python::class_<
+			Bucketing, 
+			boost::python::bases<CppModule>, 
+            std::shared_ptr<Bucketing>
+		>(
         "Bucketing",
         "Throws seeds into buckets in order to speed up the extraction "
         "of strips of consideration.\n"
@@ -167,4 +171,9 @@ void exportBucketing()
         .def_readwrite("strip_size", &Bucketing::uiStripSize)
         .def_readwrite("max_hits", &Bucketing::uiMaxHitsPerInterval)
         .def_readwrite("skip_long", &Bucketing::bSkipLongBWTIntervals);
+
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<Bucketing>,
+		std::shared_ptr<CppModule> 
+	>();
 }//function

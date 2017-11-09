@@ -162,8 +162,16 @@ void demoCode()
 void exportSMW()
 {
 	boost::python::def("demoSMW", &demoCode);
-    boost::python::class_<SMW, boost::python::bases<CppModule>>(
+    boost::python::class_<
+			SMW, 
+			boost::python::bases<CppModule>,
+        	std::shared_ptr<SMW>
+			>(
 			"SMW",
             "SMW alignment.\n"
         );
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<SMW>,
+		std::shared_ptr<CppModule> 
+	>();
 }
