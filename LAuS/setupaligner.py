@@ -28,14 +28,14 @@ from .__init__ import *
 # @ingroup module
 #
 def set_up_aligner(query_pledges, reference_pledge, 
-        fm_index_pledge, seg=LongestNonEnclosedSegments(), max_hits=500):
+        fm_index_pledge, seg=LongestNonEnclosedSegments(), chain=LineSweep(), max_hits=500):
 
     anc = NlongestIntervalsAsAnchors(2)
 
     bucketing = Bucketing()
     bucketing.max_hits = max_hits
 
-    sweep = SweepAllReturnBest()
+    execall = SweepAllReturnBest(chain)
 
     nmw = NeedlemanWunsch()
 
@@ -68,7 +68,7 @@ def set_up_aligner(query_pledges, reference_pledge,
         ))
         return_pledges[2].append(strips_pledge)
 
-        best_pledge = sweep.promise_me((
+        best_pledge = execall.promise_me((
             strips_pledge,
             query_pledge,
             reference_pledge

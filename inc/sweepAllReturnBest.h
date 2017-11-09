@@ -21,12 +21,13 @@
 class SweepAllReturnBest: public CppModule
 {
 private:
-    static LineSweep xLineSweep;
+    CppModule xModule;
 
 public:
-    SweepAllReturnBest()
+    SweepAllReturnBest(CppModule xModule)
             :
-        CppModule()
+        CppModule(),
+        xModule(xModule)
     {}//default constructor
 
     //overload
@@ -34,10 +35,6 @@ public:
     {
         std::shared_ptr<SeedsVector> pSeedsVector = std::shared_ptr<SeedsVector>(
             std::static_pointer_cast<SeedsVector>(vpInput[0]));
-        std::shared_ptr<NucleotideSequence> pQuerySeq =
-            std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
-        std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq =
-            std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
 
         SeedsVector vTempResults = SeedsVector(pSeedsVector->size());
         {
@@ -50,22 +47,18 @@ public:
                     (
                         size_t, 
                         std::shared_ptr<SeedsVector> pSeedsVector,
-                        std::shared_ptr<NucleotideSequence> pQuerySeq,
-                        std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq,
                         SeedsVector* vTempResults,
-                        LineSweep& rLineSweep,
+                        CppModule& rModule,
                         unsigned int i
                     )
                     {
                         std::vector<std::shared_ptr<Container>> vInput = {
-                                pQuerySeq, 
-                                pRefSeq, 
                                 (*pSeedsVector)[i]
                             };
                         try
                         {
                             (*vTempResults)[i] = std::static_pointer_cast<Seeds>(
-                                    rLineSweep.execute(vInput));
+                                    rModule.execute(vInput));
                         }
                         catch(NullPointerException e) 
                         {
@@ -82,7 +75,7 @@ public:
                         if((*vTempResults)[i] == nullptr)
                             throw NullPointerException("linesweep deleviered nullpointer as result");
                     },//lambda
-                    pSeedsVector, pQuerySeq, pRefSeq, &vTempResults, xLineSweep, i
+                    pSeedsVector, &vTempResults, xModule, i
                 );
             }//for
         }//scope xPool
@@ -106,9 +99,7 @@ public:
     std::vector<ContainerType> getInputType()
     {
         return std::vector<ContainerType>{
-                ContainerType::seedsVector,
-                ContainerType::nucSeq,
-                ContainerType::packedNucSeq
+                ContainerType::seedsVector
             };
     }//function
 
