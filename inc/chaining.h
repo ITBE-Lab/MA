@@ -42,17 +42,31 @@ class Chaining : public CppModule
 {
 private:
 
-    inline int64_t gc1(Seed s) const
+    inline int64_t gc1_end(const Seed s) const
     {
-        int64_t x = abs((int64_t)s.end_ref()-(int64_t)s.end());
+        int64_t x = (int64_t)s.end_ref()-(int64_t)s.end();
         int64_t y = s.end();
         return COST_INS_DEL * x + COST_POSS_MATCH * y;
     }//function
 
-    inline int64_t gc2(Seed s) const
+    inline int64_t gc2_end(const Seed s) const
     {
         int64_t x = s.end_ref();
-        int64_t y = abs((int64_t)s.end()-(int64_t)s.end_ref());
+        int64_t y = (int64_t)s.end()-(int64_t)s.end_ref();
+        return COST_POSS_MATCH * x + COST_INS_DEL * y;
+    }//function
+
+    inline int64_t gc1_start(const Seed s) const
+    {
+        int64_t x = (int64_t)s.start_ref()-(int64_t)s.start();
+        int64_t y = s.start();
+        return COST_INS_DEL * x + COST_POSS_MATCH * y;
+    }//function
+
+    inline int64_t gc2_start(const Seed s) const
+    {
+        int64_t x = s.start_ref();
+        int64_t y = (int64_t)s.start()-(int64_t)s.start_ref();
         return COST_POSS_MATCH * x + COST_INS_DEL * y;
     }//function
 
@@ -62,7 +76,7 @@ private:
                 (int64_t)seed.end_ref()-(int64_t)seed.end(),
                 seed.end(),
                 chain,
-                chain->score + gc1(seed)
+                chain->score + gc1_end(seed)
             );
     }//function
 
@@ -72,7 +86,7 @@ private:
                 seed.end_ref(),
                 (int64_t)seed.end()-(int64_t)seed.end_ref(),
                 chain,
-                chain->score + gc2(seed)
+                chain->score + gc2_end(seed)
             );
     }//function
 

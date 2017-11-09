@@ -33,6 +33,14 @@ std::shared_ptr<Container> Chaining::execute(
         data1.push_back(t1(seed, chain));
         data2.push_back(t2(seed, chain));
     }//for
+
+    //first octant
+    RMQ<int64_t> d1 = RMQ<int64_t>(data1);
+    //2nd octant
+    RMQ<int64_t> d2 = RMQ<int64_t>(data2);
+
+    //it's importent to do this after the initialization of the trees
+    //sonce the trees sort the vector datastructure...
     for(unsigned int i = 0; i < data1.size(); i++)
         if(data1[i].pChain != nullptr)
             data1[i].pChain->t1 = &data1[i];
@@ -41,10 +49,6 @@ std::shared_ptr<Container> Chaining::execute(
             data2[i].pChain->t2 = &data2[i];
     std::shared_ptr<Chain> bestChain = chains[0];
 
-    //first octant
-    RMQ<int64_t> d1 = RMQ<int64_t>(data1);
-    //2nd octant
-    RMQ<int64_t> d2 = RMQ<int64_t>(data2);
 
 
     std::sort(
@@ -66,6 +70,14 @@ std::shared_ptr<Container> Chaining::execute(
                     << chain->s.end() << " "
                     << chain->s.size() << std::endl;
         )
+    /*
+    * SWITCH between allowing overlaps of chains our not
+    * true = no overlaps
+    * WARNING: chaining code is not 100% correct when allowing overlaps
+    * (basically each certain match will be scored as possible match only in that case)
+    */ 
+    #define STARTS true
+    #if STARTS
         RMQ<int64_t>::RMQData& a = d1.rmq(
                 -1000000,-1,
                 (int64_t)chain->s.start_ref()-(int64_t)chain->s.start() - 1, chain->s.start() - 1//TODO: replace with function
@@ -74,9 +86,28 @@ std::shared_ptr<Container> Chaining::execute(
                 -1,(int64_t)chain->s.start()-(int64_t)chain->s.start_ref() - 1,
                 chain->s.start_ref() - 1,-1000000 //TODO: replace with function
             );
+    #else
+        RMQ<int64_t>::RMQData& a = d1.rmq(
+                -1000000,-1,
+                (int64_t)chain->s.end_ref()-(int64_t)chain->s.end() - 1, chain->s.end() - 1//TODO: replace with function
+            );
+        RMQ<int64_t>::RMQData& b = d2.rmq(
+                -1,(int64_t)chain->s.end()-(int64_t)chain->s.end_ref() - 1,
+                chain->s.end_ref() - 1,-1000000 //TODO: replace with function
+            );
+    #endif
+        DEBUG_2(
+            std::cout << "score adjustments (second/first octant): -"
+                    << gc1_start(chain->s) << " -"
+                    << gc2_start(chain->s) << std::endl;
+        )
         //using the RMQdata's to check for smaller insted of the chains
         //since we do not have to check for nullptrs this way
-        if(a.score - gc1(chain->s) < b.score - gc2(chain->s))
+    #if STARTS
+        if(a.score - gc1_start(chain->s) < b.score - gc2_start(chain->s))
+    #else
+        if(a.score - gc1_end(chain->s) < b.score - gc2_end(chain->s))
+    #endif
             chain->pred = b.pChain;
         else
             chain->pred = a.pChain;
@@ -121,8 +152,8 @@ std::shared_ptr<Container> Chaining::execute(
         }//if
         else{
             chain->score = addScore + chain->pred->score;
-            chain->t1->score = chain->score + gc1(chain->s);
-            chain->t2->score = chain->score + gc2(chain->s);
+            chain->t1->score = chain->score + gc1_end(chain->s);
+            chain->t2->score = chain->score + gc2_end(chain->s);
         }//else
 
 

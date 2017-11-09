@@ -81,10 +81,10 @@ def test_chaining():
     output_file("test_chaining.html")
     seeds = Seeds()
     chaining = Chaining()
-    for _ in range(10):
+    for _ in range(50):
         seeds.append(Seed(
             random.randint(0,200),#query
-            random.randint(10,10),#length
+            random.randint(5,30),#length
             random.randint(0,200)))#ref
 
     p1 = figure(

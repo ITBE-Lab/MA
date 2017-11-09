@@ -17,7 +17,7 @@
 
 #define COST_INS_DEL 2//lambda in the paper
 #define COST_POSS_MATCH 1
-#define SCORE_MATCH 30
+#define SCORE_MATCH 3
 
 class Chain;
 
@@ -151,7 +151,7 @@ private:
 					max = yArray[i];
 				DEBUG_2(
 					if(data[yArray[i]].pChain != nullptr)
-						std::cout << "Seed (ref/query/size/score):" 
+						std::cout << "Seed (ref/query/size/score/x/y):" 
 							<< data[yArray[i]].pChain->s.end_ref() << " "
 							<< data[yArray[i]].pChain->s.end() << " "
 							<< data[yArray[i]].pChain->s.size() << " "
