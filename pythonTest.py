@@ -81,7 +81,8 @@ def test_chaining():
     output_file("test_chaining.html")
     seeds = Seeds()
     chaining = Chaining()
-    for _ in range(50):
+    linesweep = LineSweep()
+    for _ in range(10):
         seeds.append(Seed(
             random.randint(0,200),#query
             random.randint(5,30),#length
@@ -116,31 +117,27 @@ def test_chaining():
 
     listx = []
     listy = []
-    listx_ = []
-    listy_ = []
-    first = True
     for seed in chaining.execute((seeds,)):
-        if seed.size() == 0:
-            listx.append(float('nan'))
-            listy.append(float('nan'))
-            first = False
-        elif not first:
-            listx.append(seed.start_ref())
-            listy.append(seed.start())
-            listx.append(seed.end_ref())
-            listy.append(seed.end())
-        if first:
-            listx_.append(seed.start_ref())
-            listy_.append(seed.start())
+        listx.append(seed.start_ref())
+        listy.append(seed.start())
+        listx.append(seed.end_ref())
+        listy.append(seed.end())
 
-            listx_.append(seed.end_ref())
-            listy_.append(seed.end())
+    listx_ls = []
+    listy_ls = []
+    for seed in linesweep.execute((seeds,)):
+        listx_ls.append(seed.start_ref())
+        listy_ls.append(seed.start())
+        listx_ls.append(seed.end_ref())
+        listy_ls.append(seed.end())
+        listx_ls.append( float('nan') )
+        listy_ls.append( float('nan') )
 
     listx, listy = make_list_pretty(listx, listy)
-    listx_, listy_ = make_list_pretty(listx_, listy_)
-    p1.line(listx, listy, color="red")
+    listx_ls, listy_ls = make_list_pretty(listx_ls, listy_ls)
+    p1.line(listx_ls, listy_ls, line_width=3, color="blue")
     #p1.circle(listx, listy, size=3, color="red")
-    p1.line(listx_, listy_, line_width=3, color="green")
+    p1.line(listx, listy, line_width=3, color="green")
     #p1.circle(listx_, listy_, size=5, color="green")
 
     print("==================done==================")

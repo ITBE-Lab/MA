@@ -16,8 +16,8 @@
  * Each perfect match "casts a shadow" at the left and right border of the strip.
  * Each shadow is stored in one of these data structures.
  */
-class ShadowInterval: public Interval<nucSeqIndex>{
-private:
+class ShadowInterval: public Interval<int64_t>{
+public:
 	/// @brief While swiping the interfering shadows will get stored in this list.
     std::shared_ptr<std::list<ShadowInterval*>> pInterferingIntervals;
 	/// @brief TODO:
@@ -34,7 +34,7 @@ private:
     unsigned int iScoreInterfering2ndOrder;
 	/// @brief The score added by this interval to the outer interfering one
     unsigned int iInterferingSelf;
-public:
+
     /**
      * @brief Creates a new shadow.
      * @details
@@ -42,8 +42,8 @@ public:
      * Therefore the iterator is required in order to delete the respective seed from its list.
      */
     ShadowInterval(
-            nucSeqIndex iBegin, 
-            nucSeqIndex iSize, 
+            int64_t iBegin, 
+            int64_t iSize, 
             std::list<Seed>::iterator pSeed
         )
             :
@@ -77,18 +77,18 @@ public:
     /**
      * @brief Returns the length of this interval that is not overlapped by the given one.
      */
-    nucSeqIndex non_overlap(ShadowInterval rInterval)
+    int64_t non_overlap(ShadowInterval rInterval)
     {
         if(pInterferingIntervals->empty())
             return size();
         //TODO: fixme
         return std::max(
-                (*pInterferingIntervals->back())->end_ref() > rInterval->start_ref() ?
-                (*pInterferingIntervals->back())->end_ref() - rInterval->start_ref() :
+                pInterferingIntervals->back()->pSeed->end_ref() > rInterval.pSeed->start_ref() ?
+                pInterferingIntervals->back()->pSeed->end_ref() - rInterval.pSeed->start_ref() :
                 0
                 ,
-                (*pInterferingIntervals->back())->end() > rInterval->start() ?
-                (*pInterferingIntervals->back())->end() - rInterval->start() :
+                pInterferingIntervals->back()->pSeed->end() > rInterval.pSeed->start() ?
+                pInterferingIntervals->back()->pSeed->end() - rInterval.pSeed->start() :
                 0
             );
     }//function
@@ -256,21 +256,6 @@ public:
         return pIInterferWith;
     }//function
 
-    /**
-     * @brief Provides easy access to the seed within this shadow.
-     */
-    inline const std::list<Seed>::iterator operator*() const
-    {
-        return pSeed;
-    }//operator
-
-    /**
-     * @brief Provides easy access to the seed within this shadow.
-     */
-    inline const std::list<Seed>::iterator operator->() const
-    {
-        return pSeed;
-    }//operator
 
     
     /**
@@ -317,6 +302,39 @@ public:
 };//class
 
 /**
+ * @details
+ * small class in order to have a operator< on a pointer
+ */
+class ShadowIntervalPtr
+{
+public:
+    ShadowInterval *p;
+
+    ShadowIntervalPtr(ShadowInterval* p)
+            :
+        p(p)
+    {}//constructor
+    
+    inline bool operator<(const ShadowIntervalPtr& rOther) const
+    {
+        return *p < *rOther.p;
+    }//operator
+    
+    inline bool operator==(const ShadowIntervalPtr& rOther) const
+    {
+        return *p == *rOther.p;
+    }//operator
+
+    /**
+     * @brief Provides easy access to the seed within this shadow.
+     */
+    inline ShadowInterval* operator->() const
+    {
+        return p;
+    }//operator
+};//class
+
+/**
  * @brief Implements the linesweep algorithm.
  * @ingroup module
  */
@@ -339,20 +357,14 @@ private:
     * @details
     * "Casts" the shadow against the border of the considered area.
     */
-    ShadowInterval getLeftShadow(
-            std::list<Seed>::iterator pSeed,
-            nucSeqIndex uiQueryLength
-        ) const;
+    ShadowInterval getLeftShadow(std::list<Seed>::iterator pSeed) const;
 
     /**
     * @brief Returns the left shadow of a seed.
     * @details
     * "Casts" the shadow against the border of the considered area.
     */
-    ShadowInterval getRightShadow(
-            std::list<Seed>::iterator pSeed,
-            nucSeqIndex iRefSize
-        ) const;
+    ShadowInterval getRightShadow(std::list<Seed>::iterator pSeed) const;
 public:
 
     //overload

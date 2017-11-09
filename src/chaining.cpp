@@ -168,8 +168,9 @@ std::shared_ptr<Container> Chaining::execute(
     }//for
 
     std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
+
 //toggle for generating debug output
-#if 1
+#if 0
     for(std::shared_ptr<Chain> chain : chains)
     {
         if(chain->pred != nullptr)
@@ -180,6 +181,7 @@ std::shared_ptr<Container> Chaining::execute(
         }
     }//for
 #endif
+
     while(bestChain != nullptr)
     {
         DEBUG_2(

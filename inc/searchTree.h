@@ -43,6 +43,7 @@ private:
         void reCalcHeight()
         {
             setHeight(std::max(pLeft->getHeight(), pRight->getHeight())+1);
+            assert(getHeight() > 0);
         }//function
 
     public:
@@ -60,7 +61,7 @@ private:
             pNext(pNext)
         {}//constructor
 
-        virtual const T& get() const
+        virtual const T get() const
         {
             throw NullPointerException("there should never be an instance of the node class");
         }
@@ -72,7 +73,7 @@ private:
         }//function
 
         virtual std::shared_ptr<Node> insert(
-                T& data, 
+                T data, 
                 std::shared_ptr<Node> pThis,
                 std::shared_ptr<Branch> pLastPrev,
                 std::shared_ptr<Branch> pLastNext,
@@ -107,7 +108,7 @@ private:
         }//function
 
         virtual std::shared_ptr<Node> insertOrGet(
-                T& data, 
+                T data, 
                 std::shared_ptr<Node> pThis,
                 std::shared_ptr<Branch> pLastPrev,
                 std::shared_ptr<Branch> pLastNext,
@@ -176,6 +177,8 @@ private:
             }//if
             else
             {
+                assert(std::dynamic_pointer_cast<Branch>(pLeft) == nullptr);
+                assert(pPrev.lock() == nullptr);
                 if(pNext.lock() != nullptr)
                     pNext.lock()->pPrev = std::shared_ptr<Branch>(nullptr);
                 if(pRight->getHeight() != 0)
@@ -243,15 +246,15 @@ private:
         }//function
 
     public:
-        Branch(T& data, std::shared_ptr<Branch> pPrev, std::shared_ptr<Branch> pNext,       std::shared_ptr<Node> pLeaf)
+        Branch(T data, std::shared_ptr<Branch> pPrev, std::shared_ptr<Branch> pNext,       std::shared_ptr<Node> pLeaf)
                 :
             Node(pPrev, pNext, pLeaf, pLeaf),
             data(data),
-            height(0)
+            height(1)
         {}//constructor
 
         //overload
-        const T& get() const
+        const T get() const
         {
             return data;
         }//function
@@ -259,6 +262,7 @@ private:
         //overload
         unsigned int getHeight() const
         {
+            assert(height > 0);
             return height;
         }//function
 
@@ -274,7 +278,7 @@ private:
         void setHeight(unsigned int h)
         {}//function
 
-        bool operator<(T& other) const
+        bool operator<(T other) const
         {
             throw NullPointerException("trying to compare with data of tree leaf");
         }//operator
@@ -290,7 +294,7 @@ private:
                 )
         {}//constructor
 
-        const T& get() const
+        const T get() const
         {
             throw NullPointerException("trying to access data of tree leaf");
         }//function
@@ -322,7 +326,7 @@ private:
         }//function
         
         std::shared_ptr<Node> insert(
-                T& data,
+                T data,
                 std::shared_ptr<Node> pThis,
                 std::shared_ptr<Branch> pLastPrev,
                 std::shared_ptr<Branch> pLastNext,
@@ -338,11 +342,15 @@ private:
                 pLastNext->setPrev(pNew);
             assert(pNew->getRight() != nullptr);
             assert(pNew->getLeft() != nullptr);
+            DEBUG(
+                if(pLastNext != nullptr)
+                    std::cout << "next not null" << std::endl;
+            )
             return pNew;
         }//function
         
         std::shared_ptr<Node> insertOrGet(
-                T& data,
+                T data,
                 std::shared_ptr<Node> pThis,
                 std::shared_ptr<Branch> pLastPrev,
                 std::shared_ptr<Branch> pLastNext,
@@ -404,7 +412,7 @@ public:
         /**
          * @brief Get the content of the iterator.
          */
-        const T& operator*() const 
+        const T operator*() const 
         {
             if(pCurr == nullptr) 
                 throw NullPointerException("trying to access iterator that has no element"); 
@@ -422,7 +430,7 @@ public:
         /**
          * @brief Get the content of the iterator.
          */
-        const T& operator->() const
+        const T operator->() const
         {
             if(pCurr == nullptr) 
                 throw NullPointerException("trying to access iterator that has no element"); 
@@ -435,7 +443,7 @@ public:
         void operator++()
         {
             if(pCurr != nullptr) 
-                pCurr = pCurr->next();
+                pCurr = pCurr->getNext();
         }//function
     };//class
 
@@ -443,7 +451,7 @@ public:
      * @brief Function to insert data.
      * @returns the new tree element.
      */
-    Iterator insert(T& data)
+    Iterator insert(T data)
     {
         std::shared_ptr<Branch> pRet = nullptr;
         pRoot = pRoot->insert(data, pRoot, nullptr, nullptr, pRet);
@@ -456,7 +464,7 @@ public:
      * @brief Function to insert a new element if not already present.
      * @returns the element with the given value if present; the new element otherwise.
      */
-    Iterator insertOrGet(T& data)
+    Iterator insertOrGet(T data)
     {
         std::shared_ptr<Branch> pRet = nullptr;
         pRoot = pRoot->insertOrGet(data, pRoot, nullptr, nullptr, pRet);
@@ -474,22 +482,17 @@ public:
     }//function
 
     /** @brief returns the leftmost element of the Tree. */
-    const T& first() const
+    const T first() const
     {
         assert(!isEmpty());
         std::shared_ptr<Node> pCurr = pRoot;
-        while(pCurr->getHeight() > 1)
-        {
-            if(pCurr->getLeft()->getHeight() > 0)
-                pCurr = pCurr->getLeft();
-            else
-                pCurr = pCurr->getRight();
-        }
+        while(pCurr->getHeight() > 1 && pCurr->getLeft()->getHeight() > 0)
+            pCurr = pCurr->getLeft();
         return pCurr->get();
     }//function
 
     /** @brief returns the root element of the Tree. */
-    const T& root() const
+    const T root() const
     {
         assert(!isEmpty());
         return pRoot->get();

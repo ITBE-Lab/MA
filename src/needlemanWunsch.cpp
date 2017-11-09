@@ -222,15 +222,16 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         return pRet;
     }//if
 
+    //SOTING IS DONE IN THE LINESWEEP STEP
     //sort shadows (increasingly) by start coordinate of the match
-    pSeeds->sort(
+    /*pSeeds->sort(
             [](Seed xA, Seed xB)
             {
                 if(xA.start_ref() == xB.start_ref())
                     return xA.start() < xB.start();
                 return xA.start_ref() < xB.start_ref();
             }//lambda
-        );//sort function call
+        );//sort function call*/
 
     //remove dangeling fronts and backs
     if(pSeeds->size() >= 2)
