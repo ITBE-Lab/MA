@@ -77,23 +77,49 @@ def make_list_pretty(lx, ly):
             lasty = ly[i]
     return lx, ly
 
-def test_chaining():
-    output_file("test_chaining.html")
-    seeds = Seeds()
-    chaining = Chaining()
-    linesweep = LineSweep()
-    for _ in range(10):
-        seeds.append(Seed(
-            random.randint(0,200),#query
-            random.randint(5,30),#length
-            random.randint(0,200)))#ref
+
+def get_query(ref_seq, q_len, mutation_amount, del_ins_size):
+    q = ""
+
+    q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
+    q_to = q_from + q_len
+    q = str(ref_seq.extract_from_to(q_from, q_to))
+    for _ in range(mutation_amount * 10):
+        pos = random.randint(1,len(q)-1)
+        q = q[:pos-1] + mutate(q[pos]) + q[pos:]
+
+    for _ in range(mutation_amount):
+        if len(q) <= del_ins_size:
+            break
+        pos = random.randint(1,len(q)-del_ins_size - 1)
+        l = del_ins_size
+        q = q[:pos-1] + q[pos + l:]
+
+    for _ in range(mutation_amount):
+        pos = random.randint(1,len(q)-1)
+        l = del_ins_size
+        for _ in range(l):
+            char = random.randint(1,4)
+            if char == 1:
+                q = q[:pos] + "a" + q[pos:]
+            elif char == 2:
+                q = q[:pos] + "c" + q[pos:]
+            elif char == 3:
+                q = q[:pos] + "t" + q[pos:]
+            else:
+                q = q[:pos] + "g" + q[pos:]
+
+    return NucSeq(q)
+
+def test_chaining(seeds, results):
+    output_file("chaining_comp.html")
 
     p1 = figure(
-            title="chaining", 
+            title="chaining comp", 
             x_axis_label='reference', 
             y_axis_label='query',
-            plot_width = 800,
-            plot_height = 800)
+            plot_width=800,
+            plot_height=800)
 
     listx = []
     listy = []
@@ -110,42 +136,63 @@ def test_chaining():
         linex.append( float('nan') )
         liney.append( float('nan') )
 
-    p1.circle(listx, listy, size=7, color="black")
+    p1.circle(listx, listy, size=10, color="black")
     p1.line(linex, liney, line_width=5 ,color="black")
 
-    print("==================chaining==================")
+    for index, result_tuple in enumerate(results):
+        result, color, name = result_tuple
+        listx = []
+        listy = []
+        listx_ = []
+        listy_ = []
+        for seed in result:
+            listx.append(seed.start_ref())
+            listy.append(seed.start())
+            listx.append(seed.end_ref())
+            listy.append(seed.end())
+            listx_.append(seed.end_ref())
+            listy_.append(seed.end())
+            listx.append( float('nan') )
+            listy.append( float('nan') )
+        listx, listy = make_list_pretty(listx, listy)
+        dashes = []
+        for _ in results:
+            dashes.append(10)
+            dashes.append(0)
+        dashes[index*2] = 0
+        dashes[index*2+1] = 10
+        p1.line(listx, listy, line_width=5, line_dash=dashes, color=color, legend=name)
+        p1.circle(listx_, listy_, size=10, color=color)
 
-    listx = []
-    listy = []
-    for seed in chaining.execute((seeds,)):
-        listx.append(seed.start_ref())
-        listy.append(seed.start())
-        listx.append(seed.end_ref())
-        listy.append(seed.end())
-
-    listx_ls = []
-    listy_ls = []
-    for seed in linesweep.execute((seeds,)):
-        listx_ls.append(seed.start_ref())
-        listy_ls.append(seed.start())
-        listx_ls.append(seed.end_ref())
-        listy_ls.append(seed.end())
-        listx_ls.append( float('nan') )
-        listy_ls.append( float('nan') )
-
-    listx, listy = make_list_pretty(listx, listy)
-    listx_ls, listy_ls = make_list_pretty(listx_ls, listy_ls)
-    p1.line(listx_ls, listy_ls, line_width=3, color="blue")
-    #p1.circle(listx, listy, size=3, color="red")
-    p1.line(listx, listy, line_width=3, color="green")
-    #p1.circle(listx_, listy_, size=5, color="green")
-
-    print("==================done==================")
     show(p1)
 
+def compare_chaining_linesweep_visual():
+    ref_seq = Pack()
+    ref_seq.load("/mnt/ssd0/chrom/human/pack")
+    fm_index = FMIndex()
+    fm_index.load("/mnt/ssd0/chrom/human/index")
+    query = get_query(ref_seq, 1000, 2, 10)
 
-#test_chaining()
-#exit()
+    segments = LongestLRSegments().execute((
+            fm_index,
+            query
+        ))
+
+    seeds = segments.get_seeds(fm_index, 5)
+
+    ls_res = LineSweep().execute((
+            seeds,
+        ))
+
+    ch_res = Chaining().execute((
+            seeds,
+        ))
+
+    test_chaining(seeds, [(ls_res, "blue", "linesweep"), (ch_res, "green", "chaining")])
+
+
+#compare_chaining_linesweep_visual()
+exit()
 
 q = ""
 

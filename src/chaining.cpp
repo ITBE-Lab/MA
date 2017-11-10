@@ -25,8 +25,9 @@ std::shared_ptr<Container> Chaining::execute(
 
     std::vector<RMQ<int64_t>::RMQData> data1;
     std::vector<RMQ<int64_t>::RMQData> data2;
-    data1.push_back(RMQ<int64_t>::RMQData(-100000,0,nullptr, -1000000));
-    data2.push_back(RMQ<int64_t>::RMQData(0,-100000,nullptr, -1000000));
+    int64_t veryVerySmall = 9*(INT64_MIN/10);
+    data1.push_back(RMQ<int64_t>::RMQData(veryVerySmall,0,nullptr, veryVerySmall));
+    data2.push_back(RMQ<int64_t>::RMQData(0,veryVerySmall,nullptr, veryVerySmall));
 
     std::vector<std::shared_ptr<Chain>> chains;
     for(Seed seed : *pSeeds)
@@ -82,21 +83,21 @@ std::shared_ptr<Container> Chaining::execute(
     #define STARTS true
     #if STARTS
         RMQ<int64_t>::RMQData& a = d1.rmq(
-                -1000000,-1,
-                (int64_t)chain->s.start_ref()-(int64_t)chain->s.start() - 1, chain->s.start() - 1//TODO: replace with function
+                veryVerySmall,-1,
+                (int64_t)chain->s.start_ref()-(int64_t)chain->s.start() , chain->s.start() //TODO: replace with function
             );
         RMQ<int64_t>::RMQData& b = d2.rmq(
-                -1,(int64_t)chain->s.start()-(int64_t)chain->s.start_ref() - 1,
-                chain->s.start_ref() - 1,-1000000 //TODO: replace with function
+                -1,(int64_t)chain->s.start()-(int64_t)chain->s.start_ref(),
+                chain->s.start_ref() ,veryVerySmall //TODO: replace with function
             );
     #else
         RMQ<int64_t>::RMQData& a = d1.rmq(
-                -1000000,-1,
+                veryVerySmall,-1,
                 (int64_t)chain->s.end_ref()-(int64_t)chain->s.end() - 1, chain->s.end() - 1//TODO: replace with function
             );
         RMQ<int64_t>::RMQData& b = d2.rmq(
                 -1,(int64_t)chain->s.end()-(int64_t)chain->s.end_ref() - 1,
-                chain->s.end_ref() - 1,-1000000 //TODO: replace with function
+                chain->s.end_ref() - 1,veryVerySmall //TODO: replace with function
             );
     #endif
         DEBUG_2(
@@ -116,15 +117,20 @@ std::shared_ptr<Container> Chaining::execute(
             chain->pred = a.pChain;
 
         if(chain->pred == nullptr)
+        {
+            DEBUG_2(
+                std::cout << "picked dummy" << std::endl;
+            )
             continue;
+        }//if
         assert(chain->pred != chain);
         DEBUG_2(
             std::cout << "candidate: " << chain->pred->s.end_ref() << " "
                     << chain->pred->s.end() << " "
                     << chain->pred->s.size() << std::endl;
         )
-        assert(chain->pred->s.end_ref() < chain->s.end_ref());
-        assert(chain->pred->s.end() < chain->s.end());
+        assert(chain->pred->s.end_ref() <= chain->s.end_ref());
+        assert(chain->pred->s.end() <= chain->s.end());
         //update score
         int64_t x = chain->s.end_ref() - chain->pred->s.end_ref();
         int64_t y = chain->s.end() - chain->pred->s.end();

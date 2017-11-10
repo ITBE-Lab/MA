@@ -196,18 +196,17 @@ public:
 	 */
 	std::shared_ptr<Seeds> getSeeds(
 			std::shared_ptr<FM_Index> pxFM_Index, 
-			unsigned int min_length
+			unsigned int max_num
 		)
 	{
 		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
 		forEachSeed(
 				pxFM_Index,
-				1000,//parameter has become irrelevant
-				true,//parameter has become irrelevant
+				max_num,
+				true,
 				[&](Seed xS)
 				{
-					if(xS.size() >= min_length)
-						pRet->push_back(xS);
+					pRet->push_back(xS);
 				}//lambda
 			);//forall
 		return pRet;
@@ -287,7 +286,7 @@ public:
 	 */
 	std::shared_ptr<Seeds> getSeeds(
 			std::shared_ptr<FM_Index> pxFM_Index, 
-			unsigned int min_length
+			unsigned int max_num
 		)
 	{
 		
@@ -296,7 +295,7 @@ public:
 			[&]
 			(std::shared_ptr<SegmentTreeInterval> pxNode)
 			{ 
-				pRet->append(pxNode->getSeeds(pxFM_Index, min_length));
+				pRet->append(pxNode->getSeeds(pxFM_Index, max_num));
 			}//lambda
 		);
 		return pRet;

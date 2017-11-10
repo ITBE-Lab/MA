@@ -50,7 +50,8 @@
         "utility": "cpp",
         "codecvt": "cpp",
         "cstddef": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "climits": "cpp"
     },
     "python.linting.pylintEnabled": false
 }

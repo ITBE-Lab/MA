@@ -50,11 +50,6 @@ public:
 		const bool operator< (const RMQData& other) const
 		{
 			return score < other.score;
-			/*if(pChain == nullptr)
-				return true;
-			if(other.pChain == nullptr)
-				return false;
-			return *pChain < *other.pChain;*/
 		}//function
 	};//class
 
