@@ -84,17 +84,21 @@ def get_query(ref_seq, q_len, mutation_amount, del_ins_size):
     q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
     q_to = q_from + q_len
     q = str(ref_seq.extract_from_to(q_from, q_to))
+
+    #mutations
     for _ in range(mutation_amount * 10):
         pos = random.randint(1,len(q)-1)
         q = q[:pos-1] + mutate(q[pos]) + q[pos:]
 
-    for _ in range(mutation_amount):
+    #deletions
+    for _ in range(0):
         if len(q) <= del_ins_size:
             break
         pos = random.randint(1,len(q)-del_ins_size - 1)
         l = del_ins_size
         q = q[:pos-1] + q[pos + l:]
 
+    #insertions
     for _ in range(mutation_amount):
         pos = random.randint(1,len(q)-1)
         l = del_ins_size
@@ -152,8 +156,6 @@ def test_chaining(seeds, results):
             listy.append(seed.end())
             listx_.append(seed.end_ref())
             listy_.append(seed.end())
-            listx.append( float('nan') )
-            listy.append( float('nan') )
         listx, listy = make_list_pretty(listx, listy)
         dashes = []
         for i in range(len(results)):
@@ -163,8 +165,7 @@ def test_chaining(seeds, results):
             else:
                 dashes.append(0)
                 dashes.append(10)
-        p1.line(listx, listy, line_width=5, line_dash=dashes, color=color, legend=name)
-        p1.circle(listx_, listy_, size=10, color=color)
+        p1.line(listx, listy, line_width=3, line_dash=dashes, color=color, legend=name)
 
     show(p1)
 
@@ -185,9 +186,9 @@ def compare_chaining_linesweep_visual():
     ref_seq.load("/mnt/ssd0/chrom/human/pack")
     fm_index = FMIndex()
     fm_index.load("/mnt/ssd0/chrom/human/index")
-    query = get_query(ref_seq, 1000, 5, 10)
+    query = get_query(ref_seq, 1000, 10, 100)
 
-    segments = LongestLRSegments().execute((
+    segments = LongestNonEnclosedSegments().execute((
             fm_index,
             query
         ))
@@ -213,6 +214,9 @@ def compare_chaining_linesweep_visual():
     ch_res = Chaining().execute((
             seeds,
         ))"""
+
+    print(len(ls_res))
+    print(len(ch_res))
 
     test_chaining(seeds, [(ch_res, "green", "chaining"), (ls_res, "blue", "linesweep")])
 

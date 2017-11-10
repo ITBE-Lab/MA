@@ -17,7 +17,7 @@
 
 #define COST_INS_DEL 2//lambda in the paper
 #define COST_POSS_MATCH 1
-#define SCORE_MATCH 3
+#define SCORE_MATCH 30
 
 class Chain;
 
