@@ -20,15 +20,29 @@ std::shared_ptr<Container> Chaining::execute(
 {
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);
 
-    if(pSeeds->size() == 1)
+    //take care of the two special cases
+    if(pSeeds->size() == 0)
         return std::shared_ptr<Seeds>(new Seeds());
+    if(pSeeds->size() == 1)
+    {
+        std::shared_ptr<Seeds> ret = std::shared_ptr<Seeds>(new Seeds());
+        ret->push_front( pSeeds->front() );
+        return ret;
+    }//if
 
+    //normal case where we have >= 2 seeds and actually need to make a decision on what to keep.
+
+    //start with setting up the Range Maximum Query (RMQ) data structures
+    //one for the first octant one for the second octant
     std::vector<RMQ<int64_t>::RMQData> data1;
     std::vector<RMQ<int64_t>::RMQData> data2;
     int64_t veryVerySmall = 9*(INT64_MIN/10);
+    //we will put two dummy starting points in the RMQs.
+    //that way we can be sure that any query will always have a result. 
     data1.push_back(RMQ<int64_t>::RMQData(veryVerySmall,0,nullptr, veryVerySmall));
     data2.push_back(RMQ<int64_t>::RMQData(0,veryVerySmall,nullptr, veryVerySmall));
 
+    //now we add all seeds to both RMQs
     std::vector<std::shared_ptr<Chain>> chains;
     for(Seed seed : *pSeeds)
     {

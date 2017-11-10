@@ -28,9 +28,10 @@ from .__init__ import *
 # @ingroup module
 #
 def set_up_aligner(query_pledges, reference_pledge, 
-        fm_index_pledge, seg=LongestNonEnclosedSegments(), chain=LineSweep(), max_hits=500):
+        fm_index_pledge, seg=LongestNonEnclosedSegments(), 
+        chain=LineSweep(), max_hits=500, num_anchors=10):
 
-    anc = NlongestIntervalsAsAnchors(2)
+    anc = NlongestIntervalsAsAnchors(num_anchors)
 
     bucketing = Bucketing()
     bucketing.max_hits = max_hits
