@@ -16,23 +16,34 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
         std::vector<std::shared_ptr<Container>> vpInput
     )
 {
-    std::shared_ptr<SegmentTree> pRet(new SegmentTree());
 
     std::shared_ptr<SegmentTree> pCastedInput = std::static_pointer_cast<SegmentTree>(vpInput[0]);
+
+    std::vector<std::shared_ptr<SegmentTreeInterval>> aIntervals;
     /*
     *   get the n longest intervals
     */
     pCastedInput->forEach(
-        [&pRet, this](std::shared_ptr<SegmentTreeInterval> pxNode)
+        [&aIntervals](std::shared_ptr<SegmentTreeInterval> pxNode)
         {
-            auto pxIterator = pRet->begin();
-            while (pxIterator.isListElement() && pxIterator->size() > pxNode->size())
-                ++pxIterator;
-            pRet->insertBefore(pxNode, pxIterator);
-            if (pRet->length() > uiN)
-                pRet->removeNode(pRet->end());
+            aIntervals.push_back(pxNode);
         }//lambda
     );//forEach
+
+    std::sort(
+        aIntervals.begin(), aIntervals.end(),
+        []
+        (const std::shared_ptr<SegmentTreeInterval> a, const std::shared_ptr<SegmentTreeInterval> b)
+        {
+            return a->size() > b->size();
+        }//lambda
+    );//sort function call
+    assert(aIntervals.front()->size() >= aIntervals.back()->size());
+
+    std::shared_ptr<SegmentTree> pRet(new SegmentTree());
+
+    for(unsigned int i = 0; i <= uiN && i < aIntervals.size(); i++)
+        pRet->push_front(aIntervals[i]);
 
     return pRet;
 

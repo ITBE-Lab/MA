@@ -13,7 +13,24 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
-#define NUM_THREADS_ALIGNER 1
+#define NUM_THREADS_ALIGNER 0
+
+
+/*
+ * IDEA: 
+ * if all within module synchronization is in "SYNC()" blocs
+ * i can enable and disable inner module multithreading simply by setting NUM_THREADS_ALIGNER to 0
+ * 
+ * in that case threadpool is set up to execute all tasks using the main thread.
+ * WARNING:
+ * the multithreading within the pledge class is still active
+ * so no SYNC blocks in the threads class
+ */
+#if NUM_THREADS_ALIGNER > 0
+#define SYNC(x) x
+#else //DEBUG_LEVEL
+#define SYNC(x)
+#endif //DEBUG_LEVEL
 
 #include <vector>
 #include <queue>
@@ -36,9 +53,31 @@
  *
  * // get result from future\n
  * std::cout << result.get() << std::endl;\n
+ *
+ *
+ * if the threadpool is set to have 0 threads, we will execute every task in the main thread
+ * immediately, thus we dont need to setup threads at all.
+ * this can be used to disable multithreading simply setting the pool to have 0 threads
  */
 class ThreadPool {
+ private:
+    /* need to keep track of threads so we can join them
+	 */
+    std::vector< std::thread > workers;
+    
+	/* the task queue
+	 */
+    std::queue< std::function<void(size_t)> > tasks;
+    
+    /* Synchronization
+	 */
+    std::mutex queue_mutex;
+    std::condition_variable condition;
+    bool bStop;
+	const size_t threads;
+
 public:
+
 	/* External definition
 	 */
     ThreadPool( size_t );
@@ -72,6 +111,13 @@ public:
 		/* The future outcome of the task. The caller will be later blocked until this result will be available. 
 		 */
 		std::future<return_type> xFuture = task->get_future();
+
+		//if the threadpool is set to have 0 threads then execute the task in the main thread
+		if(threads == 0)
+		{
+			(*task)(0);
+			return xFuture;
+		}//if
 		
 		{
 			/* Mutual access to the task queue has to be synchronized. 
@@ -90,27 +136,20 @@ public:
 		return xFuture;
 	} // method enqueue
    
- private:
-    /* need to keep track of threads so we can join them
-	 */
-    std::vector< std::thread > workers;
-    
-	/* the task queue
-	 */
-    std::queue< std::function<void(size_t)> > tasks;
-    
-    /* Synchronization
-	 */
-    std::mutex queue_mutex;
-    std::condition_variable condition;
-    bool bStop;
 };
  
 /* Constructor just launches some amount of workers
  */
 inline ThreadPool::ThreadPool( size_t threads )
-    :   bStop( false ) // stop must be false in the beginning
+    	:
+	bStop( false ), // stop must be false in the beginning
+	threads(threads)
 {
+	//if the threadpool is set to have 0 threads, we will execute every task in the main thread
+	//immediately, thus we dont need to setup threads at all.
+	//this can be used to disable multithreading simply setting the pool to have 0 threads
+	if(threads == 0)
+		return;
 	for ( size_t i = 0; i < threads; ++i )
         workers.emplace_back(
             [this, i]
@@ -169,6 +208,11 @@ inline ThreadPool::ThreadPool( size_t threads )
  */
 inline ThreadPool::~ThreadPool()
 {
+	//if the threadpool is set to have 0 threads, we will execute every task in the main thread
+	//immediately, thus we dont need to setup threads at all.
+	//this can be used to disable multithreading simply setting the pool to have 0 threads
+	if(threads == 0)
+		return;
     {
         std::unique_lock<std::mutex> lock( queue_mutex );
         bStop = true;
@@ -197,10 +241,33 @@ inline ThreadPool::~ThreadPool()
  * // get result from future\n
  * std::cout << result.get() << std::endl;\n
  *
+ *
+ * if the threadpool is set to have 0 threads, we will execute every task in the main thread
+ * immediately, thus we dont need to setup threads at all.
+ * this can be used to disable multithreading simply setting the pool to have 0 threads
+ *
  * @note This pool allows enqueues from within a worker thread.
  */
 class ThreadPoolAllowingRecursiveEnqueues {
+
+private:
+	/* need to keep track of threads so we can join them
+	*/
+	std::vector< std::thread > workers;
+
+	/* the task queue
+	*/
+	std::queue< std::function<void(size_t)> > tasks;
+
+	/* Synchronization
+	*/
+	std::mutex queue_mutex;
+	std::condition_variable condition;
+	bool bStop;
+	const size_t threads;
+
 public:
+
 	/* External definition
 	*/
 	ThreadPoolAllowingRecursiveEnqueues(size_t);
@@ -230,6 +297,13 @@ public:
 		*/
 		std::future<return_type> xFuture = task->get_future();
 
+		//if the threadpool is set to have 0 threads then execute the task in the main thread
+		if(threads == 0)
+		{
+			(*task)(0);
+			return xFuture;
+		}//if
+
 		{
 			/* Mutual access to the task queue has to be synchronized.
 			*/
@@ -246,28 +320,20 @@ public:
 
 		return xFuture;
 	} // method enqueue
-
-private:
-	/* need to keep track of threads so we can join them
-	*/
-	std::vector< std::thread > workers;
-
-	/* the task queue
-	*/
-	std::queue< std::function<void(size_t)> > tasks;
-
-	/* Synchronization
-	*/
-	std::mutex queue_mutex;
-	std::condition_variable condition;
-	bool bStop;
 };
 
 /* Constructor just launches some amount of workers
 */
 inline ThreadPoolAllowingRecursiveEnqueues::ThreadPoolAllowingRecursiveEnqueues(size_t threads)
-	: bStop(false) // stop must be false in the beginning
+		:
+	bStop( false ), // stop must be false in the beginning
+	threads(threads)
 {
+	//if the threadpool is set to have 0 threads, we will execute every task in the main thread
+	//immediately, thus we dont need to setup threads at all.
+	//this can be used to disable multithreading simply setting the pool to have 0 threads
+	if(threads == 0)
+		return;
 	for (size_t i = 0; i < threads; ++i)
 		workers.emplace_back(
 		[this, i]
@@ -314,6 +380,12 @@ inline ThreadPoolAllowingRecursiveEnqueues::ThreadPoolAllowingRecursiveEnqueues(
 */
 inline ThreadPoolAllowingRecursiveEnqueues::~ThreadPoolAllowingRecursiveEnqueues()
 {
+	//if the threadpool is set to have 0 threads, we will execute every task in the main thread
+	//immediately, thus we dont need to setup threads at all.
+	//this can be used to disable multithreading simply setting the pool to have 0 threads
+	if(threads == 0)
+		return;
+
 	{
 		std::unique_lock<std::mutex> lock(queue_mutex);
 		bStop = true;

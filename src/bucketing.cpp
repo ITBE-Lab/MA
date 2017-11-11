@@ -87,7 +87,55 @@ std::shared_ptr<Container> Bucketing::execute(
 		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[4]);
 
-	
+//switch for different method of doing this
+#if 1
+
+	std::shared_ptr<SeedsVector> pRet(new SeedsVector());
+	/*
+	 * return one strip of consideration for each anchor
+	 * iterate over the anchors and then over all seeds in order to do that
+	*/
+	pAnchors->forEach(
+		[&](std::shared_ptr<SegmentTreeInterval> pxAnchor)
+		{
+			forEachNonBridgingSeed(
+				pxAnchor, pFM_index, pRefSeq, pQuerySeq,
+				[&](Seed xAnchor)
+				{
+					nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
+					nucSeqIndex uiEnd = uiStart + uiStripSize;
+					std::shared_ptr<Seeds> pxNew(new Seeds());
+					
+					
+					pSegments->forEach(
+						[&](std::shared_ptr<SegmentTreeInterval> pxNode)
+						{
+							forEachNonBridgingSeed(
+								pxNode, pFM_index, pRefSeq, pQuerySeq,
+								[&](Seed xSeed)
+								{
+									nucSeqIndex uiSeed = getPositionForBucketing(
+											pQuerySeq->length(), 
+											xSeed
+										);
+									if(uiStart <= uiSeed && uiEnd >= uiSeed)
+										pxNew->push_back(xSeed);
+								}//lambda
+							);//for each
+						}//lambda
+					);//forEach
+
+
+					pRet->push_back(pxNew);
+				},//lambda
+				uiStripSize/2
+			);//for each
+		}//lambda
+	);//for each
+
+	return pRet;
+
+#else
 	std::vector<SeedBucket> axSeedBuckets((pQuerySeq->length() + pRefSeq->uiUnpackedSizeForwardPlusReverse())/uiStripSize + 1);
 
 
@@ -142,6 +190,7 @@ std::shared_ptr<Container> Bucketing::execute(
 	);//forEach
 
 	return pRet;
+#endif
 }//function
 
 void exportBucketing()

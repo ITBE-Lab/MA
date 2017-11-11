@@ -7,6 +7,7 @@
 #define DOUBLY_LINKED_LIST
 
 #include <boost/python/errors.hpp>
+#include "threadPool.h"
 
 template <typename Content>
 class DoublyLinkedList;
@@ -316,9 +317,11 @@ public:
 	{
 		//lock the last, this and the next node
 		//Deadlock prevention technique: always lock the elements IN-order of the list
-		std::lock_guard<std::mutex> xOtherGuard(*pxNode->getLastNode()->getMutex());
-		std::lock_guard<std::mutex> xMyGuard(*pxNode->getMutex());
-		std::lock_guard<std::mutex> xOtherGuard2(*pxNode->getNextNode()->getMutex());
+		SYNC(
+			std::lock_guard<std::mutex> xOtherGuard(*pxNode->getLastNode()->getMutex());
+			std::lock_guard<std::mutex> xMyGuard(*pxNode->getMutex());
+			std::lock_guard<std::mutex> xOtherGuard2(*pxNode->getNextNode()->getMutex());
+		)//SYNC
 		//check if this node is the root node; if so move the root node to the next node
 		pxNode->getLastNode()->setNextNode(pxNode->getNextNode());
 		pxNode->getNextNode()->setLastNode(pxNode->getLastNode());
@@ -332,8 +335,8 @@ public:
 	{
 		//lock the last and this node
 		//Deadlock prevention technique: always lock the elements IN-order of the list
-		std::lock_guard<std::mutex> xOtherGuard(*pxNode->getLastNode()->getMutex());
-		std::lock_guard<std::mutex> xMyGuard(*pxNode->getMutex());
+		SYNC(std::lock_guard<std::mutex> xOtherGuard(*pxNode->getLastNode()->getMutex());)
+		SYNC(std::lock_guard<std::mutex> xMyGuard(*pxNode->getMutex());)
 
 		std::shared_ptr<DoublyLinkedListElement<Content>> pxNewElement
 			= std::shared_ptr<DoublyLinkedListElement<Content>>(new DoublyLinkedListElement<Content>(pxNode->getLastNode(), pxContent, pxNode));
@@ -369,8 +372,8 @@ public:
 	{
 		//lock the next and this node
 		//Deadlock prevention technique: always lock the elements IN-order of the list
-		std::lock_guard<std::mutex> xMyGuard(*pxNode->getMutex());
-		std::lock_guard<std::mutex> xOtherGuard2(*pxNode->getNextNode()->getMutex());
+		SYNC(std::lock_guard<std::mutex> xMyGuard(*pxNode->getMutex());)
+		SYNC(std::lock_guard<std::mutex> xOtherGuard2(*pxNode->getNextNode()->getMutex());)
 
 		std::shared_ptr<DoublyLinkedListElement<Content>> pxNewElement
 			= std::shared_ptr<DoublyLinkedListElement<Content>>(new DoublyLinkedListElement<Content>(pxNode, pxContent, pxNode->getNextNode()));

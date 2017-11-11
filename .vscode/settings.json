@@ -51,7 +51,8 @@
         "codecvt": "cpp",
         "cstddef": "cpp",
         "memory": "cpp",
-        "climits": "cpp"
+        "climits": "cpp",
+        "queue": "cpp"
     },
     "python.linting.pylintEnabled": false
 }

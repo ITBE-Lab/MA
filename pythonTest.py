@@ -91,7 +91,7 @@ def get_query(ref_seq, q_len, mutation_amount, del_ins_size):
         q = q[:pos-1] + mutate(q[pos]) + q[pos:]
 
     #deletions
-    for _ in range(0):
+    for _ in range(mutation_amount):
         if len(q) <= del_ins_size:
             break
         pos = random.randint(1,len(q)-del_ins_size - 1)
@@ -221,12 +221,12 @@ def compare_chaining_linesweep_visual():
     test_chaining(seeds, [(ch_res, "green", "chaining"), (ls_res, "blue", "linesweep")])
 
 
-compare_chaining_linesweep_visual()
-exit()
+#compare_chaining_linesweep_visual()
+#exit()
 
 q = ""
 
-num_test = 1000
+num_test = 10000
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(ContainerType.nucSeq))
@@ -235,8 +235,7 @@ reference_pledge = Pledge(ContainerType.packedNucSeq)
 fm_index_pledge = Pledge(ContainerType.fM_index)
 
 
-
-
+print("setup...")
 ref_seq = Pack()
 #ref_seq.append("no name", "no desc", NucSeq("AACG"))
 ref_seq.load("/mnt/ssd0/chrom/human/pack")
@@ -244,106 +243,31 @@ ref_seq.load("/mnt/ssd0/chrom/human/pack")
 fm_index = FMIndex()
 fm_index.load("/mnt/ssd0/chrom/human/index")
 
-
-memory = open("memory_usage.txt", "w")
-memory.close()
-
-del_ins_size = 10
-q_len = 1000
-
-# output to static HTML file
-output_file("result.html")
-
-# create a new plot with a title and axis labels
-p = figure(title="quality comparison BWA", x_axis_label='genetic distance', y_axis_label='hit rate')
-
 reference_pledge.set(ref_seq)
 fm_index_pledge.set(fm_index)
 
-for max_h in range(100,1000, 100):
-    print("max_hits = " + str(max_h))
-    result_pledges = set_up_aligner(
-        query_pledge,
-        reference_pledge,
-        fm_index_pledge,
-        max_hits=max_h,
-        chain=Chaining()
-    )
 
-    x = []
-    y = []
-
-    #while True:
-    for mutation_amount in range(0,30):
-        #mutation_amount = 0#random.randint(0, 30)
-        x.append(mutation_amount)
-        starts = []
-        ends = []
-        hits = 0
-        memory = open("memory_usage.txt", "a")
-        gc.collect()
-        memory.write(str(get_memory()) + "\n")
-        memory.close()
-        for i in range(num_test):
-            q = ""
-
-            q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
-            starts.append(q_from)
-            q_to = q_from + q_len
-            ends.append(q_to)
-            q = str(ref_seq.extract_from_to(q_from, q_to))
-            for _ in range(mutation_amount * 10):
-                pos = random.randint(1,len(q)-1)
-                q = q[:pos-1] + mutate(q[pos]) + q[pos:]
-
-            for _ in range(mutation_amount):
-                if len(q) <= del_ins_size:
-                    break
-                pos = random.randint(1,len(q)-del_ins_size - 1)
-                l = del_ins_size
-                q = q[:pos-1] + q[pos + l:]
-
-            for _ in range(mutation_amount):
-                pos = random.randint(1,len(q)-1)
-                l = del_ins_size
-                for _ in range(l):
-                    char = random.randint(1,4)
-                    if char == 1:
-                        q = q[:pos] + "a" + q[pos:]
-                    elif char == 2:
-                        q = q[:pos] + "c" + q[pos:]
-                    elif char == 3:
-                        q = q[:pos] + "t" + q[pos:]
-                    else:
-                        q = q[:pos] + "g" + q[pos:]
-
-            query = NucSeq(q)
-
-            query_pledge[i].set(query)
-
-        Pledge.simultaneous_get(result_pledges[-1], 48)
-
-        for i, pledge in enumerate(result_pledges[-1]):
-            alignment = pledge.get()
-            if alignment is None:
-                continue
-            if near(alignment.begin_on_ref(), starts[i]) and near(alignment.end_on_ref(), ends[i]):
-                hits += 1
-                #print("hit")
-        y.append(hits/num_test)
-        print(hits/num_test)
-
-    cdgt1 = math.floor(10*max_h/1000)
-    cdgt2 = math.floor(100*max_h/1000)%10
-        
-    # add a line renderer with legend and line thickness
-    p.line(x, y, legend=str(max_h), color="#A0A0" + str(cdgt1) + str(cdgt2), line_width=3)
-    #break
+result_pledges = set_up_aligner(
+    query_pledge,
+    reference_pledge,
+    fm_index_pledge,
+    max_hits=10,
+    seg=LongestLRSegments(),
+    chain=Chaining()
+)
+print("done")
 
 
+while True:
+    print("generation...")
+    for i in range(num_test):
+        query_pledge[i].set(get_query(ref_seq, 1000, random.randint(0,50), 10))
+    print("done")
 
+    print("alignment...")
+    #result_pledges[-1][0].get()
+    Pledge.simultaneous_get(result_pledges[-1], 32)
+    print("done")
 
-# show the results
-show(p)
 
 print("done")

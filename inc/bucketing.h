@@ -16,11 +16,11 @@
  class SeedBucket
  {
  private:
-	 nucSeqIndex uiTotalScore;
+	nucSeqIndex uiTotalScore;
  
-	 std::list<Seed> lxContent;
+	std::vector<Seed> lxContent;
  
-	 std::mutex xMutex;
+	std::mutex xMutex;
  
  public:
 	SeedBucket()
@@ -36,7 +36,7 @@
 
 	void addSeed(const Seed xNew)
 	{
-		std::lock_guard<std::mutex> xGuard(xMutex);
+		SYNC(std::lock_guard<std::mutex> xGuard(xMutex);)
 		lxContent.push_back(xNew);
 		uiTotalScore += xNew.size();
 		//end of scope xGuard
@@ -55,7 +55,7 @@
 		}//for
 	}//function
 
-	const std::list<Seed>& seeds() const
+	const std::vector<Seed>& seeds() const
 	{
 		return lxContent;
 	}//function
@@ -71,7 +71,7 @@ private:
 
 public:
 	unsigned int uiNumThreads = 8;
-	nucSeqIndex uiStripSize = 1000;
+	nucSeqIndex uiStripSize = 10000;
 	unsigned int uiMaxHitsPerInterval = 500;
 	bool bSkipLongBWTIntervals = true;
 	
