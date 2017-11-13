@@ -27,9 +27,16 @@ from .__init__ import *
 # @returns a list of pledge tuples
 # @ingroup module
 #
-def set_up_aligner(query_pledges, reference_pledge, 
-        fm_index_pledge, seg=LongestNonEnclosedSegments(), 
-        chain=LineSweep(), max_hits=500, num_anchors=10):
+def set_up_aligner(
+        query_pledges, 
+        reference_pledge, 
+        fm_index_pledge, 
+        seg=LongestNonEnclosedSegments(), 
+        chain=LineSweep(), 
+        max_hits=500, 
+        num_anchors=10, 
+        strips_of_consideration=True
+        ):
 
     anc = NlongestIntervalsAsAnchors(num_anchors)
 
@@ -48,38 +55,66 @@ def set_up_aligner(query_pledges, reference_pledge,
     else:
         query_pledges_.append(query_pledges)
 
-    return_pledges = ([], [], [], [], [])
+    return_pledges = ([], [], [], [])
+    if strips_of_consideration:
+        return_pledges.append([])
+
     for query_pledge in query_pledges_:
+        ret_pl_indx = 0
         segment_pledge = seg.promise_me((
             fm_index_pledge,
             query_pledge
         ))
-        return_pledges[0].append(segment_pledge)
+        return_pledges[ret_pl_indx].append(segment_pledge)
+        ret_pl_indx += 1
 
-        anchors_pledge = anc.promise_me((segment_pledge,))
-        return_pledges[1].append(anchors_pledge)
+        best_pledge = None
+
+        if strips_of_consideration:
+            anchors_pledge = anc.promise_me((segment_pledge,))
+            return_pledges[ret_pl_indx].append(anchors_pledge)
+            ret_pl_indx += 1
 
 
-        strips_pledge = bucketing.promise_me((
-            segment_pledge,
-            anchors_pledge,
-            query_pledge,
-            reference_pledge,
-            fm_index_pledge
-        ))
-        return_pledges[2].append(strips_pledge)
+            strips_pledge = bucketing.promise_me((
+                segment_pledge,
+                anchors_pledge,
+                query_pledge,
+                reference_pledge,
+                fm_index_pledge
+            ))
+            return_pledges[ret_pl_indx].append(strips_pledge)
+            ret_pl_indx += 1
 
-        best_pledge = execall.promise_me((
-            strips_pledge,
-        ))
-        return_pledges[3].append(best_pledge)
+            best_pledge = execall.promise_me((
+                strips_pledge,
+            ))[0]
+
+        else:
+            extractAll = ExtractAllSeeds()
+            extractAll.max_hits = max_hits
+
+            strip_pledge = extractAll.promise_me((
+                segment_pledge, fm_index_pledge
+            ))
+            return_pledges[ret_pl_indx].append(strip_pledge)
+            ret_pl_indx += 1
+
+            
+            best_pledge = chain.promise_me((
+                strip_pledge,
+            ))
+
+        return_pledges[ret_pl_indx].append(best_pledge)
+        ret_pl_indx += 1
 
         align_pledge = nmw.promise_me((
             best_pledge,
             query_pledge,
             reference_pledge
         ))
-        return_pledges[4].append(align_pledge)
+        return_pledges[ret_pl_indx].append(align_pledge)
+        ret_pl_indx += 1
 
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
         return return_pledges

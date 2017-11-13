@@ -159,6 +159,37 @@ public:
         return uiEndOnRef;
     }//function
 
+    int score(int matchScore, int missmatchScore, int gapOpenScore, int gapExtensionScore){
+        int score = 0;
+
+        bool firstGap = true;
+        for(unsigned int i = 0; i < length(); i++)
+        {
+            if(at(i) == MatchType::seed || at(i) == MatchType::match)
+            {
+                score += matchScore;
+                firstGap = true;
+            }//if
+            else if(at(i) == MatchType::missmatch)
+            {
+                score += missmatchScore;
+                firstGap = true;
+            }//if
+            else if(at(i) == MatchType::insertion || at(i) == MatchType::deletion)
+            {
+                if(firstGap)
+                {
+                    firstGap = false;
+                    score += gapOpenScore;
+                }//if
+                else
+                    score += gapExtensionScore;
+            }//if
+        }//for
+
+        return score;
+    }
+
     /**
      * @brief Remove dangeling deletions.
      * @details

@@ -148,6 +148,7 @@
 #include "longestLRSegments.h"
 #include "chaining.h"
 #include "smith_waterman.h"
+#include "extractAllSeeds.h"
 
 
 #endif

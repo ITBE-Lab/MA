@@ -30,4 +30,5 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportSweepAll();
         exportChaining();
         exportSMW();
+        exportExtractAllSeeds();
 }

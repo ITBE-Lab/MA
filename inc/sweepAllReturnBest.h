@@ -22,6 +22,7 @@ class SweepAllReturnBest: public CppModule
 {
 private:
     std::shared_ptr<CppModule> pModule;
+    unsigned int numReturn = 1;
 
 public:
     SweepAllReturnBest(std::shared_ptr<CppModule> pModule)
@@ -36,12 +37,14 @@ public:
         std::shared_ptr<SeedsVector> pSeedsVector = std::shared_ptr<SeedsVector>(
             std::static_pointer_cast<SeedsVector>(vpInput[0]));
 
-        SeedsVector vTempResults = SeedsVector(pSeedsVector->size());
+        std::shared_ptr<SeedsVector> vTempResults = std::shared_ptr<SeedsVector>(
+                new SeedsVector(pSeedsVector->size())
+            );
         {
             ThreadPool xPool( NUM_THREADS_ALIGNER );
-            for(unsigned int i = 0; i < vTempResults.size(); i++)
+            for(unsigned int i = 0; i < vTempResults->size(); i++)
             {
-                vTempResults[i] = std::shared_ptr<Seeds>();
+                (*vTempResults)[i] = std::shared_ptr<Seeds>();
                 xPool.enqueue(
                     [&vTempResults]
                     (
@@ -56,8 +59,9 @@ public:
                             };
                         try
                         {
-                            vTempResults[i] = std::static_pointer_cast<Seeds>(
+                            (*vTempResults)[i] = std::static_pointer_cast<Seeds>(
                                     pModule->execute(vInput));
+                            (*vTempResults)[i]->mem_score = (*vTempResults)[i]->getScore();
                         }
                         catch(NullPointerException e) 
                         {
@@ -71,9 +75,9 @@ public:
                         {
                             std::cerr << "unknown exception when executing" << std::endl;
                         }
-                        if(vTempResults[i] == nullptr)
+                        if((*vTempResults)[i] == nullptr)
                             std::cerr << "linesweep deleviered nullpointer as result" << std::endl;
-                        if(vTempResults[i] == nullptr)
+                        if((*vTempResults)[i] == nullptr)
                             throw NullPointerException("linesweep deleviered nullpointer as result");
                     },//lambda
                     pSeedsVector, pModule, i
@@ -81,19 +85,19 @@ public:
             }//for
         }//scope xPool
 
-        if(vTempResults.empty())
+        if(vTempResults->empty())
             return std::shared_ptr<Seeds>(new Seeds());
 
-        std::shared_ptr<Seeds> pRet = vTempResults[0];
-        assert(pRet != nullptr);
-        for(std::shared_ptr<Seeds> pSeeds : vTempResults)
-        {
-            assert(pSeeds != nullptr);
-            if(pSeeds->getScore() > pRet->getScore())
-                pRet = pSeeds;
-        }//for
+        std::sort(
+            vTempResults->begin(), vTempResults->end(),
+            []
+            (const std::shared_ptr<Seeds> a, const std::shared_ptr<Seeds> b)
+            {
+                return a->mem_score > b->mem_score;
+            }//lambda
+        );//sort function call
 
-        return pRet;
+        return vTempResults;
     }//function
 
     //overload
@@ -107,7 +111,7 @@ public:
     //overload
     ContainerType getOutputType()
     {
-        return ContainerType::seeds;
+        return ContainerType::seedsVector;
     }//function
 };//class
 

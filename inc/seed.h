@@ -106,11 +106,13 @@ public:
  * Also holds the summed up score of the seeds within the list.
  * @ingroup Container
  */
-class Seeds:
-public std::list<Seed>,
-public Container
+class Seeds
+    :
+        public std::list<Seed>,
+        public Container
 {
-    public:
+public:
+    nucSeqIndex mem_score = 0;
     //inherit the constructors from vector
     using list::list;
     //inherit the constructors from Container
