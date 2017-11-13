@@ -186,7 +186,7 @@ def compare_chaining_linesweep_visual():
     ref_seq.load("/mnt/ssd0/chrom/human/pack")
     fm_index = FMIndex()
     fm_index.load("/mnt/ssd0/chrom/human/index")
-    query = get_query(ref_seq, 1000, 10, 100)
+    query = get_query(ref_seq, 1000, 10, 10)
 
     segments = LongestNonEnclosedSegments().execute((
             fm_index,
@@ -197,23 +197,19 @@ def compare_chaining_linesweep_visual():
 
     bucketing = Bucketing()
     bucketing.max_hits = 5
+    extractAll = ExtractAllSeeds()
+    extractAll.max_hits = bucketing.max_hits
+
     strips = bucketing.execute((segments, anchors, query, ref_seq, fm_index))
 
-    ls_res = SweepAllReturnBest(LineSweep()).execute((strips,))
-    ch_res = SweepAllReturnBest(Chaining()).execute((strips,))
+    #only get the best result for linesweep & bucketing
+    ls_res = SweepAllReturnBest(LineSweep()).execute((strips,))[0]
+
+    strip = extractAll.execute((segments, fm_index))
+
+    ch_res = Chaining().execute((strip,))
 
     seeds = segments.get_seeds(fm_index, 5)
-    """
-
-    #seeds = make_up_seeds()
-
-    ls_res = LineSweep().execute((
-            seeds,
-        ))
-
-    ch_res = Chaining().execute((
-            seeds,
-        ))"""
 
     print(len(ls_res))
     print(len(ch_res))
@@ -221,8 +217,8 @@ def compare_chaining_linesweep_visual():
     test_chaining(seeds, [(ch_res, "green", "chaining"), (ls_res, "blue", "linesweep")])
 
 
-#compare_chaining_linesweep_visual()
-#exit()
+compare_chaining_linesweep_visual()
+exit()
 
 q = ""
 
