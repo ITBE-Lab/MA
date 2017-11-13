@@ -46,8 +46,12 @@ def set_up_aligner(
     execall = SweepAllReturnBest(chain)
 
     nmw = NeedlemanWunsch()
+    getBestOnly = GetBestOnly()
 
     printer = AlignmentPrinter()
+
+    extractAll = ExtractAllSeeds()
+    extractAll.max_hits = max_hits
 
     query_pledges_ = []
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
@@ -55,7 +59,7 @@ def set_up_aligner(
     else:
         query_pledges_.append(query_pledges)
 
-    return_pledges = ([], [], [], [])
+    return_pledges = [[], [], [], []]
     if strips_of_consideration:
         return_pledges.append([])
 
@@ -86,14 +90,13 @@ def set_up_aligner(
             return_pledges[ret_pl_indx].append(strips_pledge)
             ret_pl_indx += 1
 
-            best_pledge = execall.promise_me((
-                strips_pledge,
-            ))[0]
+            best_pledge = getBestOnly.promise_me((
+                    execall.promise_me((
+                        strips_pledge,
+                    )),
+                ))
 
         else:
-            extractAll = ExtractAllSeeds()
-            extractAll.max_hits = max_hits
-
             strip_pledge = extractAll.promise_me((
                 segment_pledge, fm_index_pledge
             ))
