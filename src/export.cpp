@@ -27,10 +27,8 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportNeedlemanWunsch();
         exportSeed();
         exportBucketing();
-        exportSweepAll();
         exportChaining();
         exportSMW();
         exportExtractAllSeeds();
-        exportGetBestOnly();
-        exportNmwMultiple();
+        exportExecOnVector();
 }

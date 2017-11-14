@@ -12,10 +12,10 @@ class SMW: public CppModule
     std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
     //overload
-    std::vector<ContainerType> getInputType();
+    std::vector<std::shared_ptr<Container>> getInputType();
 
     //overload
-    ContainerType getOutputType();
+    std::shared_ptr<Container> getOutputType();
 };//class
 
 #endif

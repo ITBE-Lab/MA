@@ -2,20 +2,20 @@
 
 
 
-std::vector<ContainerType> ExtractAllSeeds::getInputType()
+std::vector<std::shared_ptr<Container>> ExtractAllSeeds::getInputType()
 {
-	return std::vector<ContainerType>
+	return std::vector<std::shared_ptr<Container>>
 	{
 		//all segments
-		ContainerType::segmentList,
+		std::shared_ptr<Container>(new SegmentTree()),
 		//the forward fm_index
-		ContainerType::fM_index
+		std::shared_ptr<Container>(new FM_Index())
 	};
 }//function
 
-ContainerType ExtractAllSeeds::getOutputType()
+std::shared_ptr<Container> ExtractAllSeeds::getOutputType()
 {
-	return ContainerType::seeds;
+	return std::shared_ptr<Container>(new Seeds());
 }//function
 
 

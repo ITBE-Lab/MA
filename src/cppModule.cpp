@@ -115,7 +115,7 @@ void exportModule()
             "Pledge",
             "Represents the pledge to deliver some container.\n"
             "Content may be provided by a Module (use promiseMe function) or by calling set.\n",
-            boost::python::init<ContainerType>(
+            boost::python::init<std::shared_ptr<Container>>(
                 "arg1: self\n"
                 "arg2: Type of the promised container\n"
             )

@@ -1,16 +1,16 @@
 #include "chaining.h"
 
-std::vector<ContainerType> Chaining::getInputType()
+std::vector<std::shared_ptr<Container>> Chaining::getInputType()
 {
-	return std::vector<ContainerType>{
+	return std::vector<std::shared_ptr<Container>>{
 			//the strip of consideration
-			ContainerType::seeds,
+			std::shared_ptr<Container>(new Seeds()),
 		};
 }//function
 
-ContainerType Chaining::getOutputType()
+std::shared_ptr<Container> Chaining::getOutputType()
 {
-	return ContainerType::seeds;
+	return std::shared_ptr<Container>(new Seeds());
 }//function
 
 

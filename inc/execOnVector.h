@@ -1,15 +1,12 @@
 /**
- * @package LAuS.sweepAllReturnBest
- * @brief Implements @ref LAuS.sweepAllReturnBest.SweepAllReturnBest "SweepAllReturnBest".
- * @file sweepAllReturnBest.py
- * @brief Implements @ref LAuS.sweepAllReturnBest.SweepAllReturnBest "SweepAllReturnBest".
- * @author Markus Schmidt
-*/
+ * TODO:
+ * @file execOnVector.h
+ */
 
-#ifndef SWEEP_ALL_RETURN_BEST
-#define SWEEP_ALL_RETURN_BEST
+#ifndef EXEC_ON_VECTOR_H
+#define EXEC_ON_VECTOR_H
 
-#include "linesweep.h"
+#include "cppModule.h"
 #include "threadPool.h"
 
 /**
@@ -18,14 +15,13 @@
  * The module calls LineSweep for all Seeds in the SeedsVector.
  * @ingroup module
  */
-class SweepAllReturnBest: public CppModule
+class ExecOnVec: public CppModule
 {
 private:
     std::shared_ptr<CppModule> pModule;
-    unsigned int numReturn = 1;
 
 public:
-    SweepAllReturnBest(std::shared_ptr<CppModule> pModule)
+    ExecOnVec(std::shared_ptr<CppModule> pModule)
             :
         CppModule(),
         pModule(pModule)
@@ -34,7 +30,7 @@ public:
     //overload
     std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput)
     {
-        std::shared_ptr<SeedsVector> pSeedsVector = std::shared_ptr<SeedsVector>(
+        std::shared_ptr<ContainerVector> pSeedsVector = std::shared_ptr<SeedsVector>(
             std::static_pointer_cast<SeedsVector>(vpInput[0]));
 
         std::shared_ptr<SeedsVector> vTempResults = std::shared_ptr<SeedsVector>(
@@ -99,26 +95,16 @@ public:
 
         return vTempResults;
     }//function
+    
+	std::vector<std::shared_ptr<Container>> getInputType();
+    std::shared_ptr<Container> getOutputType();
 
-    //overload
-    std::vector<ContainerType> getInputType()
-    {
-        return std::vector<ContainerType>{
-                ContainerType::seedsVector
-            };
-    }//function
-
-    //overload
-    ContainerType getOutputType()
-    {
-        return ContainerType::seedsVector;
-    }//function
 };//class
 
 /**
  * @brief Exposes the SweepAllReturnBest @ref CppModule "module" to boost python.
  * @ingroup export
  */
-void exportSweepAll();
+void exportExecOnVector();
 
 #endif

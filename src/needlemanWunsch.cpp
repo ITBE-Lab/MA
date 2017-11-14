@@ -3,21 +3,21 @@
 
 
 
-std::vector<ContainerType> NeedlemanWunsch::getInputType()
+std::vector<std::shared_ptr<Container>> NeedlemanWunsch::getInputType()
 {
-    return std::vector<ContainerType>{
+    return std::vector<std::shared_ptr<Container>>{
         //the sound strip of consideration
-        ContainerType::seeds,
+        std::shared_ptr<Container>(new Seeds()),
         //the query sequence
-        ContainerType:nucSeq,
+        std::shared_ptr<Container>(new NucleotideSequence()),
         //the reference sequence
-        ContainerType:packedNucSeq,
+        std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
     };
 }//function
 
-ContainerType NeedlemanWunsch::getOutputType()
+std::shared_ptr<Container> NeedlemanWunsch::getOutputType()
 {
-    return ContainerType::alignment;
+    return std::shared_ptr<Container>(new Alignment());
 }//function
 
 int iDeletion = -50;

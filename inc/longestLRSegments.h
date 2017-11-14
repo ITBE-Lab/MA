@@ -57,8 +57,8 @@ public:
 	
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
-	std::vector<ContainerType> getInputType();
-    ContainerType getOutputType();
+	std::vector<std::shared_ptr<Container>> getInputType();
+    std::shared_ptr<Container> getOutputType();
 };//class
 
 

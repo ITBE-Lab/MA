@@ -2,26 +2,28 @@
 
 
 
-std::vector<ContainerType> Bucketing::getInputType()
+std::vector<std::shared_ptr<Container>> Bucketing::getInputType()
 {
-	return std::vector<ContainerType>
+	return std::vector<std::shared_ptr<Container>>
 	{
 		//all segments
-		ContainerType::segmentList,
+		std::shared_ptr<Container>(new SegmentTree()),
 		//the anchors
-		ContainerType::segmentList,
+		std::shared_ptr<Container>(new SegmentTree()),
 		//the querry
-		ContainerType::nucSeq,
+		std::shared_ptr<Container>(new NucleotideSequence()),
 		//the reference
-		ContainerType::packedNucSeq,
+		std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
 		//the forward fm_index
-		ContainerType::fM_index,
+		std::shared_ptr<Container>(new FM_Index()),
 	};
 }//function
 
-ContainerType Bucketing::getOutputType()
+std::shared_ptr<Container> Bucketing::getOutputType()
 {
-	return ContainerType::seedsVector;
+	return std::shared_ptr<Container>(new ContainerVector(
+			std::shared_ptr<Container>(new Seeds())
+		));
 }//function
 
 

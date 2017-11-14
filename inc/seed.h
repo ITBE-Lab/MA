@@ -196,40 +196,6 @@ public:
 
 };//class
 
-/**
- * @brief a std::vector of seeds.
- * @details
- * This class is necessary in order to inherit from Container.
- */
-class SeedsVector:
-    public std::vector<std::shared_ptr<Seeds>>,
-    public ContainerVector
-{
-public:
-    //inherit the constructors from vector
-    using vector::vector;
-    //inherit the constructors from Container
-    using Container::Container;
-
-    //overload
-    bool canCast(std::shared_ptr<Container> c) const
-    {
-        return std::dynamic_pointer_cast<Seeds>(c) != nullptr;
-    }//function
-
-    //overload
-    std::string getTypeName() const
-    {
-        return "Seeds";
-    }//function
-
-    //overload
-    std::shared_ptr<Container> getType() const
-    {
-        return std::shared_ptr<Container>(new Seeds());
-    }//function
-};//class
-
 
 /**
  * @brief exports the Seed and Seedlist classes to python.

@@ -66,7 +66,7 @@ void exportAlignment()
     ;
 
     
-    //export the containertype enum
+    //export the matchType enum
     boost::python::enum_<Alignment::MatchType>("MatchType")
         .value("match", Alignment::MatchType::match)
         .value("seed", Alignment::MatchType::seed)

@@ -143,13 +143,11 @@
 #include "linesweep.h"
 #include "longestNonEnclosedSegments.h"
 #include "bucketing.h"
-#include "sweepAllReturnBest.h"
 #include "longestLRSegments.h"
 #include "chaining.h"
 #include "smith_waterman.h"
 #include "extractAllSeeds.h"
-#include "getBestOnly.h"
-#include "nmwMultiple.h"
+#include "execOnVector.h"
 
 
 #endif

@@ -8,20 +8,20 @@
 #include "smith_waterman.h"
 
 
-std::vector<ContainerType> SMW::getInputType()
+std::vector<std::shared_ptr<Container>> SMW::getInputType()
 {
-	return std::vector<ContainerType>{
+	return std::vector<std::shared_ptr<Container>>{
 			//the query sequence
-			ContainerType::nucSeq,
+			std::shared_ptr<Container>(new NucleotideSequence()),
 			//the ref
-			ContainerType::packedNucSeq
+			std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection())
 		};
 }//function
 
 
-ContainerType SMW::getOutputType()
+std::shared_ptr<Container> SMW::getOutputType()
 {
-	return ContainerType::alignment;
+	return std::shared_ptr<Container>(new Alignment());
 }//function
 
 /* Random nucleotide sequence of length uiLen

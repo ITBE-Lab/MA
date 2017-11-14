@@ -1,4 +1,4 @@
-/** 
+/**
  * @file container.h
  * @brief Implements Container.
  * @author Markus Schmidt
@@ -70,6 +70,45 @@ public:
     std::shared_ptr<Container> getType() const
     {
         return std::shared_ptr<Container>(new Nil());
+    }//function
+};//class
+
+class ContainerVector:
+    public Container,
+    public std::vector<std::shared_ptr<Container>>
+{
+private:
+    std::shared_ptr<Container> contentType;
+public:
+    ContainerVector()
+        :
+        contentType(new Container())
+    {}//container vector
+
+    ContainerVector(std::shared_ptr<Container> contentType)
+        :
+        contentType(contentType)
+    {}//container vector
+
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        std::shared_ptr<Container> casted = std::dynamic_pointer_cast<ContainerVector>(c);
+        if(casted == nullptr)
+            return false;
+        return casted->contentType->getType()->canCast(contentType->getType());
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "ContainerVector";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new ContainerVector(contentType));
     }//function
 };//class
 

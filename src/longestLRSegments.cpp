@@ -342,18 +342,18 @@ void LongestLRSegments::procesInterval(
 }//function
 
 
-std::vector<ContainerType> LongestLRSegments::getInputType()
+std::vector<std::shared_ptr<Container>> LongestLRSegments::getInputType()
 {
-	return std::vector<ContainerType>{
+	return std::vector<std::shared_ptr<Container>>{
 			//the forward fm_index
-			ContainerType::fM_index,
+			std::shared_ptr<Container>(new FM_Index()),
 			//the query sequence
-			ContainerType::nucSeq,
+			std::shared_ptr<Container>(new NucleotideSequence()),
 		};
 }
-ContainerType LongestLRSegments::getOutputType()
+std::shared_ptr<Container> LongestLRSegments::getOutputType()
 {
-	return ContainerType::segmentList;
+	return std::shared_ptr<Container>(new SegmentTree());
 }
 
 
