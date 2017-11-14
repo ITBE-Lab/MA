@@ -11,6 +11,7 @@ bool typeCheck(
         return true;
     std::cerr << "Types did not match. Got: " << pData->getTypeName();
     std::cerr << " but expected: " << pData->getTypeName() << std::endl;
+    return false;
 }//function
 
 bool typeCheck(
