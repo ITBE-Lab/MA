@@ -119,8 +119,7 @@
  * - move backwards extension into fm_index class
  * - STOP ADDING ITEMS TO THIS LIST
  * - reintroduce rotations to searchTree
- * - redo the containerType 
- * |-> while doing that make the three "do sth multiple times classes" one...
+ * - do runtime breakdown
  * 
  * @section about_us_sec About Us
  * 
