@@ -218,7 +218,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     //no seeds => no spot found at all...
     if(pSeeds->empty())
     {
-        std::shared_ptr<Alignment> pRet(new Alignment(0, 0));
+        std::shared_ptr<Alignment> pRet(new Alignment());
         return pRet;
     }//if
 
@@ -283,7 +283,10 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         )
         endRef = pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2;
 
-    std::shared_ptr<Alignment> pRet(new Alignment(beginRef, endRef));
+
+    std::shared_ptr<Alignment> pRet(
+            new Alignment(beginRef, endRef, iMatch, iMissMatch, iDeletion, iDeletionContinued)
+        );
 
     DEBUG(
         std::cout << beginRef << " " << endRef << std::endl;
@@ -294,7 +297,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         pRef = pRefPack->vExtract(beginRef, endRef);
     } catch(std::runtime_error e)
     {
-        std::shared_ptr<Alignment> pRet(new Alignment(0, 0));
+        std::shared_ptr<Alignment> pRet(new Alignment());
         return pRet;
     }
 

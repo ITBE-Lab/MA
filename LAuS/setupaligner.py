@@ -43,14 +43,11 @@ def set_up_aligner(
     bucketing = Bucketing()
     bucketing.max_hits = max_hits
 
-    execall = SweepAllReturnBest(chain)
+    execall = ExecOnVec(chain, False, 0)
 
     nmw = NeedlemanWunsch()
-    nmw_multiple = NmwMultiple()
-    nmw_multiple.try_n_many = num_anchors
-    getBestOnly = GetBestOnly()
-
-    printer = AlignmentPrinter()
+    nmw_multiple = ExecOnVec(nmw, True, 0)
+    getBestOnly = Tail(Alignment())
 
     extractAll = ExtractAllSeeds()
     extractAll.max_hits = max_hits
@@ -63,6 +60,7 @@ def set_up_aligner(
 
     return_pledges = [[], [], [], []]
     if strips_of_consideration:
+        return_pledges.append([])
         return_pledges.append([])
 
     for query_pledge in query_pledges_:
@@ -98,12 +96,15 @@ def set_up_aligner(
             return_pledges[ret_pl_indx].append(best_pledge)
             ret_pl_indx += 1
 
-            align_pledge = nmw_multiple.promise_me((
+            alignments_pledge = nmw_multiple.promise_me((
                 best_pledge,
                 query_pledge,
                 reference_pledge
             ))
+            return_pledges[ret_pl_indx].append(alignments_pledge)
+            ret_pl_indx += 1
 
+            align_pledge = getBestOnly.promise_me((alignments_pledge,))
             return_pledges[ret_pl_indx].append(align_pledge)
             ret_pl_indx += 1
 

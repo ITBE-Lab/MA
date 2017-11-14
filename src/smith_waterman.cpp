@@ -101,7 +101,7 @@ std::shared_ptr<Container> SMW::execute(
 	nucSeqIndex start = vMaxScorePositions[0];
 	if(vMaxScorePositions.size() != 1)
 		std::cout << "WARNING SMW found "<< vMaxScorePositions.size() <<" positions!" << std::endl;
-	return std::shared_ptr<Alignment>(new Alignment(start, 0));
+	return std::shared_ptr<Alignment>(new Alignment(start));
 }//function
 
 

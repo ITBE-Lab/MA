@@ -48,6 +48,11 @@ private:
     /// The end of the alignment on the reference sequence.
     nucSeqIndex uiEndOnRef;
 
+    int matchScore;
+    int missmatchScore;
+    int gapOpenScore;
+    int gapExtensionScore;
+
 public:
     /**
      * @brief Creates an empty alignment.
@@ -64,13 +69,43 @@ public:
      * @brief Creates an empty alignment, 
      * where the interval of the reference that is used is already known.
      */
-    Alignment(nucSeqIndex uiBeginOnRef, nucSeqIndex uiEndOnRef)
+    Alignment(
+            nucSeqIndex uiBeginOnRef, 
+            nucSeqIndex uiEndOnRef,
+            int matchScore, 
+            int missmatchScore,
+            int gapOpenScore, 
+            int gapExtensionScore
+        )
             :
         data(),
         uiLength(0),
         uiDataStart(0),
         uiBeginOnRef(uiBeginOnRef),
-        uiEndOnRef(uiEndOnRef)
+        uiEndOnRef(uiEndOnRef),
+        matchScore(matchScore),
+        missmatchScore(missmatchScore),
+        gapOpenScore(gapOpenScore),
+        gapExtensionScore(gapExtensionScore)
+    {}//constructor
+
+    /**
+     * @brief Creates an empty alignment, 
+     * where the interval of the reference that is used is already known.
+     */
+    Alignment(
+            nucSeqIndex uiBeginOnRef
+        )
+            :
+        data(),
+        uiLength(0),
+        uiDataStart(0),
+        uiBeginOnRef(uiBeginOnRef),
+        uiEndOnRef(0),
+        matchScore(0),
+        missmatchScore(0),
+        gapOpenScore(0),
+        gapExtensionScore(0)
     {}//constructor
 
     //overload
@@ -174,7 +209,7 @@ public:
         return uiEndOnRef;
     }//function
 
-    int score(int matchScore, int missmatchScore, int gapOpenScore, int gapExtensionScore){
+    int score(){
         int score = 0;
 
         bool firstGap = true;
@@ -226,6 +261,14 @@ public:
             uiLength -= std::get<1>(data.back());
             data.pop_back();
         }//if
+    }//function
+
+    bool smaller(std::shared_ptr<Container> pOther)
+    {
+        std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
+        if(pAlign == nullptr)
+            return false;
+        return score() < pAlign->score();
     }//function
 };//class
 

@@ -13,6 +13,8 @@
 #include <iostream>
 #include <boost/python/list.hpp>
 #include "threadPool.h"
+#include <ctime>
+#include <chrono>
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
 
@@ -274,7 +276,8 @@ private:
         type(type),
         vPredecessors(vPredecessors),
         vSuccessors(),
-        xMutex()
+        xMutex(),
+        execTime(0)
     {}//constructor
 
     /**
@@ -294,9 +297,11 @@ private:
         type(type),
         vPredecessors(vPredecessors),
         vSuccessors(),
-        xMutex()
+        xMutex(),
+        execTime(0)
     {}//constructor
 public:
+    double execTime;
     /**
      * @brief Create a new pledge without a module giving the pledge.
      * @details
@@ -312,7 +317,8 @@ public:
         type(type),
         vPredecessors(),
         vSuccessors(),
-        xMutex()
+        xMutex(),
+        execTime(0)
     {}//constructor
 
     /**
@@ -412,7 +418,10 @@ public:
                 vInput.push_back(pFuture->get());
             try
             {
+                auto timeStamp = std::chrono::system_clock::now();
                 content = (std::shared_ptr<Container>)pledger->execute(vInput);
+                std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
+                execTime = duration.count();
                 assert(typeCheck(content, type));
             } catch(...)
             {

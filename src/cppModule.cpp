@@ -9,8 +9,8 @@ bool typeCheck(
 {
     if(pExpected->getType()->canCast(pData->getType()))
         return true;
-    std::cerr << "Types did not match. Got: " << pData->getTypeName();
-    std::cerr << " but expected: " << pData->getTypeName() << std::endl;
+    std::cerr << "Types did not match. Got: " << pData->getType()->getTypeName();
+    std::cerr << " but expected: " << pExpected->getType()->getTypeName() << std::endl;
     return false;
 }//function
 
@@ -26,10 +26,10 @@ bool typeCheck(
         std::cerr << std::endl;
         std::cerr << "Expected: [";
         for(unsigned int i = 0; i < vExpected.size(); i++)
-            std::cerr << vExpected[i]->getTypeName() << ", ";
+            std::cerr << vExpected[i]->getType()->getTypeName() << ", ";
         std::cerr << "] but got: [";
         for(unsigned int i = 0; i < vData.size(); i++)
-            std::cerr << vData[i]->getTypeName() << ", ";
+            std::cerr << vData[i]->getType()->getTypeName() << ", ";
         std::cerr << "]" << std::endl;
         std::cerr << std::endl;
         return false;
@@ -42,10 +42,10 @@ bool typeCheck(
             std::cerr << "Element " << i << "s type is incorrect." << std::endl;
             std::cerr << "Expected: [";
             for(unsigned int i = 0; i < vExpected.size(); i++)
-                std::cerr << vExpected[i]->getTypeName() << ", ";
+                std::cerr << vExpected[i]->getType()->getTypeName() << ", ";
             std::cerr << "] but got: [";
             for(unsigned int i = 0; i < vData.size(); i++)
-                std::cerr << vData[i]->getTypeName() << ", ";
+                std::cerr << vData[i]->getType()->getTypeName() << ", ";
             std::cerr << "]" << std::endl;
             return false;
         }//if
@@ -160,6 +160,7 @@ void exportModule()
                     "/n"
                 )
             .staticmethod("simultaneous_get")
+            .def_readwrite("exec_time", &Pledge::execTime)
         ;
 
 	//tell boost python that pointers of these classes can be converted implicitly

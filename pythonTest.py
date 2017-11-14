@@ -216,19 +216,26 @@ def compare_chaining_linesweep_visual():
 
     test_chaining(seeds, [(ch_res, "green", "chaining"), (ls_res, "blue", "linesweep")])
 
+def print_runtime_breakdown(result_pledges):
+    for index, step in enumerate(result_pledges):
+        avg = 0
+        for pledge in step:
+            avg += pledge.exec_time
+        avg /= len(step)
+        print("step " + str(index) + " of the alignment took " + str(avg) + " seconds")
 
 #compare_chaining_linesweep_visual()
 #exit()
 
 q = ""
 
-num_test = 10000
+num_test = 1000
 query_pledge = []
 for _ in range(num_test):
-    query_pledge.append(Pledge(ContainerType.nucSeq))
+    query_pledge.append(Pledge(NucSeq()))
 
-reference_pledge = Pledge(ContainerType.packedNucSeq)
-fm_index_pledge = Pledge(ContainerType.fM_index)
+reference_pledge = Pledge(Pack())
+fm_index_pledge = Pledge(FMIndex())
 
 
 print("setup...")
@@ -247,8 +254,7 @@ result_pledges = set_up_aligner(
     query_pledge,
     reference_pledge,
     fm_index_pledge,
-    max_hits=10,
-    seg=LongestLRSegments()
+    max_hits=10
 )
 print("done")
 
@@ -256,13 +262,15 @@ print("done")
 while True:
     print("generation...")
     for i in range(num_test):
-        query_pledge[i].set(get_query(ref_seq, 1000, random.randint(0,50), 10))
+        query_pledge[i].set(get_query(ref_seq, 1000, random.randint(0,30), 10))
     print("done")
 
     print("alignment...")
     #result_pledges[-1][0].get()
-    Pledge.simultaneous_get(result_pledges[-1], 32)
+    Pledge.simultaneous_get(result_pledges[-1], 16)
     print("done")
+
+    print_runtime_breakdown(result_pledges)
 
 
 print("done")

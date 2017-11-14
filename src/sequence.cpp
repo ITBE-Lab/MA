@@ -44,6 +44,9 @@ void exportSequence()
 				"arg1: self\n"
 				"arg2: string to initialize the sequence from\n"
 			))
+			.def(boost::python::init<>(
+				"arg1: self\n"
+			))
 			.def(
 					"at", 
 					&NucleotideSequence::charAt,

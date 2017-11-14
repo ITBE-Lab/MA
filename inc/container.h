@@ -47,6 +47,15 @@ public:
     {
         return std::shared_ptr<Container>(new Container());
     }//function
+
+    /**
+     * @details
+     * used by ExecOnVec to sort containers in order
+     */
+    virtual bool smaller(const std::shared_ptr<Container> other)
+	{
+		return true;
+	}// operator
 };//class
 
 
@@ -116,6 +125,8 @@ public:
     {
         return std::shared_ptr<Container>(new ContainerVector(contentType));
     }//function
+
+
 };//class
 
 /** 
