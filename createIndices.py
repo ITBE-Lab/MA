@@ -62,6 +62,6 @@ def chrNames(prefix, num, suffix):
     return ret
 
 
-#make(chrNames("/mnt/ssd0/chrom/human/chr", 25, ".fna"), "all")
-make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "all")
+#make(chrNames("/mnt/ssd0/chrom/human/chr", 25, ".fna"), "/mnt/ssd0/chrom/human/all")
+make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "/mnt/ssd0/chrom/mouse/all")
 #makeRandom("/mnt/ssd0/chrom/random/random", 1000000)

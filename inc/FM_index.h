@@ -46,7 +46,30 @@ public:
 		Interval(start, size),
 		startOfComplement(startOfComplement)
 	{}//constructor
-	ContainerType getType(){return ContainerType::sa_interval;}
+
+	SA_IndexInterval()
+			:
+		Interval(),
+		startOfComplement(0)
+	{}//constructor
+
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<SA_IndexInterval>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "SA_IndexInterval";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new SA_IndexInterval());
+    }//function
 
 	/**
 	 * @brief Switch to the respective reverse complement.
@@ -782,8 +805,23 @@ public :
 		return sErrorText == "";
 	} // method
 
-	/*used to identify the FM_index datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::fM_index;}
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<FM_Index>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "FM_Index";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new FM_Index());
+    }//function
 
 	/* Default constructor. (Initializes the fix count-table)
 	 */

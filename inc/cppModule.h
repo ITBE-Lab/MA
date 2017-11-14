@@ -26,15 +26,6 @@ extern std::mutex xPython;
 
 class Pledge;
 
-/**
- * @brief Checks weather the given types are equal.
- * @details
- * This requires a function since we have types like any of none.
- */
-bool typeCheck(
-        ContainerType xData, 
-        ContainerType xExpected
-    );
 
 /**
  * @brief Checks weather the given container has the expected type.
@@ -43,7 +34,7 @@ bool typeCheck(
  */
 bool typeCheck(
         std::shared_ptr<Container> pData, 
-        ContainerType xExpected
+        std::shared_ptr<Container> pExpected
     );
 
 /**
@@ -53,7 +44,7 @@ bool typeCheck(
  */
 bool typeCheck(
         std::vector<std::shared_ptr<Container>> vData, 
-        std::vector<ContainerType> vExpected
+        std::vector<std::shared_ptr<Container>> vExpected
     );
 
 /**
@@ -82,9 +73,9 @@ public:
      * @details
      * Used for type checking the inputs before calling execute.
      */
-    virtual std::vector<ContainerType> getInputType()
+    virtual std::vector<std::shared_ptr<Container>> getInputType()
     {
-        return std::vector<ContainerType>{ContainerType::nothing};
+        return std::vector<std::shared_ptr<Container>>{std::shared_ptr<Container>(new Nil())};
     }
 
     /**
@@ -92,9 +83,9 @@ public:
      * @details
      * Used for type checking weather the module returns expected data.
      */
-    virtual ContainerType getOutputType()
+    virtual std::shared_ptr<Container> getOutputType()
     {
-        return ContainerType::nothing;
+        return std::shared_ptr<Container>(new Nil());
     }
 
     /**
@@ -261,7 +252,7 @@ private:
     std::shared_ptr<CppModule> pledger;
     boost::python::object py_pledger;
     std::shared_ptr<Container> content;
-    ContainerType type;
+    std::shared_ptr<Container> type;
     std::vector<std::shared_ptr<Pledge>> vPredecessors;
     std::vector<std::weak_ptr<Pledge>> vSuccessors;
     std::mutex xMutex;
@@ -273,7 +264,7 @@ private:
      */
     Pledge(
             std::shared_ptr<CppModule> pledger,
-            ContainerType type,
+            std::shared_ptr<Container> type,
             std::vector<std::shared_ptr<Pledge>> vPredecessors
         )
             :
@@ -293,7 +284,7 @@ private:
      */
     Pledge(
             boost::python::object py_pledger,
-            ContainerType type,
+            std::shared_ptr<Container> type,
             std::vector<std::shared_ptr<Pledge>> vPredecessors
         )
             :
@@ -312,7 +303,7 @@ public:
      * This means that this Pledge has to be fullfilled by calling set manually.
      */
     Pledge(
-            ContainerType type
+            std::shared_ptr<Container> type
         )
             :
         pledger(nullptr),
@@ -323,14 +314,30 @@ public:
         vSuccessors(),
         xMutex()
     {}//constructor
-    
-    ~Pledge()
-    {}//destructor
 
     /**
      * @brief this is required due to the use of mutex 
-    */
+     */
     Pledge(const Pledge&) = delete;//copy constructor
+    
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<Pledge>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "Pledge";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return type->getType();
+    }//function
+
 
     static inline std::shared_ptr<Pledge> makePledge(
             std::shared_ptr<CppModule> pledger,
@@ -349,7 +356,7 @@ public:
 
     static inline std::shared_ptr<Pledge> makePyPledge(
             boost::python::object py_pledger,
-            ContainerType type,
+            std::shared_ptr<Container> type,
             std::vector<std::shared_ptr<Pledge>> vPredecessors
         )
     {
@@ -454,12 +461,6 @@ public:
                 );
             }//for
         }//scope xPool
-    }//function
-
-    //overload
-    ContainerType getType()
-    {
-        return type;
     }//function
 };//class
 

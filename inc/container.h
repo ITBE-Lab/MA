@@ -13,27 +13,6 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 /**
- * @brief Used to describe the type of the Container.
- * @details
- * required by CppModule for type checking the inputs before casting and using them.
- */
-enum ContainerType{
-    fM_index,//0
-    nucSeq,//1
-    alignment,//2
-    packedNucSeq,//3
-    segmentList,//4
-    segment,//5
-    seed,//6
-    seeds,//7
-    seedsVector,//8
-    sa_interval,//9
-    unknown,//10
-    nothing,//11
-    any,//12
-};//enum
-
-/**
  * @defgroup container
  * @brief All classes containing data elements.
  * @details
@@ -51,10 +30,47 @@ class Container
 {
 public:
     /** 
-    * @returns the type of the container as enum.
+    * @returns the type of the container as int.
     * @brief Used by @ref CppModule "module" for type checking its Inputs.
     */
-    virtual ContainerType getType(){return ContainerType::unknown;}
+    volatile bool canCast(std::shared_ptr<Container> c) const
+    {
+        return true;
+    }//function
+
+    virtual std::string getTypeName() const
+    {
+        return "Container";
+    }//function
+
+    virtual std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new Container());
+    }//function
+};//class
+
+
+class Nil : public Container
+{
+public:
+    /** 
+    * @returns the type of the container as int.
+    * @brief Used by @ref CppModule "module" for type checking its Inputs.
+    */
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return false;
+    }//function
+
+    std::string getTypeName() const
+    {
+        return "Nil";
+    }//function
+
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new Nil());
+    }//function
 };//class
 
 /** 

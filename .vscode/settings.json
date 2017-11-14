@@ -52,7 +52,8 @@
         "cstddef": "cpp",
         "memory": "cpp",
         "climits": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "vector": "cpp"
     },
     "python.linting.pylintEnabled": false
 }

@@ -42,8 +42,12 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
 
     std::shared_ptr<SegmentTree> pRet(new SegmentTree());
 
-    for(unsigned int i = 0; i <= uiN && i < aIntervals.size(); i++)
+    unsigned int num = 0;
+    for(unsigned int i = 0; num < uiN && i < aIntervals.size(); i++)
+    {
         pRet->push_front(aIntervals[i]);
+        num++;
+    }//for
 
     return pRet;
 

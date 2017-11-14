@@ -217,8 +217,8 @@ def compare_chaining_linesweep_visual():
     test_chaining(seeds, [(ch_res, "green", "chaining"), (ls_res, "blue", "linesweep")])
 
 
-compare_chaining_linesweep_visual()
-exit()
+#compare_chaining_linesweep_visual()
+#exit()
 
 q = ""
 
@@ -248,8 +248,7 @@ result_pledges = set_up_aligner(
     reference_pledge,
     fm_index_pledge,
     max_hits=10,
-    seg=LongestLRSegments(),
-    chain=Chaining()
+    seg=LongestLRSegments()
 )
 print("done")
 

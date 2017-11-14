@@ -1,5 +1,11 @@
 //TODO: docu
 
+
+/*
+ * FIXME: i'm super inefficient
+ * would be better to make all following modules be able to deal with seedVectors instrad of seeds
+ */
+
 #ifndef GET_BEST_ONLY_H
 #define GET_BEST_ONLY_H
 
@@ -21,7 +27,11 @@ public:
         std::shared_ptr<SeedsVector> pSeedsVector = std::shared_ptr<SeedsVector>(
             std::static_pointer_cast<SeedsVector>(vpInput[0]));
 
-        return std::shared_ptr<Seeds>(new Seeds((*pSeedsVector)[0]));
+        std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
+        if(!pSeedsVector->empty())
+            pRet->append((*pSeedsVector)[0]);
+
+        return pRet;
     }//function
 
     //overload
@@ -35,7 +45,7 @@ public:
     //overload
     ContainerType getOutputType()
     {
-        return ContainerType::seedsVector;
+        return ContainerType::seeds;
     }//function
 };//class
 

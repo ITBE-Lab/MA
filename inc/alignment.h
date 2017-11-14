@@ -74,7 +74,22 @@ public:
     {}//constructor
 
     //overload
-    ContainerType getType(){return ContainerType::alignment;}
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<Alignment>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "Alignment";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new Alignment());
+    }//function
 
     /**
      * @returns the type of math for the given position i.

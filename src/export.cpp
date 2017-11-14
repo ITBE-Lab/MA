@@ -31,4 +31,6 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportChaining();
         exportSMW();
         exportExtractAllSeeds();
+        exportGetBestOnly();
+        exportNmwMultiple();
 }

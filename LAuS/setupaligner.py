@@ -33,7 +33,7 @@ def set_up_aligner(
         fm_index_pledge, 
         seg=LongestNonEnclosedSegments(), 
         chain=LineSweep(), 
-        max_hits=500, 
+        max_hits=5, 
         num_anchors=10, 
         strips_of_consideration=True
         ):
@@ -46,6 +46,8 @@ def set_up_aligner(
     execall = SweepAllReturnBest(chain)
 
     nmw = NeedlemanWunsch()
+    nmw_multiple = NmwMultiple()
+    nmw_multiple.try_n_many = num_anchors
     getBestOnly = GetBestOnly()
 
     printer = AlignmentPrinter()
@@ -72,7 +74,6 @@ def set_up_aligner(
         return_pledges[ret_pl_indx].append(segment_pledge)
         ret_pl_indx += 1
 
-        best_pledge = None
 
         if strips_of_consideration:
             anchors_pledge = anc.promise_me((segment_pledge,))
@@ -90,11 +91,21 @@ def set_up_aligner(
             return_pledges[ret_pl_indx].append(strips_pledge)
             ret_pl_indx += 1
 
-            best_pledge = getBestOnly.promise_me((
-                    execall.promise_me((
-                        strips_pledge,
-                    )),
-                ))
+            best_pledge = execall.promise_me((
+                strips_pledge,
+            ))
+
+            return_pledges[ret_pl_indx].append(best_pledge)
+            ret_pl_indx += 1
+
+            align_pledge = nmw_multiple.promise_me((
+                best_pledge,
+                query_pledge,
+                reference_pledge
+            ))
+
+            return_pledges[ret_pl_indx].append(align_pledge)
+            ret_pl_indx += 1
 
         else:
             strip_pledge = extractAll.promise_me((
@@ -108,16 +119,16 @@ def set_up_aligner(
                 strip_pledge,
             ))
 
-        return_pledges[ret_pl_indx].append(best_pledge)
-        ret_pl_indx += 1
+            return_pledges[ret_pl_indx].append(best_pledge)
+            ret_pl_indx += 1
 
-        align_pledge = nmw.promise_me((
-            best_pledge,
-            query_pledge,
-            reference_pledge
-        ))
-        return_pledges[ret_pl_indx].append(align_pledge)
-        ret_pl_indx += 1
+            align_pledge = nmw.promise_me((
+                best_pledge,
+                query_pledge,
+                reference_pledge
+            ))
+            return_pledges[ret_pl_indx].append(align_pledge)
+            ret_pl_indx += 1
 
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
         return return_pledges

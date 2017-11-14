@@ -50,6 +50,15 @@ public:
         Interval(rOther),
         uiPosOnReference(rOther.uiPosOnReference)
     {}//copy constructor
+
+    /**
+     * @brief Default Constructor.
+     */
+    Seed()
+            :
+        Interval(0),
+        uiPosOnReference()
+    {}//copy constructor
     
     /**
      * @brief Returns the beginning of the seed on the reference.
@@ -96,8 +105,23 @@ public:
 		return Interval::operator==(rxOther) && uiPosOnReference == rxOther.uiPosOnReference;
 	}// operator
 
-    /*used to identify the Seed datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::seed;}
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<Seed>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "Seed";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new Seed());
+    }//function
 }; //class
 
 /**
@@ -130,8 +154,24 @@ public:
         Container()
     {}//default constructor
 
-    /*used to identify the Seeds datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::seeds;}
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<Seeds>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "Seeds";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new Seeds());
+    }//function
+
     /*returns the sum off all scores within the list*/
     nucSeqIndex getScore() const
     {
@@ -163,15 +203,31 @@ public:
  */
 class SeedsVector:
     public std::vector<std::shared_ptr<Seeds>>,
-    public Container
+    public ContainerVector
 {
 public:
     //inherit the constructors from vector
     using vector::vector;
     //inherit the constructors from Container
     using Container::Container;
-    /*used to identify the SeedsVector datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::seedsVector;}
+
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<Seeds>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "Seeds";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new Seeds());
+    }//function
 };//class
 
 

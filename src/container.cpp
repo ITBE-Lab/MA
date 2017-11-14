@@ -37,22 +37,6 @@ void exportContainer()
 
     //make vectors of container-pointers a thing
     iterable_converter()
-        .from_python<std::vector<std::shared_ptr<Container>>>()
-        .from_python<std::vector<ContainerType>>();
+        .from_python<std::vector<std::shared_ptr<Container>>>();
 
-    //export the containertype enum
-    boost::python::enum_<ContainerType>("ContainerType")
-        .value("fM_index", ContainerType::fM_index)
-        .value("nucSeq", ContainerType::nucSeq)
-        .value("alignment", ContainerType::alignment)
-        .value("packedNucSeq", ContainerType::packedNucSeq)
-        .value("segmentList", ContainerType::segmentList)
-        .value("segment", ContainerType::segment)
-        .value("seed", ContainerType::seed)
-        .value("seeds", ContainerType::seeds)
-        .value("seedsVector", ContainerType::seedsVector)
-        .value("sa_interval", ContainerType::sa_interval)
-        .value("unknown", ContainerType::unknown)
-        .value("nothing", ContainerType::nothing)
-        .value("any", ContainerType::any);
 }//function

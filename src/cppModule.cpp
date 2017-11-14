@@ -3,55 +3,49 @@
 std::mutex xPython;
 
 bool typeCheck(
-        ContainerType xData, 
-        ContainerType xExpected
-    )
-{
-    if(xExpected == ContainerType::any)
-        return true;
-    if(xExpected == ContainerType::unknown)
-    {
-        std::cerr << "types did not match. Got:" << xData;
-        std::cerr << " but expected type is unknown " << std::endl;
-        return false;
-    }//if
-    if(xData != xExpected)
-    {
-        std::cerr << "types did not match. Got:" << xData;
-        std::cerr << " but expected: " << xExpected << std::endl;
-        return false;
-    }//if
-    return true;
-}//function
-
-bool typeCheck(
         std::shared_ptr<Container> pData, 
-        ContainerType xExpected
+        std::shared_ptr<Container> pExpected
     )
 {
-    if(xExpected == ContainerType::nothing && pData == nullptr)
+    if(pExpected->getType()->canCast(pData->getType()))
         return true;
-    else if(pData == nullptr && xExpected != ContainerType::nothing)
-    {
-        std::cerr << "types did not match. Got: nullptr";
-        std::cerr << " but expected: " << xExpected << std::endl;
-        return false;
-    }//if
-    return typeCheck(pData->getType(), xExpected);
+    std::cerr << "Types did not match. Got: " << pData->getTypeName();
+    std::cerr << " but expected: " << pData->getTypeName() << std::endl;
 }//function
 
 bool typeCheck(
         std::vector<std::shared_ptr<Container>> vData, 
-        std::vector<ContainerType> vExpected
+        std::vector<std::shared_ptr<Container>> vExpected
     )
 {
     if(vData.size() != vExpected.size())
+    {
+        std::cerr << "Types of vectors did not match. " << std::endl;
+        std::cerr << "Expected " << vExpected.size() << " elements but got " << vData.size();
+        std::cerr << std::endl;
+        std::cerr << "Expected: [";
+        for(unsigned int i = 0; i < vExpected.size(); i++)
+            std::cerr << vExpected[i]->getTypeName() << ", ";
+        std::cerr << "] but got: [";
+        for(unsigned int i = 0; i < vData.size(); i++)
+            std::cerr << vData[i]->getTypeName() << ", ";
+        std::cerr << "]" << std::endl;
+        std::cerr << std::endl;
         return false;
+    }//for
     for(unsigned int i = 0; i < vData.size(); i++)
         if(!typeCheck(vData[i], vExpected[i]))
         {
-            std::cerr << "types of vectors did not match." << std::endl;
-            std::cerr << "-> element " << i << "s type is incorrect." << std::endl;
+            std::cerr << "Types of vectors did not match.";
+            std::cerr << std::endl;
+            std::cerr << "Element " << i << "s type is incorrect." << std::endl;
+            std::cerr << "Expected: [";
+            for(unsigned int i = 0; i < vExpected.size(); i++)
+                std::cerr << vExpected[i]->getTypeName() << ", ";
+            std::cerr << "] but got: [";
+            for(unsigned int i = 0; i < vData.size(); i++)
+                std::cerr << vData[i]->getTypeName() << ", ";
+            std::cerr << "]" << std::endl;
             return false;
         }//if
     return true;

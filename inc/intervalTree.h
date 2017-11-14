@@ -37,8 +37,31 @@ public:
 		xSaInterval(xSaInterval)
 	{}//constructor
 
-	//overload
-	ContainerType getType() const {return ContainerType::segment;}
+	SaSegment()
+			:
+		Interval(),
+		xSaInterval()
+	{}//constructor
+
+
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<SaSegment>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "SaSegment";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new SaSegment());
+    }//function
+
 	/**
 	 * @brief The bwt interval within.
 	 * @returns the bwt interval within.
@@ -82,9 +105,34 @@ public:
 		Interval(uiStart, uiSize),
 		lxSaSegment()
 	{}//constructor
+
+	/**
+	 * @brief Default constructor.
+	 */
+	SegmentTreeInterval(0)
+		:
+		Interval(),
+		lxSaSegment()
+	{}//constructor
 	
-	//overload
-	ContainerType getType(){return ContainerType::segment;}//function
+
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<SegmentTreeInterval>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "SegmentTreeInterval";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new SegmentTreeInterval());
+    }//function
 
 
 	/**
@@ -264,11 +312,32 @@ public:
 		std::shared_ptr<SegmentTreeInterval> pxRoot(new SegmentTreeInterval(0, uiQueryLength-1));
 		push_back(pxRoot);
 	}//constructor
+
+	/**
+	 * @brief Default constructor
+	 */
 	SegmentTree()
+			:
+		DoublyLinkedList()
 	{}//constructor
 
-	//overload
-	ContainerType getType(){return ContainerType::segmentList;}//function
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<SegmentTree>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "SegmentList";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new SegmentTree());
+    }//function
 
 	/**
 	 * @brief Prints basic information about the segment tree.

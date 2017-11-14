@@ -39,6 +39,15 @@ public:
 		iSize(c.iSize)
 	{}// copy constructor
 
+	/**
+	 * @brief Default empty constructor.
+	 */
+	Interval()
+		:
+		iStart(0),
+		iSize(0)
+	{}// copy constructor
+
 	inline static Interval start_end(T start, T end)
 	{
 		Interval xRet(start, 0);

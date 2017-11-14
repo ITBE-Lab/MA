@@ -407,8 +407,23 @@ public :
 	/** is implicitly deleted by geneticSequence but boost python needs to know */
 	NucleotideSequence(const NucleotideSequence&) = delete;
 
-	/** used to identify the nucleotide sequence datatype in the aligner pipeline*/
-    ContainerType getType(){return ContainerType::nucSeq;}
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<NucleotideSequence>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "NucSeq";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new NucleotideSequence());
+    }//function
 
 	/** Delivers the complement of a single nucleotide.
 	 */

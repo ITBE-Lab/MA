@@ -114,14 +114,13 @@
  * 
  * @section todos TODOs
  * 
- * - implement regular chaining
- * - implement fixed chaining
  * - update this page... (the example has to be changed)
  * - rename classes and files aproproately
- * - reduce the time threads are stuck in locks
  * - move backwards extension into fm_index class
  * - STOP ADDING ITEMS TO THIS LIST
  * - reintroduce rotations to searchTree
+ * - redo the containerType 
+ * |-> while doing that make the three "do sth multiple times classes" one...
  * 
  * @section about_us_sec About Us
  * 
@@ -149,6 +148,8 @@
 #include "chaining.h"
 #include "smith_waterman.h"
 #include "extractAllSeeds.h"
+#include "getBestOnly.h"
+#include "nmwMultiple.h"
 
 
 #endif

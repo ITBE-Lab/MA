@@ -544,10 +544,23 @@ public:
 	} // default constructor
 
 	
-	ContainerType getType() 
-	{
-		return ContainerType::packedNucSeq;
-	}//function
+    //overload
+    bool canCast(std::shared_ptr<Container> c) const
+    {
+        return std::dynamic_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(c) != nullptr;
+    }//function
+
+    //overload
+    std::string getTypeName() const
+    {
+        return "Pack";
+    }//function
+
+    //overload
+    std::shared_ptr<Container> getType() const
+    {
+        return std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection());
+    }//function
 	
 	/* Appends a single nucleotide sequence to the collection.
 	 * TO DO: uiOffsetDistance seems not be required any longer.
