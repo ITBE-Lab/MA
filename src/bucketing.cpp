@@ -92,7 +92,7 @@ std::shared_ptr<Container> Bucketing::execute(
 //switch for different method of doing this
 #if 1
 
-	std::shared_ptr<SeedsVector> pRet(new SeedsVector());
+	std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 	/*
 	 * return one strip of consideration for each anchor
 	 * iterate over the anchors and then over all seeds in order to do that

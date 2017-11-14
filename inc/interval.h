@@ -43,10 +43,7 @@ public:
 	 * @brief Default empty constructor.
 	 */
 	Interval()
-		:
-		iStart(0),
-		iSize(0)
-	{}// copy constructor
+	{}// default constructor
 
 	inline static Interval start_end(T start, T end)
 	{

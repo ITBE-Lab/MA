@@ -4,13 +4,17 @@
 
 std::vector<std::shared_ptr<Container>> ExecOnVec::getInputType()
 {
-	return std::vector<std::shared_ptr<Container>>{
-			std::shared_ptr<Container>(new ContainerVector(pModule->getInputType())),
-		};
+    if(pModule->getInputType().size() == 1)
+        return std::vector<std::shared_ptr<Container>>{
+                std::shared_ptr<Container>(new ContainerVector(pModule->getInputType()[0])),
+            };
+    return std::vector<std::shared_ptr<Container>>{
+                std::shared_ptr<Container>(new Nil()),
+            };
 }
 std::shared_ptr<Container> ExecOnVec::getOutputType()
 {
-	return std::shared_ptr<Container>(new ContainerVector(pModule->getInputType()));
+	return std::shared_ptr<Container>(new ContainerVector(pModule->getOutputType()));
 }
 
 void exportExecOnVector()

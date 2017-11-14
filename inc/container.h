@@ -90,10 +90,16 @@ public:
         contentType(contentType)
     {}//container vector
 
+    ContainerVector(std::shared_ptr<Container> contentType, size_t numElements)
+        :
+        vector(numElements),
+        contentType(contentType)
+    {}//container vector
+
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        std::shared_ptr<Container> casted = std::dynamic_pointer_cast<ContainerVector>(c);
+        std::shared_ptr<ContainerVector> casted = std::dynamic_pointer_cast<ContainerVector>(c);
         if(casted == nullptr)
             return false;
         return casted->contentType->getType()->canCast(contentType->getType());

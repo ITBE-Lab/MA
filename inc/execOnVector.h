@@ -30,34 +30,30 @@ public:
     //overload
     std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput)
     {
-        std::shared_ptr<ContainerVector> pSeedsVector = std::shared_ptr<SeedsVector>(
-            std::static_pointer_cast<SeedsVector>(vpInput[0]));
+        std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
+            std::static_pointer_cast<ContainerVector>(vpInput[0]));
 
-        std::shared_ptr<SeedsVector> vTempResults = std::shared_ptr<SeedsVector>(
-                new SeedsVector(pSeedsVector->size())
+        std::shared_ptr<ContainerVector> pResults = std::shared_ptr<ContainerVector>(
+                new ContainerVector(pModule->getOutputType(), pInVec->size())
             );
         {
             ThreadPool xPool( NUM_THREADS_ALIGNER );
-            for(unsigned int i = 0; i < vTempResults->size(); i++)
+            for(unsigned int i = 0; i < pResults->size(); i++)
             {
-                (*vTempResults)[i] = std::shared_ptr<Seeds>();
+                (*pResults)[i] = std::shared_ptr<Container>();
                 xPool.enqueue(
-                    [&vTempResults]
+                    [&pResults]
                     (
                         size_t, 
-                        std::shared_ptr<SeedsVector> pSeedsVector,
+                        std::shared_ptr<ContainerVector> pInVec,
                         std::shared_ptr<CppModule> pModule,
                         unsigned int i
                     )
                     {
-                        std::vector<std::shared_ptr<Container>> vInput = {
-                                (*pSeedsVector)[i]
-                            };
+                        std::vector<std::shared_ptr<Container>> vInput{ (*pInVec)[i] };
                         try
                         {
-                            (*vTempResults)[i] = std::static_pointer_cast<Seeds>(
-                                    pModule->execute(vInput));
-                            (*vTempResults)[i]->mem_score = (*vTempResults)[i]->getScore();
+                            (*pResults)[i] = pModule->execute(vInput);
                         }
                         catch(NullPointerException e) 
                         {
@@ -71,19 +67,17 @@ public:
                         {
                             std::cerr << "unknown exception when executing" << std::endl;
                         }
-                        if((*vTempResults)[i] == nullptr)
+                        if((*pResults)[i] == nullptr)
                             std::cerr << "linesweep deleviered nullpointer as result" << std::endl;
-                        if((*vTempResults)[i] == nullptr)
+                        if((*pResults)[i] == nullptr)
                             throw NullPointerException("linesweep deleviered nullpointer as result");
                     },//lambda
-                    pSeedsVector, pModule, i
+                    pInVec, pModule, i
                 );
             }//for
         }//scope xPool
-
-        if(vTempResults->empty())
-            return std::shared_ptr<Seeds>(new Seeds());
-
+/*
+TODO: make module for me
         std::sort(
             vTempResults->begin(), vTempResults->end(),
             []
@@ -92,8 +86,8 @@ public:
                 return a->mem_score > b->mem_score;
             }//lambda
         );//sort function call
-
-        return vTempResults;
+*/
+        return pResults;
     }//function
     
 	std::vector<std::shared_ptr<Container>> getInputType();

@@ -56,8 +56,7 @@ public:
      */
     Seed()
             :
-        Interval(0),
-        uiPosOnReference()
+        Interval()
     {}//copy constructor
     
     /**

@@ -314,7 +314,7 @@ std::vector<std::shared_ptr<Container>> LongestNonEnclosedSegments::getInputType
 }
 std::shared_ptr<Container> LongestNonEnclosedSegments::getOutputType()
 {
-	return std::shared_ptr<Container>(new SegmentList());
+	return std::shared_ptr<Container>(new SegmentTree());
 }
 
 

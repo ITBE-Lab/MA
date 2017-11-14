@@ -109,7 +109,7 @@ public:
 	/**
 	 * @brief Default constructor.
 	 */
-	SegmentTreeInterval(0)
+	SegmentTreeInterval()
 		:
 		Interval(),
 		lxSaSegment()
