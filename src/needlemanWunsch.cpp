@@ -279,11 +279,10 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         beginRef = pSeeds->front().start_ref() - beginQuery*2;
     nucSeqIndex endQuery = pSeeds->back().end();
     assert(endQuery <= pQuery->length());
-    //TODO: can only do forward hits so far...
-    nucSeqIndex endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()/2;
+    nucSeqIndex endRef = pRefPack->uiUnpackedSizeForwardPlusReverse();
     if( 
             pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2 <
-            pRefPack->uiUnpackedSizeForwardPlusReverse()/2
+            pRefPack->uiUnpackedSizeForwardPlusReverse()
         )
         endRef = pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2;
 

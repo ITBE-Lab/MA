@@ -101,6 +101,10 @@ void exportPack()
                 "\n"
                 "Extracts the reverse strand of the pack as sequence.\n"
             )
+        .def(
+                "is_bridging", 
+                &BWACompatiblePackedNucleotideSequencesCollection::bridingSubsection_boost
+            )
         .def_readonly(
                 "unpacked_size_single_strand", 
                 &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardStrand

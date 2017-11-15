@@ -134,10 +134,18 @@ std::shared_ptr<Container> Bucketing::execute(
 
 					/*
 					 * FILTER START
-					 * 1) 	we filter out anchors that are to close to each other
-					 * 		since we do not want to work on the same area twice
-					 * 2)	we make sure that we can never have bridging strips
+					 *
+					 * 1)	we make sure that we can never have bridging strips
+					 *
+					 * 2) 	we filter out anchors that are to close to each other
+					 *		since we do not want to work on the same area twice
 					 */
+					//1)
+					if(pRefSeq->bridingSubsection(uiStart, uiStripSize))
+					{
+						pRefSeq->unBridgeSubsection(uiStart, uiStripSize);
+					}//if
+					//2)
 					for(std::tuple<nucSeqIndex, nucSeqIndex> intv : collectedIntervals)
 					{
 						if(std::get<0>(intv) >= uiEnd)

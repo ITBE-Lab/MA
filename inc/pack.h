@@ -990,6 +990,31 @@ public:
 			return true;
 		} // else
 	} // method
+
+	/*
+	 * Return a sequence id including the reverse complement.
+	 * this is done by multiplying the id's by 2
+	 * an even number is on the forward strand
+	 * an odd on the reverse
+	 * in order to get the initial id do floor(id/2)
+	 */
+	int64_t uiSequenceIdForPositionOrRev( uint64_t uiPosition ) const
+	{
+		if(bPositionIsOnReversStrand(uiPosition))
+			return uiSequenceIdForPosition(iAbsolutePosition(uiPosition)) * 2 + 1;
+		return uiSequenceIdForPosition(uiPosition);
+	}//function
+
+	/*
+	 * @see uiSequenceIdForPositionOrRev
+	 * only use with ids from uiSequenceIdForPositionOrRev
+	 */
+	uint64_t endOfSequenceWithIdOrReverse( int64_t iSequenceId ) const
+	{
+		if(iSequenceId % 2 == 1)
+			return uiPositionToReverseStrand(startOfSequenceWithId(iSequenceId / 2));
+		return endOfSequenceWithId(iSequenceId);
+	}//function
 	
 	/** Returns true if the section defined by both arguments has bridging properties.
 	 * Returns false for a non-bridging section, where the sequence id belonging to the section is transferred via the reference variable.
@@ -999,14 +1024,47 @@ public:
 	{
 		if ( uiSize > 0 )
 		{
-			int64_t riSequenceId = uiSequenceIdForPosition( uiBegin );
+			int64_t riSequenceId = uiSequenceIdForPositionOrRev( uiBegin );
 			return    ( bPositionIsOnReversStrand( uiBegin ) != bPositionIsOnReversStrand( (uiBegin + uiSize) - 1 ) ) // bridging forward reverse border
-				   || ( riSequenceId != uiSequenceIdForPosition( (uiBegin + uiSize) - 1 ) ); // section crosses different sequences
+				   || ( riSequenceId != uiSequenceIdForPositionOrRev( (uiBegin + uiSize) - 1 ) ); // section crosses different sequences
 		} // if
 		else
 		{
 			return true;
 		} // else
+	} // method
+
+	/*
+	 * boost can't handle overloads
+	 * thus we create a un-overloaded function for it...
+	 */
+	bool bridingSubsection_boost( const uint64_t uiBegin, 
+							const uint64_t uiSize) const
+	{
+		return bridingSubsection(uiBegin, uiSize);
+	}//function
+	
+
+
+	/** changes uiBegin and uiSize so that they return the larges possible subinterval that is
+	 * non bridging
+	 * undefined behaviour for a non-bridging interval
+	 */
+	void unBridgeSubsection( uint64_t& uiBegin, uint64_t& uiSize) const
+	{
+		int64_t startId = uiSequenceIdForPositionOrRev( uiBegin );
+
+		uint64_t uiSplit = endOfSequenceWithIdOrReverse(startId);
+		assert(uiBegin <= uiSplit);
+		if(uiBegin + uiSize/2 > uiSplit)
+		{
+			uiSize = uiSize + uiBegin - uiSplit;
+			uiBegin = uiSplit;
+		}//if
+		else
+		{
+			uiSize = uiSplit - uiBegin;
+		}//else
 	} // method
 
 	/* Extracts some subsequence from the packed sequence. (original name bns_get_seq)

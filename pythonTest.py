@@ -82,8 +82,13 @@ def make_list_pretty(lx, ly):
 def get_query(ref_seq, q_len, mutation_amount, del_ins_size):
     q = ""
 
-    q_from = random.randint(0, ref_seq.unpacked_size_single_strand - q_len)
-    q_to = q_from + q_len
+    #do - while loop
+    while True:#do
+        q_from = random.randint(0, ref_seq.unpacked_size() - q_len)
+        q_to = q_from + q_len
+    #while
+        if not ref_seq.is_bridging(q_from, q_len):
+            break
     q = str(ref_seq.extract_from_to(q_from, q_to))
 
     #mutations
@@ -304,8 +309,8 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
 
     print_runtime_breakdown(distances, runtimes_list, names, module_names)
 
-compare_chaining_linesweep_visual()
-exit()
+#compare_chaining_linesweep_visual()
+#exit()
 
 q = ""
 
@@ -359,7 +364,12 @@ result_pledges_2 = set_up_aligner(
 
 print("done")
 
+while True:
+    for i in range(num_test):
+        query_pledge[i].set(get_query(ref_seq, 1000, random.randint(0,30), 10))
 
+    Pledge.simultaneous_get(result_pledges[-1], 32)
+    print("iteration!")
 
 
 runtime_breakdown(num_test, query_pledge, 
