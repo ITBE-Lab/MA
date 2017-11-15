@@ -116,7 +116,7 @@ def get_query(ref_seq, q_len, mutation_amount, del_ins_size):
 
     return NucSeq(q)
 
-def test_chaining(seeds, results):
+def test_chaining(seeds, strip, results):
     output_file("chaining_comp.html")
 
     p1 = figure(
@@ -128,6 +128,8 @@ def test_chaining(seeds, results):
 
     listx = []
     listy = []
+    stripx = []
+    stripy = []
     linex = []
     liney = []
     for seed in seeds:
@@ -140,8 +142,12 @@ def test_chaining(seeds, results):
         liney.append( seed.end() )
         linex.append( float('nan') )
         liney.append( float('nan') )
+    for seed in strip:
+        stripx.append( seed.end_ref() )
+        stripy.append( seed.end() )
 
-    p1.circle(listx, listy, size=10, color="black")
+    p1.circle(listx, listy, size=7, color="black")
+    p1.circle(stripx, stripy, size=10, color="red")
     p1.line(linex, liney, line_width=5 ,color="black")
 
     for index, result_tuple in enumerate(results):
@@ -182,6 +188,18 @@ def make_up_seeds():
             ref_pos))#ref
     return seeds
 
+def make_up_seeds_simple():
+    seeds = Seeds()
+    num = 15
+    for _ in range(num):
+        q_pos = random.randint(0,200)
+        ref_pos = random.randint(0,200)
+        seeds.append(Seed(
+            q_pos,#query
+            random.randint(30,30),#length
+            ref_pos))#ref
+    return seeds
+
 def compare_chaining_linesweep_visual():
     ref_seq = Pack()
     ref_seq.load("/mnt/ssd0/chrom/human/pack")
@@ -194,28 +212,30 @@ def compare_chaining_linesweep_visual():
             query
         ))
 
-    anchors = NlongestIntervalsAsAnchors(10).execute((segments,))
+    anchors = NlongestIntervalsAsAnchors(1).execute((segments,))
 
     bucketing = Bucketing()
     bucketing.max_hits = 5
+    tail = Tail(Seeds())
     extractAll = ExtractAllSeeds()
     extractAll.max_hits = bucketing.max_hits
 
     strips = bucketing.execute((segments, anchors, query, ref_seq, fm_index))
+    strip = tail.execute((strips,))
 
     #only get the best result for linesweep & bucketing
-    ls_res = SweepAllReturnBest(LineSweep()).execute((strips,))[0]
+    ls_res = LineSweep().execute((strip,))
 
-    strip = extractAll.execute((segments, fm_index))
+    #strip = extractAll.execute((segments, fm_index))
 
-    ch_res = Chaining().execute((strip,))
+    ls2_res = LineSweep2().execute((strip,))
 
     seeds = segments.get_seeds(fm_index, 5)
 
     print(len(ls_res))
-    print(len(ch_res))
+    print(len(ls2_res))
 
-    test_chaining(seeds, [(ch_res, "green", "chaining"), (ls_res, "blue", "linesweep")])
+    test_chaining(seeds, strip, [(ls2_res, "green", "linesweep 2"), (ls_res, "blue", "linesweep")])
 
 def print_runtime_breakdown(distances, runtimes_list, names, module_names):
     output_file("runtimes_breakdown.html")
@@ -283,8 +303,8 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
 
     print_runtime_breakdown(distances, runtimes_list, names, module_names)
 
-#compare_chaining_linesweep_visual()
-#exit()
+compare_chaining_linesweep_visual()
+exit()
 
 q = ""
 
