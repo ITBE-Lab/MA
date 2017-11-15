@@ -1,13 +1,13 @@
 #include "linesweep.h"
 
-std::vector<std::shared_ptr<Container>> LineSweep::getInputType()
+std::vector<std::shared_ptr<Container>> LineSweep::getInputType() const
 {
 	return std::vector<std::shared_ptr<Container>>{
 			std::shared_ptr<Container>(new Seeds())
 		};
 }//function
 
-std::shared_ptr<Container> LineSweep::getOutputType()
+std::shared_ptr<Container> LineSweep::getOutputType() const
 {
 	return std::shared_ptr<Container>(new Seeds());
 }//function

@@ -113,9 +113,14 @@ public:
 
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
-    std::vector<std::shared_ptr<Container>> getInputType();
+    std::vector<std::shared_ptr<Container>> getInputType() const;
 
-	std::shared_ptr<Container> getOutputType();
+	std::shared_ptr<Container> getOutputType() const;
+
+    std::string getName() const
+    {
+        return "Bucketing";
+    }
 };//class
 
 /**

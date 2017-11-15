@@ -2,7 +2,7 @@
 
 
 
-std::vector<std::shared_ptr<Container>> ExtractAllSeeds::getInputType()
+std::vector<std::shared_ptr<Container>> ExtractAllSeeds::getInputType() const
 {
 	return std::vector<std::shared_ptr<Container>>
 	{
@@ -13,7 +13,7 @@ std::vector<std::shared_ptr<Container>> ExtractAllSeeds::getInputType()
 	};
 }//function
 
-std::shared_ptr<Container> ExtractAllSeeds::getOutputType()
+std::shared_ptr<Container> ExtractAllSeeds::getOutputType() const
 {
 	return std::shared_ptr<Container>(new Seeds());
 }//function

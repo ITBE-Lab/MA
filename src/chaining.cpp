@@ -1,6 +1,6 @@
 #include "chaining.h"
 
-std::vector<std::shared_ptr<Container>> Chaining::getInputType()
+std::vector<std::shared_ptr<Container>> Chaining::getInputType() const
 {
 	return std::vector<std::shared_ptr<Container>>{
 			//the strip of consideration
@@ -8,7 +8,7 @@ std::vector<std::shared_ptr<Container>> Chaining::getInputType()
 		};
 }//function
 
-std::shared_ptr<Container> Chaining::getOutputType()
+std::shared_ptr<Container> Chaining::getOutputType() const
 {
 	return std::shared_ptr<Container>(new Seeds());
 }//function

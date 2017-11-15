@@ -5,6 +5,7 @@ import os
 import math
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import row, column
+from bokeh.palettes import d3
 
 
 _proc_status = '/proc/%d/status' % os.getpid()
@@ -216,20 +217,73 @@ def compare_chaining_linesweep_visual():
 
     test_chaining(seeds, [(ch_res, "green", "chaining"), (ls_res, "blue", "linesweep")])
 
-def print_runtime_breakdown(result_pledges):
+def print_runtime_breakdown(distances, runtimes_list, names, module_names):
+    output_file("runtimes_breakdown.html")
+    plots = []
+    for index, runtimes in enumerate(runtimes_list):
+        colors = d3["Category10"][10]
+        p1 = figure(
+                title=names[index],
+                x_axis_label='distance',
+                y_axis_label='seconds',
+                plot_width=800,
+                plot_height=800)
+
+        for index2, runtime in enumerate(runtimes):
+            p1.line(distances, runtime, legend=module_namesp[index][index2], line_width=5, color=colors[index2])
+
+        plots.append(p1)
+
+    show(row(plots))
+
+def runtime_breakdown_helper(result_pledges):
+    ret = []
     for index, step in enumerate(result_pledges):
         avg = 0
         for pledge in step:
             avg += pledge.exec_time
         avg /= len(step)
-        print("step " + str(index) + " of the alignment took " + str(avg) + " seconds")
+        ret.append(avg)
+    return ret
+
+
+def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
+    distances = []
+
+    #setup a new list
+    module_names = []
+    runtimes_list = []
+    for result_pledges in result_pledges_list:
+        runtimes = []
+        names = []
+        for pledge in result_pledges:
+            runtimes.append([])
+            names.append(pledge[0].get_pledger().get_name())
+        runtimes_list.append(runtimes)
+        module_names.append(names)
+
+    max_dist = 15
+    for distance in range(0,max_dist):
+        print(str(distance) + "/" + str(max_dist))
+        distances.append(distance)
+        for i in range(num_test):
+            query_pledge[i].set(get_query(ref_seq, 1000, distance, 10))
+
+        for result_pledges in result_pledges_list:
+            Pledge.simultaneous_get(result_pledges[-1], 10)
+
+        for index1, result_pledges in enumerate(result_pledges_list):
+            for index, runtime in enumerate(runtime_breakdown_helper(result_pledges)):
+                runtimes_list[index1][index].append(runtime)
+
+    print_runtime_breakdown(distances, runtimes_list, names)
 
 #compare_chaining_linesweep_visual()
 #exit()
 
 q = ""
 
-num_test = 1000
+num_test = 100
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(NucSeq()))
@@ -256,21 +310,17 @@ result_pledges = set_up_aligner(
     fm_index_pledge,
     max_hits=10
 )
-print("done")
 
 
-while True:
-    print("generation...")
-    for i in range(num_test):
-        query_pledge[i].set(get_query(ref_seq, 1000, random.randint(0,30), 10))
-    print("done")
-
-    print("alignment...")
-    #result_pledges[-1][0].get()
-    Pledge.simultaneous_get(result_pledges[-1], 16)
-    print("done")
-
-    print_runtime_breakdown(result_pledges)
-
+result_pledges_2 = set_up_aligner(
+    query_pledge,
+    reference_pledge,
+    fm_index_pledge,
+    max_hits=10,
+    chain=Chaining()
+)
 
 print("done")
+
+runtime_breakdown(num_test, query_pledge, 
+    [result_pledges, result_pledges_2], ["default", "chaining"])

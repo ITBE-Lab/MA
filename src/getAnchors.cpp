@@ -1,14 +1,14 @@
 #include "getAnchors.h"
 
 
-std::vector<std::shared_ptr<Container>> NlongestIntervalsAsAnchors::getInputType()
+std::vector<std::shared_ptr<Container>> NlongestIntervalsAsAnchors::getInputType() const
 {
     return std::vector<std::shared_ptr<Container>>{
             std::shared_ptr<Container>(new SegmentTree())
         };
 }//function
 
-std::shared_ptr<Container> NlongestIntervalsAsAnchors::getOutputType()
+std::shared_ptr<Container> NlongestIntervalsAsAnchors::getOutputType() const
 {
     return std::shared_ptr<Container>(new SegmentTree());
 }//function

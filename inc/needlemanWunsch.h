@@ -26,11 +26,15 @@ public:
     std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
     //overload
-    std::vector<std::shared_ptr<Container>> getInputType();
+    std::vector<std::shared_ptr<Container>> getInputType() const;
 
     //overload
-    std::shared_ptr<Container> getOutputType();
+    std::shared_ptr<Container> getOutputType() const;
 
+    std::string getName() const
+    {
+        return "NeedlemanWunsch";
+    }
 };//class
 
 /**

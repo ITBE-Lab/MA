@@ -1,6 +1,6 @@
 #include "execOnVector.h"
 
-std::vector<std::shared_ptr<Container>> ExecOnVec::getInputType()
+std::vector<std::shared_ptr<Container>> ExecOnVec::getInputType() const
 {
     std::shared_ptr<ContainerVector> pVec(new ContainerVector(pModule->getInputType()[0]));
 
@@ -10,7 +10,7 @@ std::vector<std::shared_ptr<Container>> ExecOnVec::getInputType()
     return vRet;
 }//function
 
-std::shared_ptr<Container> ExecOnVec::getOutputType()
+std::shared_ptr<Container> ExecOnVec::getOutputType() const
 {
 	return std::shared_ptr<Container>(new ContainerVector(pModule->getOutputType()));
 }//function
@@ -84,14 +84,14 @@ std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Contai
     return pResults;
 }//function
 
-std::vector<std::shared_ptr<Container>> Tail::getInputType()
+std::vector<std::shared_ptr<Container>> Tail::getInputType() const
 {
     return std::vector<std::shared_ptr<Container>>{
                 std::shared_ptr<ContainerVector>(new ContainerVector(type)),
             };
 }//function
 
-std::shared_ptr<Container> Tail::getOutputType()
+std::shared_ptr<Container> Tail::getOutputType() const
 {
 	return type;
 }//function

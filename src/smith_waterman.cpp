@@ -8,7 +8,7 @@
 #include "smith_waterman.h"
 
 
-std::vector<std::shared_ptr<Container>> SMW::getInputType()
+std::vector<std::shared_ptr<Container>> SMW::getInputType() const
 {
 	return std::vector<std::shared_ptr<Container>>{
 			//the query sequence
@@ -19,7 +19,7 @@ std::vector<std::shared_ptr<Container>> SMW::getInputType()
 }//function
 
 
-std::shared_ptr<Container> SMW::getOutputType()
+std::shared_ptr<Container> SMW::getOutputType() const
 {
 	return std::shared_ptr<Container>(new Alignment());
 }//function

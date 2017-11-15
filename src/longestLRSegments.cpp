@@ -342,7 +342,7 @@ void LongestLRSegments::procesInterval(
 }//function
 
 
-std::vector<std::shared_ptr<Container>> LongestLRSegments::getInputType()
+std::vector<std::shared_ptr<Container>> LongestLRSegments::getInputType() const
 {
 	return std::vector<std::shared_ptr<Container>>{
 			//the forward fm_index
@@ -351,7 +351,7 @@ std::vector<std::shared_ptr<Container>> LongestLRSegments::getInputType()
 			std::shared_ptr<Container>(new NucleotideSequence()),
 		};
 }
-std::shared_ptr<Container> LongestLRSegments::getOutputType()
+std::shared_ptr<Container> LongestLRSegments::getOutputType() const
 {
 	return std::shared_ptr<Container>(new SegmentTree());
 }

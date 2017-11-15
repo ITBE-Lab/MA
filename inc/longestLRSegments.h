@@ -57,8 +57,13 @@ public:
 	
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
-	std::vector<std::shared_ptr<Container>> getInputType();
-    std::shared_ptr<Container> getOutputType();
+	std::vector<std::shared_ptr<Container>> getInputType() const;
+    std::shared_ptr<Container> getOutputType() const;
+
+    std::string getName() const
+    {
+        return "LongestLRSegments";
+    }
 };//class
 
 

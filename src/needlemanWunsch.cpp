@@ -3,7 +3,7 @@
 
 
 
-std::vector<std::shared_ptr<Container>> NeedlemanWunsch::getInputType()
+std::vector<std::shared_ptr<Container>> NeedlemanWunsch::getInputType() const
 {
     return std::vector<std::shared_ptr<Container>>{
         //the sound strip of consideration
@@ -15,7 +15,7 @@ std::vector<std::shared_ptr<Container>> NeedlemanWunsch::getInputType()
     };
 }//function
 
-std::shared_ptr<Container> NeedlemanWunsch::getOutputType()
+std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
 {
     return std::shared_ptr<Container>(new Alignment());
 }//function

@@ -31,7 +31,6 @@ bool typeCheck(
         for(unsigned int i = 0; i < vData.size(); i++)
             std::cerr << vData[i]->getType()->getTypeName() << ", ";
         std::cerr << "]" << std::endl;
-        std::cerr << std::endl;
         return false;
     }//for
     for(unsigned int i = 0; i < vData.size(); i++)
@@ -59,7 +58,10 @@ std::shared_ptr<Pledge> CppModule::promiseMe(
 {
     std::vector<std::shared_ptr<Container>> vCastInput(vInput.begin(), vInput.end());
     if(!typeCheck(vCastInput, pThis->getInputType()))
+    {
+        std::cerr << "promise of module " << pThis->getName() << " had the wrong type" << std::endl;
         throw new ModuleIO_Exception("Input type and expected input type did not match.");
+    }//if
     return Pledge::makePledge(pThis, vInput);
 }//function
 
@@ -93,6 +95,12 @@ void exportModule()
                 &CppModule::getOutputType,
                 "arg1: self\n"
                 "returns: the type of containers that is expected as output from this module\n"
+            )
+        .def(
+                "get_name",
+                &CppModule::getName,
+                "arg1: self\n"
+                "returns: the module name\n"
             )
         .def(
                 "promise_me",
@@ -160,6 +168,10 @@ void exportModule()
                     "/n"
                 )
             .staticmethod("simultaneous_get")
+            .def(
+                    "get_pledger",
+                    &Pledge::getPledger
+                )
             .def_readwrite("exec_time", &Pledge::execTime)
         ;
 

@@ -75,7 +75,7 @@ public:
      * @details
      * Used for type checking the inputs before calling execute.
      */
-    virtual std::vector<std::shared_ptr<Container>> getInputType()
+    virtual std::vector<std::shared_ptr<Container>> getInputType() const
     {
         return std::vector<std::shared_ptr<Container>>{std::shared_ptr<Container>(new Nil())};
     }
@@ -85,9 +85,14 @@ public:
      * @details
      * Used for type checking weather the module returns expected data.
      */
-    virtual std::shared_ptr<Container> getOutputType()
+    virtual std::shared_ptr<Container> getOutputType() const
     {
         return std::shared_ptr<Container>(new Nil());
+    }
+
+    virtual std::string getName() const
+    {
+        return "Module";
     }
 
     /**
@@ -99,10 +104,16 @@ public:
     std::shared_ptr<Container> saveExecute(std::vector<std::shared_ptr<Container>> vInput)
     {
         if(!typeCheck(vInput, getInputType()))
+        {
+            std::cerr << "input of module " << getName() << " had the wrong type" << std::endl;
             throw new ModuleIO_Exception("Input type and expected input type did not match.");
+        }//if
         std::shared_ptr<Container> pRet = execute(vInput);
         if(!typeCheck(pRet, getOutputType()))
+        {
+            std::cerr << "output of module " << getName() << " had the wrong type" << std::endl;
             throw new ModuleIO_Exception("Module produced output of wrong type.");
+        }//if
         return pRet;
     }//function
 
@@ -344,6 +355,11 @@ public:
         return type->getType();
     }//function
 
+
+    const std::shared_ptr<CppModule> getPledger() const
+    {
+        return pledger;
+    }//function
 
     static inline std::shared_ptr<Pledge> makePledge(
             std::shared_ptr<CppModule> pledger,

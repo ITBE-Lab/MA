@@ -2,7 +2,7 @@
 
 
 
-std::vector<std::shared_ptr<Container>> Bucketing::getInputType()
+std::vector<std::shared_ptr<Container>> Bucketing::getInputType() const
 {
 	return std::vector<std::shared_ptr<Container>>
 	{
@@ -19,7 +19,7 @@ std::vector<std::shared_ptr<Container>> Bucketing::getInputType()
 	};
 }//function
 
-std::shared_ptr<Container> Bucketing::getOutputType()
+std::shared_ptr<Container> Bucketing::getOutputType() const
 {
 	return std::shared_ptr<Container>(new ContainerVector(
 			std::shared_ptr<Container>(new Seeds())
