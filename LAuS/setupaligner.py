@@ -89,15 +89,15 @@ def set_up_aligner(
             return_pledges[ret_pl_indx].append(strips_pledge)
             ret_pl_indx += 1
 
-            best_pledge = execall.promise_me((
+            chains_pledge = execall.promise_me((
                 strips_pledge,
             ))
 
-            return_pledges[ret_pl_indx].append(best_pledge)
+            return_pledges[ret_pl_indx].append(chains_pledge)
             ret_pl_indx += 1
 
             alignments_pledge = nmw_multiple.promise_me((
-                best_pledge,
+                chains_pledge,
                 query_pledge,
                 reference_pledge
             ))
@@ -134,4 +134,4 @@ def set_up_aligner(
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
         return return_pledges
     else:
-        return return_pledges[0]
+        return [item for sublist in return_pledges for item in sublist]

@@ -119,8 +119,6 @@
  * - move backwards extension into fm_index class
  * - STOP ADDING ITEMS TO THIS LIST
  * - reintroduce rotations to searchTree
- * - do runtime breakdown => result: bucketing is the slowest! 
- *      (switch to a implementation using range querys?)
  * 
  * @section about_us_sec About Us
  * 

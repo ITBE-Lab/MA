@@ -231,9 +231,10 @@ def compare_chaining_linesweep_visual():
     ls2_res = LineSweep2().execute((strip,))
 
     seeds = segments.get_seeds(fm_index, 5)
-
+    
     print(len(ls_res))
     print(len(ls2_res))
+
 
     test_chaining(seeds, strip, [(ls2_res, "green", "linesweep 2"), (ls_res, "blue", "linesweep")])
 
@@ -303,8 +304,8 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
 
     print_runtime_breakdown(distances, runtimes_list, names, module_names)
 
-compare_chaining_linesweep_visual()
-exit()
+#compare_chaining_linesweep_visual()
+#exit()
 
 q = ""
 
@@ -333,11 +334,20 @@ result_pledges = set_up_aligner(
     query_pledge,
     reference_pledge,
     fm_index_pledge,
-    max_hits=10,
-    num_anchors=1
+    chain=LineSweep2(),
+    seg=LongestLRSegments()
 )
-
-
+"""
+query_pledge[0].set(get_query(ref_seq, 1000, 1, 10))
+printer = AlignmentPrinter()
+alignment = result_pledges[-1][0].get()
+for chain in ContainerVectorContainer(result_pledges[-3][0].get()).get():
+    print("chain" + str(len(chain)))
+print(alignment.begin_on_ref())
+print(alignment.end_on_ref())
+printer.execute((alignment,query_pledge[0].get(), ref_seq))
+exit()
+"""
 result_pledges_2 = set_up_aligner(
     query_pledge,
     reference_pledge,
@@ -349,5 +359,10 @@ result_pledges_2 = set_up_aligner(
 
 print("done")
 
+
+
+
 runtime_breakdown(num_test, query_pledge, 
     [result_pledges, result_pledges_2], ["default", "chaining (no strip of c.)"])
+
+

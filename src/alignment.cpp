@@ -63,6 +63,21 @@ void exportAlignment()
                 "arg1: self\n"
                 "returns: length of the alignmen\n"
             )
+        .def(
+                "seed_coverage", 
+                &Alignment::seedCoverage,
+                "arg1: self\n"
+            )
+        .def(
+                "get_score", 
+                &Alignment::score,
+                "arg1: self\n"
+            )
+        .def(
+                "num_by_seeds", 
+                &Alignment::numBySeeds,
+                "arg1: self\n"
+            )
     ;
 
     

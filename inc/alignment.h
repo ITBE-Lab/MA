@@ -130,7 +130,7 @@ public:
      * @returns the type of math for the given position i.
      * @brief Type of math at i.
      */
-    MatchType at(nucSeqIndex i)
+    MatchType at(nucSeqIndex i) const
     {
         //everything after the query is a deletion
         if(i >= uiLength)
@@ -148,7 +148,7 @@ public:
      * @returns the type of math for the given position i.
      * @brief Type of math at i.
      */
-    MatchType operator[](nucSeqIndex i)
+    MatchType operator[](nucSeqIndex i) const
     {
         return at(i);
     }//operator
@@ -190,7 +190,7 @@ public:
 
     ///@returns the length of the alignment
     ///@brief Length of the alignment
-    nucSeqIndex length()
+    nucSeqIndex length() const
     {
         return uiLength;
     }//function
@@ -209,7 +209,8 @@ public:
         return uiEndOnRef;
     }//function
 
-    int score(){
+    int score() const
+    {
         int score = 0;
 
         bool firstGap = true;
@@ -240,6 +241,24 @@ public:
         return score;
     }
 
+    float seedCoverage() const
+    {
+        unsigned int iCount = 0;
+        for(unsigned int i = 0; i < length(); i++)
+            if(at(i) == MatchType::seed)
+                iCount++;
+        return ((float)iCount)/ (float)length();
+    }
+
+    unsigned int numBySeeds() const
+    {
+        unsigned int iCount = 0;
+        for(unsigned int i = 0; i < length(); i++)
+            if(at(i) == MatchType::seed)
+                iCount++;
+        return iCount;
+    }
+
     /**
      * @brief Remove dangeling deletions.
      * @details
@@ -263,9 +282,9 @@ public:
         }//if
     }//function
 
-    bool smaller(std::shared_ptr<Container> pOther)
+    bool smaller(const std::shared_ptr<Container> pOther) const
     {
-        std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
+        const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
         if(pAlign == nullptr)
             return false;
         return score() < pAlign->score();

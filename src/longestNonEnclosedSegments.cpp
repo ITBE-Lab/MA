@@ -333,12 +333,7 @@ std::shared_ptr<Container> LongestNonEnclosedSegments::execute(
 	assert(*pSegmentTree->begin() != nullptr);
 
 	{//scope for xPool
-		DEBUG(
-			ThreadPoolAllowingRecursiveEnqueues xPool( 1 );
-		)
-		#if DEBUG_LEVEL <= 0
-			ThreadPoolAllowingRecursiveEnqueues xPool( NUM_THREADS_ALIGNER );
-		#endif
+		ThreadPoolAllowingRecursiveEnqueues xPool( NUM_THREADS_ALIGNER );
 
 		//enqueue the root interval for processing
 		xPool.enqueue( 

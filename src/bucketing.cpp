@@ -77,6 +77,7 @@ void Bucketing::saveSeeds(
 	);//for each
 }///function
 
+
 std::shared_ptr<Container> Bucketing::execute(
 		std::vector<std::shared_ptr<Container>> vpInput
 	)
@@ -91,6 +92,95 @@ std::shared_ptr<Container> Bucketing::execute(
 
 //switch for different method of doing this
 #if 1
+
+	std::vector<Seed> vSeeds;
+	pSegments->forEach(
+		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
+		{
+			forEachNonBridgingSeed(
+				pxNode, pFM_index, pRefSeq, pQuerySeq,
+				[&](Seed xSeed)
+				{
+					vSeeds.push_back(xSeed);
+				}//lambda
+			);//for each
+		}//lambda
+	);//forEach
+
+	//sort the seeds according to their initial positions
+	std::sort(
+		vSeeds.begin(), vSeeds.end(),
+		[&]
+		(const Seed a, const Seed b)
+		{
+			return getPositionForBucketing(pQuerySeq->length(), a) 
+					< getPositionForBucketing(pQuerySeq->length(), b);
+		}//lambda
+	);//sort function call
+
+	//used to make sure we don't collect the same area twice
+	std::vector<std::tuple<nucSeqIndex, nucSeqIndex>> collectedIntervals;
+
+	std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
+	pAnchors->forEach(
+		[&](std::shared_ptr<SegmentTreeInterval> pxAnchor)
+		{
+			forEachNonBridgingSeed(
+				pxAnchor, pFM_index, pRefSeq, pQuerySeq,
+				[&](Seed xAnchor)
+				{
+					nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
+					nucSeqIndex uiEnd = uiStart + uiStripSize;
+
+					/*
+					 * FILTER START
+					 * 1) 	we filter out anchors that are to close to each other
+					 * 		since we do not want to work on the same area twice
+					 * 2)	we make sure that we can never have bridging strips
+					 */
+					for(std::tuple<nucSeqIndex, nucSeqIndex> intv : collectedIntervals)
+					{
+						if(std::get<0>(intv) >= uiEnd)
+							continue;
+						if(std::get<1>(intv) <= uiStart)
+							continue;
+					}//for
+					collectedIntervals.push_back(std::make_tuple(uiStart, uiEnd));
+					/*
+					 * FILTER END
+					 */
+
+
+					std::shared_ptr<Seeds> pxNew(new Seeds());
+
+					//binary search for the first element in range
+					auto iterator = std::lower_bound(
+						vSeeds.begin(), vSeeds.end(), uiStart,
+						[&]
+						(const Seed a, const nucSeqIndex uiStart)
+						{
+							return getPositionForBucketing(pQuerySeq->length(), a) < uiStart;
+						}//lambda
+					);//binary search function call
+					assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
+
+					while(
+							iterator != vSeeds.end() &&
+							getPositionForBucketing(pQuerySeq->length(), *iterator) < uiEnd
+						)
+					{
+						pxNew->push_back(*iterator);
+						++iterator;
+					}//while
+
+					pRet->push_back(pxNew);
+				},//lambda
+				uiStripSize/2
+			);//for each
+		}//lambda
+	);//for each
+	return pRet;
+#elif 1
 
 	std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 	/*

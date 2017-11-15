@@ -249,12 +249,16 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         }
         while(pSeeds->size() > 1 && pSeeds->front().end_ref() + iMaxDist < iCenter)
         {
-            std::cout << "WARNING: removed dangeling front" << std::endl;
+            DEBUG(
+                std::cout << "WARNING: removed dangeling front" << std::endl;
+            )
             pSeeds->pop_front();
         }//if
         while(pSeeds->size() > 1 && pSeeds->back().start_ref() > iCenter + iMaxDist)
         {
-            std::cout << "WARNING: removed dangeling back" << std::endl;
+            DEBUG(
+                std::cout << "WARNING: removed dangeling back" << std::endl;
+            )
             pSeeds->pop_back();
         }//while
     }//if

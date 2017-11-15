@@ -76,7 +76,7 @@ public:
 	bool bSkipLongBWTIntervals = true;
 	
 private:
-	nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS) const 
+	inline nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS) const 
 	{ 
 		return xS.start_ref() + (uiQueryLength - xS.start()); 
 	}//function

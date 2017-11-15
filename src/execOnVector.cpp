@@ -78,7 +78,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Contai
         );//sort function call
     }//if
 
-    while(nMany != 0 || pResults->size() > nMany)
+    while(nMany != 0 && pResults->size() > nMany)
         pResults->pop_back();
 
     return pResults;

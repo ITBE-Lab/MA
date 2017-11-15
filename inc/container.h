@@ -52,7 +52,7 @@ public:
      * @details
      * used by ExecOnVec to sort containers in order
      */
-    virtual bool smaller(const std::shared_ptr<Container> other)
+    virtual bool smaller(const std::shared_ptr<Container> other) const
 	{
 		return true;
 	}// operator
@@ -99,6 +99,12 @@ public:
         contentType(contentType)
     {}//container vector
 
+    ContainerVector(const std::shared_ptr<ContainerVector> pOther)
+            :
+        vector(*pOther),
+        contentType(pOther->contentType)
+    {}//container vector
+
     ContainerVector(std::shared_ptr<Container> contentType, size_t numElements)
         :
         vector(numElements),
@@ -124,6 +130,12 @@ public:
     std::shared_ptr<Container> getType() const
     {
         return std::shared_ptr<Container>(new ContainerVector(contentType));
+    }//function
+
+    //overload
+    std::vector<std::shared_ptr<Container>> get()
+    {
+        return *this;
     }//function
 
 

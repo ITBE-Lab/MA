@@ -497,6 +497,43 @@ public:
         assert(!isEmpty());
         return pRoot->get();
     }//function
+
+    #if 0
+    //FIXME: UNTESTED... (not necessary)
+    void range_query(std::function<void(const T)> fDo, const T from, const T to) const
+    {
+        std::shared_ptr<Node> pCurr = pRoot;
+        //find starting Point
+        while(pCurr->getHeight() > 1)
+        {
+            if(from < pCurr->get())
+            {
+                if(pCurr->getLeft()->getHeight() > 1)
+                    pCurr = pCurr->getLeft();
+                else
+                    break;
+            }//if
+            else
+            {
+                if(pCurr->getRight()->getHeight() > 1)
+                    pCurr = pCurr->getRight();
+                else
+                    break;
+            }//else
+        }//while
+
+        //found nothing
+        if(pCurr->getHeight() == 0)
+            return;
+
+        //follow the next pointers until we are further than to
+        while(pCurr != nullptr && pCurr->get() < to)
+        {
+            fDo(pCurr->get());
+            pCurr = pCurr->next();
+        }//while
+    }//function
+    #endif
 };//class
 
 #endif
