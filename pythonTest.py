@@ -230,7 +230,7 @@ def print_runtime_breakdown(distances, runtimes_list, names, module_names):
                 plot_height=800)
 
         for index2, runtime in enumerate(runtimes):
-            p1.line(distances, runtime, legend=module_namesp[index][index2], line_width=5, color=colors[index2])
+            p1.line(distances, runtime, legend=module_names[index][index2], line_width=5, color=colors[index2])
 
         plots.append(p1)
 
@@ -259,6 +259,8 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
         for pledge in result_pledges:
             runtimes.append([])
             names.append(pledge[0].get_pledger().get_name())
+        names.append("total")
+        runtimes.append([])
         runtimes_list.append(runtimes)
         module_names.append(names)
 
@@ -273,10 +275,13 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
             Pledge.simultaneous_get(result_pledges[-1], 10)
 
         for index1, result_pledges in enumerate(result_pledges_list):
+            total = 0
             for index, runtime in enumerate(runtime_breakdown_helper(result_pledges)):
                 runtimes_list[index1][index].append(runtime)
+                total += runtime
+            runtimes_list[index1][-1].append(total)
 
-    print_runtime_breakdown(distances, runtimes_list, names)
+    print_runtime_breakdown(distances, runtimes_list, names, module_names)
 
 #compare_chaining_linesweep_visual()
 #exit()
@@ -308,7 +313,8 @@ result_pledges = set_up_aligner(
     query_pledge,
     reference_pledge,
     fm_index_pledge,
-    max_hits=10
+    max_hits=10,
+    num_anchors=1
 )
 
 
@@ -317,10 +323,11 @@ result_pledges_2 = set_up_aligner(
     reference_pledge,
     fm_index_pledge,
     max_hits=10,
-    chain=Chaining()
+    chain=Chaining(),
+    strips_of_consideration=False
 )
 
 print("done")
 
 runtime_breakdown(num_test, query_pledge, 
-    [result_pledges, result_pledges_2], ["default", "chaining"])
+    [result_pledges, result_pledges_2], ["default", "chaining (no strip of c.)"])
