@@ -130,7 +130,6 @@ std::shared_ptr<Container> Bucketing::execute(
 				[&](Seed xAnchor)
 				{
 					nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
-					nucSeqIndex uiEnd = uiStart + uiStripSize;
 
 					/*
 					 * FILTER START
@@ -141,10 +140,15 @@ std::shared_ptr<Container> Bucketing::execute(
 					 *		since we do not want to work on the same area twice
 					 */
 					//1)
+					if(uiStripSize/2 > getPositionForBucketing(pQuerySeq->length(), xAnchor))
+						uiStart = 0;
+					if(uiStart + uiStripSize >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
+						uiStripSize = pRefSeq->uiUnpackedSizeForwardPlusReverse() - uiStart - 1;
 					if(pRefSeq->bridingSubsection(uiStart, uiStripSize))
 					{
 						pRefSeq->unBridgeSubsection(uiStart, uiStripSize);
 					}//if
+					nucSeqIndex uiEnd = uiStart + uiStripSize;
 					//2)
 					for(std::tuple<nucSeqIndex, nucSeqIndex> intv : collectedIntervals)
 					{

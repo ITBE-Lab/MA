@@ -1001,8 +1001,8 @@ public:
 	int64_t uiSequenceIdForPositionOrRev( uint64_t uiPosition ) const
 	{
 		if(bPositionIsOnReversStrand(uiPosition))
-			return uiSequenceIdForPosition(iAbsolutePosition(uiPosition)) * 2 + 1;
-		return uiSequenceIdForPosition(uiPosition);
+			return uiSequenceIdForPosition(uiPositionToReverseStrand(uiPosition)) * 2 + 1;
+		return uiSequenceIdForPosition(uiPosition) * 2;
 	}//function
 
 	/*
@@ -1013,7 +1013,7 @@ public:
 	{
 		if(iSequenceId % 2 == 1)
 			return uiPositionToReverseStrand(startOfSequenceWithId(iSequenceId / 2));
-		return endOfSequenceWithId(iSequenceId);
+		return endOfSequenceWithId(iSequenceId / 2);
 	}//function
 	
 	/** Returns true if the section defined by both arguments has bridging properties.
