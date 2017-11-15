@@ -328,6 +328,16 @@ std::shared_ptr<Container> LineSweep2::execute(
     //perform the line sweep algorithm on the right shadows
     linesweep(vShadows, pSeeds);
 
+    //shadows need to be sorted for the following steps
+    pSeeds->sort(
+            [](const Seed& xA, const Seed& xB)
+            {
+                if(xA.start_ref() == xB.start_ref())
+                    return xA.start() < xB.start();
+                return xA.start_ref() < xB.start_ref();
+            }//lambda
+        );//sort function call
+
     //copy pSeeds since we want to return it
     return pSeeds;
 }//function

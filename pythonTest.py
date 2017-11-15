@@ -147,7 +147,7 @@ def test_chaining(seeds, strip, results):
         stripy.append( seed.end() )
 
     p1.circle(listx, listy, size=7, color="black")
-    p1.circle(stripx, stripy, size=10, color="red")
+    p1.circle(stripx, stripy, size=10, legend="in strip of cons.", color="red")
     p1.line(linex, liney, line_width=5 ,color="black")
 
     for index, result_tuple in enumerate(results):
@@ -304,8 +304,8 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
 
     print_runtime_breakdown(distances, runtimes_list, names, module_names)
 
-#compare_chaining_linesweep_visual()
-#exit()
+compare_chaining_linesweep_visual()
+exit()
 
 q = ""
 
