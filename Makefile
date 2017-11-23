@@ -37,7 +37,7 @@ html/index.html: $(wildcard inc/*.h) $(wildcard LAuS/*.py)
 
 install: all
 	pip3 install . --upgrade --no-cache-dir
-	cp /usr/home/markus/aligner/libLAuS.so /usr/lib
+	cp /usr/home/markus/workspace/aligner/libLAuS.so /usr/lib
 	pip3 show LAuS
 
 

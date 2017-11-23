@@ -314,7 +314,7 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
 
 q = ""
 
-num_test = 100
+num_test = 500
 query_pledge = []
 for _ in range(num_test):
     query_pledge.append(Pledge(NucSeq()))
@@ -366,7 +366,7 @@ print("done")
 
 while True:
     for i in range(num_test):
-        query_pledge[i].set(get_query(ref_seq, 1000, random.randint(0,30), 10))
+        query_pledge[i].set(get_query(ref_seq, 100, random.randint(0,5), 10))
 
     Pledge.simultaneous_get(result_pledges[-1], 32)
     print("iteration!")

@@ -875,6 +875,16 @@ public:
 		return xVectorOfSequenceDescriptors[iSequenceId].uiStartOffsetUnpacked;
 	} // method
 
+	/* Start of in sequence with id on forward strand.
+	 */
+	uint64_t startOfSequenceWithName( std::string name ) const
+	{
+		for(const SequenceInPack& seq : xVectorOfSequenceDescriptors)
+			if(seq.sName.compare(name) == 0)
+				return seq.uiStartOffsetUnpacked;
+		return 0;
+	} // method
+
 	/* Start of sequence with id on reverse strand. 
 	 */
 	uint64_t endOfSequenceWithId( int64_t iSequenceId ) const
@@ -1017,11 +1027,12 @@ public:
 	}//function
 	
 	/** Returns true if the section defined by both arguments has bridging properties.
-	 * Returns false for a non-bridging section, where the sequence id belonging to the section is transferred via the reference variable.
+	 * Returns false for a non-bridging section.
 	 */
 	bool bridingSubsection( const uint64_t uiBegin, 
 							const uint64_t uiSize) const
 	{
+		assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse() );
 		if ( uiSize > 0 )
 		{
 			int64_t riSequenceId = uiSequenceIdForPositionOrRev( uiBegin );
@@ -1052,6 +1063,7 @@ public:
 	 */
 	void unBridgeSubsection( uint64_t& uiBegin, uint64_t& uiSize) const
 	{
+		assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse() );
 		int64_t startId = uiSequenceIdForPositionOrRev( uiBegin );
 
 		uint64_t uiSplit = endOfSequenceWithIdOrReverse(startId);

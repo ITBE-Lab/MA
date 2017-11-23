@@ -105,6 +105,12 @@ public:
         contentType(pOther->contentType)
     {}//container vector
 
+    ContainerVector(std::shared_ptr<std::vector<std::shared_ptr<Container>>> pContent)
+            :
+        vector(*pContent),
+        contentType(pContent->front()->getType())
+    {}//container vector
+
     ContainerVector(std::shared_ptr<Container> contentType, size_t numElements)
         :
         vector(numElements),
@@ -138,6 +144,10 @@ public:
         return *this;
     }//function
 
+    void push_back_boost(std::shared_ptr<Container> c)
+    {
+        push_back(c);
+    }//function
 
 };//class
 

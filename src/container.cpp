@@ -47,7 +47,10 @@ void exportContainer()
                 "ContainerVectorContainer"
             )
         .def(boost::python::init<const std::shared_ptr<ContainerVector>>())
+        .def(boost::python::init<std::shared_ptr<Container>>())
+        .def(boost::python::init<std::shared_ptr<std::vector<std::shared_ptr<Container>>>>())
         .def("get", &ContainerVector::get)
+        .def("append", &ContainerVector::push_back_boost)
         ;
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 

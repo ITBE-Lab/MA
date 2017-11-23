@@ -453,11 +453,14 @@ public:
              * here we jump to python code to call a function and resume the cpp code 
              * once python is done...
              */
+            auto timeStamp = std::chrono::system_clock::now();
             content = boost::python::extract<
                     std::shared_ptr<Container>
                 >(
                     py_pledger.attr("save_execute")(vInput)
                 ); 
+            std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
+            execTime = duration.count();
             assert(typeCheck(content, type));
         }//else
         return content;

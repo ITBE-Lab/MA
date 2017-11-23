@@ -17,6 +17,7 @@ void exportAlignment()
                 "arg2: index at which to look\n"
                 "returns: match type at the given position\n"
             )
+        .def(boost::python::init<nucSeqIndex>())
         .def(
                 "__getitem__", 
                 &Alignment::at,

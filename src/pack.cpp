@@ -105,6 +105,10 @@ void exportPack()
                 "is_bridging", 
                 &BWACompatiblePackedNucleotideSequencesCollection::bridingSubsection_boost
             )
+        .def(
+                "start_of_sequence", 
+                &BWACompatiblePackedNucleotideSequencesCollection::startOfSequenceWithName
+            )
         .def_readonly(
                 "unpacked_size_single_strand", 
                 &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardStrand
