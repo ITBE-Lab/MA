@@ -21,7 +21,9 @@ std::vector<std::shared_ptr<Container>> SMW::getInputType() const
 
 std::shared_ptr<Container> SMW::getOutputType() const
 {
-	return std::shared_ptr<Container>(new Alignment());
+	return std::shared_ptr<Container>(
+			new ContainerVector(std::shared_ptr<Container>(new Alignment()))
+		);
 }//function
 
 /* Random nucleotide sequence of length uiLen
@@ -89,19 +91,32 @@ std::shared_ptr<Container> SMW::execute(
 		1, // penalty for gap extension
 		pQuerySeq->uxAlphabetSize() // alphabet size of input
 	);
+
+	std::shared_ptr<NucleotideSequence> pReference = pRefPack->vColletionAsNucleotideSequence();
+
+	//reversing query and reference in order to obtain start instead of end (markus)
+	pQuerySeq->vReverse();
+	pReference->vReverse();
 	
 	// 2. Do the alignment ...
 	std::vector<size_t> vMaxScorePositions;
 	/*int16_t imaxScore =*/ alignSW_SIMD( *pQuerySeq, // query sequence
-									  *pRefPack->vColletionAsNucleotideSequence(), // reference sequence
+									  *pReference, // reference sequence
 									  xSWparameterSet, // Smith Waterman alignment parameter
 									  vMaxScorePositions // vector will recieve positions, where we have a max score
 									);
 
-	nucSeqIndex start = vMaxScorePositions[0];
-	if(vMaxScorePositions.size() != 1)
-		std::cout << "WARNING SMW found "<< vMaxScorePositions.size() <<" positions!" << std::endl;
-	return std::shared_ptr<Alignment>(new Alignment(start));
+	// 3. collect the results ...
+	auto pvRet = std::make_shared<std::vector<std::shared_ptr<Container>>>();
+
+	for(nucSeqIndex revStart : vMaxScorePositions)
+	{
+		//undo the reversion by substracting from absolute length
+		std::shared_ptr<Container> pAlignment = std::shared_ptr<Alignment>(new Alignment(pRefPack->uiUnpackedSizeForwardPlusReverse() - revStart));
+		pvRet->push_back(pAlignment);
+	}//for
+
+	return std::shared_ptr<ContainerVector>(new ContainerVector(pvRet));
 }//function
 
 

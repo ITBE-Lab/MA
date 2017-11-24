@@ -8,25 +8,14 @@ from bokeh.layouts import row, column
 from bokeh.palettes import d3
 
 
+def setup_multiple(module, in_list, perm):
+    ret = []
+    for in_ele in in_list:
+        ret.append(module.promise_me((in_ele, perm)))
+    return [ret]
+
+
 human_genome = "/mnt/ssd0/chrom/human/all"
-#testing result submission and clearing
-"""
-results_list = [
-    (1, 1, 1, 1 ,"blub"),
-    (1, 1, 1, 1 ,"blub"),
-    (2, 1, 1, 1 ,"blub"),
-    (3, 1, 1, 1 ,"blub"),
-]
-
-submitResults(db_name, results_list)
-print(len(getNewQueries(db_name, "blub", human_genome)))
-
-clearResults(db_name, "blub")
-print(len(getNewQueries(db_name, "blub", human_genome)))
-"""
-#creating samples int the database
-createSampleQueries(human_genome, db_name, 1000, 100, 50, 2)
-exit()
 
 
 
@@ -330,6 +319,92 @@ def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
             runtimes_list[index1][-1].append(total)
 
     print_runtime_breakdown(distances, runtimes_list, names, module_names)
+
+##
+# run smith waterman for all new samples within the database and save the results
+#
+def run_smw_for_all_samples(reference_name):
+    query_pledges = []
+    sample_ids = []
+
+    #
+    # collect samples and respective id's
+    #
+    print("collecting new queries for smw...")
+    for sequence, sample_id in getNewQueries(db_name, "smw", human_genome, 100, 10):
+        sample_ids.append(sample_id)
+        query_pledges.append(Pledge(NucSeq()))
+        query_pledges[-1].set(NucSeq(sequence))
+    print("collected " + str(len(sample_ids)) + " new queries for smw")
+
+    #
+    # create pledges
+    #
+    reference_pledge = Pledge(Pack())
+    ref_seq = Pack()
+    ref_seq.load(reference_name)
+    reference_pledge.set(ref_seq)
+    result_pledge = setup_multiple(SMW(), query_pledges, reference_pledge)
+
+    #
+    # run smw for all new samples
+    #
+    print("running smw...")
+    Pledge.simultaneous_get(result_pledge[-1], 16)
+    print("done")
+
+    #
+    # collect the results
+    #
+    print("collecting and saving results...")
+    results = []
+    for alignment_vec, sample_id in zip(result_pledge[-1], sample_ids):
+        for alignment in alignment_vec:
+            result = (
+                        sample_id,
+                        alignment.get_score(),
+                        alignment.begin_on_ref(),
+                        alignment.length(),
+                        "smw"
+                    )
+            results.append(result)
+
+    #
+    # save the results
+    #
+    submitResults(db_name, results)
+    print("done")
+
+#function
+
+run_smw_for_all_samples(human_genome)
+
+#testing result submission and clearing
+"""
+results_list = [
+    (1, 1, 1 ,"blub"),
+    (1, 1, 1 ,"blub"),
+    (2, 1, 1 ,"blub"),
+    (3, 1, 1 ,"blub"),
+]
+
+submitResults(db_name, results_list)
+print(len(getNewQueries(db_name, "blub", human_genome, 1, 1)))
+
+clearResults(db_name, "blub")
+print(len(getNewQueries(db_name, "blub", human_genome, 1, 1)))
+"""
+#creating samples int the database
+#createSampleQueries(human_genome, db_name, 1000, 100, 50, 2)
+
+
+
+
+
+
+exit()
+
+
 
 #compare_chaining_linesweep_visual()
 #exit()

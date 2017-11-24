@@ -51,7 +51,6 @@ def setUpDbTables(conn):
                     sample_id INTEGER,
                     score REAL,
                     result_start INTEGER,
-                    result_size INTEGER,
                     approach TINYTEXT
                 )
                 """)
@@ -75,7 +74,7 @@ def insertQueries(conn, queries_list):
                     """, queries_list)
     conn.commit()
 
-def getNewQueries(ref, approach, reference):
+def getNewQueries(ref, approach, reference, res_mut, res_indel):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     return c.execute("""
@@ -88,7 +87,9 @@ def getNewQueries(ref, approach, reference):
                                 WHERE approach = ?
                                 AND reference = ?
                             )
-                        """, (approach,reference)).fetchall()
+                        AND num_mutation % ? == 0
+                        AND num_indels % ? == 0
+                        """, (approach, reference, res_mut, res_indel)).fetchall()
 
 def submitResults(ref, results_list):
     conn = sqlite3.connect(db_name)
@@ -99,10 +100,9 @@ def submitResults(ref, results_list):
                         sample_id,
                         score,
                         result_start,
-                        result_size,
                         approach
                     )
-                    VALUES (?,?,?,?,?)
+                    VALUES (?,?,?,?)
                     """, results_list)
     conn.commit()
 
