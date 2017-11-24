@@ -55,5 +55,9 @@
         "queue": "cpp",
         "vector": "cpp"
     },
-    "python.linting.pylintEnabled": false
+    "python.linting.pylintEnabled": false,
+    "cSpell.words": [
+        "indel",
+        "indels"
+    ]
 }

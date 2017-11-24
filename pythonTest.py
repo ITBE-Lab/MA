@@ -8,6 +8,28 @@ from bokeh.layouts import row, column
 from bokeh.palettes import d3
 
 
+human_genome = "/mnt/ssd0/chrom/human/all"
+#testing result submission and clearing
+"""
+results_list = [
+    (1, 1, 1, 1 ,"blub"),
+    (1, 1, 1, 1 ,"blub"),
+    (2, 1, 1, 1 ,"blub"),
+    (3, 1, 1, 1 ,"blub"),
+]
+
+submitResults(db_name, results_list)
+print(len(getNewQueries(db_name, "blub", human_genome)))
+
+clearResults(db_name, "blub")
+print(len(getNewQueries(db_name, "blub", human_genome)))
+"""
+#creating samples int the database
+createSampleQueries(human_genome, db_name, 1000, 100, 50, 2)
+exit()
+
+
+
 _proc_status = '/proc/%d/status' % os.getpid()
 
 _scale = {'kB': 1024.0, 'mB': 1024.0*1024.0,
