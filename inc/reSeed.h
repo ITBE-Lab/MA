@@ -3,7 +3,7 @@
  * @brief Implements a segmentation algorithm.
  * @author Markus Schmidt
  */
-#if 0
+
 #ifndef LONGEST_NON_ENCLOSED_SEGMENTS_H
 #define LONGEST_NON_ENCLOSED_SEGMENTS_H
 
@@ -43,8 +43,8 @@ public:
 	
 	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
 
-	std::vector<std::shared_ptr<Container>> getInputType();
-    std::shared_ptr<Container> getOutputType();
+	std::vector<std::shared_ptr<Container>> getInputType() const;
+    std::shared_ptr<Container> getOutputType() const;
 };//class
 
 
@@ -54,5 +54,4 @@ public:
  */
 void exportReSeed();
 
-#endif
 #endif

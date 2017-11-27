@@ -90,47 +90,7 @@ def make_list_pretty(lx, ly):
     return lx, ly
 
 
-def get_query(ref_seq, q_len, mutation_amount, del_ins_size):
-    q = ""
 
-    #do - while loop
-    while True:#do
-        q_from = random.randint(0, ref_seq.unpacked_size() - q_len)
-        q_to = q_from + q_len
-    #while
-        if not ref_seq.is_bridging(q_from, q_len):
-            break
-    q = str(ref_seq.extract_from_to(q_from, q_to))
-
-    #mutations
-    for _ in range(mutation_amount * 10):
-        pos = random.randint(1,len(q)-1)
-        q = q[:pos-1] + mutate(q[pos]) + q[pos:]
-
-    #deletions
-    for _ in range(mutation_amount):
-        if len(q) <= del_ins_size:
-            break
-        pos = random.randint(1,len(q)-del_ins_size - 1)
-        l = del_ins_size
-        q = q[:pos-1] + q[pos + l:]
-
-    #insertions
-    for _ in range(mutation_amount):
-        pos = random.randint(1,len(q)-1)
-        l = del_ins_size
-        for _ in range(l):
-            char = random.randint(1,4)
-            if char == 1:
-                q = q[:pos] + "a" + q[pos:]
-            elif char == 2:
-                q = q[:pos] + "c" + q[pos:]
-            elif char == 3:
-                q = q[:pos] + "t" + q[pos:]
-            else:
-                q = q[:pos] + "g" + q[pos:]
-
-    return NucSeq(q)
 
 def test_chaining(seeds, strip, results):
     output_file("chaining_comp.html")
@@ -377,99 +337,64 @@ def run_smw_for_all_samples(reference_name):
 
 #function
 
-run_smw_for_all_samples(human_genome)
-
-#testing result submission and clearing
-"""
-results_list = [
-    (1, 1, 1 ,"blub"),
-    (1, 1, 1 ,"blub"),
-    (2, 1, 1 ,"blub"),
-    (3, 1, 1 ,"blub"),
-]
-
-submitResults(db_name, results_list)
-print(len(getNewQueries(db_name, "blub", human_genome, 1, 1)))
-
-clearResults(db_name, "blub")
-print(len(getNewQueries(db_name, "blub", human_genome, 1, 1)))
-"""
-#creating samples int the database
-#createSampleQueries(human_genome, db_name, 1000, 100, 50, 2)
-
-
-
-
-
-
-exit()
-
-
-
-#compare_chaining_linesweep_visual()
 #exit()
 
-q = ""
+def make_runtime_breakdown():
+    print("setup...")
+    num_test = 500
+    query_pledge = []
+    for _ in range(num_test):
+        query_pledge.append(Pledge(NucSeq()))
 
-num_test = 500
-query_pledge = []
-for _ in range(num_test):
-    query_pledge.append(Pledge(NucSeq()))
-
-reference_pledge = Pledge(Pack())
-fm_index_pledge = Pledge(FMIndex())
-
-
-print("setup...")
-ref_seq = Pack()
-#ref_seq.append("no name", "no desc", NucSeq("AACG"))
-ref_seq.load("/mnt/ssd0/chrom/human/pack")
-#fm_index = FMIndex(ref_seq)
-fm_index = FMIndex()
-fm_index.load("/mnt/ssd0/chrom/human/index")
-
-reference_pledge.set(ref_seq)
-fm_index_pledge.set(fm_index)
+    reference_pledge = Pledge(Pack())
+    fm_index_pledge = Pledge(FMIndex())
 
 
-result_pledges = set_up_aligner(
-    query_pledge,
-    reference_pledge,
-    fm_index_pledge,
-    chain=LineSweep2(),
-    seg=LongestLRSegments()
-)
-"""
-query_pledge[0].set(get_query(ref_seq, 1000, 1, 10))
-printer = AlignmentPrinter()
-alignment = result_pledges[-1][0].get()
-for chain in ContainerVectorContainer(result_pledges[-3][0].get()).get():
-    print("chain" + str(len(chain)))
-print(alignment.begin_on_ref())
-print(alignment.end_on_ref())
-printer.execute((alignment,query_pledge[0].get(), ref_seq))
-exit()
-"""
-result_pledges_2 = set_up_aligner(
-    query_pledge,
-    reference_pledge,
-    fm_index_pledge,
-    max_hits=10,
-    chain=Chaining(),
-    strips_of_consideration=False
-)
+    ref_seq = Pack()
+    ref_seq.load("/mnt/ssd0/chrom/human/pack")
+    fm_index = FMIndex()
+    fm_index.load("/mnt/ssd0/chrom/human/index")
 
-print("done")
-
-while True:
-    for i in range(num_test):
-        query_pledge[i].set(get_query(ref_seq, 100, random.randint(0,5), 10))
-
-    Pledge.simultaneous_get(result_pledges[-1], 32)
-    print("iteration!")
+    reference_pledge.set(ref_seq)
+    fm_index_pledge.set(fm_index)
 
 
-runtime_breakdown(num_test, query_pledge, 
-    [result_pledges, result_pledges_2], ["default", "chaining (no strip of c.)"])
+    result_pledges = set_up_aligner(
+        query_pledge,
+        reference_pledge,
+        fm_index_pledge,
+        chain=LineSweep2(),
+        seg=LongestLRSegments()
+    )
 
+    result_pledges_2 = set_up_aligner(
+        query_pledge,
+        reference_pledge,
+        fm_index_pledge,
+        LongestLRSegments()
+    )
+
+    print("done")
+    """
+    while True:
+        for i in range(num_test):
+            query_pledge[i].set(get_query(ref_seq, 100, random.randint(0,5), 10))
+
+        Pledge.simultaneous_get(result_pledges[-1], 32)
+        print("iteration!")
+    """
+
+    runtime_breakdown(num_test, query_pledge, 
+        [result_pledges, result_pledges_2], ["Bs SoC sLs", "Bs SoC Ls"])
+#function
+
+#run_smw_for_all_samples(human_genome)
+
+#creating samples int the database
+createSampleQueries(human_genome, db_name, 1000, 100, 256)
+
+
+#exit()
+
+#compare_chaining_linesweep_visual()
 

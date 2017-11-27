@@ -1,4 +1,4 @@
-#if 0
+
 #include "reSeed.h"
 
 
@@ -13,7 +13,7 @@
 * Delivers 4 intervals for a single input interval.
 * Here we use only two fields in the BWT_Interval.
 */
-SA_IndexInterval LongestNonEnclosedSegments::extend_backward( 
+SA_IndexInterval ReSeed::extend_backward( 
 		// current interval
 		const SA_IndexInterval &ik,
 		// the character to extend with
@@ -101,7 +101,7 @@ SA_IndexInterval LongestNonEnclosedSegments::extend_backward(
 } // method
 
 
-SaSegment LongestNonEnclosedSegments::extend(
+SaSegment ReSeed::extend(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		std::shared_ptr<FM_Index> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq
@@ -230,20 +230,21 @@ SaSegment LongestNonEnclosedSegments::extend(
 }//function
 
 
-std::vector<ContainerType> ReSeed::getInputType()
+std::vector<std::shared_ptr<Container>> ReSeed::getInputType() const
 {
-	return std::vector<ContainerType>{
+	return std::vector<std::shared_ptr<Container>>{
 			//the forward fm_index
-			ContainerType::fM_index,
+			std::shared_ptr<Container>(new FM_Index()),
 			//the forward fm_index
-			ContainerType::segmentList,
+			std::shared_ptr<Container>(new SegmentTree()),
 			//the query sequence
-			ContainerType::nucSeq,
+			std::shared_ptr<Container>(new NucleotideSequence()),
 		};
 }
-ContainerType ReSeed::getOutputType()
+
+std::shared_ptr<Container> ReSeed::getOutputType() const
 {
-	return ContainerType::segmentList;
+	return std::shared_ptr<Container>(new SegmentTree());
 }
 
 
@@ -268,7 +269,6 @@ void exportReSeed()
 {
 	//export the ReSeed class
 	boost::python::class_<ReSeed, boost::python::bases<CppModule>>("ReSeed")
-		.read_write("min_split_len", &ReSeed::minSplitLen)
+		.def_readwrite("min_split_len", &ReSeed::minSplitLen)
 	;
 }//function
-#endif
