@@ -391,10 +391,179 @@ def make_runtime_breakdown():
 #run_smw_for_all_samples(human_genome)
 
 #creating samples int the database
-createSampleQueries(human_genome, db_name, 1000, 100, 256)
+#createSampleQueries(human_genome, db_name, 1000, 100, 256)
 
+
+def test_my_approach(
+            db_name,
+            reference,
+            name,
+            seg=LongestNonEnclosedSegments(),
+            chain=LineSweep(), 
+            max_hits=5,
+            num_anchors=10, 
+            strips_of_consideration=True
+        ):
+    print("collecting samples (" + name + ") ...")
+    reference_pledge = Pledge(Pack())
+    fm_index_pledge = Pledge(FMIndex())
+
+    queries = getNewQueries(db_name, name, reference)
+
+    print("extracting " + str(len(queries)) + " samples (" + name + ")...")
+    #setup the query pledges
+    query_pledge = []
+    for sequence, sample_id in queries:
+        query_pledge.append(Pledge(NucSeq()))
+        query_pledge[-1].set(NucSeq(sequence))
+
+
+    print("setting up (" + name + ") ...")
+    ref_pack = Pack()
+    ref_pack.load(reference)
+    reference_pledge.set(ref_pack)
+
+    fm_index = FMIndex()
+    fm_index.load(reference)
+    fm_index_pledge.set(fm_index)
+
+    result_pledge = set_up_aligner(
+        query_pledge,
+        reference_pledge,
+        fm_index_pledge,
+        seg=seg,
+        chain=LineSweep2(),
+        max_hits=max_hits,
+        num_anchors=num_anchors,
+        strips_of_consideration=strips_of_consideration
+    )
+
+    print("computing (" + name + ") ...")
+    Pledge.simultaneous_get(result_pledge[-1], 32)
+
+    print("submitting results (" + name + ") ...")
+    result = []
+    for index in range(len(queries)):
+        alignment = result_pledge[-1][index].get()
+        segment_list = result_pledge[0][index].get()
+        total_time = 0
+        for step_index in range(len(result_pledge)):
+            total_time += result_pledge[step_index][index].exec_time
+        sample_id = queries[index][1]
+        result.append(
+            (
+                sample_id,
+                alignment.get_score(),
+                alignment.begin_on_ref(),
+                segment_list.num_seeds(fm_index, max_hits),
+                total_time,
+                name
+            )
+        )
+    submitResults(db_name, result)
+    print("done")
+
+
+def test_my_approaches():
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:5 sLs")
+    test_my_approach(db_name, human_genome, "Bs:5 SoC:5 sLs", seg=LongestLRSegments())
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000 sLs", num_anchors=10000)
+    test_my_approach(db_name, human_genome, "Bs:5 SoC:1000 sLs", seg=LongestLRSegments(),
+                    num_anchors=10000)
+
+
+
+def analyse_all_approaches():
+    approaches = getApproachesWithData(db_name)
+    plots = [ [], [], [] ]
+    indel_size = 100
+    query_size = 1000
+    for approach in approaches:
+        results = getResults(db_name, approaches, query_size, indel_size)
+        hits = {}
+        tries = {}
+        run_times = {}
+        scores = {}
+
+        max_indel = 0
+        max_mut = 0
+
+        def init(d, x, y):
+            if x not in d:
+                d[x] = {}
+            if y not in d[x]:
+                d[x][y] = 0
+            return d
+
+        for score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time in results:
+            hits = init(hits, num_mutation, num_indels)
+            tries = init(tries, num_mutation, num_indels)
+            run_times = init(run_times, num_mutation, num_indels)
+            scores = init(scores, num_mutation, num_indels)
+            if num_indels > max_indel:
+                max_indel = num_indels
+            if num_mutation > max_mut:
+                max_mut = num_mutation
+
+            if near(result_start, original_start):
+                hits[num_mutation][num_indels] += 1
+            tries[num_mutation][num_indels] += 1
+            run_times[num_mutation][num_indels] += run_time
+            scores[num_mutation][num_indels] += scores
+
+        def makePicFromDict(d, w, h, divideBy, title):
+            min_ = 10000
+            max_ = 0
+            pic = []
+            for x in range(w):
+                pic.append( [] )
+                for y in range(h):
+                    if x not in d or y not in d[x]:
+                        pic.append( float("nan") )
+                    else:
+                        pic.append( d[x][y] / divideBy[x][y] )
+                        if pic[-1][-1] < min_:
+                            min_ = pic[-1][-1]
+                        if pic[-1][-1] > max_:
+                            max_ = pic[-1][-1]
+
+            color_mapper = LinearColorMapper(palette="Viridis256", low=min_, high=max_)
+
+            tick_formater = FuncTickFormatter(code="""
+                return Math.max(Math.floor(tick/2),0) + x""" + 
+                    indel_size + 
+                """ + "; " + Math.max(Math.floor( (tick+1)/2),0) x""" +
+                    indel_size
+                )
+
+            plot = figure(title=title,
+                    x_range=(0,max_indels), y_range=(0,max_mutations),
+                    x_axis_label='num insertions; num deletions', y_axis_label='num mutations'
+                )
+            plot.xaxis.formatter = tick_formater
+            plot.image(image=[pic], color_mapper=color_mapper,
+                    dh=[max_mutations], dw=[max_indels], x=[0], y=[0])
+
+            color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+
+            plot.add_layout(color_bar, 'left')
+
+            return plot
+
+        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries)
+        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries)
+        avg_score = makePicFromDict(scores, max_mut, max_indel, tries)
+
+        plots[0].append(avg_hits)
+        plots[0].append(avg_runtime)
+        plots[0].append(avg_score)
+
+    save(layout(plots))
 
 #exit()
 
+createSampleQueries(human_genome, db_name, 1000, 100, 256)
+test_my_approaches()
+analyse_all_approaches()
 #compare_chaining_linesweep_visual()
 

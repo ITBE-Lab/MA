@@ -58,6 +58,8 @@ def setUpDbTables(conn):
                     sample_id INTEGER,
                     score REAL,
                     result_start INTEGER,
+                    num_seeds INTEGER,
+                    run_time REAL,
                     approach TINYTEXT
                 )
                 """)
@@ -145,6 +147,14 @@ def clearResults(db_name, ref, approach):
                 """, (approach,))
     conn.commit()
 
+def getApproachesWithData(db_name):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT DISTINCT approach
+                        FROM results
+                    """).fetchall()
+
 ##
 # returns a list of tuples.
 # the tuple consists of:
@@ -165,8 +175,8 @@ def getResults(db_name, approach, size, indel_size, reference=None):
                                     samples.origin,
                                     samples.num_mutation,
                                     samples.num_indels,
-                                    samples.num_seeds,
-                                    samples.run_time
+                                    results.num_seeds,
+                                    results.run_time
                                 )
                             FROM samples
                             JOIN results ON results.sample_id=samples.sample_id
@@ -330,7 +340,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
     ref_seq = Pack()
     ref_seq.load(ref)
 
-    max_indels = int(size/indel_size)
+    max_indels = int(size/indel_size)*2
     queries_list = []
 
     #
@@ -338,6 +348,10 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
     #
     for mutation_amount in range(0, size, 10):
         for indel_amount in range(0, max_indels, 1):
+
+            #dont put sequences that can't be found
+            if mutation_amount + max_indels * indel_size >= size:
+                continue
 
             for _ in range(amount):
                 #
@@ -376,6 +390,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
         insertQueries(conn, queries_list)
     print("done saving")
 #function
+
 
 db_name = "/mnt/ssd1/alignmentSamples.db"
 
