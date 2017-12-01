@@ -20,7 +20,7 @@ greys = [
 def save(plot, name):
     export_png(plot, filename="paperGraphics/" + name + ".png")
     plot.output_backend = "svg"
-    #export_svgs(plot, filename="paperGraphics/" + name + ".svg")
+    export_svgs(plot, filename="paperGraphics/" + name + ".svg")
     #show(plot)
 
 resolution = 300
@@ -249,3 +249,78 @@ plot.yaxis.formatter = FuncTickFormatter(code="""
 
 
 save(plot, "alignment")
+
+
+plot = figure(
+            title="Figure 3: Strip of consideration",
+            plot_width=resolution, plot_height=resolution,
+            x_axis_label = "reference", y_axis_label = "query"
+        )
+
+
+plot.line(
+    [-.5,7.5],
+    [-.5,7.5],
+    color=greys[0],
+    legend="strip of consideration",
+    line_width=3,
+    line_dash=[2,2]
+)
+
+plot.line(
+    [5.5,12.5],
+    [-.5,6.5],
+    color=greys[0],
+    legend="strip of consideration",
+    line_width=3,
+    line_dash=[2,2]
+)
+
+
+plot.patch(
+        [-.5,7.5,12.5,12.5,5.5],
+        [-.5,7.5,7.5,6.5,-.5],
+        fill_color=greys[2],
+        fill_alpha=.5,
+        line_color=None,
+        #line_width=2,
+        #line_dash=[2,2],
+        legend="strip of consideration"
+    )
+
+
+plot.line(
+    [5.5,7.5],
+    [2.5,4.5],
+    color="black",
+    legend="seed",
+    line_width=5
+)
+
+plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
+plot.legend.location = "bottom_right"
+plot.toolbar.logo = None
+plot.toolbar_location = None
+grid = []
+for p in range(-1,len(reference)):
+    grid.append(p+.5)
+plot.xgrid.ticker = FixedTicker(ticks=grid)
+plot.xgrid.band_fill_color = greys[3]
+plot.xgrid.band_fill_alpha = 0.1
+plot.xaxis.formatter = FuncTickFormatter(code="""
+    var labels = %s;
+    return labels[tick];
+""" % reference)
+plot.yaxis.ticker = FixedTicker(ticks=range(len(query)))
+grid = []
+for p in range(-1,len(query)):
+    grid.append(p+.5)
+plot.ygrid.ticker = FixedTicker(ticks=grid)
+plot.ygrid.band_fill_color = greys[3]
+plot.ygrid.band_fill_alpha = 0.1
+plot.yaxis.formatter = FuncTickFormatter(code="""
+    var labels = %s;
+    return labels[tick];
+""" % query)
+
+save(plot, "stripOfConsideration")

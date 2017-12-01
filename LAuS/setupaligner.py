@@ -35,10 +35,11 @@ def set_up_aligner(
         chain=LineSweep(), 
         max_hits=5, 
         num_anchors=10, 
-        strips_of_consideration=True
+        strips_of_consideration=True,
+        re_seed = None
         ):
 
-    anc = NlongestIntervalsAsAnchors(num_anchors)
+    anc = NlongestIntervalsAsAnchors(num_anchors, max_hits)
 
     bucketing = Bucketing()
     bucketing.max_hits = max_hits
@@ -52,6 +53,11 @@ def set_up_aligner(
     extractAll = ExtractAllSeeds()
     extractAll.max_hits = max_hits
 
+    #reseed = ReSeed()
+    #if not re_seed is None:
+    #    reseed.min_split_len = reseed
+
+
     query_pledges_ = []
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
         query_pledges_.extend(query_pledges)
@@ -59,6 +65,8 @@ def set_up_aligner(
         query_pledges_.append(query_pledges)
 
     return_pledges = [[], [], [], []]
+    #if not re_seed is None:
+    #    return_pledges.append([])
     if strips_of_consideration:
         return_pledges.append([])
         return_pledges.append([])
@@ -72,9 +80,18 @@ def set_up_aligner(
         return_pledges[ret_pl_indx].append(segment_pledge)
         ret_pl_indx += 1
 
+        #if not re_seed is None:
+        #    segment_pledge = reseed.promise_me((
+        #        fm_index_pledge,
+        #        segment_pledge,
+        #        query_pledge
+        #    ))
+        #return_pledges[ret_pl_indx].append(segment_pledge)
+        #ret_pl_indx += 1
+
 
         if strips_of_consideration:
-            anchors_pledge = anc.promise_me((segment_pledge,))
+            anchors_pledge = anc.promise_me((segment_pledge,reference_pledge,fm_index_pledge))
             return_pledges[ret_pl_indx].append(anchors_pledge)
             ret_pl_indx += 1
 

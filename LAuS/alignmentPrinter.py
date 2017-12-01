@@ -45,7 +45,7 @@ class AlignmentPrinter(Module):
         ref = ref_pack.extract_from_to(align.begin_on_ref(), align.end_on_ref())
 
         lines = [
-            "some desc for alignment here...:"
+            "Alignment score: " + str(align.get_score())
         ]
         counter = 0
         ind_query = 0

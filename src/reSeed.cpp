@@ -257,7 +257,10 @@ std::shared_ptr<Container> ReSeed::execute(
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
 
-		
+
+	
+
+
 	std::shared_ptr<SegmentTree> pSegmentTree(new SegmentTree(pQuerySeq->length()));
 
 

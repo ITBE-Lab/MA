@@ -17,22 +17,25 @@ from math import floor
 
 def mutate(char):
     num = 0
-    if char == "c":
+    if char == "c" or char == "C":
         num = 1
-    elif char == "t":
+    elif char == "t" or char == "t":
         num = 2
-    elif char == "g":
+    elif char == "g" or char == "g":
         num = 3
     num += random.randint(1,3)
     num %= 4
     if num == 0:
         return 'a'
-    elif char == 1:
+    elif num == 1:
         return 'c'
-    elif char == 2:
+    elif num == 2:
         return 't'
-    else:
+    elif num == 3:
         return 'g'
+    else:
+        print("error while mutating")
+        return 'n'
 
 def setUpDbTables(conn):
     c = conn.cursor()
@@ -70,6 +73,23 @@ def setUpDbTables(conn):
                     approach
                 )
                 """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS samples_index_1 ON samples
+                (
+                    original_size,
+                    num_mutation,
+                    num_insertions
+                )
+                """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS samples_index_2 ON samples
+                (
+                    num_mutation,
+                    num_insertions
+                )
+                """)
     conn.commit()
 
 def insertQueries(conn, queries_list):
@@ -89,10 +109,11 @@ def insertQueries(conn, queries_list):
                     """, queries_list)
     conn.commit()
 
-def getNewQueries(db_name, approach, reference, res_mut, res_indel):
+def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size = None):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    return c.execute("""
+    if size is None:
+        return c.execute("""
                         SELECT sequence, sample_id
                         FROM samples
                         WHERE sample_id NOT IN 
@@ -105,21 +126,20 @@ def getNewQueries(db_name, approach, reference, res_mut, res_indel):
                         AND num_mutation % ? == 0
                         AND num_indels % ? == 0
                         """, (approach, reference, res_mut, res_indel)).fetchall()
-
-def getNewQueries(db_name, approach, reference):
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
     return c.execute("""
                         SELECT sequence, sample_id
                         FROM samples
-                        WHERE sample_id NOT IN
+                        WHERE sample_id NOT IN 
                             (
                                 SELECT DISTINCT sample_id
                                 FROM results
                                 WHERE approach = ?
                                 AND reference = ?
                             )
-                        """, (approach, reference)).fetchall()
+                        AND num_mutation % ? == 0
+                        AND num_indels % ? == 0
+                        AND original_size == ?
+                        """, (approach, reference, res_mut, res_indel, size)).fetchall()
 
 def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
@@ -169,34 +189,30 @@ def getResults(db_name, approach, size, indel_size, reference=None):
     if reference is None:
         return c.execute("""
                             SELECT 
-                                (
-                                    results.score,
-                                    results.result_start,
-                                    samples.origin,
-                                    samples.num_mutation,
-                                    samples.num_indels,
-                                    results.num_seeds,
-                                    results.run_time
-                                )
+                                results.score,
+                                results.result_start,
+                                samples.origin,
+                                samples.num_mutation,
+                                samples.num_indels,
+                                results.num_seeds,
+                                results.run_time
                             FROM samples
-                            JOIN results ON results.sample_id=samples.sample_id
+                            JOIN results ON results.sample_id = samples.sample_id
                             WHERE results.approach == ?
                             AND samples.original_size == ?
                             AND samples.indel_size == ?
                             """, (approach, size, indel_size)).fetchall()
     return c.execute("""
                         SELECT 
-                            (
-                                results.score,
-                                results.result_start,
-                                samples.origin,
-                                samples.num_mutation,
-                                samples.num_indels
-                            )
+                            results.score,
+                            results.result_start,
+                            samples.origin,
+                            samples.num_mutation,
+                            samples.num_indels
                         FROM samples
-                        JOIN results ON results.sample_id=samples.sample_id
-                        WHERE results.approach == ?
-                        AND samples.original_size == ?
+                        JOIN results ON results.sample_id = samples.sample_id
+                        AND results.approach == ?
+                        WHERE samples.original_size == ?
                         AND samples.indel_size == ?
                         AND samples.reference == ?
                         """, (approach, size, indel_size, reference)).fetchall()
@@ -314,7 +330,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
         mutation_spots.append(index)
     shuffle(mutation_spots)
     for pos in mutation_spots[:mutation_amount]:
-        q = q[:pos-1] + mutate(q[pos]) + q[pos:]
+        q = q[:pos-1] + mutate(q[pos-1]) + q[pos:]
 
     #insertion
     insertion_spots = get_random_spots(insertion_amount, len(q), 1)
@@ -343,6 +359,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
     max_indels = int(size/indel_size)*2
     queries_list = []
 
+    nuc_distrib_count = [0,0,0,0,0]
+
     #
     # iterate over the given range of mutations indels and number of sequences
     #
@@ -350,7 +368,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
         for indel_amount in range(0, max_indels, 1):
 
             #dont put sequences that can't be found
-            if mutation_amount + max_indels * indel_size >= size:
+            if mutation_amount + indel_amount/2 * indel_size >= size - 1:
                 continue
 
             for _ in range(amount):
@@ -358,6 +376,18 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
                 # extract the query sequence
                 #
                 q_from, query = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size)
+
+                for nuc in query:
+                    if nuc == 'A' or nuc == 'a':
+                        nuc_distrib_count[0] += 1
+                    elif nuc == 'C' or nuc == 'c':
+                        nuc_distrib_count[1] += 1
+                    elif nuc == 'G' or nuc == 'g':
+                        nuc_distrib_count[2] += 1
+                    elif nuc == 'T' or nuc == 't':
+                        nuc_distrib_count[3] += 1
+                    else:
+                        nuc_distrib_count[4] += 1
 
                 #
                 # construct the query tuple
@@ -389,6 +419,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
     if len(queries_list) > 0:
         insertQueries(conn, queries_list)
     print("done saving")
+
+    print("nuc distrib [A,C,G,T]: " + str(nuc_distrib_count))
 #function
 
 

@@ -4,8 +4,11 @@ import gc
 import os
 import math
 from bokeh.plotting import figure, output_file, show
-from bokeh.layouts import row, column
+from bokeh.layouts import row, column, layout
 from bokeh.palettes import d3
+from bokeh.models import LinearAxis, Range1d, LogColorMapper
+from bokeh.models.formatters import FuncTickFormatter
+from bokeh.io import save
 
 
 def setup_multiple(module, in_list, perm):
@@ -402,15 +405,24 @@ def test_my_approach(
             chain=LineSweep(), 
             max_hits=5,
             num_anchors=10, 
-            strips_of_consideration=True
+            strips_of_consideration=True,
+            low_res = False,
+            size = 100
         ):
     print("collecting samples (" + name + ") ...")
     reference_pledge = Pledge(Pack())
     fm_index_pledge = Pledge(FMIndex())
 
-    queries = getNewQueries(db_name, name, reference)
+    res1 = 1
+    if low_res:
+        res1 = 100
+    res2 = 1
+    if low_res:
+        res2 = 5
 
-    print("extracting " + str(len(queries)) + " samples (" + name + ")...")
+    queries = getNewQueries(db_name, name, reference, res1, res2, size)
+
+    print("extracting " + str(len(queries)) + " samples (" + name + ") ...")
     #setup the query pledges
     query_pledge = []
     for sequence, sample_id in queries:
@@ -438,6 +450,18 @@ def test_my_approach(
         strips_of_consideration=strips_of_consideration
     )
 
+    #temp code
+    """
+    num = -51
+    result_pledge[-1][num].get()
+
+    printer = AlignmentPrinter()
+    for alignment in result_pledge[-2][num].get().get():
+        printer.execute((alignment, query_pledge[num].get(), ref_pack))
+
+    exit()
+    """
+
     print("computing (" + name + ") ...")
     Pledge.simultaneous_get(result_pledge[-1], 32)
 
@@ -451,39 +475,59 @@ def test_my_approach(
             total_time += result_pledge[step_index][index].exec_time
         sample_id = queries[index][1]
         result.append(
-            (
-                sample_id,
-                alignment.get_score(),
-                alignment.begin_on_ref(),
-                segment_list.num_seeds(fm_index, max_hits),
-                total_time,
-                name
+                (
+                    sample_id,
+                    alignment.get_score(),
+                    alignment.begin_on_ref(),
+                    segment_list.num_seeds(fm_index, max_hits),
+                    total_time,
+                    name
+                )
             )
-        )
     submitResults(db_name, result)
     print("done")
 
 
 def test_my_approaches():
+    clearResults(db_name, human_genome, "pBs:5 SoC:100 sLs")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100 sLs", num_anchors=100)
+
+    clearResults(db_name, human_genome, "pBs:5 SoC:1 sLs")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1 sLs", num_anchors=1)
+
+    clearResults(db_name, human_genome, "pBs:5 SoC:5 sLs")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:5 sLs")
-    test_my_approach(db_name, human_genome, "Bs:5 SoC:5 sLs", seg=LongestLRSegments())
+
+    #clearResults(db_name, human_genome, "Bs:5 SoC:5 sLs")
+    #test_my_approach(db_name, human_genome, "Bs:5 SoC:5 sLs", seg=LongestLRSegments())
+
+
+    clearResults(db_name, human_genome, "pBs:5 SoC:10000 sLs")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:10000 sLs", num_anchors=10000)
-    test_my_approach(db_name, human_genome, "Bs:5 SoC:1000 sLs", seg=LongestLRSegments(),
-                    num_anchors=10000)
+
+    clearResults(db_name, human_genome, "pBs:5 Ch")
+    test_my_approach(db_name, human_genome, "pBs:5 Ch", chain=Chaining(), strips_of_consideration=False)
+
+    #clearResults(db_name, human_genome, "Bs:10000 SoC:10000 sLs")
+    #test_my_approach(db_name, human_genome, "Bs:10000 SoC:10000 sLs", seg=LongestLRSegments(),
+    #                num_anchors=10000, max_hits=10000)
 
 
 
 def analyse_all_approaches():
+    output_file("results_log.html")
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [] ]
-    indel_size = 100
-    query_size = 1000
-    for approach in approaches:
-        results = getResults(db_name, approaches, query_size, indel_size)
+    plots = [ [], [], [], [] ]
+    indel_size = 10
+    query_size = 100
+    for approach_ in approaches:
+        approach = approach_[0]
+        results = getResults(db_name, approach, query_size, indel_size)
         hits = {}
         tries = {}
         run_times = {}
         scores = {}
+        nums_seeds = {}
 
         max_indel = 0
         max_mut = 0
@@ -499,7 +543,9 @@ def analyse_all_approaches():
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
-            scores = init(scores, num_mutation, num_indels)
+            if not score is None:
+                scores = init(scores, num_mutation, num_indels)
+            nums_seeds = init(nums_seeds, num_mutation, num_indels)
             if num_indels > max_indel:
                 max_indel = num_indels
             if num_mutation > max_mut:
@@ -509,40 +555,66 @@ def analyse_all_approaches():
                 hits[num_mutation][num_indels] += 1
             tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] += run_time
-            scores[num_mutation][num_indels] += scores
+            nums_seeds[num_mutation][num_indels] += num_seeds
+            if not score is None:
+                scores[num_mutation][num_indels] += score
 
-        def makePicFromDict(d, w, h, divideBy, title):
-            min_ = 10000
-            max_ = 0
+        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False):
             pic = []
-            for x in range(w):
-                pic.append( [] )
-                for y in range(h):
-                    if x not in d or y not in d[x]:
-                        pic.append( float("nan") )
-                    else:
-                        pic.append( d[x][y] / divideBy[x][y] )
-                        if pic[-1][-1] < min_:
-                            min_ = pic[-1][-1]
-                        if pic[-1][-1] > max_:
-                            max_ = pic[-1][-1]
+            min_ = 10000.0
+            max_ = 0.0
+            if len(d.keys()) == 0:
+                return None
+            else:
+                w_keys = sorted(d.keys())
+                h_keys = sorted(d[0].keys())
+
+                for x in w_keys:
+                    pic.append( [] )
+                    for y in h_keys:
+                        if x not in d or y not in d[x]:
+                            pic[-1].append( float("nan") )
+                        else:
+                            pic[-1].append( d[x][y] / divideBy[x][y] )
+                            if pic[-1][-1] < min_:
+                                min_ = pic[-1][-1]
+                            if pic[-1][-1] > max_:
+                                max_ = pic[-1][-1]
+
+                for _ in range(ignore_max_n):
+                    max_x = 0
+                    max_y = 0
+                    for x, row in enumerate(pic):
+                        for y, p in enumerate(row):
+                            if p > pic[max_x][max_y]:
+                                max_x = x
+                                max_y = y
+                    pic[max_x][max_y] = float('nan')
+                if ignore_max_n > 0:
+                    max_ = 0
+                    for row in pic:
+                        for p in row:
+                            if p > max_:
+                                max_ = p
+
 
             color_mapper = LinearColorMapper(palette="Viridis256", low=min_, high=max_)
+            if log:
+                color_mapper = LogColorMapper(palette="Viridis256", low=min_, high=max_)
 
             tick_formater = FuncTickFormatter(code="""
-                return Math.max(Math.floor(tick/2),0) + x""" + 
-                    indel_size + 
-                """ + "; " + Math.max(Math.floor( (tick+1)/2),0) x""" +
-                    indel_size
+                return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
+                        Math.max(Math.floor( (tick)/2),0)"""
                 )
+            #tick_formater = FuncTickFormatter(code="return 'a')
 
             plot = figure(title=title,
-                    x_range=(0,max_indels), y_range=(0,max_mutations),
-                    x_axis_label='num insertions; num deletions', y_axis_label='num mutations'
+                    x_range=(0,h), y_range=(0,w),
+                    x_axis_label='num ' + str(indel_size) + ' nt insertions; num ' + str(indel_size) + ' nt deletions', y_axis_label='num mutations'
                 )
             plot.xaxis.formatter = tick_formater
             plot.image(image=[pic], color_mapper=color_mapper,
-                    dh=[max_mutations], dw=[max_indels], x=[0], y=[0])
+                    dh=[w], dw=[h], x=[0], y=[0])
 
             color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
@@ -550,19 +622,25 @@ def analyse_all_approaches():
 
             return plot
 
-        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries)
-        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries)
-        avg_score = makePicFromDict(scores, max_mut, max_indel, tries)
+        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach)
+        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0, True)
+        avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
+        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
 
-        plots[0].append(avg_hits)
-        plots[0].append(avg_runtime)
-        plots[0].append(avg_score)
+        if not avg_hits is None:
+            plots[0].append(avg_hits)
+        if not avg_runtime is None:
+            plots[1].append(avg_runtime)
+        if not avg_score is None:
+            plots[2].append(avg_score)
+        if not avg_seeds is None:
+            plots[3].append(avg_seeds)
 
     save(layout(plots))
 
 #exit()
 
-createSampleQueries(human_genome, db_name, 1000, 100, 256)
+#createSampleQueries(human_genome, db_name, 100, 10, 64)
 test_my_approaches()
 analyse_all_approaches()
 #compare_chaining_linesweep_visual()

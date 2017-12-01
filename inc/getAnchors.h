@@ -21,10 +21,12 @@ class NlongestIntervalsAsAnchors : public CppModule
 public:
     ///@brief number of seeds to extract
     unsigned int uiN;
+    unsigned int uiMaxHitsPerInterval;
 
-    NlongestIntervalsAsAnchors(unsigned int uiN = 50)
+    NlongestIntervalsAsAnchors(unsigned int uiN, unsigned int uiMaxHitsPerInterval)
             :  
-        uiN(uiN)
+        uiN(uiN),
+        uiMaxHitsPerInterval(uiMaxHitsPerInterval)
     {}//constructor
 
     std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);

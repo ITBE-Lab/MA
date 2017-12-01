@@ -20,12 +20,12 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
     return std::shared_ptr<Container>(new Alignment());
 }//function
 
-int iDeletion = -50;
-int iInsertion = -50;
+int iDeletion = -4;//-50
+int iInsertion = -4;//-50
 int iDeletionContinued = -1;
 int iInsertionContinued = -1;
-int iMatch = 20;
-int iMissMatch = -5;
+int iMatch = 10;//20
+int iMissMatch = -3;//-20
 
 void needlemanWunsch(
         std::shared_ptr<NucleotideSequence> pQuery, 
@@ -39,8 +39,6 @@ void needlemanWunsch(
 {
     assert(toQuery <= pQuery->length());
     assert(toRef <= pRef->length());
-    if( (toRef - fromRef) * (toQuery - fromQuery) > 10000)
-        return;
     if(toRef <= fromRef)
         if(toQuery <= fromQuery)
             return;
@@ -80,8 +78,9 @@ void needlemanWunsch(
         }//while
         return;
     }//if
-    int s[toQuery-fromQuery+1][toRef-fromRef+1];
-    char dir[toQuery-fromQuery+1][toRef-fromRef+1];//1=match; 2=ins; 3=del
+    std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
+    std::vector<std::vector<char>> dir(toQuery-fromQuery+1, std::vector<char>(toRef-fromRef+1));
+
     s[0][0] = 0;
     dir[0][0] = 1;
     s[1][0] = iInsertion;

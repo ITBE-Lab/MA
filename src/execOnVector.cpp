@@ -17,8 +17,14 @@ std::shared_ptr<Container> ExecOnVec::getOutputType() const
 
 std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Container>> vpInput)
 {
+    // vp input is organized to following way: first a vector then single elements.
+    // each element of the first vector shall be executed with all following elements
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
         std::static_pointer_cast<ContainerVector>(vpInput[0]));
+
+    DEBUG(
+        std::cout << "executing on: " << pInVec->size() << std::endl;
+    )
 
     std::shared_ptr<ContainerVector> pResults = std::shared_ptr<ContainerVector>(
             new ContainerVector(pModule->getOutputType(), pInVec->size())
@@ -37,9 +43,12 @@ std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Contai
                     unsigned int i
                 )
                 {
+                    // create a input vector and add the first element to it
+                    // the appropriate element of the vector that is given as first input
                     std::vector<std::shared_ptr<Container>> vInput{ (*pInVec)[i] };
-                    for(unsigned int i = 1; i < vpInput.size(); i++)
-                        vInput.push_back(vpInput[i]);
+                    // add all following elements
+                    for(unsigned int j = 1; j < vpInput.size(); j++)
+                        vInput.push_back(vpInput[j]);
                     try
                     {
                         (*pResults)[i] = pModule->execute(vInput);
@@ -76,10 +85,17 @@ std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Contai
                 return a->smaller(b);
             }//lambda
         );//sort function call
+        if(pResults->size() > 1)
+            assert(!pResults->back()->smaller(pResults->front()));
     }//if
 
-    while(nMany != 0 && pResults->size() > nMany)
-        pResults->pop_back();
+    if(nMany != 0 && pResults->size() > nMany)
+    {
+        auto end = pResults->end();
+        for(unsigned int i = 0; i < nMany; i++)
+            end--;
+        pResults->erase(pResults->begin(), end);
+    }//if
 
     return pResults;
 }//function

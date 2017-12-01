@@ -4,13 +4,15 @@
 std::vector<std::shared_ptr<Container>> NlongestIntervalsAsAnchors::getInputType() const
 {
     return std::vector<std::shared_ptr<Container>>{
-            std::shared_ptr<Container>(new SegmentTree())
+            std::shared_ptr<Container>(new SegmentTree()),
+            std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
+            std::shared_ptr<Container>(new FM_Index())
         };
 }//function
 
 std::shared_ptr<Container> NlongestIntervalsAsAnchors::getOutputType() const
 {
-    return std::shared_ptr<Container>(new SegmentTree());
+    return std::shared_ptr<Container>(new Seeds());
 }//function
 
 
@@ -20,35 +22,42 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
 {
 
     std::shared_ptr<SegmentTree> pCastedInput = std::static_pointer_cast<SegmentTree>(vpInput[0]);
+	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
+		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[1]);
+	std::shared_ptr<FM_Index> pxFM_index = std::static_pointer_cast<FM_Index>(vpInput[2]);
 
-    std::vector<std::shared_ptr<SegmentTreeInterval>> aIntervals;
+    std::vector<Seed> aSeeds;
     /*
     *   get the n longest intervals
     */
     pCastedInput->forEach(
-        [&aIntervals](std::shared_ptr<SegmentTreeInterval> pxNode)
+        [&](std::shared_ptr<SegmentTreeInterval> pxNode)
         {
-            aIntervals.push_back(pxNode);
+            pxNode->forEachSeed(
+                pxFM_index, uiMaxHitsPerInterval, true,
+                [&](Seed xS)
+                {
+                    aSeeds.push_back(xS);
+                }//lambda
+            );
         }//lambda
     );//forEach
 
     std::sort(
-        aIntervals.begin(), aIntervals.end(),
+        aSeeds.begin(), aSeeds.end(),
         []
-        (const std::shared_ptr<SegmentTreeInterval> a, const std::shared_ptr<SegmentTreeInterval> b)
+        (const Seed& a, const Seed& b)
         {
-            return a->size() > b->size();
+            return a.size() > b.size();
         }//lambda
     );//sort function call
-    assert(aIntervals.front()->size() >= aIntervals.back()->size());
+    assert(aSeeds.size() <= 1 || aSeeds.front().size() >= aSeeds.back().size());
 
-    std::shared_ptr<SegmentTree> pRet(new SegmentTree());
+    std::shared_ptr<Seeds> pRet(new Seeds());
 
-    unsigned int num = 0;
-    for(unsigned int i = 0; num < uiN && i < aIntervals.size(); i++)
+    for(unsigned int i = 0; i < uiN && i < aSeeds.size(); i++)
     {
-        pRet->push_front(aIntervals[i]);
-        num++;
+        pRet->push_back(aSeeds[i]);
     }//for
 
     return pRet;
@@ -72,12 +81,13 @@ void exportGetAnchors()
         "       seg_list: the list of segments to pick the anchors from\n"
         "   returns segList.\n"
         "       seg_list: the anchors\n",
-        boost::python::init<boost::python::optional<unsigned int>>(
+        boost::python::init<unsigned int, unsigned int>(
             "arg1: self\n"
             "arg2: number of intervals to extract as anchors\n"
         )
     )
-        .add_property("uiN", &NlongestIntervalsAsAnchors::uiN, &NlongestIntervalsAsAnchors::uiN)
+        .def_readwrite("uiN", &NlongestIntervalsAsAnchors::uiN)
+        .def_readwrite("uiMaxHitsPerInterval", &NlongestIntervalsAsAnchors::uiMaxHitsPerInterval)
     ;
 
 	boost::python::implicitly_convertible< 

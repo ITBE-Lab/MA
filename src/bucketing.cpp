@@ -9,8 +9,8 @@ std::vector<std::shared_ptr<Container>> Bucketing::getInputType() const
 		//all segments
 		std::shared_ptr<Container>(new SegmentTree()),
 		//the anchors
-		std::shared_ptr<Container>(new SegmentTree()),
-		//the querry
+		std::shared_ptr<Container>(new Seeds()),
+		//the query
 		std::shared_ptr<Container>(new NucleotideSequence()),
 		//the reference
 		std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
@@ -83,15 +83,12 @@ std::shared_ptr<Container> Bucketing::execute(
 	)
 {
 	std::shared_ptr<SegmentTree> pSegments = std::static_pointer_cast<SegmentTree>(vpInput[0]);
-	std::shared_ptr<SegmentTree> pAnchors = std::static_pointer_cast<SegmentTree>(vpInput[1]);
+	std::shared_ptr<Seeds> pAnchors = std::static_pointer_cast<Seeds>(vpInput[1]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
 	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
 		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[4]);
-
-//switch for different method of doing this
-#if 1
 
 	std::vector<Seed> vSeeds;
 	pSegments->forEach(
@@ -122,182 +119,69 @@ std::shared_ptr<Container> Bucketing::execute(
 	std::vector<std::tuple<nucSeqIndex, nucSeqIndex>> collectedIntervals;
 
 	std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
-	pAnchors->forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxAnchor)
+	for(Seed& xAnchor : *pAnchors)
+	{
+		nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
+		nucSeqIndex uiSize = uiStripSize;
+
+		/*
+			* FILTER START
+			*
+			* 1)	we make sure that we can never have bridging strips
+			*
+			* 2) 	we filter out anchors that are to close to each other
+			*		since we do not want to work on the same area twice
+			*/
+		//1)
+		if(uiStripSize/2 > getPositionForBucketing(pQuerySeq->length(), xAnchor))
+			uiStart = 0;
+		if(uiStart >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
+			uiStart = pRefSeq->uiUnpackedSizeForwardPlusReverse() - 1;
+		if(uiStart + uiSize >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
+			uiSize = pRefSeq->uiUnpackedSizeForwardPlusReverse() - uiStart - 1;
+		if(pRefSeq->bridingSubsection(uiStart, uiSize))
 		{
-			forEachNonBridgingSeed(
-				pxAnchor, pFM_index, pRefSeq, pQuerySeq,
-				[&](Seed xAnchor)
-				{
-					nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
-					nucSeqIndex uiSize = uiStripSize;
-
-					/*
-					 * FILTER START
-					 *
-					 * 1)	we make sure that we can never have bridging strips
-					 *
-					 * 2) 	we filter out anchors that are to close to each other
-					 *		since we do not want to work on the same area twice
-					 */
-					//1)
-					if(uiStripSize/2 > getPositionForBucketing(pQuerySeq->length(), xAnchor))
-						uiStart = 0;
-					if(uiStart >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
-						uiStart = pRefSeq->uiUnpackedSizeForwardPlusReverse() - 1;
-					if(uiStart + uiSize >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
-						uiSize = pRefSeq->uiUnpackedSizeForwardPlusReverse() - uiStart - 1;
-					if(pRefSeq->bridingSubsection(uiStart, uiSize))
-					{
-						pRefSeq->unBridgeSubsection(uiStart, uiSize);
-					}//if
-					nucSeqIndex uiEnd = uiStart + uiSize;
-					//2)
-					for(std::tuple<nucSeqIndex, nucSeqIndex> intv : collectedIntervals)
-					{
-						if(std::get<0>(intv) >= uiEnd)
-							continue;
-						if(std::get<1>(intv) <= uiStart)
-							continue;
-					}//for
-					collectedIntervals.push_back(std::make_tuple(uiStart, uiEnd));
-					/*
-					 * FILTER END
-					 */
-
-
-					std::shared_ptr<Seeds> pxNew(new Seeds());
-
-					//binary search for the first element in range
-					auto iterator = std::lower_bound(
-						vSeeds.begin(), vSeeds.end(), uiStart,
-						[&]
-						(const Seed a, const nucSeqIndex uiStart)
-						{
-							return getPositionForBucketing(pQuerySeq->length(), a) < uiStart;
-						}//lambda
-					);//binary search function call
-					assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
-
-					while(
-							iterator != vSeeds.end() &&
-							getPositionForBucketing(pQuerySeq->length(), *iterator) < uiEnd
-						)
-					{
-						pxNew->push_back(*iterator);
-						++iterator;
-					}//while
-
-					pRet->push_back(pxNew);
-				},//lambda
-				uiStripSize/2
-			);//for each
-		}//lambda
-	);//for each
-	return pRet;
-#elif 1
-
-	std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
-	/*
-	 * return one strip of consideration for each anchor
-	 * iterate over the anchors and then over all seeds in order to do that
-	*/
-	pAnchors->forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxAnchor)
+			pRefSeq->unBridgeSubsection(uiStart, uiSize);
+		}//if
+		nucSeqIndex uiEnd = uiStart + uiSize;
+		//2)
+		for(std::tuple<nucSeqIndex, nucSeqIndex> intv : collectedIntervals)
 		{
-			forEachNonBridgingSeed(
-				pxAnchor, pFM_index, pRefSeq, pQuerySeq,
-				[&](Seed xAnchor)
-				{
-					nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
-					nucSeqIndex uiEnd = uiStart + uiStripSize;
-					std::shared_ptr<Seeds> pxNew(new Seeds());
-					
-					
-					pSegments->forEach(
-						[&](std::shared_ptr<SegmentTreeInterval> pxNode)
-						{
-							forEachNonBridgingSeed(
-								pxNode, pFM_index, pRefSeq, pQuerySeq,
-								[&](Seed xSeed)
-								{
-									nucSeqIndex uiSeed = getPositionForBucketing(
-											pQuerySeq->length(), 
-											xSeed
-										);
-									if(uiStart <= uiSeed && uiEnd >= uiSeed)
-										pxNew->push_back(xSeed);
-								}//lambda
-							);//for each
-						}//lambda
-					);//forEach
-
-
-					pRet->push_back(pxNew);
-				},//lambda
-				uiStripSize/2
-			);//for each
-		}//lambda
-	);//for each
-
-	return pRet;
-
-#else
-	std::vector<SeedBucket> axSeedBuckets((pQuerySeq->length() + pRefSeq->uiUnpackedSizeForwardPlusReverse())/uiStripSize + 1);
-
-
-	/*
-	*	extract all seeds from the segment tree intervals
-	*	store them in buckets for easy pickup
-	*/
-	pSegments->forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
-		{
-			saveSeeds(pxNode, pFM_index, pRefSeq, pQuerySeq, axSeedBuckets);
-		}//lambda
-	);//forEach
-
-	DEBUG_3(
-		std::cout << "values of buckets: ";
-		for(auto& bucket : axSeedBuckets)
-		{
-			std::cout << bucket.getValue() << " ";
+			if(std::get<0>(intv) >= uiEnd)
+				continue;
+			if(std::get<1>(intv) <= uiStart)
+				continue;
 		}//for
-		std::cout << std::endl;
-	)//DEBUG
+		collectedIntervals.push_back(std::make_tuple(uiStart, uiEnd));
+		/*
+			* FILTER END
+			*/
 
-	std::shared_ptr<SeedsVector> pRet(new SeedsVector());
-	/*
-	*	return one strip of consideration for each anchor
-	*/
-	pAnchors->forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
+		std::shared_ptr<Seeds> pxNew(new Seeds());
+
+		//binary search for the first element in range
+		auto iterator = std::lower_bound(
+			vSeeds.begin(), vSeeds.end(), uiStart,
+			[&]
+			(const Seed a, const nucSeqIndex uiStart)
+			{
+				return getPositionForBucketing(pQuerySeq->length(), a) < uiStart;
+			}//lambda
+		);//binary search function call
+		assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
+
+		while(
+				iterator != vSeeds.end() &&
+				getPositionForBucketing(pQuerySeq->length(), *iterator) < uiEnd
+			)
 		{
-			forEachNonBridgingSeed(
-				pxNode, pFM_index, pRefSeq, pQuerySeq,
-				[&](Seed xAnchor)
-				{
-					nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
-					std::shared_ptr<Seeds> pxNew(new Seeds());
-					for (
-							unsigned int uiC = uiStart / uiStripSize - 1; 
-							uiC <= (uiStart + uiStripSize) / uiStripSize 
-							&& uiC < axSeedBuckets.size(); 
-							uiC++
-						)
-					{
-						for(const Seed& rS : axSeedBuckets[uiC].seeds())
-							pxNew->push_back(rS);
-					}//for
-					pRet->push_back(pxNew);
-				},//lambda
-				uiStripSize/2
-			);//for each
-		}//lambda
-	);//forEach
+			pxNew->push_back(*iterator);
+			++iterator;
+		}//while
 
+		pRet->push_back(pxNew);
+	}//for
 	return pRet;
-#endif
 }//function
 
 void exportBucketing()
