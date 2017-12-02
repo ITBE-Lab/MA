@@ -37,15 +37,18 @@ def mutate(char):
         print("error while mutating")
         return 'n'
 
-def setUpDbTables(conn):
+def setUpDbTables(conn, reset = False):
     c = conn.cursor()
+
+    if reset:
+        c.execute("DROP TABLE IF EXISTS samples")
+        c.execute("DROP TABLE IF EXISTS results")
 
     c.execute("""
                 CREATE TABLE IF NOT EXISTS samples
                 (
                     sample_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     num_mutation INTEGER,
-                    num_insertions INTEGER,
                     num_indels INTEGER,
                     original_size INTEGER,
                     origin INTEGER,
@@ -75,19 +78,37 @@ def setUpDbTables(conn):
                 """)
 
     c.execute("""
+                CREATE INDEX IF NOT EXISTS results_index_2 ON results
+                (
+                    sample_id
+                )
+                """)
+
+    c.execute("""
                 CREATE INDEX IF NOT EXISTS samples_index_1 ON samples
                 (
-                    original_size,
-                    num_mutation,
-                    num_insertions
+                    num_indels
                 )
                 """)
 
     c.execute("""
                 CREATE INDEX IF NOT EXISTS samples_index_2 ON samples
                 (
-                    num_mutation,
-                    num_insertions
+                    original_size
+                )
+                """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS samples_index_3 ON samples
+                (
+                    num_mutation
+                )
+                """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS samples_index_4 ON samples
+                (
+                    sample_id
                 )
                 """)
     conn.commit()
@@ -120,9 +141,9 @@ def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size
                             (
                                 SELECT DISTINCT sample_id
                                 FROM results
-                                WHERE approach = ?
-                                AND reference = ?
+                                WHERE approach == ?
                             )
+                        AND reference == ?
                         AND num_mutation % ? == 0
                         AND num_indels % ? == 0
                         """, (approach, reference, res_mut, res_indel)).fetchall()
@@ -133,13 +154,34 @@ def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size
                             (
                                 SELECT DISTINCT sample_id
                                 FROM results
-                                WHERE approach = ?
-                                AND reference = ?
+                                WHERE approach == ?
                             )
+                        AND reference == ?
                         AND num_mutation % ? == 0
                         AND num_indels % ? == 0
                         AND original_size == ?
                         """, (approach, reference, res_mut, res_indel, size)).fetchall()
+
+def getQueriesFor(db_name, reference, mut = 1, indel = 1, size = 100):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT sequence, sample_id
+                        FROM samples
+                        WHERE reference == ?
+                        AND num_mutation == ?
+                        AND num_indels == ?
+                        AND original_size == ?
+                        """, (reference, mut, indel, size)).fetchall()
+
+def getOriginOf(db_name, sample_id):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT origin
+                        FROM samples
+                        WHERE sample_id == ?
+                        """, (sample_id,)).fetchone()[0]
 
 def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
@@ -277,7 +319,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
     q_from = 0
     #do - while loop
     while True:#do
-        q_from = random.randint(0, ref_seq.unpacked_size() - q_len)
+        q_from = random.randint(0, ref_seq.unpacked_size()/2 - q_len)
         q_to = q_from + q_len
     #while
         if ref_seq.is_bridging(q_from, q_len):
@@ -305,7 +347,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
         for index in range(interval_length - min_distance):
             spots.append(index)
         shuffle(spots)
-        spots = spots[:deletion_amount]
+        spots = spots[:amount]
         spots.sort()
         for index in range(1,len(spots)):
             if spots[index-1] + min_distance + 1 > spots[index]:
@@ -319,22 +361,28 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
     deletion_amount = floor(indel_amount/2)
     insertion_amount = floor( (indel_amount+1) /2)
 
-    #deletion
+    # deletion
     deletion_spots = get_random_spots(deletion_amount, len(q), indel_size + 1)
     for pos in reversed(deletion_spots):
         q = q[:pos] + q[pos + indel_size:]
 
-    #mutations
+    # mutations
     mutation_spots = []
     for index in range(len(q)):
         mutation_spots.append(index)
     shuffle(mutation_spots)
     for pos in mutation_spots[:mutation_amount]:
-        q = q[:pos-1] + mutate(q[pos-1]) + q[pos:]
+        l = len(q)
+        q = q[:pos] + mutate(q[pos]) + q[pos+1:]
+        if not len(q) == l:
+            print("ERROR: mutation changed query length:" + str(l) + " != " + str(len(q)))
+            print(q)
 
-    #insertion
+    # insertion
     insertion_spots = get_random_spots(insertion_amount, len(q), 1)
-    for pos in insertion_spots:
+    # pos are sorted in order to we need to reverse them in order 
+    # to not insert twice at the same location
+    for pos in reversed(insertion_spots):
         for _ in range(indel_size):
             char = random.randint(1,4)
             if char == 1:
@@ -343,15 +391,17 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
                 q = q[:pos] + "c" + q[pos:]
             elif char == 3:
                 q = q[:pos] + "t" + q[pos:]
-            else:
+            elif char == 4:
                 q = q[:pos] + "g" + q[pos:]
+            else:
+                print("ERROR: indel produced impossible nucleotide")
 
     return (q_from, q)
 
-def createSampleQueries(ref, db_name, size, indel_size, amount):
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False):
     conn = sqlite3.connect(db_name)
 
-    setUpDbTables(conn)
+    setUpDbTables(conn, reset)
 
     ref_seq = Pack()
     ref_seq.load(ref)
@@ -364,8 +414,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
     #
     # iterate over the given range of mutations indels and number of sequences
     #
-    for mutation_amount in range(0, size, 10):
-        for indel_amount in range(0, max_indels, 1):
+    for mutation_amount in range(0, size, int(size/10)):
+        for indel_amount in range(0, max_indels, int(max_indels/10)):
 
             #dont put sequences that can't be found
             if mutation_amount + indel_amount/2 * indel_size >= size - 1:
@@ -420,7 +470,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount):
         insertQueries(conn, queries_list)
     print("done saving")
 
-    print("nuc distrib [A,C,G,T]: " + str(nuc_distrib_count))
+    print("nuc distrib [A, C, G, T, N]: " + str(nuc_distrib_count))
 #function
 
 

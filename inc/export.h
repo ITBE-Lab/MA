@@ -118,7 +118,8 @@
  * - rename classes and files aproproately
  * - move backwards extension into fm_index class
  * - STOP ADDING ITEMS TO THIS LIST
- * - reintroduce rotations to searchTree
+ * - reintroduce rotations to searchTree (maybe not necessary since we don't use that code anymore)
+ * - make banded efficient NMW
  * 
  * @section about_us_sec About Us
  * 
@@ -146,6 +147,7 @@
 #include "smith_waterman.h"
 #include "extractAllSeeds.h"
 #include "execOnVector.h"
+#include "reSeed.h"
 
 
 #endif

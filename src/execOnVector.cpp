@@ -80,7 +80,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Contai
         std::sort(
             pResults->begin(), pResults->end(),
             []
-            (const std::shared_ptr<Container> a, const std::shared_ptr<Container> b)
+            (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
             {
                 return a->smaller(b);
             }//lambda

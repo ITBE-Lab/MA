@@ -20,12 +20,12 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
     return std::shared_ptr<Container>(new Alignment());
 }//function
 
-int iDeletion = -4;//-50
-int iInsertion = -4;//-50
+int iDeletion = -16;//-50
+int iInsertion = -16;//-50
 int iDeletionContinued = -1;
 int iInsertionContinued = -1;
-int iMatch = 10;//20
-int iMissMatch = -3;//-20
+int iMatch = 8;//20
+int iMissMatch = -2;//-20
 
 void needlemanWunsch(
         std::shared_ptr<NucleotideSequence> pQuery, 

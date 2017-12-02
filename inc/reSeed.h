@@ -4,10 +4,10 @@
  * @author Markus Schmidt
  */
 
-#ifndef LONGEST_NON_ENCLOSED_SEGMENTS_H
-#define LONGEST_NON_ENCLOSED_SEGMENTS_H
+#ifndef RE_SEED_H
+#define RE_SEED_H
 
-#define DEBUG_ENABLED
+//#define DEBUG_ENABLED
 
 #include "system.h"
 #include "cppModule.h"
@@ -31,8 +31,10 @@ private:
 	/*
 	 * bwa style extension
 	 */
-	static SaSegment extend(
+	static void extend(
 			std::shared_ptr<SegmentTreeInterval> pxNode,
+			nucSeqIndex min,
+			nucSeqIndex max,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq
 		);

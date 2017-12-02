@@ -181,10 +181,16 @@ def make_up_seeds_simple():
 
 def compare_chaining_linesweep_visual():
     ref_seq = Pack()
-    ref_seq.load("/mnt/ssd0/chrom/human/pack")
+    ref_seq.load(human_genome)
     fm_index = FMIndex()
-    fm_index.load("/mnt/ssd0/chrom/human/index")
-    query = get_query(ref_seq, 1000, 10, 10)
+    fm_index.load(human_genome)
+    query_seq, query_id = getQueriesFor(db_name, human_genome, 50, 0, 100)[0]
+    query = NucSeq(query_seq)
+
+    query_orig = getOriginOf(db_name, query_id)
+
+    print(query_seq)
+    print(str(ref_seq.extract(query_orig, query_orig+100)))
 
     segments = LongestNonEnclosedSegments().execute((
             fm_index,
@@ -407,7 +413,8 @@ def test_my_approach(
             num_anchors=10, 
             strips_of_consideration=True,
             low_res = False,
-            size = 100
+            re_seed = None,
+            max_sweep = None
         ):
     print("collecting samples (" + name + ") ...")
     reference_pledge = Pledge(Pack())
@@ -420,14 +427,17 @@ def test_my_approach(
     if low_res:
         res2 = 5
 
-    queries = getNewQueries(db_name, name, reference, res1, res2, size)
+    queries = getNewQueries(db_name, name, reference, res1, res2)
+    #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
     print("extracting " + str(len(queries)) + " samples (" + name + ") ...")
     #setup the query pledges
     query_pledge = []
+    ids = []
     for sequence, sample_id in queries:
         query_pledge.append(Pledge(NucSeq()))
         query_pledge[-1].set(NucSeq(sequence))
+        ids.append(sample_id)
 
 
     print("setting up (" + name + ") ...")
@@ -447,25 +457,31 @@ def test_my_approach(
         chain=LineSweep2(),
         max_hits=max_hits,
         num_anchors=num_anchors,
-        strips_of_consideration=strips_of_consideration
+        strips_of_consideration=strips_of_consideration,
+        re_seed=re_seed,
+        max_sweep=max_sweep
     )
 
     #temp code
-    """
-    num = -51
-    result_pledge[-1][num].get()
+    if False:
+        num = 0
+        #result_pledge[-1][num].get()
 
-    printer = AlignmentPrinter()
-    for alignment in result_pledge[-2][num].get().get():
-        printer.execute((alignment, query_pledge[num].get(), ref_pack))
+        printer = AlignmentPrinter()
 
-    exit()
-    """
+        print("origin: " + str(ids[num]))
+        print("num results: " + str(len(result_pledge[-2][num].get().get())))
+
+        for alignment in result_pledge[-2][num].get().get():
+            printer.execute((alignment, query_pledge[num].get(), ref_pack))
+
+        exit()
 
     print("computing (" + name + ") ...")
+    Pledge.simultaneous_get(result_pledge[0], 32)
     Pledge.simultaneous_get(result_pledge[-1], 32)
 
-    print("submitting results (" + name + ") ...")
+    print("extracting results (" + name + ") ...")
     result = []
     for index in range(len(queries)):
         alignment = result_pledge[-1][index].get()
@@ -484,29 +500,41 @@ def test_my_approach(
                     name
                 )
             )
+    print("submitting results (" + name + ") ...")
     submitResults(db_name, result)
     print("done")
 
 
 def test_my_approaches():
-    clearResults(db_name, human_genome, "pBs:5 SoC:100 sLs")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100 sLs", num_anchors=100)
+    #clearResults(db_name, human_genome, "pBs:50000 SoC:5 sLs")
+    #test_my_approach(db_name, human_genome, "pBs:50000 SoC:5 sLs", max_hits=50000)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:1 sLs")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1 sLs", num_anchors=1)
+    #clearResults(db_name, human_genome, "pBs:5 SoC:10 sLs")
+    #test_my_approach(db_name, human_genome, "pBs:5 SoC:10 sLs", num_anchors=10)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:5 sLs")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:5 sLs")
+    #clearResults(db_name, human_genome, "Bs:50000 SoC:5 sLs")
+    #test_my_approach(db_name, human_genome, "Bs:50000 SoC:5 sLs", max_hits=50000, seg=LongestLRSegments())
 
-    #clearResults(db_name, human_genome, "Bs:5 SoC:5 sLs")
-    #test_my_approach(db_name, human_genome, "Bs:5 SoC:5 sLs", seg=LongestLRSegments())
+    clearResults(db_name, human_genome, "pBs:5 SoC:100 sLs:5")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100 sLs:5", num_anchors=100, max_sweep=5)
 
+    clearResults(db_name, human_genome, "pBs:5 SoC:100 sLs:1")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100 sLs:1", num_anchors=100, max_sweep=1)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:10000 sLs")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000 sLs", num_anchors=10000)
+    clearResults(db_name, human_genome, "pBs:5 SoC:1 sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1 sLs:inf", num_anchors=1)
 
-    clearResults(db_name, human_genome, "pBs:5 Ch")
-    test_my_approach(db_name, human_genome, "pBs:5 Ch", chain=Chaining(), strips_of_consideration=False)
+    #clearResults(db_name, human_genome, "pBsr:1000 SoC:10 sLs")
+    #test_my_approach(db_name, human_genome, "pBsr:1000 SoC:10 sLs", max_hits=1000, num_anchors=10, re_seed=0)
+
+    #clearResults(db_name, human_genome, "Bs:5 SoC:5 sLs:inf")
+    #test_my_approach(db_name, human_genome, "Bs:5 SoC:5 sLs:inf", seg=LongestLRSegments())
+
+    #clearResults(db_name, human_genome, "pBs:5 SoC:1000 sLs:5")
+    #test_my_approach(db_name, human_genome, "pBs:5 SoC:1000 sLs:5", num_anchors=1000, max_sweep=5)
+
+    #clearResults(db_name, human_genome, "pBs:5 Ch")
+    #test_my_approach(db_name, human_genome, "pBs:5 Ch", chain=Chaining(), strips_of_consideration=False)
 
     #clearResults(db_name, human_genome, "Bs:10000 SoC:10000 sLs")
     #test_my_approach(db_name, human_genome, "Bs:10000 SoC:10000 sLs", seg=LongestLRSegments(),
@@ -514,12 +542,11 @@ def test_my_approaches():
 
 
 
-def analyse_all_approaches():
+def analyse_all_approaches(query_size = 100, indel_size = 10):
     output_file("results_log.html")
     approaches = getApproachesWithData(db_name)
     plots = [ [], [], [], [] ]
-    indel_size = 10
-    query_size = 100
+
     for approach_ in approaches:
         approach = approach_[0]
         results = getResults(db_name, approach, query_size, indel_size)
@@ -529,8 +556,8 @@ def analyse_all_approaches():
         scores = {}
         nums_seeds = {}
 
-        max_indel = 0
-        max_mut = 0
+        max_indel = 2*query_size/indel_size
+        max_mut = query_size
 
         def init(d, x, y):
             if x not in d:
@@ -546,10 +573,6 @@ def analyse_all_approaches():
             if not score is None:
                 scores = init(scores, num_mutation, num_indels)
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
-            if num_indels > max_indel:
-                max_indel = num_indels
-            if num_mutation > max_mut:
-                max_mut = num_mutation
 
             if near(result_start, original_start):
                 hits[num_mutation][num_indels] += 1
@@ -559,7 +582,8 @@ def analyse_all_approaches():
             if not score is None:
                 scores[num_mutation][num_indels] += score
 
-        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False):
+
+        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None):
             pic = []
             min_ = 10000.0
             max_ = 0.0
@@ -597,6 +621,10 @@ def analyse_all_approaches():
                             if p > max_:
                                 max_ = p
 
+            if set_max is not None:
+                max_ = set_max
+            if set_min is not None:
+                min_ = set_min
 
             color_mapper = LinearColorMapper(palette="Viridis256", low=min_, high=max_)
             if log:
@@ -622,7 +650,7 @@ def analyse_all_approaches():
 
             return plot
 
-        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach)
+        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0, True)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
@@ -639,9 +667,25 @@ def analyse_all_approaches():
     save(layout(plots))
 
 #exit()
+def manualCheckSequences():
+    ref_seq = Pack()
+    ref_seq.load(human_genome)
+    for query_seq, query_id in getQueriesFor(db_name, human_genome, 40, 0, 100):
+        query = NucSeq(query_seq)
 
-#createSampleQueries(human_genome, db_name, 100, 10, 64)
+        query_orig = getOriginOf(db_name, query_id)
+
+        print(query_seq)
+        print(str(ref_seq.extract_from_to(query_orig, query_orig+100)))
+        print("")
+
+
+#manualCheckSequences()
+#exit()
+
+#exit()
+createSampleQueries(human_genome, db_name, 1000, 100, 64, True)
 test_my_approaches()
-analyse_all_approaches()
+analyse_all_approaches(1000, 100)
 #compare_chaining_linesweep_visual()
 

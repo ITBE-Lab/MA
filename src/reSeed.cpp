@@ -101,13 +101,14 @@ SA_IndexInterval ReSeed::extend_backward(
 } // method
 
 
-SaSegment ReSeed::extend(
+void ReSeed::extend(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
+		nucSeqIndex min,
+		nucSeqIndex max,
 		std::shared_ptr<FM_Index> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq
 	)
 {
-	nucSeqIndex center = pxNode->start() + pxNode->size()/2;
 
 	// query sequence itself
 	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
@@ -120,13 +121,13 @@ SaSegment ReSeed::extend(
 	// because very first string in SA-array starts with $
 	// size in T and T' is equal due to symmetry
 	SA_IndexInterval ik(
-						pFM_index->L2[complement(q[center])] + 1, 
-						pFM_index->L2[(int)q[center]] + 1, 
-						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
+						pFM_index->L2[complement(q[min])] + 1, 
+						pFM_index->L2[(int)q[min]] + 1, 
+						pFM_index->L2[(int)q[min] + 1] - pFM_index->L2[(int)q[min]]
 					);
 
 	std::list<SaSegment> curr = std::list<SaSegment>();
-	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
+	for(nucSeqIndex i = min+1; i < max; i++)
 	{
 		DEBUG_2(
 			std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
@@ -134,11 +135,6 @@ SaSegment ReSeed::extend(
 		)
 		assert(ik.size() > 0);
 		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
-
-		if(ok.size() != ik.size()) 
-			curr.push_front(SaSegment(center, i-center-1, ik.revComp()));
-		if(i == pQuerySeq->length()-1 && ok.size() != 0)
-			curr.push_front(SaSegment(center, i-center, ok.revComp()));
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -148,85 +144,15 @@ SaSegment ReSeed::extend(
 		* In fact, if ok.getSize is zero, then there are no matches any more.
 		*/
 		if (ok.size() == 0)
+			max = i-1;
 			break; // the SA-index interval size is too small to be extended further
 		ik = ok;
 	}//for
-	DEBUG_2(
-		std::cout << "swap" << std::endl;
-	)
-	std::list<SaSegment> prev = std::list<SaSegment>();
-	SaSegment longest(0,0,SA_IndexInterval(0,0,0));
-	std::list<SaSegment> *pPrev, *pCurr, *pTemp;
-	pPrev = &curr;
-	pCurr = &prev;
-	if(center != 0)
-	{
-		for(nucSeqIndex i = center-1; i >= 0; i--)
-		{
-			assert(pCurr->empty());
-
-			bool bHaveOne = false;
-
-			for(SaSegment ik : *pPrev)
-			{
-				DEBUG_2(
-					std::cout << i+1 << " -> " << ik.saInterval().start() << " " << ik.saInterval().end() << std::endl;
-					std::cout << i+1 << " ~> " << ik.saInterval().revComp().start() << " " << ik.saInterval().revComp().end() << std::endl;
-				)
-				SA_IndexInterval ok = extend_backward(ik.saInterval(), q[i], pFM_index);
-				DEBUG_2(
-					std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
-					std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
-				)
-				DEBUG(
-					std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
-				)
-				if(ok.size() == 0 && !bHaveOne)
-				{
-					pxNode->push_back(ik);
-					assert(ik.end() <= pQuerySeq->length());
-					if(ik.size() > longest.size())
-						longest = ik;
-					bHaveOne = true;
-				}//if
-				else if(ok.size() != 0)
-				{
-					SaSegment xSeg = SaSegment(i, ik.size()+1, ok);
-					pCurr->push_back(xSeg);
-					assert(xSeg.end() <= pQuerySeq->length());
-				}//if
-			}//for
-			pTemp = pPrev;
-			pPrev = pCurr;
-			pCurr = pTemp;
-			pCurr->clear();
-
-			//if there are no more intervals to extend
-			if(pPrev->empty())
-				break;
-
-			//cause nuxSeqIndex is unsigned
-			if(i == 0)
-				break;
-		}//for
-	}//if
-	
-	if(!pPrev->empty())
-	{
-		assert(pPrev->front().size() >= pPrev->back().size());
-
-		pxNode->push_back(pPrev->front());
-		assert(pPrev->front().end() <= pQuerySeq->length());
-		
-		DEBUG_2(
-			std::cout << pPrev->front().start() << ":" << pPrev->front().end() << std::endl;
-		)
-
-		if(pPrev->front().size() > longest.size())
-			longest = pPrev->front();
-	}//if
-
-	return longest;
+	SaSegment seg(min,max-min,ik.revComp());
+	assert(min >= 0);
+	assert(max < pQuerySeq->length());
+	assert(seg.end() < pQuerySeq->length());
+	pxNode->push_back(seg);
 }//function
 
 
@@ -257,13 +183,20 @@ std::shared_ptr<Container> ReSeed::execute(
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
 
-
-	
-
-
 	std::shared_ptr<SegmentTree> pSegmentTree(new SegmentTree(pQuerySeq->length()));
 
+	pSegments->forEach(
+		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
+		{
+			pSegmentTree->push_back(pxNode);
 
+			for(SaSegment& seg : pxNode->lxSaSegment)
+			{
+				if(seg.size() > 2)
+					extend(pxNode, seg.start() + 1, seg.end() - 1, pFM_index, pQuerySeq);
+			}//for
+		}//lambda
+	);//forEach
 
 	return pSegmentTree;
 }//function
@@ -271,7 +204,16 @@ std::shared_ptr<Container> ReSeed::execute(
 void exportReSeed()
 {
 	//export the ReSeed class
-	boost::python::class_<ReSeed, boost::python::bases<CppModule>>("ReSeed")
+	boost::python::class_<
+			ReSeed,
+			boost::python::bases<CppModule>,
+			std::shared_ptr<ReSeed>
+		>("ReSeed")
 		.def_readwrite("min_split_len", &ReSeed::minSplitLen)
 	;
+
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<ReSeed>,
+		std::shared_ptr<CppModule> 
+	>();
 }//function

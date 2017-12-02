@@ -53,6 +53,8 @@ private:
     int gapOpenScore;
     int gapExtensionScore;
 
+    int iScore = 0;
+
 public:
     /**
      * @brief Creates an empty alignment.
@@ -154,13 +156,24 @@ public:
     }//operator
 
     /**
-     * @brief appends multiple matchTypes to the aligment
+     * @brief appends multiple matchTypes to the alignment
      * @details
      * This is used for appending seeds,
      * where simply size of the seed matches need to be appended.
      */
     void append(MatchType type, nucSeqIndex size)
     {
+        if(type == MatchType::seed || type == MatchType::match)
+            iScore += matchScore * size;
+        else if(type == MatchType::missmatch)
+            iScore += missmatchScore * size;
+        else if(type == MatchType::insertion || type == MatchType::deletion)
+        {
+            if(at(length()-1) != MatchType::insertion && at(length()-1) != MatchType::deletion)
+                iScore += gapOpenScore;
+            iScore += gapExtensionScore * size-1;
+        }//if
+
         if(data.size() != 0 && std::get<0>(data.back()) == type)
             std::get<1>(data.back()) += size;
         else
@@ -169,7 +182,7 @@ public:
     }//function
 
     /**
-     * @brief appends a matchType to the aligment
+     * @brief appends a matchType to the alignment
      */
     void append(MatchType type)
     {
@@ -211,34 +224,7 @@ public:
 
     int score() const
     {
-        int score = 0;
-
-        bool firstGap = true;
-        for(unsigned int i = 0; i < length(); i++)
-        {
-            if(at(i) == MatchType::seed || at(i) == MatchType::match)
-            {
-                score += matchScore;
-                firstGap = true;
-            }//if
-            else if(at(i) == MatchType::missmatch)
-            {
-                score += missmatchScore;
-                firstGap = true;
-            }//if
-            else if(at(i) == MatchType::insertion || at(i) == MatchType::deletion)
-            {
-                if(firstGap)
-                {
-                    firstGap = false;
-                    score += gapOpenScore;
-                }//if
-                else
-                    score += gapExtensionScore;
-            }//if
-        }//for
-
-        return score;
+        return iScore;
     }
 
     float seedCoverage() const
@@ -273,11 +259,15 @@ public:
             uiBeginOnRef += std::get<1>(data[uiDataStart]);
             uiLength -= std::get<1>(data[uiDataStart]);
             uiDataStart++;
+            iScore -= gapOpenScore;
+            iScore -= gapExtensionScore * std::get<1>(data[uiDataStart])-1;
         }//if
         if(std::get<0>(data.back()) == MatchType::deletion)
         {
             uiEndOnRef -= std::get<1>(data.back());
             uiLength -= std::get<1>(data.back());
+            iScore -= gapOpenScore;
+            iScore -= gapExtensionScore * std::get<1>(data.back())-1;
             data.pop_back();
         }//if
     }//function

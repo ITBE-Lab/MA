@@ -28,23 +28,29 @@ from .__init__ import *
 # @ingroup module
 #
 def set_up_aligner(
-        query_pledges, 
-        reference_pledge, 
-        fm_index_pledge, 
-        seg=LongestNonEnclosedSegments(), 
-        chain=LineSweep(), 
-        max_hits=5, 
-        num_anchors=10, 
+        query_pledges,
+        reference_pledge,
+        fm_index_pledge,
+        seg=LongestNonEnclosedSegments(),
+        chain=LineSweep(),
+        max_hits=5,
+        num_anchors=5,
         strips_of_consideration=True,
-        re_seed = None
+        re_seed = None,
+        max_sweep = None
         ):
 
     anc = NlongestIntervalsAsAnchors(num_anchors, max_hits)
 
     bucketing = Bucketing()
     bucketing.max_hits = max_hits
+    bucketing.strip_size = 250
 
-    execall = ExecOnVec(chain, False, 0)
+    max_sweep_n = 0
+    if not max_sweep is None:
+        max_sweep_n = max_sweep
+
+    execall = ExecOnVec(chain, not max_sweep is None, max_sweep_n)
 
     nmw = NeedlemanWunsch()
     nmw_multiple = ExecOnVec(nmw, True, 0)
@@ -53,9 +59,9 @@ def set_up_aligner(
     extractAll = ExtractAllSeeds()
     extractAll.max_hits = max_hits
 
-    #reseed = ReSeed()
-    #if not re_seed is None:
-    #    reseed.min_split_len = reseed
+    reseed = ReSeed()
+    if not re_seed is None:
+        reseed.min_split_len = re_seed
 
 
     query_pledges_ = []
@@ -65,8 +71,8 @@ def set_up_aligner(
         query_pledges_.append(query_pledges)
 
     return_pledges = [[], [], [], []]
-    #if not re_seed is None:
-    #    return_pledges.append([])
+    if not re_seed is None:
+        return_pledges.append([])
     if strips_of_consideration:
         return_pledges.append([])
         return_pledges.append([])
@@ -80,21 +86,20 @@ def set_up_aligner(
         return_pledges[ret_pl_indx].append(segment_pledge)
         ret_pl_indx += 1
 
-        #if not re_seed is None:
-        #    segment_pledge = reseed.promise_me((
-        #        fm_index_pledge,
-        #        segment_pledge,
-        #        query_pledge
-        #    ))
-        #return_pledges[ret_pl_indx].append(segment_pledge)
-        #ret_pl_indx += 1
+        if not re_seed is None:
+            segment_pledge = reseed.promise_me((
+                fm_index_pledge,
+                segment_pledge,
+                query_pledge
+            ))
+            return_pledges[ret_pl_indx].append(segment_pledge)
+            ret_pl_indx += 1
 
 
         if strips_of_consideration:
             anchors_pledge = anc.promise_me((segment_pledge,reference_pledge,fm_index_pledge))
             return_pledges[ret_pl_indx].append(anchors_pledge)
             ret_pl_indx += 1
-
 
             strips_pledge = bucketing.promise_me((
                 segment_pledge,

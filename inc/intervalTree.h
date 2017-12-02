@@ -90,13 +90,12 @@ public:
  */
 class SegmentTreeInterval: public Container, public Interval<nucSeqIndex>
 {
-private:
+public:
 	/** 
 	 * @brief list of the perfect matches found through backwards / forward extension 
 	 */
 	std::list<SaSegment> lxSaSegment;
 
-public:
 	/**
 	 * @brief Creates a new interval with a start and size.
 	 */
@@ -181,7 +180,7 @@ public:
 			//if bSkipLongerIntervals is not set uiJump by is used to not return more than 
 			//uiMaxNumHitsPerInterval
 			t_bwtIndex uiJumpBy = 1;
-			if (xSegment.saInterval().size() > uiMaxNumHitsPerInterval)
+			if (xSegment.saInterval().size() > uiMaxNumHitsPerInterval && uiMaxNumHitsPerInterval != 0)
 			{
 				if (bSkipLongerIntervals)
 					continue;

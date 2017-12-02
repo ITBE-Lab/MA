@@ -31,4 +31,5 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportSMW();
         exportExtractAllSeeds();
         exportExecOnVector();
+        exportReSeed();
 }

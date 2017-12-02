@@ -110,6 +110,8 @@ SaSegment LongestNonEnclosedSegments::extend(
 		std::shared_ptr<NucleotideSequence> pQuerySeq
 	)
 {
+	unsigned int min_matches = 0;
+
 	nucSeqIndex center = pxNode->start() + pxNode->size()/2;
 
 	// query sequence itself
@@ -184,7 +186,7 @@ SaSegment LongestNonEnclosedSegments::extend(
 				DEBUG(
 					std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
 				)
-				if(ok.size() == 0 && !bHaveOne)
+				if(ok.size() <= min_matches && !bHaveOne)
 				{
 					pxNode->push_back(ik);
 					assert(ik.end() <= pQuerySeq->length());
@@ -192,7 +194,7 @@ SaSegment LongestNonEnclosedSegments::extend(
 						longest = ik;
 					bHaveOne = true;
 				}//if
-				else if(ok.size() != 0)
+				else if(ok.size() > 0)
 				{
 					SaSegment xSeg = SaSegment(i, ik.size()+1, ok);
 					pCurr->push_back(xSeg);
