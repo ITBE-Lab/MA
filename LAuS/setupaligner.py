@@ -37,14 +37,15 @@ def set_up_aligner(
         num_anchors=5,
         strips_of_consideration=True,
         re_seed = None,
-        max_sweep = None
+        max_sweep = None,
+        strip_size = 500
         ):
 
     anc = NlongestIntervalsAsAnchors(num_anchors, max_hits)
 
     bucketing = Bucketing()
     bucketing.max_hits = max_hits
-    bucketing.strip_size = 250
+    bucketing.strip_size = strip_size
 
     max_sweep_n = 0
     if not max_sweep is None:

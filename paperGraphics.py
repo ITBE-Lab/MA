@@ -3,9 +3,10 @@ from bokeh.layouts import row, column
 from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead
 from bokeh.palettes import d3
 from bokeh.io import export_png, export_svgs
-from bokeh.models import FuncTickFormatter, FixedTicker
+from bokeh.models import FuncTickFormatter, FixedTicker, Label
 import math
 
+font = "Times New Roman"
 
 greys = [
         "#acacac",
@@ -24,17 +25,17 @@ def save(plot, name):
     #show(plot)
 
 resolution = 300
-min_x = -1
-min_y = -1
-max_x = 11
-max_y = 11
+min_x = 0
+min_y = 0
+max_x = 10
+max_y = 10
 
 
 plot = figure(
             title="Figure 2",
             plot_width=resolution, plot_height=resolution,
-            x_range=(min_x+1,max_x-1),
-            y_range=(min_y+1,max_y-1)
+            x_range=(min_x,max_x),
+            y_range=(min_y,max_y)
         )
 plot.axis.visible = False
 plot.grid.grid_line_color = None
@@ -88,9 +89,9 @@ plot.patch(
         patch_y,
         fill_color=greys[2],
         fill_alpha=.5,
-        line_color=greys[0],
-        line_width=2,
-        line_dash=[2,2],
+        line_color=None,
+        #line_width=2,
+        #line_dash=[2,2],
         legend="seed-shadow"
     )
 
@@ -102,15 +103,27 @@ plot.line(
         line_width=5
     )
 
+plot.line(
+        [4,6,6,8],
+        [0,2,8,10],
+        legend="path",
+        color="black",
+        line_dash=[2,2],
+        line_width=2
+    )
+
 plot.x(
         [seeds[-1][0]],
         [seeds[-1][1]],
         color="black",
         size=10,
         line_width=3,
-        legend="P"
     )
 
+plot.add_layout(
+        Label(x=6.3, y=7.5, text='P', text_font=font, text_color="black") 
+    )
+"""
 plot.add_layout(Arrow(end=OpenHead(line_color="black",size=10),
     x_start=seeds[0][0] + seeds[0][2], y_start=seeds[0][1] + seeds[0][2], 
     x_end=seeds[0][0] + seeds[0][2]+1, y_end=seeds[0][1] + seeds[0][2]))
@@ -118,8 +131,13 @@ plot.add_layout(Arrow(end=OpenHead(line_color="black",size=10),
 plot.add_layout(Arrow(end=OpenHead(line_color="black",size=10),
     x_start=seeds[0][0] + seeds[0][2], y_start=seeds[0][1] + seeds[0][2], 
     x_end=seeds[0][0] + seeds[0][2], y_end=seeds[0][1] + seeds[0][2]+1))
+"""
 
-
+plot.title.text_font=font
+plot.legend.label_text_font=font
+plot.legend.label_text_baseline="bottom"
+plot.axis.axis_label_text_font=font
+plot.axis.major_label_text_font=font
 plot.legend.location = "top_left"
 save(plot, "shadows")
 
@@ -130,8 +148,8 @@ MM = "\=M"
 D = "D"
 
 
-query =     [                    "C", "A", "C", "A", "T", "A", "T", "T" ]
-reference = ["A", "C", "A", "G", "C", "A",           "T", "T", "T", "T", "G", "G", "A"]
+query =     [                         "C", "A", "C", "A", "T", "A", "T", "T" ]
+reference = ["A", "G", "G", "A", "G", "C", "A",           "T", "T", "T", "T", "C", "A"]
 """
 for index in range(len(query)):
     query[index] = query[index] + " (" + str(index) + ")"
@@ -139,7 +157,7 @@ for index in range(len(reference)):
     reference[index] = reference[index] + " (" + str(index) + ")"
 """
 
-alignment = [D,D,D,D,M,M,I,I,M,MM,M,M,D,D,D]
+alignment = [D,D,D,D,D,M,M,I,I,M,MM,M,M,D,D]
 
 
 plot = figure(
@@ -148,6 +166,8 @@ plot = figure(
             x_axis_label = "reference", y_axis_label = "query"
         )
 
+plot.xaxis.major_tick_line_color = None
+plot.yaxis.major_tick_line_color = None
 
 cur_x = -.5
 cur_y = -.5
@@ -222,7 +242,7 @@ plot.multi_line(
     )
 
 plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
-plot.legend.location = "bottom_right"
+plot.legend.location = "top_left"
 plot.toolbar.logo = None
 plot.toolbar_location = None
 grid = []
@@ -230,7 +250,8 @@ for p in range(-1,len(reference)):
     grid.append(p+.5)
 plot.xgrid.ticker = FixedTicker(ticks=grid)
 plot.xgrid.band_fill_color = greys[3]
-plot.xgrid.band_fill_alpha = 0.1
+plot.xgrid.band_fill_alpha = 0.2
+plot.xgrid.grid_line_color = greys[0]
 plot.xaxis.formatter = FuncTickFormatter(code="""
     var labels = %s;
     return labels[tick];
@@ -241,13 +262,19 @@ for p in range(-1,len(query)):
     grid.append(p+.5)
 plot.ygrid.ticker = FixedTicker(ticks=grid)
 plot.ygrid.band_fill_color = greys[3]
-plot.ygrid.band_fill_alpha = 0.1
+plot.ygrid.band_fill_alpha = 0.2
+plot.ygrid.grid_line_color = greys[0]
 plot.yaxis.formatter = FuncTickFormatter(code="""
     var labels = %s;
     return labels[tick];
 """ % query)
 
 
+plot.title.text_font=font
+plot.legend.label_text_font=font
+plot.legend.label_text_baseline="bottom"
+plot.axis.axis_label_text_font=font
+plot.axis.major_label_text_font=font
 save(plot, "alignment")
 
 
@@ -257,31 +284,11 @@ plot = figure(
             x_axis_label = "reference", y_axis_label = "query"
         )
 
-
-plot.line(
-    [-.5,7.5],
-    [-.5,7.5],
-    color=greys[0],
-    legend="strip of consideration",
-    line_width=3,
-    line_dash=[2,2]
-)
-
-plot.line(
-    [5.5,12.5],
-    [-.5,6.5],
-    color=greys[0],
-    legend="strip of consideration",
-    line_width=3,
-    line_dash=[2,2]
-)
-
-
 plot.patch(
         [-.5,7.5,12.5,12.5,5.5],
         [-.5,7.5,7.5,6.5,-.5],
         fill_color=greys[2],
-        fill_alpha=.5,
+        fill_alpha=.75,
         line_color=None,
         #line_width=2,
         #line_dash=[2,2],
@@ -290,15 +297,36 @@ plot.patch(
 
 
 plot.line(
+    [-.5,7.5],
+    [-.5,7.5],
+    color="black",
+    legend="strip of consideration",
+    line_width=1,
+    line_dash=[2,2]
+)
+
+plot.line(
+    [5.5,12.5],
+    [-.5,6.5],
+    color="black",
+    legend="strip of consideration",
+    line_width=1,
+    line_dash=[2,2]
+)
+
+plot.line(
     [5.5,7.5],
     [2.5,4.5],
     color="black",
-    legend="seed",
+    legend="anchor",
     line_width=5
 )
 
+
+plot.xaxis.major_tick_line_color = None
+plot.yaxis.major_tick_line_color = None
 plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
-plot.legend.location = "bottom_right"
+plot.legend.location = "top_left"
 plot.toolbar.logo = None
 plot.toolbar_location = None
 grid = []
@@ -306,7 +334,8 @@ for p in range(-1,len(reference)):
     grid.append(p+.5)
 plot.xgrid.ticker = FixedTicker(ticks=grid)
 plot.xgrid.band_fill_color = greys[3]
-plot.xgrid.band_fill_alpha = 0.1
+plot.xgrid.band_fill_alpha = 0.2
+plot.xgrid.grid_line_color = greys[0]
 plot.xaxis.formatter = FuncTickFormatter(code="""
     var labels = %s;
     return labels[tick];
@@ -317,10 +346,16 @@ for p in range(-1,len(query)):
     grid.append(p+.5)
 plot.ygrid.ticker = FixedTicker(ticks=grid)
 plot.ygrid.band_fill_color = greys[3]
-plot.ygrid.band_fill_alpha = 0.1
+plot.ygrid.band_fill_alpha = 0.2
+plot.ygrid.grid_line_color = greys[0]
 plot.yaxis.formatter = FuncTickFormatter(code="""
     var labels = %s;
     return labels[tick];
 """ % query)
 
+plot.title.text_font=font
+plot.legend.label_text_font=font
+plot.legend.label_text_baseline="hanging"
+plot.axis.axis_label_text_font=font
+plot.axis.major_label_text_font=font
 save(plot, "stripOfConsideration")

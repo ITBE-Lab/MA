@@ -402,7 +402,6 @@ def make_runtime_breakdown():
 #creating samples int the database
 #createSampleQueries(human_genome, db_name, 1000, 100, 256)
 
-
 def test_my_approach(
             db_name,
             reference,
@@ -414,7 +413,8 @@ def test_my_approach(
             strips_of_consideration=True,
             low_res = False,
             re_seed = None,
-            max_sweep = None
+            max_sweep = None,
+            strip_size = 500
         ):
     print("collecting samples (" + name + ") ...")
     reference_pledge = Pledge(Pack())
@@ -459,7 +459,8 @@ def test_my_approach(
         num_anchors=num_anchors,
         strips_of_consideration=strips_of_consideration,
         re_seed=re_seed,
-        max_sweep=max_sweep
+        max_sweep=max_sweep,
+        strip_size=strip_size
     )
 
     #temp code
@@ -515,14 +516,23 @@ def test_my_approaches():
     #clearResults(db_name, human_genome, "Bs:50000 SoC:5 sLs")
     #test_my_approach(db_name, human_genome, "Bs:50000 SoC:5 sLs", max_hits=50000, seg=LongestLRSegments())
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:100 sLs:5")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100 sLs:5", num_anchors=100, max_sweep=5)
+    clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5", num_anchors=100, max_sweep=5)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:100 sLs:1")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100 sLs:1", num_anchors=100, max_sweep=1)
+    clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:1")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:1", num_anchors=100, max_sweep=1)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:1 sLs:inf")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1 sLs:inf", num_anchors=1)
+    clearResults(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf", num_anchors=1)
+
+    clearResults(db_name, human_genome, "pBs:5 SoC:1,100nt sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,100nt sLs:inf", num_anchors=1, strip_size=100)
+
+    clearResults(db_name, human_genome, "pBs:5 SoC:1,10000nt sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,10000nt sLs:inf", num_anchors=1, strip_size=10000)
+
+    clearResults(db_name, human_genome, "pBs:5 SoC:1,1000000nt sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,1000000nt sLs:inf", num_anchors=1, strip_size=1000000)
 
     #clearResults(db_name, human_genome, "pBsr:1000 SoC:10 sLs")
     #test_my_approach(db_name, human_genome, "pBsr:1000 SoC:10 sLs", max_hits=1000, num_anchors=10, re_seed=0)
@@ -679,13 +689,11 @@ def manualCheckSequences():
         print(str(ref_seq.extract_from_to(query_orig, query_orig+100)))
         print("")
 
-
 #manualCheckSequences()
 #exit()
 
 #exit()
-createSampleQueries(human_genome, db_name, 1000, 100, 64, True)
-test_my_approaches()
+#createSampleQueries(human_genome, db_name, 1000, 100, 64, True)
+#test_my_approaches()
 analyse_all_approaches(1000, 100)
 #compare_chaining_linesweep_visual()
-
