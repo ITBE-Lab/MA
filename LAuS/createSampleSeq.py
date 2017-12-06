@@ -312,8 +312,8 @@ def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size
 
 def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
     q = ""
-    original_nuc_dist = (0, 0, 0, 0, 0)
-    modified_nuc_dist = (0, 0, 0, 0, 0)
+    original_nuc_dist = [0, 0, 0, 0, 0]
+    modified_nuc_dist = [0, 0, 0, 0, 0]
 
     #
     # get a non- bridging sequence - just randomly try until one is okay
@@ -436,8 +436,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False):
     max_indels = int(size/indel_size)*2
     queries_list = []
 
-    nuc_distrib_count_orig = (0,0,0,0,0)
-    nuc_distrib_count_mod = (0,0,0,0,0)
+    nuc_distrib_count_orig = [0,0,0,0,0]
+    nuc_distrib_count_mod = [0,0,0,0,0]
 
     #
     # iterate over the given range of mutations indels and number of sequences
@@ -455,8 +455,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False):
                 #
                 q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size)
 
-                nuc_distrib_count_orig = tuple(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
-                nuc_distrib_count_mod = tuple(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))
+                nuc_distrib_count_orig = map(operator.add, nuc_distrib_count_orig, original_nuc_dist)
+                nuc_distrib_count_mod = map(operator.add, modified_nuc_dist, nuc_distrib_count_mod)
 
                 #
                 # construct the query tuple
