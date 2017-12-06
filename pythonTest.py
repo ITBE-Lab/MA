@@ -867,7 +867,7 @@ def manualCheckSequences():
 #manualCheckSequences()
 #exit()
 
-import createIndices
+#import createIndices
 #exit()
 createSampleQueries(human_genome, db_name, 1000, 100, 64, True)
 test_my_approaches()
