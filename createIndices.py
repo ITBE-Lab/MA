@@ -52,17 +52,16 @@ def makeRandom(out_name, size):
 
 def chrNames(prefix, num, suffix):
     ret = []
-    for index in range(1,num):
-        name = str(index)
-        if index == num-1:
-            name = "X"
-        if index == num-2:
-            name = "Y"
+    for index in range(0,num):
+        name = str(index+1)# files count from 1 to num (inclusive)
         ret.append(prefix + name + suffix)
+    ret.append(prefix + "X" + suffix)
+    ret.append(prefix + "Y" + suffix)
     return ret
 
 
-make(chrNames("/mnt/ssd0/chrom/human/chr", 25, ".fna"), "/mnt/ssd0/chrom/human/all")
-#make(["/mnt/ssd0/chrom/human/chr1.fna"], "/mnt/ssd0/chrom/human/chr1only")
+#make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/chrom/human/all")
+make(
+    ["/mnt/ssd0/chrom/human/GCF_000001405.37_GRCh38.p11_genomic.fna"], "/mnt/ssd0/genome/human")
 #make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "/mnt/ssd0/chrom/mouse/all")
 #makeRandom("/mnt/ssd0/chrom/random/random", 1000000)

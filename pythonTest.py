@@ -9,6 +9,7 @@ from bokeh.palettes import d3
 from bokeh.models import LinearAxis, Range1d, LogColorMapper
 from bokeh.models.formatters import FuncTickFormatter
 from bokeh.io import save
+import numpy as np
 
 
 def setup_multiple(module, in_list, perm):
@@ -18,7 +19,7 @@ def setup_multiple(module, in_list, perm):
     return [ret]
 
 
-human_genome = "/mnt/ssd0/chrom/human/all"
+human_genome = "/mnt/ssd0/genome/human"
 
 
 
@@ -516,24 +517,38 @@ def test_my_approaches():
     #clearResults(db_name, human_genome, "Bs:50000 SoC:5 sLs")
     #test_my_approach(db_name, human_genome, "Bs:50000 SoC:5 sLs", max_hits=50000, seg=LongestLRSegments())
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5")
+    #clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5", num_anchors=100, max_sweep=5)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:1")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:1", num_anchors=100, max_sweep=1)
-
-    clearResults(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf")
+    #clearResults(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf", num_anchors=1)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:1,100nt sLs:inf")
+    #clearResults(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:1,100nt sLs:inf", num_anchors=1, strip_size=100)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:1,10000nt sLs:inf")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,10000nt sLs:inf", num_anchors=1, strip_size=10000)
+    #clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:inf", num_anchors=100)
 
-    clearResults(db_name, human_genome, "pBs:5 SoC:1,1000000nt sLs:inf")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,1000000nt sLs:inf", num_anchors=1, strip_size=1000000)
+    #clearResults(db_name, human_genome, "pBs:5 SoC:100,10000nt sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000nt sLs:inf", num_anchors=100, strip_size=10000)
 
+    #clearResults(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf", num_anchors=100, strip_size=10000000)
+
+    #clearResults(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:100")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:100", num_anchors=1000, max_sweep=100)
+
+    #clearResults(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:500")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:500", num_anchors=1000, max_sweep=500)
+
+    #clearResults(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:500")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:500", num_anchors=10000, max_sweep=500)
+
+    #clearResults(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:100")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:100", num_anchors=10000, max_sweep=100)
+
+    #clearResults(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:1")
+    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:1", num_anchors=10000, max_sweep=1)
     #clearResults(db_name, human_genome, "pBsr:1000 SoC:10 sLs")
     #test_my_approach(db_name, human_genome, "pBsr:1000 SoC:10 sLs", max_hits=1000, num_anchors=10, re_seed=0)
 
@@ -676,6 +691,166 @@ def analyse_all_approaches(query_size = 100, indel_size = 10):
 
     save(layout(plots))
 
+
+
+def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 10):
+    output_file(out + ".html")
+    plots = []
+
+    max_indel = 2*query_size/indel_size
+    max_mut = query_size
+
+    def get_data(db_name, approach, query_size, indel_size):
+        results = getResults(db_name, approach, query_size, indel_size)
+        hits = {}
+        tries = {}
+        run_times = {}
+        scores = {}
+        nums_seeds = {}
+
+        def init(d, x, y):
+            if x not in d:
+                d[x] = {}
+            if y not in d[x]:
+                d[x][y] = 0
+            return d
+
+        for score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time in results:
+            hits = init(hits, num_mutation, num_indels)
+            tries = init(tries, num_mutation, num_indels)
+            run_times = init(run_times, num_mutation, num_indels)
+            if not score is None:
+                scores = init(scores, num_mutation, num_indels)
+            nums_seeds = init(nums_seeds, num_mutation, num_indels)
+            if near(result_start, original_start):
+                hits[num_mutation][num_indels] += 1
+            tries[num_mutation][num_indels] += 1
+            run_times[num_mutation][num_indels] += run_time
+            nums_seeds[num_mutation][num_indels] += num_seeds
+            if not score is None:
+                scores[num_mutation][num_indels] += score
+
+        return (hits, tries, run_times, scores, nums_seeds)
+
+    def convertToList(d, w, h, divideBy):
+        pic = []
+        if len(d.keys()) == 0:
+            return None
+        else:
+            w_keys = sorted(d.keys())
+            h_keys = sorted(d[0].keys())
+            for x in w_keys:
+                pic.append( [] )
+                for y in h_keys:
+                    if x not in d or y not in d[x]:
+                        pic[-1].append( float("nan") )
+                    else:
+                        pic[-1].append( d[x][y] / divideBy[x][y] )
+        return pic
+
+    def sub(arr1, arr2):
+        if arr1 is None or arr2 is None:
+            return None
+        for x, row in enumerate(arr2):
+            for y, ele in enumerate(row):
+                arr1[x][y] -= ele
+        return arr1
+
+    l_1 = get_data(db_name, approaches[0], query_size, indel_size)
+    l_2 = get_data(db_name, approaches[1], query_size, indel_size)
+
+    hits = sub(convertToList(l_1[0], max_indel, max_mut, l_1[1]),
+            convertToList(l_2[0], max_indel, max_mut, l_2[1]))
+
+    run_times = sub(convertToList(l_1[2], max_indel, max_mut, l_1[1]),
+            convertToList(l_2[2], max_indel, max_mut, l_2[1]))
+
+    scores = sub(convertToList(l_1[3], max_indel, max_mut, l_1[1]),
+            convertToList(l_2[3], max_indel, max_mut, l_2[1]))
+
+    nums_seeds = sub(convertToList(l_1[4], max_indel, max_mut, l_1[1]),
+            convertToList(l_2[4], max_indel, max_mut, l_2[1]))
+
+
+    def makePic(pic, w, h, title, log = False):
+        if pic is None:
+            return None
+        def rgb(minimum, maximum, value):
+            def clamp(x):
+                return max(0, min(x, 255))
+            value = min(max(minimum, value), maximum)
+            red = green = blue = 0.0
+            if value < 0:
+                red = value/minimum
+            else:
+                green = value/maximum
+            return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
+                                                clamp(int(blue * 255)))
+
+        def heatmap_palette(num_colors):
+            """
+            Color palette for visualization.
+            """
+            return [rgb(-1, 1, x) for x in np.linspace(-1, 1, num_colors)]
+
+        max_ = -100000
+        min_ =  100000
+
+        for row in pic:
+            for ele in row:
+                if ele > max_:
+                    max_ = ele
+                if ele < min_:
+                    min_ = ele
+
+        if min_ < 0:
+            min_ = -min_
+        range_ = max_
+        if min_ > range_:
+            range_ = min_
+
+        color_mapper = LinearColorMapper(palette=heatmap_palette(127), low=-range_, high=range_)
+        if log:
+            color_mapper = LogColorMapper(palette=heatmap_palette(127), low=-range_, high=range_)
+
+        tick_formater = FuncTickFormatter(code="""
+            return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
+                    Math.max(Math.floor( (tick)/2),0)"""
+            )
+        #tick_formater = FuncTickFormatter(code="return 'a')
+
+        plot = figure(title=title,
+                x_range=(0,h), y_range=(0,w),
+                x_axis_label='num ' + str(indel_size) + ' nt insertions; num ' + str(indel_size) + ' nt deletions', y_axis_label='num mutations'
+            )
+        plot.xaxis.formatter = tick_formater
+        plot.image(image=[pic], color_mapper=color_mapper,
+                dh=[w], dw=[h], x=[0], y=[0])
+
+        color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+
+        plot.add_layout(color_bar, 'left')
+
+        return plot
+
+    desc = approaches[0] + " - " + approaches[1]
+
+    avg_hits = makePic(hits, max_mut, max_indel, "accuracy: " + desc)
+    avg_runtime = makePic(run_times, max_mut, max_indel, "runtime: " + desc)
+    avg_score = makePic(scores, max_mut, max_indel, "score: " + desc)
+    avg_seeds = makePic(nums_seeds, max_mut, max_indel, "num seeds: " + desc)
+
+    if not avg_hits is None:
+        plots.append(avg_hits)
+    if not avg_runtime is None:
+        plots.append(avg_runtime)
+    if not avg_score is None:
+        plots.append(avg_score)
+    if not avg_seeds is None:
+        plots.append(avg_seeds)
+
+    save(row(plots))
+
 #exit()
 def manualCheckSequences():
     ref_seq = Pack()
@@ -692,8 +867,13 @@ def manualCheckSequences():
 #manualCheckSequences()
 #exit()
 
+import createIndices
 #exit()
-#createSampleQueries(human_genome, db_name, 1000, 100, 64, True)
-#test_my_approaches()
+createSampleQueries(human_genome, db_name, 1000, 100, 64, True)
+test_my_approaches()
 analyse_all_approaches(1000, 100)
+
+
+#compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)
+#compare_approaches("results_comp_me_me", ["pBs:5 SoC:100,500nt sLs:1", "pBs:5 SoC:1,500nt sLs:inf"], db_name, 1000, 100)
 #compare_chaining_linesweep_visual()

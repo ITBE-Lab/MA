@@ -109,6 +109,10 @@ void exportPack()
                 "start_of_sequence", 
                 &BWACompatiblePackedNucleotideSequencesCollection::startOfSequenceWithName
             )
+        .def(
+                "start_of_sequence_id", 
+                &BWACompatiblePackedNucleotideSequencesCollection::startOfSequenceWithId
+            )
         .def_readonly(
                 "unpacked_size_single_strand", 
                 &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardStrand

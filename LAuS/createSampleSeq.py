@@ -14,6 +14,7 @@ import numpy
 import random
 from random import shuffle
 from math import floor
+import operator
 
 def mutate(char):
     num = 0
@@ -311,6 +312,8 @@ def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size
 
 def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
     q = ""
+    original_nuc_dist = (0, 0, 0, 0, 0)
+    modified_nuc_dist = (0, 0, 0, 0, 0)
 
     #
     # get a non- bridging sequence - just randomly try until one is okay
@@ -326,6 +329,18 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
             continue
         q = str(ref_seq.extract_from_to(q_from, q_to))
         break
+
+    for nuc in q:
+        if nuc == 'A' or nuc == 'a':
+            original_nuc_dist[0] += 1
+        elif nuc == 'C' or nuc == 'c':
+            original_nuc_dist[1] += 1
+        elif nuc == 'G' or nuc == 'g':
+            original_nuc_dist[2] += 1
+        elif nuc == 'T' or nuc == 't':
+            original_nuc_dist[3] += 1
+        else:
+            original_nuc_dist[4] += 1
 
     #
     # apply modifications
@@ -396,7 +411,19 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
             else:
                 print("ERROR: indel produced impossible nucleotide")
 
-    return (q_from, q)
+    for nuc in q:
+        if nuc == 'A' or nuc == 'a':
+            modified_nuc_dist[0] += 1
+        elif nuc == 'C' or nuc == 'c':
+            modified_nuc_dist[1] += 1
+        elif nuc == 'G' or nuc == 'g':
+            modified_nuc_dist[2] += 1
+        elif nuc == 'T' or nuc == 't':
+            modified_nuc_dist[3] += 1
+        else:
+            modified_nuc_dist[4] += 1
+
+    return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
 def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False):
     conn = sqlite3.connect(db_name)
@@ -409,7 +436,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False):
     max_indels = int(size/indel_size)*2
     queries_list = []
 
-    nuc_distrib_count = [0,0,0,0,0]
+    nuc_distrib_count_orig = (0,0,0,0,0)
+    nuc_distrib_count_mod = (0,0,0,0,0)
 
     #
     # iterate over the given range of mutations indels and number of sequences
@@ -425,19 +453,10 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False):
                 #
                 # extract the query sequence
                 #
-                q_from, query = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size)
+                q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size)
 
-                for nuc in query:
-                    if nuc == 'A' or nuc == 'a':
-                        nuc_distrib_count[0] += 1
-                    elif nuc == 'C' or nuc == 'c':
-                        nuc_distrib_count[1] += 1
-                    elif nuc == 'G' or nuc == 'g':
-                        nuc_distrib_count[2] += 1
-                    elif nuc == 'T' or nuc == 't':
-                        nuc_distrib_count[3] += 1
-                    else:
-                        nuc_distrib_count[4] += 1
+                nuc_distrib_count_orig = tuple(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
+                nuc_distrib_count_mod = tuple(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))
 
                 #
                 # construct the query tuple
@@ -470,7 +489,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False):
         insertQueries(conn, queries_list)
     print("done saving")
 
-    print("nuc distrib [A, C, G, T, N]: " + str(nuc_distrib_count))
+    print("nuc distrib (A, C, G, T, N) original: ", nuc_distrib_count_orig,
+        " modified: ", nuc_distrib_count_mod)
 #function
 
 
