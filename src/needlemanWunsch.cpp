@@ -3,9 +3,9 @@
 
 
 
-std::vector<std::shared_ptr<Container>> NeedlemanWunsch::getInputType() const
+ContainerVector NeedlemanWunsch::getInputType() const
 {
-    return std::vector<std::shared_ptr<Container>>{
+    return ContainerVector{
         //the sound strip of consideration
         std::shared_ptr<Container>(new Seeds()),
         //the query sequence
@@ -205,7 +205,7 @@ void needlemanWunsch(
 }//function
 
 std::shared_ptr<Container> NeedlemanWunsch::execute(
-        std::vector<std::shared_ptr<Container>> vpInput
+        ContainerVector vpInput
     )
 {
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);

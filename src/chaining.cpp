@@ -1,8 +1,8 @@
 #include "chaining.h"
 
-std::vector<std::shared_ptr<Container>> Chaining::getInputType() const
+ContainerVector Chaining::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>{
+	return ContainerVector{
 			//the strip of consideration
 			std::shared_ptr<Container>(new Seeds()),
 		};
@@ -15,7 +15,7 @@ std::shared_ptr<Container> Chaining::getOutputType() const
 
 
 std::shared_ptr<Container> Chaining::execute(
-        std::vector<std::shared_ptr<Container>> vpInput
+        ContainerVector vpInput
     )
 {
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);

@@ -1,10 +1,10 @@
-#include "bucketing.h"
+#include "stripOfConsideration.h"
 
 
 
-std::vector<std::shared_ptr<Container>> Bucketing::getInputType() const
+ContainerVector StripOfConsideration::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>
+	return ContainerVector
 	{
 		//all segments
 		std::shared_ptr<Container>(new SegmentTree()),
@@ -19,7 +19,7 @@ std::vector<std::shared_ptr<Container>> Bucketing::getInputType() const
 	};
 }//function
 
-std::shared_ptr<Container> Bucketing::getOutputType() const
+std::shared_ptr<Container> StripOfConsideration::getOutputType() const
 {
 	return std::shared_ptr<Container>(new ContainerVector(
 			std::shared_ptr<Container>(new Seeds())
@@ -27,7 +27,7 @@ std::shared_ptr<Container> Bucketing::getOutputType() const
 }//function
 
 
-void Bucketing::forEachNonBridgingSeed(
+void StripOfConsideration::forEachNonBridgingSeed(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 		std::shared_ptr<NucleotideSequence> pxQuerySeq,
@@ -60,7 +60,7 @@ void Bucketing::forEachNonBridgingSeed(
 }//function
 
 /** transfer the saved hits into the clustering*/
-void Bucketing::saveSeeds(
+void StripOfConsideration::saveSeeds(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		std::shared_ptr<FM_Index> pxFM_index,
 		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
@@ -78,8 +78,8 @@ void Bucketing::saveSeeds(
 }///function
 
 
-std::shared_ptr<Container> Bucketing::execute(
-		std::vector<std::shared_ptr<Container>> vpInput
+std::shared_ptr<Container> StripOfConsideration::execute(
+		ContainerVector vpInput
 	)
 {
 	std::shared_ptr<SegmentTree> pSegments = std::static_pointer_cast<SegmentTree>(vpInput[0]);
@@ -90,6 +90,7 @@ std::shared_ptr<Container> Bucketing::execute(
 		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[4]);
 
+	//extract the seeds
 	std::vector<Seed> vSeeds;
 	pSegments->forEach(
 		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
@@ -145,6 +146,8 @@ std::shared_ptr<Container> Bucketing::execute(
 		}//if
 		nucSeqIndex uiEnd = uiStart + uiSize;
 		//2)
+		//TODO: this has a squared complexity :(
+		// -> might be saved by the fact that there are always very fey strips...?
 		for(std::tuple<nucSeqIndex, nucSeqIndex> intv : collectedIntervals)
 		{
 			if(std::get<0>(intv) >= uiEnd)
@@ -154,8 +157,8 @@ std::shared_ptr<Container> Bucketing::execute(
 		}//for
 		collectedIntervals.push_back(std::make_tuple(uiStart, uiEnd));
 		/*
-			* FILTER END
-			*/
+		* FILTER END
+		*/
 
 		std::shared_ptr<Seeds> pxNew(new Seeds());
 
@@ -170,6 +173,7 @@ std::shared_ptr<Container> Bucketing::execute(
 		);//binary search function call
 		assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
 
+		//save all seeds belonging into the strip of consideration
 		while(
 				iterator != vSeeds.end() &&
 				getPositionForBucketing(pQuerySeq->length(), *iterator) < uiEnd
@@ -184,36 +188,22 @@ std::shared_ptr<Container> Bucketing::execute(
 	return pRet;
 }//function
 
-void exportBucketing()
+void exportStripOfConsideration()
 {
     //export the Bucketing class
 	boost::python::class_<
-			Bucketing, 
+			StripOfConsideration, 
 			boost::python::bases<CppModule>, 
-            std::shared_ptr<Bucketing>
+            std::shared_ptr<StripOfConsideration>
 		>(
-        "Bucketing",
-        "Throws seeds into buckets in order to speed up the extraction "
-        "of strips of consideration.\n"
-        "\n"
-        "	Execution:\n"
-        "	Expects anchor, seeds, query, ref, ind, rev_ind as input.\n"
-        "		anchor: the seeds that shall be used as anchors for the strips\n"
-        "		seeds: all seeds\n"
-        "		query: the query as NucleotideSequence\n"
-        "		ref: the reference sequence as Pack\n"
-        "		ind: the forward FM Index\n"
-        "		rev_ind: the reversed FM Index\n"
-        "	returns strip_vec.\n"
-        "		strip_vec: a strip of consideration for each anchor "
-        "as StripOfConsiderationVector\n"
+        "StripOfConsideration"
     )
-        .def_readwrite("strip_size", &Bucketing::uiStripSize)
-        .def_readwrite("max_hits", &Bucketing::uiMaxHitsPerInterval)
-        .def_readwrite("skip_long", &Bucketing::bSkipLongBWTIntervals);
+        .def_readwrite("strip_size", &StripOfConsideration::uiStripSize)
+        .def_readwrite("max_hits", &StripOfConsideration::uiMaxHitsPerInterval)
+        .def_readwrite("skip_long", &StripOfConsideration::bSkipLongBWTIntervals);
 
 	boost::python::implicitly_convertible< 
-		std::shared_ptr<Bucketing>,
+		std::shared_ptr<StripOfConsideration>,
 		std::shared_ptr<CppModule> 
 	>();
 }//function

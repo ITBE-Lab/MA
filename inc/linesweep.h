@@ -368,10 +368,10 @@ private:
 public:
 
     //overload
-	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput);
+	std::shared_ptr<Container> execute(ContainerVector pInput);
 
     //overload
-    std::vector<std::shared_ptr<Container>> getInputType() const;
+    ContainerVector getInputType() const;
 
     //overload
     std::shared_ptr<Container> getOutputType() const;
@@ -448,10 +448,13 @@ public:
 
 
 /**
- * @brief Implements the linesweep algorithm.
+ * @brief Implements the LinearLineSweep algorithm.
  * @ingroup module
+ * @details
+ * Removes all contradicting seeds.
+ * This should only be used in combination with the StripOfConsideration module.
  */
-class LineSweep2: public CppModule
+class LinearLineSweep: public CppModule
 {
 private:
     /**
@@ -466,25 +469,25 @@ private:
         );
 
     /**
-    * @brief Returns the right shadow of a seed.
+    * @brief Returns the left shadow of a seed.
     * @details
-    * "Casts" the shadow against the border of the considered area.
+    * "Casts" the left shadows.
     */
     ShadowInterval2 getLeftShadow(std::list<Seed>::iterator pSeed) const;
 
     /**
-    * @brief Returns the left shadow of a seed.
+    * @brief Returns the right shadow of a seed.
     * @details
-    * "Casts" the shadow against the border of the considered area.
+    * "Casts" the right shadows.
     */
     ShadowInterval2 getRightShadow(std::list<Seed>::iterator pSeed) const;
 public:
 
     //overload
-	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput);
+	std::shared_ptr<Container> execute(ContainerVector pInput);
 
     //overload
-    std::vector<std::shared_ptr<Container>> getInputType() const;
+    ContainerVector getInputType() const;
 
     //overload
     std::shared_ptr<Container> getOutputType() const;

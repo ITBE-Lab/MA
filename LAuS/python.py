@@ -634,31 +634,43 @@ class NucSeq_(NucleotideSequence):
         pass
 
 ##
-# @brief The Bucketing Module.
+# @brief The StripOfConsideration Module.
 # @details
+# Used to quickly find areas with high density of @ref Seed "seeds".
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup module
 #
-class Bucketing_(Bucketing):
+class StripOfConsideration_(StripOfConsideration):
     ##
     # @brief Create a new Module.
     # @details
-    # Reimplemented from @ref Bucketing.
+    # Reimplemented from @ref StripOfConsideration.
     #
     def __init__(self):
-        pass
+        ##
+        # @brief The strip of consideration size.
+        self.strip_size = 10000
+        ##
+        # @brief Maximum ambiguity for a seed to be considered.
+        self.max_hits = 500
+        ##
+        # @brief skip seeds with too much ambiguity
+        # @details
+        # True: skip all seeds with to much ambiguity
+        # False: use max_hits instances of the seeds with more ambiguity
+        self.skip_long = True
 
     ##
     # @brief returns the @ref ContainerType "container types" segmentList, segmentList, nucSeq, packedNucSeq, fm_index.
     # @details
-    # Reimplemented from @ref Bucketing::getInputType.
+    # Reimplemented from @ref StripOfConsideration::getInputType.
     def get_input_type(self):
         pass
 
     ##
     # @brief returns the @ref ContainerType "container type" seedsVector.
     # @details
-    # Reimplemented from @ref Bucketing::getOutputType.
+    # Reimplemented from @ref StripOfConsideration::getOutputType.
     def get_output_type(self):
         pass
 
@@ -688,6 +700,67 @@ class LineSweep_(LineSweep):
     # @brief returns the @ref ContainerType "container type" seeds.
     # @details
     # Reimplemented from @ref LineSweep::getOutputType.
+    def get_output_type(self):
+        pass
+
+##
+# @brief The LinearLineSweep Module.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup module
+#
+class LinearLineSweep_(LinearLineSweep):
+    ##
+    # @brief Create a new Module.
+    # @details
+    # Reimplemented from @ref LinearLineSweep.
+    #
+    def __init__(self):
+        pass
+
+    ##
+    # @brief returns the @ref ContainerType "container types" nucSeq, packedNucSeq, seeds.
+    # @details
+    # Reimplemented from @ref LinearLineSweep::getInputType.
+    # Expects:
+    # - Seeds
+    def get_input_type(self):
+        pass
+
+    ##
+    # @brief returns the @ref ContainerType "container type" seeds.
+    # @details
+    # Reimplemented from @ref LinearLineSweep::getOutputType.
+    # Type is: Seeds
+    def get_output_type(self):
+        pass
+
+##
+# @brief The Chaining Module.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup module
+#
+class Chaining(Chaining_):
+    ##
+    # @brief Create a new Module.
+    # @details
+    # Reimplemented from @ref Chaining.
+    #
+    def __init__(self):
+        pass
+
+    ##
+    # @brief returns the @ref ContainerType "container types" nucSeq, packedNucSeq, seeds.
+    # @details
+    # Reimplemented from @ref Chaining::getInputType.
+    def get_input_type(self):
+        pass
+
+    ##
+    # @brief returns the @ref ContainerType "container type" seeds.
+    # @details
+    # Reimplemented from @ref Chaining::getOutputType.
     def get_output_type(self):
         pass
 
@@ -768,6 +841,7 @@ class LongestNonEnclosedSegments_(LongestNonEnclosedSegments):
     # @brief returns the @ref ContainerType "container types" fm_index, nucSeq.
     # @details
     # Reimplemented from @ref LongestNonEnclosedSegments::getInputType.
+    #
     def get_input_type(self):
         pass
 
@@ -775,8 +849,71 @@ class LongestNonEnclosedSegments_(LongestNonEnclosedSegments):
     # @brief returns the @ref ContainerType "container type" segmentList.
     # @details
     # Reimplemented from @ref LongestNonEnclosedSegments::getOutputType.
+    #
     def get_output_type(self):
         pass
 
+##
+# @brief The LongestLRSegments Module.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup module
+#
+class LongestLRSegments_(LongestLRSegments):
+    ##
+    # @brief Create a new Module.
+    # @details
+    # Reimplemented from @ref LongestLRSegments.
+    #
+    def __init__(self):
+        pass
 
+    ##
+    # @brief returns the @ref ContainerType "container types" fm_index, nucSeq.
+    # @details
+    # Reimplemented from @ref LongestLRSegments::getInputType.
+    #
+    def get_input_type(self):
+        pass
 
+    ##
+    # @brief returns the @ref ContainerType "container type" segmentList.
+    # @details
+    # Reimplemented from @ref LongestLRSegments::getOutputType.
+    #
+    def get_output_type(self):
+        pass
+
+##
+# @brief The ContainerVector Module.
+# @details
+# Holds multiple containers.
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class ContainerVector_(ContainerVector):
+    ##
+    # @brief Create a new Module.
+    # @details
+    # Reimplemented from @ref ContainerVector.
+    #
+    def __init__(self):
+        pass
+
+    ##
+    # @brief Is iterable.
+    #
+    def __iter__(self):
+        pass
+
+    ##
+    # @brief Is iterable.
+    #
+    def __len__(self):
+        pass
+
+    ##
+    # @brief Is iterable.
+    #
+    def __at__(self, index):
+        pass

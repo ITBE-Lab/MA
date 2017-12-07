@@ -3,8 +3,8 @@
  * @brief Implements a Bucketing.
  * @author Markus Schmidt
  */
-#ifndef BUCKETING_H
-#define BUCKETING_H
+#ifndef STRIP_OF_CONSIDERATION_H
+#define STRIP_OF_CONSIDERATION_H
 
 #include "intervalTree.h"
 #include "cppModule.h"
@@ -65,14 +65,21 @@
  * @brief Used to quickly find areas with high density of @ref Seed "seeds".
  * @ingroup module
  */
-class Bucketing: public CppModule
+class StripOfConsideration: public CppModule
 {
 private:
 
 public:
-	unsigned int uiNumThreads = 8;
+	/// @brief The strip of consideration size.
 	nucSeqIndex uiStripSize = 10000;
+	/// @brief Maximum ambiguity for a seed to be considered.
 	unsigned int uiMaxHitsPerInterval = 500;
+	/**
+	* @brief skip seeds with too much ambiguity
+	* @details
+	* True: skip all seeds with to much ambiguity
+	* False: use max_hits instances of the seeds with more ambiguity
+	*/
 	bool bSkipLongBWTIntervals = true;
 	
 private:
@@ -109,17 +116,17 @@ private:
 
 public:
 
-	Bucketing(){}//constructor
+	StripOfConsideration(){}//constructor
 
-	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
+	std::shared_ptr<Container> execute(ContainerVector vpInput);
 
-    std::vector<std::shared_ptr<Container>> getInputType() const;
+    ContainerVector getInputType() const;
 
 	std::shared_ptr<Container> getOutputType() const;
 
     std::string getName() const
     {
-        return "Bucketing";
+        return "StripOfConsideration";
     }
 };//class
 
@@ -127,6 +134,6 @@ public:
  * @brief export the bucketing @ref CppModule "module" to python.
  * @ingroup export
  */
-void exportBucketing();
+void exportStripOfConsideration();
 
 #endif

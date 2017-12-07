@@ -1,9 +1,9 @@
 #include "getAnchors.h"
 
 
-std::vector<std::shared_ptr<Container>> NlongestIntervalsAsAnchors::getInputType() const
+ContainerVector NlongestIntervalsAsAnchors::getInputType() const
 {
-    return std::vector<std::shared_ptr<Container>>{
+    return ContainerVector{
             std::shared_ptr<Container>(new SegmentTree()),
             std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
             std::shared_ptr<Container>(new FM_Index())
@@ -17,7 +17,7 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::getOutputType() const
 
 
 std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
-        std::vector<std::shared_ptr<Container>> vpInput
+        ContainerVector vpInput
     )
 {
 

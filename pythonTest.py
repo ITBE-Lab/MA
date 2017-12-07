@@ -455,7 +455,7 @@ def test_my_approach(
         reference_pledge,
         fm_index_pledge,
         seg=seg,
-        chain=LineSweep2(),
+        chain=LinearLineSweep(),
         max_hits=max_hits,
         num_anchors=num_anchors,
         strips_of_consideration=strips_of_consideration,
@@ -507,68 +507,23 @@ def test_my_approach(
     print("done")
 
 
-def test_my_approaches():
-    #clearResults(db_name, human_genome, "pBs:50000 SoC:5 sLs")
-    #test_my_approach(db_name, human_genome, "pBs:50000 SoC:5 sLs", max_hits=50000)
+def test_my_approaches(db_name):
+    test_my_approach(db_name, human_genome, "Bs:5 SoC:100,500nt sLs:5", max_hits=5, num_anchors=100, max_sweep=5, seg=LongestLRSegments())
 
-    #clearResults(db_name, human_genome, "pBs:5 SoC:10 sLs")
-    #test_my_approach(db_name, human_genome, "pBs:5 SoC:10 sLs", num_anchors=10)
-
-    #clearResults(db_name, human_genome, "Bs:50000 SoC:5 sLs")
-    #test_my_approach(db_name, human_genome, "Bs:50000 SoC:5 sLs", max_hits=50000, seg=LongestLRSegments())
-
-    #clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5", num_anchors=100, max_sweep=5)
 
-    #clearResults(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf", num_anchors=1)
 
-    #clearResults(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,100nt sLs:inf", num_anchors=1, strip_size=100)
-
-    #clearResults(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:inf")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:inf", num_anchors=100)
 
-    #clearResults(db_name, human_genome, "pBs:5 SoC:100,10000nt sLs:inf")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000nt sLs:inf", num_anchors=100, strip_size=10000)
+    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000nt sLs:inf", num_anchors=100, strip_size=10000)
 
-    #clearResults(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf", num_anchors=100, strip_size=10000000)
+    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf", num_anchors=100, strip_size=10000000)
 
-    #clearResults(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:100")
     test_my_approach(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:100", num_anchors=1000, max_sweep=100)
 
-    #clearResults(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:500")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:500", num_anchors=1000, max_sweep=500)
-
-    #clearResults(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:500")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:500", num_anchors=10000, max_sweep=500)
-
-    #clearResults(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:100")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:100", num_anchors=10000, max_sweep=100)
-
-    #clearResults(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:1")
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:10000,500nt sLs:1", num_anchors=10000, max_sweep=1)
-    #clearResults(db_name, human_genome, "pBsr:1000 SoC:10 sLs")
-    #test_my_approach(db_name, human_genome, "pBsr:1000 SoC:10 sLs", max_hits=1000, num_anchors=10, re_seed=0)
-
-    #clearResults(db_name, human_genome, "Bs:5 SoC:5 sLs:inf")
-    #test_my_approach(db_name, human_genome, "Bs:5 SoC:5 sLs:inf", seg=LongestLRSegments())
-
-    #clearResults(db_name, human_genome, "pBs:5 SoC:1000 sLs:5")
-    #test_my_approach(db_name, human_genome, "pBs:5 SoC:1000 sLs:5", num_anchors=1000, max_sweep=5)
-
-    #clearResults(db_name, human_genome, "pBs:5 Ch")
-    #test_my_approach(db_name, human_genome, "pBs:5 Ch", chain=Chaining(), strips_of_consideration=False)
-
-    #clearResults(db_name, human_genome, "Bs:10000 SoC:10000 sLs")
-    #test_my_approach(db_name, human_genome, "Bs:10000 SoC:10000 sLs", seg=LongestLRSegments(),
-    #                num_anchors=10000, max_hits=10000)
-
-
-
-def analyse_all_approaches(query_size = 100, indel_size = 10):
-    output_file("results_log.html")
+def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
+    output_file(out)
     approaches = getApproachesWithData(db_name)
     plots = [ [], [], [], [] ]
 
@@ -869,9 +824,13 @@ def manualCheckSequences():
 
 #import createIndices
 #exit()
-createSampleQueries(human_genome, db_name, 1000, 100, 64, True)
-test_my_approaches()
-analyse_all_approaches(1000, 100)
+createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 512, True, True)
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+
+createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
+test_my_approaches("/mnt/ssd1/shortIndels.db")
+analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 100)
 
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)

@@ -289,6 +289,8 @@ SaSegment LongestLRSegments::extend(
  *		split the interval in 3 parts: prev:perfectMatch:post
  *		queue the prev and post intervals into the thread pool
  *		save the perfect match for later clustering
+ *
+ * The Perfect match is produced by a forward, backwards and a backwards forwards extension.
 */
 void LongestLRSegments::procesInterval(
 			size_t uiThreadId,
@@ -342,9 +344,9 @@ void LongestLRSegments::procesInterval(
 }//function
 
 
-std::vector<std::shared_ptr<Container>> LongestLRSegments::getInputType() const
+ContainerVector LongestLRSegments::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>{
+	return ContainerVector{
 			//the forward fm_index
 			std::shared_ptr<Container>(new FM_Index()),
 			//the query sequence
@@ -358,7 +360,7 @@ std::shared_ptr<Container> LongestLRSegments::getOutputType() const
 
 
 std::shared_ptr<Container> LongestLRSegments::execute(
-		std::vector<std::shared_ptr<Container>> vpInput
+		ContainerVector vpInput
 	)
 {
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);

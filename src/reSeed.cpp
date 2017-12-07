@@ -156,9 +156,9 @@ void ReSeed::extend(
 }//function
 
 
-std::vector<std::shared_ptr<Container>> ReSeed::getInputType() const
+ContainerVector ReSeed::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>{
+	return ContainerVector{
 			//the forward fm_index
 			std::shared_ptr<Container>(new FM_Index()),
 			//the forward fm_index
@@ -175,7 +175,7 @@ std::shared_ptr<Container> ReSeed::getOutputType() const
 
 
 std::shared_ptr<Container> ReSeed::execute(
-		std::vector<std::shared_ptr<Container>> vpInput
+		ContainerVector vpInput
 	)
 {
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);

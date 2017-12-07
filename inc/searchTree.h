@@ -14,6 +14,7 @@
 
 /**
  * @brief Self balancing binary search tree.
+ * @note: FIXME: rotations are disabled!
  */
 template<typename T>
 class SearchTree

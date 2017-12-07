@@ -92,10 +92,10 @@ private:
 
 public:
     //overload
-	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput);
+	std::shared_ptr<Container> execute(ContainerVector pInput);
 
     //overload
-    std::vector<std::shared_ptr<Container>> getInputType() const;
+    ContainerVector getInputType() const;
 
     //overload
     std::shared_ptr<Container> getOutputType() const;

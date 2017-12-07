@@ -8,9 +8,9 @@
 #include "smith_waterman.h"
 
 
-std::vector<std::shared_ptr<Container>> SMW::getInputType() const
+ContainerVector SMW::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>{
+	return ContainerVector{
 			//the query sequence
 			std::shared_ptr<Container>(new NucleotideSequence()),
 			//the ref
@@ -74,7 +74,7 @@ int16_t alignSW_SIMD( const NucleotideSequence &rQuerySequence, // query sequenc
 
 
 std::shared_ptr<Container> SMW::execute(
-		std::vector<std::shared_ptr<Container>> vpInput
+		ContainerVector vpInput
 	)
 {
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
@@ -107,7 +107,7 @@ std::shared_ptr<Container> SMW::execute(
 									);
 
 	// 3. collect the results ...
-	auto pvRet = std::make_shared<std::vector<std::shared_ptr<Container>>>();
+	auto pvRet = std::make_shared<ContainerVector>();
 
 	for(nucSeqIndex revStart : vMaxScorePositions)
 	{

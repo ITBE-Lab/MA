@@ -21,37 +21,27 @@ void exportContainer()
             );
 
             
-    boost::python::class_<std::vector<std::shared_ptr<Container>>>(
+    boost::python::class_<ContainerVector>(
             "ContainerVector"
         )
+        .def(boost::python::init<const std::shared_ptr<ContainerVector>>())
+        .def(boost::python::init<std::shared_ptr<Container>>())
+        .def("append", &ContainerVector::push_back_boost)
         .def(boost::python::vector_indexing_suite<
-                std::vector<std::shared_ptr<Container>>,
+                ContainerVector,
                 /*
                 *	true = noproxy this means that the content of the vector is already exposed by
                 *	boost python. 
-                *	if this is kept as false, SeedsVector would be exposed a second time.
-                *	the two SeedsVector would be different and not inter castable.
+                *	if this is kept as false, Container would be exposed a second time.
+                *	the two Containers would be different and not inter castable.
                 */
                 true
             >());
 
     //make vectors of container-pointers a thing
     iterable_converter()
-        .from_python<std::vector<std::shared_ptr<Container>>>();
+        .from_python<ContainerVector>();
 
-    boost::python::class_<
-            ContainerVector, 
-            boost::python::bases<Container>, 
-            std::shared_ptr<ContainerVector>
-        >(
-                "ContainerVectorContainer"
-            )
-        .def(boost::python::init<const std::shared_ptr<ContainerVector>>())
-        .def(boost::python::init<std::shared_ptr<Container>>())
-        .def(boost::python::init<std::shared_ptr<std::vector<std::shared_ptr<Container>>>>())
-        .def("get", &ContainerVector::get)
-        .def("append", &ContainerVector::push_back_boost)
-        ;
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 
         std::shared_ptr<ContainerVector>,

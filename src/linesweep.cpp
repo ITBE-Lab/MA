@@ -1,8 +1,8 @@
 #include "linesweep.h"
 
-std::vector<std::shared_ptr<Container>> LineSweep::getInputType() const
+ContainerVector LineSweep::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>{
+	return ContainerVector{
 			std::shared_ptr<Container>(new Seeds())
 		};
 }//function
@@ -146,7 +146,7 @@ void LineSweep::linesweep(
 }//function
 
 std::shared_ptr<Container> LineSweep::execute(
-        std::vector<std::shared_ptr<Container>> vpInput
+        ContainerVector vpInput
     )
 {
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
@@ -189,16 +189,14 @@ std::shared_ptr<Container> LineSweep::execute(
 
 
 
-
-
-std::vector<std::shared_ptr<Container>> LineSweep2::getInputType() const
+ContainerVector LinearLineSweep::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>{
+	return ContainerVector{
 			std::shared_ptr<Container>(new Seeds())
 		};
 }//function
 
-std::shared_ptr<Container> LineSweep2::getOutputType() const
+std::shared_ptr<Container> LinearLineSweep::getOutputType() const
 {
 	return std::shared_ptr<Container>(new Seeds());
 }//function
@@ -207,7 +205,7 @@ std::shared_ptr<Container> LineSweep2::getOutputType() const
  * determine the start and end positions this match casts on the left border of the given bucket
  * pxMatch is the container this match is stored in.
  */
-ShadowInterval2 LineSweep2::getLeftShadow(std::list<Seed>::iterator pSeed) const
+ShadowInterval2 LinearLineSweep::getLeftShadow(std::list<Seed>::iterator pSeed) const
 {
     return ShadowInterval2(
             pSeed->start(),
@@ -220,7 +218,7 @@ ShadowInterval2 LineSweep2::getLeftShadow(std::list<Seed>::iterator pSeed) const
  * determine the start and end positions this match casts on the right border of the given bucket
  * pxMatch is the container this match is stored in.
  */
-ShadowInterval2 LineSweep2::getRightShadow(std::list<Seed>::iterator pSeed) const
+ShadowInterval2 LinearLineSweep::getRightShadow(std::list<Seed>::iterator pSeed) const
 {
     return ShadowInterval2(
             pSeed->start_ref(),
@@ -230,7 +228,7 @@ ShadowInterval2 LineSweep2::getRightShadow(std::list<Seed>::iterator pSeed) cons
 }//function
 
 
-void LineSweep2::linesweep(
+void LinearLineSweep::linesweep(
         std::vector<ShadowInterval2>& vShadows, 
         std::shared_ptr<Seeds> pSeeds
     )
@@ -265,11 +263,14 @@ void LineSweep2::linesweep(
                 << rInterval.pSeed->start_ref() << ", " << rInterval.pSeed->end_ref() << "; "
                 << rInterval.pSeed->start() << ", " << rInterval.pSeed->end() << std::endl;
         )
+        //check weather there are contradictions to the current seed
         if(!xItervalEnds.empty() && xItervalEnds.front().end() >= rInterval.end())
         {
-            //special case: we have a duplicate seed => we do not want to remove both instances
-            //cause mereley a duplicate is not a contradiction
-            //note we do not need to check for duplicates later due to the ordering of the seeds
+            //yes there are some!
+
+            // special case: we have a duplicate seed => we do not want to remove both instances
+            // cause mereley a duplicate is not a contradiction
+            // note: we do not need to check for duplicates later due to the ordering of the seeds
             if(rInterval.within(xItervalEnds.front()))
             {
                 xItervalEnds.front().remove(pSeeds);
@@ -278,11 +279,11 @@ void LineSweep2::linesweep(
             DEBUG(
                 std::cout << "\tremoving: " << xItervalEnds.front().end() << std::endl;
             )
-            //delete the first seed
+            // delete the first seed
             xItervalEnds.front().remove(pSeeds);
-            //check if following seeds need also be deleted
+            // check if following seeds need also be deleted
             auto iterator = xItervalEnds.begin();
-            //we dealed with the first element already
+            // we dealed with the first element already
             ++iterator;
             while(iterator != xItervalEnds.end() && iterator->end() >= rInterval.end())
             {
@@ -292,15 +293,18 @@ void LineSweep2::linesweep(
                 iterator->remove(pSeeds);
                 iterator = xItervalEnds.erase(iterator);
             }//while
+            // remove the current seed since there were contradictions to it.
             rInterval.remove(pSeeds);
         }//if
+
+        //there are no contradictions -> remember the end of the seed
         else
             xItervalEnds.push_front(rInterval);
     }//for
 }//function
 
-std::shared_ptr<Container> LineSweep2::execute(
-        std::vector<std::shared_ptr<Container>> vpInput
+std::shared_ptr<Container> LinearLineSweep::execute(
+        ContainerVector vpInput
     )
 {
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
@@ -314,7 +318,7 @@ std::shared_ptr<Container> LineSweep2::execute(
 
     //perform the line sweep algorithm on the left shadows
     linesweep(vShadows, pSeeds);
-    
+
     vShadows.clear();
 
     DEBUG(
@@ -350,44 +354,23 @@ void exportLinesweep()
         boost::python::bases<CppModule>,
         std::shared_ptr<LineSweep>
     >(
-        "LineSweep",
-        "Uses linesweeping to remove contradicting "
-        "matches within one strip of consideration.\n"
-        "\n"
-        "Execution:\n"
-        "	Expects query, ref, strip_vec as input.\n"
-        "		query: the query as NucleotideSequence\n"
-        "		ref: the reference sequence as Pack\n"
-        "		strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
-        "	returns strip_vec.\n"
-        "		strip_vec: the evaluated areas\n"
+        "LineSweep"
     );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<LineSweep>,
 		std::shared_ptr<CppModule> 
 	>();
 
-
     //export the LineSweepContainer class
 	boost::python::class_<
-        LineSweep2, 
+        LinearLineSweep, 
         boost::python::bases<CppModule>,
-        std::shared_ptr<LineSweep2>
+        std::shared_ptr<LinearLineSweep>
     >(
-        "LineSweep2",
-        "Uses linesweeping to remove contradicting "
-        "matches within one strip of consideration.\n"
-        "\n"
-        "Execution:\n"
-        "	Expects query, ref, strip_vec as input.\n"
-        "		query: the query as NucleotideSequence\n"
-        "		ref: the reference sequence as Pack\n"
-        "		strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
-        "	returns strip_vec.\n"
-        "		strip_vec: the evaluated areas\n"
+        "LinearLineSweep"
     );
 	boost::python::implicitly_convertible< 
-		std::shared_ptr<LineSweep2>,
+		std::shared_ptr<LinearLineSweep>,
 		std::shared_ptr<CppModule> 
 	>();
 }//function

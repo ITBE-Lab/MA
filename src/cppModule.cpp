@@ -15,8 +15,8 @@ bool typeCheck(
 }//function
 
 bool typeCheck(
-        std::vector<std::shared_ptr<Container>> vData, 
-        std::vector<std::shared_ptr<Container>> vExpected
+        ContainerVector vData, 
+        ContainerVector vExpected
     )
 {
     if(vData.size() != vExpected.size())
@@ -56,7 +56,7 @@ std::shared_ptr<Pledge> CppModule::promiseMe(
         std::vector<std::shared_ptr<Pledge>> vInput
     )
 {
-    std::vector<std::shared_ptr<Container>> vCastInput(vInput.begin(), vInput.end());
+    ContainerVector vCastInput(vInput.begin(), vInput.end());
     if(!typeCheck(vCastInput, pThis->getInputType()))
     {
         std::cerr << "promise of module " << pThis->getName() << " had the wrong type" << std::endl;

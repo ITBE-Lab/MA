@@ -23,10 +23,10 @@ public:
     {}//constructor
 
     //overload
-    std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
+    std::shared_ptr<Container> execute(ContainerVector vpInput);
 
     //overload
-    std::vector<std::shared_ptr<Container>> getInputType() const;
+    ContainerVector getInputType() const;
 
     //overload
     std::shared_ptr<Container> getOutputType() const;

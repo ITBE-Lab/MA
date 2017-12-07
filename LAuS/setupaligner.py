@@ -13,7 +13,7 @@ from .__init__ import *
 # Uses following Modules in this order:
 # - The given segmentation; default is LongestNonEnclosedSegments
 # - NlongestIntervalsAsAnchors
-# - Bucketing
+# - StripOfConsideration
 # - @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest"
 # - NeedlemanWunsch
 # - @ref LAuS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter"
@@ -43,9 +43,9 @@ def set_up_aligner(
 
     anc = NlongestIntervalsAsAnchors(num_anchors, max_hits)
 
-    bucketing = Bucketing()
-    bucketing.max_hits = max_hits
-    bucketing.strip_size = strip_size
+    soc = StripOfConsideration()
+    soc.max_hits = max_hits
+    soc.strip_size = strip_size
 
     max_sweep_n = 0
     if not max_sweep is None:
@@ -102,7 +102,7 @@ def set_up_aligner(
             return_pledges[ret_pl_indx].append(anchors_pledge)
             ret_pl_indx += 1
 
-            strips_pledge = bucketing.promise_me((
+            strips_pledge = soc.promise_me((
                 segment_pledge,
                 anchors_pledge,
                 query_pledge,

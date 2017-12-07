@@ -1,10 +1,10 @@
 #include "execOnVector.h"
 
-std::vector<std::shared_ptr<Container>> ExecOnVec::getInputType() const
+ContainerVector ExecOnVec::getInputType() const
 {
     std::shared_ptr<ContainerVector> pVec(new ContainerVector(pModule->getInputType()[0]));
 
-    std::vector<std::shared_ptr<Container>> vRet = pModule->getInputType();
+    ContainerVector vRet = pModule->getInputType();
     vRet[0] = pVec;
 
     return vRet;
@@ -15,7 +15,7 @@ std::shared_ptr<Container> ExecOnVec::getOutputType() const
 	return std::shared_ptr<Container>(new ContainerVector(pModule->getOutputType()));
 }//function
 
-std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Container>> vpInput)
+std::shared_ptr<Container> ExecOnVec::execute(ContainerVector vpInput)
 {
     // vp input is organized to following way: first a vector then single elements.
     // each element of the first vector shall be executed with all following elements
@@ -45,7 +45,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Contai
                 {
                     // create a input vector and add the first element to it
                     // the appropriate element of the vector that is given as first input
-                    std::vector<std::shared_ptr<Container>> vInput{ (*pInVec)[i] };
+                    ContainerVector vInput{ (*pInVec)[i] };
                     // add all following elements
                     for(unsigned int j = 1; j < vpInput.size(); j++)
                         vInput.push_back(vpInput[j]);
@@ -100,9 +100,9 @@ std::shared_ptr<Container> ExecOnVec::execute(std::vector<std::shared_ptr<Contai
     return pResults;
 }//function
 
-std::vector<std::shared_ptr<Container>> Tail::getInputType() const
+ContainerVector Tail::getInputType() const
 {
-    return std::vector<std::shared_ptr<Container>>{
+    return ContainerVector{
                 std::shared_ptr<ContainerVector>(new ContainerVector(type)),
             };
 }//function
@@ -113,7 +113,7 @@ std::shared_ptr<Container> Tail::getOutputType() const
 }//function
 
 
-std::shared_ptr<Container> Tail::execute(std::vector<std::shared_ptr<Container>> vpInput)
+std::shared_ptr<Container> Tail::execute(ContainerVector vpInput)
 {
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
         std::static_pointer_cast<ContainerVector>(vpInput[0]));

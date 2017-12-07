@@ -2,9 +2,9 @@
 
 
 
-std::vector<std::shared_ptr<Container>> ExtractAllSeeds::getInputType() const
+ContainerVector ExtractAllSeeds::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>
+	return ContainerVector
 	{
 		//all segments
 		std::shared_ptr<Container>(new SegmentTree()),
@@ -21,7 +21,7 @@ std::shared_ptr<Container> ExtractAllSeeds::getOutputType() const
 
 
 std::shared_ptr<Container> ExtractAllSeeds::execute(
-		std::vector<std::shared_ptr<Container>> vpInput
+		ContainerVector vpInput
 	)
 {
 	std::shared_ptr<SegmentTree> pSegments = std::static_pointer_cast<SegmentTree>(vpInput[0]);

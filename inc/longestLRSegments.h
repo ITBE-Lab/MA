@@ -17,7 +17,10 @@
 class PerfectMatch;
 
 /**
- * @brief Computes a set of maximal non-enclosed seeds.
+ * @brief Computes a set of non-enclosed seeds.
+ * @details
+ * This is the seeding algorithm presented in our paper.
+ * Gives you vew good quality seeds.
  * @ingroup module
  */
 class LongestLRSegments : public CppModule{
@@ -55,9 +58,9 @@ private:
 
 public:
 	
-	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
+	std::shared_ptr<Container> execute(ContainerVector vpInput);
 
-	std::vector<std::shared_ptr<Container>> getInputType() const;
+	ContainerVector getInputType() const;
     std::shared_ptr<Container> getOutputType() const;
 
     std::string getName() const

@@ -29,9 +29,9 @@ public:
         uiMaxHitsPerInterval(uiMaxHitsPerInterval)
     {}//constructor
 
-    std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
+    std::shared_ptr<Container> execute(ContainerVector vpInput);
 
-    std::vector<std::shared_ptr<Container>> getInputType() const;
+    ContainerVector getInputType() const;
 
     std::shared_ptr<Container> getOutputType() const;
 

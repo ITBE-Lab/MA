@@ -305,9 +305,9 @@ void LongestNonEnclosedSegments::procesInterval(
 }//function
 
 
-std::vector<std::shared_ptr<Container>> LongestNonEnclosedSegments::getInputType() const
+ContainerVector LongestNonEnclosedSegments::getInputType() const
 {
-	return std::vector<std::shared_ptr<Container>>{
+	return ContainerVector{
 			//the forward fm_index
 			std::shared_ptr<Container>(new FM_Index()),
 			//the query sequence
@@ -321,7 +321,7 @@ std::shared_ptr<Container> LongestNonEnclosedSegments::getOutputType() const
 
 
 std::shared_ptr<Container> LongestNonEnclosedSegments::execute(
-		std::vector<std::shared_ptr<Container>> vpInput
+		ContainerVector vpInput
 	)
 {
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);

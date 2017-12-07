@@ -17,7 +17,11 @@
 class PerfectMatch;
 
 /**
- * @brief Computes a set of maximal non-enclosed seeds.
+ * @brief Computes all non-enclosed seeds.
+ * @details
+ * This is the the BWA seeding strategy, parallelized using binary seeding.
+ * Gives you all non-enclosed seeds.
+ * Therefore there are a lot of bad quality seeds and strict filters need to be applied.
  * @ingroup module
  */
 class LongestNonEnclosedSegments : public CppModule{
@@ -55,9 +59,9 @@ private:
 
 public:
 	
-	std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> vpInput);
+	std::shared_ptr<Container> execute(ContainerVector vpInput);
 
-	std::vector<std::shared_ptr<Container>> getInputType() const;
+	ContainerVector getInputType() const;
     std::shared_ptr<Container> getOutputType() const;
 
     std::string getName() const

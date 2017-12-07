@@ -45,8 +45,8 @@ bool typeCheck(
  * This requires a function since we have types like any of none.
  */
 bool typeCheck(
-        std::vector<std::shared_ptr<Container>> vData, 
-        std::vector<std::shared_ptr<Container>> vExpected
+        ContainerVector vData, 
+        ContainerVector vExpected
     );
 
 /**
@@ -65,7 +65,7 @@ public:
      * @details
      * Expects the given containers to have the correct types.
      */
-    virtual std::shared_ptr<Container> execute(std::vector<std::shared_ptr<Container>> pInput)
+    virtual std::shared_ptr<Container> execute(ContainerVector pInput)
     {
         return nullptr;
     }
@@ -75,9 +75,9 @@ public:
      * @details
      * Used for type checking the inputs before calling execute.
      */
-    virtual std::vector<std::shared_ptr<Container>> getInputType() const
+    virtual ContainerVector getInputType() const
     {
-        return std::vector<std::shared_ptr<Container>>{std::shared_ptr<Container>(new Nil())};
+        return ContainerVector{std::shared_ptr<Container>(new Nil())};
     }
 
     /**
@@ -101,7 +101,7 @@ public:
      * Internally calls execute after checking the input types.
      * Also checks the result returned by Execute.
      */
-    std::shared_ptr<Container> saveExecute(std::vector<std::shared_ptr<Container>> vInput)
+    std::shared_ptr<Container> saveExecute(ContainerVector vInput)
     {
         if(!typeCheck(vInput, getInputType()))
         {
@@ -123,7 +123,7 @@ public:
      * Internally calls execute after checking the input types.
      * Also checks the result returned by Execute.
      */
-    std::shared_ptr<Container> pyExecute(std::vector<std::shared_ptr<Container>> vInput)
+    std::shared_ptr<Container> pyExecute(ContainerVector vInput)
     {
 #if 1
         try
@@ -429,7 +429,7 @@ public:
             throw ModuleIO_Exception("No pledger known");
         if(pledger != nullptr)
         {
-            std::vector<std::shared_ptr<Container>> vInput;
+            ContainerVector vInput;
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
                 vInput.push_back(pFuture->get());
             try

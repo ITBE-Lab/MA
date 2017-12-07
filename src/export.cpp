@@ -26,7 +26,7 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportLinesweep();
         exportNeedlemanWunsch();
         exportSeed();
-        exportBucketing();
+        exportStripOfConsideration();
         exportChaining();
         exportSMW();
         exportExtractAllSeeds();

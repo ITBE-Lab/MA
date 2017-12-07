@@ -89,6 +89,7 @@ class ContainerVector:
 private:
     std::shared_ptr<Container> contentType;
 public:
+    using vector::vector;
     ContainerVector()
         :
         contentType(new Container())
@@ -138,7 +139,6 @@ public:
         return std::shared_ptr<Container>(new ContainerVector(contentType));
     }//function
 
-    //overload
     std::vector<std::shared_ptr<Container>> get()
     {
         return *this;

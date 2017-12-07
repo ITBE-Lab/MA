@@ -58,6 +58,7 @@
     "python.linting.pylintEnabled": false,
     "cSpell.words": [
         "indel",
-        "indels"
+        "indels",
+        "wunsch"
     ]
 }
