@@ -10,7 +10,15 @@
 #include "threadPool.h"
 
 /**
- * @brief TODO:
+ * @brief Execute some CppModule on all elements of a ContainerVector.
+ * @details
+ * Replaces the first input of the given CppModule is with a ContainerVector.
+ * Then runs the given CppModule with each element of the vector and all other inputs.
+ * 
+ * Can optionally sort the elements.
+ * Sorts in increasing order -> the last element is the one with the highest score.
+ * This is necessary since the output is a vector, 
+ * thus if one wants to extract the largest n elements theu need to be at the end of the vector.
  */
 class ExecOnVec: public CppModule
 {
@@ -42,7 +50,7 @@ public:
 };//class
 
 /**
- * @brief TODO:
+ * @brief Used to extract the last element of a ContainerVector.
  */
 class Tail: public CppModule
 {

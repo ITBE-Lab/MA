@@ -53,6 +53,12 @@ public:
 		startOfComplement(0)
 	{}//constructor
 
+	SA_IndexInterval(const SA_IndexInterval& other)
+			:
+		Interval(other),
+		startOfComplement(other.startOfComplement)
+	{}//copy constructor
+
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {

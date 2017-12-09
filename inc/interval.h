@@ -53,35 +53,6 @@ public:
 	}//function
 
 	/**
-	 * @returns the start of the interval.
-	 * @brief Interval start.
-	 */
-	inline const T start() const
-	{
-		return iStart;
-	}// function
-
-	///@brief Wrapper for boost-python.
-	inline const T start_boost1() const
-	{
-		return iStart;
-	}// function
-
-	/**
-	 * @brief allows chaning the beginning of the interval.
-	 */
-	inline void start(const T iVal)
-	{
-		iStart = iVal;
-	}// function
-
-	///@brief Wrapper for boost-python.
-	inline void start_boost2(const T iVal)
-	{
-		iStart = iVal;
-	}// function
-
-	/**
 	 * @returns the end of the interval.
 	 * @brief Interval end.
 	 * @note end = start = size
@@ -109,7 +80,38 @@ public:
 	///@brief Wrapper for boost-python.
 	inline void end_boost2(const T iVal)
 	{
-		iSize = iVal - iStart;
+		end(iVal);
+	}// function
+
+	/**
+	 * @returns the start of the interval.
+	 * @brief Interval start.
+	 */
+	inline const T start() const
+	{
+		return iStart;
+	}// function
+
+	///@brief Wrapper for boost-python.
+	inline const T start_boost1() const
+	{
+		return iStart;
+	}// function
+
+	/**
+	 * @brief allows chaning the beginning of the interval.
+	 */
+	inline void start(const T iVal)
+	{
+		T iEnd = end();
+		iStart = iVal;
+		end(iEnd);
+	}// function
+
+	///@brief Wrapper for boost-python.
+	inline void start_boost2(const T iVal)
+	{
+		start(iVal);
 	}// function
 
 	/**

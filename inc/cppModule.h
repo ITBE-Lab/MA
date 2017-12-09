@@ -163,7 +163,8 @@ public:
 /**
  * @brief Abstract class intended to hold promises to data objects used by Modules.
  * @details
- * Us this class to set up a computational graph.
+ * TODO: update me!
+ * Use this class to set up a computational graph.
  * The graphs nodes are Modules (in python or cpp) that perform computational tasks.
  * Each node takes a vector of containers as input.
  * This container vector was created using the vector of Pledges that was given to the Module.

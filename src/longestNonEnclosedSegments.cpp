@@ -104,15 +104,16 @@ SA_IndexInterval LongestNonEnclosedSegments::extend_backward(
 } // method
 
 
-SaSegment LongestNonEnclosedSegments::extend(
+Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 		std::shared_ptr<SegmentTreeInterval> pxNode,
 		std::shared_ptr<FM_Index> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq
 	)
 {
-	unsigned int min_matches = 0;
-
 	nucSeqIndex center = pxNode->start() + pxNode->size()/2;
+
+	//to remember the covered area
+	Interval<nucSeqIndex> ret(center,0);
 
 	// query sequence itself
 	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
@@ -130,7 +131,16 @@ SaSegment LongestNonEnclosedSegments::extend(
 						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
 					);
 
-	std::list<SaSegment> curr = std::list<SaSegment>();
+	/*
+	 * forward extension first
+	 * this way we need to swap only once (forward to backwards) instead of swapping
+	 * (backwards to forwards to backwards)
+	 * 
+	 * curr is used to remember the Suffix array interval each time we loose some hits by extending
+	 */
+	// FIXME: for some reason valgrind does NOT like this list
+	std::vector<SaSegment> curr;
+	// extend until the end of the query
 	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
 	{
 		DEBUG_2(
@@ -138,12 +148,22 @@ SaSegment LongestNonEnclosedSegments::extend(
 			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
 		)
 		assert(ik.size() > 0);
+		//this is the extension
 		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
+		// checking weather we lost some intervals
+		// if so -> remember the interval just before we lost the hits
 		if(ok.size() != ik.size()) 
-			curr.push_front(SaSegment(center, i-center-1, ik.revComp()));
+			// save the reverse complement cause when extending the saved interval we will extend
+			// in the other direction
+			// FIXME: memory leak here according to valgrind ?!?
+			curr.push_back(SaSegment(center, i-center-1, ik.revComp()));
+		// if were at the end of the query and we still have hits we need to make sure to record them
 		if(i == pQuerySeq->length()-1 && ok.size() != 0)
-			curr.push_front(SaSegment(center, i-center, ok.revComp()));
+			// save the reverse complement cause when extending the saved interval we will extend
+			// in the other direction
+			// FIXME: memory leak here according to valgrind ?!?
+			curr.push_back(SaSegment(center, i-center, ok.revComp()));
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -151,33 +171,64 @@ SaSegment LongestNonEnclosedSegments::extend(
 		)
 		/*
 		* In fact, if ok.getSize is zero, then there are no matches any more.
+		* thus we can stop extending forwards
 		*/
 		if (ok.size() == 0)
 			break; // the SA-index interval size is too small to be extended further
+		// if we get here we can forget the old interval and save the current interval.
 		ik = ok;
+		// remember that we covered this area
+		ret.end(i);
 	}//for
 	DEBUG_2(
 		std::cout << "swap" << std::endl;
 	)
-	std::list<SaSegment> prev = std::list<SaSegment>();
-	SaSegment longest(0,0,SA_IndexInterval(0,0,0));
-	std::list<SaSegment> *pPrev, *pCurr, *pTemp;
+	/*
+	 * This is the backwards extension part
+	 * Here we need to extend the intervals in reverse order with respect to how we discovered them.
+	 * (reversing is done by push_front insted of push_back)
+	 *
+	 * we will use prev and curr in this way:
+	 * 		each iteration we will extend all intervals in prev
+	 * 		and save the intervals that need to be extended further in curr
+	 * 		at the end of the iteration we will swap prev and curr
+	 * 		then clear curr
+	 */
+	std::reverse(curr.begin(), curr.end());
+	std::vector<SaSegment> prev;
+	//pointers for easy swapping of the lists
+	std::vector<SaSegment> *pPrev, *pCurr, *pTemp;
 	pPrev = &curr;
 	pCurr = &prev;
+	// quick check that we can extend backwards at all (center is unsigned thus this is necessary)
 	if(center != 0)
 	{
+		// extend until we reach the start of the query
 		for(nucSeqIndex i = center-1; i >= 0; i--)
 		{
 			assert(pCurr->empty());
 
+			/*
+			 * we need to remember weather finished extending some interval in this step.
+			 * because:
+			 * 		if we already have found one with this length
+			 * 			then all following intervals that we find have to be enclosed
+			 * 			(this is due to the fact that they we know they start further right but 
+			 * 			 end at the same point)
+			 */
 			bool bHaveOne = false;
 
-			for(SaSegment ik : *pPrev)
+			/*
+			 * for all remembered intervals 
+			 * (ordered by the start on the query)
+			 */
+			for(SaSegment& ik : *pPrev)
 			{
 				DEBUG_2(
 					std::cout << i+1 << " -> " << ik.saInterval().start() << " " << ik.saInterval().end() << std::endl;
 					std::cout << i+1 << " ~> " << ik.saInterval().revComp().start() << " " << ik.saInterval().revComp().end() << std::endl;
 				)
+				// actually extend the current interval
 				SA_IndexInterval ok = extend_backward(ik.saInterval(), q[i], pFM_index);
 				DEBUG_2(
 					std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -186,36 +237,49 @@ SaSegment LongestNonEnclosedSegments::extend(
 				DEBUG(
 					std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
 				)
-				if(ok.size() <= min_matches && !bHaveOne)
+				// check if the extension resulted in a non enclosed interval
+				if(ok.size() == 0 && !bHaveOne)
 				{
+					// save the interval
 					pxNode->push_back(ik);
 					assert(ik.end() <= pQuerySeq->length());
-					if(ik.size() > longest.size())
-						longest = ik;
+					// we need to remember that we already found a interval this iteration
 					bHaveOne = true;
-				}//if
+				}// if
+				// check if we can extend this interval further
 				else if(ok.size() > 0)
 				{
+					// if so add the intervals to the list
 					SaSegment xSeg = SaSegment(i, ik.size()+1, ok);
+					// FIXME: memory leak here according to valgrind ?!?
 					pCurr->push_back(xSeg);
 					assert(xSeg.end() <= pQuerySeq->length());
-				}//if
-			}//for
+				}// if
+			}// for
+
+
+			// swap out the lists and clear the things we just worked on
 			pTemp = pPrev;
 			pPrev = pCurr;
 			pCurr = pTemp;
+			// FIXME: memory leak here according to valgrind ?!?
 			pCurr->clear();
 
-			//if there are no more intervals to extend
+			// if there are no more intervals to extend
 			if(pPrev->empty())
 				break;
 
-			//cause nuxSeqIndex is unsigned
+			// remember that we covered this area
+			ret.start(i);
+
+			// cause nuxSeqIndex is unsigned we have to avoid underflow
 			if(i == 0)
 				break;
-		}//for
-	}//if
-	
+		}// for
+	}// if
+
+	//if we reach the beginning of the query it is possible that there are still intervals that contain matches.
+	//we need to save the longest of those, which is conveniently (due to our sorting) the first one in the list
 	if(!pPrev->empty())
 	{
 		assert(pPrev->front().size() >= pPrev->back().size());
@@ -226,17 +290,10 @@ SaSegment LongestNonEnclosedSegments::extend(
 		DEBUG_2(
 			std::cout << pPrev->front().start() << ":" << pPrev->front().end() << std::endl;
 		)
-
-		if(pPrev->front().size() > longest.size())
-			longest = pPrev->front();
 	}//if
 
-	return longest;
-
-	/*if (bBackwards)
-		return SaSegment(i + 1, uiStartIndex - (i + 1), ik, false);
-	else
-		return SaSegment(uiStartIndex, i - uiStartIndex - 1, ik, true);*/
+	//return the area that we covered
+	return ret;
 }//function
 
 /* this function implements the segmentation of the query
@@ -267,11 +324,11 @@ void LongestNonEnclosedSegments::procesInterval(
 	)
 
 	//performs extension and records any perfect matches
-	SaSegment xLongest = extend(*pxNode, pFM_index, pQuerySeq);
+	Interval<nucSeqIndex> xAreaCovered = extend(*pxNode, pFM_index, pQuerySeq);
 
 	nucSeqIndex uiFrom, uiTo;
-	uiFrom = xLongest.start();
-	uiTo = xLongest.end();
+	uiFrom = xAreaCovered.start();
+	uiTo = xAreaCovered.end();
 	DEBUG(
 		std::cout << "splitting interval (" << pxNode->start() << "," << pxNode->end() << ") at (" << uiFrom << "," << uiTo << ")" << std::endl;
 	)
@@ -279,6 +336,7 @@ void LongestNonEnclosedSegments::procesInterval(
 	if (uiFrom != 0 && pxNode->start() + 1 < uiFrom)
 	{
 		//create a new list element and insert it before the current node
+		//FIXME: valgrind says that we have a memory leak here... (it's not cyclic pointers...?)
 		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
 			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start() - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
@@ -290,6 +348,7 @@ void LongestNonEnclosedSegments::procesInterval(
 	if (pxNode->end() > uiTo + 1)
 	{
 		//create a new list element and insert it after the current node
+		//FIXME: valgrind says that we have a memory leak here... (it's not cyclic pointers...?)
 		auto pxNextNode = pSegmentTree->insertAfter(std::shared_ptr<SegmentTreeInterval>(
 			new SegmentTreeInterval(uiTo + 1, pxNode->end() - uiTo - 1)), pxNode);
 		//enqueue procesInterval() for the new interval
@@ -298,7 +357,6 @@ void LongestNonEnclosedSegments::procesInterval(
 			pxNextNode, pSegmentTree, pFM_index, pQuerySeq, pxPool
 		);//enqueue
 	}//if
-
 
 	pxNode->start(uiFrom);
 	pxNode->end(uiTo);

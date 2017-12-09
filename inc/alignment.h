@@ -163,6 +163,7 @@ public:
      */
     void append(MatchType type, nucSeqIndex size)
     {
+        //adjust the score of the alignment
         if(type == MatchType::seed || type == MatchType::match)
             iScore += matchScore * size;
         else if(type == MatchType::missmatch)
@@ -173,7 +174,13 @@ public:
                 iScore += gapOpenScore;
             iScore += gapExtensionScore * size-1;
         }//if
-
+        /*
+         * we are storing in a compressed format 
+         * since it actually makes quite a lot of things easier
+         * same thing here: just check weather the last symbol is the same as the inserted one
+         *      if so just add the amount of new symbols
+         *      else make a new entry with the correct amount of symbols
+         */
         if(data.size() != 0 && std::get<0>(data.back()) == type)
             std::get<1>(data.back()) += size;
         else
@@ -222,11 +229,18 @@ public:
         return uiEndOnRef;
     }//function
 
+    /**
+     * @brief the NMW score for this alignment
+     */
     int score() const
     {
         return iScore;
     }
 
+    /**
+     * @brief returns how many nucleotides within this alignment are determined by seeds 
+     * as a percentage
+     */
     float seedCoverage() const
     {
         unsigned int iCount = 0;
@@ -236,6 +250,9 @@ public:
         return ((float)iCount)/ (float)length();
     }
 
+    /*
+     * @brief returns how many nucleotides within this alignment are determined by seeds
+     */
     unsigned int numBySeeds() const
     {
         unsigned int iCount = 0;
@@ -272,6 +289,12 @@ public:
         }//if
     }//function
 
+    /**
+     * @brief for sorting alignment by their score
+     * @details
+     * When multiple alignments are created we use this function to sort them 
+     * overload from CppModule
+     */
     bool smaller(const std::shared_ptr<Container> pOther) const
     {
         const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);

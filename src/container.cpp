@@ -6,18 +6,12 @@ void exportContainer()
 {
     // container is an abstract class and should never be initialized
 	boost::python::class_<Container, std::shared_ptr<Container>>(
-            "Container", 
-            "abstract\n"
-            "Any class holding data should inherit Container.\n",
+            "Container",
             boost::python::no_init
         )
         .def(
                 "get_type_info", 
-                &Container::getType,
-                "arg1: self\n"
-                "returns: an enum describing the type of data stored.\n"
-                "\n"
-                "Used to check weather a module can work with the given containers.\n"
+                &Container::getType
             );
 
             

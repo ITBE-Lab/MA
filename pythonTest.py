@@ -50,6 +50,7 @@ def _VmB(VmKey):
 def get_memory(since=0.0):
     '''Return memory usage in bytes.
     '''
+    gc.collect()
     return _VmB('VmSize:') - since
 
 def near(index, index_2):
@@ -397,6 +398,43 @@ def make_runtime_breakdown():
     runtime_breakdown(num_test, query_pledge, 
         [result_pledges, result_pledges_2], ["Bs SoC sLs", "Bs SoC Ls"])
 #function
+
+
+def memory_test(reference, test_index):
+    reference_pledge = Pledge(Pack())
+    fm_index_pledge = Pledge(FMIndex())
+    query_pledge = Pledge(NucSeq())
+    
+    ref_pack = Pack()
+    ref_pack.load(reference)
+    reference_pledge.set(ref_pack)
+
+    fm_index = FMIndex()
+    fm_index.load(reference)
+    fm_index_pledge.set(fm_index)
+
+    
+    result_pledge = set_up_aligner(
+        query_pledge,
+        reference_pledge,
+        fm_index_pledge
+    )
+    #module = LongestNonEnclosedSegments()
+
+    mem = None
+
+    while True:
+        q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 100, 0, 0, 1)
+        query_pledge.set(NucSeq(q))
+
+        #module.execute((fm_index, NucSeq(q)))
+        result_pledge[test_index].get()
+
+        if not mem is None and not get_memory(mem) == 0:
+            print(get_memory(mem), "\t", get_memory())
+            #print(q)
+        mem = get_memory()
+
 
 #run_smw_for_all_samples(human_genome)
 
@@ -819,11 +857,10 @@ def manualCheckSequences():
         print(str(ref_seq.extract_from_to(query_orig, query_orig+100)))
         print("")
 
-#manualCheckSequences()
-#exit()
 
-#import createIndices
-#exit()
+memory_test(human_genome, 1)
+exit()
+
 createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 512, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
@@ -835,4 +872,3 @@ analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 100)
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)
 #compare_approaches("results_comp_me_me", ["pBs:5 SoC:100,500nt sLs:1", "pBs:5 SoC:1,500nt sLs:inf"], db_name, 1000, 100)
-#compare_chaining_linesweep_visual()

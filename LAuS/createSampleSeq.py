@@ -496,8 +496,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
         insertQueries(conn, queries_list)
     print("done saving")
 
-    print("nuc distrib (A, C, G, T, N) original: ", nuc_distrib_count_orig,
-        " modified: ", nuc_distrib_count_mod)
+    print("nuc distrib (A, C, G, T, N) original: ", nuc_distrib_count_orig.items(),
+        " modified: ", nuc_distrib_count_mod.items())
 #function
 
 

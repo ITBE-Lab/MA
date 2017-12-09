@@ -59,6 +59,12 @@ public:
 };//class
 
 
+/**
+ * @brief Container that shall represent Null
+ * @details
+ * Should be used if a module does not require input or produces no ouput.
+ * @ingroup container
+ */
 class Nil : public Container
 {
 public:
@@ -82,6 +88,15 @@ public:
     }//function
 };//class
 
+/**
+ * @brief A vector of containers, that itself is a Container
+ * @details
+ * This can be used to define a vector as input and output of Modules.
+ * @note:
+ * TODO: this requires type checking! While the class holds a dummy container as type 
+ * it does not yet guarantee that all added containers are of the defined type.
+ * @ingroup container
+ */
 class ContainerVector:
     public Container,
     public std::vector<std::shared_ptr<Container>>

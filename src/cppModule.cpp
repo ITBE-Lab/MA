@@ -70,49 +70,30 @@ void exportModule()
     //module is an abstract class and should never be initialized
 	boost::python::class_<CppModule>(
             "CppModule",
-            "Any class implementing a algorithm should inherit Module\n",
             boost::python::no_init
         )
         .def(
                 "execute",
-                &CppModule::pyExecute,
-                "arg1: self\n"
-                "arg2: tuple/vector of containers. "
-                "Their types must match the input type of this module\n"
-                "returns: a container holding the results of the "
-                "computations done by this module. Must match the output type of the module.\n"
-                "\n"
-                "perform the task implemented by the respective instance.\n"
+                &CppModule::pyExecute
             )
         .def(
                 "get_input_type",
-                &CppModule::getInputType,
-                "arg1: self\n"
-                "returns: the type of containers that is expected as input by this module\n"
+                &CppModule::getInputType
             )
         .def(
                 "get_output_type",
-                &CppModule::getOutputType,
-                "arg1: self\n"
-                "returns: the type of containers that is expected as output from this module\n"
+                &CppModule::getOutputType
             )
         .def(
                 "get_name",
-                &CppModule::getName,
-                "arg1: self\n"
-                "returns: the module name\n"
+                &CppModule::getName
             )
         .def(
                 "promise_me",
                 &CppModule::promiseMe,
                 boost::python::with_custodian_and_ward_postcall<0,1,
                 boost::python::with_custodian_and_ward_postcall<0,2>
-                >(),
-                "arg1: self\n"
-                "arg3: a list of pledges that are required as inputs\n"
-                "returns: a promise to create a container of the type getOutputType\n"
-                "\n"
-                "The module will only hold the pledge if all inputs are delivered."
+                >()
             )
     ;
     boost::python::class_<
@@ -122,8 +103,6 @@ void exportModule()
             std::shared_ptr<Pledge>
         >(
             "Pledge",
-            "Represents the pledge to deliver some container.\n"
-            "Content may be provided by a Module (use promiseMe function) or by calling set.\n",
             boost::python::init<std::shared_ptr<Container>>(
                 "arg1: self\n"
                 "arg2: Type of the promised container\n"
@@ -134,38 +113,21 @@ void exportModule()
                     &Pledge::makePyPledge,
                     boost::python::with_custodian_and_ward_postcall<0,1,
                     boost::python::with_custodian_and_ward_postcall<0,3>
-                    >(),
-                    "arg1: self\n"
-                    "arg3: a list of pledges that are required as inputs\n"
-                    "returns: a promise to create a container of the type getOutputType\n"
-                    "\n"
-                    "The module will only hold the pledge if all inputs are delivered."
+                    >()
                 )
             .staticmethod("make_pledge")
             .def(
                     "set",
-                    &Pledge::set,
-                    "arg1: self\n"
-                    "arg2: the container that shall be stored\n"
-                    "returns: nil\n"
+                    &Pledge::set
                 )
             .def(
                     "get",
                     &Pledge::get,
-                    boost::python::with_custodian_and_ward_postcall<1,0>(),
-                    "arg1: self\n"
-                    "returns: the pledged container\n"
-                    "/n"
-                    "Every part of the computational graph that is needed to fullfill " 
-                    "this pledge will be computed.\n"
+                    boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
                     "simultaneous_get",
-                    &Pledge::simultaneousGet,
-                    "arg1: class\n"
-                    "arg2: pledges\n"
-                    "arg1: num_threads\n"
-                    "/n"
+                    &Pledge::simultaneousGet
                 )
             .staticmethod("simultaneous_get")
             .def(

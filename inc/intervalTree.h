@@ -43,6 +43,12 @@ public:
 		xSaInterval()
 	{}//constructor
 
+	SaSegment(const SaSegment& other)
+			:
+		Interval(other),
+		xSaInterval(other.xSaInterval)
+	{}//copy constructor
+
 
     //overload
     bool canCast(std::shared_ptr<Container> c) const

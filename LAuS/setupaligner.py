@@ -32,13 +32,13 @@ def set_up_aligner(
         reference_pledge,
         fm_index_pledge,
         seg=LongestNonEnclosedSegments(),
-        chain=LineSweep(),
+        chain=LinearLineSweep(),
         max_hits=5,
         num_anchors=5,
         strips_of_consideration=True,
         re_seed = None,
         max_sweep = None,
-        strip_size = 500
+        strip_size = 1000
         ):
 
     anc = NlongestIntervalsAsAnchors(num_anchors, max_hits)

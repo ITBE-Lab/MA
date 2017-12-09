@@ -43,6 +43,9 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
         }//lambda
     );//forEach
 
+    /*
+     * sort them
+     */
     std::sort(
         aSeeds.begin(), aSeeds.end(),
         []
@@ -55,13 +58,13 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
 
     std::shared_ptr<Seeds> pRet(new Seeds());
 
+    // only save the uiN longest
     for(unsigned int i = 0; i < uiN && i < aSeeds.size(); i++)
     {
         pRet->push_back(aSeeds[i]);
     }//for
 
     return pRet;
-
 }//function
 
 void exportGetAnchors()
@@ -71,20 +74,8 @@ void exportGetAnchors()
         boost::python::bases<CppModule>,
 		std::shared_ptr<NlongestIntervalsAsAnchors>
     >(
-        "NlongestIntervalsAsAnchors", 
-        "uiN: number of intervals to extract as anchors\n"
-        "\n"
-        "Picks a set of anchors for the strips of consideration.\n"
-        "\n"
-        "Execution:\n"
-        "   Expects seg_list\n"
-        "       seg_list: the list of segments to pick the anchors from\n"
-        "   returns segList.\n"
-        "       seg_list: the anchors\n",
-        boost::python::init<unsigned int, unsigned int>(
-            "arg1: self\n"
-            "arg2: number of intervals to extract as anchors\n"
-        )
+        "NlongestIntervalsAsAnchors",
+        boost::python::init<unsigned int, unsigned int>()
     )
         .def_readwrite("uiN", &NlongestIntervalsAsAnchors::uiN)
         .def_readwrite("uiMaxHitsPerInterval", &NlongestIntervalsAsAnchors::uiMaxHitsPerInterval)
