@@ -6,7 +6,7 @@
 #ifndef GET_ANCHORS_H
 #define GET_ANCHORS_H
 
-#include "intervalTree.h"
+#include "segmentList.h"
 #include "cppModule.h"
 
 /**

@@ -6,7 +6,7 @@
 #ifndef LINESWEEP
 #define LINESWEEP
 
-#include "intervalTree.h"
+#include "segmentList.h"
 #include "searchTree.h"
 #include "cppModule.h"
 

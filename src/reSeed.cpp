@@ -102,7 +102,7 @@ SA_IndexInterval ReSeed::extend_backward(
 
 
 void ReSeed::extend(
-		std::shared_ptr<SegmentTreeInterval> pxNode,
+		std::shared_ptr<SegmentListInterval> pxNode,
 		nucSeqIndex min,
 		nucSeqIndex max,
 		std::shared_ptr<FM_Index> pFM_index,
@@ -162,7 +162,7 @@ ContainerVector ReSeed::getInputType() const
 			//the forward fm_index
 			std::shared_ptr<Container>(new FM_Index()),
 			//the forward fm_index
-			std::shared_ptr<Container>(new SegmentTree()),
+			std::shared_ptr<Container>(new SegmentList()),
 			//the query sequence
 			std::shared_ptr<Container>(new NucleotideSequence()),
 		};
@@ -170,7 +170,7 @@ ContainerVector ReSeed::getInputType() const
 
 std::shared_ptr<Container> ReSeed::getOutputType() const
 {
-	return std::shared_ptr<Container>(new SegmentTree());
+	return std::shared_ptr<Container>(new SegmentList());
 }
 
 
@@ -179,15 +179,15 @@ std::shared_ptr<Container> ReSeed::execute(
 	)
 {
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
-	std::shared_ptr<SegmentTree> pSegments = std::static_pointer_cast<SegmentTree>(vpInput[1]);
+	std::shared_ptr<SegmentList> pSegments = std::static_pointer_cast<SegmentList>(vpInput[1]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
 
-	std::shared_ptr<SegmentTree> pSegmentTree(new SegmentTree(pQuerySeq->length()));
+	std::shared_ptr<SegmentList> pSegmentList(new SegmentList(pQuerySeq->length()));
 
-	for(std::shared_ptr<SegmentTreeInterval> pxNode : *pSegments)
+	for(std::shared_ptr<SegmentListInterval> pxNode : *pSegments)
 	{
-		pSegmentTree->push_back(pxNode);
+		pSegmentList->push_back(pxNode);
 
 		for(SaSegment& seg : pxNode->lxSaSegment)
 		{
@@ -196,7 +196,7 @@ std::shared_ptr<Container> ReSeed::execute(
 		}//for
 	}//for
 
-	return pSegmentTree;
+	return pSegmentList;
 }//function
 
 void exportReSeed()

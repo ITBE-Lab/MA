@@ -6,7 +6,7 @@
 #ifndef EXTRACT_ALL_SEEDS_H
 #define EXTRACT_ALL_SEEDS_H
 
-#include "intervalTree.h"
+#include "segmentList.h"
 #include "cppModule.h"
 
 /**

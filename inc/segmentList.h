@@ -1,5 +1,5 @@
 /** 
- * @file intervalTree.h
+ * @file segmentList.h
  * @brief Implements a the IntervalTree used for segmentation and various other related classes.
  * @author Markus Schmidt
  */
@@ -93,7 +93,7 @@ public:
  * @brief A Interval in the Segment Tree.
  * @ingroup container
  */
-class SegmentTreeInterval: public Container, public Interval<nucSeqIndex>
+class SegmentListInterval: public Container, public Interval<nucSeqIndex>
 {
 public:
 	/** 
@@ -104,7 +104,7 @@ public:
 	/**
 	 * @brief Creates a new interval with a start and size.
 	 */
-	SegmentTreeInterval(const nucSeqIndex uiStart, const nucSeqIndex uiSize)
+	SegmentListInterval(const nucSeqIndex uiStart, const nucSeqIndex uiSize)
 		:
 		Interval(uiStart, uiSize),
 		lxSaSegment()
@@ -113,7 +113,7 @@ public:
 	/**
 	 * @brief Default constructor.
 	 */
-	SegmentTreeInterval()
+	SegmentListInterval()
 		:
 		Interval(),
 		lxSaSegment()
@@ -123,19 +123,19 @@ public:
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        return std::dynamic_pointer_cast<SegmentTreeInterval>(c) != nullptr;
+        return std::dynamic_pointer_cast<SegmentListInterval>(c) != nullptr;
     }//function
 
     //overload
     std::string getTypeName() const
     {
-        return "SegmentTreeInterval";
+        return "SegmentListInterval";
     }//function
 
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new SegmentTreeInterval());
+        return std::shared_ptr<Container>(new SegmentListInterval());
     }//function
 
 
@@ -299,7 +299,7 @@ public:
  * tree.
  * @ingroup container
  */
-class SegmentTree : public std::list<std::shared_ptr<SegmentTreeInterval>>, public Container{
+class SegmentList : public std::list<std::shared_ptr<SegmentListInterval>>, public Container{
 
 public:
 	/**
@@ -308,23 +308,23 @@ public:
 	* Sets up the interval tree with two leaves and one initial interval comprising the whole query
 	* note that the tree is internally represented as a DoublyLinkedList since only the leaves are of relevance
 	*/
-	SegmentTree(const nucSeqIndex uiQueryLength)
+	SegmentList(const nucSeqIndex uiQueryLength)
 	{
 		//the intervals are inclusive in the tree...
-		std::shared_ptr<SegmentTreeInterval> pxRoot(new SegmentTreeInterval(0, uiQueryLength-1));
+		std::shared_ptr<SegmentListInterval> pxRoot(new SegmentListInterval(0, uiQueryLength-1));
 		push_back(pxRoot);
 	}//constructor
 
 	/**
 	 * @brief Default constructor
 	 */
-	SegmentTree()
+	SegmentList()
 	{}//constructor
 
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        return std::dynamic_pointer_cast<SegmentTree>(c) != nullptr;
+        return std::dynamic_pointer_cast<SegmentList>(c) != nullptr;
     }//function
 
     //overload
@@ -336,7 +336,7 @@ public:
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new SegmentTree());
+        return std::shared_ptr<Container>(new SegmentList());
     }//function
 
 	/**
@@ -346,7 +346,7 @@ public:
 	 */
 	void print(std::ostream &xOut) const
 	{
-		for(std::shared_ptr<SegmentTreeInterval> pxNode : *this)
+		for(std::shared_ptr<SegmentListInterval> pxNode : *this)
 			pxNode->print(xOut);
 	}//function
 
@@ -361,7 +361,7 @@ public:
 	{
 		
 		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
-		for(std::shared_ptr<SegmentTreeInterval> pxNode : *this)
+		for(std::shared_ptr<SegmentListInterval> pxNode : *this)
 			pRet->append(pxNode->getSeeds(pxFM_Index, max_num));
 		return pRet;
 	}//function
@@ -374,7 +374,7 @@ public:
 	{
 		
 		unsigned int uiTotal = 0;
-		for(std::shared_ptr<SegmentTreeInterval> pxNode : *this)
+		for(std::shared_ptr<SegmentListInterval> pxNode : *this)
 			uiTotal += pxNode->numSeeds(pxFM_Index, max_size);
 		return uiTotal;
 	}//function
@@ -382,16 +382,16 @@ public:
 	class PythonIterator
 	{
 	public:
-		SegmentTree::iterator x;
-		SegmentTree::iterator end;
+		SegmentList::iterator x;
+		SegmentList::iterator end;
 
-		PythonIterator(SegmentTree::iterator x, SegmentTree::iterator end)
+		PythonIterator(SegmentList::iterator x, SegmentList::iterator end)
 				:
 			x(x),
 			end(end)
 		{}//constructor
 
-		std::shared_ptr<SegmentTreeInterval> next()
+		std::shared_ptr<SegmentListInterval> next()
 		{
 			if(x != end)
 			{
@@ -399,7 +399,7 @@ public:
 				boost::python::throw_error_already_set();
 				return nullptr;
 			}//if
-			std::shared_ptr<SegmentTreeInterval> pRet = *x;
+			std::shared_ptr<SegmentListInterval> pRet = *x;
 			++x;
 			return pRet;
 		}//function
@@ -412,16 +412,16 @@ public:
 };
 
 /**
- * @brief Simple printer function for the SegmentTree.
+ * @brief Simple printer function for the SegmentList.
  */
-std::ostream& operator<<(std::ostream& xOs, const SegmentTree& rxTree);
+std::ostream& operator<<(std::ostream& xOs, const SegmentList& rxTree);
 /**
- * @brief Simple printer function for a SegmentTreeInterval.
+ * @brief Simple printer function for a SegmentListInterval.
  */
-std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode);
+std::ostream& operator<<(std::ostream& xOs, const SegmentListInterval &rxNode);
 
 /**
- * @brief Exposes the SegmentTree to boost python.
+ * @brief Exposes the SegmentList to boost python.
  * @ingroup export
  */
 void exportIntervalTree();

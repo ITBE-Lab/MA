@@ -97,7 +97,7 @@ SA_IndexInterval LongestLRSegments::extend_backward(
 
 
 SaSegment LongestLRSegments::extend(
-		std::shared_ptr<SegmentTreeInterval> pxNode,
+		std::shared_ptr<SegmentListInterval> pxNode,
 		std::shared_ptr<FM_Index> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq
 	)
@@ -294,14 +294,14 @@ SaSegment LongestLRSegments::extend(
 */
 void LongestLRSegments::procesInterval(
 			size_t uiThreadId,
-			SegmentTree::iterator it,
-			std::shared_ptr<SegmentTree> pSegmentTree,
+			SegmentList::iterator it,
+			std::shared_ptr<SegmentList> pSegmentList,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		)
 {
-	std::shared_ptr<SegmentTreeInterval> pxNode = *it;
+	std::shared_ptr<SegmentListInterval> pxNode = *it;
 	DEBUG(
 		std::cout << "interval (" << pxNode->start() << "," << pxNode->end() << ")" << std::endl;
 	)
@@ -319,23 +319,23 @@ void LongestLRSegments::procesInterval(
 	if (uiFrom != 0 && pxNode->start() + 1 < uiFrom)
 	{
 		//create a new list element and insert it before the current node
-		auto pxPrevNode = pSegmentTree->insert(it, std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start() - 1)));
+		auto pxPrevNode = pSegmentList->insert(it, std::shared_ptr<SegmentListInterval>(
+			new SegmentListInterval(pxNode->start(), uiFrom - pxNode->start() - 1)));
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
 			LongestLRSegments::procesInterval,
-			pxPrevNode, pSegmentTree, pFM_index, pQuerySeq, pxPool
+			pxPrevNode, pSegmentList, pFM_index, pQuerySeq, pxPool
 		);//enqueue
 	}//if
 	if (pxNode->end() > uiTo + 1)
 	{
 		//create a new list element and insert it after the current node
-		auto pxNextNode = pSegmentTree->insert(++it, std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(uiTo + 1, pxNode->end() - uiTo - 1)));
+		auto pxNextNode = pSegmentList->insert(++it, std::shared_ptr<SegmentListInterval>(
+			new SegmentListInterval(uiTo + 1, pxNode->end() - uiTo - 1)));
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
 			LongestLRSegments::procesInterval,
-			pxNextNode, pSegmentTree, pFM_index, pQuerySeq, pxPool
+			pxNextNode, pSegmentList, pFM_index, pQuerySeq, pxPool
 		);//enqueue
 	}//if
 
@@ -356,7 +356,7 @@ ContainerVector LongestLRSegments::getInputType() const
 }
 std::shared_ptr<Container> LongestLRSegments::getOutputType() const
 {
-	return std::shared_ptr<Container>(new SegmentTree());
+	return std::shared_ptr<Container>(new SegmentList());
 }
 
 
@@ -369,10 +369,10 @@ std::shared_ptr<Container> LongestLRSegments::execute(
 		std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
 
 		
-	std::shared_ptr<SegmentTree> pSegmentTree(new SegmentTree(pQuerySeq->length()));
+	std::shared_ptr<SegmentList> pSegmentList(new SegmentList(pQuerySeq->length()));
 
 
-	assert(*pSegmentTree->begin() != nullptr);
+	assert(*pSegmentList->begin() != nullptr);
 
 	{//scope for xPool
 		DEBUG(
@@ -385,12 +385,12 @@ std::shared_ptr<Container> LongestLRSegments::execute(
 		//enqueue the root interval for processing
 		xPool.enqueue( 
 			LongestLRSegments::procesInterval,
-			pSegmentTree->begin(), pSegmentTree, pFM_index, pQuerySeq, &xPool
+			pSegmentList->begin(), pSegmentList, pFM_index, pQuerySeq, &xPool
 		);//enqueue
 
 	}//end of scope xPool
 
-	return pSegmentTree;
+	return pSegmentList;
 }//function
 
 void exportLongestLRSegments()

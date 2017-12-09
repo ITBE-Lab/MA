@@ -6,7 +6,7 @@
 #ifndef STRIP_OF_CONSIDERATION_H
 #define STRIP_OF_CONSIDERATION_H
 
-#include "intervalTree.h"
+#include "segmentList.h"
 #include "cppModule.h"
 
 /**
@@ -99,7 +99,7 @@ private:
 	}//function
 
 	void forEachNonBridgingSeed(
-			std::shared_ptr<SegmentTreeInterval> pxNode,
+			std::shared_ptr<SegmentListInterval> pxNode,
 			std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
 			std::function<void(Seed)> fDo,
@@ -107,7 +107,7 @@ private:
 		);
 	
 	void saveSeeds(
-			std::shared_ptr<SegmentTreeInterval> pxNode,
+			std::shared_ptr<SegmentListInterval> pxNode,
 			std::shared_ptr<FM_Index> pxFM_index,
 			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,

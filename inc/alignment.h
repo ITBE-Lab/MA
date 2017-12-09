@@ -7,7 +7,7 @@
 #ifndef ALIGNMENT_H
 #define ALIGNMENT_H
 
-#include "intervalTree.h"
+#include "segmentList.h"
 
 /**
  * @brief Holds a finished alignment.

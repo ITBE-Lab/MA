@@ -4,7 +4,7 @@
 ContainerVector NlongestIntervalsAsAnchors::getInputType() const
 {
     return ContainerVector{
-            std::shared_ptr<Container>(new SegmentTree()),
+            std::shared_ptr<Container>(new SegmentList()),
             std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
             std::shared_ptr<Container>(new FM_Index())
         };
@@ -21,7 +21,7 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
     )
 {
 
-    std::shared_ptr<SegmentTree> pCastedInput = std::static_pointer_cast<SegmentTree>(vpInput[0]);
+    std::shared_ptr<SegmentList> pCastedInput = std::static_pointer_cast<SegmentList>(vpInput[0]);
 	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
 		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[1]);
 	std::shared_ptr<FM_Index> pxFM_index = std::static_pointer_cast<FM_Index>(vpInput[2]);
@@ -30,7 +30,7 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
     /*
     *   get the n longest intervals
     */
-	for(std::shared_ptr<SegmentTreeInterval> pxNode : *pCastedInput)
+	for(std::shared_ptr<SegmentListInterval> pxNode : *pCastedInput)
         pxNode->forEachSeed(
             pxFM_index, uiMaxHitsPerInterval, true,
             [&](Seed xS)

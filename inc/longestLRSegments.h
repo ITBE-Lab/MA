@@ -10,7 +10,7 @@
 
 #include "system.h"
 #include "cppModule.h"
-#include "intervalTree.h"
+#include "segmentList.h"
 #include "threadPool.h"
 
 
@@ -37,7 +37,7 @@ private:
 	*  current extension could reach further than uiOnlyRecordHitsFurtherThan
 	*/
 	static SaSegment extend(
-			std::shared_ptr<SegmentTreeInterval> pxNode,
+			std::shared_ptr<SegmentListInterval> pxNode,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq
 		);
@@ -48,8 +48,8 @@ private:
 	*/
 	static void procesInterval(
 			size_t uiThreadId, 
-			SegmentTree::iterator pxNode, 
-			std::shared_ptr<SegmentTree> pSegmentTree,
+			SegmentList::iterator pxNode, 
+			std::shared_ptr<SegmentList> pSegmentList,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool

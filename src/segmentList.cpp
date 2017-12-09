@@ -1,6 +1,6 @@
-#include "intervalTree.h"
+#include "segmentList.h"
 
-void SegmentTreeInterval::push_back(SaSegment xSaSegment)
+void SegmentListInterval::push_back(SaSegment xSaSegment)
 {
 	lxSaSegment.push_back(xSaSegment);
 	DEBUG(
@@ -8,14 +8,14 @@ void SegmentTreeInterval::push_back(SaSegment xSaSegment)
 	)
 }//function
 
-std::ostream& operator<<(std::ostream& xOs, const SegmentTree& xTree)
+std::ostream& operator<<(std::ostream& xOs, const SegmentList& xTree)
 {
 	xTree.print(xOs);
 	return xOs;
 }//function
 
 
-std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode)
+std::ostream& operator<<(std::ostream& xOs, const SegmentListInterval &rxNode)
 {
 	rxNode.print(xOs);
 	return xOs;
@@ -23,11 +23,11 @@ std::ostream& operator<<(std::ostream& xOs, const SegmentTreeInterval &rxNode)
 
 void exportIntervalTree()
 {
-	 //export the SegmentTreeInterval class
+	 //export the SegmentListInterval class
 	boost::python::class_<
-			SegmentTreeInterval, 
+			SegmentListInterval, 
 			boost::python::bases<Container>,
-			std::shared_ptr<SegmentTreeInterval>
+			std::shared_ptr<SegmentListInterval>
 		>(
 			"Segment",
 			"A interval on the querry.\n",
@@ -39,33 +39,33 @@ void exportIntervalTree()
 		)
 		.def(
 				"start", 
-				&SegmentTreeInterval::start_boost1,
+				&SegmentListInterval::start_boost1,
 				"arg1: self\n"
 				"returns: start index of the interval\n"
 			)
 		.def(
 				"start", 
-				&SegmentTreeInterval::start_boost2,
+				&SegmentListInterval::start_boost2,
 				"arg1: self\n"
 				"arg1: new start of the interval\n"
 				"returns: nil\n"
 			)
 		.def(
 				"end", 
-				&SegmentTreeInterval::end_boost1,
+				&SegmentListInterval::end_boost1,
 				"arg1: self\n"
 				"returns: end index of the interval\n"
 			)
 		.def(
 				"end", 
-				&SegmentTreeInterval::end_boost2,
+				&SegmentListInterval::end_boost2,
 				"arg1: self\n"
 				"arg1: new end of the interval\n"
 				"returns: nil\n"
 			)
 		.def(
 				"push_back_bwt", 
-				&SegmentTreeInterval::push_back,
+				&SegmentListInterval::push_back,
 				"arg1: self\n"
 				"arg2: start index of the BWT Interval\n"
 				"arg3: length of the BWT Interval\n"
@@ -81,27 +81,27 @@ void exportIntervalTree()
 			)
 		.def(
 				"get_seeds", 
-				&SegmentTreeInterval::getSeeds,
+				&SegmentListInterval::getSeeds,
 				"arg1: self\n"
 				"arg2: the fm_index.\n"
 				"returns: all seeds within the segment.\n"
 			)
 		.def(
 				"size",
-				&SegmentTreeInterval::size_boost1,
+				&SegmentListInterval::size_boost1,
 				"arg1: self\n"
 				"returns: lenght of the segment\n"
 			)
 		.def(
 				"size",
-				&SegmentTreeInterval::size_boost2,
+				&SegmentListInterval::size_boost2,
 				"arg1: self\n"
 				"arg1: new size of the interval\n"
 				"returns: nil\n"
 			)
 		.def(
 				"set", 
-				&SegmentTreeInterval::set,
+				&SegmentListInterval::set,
 				"arg1: self\n"
 				"arg2: new start index of the interval\n"
 				"arg3: new end index of the interval\n"
@@ -109,26 +109,26 @@ void exportIntervalTree()
 
 	//tell boost python that pointers of these classes can be converted implicitly
 	boost::python::implicitly_convertible< 
-			std::shared_ptr<SegmentTreeInterval>,
+			std::shared_ptr<SegmentListInterval>,
 			std::shared_ptr<Container> 
 		>();  
 	
-	 //export the SegmentTree class
+	 //export the SegmentList class
 	boost::python::class_<
-			SegmentTree, 
+			SegmentList, 
 			boost::python::bases<Container>,
-			std::shared_ptr<SegmentTree>
+			std::shared_ptr<SegmentList>
 		>(
 			"SegmentList"
 		)
 			.def(boost::python::init<const nucSeqIndex>())
 			.def(
 					"__iter__", 
-					&SegmentTree::begin_boost
+					&SegmentList::begin_boost
 				)
 			.def(
 					"get_seeds", 
-					&SegmentTree::getSeeds,
+					&SegmentList::getSeeds,
 					boost::python::with_custodian_and_ward_postcall<1,0>(),
 					"arg1: self\n"
 					"arg2: the fm_index.\n"
@@ -136,7 +136,7 @@ void exportIntervalTree()
 				)
 			.def(
 					"num_seeds", 
-					&SegmentTree::numSeeds,
+					&SegmentList::numSeeds,
 					"arg1: self\n"
 					"returns: number of seeds.\n"
 				)
@@ -144,20 +144,20 @@ void exportIntervalTree()
 
 	//tell boost python that pointers of these classes can be converted implicitly
 	boost::python::implicitly_convertible< 
-			std::shared_ptr<SegmentTree>,
+			std::shared_ptr<SegmentList>,
 			std::shared_ptr<Container> 
 		>(); 
 	
-	 //export the SegmentTree iterator class
+	 //export the SegmentList iterator class
 	boost::python::class_<
-			SegmentTree::PythonIterator
+			SegmentList::PythonIterator
 		>(
 			"SegmentListIterator",
 			boost::python::no_init
 		)
 		.def(
 				"__next__", 
-				&SegmentTree::PythonIterator::next
+				&SegmentList::PythonIterator::next
 			)
 	;
 

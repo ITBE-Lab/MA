@@ -37,9 +37,9 @@
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
- * <tr><td>Create seeds <td> FM_Index, NucleotideSequence <td> SegmentTree
- * <tr><td>Remove inconsistent seeds <td> SegmentTree <td> SegmentTree
- * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentTree,
+ * <tr><td>Create seeds <td> FM_Index, NucleotideSequence <td> SegmentList
+ * <tr><td>Remove inconsistent seeds <td> SegmentList <td> SegmentList
+ * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentList,
  * NucleotideSequence, BWACompatiblePackedNucleotideSequencesCollection <td> Alignment
  * </table>
  *

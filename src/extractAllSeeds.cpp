@@ -7,7 +7,7 @@ ContainerVector ExtractAllSeeds::getInputType() const
 	return ContainerVector
 	{
 		//all segments
-		std::shared_ptr<Container>(new SegmentTree()),
+		std::shared_ptr<Container>(new SegmentList()),
 		//the forward fm_index
 		std::shared_ptr<Container>(new FM_Index())
 	};
@@ -24,7 +24,7 @@ std::shared_ptr<Container> ExtractAllSeeds::execute(
 		ContainerVector vpInput
 	)
 {
-	std::shared_ptr<SegmentTree> pSegments = std::static_pointer_cast<SegmentTree>(vpInput[0]);
+	std::shared_ptr<SegmentList> pSegments = std::static_pointer_cast<SegmentList>(vpInput[0]);
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[1]);
 
 

@@ -11,7 +11,7 @@
 
 #include "system.h"
 #include "cppModule.h"
-#include "intervalTree.h"
+#include "segmentList.h"
 #include "threadPool.h"
 
 
@@ -32,7 +32,7 @@ private:
 	 * bwa style extension
 	 */
 	static void extend(
-			std::shared_ptr<SegmentTreeInterval> pxNode,
+			std::shared_ptr<SegmentListInterval> pxNode,
 			nucSeqIndex min,
 			nucSeqIndex max,
 			std::shared_ptr<FM_Index> pFM_index,

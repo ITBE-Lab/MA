@@ -232,11 +232,11 @@ class FMIndex_(FM_Index):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class SegmentList_(SegmentTree):
+class SegmentList_(SegmentList):
     ##
     # @brief Create a empty list.
     # @details
-    # Reimplemented from @ref SegmentTree.
+    # Reimplemented from @ref SegmentList.
     #
     def __init__(self):
         pass
@@ -244,7 +244,7 @@ class SegmentList_(SegmentTree):
     ##
     # @brief Create a list containing one Segment of the size query_length.
     # @details
-    # Reimplemented from @ref SegmentTree.
+    # Reimplemented from @ref SegmentList.
     #
     def __init__(self, query_length):
         pass
@@ -252,7 +252,7 @@ class SegmentList_(SegmentTree):
     ##
     # @brief An SegmentListIterator_ pointing to the first element of the list.
     # @details
-    # Reimplemented from @ref SegmentTree::begin.
+    # Reimplemented from @ref SegmentList::begin.
     #
     def __iter__(self):
         pass
@@ -262,7 +262,7 @@ class SegmentList_(SegmentTree):
     # @details
     # Invalidates the iterator.
     # Replace it with the returned one. <br>
-    # Reimplemented from @ref SegmentTree::insertBefore_boost.
+    # Reimplemented from @ref SegmentList::insertBefore_boost.
     # @returns a new SegmentListIterator_.
     #
     def insert_before(self, segment, iterator):
@@ -273,7 +273,7 @@ class SegmentList_(SegmentTree):
     # @details
     # Invalidates the iterator.
     # Replace it with the returned one. <br>
-    # Reimplemented from @ref SegmentTree::insertAfter_boost.
+    # Reimplemented from @ref SegmentList::insertAfter_boost.
     # @returns a new SegmentListIterator_.
     #
     def insert_after(self, segment, iterator):
@@ -282,7 +282,7 @@ class SegmentList_(SegmentTree):
     ##
     # @brief Insert a segment at the end of the list.
     # @details
-    # Reimplemented from @ref SegmentTree::push_back.
+    # Reimplemented from @ref SegmentList::push_back.
     #
     def push_back(self, segment):
         pass
@@ -290,7 +290,7 @@ class SegmentList_(SegmentTree):
     ##
     # @brief Insert a segment at the front of the list.
     # @details
-    # Reimplemented from @ref SegmentTree::push_front.
+    # Reimplemented from @ref SegmentList::push_front.
     #
     def push_front(self, segment):
         pass
@@ -299,7 +299,7 @@ class SegmentList_(SegmentTree):
     # @brief Removes the element the SegmentListIterator_ points to.
     # @details
     # Invalidates the iterator. <br>
-    # Reimplemented from @ref SegmentTree::removeNode_boost.
+    # Reimplemented from @ref SegmentList::removeNode_boost.
     #
     def remove_node(self, segment, iterator):
         pass
@@ -307,7 +307,7 @@ class SegmentList_(SegmentTree):
     ##
     # @brief Returns all Seeds.
     # @details
-    # Reimplemented from @ref SegmentTree::getSeeds.
+    # Reimplemented from @ref SegmentList::getSeeds.
     #
     def get_seeds(self, fm_index):
         pass
@@ -315,7 +315,7 @@ class SegmentList_(SegmentTree):
     ##
     # @brief Returns the number of Seeds.
     # @details
-    # Reimplemented from @ref SegmentTree::numSeeds.
+    # Reimplemented from @ref SegmentList::numSeeds.
     #
     def num_seeds(self):
         pass
@@ -325,11 +325,11 @@ class SegmentList_(SegmentTree):
 # @details
 # @note To create an instance of this class omit the trainling underscore.
 #
-class SegmentListIterator_(SegmentTree::iterator):
+class SegmentListIterator_(SegmentList::iterator):
     ##
     # @brief Returns the current element and increments the iterator.
     # @details
-    # Reimplemented from @ref SegmentTree::Iterator::next_boost.
+    # Reimplemented from @ref SegmentList::Iterator::next_boost.
     #
     def __next__(self):
         pass
@@ -340,11 +340,11 @@ class SegmentListIterator_(SegmentTree::iterator):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Segment_(SegmentTreeInterval):
+class Segment_(SegmentListInterval):
     ##
     # @brief Create a new segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval.
+    # Reimplemented from @ref SegmentListInterval.
     #
     def __init__(self, start, size):
         pass
@@ -352,7 +352,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Get the start of the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::start_boost1.
+    # Reimplemented from @ref SegmentListInterval::start_boost1.
     #
     def start(self):
         pass
@@ -360,7 +360,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Set the start of the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::start_boost2.
+    # Reimplemented from @ref SegmentListInterval::start_boost2.
     #
     def start(self, new):
         pass
@@ -368,7 +368,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Get the end of the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::end_boost1.
+    # Reimplemented from @ref SegmentListInterval::end_boost1.
     #
     def end(self):
         pass
@@ -376,7 +376,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Set the end of the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::end_boost2.
+    # Reimplemented from @ref SegmentListInterval::end_boost2.
     #
     def end(self, new):
         pass
@@ -387,7 +387,7 @@ class Segment_(SegmentTreeInterval):
     # @brief Record a bwt interval that matches this segment.
     # @details
     #
-    # Reimplemented from @ref SegmentTreeInterval::push_back.
+    # Reimplemented from @ref SegmentListInterval::push_back.
     #
     def push_back_bwt(start):
         pass
@@ -396,7 +396,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Extracts all seeds from the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::getSeeds.
+    # Reimplemented from @ref SegmentListInterval::getSeeds.
     #
     def get_seeds(self, fm_index):
         pass
@@ -404,7 +404,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Get the length of the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::size_boost1.
+    # Reimplemented from @ref SegmentListInterval::size_boost1.
     #
     def size(self):
         pass
@@ -412,7 +412,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Set the length of the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::size_boost2.
+    # Reimplemented from @ref SegmentListInterval::size_boost2.
     #
     def size(self, new):
         pass
@@ -420,7 +420,7 @@ class Segment_(SegmentTreeInterval):
     ##
     # @brief Set the start and end of the segment.
     # @details
-    # Reimplemented from @ref SegmentTreeInterval::set.
+    # Reimplemented from @ref SegmentListInterval::set.
     #
     def set(self, start, end):
         pass
