@@ -482,7 +482,10 @@ def test_my_approach(
     all_queries = getNewQueries(db_name, name, reference, res1, res2)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
-    for queries in chunks(all_queries, 2048):
+    print("having ", len(all_queries), " samples total (", name, ")...")
+
+    # break samples into chunks of 2^12
+    for queries in chunks(all_queries, 4096):
         print("extracting " + str(len(queries)) + " samples (" + name + ") ...")
         #setup the query pledges
         query_pledge = []
