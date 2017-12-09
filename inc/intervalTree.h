@@ -8,7 +8,6 @@
 
 #include "fm_index.h"
 #include <thread>
-#include "doublyLinkedList.h"
 #include "seed.h"
 
 #define confMETA_MEASURE_DURATION ( 1 )
@@ -300,7 +299,7 @@ public:
  * tree.
  * @ingroup container
  */
-class SegmentTree : public DoublyLinkedList<SegmentTreeInterval>, public Container{
+class SegmentTree : public std::list<std::shared_ptr<SegmentTreeInterval>>, public Container{
 
 public:
 	/**
@@ -310,8 +309,6 @@ public:
 	* note that the tree is internally represented as a DoublyLinkedList since only the leaves are of relevance
 	*/
 	SegmentTree(const nucSeqIndex uiQueryLength)
-		:
-		DoublyLinkedList()
 	{
 		//the intervals are inclusive in the tree...
 		std::shared_ptr<SegmentTreeInterval> pxRoot(new SegmentTreeInterval(0, uiQueryLength-1));
@@ -322,8 +319,6 @@ public:
 	 * @brief Default constructor
 	 */
 	SegmentTree()
-			:
-		DoublyLinkedList()
 	{}//constructor
 
     //overload
@@ -351,7 +346,8 @@ public:
 	 */
 	void print(std::ostream &xOut) const
 	{
-		forEach([&xOut](std::shared_ptr<SegmentTreeInterval> pxNode){ pxNode->print(xOut); });
+		for(std::shared_ptr<SegmentTreeInterval> pxNode : *this)
+			pxNode->print(xOut);
 	}//function
 
 	
@@ -365,13 +361,8 @@ public:
 	{
 		
 		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
-		forEach(
-			[&]
-			(std::shared_ptr<SegmentTreeInterval> pxNode)
-			{ 
-				pRet->append(pxNode->getSeeds(pxFM_Index, max_num));
-			}//lambda
-		);
+		for(std::shared_ptr<SegmentTreeInterval> pxNode : *this)
+			pRet->append(pxNode->getSeeds(pxFM_Index, max_num));
 		return pRet;
 	}//function
 
@@ -383,14 +374,40 @@ public:
 	{
 		
 		unsigned int uiTotal = 0;
-		forEach(
-			[&]
-			(std::shared_ptr<SegmentTreeInterval> pxNode)
-			{ 
-				uiTotal += pxNode->numSeeds(pxFM_Index, max_size);
-			}//lambda
-		);
+		for(std::shared_ptr<SegmentTreeInterval> pxNode : *this)
+			uiTotal += pxNode->numSeeds(pxFM_Index, max_size);
 		return uiTotal;
+	}//function
+
+	class PythonIterator
+	{
+	public:
+		SegmentTree::iterator x;
+		SegmentTree::iterator end;
+
+		PythonIterator(SegmentTree::iterator x, SegmentTree::iterator end)
+				:
+			x(x),
+			end(end)
+		{}//constructor
+
+		std::shared_ptr<SegmentTreeInterval> next()
+		{
+			if(x != end)
+			{
+				PyErr_SetNone(PyExc_StopIteration);
+				boost::python::throw_error_already_set();
+				return nullptr;
+			}//if
+			std::shared_ptr<SegmentTreeInterval> pRet = *x;
+			++x;
+			return pRet;
+		}//function
+	};//class
+
+	PythonIterator begin_boost()
+	{
+		return PythonIterator(this->begin(), this->end());
 	}//function
 };
 

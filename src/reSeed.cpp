@@ -185,18 +185,16 @@ std::shared_ptr<Container> ReSeed::execute(
 
 	std::shared_ptr<SegmentTree> pSegmentTree(new SegmentTree(pQuerySeq->length()));
 
-	pSegments->forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
-		{
-			pSegmentTree->push_back(pxNode);
+	for(std::shared_ptr<SegmentTreeInterval> pxNode : *pSegments)
+	{
+		pSegmentTree->push_back(pxNode);
 
-			for(SaSegment& seg : pxNode->lxSaSegment)
-			{
-				if(seg.size() > 2)
-					extend(pxNode, seg.start() + 1, seg.end() - 1, pFM_index, pQuerySeq);
-			}//for
-		}//lambda
-	);//forEach
+		for(SaSegment& seg : pxNode->lxSaSegment)
+		{
+			if(seg.size() > 2)
+				extend(pxNode, seg.start() + 1, seg.end() - 1, pFM_index, pQuerySeq);
+		}//for
+	}//for
 
 	return pSegmentTree;
 }//function

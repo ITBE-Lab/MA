@@ -119,69 +119,12 @@ void exportIntervalTree()
 			boost::python::bases<Container>,
 			std::shared_ptr<SegmentTree>
 		>(
-			"SegmentList",
-			"A doubly linked list holding Segments.\n"
+			"SegmentList"
 		)
-			.def(boost::python::init<const nucSeqIndex>(
-				"arg1: self\n"
-				"arg2: size of the query\n"
-			))
+			.def(boost::python::init<const nucSeqIndex>())
 			.def(
 					"__iter__", 
-					&SegmentTree::begin,
-					"arg1: self\n"
-					"returns: an iterator pointing to the first element of the list.\n"
-				)
-			.def(
-					"insert_before", 
-					&SegmentTree::insertBefore_boost,
-					"arg1: self\n"
-					"arg2: the segment to insert.\n"
-					"arg3 the current iterator.\n"
-					"returns: a new iterator.\n"
-					"\n"
-					"Insert a segment before the position of the given iterator.\n"
-					"Invalidates the iterator.\n"
-					"Replace it with the returned one.\n"
-				)
-			.def(
-					"insert_after", 
-					&SegmentTree::insertAfter_boost,
-					"arg1: self\n"
-					"arg2: the segment to insert.\n"
-					"arg3: the current iterator.\n"
-					"returns: a new iterator.\n"
-					"\n"
-					"Insert a segment after the position of the given iterator.\n"
-					"Invalidates the iterator.\n"
-					"Replace it with the returned one.\n"
-				)
-			.def(
-					"push_back", 
-					&SegmentTree::push_back,
-					"arg1: self\n"
-					"arg2: the segment to insert.\n"
-					"returns: a new iterator.\n"
-					"\n"
-					"Insert a segment at the end of the list.\n"
-				)
-			.def(
-					"push_front", 
-					&SegmentTree::push_front,
-					"arg1: self\n"
-					"arg2: the segment to insert.\n"
-					"returns: a new iterator.\n"
-					"\n"
-					"Insert a segment at the front of the list.\n"
-				)
-			.def(
-					"remove_node", 
-					&SegmentTree::removeNode_boost,
-					"arg1: self\n"
-					"arg2: the iterator pointing to the segment that shall be removed.\n"
-					"returns: nil.\n"
-					"\n"
-					"Invalidates the iterator.\n"
+					&SegmentTree::begin_boost
 				)
 			.def(
 					"get_seeds", 
@@ -207,22 +150,14 @@ void exportIntervalTree()
 	
 	 //export the SegmentTree iterator class
 	boost::python::class_<
-			SegmentTree::Iterator
+			SegmentTree::PythonIterator
 		>(
 			"SegmentListIterator",
-			"Iterator for the doubly linked SegmentList.\n"
-			"The list has a dummy element at bot ends.\n"
-			"If the iterator sits on top a dummy element exists() returns false.\n",
 			boost::python::no_init
 		)
 		.def(
 				"__next__", 
-				&SegmentTree::Iterator::next_boost,
-				"arg1: self\n"
-				"returns: the current element\n"
-				"\n"
-				"Return the current element.\n"
-				"Move the iterator to the next element of the list.\n"
+				&SegmentTree::PythonIterator::next
 			)
 	;
 

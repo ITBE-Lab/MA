@@ -325,7 +325,7 @@ class SegmentList_(SegmentTree):
 # @details
 # @note To create an instance of this class omit the trainling underscore.
 #
-class SegmentListIterator_(SegmentTree::Iterator):
+class SegmentListIterator_(SegmentTree::iterator):
     ##
     # @brief Returns the current element and increments the iterator.
     # @details

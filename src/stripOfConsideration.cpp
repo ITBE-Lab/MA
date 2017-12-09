@@ -92,18 +92,14 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
 	//extract the seeds
 	std::vector<Seed> vSeeds;
-	pSegments->forEach(
-		[&](std::shared_ptr<SegmentTreeInterval> pxNode)
-		{
-			forEachNonBridgingSeed(
-				pxNode, pFM_index, pRefSeq, pQuerySeq,
-				[&](Seed xSeed)
-				{
-					vSeeds.push_back(xSeed);
-				}//lambda
-			);//for each
-		}//lambda
-	);//forEach
+	for(std::shared_ptr<SegmentTreeInterval> pxNode : *pSegments)
+		forEachNonBridgingSeed(
+			pxNode, pFM_index, pRefSeq, pQuerySeq,
+			[&](Seed xSeed)
+			{
+				vSeeds.push_back(xSeed);
+			}//lambda
+		);//for each
 
 	//sort the seeds according to their initial positions
 	std::sort(

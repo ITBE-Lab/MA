@@ -49,7 +49,7 @@ private:
 	*/
 	static void procesInterval(
 			size_t uiThreadId, 
-			DoublyLinkedList<SegmentTreeInterval>::Iterator pxNode, 
+			SegmentTree::iterator pxNode, 
 			std::shared_ptr<SegmentTree> pSegmentTree,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,

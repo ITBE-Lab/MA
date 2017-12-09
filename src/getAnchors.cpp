@@ -30,18 +30,14 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
     /*
     *   get the n longest intervals
     */
-    pCastedInput->forEach(
-        [&](std::shared_ptr<SegmentTreeInterval> pxNode)
-        {
-            pxNode->forEachSeed(
-                pxFM_index, uiMaxHitsPerInterval, true,
-                [&](Seed xS)
-                {
-                    aSeeds.push_back(xS);
-                }//lambda
-            );
-        }//lambda
-    );//forEach
+	for(std::shared_ptr<SegmentTreeInterval> pxNode : *pCastedInput)
+        pxNode->forEachSeed(
+            pxFM_index, uiMaxHitsPerInterval, true,
+            [&](Seed xS)
+            {
+                aSeeds.push_back(xS);
+            }//lambda
+        );
 
     /*
      * sort them

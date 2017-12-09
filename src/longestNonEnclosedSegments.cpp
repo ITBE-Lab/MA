@@ -312,19 +312,20 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 */
 void LongestNonEnclosedSegments::procesInterval(
 			size_t uiThreadId,
-			DoublyLinkedList<SegmentTreeInterval>::Iterator pxNode,
+			SegmentTree::iterator it,
 			std::shared_ptr<SegmentTree> pSegmentTree,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		)
 {
+	std::shared_ptr<SegmentTreeInterval> pxNode = *it;
 	DEBUG(
 		std::cout << "interval (" << pxNode->start() << "," << pxNode->end() << ")" << std::endl;
 	)
 
 	//performs extension and records any perfect matches
-	Interval<nucSeqIndex> xAreaCovered = extend(*pxNode, pFM_index, pQuerySeq);
+	Interval<nucSeqIndex> xAreaCovered = extend(pxNode, pFM_index, pQuerySeq);
 
 	nucSeqIndex uiFrom, uiTo;
 	uiFrom = xAreaCovered.start();
@@ -337,8 +338,8 @@ void LongestNonEnclosedSegments::procesInterval(
 	{
 		//create a new list element and insert it before the current node
 		//FIXME: valgrind says that we have a memory leak here... (it's not cyclic pointers...?)
-		auto pxPrevNode = pSegmentTree->insertBefore(std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start() - 1)), pxNode);
+		auto pxPrevNode = pSegmentTree->insert(it, std::shared_ptr<SegmentTreeInterval>(
+			new SegmentTreeInterval(pxNode->start(), uiFrom - pxNode->start() - 1)));
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
 			LongestNonEnclosedSegments::procesInterval,
@@ -349,8 +350,8 @@ void LongestNonEnclosedSegments::procesInterval(
 	{
 		//create a new list element and insert it after the current node
 		//FIXME: valgrind says that we have a memory leak here... (it's not cyclic pointers...?)
-		auto pxNextNode = pSegmentTree->insertAfter(std::shared_ptr<SegmentTreeInterval>(
-			new SegmentTreeInterval(uiTo + 1, pxNode->end() - uiTo - 1)), pxNode);
+		auto pxNextNode = pSegmentTree->insert(++it,std::shared_ptr<SegmentTreeInterval>(
+			new SegmentTreeInterval(uiTo + 1, pxNode->end() - uiTo - 1)));
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
 			LongestNonEnclosedSegments::procesInterval,
