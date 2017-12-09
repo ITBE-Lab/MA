@@ -1,5 +1,8 @@
 #include "linesweep.h"
 
+
+//Deprecated
+#if 0
 ContainerVector LineSweep::getInputType() const
 {
 	return ContainerVector{
@@ -188,6 +191,7 @@ std::shared_ptr<Container> LineSweep::execute(
 }//function
 
 
+#endif
 
 ContainerVector LinearLineSweep::getInputType() const
 {
@@ -348,6 +352,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
 void exportLinesweep()
 {
+    //deprecated
+    #if 0
     //export the LineSweepContainer class
 	boost::python::class_<
         LineSweep, 
@@ -360,6 +366,7 @@ void exportLinesweep()
 		std::shared_ptr<LineSweep>,
 		std::shared_ptr<CppModule> 
 	>();
+    #endif
 
     //export the LineSweepContainer class
 	boost::python::class_<

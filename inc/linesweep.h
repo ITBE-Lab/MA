@@ -10,27 +10,30 @@
 #include "searchTree.h"
 #include "cppModule.h"
 
+// deprecated old linesweep code
+#if 0
 /**
  * @brief The shadow of a Seed.
  * @details
  * Each perfect match "casts a shadow" at the left and right border of the strip.
  * Each shadow is stored in one of these data structures.
+ * @note DEPRECATED!
  */
 class ShadowInterval: public Interval<int64_t>{
 public:
 	/// @brief While swiping the interfering shadows will get stored in this list.
     std::shared_ptr<std::list<ShadowInterval*>> pInterferingIntervals;
-	/// @brief TODO:
+	/// @brief old complicated algorithm required that
     std::shared_ptr<std::list<ShadowInterval*>> pInterferingIntervals2ndOrder;
     /// @brief The interval this one interferes with.
     ShadowInterval* pIInterferWith;
-    /// @brief TODO:
+    /// @brief old complicated algorithm required that
     std::list<std::tuple<ShadowInterval*, unsigned int>> lIInterferWith2ndOrder;
     /// @brief The seed this interval corresponds to (used to delete the seed in case this is necessary).
     std::list<Seed>::iterator pSeed;
 	/// @brief The total score of the interfering shadows.
     unsigned int iScoreInterfering;
-	/// @brief TODO:
+	/// @brief old complicated algorithm required that
     unsigned int iScoreInterfering2ndOrder;
 	/// @brief The score added by this interval to the outer interfering one
     unsigned int iInterferingSelf;
@@ -81,7 +84,6 @@ public:
     {
         if(pInterferingIntervals->empty())
             return size();
-        //TODO: fixme
         return std::max(
                 pInterferingIntervals->back()->pSeed->end_ref() > rInterval.pSeed->start_ref() ?
                 pInterferingIntervals->back()->pSeed->end_ref() - rInterval.pSeed->start_ref() :
@@ -381,7 +383,7 @@ public:
         return "LineSweep";
     }
 };//class
-
+#endif
 
 
 /**

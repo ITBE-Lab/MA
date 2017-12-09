@@ -404,7 +404,7 @@ def memory_test(reference, test_index):
     reference_pledge = Pledge(Pack())
     fm_index_pledge = Pledge(FMIndex())
     query_pledge = Pledge(NucSeq())
-
+    """
     ref_pack = Pack()
     ref_pack.load(reference)
     reference_pledge.set(ref_pack)
@@ -413,25 +413,26 @@ def memory_test(reference, test_index):
     fm_index.load(reference)
     fm_index_pledge.set(fm_index)
 
-    
     result_pledge = set_up_aligner(
         query_pledge,
         reference_pledge,
         fm_index_pledge
     )
     #module = LongestNonEnclosedSegments()
-
+    """
     mem = None
 
     num = 0
     print("running")
     while True:
-        q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 100, 0, 0, 1)
-        query_pledge.set(NucSeq(q))
+        #q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 100, 0, 0, 1)
+        #query_pledge.set(NucSeq(q))
 
         #module.execute((fm_index, NucSeq(q)))
         #result_pledge[test_index].get()
-        Pledge.simultaneous_get( [result_pledge[test_index]] ,1)
+        #Pledge.simultaneous_get( [result_pledge[test_index]] ,1)
+
+        query_pledge.test()
 
         if not mem is None and not get_memory(mem) == 0:
             print(get_memory(mem), "\t", get_memory())
@@ -443,6 +444,10 @@ def memory_test(reference, test_index):
             print("marker")
             num = 0
 
+## @brief Yield successive n-sized chunks from l.
+def chunks(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 #run_smw_for_all_samples(human_genome)
 
@@ -454,7 +459,7 @@ def test_my_approach(
             reference,
             name,
             seg=LongestNonEnclosedSegments(),
-            chain=LineSweep(), 
+            chain=LinearLineSweep(), 
             max_hits=5,
             num_anchors=10, 
             strips_of_consideration=True,
@@ -474,82 +479,82 @@ def test_my_approach(
     if low_res:
         res2 = 5
 
-    queries = getNewQueries(db_name, name, reference, res1, res2)
+    all_queries = getNewQueries(db_name, name, reference, res1, res2)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
-    print("extracting " + str(len(queries)) + " samples (" + name + ") ...")
-    #setup the query pledges
-    query_pledge = []
-    ids = []
-    for sequence, sample_id in queries:
-        query_pledge.append(Pledge(NucSeq()))
-        query_pledge[-1].set(NucSeq(sequence))
-        ids.append(sample_id)
+    for queries in chunks(all_queries, 2048):
+        print("extracting " + str(len(queries)) + " samples (" + name + ") ...")
+        #setup the query pledges
+        query_pledge = []
+        ids = []
+        for sequence, sample_id in queries:
+            query_pledge.append(Pledge(NucSeq()))
+            query_pledge[-1].set(NucSeq(sequence))
+            ids.append(sample_id)
 
 
-    print("setting up (" + name + ") ...")
-    ref_pack = Pack()
-    ref_pack.load(reference)
-    reference_pledge.set(ref_pack)
+        print("setting up (" + name + ") ...")
+        ref_pack = Pack()
+        ref_pack.load(reference)
+        reference_pledge.set(ref_pack)
 
-    fm_index = FMIndex()
-    fm_index.load(reference)
-    fm_index_pledge.set(fm_index)
+        fm_index = FMIndex()
+        fm_index.load(reference)
+        fm_index_pledge.set(fm_index)
 
-    result_pledge = set_up_aligner(
-        query_pledge,
-        reference_pledge,
-        fm_index_pledge,
-        seg=seg,
-        chain=LinearLineSweep(),
-        max_hits=max_hits,
-        num_anchors=num_anchors,
-        strips_of_consideration=strips_of_consideration,
-        re_seed=re_seed,
-        max_sweep=max_sweep,
-        strip_size=strip_size
-    )
+        result_pledge = set_up_aligner(
+            query_pledge,
+            reference_pledge,
+            fm_index_pledge,
+            seg=seg,
+            chain=LinearLineSweep(),
+            max_hits=max_hits,
+            num_anchors=num_anchors,
+            strips_of_consideration=strips_of_consideration,
+            re_seed=re_seed,
+            max_sweep=max_sweep,
+            strip_size=strip_size
+        )
 
-    #temp code
-    if False:
-        num = 0
-        #result_pledge[-1][num].get()
+        #temp code
+        if False:
+            num = 0
+            #result_pledge[-1][num].get()
 
-        printer = AlignmentPrinter()
+            printer = AlignmentPrinter()
 
-        print("origin: " + str(ids[num]))
-        print("num results: " + str(len(result_pledge[-2][num].get().get())))
+            print("origin: " + str(ids[num]))
+            print("num results: " + str(len(result_pledge[-2][num].get().get())))
 
-        for alignment in result_pledge[-2][num].get().get():
-            printer.execute((alignment, query_pledge[num].get(), ref_pack))
+            for alignment in result_pledge[-2][num].get().get():
+                printer.execute((alignment, query_pledge[num].get(), ref_pack))
 
-        exit()
+            exit()
 
-    print("computing (" + name + ") ...")
-    Pledge.simultaneous_get(result_pledge[0], 32)
-    Pledge.simultaneous_get(result_pledge[-1], 32)
+        print("computing (" + name + ") ...")
+        Pledge.simultaneous_get(result_pledge[-1], 32)
 
-    print("extracting results (" + name + ") ...")
-    result = []
-    for index in range(len(queries)):
-        alignment = result_pledge[-1][index].get()
-        segment_list = result_pledge[0][index].get()
-        total_time = 0
-        for step_index in range(len(result_pledge)):
-            total_time += result_pledge[step_index][index].exec_time
-        sample_id = queries[index][1]
-        result.append(
-                (
-                    sample_id,
-                    alignment.get_score(),
-                    alignment.begin_on_ref(),
-                    segment_list.num_seeds(fm_index, max_hits),
-                    total_time,
-                    name
+        print("extracting results (" + name + ") ...")
+        result = []
+        for index in range(len(queries)):
+            alignment = result_pledge[-1][index].get()
+            segment_list = result_pledge[0][index].get()
+            total_time = 0
+            for step_index in range(len(result_pledge)):
+                total_time += result_pledge[step_index][index].exec_time
+            sample_id = queries[index][1]
+            result.append(
+                    (
+                        sample_id,
+                        alignment.get_score(),
+                        alignment.begin_on_ref(),
+                        segment_list.num_seeds(fm_index, max_hits),
+                        total_time,
+                        name
+                    )
                 )
-            )
-    print("submitting results (" + name + ") ...")
-    submitResults(db_name, result)
+        print("submitting results (" + name + ") ...")
+        submitResults(db_name, result)
     print("done")
 
 
@@ -866,8 +871,9 @@ def manualCheckSequences():
         print("")
 
 
-memory_test(human_genome, -1)
-exit()
+
+#memory_test(human_genome, -1)
+#exit()
 
 
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
