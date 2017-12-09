@@ -430,7 +430,8 @@ def memory_test(reference, test_index):
         query_pledge.set(NucSeq(q))
 
         #module.execute((fm_index, NucSeq(q)))
-        result_pledge[test_index].get()
+        #result_pledge[test_index].get()
+        Pledge.simultaneous_get( [result_pledge[test_index]] ,1)
 
         if not mem is None and not get_memory(mem) == 0:
             print(get_memory(mem), "\t", get_memory())
@@ -865,8 +866,8 @@ def manualCheckSequences():
         print("")
 
 
-#memory_test(human_genome, 1)
-#exit()
+memory_test(human_genome, -1)
+exit()
 
 
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)

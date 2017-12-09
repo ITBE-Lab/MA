@@ -91,9 +91,9 @@ void exportModule()
         .def(
                 "promise_me",
                 &CppModule::promiseMe,
-                boost::python::with_custodian_and_ward_postcall<0,1,
-                boost::python::with_custodian_and_ward_postcall<0,2>
-                >()
+                //boost::python::with_custodian_and_ward_postcall<0,1,
+                boost::python::with_custodian_and_ward_postcall<0,2>()
+                //>()
             )
     ;
     boost::python::class_<
@@ -103,10 +103,7 @@ void exportModule()
             std::shared_ptr<Pledge>
         >(
             "Pledge",
-            boost::python::init<std::shared_ptr<Container>>(
-                "arg1: self\n"
-                "arg2: Type of the promised container\n"
-            )
+            boost::python::init<std::shared_ptr<Container>>()
         )
             .def(
                     "make_pledge",

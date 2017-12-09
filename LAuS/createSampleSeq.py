@@ -462,8 +462,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
                 #
                 q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size)
 
-                nuc_distrib_count_orig = map(operator.add, nuc_distrib_count_orig, original_nuc_dist)
-                nuc_distrib_count_mod = map(operator.add, modified_nuc_dist, nuc_distrib_count_mod)
+                nuc_distrib_count_orig = list(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
+                nuc_distrib_count_mod = list(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))
 
                 #
                 # construct the query tuple
@@ -496,8 +496,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
         insertQueries(conn, queries_list)
     print("done saving")
 
-    print("nuc distrib (A, C, G, T, N) original: ", nuc_distrib_count_orig.items(),
-        " modified: ", nuc_distrib_count_mod.items())
+    print("nuc distrib (A, C, G, T, N) changed by: ", list(map(
+        operator.sub, nuc_distrib_count_orig, nuc_distrib_count_mod)))
+    print("total amount: ", sum(nuc_distrib_count_orig))
 #function
 
 
