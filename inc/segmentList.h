@@ -336,7 +336,7 @@ public:
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new SegmentList());
+        return std::shared_ptr<SegmentList>(new SegmentList());
     }//function
 
 	/**

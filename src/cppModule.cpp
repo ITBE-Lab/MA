@@ -122,8 +122,9 @@ void exportModule()
                 )
             .def(
                     "get",
-                    &Pledge::get,
-                    boost::python::with_custodian_and_ward_postcall<1,0>()
+                    &Pledge::get
+                    //THIS WARD CAUSES THE MEMORY LEAKS
+                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
                     "simultaneous_get",

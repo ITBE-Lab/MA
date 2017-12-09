@@ -404,7 +404,7 @@ def memory_test(reference, test_index):
     reference_pledge = Pledge(Pack())
     fm_index_pledge = Pledge(FMIndex())
     query_pledge = Pledge(NucSeq())
-    
+
     ref_pack = Pack()
     ref_pack.load(reference)
     reference_pledge.set(ref_pack)
@@ -423,6 +423,8 @@ def memory_test(reference, test_index):
 
     mem = None
 
+    num = 0
+    print("running")
     while True:
         q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 100, 0, 0, 1)
         query_pledge.set(NucSeq(q))
@@ -434,6 +436,11 @@ def memory_test(reference, test_index):
             print(get_memory(mem), "\t", get_memory())
             #print(q)
         mem = get_memory()
+
+        num += 1
+        if num >= 1000:
+            print("marker")
+            num = 0
 
 
 #run_smw_for_all_samples(human_genome)
@@ -858,17 +865,18 @@ def manualCheckSequences():
         print("")
 
 
-memory_test(human_genome, 1)
-exit()
+#memory_test(human_genome, 1)
+#exit()
 
-createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 512, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
 test_my_approaches("/mnt/ssd1/shortIndels.db")
 analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 100)
 
+
+createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 512, True, True)
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)
 #compare_approaches("results_comp_me_me", ["pBs:5 SoC:100,500nt sLs:1", "pBs:5 SoC:1,500nt sLs:inf"], db_name, 1000, 100)
