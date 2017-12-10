@@ -17,20 +17,20 @@
  * @brief A Suffix Array Segment.
  * @details
  * A Suffix Array Segment is made up of two Intervals.
- * @li @c a SA_IndexInterval.
+ * @li @c a SAInterval.
  * @li @c a Interval representing the position of the sequence on the query.
  * @ingroup container
  */
 class Segment: public Container, public Interval<nucSeqIndex> {
 private:
-	SA_IndexInterval xSaInterval;
+	SAInterval xSaInterval;
 public:
 	/**
 	* @brief Creates a new Segment.
-	* @details Creates a new Segment on the base of a SA_IndexInterval and the 
+	* @details Creates a new Segment on the base of a SAInterval and the 
 	* respective indices on the quey.
 	*/
-	Segment(nucSeqIndex uiStart, nucSeqIndex uiSize, SA_IndexInterval xSaInterval)
+	Segment(nucSeqIndex uiStart, nucSeqIndex uiSize, SAInterval xSaInterval)
 			:
 		Interval(uiStart, uiSize),
 		xSaInterval(xSaInterval)
@@ -71,7 +71,7 @@ public:
 	 * @brief The bwt interval within.
 	 * @returns the bwt interval within.
 	 */
-	const SA_IndexInterval& saInterval() const
+	const SAInterval& saInterval() const
 	{
 		return xSaInterval;
 	}//function

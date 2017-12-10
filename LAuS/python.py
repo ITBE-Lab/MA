@@ -13,7 +13,8 @@
 
 raise ImportError("You imported a Module that is used purely for documentation.")
 
-from libLAuS import ""
+from libLAuS import *
+from collections.abc import MutableSequence
 
 ##
 # @brief contains the final output of the aligner.
@@ -232,30 +233,18 @@ class FMIndex_(FM_Index):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class SegmentVector_(SegmentVector):
-    ##
-    # @brief Create a empty list.
-    # @details
-    # Reimplemented from @ref SegmentVector.
-    #
-    def __init__(self):
-        pass
+class SegmentVector_(SegmentVector, MutableSequence):
+    pass
 
-    ##
-    # @brief Create a list containing one Segment of the size query_length.
-    # @details
-    # Reimplemented from @ref SegmentVector.
-    #
-    def __init__(self):
-        pass
-
-    ##
-    # @brief An SegmentVectorIterator_ pointing to the first element of the list.
-    # @details
-    # Reimplemented from @ref SegmentVector::begin.
-    #
-    def __iter__(self):
-        pass
+##
+# @brief The Container for a Seeds_
+# @details
+# is iterable
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class Seeds_(Seeds, MutableSequence):
+    pass
 
 ##
 # @brief A interval on the query that contains one or multiple @ref Seed "seeds".
@@ -743,29 +732,6 @@ class BinarySeeding_(BinarySeeding):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class ContainerVector_(ContainerVector):
-    ##
-    # @brief Create a new Module.
-    # @details
-    # Reimplemented from @ref ContainerVector.
-    #
-    def __init__(self):
-        pass
+class ContainerVector_(ContainerVector, MutableSequence):
+    pass
 
-    ##
-    # @brief Is iterable.
-    #
-    def __iter__(self):
-        pass
-
-    ##
-    # @brief Is iterable.
-    #
-    def __len__(self):
-        pass
-
-    ##
-    # @brief Is iterable.
-    #
-    def __at__(self, index):
-        pass

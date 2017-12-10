@@ -13,9 +13,9 @@
 * Delivers 4 intervals for a single input interval.
 * Here we use only two fields in the BWT_Interval.
 */
-SA_IndexInterval ReSeed::extend_backward( 
+SAInterval ReSeed::extend_backward( 
 		// current interval
-		const SA_IndexInterval &ik,
+		const SAInterval &ik,
 		// the character to extend with
 		const uint8_t c,
 		std::shared_ptr<FM_Index> pFM_index
@@ -97,7 +97,7 @@ SA_IndexInterval ReSeed::extend_backward(
 	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval
-	return SA_IndexInterval(pFM_index->L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
+	return SAInterval(pFM_index->L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
 } // method
 
 
@@ -120,7 +120,7 @@ void ReSeed::extend(
 	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
 	// because very first string in SA-array starts with $
 	// size in T and T' is equal due to symmetry
-	SA_IndexInterval ik(
+	SAInterval ik(
 						pFM_index->L2[complement(q[min])] + 1, 
 						pFM_index->L2[(int)q[min]] + 1, 
 						pFM_index->L2[(int)q[min] + 1] - pFM_index->L2[(int)q[min]]
@@ -134,7 +134,7 @@ void ReSeed::extend(
 			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
 		)
 		assert(ik.size() > 0);
-		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
+		SAInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;

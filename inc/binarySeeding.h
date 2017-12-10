@@ -27,8 +27,8 @@ class BinarySeeding : public CppModule{
 private:
 	bool bLrExtension;
 
-	static SA_IndexInterval extend_backward(
-			const SA_IndexInterval &ik, 
+	static SAInterval extend_backward(
+			const SAInterval &ik, 
 			const uint8_t c, 
 			std::shared_ptr<FM_Index> pFM_index
 		);

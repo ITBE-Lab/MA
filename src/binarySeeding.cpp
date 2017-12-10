@@ -16,9 +16,9 @@
 * Delivers 4 intervals for a single input interval.
 * Here we use only two fields in the BWT_Interval.
 */
-SA_IndexInterval BinarySeeding::extend_backward( 
+SAInterval BinarySeeding::extend_backward( 
 		// current interval
-		const SA_IndexInterval &ik,
+		const SAInterval &ik,
 		// the character to extend with
 		const uint8_t c,
 		std::shared_ptr<FM_Index> pFM_index
@@ -100,7 +100,7 @@ SA_IndexInterval BinarySeeding::extend_backward(
 	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval
-	return SA_IndexInterval(pFM_index->L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
+	return SAInterval(pFM_index->L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
 } // method
 
 
@@ -121,7 +121,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
 	// because very first string in SA-array starts with $
 	// size in T and T' is equal due to symmetry
-	SA_IndexInterval ik(
+	SAInterval ik(
 						pFM_index->L2[complement(q[center])] + 1, 
 						pFM_index->L2[(int)q[center]] + 1, 
 						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
@@ -138,7 +138,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
 		)
 		assert(ik.size() > 0);
-		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
+		SAInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -170,7 +170,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 				std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
 			)
 			assert(ik.size() > 0);
-			SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+			SAInterval ok = extend_backward(ik, q[i], pFM_index);
 			DEBUG_2(
 				std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
 				std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
@@ -203,7 +203,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
 	// because very first string in SA-array starts with $
 	// size in T and T' is equal due to symmetry
-	ik = SA_IndexInterval(
+	ik = SAInterval(
 						pFM_index->L2[q[center]] + 1, 
 						pFM_index->L2[(int)complement(q[center])] + 1, 
 						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
@@ -221,7 +221,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 				std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
 			)
 			assert(ik.size() > 0);
-			SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+			SAInterval ok = extend_backward(ik, q[i], pFM_index);
 			DEBUG_2(
 				std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
 				std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
@@ -255,7 +255,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
 		)
 		assert(ik.size() > 0);
-		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
+		SAInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -311,7 +311,7 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
 	// because very first string in SA-array starts with $
 	// size in T and T' is equal due to symmetry
-	SA_IndexInterval ik(
+	SAInterval ik(
 						pFM_index->L2[complement(q[center])] + 1, 
 						pFM_index->L2[(int)q[center]] + 1, 
 						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
@@ -334,7 +334,7 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 		)
 		assert(ik.size() > 0);
 		//this is the extension
-		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
+		SAInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
 
 		// checking weather we lost some intervals
 		// if so -> remember the interval just before we lost the hits
@@ -415,7 +415,7 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 					std::cout << i+1 << " ~> " << ik.saInterval().revComp().start() << " " << ik.saInterval().revComp().end() << std::endl;
 				)
 				// actually extend the current interval
-				SA_IndexInterval ok = extend_backward(ik.saInterval(), q[i], pFM_index);
+				SAInterval ok = extend_backward(ik.saInterval(), q[i], pFM_index);
 				DEBUG_2(
 					std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
 					std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;

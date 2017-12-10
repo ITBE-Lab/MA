@@ -37,23 +37,23 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
  * See http://en.wikipedia.org/wiki/FM-index (intervals within the F-L matrix )
  * @ingroup container
  */
-class SA_IndexInterval: public Container, public Interval<t_bwtIndex> {
+class SAInterval: public Container, public Interval<t_bwtIndex> {
 private:
 	t_bwtIndex startOfComplement;
 public:
-	SA_IndexInterval(t_bwtIndex start, t_bwtIndex startOfComplement, t_bwtIndex size)
+	SAInterval(t_bwtIndex start, t_bwtIndex startOfComplement, t_bwtIndex size)
 			:
 		Interval(start, size),
 		startOfComplement(startOfComplement)
 	{}//constructor
 
-	SA_IndexInterval()
+	SAInterval()
 			:
 		Interval(),
 		startOfComplement(0)
 	{}//constructor
 
-	SA_IndexInterval(const SA_IndexInterval& other)
+	SAInterval(const SAInterval& other)
 			:
 		Interval(other),
 		startOfComplement(other.startOfComplement)
@@ -62,35 +62,35 @@ public:
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        return std::dynamic_pointer_cast<SA_IndexInterval>(c) != nullptr;
+        return std::dynamic_pointer_cast<SAInterval>(c) != nullptr;
     }//function
 
     //overload
     std::string getTypeName() const
     {
-        return "SA_IndexInterval";
+        return "SAInterval";
     }//function
 
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new SA_IndexInterval());
+        return std::shared_ptr<Container>(new SAInterval());
     }//function
 
 	/**
 	 * @brief Switch to the respective reverse complement.
 	 * @details
-	 * A SA_IndexInterval is the same size as the interval for the reverse complement sequence.
+	 * A SAInterval is the same size as the interval for the reverse complement sequence.
 	 * This fact can be used to implement forward extension.
 	 * @Note This only works when combined with FMD-indices.
 	 */
-	SA_IndexInterval revComp() const
+	SAInterval revComp() const
 	{
-		return SA_IndexInterval(startOfComplement, start(), size());
+		return SAInterval(startOfComplement, start(), size());
 	}//function
 
 	/**
-	 * @brief returns the start position of the SA_IndexInterval created using the reverse
+	 * @brief returns the start position of the SAInterval created using the reverse
 	 * complement of the sequence used for this interval.
 	 */
 	t_bwtIndex startRevComp() const
@@ -100,9 +100,9 @@ public:
 
 	
 	/*
-	 * @brief copys from another SA_IndexInterval.
+	 * @brief copys from another SAInterval.
 	 */
-	inline SA_IndexInterval& operator=(const SA_IndexInterval& rxOther)
+	inline SAInterval& operator=(const SAInterval& rxOther)
 	{
 		Interval::operator=(rxOther);
 		assert(size() == rxOther.size());
@@ -114,11 +114,11 @@ public:
 	 * @brief compares two Intervals.
 	 * @returns true if start and size are equal, false otherwise.
 	 */
-	inline bool operator==(const SA_IndexInterval& rxOther)
+	inline bool operator==(const SAInterval& rxOther)
 	{
 		return Interval::operator==(rxOther) && startOfComplement == rxOther.startOfComplement;
 	}// operator
-}; // class ( SA_IndexInterval )
+}; // class ( SAInterval )
 
 
 typedef unsigned char ubyte_t;
