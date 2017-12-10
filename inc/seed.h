@@ -23,11 +23,9 @@ typedef uint64_t nucSeqIndex;
  */
 class Seed: public Container, public Interval<nucSeqIndex>
 {
-private:
+public:
     ///@brief the beginning of the match on the reference
     nucSeqIndex uiPosOnReference;
-
-public:
 
     /**
      * @brief Creates a new Seed.
@@ -57,7 +55,7 @@ public:
     Seed()
             :
         Interval()
-    {}//copy constructor
+    {}//default constructor
     
     /**
      * @brief Returns the beginning of the seed on the reference.

@@ -158,7 +158,7 @@ void FM_Index::bwt_cal_sa_step3( unsigned int intv )
 } // method
 
 void FM_Index::build_FM_Index( 
-    const BWACompatiblePackedNucleotideSequencesCollection &rxSequenceCollection, // the pack for which we compute a BWT
+    const Pack &rxSequenceCollection, // the pack for which we compute a BWT
     unsigned int uiAlgorithmSelection
    )
 {
@@ -234,6 +234,14 @@ void FM_Index::build_FM_Index(
 
 void exportFM_index()
 {
+    
+    exportInterval<t_bwtIndex>();
+    //export the SAInterval class
+    boost::python::class_<
+            SAInterval,
+            boost::python::bases<Interval<t_bwtIndex>>
+        >("SAInterval")
+    ;
     //export the FM_index class
 	boost::python::class_<
             FM_Index, 
@@ -247,7 +255,7 @@ void exportFM_index()
             "arg1: self\n"
             "arg2: the NucSeq to create the BWT Index from\n"
         ))
-        .def(boost::python::init<std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>>(
+        .def(boost::python::init<std::shared_ptr<Pack>>(
             "arg1: self\n"
             "arg2: the Pack to create the BWT Index from\n"
         ))

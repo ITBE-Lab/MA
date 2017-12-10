@@ -40,7 +40,7 @@
  * <tr><td>Create seeds <td> FM_Index, NucleotideSequence <td> SegmentVector
  * <tr><td>Remove inconsistent seeds <td> SegmentVector <td> SegmentVector
  * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentVector,
- * NucleotideSequence, BWACompatiblePackedNucleotideSequencesCollection <td> Alignment
+ * NucleotideSequence, Pack <td> Alignment
  * </table>
  *
  * @note The python classes can be easily identified by the prefix "LAuS." 

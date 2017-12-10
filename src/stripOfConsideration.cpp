@@ -13,7 +13,7 @@ ContainerVector StripOfConsideration::getInputType() const
 		//the query
 		std::shared_ptr<Container>(new NucleotideSequence()),
 		//the reference
-		std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
+		std::shared_ptr<Container>(new Pack()),
 		//the forward fm_index
 		std::shared_ptr<Container>(new FM_Index()),
 	};
@@ -29,7 +29,7 @@ std::shared_ptr<Container> StripOfConsideration::getOutputType() const
 
 void StripOfConsideration::forEachNonBridgingSeed(
 		std::shared_ptr<SegmentVector> pVector,
-		std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
+		std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<Pack> pxRefSequence,
 		std::shared_ptr<NucleotideSequence> pxQuerySeq,
 		std::function<void(Seed rxS)> fDo,
 		nucSeqIndex addSize = 0
@@ -68,8 +68,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 	std::shared_ptr<Seeds> pAnchors = std::static_pointer_cast<Seeds>(vpInput[1]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
-	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
-		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[3]);
+	std::shared_ptr<Pack> pRefSeq = 
+		std::static_pointer_cast<Pack>(vpInput[3]);
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[4]);
 
 	//extract the seeds

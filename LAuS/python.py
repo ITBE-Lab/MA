@@ -96,6 +96,13 @@ class MatchType_(MatchType):
     def __init__(self):
         pass
 
+##
+# @brief representation of a interval
+#
+class Interval_(Interval):
+    def __init__(self, start, size):
+        self.start = start
+        self.size = size
 
 ##
 # @brief Represents the pledge to deliver some container.
@@ -252,46 +259,14 @@ class Seeds_(Seeds, MutableSequence):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Segment_(Segment):
+class Segment_(Segment, Interval_):
     ##
-    # @brief Create a new segment.
+    # @brief Create a new Segment
     # @details
-    # Reimplemented from @ref SegmentVector.
+    # Reimplemented from @ref Segment.
     #
-    def __init__(self, start, size):
-        pass
-
-    ##
-    # @brief Extracts all seeds from the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::getSeeds.
-    #
-    def get_seeds(self, fm_index):
-        pass
-
-    ##
-    # @brief Get the length of the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::size_boost1.
-    #
-    def size(self):
-        pass
-
-    ##
-    # @brief Set the length of the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::size_boost2.
-    #
-    def size(self, new):
-        pass
-
-    ##
-    # @brief Set the start and end of the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::set.
-    #
-    def set(self, start, end):
-        pass
+    def __init__(self, start, size, sa_interval):
+        self.sa_interval = sa_interval
 
 ##
 # @brief A packed version of a @ref NucSeq_ "NucSeq".
@@ -299,11 +274,11 @@ class Segment_(Segment):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
+class Pack_(Pack):
     ##
     # @brief Create an empty pack.
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection.
+    # Reimplemented from @ref Pack.
     #
     def __init__(self):
         self.unpacked_size_single_strand = 0
@@ -312,7 +287,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief The length of the sequence within the pack
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardPlusReverse.
+    # Reimplemented from @ref Pack::uiUnpackedSizeForwardPlusReverse.
     #
     def unpacked_size(self):
         pass
@@ -320,7 +295,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief Append a @ref NucSeq_ "NucSeq".
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::vAppendSequence_boost.
+    # Reimplemented from @ref Pack::vAppendSequence_boost.
     #
     def append(self, nuc_seq):
         pass
@@ -328,7 +303,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief Stores this pack at the given location.
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::vStoreCollection.
+    # Reimplemented from @ref Pack::vStoreCollection.
     #
     def store(self, file_name):
         pass
@@ -336,7 +311,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief Checks weather a pack exists at the given location.
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::packExistsOnFileSystem.
+    # Reimplemented from @ref Pack::packExistsOnFileSystem.
     #
     @staticmethod
     def exists(file_name):
@@ -345,7 +320,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief Loads a pack from the given location on disk.
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::vLoadCollection.
+    # Reimplemented from @ref Pack::vLoadCollection.
     #
     def load(self, file_name):
         pass
@@ -354,7 +329,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     # @brief Extracts a sequence from the pack.
     # @details
     # Indices are inclusive <br>
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::vExtract.
+    # Reimplemented from @ref Pack::vExtract.
     #
     def extract_from_to(self, start, end):
         pass
@@ -362,7 +337,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief Extracts the entire pack as sequence.
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::vColletionAsNucleotideSequence.
+    # Reimplemented from @ref Pack::vColletionAsNucleotideSequence.
     #
     def extract_complete(self):
         pass
@@ -370,7 +345,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief Extracts the forward strand entire pack as sequence.
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::vColletionWithoutReverseStrandAsNucleotideSequence.
+    # Reimplemented from @ref Pack::vColletionWithoutReverseStrandAsNucleotideSequence.
     #
     def extract_forward_strand(self):
         pass
@@ -378,7 +353,7 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
     ##
     # @brief Extracts the reverse strand entire pack as sequence.
     # @details
-    # Reimplemented from @ref BWACompatiblePackedNucleotideSequencesCollection::vColletionOnlyReverseStrandAsNucleotideSequence.
+    # Reimplemented from @ref Pack::vColletionOnlyReverseStrandAsNucleotideSequence.
     #
     def extract_reverse_strand(self):
         pass
@@ -389,45 +364,28 @@ class Pack_(BWACompatiblePackedNucleotideSequencesCollection):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Seed_(Seed):
+class Seed_(Seed, Interval_):
     ##
-    # @brief The start position on the query.
+    # @brief Create a new Seed.
     # @details
-    # Reimplemented from @ref Seed::start_boost1.
+    # Reimplemented from @ref Seed.
     #
-    def start(self):
-        pass
+    def __init__(self, query_start, size, ref_start):
+        self.ref_start = ref_start
 
+##
+# @brief A SAInterval.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class SAInterval_(SAInterval, Interval_):
     ##
-    # @brief The end position on the query.
+    # @brief Create a new SAInterval.
     # @details
-    # Reimplemented from @ref Seed::end_boost1.
+    # Reimplemented from @ref SAInterval.
     #
-    def end(self):
-        pass
-
-    ##
-    # @brief The start position on the reference.
-    # @details
-    # Reimplemented from @ref Seed::start_ref.
-    #
-    def start_ref(self):
-        pass
-
-    ##
-    # @brief The end position on the reference.
-    # @details
-    # Reimplemented from @ref Seed::end_ref.
-    #
-    def end_ref(self):
-        pass
-
-    ##
-    # @brief The size of the seed.
-    # @details
-    # Reimplemented from @ref Seed::size_boost1.
-    #
-    def size(self):
+    def __init__(self, query_start, size):
         pass
 
 ##

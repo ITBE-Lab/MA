@@ -3,10 +3,10 @@
 void exportPack()
 {
     boost::python::class_<
-            BWACompatiblePackedNucleotideSequencesCollection, 
+            Pack, 
             boost::noncopyable,
             boost::python::bases<Container>,
-            std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>
+            std::shared_ptr<Pack>
         >(
                 "Pack",
                 "unpacked_size_single_strand: the size of one strand\n"
@@ -16,13 +16,13 @@ void exportPack()
             )
         .def(
                 "unpacked_size", 
-                &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardPlusReverse,
+                &Pack::uiUnpackedSizeForwardPlusReverse,
                 "arg1: self\n"
                 "returns: the length of the sequence within the pack.\n"
             )
         .def(
                 "append", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vAppendSequence_boost,
+                &Pack::vAppendSequence_boost,
                 "arg1: self\n"
                 "arg2: a NucleotideSequence\n"
                 "returns: nil\n"
@@ -31,7 +31,7 @@ void exportPack()
             )
         .def(
                 "append_fasta_file", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vAppendFastaFile,
+                &Pack::vAppendFastaFile,
                 "arg1: self\n"
                 "arg2: the filename\n"
                 "returns: nil\n"
@@ -40,7 +40,7 @@ void exportPack()
             )
         .def(
                 "store", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vStoreCollection,
+                &Pack::vStoreCollection,
                 "arg1: self\n"
                 "arg2: the folder and filename on disk\n"
                 "returns: nil\n"
@@ -49,7 +49,7 @@ void exportPack()
             )
         .def(
                 "exists", 
-                &BWACompatiblePackedNucleotideSequencesCollection::packExistsOnFileSystem,
+                &Pack::packExistsOnFileSystem,
                 "arg1: self\n"
                 "arg2: the folder and filename on disk\n"
                 "returns: a bool indicating if the file exists\n"
@@ -59,7 +59,7 @@ void exportPack()
         .staticmethod("exists")
         .def(
                 "load", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vLoadCollection,
+                &Pack::vLoadCollection,
                 "arg1: self\n"
                 "arg2: the folder and filename on disk\n"
                 "returns: nil\n"
@@ -68,7 +68,7 @@ void exportPack()
             )
         .def(
                 "extract_from_to", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vExtract,
+                &Pack::vExtract,
                 "arg1: self\n"
                 "arg2: begin of extraction\n"
                 "arg3: end of extraction\n"
@@ -79,7 +79,7 @@ void exportPack()
             )
         .def(
                 "extract_complete", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vColletionAsNucleotideSequence,
+                &Pack::vColletionAsNucleotideSequence,
                 "arg1: self\n"
                 "returns: the extracted sequence as NucleotideSequence\n"
                 "\n"
@@ -87,7 +87,7 @@ void exportPack()
             )
         .def(
                 "extract_forward_strand", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vColletionWithoutReverseStrandAsNucleotideSequence,
+                &Pack::vColletionWithoutReverseStrandAsNucleotideSequence,
                 "arg1: self\n"
                 "returns: the extracted sequence as NucleotideSequence\n"
                 "\n"
@@ -95,7 +95,7 @@ void exportPack()
             )
         .def(
                 "extract_reverse_strand", 
-                &BWACompatiblePackedNucleotideSequencesCollection::vColletionOnlyReverseStrandAsNucleotideSequence,
+                &Pack::vColletionOnlyReverseStrandAsNucleotideSequence,
                 "arg1: self\n"
                 "returns: the extracted sequence as NucleotideSequence\n"
                 "\n"
@@ -103,25 +103,25 @@ void exportPack()
             )
         .def(
                 "is_bridging", 
-                &BWACompatiblePackedNucleotideSequencesCollection::bridgingSubsection_boost
+                &Pack::bridgingSubsection_boost
             )
         .def(
                 "start_of_sequence", 
-                &BWACompatiblePackedNucleotideSequencesCollection::startOfSequenceWithName
+                &Pack::startOfSequenceWithName
             )
         .def(
                 "start_of_sequence_id", 
-                &BWACompatiblePackedNucleotideSequencesCollection::startOfSequenceWithId
+                &Pack::startOfSequenceWithId
             )
         .def_readonly(
                 "unpacked_size_single_strand", 
-                &BWACompatiblePackedNucleotideSequencesCollection::uiUnpackedSizeForwardStrand
+                &Pack::uiUnpackedSizeForwardStrand
             )
         ;
 
 	//tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<
-            std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection>,
+            std::shared_ptr<Pack>,
             std::shared_ptr<Container>
         >();
 }//function

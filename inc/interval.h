@@ -15,12 +15,11 @@
 template<typename T>
 class Interval
 {
-private :
+public:
 	/// @brief Start position of interval.
 	T iStart;
 	/// @brief Size of interval.
 	T iSize;
-public:
 	/**
 	 * @brief Creates a new Interval.
 	 */
@@ -195,3 +194,19 @@ public:
 		return iStart == rxOther.iStart && iSize == rxOther.iSize;
 	}// operator
 };//class
+
+
+template<typename T>
+void exportInterval()
+{
+    //export the Seed class
+    boost::python::class_<
+            Interval<T>
+        >(
+            "Interval",
+            boost::python::init<T, T>()
+        )
+        .def_readwrite("start", &Interval<T>::iStart)
+        .def_readwrite("size", &Interval<T>::iSize)
+    ;
+}//function

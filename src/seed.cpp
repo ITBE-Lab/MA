@@ -3,34 +3,14 @@
 void exportSeed()
 {
 
+    exportInterval<nucSeqIndex>();
+
     //export the Seed class
     boost::python::class_<
-            Seed
-        >(
-            "Seed",
-            "A single seed.\n",
-            boost::python::init<nucSeqIndex, nucSeqIndex, nucSeqIndex>()
-        )
-        .def(
-                "start", 
-                &Seed::start_boost1
-            )
-        .def(
-                "end", 
-                &Seed::end_boost1
-            )
-        .def(
-                "start_ref", 
-                &Seed::start_ref
-            )
-        .def(
-                "end_ref", 
-                &Seed::end_ref
-            )
-        .def(
-                "size", 
-                &Seed::size_boost1
-            )
+            Seed,
+            boost::python::bases<Interval<nucSeqIndex>>
+        >("Seed")
+        .def_readwrite("start_ref", &Seed::uiPosOnReference)
     ;
 
     //export the Seeds class

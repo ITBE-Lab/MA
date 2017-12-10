@@ -14,7 +14,7 @@ ContainerVector SMW::getInputType() const
 			//the query sequence
 			std::shared_ptr<Container>(new NucleotideSequence()),
 			//the ref
-			std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection())
+			std::shared_ptr<Container>(new Pack())
 		};
 }//function
 
@@ -79,8 +79,8 @@ std::shared_ptr<Container> SMW::execute(
 {
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[0]);
-	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefPack = 
-		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[1]);
+	std::shared_ptr<Pack> pRefPack = 
+		std::static_pointer_cast<Pack>(vpInput[1]);
 
 
 	// 1. Prepare the SW parameter set ...

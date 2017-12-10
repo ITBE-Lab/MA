@@ -14,6 +14,7 @@
 #include "pack.h"
 #include "is.h"
 #include "bwt_large.h"
+#include "interval.h"
 
 
 //extern Configuration xGlobalConfiguration;
@@ -298,7 +299,7 @@ protected :
 	 *						  2 automatic selection on foundation of input size
 	 */
 	void build_FM_Index( 
-						const BWACompatiblePackedNucleotideSequencesCollection &rxSequenceCollection, // the pack for which we compute a BWT
+						const Pack &rxSequenceCollection, // the pack for which we compute a BWT
 						unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
 					   );
 
@@ -857,7 +858,7 @@ public :
 
 	/* FM-Index constructor. Builds a FM index on foundation of a given sequence collection. 
 	 */
-	FM_Index( const BWACompatiblePackedNucleotideSequencesCollection &rxSequenceCollection, // the pack for which we require a BWT
+	FM_Index( const Pack &rxSequenceCollection, // the pack for which we require a BWT
 			  unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
 			)
 		: FM_Index() // call the default constructor
@@ -870,7 +871,7 @@ public :
 	 */
 	 FM_Index( 
 			// the pack for which we require a BWT
-			const std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxSequenceCollection 
+			const std::shared_ptr<Pack> pxSequenceCollection 
 		)
 		: FM_Index() // call the default constructor
 	{

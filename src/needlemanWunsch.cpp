@@ -11,7 +11,7 @@ ContainerVector NeedlemanWunsch::getInputType() const
         //the query sequence
         std::shared_ptr<Container>(new NucleotideSequence()),
         //the reference sequence
-        std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
+        std::shared_ptr<Container>(new Pack()),
     };
 }//function
 
@@ -211,8 +211,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);
     std::shared_ptr<NucleotideSequence> pQuery 
         = std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
-    std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefPack = 
-        std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[2]);
+    std::shared_ptr<Pack> pRefPack = 
+        std::static_pointer_cast<Pack>(vpInput[2]);
 
     //no seeds => no spot found at all...
     if(pSeeds->empty())

@@ -1,6 +1,6 @@
 /** 
  * @file pack.h
- * @brief Implements the BWACompatiblePackedNucleotideSequencesCollection class.
+ * @brief Implements the Pack class.
  * @author Arne Kutzner
  */
 
@@ -89,13 +89,13 @@ extern unsigned char nst_nt4_table[256];
  * Compresses the sequence.
  * @ingroup container
  */
-class BWACompatiblePackedNucleotideSequencesCollection: public Container
+class Pack: public Container
 {
 	/* Delete implicit copy constructor.
 	 * For performance reasons we do not want to risk unwanted copies of packs, although it is safe to make such copies using the implicit constructor definitions.
 	 * According the C++ standard this should effect all other implicit constructors as well.
 	 */
-	BWACompatiblePackedNucleotideSequencesCollection(const BWACompatiblePackedNucleotideSequencesCollection& ) = delete; 
+	Pack(const Pack& ) = delete; 
 
 private:
 	/* In the original BWA code the reverse strand is stored as part of the pack as well.
@@ -531,7 +531,7 @@ public:
 
 	/* Default constructor. 
 	 */
-	BWACompatiblePackedNucleotideSequencesCollection() :
+	Pack() :
 		bPackComprisesReverseStrand( false ),
 		xVectorOfSequenceDescriptors(),
 		xVectorOfHoleDescriptors(),
@@ -548,7 +548,7 @@ public:
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        return std::dynamic_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(c) != nullptr;
+        return std::dynamic_pointer_cast<Pack>(c) != nullptr;
     }//function
 
     //overload
@@ -560,7 +560,7 @@ public:
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection());
+        return std::shared_ptr<Container>(new Pack());
     }//function
 	
 	/* Appends a single nucleotide sequence to the collection.
