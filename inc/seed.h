@@ -132,25 +132,27 @@ public:
  */
 class Seeds
     :
-        public std::list<Seed>,
+        public std::vector<Seed>,
         public Container
 {
 public:
     nucSeqIndex mem_score = 0;
     //inherit the constructors from vector
-    using list::list;
+    using vector::vector;
     //inherit the constructors from Container
     using Container::Container;
 
     Seeds(std::shared_ptr<Seeds> pOther)
-        :
-        list(pOther != nullptr ? *pOther : std::list<Seed>()),
+            :
+        vector(),
         Container()
-    {}//copy constructor
+    {
+        append(pOther);
+    }//copy constructor
 
     Seeds()
-        :
-        list(),
+            :
+        vector(),
         Container()
     {}//default constructor
 
@@ -179,12 +181,6 @@ public:
         for(const Seed& rS : *this)
             iRet += rS.getValue();
         return iRet;
-    }//function
-
-    /*append a Seed*/
-    void push_back(Seed x)
-    {
-        list::push_back(x);
     }//function
 
     /*append a copy of another list*/

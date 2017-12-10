@@ -10,58 +10,6 @@
 #include "cppModule.h"
 
 /**
- * @brief a bucket for the seeds
- * @ingroup container
- */
- class SeedBucket
- {
- private:
-	nucSeqIndex uiTotalScore;
- 
-	std::vector<Seed> lxContent;
- 
-	std::mutex xMutex;
- 
- public:
-	SeedBucket()
-		:
-		uiTotalScore(0),
-		lxContent(),
-		xMutex()
-		//,bUsed(false)
-	{}//constructor
-
-	////disable copying of buckets
-	SeedBucket(const SeedBucket&) = delete;
-
-	void addSeed(const Seed xNew)
-	{
-		SYNC(std::lock_guard<std::mutex> xGuard(xMutex);)
-		lxContent.push_back(xNew);
-		uiTotalScore += xNew.size();
-		//end of scope xGuard
-	}//function
-
-	nucSeqIndex getValue()
-	{
-		return uiTotalScore;
-	}//function
-
-	void forall(std::function<void(const Seed&)> fDo)
-	{
-		for (auto xSeed : lxContent)
-		{
-			fDo(xSeed);
-		}//for
-	}//function
-
-	const std::vector<Seed>& seeds() const
-	{
-		return lxContent;
-	}//function
- };//class
-
-/**
  * @brief Used to quickly find areas with high density of @ref Seed "seeds".
  * @ingroup module
  */
@@ -86,16 +34,6 @@ private:
 	inline nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS) const 
 	{ 
 		return xS.start_ref() + (uiQueryLength - xS.start()); 
-	}//function
-
-	void addSeed(
-			nucSeqIndex uiQueryLength, 
-			const Seed xNew, 
-			std::vector<SeedBucket>& raxSeedBuckets
-		)
-	{
-		assert(getPositionForBucketing(uiQueryLength, xNew) / uiStripSize < raxSeedBuckets.size());
-		raxSeedBuckets[getPositionForBucketing(uiQueryLength, xNew) / uiStripSize].addSeed(xNew);
 	}//function
 
 	void forEachNonBridgingSeed(

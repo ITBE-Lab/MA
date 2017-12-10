@@ -1,7 +1,11 @@
 /** 
  * @file searchTree.h
  * @brief A Self Balancing Binary Search Tree.
+ * @note DEPRECATED
  */
+
+//DEPRECATED
+#if 0
 
 #ifndef BALANCED_SEARCH_TREE
 #define BALANCED_SEARCH_TREE
@@ -536,5 +540,7 @@ public:
     }//function
     #endif
 };//class
+
+#endif
 
 #endif

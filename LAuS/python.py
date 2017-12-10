@@ -246,7 +246,7 @@ class SegmentVector_(SegmentVector):
     # @details
     # Reimplemented from @ref SegmentVector.
     #
-    def __init__(self, query_length):
+    def __init__(self):
         pass
 
     ##
@@ -257,141 +257,20 @@ class SegmentVector_(SegmentVector):
     def __iter__(self):
         pass
 
-    ##
-    # @brief Insert a segment before the position of the given iterator.
-    # @details
-    # Invalidates the iterator.
-    # Replace it with the returned one. <br>
-    # Reimplemented from @ref SegmentVector::insertBefore_boost.
-    # @returns a new SegmentVectorIterator_.
-    #
-    def insert_before(self, segment, iterator):
-        pass
-
-    ##
-    # @brief Insert a segment after the position of the given iterator.
-    # @details
-    # Invalidates the iterator.
-    # Replace it with the returned one. <br>
-    # Reimplemented from @ref SegmentVector::insertAfter_boost.
-    # @returns a new SegmentVectorIterator_.
-    #
-    def insert_after(self, segment, iterator):
-        pass
-
-    ##
-    # @brief Insert a segment at the end of the list.
-    # @details
-    # Reimplemented from @ref SegmentVector::push_back.
-    #
-    def push_back(self, segment):
-        pass
-
-    ##
-    # @brief Insert a segment at the front of the list.
-    # @details
-    # Reimplemented from @ref SegmentVector::push_front.
-    #
-    def push_front(self, segment):
-        pass
-
-    ##
-    # @brief Removes the element the SegmentVectorIterator_ points to.
-    # @details
-    # Invalidates the iterator. <br>
-    # Reimplemented from @ref SegmentVector::removeNode_boost.
-    #
-    def remove_node(self, segment, iterator):
-        pass
-
-    ##
-    # @brief Returns all Seeds.
-    # @details
-    # Reimplemented from @ref SegmentVector::getSeeds.
-    #
-    def get_seeds(self, fm_index):
-        pass
-
-    ##
-    # @brief Returns the number of Seeds.
-    # @details
-    # Reimplemented from @ref SegmentVector::numSeeds.
-    #
-    def num_seeds(self):
-        pass
-
-##
-# @brief Iterator for the doubly linked SegmentVector.
-# @details
-# @note To create an instance of this class omit the trainling underscore.
-#
-class SegmentVectorIterator_(SegmentVector::iterator):
-    ##
-    # @brief Returns the current element and increments the iterator.
-    # @details
-    # Reimplemented from @ref SegmentVector::Iterator::next_boost.
-    #
-    def __next__(self):
-        pass
-
 ##
 # @brief A interval on the query that contains one or multiple @ref Seed "seeds".
 # @details
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Segment_(SegmentVectorInterval):
+class Segment_(Segment):
     ##
     # @brief Create a new segment.
     # @details
-    # Reimplemented from @ref SegmentVectorInterval.
+    # Reimplemented from @ref SegmentVector.
     #
     def __init__(self, start, size):
         pass
-
-    ##
-    # @brief Get the start of the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::start_boost1.
-    #
-    def start(self):
-        pass
-
-    ##
-    # @brief Set the start of the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::start_boost2.
-    #
-    def start(self, new):
-        pass
-
-    ##
-    # @brief Get the end of the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::end_boost1.
-    #
-    def end(self):
-        pass
-
-    ##
-    # @brief Set the end of the segment.
-    # @details
-    # Reimplemented from @ref SegmentVectorInterval::end_boost2.
-    #
-    def end(self, new):
-        pass
-
-"""
-    TODO:
-    ##
-    # @brief Record a bwt interval that matches this segment.
-    # @details
-    #
-    # Reimplemented from @ref SegmentVectorInterval::push_back.
-    #
-    def push_back_bwt(start):
-        pass
-"""
 
     ##
     # @brief Extracts all seeds from the segment.
@@ -674,6 +553,8 @@ class StripOfConsideration_(StripOfConsideration):
     def get_output_type(self):
         pass
 
+#DEPRECATED
+"""
 ##
 # @brief The LineSweep Module.
 # @details
@@ -702,6 +583,7 @@ class LineSweep_(LineSweep):
     # Reimplemented from @ref LineSweep::getOutputType.
     def get_output_type(self):
         pass
+"""
 
 ##
 # @brief The LinearLineSweep Module.
@@ -741,7 +623,7 @@ class LinearLineSweep_(LinearLineSweep):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup module
 #
-class Chaining(Chaining_):
+class Chaining_(Chaining):
     ##
     # @brief Create a new Module.
     # @details
@@ -833,8 +715,9 @@ class BinarySeeding_(BinarySeeding):
     # @brief Create a new Module.
     # @details
     # Reimplemented from @ref BinarySeeding.
+    # if use_lr_extension is true then TODO:
     #
-    def __init__(self):
+    def __init__(self, use_lr_extension):
         pass
 
     ##
@@ -849,37 +732,6 @@ class BinarySeeding_(BinarySeeding):
     # @brief returns the @ref ContainerType "container type" segmentList.
     # @details
     # Reimplemented from @ref BinarySeeding::getOutputType.
-    #
-    def get_output_type(self):
-        pass
-
-##
-# @brief The LongestLRSegments Module.
-# @details
-# @note To create an instance of this class omit the trainling underscore.
-# @ingroup module
-#
-class LongestLRSegments_(LongestLRSegments):
-    ##
-    # @brief Create a new Module.
-    # @details
-    # Reimplemented from @ref LongestLRSegments.
-    #
-    def __init__(self):
-        pass
-
-    ##
-    # @brief returns the @ref ContainerType "container types" fm_index, nucSeq.
-    # @details
-    # Reimplemented from @ref LongestLRSegments::getInputType.
-    #
-    def get_input_type(self):
-        pass
-
-    ##
-    # @brief returns the @ref ContainerType "container type" segmentList.
-    # @details
-    # Reimplemented from @ref LongestLRSegments::getOutputType.
     #
     def get_output_type(self):
         pass

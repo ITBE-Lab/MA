@@ -115,8 +115,6 @@
  * @section todos TODOs
  * 
  * - update this page... (the example has to be changed)
- * - rename classes and files aproproately
- * - move backwards extension into fm_index class
  * - make banded efficient NMW (have to wait for SMW)
  * - expose interval to python (change segment and seed)
  * - STOP ADDING ITEMS TO THIS LIST

@@ -9,6 +9,26 @@
 
 #include "segmentList.h"
 
+
+/**
+ * @brief Describes the type of match at one specific position of the alignment.
+ * @details
+ * @li @c match: query and reference have the same nucleotide.
+ * @li @c seed: query and reference have the same nucleotide 
+ * (the match was found as part of a seed).
+ * @li @c missmatch: query and reference have different nucleotides, 
+ *      but they are aligned to the same position nonetheless.
+ * @li @c insertion: a nucleotide is present on the query that has no counterpart on the reference.
+ * @li @c deletion: a nucleotide is present on the reference that has no counterpart on the query.
+ */
+enum MatchType{
+    seed,
+    match,
+    missmatch,
+    insertion,
+    deletion
+};//enum
+
 /**
  * @brief Holds a finished alignment.
  * @details
@@ -17,25 +37,6 @@
  */
 class Alignment : public Container
 {
-public:
-    /**
-     * @brief Describes the type of match at one specific position of the alignment.
-     * @details
-     * @li @c match: query and reference have the same nucleotide.
-     * @li @c seed: query and reference have the same nucleotide 
-     * (the match was found as part of a seed).
-     * @li @c missmatch: query and reference have different nucleotides, 
-     *      but they are aligned to the same position nonetheless.
-     * @li @c insertion: a nucleotide is present on the query that has no counterpart on the reference.
-     * @li @c deletion: a nucleotide is present on the reference that has no counterpart on the query.
-     */
-    enum MatchType{
-        seed,
-        match,
-        missmatch,
-        insertion,
-        deletion
-    };//enum
 private:
     /// The sparse list of MatchTypes that describe the alignment.
     std::vector<std::tuple<MatchType, nucSeqIndex>> data;

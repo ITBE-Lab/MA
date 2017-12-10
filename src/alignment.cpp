@@ -83,12 +83,12 @@ void exportAlignment()
 
     
     //export the matchType enum
-    boost::python::enum_<Alignment::MatchType>("MatchType")
-        .value("match", Alignment::MatchType::match)
-        .value("seed", Alignment::MatchType::seed)
-        .value("missmatch", Alignment::MatchType::missmatch)
-        .value("insertion", Alignment::MatchType::insertion)
-        .value("deletion", Alignment::MatchType::deletion);
+    boost::python::enum_<MatchType>("MatchType")
+        .value("match", MatchType::match)
+        .value("seed", MatchType::seed)
+        .value("missmatch", MatchType::missmatch)
+        .value("insertion", MatchType::insertion)
+        .value("deletion", MatchType::deletion);
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 

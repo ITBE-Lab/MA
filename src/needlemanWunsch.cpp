@@ -57,7 +57,7 @@ void needlemanWunsch(
         int iY = toRef-fromRef;
         while(iY > 0)
         {
-            pAlignment->append(Alignment::MatchType::deletion);
+            pAlignment->append(MatchType::deletion);
             DEBUG_2(
                 std::cout << "D";
             )//DEBUG
@@ -70,7 +70,7 @@ void needlemanWunsch(
         int iX = toQuery-fromQuery;
         while(iX > 0)
         {
-            pAlignment->append(Alignment::MatchType::insertion);
+            pAlignment->append(MatchType::insertion);
             DEBUG_2(  
                 std::cout << "I";
             )//DEBUG
@@ -167,14 +167,14 @@ void needlemanWunsch(
         {
             if( (*pQuery)[toQuery - iX] == (*pRef)[toRef - iY] )
             {
-                pAlignment->append(Alignment::MatchType::match);
+                pAlignment->append(MatchType::match);
                 DEBUG_2(
                     std::cout << "M";
                 )//DEBUG
             }
             else
             {
-                pAlignment->append(Alignment::MatchType::missmatch);
+                pAlignment->append(MatchType::missmatch);
                 DEBUG_2(
                     std::cout << "W";
                 )//DEBUG
@@ -184,7 +184,7 @@ void needlemanWunsch(
         }//if
         else if(dir[iX][iY] == 3)
         {
-            pAlignment->append(Alignment::MatchType::deletion);
+            pAlignment->append(MatchType::deletion);
             iY--;
             DEBUG_2(
                 std::cout << "D";
@@ -192,7 +192,7 @@ void needlemanWunsch(
         }//if
         else
         {
-            pAlignment->append(Alignment::MatchType::insertion);
+            pAlignment->append(MatchType::insertion);
             iX--;
             DEBUG_2(
                 std::cout << "I";
@@ -232,6 +232,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             }//lambda
         );//sort function call*/
 
+//DEPRECATED
+#if 0
     //remove dangeling fronts and backs
     if(pSeeds->size() >= 2)
     {
@@ -262,6 +264,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         }//while
     }//if
     assert(pSeeds->size() > 0);
+#endif
 
     DEBUG_2(
         std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
@@ -330,13 +333,13 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             std::cout << "overlap: " << overlap << std::endl;
         )//DEBUG
         if(ovQ > ovR)
-            pRet->append(Alignment::MatchType::deletion, ovQ - ovR);
+            pRet->append(MatchType::deletion, ovQ - ovR);
         DEBUG_2(
             for(nucSeqIndex i = ovR; i < ovQ; i++)
                 std::cout << "d";
         )
         if(ovR > ovQ)
-            pRet->append(Alignment::MatchType::insertion, ovR - ovQ);
+            pRet->append(MatchType::insertion, ovR - ovQ);
         DEBUG_2(
             for(nucSeqIndex i = ovQ; i < ovR; i++)
                 std::cout << "i";
@@ -344,7 +347,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         )//DEBUG
         if(len > overlap)
         {
-            pRet->append(Alignment::MatchType::seed, len - overlap);
+            pRet->append(MatchType::seed, len - overlap);
             DEBUG_2(
                 std::cout << len - overlap << std::endl;
             )//DEBUG_2

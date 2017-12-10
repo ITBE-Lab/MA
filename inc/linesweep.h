@@ -394,7 +394,7 @@ public:
  */
 class ShadowInterval2: public Interval<int64_t>{
 public:
-    std::list<Seed>::iterator pSeed;
+    Seeds::iterator pSeed;
 
     /**
      * @brief Creates a new shadow.
@@ -405,7 +405,7 @@ public:
     ShadowInterval2(
             int64_t iBegin, 
             int64_t iSize, 
-            std::list<Seed>::iterator pSeed
+            Seeds::iterator pSeed
         )
             :
         Interval(iBegin, iSize),
@@ -475,14 +475,14 @@ private:
     * @details
     * "Casts" the left shadows.
     */
-    ShadowInterval2 getLeftShadow(std::list<Seed>::iterator pSeed) const;
+    ShadowInterval2 getLeftShadow(Seeds::iterator pSeed) const;
 
     /**
     * @brief Returns the right shadow of a seed.
     * @details
     * "Casts" the right shadows.
     */
-    ShadowInterval2 getRightShadow(std::list<Seed>::iterator pSeed) const;
+    ShadowInterval2 getRightShadow(Seeds::iterator pSeed) const;
 public:
 
     //overload

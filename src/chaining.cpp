@@ -26,7 +26,7 @@ std::shared_ptr<Container> Chaining::execute(
     if(pSeeds->size() == 1)
     {
         std::shared_ptr<Seeds> ret = std::shared_ptr<Seeds>(new Seeds());
-        ret->push_front( pSeeds->front() );
+        ret->push_back( pSeeds->front() );
         return ret;
     }//if
 
@@ -213,7 +213,8 @@ std::shared_ptr<Container> Chaining::execute(
                     << bestChain->s.start_ref() << " "
                     << bestChain->s.size() << std::endl;
         )
-        pRet->push_front(bestChain->s);
+        //TODO: possible that this gives reverse output...
+        pRet->push_back(bestChain->s);
         bestChain = bestChain->pred;
     }//while
     DEBUG(

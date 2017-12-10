@@ -209,7 +209,7 @@ std::shared_ptr<Container> LinearLineSweep::getOutputType() const
  * determine the start and end positions this match casts on the left border of the given bucket
  * pxMatch is the container this match is stored in.
  */
-ShadowInterval2 LinearLineSweep::getLeftShadow(std::list<Seed>::iterator pSeed) const
+ShadowInterval2 LinearLineSweep::getLeftShadow(Seeds::iterator pSeed) const
 {
     return ShadowInterval2(
             pSeed->start(),
@@ -222,7 +222,7 @@ ShadowInterval2 LinearLineSweep::getLeftShadow(std::list<Seed>::iterator pSeed) 
  * determine the start and end positions this match casts on the right border of the given bucket
  * pxMatch is the container this match is stored in.
  */
-ShadowInterval2 LinearLineSweep::getRightShadow(std::list<Seed>::iterator pSeed) const
+ShadowInterval2 LinearLineSweep::getRightShadow(Seeds::iterator pSeed) const
 {
     return ShadowInterval2(
             pSeed->start_ref(),
@@ -311,13 +311,14 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         ContainerVector vpInput
     )
 {
+    //copy the input
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
         std::static_pointer_cast<Seeds>(vpInput[0])));
 
     std::vector<ShadowInterval2> vShadows = {};
 
     //get the left shadows
-    for(std::list<Seed>::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
+    for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
         vShadows.push_back(getLeftShadow(pSeed));
 
     //perform the line sweep algorithm on the left shadows
@@ -330,14 +331,15 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     )
     
     //get the right shadows
-    for(std::list<Seed>::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
+    for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
         vShadows.push_back(getRightShadow(pSeed));
 
     //perform the line sweep algorithm on the right shadows
     linesweep(vShadows, pSeeds);
 
     //shadows need to be sorted for the following steps
-    pSeeds->sort(
+    std::sort(
+            pSeeds->begin(), pSeeds->end(),
             [](const Seed& xA, const Seed& xB)
             {
                 if(xA.start_ref() == xB.start_ref())
