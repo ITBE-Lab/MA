@@ -1,4 +1,4 @@
-#include "longestNonEnclosedSegments.h"
+#include "binarySeeding.h"
 
 #define INCLUDE_SELF_TESTS (  1 )
 
@@ -16,7 +16,7 @@
 * Delivers 4 intervals for a single input interval.
 * Here we use only two fields in the BWT_Interval.
 */
-SA_IndexInterval LongestNonEnclosedSegments::extend_backward( 
+SA_IndexInterval BinarySeeding::extend_backward( 
 		// current interval
 		const SA_IndexInterval &ik,
 		// the character to extend with
@@ -104,14 +104,200 @@ SA_IndexInterval LongestNonEnclosedSegments::extend_backward(
 } // method
 
 
-Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
-		std::shared_ptr<SegmentListInterval> pxNode,
+Interval<nucSeqIndex> BinarySeeding::lrExtension(
+		nucSeqIndex center,
 		std::shared_ptr<FM_Index> pFM_index,
-		std::shared_ptr<NucleotideSequence> pQuerySeq
+		std::shared_ptr<NucleotideSequence> pQuerySeq,
+		std::shared_ptr<SegmentVector> pSegmentVector
 	)
 {
-	nucSeqIndex center = pxNode->start() + pxNode->size()/2;
+	// query sequence itself 
+	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
+	
+	/* Initialize ik on the foundation of the single base q[x].
+	 * In order to understand this initialization you should have a look 
+	 *to the corresponding PowerPoint slide.
+	 */
+	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
+	// because very first string in SA-array starts with $
+	// size in T and T' is equal due to symmetry
+	SA_IndexInterval ik(
+						pFM_index->L2[complement(q[center])] + 1, 
+						pFM_index->L2[(int)q[center]] + 1, 
+						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
+					);
 
+	/*
+	 * extend ik right, until there are no more matches
+	 */
+	nucSeqIndex end = center;
+	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
+	{
+		DEBUG_2(
+			std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+		)
+		assert(ik.size() > 0);
+		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
+
+		DEBUG_2(
+			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+			std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+		)
+		/*
+		* In fact, if ok.getSize is zero, then there are no matches any more.
+		*/
+		if (ok.size() == 0)
+			break; // the SA-index interval size is too small to be extended further
+		end = i;
+		ik = ok;
+	}//for
+	DEBUG_2(
+		std::cout << "swap" << std::endl;
+	)
+	//this is required in order to extend the other way
+	ik = ik.revComp();
+	nucSeqIndex start = center;
+	/*
+	 * extend ik left, until there are no more matches
+	 */
+	if(center > 0)
+	{
+		for(nucSeqIndex i = center-1; i >= 0; i--)
+		{
+			DEBUG_2(
+				std::cout << i+1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+				std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+			)
+			assert(ik.size() > 0);
+			SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+			DEBUG_2(
+				std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+				std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+			)
+
+			/*
+			* In fact, if ok.getSize is zero, then there are no matches any more.
+			*/
+			if (ok.size() == 0)
+				break; // the SA-index interval size is too small to be extended further
+			start = i;
+			ik = ok;
+			//cause nuxSeqIndex is unsigned
+			if(i == 0)
+				break;
+		}//for
+	}//if
+	std::shared_ptr<Segment> pRightLeft(new Segment(start,end-start,ik));
+	assert(start >= 0);
+	assert(end < pQuerySeq->length());
+	assert(pRightLeft->end() < pQuerySeq->length());
+	pSegmentVector->push_back(pRightLeft);
+	DEBUG_2(
+		std::cout << "--other way--" << std::endl;
+	)
+	/* Initialize ik on the foundation of the single base q[x].
+	 * In order to understand this initialization you should have a look 
+	 *to the corresponding PowerPoint slide.
+	 */
+	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
+	// because very first string in SA-array starts with $
+	// size in T and T' is equal due to symmetry
+	ik = SA_IndexInterval(
+						pFM_index->L2[q[center]] + 1, 
+						pFM_index->L2[(int)complement(q[center])] + 1, 
+						pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
+					);
+	start = center;
+	/*
+	 * extend ik left, until there are no more matches
+	 */
+	if(center > 0)
+	{
+		for(nucSeqIndex i = center-1; i >= 0; i--)
+		{
+			DEBUG_2(
+				std::cout << i+1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+				std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+			)
+			assert(ik.size() > 0);
+			SA_IndexInterval ok = extend_backward(ik, q[i], pFM_index);
+			DEBUG_2(
+				std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+				std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+			)
+
+			/*
+			* In fact, if ok.getSize is zero, then there are no matches any more.
+			*/
+			if (ok.size() == 0)
+				break; // the SA-index interval size is too small to be extended further
+			start = i;
+			ik = ok;
+			//cause nuxSeqIndex is unsigned
+			if(i == 0)
+				break;
+		}//for
+	}//if
+	DEBUG_2(
+		std::cout << "swap" << std::endl;
+	)
+	//this is required in order to extend the other way
+	ik = ik.revComp();
+	end = center;
+	/*
+	 * extend ik right, until there are no more matches
+	 */
+	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
+	{
+		DEBUG_2(
+			std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
+			std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
+		)
+		assert(ik.size() > 0);
+		SA_IndexInterval ok = extend_backward(ik, complement(q[i]), pFM_index);
+
+		DEBUG_2(
+			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
+			std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
+		)
+
+		/*
+		* In fact, if ok.getSize is zero, then there are no matches any more.
+		*/
+		if (ok.size() == 0)
+			break; // the SA-index interval size is too small to be extended further
+		end = i;
+		ik = ok;
+	}//for
+	std::shared_ptr<Segment> pLeftRight(new Segment(start,end-start,ik.revComp()));
+	assert(start >= 0);
+	assert(end < pQuerySeq->length());
+	assert(pLeftRight->end() < pQuerySeq->length());
+	pSegmentVector->push_back(pLeftRight);
+
+	//to return the covered area
+	Interval<nucSeqIndex> ret(center,0);
+	if(pLeftRight->start() < pRightLeft->start())
+		ret.start(pLeftRight->start());
+	else
+		ret.start(pRightLeft->start());
+
+	if(pLeftRight->end() > pRightLeft->end())
+		ret.end(pLeftRight->end());
+	else
+		ret.end(pRightLeft->end());
+
+	return ret;
+}//function
+
+Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
+		nucSeqIndex center,
+		std::shared_ptr<FM_Index> pFM_index,
+		std::shared_ptr<NucleotideSequence> pQuerySeq,
+		std::shared_ptr<SegmentVector> pSegmentVector
+	)
+{
 	//to remember the covered area
 	Interval<nucSeqIndex> ret(center,0);
 
@@ -241,7 +427,7 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 				if(ok.size() == 0 && !bHaveOne)
 				{
 					// save the interval
-					pxNode->push_back(ik);
+					pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(ik)));
 					assert(ik.end() <= pQuerySeq->length());
 					// we need to remember that we already found a interval this iteration
 					bHaveOne = true;
@@ -285,7 +471,7 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 	{
 		assert(pPrev->front().size() >= pPrev->back().size());
 
-		pxNode->push_back(pPrev->front());
+		pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(pPrev->front())));
 		assert(pPrev->front().end() <= pQuerySeq->length());
 		
 		DEBUG_2(
@@ -311,61 +497,63 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
  *		queue the prev and post intervals into the thread pool
  *		save the perfect match for later clustering
 */
-void LongestNonEnclosedSegments::procesInterval(
-			size_t uiThreadId,
-			SegmentList::iterator it,
-			std::shared_ptr<SegmentList> pSegmentList,
+void BinarySeeding::procesInterval(
+			Interval<nucSeqIndex> xAreaToCover,
+			std::shared_ptr<SegmentVector> pSegmentVector,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		)
 {
-	std::shared_ptr<SegmentListInterval> pxNode = *it;
+	nucSeqIndex uiStart = xAreaToCover.start();
+	nucSeqIndex uiEnd = xAreaToCover.end();
 	DEBUG(
-		std::cout << "interval (" << pxNode->start() << "," << pxNode->end() << ")" << std::endl;
+		std::cout << "interval (" << uiStart << "," << uiEnd << ")" << std::endl;
 	)
 
+	Interval<nucSeqIndex> xAreaCovered;
 	//performs extension and records any perfect matches
-	Interval<nucSeqIndex> xAreaCovered = extend(pxNode, pFM_index, pQuerySeq);
+	if(bLrExtension)
+		xAreaCovered = lrExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
+	else
+		xAreaCovered = nonEnclosedExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
 
-	nucSeqIndex uiFrom, uiTo;
-	uiFrom = xAreaCovered.start();
-	uiTo = xAreaCovered.end();
+	nucSeqIndex uiFrom = xAreaCovered.start();
+	nucSeqIndex uiTo = xAreaCovered.end();
 	DEBUG(
-		std::cout << "splitting interval (" << pxNode->start() << "," << pxNode->end() << ") at (" << uiFrom << "," << uiTo << ")" << std::endl;
+		std::cout << "splitting interval (" << uiStart << "," << uiEnd << ") at (" << uiFrom << "," << uiTo << ")" << std::endl;
 	)
 
-	if (uiFrom != 0 && pxNode->start() + 1 < uiFrom)
+	if (uiFrom != 0 && uiStart + 1 < uiFrom)
 	{
-		//create a new list element and insert it before the current node
-		//FIXME: valgrind says that we have a memory leak here... (it's not cyclic pointers...?)
-		auto pxPrevNode = pSegmentList->insert(it, std::shared_ptr<SegmentListInterval>(
-			new SegmentListInterval(pxNode->start(), uiFrom - pxNode->start() - 1)));
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
-			LongestNonEnclosedSegments::procesInterval,
-			pxPrevNode, pSegmentList, pFM_index, pQuerySeq, pxPool
+			BinarySeeding::procesIntervalStatic,
+			this,
+			Interval<nucSeqIndex>(uiStart, uiFrom - uiStart - 1),
+			pSegmentVector,
+			pFM_index,
+			pQuerySeq,
+			pxPool
 		);//enqueue
 	}//if
-	if (pxNode->end() > uiTo + 1)
+	if (uiEnd > uiTo + 1)
 	{
-		//create a new list element and insert it after the current node
-		//FIXME: valgrind says that we have a memory leak here... (it's not cyclic pointers...?)
-		auto pxNextNode = pSegmentList->insert(++it,std::shared_ptr<SegmentListInterval>(
-			new SegmentListInterval(uiTo + 1, pxNode->end() - uiTo - 1)));
 		//enqueue procesInterval() for the new interval
 		pxPool->enqueue( 
-			LongestNonEnclosedSegments::procesInterval,
-			pxNextNode, pSegmentList, pFM_index, pQuerySeq, pxPool
+			BinarySeeding::procesIntervalStatic,
+			this,
+			Interval<nucSeqIndex>(uiTo + 1, uiEnd - uiTo - 1),
+			pSegmentVector,
+			pFM_index,
+			pQuerySeq,
+			pxPool
 		);//enqueue
 	}//if
-
-	pxNode->start(uiFrom);
-	pxNode->end(uiTo);
 }//function
 
 
-ContainerVector LongestNonEnclosedSegments::getInputType() const
+ContainerVector BinarySeeding::getInputType() const
 {
 	return ContainerVector{
 			//the forward fm_index
@@ -374,13 +562,13 @@ ContainerVector LongestNonEnclosedSegments::getInputType() const
 			std::shared_ptr<Container>(new NucleotideSequence()),
 		};
 }
-std::shared_ptr<Container> LongestNonEnclosedSegments::getOutputType() const
+std::shared_ptr<Container> BinarySeeding::getOutputType() const
 {
-	return std::shared_ptr<Container>(new SegmentList());
+	return std::shared_ptr<Container>(new SegmentVector());
 }
 
 
-std::shared_ptr<Container> LongestNonEnclosedSegments::execute(
+std::shared_ptr<Container> BinarySeeding::execute(
 		ContainerVector vpInput
 	)
 {
@@ -389,45 +577,44 @@ std::shared_ptr<Container> LongestNonEnclosedSegments::execute(
 		std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
 
 		
-	std::shared_ptr<SegmentList> pSegmentList(new SegmentList(pQuerySeq->length()));
-
-
-	assert(*pSegmentList->begin() != nullptr);
+	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
 
 	{//scope for xPool
 		ThreadPoolAllowingRecursiveEnqueues xPool( NUM_THREADS_ALIGNER );
 
 		//enqueue the root interval for processing
 		xPool.enqueue( 
-			LongestNonEnclosedSegments::procesInterval,
-			pSegmentList->begin(), pSegmentList, pFM_index, pQuerySeq, &xPool
+			BinarySeeding::procesIntervalStatic,
+			this,
+			Interval<nucSeqIndex>(0, pQuerySeq->length()),
+			pSegmentVector,
+			pFM_index,
+			pQuerySeq,
+			&xPool
 		);//enqueue
 
 	}//end of scope xPool
 
-	return pSegmentList;
+	return pSegmentVector;
 }//function
 
-void exportLongestNonEnclosedSegments()
+void exportBinarySeeding()
 {
 	//boost::python::def("analyse_crisper", analyseCRISPER);
 
-
-
-	//export the LongestNonEnclosedSegments class
+	//export the BinarySeeding class
 	boost::python::class_<
-			LongestNonEnclosedSegments, 
+			BinarySeeding, 
 			boost::python::bases<CppModule>,
-        	std::shared_ptr<LongestNonEnclosedSegments>
+        	std::shared_ptr<BinarySeeding>
 		>(
-			"LongestNonEnclosedSegments",
-			"bBreakOnAmbiguousBase: weather the extension of "
-			"intervals shall be stopped at N's\n"
+			"BinarySeeding",
+			boost::python::init<bool>()
 		)
 		;
 	boost::python::implicitly_convertible< 
-		std::shared_ptr<LongestNonEnclosedSegments>,
+		std::shared_ptr<BinarySeeding>,
 		std::shared_ptr<CppModule> 
 	>();
-	
+
 }//function

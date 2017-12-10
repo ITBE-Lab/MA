@@ -99,19 +99,11 @@ private:
 	}//function
 
 	void forEachNonBridgingSeed(
-			std::shared_ptr<SegmentListInterval> pxNode,
+			std::shared_ptr<SegmentVector> pVector,
 			std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
 			std::function<void(Seed)> fDo,
 			nucSeqIndex addSize// = 0 (default)
-		);
-	
-	void saveSeeds(
-			std::shared_ptr<SegmentListInterval> pxNode,
-			std::shared_ptr<FM_Index> pxFM_index,
-			std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
-			std::shared_ptr<NucleotideSequence> pxQuerySeq,
-			std::vector<SeedBucket>& raxSeedBuckets
 		);
 
 public:

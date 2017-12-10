@@ -16,8 +16,7 @@ BOOST_PYTHON_MODULE(libLAuS)
         exportModule();
         exportFM_index();
         exportSequence();
-        exportLongestNonEnclosedSegments();
-        exportLongestLRSegments();
+        exportBinarySeeding();
         exportPack();
         exportIntervalTree();
         exportExceptions();

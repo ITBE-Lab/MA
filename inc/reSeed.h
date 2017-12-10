@@ -32,7 +32,7 @@ private:
 	 * bwa style extension
 	 */
 	static void extend(
-			std::shared_ptr<SegmentListInterval> pxNode,
+			std::shared_ptr<SegmentVector> pxVector,
 			nucSeqIndex min,
 			nucSeqIndex max,
 			std::shared_ptr<FM_Index> pFM_index,

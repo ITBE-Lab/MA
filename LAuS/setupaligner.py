@@ -11,8 +11,8 @@ from .__init__ import *
 # with the standard aligner comfiguration.
 # @details 
 # Uses following Modules in this order:
-# - The given segmentation; default is LongestNonEnclosedSegments
-# - NlongestIntervalsAsAnchors
+# - The given segmentation; default is BinarySeeding
+# - GetAnchors
 # - StripOfConsideration
 # - @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest"
 # - NeedlemanWunsch
@@ -31,7 +31,7 @@ def set_up_aligner(
         query_pledges,
         reference_pledge,
         fm_index_pledge,
-        seg=LongestNonEnclosedSegments(),
+        seg=BinarySeeding(True),
         chain=LinearLineSweep(),
         max_hits=5,
         num_anchors=5,
@@ -41,7 +41,7 @@ def set_up_aligner(
         strip_size = 1000
         ):
 
-    anc = NlongestIntervalsAsAnchors(num_anchors, max_hits)
+    anc = GetAnchors(num_anchors, max_hits)
 
     soc = StripOfConsideration()
     soc.max_hits = max_hits

@@ -103,7 +103,7 @@ void exportPack()
             )
         .def(
                 "is_bridging", 
-                &BWACompatiblePackedNucleotideSequencesCollection::bridingSubsection_boost
+                &BWACompatiblePackedNucleotideSequencesCollection::bridgingSubsection_boost
             )
         .def(
                 "start_of_sequence", 

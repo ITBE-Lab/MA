@@ -181,7 +181,7 @@ public:
  * Note that this setup mimics the one given in the @ref quick_start_sec "quick start" section
  * @code{.py}
  * # A module that creates seeds.
- * seg = LongestNonEnclosedSegments()
+ * seg = BinarySeeding()
  * # A module that removes inconsistent seeds.
  * sweep = SweepAllReturnBest()
  * # A module that creates local alignments in the gaps between the seeds.

@@ -226,17 +226,17 @@ class FMIndex_(FM_Index):
         pass
 
 ##
-# @brief The Container for a SegmentList
+# @brief The Container for a SegmentVector
 # @details
 # A doubly linked list holding Segments.
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class SegmentList_(SegmentList):
+class SegmentVector_(SegmentVector):
     ##
     # @brief Create a empty list.
     # @details
-    # Reimplemented from @ref SegmentList.
+    # Reimplemented from @ref SegmentVector.
     #
     def __init__(self):
         pass
@@ -244,15 +244,15 @@ class SegmentList_(SegmentList):
     ##
     # @brief Create a list containing one Segment of the size query_length.
     # @details
-    # Reimplemented from @ref SegmentList.
+    # Reimplemented from @ref SegmentVector.
     #
     def __init__(self, query_length):
         pass
 
     ##
-    # @brief An SegmentListIterator_ pointing to the first element of the list.
+    # @brief An SegmentVectorIterator_ pointing to the first element of the list.
     # @details
-    # Reimplemented from @ref SegmentList::begin.
+    # Reimplemented from @ref SegmentVector::begin.
     #
     def __iter__(self):
         pass
@@ -262,8 +262,8 @@ class SegmentList_(SegmentList):
     # @details
     # Invalidates the iterator.
     # Replace it with the returned one. <br>
-    # Reimplemented from @ref SegmentList::insertBefore_boost.
-    # @returns a new SegmentListIterator_.
+    # Reimplemented from @ref SegmentVector::insertBefore_boost.
+    # @returns a new SegmentVectorIterator_.
     #
     def insert_before(self, segment, iterator):
         pass
@@ -273,8 +273,8 @@ class SegmentList_(SegmentList):
     # @details
     # Invalidates the iterator.
     # Replace it with the returned one. <br>
-    # Reimplemented from @ref SegmentList::insertAfter_boost.
-    # @returns a new SegmentListIterator_.
+    # Reimplemented from @ref SegmentVector::insertAfter_boost.
+    # @returns a new SegmentVectorIterator_.
     #
     def insert_after(self, segment, iterator):
         pass
@@ -282,7 +282,7 @@ class SegmentList_(SegmentList):
     ##
     # @brief Insert a segment at the end of the list.
     # @details
-    # Reimplemented from @ref SegmentList::push_back.
+    # Reimplemented from @ref SegmentVector::push_back.
     #
     def push_back(self, segment):
         pass
@@ -290,16 +290,16 @@ class SegmentList_(SegmentList):
     ##
     # @brief Insert a segment at the front of the list.
     # @details
-    # Reimplemented from @ref SegmentList::push_front.
+    # Reimplemented from @ref SegmentVector::push_front.
     #
     def push_front(self, segment):
         pass
 
     ##
-    # @brief Removes the element the SegmentListIterator_ points to.
+    # @brief Removes the element the SegmentVectorIterator_ points to.
     # @details
     # Invalidates the iterator. <br>
-    # Reimplemented from @ref SegmentList::removeNode_boost.
+    # Reimplemented from @ref SegmentVector::removeNode_boost.
     #
     def remove_node(self, segment, iterator):
         pass
@@ -307,7 +307,7 @@ class SegmentList_(SegmentList):
     ##
     # @brief Returns all Seeds.
     # @details
-    # Reimplemented from @ref SegmentList::getSeeds.
+    # Reimplemented from @ref SegmentVector::getSeeds.
     #
     def get_seeds(self, fm_index):
         pass
@@ -315,21 +315,21 @@ class SegmentList_(SegmentList):
     ##
     # @brief Returns the number of Seeds.
     # @details
-    # Reimplemented from @ref SegmentList::numSeeds.
+    # Reimplemented from @ref SegmentVector::numSeeds.
     #
     def num_seeds(self):
         pass
 
 ##
-# @brief Iterator for the doubly linked SegmentList.
+# @brief Iterator for the doubly linked SegmentVector.
 # @details
 # @note To create an instance of this class omit the trainling underscore.
 #
-class SegmentListIterator_(SegmentList::iterator):
+class SegmentVectorIterator_(SegmentVector::iterator):
     ##
     # @brief Returns the current element and increments the iterator.
     # @details
-    # Reimplemented from @ref SegmentList::Iterator::next_boost.
+    # Reimplemented from @ref SegmentVector::Iterator::next_boost.
     #
     def __next__(self):
         pass
@@ -340,11 +340,11 @@ class SegmentListIterator_(SegmentList::iterator):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Segment_(SegmentListInterval):
+class Segment_(SegmentVectorInterval):
     ##
     # @brief Create a new segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval.
+    # Reimplemented from @ref SegmentVectorInterval.
     #
     def __init__(self, start, size):
         pass
@@ -352,7 +352,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Get the start of the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::start_boost1.
+    # Reimplemented from @ref SegmentVectorInterval::start_boost1.
     #
     def start(self):
         pass
@@ -360,7 +360,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Set the start of the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::start_boost2.
+    # Reimplemented from @ref SegmentVectorInterval::start_boost2.
     #
     def start(self, new):
         pass
@@ -368,7 +368,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Get the end of the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::end_boost1.
+    # Reimplemented from @ref SegmentVectorInterval::end_boost1.
     #
     def end(self):
         pass
@@ -376,7 +376,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Set the end of the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::end_boost2.
+    # Reimplemented from @ref SegmentVectorInterval::end_boost2.
     #
     def end(self, new):
         pass
@@ -387,7 +387,7 @@ class Segment_(SegmentListInterval):
     # @brief Record a bwt interval that matches this segment.
     # @details
     #
-    # Reimplemented from @ref SegmentListInterval::push_back.
+    # Reimplemented from @ref SegmentVectorInterval::push_back.
     #
     def push_back_bwt(start):
         pass
@@ -396,7 +396,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Extracts all seeds from the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::getSeeds.
+    # Reimplemented from @ref SegmentVectorInterval::getSeeds.
     #
     def get_seeds(self, fm_index):
         pass
@@ -404,7 +404,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Get the length of the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::size_boost1.
+    # Reimplemented from @ref SegmentVectorInterval::size_boost1.
     #
     def size(self):
         pass
@@ -412,7 +412,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Set the length of the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::size_boost2.
+    # Reimplemented from @ref SegmentVectorInterval::size_boost2.
     #
     def size(self, new):
         pass
@@ -420,7 +420,7 @@ class Segment_(SegmentListInterval):
     ##
     # @brief Set the start and end of the segment.
     # @details
-    # Reimplemented from @ref SegmentListInterval::set.
+    # Reimplemented from @ref SegmentVectorInterval::set.
     #
     def set(self, start, end):
         pass
@@ -794,16 +794,16 @@ class NeedlemanWunsch_(NeedlemanWunsch):
         pass
 
 ##
-# @brief The NlongestIntervalsAsAnchors Module.
+# @brief The GetAnchors Module.
 # @details
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup module
 #
-class NlongestIntervalsAsAnchors_(NlongestIntervalsAsAnchors):
+class GetAnchors_(GetAnchors):
     ##
     # @brief Create a new Module.
     # @details
-    # Reimplemented from @ref NlongestIntervalsAsAnchors.
+    # Reimplemented from @ref GetAnchors.
     #
     def __init__(self):
         pass
@@ -811,28 +811,28 @@ class NlongestIntervalsAsAnchors_(NlongestIntervalsAsAnchors):
     ##
     # @brief returns the @ref ContainerType "container types" segmentList.
     # @details
-    # Reimplemented from @ref NlongestIntervalsAsAnchors::getInputType.
+    # Reimplemented from @ref GetAnchors::getInputType.
     def get_input_type(self):
         pass
 
     ##
     # @brief returns the @ref ContainerType "container type" segmentList.
     # @details
-    # Reimplemented from @ref NlongestIntervalsAsAnchors::getOutputType.
+    # Reimplemented from @ref GetAnchors::getOutputType.
     def get_output_type(self):
         pass
 
 ##
-# @brief The LongestNonEnclosedSegments Module.
+# @brief The BinarySeeding Module.
 # @details
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup module
 #
-class LongestNonEnclosedSegments_(LongestNonEnclosedSegments):
+class BinarySeeding_(BinarySeeding):
     ##
     # @brief Create a new Module.
     # @details
-    # Reimplemented from @ref LongestNonEnclosedSegments.
+    # Reimplemented from @ref BinarySeeding.
     #
     def __init__(self):
         pass
@@ -840,7 +840,7 @@ class LongestNonEnclosedSegments_(LongestNonEnclosedSegments):
     ##
     # @brief returns the @ref ContainerType "container types" fm_index, nucSeq.
     # @details
-    # Reimplemented from @ref LongestNonEnclosedSegments::getInputType.
+    # Reimplemented from @ref BinarySeeding::getInputType.
     #
     def get_input_type(self):
         pass
@@ -848,7 +848,7 @@ class LongestNonEnclosedSegments_(LongestNonEnclosedSegments):
     ##
     # @brief returns the @ref ContainerType "container type" segmentList.
     # @details
-    # Reimplemented from @ref LongestNonEnclosedSegments::getOutputType.
+    # Reimplemented from @ref BinarySeeding::getOutputType.
     #
     def get_output_type(self):
         pass

@@ -194,12 +194,12 @@ def compare_chaining_linesweep_visual():
     print(query_seq)
     print(str(ref_seq.extract(query_orig, query_orig+100)))
 
-    segments = LongestNonEnclosedSegments().execute((
+    segments = BinarySeeding().execute((
             fm_index,
             query
         ))
 
-    anchors = NlongestIntervalsAsAnchors(1).execute((segments,))
+    anchors = GetAnchors(1).execute((segments,))
 
     bucketing = Bucketing()
     bucketing.max_hits = 5
@@ -404,7 +404,7 @@ def memory_test(reference, test_index):
     reference_pledge = Pledge(Pack())
     fm_index_pledge = Pledge(FMIndex())
     query_pledge = Pledge(NucSeq())
-    """
+    
     ref_pack = Pack()
     ref_pack.load(reference)
     reference_pledge.set(ref_pack)
@@ -418,21 +418,21 @@ def memory_test(reference, test_index):
         reference_pledge,
         fm_index_pledge
     )
-    #module = LongestNonEnclosedSegments()
-    """
+    #module = BinarySeeding()
+    
     mem = None
 
     num = 0
     print("running")
     while True:
-        #q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 100, 0, 0, 1)
-        #query_pledge.set(NucSeq(q))
+        q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 100, 0, 0, 1)
+        query_pledge.set(NucSeq(q))
 
         #module.execute((fm_index, NucSeq(q)))
-        #result_pledge[test_index].get()
+        result_pledge[test_index].get()
         #Pledge.simultaneous_get( [result_pledge[test_index]] ,1)
 
-        query_pledge.test()
+        #query_pledge.get()
 
         if not mem is None and not get_memory(mem) == 0:
             print(get_memory(mem), "\t", get_memory())
@@ -458,7 +458,7 @@ def test_my_approach(
             db_name,
             reference,
             name,
-            seg=LongestNonEnclosedSegments(),
+            seg=BinarySeeding(True),
             chain=LinearLineSweep(), 
             max_hits=5,
             num_anchors=10, 
@@ -875,8 +875,8 @@ def manualCheckSequences():
 
 
 
-#memory_test(human_genome, -1)
-#exit()
+memory_test(human_genome, -1)
+exit()
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)

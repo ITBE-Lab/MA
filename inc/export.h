@@ -27,7 +27,7 @@
  * 
  * 
  * A C++ Module is available for each of these tasks, respectively:
- * - LongestNonEnclosedSegments
+ * - BinarySeeding
  * - LineSweep
  * - NeedlemanWunsch
  * 
@@ -37,9 +37,9 @@
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
- * <tr><td>Create seeds <td> FM_Index, NucleotideSequence <td> SegmentList
- * <tr><td>Remove inconsistent seeds <td> SegmentList <td> SegmentList
- * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentList,
+ * <tr><td>Create seeds <td> FM_Index, NucleotideSequence <td> SegmentVector
+ * <tr><td>Remove inconsistent seeds <td> SegmentVector <td> SegmentVector
+ * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentVector,
  * NucleotideSequence, BWACompatiblePackedNucleotideSequencesCollection <td> Alignment
  * </table>
  *
@@ -59,7 +59,7 @@
  * Here is some python code that sets up the three main @ref CppModule "modules" reqired for alignment:
  * @code{.py}
  * # A module that creates seeds.
- * seg = LongestNonEnclosedSegments()
+ * seg = BinarySeeding()
  * # A module that removes inconsistent seeds.
  * sweep = SweepAllReturnBest()
  * # A module that creates local alignments in the gaps between the seeds.
@@ -70,7 +70,7 @@
  *
  * Here we set up the @ref Module "modules" we need for the alignment process.
  * The @ref Module "modules" themselves do not store data. They can be used multiple times.
- * Note that while LongestNonEnclosedSegments and NeedlemanWunsch are C++ modules,
+ * Note that while BinarySeeding and NeedlemanWunsch are C++ modules,
  * SweepAllReturnBest and AlignmentPrinter are implemented in Python.
  *
  * @code{.py}
@@ -118,6 +118,7 @@
  * - rename classes and files aproproately
  * - move backwards extension into fm_index class
  * - make banded efficient NMW (have to wait for SMW)
+ * - expose interval to python (change segment and seed)
  * - STOP ADDING ITEMS TO THIS LIST
  * 
  * @section about_us_sec About Us
@@ -139,9 +140,8 @@
 #include "getAnchors.h"
 #include "needlemanWunsch.h"
 #include "linesweep.h"
-#include "longestNonEnclosedSegments.h"
+#include "binarySeeding.h"
 #include "stripOfConsideration.h"
-#include "longestLRSegments.h"
 #include "chaining.h"
 #include "smith_waterman.h"
 #include "extractAllSeeds.h"

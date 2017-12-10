@@ -1,6 +1,6 @@
 /** 
  * @file getAnchors.h
- * @brief Implements NlongestIntervalsAsAnchors.
+ * @brief Implements GetAnchors.
  * @author Markus Schmidt
  */
 #ifndef GET_ANCHORS_H
@@ -16,14 +16,14 @@
  * These can then be used as anchors for StripOfConsiderations.
  * @ingroup module
  */
-class NlongestIntervalsAsAnchors : public CppModule
+class GetAnchors : public CppModule
 {
 public:
     ///@brief number of seeds to extract
     unsigned int uiN;
     unsigned int uiMaxHitsPerInterval;
 
-    NlongestIntervalsAsAnchors(unsigned int uiN, unsigned int uiMaxHitsPerInterval)
+    GetAnchors(unsigned int uiN, unsigned int uiMaxHitsPerInterval)
             :  
         uiN(uiN),
         uiMaxHitsPerInterval(uiMaxHitsPerInterval)

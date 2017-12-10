@@ -1,27 +1,27 @@
 #include "getAnchors.h"
 
 
-ContainerVector NlongestIntervalsAsAnchors::getInputType() const
+ContainerVector GetAnchors::getInputType() const
 {
     return ContainerVector{
-            std::shared_ptr<Container>(new SegmentList()),
+            std::shared_ptr<Container>(new SegmentVector()),
             std::shared_ptr<Container>(new BWACompatiblePackedNucleotideSequencesCollection()),
             std::shared_ptr<Container>(new FM_Index())
         };
 }//function
 
-std::shared_ptr<Container> NlongestIntervalsAsAnchors::getOutputType() const
+std::shared_ptr<Container> GetAnchors::getOutputType() const
 {
     return std::shared_ptr<Container>(new Seeds());
 }//function
 
 
-std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
+std::shared_ptr<Container> GetAnchors::execute(
         ContainerVector vpInput
     )
 {
 
-    std::shared_ptr<SegmentList> pCastedInput = std::static_pointer_cast<SegmentList>(vpInput[0]);
+    std::shared_ptr<SegmentVector> pCastedInput = std::static_pointer_cast<SegmentVector>(vpInput[0]);
 	std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pRefSeq = 
 		std::static_pointer_cast<BWACompatiblePackedNucleotideSequencesCollection>(vpInput[1]);
 	std::shared_ptr<FM_Index> pxFM_index = std::static_pointer_cast<FM_Index>(vpInput[2]);
@@ -30,14 +30,13 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
     /*
     *   get the n longest intervals
     */
-	for(std::shared_ptr<SegmentListInterval> pxNode : *pCastedInput)
-        pxNode->forEachSeed(
-            pxFM_index, uiMaxHitsPerInterval, true,
-            [&](Seed xS)
-            {
-                aSeeds.push_back(xS);
-            }//lambda
-        );
+    pCastedInput->forEachSeed(
+        pxFM_index, uiMaxHitsPerInterval, true,
+        [&](Seed xS)
+        {
+            aSeeds.push_back(xS);
+        }//lambda
+    );
 
     /*
      * sort them
@@ -66,19 +65,19 @@ std::shared_ptr<Container> NlongestIntervalsAsAnchors::execute(
 void exportGetAnchors()
 {
     boost::python::class_<
-        NlongestIntervalsAsAnchors, 
+        GetAnchors, 
         boost::python::bases<CppModule>,
-		std::shared_ptr<NlongestIntervalsAsAnchors>
+		std::shared_ptr<GetAnchors>
     >(
-        "NlongestIntervalsAsAnchors",
+        "GetAnchors",
         boost::python::init<unsigned int, unsigned int>()
     )
-        .def_readwrite("uiN", &NlongestIntervalsAsAnchors::uiN)
-        .def_readwrite("uiMaxHitsPerInterval", &NlongestIntervalsAsAnchors::uiMaxHitsPerInterval)
+        .def_readwrite("uiN", &GetAnchors::uiN)
+        .def_readwrite("uiMaxHitsPerInterval", &GetAnchors::uiMaxHitsPerInterval)
     ;
 
 	boost::python::implicitly_convertible< 
-		std::shared_ptr<NlongestIntervalsAsAnchors>,
+		std::shared_ptr<GetAnchors>,
 		std::shared_ptr<CppModule> 
 	>();
 }//function

@@ -7,7 +7,7 @@ ContainerVector StripOfConsideration::getInputType() const
 	return ContainerVector
 	{
 		//all segments
-		std::shared_ptr<Container>(new SegmentList()),
+		std::shared_ptr<Container>(new SegmentVector()),
 		//the anchors
 		std::shared_ptr<Container>(new Seeds()),
 		//the query
@@ -28,20 +28,20 @@ std::shared_ptr<Container> StripOfConsideration::getOutputType() const
 
 
 void StripOfConsideration::forEachNonBridgingSeed(
-		std::shared_ptr<SegmentListInterval> pxNode,
+		std::shared_ptr<SegmentVector> pVector,
 		std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
 		std::shared_ptr<NucleotideSequence> pxQuerySeq,
 		std::function<void(Seed rxS)> fDo,
 		nucSeqIndex addSize = 0
 	)
 {
-	pxNode->forEachSeed(
+	pVector->forEachSeed(
 		pxFM_index, uiMaxHitsPerInterval, bSkipLongBWTIntervals,
 		[&](Seed xS)
 		{
 			// check if the match is bridging the forward/reverse strand 
 			// or bridging between two chromosomes
-			if ( pxRefSequence->bridingSubsection(
+			if ( pxRefSequence->bridgingSubsection(
 					//prevent negative index
 					xS.start_ref() > addSize ? xS.start_ref() - addSize : 0,//from
 					//prevent index larger than reference
@@ -59,30 +59,12 @@ void StripOfConsideration::forEachNonBridgingSeed(
 	);
 }//function
 
-/** transfer the saved hits into the clustering*/
-void StripOfConsideration::saveSeeds(
-		std::shared_ptr<SegmentListInterval> pxNode,
-		std::shared_ptr<FM_Index> pxFM_index,
-		std::shared_ptr<BWACompatiblePackedNucleotideSequencesCollection> pxRefSequence,
-		std::shared_ptr<NucleotideSequence> pxQuerySeq,
-		std::vector<SeedBucket>& raxSeedBuckets
-	)
-{
-	forEachNonBridgingSeed(
-		pxNode, pxFM_index, pxRefSequence, pxQuerySeq,
-		[&](Seed xSeed)
-		{
-			addSeed(pxQuerySeq->length(), xSeed, raxSeedBuckets);
-		}//lambda
-	);//for each
-}///function
-
 
 std::shared_ptr<Container> StripOfConsideration::execute(
 		ContainerVector vpInput
 	)
 {
-	std::shared_ptr<SegmentList> pSegments = std::static_pointer_cast<SegmentList>(vpInput[0]);
+	std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>(vpInput[0]);
 	std::shared_ptr<Seeds> pAnchors = std::static_pointer_cast<Seeds>(vpInput[1]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
@@ -92,14 +74,13 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
 	//extract the seeds
 	std::vector<Seed> vSeeds;
-	for(std::shared_ptr<SegmentListInterval> pxNode : *pSegments)
-		forEachNonBridgingSeed(
-			pxNode, pFM_index, pRefSeq, pQuerySeq,
-			[&](Seed xSeed)
-			{
-				vSeeds.push_back(xSeed);
-			}//lambda
-		);//for each
+	forEachNonBridgingSeed(
+		pSegments, pFM_index, pRefSeq, pQuerySeq,
+		[&](Seed xSeed)
+		{
+			vSeeds.push_back(xSeed);
+		}//lambda
+	);//for each
 
 	//sort the seeds according to their initial positions
 	std::sort(
@@ -136,7 +117,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 			uiStart = pRefSeq->uiUnpackedSizeForwardPlusReverse() - 1;
 		if(uiStart + uiSize >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
 			uiSize = pRefSeq->uiUnpackedSizeForwardPlusReverse() - uiStart - 1;
-		if(pRefSeq->bridingSubsection(uiStart, uiSize))
+		if(pRefSeq->bridgingSubsection(uiStart, uiSize))
 		{
 			pRefSeq->unBridgeSubsection(uiStart, uiSize);
 		}//if

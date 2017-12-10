@@ -102,7 +102,7 @@ SA_IndexInterval ReSeed::extend_backward(
 
 
 void ReSeed::extend(
-		std::shared_ptr<SegmentListInterval> pxNode,
+		std::shared_ptr<SegmentVector> pxVector,
 		nucSeqIndex min,
 		nucSeqIndex max,
 		std::shared_ptr<FM_Index> pFM_index,
@@ -148,11 +148,11 @@ void ReSeed::extend(
 			break; // the SA-index interval size is too small to be extended further
 		ik = ok;
 	}//for
-	Segment seg(min,max-min,ik.revComp());
+	std::shared_ptr<Segment> pSeg(new Segment(min,max-min,ik.revComp()));
 	assert(min >= 0);
 	assert(max < pQuerySeq->length());
-	assert(seg.end() < pQuerySeq->length());
-	pxNode->push_back(seg);
+	assert(pSeg->end() < pQuerySeq->length());
+	pxVector->push_back(pSeg);
 }//function
 
 
@@ -162,7 +162,7 @@ ContainerVector ReSeed::getInputType() const
 			//the forward fm_index
 			std::shared_ptr<Container>(new FM_Index()),
 			//the forward fm_index
-			std::shared_ptr<Container>(new SegmentList()),
+			std::shared_ptr<Container>(new SegmentVector()),
 			//the query sequence
 			std::shared_ptr<Container>(new NucleotideSequence()),
 		};
@@ -170,7 +170,7 @@ ContainerVector ReSeed::getInputType() const
 
 std::shared_ptr<Container> ReSeed::getOutputType() const
 {
-	return std::shared_ptr<Container>(new SegmentList());
+	return std::shared_ptr<Container>(new SegmentVector());
 }
 
 
@@ -179,24 +179,21 @@ std::shared_ptr<Container> ReSeed::execute(
 	)
 {
 	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
-	std::shared_ptr<SegmentList> pSegments = std::static_pointer_cast<SegmentList>(vpInput[1]);
+	std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>(vpInput[1]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
 
-	std::shared_ptr<SegmentList> pSegmentList(new SegmentList(pQuerySeq->length()));
+	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
 
-	for(std::shared_ptr<SegmentListInterval> pxNode : *pSegments)
+	for(std::shared_ptr<Segment> pxNode : *pSegments)
 	{
-		pSegmentList->push_back(pxNode);
+		pSegmentVector->push_back(pxNode);
 
-		for(Segment& seg : pxNode->lxSegment)
-		{
-			if(seg.size() > 2)
-				extend(pxNode, seg.start() + 1, seg.end() - 1, pFM_index, pQuerySeq);
-		}//for
+		if(pxNode->size() > 2)
+			extend(pSegmentVector, pxNode->start() + 1, pxNode->end() - 1, pFM_index, pQuerySeq);
 	}//for
 
-	return pSegmentList;
+	return pSegmentVector;
 }//function
 
 void exportReSeed()

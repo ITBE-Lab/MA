@@ -986,7 +986,7 @@ public:
 	 * Returns false for a non-bridging section, where the sequence id belonging to the section is transferred via the reference variable.
 	 * Returns the sequence id additionally.
 	 */
-	bool bridingSubsection( const uint64_t uiBegin, 
+	bool bridgingSubsection( const uint64_t uiBegin, 
 							const uint64_t uiSize, 
 							int64_t &riSequenceId ) const
 	{
@@ -1030,7 +1030,7 @@ public:
 	/** Returns true if the section defined by both arguments has bridging properties.
 	 * Returns false for a non-bridging section.
 	 */
-	bool bridingSubsection( const uint64_t uiBegin, 
+	bool bridgingSubsection( const uint64_t uiBegin, 
 							const uint64_t uiSize) const
 	{
 		assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse() );
@@ -1050,10 +1050,10 @@ public:
 	 * boost can't handle overloads
 	 * thus we create a un-overloaded function for it...
 	 */
-	bool bridingSubsection_boost( const uint64_t uiBegin, 
+	bool bridgingSubsection_boost( const uint64_t uiBegin, 
 							const uint64_t uiSize) const
 	{
-		return bridingSubsection(uiBegin, uiSize);
+		return bridgingSubsection(uiBegin, uiSize);
 	}//function
 	
 
