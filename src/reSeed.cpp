@@ -126,7 +126,7 @@ void ReSeed::extend(
 						pFM_index->L2[(int)q[min] + 1] - pFM_index->L2[(int)q[min]]
 					);
 
-	std::list<SaSegment> curr = std::list<SaSegment>();
+	std::list<Segment> curr = std::list<Segment>();
 	for(nucSeqIndex i = min+1; i < max; i++)
 	{
 		DEBUG_2(
@@ -148,7 +148,7 @@ void ReSeed::extend(
 			break; // the SA-index interval size is too small to be extended further
 		ik = ok;
 	}//for
-	SaSegment seg(min,max-min,ik.revComp());
+	Segment seg(min,max-min,ik.revComp());
 	assert(min >= 0);
 	assert(max < pQuerySeq->length());
 	assert(seg.end() < pQuerySeq->length());
@@ -189,7 +189,7 @@ std::shared_ptr<Container> ReSeed::execute(
 	{
 		pSegmentList->push_back(pxNode);
 
-		for(SaSegment& seg : pxNode->lxSaSegment)
+		for(Segment& seg : pxNode->lxSegment)
 		{
 			if(seg.size() > 2)
 				extend(pxNode, seg.start() + 1, seg.end() - 1, pFM_index, pQuerySeq);

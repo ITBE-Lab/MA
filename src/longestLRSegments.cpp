@@ -96,7 +96,7 @@ SA_IndexInterval LongestLRSegments::extend_backward(
 } // method
 
 
-SaSegment LongestLRSegments::extend(
+Segment LongestLRSegments::extend(
 		std::shared_ptr<SegmentListInterval> pxNode,
 		std::shared_ptr<FM_Index> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq
@@ -181,7 +181,7 @@ SaSegment LongestLRSegments::extend(
 				break;
 		}//for
 	}//if
-	SaSegment rightLeft(start,end-start,ik);
+	Segment rightLeft(start,end-start,ik);
 	assert(start >= 0);
 	assert(end < pQuerySeq->length());
 	assert(rightLeft.end() < pQuerySeq->length());
@@ -263,13 +263,13 @@ SaSegment LongestLRSegments::extend(
 		end = i;
 		ik = ok;
 	}//for
-	SaSegment leftRight(start,end-start,ik.revComp());
+	Segment leftRight(start,end-start,ik.revComp());
 	assert(start >= 0);
 	assert(end < pQuerySeq->length());
 	assert(leftRight.end() < pQuerySeq->length());
 	pxNode->push_back(leftRight);
 
-	SaSegment longest = rightLeft;
+	Segment longest = rightLeft;
 	if(leftRight.size() > rightLeft.size())
 		longest = leftRight;
 
@@ -307,7 +307,7 @@ void LongestLRSegments::procesInterval(
 	)
 
 	//performs extension and records any perfect matches
-	SaSegment xLongest = extend(pxNode, pFM_index, pQuerySeq);
+	Segment xLongest = extend(pxNode, pFM_index, pQuerySeq);
 
 	nucSeqIndex uiFrom, uiTo;
 	uiFrom = xLongest.start();

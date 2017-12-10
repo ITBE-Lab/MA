@@ -1,10 +1,10 @@
 #include "segmentList.h"
 
-void SegmentListInterval::push_back(SaSegment xSaSegment)
+void SegmentListInterval::push_back(Segment xSegment)
 {
-	lxSaSegment.push_back(xSaSegment);
+	lxSegment.push_back(xSegment);
 	DEBUG(
-		std::cout << "found segment: " << xSaSegment.saInterval().start() << " " << xSaSegment.saInterval().end() << std::endl;
+		std::cout << "found segment: " << xSegment.saInterval().start() << " " << xSegment.saInterval().end() << std::endl;
 	)
 }//function
 

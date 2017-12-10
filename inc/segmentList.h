@@ -21,28 +21,28 @@
  * @li @c a Interval representing the position of the sequence on the query.
  * @ingroup container
  */
-class SaSegment: public Container, public Interval<nucSeqIndex> {
+class Segment: public Container, public Interval<nucSeqIndex> {
 private:
 	SA_IndexInterval xSaInterval;
 public:
 	/**
-	* @brief Creates a new SaSegment.
-	* @details Creates a new SaSegment on the base of a SA_IndexInterval and the 
+	* @brief Creates a new Segment.
+	* @details Creates a new Segment on the base of a SA_IndexInterval and the 
 	* respective indices on the quey.
 	*/
-	SaSegment(nucSeqIndex uiStart, nucSeqIndex uiSize, SA_IndexInterval xSaInterval)
+	Segment(nucSeqIndex uiStart, nucSeqIndex uiSize, SA_IndexInterval xSaInterval)
 			:
 		Interval(uiStart, uiSize),
 		xSaInterval(xSaInterval)
 	{}//constructor
 
-	SaSegment()
+	Segment()
 			:
 		Interval(),
 		xSaInterval()
 	{}//constructor
 
-	SaSegment(const SaSegment& other)
+	Segment(const Segment& other)
 			:
 		Interval(other),
 		xSaInterval(other.xSaInterval)
@@ -52,19 +52,19 @@ public:
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        return std::dynamic_pointer_cast<SaSegment>(c) != nullptr;
+        return std::dynamic_pointer_cast<Segment>(c) != nullptr;
     }//function
 
     //overload
     std::string getTypeName() const
     {
-        return "SaSegment";
+        return "Segment";
     }//function
 
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new SaSegment());
+        return std::shared_ptr<Container>(new Segment());
     }//function
 
 	/**
@@ -77,17 +77,17 @@ public:
 	}//function
 	
     /**
-     * @brief Copys from another SaSegment.
+     * @brief Copys from another Segment.
 	 * @note override
      */
-    inline SaSegment& operator=(const SaSegment& rxOther)
+    inline Segment& operator=(const Segment& rxOther)
     {
         Interval::operator=(rxOther);
         xSaInterval = rxOther.xSaInterval;
         return *this;
     }// operator
 
-}; // class ( SaSegment )
+}; // class ( Segment )
 
 /**
  * @brief A Interval in the Segment Tree.
@@ -99,7 +99,7 @@ public:
 	/** 
 	 * @brief list of the perfect matches found through backwards / forward extension 
 	 */
-	std::list<SaSegment> lxSaSegment;
+	std::list<Segment> lxSegment;
 
 	/**
 	 * @brief Creates a new interval with a start and size.
@@ -107,7 +107,7 @@ public:
 	SegmentListInterval(const nucSeqIndex uiStart, const nucSeqIndex uiSize)
 		:
 		Interval(uiStart, uiSize),
-		lxSaSegment()
+		lxSegment()
 	{}//constructor
 
 	/**
@@ -116,7 +116,7 @@ public:
 	SegmentListInterval()
 		:
 		Interval(),
-		lxSaSegment()
+		lxSegment()
 	{}//constructor
 	
 
@@ -153,7 +153,7 @@ public:
 	 * The interval contains uiLengthInBwt individual perfect matches of 
 	 * (uiStartOfIntervalOnQuery, uiEndOfIntervalOnQuery) on the reference sequence.
 	 */
-	void push_back(SaSegment interval);
+	void push_back(Segment interval);
 
 	/**
 	 * @brief The center of the segment.
@@ -178,7 +178,7 @@ public:
 		)
 	{
 		//iterate over all the intervals that have been recorded using pushBackBwtInterval()
-		for (SaSegment xSegment : lxSaSegment)
+		for (Segment xSegment : lxSegment)
 		{
 			//if the interval contains more than uiMaxNumHitsPerInterval hits it's of no importance and will produce nothing but noise
 

@@ -138,7 +138,7 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 	 * 
 	 * curr is used to remember the Suffix array interval each time we loose some hits by extending
 	 */
-	std::vector<SaSegment> curr;
+	std::vector<Segment> curr;
 	// extend until the end of the query
 	for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
 	{
@@ -155,12 +155,12 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 		if(ok.size() != ik.size()) 
 			// save the reverse complement cause when extending the saved interval we will extend
 			// in the other direction
-			curr.push_back(SaSegment(center, i-center-1, ik.revComp()));
+			curr.push_back(Segment(center, i-center-1, ik.revComp()));
 		// if were at the end of the query and we still have hits we need to make sure to record them
 		if(i == pQuerySeq->length()-1 && ok.size() != 0)
 			// save the reverse complement cause when extending the saved interval we will extend
 			// in the other direction
-			curr.push_back(SaSegment(center, i-center, ok.revComp()));
+			curr.push_back(Segment(center, i-center, ok.revComp()));
 
 		DEBUG_2(
 			std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
@@ -192,12 +192,12 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 	 * 		then clear curr
 	 */
 	std::reverse(curr.begin(), curr.end());
-	std::vector<SaSegment> prev;
+	std::vector<Segment> prev;
 	//pointers for easy swapping of the lists
 
 	// FIXME: for some reason valgrind does NOT like this
 	// maybe it cant deal with the pointers?
-	std::vector<SaSegment> *pPrev, *pCurr, *pTemp;
+	std::vector<Segment> *pPrev, *pCurr, *pTemp;
 	pPrev = &curr;
 	pCurr = &prev;
 	// quick check that we can extend backwards at all (center is unsigned thus this is necessary)
@@ -222,7 +222,7 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 			 * for all remembered intervals 
 			 * (ordered by the start on the query)
 			 */
-			for(SaSegment& ik : *pPrev)
+			for(Segment& ik : *pPrev)
 			{
 				DEBUG_2(
 					std::cout << i+1 << " -> " << ik.saInterval().start() << " " << ik.saInterval().end() << std::endl;
@@ -250,7 +250,7 @@ Interval<nucSeqIndex> LongestNonEnclosedSegments::extend(
 				else if(ok.size() > 0)
 				{
 					// if so add the intervals to the list
-					SaSegment xSeg = SaSegment(i, ik.size()+1, ok);
+					Segment xSeg = Segment(i, ik.size()+1, ok);
 					// FIXME: memory leak here according to valgrind ?!?
 					pCurr->push_back(xSeg);
 					assert(xSeg.end() <= pQuerySeq->length());

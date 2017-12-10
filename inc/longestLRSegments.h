@@ -36,7 +36,7 @@ private:
 	*  starts at uiStartIndex and will save any matches longer than uiMinIntervalSize in pxNode if the
 	*  current extension could reach further than uiOnlyRecordHitsFurtherThan
 	*/
-	static SaSegment extend(
+	static Segment extend(
 			std::shared_ptr<SegmentListInterval> pxNode,
 			std::shared_ptr<FM_Index> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq
