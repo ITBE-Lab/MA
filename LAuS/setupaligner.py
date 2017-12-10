@@ -31,7 +31,7 @@ def set_up_aligner(
         query_pledges,
         reference_pledge,
         fm_index_pledge,
-        seg=BinarySeeding(True),
+        seg=BinarySeeding(False),
         chain=LinearLineSweep(),
         max_hits=5,
         num_anchors=5,

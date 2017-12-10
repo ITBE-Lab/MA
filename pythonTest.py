@@ -459,7 +459,7 @@ def test_my_approach(
             db_name,
             reference,
             name,
-            seg=BinarySeeding(True),
+            seg=BinarySeeding(False),
             chain=LinearLineSweep(), 
             max_hits=5,
             num_anchors=10, 
@@ -563,7 +563,7 @@ def test_my_approach(
 
 
 def test_my_approaches(db_name):
-    test_my_approach(db_name, human_genome, "Bs:5 SoC:100,500nt sLs:5", max_hits=5, num_anchors=100, max_sweep=5, seg=LongestLRSegments())
+    test_my_approach(db_name, human_genome, "Bs:5 SoC:100,500nt sLs:5", max_hits=5, num_anchors=100, max_sweep=5, seg=BinarySeeding(True))
 
     test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5", num_anchors=100, max_sweep=5)
 
@@ -876,13 +876,13 @@ def manualCheckSequences():
 
 
 
-memory_test(human_genome, -1)
-exit()
+#memory_test(human_genome, -1)
+#exit()
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
-test_my_approaches("/mnt/ssd1/shortIndels.db")
-analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
+#test_my_approaches("/mnt/ssd1/shortIndels.db")
+#analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 512, True, True)
