@@ -418,7 +418,7 @@ def memory_test(reference, test_index):
         reference_pledge,
         fm_index_pledge
     )
-    #module = BinarySeeding()
+    module = BinarySeeding(True)
     
     mem = None
 
@@ -428,8 +428,9 @@ def memory_test(reference, test_index):
         q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 100, 0, 0, 1)
         query_pledge.set(NucSeq(q))
 
-        #module.execute((fm_index, NucSeq(q)))
-        result_pledge[test_index].get()
+        module.execute(fm_index, NucSeq(q))
+        
+        #result_pledge[test_index].get()
         #Pledge.simultaneous_get( [result_pledge[test_index]] ,1)
 
         #query_pledge.get()
