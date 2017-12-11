@@ -14,7 +14,6 @@
 #include "pack.h"
 #include "is.h"
 #include "bwt_large.h"
-#include "interval.h"
 
 namespace libLAuS
 {

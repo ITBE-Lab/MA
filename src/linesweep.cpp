@@ -209,9 +209,9 @@ std::shared_ptr<Container> LinearLineSweep::getOutputType() const
  * determine the start and end positions this match casts on the left border of the given bucket
  * pxMatch is the container this match is stored in.
  */
-ShadowInterval2 LinearLineSweep::getLeftShadow(Seeds::iterator pSeed) const
+LinearLineSweep::ShadowInterval LinearLineSweep::getLeftShadow(Seeds::iterator pSeed) const
 {
-    return ShadowInterval2(
+    return ShadowInterval(
             pSeed->start(),
             pSeed->end_ref() - (int64_t)pSeed->start(),
             pSeed
@@ -222,9 +222,9 @@ ShadowInterval2 LinearLineSweep::getLeftShadow(Seeds::iterator pSeed) const
  * determine the start and end positions this match casts on the right border of the given bucket
  * pxMatch is the container this match is stored in.
  */
-ShadowInterval2 LinearLineSweep::getRightShadow(Seeds::iterator pSeed) const
+LinearLineSweep::ShadowInterval LinearLineSweep::getRightShadow(Seeds::iterator pSeed) const
 {
-    return ShadowInterval2(
+    return ShadowInterval(
             pSeed->start_ref(),
             pSeed->end() - (int64_t)pSeed->start_ref(),
             pSeed
@@ -233,7 +233,7 @@ ShadowInterval2 LinearLineSweep::getRightShadow(Seeds::iterator pSeed) const
 
 
 void LinearLineSweep::linesweep(
-        std::vector<ShadowInterval2>& vShadows, 
+        std::vector<ShadowInterval>& vShadows, 
         std::shared_ptr<Seeds> pSeeds
     )
 {
@@ -241,7 +241,7 @@ void LinearLineSweep::linesweep(
     std::sort(
             vShadows.begin(),
             vShadows.end(),
-            [](ShadowInterval2 xA, ShadowInterval2 xB)
+            [](ShadowInterval xA, ShadowInterval xB)
             {
                 /*
                 * sort by the interval starts
@@ -254,10 +254,10 @@ void LinearLineSweep::linesweep(
         );//sort function call
 
     //records the interval ends
-    std::list<ShadowInterval2> xItervalEnds = std::list<ShadowInterval2>();
+    std::list<ShadowInterval> xItervalEnds = std::list<ShadowInterval>();
 
     //this is the line sweeping part
-    for(ShadowInterval2& rInterval : vShadows)
+    for(ShadowInterval& rInterval : vShadows)
     {
         DEBUG(
             std::cout << "Current Sweep position: " << rInterval.start() << std::endl;
@@ -315,7 +315,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
         std::static_pointer_cast<Seeds>(vpInput[0])));
 
-    std::vector<ShadowInterval2> vShadows = {};
+    std::vector<ShadowInterval> vShadows = {};
 
     //get the left shadows
     for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)

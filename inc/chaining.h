@@ -9,7 +9,6 @@
 #ifndef CHAINING_H
 #define CHAINING_H
 
-#include "nucSeq.h"
 #include "pack.h"
 #include "module.h"
 #include "seed.h"
@@ -43,7 +42,8 @@ namespace libLAuS
         template<typename coordinate>
         class RMQ
         {
-        public:
+        private:
+            friend Chaining;
             class RMQData{
             public:
                 coordinate x, y;
@@ -63,8 +63,6 @@ namespace libLAuS
                     return score < other.score;
                 }//function
             };//class
-
-        private:
             class Node
             {
             public:

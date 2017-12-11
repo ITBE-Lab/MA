@@ -180,7 +180,7 @@ class SMW(libLAuS.SMW):
 # @brief contains the final output of the aligner.
 # @details
 # Holds a sparse vector like representation of one alignment.
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class Alignment(libLAuS.Alignment):
@@ -195,7 +195,7 @@ class Alignment(libLAuS.Alignment):
 #   but they are aligned to the same position nonetheless.
 # - insertion: a nucleotide is present on the query that has no counterpart on the reference.
 # - deletion: a nucleotide is present on the reference that has no counterpart on the query.
-# @note To create an instance of this class omit the trainling underscore.
+# @note libLAuS::MatchType is an enum and therefore does not show up in the class hierarchy.
 #
 class MatchType(libLAuS.MatchType):
     pass
@@ -204,7 +204,7 @@ class MatchType(libLAuS.MatchType):
 # @brief Represents the pledge to deliver some container.
 # @details
 # Content may be provided by a @ref Module::promiseMe "module" or by calling @ref set.
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class Pledge(libLAuS.Pledge):
@@ -213,7 +213,7 @@ class Pledge(libLAuS.Pledge):
 ##
 # @brief Contains a suffix array.
 # @details
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class FMIndex(libLAuS.FMIndex):
@@ -223,7 +223,7 @@ class FMIndex(libLAuS.FMIndex):
 # @brief The Container for a SegmentVector
 # @details
 # A doubly linked list holding Segments.
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class SegmentVector(libLAuS.SegmentVector):
@@ -233,7 +233,7 @@ class SegmentVector(libLAuS.SegmentVector):
 # @brief The Container for a Seeds_
 # @details
 # is iterable
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class Seeds(libLAuS.Seeds):
@@ -242,7 +242,7 @@ class Seeds(libLAuS.Seeds):
 ##
 # @brief A interval on the query that contains one or multiple @ref Seed "seeds".
 # @details
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class Segment(libLAuS.Segment):
@@ -251,7 +251,7 @@ class Segment(libLAuS.Segment):
 ##
 # @brief A packed version of a @ref NucSeq_ "NucSeq".
 # @details
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class Pack(libLAuS.Pack):
@@ -260,7 +260,7 @@ class Pack(libLAuS.Pack):
 ##
 # @brief A single seed.
 # @details
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class Seed(libLAuS.Seed):
@@ -269,7 +269,7 @@ class Seed(libLAuS.Seed):
 ##
 # @brief A SAInterval.
 # @details
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class SAInterval(libLAuS.SAInterval):
@@ -278,7 +278,7 @@ class SAInterval(libLAuS.SAInterval):
 ##
 # @brief A nucleotide sequence.
 # @details
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class NucSeq(libLAuS.NucSeq):
@@ -288,7 +288,7 @@ class NucSeq(libLAuS.NucSeq):
 # @brief The ContainerVector Module.
 # @details
 # Holds multiple containers.
-# @note To create an instance of this class omit the trainling underscore.
+#
 # @ingroup container
 #
 class ContainerVector(libLAuS.ContainerVector):

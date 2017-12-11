@@ -1,5 +1,5 @@
 ##DEPRECATED
-
+"""
 raise ImportError("You imported a Module that is used purely for documentation.")
 
 from libLAuS import *
@@ -458,3 +458,4 @@ class NucSeq_(NucSeq):
 class ContainerVector_(ContainerVector, MutableSequence):
     pass
 
+"""

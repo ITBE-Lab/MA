@@ -7,29 +7,28 @@
  */
 
 /**
- * @mainpage @ref Module "Modular" @ref LineSweep "Linesweeping" Aligner using Segmentation
+ * @mainpage @ref libLAuS::Module "Modular" @ref libLAuS::LinearLineSweep "Linesweeping" Aligner using Segmentation
  * @tableofcontents
  * @section intro_sec Introduction
  *
- * LAuS is a Modular alignment tool build using C++11 and Boost Python.
- * The alignment process has been seperated into several @ref Module "modules".
- * The execution order of the @ref Module "modules" is set up using Python.
- * @ref Module "Modules" can be implemented in Python or C++. <br>
- * The Pledge class allows setting up a @ref comp_graph_sec "computational graph", 
+ * LAuS is a libLAuS::Module "Modular" alignment tool build using C++11 and Boost Python.
+ * The alignment process has been seperated into several @ref libLAuS::Module "modules".
+ * The execution order of the @ref libLAuS::Module "modules" is set up using Python.
+ * @ref libLAuS::Module "Modules" can be implemented in Python or C++. <br>
+ * The @ref libLAuS::Pledge "Pledge" class allows setting up a @ref comp_graph_sec "computational graph", 
  * that avoids unnecessary jumps between 
- * Python and C++.
+ * Python and C++. <br>
  *
  *
  * The general aligner structure is as follows:
- * - Create seeds
- * - Remove inconsistent seeds
- * - Create local alignments in the gaps between the seeds
+ * - Seeding
+ * - Seed Processing
+ *   -# Filtering
+ *   -# Coupeling
+ * - Optimal Matching
  * 
  * 
- * A C++ Module is available for each of these tasks, respectively:
- * - BinarySeeding
- * - LineSweep
- * - NeedlemanWunsch
+ * A C++ Module is available for each of these tasks, respectively.
  * 
  * 
  * @ref Container "Containers" are used for the inputs and outputs of the @ref Module "modules".
@@ -37,14 +36,14 @@
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
- * <tr><td>Create seeds <td> FMIndex, NucSeq <td> SegmentVector
- * <tr><td>Remove inconsistent seeds <td> SegmentVector <td> SegmentVector
- * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentVector,
- * NucSeq, Pack <td> Alignment
+ * <tr><td>Seeding <td> libLAuS::FMIndex, libLAuS::NucSeq <td> libLAuS::SegmentVector
+ * <tr><td>Seed Processing <td> libLAuS::SegmentVector <td> libLAuS::SegmentVector
+ * <tr><td>Optimal Matching <td> libLAuS::SegmentVector,
+ * libLAuS::NucSeq, libLAuS::Pack <td> libLAuS::Alignment
  * </table>
  *
  * @note The python classes can be easily identified by the prefix "LAuS." 
- * while C++ classes have no specific prefix.
+ * while C++ classes have "libLAuS::" as prefix.
  *
  * @section install_sec Installation
  * 
@@ -94,29 +93,25 @@
  *
  * @code{.py}
  * # Call the segmentation module.
- * segments = seg.execute((fm_index, query)) #(*)
+ * segments = seg.execute(fm_index, query)
  * # Call the line sweep module.
- * seeds = sweep.execute((segments,)) #(*)
+ * seeds = sweep.execute(segments)
  * # Call the local alignment module.
- * alignment = nmw.execute((seeds, query, ref)) #(*)
+ * alignment = nmw.execute(seeds, query, ref)
  * 
  * # Print the alignment
- * printer.execute((alignment, )) #(*)
+ * printer.execute(alignment)
  * @endcode
  * 
  * Here we perform the alignment process and print the results. <br>
- * (*) All @ref Module "modules" use a tuple or list of @ref Container "containers" as input.
- * Therefore the @ref Module::execute "execute" function calls use the syntax shown above.
  *
  * @note for a quick start on how to setup a computational graph,
- * this setup of @ref Module "modules" using a
+ * this setup of @ref libLAuS::Module "modules" using a
  * computation graph can be seen in the @ref comp_graph_sec "Pledge" class.
  * 
  * @section todos TODOs
  * 
- * - update this page... (the example has to be changed)
  * - make banded efficient NMW (have to wait for SMW)
- * - expose interval to python (change segment and seed)
  * - STOP ADDING ITEMS TO THIS LIST
  * 
  * @section about_us_sec About Us
