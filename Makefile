@@ -10,8 +10,8 @@ BOOST_LIB_PATH = /opt/dev/boost_1_65_1/stage/lib
 BOOST_LIB = boost_python3-mt dl rt z boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams-mt
  
 # target files
-TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp)))
-CTARGET = $(subst .c,,$(subst src/,,$(wildcard src/*.c)))
+TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp))) $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
+CTARGET = $(subst .c,,$(subst src/,,$(wildcard src/*.c))) $(subst .c,,$(subst src/,,$(wildcard src/*/*.c)))
 TARGET_OBJ = $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
@@ -47,7 +47,7 @@ distrib:
 	python setup.py sdist bdist_egg bdist_wheel
 
 clean:
-	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*.co) libLAuS.so
+	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*/*.o) $(wildcard obj/*.co) $(wildcard obj/*/*.co) libLAuS.so
 	rm -r -f dist *.egg-info build
 	rm -r -f html
 
