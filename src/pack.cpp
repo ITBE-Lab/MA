@@ -1,4 +1,5 @@
 #include "pack.h"
+using namespace libLAuS;
 
 void exportPack()
 {

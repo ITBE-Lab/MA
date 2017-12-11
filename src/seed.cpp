@@ -1,4 +1,5 @@
 #include "seed.h"
+using namespace libLAuS;
 
 void exportSeed()
 {

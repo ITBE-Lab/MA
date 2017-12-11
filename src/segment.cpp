@@ -1,4 +1,5 @@
-#include "segmentList.h"
+#include "segment.h"
+using namespace libLAuS;
 
 void exportIntervalTree()
 {

@@ -6,7 +6,8 @@
 #pragma once
 
 #include "support.h"
-#include "sequence.h"
+#include "nucSeq.h"
+using namespace libLAuS;
 
 // #define USE_STL
 

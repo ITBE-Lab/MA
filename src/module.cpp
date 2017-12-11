@@ -2,7 +2,7 @@
 using namespace libLAuS;
 std::mutex xPython;
 
-bool typeCheck(
+bool libLAuS::typeCheck(
         std::shared_ptr<Container> pData, 
         std::shared_ptr<Container> pExpected
     )
@@ -14,7 +14,7 @@ bool typeCheck(
     return false;
 }//function
 
-bool typeCheck(
+bool libLAuS::typeCheck(
         ContainerVector vData, 
         ContainerVector vExpected
     )

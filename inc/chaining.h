@@ -9,7 +9,7 @@
 #ifndef CHAINING_H
 #define CHAINING_H
 
-#include "sequence.h"
+#include "nucSeq.h"
 #include "pack.h"
 #include "module.h"
 #include "seed.h"

@@ -17,10 +17,10 @@
 #include <chrono>
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
-extern std::mutex xPython;
 
 namespace libLAuS
 {
+    extern std::mutex xPython;
     /**
      * @defgroup module
      * @brief All classes implementing some algorithm.

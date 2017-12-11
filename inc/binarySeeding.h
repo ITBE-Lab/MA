@@ -8,7 +8,7 @@
 
 #include "system.h"
 #include "module.h"
-#include "segmentList.h"
+#include "segment.h"
 #include "threadPool.h"
 
 namespace libLAuS

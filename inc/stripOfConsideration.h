@@ -6,7 +6,7 @@
 #ifndef STRIP_OF_CONSIDERATION_H
 #define STRIP_OF_CONSIDERATION_H
 
-#include "segmentList.h"
+#include "segment.h"
 #include "module.h"
 
 namespace libLAuS

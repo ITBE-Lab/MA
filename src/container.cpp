@@ -1,6 +1,5 @@
 #include "container.h"
-
-
+using namespace libLAuS;
 
 void exportContainer()
 {

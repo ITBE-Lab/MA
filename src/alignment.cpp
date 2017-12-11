@@ -1,4 +1,5 @@
 #include "alignment.h"
+using namespace libLAuS;
 
 void exportAlignment()
 {

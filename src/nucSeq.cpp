@@ -1,5 +1,5 @@
-#include "sequence.h"
-
+#include "nucSeq.h"
+using namespace libLAuS;
 
 /* The translation table for columns.
  * Translates a single character into a 2-bit compressed code.

@@ -15,7 +15,8 @@
 #include <limits> 
 #include "sw_common.h"
 #include "exception.h" // code throws aligner exceptions
-#include "sequence.h" // sequence slices
+#include "nucSeq.h" // sequence slices
+using namespace libLAuS;
 
 /* Visual C++ and g++ indicate the setting of the AVX2 flag via the __AVX2__ symbol.
  */

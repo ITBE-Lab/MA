@@ -6,7 +6,7 @@
 #ifndef EXTRACT_ALL_SEEDS_H
 #define EXTRACT_ALL_SEEDS_H
 
-#include "segmentList.h"
+#include "segment.h"
 #include "module.h"
 
 namespace libLAuS

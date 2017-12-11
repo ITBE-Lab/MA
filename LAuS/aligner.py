@@ -11,8 +11,6 @@
 #
 
 import libLAuS
-#TODO: remove this once unnecessary
-from libLAuS import *
 import traceback
 
 ##
@@ -119,6 +117,182 @@ class GetAnchors(libLAuS.GetAnchors):
     def promise_me(self, *args):
         return super(GetAnchors, self).promise_me(list(args))
 
+##
+# @brief python wrapper for ExecOnVec
+class ExecOnVec(libLAuS.ExecOnVec):
+    def execute(self, *args):
+        return super(ExecOnVec, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(ExecOnVec, self).promise_me(list(args))
+
+##
+# @brief The Tail Module.
+# @details
+# returns the tail of a container vector
+# @ingroup module
+#
+class Tail(libLAuS.Tail):
+    def execute(self, *args):
+        return super(Tail, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(Tail, self).promise_me(list(args))
+
+##
+# @brief The ExtractAllSeeds Module.
+# @details
+# extracts all seeds from a segment list.
+# @ingroup module
+#
+class ExtractAllSeeds(libLAuS.ExtractAllSeeds):
+    def execute(self, *args):
+        return super(ExtractAllSeeds, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(ExtractAllSeeds, self).promise_me(list(args))
+
+##
+# @brief The ReSeed Module.
+# @details
+# extracts all seeds from a segment list.
+# @ingroup module
+#
+class ReSeed(libLAuS.ReSeed):
+    def execute(self, *args):
+        return super(ReSeed, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(ReSeed, self).promise_me(list(args))
+
+##
+# @brief The SMW Module.
+# @ingroup module
+#
+class SMW(libLAuS.SMW):
+    def execute(self, *args):
+        return super(SMW, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(SMW, self).promise_me(list(args))
+
+##
+# @brief contains the final output of the aligner.
+# @details
+# Holds a sparse vector like representation of one alignment.
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class Alignment(libLAuS.Alignment):
+    pass
+
+##
+# @brief Describes the type of match at one specific position of the alignment.
+# @details
+# - match: query and reference have the same nucleotide.
+# - seed: query and reference have the same nucleotide (the match was found as part of a seed).
+# - missmatch: query and reference have different nucleotides, 
+#   but they are aligned to the same position nonetheless.
+# - insertion: a nucleotide is present on the query that has no counterpart on the reference.
+# - deletion: a nucleotide is present on the reference that has no counterpart on the query.
+# @note To create an instance of this class omit the trainling underscore.
+#
+class MatchType(libLAuS.MatchType):
+    pass
+
+##
+# @brief Represents the pledge to deliver some container.
+# @details
+# Content may be provided by a @ref Module::promiseMe "module" or by calling @ref set.
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class Pledge(libLAuS.Pledge):
+    pass
+
+##
+# @brief Contains a suffix array.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class FMIndex(libLAuS.FMIndex):
+    pass
+
+##
+# @brief The Container for a SegmentVector
+# @details
+# A doubly linked list holding Segments.
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class SegmentVector(libLAuS.SegmentVector):
+    pass
+
+##
+# @brief The Container for a Seeds_
+# @details
+# is iterable
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class Seeds(libLAuS.Seeds):
+    pass
+
+##
+# @brief A interval on the query that contains one or multiple @ref Seed "seeds".
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class Segment(libLAuS.Segment):
+    pass
+
+##
+# @brief A packed version of a @ref NucSeq_ "NucSeq".
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class Pack(libLAuS.Pack):
+    pass
+
+##
+# @brief A single seed.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class Seed(libLAuS.Seed):
+    pass
+
+##
+# @brief A SAInterval.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class SAInterval(libLAuS.SAInterval):
+    pass
+
+##
+# @brief A nucleotide sequence.
+# @details
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class NucSeq(libLAuS.NucSeq):
+    pass
+
+##
+# @brief The ContainerVector Module.
+# @details
+# Holds multiple containers.
+# @note To create an instance of this class omit the trainling underscore.
+# @ingroup container
+#
+class ContainerVector(libLAuS.ContainerVector):
+    pass
 """
 class ContainerType(CppContainerType):
     alignment = CppContainerType.alignment

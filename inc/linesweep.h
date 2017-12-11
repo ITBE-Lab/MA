@@ -6,7 +6,7 @@
 #ifndef LINESWEEP
 #define LINESWEEP
 
-#include "segmentList.h"
+#include "segment.h"
 #include "searchTree.h"
 #include "module.h"
 

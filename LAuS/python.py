@@ -1,15 +1,4 @@
-##
-# @package LAuS.python
-# @brief This package is merely for documentation purpose.
-# @file python.py
-# @brief This file is merely for documentation purpose.
-# @details
-# This file does not get loaded nor installed however doxygen does not know that.
-# Thus we can provide documentation for classes that exist 
-# (since they are generated in the C++ code),
-# but are not present in for of a individual file.
-# @author Markus Schmidt
-#
+##DEPRECATED
 
 raise ImportError("You imported a Module that is used purely for documentation.")
 
@@ -23,7 +12,7 @@ from collections.abc import MutableSequence
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Alignment_(Alignment):
+class Alignment(libLAuS.Alignment):
 
     ##
     # @brief Get the MatchType at the position index.

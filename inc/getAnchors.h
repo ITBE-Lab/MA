@@ -6,7 +6,7 @@
 #ifndef GET_ANCHORS_H
 #define GET_ANCHORS_H
 
-#include "segmentList.h"
+#include "segment.h"
 #include "module.h"
 
 namespace libLAuS
