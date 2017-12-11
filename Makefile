@@ -40,6 +40,8 @@ install: all
 	cp /usr/home/markus/workspace/aligner/libLAuS.so /usr/lib
 	pip3 show LAuS
 
+vid:
+	gource -f --seconds-per-day 0.1
 
 distrib:
 	python setup.py sdist bdist_egg bdist_wheel
@@ -51,4 +53,4 @@ clean:
 
 docs: html/index.html
 
-.Phony: all clean install distrib docs
+.Phony: all clean install distrib docs vid

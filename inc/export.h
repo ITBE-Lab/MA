@@ -130,16 +130,16 @@
 #ifndef EXPORT_H
 #define EXPORT_H
 
-#include "getAnchors.h"
-#include "needlemanWunsch.h"
-#include "linesweep.h"
-#include "binarySeeding.h"
-#include "stripOfConsideration.h"
-#include "chaining.h"
-#include "smith_waterman.h"
-#include "extractAllSeeds.h"
-#include "execOnVector.h"
-#include "reSeed.h"
+#include "module/getAnchors.h"
+#include "module/needlemanWunsch.h"
+#include "module/linesweep.h"
+#include "module/binarySeeding.h"
+#include "module/stripOfConsideration.h"
+#include "module/chaining.h"
+#include "module/smith_waterman.h"
+#include "module/extractAllSeeds.h"
+#include "module/execOnVector.h"
+#include "module/reSeed.h"
 
 
 #endif
