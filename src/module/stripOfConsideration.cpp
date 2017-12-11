@@ -36,7 +36,7 @@ void StripOfConsideration::forEachNonBridgingSeed(
     )
 {
     pVector->forEachSeed(
-        pxFM_index, uiMaxHitsPerInterval, bSkipLongBWTIntervals,
+        pxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals,
         [&](Seed xS)
         {
             // check if the match is bridging the forward/reverse strand 
@@ -172,12 +172,11 @@ void exportStripOfConsideration()
             StripOfConsideration, 
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
-        >(
-        "StripOfConsideration"
-    )
+        >("StripOfConsideration")
+        .def(boost::python::init<nucSeqIndex, unsigned int>())
         .def_readwrite("strip_size", &StripOfConsideration::uiStripSize)
-        .def_readwrite("max_hits", &StripOfConsideration::uiMaxHitsPerInterval)
-        .def_readwrite("skip_long", &StripOfConsideration::bSkipLongBWTIntervals);
+        .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
+    ;
 
     boost::python::implicitly_convertible< 
         std::shared_ptr<StripOfConsideration>,

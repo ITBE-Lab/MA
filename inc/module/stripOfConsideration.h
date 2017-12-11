@@ -17,13 +17,11 @@ namespace libLAuS
      */
     class StripOfConsideration: public Module
     {
-    private:
-
     public:
         /// @brief The strip of consideration size.
         nucSeqIndex uiStripSize = 10000;
         /// @brief Maximum ambiguity for a seed to be considered.
-        unsigned int uiMaxHitsPerInterval = 500;
+        unsigned int uiMaxAmbiguity = 500;
         /**
         * @brief skip seeds with too much ambiguity
         * @details
@@ -48,7 +46,13 @@ namespace libLAuS
 
     public:
 
-        StripOfConsideration(){}//constructor
+        StripOfConsideration(){}//default constructor
+
+        StripOfConsideration(nucSeqIndex uiStripSize, unsigned int uiMaxAmbiguity)
+                :
+            uiStripSize(uiStripSize),
+            uiMaxAmbiguity(uiMaxAmbiguity)
+        {}//constructor
 
         std::shared_ptr<Container> execute(ContainerVector vpInput);
 

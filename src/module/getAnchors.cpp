@@ -20,18 +20,18 @@ std::shared_ptr<Container> GetAnchors::execute(
         ContainerVector vpInput
     )
 {
-
-    std::shared_ptr<SegmentVector> pCastedInput = std::static_pointer_cast<SegmentVector>(vpInput[0]);
+    std::shared_ptr<SegmentVector> pCastedInput =
+        std::static_pointer_cast<SegmentVector>(vpInput[0]);
     std::shared_ptr<Pack> pRefSeq = 
         std::static_pointer_cast<Pack>(vpInput[1]);
     std::shared_ptr<FMIndex> pxFM_index = std::static_pointer_cast<FMIndex>(vpInput[2]);
 
     std::vector<Seed> aSeeds;
     /*
-    *   get the n longest intervals
-    */
+     * extract all seeds
+     */
     pCastedInput->forEachSeed(
-        pxFM_index, uiMaxHitsPerInterval, true,
+        pxFM_index, uiMaxAmbiguity, true,
         [&](Seed xS)
         {
             aSeeds.push_back(xS);
@@ -68,12 +68,10 @@ void exportGetAnchors()
         GetAnchors, 
         boost::python::bases<Module>,
         std::shared_ptr<GetAnchors>
-    >(
-        "GetAnchors",
-        boost::python::init<unsigned int, unsigned int>()
-    )
-        .def_readwrite("uiN", &GetAnchors::uiN)
-        .def_readwrite("uiMaxHitsPerInterval", &GetAnchors::uiMaxHitsPerInterval)
+    >("GetAnchors")
+        .def(boost::python::init<unsigned int, unsigned int>())
+        .def_readwrite("n", &GetAnchors::uiN)
+        .def_readwrite("max_ambiguity", &GetAnchors::uiMaxAmbiguity)
     ;
 
     boost::python::implicitly_convertible< 

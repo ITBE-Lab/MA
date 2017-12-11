@@ -43,9 +43,7 @@ def set_up_aligner(
 
     anc = GetAnchors(num_anchors, max_hits)
 
-    soc = StripOfConsideration()
-    soc.max_hits = max_hits
-    soc.strip_size = strip_size
+    soc = StripOfConsideration(strip_size, max_hits)
 
     max_sweep_n = 0
     if not max_sweep is None:
@@ -57,8 +55,7 @@ def set_up_aligner(
     nmw_multiple = ExecOnVec(nmw, True, 0)
     getBestOnly = Tail(Alignment())
 
-    extractAll = ExtractAllSeeds()
-    extractAll.max_hits = max_hits
+    extractAll = ExtractAllSeeds(max_hits)
 
     reseed = ReSeed()
     if not re_seed is None:

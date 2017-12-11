@@ -22,13 +22,21 @@ namespace libLAuS
     {
     public:
         ///@brief number of seeds to extract
-        unsigned int uiN;
-        unsigned int uiMaxHitsPerInterval;
+        unsigned int uiN = 10;
+        /**
+         * @brief the maximal ambiguity a extracted seed shall have.
+         * @details
+         * Will skip any segments that would lead to more than maxAmbiguity seeds.
+         */
+        unsigned int uiMaxAmbiguity = 10;
 
-        GetAnchors(unsigned int uiN, unsigned int uiMaxHitsPerInterval)
+        GetAnchors(unsigned int uiN, unsigned int uiMaxAmbiguity)
                 :  
             uiN(uiN),
-            uiMaxHitsPerInterval(uiMaxHitsPerInterval)
+            uiMaxAmbiguity(uiMaxAmbiguity)
+        {}//constructor
+
+        GetAnchors()
         {}//constructor
 
         std::shared_ptr<Container> execute(ContainerVector vpInput);
