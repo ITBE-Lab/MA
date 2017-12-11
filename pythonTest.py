@@ -6,7 +6,7 @@ import math
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import row, column, layout
 from bokeh.palettes import d3
-from bokeh.models import LinearAxis, Range1d, LogColorMapper
+from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker
 from bokeh.models.formatters import FuncTickFormatter
 from bokeh.io import save
 import numpy as np
@@ -885,7 +885,7 @@ def manualCheckSequences():
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
 
 
-#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 512, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 

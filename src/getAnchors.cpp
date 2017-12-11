@@ -6,7 +6,7 @@ ContainerVector GetAnchors::getInputType() const
     return ContainerVector{
             std::shared_ptr<Container>(new SegmentVector()),
             std::shared_ptr<Container>(new Pack()),
-            std::shared_ptr<Container>(new FM_Index())
+            std::shared_ptr<Container>(new FMIndex())
         };
 }//function
 
@@ -24,7 +24,7 @@ std::shared_ptr<Container> GetAnchors::execute(
     std::shared_ptr<SegmentVector> pCastedInput = std::static_pointer_cast<SegmentVector>(vpInput[0]);
 	std::shared_ptr<Pack> pRefSeq = 
 		std::static_pointer_cast<Pack>(vpInput[1]);
-	std::shared_ptr<FM_Index> pxFM_index = std::static_pointer_cast<FM_Index>(vpInput[2]);
+	std::shared_ptr<FMIndex> pxFM_index = std::static_pointer_cast<FMIndex>(vpInput[2]);
 
     std::vector<Seed> aSeeds;
     /*

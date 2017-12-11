@@ -18,7 +18,7 @@ SAInterval ReSeed::extend_backward(
 		const SAInterval &ik,
 		// the character to extend with
 		const uint8_t c,
-		std::shared_ptr<FM_Index> pFM_index
+		std::shared_ptr<FMIndex> pFM_index
 	)
 {
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
@@ -105,7 +105,7 @@ void ReSeed::extend(
 		std::shared_ptr<SegmentVector> pxVector,
 		nucSeqIndex min,
 		nucSeqIndex max,
-		std::shared_ptr<FM_Index> pFM_index,
+		std::shared_ptr<FMIndex> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq
 	)
 {
@@ -160,7 +160,7 @@ ContainerVector ReSeed::getInputType() const
 {
 	return ContainerVector{
 			//the forward fm_index
-			std::shared_ptr<Container>(new FM_Index()),
+			std::shared_ptr<Container>(new FMIndex()),
 			//the forward fm_index
 			std::shared_ptr<Container>(new SegmentVector()),
 			//the query sequence
@@ -178,7 +178,7 @@ std::shared_ptr<Container> ReSeed::execute(
 		ContainerVector vpInput
 	)
 {
-	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
+	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[0]);
 	std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>(vpInput[1]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);

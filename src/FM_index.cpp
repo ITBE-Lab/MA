@@ -1,6 +1,6 @@
 #include "fm_index.h"
 
-void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac )
+void FMIndex::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac )
 {	
     
     /* Size of the reference sequence
@@ -50,7 +50,7 @@ void FM_Index::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac )
     } // for
 } // method
 
-void FM_Index::bwt_bwtupdate_core_step2()
+void FMIndex::bwt_bwtupdate_core_step2()
 {
     bwtint_t i, k, c[4], n_occ;
 
@@ -109,7 +109,7 @@ void FM_Index::bwt_bwtupdate_core_step2()
     bwt = std::move( xVectorWithOccInjections );
 } // method
 
-void FM_Index::bwt_cal_sa_step3( unsigned int intv )
+void FMIndex::bwt_cal_sa_step3( unsigned int intv )
 {
     assert( ispowerof2( intv ) );	//, "SA sample interval is not a power of 2.");
 
@@ -157,7 +157,7 @@ void FM_Index::bwt_cal_sa_step3( unsigned int intv )
     this->sa[0] = (bwtint_t)-1; // before this line, bwt->sa[0] = bwt->seq_len
 } // method
 
-void FM_Index::build_FM_Index( 
+void FMIndex::build_FMIndex( 
     const Pack &rxSequenceCollection, // the pack for which we compute a BWT
     unsigned int uiAlgorithmSelection
    )
@@ -244,9 +244,9 @@ void exportFM_index()
     ;
     //export the FM_index class
 	boost::python::class_<
-            FM_Index, 
+            FMIndex, 
             boost::python::bases<Container>, 
-            std::shared_ptr<FM_Index>
+            std::shared_ptr<FMIndex>
         >(
                 "FMIndex",
                 "contains the BWT of a nucleotide sequence\n"
@@ -261,7 +261,7 @@ void exportFM_index()
         ))
         .def(
                 "load", 
-                &FM_Index::vLoadFM_Index,
+                &FMIndex::vLoadFMIndex,
                 "arg1: self\n"
                 "arg2: the path an filename of the FM Index that shall be loaded\n"
                 "returns: nil\n"
@@ -270,7 +270,7 @@ void exportFM_index()
             )
         .def(
                 "exists", 
-                &FM_Index::packExistsOnFileSystem,
+                &FMIndex::packExistsOnFileSystem,
                 "arg1: self\n"
                 "arg2: the path an filename of the FM Index that shall be checked\n"
                 "returns: nil\n"
@@ -280,7 +280,7 @@ void exportFM_index()
         .staticmethod("exists")
         .def(
                 "store", 
-                &FM_Index::vStoreFM_Index,
+                &FMIndex::vStoreFMIndex,
                 "arg1: self\n"
                 "arg2: the path an filename the FM Index shall be stored at\n"
                 "returns: nil\n"
@@ -289,7 +289,7 @@ void exportFM_index()
             )
         .def(
                 "bwt_sa", 
-                &FM_Index::bwt_sa,
+                &FMIndex::bwt_sa,
                 "arg1: self\n"
                 "arg2: the BWT position to extract\n"
                 "returns: nil\n"
@@ -299,7 +299,7 @@ void exportFM_index()
             )
         .def(
                 "bwt_2occ4", 
-                &FM_Index::bwt_2occ4,
+                &FMIndex::bwt_2occ4,
                 "arg1: self\n"
                 "arg2: the BWT position to extract\n"
                 "returns: nil\n"
@@ -310,7 +310,7 @@ void exportFM_index()
 
 	//tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 
-                                            std::shared_ptr<FM_Index>,
+                                            std::shared_ptr<FMIndex>,
                                             std::shared_ptr<Container> 
                                         >();
 }//function

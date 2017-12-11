@@ -134,7 +134,7 @@ public:
 	 * @Note pushBackBwtInterval records an interval of hits
 	 */
 	void forEachSeed(
-			std::shared_ptr<FM_Index> pxFM_Index,
+			std::shared_ptr<FMIndex> pxFMIndex,
 			unsigned int uiMAxAmbiguity,
 			bool bSkip,
 			std::function<void(Seed s)> fDo
@@ -169,7 +169,7 @@ public:
 				)
 			{
 				//calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
-				nucSeqIndex ulIndexOnRefSeq = pxFM_Index->bwt_sa(ulCurrPos);
+				nucSeqIndex ulIndexOnRefSeq = pxFMIndex->bwt_sa(ulCurrPos);
 				//call the given function
 				fDo(Seed(pSegment->start(), pSegment->size() + 1, ulIndexOnRefSeq));
 			}//for
@@ -181,14 +181,14 @@ public:
 	 * @brief Extracts all seeds from the segment list.
 	 */
 	std::shared_ptr<Seeds> extractSeeds(
-			std::shared_ptr<FM_Index> pxFM_Index, 
+			std::shared_ptr<FMIndex> pxFMIndex, 
 			unsigned int uiMAxAmbiguity,
 			bool bSkip = true
 		)
 	{
 		std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
 		forEachSeed(
-			pxFM_Index,
+			pxFMIndex,
 			uiMAxAmbiguity,
 			bSkip,
 			[&pRet]
@@ -204,7 +204,7 @@ public:
 	/**
 	 * @brief returns the number of seeds
 	 */
-	unsigned int numSeeds(std::shared_ptr<FM_Index> pxFM_Index, unsigned int max_size)
+	unsigned int numSeeds(std::shared_ptr<FMIndex> pxFMIndex, unsigned int max_size)
 	{
 		unsigned int uiTotal = 0;
 		for (std::shared_ptr<Segment> pSegment : *this)

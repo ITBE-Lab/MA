@@ -165,11 +165,11 @@ class Pledge_(Pledge):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class FMIndex_(FM_Index):
+class FMIndex_(FMIndex):
     ##
     # @brief Create a empty suffix array.
     # @details
-    # Reimplemented from @ref FM_Index.
+    # Reimplemented from @ref FMIndex.
     #
     def __init__(self):
         pass
@@ -177,7 +177,7 @@ class FMIndex_(FM_Index):
     ##
     # @brief Create a new suffix array using the given sequence.
     # @details
-    # Reimplemented from @ref FM_Index.
+    # Reimplemented from @ref FMIndex.
     #
     def __init__(self, NucSeq):
         pass
@@ -185,7 +185,7 @@ class FMIndex_(FM_Index):
     ##
     # @brief Create a new suffix array using the given sequence.
     # @details
-    # Reimplemented from @ref FM_Index.
+    # Reimplemented from @ref FMIndex.
     #
     def __init__(self, Pack):
         pass
@@ -193,7 +193,7 @@ class FMIndex_(FM_Index):
     ##
     # @brief Load a suffix array from disk.
     # @details
-    # Reimplemented from @ref FM_Index::vLoadFM_Index.
+    # Reimplemented from @ref FMIndex::vLoadFMIndex.
     #
     def load(self, file_name):
         pass
@@ -201,7 +201,7 @@ class FMIndex_(FM_Index):
     ##
     # @brief Check if there is a suffixarray named file_name on disk.
     # @details
-    # Reimplemented from @ref FM_Index::packExistsOnFileSystem.
+    # Reimplemented from @ref FMIndex::packExistsOnFileSystem.
     #
     @staticmethod
     def exists(file_name):
@@ -210,7 +210,7 @@ class FMIndex_(FM_Index):
     ##
     # @brief Store a suffix array on disk.
     # @details
-    # Reimplemented from @ref FM_Index::vStoreFM_Index.
+    # Reimplemented from @ref FMIndex::vStoreFMIndex.
     #
     def store(self, file_name):
         pass
@@ -219,7 +219,7 @@ class FMIndex_(FM_Index):
     # @brief Delivers the Position in the reference sequence that belongs to 
     # the position k in the BWT.
     # @details
-    # Reimplemented from @ref FM_Index::bwt_sa.
+    # Reimplemented from @ref FMIndex::bwt_sa.
     #
     def bwt_sa(self, k):
         pass
@@ -228,7 +228,7 @@ class FMIndex_(FM_Index):
     # @brief Delivers the Position in the reference sequence that belongs to 
     # the position k in the BWT.
     # @details
-    # Reimplemented from @ref FM_Index::bwt_2occ4.
+    # Reimplemented from @ref FMIndex::bwt_2occ4.
     #
     def bwt_2occ4(self, k):
         pass

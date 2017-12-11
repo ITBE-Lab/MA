@@ -38,7 +38,7 @@ private:
 
 	void forEachNonBridgingSeed(
 			std::shared_ptr<SegmentVector> pVector,
-			std::shared_ptr<FM_Index> pxFM_index,std::shared_ptr<Pack> pxRefSequence,
+			std::shared_ptr<FMIndex> pxFM_index,std::shared_ptr<Pack> pxRefSequence,
 			std::shared_ptr<NucleotideSequence> pxQuerySeq,
 			std::function<void(Seed)> fDo,
 			nucSeqIndex addSize// = 0 (default)

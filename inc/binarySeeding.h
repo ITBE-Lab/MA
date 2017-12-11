@@ -30,7 +30,7 @@ private:
 	static SAInterval extend_backward(
 			const SAInterval &ik, 
 			const uint8_t c, 
-			std::shared_ptr<FM_Index> pFM_index
+			std::shared_ptr<FMIndex> pFM_index
 		);
 
 	/**
@@ -38,7 +38,7 @@ private:
 	 */
 	Interval<nucSeqIndex> lrExtension(
 			nucSeqIndex center,
-			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<FMIndex> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			std::shared_ptr<SegmentVector> pSegmentVector
 		);
@@ -48,7 +48,7 @@ private:
 	 */
 	Interval<nucSeqIndex> nonEnclosedExtension(
 			nucSeqIndex center,
-			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<FMIndex> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			std::shared_ptr<SegmentVector> pSegmentVector
 		);
@@ -61,7 +61,7 @@ private:
 	void procesInterval(
 			Interval<nucSeqIndex> xAreaToCover,
 			std::shared_ptr<SegmentVector> pSegmentVector,
-			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<FMIndex> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		);
@@ -76,7 +76,7 @@ private:
 			BinarySeeding *obj,
 			Interval<nucSeqIndex> xAreaToCover,
 			std::shared_ptr<SegmentVector> pSegmentVector,
-			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<FMIndex> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		)
@@ -98,7 +98,21 @@ public:
 	
 	std::shared_ptr<Container> execute(ContainerVector vpInput);
 
+	/**
+	 * @brief Used to check the input of execute.
+	 * @details
+	 * Returns:
+	 * - FMIndex
+	 * - NucleotideSequence
+	 */
 	ContainerVector getInputType() const;
+
+	/**
+	 * @brief Used to check the output of execute.
+	 * @details
+	 * Returns:
+	 * - SegmentVector
+	 */
     std::shared_ptr<Container> getOutputType() const;
 
     std::string getName() const

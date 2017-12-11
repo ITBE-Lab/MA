@@ -21,7 +21,7 @@ SAInterval BinarySeeding::extend_backward(
 		const SAInterval &ik,
 		// the character to extend with
 		const uint8_t c,
-		std::shared_ptr<FM_Index> pFM_index
+		std::shared_ptr<FMIndex> pFM_index
 	)
 {
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
@@ -68,10 +68,13 @@ SAInterval BinarySeeding::extend_backward(
 	 * sometimes we do not...
 	 *
 	 * lets adjust the sizes of the smaller intervals accordingly
+	 * 
+	 * TODO: changed ik.start() < pFM_index->primary && ik.end() >= pFM_index->primary
+	 * to current version... how to check if thats ok?
 	 */
 	if(
-			ik.start() < pFM_index->primary && 
-			ik.end() >= pFM_index->primary
+			ik.start() <= pFM_index->primary && 
+			ik.end() > pFM_index->primary
 		)
 	{
 		cntk_2[0]++;
@@ -106,7 +109,7 @@ SAInterval BinarySeeding::extend_backward(
 
 Interval<nucSeqIndex> BinarySeeding::lrExtension(
 		nucSeqIndex center,
-		std::shared_ptr<FM_Index> pFM_index,
+		std::shared_ptr<FMIndex> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq,
 		std::shared_ptr<SegmentVector> pSegmentVector
 	)
@@ -293,7 +296,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 
 Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 		nucSeqIndex center,
-		std::shared_ptr<FM_Index> pFM_index,
+		std::shared_ptr<FMIndex> pFM_index,
 		std::shared_ptr<NucleotideSequence> pQuerySeq,
 		std::shared_ptr<SegmentVector> pSegmentVector
 	)
@@ -500,7 +503,7 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 void BinarySeeding::procesInterval(
 			Interval<nucSeqIndex> xAreaToCover,
 			std::shared_ptr<SegmentVector> pSegmentVector,
-			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<FMIndex> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		)
@@ -557,7 +560,7 @@ ContainerVector BinarySeeding::getInputType() const
 {
 	return ContainerVector{
 			//the forward fm_index
-			std::shared_ptr<Container>(new FM_Index()),
+			std::shared_ptr<Container>(new FMIndex()),
 			//the query sequence
 			std::shared_ptr<Container>(new NucleotideSequence()),
 		};
@@ -572,7 +575,7 @@ std::shared_ptr<Container> BinarySeeding::execute(
 		ContainerVector vpInput
 	)
 {
-	std::shared_ptr<FM_Index> pFM_index = std::static_pointer_cast<FM_Index>(vpInput[0]);
+	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[0]);
 	std::shared_ptr<NucleotideSequence> pQuerySeq = 
 		std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
 

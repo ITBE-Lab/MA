@@ -25,7 +25,7 @@ private:
 	static SAInterval extend_backward(
 			const SAInterval &ik, 
 			const uint8_t c, 
-			std::shared_ptr<FM_Index> pFM_index
+			std::shared_ptr<FMIndex> pFM_index
 		);
 
 	/*
@@ -35,7 +35,7 @@ private:
 			std::shared_ptr<SegmentVector> pxVector,
 			nucSeqIndex min,
 			nucSeqIndex max,
-			std::shared_ptr<FM_Index> pFM_index,
+			std::shared_ptr<FMIndex> pFM_index,
 			std::shared_ptr<NucleotideSequence> pQuerySeq
 		);
 

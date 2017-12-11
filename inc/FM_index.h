@@ -132,7 +132,7 @@ typedef unsigned char ubyte_t;
  * The original data-structure was part of the BWA-code.
  * @ingroup container
  */
-class FM_Index : public Container
+class FMIndex : public Container
 {
 public :
 	/* C(), cumulative counts (part of the FM index)
@@ -298,15 +298,15 @@ protected :
 	 *						  1 manually selected algorithm for large inputs
 	 *						  2 automatic selection on foundation of input size
 	 */
-	void build_FM_Index( 
+	void build_FMIndex( 
 						const Pack &rxSequenceCollection, // the pack for which we compute a BWT
 						unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
 					   );
 
-	/** Builds up a FM_Index for the given input sequence. 
+	/** Builds up a FMIndex for the given input sequence. 
 	 * REMARK: The sequence should be free of ambiguous bases (character N).
 	 */
-	 void build_FM_Index( const NucleotideSequence &fn_pac )
+	 void build_FMIndex( const NucleotideSequence &fn_pac )
 	 {
 		 /* Construction of core BWT.
 		  */
@@ -724,7 +724,7 @@ public :
 
 	/** Dump the current FM-Index to two separated files for BWT and SA.
 	 */
-	void vStoreFM_Index_boost( const boost::filesystem::path &rxFileNamePrefix )
+	void vStoreFMIndex_boost( const boost::filesystem::path &rxFileNamePrefix )
 	{
 		{	/* Save burrow wheeler transform
 			 */
@@ -741,17 +741,17 @@ public :
 		} // scope
 	} // method
 	
-	/** wrap the vStoreFM_Index function in oder to make it acessible to pyhton */
-	void vStoreFM_Index( const char* sPrefix )
+	/** wrap the vStoreFMIndex function in oder to make it acessible to pyhton */
+	void vStoreFMIndex( const char* sPrefix )
 	{
 		std::string sPath(sPrefix);
-		vStoreFM_Index_boost(sPath);
+		vStoreFMIndex_boost(sPath);
 	}//function
 
 
-	/** Load an FM-Index previously stored by vStoreFM_Index.
+	/** Load an FM-Index previously stored by vStoreFMIndex.
 	 */
-	void vLoadFM_Index_boost( const boost::filesystem::path &rxFileNamePrefix )
+	void vLoadFMIndex_boost( const boost::filesystem::path &rxFileNamePrefix )
 	{
 		{	if ( !boost::filesystem::exists( rxFileNamePrefix.string() + ".bwt" ) )
 			{
@@ -780,10 +780,10 @@ public :
 		} // scope
 	} // method
 
-	void vLoadFM_Index( std::string sPrefix )
+	void vLoadFMIndex( std::string sPrefix )
 	{
 		std::string sPath(sPrefix);
-		vLoadFM_Index_boost(sPath);
+		vLoadFMIndex_boost(sPath);
 	}//function
 
 
@@ -791,17 +791,17 @@ public :
 	 * BWT can be build by several different functions. Here we can check for correctness.
 	 * So long it does not compare the BWT sequence itself.
 	 */
-	bool operator== ( const FM_Index &rxOtherFM_Index )
+	bool operator== ( const FMIndex &rxOtherFMIndex )
 	{
-		std::string sErrorText = ( L2 != rxOtherFM_Index.L2 ) 
+		std::string sErrorText = ( L2 != rxOtherFMIndex.L2 ) 
 								 ?  "Different L2"
-								 :	( primary != rxOtherFM_Index.primary ) 
+								 :	( primary != rxOtherFMIndex.primary ) 
 									?  "Different primary"
-									:	( uiRefSeqLength != rxOtherFM_Index.uiRefSeqLength )
+									:	( uiRefSeqLength != rxOtherFMIndex.uiRefSeqLength )
 										? "Different seq_len"
-										:	( bwt != rxOtherFM_Index.bwt )
+										:	( bwt != rxOtherFMIndex.bwt )
 											?	"Different bwt_size"
-											: ( sa != rxOtherFM_Index.sa ) 
+											: ( sa != rxOtherFMIndex.sa ) 
 												? "Different suffix arrays"
 												: "";
 		if ( sErrorText != "" )
@@ -815,24 +815,24 @@ public :
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        return std::dynamic_pointer_cast<FM_Index>(c) != nullptr;
+        return std::dynamic_pointer_cast<FMIndex>(c) != nullptr;
     }//function
 
     //overload
     std::string getTypeName() const
     {
-        return "FM_Index";
+        return "FMIndex";
     }//function
 
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new FM_Index());
+        return std::shared_ptr<Container>(new FMIndex());
     }//function
 
 	/* Default constructor. (Initializes the fix count-table)
 	 */
-	FM_Index()
+	FMIndex()
 		: L2 ({ { 0, 0, 0, 0, 0, 0 } }),
 		  bwt(), // initialize the vector keeping the BWT
 		  sa() // initialize the vector keeping the suffix array
@@ -842,43 +842,43 @@ public :
 
 	/* FM-Index constructor. Builds a FM index on foundation of rxSequence. 
 	 */
-	 FM_Index( const NucleotideSequence &rxSequence ) 
-	 : FM_Index() // call the default constructor
+	 FMIndex( const NucleotideSequence &rxSequence ) 
+	 : FMIndex() // call the default constructor
 	{
-		build_FM_Index( rxSequence );
+		build_FMIndex( rxSequence );
 	} // constructor
 
 	/* FM-Index constructor. Builds a FM index on foundation of pxSequence. 
 	*/
-	FM_Index( const std::shared_ptr<NucleotideSequence> pxSequence ) 
-		: FM_Index() // call the default constructor
+	FMIndex( const std::shared_ptr<NucleotideSequence> pxSequence ) 
+		: FMIndex() // call the default constructor
 	{
-		build_FM_Index( *pxSequence );
+		build_FMIndex( *pxSequence );
 	} // constructor
 
 	/* FM-Index constructor. Builds a FM index on foundation of a given sequence collection. 
 	 */
-	FM_Index( const Pack &rxSequenceCollection, // the pack for which we require a BWT
+	FMIndex( const Pack &rxSequenceCollection, // the pack for which we require a BWT
 			  unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
 			)
-		: FM_Index() // call the default constructor
+		: FMIndex() // call the default constructor
 	{
-		build_FM_Index( rxSequenceCollection, uiAlgorithmSelection );
+		build_FMIndex( rxSequenceCollection, uiAlgorithmSelection );
 	} // constructor
 	
 
 	/* FM-Index constructor. Builds a FM index on foundation of a given sequence collection. 
 	 */
-	 FM_Index( 
+	 FMIndex( 
 			// the pack for which we require a BWT
 			const std::shared_ptr<Pack> pxSequenceCollection 
 		)
-		: FM_Index() // call the default constructor
+		: FMIndex() // call the default constructor
 	{
-		build_FM_Index( *pxSequenceCollection, 2 );
+		build_FMIndex( *pxSequenceCollection, 2 );
 	} // constructor
 
-}; // class FM_Index
+}; // class FMIndex
 
 /**
  * @brief function called in order to export this @ref CppModule "module"

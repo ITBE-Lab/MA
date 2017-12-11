@@ -443,8 +443,11 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
     skip_y = int(max_indels/10)
 
     if high_qual:
-        skip_x = max(1, int(size/100))
-        skip_y = max(1, int(max_indels/100))
+        skip_x = max(1, int(size/50))
+        skip_y = max(1, int(max_indels/50))
+    
+    if skip_x % 1 == 1:
+        skip_x += 1
 
     #
     # iterate over the given range of mutations indels and number of sequences

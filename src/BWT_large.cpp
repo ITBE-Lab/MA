@@ -1583,7 +1583,7 @@ void BWTSaveBwtCodeAndOcc(const BWT *bwt, const char *bwtFileName, const char *o
 	}
 }
 
-/* New function for interfacing with the FM_Index class
+/* New function for interfacing with the FMIndex class
  */
 std::tuple< bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int > > bwtLarge( const char *pcFileNamePack )
 {
