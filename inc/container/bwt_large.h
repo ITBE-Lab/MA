@@ -12,7 +12,7 @@
 #include <errno.h>
 
 #include <boost/log/trivial.hpp>
-#include "qSufSort.h"
+#include "container/qSufSort.h"
 
 /* C++ includes
  */

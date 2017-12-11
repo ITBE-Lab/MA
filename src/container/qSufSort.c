@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include "qSufSort.h"
+#include "container/qSufSort.h"
 #include <stdint.h>
 
 

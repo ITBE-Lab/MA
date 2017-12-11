@@ -12,8 +12,8 @@
 #include <mutex>
 #include <chrono> // time required for temporary filename construction
 #include "container/pack.h"
-#include "is.h"
-#include "bwt_large.h"
+#include "container/is.h"
+#include "container/bwt_large.h"
 
 namespace libLAuS
 {

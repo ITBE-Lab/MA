@@ -4,7 +4,7 @@
 	This file is self contained and does not interface to the remaining code.
 */
 
-#include "bwt_large.h"
+#include "container/bwt_large.h"
 
 
 #define ALPHABET_SIZE				4

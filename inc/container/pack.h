@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
-#include "fasta_reader.h"
+#include "container/fasta_reader.h"
 
 namespace libLAuS
 {

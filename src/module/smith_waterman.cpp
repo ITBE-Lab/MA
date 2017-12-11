@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
-#include "sw_sse_avx.h"
+#include "module/sw_sse_avx.h"
 #include "module/smith_waterman.h"
 using namespace libLAuS;
 
