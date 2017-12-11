@@ -7,7 +7,7 @@
 
 #include <functional>
 #include <iostream>
-#include "exception.h"
+#include "util/exception.h"
 
 /**
  * @brief A generic multipurpose Interval.

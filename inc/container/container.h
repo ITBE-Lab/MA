@@ -8,7 +8,7 @@
 #define CONTAINER_H
 
 #include <vector>
-#include "exception.h"
+#include "util/exception.h"
 #include "util/iterableConverter.h"
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 

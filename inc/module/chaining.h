@@ -16,7 +16,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include "exception.h"
+#include "util/exception.h"
 #include "util/debug.h"
 
 

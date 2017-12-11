@@ -1,4 +1,4 @@
-#include "exception.h"
+#include "util/exception.h"
 
 void translator(ModuleIO_Exception const& x) {
     PyErr_SetString(PyExc_RuntimeError, x.what()); 

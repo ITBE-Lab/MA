@@ -14,7 +14,7 @@
 #include <vector>
 #include <limits> 
 #include "sw_common.h"
-#include "exception.h" // code throws aligner exceptions
+#include "util/exception.h" // code throws aligner exceptions
 #include "container/nucSeq.h" // sequence slices
 using namespace libLAuS;
 

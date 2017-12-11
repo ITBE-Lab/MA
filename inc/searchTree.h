@@ -13,7 +13,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <memory>
-#include "exception.h"
+#include "util/exception.h"
 
 
 /**
