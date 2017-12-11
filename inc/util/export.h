@@ -11,7 +11,7 @@
  * @tableofcontents
  * @section intro_sec Introduction
  *
- * LAuS is a libLAuS::Module "Modular" alignment tool build using C++11 and Boost Python.
+ * LAuS is a @ref libLAuS::Module "Modular" alignment tool build using C++11 and Boost Python.
  * The alignment process has been seperated into several @ref libLAuS::Module "modules".
  * The execution order of the @ref libLAuS::Module "modules" is set up using Python.
  * @ref libLAuS::Module "Modules" can be implemented in Python or C++. <br>
