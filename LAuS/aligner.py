@@ -65,7 +65,6 @@ class Module(libLAuS.Module):
     def promise_me(self, input):
         return Pledge.make_pledge(self, self.get_output_type(), input)
 
-
 ##
 # @brief python wrapper for BinarySeeding
 class BinarySeeding(libLAuS.BinarySeeding):
@@ -74,6 +73,51 @@ class BinarySeeding(libLAuS.BinarySeeding):
 
     def promise_me(self, *args):
         return super(BinarySeeding, self).promise_me(list(args))
+
+##
+# @brief python wrapper for StripOfConsideration
+class StripOfConsideration(libLAuS.StripOfConsideration):
+    def execute(self, *args):
+        return super(StripOfConsideration, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(StripOfConsideration, self).promise_me(list(args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class LinearLineSweep(libLAuS.LinearLineSweep):
+    def execute(self, *args):
+        return super(LinearLineSweep, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(LinearLineSweep, self).promise_me(list(args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class Chaining(libLAuS.Chaining):
+    def execute(self, *args):
+        return super(Chaining, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(Chaining, self).promise_me(list(args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class NeedlemanWunsch(libLAuS.NeedlemanWunsch):
+    def execute(self, *args):
+        return super(NeedlemanWunsch, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(NeedlemanWunsch, self).promise_me(list(args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class GetAnchors(libLAuS.GetAnchors):
+    def execute(self, *args):
+        return super(GetAnchors, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(GetAnchors, self).promise_me(list(args))
 
 """
 class ContainerType(CppContainerType):

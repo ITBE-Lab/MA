@@ -88,69 +88,67 @@ def set_up_aligner(
         ret_pl_indx += 1
 
         if not re_seed is None:
-            segment_pledge = reseed.promise_me((
+            segment_pledge = reseed.promise_me(
                 fm_index_pledge,
                 segment_pledge,
                 query_pledge
-            ))
+            )
             return_pledges[ret_pl_indx].append(segment_pledge)
             ret_pl_indx += 1
 
 
         if strips_of_consideration:
-            anchors_pledge = anc.promise_me((segment_pledge,reference_pledge,fm_index_pledge))
+            anchors_pledge = anc.promise_me(segment_pledge,reference_pledge,fm_index_pledge)
             return_pledges[ret_pl_indx].append(anchors_pledge)
             ret_pl_indx += 1
 
-            strips_pledge = soc.promise_me((
+            strips_pledge = soc.promise_me(
                 segment_pledge,
                 anchors_pledge,
                 query_pledge,
                 reference_pledge,
                 fm_index_pledge
-            ))
+            )
             return_pledges[ret_pl_indx].append(strips_pledge)
             ret_pl_indx += 1
 
-            chains_pledge = execall.promise_me((
+            chains_pledge = execall.promise_me(
                 strips_pledge,
-            ))
+            )
 
             return_pledges[ret_pl_indx].append(chains_pledge)
             ret_pl_indx += 1
 
-            alignments_pledge = nmw_multiple.promise_me((
+            alignments_pledge = nmw_multiple.promise_me(
                 chains_pledge,
                 query_pledge,
                 reference_pledge
-            ))
+            )
             return_pledges[ret_pl_indx].append(alignments_pledge)
             ret_pl_indx += 1
 
-            align_pledge = getBestOnly.promise_me((alignments_pledge,))
+            align_pledge = getBestOnly.promise_me(alignments_pledge)
             return_pledges[ret_pl_indx].append(align_pledge)
             ret_pl_indx += 1
 
         else:
-            strip_pledge = extractAll.promise_me((
+            strip_pledge = extractAll.promise_me(
                 segment_pledge, fm_index_pledge
-            ))
+            )
             return_pledges[ret_pl_indx].append(strip_pledge)
             ret_pl_indx += 1
 
             
-            best_pledge = chain.promise_me((
-                strip_pledge,
-            ))
+            best_pledge = chain.promise_me(strip_pledge)
 
             return_pledges[ret_pl_indx].append(best_pledge)
             ret_pl_indx += 1
 
-            align_pledge = nmw.promise_me((
+            align_pledge = nmw.promise_me(
                 best_pledge,
                 query_pledge,
                 reference_pledge
-            ))
+            )
             return_pledges[ret_pl_indx].append(align_pledge)
             ret_pl_indx += 1
 
