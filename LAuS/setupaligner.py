@@ -80,10 +80,10 @@ def set_up_aligner(
 
     for query_pledge in query_pledges_:
         ret_pl_indx = 0
-        segment_pledge = seg.promise_me((
+        segment_pledge = seg.promise_me(
             fm_index_pledge,
             query_pledge
-        ))
+        )
         return_pledges[ret_pl_indx].append(segment_pledge)
         ret_pl_indx += 1
 

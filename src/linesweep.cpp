@@ -1,5 +1,5 @@
 #include "linesweep.h"
-
+using namespace libLAuS;
 
 //Deprecated
 #if 0
@@ -359,27 +359,27 @@ void exportLinesweep()
     //export the LineSweepContainer class
 	boost::python::class_<
         LineSweep, 
-        boost::python::bases<CppModule>,
+        boost::python::bases<Module>,
         std::shared_ptr<LineSweep>
     >(
         "LineSweep"
     );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<LineSweep>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
     #endif
 
     //export the LineSweepContainer class
 	boost::python::class_<
         LinearLineSweep, 
-        boost::python::bases<CppModule>,
+        boost::python::bases<Module>,
         std::shared_ptr<LinearLineSweep>
     >(
         "LinearLineSweep"
     );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<LinearLineSweep>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }//function

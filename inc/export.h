@@ -3,18 +3,18 @@
  * @brief Provides the boost-python main method.
  * @author Markus Schmidt
  * @details 
- * Calls the export functions of the various @ref CppModule "modules" and Containers.
+ * Calls the export functions of the various @ref Module "modules" and Containers.
  */
 
 /**
- * @mainpage @ref CppModule "Modular" @ref LineSweep "Linesweeping" Aligner using Segmentation
+ * @mainpage @ref Module "Modular" @ref LineSweep "Linesweeping" Aligner using Segmentation
  * @tableofcontents
  * @section intro_sec Introduction
  *
  * LAuS is a Modular alignment tool build using C++11 and Boost Python.
- * The alignment process has been seperated into several @ref CppModule "modules".
- * The execution order of the @ref CppModule "modules" is set up using Python.
- * @ref CppModule "Modules" can be implemented in Python or C++. <br>
+ * The alignment process has been seperated into several @ref Module "modules".
+ * The execution order of the @ref Module "modules" is set up using Python.
+ * @ref Module "Modules" can be implemented in Python or C++. <br>
  * The Pledge class allows setting up a @ref comp_graph_sec "computational graph", 
  * that avoids unnecessary jumps between 
  * Python and C++.
@@ -32,7 +32,7 @@
  * - NeedlemanWunsch
  * 
  * 
- * @ref Container "Containers" are used for the inputs and outputs of the @ref CppModule "modules".
+ * @ref Container "Containers" are used for the inputs and outputs of the @ref Module "modules".
  * The Expected in- and out- puts for each of the three main steps is as follows:
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
@@ -56,7 +56,7 @@
  * 
  * @section quick_start_sec Quick start
  *
- * Here is some python code that sets up the three main @ref CppModule "modules" reqired for alignment:
+ * Here is some python code that sets up the three main @ref Module "modules" reqired for alignment:
  * @code{.py}
  * # A module that creates seeds.
  * seg = BinarySeeding()
@@ -109,7 +109,7 @@
  * Therefore the @ref Module::execute "execute" function calls use the syntax shown above.
  *
  * @note for a quick start on how to setup a computational graph,
- * this setup of @ref CppModule "modules" using a
+ * this setup of @ref Module "modules" using a
  * computation graph can be seen in the @ref comp_graph_sec "Pledge" class.
  * 
  * @section todos TODOs
@@ -126,7 +126,7 @@
 
 /**
  * @defgroup export
- * @brief functions that are used to export Container and @ref CppModule "module" classes to Python
+ * @brief functions that are used to export Container and @ref Module "module" classes to Python
  * @details
  * When the library is imported in python we need to tell python which classes functions etc.
  * we provide.

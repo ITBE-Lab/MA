@@ -881,7 +881,7 @@ public :
 }; // class FMIndex
 
 /**
- * @brief function called in order to export this @ref CppModule "module"
+ * @brief function called in order to export this @ref Module "module"
  * @ingroup export
  */
 void exportFM_index();

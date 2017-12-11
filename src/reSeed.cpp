@@ -6,6 +6,7 @@
 #include <memory>
 #include <atomic>
 #include <chrono>
+using namespace libLAuS;
  
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
@@ -201,7 +202,7 @@ void exportReSeed()
 	//export the ReSeed class
 	boost::python::class_<
 			ReSeed,
-			boost::python::bases<CppModule>,
+			boost::python::bases<Module>,
 			std::shared_ptr<ReSeed>
 		>("ReSeed")
 		.def_readwrite("min_split_len", &ReSeed::minSplitLen)
@@ -209,6 +210,6 @@ void exportReSeed()
 
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<ReSeed>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }//function

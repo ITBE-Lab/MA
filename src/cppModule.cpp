@@ -1,5 +1,5 @@
-#include "cppModule.h"
-
+#include "module.h"
+using namespace libLAuS;
 std::mutex xPython;
 
 bool typeCheck(
@@ -51,8 +51,8 @@ bool typeCheck(
     return true;
 }//function
 
-std::shared_ptr<Pledge> CppModule::promiseMe(
-        std::shared_ptr<CppModule> pThis, 
+std::shared_ptr<Pledge> Module::promiseMe(
+        std::shared_ptr<Module> pThis, 
         std::vector<std::shared_ptr<Pledge>> vInput
     )
 {
@@ -68,29 +68,29 @@ std::shared_ptr<Pledge> CppModule::promiseMe(
 void exportModule()
 {
     //module is an abstract class and should never be initialized
-	boost::python::class_<CppModule>(
-            "CppModule",
+	boost::python::class_<Module>(
+            "Module",
             boost::python::no_init
         )
         .def(
                 "execute",
-                &CppModule::pyExecute
+                &Module::pyExecute
             )
         .def(
                 "get_input_type",
-                &CppModule::getInputType
+                &Module::getInputType
             )
         .def(
                 "get_output_type",
-                &CppModule::getOutputType
+                &Module::getOutputType
             )
         .def(
                 "get_name",
-                &CppModule::getName
+                &Module::getName
             )
         .def(
                 "promise_me",
-                &CppModule::promiseMe,
+                &Module::promiseMe,
                 //boost::python::with_custodian_and_ward_postcall<0,1,
                 boost::python::with_custodian_and_ward_postcall<0,2>()
                 //>()

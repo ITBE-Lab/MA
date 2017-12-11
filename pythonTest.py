@@ -876,8 +876,8 @@ def manualCheckSequences():
 
 
 
-#memory_test(human_genome, -1)
-#exit()
+memory_test(human_genome, -1)
+exit()
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)

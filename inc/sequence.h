@@ -521,7 +521,7 @@ public :
 }; // class NucSeq
 
 /**
- * @brief export this @ref CppModule "modules" to boost python 
+ * @brief export this @ref Module "modules" to boost python 
  * @ingroup export
  */
 void exportSequence();

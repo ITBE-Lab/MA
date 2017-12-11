@@ -1,5 +1,5 @@
 #include "getAnchors.h"
-
+using namespace libLAuS;
 
 ContainerVector GetAnchors::getInputType() const
 {
@@ -66,7 +66,7 @@ void exportGetAnchors()
 {
     boost::python::class_<
         GetAnchors, 
-        boost::python::bases<CppModule>,
+        boost::python::bases<Module>,
 		std::shared_ptr<GetAnchors>
     >(
         "GetAnchors",
@@ -78,6 +78,6 @@ void exportGetAnchors()
 
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<GetAnchors>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }//function

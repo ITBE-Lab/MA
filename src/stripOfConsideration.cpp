@@ -1,5 +1,5 @@
 #include "stripOfConsideration.h"
-
+using namespace libLAuS;
 
 
 ContainerVector StripOfConsideration::getInputType() const
@@ -170,7 +170,7 @@ void exportStripOfConsideration()
     //export the Bucketing class
 	boost::python::class_<
 			StripOfConsideration, 
-			boost::python::bases<CppModule>, 
+			boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
 		>(
         "StripOfConsideration"
@@ -181,6 +181,6 @@ void exportStripOfConsideration()
 
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<StripOfConsideration>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }//function

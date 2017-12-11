@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "sw_sse_avx.h"
 #include "smith_waterman.h"
-
+using namespace libLAuS;
 
 ContainerVector SMW::getInputType() const
 {
@@ -179,7 +179,7 @@ void exportSMW()
 	boost::python::def("demoSMW", &demoCode);
     boost::python::class_<
 			SMW, 
-			boost::python::bases<CppModule>,
+			boost::python::bases<Module>,
         	std::shared_ptr<SMW>
 			>(
 			"SMW",
@@ -187,6 +187,6 @@ void exportSMW()
         );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<SMW>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }

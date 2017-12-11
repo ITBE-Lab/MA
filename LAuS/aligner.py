@@ -10,37 +10,39 @@
 # @author Markus Schmidt
 #
 
+import libLAuS
+#TODO: remove this once unnecessary
 from libLAuS import *
 import traceback
 
 ##
-# @brief the Python implementation of @ref CppModule "module".
+# @brief the Python implementation of @ref Module "module".
 # @details 
 # The module overrides the @ref promiseMe "promise_me" function.
 # Thus telling the C++ code that any module inheriting from this class is written in python.
-# @see the C++ implementation of @ref CppModule "module".
+# @see the C++ implementation of @ref Module "module".
 # @ingroup module 
 #
-class Module(CppModule):
+class Module(libLAuS.Module):
 
     ##
     # @brief The expected input types.
     # @details
-    # Reimplemented from @ref CppModule::getInputType.
+    # Reimplemented from @ref Module::getInputType.
     def get_input_type(self):
         return [ContainerType.nothing]
 
     ##
     # @brief The expected output type.
     # @details
-    # Reimplemented from @ref CppModule::getOutputType.
+    # Reimplemented from @ref Module::getOutputType.
     def get_output_type(self):
         return ContainerType.nothing
 
     ##
     # @brief Execute the implemented algorithm.
     # @details
-    # Reimplemented from @ref CppModule::saveExecute.
+    # Reimplemented from @ref Module::saveExecute.
     def execute(self, input):
         self.__store_result = Module.execute(input)
         return self.__store_result
@@ -48,7 +50,7 @@ class Module(CppModule):
     ##
     # @brief call the execute function with a try catch block
     # @details
-    # Reimplemented from @ref CppModule::saveExecute.
+    # Reimplemented from @ref Module::saveExecute.
     def save_execute(self, input):
         try:
             return self.execute(input)
@@ -59,9 +61,19 @@ class Module(CppModule):
     ##
     # @brief Make this module promise to execute it's function on the provided data.
     # @details
-    # Reimplemented from @ref CppModule::promiseMe.
+    # Reimplemented from @ref Module::promiseMe.
     def promise_me(self, input):
         return Pledge.make_pledge(self, self.get_output_type(), input)
+
+
+##
+# @brief python wrapper for BinarySeeding
+class BinarySeeding(libLAuS.BinarySeeding):
+    def execute(self, *args):
+        return super(BinarySeeding, self).execute(list(args))
+
+    def promise_me(self, *args):
+        return super(BinarySeeding, self).promise_me(list(args))
 
 """
 class ContainerType(CppContainerType):

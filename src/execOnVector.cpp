@@ -1,4 +1,5 @@
 #include "execOnVector.h"
+using namespace libLAuS;
 
 ContainerVector ExecOnVec::getInputType() const
 {
@@ -39,7 +40,7 @@ std::shared_ptr<Container> ExecOnVec::execute(ContainerVector vpInput)
                 (
                     size_t, 
                     std::shared_ptr<ContainerVector> pInVec,
-                    std::shared_ptr<CppModule> pModule,
+                    std::shared_ptr<Module> pModule,
                     unsigned int i
                 )
                 {
@@ -141,23 +142,23 @@ void exportExecOnVector()
     //export the ExecOnVec class
 	boost::python::class_<
             ExecOnVec, 
-            boost::python::bases<CppModule>,
+            boost::python::bases<Module>,
             std::shared_ptr<ExecOnVec>
         >(
         "ExecOnVec",
-        boost::python::init<std::shared_ptr<CppModule>, bool, unsigned int>()[
+        boost::python::init<std::shared_ptr<Module>, bool, unsigned int>()[
                 boost::python::with_custodian_and_ward_postcall<0,1>()
             ]
     );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<ExecOnVec>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 
     //export the Tail class
 	boost::python::class_<
             Tail, 
-            boost::python::bases<CppModule>,
+            boost::python::bases<Module>,
             std::shared_ptr<Tail>
         >(
         "Tail",
@@ -167,6 +168,6 @@ void exportExecOnVector()
     );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<Tail>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }//function

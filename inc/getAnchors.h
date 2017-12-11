@@ -7,53 +7,56 @@
 #define GET_ANCHORS_H
 
 #include "segmentList.h"
-#include "cppModule.h"
+#include "module.h"
 
-/**
- * @brief Extract the n longes seeds.
- * @details
- * Extracts the n longest Seed -s.
- * These can then be used as anchors for StripOfConsiderations.
- * @ingroup module
- */
-class GetAnchors : public CppModule
+namespace libLAuS
 {
-public:
-    ///@brief number of seeds to extract
-    unsigned int uiN;
-    unsigned int uiMaxHitsPerInterval;
-
-    GetAnchors(unsigned int uiN, unsigned int uiMaxHitsPerInterval)
-            :  
-        uiN(uiN),
-        uiMaxHitsPerInterval(uiMaxHitsPerInterval)
-    {}//constructor
-
-    std::shared_ptr<Container> execute(ContainerVector vpInput);
-
     /**
-     * @brief Used to check the input of execute.
+     * @brief Extract the n longes seeds.
      * @details
-     * Returns:
-     * - SegmentVector
-     * - Pack
-     * - FMIndex
+     * Extracts the n longest Seed -s.
+     * These can then be used as anchors for StripOfConsiderations.
+     * @ingroup module
      */
-    ContainerVector getInputType() const;
-
-	/**
-	 * @brief Used to check the output of execute.
-	 * @details
-	 * Returns:
-	 * - Seeds
-	 */
-    std::shared_ptr<Container> getOutputType() const;
-
-    std::string getName() const
+    class GetAnchors : public Module
     {
-        return "getAnchors";
-    }
-};//class
+    public:
+        ///@brief number of seeds to extract
+        unsigned int uiN;
+        unsigned int uiMaxHitsPerInterval;
+
+        GetAnchors(unsigned int uiN, unsigned int uiMaxHitsPerInterval)
+                :  
+            uiN(uiN),
+            uiMaxHitsPerInterval(uiMaxHitsPerInterval)
+        {}//constructor
+
+        std::shared_ptr<Container> execute(ContainerVector vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - SegmentVector
+         * - Pack
+         * - FMIndex
+         */
+        ContainerVector getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - Seeds
+         */
+        std::shared_ptr<Container> getOutputType() const;
+
+        std::string getName() const
+        {
+            return "getAnchors";
+        }
+    };//class
+}//namespace libLAuS
 
 /**
  * @brief Exposes the Alignment container to boost python.

@@ -1,5 +1,5 @@
 #include "needlemanWunsch.h"
-
+using namespace libLAuS;
 
 
 
@@ -395,7 +395,7 @@ void exportNeedlemanWunsch()
      //export the segmentation class
     boost::python::class_<
         NeedlemanWunsch, 
-        boost::python::bases<CppModule>,
+        boost::python::bases<Module>,
         std::shared_ptr<NeedlemanWunsch>
     >(
         "NeedlemanWunsch", 
@@ -411,7 +411,7 @@ void exportNeedlemanWunsch()
     );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<NeedlemanWunsch>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 
 }//function

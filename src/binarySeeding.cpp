@@ -1,5 +1,7 @@
 #include "binarySeeding.h"
 
+using namespace libLAuS;
+
 #define INCLUDE_SELF_TESTS (  1 )
 
 //#include "BWTmem.h"
@@ -608,7 +610,7 @@ void exportBinarySeeding()
 	//export the BinarySeeding class
 	boost::python::class_<
 			BinarySeeding, 
-			boost::python::bases<CppModule>,
+			boost::python::bases<Module>,
         	std::shared_ptr<BinarySeeding>
 		>(
 			"BinarySeeding",
@@ -617,7 +619,7 @@ void exportBinarySeeding()
 		;
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<BinarySeeding>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 
 }//function

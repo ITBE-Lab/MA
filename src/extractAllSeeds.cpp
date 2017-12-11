@@ -1,5 +1,5 @@
 #include "extractAllSeeds.h"
-
+using namespace libLAuS;
 
 
 ContainerVector ExtractAllSeeds::getInputType() const
@@ -36,7 +36,7 @@ void exportExtractAllSeeds()
     //export the ExtractAllSeeds class
 	boost::python::class_<
 			ExtractAllSeeds, 
-			boost::python::bases<CppModule>, 
+			boost::python::bases<Module>, 
             std::shared_ptr<ExtractAllSeeds>
 		>(
         "ExtractAllSeeds"
@@ -45,6 +45,6 @@ void exportExtractAllSeeds()
 
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<ExtractAllSeeds>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }//function

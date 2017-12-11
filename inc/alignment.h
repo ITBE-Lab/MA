@@ -294,7 +294,7 @@ public:
      * @brief for sorting alignment by their score
      * @details
      * When multiple alignments are created we use this function to sort them 
-     * overload from CppModule
+     * overload from Module
      */
     bool smaller(const std::shared_ptr<Container> pOther) const
     {

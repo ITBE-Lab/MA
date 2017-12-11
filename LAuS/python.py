@@ -107,7 +107,7 @@ class Interval_(Interval):
 ##
 # @brief Represents the pledge to deliver some container.
 # @details
-# Content may be provided by a @ref CppModule::promiseMe "module" or by calling @ref set.
+# Content may be provided by a @ref Module::promiseMe "module" or by calling @ref set.
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
@@ -648,38 +648,6 @@ class GetAnchors_(GetAnchors):
     # @brief returns the @ref ContainerType "container type" segmentList.
     # @details
     # Reimplemented from @ref GetAnchors::getOutputType.
-    def get_output_type(self):
-        pass
-
-##
-# @brief The BinarySeeding Module.
-# @details
-# @note To create an instance of this class omit the trainling underscore.
-# @ingroup module
-#
-class BinarySeeding_(BinarySeeding):
-    ##
-    # @brief Create a new Module.
-    # @details
-    # Reimplemented from @ref BinarySeeding.
-    # if use_lr_extension is true then TODO:
-    #
-    def __init__(self, use_lr_extension):
-        pass
-
-    ##
-    # @brief returns the @ref ContainerType "container types" fm_index, nucSeq.
-    # @details
-    # Reimplemented from @ref BinarySeeding::getInputType.
-    #
-    def get_input_type(self):
-        pass
-
-    ##
-    # @brief returns the @ref ContainerType "container type" segmentList.
-    # @details
-    # Reimplemented from @ref BinarySeeding::getOutputType.
-    #
     def get_output_type(self):
         pass
 

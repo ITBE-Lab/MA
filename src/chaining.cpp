@@ -1,4 +1,5 @@
 #include "chaining.h"
+using namespace libLAuS;
 
 ContainerVector Chaining::getInputType() const
 {
@@ -228,7 +229,7 @@ void exportChaining()
     //export the LineSweepContainer class
 	boost::python::class_<
         Chaining, 
-        boost::python::bases<CppModule>,
+        boost::python::bases<Module>,
         std::shared_ptr<Chaining>
         >(
         "Chaining",
@@ -245,6 +246,6 @@ void exportChaining()
     );
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<Chaining>,
-		std::shared_ptr<CppModule> 
+		std::shared_ptr<Module> 
 	>();
 }//function

@@ -21,7 +21,7 @@
  */
 
 /**
- * @brief Abstract class intended to hold data objects used by @ref CppModule "modules".
+ * @brief Abstract class intended to hold data objects used by @ref Module "modules".
  * @details
  * All classes containing data should inherit from this class.
  * @ingroup container
@@ -31,7 +31,7 @@ class Container
 public:
     /** 
     * @returns the type of the container as int.
-    * @brief Used by @ref CppModule "module" for type checking its Inputs.
+    * @brief Used by @ref Module "module" for type checking its Inputs.
     */
     volatile bool canCast(std::shared_ptr<Container> c) const
     {
@@ -70,7 +70,7 @@ class Nil : public Container
 public:
     /** 
     * @returns the type of the container as int.
-    * @brief Used by @ref CppModule "module" for type checking its Inputs.
+    * @brief Used by @ref Module "module" for type checking its Inputs.
     */
     bool canCast(std::shared_ptr<Container> c) const
     {
