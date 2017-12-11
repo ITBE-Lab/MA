@@ -12,7 +12,7 @@ ContainerVector SMW::getInputType() const
 {
 	return ContainerVector{
 			//the query sequence
-			std::shared_ptr<Container>(new NucleotideSequence()),
+			std::shared_ptr<Container>(new NucSeq()),
 			//the ref
 			std::shared_ptr<Container>(new Pack())
 		};
@@ -43,8 +43,8 @@ std::string randomNucSeq(const int uiLen) {
 
 /* SIMD (SSE, AVX2) boosted Smith-Waterman alignments. 
  */
-int16_t alignSW_SIMD( const NucleotideSequence &rQuerySequence, // query sequence
-					  const NucleotideSequence &rReferenceSequence, // reference sequence
+int16_t alignSW_SIMD( const NucSeq &rQuerySequence, // query sequence
+					  const NucSeq &rReferenceSequence, // reference sequence
 					  SmithWatermanParamaterSet<int16_t> &rSWparameterSet, // Smith Waterman alignment parameter
 					  std::vector<size_t> &rvMaxScorePositions // vector will recieve positions, where we have a max score
 					)
@@ -77,8 +77,8 @@ std::shared_ptr<Container> SMW::execute(
 		ContainerVector vpInput
 	)
 {
-	std::shared_ptr<NucleotideSequence> pQuerySeq = 
-		std::static_pointer_cast<NucleotideSequence>(vpInput[0]);
+	std::shared_ptr<NucSeq> pQuerySeq = 
+		std::static_pointer_cast<NucSeq>(vpInput[0]);
 	std::shared_ptr<Pack> pRefPack = 
 		std::static_pointer_cast<Pack>(vpInput[1]);
 
@@ -92,7 +92,7 @@ std::shared_ptr<Container> SMW::execute(
 		pQuerySeq->uxAlphabetSize() // alphabet size of input
 	);
 
-	std::shared_ptr<NucleotideSequence> pReference = pRefPack->vColletionAsNucleotideSequence();
+	std::shared_ptr<NucSeq> pReference = pRefPack->vColletionAsNucSeq();
 
 	//reversing query and reference in order to obtain start instead of end (markus)
 	pQuerySeq->vReverse();
@@ -124,11 +124,11 @@ void demoCode()
 {
 	srand( (unsigned)time( NULL ) );	
 	std::string sRandNucSeq = randomNucSeq( 10000000 );
-	NucleotideSequence xReference( sRandNucSeq );
+	NucSeq xReference( sRandNucSeq );
 
 	size_t uiStart = 10000;
 	size_t uiMatchSize = 1000;
-	NucleotideSequence xQuery( sRandNucSeq.substr( uiStart, uiMatchSize ) );
+	NucSeq xQuery( sRandNucSeq.substr( uiStart, uiMatchSize ) );
 
 	// 1. Prepare the SW parameter set ...
 	SmithWatermanParamaterSet<int16_t> xSWparameterSet

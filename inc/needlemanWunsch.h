@@ -25,10 +25,22 @@ public:
     //overload
     std::shared_ptr<Container> execute(ContainerVector vpInput);
 
-    //overload
+    /**
+     * @brief Used to check the input of execute.
+     * @details
+     * Returns:
+     * - Seeds
+     * - NucSeq
+     * - Pack
+     */
     ContainerVector getInputType() const;
 
-    //overload
+	/**
+	 * @brief Used to check the output of execute.
+	 * @details
+	 * Returns:
+	 * - Alignment
+	 */
     std::shared_ptr<Container> getOutputType() const;
 
     std::string getName() const

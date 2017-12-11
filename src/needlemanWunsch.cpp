@@ -9,7 +9,7 @@ ContainerVector NeedlemanWunsch::getInputType() const
         //the sound strip of consideration
         std::shared_ptr<Container>(new Seeds()),
         //the query sequence
-        std::shared_ptr<Container>(new NucleotideSequence()),
+        std::shared_ptr<Container>(new NucSeq()),
         //the reference sequence
         std::shared_ptr<Container>(new Pack()),
     };
@@ -28,8 +28,8 @@ int iMatch = 8;//20
 int iMissMatch = -2;//-20
 
 void needlemanWunsch(
-        std::shared_ptr<NucleotideSequence> pQuery, 
-        std::shared_ptr<NucleotideSequence> pRef,
+        std::shared_ptr<NucSeq> pQuery, 
+        std::shared_ptr<NucSeq> pRef,
         nucSeqIndex fromQuery,
         nucSeqIndex toQuery,
         nucSeqIndex fromRef,
@@ -209,8 +209,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     )
 {
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);
-    std::shared_ptr<NucleotideSequence> pQuery 
-        = std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
+    std::shared_ptr<NucSeq> pQuery 
+        = std::static_pointer_cast<NucSeq>(vpInput[1]);
     std::shared_ptr<Pack> pRefPack = 
         std::static_pointer_cast<Pack>(vpInput[2]);
 
@@ -296,7 +296,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     DEBUG(
         std::cout << beginRef << " " << endRef << std::endl;
     )
-    std::shared_ptr<NucleotideSequence> pRef;
+    std::shared_ptr<NucSeq> pRef;
     try
     {
         pRef = pRefPack->vExtract(beginRef, endRef);

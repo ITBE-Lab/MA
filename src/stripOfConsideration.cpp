@@ -11,7 +11,7 @@ ContainerVector StripOfConsideration::getInputType() const
 		//the anchors
 		std::shared_ptr<Container>(new Seeds()),
 		//the query
-		std::shared_ptr<Container>(new NucleotideSequence()),
+		std::shared_ptr<Container>(new NucSeq()),
 		//the reference
 		std::shared_ptr<Container>(new Pack()),
 		//the forward fm_index
@@ -30,7 +30,7 @@ std::shared_ptr<Container> StripOfConsideration::getOutputType() const
 void StripOfConsideration::forEachNonBridgingSeed(
 		std::shared_ptr<SegmentVector> pVector,
 		std::shared_ptr<FMIndex> pxFM_index,std::shared_ptr<Pack> pxRefSequence,
-		std::shared_ptr<NucleotideSequence> pxQuerySeq,
+		std::shared_ptr<NucSeq> pxQuerySeq,
 		std::function<void(Seed rxS)> fDo,
 		nucSeqIndex addSize = 0
 	)
@@ -66,8 +66,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 {
 	std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>(vpInput[0]);
 	std::shared_ptr<Seeds> pAnchors = std::static_pointer_cast<Seeds>(vpInput[1]);
-	std::shared_ptr<NucleotideSequence> pQuerySeq = 
-		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
+	std::shared_ptr<NucSeq> pQuerySeq = 
+		std::static_pointer_cast<NucSeq>(vpInput[2]);
 	std::shared_ptr<Pack> pRefSeq = 
 		std::static_pointer_cast<Pack>(vpInput[3]);
 	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[4]);

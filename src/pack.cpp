@@ -24,7 +24,7 @@ void exportPack()
                 "append", 
                 &Pack::vAppendSequence_boost,
                 "arg1: self\n"
-                "arg2: a NucleotideSequence\n"
+                "arg2: a NucSeq\n"
                 "returns: nil\n"
                 "\n"
                 "Appends seq at the end of the pack.\n"
@@ -72,32 +72,32 @@ void exportPack()
                 "arg1: self\n"
                 "arg2: begin of extraction\n"
                 "arg3: end of extraction\n"
-                "returns: the extracted sequence as NucleotideSequence\n"
+                "returns: the extracted sequence as NucSeq\n"
                 "\n"
                 "Extracts a sequence from the pack.\n"
                 "Indices are inclusive.\n"
             )
         .def(
                 "extract_complete", 
-                &Pack::vColletionAsNucleotideSequence,
+                &Pack::vColletionAsNucSeq,
                 "arg1: self\n"
-                "returns: the extracted sequence as NucleotideSequence\n"
+                "returns: the extracted sequence as NucSeq\n"
                 "\n"
                 "Extracts the entire pack as sequence.\n"
             )
         .def(
                 "extract_forward_strand", 
-                &Pack::vColletionWithoutReverseStrandAsNucleotideSequence,
+                &Pack::vColletionWithoutReverseStrandAsNucSeq,
                 "arg1: self\n"
-                "returns: the extracted sequence as NucleotideSequence\n"
+                "returns: the extracted sequence as NucSeq\n"
                 "\n"
                 "Extracts the forward strand of the pack as sequence.\n"
             )
         .def(
                 "extract_reverse_strand", 
-                &Pack::vColletionOnlyReverseStrandAsNucleotideSequence,
+                &Pack::vColletionOnlyReverseStrandAsNucSeq,
                 "arg1: self\n"
-                "returns: the extracted sequence as NucleotideSequence\n"
+                "returns: the extracted sequence as NucSeq\n"
                 "\n"
                 "Extracts the reverse strand of the pack as sequence.\n"
             )

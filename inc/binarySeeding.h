@@ -39,7 +39,7 @@ private:
 	Interval<nucSeqIndex> lrExtension(
 			nucSeqIndex center,
 			std::shared_ptr<FMIndex> pFM_index,
-			std::shared_ptr<NucleotideSequence> pQuerySeq,
+			std::shared_ptr<NucSeq> pQuerySeq,
 			std::shared_ptr<SegmentVector> pSegmentVector
 		);
 
@@ -49,7 +49,7 @@ private:
 	Interval<nucSeqIndex> nonEnclosedExtension(
 			nucSeqIndex center,
 			std::shared_ptr<FMIndex> pFM_index,
-			std::shared_ptr<NucleotideSequence> pQuerySeq,
+			std::shared_ptr<NucSeq> pQuerySeq,
 			std::shared_ptr<SegmentVector> pSegmentVector
 		);
 
@@ -62,7 +62,7 @@ private:
 			Interval<nucSeqIndex> xAreaToCover,
 			std::shared_ptr<SegmentVector> pSegmentVector,
 			std::shared_ptr<FMIndex> pFM_index,
-			std::shared_ptr<NucleotideSequence> pQuerySeq,
+			std::shared_ptr<NucSeq> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		);
 	
@@ -77,7 +77,7 @@ private:
 			Interval<nucSeqIndex> xAreaToCover,
 			std::shared_ptr<SegmentVector> pSegmentVector,
 			std::shared_ptr<FMIndex> pFM_index,
-			std::shared_ptr<NucleotideSequence> pQuerySeq,
+			std::shared_ptr<NucSeq> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		)
 	{
@@ -103,7 +103,7 @@ public:
 	 * @details
 	 * Returns:
 	 * - FMIndex
-	 * - NucleotideSequence
+	 * - NucSeq
 	 */
 	ContainerVector getInputType() const;
 

@@ -237,7 +237,7 @@ void exportChaining()
         "\n"
         "Execution:\n"
         "	Expects query, ref, strip_vec as input.\n"
-        "		query: the query as NucleotideSequence\n"
+        "		query: the query as NucSeq\n"
         "		ref: the reference sequence as Pack\n"
         "		strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
         "	returns strip_vec.\n"

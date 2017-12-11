@@ -36,7 +36,7 @@ private:
 			nucSeqIndex min,
 			nucSeqIndex max,
 			std::shared_ptr<FMIndex> pFM_index,
-			std::shared_ptr<NucleotideSequence> pQuerySeq
+			std::shared_ptr<NucSeq> pQuerySeq
 		);
 
 

@@ -7,7 +7,7 @@
 #include <atomic>
 #include <chrono>
  
-#define complement(x) (uint8_t)NucleotideSequence::nucleotideComplement(x)
+#define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
 /**
 * Delivers 4 intervals for a single input interval.
@@ -106,7 +106,7 @@ void ReSeed::extend(
 		nucSeqIndex min,
 		nucSeqIndex max,
 		std::shared_ptr<FMIndex> pFM_index,
-		std::shared_ptr<NucleotideSequence> pQuerySeq
+		std::shared_ptr<NucSeq> pQuerySeq
 	)
 {
 
@@ -164,7 +164,7 @@ ContainerVector ReSeed::getInputType() const
 			//the forward fm_index
 			std::shared_ptr<Container>(new SegmentVector()),
 			//the query sequence
-			std::shared_ptr<Container>(new NucleotideSequence()),
+			std::shared_ptr<Container>(new NucSeq()),
 		};
 }
 
@@ -180,8 +180,8 @@ std::shared_ptr<Container> ReSeed::execute(
 {
 	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[0]);
 	std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>(vpInput[1]);
-	std::shared_ptr<NucleotideSequence> pQuerySeq = 
-		std::static_pointer_cast<NucleotideSequence>(vpInput[2]);
+	std::shared_ptr<NucSeq> pQuerySeq = 
+		std::static_pointer_cast<NucSeq>(vpInput[2]);
 
 	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
 

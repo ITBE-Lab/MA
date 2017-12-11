@@ -121,7 +121,7 @@ struct SW_SIMD_Aligner
 
 	/* Constructor
 	 */
-	SW_SIMD_Aligner( const NucleotideSequence &rQuerySequence, // query sequence of alignment
+	SW_SIMD_Aligner( const NucSeq &rQuerySequence, // query sequence of alignment
 					    const SmithWatermanParamaterSet<T_scoring> &SWparameterSet // alignment parameter
 					  ) 
 		: uiQueryLen( rQuerySequence.length() ),
@@ -181,7 +181,7 @@ struct SW_SIMD_Aligner
 	/* Write the query profile to memory.
 	 * Similar technique to the serial approach.
 	 */
-	void initQueryProfile(const NucleotideSequence &rQuerySequence,
+	void initQueryProfile(const NucSeq &rQuerySequence,
 						  const SmithWatermanParamaterSet<T_scoring> &SWparameterSet)
 	{
 		/* Initialize the Scoring Profile for the query as described in the paper.
@@ -217,7 +217,7 @@ struct SW_SIMD_Aligner
 	/* Align for 16 bit sized scores.
 	 * Returns maximum score.
 	 */
-	T_scoring align( const NucleotideSequence &pReference,
+	T_scoring align( const NucSeq &pReference,
 					 std::vector<T_size_t> &rvMaxScorePositions // vector will keep the positions of occurences of max score
 #if (DO_CHECKS == 1)
 					 , std::vector<T_scoring> &rvSwRowMaxima // vector collecting row maxima (for debugging)

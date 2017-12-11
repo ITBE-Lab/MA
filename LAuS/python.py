@@ -337,7 +337,7 @@ class Pack_(Pack):
     ##
     # @brief Extracts the entire pack as sequence.
     # @details
-    # Reimplemented from @ref Pack::vColletionAsNucleotideSequence.
+    # Reimplemented from @ref Pack::vColletionAsNucSeq.
     #
     def extract_complete(self):
         pass
@@ -345,7 +345,7 @@ class Pack_(Pack):
     ##
     # @brief Extracts the forward strand entire pack as sequence.
     # @details
-    # Reimplemented from @ref Pack::vColletionWithoutReverseStrandAsNucleotideSequence.
+    # Reimplemented from @ref Pack::vColletionWithoutReverseStrandAsNucSeq.
     #
     def extract_forward_strand(self):
         pass
@@ -353,7 +353,7 @@ class Pack_(Pack):
     ##
     # @brief Extracts the reverse strand entire pack as sequence.
     # @details
-    # Reimplemented from @ref Pack::vColletionOnlyReverseStrandAsNucleotideSequence.
+    # Reimplemented from @ref Pack::vColletionOnlyReverseStrandAsNucSeq.
     #
     def extract_reverse_strand(self):
         pass
@@ -394,11 +394,11 @@ class SAInterval_(SAInterval, Interval_):
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class NucSeq_(NucleotideSequence):
+class NucSeq_(NucSeq):
     ##
     # @brief Create a nucleotide sequence out of the given string.
     # @details
-    # Reimplemented from @ref NucleotideSequence.
+    # Reimplemented from @ref NucSeq.
     #
     def __init__(self, string):
         pass
@@ -406,7 +406,7 @@ class NucSeq_(NucleotideSequence):
     ##
     # @brief Get the nucleotide at the given index.
     # @details
-    # Reimplemented from @ref NucleotideSequence::charAt.
+    # Reimplemented from @ref NucSeq::charAt.
     #
     def at(self, index):
         pass
@@ -414,7 +414,7 @@ class NucSeq_(NucleotideSequence):
     ##
     # @brief Get the nucleotide at the given index.
     # @details
-    # Reimplemented from @ref NucleotideSequence::charAt.
+    # Reimplemented from @ref NucSeq::charAt.
     #
     def __getitem__(self, index):
         pass
@@ -422,7 +422,7 @@ class NucSeq_(NucleotideSequence):
     ##
     # @brief Append the given sequence.
     # @details
-    # Reimplemented from @ref NucleotideSequence::vAppend_boost.
+    # Reimplemented from @ref NucSeq::vAppend_boost.
     #
     def append(self, string):
         pass
@@ -430,7 +430,7 @@ class NucSeq_(NucleotideSequence):
     ##
     # @brief Get the length of the sequence.
     # @details
-    # Reimplemented from @ref NucleotideSequence::length.
+    # Reimplemented from @ref NucSeq::length.
     #
     def length(self):
         pass
@@ -438,7 +438,7 @@ class NucSeq_(NucleotideSequence):
     ##
     # @brief Get the length of the sequence.
     # @details
-    # Reimplemented from @ref NucleotideSequence::length.
+    # Reimplemented from @ref NucSeq::length.
     #
     def __len__(self):
         pass
@@ -446,7 +446,7 @@ class NucSeq_(NucleotideSequence):
     ##
     # @brief Get sequence as a string.
     # @details
-    # Reimplemented from @ref NucleotideSequence::toString.
+    # Reimplemented from @ref NucSeq::toString.
     #
     def __str__(self):
         pass
@@ -454,7 +454,7 @@ class NucSeq_(NucleotideSequence):
     ##
     # @brief Reverse the sequence.
     # @details
-    # Reimplemented from @ref NucleotideSequence::vReverse.
+    # Reimplemented from @ref NucSeq::vReverse.
     #
     def reverse(self):
         pass

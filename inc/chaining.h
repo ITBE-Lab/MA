@@ -94,10 +94,20 @@ public:
     //overload
 	std::shared_ptr<Container> execute(ContainerVector pInput);
 
-    //overload
+    /**
+     * @brief Used to check the input of execute.
+     * @details
+     * Returns:
+     * - Seeds
+     */
     ContainerVector getInputType() const;
 
-    //overload
+	/**
+	 * @brief Used to check the output of execute.
+	 * @details
+	 * Returns:
+	 * - Seeds
+	 */
     std::shared_ptr<Container> getOutputType() const;
 
 

@@ -173,7 +173,7 @@ protected :
 	 * We have a serious problem with ambiguous bases over here, because the (compressed) BWT can't represent them.
 	 * WARNING: Do not pass sequences comprising ambiguous symbols (e.g. symbol 'N').
 	 */
-	void bwt_pac2bwt_step1( const NucleotideSequence &fn_pac_arg );
+	void bwt_pac2bwt_step1( const NucSeq &fn_pac_arg );
 	
 
 	/** Retrieve character at position k from the $-removed packed BWT without occurrence counter.
@@ -306,7 +306,7 @@ protected :
 	/** Builds up a FMIndex for the given input sequence. 
 	 * REMARK: The sequence should be free of ambiguous bases (character N).
 	 */
-	 void build_FMIndex( const NucleotideSequence &fn_pac )
+	 void build_FMIndex( const NucSeq &fn_pac )
 	 {
 		 /* Construction of core BWT.
 		  */
@@ -842,7 +842,7 @@ public :
 
 	/* FM-Index constructor. Builds a FM index on foundation of rxSequence. 
 	 */
-	 FMIndex( const NucleotideSequence &rxSequence ) 
+	 FMIndex( const NucSeq &rxSequence ) 
 	 : FMIndex() // call the default constructor
 	{
 		build_FMIndex( rxSequence );
@@ -850,7 +850,7 @@ public :
 
 	/* FM-Index constructor. Builds a FM index on foundation of pxSequence. 
 	*/
-	FMIndex( const std::shared_ptr<NucleotideSequence> pxSequence ) 
+	FMIndex( const std::shared_ptr<NucSeq> pxSequence ) 
 		: FMIndex() // call the default constructor
 	{
 		build_FMIndex( *pxSequence );

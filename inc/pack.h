@@ -84,7 +84,7 @@ extern unsigned char nst_nt4_table[256];
  *       study http://gehrcke.de/2011/06/reading-files-in-c-using-ifstream-dealing-correctly-with-badbit-failbit-eofbit-and-perror/
  */
 /**
- * @brief A packed NucleotideSequence.
+ * @brief A packed NucSeq.
  * @details
  * Compresses the sequence.
  * @ingroup container
@@ -200,7 +200,7 @@ private:
 	 * Compressed in 2 bit format. 0 -> A, 1 -> C, 2 -> G, 3 -> T
 	 * Each byte contains 4 Nucleotides.
 	 */
-	std::vector<uint8_t> xPackedNucleotideSequences;
+	std::vector<uint8_t> xPackedNucSeqs;
 
 	/* The random seed value used for starting the generation of random numbers.
 	 */
@@ -213,7 +213,7 @@ private:
 	inline void vSetNucleotideOnPos( const uint64_t uiPosition, const uint8_t uiValue )
 	{	/* We expect a correct position, when we come here.
 		 */
-		xPackedNucleotideSequences[(size_t)(uiPosition >> 2)] |= uiValue << ((~uiPosition & 3UL) << 1);
+		xPackedNucSeqs[(size_t)(uiPosition >> 2)] |= uiValue << ((~uiPosition & 3UL) << 1);
 	} // inline method
 
 	/* Get the value at position uiPosition in the unpacked sequence.
@@ -222,14 +222,14 @@ private:
 	inline uint8_t getNucleotideOnPos( const uint64_t uiPosition ) const
 	{	/* We expect a correct position, when we come here.
 		 */
-		return xPackedNucleotideSequences[(size_t)(uiPosition >> 2)] >> ((~uiPosition & 3UL) << 1) & 3;
+		return xPackedNucSeqs[(size_t)(uiPosition >> 2)] >> ((~uiPosition & 3UL) << 1) & 3;
 	} // inline method
 
 	/* Method can throw exception if I/O operation fails.
 	 * Writes the isolated content of the pack-vector to the file-system.
 	 */
 	void vStorePack( const std::string &rsFileNamePrefix, 
-					 const decltype( xPackedNucleotideSequences ) &rxPackedSequences,
+					 const decltype( xPackedNucSeqs ) &rxPackedSequences,
 					 const uint64_t uiUnpackedSize
 				   ) const
 	{
@@ -349,8 +349,8 @@ private:
 		/* Read the pack back from the file.
 		 * TO DO: On 32 Bit systems check for some overflow.
 		 */
-		xPackedNucleotideSequences.resize( (size_t)(uiFileSize - (1 + bZeroByteInjection) ) );
-		xFileInputStream.read( (char *)&xPackedNucleotideSequences[0], uiFileSize - (1 + bZeroByteInjection) );
+		xPackedNucSeqs.resize( (size_t)(uiFileSize - (1 + bZeroByteInjection) ) );
+		xFileInputStream.read( (char *)&xPackedNucSeqs[0], uiFileSize - (1 + bZeroByteInjection) );
 
 		/* Check existence of injected zero-byte.
 		 */
@@ -375,11 +375,11 @@ private:
 
 		/* Check whether the unpacked sequence size is reasonable.
 		 */
-		if( ( uiUnpackedSize >> 2) + (( uiUnpackedSize & 3 ) == 0 ? 0 : 1) != xPackedNucleotideSequences.size() ) 
+		if( ( uiUnpackedSize >> 2) + (( uiUnpackedSize & 3 ) == 0 ? 0 : 1) != xPackedNucSeqs.size() ) 
 		{
 			//// std::cout << uiUnpackedSizeForwardStrand << "\n";
 			//// std::cout << ( uiUnpackedSizeForwardStrand >> 2) + (( uiUnpackedSizeForwardStrand & 3 ) == 0 ? 0 : 1 ) << "\n";
-			//// std::cout << ( xPackedNucleotideSequences.size() - 1 ) << "\n";
+			//// std::cout << ( xPackedNucSeqs.size() - 1 ) << "\n";
 			throw std::runtime_error( "Loading pack failed. Inconsistent pack size recognized." );
 		} // if
 		
@@ -535,7 +535,7 @@ public:
 		bPackComprisesReverseStrand( false ),
 		xVectorOfSequenceDescriptors(),
 		xVectorOfHoleDescriptors(),
-		xPackedNucleotideSequences(),
+		xPackedNucSeqs(),
 		seed( uint32_t( time( NULL ) ) ),	// random number generator initial value
 		uiUnpackedSizeForwardStrand( 0 )
 	{
@@ -568,7 +568,7 @@ public:
 	 */
 	void vAppendSequence( const std::string &rsName,			// name of the sequence within the collection
 						  const std::string &rsComment,			// comment for the sequence
-						  const NucleotideSequence &rxSequence	// sequence itself (The sequence will be copied and is not referred after method termination.)
+						  const NucSeq &rxSequence	// sequence itself (The sequence will be copied and is not referred after method termination.)
 						) 
 	{	/* Skip empty sequences, because they may become troublemaker, particularly if the occur on tail positions.
 		 */
@@ -650,12 +650,12 @@ public:
 			if ( uiShift == 6 )
 			{	/* Fresh element required.
 				 */
-				xPackedNucleotideSequences.emplace_back( uiSymbolCode << uiShift );
+				xPackedNucSeqs.emplace_back( uiSymbolCode << uiShift );
 			} // if
 			else
 			{	/* We insert our base pair by shifting into the last vector element.
 				 */
-				xPackedNucleotideSequences.back() |= ( uiSymbolCode << uiShift );
+				xPackedNucSeqs.back() |= ( uiSymbolCode << uiShift );
 			} // else
 			
 			uiUnpackedSizeForwardStrand++;
@@ -677,7 +677,7 @@ public:
 	void vAppendSequence_boost( 
 			const char* rsName,			// name of the sequence within the collection
 			const char* rsComment,			// comment for the sequence
-			const std::shared_ptr<NucleotideSequence> pxSequence	// sequence itself (The sequence will be copied and is not referred after method termination.)
+			const std::shared_ptr<NucSeq> pxSequence	// sequence itself (The sequence will be copied and is not referred after method termination.)
 		)
 	{
 		vAppendSequence(std::string(rsName), std::string(rsComment), *pxSequence);
@@ -692,7 +692,7 @@ public:
 		vAppendSequence( 
 				rxFastaDescriptor.sName,		// Name of the embedded sequence
 				rxFastaDescriptor.sComment,	// Comments for the sequence
-				NucleotideSequence( *rxFastaDescriptor.pSequenceRef )
+				NucSeq( *rxFastaDescriptor.pSequenceRef )
 			);
 	} // method	
 	/* Appends a single FASTA record to the collection and pack.
@@ -714,7 +714,7 @@ public:
 		/* 1. Store the .pac file ( pcPackPrefix.pac )
 		 * 2. Store the .amb file and the .ann file
 		 */
-		vStorePack( rsPackPrefix, xPackedNucleotideSequences, uiUnpackedSizeForwardStrand );
+		vStorePack( rsPackPrefix, xPackedNucSeqs, uiUnpackedSizeForwardStrand );
 		vStoreCollectionDescripton( rsPackPrefix );
 	} // method
 
@@ -725,7 +725,7 @@ public:
 	{
 		/* Make a copy of the packed nucleotide sequence.
 		 */
-		decltype(xPackedNucleotideSequences) xPackedSequence = xPackedNucleotideSequences;
+		decltype(xPackedNucSeqs) xPackedSequence = xPackedNucSeqs;
 		
 		uint64_t uiRequiredSize = (uiUnpackedSizeForwardPlusReverse() + 3) / 4; // required size of packed sequence
 
@@ -1088,7 +1088,7 @@ public:
 	void vExtractSubsection(
 			const int64_t iBegin,			 // begin of extraction
 			const int64_t iEnd,			 	// end of extraction
-			NucleotideSequence &rxSequence, // receiver of the extraction process
+			NucSeq &rxSequence, // receiver of the extraction process
 			bool bAppend = false			 // deliver true, if you would like to append to an existing nucleotide sequence
 		) const
 	{	
@@ -1148,9 +1148,9 @@ public:
 
 	/* Unpacks the complete collection (forward as well as revers strand) as a single sequence into rxSequence.
 	 */
-	std::shared_ptr<NucleotideSequence> vColletionAsNucleotideSequence() const
+	std::shared_ptr<NucSeq> vColletionAsNucSeq() const
 	{
-		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		std::shared_ptr<NucSeq> pRet(new NucSeq());
 		vExtractSubsection( 
 				0, 
 				uiStartOfReverseStrand(), 
@@ -1167,9 +1167,9 @@ public:
 
 	/* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
 	*/
-	std::shared_ptr<NucleotideSequence> vColletionWithoutReverseStrandAsNucleotideSequence() const
+	std::shared_ptr<NucSeq> vColletionWithoutReverseStrandAsNucSeq() const
 	{
-		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		std::shared_ptr<NucSeq> pRet(new NucSeq());
 		vExtractSubsection(
 				0, 
 				uiStartOfReverseStrand(), 
@@ -1181,12 +1181,12 @@ public:
 	
 	/* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
 	*/
-	std::shared_ptr<NucleotideSequence> vExtract(
+	std::shared_ptr<NucSeq> vExtract(
 			const int64_t iBegin,			 // begin of extraction
 			const int64_t iEnd			 	// end of extraction
 		) const
 	{
-		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		std::shared_ptr<NucSeq> pRet(new NucSeq());
 		vExtractSubsection(
 				iBegin, 
 				iEnd, 
@@ -1197,9 +1197,9 @@ public:
 	
 //markus
 	
-	std::shared_ptr<NucleotideSequence> vColletionOnlyReverseStrandAsNucleotideSequence() const
+	std::shared_ptr<NucSeq> vColletionOnlyReverseStrandAsNucSeq() const
 	{
-		std::shared_ptr<NucleotideSequence> pRet(new NucleotideSequence());
+		std::shared_ptr<NucSeq> pRet(new NucSeq());
 		vExtractSubsection(
 				uiStartOfReverseStrand(), 
 				uiUnpackedSizeForwardPlusReverse(), 

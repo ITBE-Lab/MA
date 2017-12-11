@@ -10,7 +10,7 @@
 #include <chrono>
 //#include "assembly.h"
  
-#define complement(x) (uint8_t)NucleotideSequence::nucleotideComplement(x)
+#define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
 /**
 * Delivers 4 intervals for a single input interval.
@@ -110,7 +110,7 @@ SAInterval BinarySeeding::extend_backward(
 Interval<nucSeqIndex> BinarySeeding::lrExtension(
 		nucSeqIndex center,
 		std::shared_ptr<FMIndex> pFM_index,
-		std::shared_ptr<NucleotideSequence> pQuerySeq,
+		std::shared_ptr<NucSeq> pQuerySeq,
 		std::shared_ptr<SegmentVector> pSegmentVector
 	)
 {
@@ -297,7 +297,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 		nucSeqIndex center,
 		std::shared_ptr<FMIndex> pFM_index,
-		std::shared_ptr<NucleotideSequence> pQuerySeq,
+		std::shared_ptr<NucSeq> pQuerySeq,
 		std::shared_ptr<SegmentVector> pSegmentVector
 	)
 {
@@ -504,7 +504,7 @@ void BinarySeeding::procesInterval(
 			Interval<nucSeqIndex> xAreaToCover,
 			std::shared_ptr<SegmentVector> pSegmentVector,
 			std::shared_ptr<FMIndex> pFM_index,
-			std::shared_ptr<NucleotideSequence> pQuerySeq,
+			std::shared_ptr<NucSeq> pQuerySeq,
 			ThreadPoolAllowingRecursiveEnqueues* pxPool
 		)
 {
@@ -562,7 +562,7 @@ ContainerVector BinarySeeding::getInputType() const
 			//the forward fm_index
 			std::shared_ptr<Container>(new FMIndex()),
 			//the query sequence
-			std::shared_ptr<Container>(new NucleotideSequence()),
+			std::shared_ptr<Container>(new NucSeq()),
 		};
 }
 std::shared_ptr<Container> BinarySeeding::getOutputType() const
@@ -576,8 +576,8 @@ std::shared_ptr<Container> BinarySeeding::execute(
 	)
 {
 	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[0]);
-	std::shared_ptr<NucleotideSequence> pQuerySeq = 
-		std::static_pointer_cast<NucleotideSequence>(vpInput[1]);
+	std::shared_ptr<NucSeq> pQuerySeq = 
+		std::static_pointer_cast<NucSeq>(vpInput[1]);
 
 		
 	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());

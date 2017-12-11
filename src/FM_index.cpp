@@ -1,6 +1,6 @@
 #include "fm_index.h"
 
-void FMIndex::bwt_pac2bwt_step1( const NucleotideSequence &fn_pac )
+void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
 {	
     
     /* Size of the reference sequence
@@ -177,7 +177,7 @@ void FMIndex::build_FMIndex(
         * For small packs we transform the pack into a single sequence 
         * with reverse strand and apply the algorithm for small inputs.
         */
-        auto pSequence = rxSequenceCollection.vColletionAsNucleotideSequence(); // unpack the pack into a single nucleotide sequence
+        auto pSequence = rxSequenceCollection.vColletionAsNucSeq(); // unpack the pack into a single nucleotide sequence
         bwt_pac2bwt_step1( *pSequence ); // construct with build in function
     } // if
     else
@@ -251,7 +251,7 @@ void exportFM_index()
                 "FMIndex",
                 "contains the BWT of a nucleotide sequence\n"
             )
-        .def(boost::python::init<std::shared_ptr<NucleotideSequence>>(
+        .def(boost::python::init<std::shared_ptr<NucSeq>>(
             "arg1: self\n"
             "arg2: the NucSeq to create the BWT Index from\n"
         ))

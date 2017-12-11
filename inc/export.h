@@ -37,10 +37,10 @@
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
- * <tr><td>Create seeds <td> FMIndex, NucleotideSequence <td> SegmentVector
+ * <tr><td>Create seeds <td> FMIndex, NucSeq <td> SegmentVector
  * <tr><td>Remove inconsistent seeds <td> SegmentVector <td> SegmentVector
  * <tr><td>Create local alignments in the gaps between the seeds <td> SegmentVector,
- * NucleotideSequence, Pack <td> Alignment
+ * NucSeq, Pack <td> Alignment
  * </table>
  *
  * @note The python classes can be easily identified by the prefix "LAuS." 

@@ -1,6 +1,6 @@
 /** 
  * @file sequence.h
- * @brief Implements NucleotideSequence.
+ * @brief Implements NucSeq.
  * @author Arne Kutzner
  */
 #pragma once
@@ -17,7 +17,7 @@
 #include "container.h"
 
 class GeneticSequence;
-class NucleotideSequence;
+class NucSeq;
 
 /** 32bit rounding to the next exponent as define
  */
@@ -364,7 +364,7 @@ public :
  * Class for genetic sequence that consist of nucleotides. (A, C, G, T)
  * @ingroup container
  */
-class NucleotideSequence : public GeneticSequence, public Container
+class NucSeq : public GeneticSequence, public Container
 {
 private :
 
@@ -375,14 +375,14 @@ public :
 
 	/** Default constructor
 	 */
-	NucleotideSequence()
+	NucSeq()
 		: GeneticSequence()
 	{ } // default constructor
 
 	/** Constructor that get the initial content of the sequence in text form.
 	 * FIX ME: This can be done a bit more efficient via the GeneticSequence class.
 	 */
-	NucleotideSequence( const std::string &rsInitialText )
+	NucSeq( const std::string &rsInitialText )
 		: GeneticSequence()
 	{
 		vAppend( rsInitialText.c_str() );
@@ -391,7 +391,7 @@ public :
 	/** Move constructor on the foundation of text sequences.
 	* Reuses the space of the text-sequence! TO DO: move & to &&
 	*/
-	NucleotideSequence( TextSequence &rSequence )
+	NucSeq( TextSequence &rSequence )
 	{
 			/* We strip the given sequence of its content and move it to our new sequence.
 			* WARNING: Here we assume that the sizes for the types char and uint8_t are equal.
@@ -405,12 +405,12 @@ public :
 
 
 	/** is implicitly deleted by geneticSequence but boost python needs to know */
-	NucleotideSequence(const NucleotideSequence&) = delete;
+	NucSeq(const NucSeq&) = delete;
 
     //overload
     bool canCast(std::shared_ptr<Container> c) const
     {
-        return std::dynamic_pointer_cast<NucleotideSequence>(c) != nullptr;
+        return std::dynamic_pointer_cast<NucSeq>(c) != nullptr;
     }//function
 
     //overload
@@ -422,7 +422,7 @@ public :
     //overload
     std::shared_ptr<Container> getType() const
     {
-        return std::shared_ptr<Container>(new NucleotideSequence());
+        return std::shared_ptr<Container>(new NucSeq());
     }//function
 
 	/** Delivers the complement of a single nucleotide.
@@ -518,7 +518,7 @@ public :
 		return ret;
 	}//function
 	
-}; // class NucleotideSequence
+}; // class NucSeq
 
 /**
  * @brief export this @ref CppModule "modules" to boost python 

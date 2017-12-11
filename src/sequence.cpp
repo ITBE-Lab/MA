@@ -4,7 +4,7 @@
 /* The translation table for columns.
  * Translates a single character into a 2-bit compressed code.
  */
-const unsigned char NucleotideSequence::xNucleotideTranslationTable[256] = 
+const unsigned char NucSeq::xNucleotideTranslationTable[256] = 
 {
 	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
 	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
@@ -28,10 +28,10 @@ void exportSequence()
 {
 	 //export the nucleotidesequence class
 	boost::python::class_<
-			NucleotideSequence, 
+			NucSeq, 
 			boost::noncopyable,
 			boost::python::bases<Container>, 
-			std::shared_ptr<NucleotideSequence>
+			std::shared_ptr<NucSeq>
 		>(
 			"NucSeq", 
 			"Holds a single nucleotide sequence.\n",
@@ -49,21 +49,21 @@ void exportSequence()
 			))
 			.def(
 					"at", 
-					&NucleotideSequence::charAt,
+					&NucSeq::charAt,
 					"arg1: self\n"
 					"arg2: index at which to look\n"
 					"returns: the char at the given index\n"
 				)
 			.def(
 					"__getitem__", 
-					&NucleotideSequence::charAt,
+					&NucSeq::charAt,
 					"arg1: self\n"
 					"arg2: index at which to look\n"
 					"returns: the char at the given index\n"
 				)
 			.def(
 					"append", 
-					&NucleotideSequence::vAppend_boost,
+					&NucSeq::vAppend_boost,
 					"arg1: self\n"
 					"arg2: sequence to append\n"
 					"returns: nil\n"
@@ -74,25 +74,25 @@ void exportSequence()
 				)
 			.def(
 					"length", 
-					&NucleotideSequence::length,
+					&NucSeq::length,
 					"arg1: self\n"
 					"returns: the length of the sequence\n"
 				)
 			.def(
 					"__len__", 
-					&NucleotideSequence::length,
+					&NucSeq::length,
 					"arg1: self\n"
 					"returns: the length of the sequence\n"
 				)
 			.def(
 					"__str__", 
-					&NucleotideSequence::toString,
+					&NucSeq::toString,
 					"arg1: self\n"
 					"returns: the sequence as string\n"
 				)
 			.def(
 					"reverse", 
-					&NucleotideSequence::vReverse,
+					&NucSeq::vReverse,
 					"arg1: self\n"
 					"returns: nil\n"
 					"\n"
@@ -101,14 +101,14 @@ void exportSequence()
 
 	//tell boost python that pointers of these classes can be converted implicitly
 	boost::python::implicitly_convertible< 
-			std::shared_ptr<NucleotideSequence>, 
+			std::shared_ptr<NucSeq>, 
 			std::shared_ptr<Container>
 		>(); 
 
 	//register return values of vectors of nucseqs
-	boost::python::class_<std::vector<std::shared_ptr<NucleotideSequence>>>("VecRetNuc")
+	boost::python::class_<std::vector<std::shared_ptr<NucSeq>>>("VecRetNuc")
 	.def(boost::python::vector_indexing_suite<
-			std::vector<std::shared_ptr<NucleotideSequence>>,
+			std::vector<std::shared_ptr<NucSeq>>,
 			/*
 			*	true = noproxy this means that the content of the vector is already exposed by
 			*	boost python. 
