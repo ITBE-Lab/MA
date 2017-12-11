@@ -13,113 +13,136 @@
 
 namespace libLAuS
 {
-	class PerfectMatch;
+    class PerfectMatch;
 
-	/**
-	 * @brief Computes all non-enclosed seeds.
-	 * @details
-	 * This is the the BWA seeding strategy, parallelized using binary seeding.
-	 * Gives you all non-enclosed seeds.
-	 * Therefore there are a lot of bad quality seeds and strict filters need to be applied.
-	 * @ingroup module
-	 */
-	class BinarySeeding : public Module{
-	private:
-		bool bLrExtension;
+    /**
+     * @brief Computes a maximally covering set of seeds.
+     * @details
+     * Can use either the extension scheme by Li et Al. or ours.
+     * @ingroup module
+     */
+    class BinarySeeding : public Module{
+    private:
+        bool bLrExtension;
 
-		static SAInterval extend_backward(
-				const SAInterval &ik, 
-				const uint8_t c, 
-				std::shared_ptr<FMIndex> pFM_index
-			);
+        /**
+         * @brief Backwards extension using a FMDIndex
+         * @details
+         * Delivers 4 intervals for a single input interval.
+         * Here we use only two fields in the BWT_Interval.
+         */
+        static SAInterval extend_backward(
+                const SAInterval &ik, 
+                const uint8_t c, 
+                std::shared_ptr<FMIndex> pFM_index
+            );
 
-		/**
-		 * TODO:
-		 */
-		Interval<nucSeqIndex> lrExtension(
-				nucSeqIndex center,
-				std::shared_ptr<FMIndex> pFM_index,
-				std::shared_ptr<NucSeq> pQuerySeq,
-				std::shared_ptr<SegmentVector> pSegmentVector
-			);
+        /**
+         * @brief The simplified extension scheme presented in our Paper.
+         * @details
+         * Computes Two segments for each index as follows:
+         * - extend backwards first then forwards
+         * - extend forwards first then backwards
+         * Starts both extensions on center.
+         * Returns an interval spanning the entire covered area.
+         * Segments are saved in pSegmentVector.
+         */
+        Interval<nucSeqIndex> lrExtension(
+                nucSeqIndex center,
+                std::shared_ptr<FMIndex> pFM_index,
+                std::shared_ptr<NucSeq> pQuerySeq,
+                std::shared_ptr<SegmentVector> pSegmentVector
+            );
 
-		/**
-		 * TODO:
-		 */
-		Interval<nucSeqIndex> nonEnclosedExtension(
-				nucSeqIndex center,
-				std::shared_ptr<FMIndex> pFM_index,
-				std::shared_ptr<NucSeq> pQuerySeq,
-				std::shared_ptr<SegmentVector> pSegmentVector
-			);
+        /**
+         * @brief The extension scheme from Li et Al.
+         * @details
+         * Computes all non-enclosed segments overlapping center.
+         * Returns an interval spanning the entire covered area.
+         * Segments are saved in pSegmentVector.
+         */
+        Interval<nucSeqIndex> nonEnclosedExtension(
+                nucSeqIndex center,
+                std::shared_ptr<FMIndex> pFM_index,
+                std::shared_ptr<NucSeq> pQuerySeq,
+                std::shared_ptr<SegmentVector> pSegmentVector
+            );
 
-		/*
-		*	does nothing if the given interval can be found entirely on the genome.
-		*	if the interval cannot be found this method splits the interval in half and repeats the step with the first half,
-		*	while queuing the second half as a task in the thread pool.
-		*/
-		void procesInterval(
-				Interval<nucSeqIndex> xAreaToCover,
-				std::shared_ptr<SegmentVector> pSegmentVector,
-				std::shared_ptr<FMIndex> pFM_index,
-				std::shared_ptr<NucSeq> pQuerySeq,
-				ThreadPoolAllowingRecursiveEnqueues* pxPool
-			);
-		
-		/*
-		* functions need to be static in order to enqueue them into a threadpool
-		* we need to enqueue procesInterval with an object associated
-		* workaround: give the object as second (since pool will give tId as first) parameter 
-		*/
-		static void procesIntervalStatic(
-				size_t uiThreadId,
-				BinarySeeding *obj,
-				Interval<nucSeqIndex> xAreaToCover,
-				std::shared_ptr<SegmentVector> pSegmentVector,
-				std::shared_ptr<FMIndex> pFM_index,
-				std::shared_ptr<NucSeq> pQuerySeq,
-				ThreadPoolAllowingRecursiveEnqueues* pxPool
-			)
-		{
-			obj->procesInterval(
-					xAreaToCover,
-					pSegmentVector,
-					pFM_index,
-					pQuerySeq,
-					pxPool
-				);
-		}//function
+        /*
+        *    does nothing if the given interval can be found entirely on the genome.
+        *    if the interval cannot be found this method splits the interval in half and repeats the step with the first half,
+        *    while queuing the second half as a task in the thread pool.
+        */
+        void procesInterval(
+                Interval<nucSeqIndex> xAreaToCover,
+                std::shared_ptr<SegmentVector> pSegmentVector,
+                std::shared_ptr<FMIndex> pFM_index,
+                std::shared_ptr<NucSeq> pQuerySeq,
+                ThreadPoolAllowingRecursiveEnqueues* pxPool
+            );
+        
+        /*
+        * functions need to be static in order to enqueue them into a threadpool
+        * we need to enqueue procesInterval with an object associated
+        * workaround: give the object as second (since pool will give tId as first) parameter 
+        */
+        static void procesIntervalStatic(
+                size_t uiThreadId,
+                BinarySeeding *obj,
+                Interval<nucSeqIndex> xAreaToCover,
+                std::shared_ptr<SegmentVector> pSegmentVector,
+                std::shared_ptr<FMIndex> pFM_index,
+                std::shared_ptr<NucSeq> pQuerySeq,
+                ThreadPoolAllowingRecursiveEnqueues* pxPool
+            )
+        {
+            obj->procesInterval(
+                    xAreaToCover,
+                    pSegmentVector,
+                    pFM_index,
+                    pQuerySeq,
+                    pxPool
+                );
+        }//function
 
-	public:
-		BinarySeeding(bool bLrExtension = true)
-				:
-			bLrExtension(bLrExtension)
-		{}//constructor
-		
-		std::shared_ptr<Container> execute(ContainerVector vpInput);
+    public:
+        /**
+         * @brief Initialize a BinarySeeding Module
+         * @details
+         * if bLrExtension is True our extension scheme is used,
+         * otherwise the extension scheme by Li et Al. is used.
+         * Our approach is faster and computes seeds of higher quality.
+         * However Li et Al.s approach will increase the overall accuracy of the alignment.
+         */
+        BinarySeeding(bool bLrExtension = true)
+                :
+            bLrExtension(bLrExtension)
+        {}//constructor
+        
+        std::shared_ptr<Container> execute(ContainerVector vpInput);
 
-		/**
-		 * @brief Used to check the input of execute.
-		 * @details
-		 * Returns:
-		 * - FMIndex
-		 * - NucSeq
-		 */
-		ContainerVector getInputType() const;
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - FMIndex
+         * - NucSeq
+         */
+        ContainerVector getInputType() const;
 
-		/**
-		 * @brief Used to check the output of execute.
-		 * @details
-		 * Returns:
-		 * - SegmentVector
-		 */
-		std::shared_ptr<Container> getOutputType() const;
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - SegmentVector
+         */
+        std::shared_ptr<Container> getOutputType() const;
 
-		std::string getName() const
-		{
-			return "BinarySeeding";
-		}
-	};//class
+        std::string getName() const
+        {
+            return "BinarySeeding";
+        }
+    };//class
 
 }//namespace
 

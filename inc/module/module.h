@@ -18,6 +18,9 @@
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
 
+/**
+ * @brief the C++ code is in this namespace.
+ */
 namespace libLAuS
 {
     extern std::mutex xPython;
@@ -92,6 +95,12 @@ namespace libLAuS
             return std::shared_ptr<Container>(new Nil());
         }
 
+        /**
+         * @brief return the name of the Module.
+         * @details
+         * Can be used to print a representation of the computational graph.
+         * Is also used when creating error messages.
+         */
         virtual std::string getName() const
         {
             return "Module";

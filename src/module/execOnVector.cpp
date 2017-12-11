@@ -13,7 +13,7 @@ ContainerVector ExecOnVec::getInputType() const
 
 std::shared_ptr<Container> ExecOnVec::getOutputType() const
 {
-	return std::shared_ptr<Container>(new ContainerVector(pModule->getOutputType()));
+    return std::shared_ptr<Container>(new ContainerVector(pModule->getOutputType()));
 }//function
 
 std::shared_ptr<Container> ExecOnVec::execute(ContainerVector vpInput)
@@ -110,7 +110,7 @@ ContainerVector Tail::getInputType() const
 
 std::shared_ptr<Container> Tail::getOutputType() const
 {
-	return type;
+    return type;
 }//function
 
 
@@ -140,7 +140,7 @@ std::shared_ptr<Container> Tail::execute(ContainerVector vpInput)
 void exportExecOnVector()
 {
     //export the ExecOnVec class
-	boost::python::class_<
+    boost::python::class_<
             ExecOnVec, 
             boost::python::bases<Module>,
             std::shared_ptr<ExecOnVec>
@@ -150,13 +150,13 @@ void exportExecOnVector()
                 boost::python::with_custodian_and_ward_postcall<0,1>()
             ]
     );
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<ExecOnVec>,
-		std::shared_ptr<Module> 
-	>();
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<ExecOnVec>,
+        std::shared_ptr<Module> 
+    >();
 
     //export the Tail class
-	boost::python::class_<
+    boost::python::class_<
             Tail, 
             boost::python::bases<Module>,
             std::shared_ptr<Tail>
@@ -166,8 +166,8 @@ void exportExecOnVector()
             boost::python::with_custodian_and_ward_postcall<0,1>()
         ]
     );
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<Tail>,
-		std::shared_ptr<Module> 
-	>();
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<Tail>,
+        std::shared_ptr<Module> 
+    >();
 }//function

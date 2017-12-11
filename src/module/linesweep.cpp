@@ -5,14 +5,14 @@ using namespace libLAuS;
 #if 0
 ContainerVector LineSweep::getInputType() const
 {
-	return ContainerVector{
-			std::shared_ptr<Container>(new Seeds())
-		};
+    return ContainerVector{
+            std::shared_ptr<Container>(new Seeds())
+        };
 }//function
 
 std::shared_ptr<Container> LineSweep::getOutputType() const
 {
-	return std::shared_ptr<Container>(new Seeds());
+    return std::shared_ptr<Container>(new Seeds());
 }//function
 
 /**
@@ -195,14 +195,14 @@ std::shared_ptr<Container> LineSweep::execute(
 
 ContainerVector LinearLineSweep::getInputType() const
 {
-	return ContainerVector{
-			std::shared_ptr<Container>(new Seeds())
-		};
+    return ContainerVector{
+            std::shared_ptr<Container>(new Seeds())
+        };
 }//function
 
 std::shared_ptr<Container> LinearLineSweep::getOutputType() const
 {
-	return std::shared_ptr<Container>(new Seeds());
+    return std::shared_ptr<Container>(new Seeds());
 }//function
 
 /**
@@ -357,29 +357,29 @@ void exportLinesweep()
     //deprecated
     #if 0
     //export the LineSweepContainer class
-	boost::python::class_<
+    boost::python::class_<
         LineSweep, 
         boost::python::bases<Module>,
         std::shared_ptr<LineSweep>
     >(
         "LineSweep"
     );
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<LineSweep>,
-		std::shared_ptr<Module> 
-	>();
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<LineSweep>,
+        std::shared_ptr<Module> 
+    >();
     #endif
 
     //export the LineSweepContainer class
-	boost::python::class_<
+    boost::python::class_<
         LinearLineSweep, 
         boost::python::bases<Module>,
         std::shared_ptr<LinearLineSweep>
     >(
         "LinearLineSweep"
     );
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<LinearLineSweep>,
-		std::shared_ptr<Module> 
-	>();
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<LinearLineSweep>,
+        std::shared_ptr<Module> 
+    >();
 }//function

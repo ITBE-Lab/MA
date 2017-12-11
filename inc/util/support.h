@@ -18,23 +18,23 @@
 #include "util/debug.h"
 
 #ifdef __GNUC__
-	#include <stdint.h>
-	
-	// SSE2
-	#include <emmintrin.h>
+    #include <stdint.h>
+    
+    // SSE2
+    #include <emmintrin.h>
 #elif _MSC_VER
-	/* Several data-type definitions of stdint.h not contained in the MSC compiler
-	 */
-	typedef unsigned __int8 uint8_t;
-	typedef signed __int8 int8_t;
+    /* Several data-type definitions of stdint.h not contained in the MSC compiler
+     */
+    typedef unsigned __int8 uint8_t;
+    typedef signed __int8 int8_t;
 
-	typedef unsigned __int32 uint32_t;
-	typedef signed __int32 int32_t;
+    typedef unsigned __int32 uint32_t;
+    typedef signed __int32 int32_t;
 
-	typedef unsigned __int16 uint16_t;
-	typedef signed __int16 int16_t;
+    typedef unsigned __int16 uint16_t;
+    typedef signed __int16 int16_t;
 
-	typedef unsigned __int64 uint64_t;
+    typedef unsigned __int64 uint64_t;
 #endif
 
 
@@ -57,28 +57,28 @@ std::string fullFileName( const char *pcFileNamePrefix, const char *pcSuffix );
  * So, here the data flow towards the current (objects) istream.
  */
 class GzipInputStream : protected boost::iostreams::filtering_streambuf<boost::iostreams::input>,
-						public std::istream
+                        public std::istream
 {
 protected :
-	/* Initializes the gzip filter. Look for the gzip-magic if this absent we work in some uncompressed mode.
-	 * In derived classes this method together with the default constructor can be used for delayed stream connecting.
-	 */
-	void vInitialize( std::istream &xInputStream );
+    /* Initializes the gzip filter. Look for the gzip-magic if this absent we work in some uncompressed mode.
+     * In derived classes this method together with the default constructor can be used for delayed stream connecting.
+     */
+    void vInitialize( std::istream &xInputStream );
 
 public :
-	/* The argument of the constructor could be an std::ifstream.
-	 * WARNING: The stream must have been opened using the mode std::ios::binary.
-	 *          xInputStream has to exist along with the lifetime of the current object.
-	 */
-	GzipInputStream( std::istream &xInputStream );
+    /* The argument of the constructor could be an std::ifstream.
+     * WARNING: The stream must have been opened using the mode std::ios::binary.
+     *          xInputStream has to exist along with the lifetime of the current object.
+     */
+    GzipInputStream( std::istream &xInputStream );
 
 protected :
-	/* This constructor is only for derived classes so that these classes can call vInitialize after creating some input stream.
-	 */
-	GzipInputStream( );
+    /* This constructor is only for derived classes so that these classes can call vInitialize after creating some input stream.
+     */
+    GzipInputStream( );
 
 public :
-	virtual ~GzipInputStream();
+    virtual ~GzipInputStream();
 }; // class
 
 /**
@@ -87,14 +87,14 @@ public :
 class GzipInputFileStream : public GzipInputStream
 {
 private :
-	std::ifstream xFileInputStream;
+    std::ifstream xFileInputStream;
 
 public :
-	GzipInputFileStream( const std::string &pcFileName );
+    GzipInputFileStream( const std::string &pcFileName );
 
-	bool is_open();
+    bool is_open();
 
-	virtual ~GzipInputFileStream();
+    virtual ~GzipInputFileStream();
 }; // class
 
 /**
@@ -104,11 +104,11 @@ public :
  */
 template<typename ParameterType>
 void vRangeCheckAndThrowInclusive(
-		const std::string &sText,
-		const ParameterType &xRangeMin,
-		const ParameterType &xVal,
-		const ParameterType &xRangeMax
-	)
+        const std::string &sText,
+        const ParameterType &xRangeMin,
+        const ParameterType &xVal,
+        const ParameterType &xRangeMax
+    )
 {
        if ( xVal < xRangeMin || xVal > xRangeMax )
        {

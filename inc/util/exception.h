@@ -31,42 +31,42 @@ template <int N>
 class Annotated_exception : public std::exception
 {
 private :
-	/* automated memory deallocation !
-	 */
-	std::string text;
+    /* automated memory deallocation !
+     */
+    std::string text;
 
 public :
-	/**
-	 * @brief takes the string that shall be printed in case the exception is thrown.
-	 * @details
-	 * prepends information about the exception type to the string.
-	 */
-	Annotated_exception( const char* info )  
-	{
-		text = std::string( (N == 0) ? "NCBI data receiver/"		:
-							(N == 1) ? "Smith Waterman Aligner"		:
-							(N == 2) ? "Fasta Reader"				:
-							(N == 3) ? "Null Pointer"				:
-							(N == 4) ? "NCBI XML"					:
-							(N == 5) ? "Boost ASIO"					:
-							(N == 6) ? "FTP Download"				:
-							(N == 7) ? "Module In/Out"					
-									 : "Unknown Source"
-						  );
-		((text += " (") += info) += ")";
-	} // constructor
+    /**
+     * @brief takes the string that shall be printed in case the exception is thrown.
+     * @details
+     * prepends information about the exception type to the string.
+     */
+    Annotated_exception( const char* info )  
+    {
+        text = std::string( (N == 0) ? "NCBI data receiver/"        :
+                            (N == 1) ? "Smith Waterman Aligner"        :
+                            (N == 2) ? "Fasta Reader"                :
+                            (N == 3) ? "Null Pointer"                :
+                            (N == 4) ? "NCBI XML"                    :
+                            (N == 5) ? "Boost ASIO"                    :
+                            (N == 6) ? "FTP Download"                :
+                            (N == 7) ? "Module In/Out"                    
+                                     : "Unknown Source"
+                          );
+        ((text += " (") += info) += ")";
+    } // constructor
 
-	~Annotated_exception() throw() 
-	{} // destructor
-	
-	/**
-	 * @brief Information about the exception.
-	 * @returns instance specific information about the exception.
-	 */
-	virtual const char* what() const throw() 
-	{ 
-		return text.c_str(); 
-	} // method
+    ~Annotated_exception() throw() 
+    {} // destructor
+    
+    /**
+     * @brief Information about the exception.
+     * @returns instance specific information about the exception.
+     */
+    virtual const char* what() const throw() 
+    { 
+        return text.c_str(); 
+    } // method
 };
 
 /**
@@ -75,8 +75,8 @@ public :
 class DataReceiverException : public Annotated_exception<0> 
 {
 public :
-	DataReceiverException(const char* info) : Annotated_exception( info )
-	{}
+    DataReceiverException(const char* info) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -85,8 +85,8 @@ public :
 class AlignerException : public Annotated_exception<1> 
 {
 public :
-	AlignerException(const char* info) : Annotated_exception( info )
-	{}
+    AlignerException(const char* info) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -95,8 +95,8 @@ public :
 class fasta_reader_exception : public Annotated_exception<2> 
 {
 public :
-	fasta_reader_exception(const char* info) : Annotated_exception( info )
-	{}
+    fasta_reader_exception(const char* info) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -105,8 +105,8 @@ public :
 class NullPointerException : public Annotated_exception<3> 
 {
 public :
-	NullPointerException(const char* info) : Annotated_exception( info )
-	{}
+    NullPointerException(const char* info) : Annotated_exception( info )
+    {}
 };
 
 
@@ -116,8 +116,8 @@ public :
 class NXBI_XML_Exception : public Annotated_exception<4> 
 {
 public :
-	NXBI_XML_Exception(const char* info) : Annotated_exception( info )
-	{}
+    NXBI_XML_Exception(const char* info) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -126,8 +126,8 @@ public :
 class BOOST_ASIO_Exception : public Annotated_exception<5>
 {
 public:
-	BOOST_ASIO_Exception( const char* info ) : Annotated_exception( info )
-	{}
+    BOOST_ASIO_Exception( const char* info ) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -136,7 +136,7 @@ public:
 class Download_Exeption : public Annotated_exception<6>
 {
 public:
-	Download_Exeption(const char* info) : Annotated_exception(info){}
+    Download_Exeption(const char* info) : Annotated_exception(info){}
 };
 
 /**
@@ -145,7 +145,7 @@ public:
 class ModuleIO_Exception : public Annotated_exception<7>
 {
 public:
-		ModuleIO_Exception(const char* info) : Annotated_exception(info){}
+        ModuleIO_Exception(const char* info) : Annotated_exception(info){}
 };
 
 
@@ -155,10 +155,10 @@ public:
 template<typename T>
 T notNull( T pointer )
 {
-	if ( pointer == NULL )
-	{
-		throw NullPointerException( "" );
-	} // if
+    if ( pointer == NULL )
+    {
+        throw NullPointerException( "" );
+    } // if
 } // generic function
 
 

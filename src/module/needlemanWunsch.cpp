@@ -409,9 +409,9 @@ void exportNeedlemanWunsch()
         "   returns alignment.\n"
         "       alignment: the final alignment\n"
     );
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<NeedlemanWunsch>,
-		std::shared_ptr<Module> 
-	>();
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<NeedlemanWunsch>,
+        std::shared_ptr<Module> 
+    >();
 
 }//function

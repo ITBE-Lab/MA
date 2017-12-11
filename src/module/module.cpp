@@ -68,7 +68,7 @@ std::shared_ptr<Pledge> Module::promiseMe(
 void exportModule()
 {
     //module is an abstract class and should never be initialized
-	boost::python::class_<Module>(
+    boost::python::class_<Module>(
             "Module",
             boost::python::no_init
         )
@@ -135,7 +135,7 @@ void exportModule()
             .def_readwrite("exec_time", &Pledge::execTime)
         ;
 
-	//tell boost python that pointers of these classes can be converted implicitly
+    //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 
                                             std::shared_ptr<Pledge>,
                                             std::shared_ptr<Container> 

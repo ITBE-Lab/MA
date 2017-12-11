@@ -14,10 +14,6 @@ using namespace libLAuS;
  
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
-/**
-* Delivers 4 intervals for a single input interval.
-* Here we use only two fields in the BWT_Interval.
-*/
 SAInterval BinarySeeding::extend_backward( 
 		// current interval
 		const SAInterval &ik,
@@ -517,21 +513,25 @@ void BinarySeeding::procesInterval(
 	)
 
 	Interval<nucSeqIndex> xAreaCovered;
-	//performs extension and records any perfect matches
+	// performs extension and records any found seeds
+	// here we use bLrExtension to choose the extension scheme
 	if(bLrExtension)
 		xAreaCovered = lrExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
 	else
 		xAreaCovered = nonEnclosedExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
 
+	// extract how far the extension got on the query.
 	nucSeqIndex uiFrom = xAreaCovered.start();
 	nucSeqIndex uiTo = xAreaCovered.end();
 	DEBUG(
 		std::cout << "splitting interval (" << uiStart << "," << uiEnd << ") at (" << uiFrom << "," << uiTo << ")" << std::endl;
 	)
 
+	// if the extension did not fully cover until uiStart:
 	if (uiFrom != 0 && uiStart + 1 < uiFrom)
 	{
-		//enqueue procesInterval() for the new interval
+		// enqueue procesInterval() for a new interval that spans from uiStart to 
+		// where the extension stopped
 		pxPool->enqueue( 
 			BinarySeeding::procesIntervalStatic,
 			this,
@@ -542,9 +542,11 @@ void BinarySeeding::procesInterval(
 			pxPool
 		);//enqueue
 	}//if
+	// if the extension did not fully cover until uiEnd:
 	if (uiEnd > uiTo + 1)
 	{
-		//enqueue procesInterval() for the new interval
+		// enqueue procesInterval() for a new interval that spans from where the extension stopped
+		// to uiEnd
 		pxPool->enqueue( 
 			BinarySeeding::procesIntervalStatic,
 			this,
@@ -585,9 +587,10 @@ std::shared_ptr<Container> BinarySeeding::execute(
 	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
 
 	{//scope for xPool
+		// setup a threadpool
 		ThreadPoolAllowingRecursiveEnqueues xPool( NUM_THREADS_ALIGNER );
 
-		//enqueue the root interval for processing
+		//enqueue the root interval (spanning the entire query) for processing
 		xPool.enqueue( 
 			BinarySeeding::procesIntervalStatic,
 			this,
@@ -605,8 +608,6 @@ std::shared_ptr<Container> BinarySeeding::execute(
 
 void exportBinarySeeding()
 {
-	//boost::python::def("analyse_crisper", analyseCRISPER);
-
 	//export the BinarySeeding class
 	boost::python::class_<
 			BinarySeeding, 

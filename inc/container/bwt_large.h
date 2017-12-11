@@ -26,11 +26,11 @@
 #endif
 
 #ifdef _MSC_VER
-	#define inline __inline
+    #define inline __inline
 #endif
 
 #ifdef _MSC_VER
-	#define __func__ __FUNCTION__
+    #define __func__ __FUNCTION__
 #endif
 
 typedef uint64_t bgint_t;

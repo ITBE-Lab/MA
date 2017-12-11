@@ -27,10 +27,10 @@ void exportSeed()
     .def(boost::python::vector_indexing_suite<
             Seeds,
             /*
-            *	true = noproxy this means that the content of the vector is already exposed by
-            *	boost python. 
-            *	if this is kept as false, Container would be exposed a second time.
-            *	the two Containers would be different and not inter castable.
+            *    true = noproxy this means that the content of the vector is already exposed by
+            *    boost python. 
+            *    if this is kept as false, Container would be exposed a second time.
+            *    the two Containers would be different and not inter castable.
             */
             true
         >());

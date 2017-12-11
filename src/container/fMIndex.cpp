@@ -2,7 +2,7 @@
 using namespace libLAuS;
 
 void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
-{	
+{    
     
     /* Size of the reference sequence
      */
@@ -35,7 +35,7 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
      * Here we call external code (in is.c) for BWT construction. 
      * The BWT construction happens in-place in buf. (This is why we allocate one byte additionally.)
      */
-	primary = is_bwt( buf.get(), (int)uiRefSeqLength );
+    primary = is_bwt( buf.get(), (int)uiRefSeqLength );
 
     /* Compute the expected size of the bwt expressed in 32 bit blocks and resize the bwt vector appropriately.
      */
@@ -45,7 +45,7 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
      * FIX ME: The construction programs should already work with the buffer.
      */
     for ( uint64_t i = 0; i < uiRefSeqLength; ++i )
-    {	/* Byte to packed transformation. 
+    {    /* Byte to packed transformation. 
          */
         bwt[i >> 4] |= buf[i] << ((15 - (i & 15)) << 1);
     } // for
@@ -112,7 +112,7 @@ void FMIndex::bwt_bwtupdate_core_step2()
 
 void FMIndex::bwt_cal_sa_step3( unsigned int intv )
 {
-    assert( ispowerof2( intv ) );	//, "SA sample interval is not a power of 2.");
+    assert( ispowerof2( intv ) );    //, "SA sample interval is not a power of 2.");
 
     // if (bwt->sa) free(bwt->sa);
     sa_intv = intv;
@@ -173,7 +173,7 @@ void FMIndex::build_FMIndex(
     * Step 1: Create the basic BWT.
     */
     if ( uiAlgorithmSelection == 0 )
-    {	
+    {    
         /*
         * For small packs we transform the pack into a single sequence 
         * with reverse strand and apply the algorithm for small inputs.
@@ -198,7 +198,7 @@ void FMIndex::build_FMIndex(
         boost::filesystem::create_directories( tempDir ); 
 
         // Create temporary filename for pack export.
-        const auto xTempFileName =	tempDir.append(  
+        const auto xTempFileName =    tempDir.append(  
                                 std::to_string( std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() ) ) // current time as string
                                 .append("-")
                                 .append(std::to_string( rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() )) // pack size as string
@@ -244,7 +244,7 @@ void exportFM_index()
         >("SAInterval")
     ;
     //export the FM_index class
-	boost::python::class_<
+    boost::python::class_<
             FMIndex, 
             boost::python::bases<Container>, 
             std::shared_ptr<FMIndex>
@@ -309,7 +309,7 @@ void exportFM_index()
                 "that belongs to the position k in the BWT.\n"
             );
 
-	//tell boost python that pointers of these classes can be converted implicitly
+    //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 
                                             std::shared_ptr<FMIndex>,
                                             std::shared_ptr<Container> 

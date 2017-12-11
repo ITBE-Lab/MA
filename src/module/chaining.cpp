@@ -3,15 +3,15 @@ using namespace libLAuS;
 
 ContainerVector Chaining::getInputType() const
 {
-	return ContainerVector{
-			//the strip of consideration
-			std::shared_ptr<Container>(new Seeds()),
-		};
+    return ContainerVector{
+            //the strip of consideration
+            std::shared_ptr<Container>(new Seeds()),
+        };
 }//function
 
 std::shared_ptr<Container> Chaining::getOutputType() const
 {
-	return std::shared_ptr<Container>(new Seeds());
+    return std::shared_ptr<Container>(new Seeds());
 }//function
 
 
@@ -227,7 +227,7 @@ std::shared_ptr<Container> Chaining::execute(
 void exportChaining()
 {
     //export the LineSweepContainer class
-	boost::python::class_<
+    boost::python::class_<
         Chaining, 
         boost::python::bases<Module>,
         std::shared_ptr<Chaining>
@@ -237,15 +237,15 @@ void exportChaining()
         "matches within one strip of consideration.\n"
         "\n"
         "Execution:\n"
-        "	Expects query, ref, strip_vec as input.\n"
-        "		query: the query as NucSeq\n"
-        "		ref: the reference sequence as Pack\n"
-        "		strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
-        "	returns strip_vec.\n"
-        "		strip_vec: the evaluated areas\n"
+        "    Expects query, ref, strip_vec as input.\n"
+        "        query: the query as NucSeq\n"
+        "        ref: the reference sequence as Pack\n"
+        "        strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
+        "    returns strip_vec.\n"
+        "        strip_vec: the evaluated areas\n"
     );
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<Chaining>,
-		std::shared_ptr<Module> 
-	>();
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<Chaining>,
+        std::shared_ptr<Module> 
+    >();
 }//function

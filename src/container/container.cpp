@@ -4,7 +4,7 @@ using namespace libLAuS;
 void exportContainer()
 {
     // container is an abstract class and should never be initialized
-	boost::python::class_<Container, std::shared_ptr<Container>>(
+    boost::python::class_<Container, std::shared_ptr<Container>>(
             "Container",
             boost::python::no_init
         )
@@ -23,10 +23,10 @@ void exportContainer()
         .def(boost::python::vector_indexing_suite<
                 ContainerVector,
                 /*
-                *	true = noproxy this means that the content of the vector is already exposed by
-                *	boost python. 
-                *	if this is kept as false, Container would be exposed a second time.
-                *	the two Containers would be different and not inter castable.
+                *    true = noproxy this means that the content of the vector is already exposed by
+                *    boost python. 
+                *    if this is kept as false, Container would be exposed a second time.
+                *    the two Containers would be different and not inter castable.
                 */
                 true
             >());

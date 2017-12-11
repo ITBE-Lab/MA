@@ -12,17 +12,25 @@
 namespace libLAuS
 {
     /**
-     * @brief Used to quickly find areas with high density of @ref Seed "seeds".
+     * @brief Extracts all Seeds from a SegmentList.
      * @ingroup module
      */
     class ExtractAllSeeds: public Module
     {
-
-
     public:
-        unsigned int maxNum = 10;
+        /**
+         * @brief the maximal ambiguity a extracted seed shall have.
+         * @details
+         * Will skip any segments that would lead to more than maxAmbiguity seeds.
+         */
+        unsigned int maxAmbiguity = 10;
 
-        ExtractAllSeeds(){}//constructor
+        ExtractAllSeeds(){}//default constructor
+
+        ExtractAllSeeds(unsigned int maxAmbiguity)
+                :
+            maxAmbiguity(maxAmbiguity)
+        {}//constructor
 
         std::shared_ptr<Container> execute(ContainerVector vpInput);
 

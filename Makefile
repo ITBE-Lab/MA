@@ -24,32 +24,32 @@ LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH
 all: libLAuS.so
 
 libLAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
-	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
+    $(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
  
 obj/%.o: src/%.cpp inc/%.h
-	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
+    $(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
 obj/%.co: src/%.c inc/%.h
-	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
+    $(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
 html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard LAuS/*.py) doxygen.config
-	doxygen doxygen.config
+    doxygen doxygen.config
 
 install: all
-	pip3 install . --upgrade --no-cache-dir
-	cp /usr/home/markus/workspace/aligner/libLAuS.so /usr/lib
-	pip3 show LAuS
+    pip3 install . --upgrade --no-cache-dir
+    cp /usr/home/markus/workspace/aligner/libLAuS.so /usr/lib
+    pip3 show LAuS
 
 vid:
-	gource -f --seconds-per-day 0.1
+    gource -f --seconds-per-day 0.1
 
 distrib:
-	python setup.py sdist bdist_egg bdist_wheel
+    python setup.py sdist bdist_egg bdist_wheel
 
 clean:
-	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*/*.o) $(wildcard obj/*.co) $(wildcard obj/*/*.co) libLAuS.so
-	rm -r -f dist *.egg-info build
-	rm -r -f html
+    rm -f -r $(wildcard obj/*.o) $(wildcard obj/*/*.o) $(wildcard obj/*.co) $(wildcard obj/*/*.co) libLAuS.so
+    rm -r -f dist *.egg-info build
+    rm -r -f html
 
 docs: html/index.html
 
