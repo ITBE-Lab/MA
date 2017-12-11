@@ -7,7 +7,7 @@
 #define EXEC_ON_VECTOR_H
 
 #include "module/module.h"
-#include "threadPool.h"
+#include "util/threadPool.h"
 
 namespace libLAuS
 {

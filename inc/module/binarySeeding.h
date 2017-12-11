@@ -6,10 +6,10 @@
 #ifndef BINARY_SEEDING_H
 #define BINARY_SEEDING_H
 
-#include "system.h"
+#include "util/system.h"
 #include "module/module.h"
 #include "container/segment.h"
-#include "threadPool.h"
+#include "util/threadPool.h"
 
 namespace libLAuS
 {

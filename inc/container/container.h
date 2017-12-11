@@ -9,7 +9,7 @@
 
 #include <vector>
 #include "exception.h"
-#include "iterableConverter.h"
+#include "util/iterableConverter.h"
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 namespace libLAuS

@@ -15,7 +15,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <fstream>
-#include "debug.h"
+#include "util/debug.h"
 
 #ifdef __GNUC__
 	#include <stdint.h>

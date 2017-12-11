@@ -7,12 +7,12 @@
 #define MODULE_H
 
 #include "container/container.h"
-#include "debug.h"
+#include "util/debug.h"
 #include <memory>
 #include <Python.h>
 #include <iostream>
 #include <boost/python/list.hpp>
-#include "threadPool.h"
+#include "util/threadPool.h"
 #include <ctime>
 #include <chrono>
 

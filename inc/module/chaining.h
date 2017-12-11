@@ -17,7 +17,7 @@
 #include <iostream>
 #include <algorithm>
 #include "exception.h"
-#include "debug.h"
+#include "util/debug.h"
 
 
 #define COST_INS_DEL 2//lambda in the paper

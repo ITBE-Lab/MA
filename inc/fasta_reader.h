@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "support.h"
+#include "util/support.h"
 #include "container/nucSeq.h"
 using namespace libLAuS;
 
