@@ -50,8 +50,24 @@ public:
 
 	std::shared_ptr<Container> execute(ContainerVector vpInput);
 
+    /**
+     * @brief Used to check the input of execute.
+     * @details
+     * Returns:
+     * - SegmentVector
+     * - Seeds
+     * - NucSeq
+	 * - Pack
+	 * - FMIndex
+     */
     ContainerVector getInputType() const;
 
+	/**
+	 * @brief Used to check the output of execute.
+	 * @details
+	 * Returns:
+	 * - ContainerVector(Seeds)
+	 */
 	std::shared_ptr<Container> getOutputType() const;
 
     std::string getName() const

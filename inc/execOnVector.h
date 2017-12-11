@@ -44,9 +44,9 @@ public:
      * @details
      * Returns:
      * - ContainerVector(<first input of given Module>)
-     * - <second input of given Module>
+     * - \<second input of given Module\>
      * - ...
-     * - <last input of given Module>
+     * - \<last input of given Module\>
      */
     ContainerVector getInputType() const;
 
@@ -80,9 +80,21 @@ public:
 
     //overload
     std::shared_ptr<Container> execute(ContainerVector vpInput);
-    //overload
-	ContainerVector getInputType() const;
-    //overload
+    
+    /**
+     * @brief Used to check the input of execute.
+     * @details
+     * Returns:
+     * - ContainerVector(x)
+     */
+    ContainerVector getInputType() const;
+
+	/**
+	 * @brief Used to check the output of execute.
+	 * @details
+	 * Returns:
+	 * - x
+	 */
     std::shared_ptr<Container> getOutputType() const;
     
     std::string getName() const
