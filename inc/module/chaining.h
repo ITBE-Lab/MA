@@ -1,6 +1,7 @@
 /**
  * @file chaining.h
  * @author Markus Schmidt
+ * @brief A implementation of Chaning with gap costs (partially naive)
  * @details
  * check out the respective paper.
  */

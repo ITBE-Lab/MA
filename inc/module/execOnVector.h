@@ -1,6 +1,7 @@
 /**
- * TODO:
  * @file execOnVector.h
+ * @author Markus Schmidt
+ * @brief execute a given module on each element of a given libLAuS::ContainerVector.
  */
 
 #ifndef EXEC_ON_VECTOR_H
