@@ -1,5 +1,5 @@
 /** 
- * @file longestNonEnclosedSegments.h
+ * @file reSeed.h
  * @brief Implements a segmentation algorithm.
  * @author Markus Schmidt
  */

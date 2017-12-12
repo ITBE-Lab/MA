@@ -1,3 +1,9 @@
+/**
+ * @file sw_common.h
+ * @brief Implements the smith waterman algorithm.
+ * @author Arne Kutzner
+ */
+
 #pragma once
 /* Common code used in Smith-Waterman aligners.
  */

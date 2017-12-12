@@ -1,3 +1,9 @@
+/**
+ * @file smith_waterman.h
+ * @brief Implements the smith waterman algorithm.
+ * @author Markus Schmidt
+ */
+
 #ifndef SMITH_WATERMAN
 #define SMITH_WATERMAN
 

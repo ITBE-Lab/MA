@@ -1,3 +1,9 @@
+/**
+ * @file sw_sse_avx.h
+ * @brief Implements the smith waterman algorithm.
+ * @author Arne Kutzner
+ */
+
 #pragma once
 /* IMPORTANT NODE: 
  * For getting AVX2 code with g++ the compiler switch "-mavx2" has to be set.

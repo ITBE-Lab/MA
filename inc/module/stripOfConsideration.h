@@ -1,6 +1,6 @@
 /** 
- * @file bucketing.h
- * @brief Implements a Bucketing.
+ * @file stripOfConsideration.h
+ * @brief Implements a Strip of Consideration.
  * @author Markus Schmidt
  */
 #ifndef STRIP_OF_CONSIDERATION_H
