@@ -6,6 +6,7 @@ from bokeh.io import export_png, export_svgs
 from bokeh.models import FuncTickFormatter, FixedTicker, Label
 import math
 
+
 font = "Times New Roman"
 
 greys = [
@@ -24,11 +25,71 @@ def save(plot, name):
     export_svgs(plot, filename="paperGraphics/" + name + ".svg")
     #show(plot)
 
-resolution = 300
+resolution = 800
 min_x = 0
 min_y = 0
 max_x = 10
 max_y = 10
+
+
+def bin_exp(n,p):
+    return (1-p)**n
+
+def prob_x_exists(x_len, ref_len):
+    p = 0.25**x_len
+    n = ref_len - x_len
+    return 1 - bin_exp(n,p)
+
+def exp_match_amount(x_len, ref_len):
+    p = 0.25**x_len
+    n = ref_len - x_len
+    return n*p
+
+#FIXME: this is not that easy => have to use distribution as input of other distribution... :/
+
+ref_len = 3000000000 # three billion
+q_len = 1000
+prob_non_enclosed = []
+prob_ambiguity = []
+#prob_var_up = []
+#prob_var_down = []
+num_mut_list = list(range(1,q_len))
+# https://en.wikipedia.org/wiki/Binomial_distribution
+for num_mut in num_mut_list:
+    match_len = int(q_len / num_mut)
+
+    binomial_one = prob_x_exists(match_len + 1, ref_len)
+    binomial_both = prob_x_exists(match_len + 2, ref_len)
+    added_prob = binomial_one
+    prob_non_enclosed.append( added_prob )
+
+    prob_ambiguity.append( exp_match_amount(match_len, ref_len) )
+    #prob_var_up.append( min(1, prob[-1] + n*p*(1-p)) )
+    #prob_var_down.append( max(0, prob[-1] - n*p*(1-p)) )
+
+#reverse
+#prob_var_down = list(reversed(prob_var_down))
+
+plot = figure(
+            title="Figure 4: Upper accuracy bound",
+            plot_width=resolution, plot_height=resolution,
+            x_axis_label = "un mutated spots",
+            x_range =[q_len+1, 0]
+        )
+
+#plot.patch(x + list(reversed(x)), prob_var_up + prob_var_down, alpha=0.5, legend="E(X)+-Var(X)")
+plot.line(num_mut_list, prob_non_enclosed, legend="at least one match is non-enclosed")
+plot.line(num_mut_list, prob_ambiguity, legend="expected ambiguity for match")
+
+
+plot.title.text_font=font
+plot.legend.label_text_font=font
+plot.axis.axis_label_text_font=font
+plot.axis.major_label_text_font=font
+show(plot)
+plot.legend.label_text_baseline="bottom"
+exit()
+save(plot, "upperBound")
 
 
 plot = figure(

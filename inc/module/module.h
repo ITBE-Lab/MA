@@ -164,6 +164,8 @@ namespace libLAuS
          * @details
          * see Pledge for more information about the computational graph that can be build using 
          * promiseMe and Pledge.
+         * @note This is static since we need to save a reference to the shared_ptr of the Module 
+         * promising.
          */
         static std::shared_ptr<Pledge> promiseMe(
                 std::shared_ptr<Module> pThis,

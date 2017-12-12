@@ -10,6 +10,90 @@ from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker
 from bokeh.models.formatters import FuncTickFormatter
 from bokeh.io import save
 import numpy as np
+import colorsys
+
+
+def light_spec_approximation(x):
+    #map input [0, 1] to wavelength [350, 645]
+    w = 370 + x * (645-370)
+    r = 0.0
+    g = 0.0
+    b = 0.0
+    if w < 440:
+        r = -(w - 440.) / (440. - 380.)
+        b = 1.0
+    elif w >= 440 and w < 490:
+        g = (w - 440.) / (490. - 440.)
+        b = 1.0
+    elif w >= 490 and w < 510:
+        g = 1.0
+        b = -(w - 510.) / (510. - 490.)
+    elif w >= 510 and w < 580:
+        r = (w - 510.) / (580. - 510.)
+        g = 1.0
+    elif w >= 580 and w < 645:
+        r = 1.0
+        g = -(w - 645.) / (645. - 580.)
+    elif w >= 645:
+        r = 1.0
+
+    #intensity
+    i = 1.0
+    if w > 650:
+        i = .3 + .7*(780-w)/(780-650)
+    elif w < 420:
+        i = .3 + .7*(w-380)/(420-380)
+
+    #gamma
+    m = .8
+
+    return (i*r**m,i*g**m,i*b**m)
+
+def hsv_walk(x):
+    return colorsys.hsv_to_rgb(-x*.8+.8, 1, x*.5+.5)
+
+def light_spec_approximation_2(x):
+    #map input [0, 1] to wavelength [350, 645]
+    w = 370 + x * (645-370)
+    r = 0.0
+    g = 0.0
+    b = 0.0
+    if w < 440:
+        r = -(w - 440.) / (440. - 380.)
+        b = 1.0
+    elif w >= 440 and w < 490:
+        g = (w - 440.) / (490. - 440.)
+        b = 1.0
+    elif w >= 490 and w < 580:
+        g = 1.0
+        b = max(0.0, -(w - 510.) / (510. - 490.))
+        r = max(0.0, (w - 510.) / (580. - 510.))
+    elif w >= 580 and w < 645:
+        r = 1.0
+        g = -(w - 645.) / (645. - 580.)
+    elif w >= 645:
+        r = 1.0
+
+    #intensity
+    i = 1.0
+    if w > 650:
+        i = .3 + .7*(780-w)/(780-650)
+    elif w < 420:
+        i = .3 + .7*(w-380)/(420-380)
+
+    #gamma
+    m = .8
+
+    return (i*r**m,i*g**m,i*b**m)
+
+def heatmap_palette(scheme, num_colors):
+    def format(rgb):
+        def clamp(x):
+            return max(0, min(x, 255))
+        red, green, blue = rgb
+        return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
+                                               clamp(int(blue * 255)))
+    return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
 
 def setup_multiple(module, in_list, perm):
@@ -661,9 +745,17 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             if set_min is not None:
                 min_ = set_min
 
-            color_mapper = LinearColorMapper(palette="Viridis256", low=min_, high=max_)
+            color_mapper = LinearColorMapper(
+                    palette=heatmap_palette(light_spec_approximation, 127),
+                    low=min_,
+                    high=max_
+                )
             if log:
-                color_mapper = LogColorMapper(palette="Viridis256", low=min_, high=max_)
+                color_mapper = LogColorMapper(
+                        palette=heatmap_palette(light_spec_approximation, 127),
+                        low=min_,
+                        high=max_
+                    )
 
             tick_formater = FuncTickFormatter(code="""
                 return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
@@ -876,8 +968,8 @@ def manualCheckSequences():
 
 
 
-memory_test(human_genome, -1)
-exit()
+#memory_test(human_genome, -1)
+#exit()
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
@@ -885,9 +977,12 @@ exit()
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
 
 
+#high quality picture
+
 createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)
 #compare_approaches("results_comp_me_me", ["pBs:5 SoC:100,500nt sLs:1", "pBs:5 SoC:1,500nt sLs:inf"], db_name, 1000, 100)
