@@ -979,8 +979,8 @@ def manualCheckSequences():
 
 #high quality picture
 
-createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
+#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
+#test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 
 
