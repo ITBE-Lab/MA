@@ -647,13 +647,13 @@ def test_my_approach(
 
 
 def test_my_approaches(db_name):
-    test_my_approach(db_name, human_genome, "Bs:5 SoC:100,500nt sLs:5", max_hits=5, num_anchors=100, max_sweep=5, seg=BinarySeeding(True))
+    #test_my_approach(db_name, human_genome, "Bs:5 SoC:100,500nt sLs:5", max_hits=5, num_anchors=100, max_sweep=5, seg=BinarySeeding(True))
 
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5", num_anchors=100, max_sweep=5)
+    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5", num_anchors=100, max_sweep=5)
 
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf", num_anchors=1)
+    #test_my_approach(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf", num_anchors=1)
 
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:inf", num_anchors=100)
+    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:inf", num_anchors=100)
 
     #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000nt sLs:inf", num_anchors=100, strip_size=10000)
 
@@ -982,6 +982,11 @@ def manualCheckSequences():
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
 #test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+
+
+createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2048, True, True)
+test_my_approaches("/mnt/ssd1/veryHighQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)

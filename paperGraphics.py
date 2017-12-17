@@ -221,7 +221,7 @@ def theoretical_max_acc():
     for num_mut in range(0, q_len, 20):
         prob_refindable.append( [] )
         for num_indel in range(0,max_indels, 2):
-            q_len_e = simulate_max_length(q_len, num_mut, num_indel, indel_size, 1000)
+            q_len_e = simulate_max_length(q_len, num_mut, num_indel, indel_size, 2048)
             if q_len_e is None:
                 prob_refindable[-1].append(float('NaN'))
             else:
@@ -601,7 +601,7 @@ def stripOfConsideration():
 
 # actually call the functions that create the pictures
 
-#theoretical_max_acc()
+theoretical_max_acc()
 #seed_shadows()
 #alignment()
 #stripOfConsideration()
