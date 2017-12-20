@@ -247,7 +247,7 @@ namespace libMABS
      * #fullfill the query pledge we gave.
      * query_pledge.set(query)
      *
-     * # Trigger the aligment process.
+     * # Trigger the alignment process.
      * print_pledge.next()
      * @endcode
      *
@@ -256,12 +256,12 @@ namespace libMABS
      * while all other modules are implemented in C++.
      * The computational graph is able to jump between python and
      * C++ modules and containers as needed.
+     * Note that this setup does not perform well, since we skipped the seed filtering step.
      *
      */
     /**
      * @brief Abstract class intended to hold promises to data objects used by Modules.
      * @details
-     * TODO: update me!
      * Use this class to set up a computational graph.
      * The graphs nodes are Modules (in python or cpp) that perform computational tasks.
      * Each node takes a vector of containers as input.

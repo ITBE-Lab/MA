@@ -36,7 +36,7 @@ void exportSeed()
         >());
 
     //make vectors of container-pointers a thing
-    iterable_converter()
+    IterableConverter()
         .from_python<Seeds>();
     
     //tell boost python that pointers of these classes can be converted implicitly

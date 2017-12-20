@@ -32,7 +32,7 @@ void exportContainer()
             >());
 
     //make vectors of container-pointers a thing
-    iterable_converter()
+    IterableConverter()
         .from_python<ContainerVector>();
 
     //tell boost python that pointers of these classes can be converted implicitly

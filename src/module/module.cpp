@@ -141,6 +141,6 @@ void exportModule()
                                             std::shared_ptr<Container> 
                                         >();
 
-    iterable_converter()
+    IterableConverter()
         .from_python<std::vector<std::shared_ptr<Pledge>>>();
 }

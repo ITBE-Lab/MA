@@ -42,7 +42,7 @@ void exportIntervalTree()
                     true
                 >());
     ;
-    iterable_converter()
+    IterableConverter()
         .from_python<SegmentVector>();
 
     //tell boost python that pointers of these classes can be converted implicitly

@@ -104,10 +104,11 @@
  * @endcode
  * 
  * Here we perform the alignment process and print the results. <br>
+ * Note that this setup does not perform well, since we skipped the seed filtering step.
  *
  * @note for a quick start on how to setup a computational graph,
  * this setup of @ref libMABS::Module "modules" using a
- * computation graph can be seen in the @ref comp_graph_page "Pledge" class.
+ * computation graph can be seen @ref comp_graph_page "here".
  * 
  * @section todos TODOs
  * 

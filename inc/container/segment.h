@@ -107,7 +107,7 @@ namespace libMABS
     public:
         /*
         * exposing the constructors from vector
-        * required for iterable_converter().from_python() to work
+        * required for IterableConverter().from_python() to work
         */
         using vector::vector;
 
