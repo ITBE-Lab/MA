@@ -15,7 +15,7 @@
  * The alignment process has been seperated into several @ref libMABS::Module "modules".
  * The execution order of the @ref libMABS::Module "modules" is set up using Python.
  * @ref libMABS::Module "Modules" can be implemented in Python or C++. <br>
- * The @ref libMABS::Pledge "Pledge" class allows setting up a @ref comp_graph_sec "computational graph", 
+ * The @ref libMABS::Pledge "Pledge" class allows setting up a @ref comp_graph_page "computational graph", 
  * that avoids unnecessary jumps between 
  * Python and C++. <br>
  *
@@ -107,7 +107,7 @@
  *
  * @note for a quick start on how to setup a computational graph,
  * this setup of @ref libMABS::Module "modules" using a
- * computation graph can be seen in the @ref comp_graph_sec "Pledge" class.
+ * computation graph can be seen in the @ref comp_graph_page "Pledge" class.
  * 
  * @section todos TODOs
  * 

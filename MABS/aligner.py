@@ -220,6 +220,15 @@ class FMIndex(libMABS.FMIndex):
     pass
 
 ##
+# @brief And empty Container.
+# @details
+#
+# @ingroup container
+#
+class Nil(libMABS.Nil):
+    pass
+
+##
 # @brief The Container for a SegmentVector
 # @details
 # A doubly linked list holding Segments.

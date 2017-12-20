@@ -174,21 +174,8 @@ namespace libMABS
     };
 
     /**
-     * @brief Abstract class intended to hold promises to data objects used by Modules.
-     * @details
-     * TODO: update me!
-     * Use this class to set up a computational graph.
-     * The graphs nodes are Modules (in python or cpp) that perform computational tasks.
-     * Each node takes a vector of containers as input.
-     * This container vector was created using the vector of Pledges that was given to the Module.
-     * Then the Module returns a Container that fits the pledge returned by the Modules 
-     * promiseMe function.
+     * @page comp_graph_page Computational Graph Quick Start
      *
-     * @note The advantage of the computational graph is that there is no unnecessary 
-     * jumping between python and cpp code.
-     * 
-     * @section comp_graph_sec Computational Graph Quick Start
-     * 
      * Here is some python code that sets up the three main @ref Module "Modules" 
      * reqired for alignment, using a computation graph: <br>
      * Note that this setup mimics the one given in the @ref quick_start_sec "quick start" section
@@ -221,31 +208,29 @@ namespace libMABS
      *
      * @code{.py}
      * # Add a segmentation module to the computation graph.
-     * segments_pledge = seg.promise_me((fm_index_pledge, query_pledge)) #(*)
+     * segments_pledge = seg.promise_me(fm_index_pledge, query_pledge)
      * # Call the line sweep module.
-     * seeds_pledge = sweep.promise_me((segments_pledge,)) #(*)
+     * seeds_pledge = sweep.promise_me(segments_pledge)
      * # Call the local alignment module.
-     * alignment_pledge = nmw.promise_me((seeds_pledge, query_pledge, ref_pledge)) #(*)
-     * 
+     * alignment_pledge = nmw.promise_me(seeds_pledge, query_pledge, ref_pledge)
+     *
      * # Print the alignment
-     * print_pledge = printer.promise_me((alignment_pledge, )) #(*)
+     * print_pledge = printer.promise_me(alignment_pledge)
      * @endcode
      *
      * Here we make add out modules to our computation graph. <br>
-     * (*) All @ref Module "modules" use a tuple or list of @ref Pledge "pledges" as input.
-     * Therefore the @ref Module::promiseMe "promise_me" function calls use the syntax shown above.
      *
      * @code{.py}
      * # Setup a container for the suffix array
      * fm_index = FMIndex()
      * # Load the array from a file.
      * fm_index.load("filename")
-     * 
+     *
      * # Setup a container for the packed reference
      * ref = Pack()
      * # Load the pack from a file.
      * ref.load("filename")
-     * 
+     *
      * # Create a query string.
      * query_string = "ACCTAA"
      * # Setup a container for the query sequence.
@@ -261,15 +246,33 @@ namespace libMABS
      * ref_pledge.set(ref)
      * #fullfill the query pledge we gave.
      * query_pledge.set(query)
-     * 
+     *
      * # Trigger the aligment process.
      * print_pledge.next()
      * @endcode
-     * 
+     *
      * Here we fullfill the pledges we made and then trigger the alignment process.
      * Note that the AlignmentPrinter and SweepAllReturnBest modules are implemented in Python,
      * while all other modules are implemented in C++.
-     * The computational graph is able to jump between python and C++ modules and containers as needed.
+     * The computational graph is able to jump between python and
+     * C++ modules and containers as needed.
+     *
+     */
+    /**
+     * @brief Abstract class intended to hold promises to data objects used by Modules.
+     * @details
+     * TODO: update me!
+     * Use this class to set up a computational graph.
+     * The graphs nodes are Modules (in python or cpp) that perform computational tasks.
+     * Each node takes a vector of containers as input.
+     * This container vector was created using the vector of Pledges that was given to the Module.
+     * Then the Module returns a Container that fits the pledge returned by the Modules 
+     * promiseMe function.
+     *
+     * Check out the @ref comp_graph_page "Computational Graph Quick Start"
+     *
+     * @note The advantage of the computational graph is that there is no unnecessary 
+     * jumping between python and cpp code.
      *
      * @ingroup container
      */
