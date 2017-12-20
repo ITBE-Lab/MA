@@ -2,7 +2,7 @@
 """
 raise ImportError("You imported a Module that is used purely for documentation.")
 
-from libLAuS import *
+from libMABS import *
 from collections.abc import MutableSequence
 
 ##
@@ -12,7 +12,7 @@ from collections.abc import MutableSequence
 # @note To create an instance of this class omit the trainling underscore.
 # @ingroup container
 #
-class Alignment(libLAuS.Alignment):
+class Alignment(libMABS.Alignment):
 
     ##
     # @brief Get the MatchType at the position index.

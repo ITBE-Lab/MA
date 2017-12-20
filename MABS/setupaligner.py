@@ -1,7 +1,7 @@
 ##
-# @package LAuS
+# @package MABS
 # @file setupaligner.py
-# @brief Implements @ref LAuS.set_up_aligner "set_up_aligner".
+# @brief Implements @ref MABS.set_up_aligner "set_up_aligner".
 # @author Markus Schmidt
 
 from .__init__ import *
@@ -14,9 +14,9 @@ from .__init__ import *
 # - The given segmentation; default is BinarySeeding
 # - GetAnchors
 # - StripOfConsideration
-# - @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest"
+# - @ref MABS.aligner.SweepAllReturnBest "SweepAllReturnBest"
 # - NeedlemanWunsch
-# - @ref LAuS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter"
+# - @ref MABS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter"
 #
 # If a list of query pledges is given a list of result pledges is returned.
 #

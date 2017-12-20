@@ -1,16 +1,16 @@
 ##
-# @package LAuS
+# @package MABS
 # @brief The Python part of the library is within this package
-# @package LAuS.aligner
-# @brief Implements @ref LAuS.aligner.Module "Module" and 
-# @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest".
+# @package MABS.aligner
+# @brief Implements @ref MABS.aligner.Module "Module" and 
+# @ref MABS.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @file aligner.py
-# @brief Implements @ref LAuS.aligner.Module "Module" and 
-# @ref LAuS.aligner.SweepAllReturnBest "SweepAllReturnBest".
+# @brief Implements @ref MABS.aligner.Module "Module" and 
+# @ref MABS.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @author Markus Schmidt
 #
 
-import libLAuS
+import libMABS
 import traceback
 
 ##
@@ -21,7 +21,7 @@ import traceback
 # @see the C++ implementation of @ref Module "module".
 # @ingroup module 
 #
-class Module(libLAuS.Module):
+class Module(libMABS.Module):
 
     ##
     # @brief The expected input types.
@@ -65,7 +65,7 @@ class Module(libLAuS.Module):
 
 ##
 # @brief python wrapper for BinarySeeding
-class BinarySeeding(libLAuS.BinarySeeding):
+class BinarySeeding(libMABS.BinarySeeding):
     def execute(self, *args):
         return super(BinarySeeding, self).execute(list(args))
 
@@ -74,7 +74,7 @@ class BinarySeeding(libLAuS.BinarySeeding):
 
 ##
 # @brief python wrapper for StripOfConsideration
-class StripOfConsideration(libLAuS.StripOfConsideration):
+class StripOfConsideration(libMABS.StripOfConsideration):
     def execute(self, *args):
         return super(StripOfConsideration, self).execute(list(args))
 
@@ -83,7 +83,7 @@ class StripOfConsideration(libLAuS.StripOfConsideration):
 
 ##
 # @brief python wrapper for LinearLineSweep
-class LinearLineSweep(libLAuS.LinearLineSweep):
+class LinearLineSweep(libMABS.LinearLineSweep):
     def execute(self, *args):
         return super(LinearLineSweep, self).execute(list(args))
 
@@ -92,7 +92,7 @@ class LinearLineSweep(libLAuS.LinearLineSweep):
 
 ##
 # @brief python wrapper for LinearLineSweep
-class Chaining(libLAuS.Chaining):
+class Chaining(libMABS.Chaining):
     def execute(self, *args):
         return super(Chaining, self).execute(list(args))
 
@@ -101,7 +101,7 @@ class Chaining(libLAuS.Chaining):
 
 ##
 # @brief python wrapper for LinearLineSweep
-class NeedlemanWunsch(libLAuS.NeedlemanWunsch):
+class NeedlemanWunsch(libMABS.NeedlemanWunsch):
     def execute(self, *args):
         return super(NeedlemanWunsch, self).execute(list(args))
 
@@ -110,7 +110,7 @@ class NeedlemanWunsch(libLAuS.NeedlemanWunsch):
 
 ##
 # @brief python wrapper for LinearLineSweep
-class GetAnchors(libLAuS.GetAnchors):
+class GetAnchors(libMABS.GetAnchors):
     def execute(self, *args):
         return super(GetAnchors, self).execute(list(args))
 
@@ -119,7 +119,7 @@ class GetAnchors(libLAuS.GetAnchors):
 
 ##
 # @brief python wrapper for ExecOnVec
-class ExecOnVec(libLAuS.ExecOnVec):
+class ExecOnVec(libMABS.ExecOnVec):
     def execute(self, *args):
         return super(ExecOnVec, self).execute(list(args))
 
@@ -132,7 +132,7 @@ class ExecOnVec(libLAuS.ExecOnVec):
 # returns the tail of a container vector
 # @ingroup module
 #
-class Tail(libLAuS.Tail):
+class Tail(libMABS.Tail):
     def execute(self, *args):
         return super(Tail, self).execute(list(args))
 
@@ -145,7 +145,7 @@ class Tail(libLAuS.Tail):
 # extracts all seeds from a segment list.
 # @ingroup module
 #
-class ExtractAllSeeds(libLAuS.ExtractAllSeeds):
+class ExtractAllSeeds(libMABS.ExtractAllSeeds):
     def execute(self, *args):
         return super(ExtractAllSeeds, self).execute(list(args))
 
@@ -158,7 +158,7 @@ class ExtractAllSeeds(libLAuS.ExtractAllSeeds):
 # extracts all seeds from a segment list.
 # @ingroup module
 #
-class ReSeed(libLAuS.ReSeed):
+class ReSeed(libMABS.ReSeed):
     def execute(self, *args):
         return super(ReSeed, self).execute(list(args))
 
@@ -169,7 +169,7 @@ class ReSeed(libLAuS.ReSeed):
 # @brief The SMW Module.
 # @ingroup module
 #
-class SMW(libLAuS.SMW):
+class SMW(libMABS.SMW):
     def execute(self, *args):
         return super(SMW, self).execute(list(args))
 
@@ -183,7 +183,7 @@ class SMW(libLAuS.SMW):
 #
 # @ingroup container
 #
-class Alignment(libLAuS.Alignment):
+class Alignment(libMABS.Alignment):
     pass
 
 ##
@@ -195,9 +195,9 @@ class Alignment(libLAuS.Alignment):
 #   but they are aligned to the same position nonetheless.
 # - insertion: a nucleotide is present on the query that has no counterpart on the reference.
 # - deletion: a nucleotide is present on the reference that has no counterpart on the query.
-# @note libLAuS::MatchType is an enum and therefore does not show up in the class hierarchy.
+# @note libMABS::MatchType is an enum and therefore does not show up in the class hierarchy.
 #
-class MatchType(libLAuS.MatchType):
+class MatchType(libMABS.MatchType):
     pass
 
 ##
@@ -207,7 +207,7 @@ class MatchType(libLAuS.MatchType):
 #
 # @ingroup container
 #
-class Pledge(libLAuS.Pledge):
+class Pledge(libMABS.Pledge):
     pass
 
 ##
@@ -216,7 +216,7 @@ class Pledge(libLAuS.Pledge):
 #
 # @ingroup container
 #
-class FMIndex(libLAuS.FMIndex):
+class FMIndex(libMABS.FMIndex):
     pass
 
 ##
@@ -226,7 +226,7 @@ class FMIndex(libLAuS.FMIndex):
 #
 # @ingroup container
 #
-class SegmentVector(libLAuS.SegmentVector):
+class SegmentVector(libMABS.SegmentVector):
     pass
 
 ##
@@ -236,7 +236,7 @@ class SegmentVector(libLAuS.SegmentVector):
 #
 # @ingroup container
 #
-class Seeds(libLAuS.Seeds):
+class Seeds(libMABS.Seeds):
     pass
 
 ##
@@ -245,7 +245,7 @@ class Seeds(libLAuS.Seeds):
 #
 # @ingroup container
 #
-class Segment(libLAuS.Segment):
+class Segment(libMABS.Segment):
     pass
 
 ##
@@ -254,7 +254,7 @@ class Segment(libLAuS.Segment):
 #
 # @ingroup container
 #
-class Pack(libLAuS.Pack):
+class Pack(libMABS.Pack):
     pass
 
 ##
@@ -263,7 +263,7 @@ class Pack(libLAuS.Pack):
 #
 # @ingroup container
 #
-class Seed(libLAuS.Seed):
+class Seed(libMABS.Seed):
     pass
 
 ##
@@ -272,7 +272,7 @@ class Seed(libLAuS.Seed):
 #
 # @ingroup container
 #
-class SAInterval(libLAuS.SAInterval):
+class SAInterval(libMABS.SAInterval):
     pass
 
 ##
@@ -281,7 +281,7 @@ class SAInterval(libLAuS.SAInterval):
 #
 # @ingroup container
 #
-class NucSeq(libLAuS.NucSeq):
+class NucSeq(libMABS.NucSeq):
     pass
 
 ##
@@ -291,7 +291,7 @@ class NucSeq(libLAuS.NucSeq):
 #
 # @ingroup container
 #
-class ContainerVector(libLAuS.ContainerVector):
+class ContainerVector(libMABS.ContainerVector):
     pass
 """
 class ContainerType(CppContainerType):

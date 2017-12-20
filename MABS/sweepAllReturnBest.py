@@ -1,8 +1,8 @@
 ##
-# @package LAuS.sweepAllReturnBest
-# @brief Implements @ref LAuS.sweepAllReturnBest.SweepAllReturnBest "SweepAllReturnBest".
+# @package MABS.sweepAllReturnBest
+# @brief Implements @ref MABS.sweepAllReturnBest.SweepAllReturnBest "SweepAllReturnBest".
 # @file sweepAllReturnBest.py
-# @brief Implements @ref LAuS.sweepAllReturnBest.SweepAllReturnBest "SweepAllReturnBest".
+# @brief Implements @ref MABS.sweepAllReturnBest.SweepAllReturnBest "SweepAllReturnBest".
 # @author Markus Schmidt
 
 from .aligner import *
@@ -24,21 +24,21 @@ class SweepAllReturnBest(Module):
     ##
     # @brief returns the @ref ContainerType "container types" seedsVector, query, ref_seq.
     # @details
-    # Reimplemented from LAuS.aligner.Module.get_input_type.
+    # Reimplemented from MABS.aligner.Module.get_input_type.
     def get_input_type(self):
         return [ContainerType.seedsVector, ContainerType.query, ContainerType.ref_seq]
 
     ##
     # @brief returns the @ref ContainerType "container type" seeds.
     # @details
-    # Reimplemented from LAuS.aligner.Module.get_output_type.
+    # Reimplemented from MABS.aligner.Module.get_output_type.
     def get_output_type(self):
         return ContainerType.seeds
 
     ##
     # @brief Execute LineSweep for all given seeds.
     # @details
-    # Reimplemented from LAuS.aligner.Module.execute.
+    # Reimplemented from MABS.aligner.Module.execute.
     def execute(self, input):
         best_strips = SeedsVector()
         strips, query, ref_seq = input
