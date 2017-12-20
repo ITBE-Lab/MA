@@ -1,5 +1,5 @@
 #include "container/seed.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 void exportSeed()
 {

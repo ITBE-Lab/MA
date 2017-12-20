@@ -1,5 +1,5 @@
 #include "module/execOnVector.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 ContainerVector ExecOnVec::getInputType() const
 {

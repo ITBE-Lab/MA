@@ -10,7 +10,7 @@
 #include "module/module.h"
 #include "container/alignment.h"
 
-namespace libLAuS
+namespace libMABS
 {
     class SMW: public Module
     {
@@ -39,7 +39,7 @@ namespace libLAuS
             return "SMW";
         }
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 void exportSMW();
 

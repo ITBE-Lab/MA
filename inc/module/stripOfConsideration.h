@@ -9,7 +9,7 @@
 #include "container/segment.h"
 #include "module/module.h"
 
-namespace libLAuS
+namespace libMABS
 {
     /**
      * @brief Used to quickly find areas with high density of @ref Seed "seeds".
@@ -81,7 +81,7 @@ namespace libLAuS
             return "StripOfConsideration";
         }
     };//class
-}//namspace libLAuS
+}//namspace libMABS
 
 /**
  * @brief export the bucketing @ref Module "module" to python.

@@ -1,5 +1,5 @@
 #include "module/getAnchors.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 ContainerVector GetAnchors::getInputType() const
 {

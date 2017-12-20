@@ -1,5 +1,5 @@
 #include "container/fMIndex.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
 {    

@@ -10,7 +10,7 @@
 #include "container/segment.h"
 
 
-namespace libLAuS
+namespace libMABS
 {
     /**
      * @brief Describes the type of match at one specific position of the alignment.
@@ -306,7 +306,7 @@ namespace libLAuS
             return score() < pAlign->score();
         }//function
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 /**
  * @brief Exposes the Alignment container to boost python.

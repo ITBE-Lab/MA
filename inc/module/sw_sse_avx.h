@@ -22,7 +22,7 @@
 #include "module/sw_common.h"
 #include "util/exception.h" // code throws aligner exceptions
 #include "container/nucSeq.h" // sequence slices
-using namespace libLAuS;
+using namespace libMABS;
 
 /* Visual C++ and g++ indicate the setting of the AVX2 flag via the __AVX2__ symbol.
  */

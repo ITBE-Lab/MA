@@ -6,7 +6,7 @@
 #include <memory>
 #include <atomic>
 #include <chrono>
-using namespace libLAuS;
+using namespace libMABS;
  
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 

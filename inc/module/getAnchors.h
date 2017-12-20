@@ -9,7 +9,7 @@
 #include "container/segment.h"
 #include "module/module.h"
 
-namespace libLAuS
+namespace libMABS
 {
     /**
      * @brief Extract the n longes seeds.
@@ -64,7 +64,7 @@ namespace libLAuS
             return "getAnchors";
         }
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 /**
  * @brief Exposes the Alignment container to boost python.

@@ -21,9 +21,9 @@ CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -g -mavx2
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror -g
 LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread -g
 
-all: libLAuS.so
+all: libMABS.so
 
-libLAuS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
+libMABS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
 
 obj/%.o: src/%.cpp inc/%.h
@@ -32,13 +32,13 @@ obj/%.o: src/%.cpp inc/%.h
 obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
 
-html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard LAuS/*.py) doxygen.config
+html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard MABS/*.py) doxygen.config
 	doxygen doxygen.config
 
 install: all
 	pip3 install . --upgrade --no-cache-dir
-	cp /usr/home/markus/workspace/aligner/libLAuS.so /usr/lib
-	pip3 show LAuS
+	cp /usr/home/markus/workspace/aligner/libMABS.so /usr/lib
+	pip3 show MABS
 
 vid:
 	gource -f --seconds-per-day 0.1
@@ -47,7 +47,7 @@ distrib:
 	python setup.py sdist bdist_egg bdist_wheel
 
 clean:
-	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*/*.o) $(wildcard obj/*.co) $(wildcard obj/*/*.co) libLAuS.so
+	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*/*.o) $(wildcard obj/*.co) $(wildcard obj/*/*.co) libMABS.so
 	rm -r -f dist *.egg-info build
 	rm -r -f html
 

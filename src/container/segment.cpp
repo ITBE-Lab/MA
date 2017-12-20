@@ -1,5 +1,5 @@
 #include "container/segment.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 void exportIntervalTree()
 {

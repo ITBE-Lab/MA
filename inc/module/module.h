@@ -21,7 +21,7 @@
 /**
  * @brief the C++ code is in this namespace.
  */
-namespace libLAuS
+namespace libMABS
 {
     extern std::mutex xPython;
     /**
@@ -58,7 +58,7 @@ namespace libLAuS
      * @brief Abstract class intended for the implementaiton of various algorithms.
      * @details
      * All computing on data should inherit from this class
-     * @see the Python implementation of @ref LAuS.aligner.Module "module".
+     * @see the Python implementation of @ref MABS.aligner.Module "module".
      * @ingroup module
      */
     class Module
@@ -505,7 +505,7 @@ namespace libLAuS
             }//scope xPool
         }//function
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 
 /**

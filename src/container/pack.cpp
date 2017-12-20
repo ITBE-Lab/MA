@@ -1,5 +1,5 @@
 #include "container/pack.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 void exportPack()
 {

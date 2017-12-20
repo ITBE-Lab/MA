@@ -1,5 +1,5 @@
 #include "module/stripOfConsideration.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 
 ContainerVector StripOfConsideration::getInputType() const

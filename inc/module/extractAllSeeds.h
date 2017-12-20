@@ -9,7 +9,7 @@
 #include "container/segment.h"
 #include "module/module.h"
 
-namespace libLAuS
+namespace libMABS
 {
     /**
      * @brief Extracts all Seeds from a SegmentList.
@@ -56,7 +56,7 @@ namespace libLAuS
             return "ExtractAllSeeds";
         }
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 /**
  * @brief export the ExtractAllSeeds @ref Module "module" to python.

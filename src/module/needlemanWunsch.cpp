@@ -1,5 +1,5 @@
 #include "module/needlemanWunsch.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 
 

@@ -596,7 +596,7 @@ def stripOfConsideration():
         return labels[tick];
     """ % reference)
     plot.yaxis.ticker = FixedTicker(ticks=range(len(query)))
-    grid = []
+    grid = []chrom
     for p in range(-1,len(query)):
         grid.append(p+.5)
     plot.ygrid.ticker = FixedTicker(ticks=grid)

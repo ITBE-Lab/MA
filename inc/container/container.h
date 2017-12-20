@@ -12,7 +12,7 @@
 #include "util/iterableConverter.h"
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
-namespace libLAuS
+namespace libMABS
 {
     /**
      * @defgroup container
@@ -167,7 +167,7 @@ namespace libLAuS
         }//function
 
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 /** 
  * @brief Function to export Container to boost python.

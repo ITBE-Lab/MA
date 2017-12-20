@@ -10,7 +10,7 @@
 #include "container/interval.h"
 #include <list>
 
-namespace libLAuS
+namespace libMABS
 {
     ///@brief any index on the query or reference nucleotide sequence is given in this datatype
     typedef uint64_t nucSeqIndex;
@@ -199,7 +199,7 @@ namespace libLAuS
         }// operator
 
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 /**
  * @brief exports the Seed and Seedlist classes to python.

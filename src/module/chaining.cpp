@@ -1,5 +1,5 @@
 #include "module/chaining.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 ContainerVector Chaining::getInputType() const
 {

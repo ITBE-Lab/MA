@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "module/sw_sse_avx.h"
 #include "module/smith_waterman.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 ContainerVector SMW::getInputType() const
 {

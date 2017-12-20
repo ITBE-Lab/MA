@@ -7,7 +7,7 @@
 
 #include "util/support.h"
 #include "container/nucSeq.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 // #define USE_STL
 

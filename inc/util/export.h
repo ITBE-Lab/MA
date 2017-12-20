@@ -7,15 +7,15 @@
  */
 
 /**
- * @mainpage @ref libLAuS::Module "Modular" @ref libLAuS::LinearLineSweep "Linesweeping" Aligner using Segmentation
+ * @mainpage @ref libMABS::Module "Modular" @ref libMABS::LinearLineSweep "Linesweeping" Aligner using Segmentation
  * @tableofcontents
  * @section intro_sec Introduction
  *
- * LAuS is a @ref libLAuS::Module "Modular" alignment tool build using C++11 and Boost Python.
- * The alignment process has been seperated into several @ref libLAuS::Module "modules".
- * The execution order of the @ref libLAuS::Module "modules" is set up using Python.
- * @ref libLAuS::Module "Modules" can be implemented in Python or C++. <br>
- * The @ref libLAuS::Pledge "Pledge" class allows setting up a @ref comp_graph_sec "computational graph", 
+ * MABS is a @ref libMABS::Module "Modular" alignment tool build using C++11 and Boost Python.
+ * The alignment process has been seperated into several @ref libMABS::Module "modules".
+ * The execution order of the @ref libMABS::Module "modules" is set up using Python.
+ * @ref libMABS::Module "Modules" can be implemented in Python or C++. <br>
+ * The @ref libMABS::Pledge "Pledge" class allows setting up a @ref comp_graph_sec "computational graph", 
  * that avoids unnecessary jumps between 
  * Python and C++. <br>
  *
@@ -36,20 +36,20 @@
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
- * <tr><td>Seeding <td> libLAuS::FMIndex, libLAuS::NucSeq <td> libLAuS::SegmentVector
- * <tr><td>Seed Processing <td> libLAuS::SegmentVector <td> libLAuS::SegmentVector
- * <tr><td>Optimal Matching <td> libLAuS::SegmentVector,
- * libLAuS::NucSeq, libLAuS::Pack <td> libLAuS::Alignment
+ * <tr><td>Seeding <td> libMABS::FMIndex, libMABS::NucSeq <td> libMABS::SegmentVector
+ * <tr><td>Seed Processing <td> libMABS::SegmentVector <td> libMABS::SegmentVector
+ * <tr><td>Optimal Matching <td> libMABS::SegmentVector,
+ * libMABS::NucSeq, libMABS::Pack <td> libMABS::Alignment
  * </table>
  *
- * @note The python classes can be easily identified by the prefix "LAuS." 
- * while C++ classes have "libLAuS::" as prefix.
+ * @note The python classes can be easily identified by the prefix "MABS." 
+ * while C++ classes have "libMABS::" as prefix.
  *
  * @section install_sec Installation
  * 
- * The easiest way to install the LAuS library is using pip:
+ * The easiest way to install the MABS library is using pip:
  * @code{.sh}
- * pip install LAuS
+ * pip install MABS
  * @endcode
  * There is a git repo with the full source code here: .... <br>
  * 
@@ -106,7 +106,7 @@
  * Here we perform the alignment process and print the results. <br>
  *
  * @note for a quick start on how to setup a computational graph,
- * this setup of @ref libLAuS::Module "modules" using a
+ * this setup of @ref libMABS::Module "modules" using a
  * computation graph can be seen in the @ref comp_graph_sec "Pledge" class.
  * 
  * @section todos TODOs

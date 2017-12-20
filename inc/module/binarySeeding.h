@@ -11,7 +11,7 @@
 #include "container/segment.h"
 #include "util/threadPool.h"
 
-namespace libLAuS
+namespace libMABS
 {
     class PerfectMatch;
 

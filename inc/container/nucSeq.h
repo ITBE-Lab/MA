@@ -16,7 +16,7 @@
 #include <boost/log/trivial.hpp>
 #include "container/container.h"
 
-namespace libLAuS
+namespace libMABS
 {
     class GeneticSequence;
     class NucSeq;
@@ -521,7 +521,7 @@ namespace libLAuS
         }//function
         
     }; // class NucSeq
-}//namespace libLAuS
+}//namespace libMABS
 
 /**
  * @brief export this @ref Module "modules" to boost python 

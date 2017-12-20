@@ -16,7 +16,7 @@
 #include <boost/filesystem.hpp>
 #include "container/fasta_reader.h"
 
-namespace libLAuS
+namespace libMABS
 {
     /* --- BEGIN DEPRECATED ---
     */
@@ -1247,7 +1247,7 @@ namespace libLAuS
             } // else
         } // method
     }; // class
-}//namespace libLAuS
+}//namespace libMABS
 
 /**
  * @brief exports the Pack class to python.

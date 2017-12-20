@@ -9,7 +9,7 @@
 #include "container/alignment.h"
 #include "module/module.h"
 
-namespace libLAuS
+namespace libMABS
 {
     /**
      * @brief implements NMW
@@ -50,7 +50,7 @@ namespace libLAuS
             return "NeedlemanWunsch";
         }
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 /**
  * @brief Exposes the Alignment container to boost python.

@@ -15,7 +15,7 @@
 #include "util/threadPool.h"
 
 
-namespace libLAuS
+namespace libMABS
 {
     /**
      * @brief Computes a set of maximal non-enclosed seeds.
@@ -65,7 +65,7 @@ namespace libLAuS
          */
         std::shared_ptr<Container> getOutputType() const;
     };//class
-}//namespace libLAuS
+}//namespace libMABS
 
 
 /**

@@ -5,7 +5,7 @@ from os import listdir
 src_files = list(map(lambda x: "src/"+x, listdir("src")))
 
 setup(
-    name='LAuS',
+    name='MABS',
     version='0.0.4',
     description='An aligner for Nucleotide Sequences.',
     author='Markus Schmidt',
@@ -45,7 +45,7 @@ setup(
 
     ext_modules=[
         Extension(
-            'libLAuS',
+            'libMABS',
             src_files,
             include_dirs=['inc', '/opt/dev/boost_1_65_1'], # project include files
             library_dirs=[
@@ -73,5 +73,5 @@ setup(
                 ] # some other compile args
             ),
         ],
-    packages=["LAuS"]
+    packages=["MABS"]
 )

@@ -1,4 +1,4 @@
-from LAuS import *
+from MABS import *
 import random
 
 def make(filenames, out_name):

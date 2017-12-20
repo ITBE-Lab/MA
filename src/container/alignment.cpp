@@ -1,5 +1,5 @@
 #include "container/alignment.h"
-using namespace libLAuS;
+using namespace libMABS;
 
 void exportAlignment()
 {
