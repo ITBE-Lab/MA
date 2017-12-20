@@ -567,11 +567,13 @@ def test_my_approach(
     all_queries = getNewQueries(db_name, name, reference, res1, res2)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
-    print("having ", len(all_queries), " samples total (", name, ")...")
+    print("having ", len(all_queries), " samples total (", name, ") ...")
 
+    extract_size = 4096
     # break samples into chunks of 2^12
-    for queries in chunks(all_queries, 4096):
-        print("extracting " + str(len(queries)) + " samples (" + name + ") ...")
+    for index, queries in enumerate(chunks(all_queries, extract_size)):
+        print("extracting", len(queries), "samples", index, "/",
+            len(all_queries)/extract_size, "(", name, ") ...")
         #setup the query pledges
         query_pledge = []
         ids = []
@@ -581,7 +583,7 @@ def test_my_approach(
             ids.append(sample_id)
 
 
-        print("setting up (" + name + ") ...")
+        print("setting up (", name, ") ...")
         ref_pack = Pack()
         ref_pack.load(reference)
         reference_pledge.set(ref_pack)
@@ -619,10 +621,10 @@ def test_my_approach(
 
             exit()
 
-        print("computing (" + name + ") ...")
+        print("computing (", name, ") ...")
         Pledge.simultaneous_get(result_pledge[-1], 32)
 
-        print("extracting results (" + name + ") ...")
+        print("extracting results (", name, ") ...")
         result = []
         for index in range(len(queries)):
             alignment = result_pledge[-1][index].get()
@@ -641,7 +643,7 @@ def test_my_approach(
                         name
                     )
                 )
-        print("submitting results (" + name + ") ...")
+        print("submitting results (", name, ") ...")
         submitResults(db_name, result)
     print("done")
 
@@ -981,7 +983,7 @@ def manualCheckSequences():
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
 #test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 
 
 createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2048, True, True)

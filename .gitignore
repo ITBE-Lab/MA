@@ -10,3 +10,4 @@ html/*
 .tempdir*
 *.svg
 *.png
+*.tmp

@@ -20,10 +20,16 @@ def mutate(char):
     num = 0
     if char == "c" or char == "C":
         num = 1
-    elif char == "t" or char == "t":
+    elif char == "t" or char == "T":
         num = 2
-    elif char == "g" or char == "g":
+    elif char == "g" or char == "G":
         num = 3
+    elif char == "a" or char == "A":
+        num = 0
+    else:
+        print("error while mutating")
+        return 'n'
+
     num += random.randint(1,3)
     num %= 4
     if num == 0:
@@ -500,9 +506,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
     print("done saving")
 
     print("nuc distrib (A, C, G, T, N) originally: ", nuc_distrib_count_orig)
-    print("nuc distrib (A, C, G, T, N) changed: ", nuc_distrib_count_orig)
-    print("nuc distrib (A, C, G, T, N) changed by: ", list(map(
-        operator.sub, nuc_distrib_count_orig, nuc_distrib_count_mod)))
+    print("nuc distrib (A, C, G, T, N) changed: ", nuc_distrib_count_mod)
+    print("nuc distrib (A, C, G, T, N) changed by: ", list(map(operator.div, map(
+        operator.sub, nuc_distrib_count_orig, nuc_distrib_count_mod)), float(sum(nuc_distrib_count_orig))))
     print("total amount: ", sum(nuc_distrib_count_orig))
 #function
 

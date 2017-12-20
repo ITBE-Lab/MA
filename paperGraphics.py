@@ -3,7 +3,7 @@ from bokeh.layouts import row, column
 from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead
 from bokeh.palettes import d3
 from bokeh.io import export_png, export_svgs
-from bokeh.models import FuncTickFormatter, FixedTicker, Label, ColorBar
+from bokeh.models import FuncTickFormatter, FixedTicker, Label, ColorBar, FactorRange
 from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker, LinearColorMapper
 import math
 import random
@@ -180,6 +180,28 @@ min_y = 0
 max_x = 10
 max_y = 10
 
+def ambiguity_per_length():
+    ref_len = 3000000000 # three billion => human genome length
+
+    expected_ambiguity = []
+    q_lens = list(range(10,21,1))
+    for q_len in q_lens:
+        expected_ambiguity.append( (0.25**q_len) * (ref_len - q_len) )
+
+    plot = figure(title="Figure X: ambiguity for query length",
+            x_axis_label='query length', y_axis_label='expected ambiguity',
+            y_range=(-1,101)
+        )
+
+    plot.line(q_lens, expected_ambiguity, color="black")
+
+    plot.title.text_font=font
+    plot.legend.label_text_font=font
+    plot.legend.label_text_baseline="bottom"
+    plot.axis.axis_label_text_font=font
+    plot.axis.major_label_text_font=font
+    plot.legend.location = "top_left"
+    save(plot, "ambiguityPerQueryLen")
 
 def theoretical_max_acc():
 
@@ -213,15 +235,16 @@ def theoretical_max_acc():
 
     ref_len = 3000000000 # three billion => human genome length
     q_len = 1000
-    indel_size = 100
+    indel_size = 3
     prob_refindable = []
+    quality = 100
 
     print("creating query length matrix...")
     max_indels = int(q_len/indel_size)*2
-    for num_mut in range(0, q_len, 20):
+    for num_mut in range(0, q_len, max(10,int(q_len/quality))):
         prob_refindable.append( [] )
-        for num_indel in range(0,max_indels, 2):
-            q_len_e = simulate_max_length(q_len, num_mut, num_indel, indel_size, 2048)
+        for num_indel in range(0,max_indels, max(2,int(max_indels/quality))):
+            q_len_e = simulate_max_length(q_len, num_mut, num_indel, indel_size, 512)
             if q_len_e is None:
                 prob_refindable[-1].append(float('NaN'))
             else:
@@ -266,7 +289,7 @@ def theoretical_max_acc():
     plot.axis.axis_label_text_font=font
     plot.axis.major_label_text_font=font
     plot.legend.label_text_baseline="bottom"
-    save(plot, "upperBound")
+    save(plot, "upperBoundShortIndels")
 
 def seed_shadows():
     plot = figure(
@@ -388,12 +411,6 @@ def alignment():
 
     query =     [                         "C", "A", "C", "A", "T", "A", "T", "T" ]
     reference = ["A", "G", "G", "A", "G", "C", "A",           "T", "T", "T", "T", "C", "A"]
-    """
-    for index in range(len(query)):
-        query[index] = query[index] + " (" + str(index) + ")"
-    for index in range(len(reference)):
-        reference[index] = reference[index] + " (" + str(index) + ")"
-    """
 
     alignment = [D,D,D,D,D,M,M,I,I,M,MM,M,M,D,D]
 
@@ -598,10 +615,52 @@ def stripOfConsideration():
     plot.axis.major_label_text_font=font
     save(plot, "stripOfConsideration")
 
+def unrelated_non_enclosed_seeds():
+    plot = figure(
+                title="Supplementary Figure X: unrelated Seeds",
+                plot_width=resolution, plot_height=resolution/2,
+                x_axis_label = "query",
+                y_range=["related seeds", "unrelated seeds 1", "unrelated seeds 2"]
+            )
+
+    related = ["related seeds", "related seeds"]
+    unrelated = ["unrelated seeds 1", "unrelated seeds 1"]
+    unrelated2 = ["unrelated seeds 2", "unrelated seeds 2"]
+
+    plot.line([-5,3], related, color="black", line_width=10)
+    plot.line([6,21], related, color="black", line_width=10)
+    plot.line([25,40], related, color="black", line_width=10)
+
+    plot.line([2,7], unrelated, color="black", line_width=10)
+    plot.line([20,27], unrelated, color="black", line_width=10)
+
+    plot.line([1,4], unrelated2, color="black", line_width=10)
+    plot.line([5,8], unrelated2, color="black", line_width=10)
+    plot.line([19,22], unrelated2, color="black", line_width=10)
+    plot.line([23,29], unrelated2, color="black", line_width=10)
+
+
+    plot.title.text_font=font
+    plot.legend.label_text_font=font
+    plot.legend.label_text_baseline="hanging"
+    plot.axis.axis_label_text_font=font
+    plot.axis.major_label_text_font=font
+    plot.xaxis.major_tick_line_color = None
+    plot.yaxis.major_tick_line_color = None
+    plot.xaxis.minor_tick_line_color = None
+    plot.xaxis.major_label_text_alpha = 0
+    plot.toolbar.logo = None
+    plot.toolbar_location = None
+    plot.ygrid.grid_line_color = None
+    plot.xgrid.ticker = FixedTicker(ticks=[-5,3,6,21,25,40])
+    save(plot, "unrelatedNonEnclosedSeeds")
+
 
 # actually call the functions that create the pictures
 
-theoretical_max_acc()
+unrelated_non_enclosed_seeds()
+#ambiguity_per_length()
+#theoretical_max_acc()
 #seed_shadows()
 #alignment()
 #stripOfConsideration()
