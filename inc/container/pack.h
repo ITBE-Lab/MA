@@ -14,7 +14,10 @@
 #include <algorithm>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
-#include "container/fasta_reader.h"
+#include "container/nucSeq.h"
+#include "util/debug.h"
+#include "util/support.h"
+//#include "container/fasta_reader.h" //DEPRECATED
 
 namespace libMABS
 {
@@ -152,7 +155,7 @@ namespace libMABS
         bool debugCheckSequenceDescriptorVector()
         {
             DEBUG(
-                BOOST_LOG_TRIVIAL( trace ) << "Check description vector for consistency.";
+                std::cout << "Check description vector for consistency." << std::endl;
             )
             decltype( SequenceInPack::uiStartOffsetUnpacked ) uiRunningStartOffsetUnpacked = 0;
 
@@ -685,6 +688,8 @@ namespace libMABS
             vAppendSequence(std::string(rsName), std::string(rsComment), *pxSequence);
         }
 
+//DEPRECATED
+#if 0
         /* Appends a single FASTA record to the collection and pack.
         */
         void vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor ) 
@@ -705,6 +710,7 @@ namespace libMABS
             xReader.vLoadFastaFile(pcFileName);
             vAppendFastaSequence(xReader);
         } // method
+#endif
 
         /* Creates the reverse strand a saves the collection on the disk.
         * After finishing a collection it is impossible to add further sequences.
@@ -765,7 +771,8 @@ namespace libMABS
                     && boost::filesystem::exists( rsPrefix + ".amb" );
         } // method
 
-
+//DEPRECATED
+#if 0
         /* Entry point, for the construction of packs.
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
@@ -847,6 +854,7 @@ namespace libMABS
                 } // lambda
             ); // function call
         } // method
+#endif
         
         /* Restores a nucleotide sequence collection from the file system using the prefix given as argument.
         */
