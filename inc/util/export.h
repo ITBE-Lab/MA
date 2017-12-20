@@ -7,7 +7,7 @@
  */
 
 /**
- * @mainpage @ref libMABS::Module "Modular" @ref libMABS::LinearLineSweep "Linesweeping" Aligner using Segmentation
+ * @mainpage @ref libMABS::Module "Modular" Aligner using @ref libMABS::BinarySeeding "BinarySeeding" and @ref libMABS::StripOfConsideration "Strips of Consideration"
  * @tableofcontents
  * @section intro_sec Introduction
  *
