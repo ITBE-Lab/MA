@@ -12,6 +12,38 @@ from bokeh.io import save
 import numpy as np
 import colorsys
 
+# Computes a single rainbow-color. (Like in C++ and Java-code)
+def rainbow(value):
+    minimum = 0
+    maximum = 1
+    """
+    Local helper function for rgb-value computation.
+    """
+    def clamp(x):
+        """
+        Local helper function for min-max encapsulation.
+        """
+        return max(0, min(x, 255))
+
+    value = min(max(minimum, value), maximum)
+    difference = maximum - minimum
+    red = green = blue = 1.0
+    if value < minimum + 0.25 * difference:
+        red = 0.0
+        green = 4.0 * (value - minimum) / difference
+    else:
+        if value < minimum + 0.5 * difference:
+            red = 0.0
+            blue = 1.0 + 4.0 * (minimum + 0.25 * difference - value) / difference
+        else:
+            if value < minimum + 0.75 * difference:
+                red = 4.0 * (value - minimum - 0.5 * difference) / difference
+                blue = 0.0
+            else:
+                green = 1.0 + 4.0 * (minimum + 0.75 * difference - value) / difference
+                blue = 0.0
+    return (red, green, blue)
+
 
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
@@ -986,8 +1018,8 @@ def manualCheckSequences():
 #analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 
 
-createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2048, True, True)
-test_my_approaches("/mnt/ssd1/veryHighQual.db")
+#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2048, True, True)
+#test_my_approaches("/mnt/ssd1/veryHighQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 

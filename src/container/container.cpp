@@ -13,7 +13,18 @@ void exportContainer()
                 &Container::getType
             );
 
-            
+    //export the Nil class
+    boost::python::class_<
+            Nil, 
+            boost::python::bases<Container>,
+            std::shared_ptr<Nil>
+        >("Nil")
+        ;
+    boost::python::implicitly_convertible<
+        std::shared_ptr<Nil>,
+        std::shared_ptr<Container>
+    >();
+
     boost::python::class_<ContainerVector>(
             "ContainerVector"
         )
