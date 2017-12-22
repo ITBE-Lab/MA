@@ -406,6 +406,7 @@ namespace libMABS
          */
         NucSeq( const std::string &rsInitialText )
         {
+            vResetProtectedAttributes();
             vAppend( rsInitialText.c_str() );
         } // constructor
 
@@ -421,10 +422,11 @@ namespace libMABS
         */
         NucSeq( NucSeq &rSequence )
         {
-                /* We strip the given sequence of its content and move it to our new sequence.
-                * WARNING: Here we assume that the sizes for the types char and uint8_t are equal.
-                */
-                rSequence.vTransferOwnership( *this );
+            vResetProtectedAttributes();
+            /* We strip the given sequence of its content and move it to our new sequence.
+            * WARNING: Here we assume that the sizes for the types char and uint8_t are equal.
+            */
+            rSequence.vTransferOwnership( *this );
         } // constructor
 
 

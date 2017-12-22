@@ -33,18 +33,17 @@ private:
             boost::python::converter::rvalue_from_python_stage1_data* data
         )
     {
-        namespace python = boost::python;
         // Object is a borrowed reference, so create a handle indicting it is
         // borrowed for proper reference counting.
-        python::handle<> handle(python::borrowed(object));
+        boost::python::handle<> handle(boost::python::borrowed(object));
 
         // Obtain a handle to the memory block that the converter has allocated
         // for the C++ type.
-        typedef python::converter::rvalue_from_python_storage<C>
+        typedef boost::python::converter::rvalue_from_python_storage<C>
                                                                     storage_type;
         void* storage = reinterpret_cast<storage_type*>(data)->storage.bytes;
 
-        typedef python::stl_input_iterator<typename C::value_type>
+        typedef boost::python::stl_input_iterator<typename C::value_type>
                                                                         iterator;
 
         // Allocate the C++ type into the converter's memory block, and assign
@@ -52,7 +51,7 @@ private:
         // c is populated by passing the begin and end iterators of
         // the python object to the c's constructor.
         new (storage) C(
-        iterator(python::object(handle)), // begin
+        iterator(boost::python::object(handle)), // begin
         iterator());                      // end
         data->convertible = storage;
     }//function

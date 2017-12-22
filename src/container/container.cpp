@@ -20,14 +20,16 @@ void exportContainer()
             std::shared_ptr<Nil>
         >("Nil")
         ;
+    //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<
         std::shared_ptr<Nil>,
         std::shared_ptr<Container>
     >();
 
-    boost::python::class_<ContainerVector>(
-            "ContainerVector"
-        )
+    boost::python::class_<ContainerVector, 
+            boost::python::bases<Container>,
+            std::shared_ptr<Nil>
+        >("ContainerVector")
         .def(boost::python::init<const std::shared_ptr<ContainerVector>>())
         .def(boost::python::init<std::shared_ptr<Container>>())
         .def("append", &ContainerVector::push_back_boost)

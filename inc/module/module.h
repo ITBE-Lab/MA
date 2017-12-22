@@ -70,7 +70,7 @@ namespace libMABS
          * @details
          * Expects the given containers to have the correct types.
          */
-        virtual std::shared_ptr<Container> execute(ContainerVector pInput)
+        virtual std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> pInput)
         {
             return nullptr;
         }
@@ -112,7 +112,7 @@ namespace libMABS
          * Internally calls execute after checking the input types.
          * Also checks the result returned by Execute.
          */
-        std::shared_ptr<Container> saveExecute(ContainerVector vInput)
+        std::shared_ptr<Container> saveExecute(std::shared_ptr<ContainerVector> vInput)
         {
             if(!typeCheck(vInput, getInputType()))
             {
@@ -134,9 +134,10 @@ namespace libMABS
          * Internally calls execute after checking the input types.
          * Also checks the result returned by Execute.
          */
-        std::shared_ptr<Container> pyExecute(ContainerVector vInput)
+        std::shared_ptr<Container> pyExecute(std::shared_ptr<ContainerVector> vInput)
         {
-    #if 1
+            return nullptr;
+#if 1
             try
             {
                 std::shared_ptr<Container> pRet = saveExecute(vInput);
@@ -154,9 +155,9 @@ namespace libMABS
                 boost::python::handle_exception();
             }//catch
             return nullptr;
-    #else
+#else
             throw AlignerException("python modules are not allowed to call cpp modules currently - sorry");
-    #endif
+#endif
         }//function
 
         /**

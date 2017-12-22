@@ -538,6 +538,27 @@ def stripOfConsideration():
                 plot_width=resolution, plot_height=resolution,
                 x_axis_label = "reference", y_axis_label = "query"
             )
+    """
+    s_gap = 16
+    s_extend = 1
+    s_match = 8
+    s_missmatch = 2
+    anchor = ((3,5),(6,8))
+
+    q_len = 8
+
+    collect_q_start = anchor[0][0]
+    bottom_left_x = anchor[0][0] + anchor[1][0] + s_gap / s_extend - (1 + s_match/s_extend) * collect_q_start
+
+    collect_q_start = q_len
+    top_left_x = anchor[0][0] + anchor[1][0] + s_gap / s_extend - (1 + s_match/s_extend) * collect_q_start
+
+    stripArea =
+        [
+            [],
+            []
+        ]
+    """
 
     plot.patch(
             [-.5,7.5,12.5,12.5,5.5],
@@ -658,9 +679,9 @@ def unrelated_non_enclosed_seeds():
 
 # actually call the functions that create the pictures
 
-unrelated_non_enclosed_seeds()
+#unrelated_non_enclosed_seeds()
 #ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()
-#stripOfConsideration()
+stripOfConsideration()

@@ -583,7 +583,6 @@ std::shared_ptr<Container> BinarySeeding::execute(
 	std::shared_ptr<NucSeq> pQuerySeq = 
 		std::static_pointer_cast<NucSeq>(vpInput[1]);
 
-		
 	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
 
 	{//scope for xPool

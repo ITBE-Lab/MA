@@ -135,6 +135,11 @@ namespace libMABS
             contentType(contentType)
         {}//container vector
 
+        ~ContainerVector()
+        {
+            std::cout << "deconstructed" << std::endl;
+        }
+
         //overload
         bool canCast(std::shared_ptr<Container> c) const
         {
