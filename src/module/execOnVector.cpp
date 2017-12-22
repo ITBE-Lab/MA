@@ -16,12 +16,12 @@ std::shared_ptr<Container> ExecOnVec::getOutputType() const
     return std::shared_ptr<Container>(new ContainerVector(pModule->getOutputType()));
 }//function
 
-std::shared_ptr<Container> ExecOnVec::execute(ContainerVector vpInput)
+std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     // vp input is organized to following way: first a vector then single elements.
     // each element of the first vector shall be executed with all following elements
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
-        std::static_pointer_cast<ContainerVector>(vpInput[0]));
+        std::static_pointer_cast<ContainerVector>((*vpInput)[0]));
 
     DEBUG(
         std::cout << "executing on: " << pInVec->size() << std::endl;
@@ -46,10 +46,10 @@ std::shared_ptr<Container> ExecOnVec::execute(ContainerVector vpInput)
                 {
                     // create a input vector and add the first element to it
                     // the appropriate element of the vector that is given as first input
-                    ContainerVector vInput{ (*pInVec)[i] };
+                    std::shared_ptr<ContainerVector> vInput(new ContainerVector { (*pInVec)[i] });
                     // add all following elements
-                    for(unsigned int j = 1; j < vpInput.size(); j++)
-                        vInput.push_back(vpInput[j]);
+                    for(unsigned int j = 1; j < vpInput->size(); j++)
+                        vInput->push_back((*vpInput)[j]);
                     try
                     {
                         (*pResults)[i] = pModule->execute(vInput);
@@ -114,10 +114,10 @@ std::shared_ptr<Container> Tail::getOutputType() const
 }//function
 
 
-std::shared_ptr<Container> Tail::execute(ContainerVector vpInput)
+std::shared_ptr<Container> Tail::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
-        std::static_pointer_cast<ContainerVector>(vpInput[0]));
+        std::static_pointer_cast<ContainerVector>((*vpInput)[0]));
 
     std::shared_ptr<Container> pRet(nullptr);
     if(pInVec->empty())

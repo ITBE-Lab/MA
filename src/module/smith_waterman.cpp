@@ -74,13 +74,13 @@ int16_t alignSW_SIMD( const NucSeq &rQuerySequence, // query sequence
 
 
 std::shared_ptr<Container> SMW::execute(
-        ContainerVector vpInput
+        std::shared_ptr<ContainerVector> vpInput
     )
 {
     std::shared_ptr<NucSeq> pQuerySeq = 
-        std::static_pointer_cast<NucSeq>(vpInput[0]);
+        std::static_pointer_cast<NucSeq>((*vpInput)[0]);
     std::shared_ptr<Pack> pRefPack = 
-        std::static_pointer_cast<Pack>(vpInput[1]);
+        std::static_pointer_cast<Pack>((*vpInput)[1]);
 
 
     // 1. Prepare the SW parameter set ...

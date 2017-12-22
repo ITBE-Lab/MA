@@ -61,16 +61,16 @@ void StripOfConsideration::forEachNonBridgingSeed(
 
 
 std::shared_ptr<Container> StripOfConsideration::execute(
-        ContainerVector vpInput
+        std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>(vpInput[0]);
-    std::shared_ptr<Seeds> pAnchors = std::static_pointer_cast<Seeds>(vpInput[1]);
+    std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>((*vpInput)[0]);
+    std::shared_ptr<Seeds> pAnchors = std::static_pointer_cast<Seeds>((*vpInput)[1]);
     std::shared_ptr<NucSeq> pQuerySeq = 
-        std::static_pointer_cast<NucSeq>(vpInput[2]);
+        std::static_pointer_cast<NucSeq>((*vpInput)[2]);
     std::shared_ptr<Pack> pRefSeq = 
-        std::static_pointer_cast<Pack>(vpInput[3]);
-    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[4]);
+        std::static_pointer_cast<Pack>((*vpInput)[3]);
+    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[4]);
 
     //extract the seeds
     std::vector<Seed> vSeeds;

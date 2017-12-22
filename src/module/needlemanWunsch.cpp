@@ -205,14 +205,14 @@ void needlemanWunsch(
 }//function
 
 std::shared_ptr<Container> NeedlemanWunsch::execute(
-        ContainerVector vpInput
+        std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);
+    std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
     std::shared_ptr<NucSeq> pQuery 
-        = std::static_pointer_cast<NucSeq>(vpInput[1]);
+        = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
     std::shared_ptr<Pack> pRefPack = 
-        std::static_pointer_cast<Pack>(vpInput[2]);
+        std::static_pointer_cast<Pack>((*vpInput)[2]);
 
     //no seeds => no spot found at all...
     if(pSeeds->empty())

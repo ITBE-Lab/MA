@@ -576,12 +576,12 @@ std::shared_ptr<Container> BinarySeeding::getOutputType() const
 
 
 std::shared_ptr<Container> BinarySeeding::execute(
-		ContainerVector vpInput
+		std::shared_ptr<ContainerVector> vpInput
 	)
 {
-	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[0]);
+	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[0]);
 	std::shared_ptr<NucSeq> pQuerySeq = 
-		std::static_pointer_cast<NucSeq>(vpInput[1]);
+		std::static_pointer_cast<NucSeq>((*vpInput)[1]);
 
 	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
 

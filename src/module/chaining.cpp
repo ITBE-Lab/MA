@@ -16,10 +16,10 @@ std::shared_ptr<Container> Chaining::getOutputType() const
 
 
 std::shared_ptr<Container> Chaining::execute(
-        ContainerVector vpInput
+        std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>(vpInput[0]);
+    std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
 
     //take care of the two special cases
     if(pSeeds->size() == 0)

@@ -114,7 +114,7 @@ namespace libMABS
          */
         std::shared_ptr<Container> saveExecute(std::shared_ptr<ContainerVector> vInput)
         {
-            if(!typeCheck(vInput, getInputType()))
+            if(!typeCheck(*vInput, getInputType()))
             {
                 std::cerr << "input of module " << getName() << " had the wrong type" << std::endl;
                 throw new ModuleIO_Exception("Input type and expected input type did not match.");
@@ -447,9 +447,9 @@ namespace libMABS
                 throw ModuleIO_Exception("No pledger known");
             if(pledger != nullptr)
             {
-                ContainerVector vInput;
+                std::shared_ptr<ContainerVector> vInput(new ContainerVector());
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    vInput.push_back(pFuture->get());
+                    vInput->push_back(pFuture->get());
                 try
                 {
                     auto timeStamp = std::chrono::system_clock::now();

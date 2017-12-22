@@ -308,12 +308,12 @@ void LinearLineSweep::linesweep(
 }//function
 
 std::shared_ptr<Container> LinearLineSweep::execute(
-        ContainerVector vpInput
+        std::shared_ptr<ContainerVector> vpInput
     )
 {
     //copy the input
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
-        std::static_pointer_cast<Seeds>(vpInput[0])));
+        std::static_pointer_cast<Seeds>((*vpInput)[0])));
 
     std::vector<ShadowInterval> vShadows = {};
 

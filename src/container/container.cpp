@@ -11,6 +11,10 @@ void exportContainer()
         .def(
                 "get_type_info", 
                 &Container::getType
+            )
+        .def(
+                "get_name", 
+                &Container::getTypeName
             );
 
     //export the Nil class
@@ -28,11 +32,10 @@ void exportContainer()
 
     boost::python::class_<ContainerVector, 
             boost::python::bases<Container>,
-            std::shared_ptr<Nil>
+            std::shared_ptr<ContainerVector>
         >("ContainerVector")
-        .def(boost::python::init<const std::shared_ptr<ContainerVector>>())
+        //.def(boost::python::init<const std::shared_ptr<ContainerVector>>())
         .def(boost::python::init<std::shared_ptr<Container>>())
-        .def("append", &ContainerVector::push_back_boost)
         .def(boost::python::vector_indexing_suite<
                 ContainerVector,
                 /*
@@ -44,9 +47,10 @@ void exportContainer()
                 true
             >());
 
+    //DEPRECATED
     //make vectors of container-pointers a thing
-    IterableConverter()
-        .from_python<ContainerVector>();
+    //IterableConverter()
+    //    .from_python<std::shared_ptr<ContainerVector>>();
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 

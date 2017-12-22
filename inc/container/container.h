@@ -70,6 +70,8 @@ namespace libMABS
     class Nil : public Container
     {
     public:
+        Nil()
+        {}//default constrctor
         /** 
         * @returns the type of the container as int.
         * @brief Used by @ref Module "module" for type checking its Inputs.
@@ -134,11 +136,6 @@ namespace libMABS
             vector(numElements),
             contentType(contentType)
         {}//container vector
-
-        ~ContainerVector()
-        {
-            std::cout << "deconstructed" << std::endl;
-        }
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const

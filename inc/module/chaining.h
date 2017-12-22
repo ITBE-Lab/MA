@@ -376,7 +376,7 @@ namespace libMABS
 
     public:
         //overload
-        std::shared_ptr<Container> execute(ContainerVector pInput);
+        std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> pInput);
 
         /**
          * @brief Used to check the input of execute.

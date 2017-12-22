@@ -63,118 +63,6 @@ class Module(libMABS.Module):
     def promise_me(self, input):
         return Pledge.make_pledge(self, self.get_output_type(), input)
 
-##
-# @brief python wrapper for BinarySeeding
-class BinarySeeding(libMABS.BinarySeeding):
-    def execute(self, *args):
-        return super(BinarySeeding, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(BinarySeeding, self).promise_me(list(args))
-
-##
-# @brief python wrapper for StripOfConsideration
-class StripOfConsideration(libMABS.StripOfConsideration):
-    def execute(self, *args):
-        return super(StripOfConsideration, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(StripOfConsideration, self).promise_me(list(args))
-
-##
-# @brief python wrapper for LinearLineSweep
-class LinearLineSweep(libMABS.LinearLineSweep):
-    def execute(self, *args):
-        return super(LinearLineSweep, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(LinearLineSweep, self).promise_me(list(args))
-
-##
-# @brief python wrapper for LinearLineSweep
-class Chaining(libMABS.Chaining):
-    def execute(self, *args):
-        return super(Chaining, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(Chaining, self).promise_me(list(args))
-
-##
-# @brief python wrapper for LinearLineSweep
-class NeedlemanWunsch(libMABS.NeedlemanWunsch):
-    def execute(self, *args):
-        return super(NeedlemanWunsch, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(NeedlemanWunsch, self).promise_me(list(args))
-
-##
-# @brief python wrapper for LinearLineSweep
-class GetAnchors(libMABS.GetAnchors):
-    def execute(self, *args):
-        return super(GetAnchors, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(GetAnchors, self).promise_me(list(args))
-
-##
-# @brief python wrapper for ExecOnVec
-class ExecOnVec(libMABS.ExecOnVec):
-    def execute(self, *args):
-        return super(ExecOnVec, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(ExecOnVec, self).promise_me(list(args))
-
-##
-# @brief The Tail Module.
-# @details
-# returns the tail of a container vector
-# @ingroup module
-#
-class Tail(libMABS.Tail):
-    def execute(self, *args):
-        return super(Tail, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(Tail, self).promise_me(list(args))
-
-##
-# @brief The ExtractAllSeeds Module.
-# @details
-# extracts all seeds from a segment list.
-# @ingroup module
-#
-class ExtractAllSeeds(libMABS.ExtractAllSeeds):
-    def execute(self, *args):
-        return super(ExtractAllSeeds, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(ExtractAllSeeds, self).promise_me(list(args))
-
-##
-# @brief The ReSeed Module.
-# @details
-# extracts all seeds from a segment list.
-# @ingroup module
-#
-class ReSeed(libMABS.ReSeed):
-    def execute(self, *args):
-        return super(ReSeed, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(ReSeed, self).promise_me(list(args))
-
-##
-# @brief The SMW Module.
-# @ingroup module
-#
-class SMW(libMABS.SMW):
-    def execute(self, *args):
-        return super(SMW, self).execute(list(args))
-
-    def promise_me(self, *args):
-        return super(SMW, self).promise_me(list(args))
 
 ##
 # @brief contains the final output of the aligner.
@@ -301,22 +189,123 @@ class NucSeq(libMABS.NucSeq):
 # @ingroup container
 #
 class ContainerVector(libMABS.ContainerVector):
-    pass
-"""
-class ContainerType(CppContainerType):
-    alignment = CppContainerType.alignment
-    any = CppContainerType.any
-    fM_index = CppContainerType.fM_index
-    nothing = CppContainerType.nothing
-    nucSeq = CppContainerType.nucSeq
-    packedNucSeq = CppContainerType.packedNucSeq
-    sa_interval = CppContainerType.sa_interval
-    seed = CppContainerType.seed
-    seeds = CppContainerType.seeds
-    seedsVector = CppContainerType.seedsVector
-    segment = CppContainerType.segment
-    segmentList = CppContainerType.segmentList
-    unknown = CppContainerType.unknown
-    #from here the new python definitions start
-    #whatever = len(CppContainerType.values)
-"""
+    def __init__(self):
+        libMABS.ContainerVector.__init__(self)
+
+    def __init__(self, *args):
+        libMABS.ContainerVector.__init__(self, args[0])
+        for arg in args:
+            self.append(arg)
+
+##
+# @brief python wrapper for BinarySeeding
+class BinarySeeding(libMABS.BinarySeeding):
+    def execute(self, *args):
+        return super(BinarySeeding, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(BinarySeeding, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for StripOfConsideration
+class StripOfConsideration(libMABS.StripOfConsideration):
+    def execute(self, *args):
+        return super(StripOfConsideration, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(StripOfConsideration, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class LinearLineSweep(libMABS.LinearLineSweep):
+    def execute(self, *args):
+        return super(LinearLineSweep, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(LinearLineSweep, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class Chaining(libMABS.Chaining):
+    def execute(self, *args):
+        return super(Chaining, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(Chaining, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class NeedlemanWunsch(libMABS.NeedlemanWunsch):
+    def execute(self, *args):
+        return super(NeedlemanWunsch, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(NeedlemanWunsch, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for LinearLineSweep
+class GetAnchors(libMABS.GetAnchors):
+    def execute(self, *args):
+        return super(GetAnchors, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(GetAnchors, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for ExecOnVec
+class ExecOnVec(libMABS.ExecOnVec):
+    def execute(self, *args):
+        return super(ExecOnVec, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(ExecOnVec, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The Tail Module.
+# @details
+# returns the tail of a container vector
+# @ingroup module
+#
+class Tail(libMABS.Tail):
+    def execute(self, *args):
+        return super(Tail, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(Tail, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The ExtractAllSeeds Module.
+# @details
+# extracts all seeds from a segment list.
+# @ingroup module
+#
+class ExtractAllSeeds(libMABS.ExtractAllSeeds):
+    def execute(self, *args):
+        return super(ExtractAllSeeds, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(ExtractAllSeeds, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The ReSeed Module.
+# @details
+# extracts all seeds from a segment list.
+# @ingroup module
+#
+class ReSeed(libMABS.ReSeed):
+    def execute(self, *args):
+        return super(ReSeed, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(ReSeed, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The SMW Module.
+# @ingroup module
+#
+class SMW(libMABS.SMW):
+    def execute(self, *args):
+        return super(SMW, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(SMW, self).promise_me(ContainerVector(*args))

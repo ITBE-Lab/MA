@@ -542,16 +542,12 @@ def memory_test(reference, test_index):
     print("running")
     while True:
         q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 200, 0, 0, 1)
-        #query_pledge.set(NucSeq(q))
+        query_pledge.set(NucSeq(q))
 
-        cv = ContainerVector()
-        cv.append(fm_index)
-        cv.append(NucSeq(q))
-
-        #module.execute(cv)
+        #module.execute(fm_index, NucSeq(q))
         #module.execute(fm_index, NucSeq(q))
 
-        #result_pledge[test_index].get()
+        result_pledge[test_index].get()
         #Pledge.simultaneous_get( [result_pledge[test_index]] ,1)
 
         #query_pledge.get()

@@ -21,11 +21,11 @@ std::shared_ptr<Container> ExtractAllSeeds::getOutputType() const
 
 
 std::shared_ptr<Container> ExtractAllSeeds::execute(
-        ContainerVector vpInput
+        std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>(vpInput[0]);
-    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>(vpInput[1]);
+    std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>((*vpInput)[0]);
+    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[1]);
 
     //extract function is actually built into SegmentVector
     return pSegments->extractSeeds(pFM_index, maxAmbiguity);

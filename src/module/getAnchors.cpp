@@ -17,14 +17,14 @@ std::shared_ptr<Container> GetAnchors::getOutputType() const
 
 
 std::shared_ptr<Container> GetAnchors::execute(
-        ContainerVector vpInput
+        std::shared_ptr<ContainerVector> vpInput
     )
 {
     std::shared_ptr<SegmentVector> pCastedInput =
-        std::static_pointer_cast<SegmentVector>(vpInput[0]);
+        std::static_pointer_cast<SegmentVector>((*vpInput)[0]);
     std::shared_ptr<Pack> pRefSeq = 
-        std::static_pointer_cast<Pack>(vpInput[1]);
-    std::shared_ptr<FMIndex> pxFM_index = std::static_pointer_cast<FMIndex>(vpInput[2]);
+        std::static_pointer_cast<Pack>((*vpInput)[1]);
+    std::shared_ptr<FMIndex> pxFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[2]);
 
     std::vector<Seed> aSeeds;
     /*

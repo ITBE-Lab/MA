@@ -40,7 +40,7 @@ namespace libMABS
         {}//constructor
 
         //overload
-        std::shared_ptr<Container> execute(ContainerVector vpInput);
+        std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);
 
         /**
          * @brief Used to check the input of execute.
@@ -82,7 +82,7 @@ namespace libMABS
         {}//constructor
 
         //overload
-        std::shared_ptr<Container> execute(ContainerVector vpInput);
+        std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);
         
         /**
          * @brief Used to check the input of execute.
