@@ -547,8 +547,8 @@ def memory_test(reference, test_index):
         #module.execute(fm_index, NucSeq(q))
         #module.execute(fm_index, NucSeq(q))
 
-        result_pledge[test_index].get()
-        #Pledge.simultaneous_get( [result_pledge[test_index]] ,1)
+        #result_pledge[test_index].get()
+        Pledge.simultaneous_get( [result_pledge[test_index]] , 1)
 
         #query_pledge.get()
 
@@ -576,7 +576,7 @@ def test_my_approach(
             db_name,
             reference,
             name,
-            seg=BinarySeeding(False),
+            seg=BinarySeeding(False,7.0),
             chain=LinearLineSweep(), 
             max_hits=5,
             num_anchors=10, 
@@ -584,7 +584,9 @@ def test_my_approach(
             low_res = False,
             re_seed = None,
             max_sweep = None,
-            strip_size = 500
+            strip_size = 500,
+            min_seeds= 2,
+            min_seed_length= .05
         ):
     print("collecting samples (" + name + ") ...")
     reference_pledge = Pledge(Pack())
@@ -602,8 +604,8 @@ def test_my_approach(
 
     print("having ", len(all_queries), " samples total (", name, ") ...")
 
-    extract_size = 4096
-    # break samples into chunks of 2^12
+    extract_size = 2**14
+    # break samples into chunks of 2^14
     for index, queries in enumerate(chunks(all_queries, extract_size)):
         print("extracting", len(queries), "samples", index, "/",
             len(all_queries)/extract_size, "(", name, ") ...")
@@ -636,7 +638,9 @@ def test_my_approach(
             strips_of_consideration=strips_of_consideration,
             re_seed=re_seed,
             max_sweep=max_sweep,
-            strip_size=strip_size
+            strip_size=strip_size,
+            min_seeds=min_seeds,
+            min_seed_length=min_seed_length
         )
 
         #temp code
@@ -694,7 +698,8 @@ def test_my_approaches(db_name):
 
     #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf", num_anchors=100, strip_size=10000000)
 
-    test_my_approach(db_name, human_genome, "pBs:5 SoC:1000,500nt sLs:100", num_anchors=1000, max_sweep=100)
+    test_my_approach(db_name, human_genome, "pBs:5,*7 SoC:1000,500nt,<5,>2,*.05 sLs:100", num_anchors=1000, max_sweep=100)
+    test_my_approach(db_name, human_genome, "pBs:5,*6 SoC:1000,500nt,<5,>2,*.05 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,6.0))
 
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
@@ -1003,8 +1008,8 @@ def manualCheckSequences():
 
 
 
-memory_test(human_genome, -1)
-exit()
+#memory_test(human_genome, -1)
+#exit()
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
@@ -1020,8 +1025,8 @@ exit()
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2048, True, True)
-#test_my_approaches("/mnt/ssd1/veryHighQual.db")
-#analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+test_my_approaches("/mnt/ssd1/veryHighQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)

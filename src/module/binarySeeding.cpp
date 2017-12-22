@@ -602,6 +602,9 @@ std::shared_ptr<Container> BinarySeeding::execute(
 
 	}//end of scope xPool
 
+    if(pSegmentVector->numSeeds(pFM_index, 100) > pQuerySeq->length() * max_seeds)
+        pSegmentVector->clear();
+
 	return pSegmentVector;
 }//function
 
@@ -614,7 +617,7 @@ void exportBinarySeeding()
         	std::shared_ptr<BinarySeeding>
 		>(
 			"BinarySeeding",
-			boost::python::init<bool>()
+			boost::python::init<bool, float>()
 		)
 		;
 	boost::python::implicitly_convertible< 

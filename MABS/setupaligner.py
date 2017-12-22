@@ -31,19 +31,21 @@ def set_up_aligner(
         query_pledges,
         reference_pledge,
         fm_index_pledge,
-        seg=BinarySeeding(False),
+        seg=BinarySeeding(False, 7.0),
         chain=LinearLineSweep(),
         max_hits=5,
         num_anchors=5,
         strips_of_consideration=True,
         re_seed = None,
         max_sweep = None,
-        strip_size = 1000
+        strip_size = 1000,
+        min_seeds= 2,
+        min_seed_length= .05
         ):
 
     anc = GetAnchors(num_anchors, max_hits)
 
-    soc = StripOfConsideration(strip_size, max_hits)
+    soc = StripOfConsideration(strip_size, max_hits, min_seeds, min_seed_length)
 
     max_sweep_n = 0
     if not max_sweep is None:

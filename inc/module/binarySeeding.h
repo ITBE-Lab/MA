@@ -24,6 +24,7 @@ namespace libMABS
     class BinarySeeding : public Module{
     private:
         bool bLrExtension;
+        float max_seeds = 7.f;
 
         /**
          * @brief Backwards extension using a FMDIndex
@@ -114,9 +115,10 @@ namespace libMABS
          * Our approach is faster and computes seeds of higher quality.
          * However Li et Al.s approach will increase the overall accuracy of the alignment.
          */
-        BinarySeeding(bool bLrExtension = true)
+        BinarySeeding(bool bLrExtension = true, float max_seeds = 7.f)
                 :
-            bLrExtension(bLrExtension)
+            bLrExtension(bLrExtension),
+            max_seeds(max_seeds)
         {}//constructor
         
         std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);

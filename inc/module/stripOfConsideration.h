@@ -22,6 +22,10 @@ namespace libMABS
         nucSeqIndex uiStripSize = 10000;
         /// @brief Maximum ambiguity for a seed to be considered.
         unsigned int uiMaxAmbiguity = 500;
+        /// @brief Minimum amount of seeds for a strip to be considered
+        unsigned int minSeeds = 3;
+        /// @brief Minimum nucleotides covered by seeds for a strip to be considered
+        float minSeedLength = 0.1;
         /**
         * @brief skip seeds with too much ambiguity
         * @details
@@ -48,10 +52,17 @@ namespace libMABS
 
         StripOfConsideration(){}//default constructor
 
-        StripOfConsideration(nucSeqIndex uiStripSize, unsigned int uiMaxAmbiguity)
+        StripOfConsideration(
+                nucSeqIndex uiStripSize, 
+                unsigned int uiMaxAmbiguity,
+                unsigned int minSeeds,
+                float minSeedLength
+            )
                 :
             uiStripSize(uiStripSize),
-            uiMaxAmbiguity(uiMaxAmbiguity)
+            uiMaxAmbiguity(uiMaxAmbiguity),
+            minSeeds(minSeeds),
+            minSeedLength(minSeedLength)
         {}//constructor
 
         std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);

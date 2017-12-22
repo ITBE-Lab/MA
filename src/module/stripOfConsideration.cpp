@@ -160,6 +160,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             ++iterator;
         }//while
 
+        /*
+         * FILTER 2
+         */
+        if(pxNew->size() < minSeeds && pxNew->getScore() < minSeedLength * pQuerySeq->length())
+            continue;
+
         pRet->push_back(pxNew);
     }//for
     return pRet;
@@ -173,9 +179,11 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<nucSeqIndex, unsigned int>())
+        .def(boost::python::init<nucSeqIndex, unsigned int, unsigned int, float>())
         .def_readwrite("strip_size", &StripOfConsideration::uiStripSize)
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
+        .def_readwrite("min_seeds", &StripOfConsideration::minSeeds)
+        .def_readwrite("min_seed_length", &StripOfConsideration::minSeedLength)
     ;
 
     boost::python::implicitly_convertible< 
