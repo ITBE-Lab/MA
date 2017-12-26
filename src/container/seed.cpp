@@ -14,6 +14,15 @@ void exportSeed()
         .def_readwrite("start_ref", &Seed::uiPosOnReference)
     ;
 
+    //export the Seed class
+    boost::python::class_<AlignmentStatistics>("AlignmentStatistics")
+        .def_readwrite("index_of_strip", &AlignmentStatistics::index_of_strip)
+        .def_readwrite("seed_coverage", &AlignmentStatistics::seed_coverage)
+        .def_readwrite("num_seeds_in_strip", &AlignmentStatistics::num_seeds_in_strip)
+        .def_readwrite("anchor_size", &AlignmentStatistics::anchor_size)
+        .def_readwrite("anchor_ambiguity", &AlignmentStatistics::anchor_ambiguity)
+    ;
+
     //export the Seeds class
     boost::python::class_<
         Seeds, 
@@ -24,6 +33,7 @@ void exportSeed()
         "Seeds"
     )
     .def(boost::python::init<std::shared_ptr<Seeds>>())
+    .def_readwrite("stats", &Seeds::xStats)
     .def(boost::python::vector_indexing_suite<
             Seeds,
             /*
@@ -33,7 +43,8 @@ void exportSeed()
             *    the two Containers would be different and not inter castable.
             */
             true
-        >());
+        >())
+        ;
 
     //make vectors of container-pointers a thing
     IterableConverter()

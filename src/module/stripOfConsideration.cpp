@@ -93,6 +93,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//lambda
     );//sort function call
 
+    unsigned int uiAnchorIndex = 0;
+
     //used to make sure we don't collect the same area twice
     std::vector<std::tuple<nucSeqIndex, nucSeqIndex>> collectedIntervals;
 
@@ -166,6 +168,16 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         if(pxNew->size() < minSeeds && pxNew->getScore() < minSeedLength * pQuerySeq->length())
             continue;
 
+        /*
+         * save some statistics about this strip
+         */
+        pxNew->xStats.index_of_strip = uiAnchorIndex++;
+        pxNew->xStats.seed_coverage = pxNew->getScore();
+        pxNew->xStats.num_seeds_in_strip = pxNew->size();
+        pxNew->xStats.anchor_size = xAnchor.size();
+        pxNew->xStats.anchor_ambiguity = xAnchor.uiAmbiguity;
+
+        //save the strip of consideration
         pRet->push_back(pxNew);
     }//for
     return pRet;

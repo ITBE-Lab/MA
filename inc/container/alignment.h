@@ -8,6 +8,7 @@
 #define ALIGNMENT_H
 
 #include "container/segment.h"
+#include "container/seed.h"
 
 
 namespace libMABS
@@ -59,6 +60,9 @@ namespace libMABS
         int iScore = 0;
 
     public:
+        //some statistics
+        AlignmentStatistics xStats;
+
         /**
          * @brief Creates an empty alignment.
          */

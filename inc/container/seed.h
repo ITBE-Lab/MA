@@ -28,6 +28,7 @@ namespace libMABS
     public:
         ///@brief the beginning of the match on the reference
         nucSeqIndex uiPosOnReference;
+        unsigned int uiAmbiguity;
 
         /**
          * @brief Creates a new Seed.
@@ -48,7 +49,8 @@ namespace libMABS
         Seed(const Seed& rOther)
                 :
             Interval(rOther),
-            uiPosOnReference(rOther.uiPosOnReference)
+            uiPosOnReference(rOther.uiPosOnReference),
+            uiAmbiguity(rOther.uiAmbiguity)
         {}//copy constructor
 
         /**
@@ -92,6 +94,7 @@ namespace libMABS
         {
             Interval::operator=(rxOther);
             uiPosOnReference = rxOther.uiPosOnReference;
+            uiAmbiguity = rxOther.uiAmbiguity;
             return *this;
         }// operator
         
@@ -125,6 +128,21 @@ namespace libMABS
     }; //class
 
     /**
+     * @brief Used to store some statistics to each alignment
+     * @details
+     * Intended for figuring out optimal thresholds.
+     */
+    class AlignmentStatistics
+    {
+    public:
+        unsigned int index_of_strip;
+        unsigned int seed_coverage;
+        unsigned int num_seeds_in_strip;
+        unsigned int anchor_size;
+        unsigned int anchor_ambiguity;
+    };
+
+    /**
      * @brief A list where one element is a Seed.
      * @details
      * Also holds the summed up score of the seeds within the list.
@@ -141,6 +159,8 @@ namespace libMABS
         using vector::vector;
         //inherit the constructors from Container
         using Container::Container;
+        //some statistics
+        AlignmentStatistics xStats;
 
         Seeds(std::shared_ptr<Seeds> pOther)
                 :

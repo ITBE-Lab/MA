@@ -676,6 +676,11 @@ def test_my_approach(
                         alignment.get_score(),
                         alignment.begin_on_ref(),
                         segment_list.num_seeds(fm_index, max_hits),
+                        alignment.stats.index_of_strip,
+                        alignment.stats.seed_coverage,
+                        alignment.stats.num_seeds_in_strip,
+                        alignment.stats.anchor_size,
+                        alignment.stats.anchor_ambiguity,
                         total_time,
                         name
                     )
@@ -698,6 +703,11 @@ def test_my_approaches(db_name):
 
     #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf", num_anchors=100, strip_size=10000000)
 
+    # [p]Bs:<max_ambiguity>,*<max_seeds_fac> 
+    # # SoC:<num_SoC>,<SoC_size>nt,\<<max_ambiguity>,\><min_seeds_in_strip>,*<min_coverage>
+    # sLs:<num_nmw>
+
+    test_my_approach(db_name, human_genome, "pBs:5,*10 SoC:1000,500nt,<5,>0,*0 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,10.0), min_seeds=0, min_seed_length=0)
     test_my_approach(db_name, human_genome, "pBs:5,*7 SoC:1000,500nt,<5,>2,*.05 sLs:100", num_anchors=1000, max_sweep=100)
     test_my_approach(db_name, human_genome, "pBs:5,*6 SoC:1000,500nt,<5,>2,*.05 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,6.0))
 

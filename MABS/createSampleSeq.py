@@ -72,6 +72,11 @@ def setUpDbTables(conn, reset = False):
                     score REAL,
                     result_start INTEGER,
                     num_seeds INTEGER,
+                    index_of_chosen_strip INTEGER,
+                    seed_coverage_chosen_strip INTGER,
+                    num_seeds_chosen_strip INTEGER,
+                    anchor_size INTEGER,
+                    anchor_ambiguity INTEGER,
                     run_time REAL,
                     approach TINYTEXT
                 )
@@ -193,18 +198,37 @@ def getOriginOf(db_name, sample_id):
 def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.executemany("""
-                    INSERT INTO results 
-                    (
-                        sample_id,
-                        score,
-                        result_start,
-                        num_seeds,
-                        run_time,
-                        approach
-                    )
-                    VALUES (?,?,?,?,?,?)
-                    """, results_list)
+    if(len(results[0]) == 6)
+        c.executemany("""
+                        INSERT INTO results 
+                        (
+                            sample_id,
+                            score,
+                            result_start,
+                            num_seeds,
+                            run_time,
+                            approach
+                        )
+                        VALUES (?,?,?,?,?,?)
+                        """, results_list)
+    else # len == 11
+        c.executemany("""
+                        INSERT INTO results 
+                        (
+                            sample_id,
+                            score,
+                            result_start,
+                            num_seeds,
+                            index_of_chosen_strip,
+                            seed_coverage_chosen_strip,
+                            num_seeds_chosen_strip,
+                            anchor_size,
+                            anchor_ambiguity,
+                            run_time,
+                            approach
+                        )
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                        """, results_list)
     conn.commit()
 
 def clearResults(db_name, ref, approach):
