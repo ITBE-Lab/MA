@@ -538,27 +538,23 @@ def stripOfConsideration():
                 plot_width=resolution, plot_height=resolution,
                 x_axis_label = "reference", y_axis_label = "query"
             )
-    """
-    s_gap = 16
-    s_extend = 1
-    s_match = 8
-    s_missmatch = 2
-    anchor = ((3,5),(6,8))
+    
+    s_gap = 16.0
+    s_extend = 1.0
+    s_match = 8.0
+    s_missmatch = 2.0
+    anchor = ((3,5),(106,8))
 
-    q_len = 8
+    q_len = 1000
 
-    collect_q_start = anchor[0][0]
-    bottom_left_x = anchor[0][0] + anchor[1][0] + s_gap / s_extend - (1 + s_match/s_extend) * collect_q_start
+    bottom_left_x = anchor[0][0] + s_gap / s_extend - (1 + s_match/s_extend) * (anchor[0][0]-1)
+    top_left_x = anchor[0][0] + anchor[1][0] + s_gap / s_extend - (1 + s_match/s_extend) * q_len
 
-    collect_q_start = q_len
-    top_left_x = anchor[0][0] + anchor[1][0] + s_gap / s_extend - (1 + s_match/s_extend) * collect_q_start
+    bottom_right_x = anchor[0][1] + anchor[1][1] - s_gap / s_extend + (s_match / s_extend) * q_len + (2 + s_match / s_extend) * anchor[0][0] - (1 + s_match/s_extend) * (anchor[0][0]-1)
+    top_right_x = anchor[0][1] + anchor[1][1] - s_gap / s_extend + (s_match / s_extend) * q_len + (2 + s_match / s_extend) * anchor[0][0] - (1 + s_match/s_extend) * q_len
 
-    stripArea =
-        [
-            [],
-            []
-        ]
-    """
+    print(bottom_left_x, bottom_right_x, top_left_x, top_right_x)
+    return
 
     plot.patch(
             [-.5,7.5,12.5,12.5,5.5],
@@ -617,7 +613,7 @@ def stripOfConsideration():
         return labels[tick];
     """ % reference)
     plot.yaxis.ticker = FixedTicker(ticks=range(len(query)))
-    grid = []chrom
+    grid = []
     for p in range(-1,len(query)):
         grid.append(p+.5)
     plot.ygrid.ticker = FixedTicker(ticks=grid)

@@ -198,7 +198,7 @@ def getOriginOf(db_name, sample_id):
 def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    if(len(results[0]) == 6)
+    if len(results_list[0]) == 6:
         c.executemany("""
                         INSERT INTO results 
                         (
@@ -211,7 +211,7 @@ def submitResults(db_name, results_list):
                         )
                         VALUES (?,?,?,?,?,?)
                         """, results_list)
-    else # len == 11
+    else: # len == 11
         c.executemany("""
                         INSERT INTO results 
                         (
@@ -256,10 +256,30 @@ def getApproachesWithData(db_name):
 #
 # returns the results for the specified reference and approach only
 # if no reference is specified the tuple contains the reference
-def getResults(db_name, approach, size, indel_size, reference=None):
+def getResults(db_name, approach, size=None, indel_size=None, reference=None):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    if reference is None:
+    if size is None and indel_size is None:
+        return c.execute("""
+                            SELECT 
+                                results.score,
+                                results.result_start,
+                                samples.origin,
+                                samples.num_mutation,
+                                samples.num_indels,
+                                results.num_seeds,
+                                results.run_time,
+                                results.index_of_chosen_strip,
+                                results.seed_coverage_chosen_strip,
+                                results.num_seeds_chosen_strip,
+                                results.anchor_size,
+                                results.anchor_ambiguity,
+                                samples.original_size
+                            FROM samples
+                            JOIN results ON results.sample_id = samples.sample_id
+                            AND results.approach == ?
+                            """, (approach, )).fetchall()
+    elif reference is None:
         return c.execute("""
                             SELECT 
                                 results.score,
@@ -289,6 +309,7 @@ def getResults(db_name, approach, size, indel_size, reference=None):
                         AND samples.indel_size == ?
                         AND samples.reference == ?
                         """, (approach, size, indel_size, reference)).fetchall()
+
 
 min_accuracy = 100
 def near(index, index_2):
@@ -531,8 +552,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
 
     print("nuc distrib (A, C, G, T, N) originally: ", nuc_distrib_count_orig)
     print("nuc distrib (A, C, G, T, N) changed: ", nuc_distrib_count_mod)
-    print("nuc distrib (A, C, G, T, N) changed by: ", list(map(operator.div, map(
-        operator.sub, nuc_distrib_count_orig, nuc_distrib_count_mod)), float(sum(nuc_distrib_count_orig))))
+    print("nuc distrib (A, C, G, T, N) changed by: ", list(map(operator.mul, map(
+        operator.sub, nuc_distrib_count_mod, nuc_distrib_count_orig), [1./float(sum(nuc_distrib_count_orig))]*5)))
     print("total amount: ", sum(nuc_distrib_count_orig))
 #function
 

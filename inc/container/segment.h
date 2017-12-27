@@ -139,7 +139,7 @@ namespace libMABS
                 std::shared_ptr<FMIndex> pxFMIndex,
                 unsigned int uiMAxAmbiguity,
                 bool bSkip,
-                std::function<void(Seed s, unsigned int uiAmbiguity)> fDo
+                std::function<void(Seed s)> fDo
             )
         {
             //iterate over all the intervals that have been recorded using pushBackBwtInterval()
@@ -173,33 +173,14 @@ namespace libMABS
                     //calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
                     nucSeqIndex ulIndexOnRefSeq = pxFMIndex->bwt_sa(ulCurrPos);
                     //call the given function
-                    fDo(
-                            Seed(pSegment->start(), pSegment->size() + 1, ulIndexOnRefSeq),
+                    fDo(Seed(
+                            pSegment->start(),
+                            pSegment->size() + 1,
+                            ulIndexOnRefSeq,
                             pSegment->saInterval().size()
-                        );
+                        ));
                 }//for
             }//for
-        }//function
-
-        /**
-         * @brief Extracts all seeds from the tree.
-         * @details
-         * Calls fDo for all recorded hits.
-         * @Note pushBackBwtInterval records an interval of hits
-         */
-        void forEachSeed(
-                std::shared_ptr<FMIndex> pxFMIndex,
-                unsigned int uiMAxAmbiguity,
-                bool bSkip,
-                std::function<void(Seed)> fDo
-            )
-        {
-            forEachSeed(
-                    pxFMIndex,
-                    uiMAxAmbiguity,
-                    bSkip,
-                    [&](Seed s, unsigned int uiAmbiguity){fDo(s);}
-                );
         }//function
 
 

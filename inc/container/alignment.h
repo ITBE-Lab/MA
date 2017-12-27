@@ -72,7 +72,8 @@ namespace libMABS
             uiLength(0),
             uiDataStart(0),
             uiBeginOnRef(0),
-            uiEndOnRef(0)
+            uiEndOnRef(0),
+            xStats()
         {}//constructor
         /**
          * @brief Creates an empty alignment, 
@@ -95,7 +96,8 @@ namespace libMABS
             matchScore(matchScore),
             missmatchScore(missmatchScore),
             gapOpenScore(gapOpenScore),
-            gapExtensionScore(gapExtensionScore)
+            gapExtensionScore(gapExtensionScore),
+            xStats()
         {}//constructor
 
         /**
@@ -114,7 +116,8 @@ namespace libMABS
             matchScore(0),
             missmatchScore(0),
             gapOpenScore(0),
-            gapExtensionScore(0)
+            gapExtensionScore(0),
+            xStats()
         {}//constructor
 
         //overload

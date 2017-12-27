@@ -21,10 +21,10 @@ BOOST_PYTHON_MODULE(libMABS)
         exportIntervalTree();
         exportExceptions();
         exportGetAnchors();
+        exportSeed();
         exportAlignment();
         exportLinesweep();
         exportNeedlemanWunsch();
-        exportSeed();
         exportStripOfConsideration();
         exportChaining();
         exportSMW();

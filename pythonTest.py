@@ -691,25 +691,134 @@ def test_my_approach(
 
 
 def test_my_approaches(db_name):
-    #test_my_approach(db_name, human_genome, "Bs:5 SoC:100,500nt sLs:5", max_hits=5, num_anchors=100, max_sweep=5, seg=BinarySeeding(True))
-
-    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:5", num_anchors=100, max_sweep=5)
-
-    #test_my_approach(db_name, human_genome, "pBs:5 SoC:1,500nt sLs:inf", num_anchors=1)
-
-    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,500nt sLs:inf", num_anchors=100)
-
-    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000nt sLs:inf", num_anchors=100, strip_size=10000)
-
-    #test_my_approach(db_name, human_genome, "pBs:5 SoC:100,10000000nt sLs:inf", num_anchors=100, strip_size=10000000)
-
     # [p]Bs:<max_ambiguity>,*<max_seeds_fac> 
     # # SoC:<num_SoC>,<SoC_size>nt,\<<max_ambiguity>,\><min_seeds_in_strip>,*<min_coverage>
     # sLs:<num_nmw>
 
     test_my_approach(db_name, human_genome, "pBs:5,*10 SoC:1000,500nt,<5,>0,*0 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,10.0), min_seeds=0, min_seed_length=0)
-    test_my_approach(db_name, human_genome, "pBs:5,*7 SoC:1000,500nt,<5,>2,*.05 sLs:100", num_anchors=1000, max_sweep=100)
-    test_my_approach(db_name, human_genome, "pBs:5,*6 SoC:1000,500nt,<5,>2,*.05 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,6.0))
+
+    #optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
+    test_my_approach(db_name, human_genome, "pBs:5,*10 SoC:1000,500nt,<5,>0,*0 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,4.0), min_seeds=2, min_seed_length=0.02)
+    
+
+def filter_suggestion(db_name, min_percentage_cov=0.1, max_num_seeds=5000, min_num_seed_in_strip=3):
+    approaches = getApproachesWithData(db_name)
+    plots = []
+
+    for approach_ in approaches:
+        true_pos = 0
+        true_neg = 0
+        false_pos = 0
+        false_neg = 0
+
+        approach = approach_[0]
+        for result in getResults(db_name, approach):
+            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, original_size = result
+
+            is_filtered = True
+
+            if seed_coverage_chosen_strip / original_size >= min_percentage_cov:
+                is_filtered = False
+            if num_seeds <= max_num_seeds:
+                is_filtered = False
+            if num_seeds_chosen_strip >= min_num_seed_in_strip:
+                is_filtered = False
+
+            is_kept = not is_filtered
+
+            if near(result_start, original_start) and is_kept:
+                true_pos += 1
+            elif near(result_start, original_start) and not is_kept:
+                false_neg += 1
+            elif not near(result_start, original_start) and is_kept:
+                false_pos += 1
+            elif not near(result_start, original_start) and not is_kept:
+                true_neg += 1
+
+        print("======",approach,"======")
+        print("true  positives:\t", true_pos, "\t*very good*")
+        print("false negatives:\t", false_neg, "\t*very bad*")
+        print("")
+        print("false positives:\t", false_pos, "\t*bad*")
+        print("true  negatives:\t", true_neg, "\t*good*")
+
+
+def analyse_detailed(out_prefix, db_name):
+    approaches = getApproachesWithData(db_name)
+    plots = []
+
+    for approach_ in approaches:
+        strip_index = ([], [])
+        seed_coverage = ([], [])
+        num_seeds_tot = ([], [])
+        num_seeds_strip = ([], [])
+        anc_size = ([], [])
+        anc_ambiguity = ([], [])
+
+        approach = approach_[0]
+        for result in getResults(db_name, approach):
+            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, original_size = result
+
+            index = 1
+            if near(result_start, original_start):
+                index = 0
+
+            strip_index[index].append(index_of_chosen_strip)
+            seed_coverage[index].append(seed_coverage_chosen_strip / original_size)
+            num_seeds_tot[index].append(num_seeds)
+            num_seeds_strip[index].append(num_seeds_chosen_strip)
+            anc_size[index].append(anchor_size)
+            anc_ambiguity[index].append(anchor_ambiguity)
+
+        output_file(out_prefix + approach + ".html")
+
+        def bar_plot(data, name):
+            plot = figure(title=name,
+                    x_axis_label='values',
+                    y_axis_label='relative amount'
+                )
+
+            total_amount_1 = len(data[0])
+            total_amount_2 = len(data[1])
+            min_val = 10000
+            max_val = 0
+            for x in data[0]:
+                if x < min_val:
+                    min_val = x
+                if x > max_val:
+                    max_val = x
+            for x in data[1]:
+                if x < min_val:
+                    min_val = x
+                if x > max_val:
+                    max_val = x
+            num_buckets = 20
+            bucket_width = float(max_val - min_val) / num_buckets
+            print(max_val, min_val, bucket_width)
+            buckets_1 = []
+            buckets_2 = []
+            buckets_x = []
+            for index in range(num_buckets):
+                buckets_1.append(0.0)
+                buckets_2.append(0.0)
+                buckets_x.append(bucket_width * index + min_val + bucket_width/2)
+            for x in data[0]:
+                buckets_1[int( float(num_buckets*(x - min_val)) / ( (max_val+0.01)-min_val))] += 1.0 / total_amount_1
+            for x in data[1]:
+                buckets_2[int( float(num_buckets*(x - min_val)) / ((max_val+0.01)-min_val))] += 1.0 / total_amount_2
+            plot.vbar(x=buckets_x, width=bucket_width, bottom=0, top=buckets_1, color="blue", legend="accurate", fill_alpha=0.5)
+            plot.vbar(x=buckets_x, width=bucket_width, bottom=0, top=buckets_2, color="red", legend="inaccurate", fill_alpha=0.5)
+            return plot
+
+        save(column([
+            bar_plot(strip_index, "index of Strip of Consideration"),
+            bar_plot(seed_coverage, "percentage of query covered by seeds in strip"),
+            bar_plot(num_seeds_tot, "number of seeds total"),
+            bar_plot(num_seeds_strip, "number of seeds in strip"),
+            bar_plot(anc_size, "length of anchor seed"),
+            bar_plot(anc_ambiguity, "ambiguity of anchor seed"),
+            ]))
+
 
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
@@ -1038,6 +1147,13 @@ def manualCheckSequences():
 test_my_approaches("/mnt/ssd1/veryHighQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
+"""
+createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)
+test_my_approaches("/mnt/ssd1/stats.db")
+analyse_all_approaches("stats.html","/mnt/ssd1/stats.db", 1000, 100)
+analyse_detailed("stats/", "/mnt/ssd1/stats.db")
+filter_suggestion("/mnt/ssd1/stats.db", min_percentage_cov=0.02, max_num_seeds=4000, min_num_seed_in_strip=2)
+"""
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)
 #compare_approaches("results_comp_me_me", ["pBs:5 SoC:100,500nt sLs:1", "pBs:5 SoC:1,500nt sLs:inf"], db_name, 1000, 100)

@@ -15,7 +15,7 @@ void exportSeed()
     ;
 
     //export the Seed class
-    boost::python::class_<AlignmentStatistics>("AlignmentStatistics")
+    boost::python::class_<AlignmentStatistics>("AlignmentStatistics", boost::python::init<>())
         .def_readwrite("index_of_strip", &AlignmentStatistics::index_of_strip)
         .def_readwrite("seed_coverage", &AlignmentStatistics::seed_coverage)
         .def_readwrite("num_seeds_in_strip", &AlignmentStatistics::num_seeds_in_strip)
@@ -33,7 +33,6 @@ void exportSeed()
         "Seeds"
     )
     .def(boost::python::init<std::shared_ptr<Seeds>>())
-    .def_readwrite("stats", &Seeds::xStats)
     .def(boost::python::vector_indexing_suite<
             Seeds,
             /*

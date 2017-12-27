@@ -40,7 +40,23 @@ namespace libMABS
             )
                 :
             Interval(uiPosOnQuery, uiLength),
-            uiPosOnReference(uiPosOnReference)
+            uiPosOnReference(uiPosOnReference),
+            uiAmbiguity(0)
+        {}//constructor
+
+        /**
+         * @brief Creates a new Seed.
+         */
+        Seed(
+                const nucSeqIndex uiPosOnQuery, 
+                const nucSeqIndex uiLength, 
+                const nucSeqIndex uiPosOnReference,
+                unsigned int uiAmbiguity
+            )
+                :
+            Interval(uiPosOnQuery, uiLength),
+            uiPosOnReference(uiPosOnReference),
+            uiAmbiguity(uiAmbiguity)
         {}//constructor
 
         /**
@@ -140,7 +156,25 @@ namespace libMABS
         unsigned int num_seeds_in_strip;
         unsigned int anchor_size;
         unsigned int anchor_ambiguity;
-    };
+
+        AlignmentStatistics()
+                :
+            index_of_strip(0),
+            seed_coverage(0),
+            num_seeds_in_strip(0),
+            anchor_size(0),
+            anchor_ambiguity(0)
+        {}
+
+        void operator=(AlignmentStatistics &rOther)
+        {
+            index_of_strip = rOther.index_of_strip;
+            seed_coverage = rOther.seed_coverage;
+            num_seeds_in_strip = rOther.num_seeds_in_strip;
+            anchor_size = rOther.anchor_size;
+            anchor_ambiguity = rOther.anchor_ambiguity;
+        }//function
+    };//class
 
     /**
      * @brief A list where one element is a Seed.
@@ -165,7 +199,8 @@ namespace libMABS
         Seeds(std::shared_ptr<Seeds> pOther)
                 :
             vector(),
-            Container()
+            Container(),
+            xStats(pOther->xStats)
         {
             append(pOther);
         }//copy constructor
@@ -173,7 +208,8 @@ namespace libMABS
         Seeds()
                 :
             vector(),
-            Container()
+            Container(),
+            xStats()
         {}//default constructor
 
         //overload

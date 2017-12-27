@@ -80,7 +80,7 @@ void exportAlignment()
                 &Alignment::numBySeeds,
                 "arg1: self\n"
             )
-        .def_readwrite("stats", &Alignment::xStats)
+        .def_readonly("stats", &Alignment::xStats)
     ;
 
     
