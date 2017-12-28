@@ -20,8 +20,11 @@ namespace libMABS
     class NeedlemanWunsch : public Module
     {
     public:
+        nucSeqIndex uiGiveUpAfter = 0;
 
-        NeedlemanWunsch()
+        NeedlemanWunsch(nucSeqIndex uiGiveUpAfter)
+                :
+            uiGiveUpAfter(uiGiveUpAfter)
         {}//constructor
 
         //overload

@@ -34,7 +34,8 @@ void needlemanWunsch(
         nucSeqIndex toQuery,
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
-        std::shared_ptr<Alignment> pAlignment
+        std::shared_ptr<Alignment> pAlignment,
+        nucSeqIndex uiGiveUpAfter
     )
 {
     assert(toQuery <= pQuery->length());
@@ -78,6 +79,46 @@ void needlemanWunsch(
         }//while
         return;
     }//if
+
+    /*
+     * give up for too large areas
+     */
+    if(uiGiveUpAfter != 0)
+    {
+        nucSeqIndex uiArea = (toQuery - fromQuery)*(toRef - fromRef);
+        if(uiArea > uiGiveUpAfter)
+        {
+            int diagLen = std::min(toRef - fromRef, toQuery - fromQuery);
+            int gapLen = std::max(toRef - fromRef, toQuery - fromQuery) - diagLen;
+
+            int scoreMissmatch = iDeletion + iDeletionContinued*gapLen + 
+                                 iMissMatch*diagLen;
+
+            int scoreIndelOnly = iDeletion + iDeletionContinued*(toRef - fromRef) + 
+                                 iInsertion + iInsertionContinued*(toQuery - fromQuery);
+
+            if(scoreIndelOnly < scoreMissmatch)
+            {
+                if(toRef - fromRef > toQuery - fromQuery)
+                {
+                    pAlignment->append(MatchType::deletion, gapLen);
+                    pAlignment->append(MatchType::missmatch, diagLen);
+                }//if
+                else
+                {
+                    pAlignment->append(MatchType::insertion, gapLen);
+                    pAlignment->append(MatchType::missmatch, diagLen);
+                }//else
+            }//if
+            else
+            {
+                pAlignment->append(MatchType::deletion, toRef - fromRef);
+                pAlignment->append(MatchType::insertion, toQuery - fromQuery);
+            }//else
+        }//if
+        return;
+    }//if
+
     std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
     std::vector<std::vector<char>> dir(toQuery-fromQuery+1, std::vector<char>(toRef-fromRef+1));
 
@@ -221,17 +262,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         return pRet;
     }//if
 
-    //SOTING IS DONE IN THE LINESWEEP STEP
-    //sort shadows (increasingly) by start coordinate of the match
-    /*pSeeds->sort(
-            [](Seed xA, Seed xB)
-            {
-                if(xA.start_ref() == xB.start_ref())
-                    return xA.start() < xB.start();
-                return xA.start_ref() < xB.start_ref();
-            }//lambda
-        );//sort function call*/
-
 //DEPRECATED
 #if 0
     //remove dangeling fronts and backs
@@ -321,7 +351,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                 rSeed.start(),
                 endOfLastSeedReference,
                 rSeed.start_ref() - beginRef,
-                pRet
+                pRet,
+                uiGiveUpAfter
             );
         nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start();
         if(rSeed.start() > endOfLastSeedQuery)
@@ -379,7 +410,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         pQuery->length(),
         endOfLastSeedReference,
         endRef - beginRef,
-        pRet
+        pRet,
+        uiGiveUpAfter
     );
 
     //cleanup the alignment
@@ -401,16 +433,10 @@ void exportNeedlemanWunsch()
         std::shared_ptr<NeedlemanWunsch>
     >(
         "NeedlemanWunsch", 
-        "Picks a set of anchors for the strips of consideration.\n"
-        "\n"
-        "Execution:\n"
-        "   Expects seg_list, query, ref\n"
-        "       seg_list: the list of segments to pick the anchors from\n"
-        "       query: the query as NucSeq\n"
-        "       ref: the reference as Pack\n"
-        "   returns alignment.\n"
-        "       alignment: the final alignment\n"
-    );
+        boost::python::init<nucSeqIndex>()
+    )
+        .def_readwrite("give_up_after", &NeedlemanWunsch::uiGiveUpAfter)
+    ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<NeedlemanWunsch>,
         std::shared_ptr<Module> 

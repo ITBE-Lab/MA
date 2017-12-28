@@ -576,7 +576,7 @@ def test_my_approach(
             db_name,
             reference,
             name,
-            seg=BinarySeeding(False,7.0),
+            seg=BinarySeeding(False),
             chain=LinearLineSweep(), 
             max_hits=5,
             num_anchors=10, 
@@ -586,7 +586,10 @@ def test_my_approach(
             max_sweep = None,
             strip_size = 500,
             min_seeds= 2,
-            min_seed_length= .05
+            min_seed_length= .05,
+            max_seeds=7.0,
+            max_seeds_2=6.5,
+            nmw_give_up=20000
         ):
     print("collecting samples (" + name + ") ...")
     reference_pledge = Pledge(Pack())
@@ -640,7 +643,10 @@ def test_my_approach(
             max_sweep=max_sweep,
             strip_size=strip_size,
             min_seeds=min_seeds,
-            min_seed_length=min_seed_length
+            min_seed_length=min_seed_length,
+            max_seeds=max_seeds,
+            max_seeds_2=max_seeds_2,
+            nmw_give_up=nmw_give_up
         )
 
         #temp code
@@ -666,10 +672,42 @@ def test_my_approach(
         for index in range(len(queries)):
             alignment = result_pledge[-1][index].get()
             segment_list = result_pledge[0][index].get()
+
             total_time = 0
             for step_index in range(len(result_pledge)):
                 total_time += result_pledge[step_index][index].exec_time
+
             sample_id = queries[index][1]
+
+            max_nmw_area=0
+            max_diag_deviation = 0.0
+            curr_diag_deviation = 0
+            gap_size = 0
+            cur_nmw_h = 0
+            cur_nmw_w = 0
+            for pos in range(len(alignment)):
+                match_type = alignment[pos]
+                if match_type == MatchType.seed:
+                    curr_diag_deviation = 0
+                    gap_size = 0
+                    cur_nmw_h = 0
+                    cur_nmw_w = 0
+                else:
+                    gap_size += 1
+                    if match_type == MatchType.insertion:
+                        curr_diag_deviation += 1
+                        cur_nmw_h += 1
+                    elif match_type == MatchType.deletion:
+                        curr_diag_deviation -= 1
+                        cur_nmw_w += 1
+                    elif match_type == MatchType.missmatch:
+                        cur_nmw_w += 1
+                        cur_nmw_h += 1
+                    if float(abs(curr_diag_deviation)) / gap_size > max_diag_deviation:
+                        max_diag_deviation = float(abs(curr_diag_deviation)) / gap_size
+                    if cur_nmw_h * cur_nmw_w > max_nmw_area:
+                        max_nmw_area = cur_nmw_h * cur_nmw_w
+
             result.append(
                     (
                         sample_id,
@@ -681,6 +719,8 @@ def test_my_approach(
                         alignment.stats.num_seeds_in_strip,
                         alignment.stats.anchor_size,
                         alignment.stats.anchor_ambiguity,
+                        max_diag_deviation,
+                        max_nmw_area,
                         total_time,
                         name
                     )
@@ -695,11 +735,22 @@ def test_my_approaches(db_name):
     # # SoC:<num_SoC>,<SoC_size>nt,\<<max_ambiguity>,\><min_seeds_in_strip>,*<min_coverage>
     # sLs:<num_nmw>
 
-    test_my_approach(db_name, human_genome, "pBs:5,*10 SoC:1000,500nt,<5,>0,*0 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,10.0), min_seeds=0, min_seed_length=0)
 
+    #
+    # this is the un optimized hammer method
+    #
+
+    #test_my_approach(db_name, human_genome, "pBs:5,*10 SoC:1000,500nt,<5,>0,*0 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False), min_seeds=0, min_seed_length=0, nmw_give_up=0)
+
+    #
     #optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
-    test_my_approach(db_name, human_genome, "pBs:5,*10 SoC:1000,500nt,<5,>0,*0 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False,4.0), min_seeds=2, min_seed_length=0.02)
-    
+    #TODO: optimize max_sweep
+    #
+
+    test_my_approach(db_name, human_genome, "pBs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
+
+    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed_2", num_anchors=200, max_sweep=100, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=1.5, max_seeds_2=1.7, nmw_give_up=20000)
+
 
 def filter_suggestion(db_name, min_percentage_cov=0.1, max_num_seeds=5000, min_num_seed_in_strip=3):
     approaches = getApproachesWithData(db_name)
@@ -713,7 +764,7 @@ def filter_suggestion(db_name, min_percentage_cov=0.1, max_num_seeds=5000, min_n
 
         approach = approach_[0]
         for result in getResults(db_name, approach):
-            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, original_size = result
+            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
 
             is_filtered = True
 
@@ -754,10 +805,12 @@ def analyse_detailed(out_prefix, db_name):
         num_seeds_strip = ([], [])
         anc_size = ([], [])
         anc_ambiguity = ([], [])
+        max_diag_deviations = ([], [])
+        max_nmw_areas = ([], [])
 
         approach = approach_[0]
         for result in getResults(db_name, approach):
-            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, original_size = result
+            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
 
             index = 1
             if near(result_start, original_start):
@@ -769,10 +822,12 @@ def analyse_detailed(out_prefix, db_name):
             num_seeds_strip[index].append(num_seeds_chosen_strip)
             anc_size[index].append(anchor_size)
             anc_ambiguity[index].append(anchor_ambiguity)
+            max_diag_deviations[index].append(max_diag_deviation)
+            max_nmw_areas[index].append(max_nmw_area)
 
         output_file(out_prefix + approach + ".html")
 
-        def bar_plot(data, name):
+        def bar_plot(data, name, num_buckets=20):
             plot = figure(title=name,
                     x_axis_label='values',
                     y_axis_label='relative amount'
@@ -792,7 +847,6 @@ def analyse_detailed(out_prefix, db_name):
                     min_val = x
                 if x > max_val:
                     max_val = x
-            num_buckets = 20
             bucket_width = float(max_val - min_val) / num_buckets
             print(max_val, min_val, bucket_width)
             buckets_1 = []
@@ -811,12 +865,14 @@ def analyse_detailed(out_prefix, db_name):
             return plot
 
         save(column([
-            bar_plot(strip_index, "index of Strip of Consideration"),
-            bar_plot(seed_coverage, "percentage of query covered by seeds in strip"),
-            bar_plot(num_seeds_tot, "number of seeds total"),
-            bar_plot(num_seeds_strip, "number of seeds in strip"),
-            bar_plot(anc_size, "length of anchor seed"),
-            bar_plot(anc_ambiguity, "ambiguity of anchor seed"),
+            bar_plot(strip_index, "index of Strip of Consideration", 50),
+            bar_plot(seed_coverage, "percentage of query covered by seeds in strip", 50),
+            bar_plot(num_seeds_tot, "number of seeds total", 50),
+            bar_plot(num_seeds_strip, "number of seeds in strip", 25),
+            bar_plot(anc_size, "length of anchor seed", 50),
+            bar_plot(anc_ambiguity, "ambiguity of anchor seed", 5),
+            bar_plot(max_diag_deviations, "required nmw strip size to reach maximum possible score", 50),
+            bar_plot(max_nmw_areas, "maximum area needleman wunsch", 50),
             ]))
 
 
@@ -856,7 +912,8 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 hits[num_mutation][num_indels] += 1
             tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] += run_time
-            nums_seeds[num_mutation][num_indels] += num_seeds
+            if not num_seeds is None:
+                nums_seeds[num_mutation][num_indels] += num_seeds
             if not score is None:
                 scores[num_mutation][num_indels] += score
 
@@ -1139,13 +1196,14 @@ def manualCheckSequences():
 #high quality picture
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
-#test_my_approaches("/mnt/ssd1/highQual.db")
-#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2048, True, True)
-test_my_approaches("/mnt/ssd1/veryHighQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+#test_my_approaches("/mnt/ssd1/veryHighQual.db")
+#analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 """
 createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)

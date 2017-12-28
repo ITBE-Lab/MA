@@ -95,6 +95,7 @@ SAInterval BinarySeeding::extend_backward(
 	for(unsigned int i = 1; i < 4; i++)
 		cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
 
+    assert(cnts[c] >= 0);
 
 
 	//BWAs SA intervals seem to be (a,b] while mine are [a,b)
@@ -117,7 +118,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 	
 	/* Initialize ik on the foundation of the single base q[x].
 	 * In order to understand this initialization you should have a look 
-	 *to the corresponding PowerPoint slide.
+	 * to the corresponding PowerPoint slide.
 	 */
 	// start I(q[x]) in T (start in BWT used for backward search) + 1, 
 	// because very first string in SA-array starts with $
@@ -602,9 +603,6 @@ std::shared_ptr<Container> BinarySeeding::execute(
 
 	}//end of scope xPool
 
-    if(pSegmentVector->numSeeds(pFM_index, 100) > pQuerySeq->length() * max_seeds)
-        pSegmentVector->clear();
-
 	return pSegmentVector;
 }//function
 
@@ -617,7 +615,7 @@ void exportBinarySeeding()
         	std::shared_ptr<BinarySeeding>
 		>(
 			"BinarySeeding",
-			boost::python::init<bool, float>()
+			boost::python::init<bool>()
 		)
 		;
 	boost::python::implicitly_convertible< 

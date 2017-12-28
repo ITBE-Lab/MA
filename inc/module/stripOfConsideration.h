@@ -26,6 +26,11 @@ namespace libMABS
         unsigned int minSeeds = 3;
         /// @brief Minimum nucleotides covered by seeds for a strip to be considered
         float minSeedLength = 0.1;
+        /// @brief maximum amount of seeds total
+        float dMaxSeeds = 7.f;
+        /// @brief maximum amount of seeds total
+        float dMaxSeeds2 = 7.f;
+
         /**
         * @brief skip seeds with too much ambiguity
         * @details
@@ -56,13 +61,17 @@ namespace libMABS
                 nucSeqIndex uiStripSize, 
                 unsigned int uiMaxAmbiguity,
                 unsigned int minSeeds,
-                float minSeedLength
+                float minSeedLength,
+                float dMaxSeeds,
+                float dMaxSeeds2
             )
                 :
             uiStripSize(uiStripSize),
             uiMaxAmbiguity(uiMaxAmbiguity),
             minSeeds(minSeeds),
-            minSeedLength(minSeedLength)
+            minSeedLength(minSeedLength),
+            dMaxSeeds(dMaxSeeds),
+            dMaxSeeds2(dMaxSeeds2)
         {}//constructor
 
         std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);

@@ -77,6 +77,8 @@ def setUpDbTables(conn, reset = False):
                     num_seeds_chosen_strip INTEGER,
                     anchor_size INTEGER,
                     anchor_ambiguity INTEGER,
+                    max_diag_deviation INTEGER,
+                    max_nmw_area INTEGER,
                     run_time REAL,
                     approach TINYTEXT
                 )
@@ -211,7 +213,7 @@ def submitResults(db_name, results_list):
                         )
                         VALUES (?,?,?,?,?,?)
                         """, results_list)
-    else: # len == 11
+    else: # len == 13
         c.executemany("""
                         INSERT INTO results 
                         (
@@ -224,10 +226,12 @@ def submitResults(db_name, results_list):
                             num_seeds_chosen_strip,
                             anchor_size,
                             anchor_ambiguity,
+                            max_diag_deviation,
+                            max_nmw_area,
                             run_time,
                             approach
                         )
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
                         """, results_list)
     conn.commit()
 
@@ -274,6 +278,8 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.num_seeds_chosen_strip,
                                 results.anchor_size,
                                 results.anchor_ambiguity,
+                                results.max_diag_deviation,
+                                results.max_nmw_area,
                                 samples.original_size
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id

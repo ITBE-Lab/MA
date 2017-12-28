@@ -72,6 +72,9 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::static_pointer_cast<Pack>((*vpInput)[3]);
     std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[4]);
 
+    if (pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds2)
+        return std::shared_ptr<Seeds>(new Seeds());
+
     //extract the seeds
     std::vector<Seed> vSeeds;
     forEachNonBridgingSeed(
@@ -147,7 +150,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             [&]
             (const Seed a, const nucSeqIndex uiStart)
             {
-                return getPositionForBucketing(pQuerySeq->length(), a) < uiStart;
+                return getPositionForBucketing(pQuerySeq->length(), a) <= uiStart;
             }//lambda
         );//binary search function call
         assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
@@ -165,8 +168,13 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         /*
          * FILTER 2
          */
-        if(pxNew->size() < minSeeds && pxNew->getScore() < minSeedLength * pQuerySeq->length())
+        if(
+                pxNew->size() < minSeeds && 
+                pxNew->getScore() < minSeedLength * pQuerySeq->length() &&
+                pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds
+            )
             continue;
+
 
         /*
          * save some statistics about this strip
@@ -191,11 +199,13 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<nucSeqIndex, unsigned int, unsigned int, float>())
+        .def(boost::python::init<nucSeqIndex, unsigned int, unsigned int, float, float, float>())
         .def_readwrite("strip_size", &StripOfConsideration::uiStripSize)
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
         .def_readwrite("min_seeds", &StripOfConsideration::minSeeds)
         .def_readwrite("min_seed_length", &StripOfConsideration::minSeedLength)
+        .def_readwrite("max_seeds", &StripOfConsideration::dMaxSeeds)
+        .def_readwrite("max_seeds_2", &StripOfConsideration::dMaxSeeds2)
     ;
 
     boost::python::implicitly_convertible< 

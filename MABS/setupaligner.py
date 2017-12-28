@@ -31,7 +31,7 @@ def set_up_aligner(
         query_pledges,
         reference_pledge,
         fm_index_pledge,
-        seg=BinarySeeding(False, 7.0),
+        seg=BinarySeeding(False),
         chain=LinearLineSweep(),
         max_hits=5,
         num_anchors=5,
@@ -40,12 +40,15 @@ def set_up_aligner(
         max_sweep = None,
         strip_size = 1000,
         min_seeds= 2,
-        min_seed_length= .05
+        min_seed_length= .05,
+        max_seeds=7.0,
+        max_seeds_2=6.5,
+        nmw_give_up=20000
         ):
 
     anc = GetAnchors(num_anchors, max_hits)
 
-    soc = StripOfConsideration(strip_size, max_hits, min_seeds, min_seed_length)
+    soc = StripOfConsideration(strip_size, max_hits, min_seeds, min_seed_length, max_seeds, max_seeds_2)
 
     max_sweep_n = 0
     if not max_sweep is None:
@@ -53,7 +56,7 @@ def set_up_aligner(
 
     execall = ExecOnVec(chain, not max_sweep is None, max_sweep_n)
 
-    nmw = NeedlemanWunsch()
+    nmw = NeedlemanWunsch(nmw_give_up)
     nmw_multiple = ExecOnVec(nmw, True, 0)
     getBestOnly = Tail(Alignment())
 
