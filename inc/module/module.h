@@ -136,7 +136,6 @@ namespace libMABS
          */
         std::shared_ptr<Container> pyExecute(std::shared_ptr<ContainerVector> vInput)
         {
-            return nullptr;
 #if 1
             try
             {

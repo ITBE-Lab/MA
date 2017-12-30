@@ -545,10 +545,9 @@ def memory_test(reference, test_index):
         query_pledge.set(NucSeq(q))
 
         #module.execute(fm_index, NucSeq(q))
-        #module.execute(fm_index, NucSeq(q))
 
-        #result_pledge[test_index].get()
-        Pledge.simultaneous_get( [result_pledge[test_index]] , 1)
+        result_pledge[test_index].get()
+        #Pledge.simultaneous_get( [result_pledge[test_index]] , 1)
 
         #query_pledge.get()
 
@@ -1184,7 +1183,7 @@ def manualCheckSequences():
 
 
 
-#memory_test(human_genome, -1)
+#memory_test(human_genome, 1)
 #exit()
 
 
@@ -1195,7 +1194,7 @@ def manualCheckSequences():
 
 #high quality picture
 
-#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
