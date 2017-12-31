@@ -58,6 +58,14 @@ def light_spec_approximation(x):
 
     return (i*r**m,i*g**m,i*b**m)
 
+for x in np.linspace(0, 1, 100):
+    def format(rgb):
+        def clamp(x):
+            return int(max(0, min(x*255, 255)))
+        r, g, b = rgb
+        return (clamp(r),clamp(g),clamp(b))
+    print(format(light_spec_approximation(x)))
+
 def heatmap_palette(scheme, num_colors):
     def format(rgb):
         def clamp(x):
@@ -680,4 +688,4 @@ def unrelated_non_enclosed_seeds():
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()
-stripOfConsideration()
+#stripOfConsideration()

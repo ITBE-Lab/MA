@@ -72,16 +72,16 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::static_pointer_cast<Pack>((*vpInput)[3]);
     std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[4]);
 
-    if (pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds2)
+    if (dMaxSeeds2 > 0 && pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds2)
         return std::shared_ptr<Seeds>(new Seeds());
 
     //extract the seeds
-    std::vector<Seed> vSeeds;
+    std::vector<std::tuple<Seed, bool>> vSeeds;
     forEachNonBridgingSeed(
         pSegments, pFM_index, pRefSeq, pQuerySeq,
         [&](Seed xSeed)
         {
-            vSeeds.push_back(xSeed);
+            vSeeds.push_back(std::make_tuple(xSeed, true));
         }//lambda
     );//for each
 
@@ -89,17 +89,15 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     std::sort(
         vSeeds.begin(), vSeeds.end(),
         [&]
-        (const Seed a, const Seed b)
+        (const std::tuple<Seed, bool> a, const std::tuple<Seed, bool> b)
         {
-            return getPositionForBucketing(pQuerySeq->length(), a) 
-                    < getPositionForBucketing(pQuerySeq->length(), b);
+            return getPositionForBucketing(pQuerySeq->length(), std::get<0>(a)) 
+                    < getPositionForBucketing(pQuerySeq->length(), std::get<0>(b));
         }//lambda
     );//sort function call
 
     unsigned int uiAnchorIndex = 0;
 
-    //used to make sure we don't collect the same area twice
-    std::vector<std::tuple<nucSeqIndex, nucSeqIndex>> collectedIntervals;
 
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
     for(Seed& xAnchor : *pAnchors)
@@ -108,14 +106,9 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         nucSeqIndex uiSize = uiStripSize;
 
         /*
-            * FILTER START
-            *
-            * 1)    we make sure that we can never have bridging strips
-            *
-            * 2)     we filter out anchors that are to close to each other
-            *        since we do not want to work on the same area twice
-            */
-        //1)
+        * FILTER START
+        * we make sure that we can never have bridging strips
+        */
         if(uiStripSize/2 > getPositionForBucketing(pQuerySeq->length(), xAnchor))
             uiStart = 0;
         if(uiStart >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
@@ -127,17 +120,6 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             pRefSeq->unBridgeSubsection(uiStart, uiSize);
         }//if
         nucSeqIndex uiEnd = uiStart + uiSize;
-        //2)
-        //TODO: this has a squared complexity :(
-        // -> might be saved by the fact that there are always very fey strips...?
-        for(std::tuple<nucSeqIndex, nucSeqIndex> intv : collectedIntervals)
-        {
-            if(std::get<0>(intv) >= uiEnd)
-                continue;
-            if(std::get<1>(intv) <= uiStart)
-                continue;
-        }//for
-        collectedIntervals.push_back(std::make_tuple(uiStart, uiEnd));
         /*
         * FILTER END
         */
@@ -148,25 +130,31 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         auto iterator = std::lower_bound(
             vSeeds.begin(), vSeeds.end(), uiStart,
             [&]
-            (const Seed a, const nucSeqIndex uiStart)
+            (const std::tuple<Seed, bool> a, const nucSeqIndex uiStart)
             {
-                return getPositionForBucketing(pQuerySeq->length(), a) <= uiStart;
+                return getPositionForBucketing(pQuerySeq->length(), std::get<0>(a)) <= uiStart;
             }//lambda
         );//binary search function call
-        assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
+        assert(getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) >= uiStart);
 
         //save all seeds belonging into the strip of consideration
         while(
                 iterator != vSeeds.end() &&
-                getPositionForBucketing(pQuerySeq->length(), *iterator) < uiEnd
+                getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) < uiEnd
             )
         {
-            pxNew->push_back(*iterator);
+            /*
+             * FILTER 2
+             * we make sure that we don't collect the same seeds twice:
+             */
+            //if(std::get<1>(*iterator))
+                pxNew->push_back(std::get<0>(*iterator));
+            std::get<1>(*iterator) = false;
             ++iterator;
         }//while
 
         /*
-         * FILTER 2
+         * FILTER 3
          */
         if(
                 pxNew->size() < minSeeds && 

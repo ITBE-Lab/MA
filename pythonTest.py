@@ -748,7 +748,14 @@ def test_my_approaches(db_name):
 
     test_my_approach(db_name, human_genome, "pBs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
 
-    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed_2", num_anchors=200, max_sweep=100, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=1.5, max_seeds_2=1.7, nmw_give_up=20000)
+    #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality&speed")
+    #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality&speed_2")
+    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
+
+    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed_2", num_anchors=100, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+
+    #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality")
+    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality", num_anchors=10000, max_sweep=0, seg=BinarySeeding(True), min_seeds=0, min_seed_length=0.02, max_seeds=0, max_seeds_2=0, nmw_give_up=0)
 
 
 def filter_suggestion(db_name, min_percentage_cov=0.1, max_num_seeds=5000, min_num_seed_in_strip=3):
@@ -816,7 +823,8 @@ def analyse_detailed(out_prefix, db_name):
                 index = 0
 
             strip_index[index].append(index_of_chosen_strip)
-            seed_coverage[index].append(seed_coverage_chosen_strip / original_size)
+            if not seed_coverage_chosen_strip is None:
+                seed_coverage[index].append(seed_coverage_chosen_strip / original_size)
             num_seeds_tot[index].append(num_seeds)
             num_seeds_strip[index].append(num_seeds_chosen_strip)
             anc_size[index].append(anchor_size)
@@ -1194,7 +1202,7 @@ def manualCheckSequences():
 
 #high quality picture
 
-createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_detailed("stats/", "/mnt/ssd1/highQual.db")

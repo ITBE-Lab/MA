@@ -115,8 +115,8 @@ void needlemanWunsch(
                 pAlignment->append(MatchType::deletion, toRef - fromRef);
                 pAlignment->append(MatchType::insertion, toQuery - fromQuery);
             }//else
+            return;
         }//if
-        return;
     }//if
 
     std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
@@ -416,6 +416,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     //cleanup the alignment
     pRet->removeDangelingDeletions();
+    // TODO: due to NMW changes i might have a lot of dangeling insertions here...
+    // maybe best to keep them around?
 
     DEBUG_2(
         std::cout << std::endl;
