@@ -10,7 +10,13 @@ import random
 import numpy as np
 
 
-font = "Times New Roman"
+font = "Helvetica"
+
+dark_greys = [
+        "#9f9f9f",
+        "#939393",
+        "#868686",
+]
 
 greys = [
         "#acacac",
@@ -57,7 +63,7 @@ def light_spec_approximation(x):
     m = .8
 
     return (i*r**m,i*g**m,i*b**m)
-
+"""
 for x in np.linspace(0, 1, 100):
     def format(rgb):
         def clamp(x):
@@ -65,6 +71,7 @@ for x in np.linspace(0, 1, 100):
         r, g, b = rgb
         return (clamp(r),clamp(g),clamp(b))
     print(format(light_spec_approximation(x)))
+"""
 
 def heatmap_palette(scheme, num_colors):
     def format(rgb):
@@ -299,20 +306,28 @@ def theoretical_max_acc():
     plot.legend.label_text_baseline="bottom"
     save(plot, "upperBoundShortIndels")
 
-def seed_shadows():
-    plot = figure(
-                title="Figure 2",
-                plot_width=resolution, plot_height=resolution,
-                x_range=(min_x,max_x),
-                y_range=(min_y,max_y)
-            )
-    plot.axis.visible = False
-    plot.grid.grid_line_color = None
-    plot.toolbar.logo = None
-    plot.toolbar_location = None
 
+#static stuff
+I = "I"
+M = "M"
+MM = "\=M"
+D = "D"
+query =     [                         "T", "A", "C", "A", "T", "T", "C", "T" ]
+reference = ["T", "T", "C", "A", "G",           "C", "A", "T", "A", "C", "T", "C", "A"]
+l_alignment = [D,D,I,I,M,M,D,D,M,MM,M,M,D,D]
+
+def seed_shadows():
+    min_x = -1.0
+    min_y = -1.0
+    max_x = 13
+    max_y = 8
+    plot = figure(
+                title="Figure X: Shadows",
+                plot_width=resolution, plot_height=resolution,
+                x_range=[-1,13], y_range=[-1,8]
+            )
     # x y size draw_shadow?
-    seeds = [(2,3,2, True), (5,1,3, False), (6,8,0, True)]
+    seeds = [(1.5,1.5,2, False), (5.5,2.5,2, True), (1.5,5.5,1, True)]
 
     seeds_x = []
     seeds_y = []
@@ -352,77 +367,81 @@ def seed_shadows():
             patch_x.append(float('nan'))
             patch_y.append(float('nan'))
 
-
     plot.patch(
             patch_x,
             patch_y,
-            fill_color=greys[2],
+            fill_color=greys[0],
             fill_alpha=.5,
             line_color=None,
             #line_width=2,
             #line_dash=[2,2],
-            legend="seed-shadow"
         )
+    """
+    plot.patch(
+            [seeds[-2][0]+seeds[-2][2], max_x, max_x, seeds[-2][0], seeds[-2][0]],
+            [seeds[-2][1]+seeds[-2][2], seeds[-2][1]+seeds[-2][2], min_y, min_y, seeds[-2][1]],
+            fill_color=dark_greys[2],
+            fill_alpha=.5,
+            line_color=None,
+            #line_width=2,
+            #line_dash=[2,2],
+        )
+    """
 
     plot.line(
             seeds_x,
             seeds_y,
-            legend="seed",
             color="black",
             line_width=5
         )
 
     plot.line(
-            [4,6,6,8],
-            [0,2,8,10],
-            legend="path",
+            [min_x, seeds[0][0], seeds[0][0]+1, seeds[1][0], seeds[1][0]+5.5],
+            [min_y, seeds[0][1], seeds[0][1]+1, seeds[1][1], max_y],
             color="black",
             line_dash=[2,2],
             line_width=2
         )
 
-    plot.x(
-            [seeds[-1][0]],
-            [seeds[-1][1]],
-            color="black",
-            size=10,
-            line_width=3,
-        )
 
-    plot.add_layout(
-            Label(x=6.3, y=7.5, text='P', text_font=font, text_color="black") 
-        )
-    """
-    plot.add_layout(Arrow(end=OpenHead(line_color="black",size=10),
-        x_start=seeds[0][0] + seeds[0][2], y_start=seeds[0][1] + seeds[0][2], 
-        x_end=seeds[0][0] + seeds[0][2]+1, y_end=seeds[0][1] + seeds[0][2]))
-
-    plot.add_layout(Arrow(end=OpenHead(line_color="black",size=10),
-        x_start=seeds[0][0] + seeds[0][2], y_start=seeds[0][1] + seeds[0][2], 
-        x_end=seeds[0][0] + seeds[0][2], y_end=seeds[0][1] + seeds[0][2]+1))
-    """
+    plot.xaxis.major_tick_line_color = None
+    plot.yaxis.major_tick_line_color = None
+    plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
+    plot.legend.location = "top_left"
+    plot.toolbar.logo = None
+    plot.toolbar_location = None
+    grid = []
+    for p in range(-1,len(reference)):
+        grid.append(p+.5)
+    plot.xgrid.ticker = FixedTicker(ticks=grid)
+    plot.xgrid.band_fill_color = greys[3]
+    plot.xgrid.band_fill_alpha = 0.2
+    plot.xgrid.grid_line_color = greys[0]
+    plot.xaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % reference)
+    plot.yaxis.ticker = FixedTicker(ticks=range(len(query)))
+    grid = []
+    for p in range(-1,len(query)):
+        grid.append(p+.5)
+    plot.ygrid.ticker = FixedTicker(ticks=grid)
+    plot.ygrid.band_fill_color = greys[3]
+    plot.ygrid.band_fill_alpha = 0.2
+    plot.ygrid.grid_line_color = greys[0]
+    plot.yaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % query)
 
     plot.title.text_font=font
     plot.legend.label_text_font=font
-    plot.legend.label_text_baseline="bottom"
+    plot.legend.label_text_baseline="hanging"
     plot.axis.axis_label_text_font=font
     plot.axis.major_label_text_font=font
-    plot.legend.location = "top_left"
     save(plot, "shadows")
 
 def alignment():
-    I = "I"
-    M = "M"
-    MM = "\=M"
-    D = "D"
-
-
-    query =     [                         "C", "A", "C", "A", "T", "A", "T", "T" ]
-    reference = ["A", "G", "G", "A", "G", "C", "A",           "T", "T", "T", "T", "C", "A"]
-
-    alignment = [D,D,D,D,D,M,M,I,I,M,MM,M,M,D,D]
-
-
     plot = figure(
                 title="Figure 1",
                 plot_width=resolution, plot_height=resolution,
@@ -444,7 +463,7 @@ def alignment():
     d_y = []
 
     c_alignment = []
-    for symbol in alignment:
+    for symbol in l_alignment:
         if len(c_alignment) > 0 and c_alignment[-1][0] == symbol:
             c_alignment[-1] = (symbol, c_alignment[-1][1]+1)
         else:
@@ -473,7 +492,7 @@ def alignment():
     plot.multi_line(
             m_x,
             m_y,
-            legend="match",
+            legend="ma",
             color="black",
             line_width=5
         )
@@ -481,7 +500,7 @@ def alignment():
     plot.multi_line(
             mm_x,
             mm_y,
-            legend="missmatch",
+            legend="mis",
             color=greys[0],
             line_width=5
         )
@@ -489,7 +508,7 @@ def alignment():
     plot.multi_line(
             i_x,
             i_y,
-            legend="insertion",
+            legend="ins_____",
             color="black",
             line_width=2,
             line_dash=[2,2]
@@ -498,14 +517,14 @@ def alignment():
     plot.multi_line(
             d_x,
             d_y,
-            legend="deletion",
+            legend="del",
             color="black",
             line_width=2,
             line_dash=[5,5]
         )
 
     plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
-    plot.legend.location = "top_left"
+    plot.legend.location = "bottom_right"
     plot.toolbar.logo = None
     plot.toolbar_location = None
     grid = []
@@ -542,28 +561,10 @@ def alignment():
 
 def stripOfConsideration():
     plot = figure(
-                title="Figure 3: Strip of consideration",
+                title="Figure X: Strip of consideration",
                 plot_width=resolution, plot_height=resolution,
-                x_axis_label = "reference", y_axis_label = "query"
+                x_range=[-1,13], y_range=[-1,8]
             )
-    
-    s_gap = 16.0
-    s_extend = 1.0
-    s_match = 8.0
-    s_missmatch = 2.0
-    anchor = ((3,5),(106,8))
-
-    q_len = 1000
-
-    bottom_left_x = anchor[0][0] + s_gap / s_extend - (1 + s_match/s_extend) * (anchor[0][0]-1)
-    top_left_x = anchor[0][0] + anchor[1][0] + s_gap / s_extend - (1 + s_match/s_extend) * q_len
-
-    bottom_right_x = anchor[0][1] + anchor[1][1] - s_gap / s_extend + (s_match / s_extend) * q_len + (2 + s_match / s_extend) * anchor[0][0] - (1 + s_match/s_extend) * (anchor[0][0]-1)
-    top_right_x = anchor[0][1] + anchor[1][1] - s_gap / s_extend + (s_match / s_extend) * q_len + (2 + s_match / s_extend) * anchor[0][0] - (1 + s_match/s_extend) * q_len
-
-    print(bottom_left_x, bottom_right_x, top_left_x, top_right_x)
-    return
-
     plot.patch(
             [-.5,7.5,12.5,12.5,5.5],
             [-.5,7.5,7.5,6.5,-.5],
@@ -572,7 +573,6 @@ def stripOfConsideration():
             line_color=None,
             #line_width=2,
             #line_dash=[2,2],
-            legend="strip of consideration"
         )
 
 
@@ -580,7 +580,6 @@ def stripOfConsideration():
         [-.5,7.5],
         [-.5,7.5],
         color="black",
-        legend="strip of consideration",
         line_width=1,
         line_dash=[2,2]
     )
@@ -589,19 +588,100 @@ def stripOfConsideration():
         [5.5,12.5],
         [-.5,6.5],
         color="black",
-        legend="strip of consideration",
         line_width=1,
         line_dash=[2,2]
     )
 
     plot.line(
-        [5.5,7.5],
-        [2.5,4.5],
+        [4.5,7.5],
+        [1.5,4.5],
         color="black",
-        legend="anchor",
-        line_width=5
+        line_width=6
+    )
+    plot.line(
+        [2.5,4.5],
+        [-.5,1.5],
+        color="black",
+        line_width=1,
+        line_dash=[8,2]
+    )
+    #lines to right and left
+    plot.line(
+        [3,6],
+        [3,3],
+        color="black",
+        line_width=1
+    )
+    plot.line(
+        [6,9],
+        [3,3],
+        color="black",
+        line_width=1
     )
 
+
+    plot.line(
+        [10.5,11.5],
+        [1.5,2.5],
+        color=dark_greys[2],
+        line_width=3
+    )
+    plot.line(
+        [8.5,10.5],
+        [-.5,1.5],
+        color=dark_greys[2],
+        line_width=1,
+        line_dash=[8,2]
+    )
+
+    plot.line(
+        [1.5,2.5],
+        [1.5,2.5],
+        color=dark_greys[2],
+        line_width=3
+    )
+    plot.line(
+        [-.5,1.5],
+        [-.5,1.5],
+        color=dark_greys[2],
+        line_width=1,
+        line_dash=[8,2]
+    )
+
+    plot.line(
+        [-.5,2.5],
+        [3.5,6.5],
+        color=dark_greys[2],
+        line_width=3
+    )
+    plot.line(
+        [-1.0,-.5],
+        [3.0,3.5],
+        color=dark_greys[2],
+        line_width=1,
+        line_dash=[8,2]
+    )
+
+    plot.line(
+        [0.5,1.5],
+        [-.5,0.5],
+        color="black",
+        line_width=3
+    )
+
+    plot.line(
+        [9.5,11.5],
+        [4.5,6.5],
+        color="black",
+        line_width=3
+    )
+    plot.line(
+        [4.5,9.5],
+        [-.5,4.5],
+        color="black",
+        line_width=1,
+        line_dash=[8,2]
+    )
 
     plot.xaxis.major_tick_line_color = None
     plot.yaxis.major_tick_line_color = None
@@ -640,29 +720,146 @@ def stripOfConsideration():
     plot.axis.major_label_text_font=font
     save(plot, "stripOfConsideration")
 
+
+def optimal_matching():
+    min_x = -1.0
+    min_y = -1.0
+    max_x = 13
+    max_y = 8
+    plot = figure(
+                title="Figure X: Optimal matching",
+                plot_width=resolution, plot_height=resolution,
+                x_range=[-1,13], y_range=[-1,8]
+            )
+    plot.patch(
+            [1.5,1.5,4.5,4.5],
+            [.5,1.5,1.5,0.5],
+            fill_color=greys[2],
+            fill_alpha=.75,
+            line_color=None,
+            #line_width=2,
+            #line_dash=[2,2],
+        )
+    plot.patch(
+            [10.5,10.5,max_x,max_x],
+            [5.5,max_y,max_y,5.5],
+            fill_color=greys[2],
+            fill_alpha=.75,
+            line_color=None,
+            #line_width=2,
+            #line_dash=[2,2],
+        )
+    plot.patch(
+            [min_x,min_x,0.5,0.5],
+            [min_y,-.5,-.5,min_y],
+            fill_color=greys[2],
+            fill_alpha=.75,
+            line_color=None,
+            #line_width=2,
+            #line_dash=[2,2],
+        )
+
+    plot.line(
+        [0.5,1.5],
+        [-.5,0.5],
+        color="black",
+        line_width=3
+    )
+    plot.line(
+        [4.5,7.5],
+        [1.5,4.5],
+        color="black",
+        line_width=3
+    )
+    plot.line(
+        [9.5,10.5],
+        [4.5,5.5],
+        color="black",
+        line_width=3
+    )
+
+
+    plot.xaxis.major_tick_line_color = None
+    plot.yaxis.major_tick_line_color = None
+    plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
+    plot.legend.location = "top_left"
+    plot.toolbar.logo = None
+    plot.toolbar_location = None
+    grid = []
+    for p in range(-1,len(reference)):
+        grid.append(p+.5)
+    plot.xgrid.ticker = FixedTicker(ticks=grid)
+    plot.xgrid.band_fill_color = greys[3]
+    plot.xgrid.band_fill_alpha = 0.2
+    plot.xgrid.grid_line_color = greys[0]
+    plot.xaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % reference)
+    plot.yaxis.ticker = FixedTicker(ticks=range(len(query)))
+    grid = []
+    for p in range(-1,len(query)):
+        grid.append(p+.5)
+    plot.ygrid.ticker = FixedTicker(ticks=grid)
+    plot.ygrid.band_fill_color = greys[3]
+    plot.ygrid.band_fill_alpha = 0.2
+    plot.ygrid.grid_line_color = greys[0]
+    plot.yaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % query)
+
+    plot.title.text_font=font
+    plot.legend.label_text_font=font
+    plot.legend.label_text_baseline="hanging"
+    plot.axis.axis_label_text_font=font
+    plot.axis.major_label_text_font=font
+    save(plot, "optimalMatching")
+
 def unrelated_non_enclosed_seeds():
     plot = figure(
                 title="Supplementary Figure X: unrelated Seeds",
                 plot_width=resolution, plot_height=resolution/2,
-                x_axis_label = "query",
-                y_range=["related seeds", "unrelated seeds 1", "unrelated seeds 2"]
+                y_range=["reference", "1", "2", "3", "query1", "query2", "query3", "query4"]
             )
 
-    related = ["related seeds", "related seeds"]
-    unrelated = ["unrelated seeds 1", "unrelated seeds 1"]
-    unrelated2 = ["unrelated seeds 2", "unrelated seeds 2"]
+    seeds = [
+        ("query1", 0, 500, 20),
+        ("query1", 24, 525, 13),
+        ("query1", 47, 547, 24),
 
-    plot.line([-5,3], related, color="black", line_width=10)
-    plot.line([6,21], related, color="black", line_width=10)
-    plot.line([25,40], related, color="black", line_width=10)
+        ("query2", 22, 320, 5),
+        ("query2", 36, 1000, 12),
+        
+        ("query3", 19, 1500, 4),
+        ("query3", 35, 320, 3),
+        ("query3", 46, 800, 5),
 
-    plot.line([2,7], unrelated, color="black", line_width=10)
-    plot.line([20,27], unrelated, color="black", line_width=10)
+        ("query4", 20, 800, 4),
+        ("query4", 45, 1340, 4)
+    ]
 
-    plot.line([1,4], unrelated2, color="black", line_width=10)
-    plot.line([5,8], unrelated2, color="black", line_width=10)
-    plot.line([19,22], unrelated2, color="black", line_width=10)
-    plot.line([23,29], unrelated2, color="black", line_width=10)
+    max_q = 0
+    max_r = 0
+    for seed in seeds:
+        if max_q < seed[1] + seed[-1]:
+            max_q = seed[1] + seed[-1]
+        if max_r < seed[2] + seed[-1]:
+            max_r = seed[2] + seed[-1]
+
+    r_fac = max_q/float(max_r)
+    for seed in seeds:
+        plot.patch(
+            [seed[1]+seed[-1], (seed[2]+seed[-1])*r_fac, seed[2]*r_fac, seed[1]],
+            [seed[0], "reference", "reference", seed[0]],
+            fill_color=greys[2],
+            fill_alpha=.5,
+            line_color=None,
+        )
+    plot.line([0, max_q], ["reference", "reference"], color="black", line_width=1)
+    for seed in seeds:
+        plot.line([seed[1], seed[1] + seed[-1]], [seed[0], seed[0]], color="black", line_width=1)
+
 
 
     plot.title.text_font=font
@@ -673,19 +870,21 @@ def unrelated_non_enclosed_seeds():
     plot.xaxis.major_tick_line_color = None
     plot.yaxis.major_tick_line_color = None
     plot.xaxis.minor_tick_line_color = None
+    plot.yaxis.minor_tick_line_color = None
     plot.xaxis.major_label_text_alpha = 0
     plot.toolbar.logo = None
     plot.toolbar_location = None
-    plot.ygrid.grid_line_color = None
-    plot.xgrid.ticker = FixedTicker(ticks=[-5,3,6,21,25,40])
+    plot.grid.grid_line_color = None
+    #plot.xgrid.ticker = FixedTicker(ticks=[-5,3,6,21,25,40])
     save(plot, "unrelatedNonEnclosedSeeds")
 
 
 # actually call the functions that create the pictures
 
-#unrelated_non_enclosed_seeds()
+unrelated_non_enclosed_seeds()
 #ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()
 #stripOfConsideration()
+#optimal_matching()

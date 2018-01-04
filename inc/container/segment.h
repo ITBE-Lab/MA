@@ -132,13 +132,14 @@ namespace libMABS
          * @brief Extracts all seeds from the tree.
          * @details
          * Calls fDo for all recorded hits.
+         * fDo shall return false to terminate the iteration shall end.
          * @Note pushBackBwtInterval records an interval of hits
          */
         void forEachSeed(
                 std::shared_ptr<FMIndex> pxFMIndex,
                 unsigned int uiMAxAmbiguity,
                 bool bSkip,
-                std::function<void(Seed s)> fDo
+                std::function<bool(Seed s)> fDo
             )
         {
             //iterate over all the intervals that have been recorded using pushBackBwtInterval()
@@ -172,16 +173,16 @@ namespace libMABS
                     //calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
                     nucSeqIndex ulIndexOnRefSeq = pxFMIndex->bwt_sa(ulCurrPos);
                     //call the given function
-                    fDo(Seed(
+                    if(!fDo(Seed(
                             pSegment->start(),
                             pSegment->size() + 1,
                             ulIndexOnRefSeq,
                             pSegment->saInterval().size()
-                        ));
+                        )))
+                        return;
                 }//for
             }//for
         }//function
-
 
         /**
          * @brief Extracts all seeds from the segment list.
@@ -201,6 +202,48 @@ namespace libMABS
                 (Seed s)
                 {
                     pRet->push_back(s);
+                    return true;
+                }//lambda
+            );//for each
+            return pRet;
+        }//function
+
+        /**
+         * @brief Extracts all seeds from the segment list.
+         */
+        std::shared_ptr<Seeds> extractLargestSeeds(
+                std::shared_ptr<FMIndex> pxFMIndex,
+                unsigned int uiN, // amount of seeds to extract
+                unsigned int uiMAxAmbiguity,
+                bool bSkip = true,
+                bool bAlreadySorted = false
+            )
+        {
+            std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
+            /*
+            * sort the intervals on the query by their length
+            */
+            if(!bAlreadySorted)
+                std::sort(
+                    begin(), end(),
+                    []
+                    (const std::shared_ptr<Segment> a, std::shared_ptr<Segment> b)
+                    {
+                        return a->size() > b->size();
+                    }//lambda
+                );//sort function call
+            assert(size() <= 1 || front()->size() >= back()->size());
+            forEachSeed(
+                pxFMIndex,
+                uiMAxAmbiguity,
+                bSkip,
+                [&pRet, &uiN]
+                (Seed s)
+                {
+                    pRet->push_back(s);
+                    if(pRet->size() >= uiN)
+                        return false;
+                    return true;
                 }//lambda
             );//for each
             return pRet;

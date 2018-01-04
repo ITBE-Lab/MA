@@ -26,40 +26,7 @@ std::shared_ptr<Container> GetAnchors::execute(
         std::static_pointer_cast<Pack>((*vpInput)[1]);
     std::shared_ptr<FMIndex> pxFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[2]);
 
-    std::vector<Seed> aSeeds;
-    /*
-     * extract all seeds
-     */
-    pCastedInput->forEachSeed(
-        pxFM_index, uiMaxAmbiguity, true,
-        [&](Seed xS)
-        {
-            aSeeds.push_back(xS);
-        }//lambda
-    );
-
-    /*
-     * sort them
-     */
-    std::sort(
-        aSeeds.begin(), aSeeds.end(),
-        []
-        (const Seed& a, const Seed& b)
-        {
-            return a.size() > b.size();
-        }//lambda
-    );//sort function call
-    assert(aSeeds.size() <= 1 || aSeeds.front().size() >= aSeeds.back().size());
-
-    std::shared_ptr<Seeds> pRet(new Seeds());
-
-    // only save the uiN longest
-    for(unsigned int i = 0; i < uiN && i < aSeeds.size(); i++)
-    {
-        pRet->push_back(aSeeds[i]);
-    }//for
-
-    return pRet;
+    return pCastedInput->extractLargestSeeds(pxFM_index, uiN, uiMaxAmbiguity, true);
 }//function
 
 void exportGetAnchors()

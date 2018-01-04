@@ -5,8 +5,8 @@ PYTHON_INCLUDE = /usr/include/python$(PYTHON_VERSION)
  
 # location of the Boost Python include files and library
  
-BOOST_INC = /opt/dev/boost_1_65_1
-BOOST_LIB_PATH = /opt/dev/boost_1_65_1/stage/lib
+BOOST_INC = $(BOOST_ROOT)
+BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib
 BOOST_LIB = boost_python3-mt dl rt z boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams-mt
  
 # target files
@@ -19,7 +19,7 @@ CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 CC=gcc
 CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -g -mavx2
 CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror -g
-LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 $(addprefix -L,$(BOOST_LIB_PATH)) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread -g
+LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 -L$(BOOST_LIB_PATH) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread -g
 
 all: libMABS.so
 
@@ -37,9 +37,10 @@ html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard MABS/*.py)
 
 install: all
 	pip3 install . --upgrade --no-cache-dir
-	cp /usr/home/markus/workspace/aligner/libMABS.so /usr/lib
+	cp libMABS.so /usr/lib
 	pip3 show MABS
 
+#TODO: remove me
 vid:
 	gource -f --seconds-per-day 0.1
 

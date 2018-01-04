@@ -52,13 +52,13 @@ void StripOfConsideration::forEachNonBridgingSeed(
                 )
             {
                 //if so ignore this hit
-                return;
+                return false;
             }//if*/
             fDo(xS);
+            return false;
         }//lambda
     );
 }//function
-
 
 std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
@@ -86,15 +86,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     );//for each
 
     //sort the seeds according to their initial positions
-    std::sort(
-        vSeeds.begin(), vSeeds.end(),
-        [&]
-        (const std::tuple<Seed, bool> a, const std::tuple<Seed, bool> b)
-        {
-            return getPositionForBucketing(pQuerySeq->length(), std::get<0>(a)) 
-                    < getPositionForBucketing(pQuerySeq->length(), std::get<0>(b));
-        }//lambda
-    );//sort function call
+    linearSort(vSeeds, pQuerySeq->length());
 
     unsigned int uiAnchorIndex = 0;
 

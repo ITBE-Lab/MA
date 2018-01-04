@@ -6,8 +6,9 @@ import math
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import row, column, layout
 from bokeh.palettes import d3
-from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker
+from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker, BasicTicker, Grid
 from bokeh.models.formatters import FuncTickFormatter
+from bokeh.layouts import gridplot
 from bokeh.io import save
 import numpy as np
 import colorsys
@@ -563,8 +564,11 @@ def memory_test(reference, test_index):
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+    if n >= len(l):
+        yield l
+    else:
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
 
 #run_smw_for_all_samples(human_genome)
 
@@ -605,8 +609,11 @@ def test_my_approach(
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
     print("having ", len(all_queries), " samples total (", name, ") ...")
+    if len(all_queries) == 0:
+        print("no new queries ... done")
+        return
 
-    extract_size = 2**14
+    extract_size = len(all_queries) #2**15
     # break samples into chunks of 2^14
     for index, queries in enumerate(chunks(all_queries, extract_size)):
         print("extracting", len(queries), "samples", index, "/",
@@ -746,16 +753,19 @@ def test_my_approaches(db_name):
     #TODO: optimize max_sweep
     #
 
-    test_my_approach(db_name, human_genome, "pBs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
+    #test_my_approach(db_name, human_genome, "pBs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
 
-    #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality&speed")
-    #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality&speed_2")
-    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
+    #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
-    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed_2", num_anchors=100, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+
+    #clearResults(db_name, human_genome, "MABS 2.1")
+    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+    test_my_approach(db_name, human_genome, "MABS 2 radix", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+    test_my_approach(db_name, human_genome, "MABS 2.1", num_anchors=1000, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=5000)
 
     #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality")
-    test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality", num_anchors=10000, max_sweep=0, seg=BinarySeeding(True), min_seeds=0, min_seed_length=0.02, max_seeds=0, max_seeds_2=0, nmw_give_up=0)
+    #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality", num_anchors=10000, max_sweep=0, seg=BinarySeeding(True), min_seeds=0, min_seed_length=0.02, max_seeds=0, max_seeds_2=0, nmw_give_up=0)
 
 
 def filter_suggestion(db_name, min_percentage_cov=0.1, max_num_seeds=5000, min_num_seed_in_strip=3):
@@ -886,8 +896,9 @@ def analyse_detailed(out_prefix, db_name):
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [] ]
-
+    #plots = [ [], [], [], [] ]
+    plots = [ [], [] ]
+    yax = True
     for approach_ in approaches:
         approach = approach_[0]
         results = getResults(db_name, approach, query_size, indel_size)
@@ -925,7 +936,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 scores[num_mutation][num_indels] += score
 
 
-        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None):
+        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None, xax=True, yax=True):
             pic = []
             min_ = 10000.0
             max_ = 0.0
@@ -969,52 +980,76 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 min_ = set_min
 
             color_mapper = LinearColorMapper(
-                    palette=heatmap_palette(light_spec_approximation, 127),
+                    palette=heatmap_palette(light_spec_approximation, 256),
                     low=min_,
                     high=max_
                 )
             if log:
                 color_mapper = LogColorMapper(
-                        palette=heatmap_palette(light_spec_approximation, 127),
+                        palette=heatmap_palette(light_spec_approximation, 256),
                         low=min_,
                         high=max_
                     )
 
-            tick_formater = FuncTickFormatter(code="""
-                return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
-                        Math.max(Math.floor( (tick)/2),0)"""
-                )
-            #tick_formater = FuncTickFormatter(code="return 'a')
-
+            plot_width=500
+            if yax:
+                plot_width += 150
+            plot_height=500
+            if xax:
+                plot_height += 40
             plot = figure(title=title,
                     x_range=(0,h), y_range=(0,w),
-                    x_axis_label='num ' + str(indel_size) + ' nt insertions; num ' + str(indel_size) + ' nt deletions', y_axis_label='num mutations'
+                    x_axis_label=str(indel_size) + 'nt indels', y_axis_label='mutations',
+                    plot_width=plot_width, plot_height=plot_height,
+                    min_border_bottom=10, min_border_top=10,
+                    min_border_left=10, min_border_right=15,
+                    tools=["save"]
                 )
-            plot.xaxis.formatter = tick_formater
+            #plot.xaxis.formatter = tick_formater
             plot.image(image=[pic], color_mapper=color_mapper,
                     dh=[w], dw=[h], x=[0], y=[0])
 
-            color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+            font = "Helvetica"
+            font_size = '15pt'
+            if yax:
+                color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+                color_bar.major_label_text_font=font
+                color_bar.major_label_text_font_size=font_size
+                plot.add_layout(color_bar, 'left')
 
-            plot.add_layout(color_bar, 'left')
+            if not xax:
+                plot.xaxis.visible = False
+            if not yax:
+                plot.yaxis.visible = False
+            if not title is None:
+                plot.title.text_font=font
+                plot.title.text_font_size=font_size
+            plot.legend.label_text_font=font
+            plot.legend.label_text_font_size=font_size
+            plot.axis.axis_label_text_font=font
+            plot.axis.major_label_text_font=font
+            plot.axis.axis_label_text_font_size=font_size
+            plot.axis.major_label_text_font_size=font_size
 
             return plot
 
-        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
-        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0, True)
-        avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
-        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
+
+        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, approach, set_max=1, set_min=0, xax=False, yax=yax)
+        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
+        #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
+        #avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach, yax=yax)
+        yax = False
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
         if not avg_runtime is None:
             plots[1].append(avg_runtime)
-        if not avg_score is None:
-            plots[2].append(avg_score)
-        if not avg_seeds is None:
-            plots[3].append(avg_seeds)
+        #if not avg_score is None:
+        #    plots[2].append(avg_score)
+        #if not avg_seeds is None:
+        #    plots[3].append(avg_seeds)
 
-    save(layout(plots))
+    save(gridplot(plots))
 
 
 
@@ -1134,9 +1169,9 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
         if min_ > range_:
             range_ = min_
 
-        color_mapper = LinearColorMapper(palette=heatmap_palette(127), low=-range_, high=range_)
+        color_mapper = LinearColorMapper(palette=heatmap_palette(255), low=-range_, high=range_)
         if log:
-            color_mapper = LogColorMapper(palette=heatmap_palette(127), low=-range_, high=range_)
+            color_mapper = LogColorMapper(palette=heatmap_palette(255), low=-range_, high=range_)
 
         tick_formater = FuncTickFormatter(code="""
             return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
@@ -1156,14 +1191,15 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
 
         plot.add_layout(color_bar, 'left')
 
+
         return plot
 
     desc = approaches[0] + " - " + approaches[1]
 
-    avg_hits = makePic(hits, max_mut, max_indel, "accuracy: " + desc)
-    avg_runtime = makePic(run_times, max_mut, max_indel, "runtime: " + desc)
-    avg_score = makePic(scores, max_mut, max_indel, "score: " + desc)
-    avg_seeds = makePic(nums_seeds, max_mut, max_indel, "num seeds: " + desc)
+    avg_hits = makePic(hits, max_mut, max_indel, "accuracy " + desc)
+    avg_runtime = makePic(run_times, max_mut, max_indel, "runtime " + desc)
+    avg_score = makePic(scores, max_mut, max_indel, "score " + desc)
+    avg_seeds = makePic(nums_seeds, max_mut, max_indel, "num seeds " + desc)
 
     if not avg_hits is None:
         plots.append(avg_hits)
@@ -1203,14 +1239,15 @@ def manualCheckSequences():
 #high quality picture
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+#test_my_approaches("/mnt/ssd1/highQual.db")
+#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 
 
-#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2048, True, True)
-#test_my_approaches("/mnt/ssd1/veryHighQual.db")
-#analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)
+test_my_approaches("/mnt/ssd1/veryHighQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 """
 createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)
