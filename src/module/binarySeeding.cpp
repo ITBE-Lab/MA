@@ -293,6 +293,37 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 	return ret;
 }//function
 
+// TODO: i should be my own module
+Interval<nucSeqIndex> BinarySeeding::bowtieExtension(
+        std::shared_ptr<FMIndex> pFM_index,
+        std::shared_ptr<NucSeq> pQuerySeq,
+        std::shared_ptr<SegmentVector> pSegmentVector
+    )
+{
+	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
+    for(nucSeqIndex i = 0; i < pQuerySeq.length()-16; i+= 10)
+    {
+
+        SAInterval ik(
+                            pFM_index->L2[complement(q[i])] + 1, 
+                            pFM_index->L2[(int)q[i]] + 1, 
+                            pFM_index->L2[(int)q[i] + 1] - pFM_index->L2[(int)q[i]]
+                        );
+        for(nucSeqIndex i2 = 0; i < 16; i++)
+        {
+            // this is the extension
+            // actually forward since we extend backwards on the reverse complement...
+            ik = extend_backward(ik, complement(q[i2 + i]), pFM_index);
+            if(ik.size() == 0)
+                break;
+        }//for
+        if(ik.size() == 0)
+            continue;
+        // found a seed
+        pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(ik.revComp())));
+    }//for
+}//function
+
 Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 		nucSeqIndex center,
 		std::shared_ptr<FMIndex> pFM_index,
@@ -586,6 +617,9 @@ std::shared_ptr<Container> BinarySeeding::execute(
 
 	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
 
+    if(do16ntevery10ntExtension)
+		bowtieExtension(pFM_index, pQuerySeq, pSegmentVector);
+    else
 	{//scope for xPool
 		// setup a threadpool
 		ThreadPoolAllowingRecursiveEnqueues xPool( NUM_THREADS_ALIGNER );
@@ -601,7 +635,7 @@ std::shared_ptr<Container> BinarySeeding::execute(
 			&xPool
 		);//enqueue
 
-	}//end of scope xPool
+	}//else & end of scope xPool
 
 	return pSegmentVector;
 }//function
@@ -617,6 +651,7 @@ void exportBinarySeeding()
 			"BinarySeeding",
 			boost::python::init<bool>()
 		)
+        .def_readwrite("do16ntevery10ntExtension", BinarySeeding::do16ntevery10ntExtension)
 		;
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<BinarySeeding>,

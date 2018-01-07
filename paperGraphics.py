@@ -5,6 +5,9 @@ from bokeh.palettes import d3
 from bokeh.io import export_png, export_svgs
 from bokeh.models import FuncTickFormatter, FixedTicker, Label, ColorBar, FactorRange
 from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker, LinearColorMapper
+from bokeh.models import ColumnDataSource
+from bokeh.transform import dodge
+from bokeh.core.properties import value
 import math
 import random
 import numpy as np
@@ -196,6 +199,10 @@ max_x = 10
 max_y = 10
 
 def ambiguity_per_length():
+    data = [[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], [5150, 1165, 263, 46, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0], [9993, 2136, 456, 104, 24, 5, 1, 0, 0, 0, 0, 0, 0, 0], [19405, 4381, 993, 228, 53, 12, 3, 0, 0, 0, 0, 0, 0, 0], [78004, 17143, 3642, 728, 140, 29, 7, 2, 0, 0, 0, 0, 0, 0], [128484, 31693, 7638, 1840, 439, 104, 24, 6, 1, 0, 0, 0, 0, 0], [252549, 66284, 17353, 4411, 1122, 284, 72, 19, 5, 2, 1, 0, 0, 0], [9156386, 7272230, 5947033, 1072039, 485588, 243296, 132622, 74758, 16771, 25234, 1798, 413, 306, 49]]
+    desc1 = ['index', 'min', 'quantile5%', 'quantile25%', 'median', 'quantile75%', 'quantile95%', 'max']
+
+    """
     ref_len = 3000000000 # three billion => human genome length
 
     expected_ambiguity = []
@@ -209,13 +216,37 @@ def ambiguity_per_length():
         )
 
     plot.line(q_lens, expected_ambiguity, color="black")
+    for i in range(len(data[0])):
+        if data[0][i] < 10:
+            data[0][i] = 10
+        if data[0][i] > 20:
+            data[0][i] = 20
+    """
+    for ii in range(1, len(data)):
+        for i in range(len(data[ii])):
+            if data[ii][i] > 1000:
+                data[ii][i] = 1000
+
+    plot = figure(
+            title="Figure X: ambiguity on the human genome",
+            plot_width=resolution, plot_height=resolution,
+            y_range=(-1,101), x_range=(9.9, 20.1),
+            x_axis_label='sequence length', y_axis_label='ambiguity'
+        )
+
+    plot.patch(list(reversed(data[0])) + data[0], list(reversed(data[7])) + data[1], legend="0-100%", color=greys[4])
+    plot.patch(data[0] + list(reversed(data[0])), data[2] + list(reversed(data[6])), legend="5-95%", color=greys[2])
+    plot.patch(data[0] + list(reversed(data[0])), data[3] + list(reversed(data[5])), legend="25-75%", color=greys[0])
+    plot.line(data[0], data[4], legend="median", color="black")
 
     plot.title.text_font=font
     plot.legend.label_text_font=font
     plot.legend.label_text_baseline="bottom"
     plot.axis.axis_label_text_font=font
+    plot.axis.axis_label_text_baseline="bottom"
     plot.axis.major_label_text_font=font
-    plot.legend.location = "top_left"
+    plot.xaxis.major_label_standoff = 10
+    plot.legend.location = "top_right"
     save(plot, "ambiguityPerQueryLen")
 
 def theoretical_max_acc():
@@ -878,13 +909,51 @@ def unrelated_non_enclosed_seeds():
     #plot.xgrid.ticker = FixedTicker(ticks=[-5,3,6,21,25,40])
     save(plot, "unrelatedNonEnclosedSeeds")
 
+def required_nmw_band_size():
+    data = ([1,2,3,4,5,6,7,8,9], [9,8,7,6,5,4,3,2,1])
+    num_buckets = 9
+    buckets_x = []
+    for index in range(num_buckets):
+        buckets_x.append(str(index) + "/" + str(num_buckets))
+
+    plot = figure(
+            title="Figure X: required DP band size",
+            plot_width=resolution, plot_height=resolution,
+            x_range=buckets_x,
+            x_axis_label='relative size required', y_axis_label='relative amount'
+        )
+    
+    d = {
+        'x': buckets_x,
+        'accurate': data[0],
+        'inaccurate': data[1],
+    }
+
+    source = ColumnDataSource(data=d)''
+
+    plot.vbar(x=dodge("x", -.125, range=plot.x_range), top='accurate', width=0.2, source=source, color="black", legend=value("accurate"))
+    plot.vbar(x=dodge("x", .125, range=plot.x_range), top='inaccurate', width=0.2, source=source, color=greys[0], legend=value("inaccurate"))
+
+    plot.title.text_font=font
+    plot.legend.label_text_font=font
+    plot.legend.label_text_baseline="bottom"
+    plot.axis.axis_label_text_font=font
+    plot.axis.axis_label_text_baseline="bottom"
+    plot.axis.major_label_text_font=font
+    plot.xaxis.major_label_standoff = 10
+    plot.xgrid.grid_line_color = None
+    plot.toolbar.logo = None
+    plot.toolbar_location = None
+    plot.legend.location = "top_center"
+    save(plot, "nmwBandSize")
 
 # actually call the functions that create the pictures
 
-unrelated_non_enclosed_seeds()
+#unrelated_non_enclosed_seeds()
 #ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()
 #stripOfConsideration()
 #optimal_matching()
+required_nmw_band_size()

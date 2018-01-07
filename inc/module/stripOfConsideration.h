@@ -55,59 +55,7 @@ namespace libMABS
                 nucSeqIndex addSize// = 0 (default)
             );
 
-        void linearSort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen)
-        {
-            unsigned int max_bits_used = 34;
-            unsigned int n = vSeeds.size();
-    
-            if( 2*max_bits_used*n / log2(n) < n*log2(n) )
-            {
-                //quicksort is faster
-                std::sort(
-                    vSeeds.begin(), vSeeds.end(),
-                    [&]
-                    (const std::tuple<Seed, bool> a, const std::tuple<Seed, bool> b)
-                    {
-                        return getPositionForBucketing(qLen, std::get<0>(a)) 
-                                < getPositionForBucketing(qLen, std::get<0>(b));
-                    }//lambda
-                );//sort function call
-                return;
-            }//if
-            //radix sort is faster than quicksort
-            //TODO: segfault here
-            unsigned int amount_buckets = max_bits_used/log2(n);
-            unsigned int iter = 0;
-            std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets1(amount_buckets);
-            std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets2(amount_buckets);
-            auto pBucketsNow = &xBuckets1;
-            auto pBucketsLast = &xBuckets2;
-            for(auto& xSeed : vSeeds)
-                (*pBucketsLast)[0].push_back(xSeed);
-
-            //2**max_bits_used maximal possible genome size
-            while(std::pow(amount_buckets,iter) <= std::pow(2,max_bits_used))
-            {
-                for(auto& xBucket : *pBucketsNow)
-                    xBucket.clear();
-                for(auto& xBucket : *pBucketsLast)
-                    for(auto& xSeed : xBucket)
-                    {
-                        nucSeqIndex index = getPositionForBucketing(qLen, std::get<0>(xSeed));
-                        index = (nucSeqIndex)( index / std::pow(amount_buckets,iter) ) % amount_buckets;
-                        (*pBucketsNow)[index].push_back(xSeed);
-                    }//for
-                iter++;
-                //swap last and now
-                auto pBucketsTemp = pBucketsNow;
-                pBucketsNow = pBucketsLast;
-                pBucketsLast = pBucketsTemp;
-            }//while
-            vSeeds.clear();
-            for(auto& xBucket : *pBucketsLast)
-                for(auto& xSeed : xBucket)
-                    vSeeds.push_back(xSeed);
-        }//function
+        void linearSort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen);
 
     public:
 

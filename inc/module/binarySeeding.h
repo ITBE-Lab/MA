@@ -24,6 +24,7 @@ namespace libMABS
     class BinarySeeding : public Module{
     private:
         bool bLrExtension;
+        bool do16ntevery10ntExtension;
 
         /**
          * @brief Backwards extension using a FMDIndex
@@ -116,7 +117,8 @@ namespace libMABS
          */
         BinarySeeding(bool bLrExtension = true)
                 :
-            bLrExtension(bLrExtension)
+            bLrExtension(bLrExtension),
+            do16ntevery10ntExtension(false)
         {}//constructor
         
         std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);

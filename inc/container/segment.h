@@ -246,6 +246,7 @@ namespace libMABS
                     return true;
                 }//lambda
             );//for each
+            assert(pRet->size() <= 1 || pRet->front().size() >= pRet->back().size());
             return pRet;
         }//function
 

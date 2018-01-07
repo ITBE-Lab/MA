@@ -26,7 +26,7 @@ std::shared_ptr<Container> GetAnchors::execute(
         std::static_pointer_cast<Pack>((*vpInput)[1]);
     std::shared_ptr<FMIndex> pxFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[2]);
 
-    return pCastedInput->extractLargestSeeds(pxFM_index, uiN, uiMaxAmbiguity, true);
+    return pCastedInput->extractLargestSeeds(pxFM_index, uiN, uiMaxAmbiguity);
 }//function
 
 void exportGetAnchors()

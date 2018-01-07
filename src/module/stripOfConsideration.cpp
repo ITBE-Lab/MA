@@ -2,6 +2,77 @@
 using namespace libMABS;
 
 
+void StripOfConsideration::linearSort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen)
+{
+    //we need 34 bits max to express any index on any genome
+    unsigned int max_bits_used = 34;
+    unsigned int n = vSeeds.size();
+
+    if( true /*2*max_bits_used*n / log2(n) > n*log2(n)*/ )
+    {
+        //quicksort is faster
+        std::sort(
+            vSeeds.begin(), vSeeds.end(),
+            [&]
+            (const std::tuple<Seed, bool> a, const std::tuple<Seed, bool> b)
+            {
+                return getPositionForBucketing(qLen, std::get<0>(a)) 
+                        < getPositionForBucketing(qLen, std::get<0>(b));
+            }//lambda
+        );//sort function call
+        return;
+    }//if
+
+    //radix sort is faster than quicksort
+    unsigned int amount_buckets = max_bits_used/log2(n);
+    if(amount_buckets < 2)
+        amount_buckets = 2;
+    unsigned int iter = 0;
+    std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets1(
+            amount_buckets, std::vector<std::tuple<Seed, bool>>()
+        );
+    std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets2(
+            amount_buckets, std::vector<std::tuple<Seed, bool>>()
+        );
+    for(auto& xSeed : vSeeds)
+        xBuckets2[0].push_back(xSeed);
+    auto pBucketsNow = &xBuckets1;
+    auto pBucketsLast = &xBuckets2;
+
+    //2^max_bits_used maximal possible genome size
+    while(std::pow(amount_buckets,iter) <= std::pow(2,max_bits_used))
+    {
+        for(auto& xBucket : *pBucketsNow)
+            xBucket.clear();
+        for(auto& xBucket : *pBucketsLast)
+            for(auto& xSeed : xBucket)
+            {
+                nucSeqIndex index = getPositionForBucketing(qLen, std::get<0>(xSeed));
+                index = (nucSeqIndex)( index / std::pow(amount_buckets,iter) ) % amount_buckets;
+                (*pBucketsNow)[index].push_back(xSeed);
+            }//for
+        iter++;
+        //swap last and now
+        auto pBucketsTemp = pBucketsNow;
+        pBucketsNow = pBucketsLast;
+        pBucketsLast = pBucketsTemp;
+    }//while
+    vSeeds.clear();
+    DEBUG(
+        nucSeqIndex last = 0;
+    )//DEBUG
+    for(auto& xBucket : *pBucketsLast)
+        for(auto& xSeed : xBucket)
+        {
+            vSeeds.push_back(xSeed);
+            DEBUG(
+                nucSeqIndex now = getPositionForBucketing(qLen, std::get<0>(xSeed));
+                assert(now >= last);
+                last = now;
+            )//DEBUG
+        }//for
+}//function
+
 ContainerVector StripOfConsideration::getInputType() const
 {
     return ContainerVector
@@ -52,10 +123,12 @@ void StripOfConsideration::forEachNonBridgingSeed(
                 )
             {
                 //if so ignore this hit
-                return false;
-            }//if*/
+                //returning true since we want to continue extracting seeds
+                return true;
+            }//if
             fDo(xS);
-            return false;
+            //returning true since we want to continue extracting seeds
+            return true;
         }//lambda
     );
 }//function
@@ -72,10 +145,11 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::static_pointer_cast<Pack>((*vpInput)[3]);
     std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[4]);
 
-    if (dMaxSeeds2 > 0 && pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds2)
+    if (false && dMaxSeeds2 > 0 && pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds2)
         return std::shared_ptr<Seeds>(new Seeds());
 
     //extract the seeds
+    //TODO: tuple unnecessary remove the bool...
     std::vector<std::tuple<Seed, bool>> vSeeds;
     forEachNonBridgingSeed(
         pSegments, pFM_index, pRefSeq, pQuerySeq,
@@ -96,6 +170,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     {
         nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
         nucSeqIndex uiSize = uiStripSize;
+
+        //TODO: implement accurate strip size!
 
         /*
         * FILTER START
@@ -127,7 +203,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 return getPositionForBucketing(pQuerySeq->length(), std::get<0>(a)) <= uiStart;
             }//lambda
         );//binary search function call
-        assert(getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) >= uiStart);
+        if(iterator != vSeeds.end())
+            assert(getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) >= uiStart);
 
         //save all seeds belonging into the strip of consideration
         while(
@@ -135,21 +212,16 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) < uiEnd
             )
         {
-            /*
-             * FILTER 2
-             * we make sure that we don't collect the same seeds twice:
-             */
-            //if(std::get<1>(*iterator))
-                pxNew->push_back(std::get<0>(*iterator));
-            std::get<1>(*iterator) = false;
+            pxNew->push_back(std::get<0>(*iterator));
+            //std::get<1>(*iterator) = false;
             ++iterator;
         }//while
 
         /*
          * FILTER 3
          */
-        if(
-                pxNew->size() < minSeeds && 
+        if(     false &&
+                pxNew->size() < minSeeds &&
                 pxNew->getScore() < minSeedLength * pQuerySeq->length() &&
                 pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds
             )

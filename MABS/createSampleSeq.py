@@ -208,10 +208,17 @@ def submitResults(db_name, results_list):
                             score,
                             result_start,
                             num_seeds,
+                            index_of_chosen_strip,
+                            seed_coverage_chosen_strip,
+                            num_seeds_chosen_strip,
+                            anchor_size,
+                            anchor_ambiguity,
+                            max_diag_deviation,
+                            max_nmw_area,
                             run_time,
                             approach
                         )
-                        VALUES (?,?,?,?,?,?)
+                        VALUES (?,?,?,?,0,0,0,0,0,0,0,?,?)
                         """, results_list)
     else: # len == 13
         c.executemany("""

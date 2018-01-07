@@ -12,6 +12,8 @@ from bokeh.layouts import gridplot
 from bokeh.io import save
 import numpy as np
 import colorsys
+from statistics import mean, median, stdev
+from sys import stderr
 
 # Computes a single rainbow-color. (Like in C++ and Java-code)
 def rainbow(value):
@@ -581,18 +583,18 @@ def test_my_approach(
             name,
             seg=BinarySeeding(False),
             chain=LinearLineSweep(), 
-            max_hits=5,
+            max_hits=100,
             num_anchors=10, 
             strips_of_consideration=True,
             low_res = False,
             re_seed = None,
             max_sweep = None,
-            strip_size = 500,
-            min_seeds= 2,
-            min_seed_length= .05,
-            max_seeds=7.0,
-            max_seeds_2=6.5,
-            nmw_give_up=20000
+            strip_size =10000,
+            min_seeds=0,
+            min_seed_length=0,
+            max_seeds=0,
+            max_seeds_2=0,
+            nmw_give_up=0
         ):
     print("collecting samples (" + name + ") ...")
     reference_pledge = Pledge(Pack())
@@ -746,7 +748,8 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    #test_my_approach(db_name, human_genome, "pBs:5,*10 SoC:1000,500nt,<5,>0,*0 sLs:100", num_anchors=1000, max_sweep=100, seg=BinarySeeding(False), min_seeds=0, min_seed_length=0, nmw_give_up=0)
+    #clearResults(db_name, human_genome, "quality radix")
+    test_my_approach(db_name, human_genome, "quality radix", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=0)
 
     #
     #optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
@@ -757,12 +760,12 @@ def test_my_approaches(db_name):
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
-    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=20, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
 
-    #clearResults(db_name, human_genome, "MABS 2.1")
+    #clearResults(db_name, human_genome, "MABS 2 radix")
     test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
-    test_my_approach(db_name, human_genome, "MABS 2 radix", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
-    test_my_approach(db_name, human_genome, "MABS 2.1", num_anchors=1000, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=5000)
+
+    #test_my_approach(db_name, human_genome, "MABS 2.1", num_anchors=1000, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=5000)
 
     #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality")
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality", num_anchors=10000, max_sweep=0, seg=BinarySeeding(True), min_seeds=0, min_seed_length=0.02, max_seeds=0, max_seeds_2=0, nmw_give_up=0)
@@ -842,6 +845,8 @@ def analyse_detailed(out_prefix, db_name):
             max_diag_deviations[index].append(max_diag_deviation)
             max_nmw_areas[index].append(max_nmw_area)
 
+        print("required_nmw_area", max_nmw_area)
+
         output_file(out_prefix + approach + ".html")
 
         def bar_plot(data, name, num_buckets=20):
@@ -893,11 +898,144 @@ def analyse_detailed(out_prefix, db_name):
             ]))
 
 
+def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10):
+    output_file(out)
+    approaches = getApproachesWithData(db_name)
+    plots = [ [], [], [], [] ]
+
+    for approach_ in approaches:
+        approach = approach_[0]
+        results = getResults(db_name, approach, query_size, indel_size)
+        hits = {}
+        tries = {}
+        run_times = {}
+        scores = {}
+        nums_seeds = {}
+
+        max_indel = 2*query_size/indel_size
+        max_mut = query_size
+
+        def init(d, x, y):
+            if x not in d:
+                d[x] = {}
+            if y not in d[x]:
+                d[x][y] = 0
+            return d
+
+        for score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time in results:
+            hits = init(hits, num_mutation, num_indels)
+            tries = init(tries, num_mutation, num_indels)
+            run_times = init(run_times, num_mutation, num_indels)
+            if not score is None:
+                scores = init(scores, num_mutation, num_indels)
+            nums_seeds = init(nums_seeds, num_mutation, num_indels)
+
+            if near(result_start, original_start):
+                hits[num_mutation][num_indels] += 1
+            tries[num_mutation][num_indels] += 1
+            run_times[num_mutation][num_indels] += run_time
+            if not num_seeds is None:
+                nums_seeds[num_mutation][num_indels] += num_seeds
+            if not score is None:
+                scores[num_mutation][num_indels] += score
+
+
+        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None):
+            pic = []
+            min_ = 10000.0
+            max_ = 0.0
+            if len(d.keys()) == 0:
+                return None
+            else:
+                w_keys = sorted(d.keys())
+                h_keys = sorted(d[0].keys())
+
+                for x in w_keys:
+                    pic.append( [] )
+                    for y in h_keys:
+                        if x not in d or y not in d[x]:
+                            pic[-1].append( float("nan") )
+                        else:
+                            pic[-1].append( d[x][y] / divideBy[x][y] )
+                            if pic[-1][-1] < min_:
+                                min_ = pic[-1][-1]
+                            if pic[-1][-1] > max_:
+                                max_ = pic[-1][-1]
+
+                for _ in range(ignore_max_n):
+                    max_x = 0
+                    max_y = 0
+                    for x, row in enumerate(pic):
+                        for y, p in enumerate(row):
+                            if p > pic[max_x][max_y]:
+                                max_x = x
+                                max_y = y
+                    pic[max_x][max_y] = float('nan')
+                if ignore_max_n > 0:
+                    max_ = 0
+                    for row in pic:
+                        for p in row:
+                            if p > max_:
+                                max_ = p
+
+            if set_max is not None:
+                max_ = set_max
+            if set_min is not None:
+                min_ = set_min
+
+            color_mapper = LinearColorMapper(
+                    palette=heatmap_palette(light_spec_approximation, 127),
+                    low=min_,
+                    high=max_
+                )
+            if log:
+                color_mapper = LogColorMapper(
+                        palette=heatmap_palette(light_spec_approximation, 127),
+                        low=min_,
+                        high=max_
+                    )
+
+            tick_formater = FuncTickFormatter(code="""
+                return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
+                        Math.max(Math.floor( (tick)/2),0)"""
+                )
+            #tick_formater = FuncTickFormatter(code="return 'a')
+
+            plot = figure(title=title,
+                    x_range=(0,h), y_range=(0,w),
+                    x_axis_label='num ' + str(indel_size) + ' nt insertions; num ' + str(indel_size) + ' nt deletions', y_axis_label='num mutations'
+                )
+            plot.xaxis.formatter = tick_formater
+            plot.image(image=[pic], color_mapper=color_mapper,
+                    dh=[w], dw=[h], x=[0], y=[0])
+
+            color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+
+            plot.add_layout(color_bar, 'left')
+
+            return plot
+
+        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
+        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0, True)
+        avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
+        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
+
+        if not avg_hits is None:
+            plots[0].append(avg_hits)
+        if not avg_runtime is None:
+            plots[1].append(avg_runtime)
+        if not avg_score is None:
+            plots[2].append(avg_score)
+        if not avg_seeds is None:
+            plots[3].append(avg_seeds)
+
+    save(layout(disp))
+
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
     #plots = [ [], [], [], [] ]
-    plots = [ [], [] ]
+    plots = [ [], [], [] ]
     yax = True
     for approach_ in approaches:
         approach = approach_[0]
@@ -926,6 +1064,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 scores = init(scores, num_mutation, num_indels)
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
 
+            print(result_start, original_start)
             if near(result_start, original_start):
                 hits[num_mutation][num_indels] += 1
             tries[num_mutation][num_indels] += 1
@@ -1037,17 +1176,17 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, approach, set_max=1, set_min=0, xax=False, yax=yax)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
         #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
-        #avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach, yax=yax)
+        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach, yax=yax)
         yax = False
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
         if not avg_runtime is None:
             plots[1].append(avg_runtime)
+        if not avg_seeds is None:
+            plots[2].append(avg_seeds)
         #if not avg_score is None:
-        #    plots[2].append(avg_score)
-        #if not avg_seeds is None:
-        #    plots[3].append(avg_seeds)
+        #    plots[3].append(avg_score)
 
     save(gridplot(plots))
 
@@ -1226,28 +1365,117 @@ def manualCheckSequences():
         print("")
 
 
+def get_ambiguity_distribution(reference, min_len=10, max_len=20):
+    def get_all_queries(l):
+        if l <= 0:
+            yield ""
+        else:
+            for q in get_all_queries(l-1):
+                yield q + "A"
+                yield q + "C"
+                yield q + "G"
+                yield q + "T"
+    def get_random_queries(l, amount):
+        for _ in range(amount):
+            q = ""
+            for _ in range(l):
+                char = random.randint(1,4)
+                if char == 1:
+                    q += "A"
+                elif char == 2:
+                    q += "C"
+                elif char == 3:
+                    q += "G"
+                elif char == 4:
+                    q += "T"
+            yield q
+    fm_index = FMIndex()
+    fm_index.load(reference)
+    """
+    total = 0
+    for l in range(min_len, max_len+1):
+        total += 4**l
+    index = 0
+    """
+    pQu = .75
+    pQl = .25
+    pMax = .95
+    pMin = .05
+    data = [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+    ]
+    for l in range(min_len-2, max_len+2):
+        ambiguity = []
+        for q in get_random_queries(l, 1000000):
+            ambiguity.append(fm_index.get_ambiguity(NucSeq(q)))
+            #if index % 1000000 == 0:
+            #    print(100*index/float(total), "%", file=stderr)
+            #index += 1
+        ambiguity = sorted(ambiguity)
+        data[0].append(l)
+        data[1].append(ambiguity[0])
+        data[2].append(ambiguity[int(len(ambiguity)*pMin)])
+        data[3].append(ambiguity[int(len(ambiguity)*pQl)])
+        data[4].append(ambiguity[int(len(ambiguity)/2)])
+        data[5].append(ambiguity[int(len(ambiguity)*pQu)])
+        data[6].append(ambiguity[int(len(ambiguity)*pMax)])
+        data[7].append(ambiguity[-1])
+    lines = [
+        "index", 
+        "min",
+        "quantile"+str(int(100*pMin)) + "%", 
+        "quantile"+str(int(100*pQl)) + "%", 
+        "median", 
+        "quantile" + str(int(100*pQu)) + "%", 
+        "quantile" + str(int(100*pMax)) + "%", 
+        "max" 
+    ]
+
+    print(lines)
+    print(data)
+
+    plot = figure(
+            title="ambiguity on the human genome",
+            y_range=(-1,101),
+            x_axis_label='sequence length', y_axis_label='ambiguity'
+        )
+
+    plot.patch(data[0] + list(reversed(data[0])), data[1] + list(reversed(data[7])), legend="0-100%", color="#E0E0E0")
+    plot.patch(data[0] + list(reversed(data[0])), data[2] + list(reversed(data[6])), legend="5-95%", color="#C0C0C0")
+    plot.patch(data[0] + list(reversed(data[0])), data[3] + list(reversed(data[5])), legend="25-75%", color="#A0A0A0")
+    plot.line(data[0], data[4], legend="50%", color="black")
+
+    show(plot)
+
 
 #memory_test(human_genome, 1)
-#exit()
-
+#get_ambiguity_distribution(human_genome)
+analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
+exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
 
-
 #high quality picture
 
-#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
-#test_my_approaches("/mnt/ssd1/highQual.db")
-#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)
-test_my_approaches("/mnt/ssd1/veryHighQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+#test_my_approaches("/mnt/ssd1/veryHighQual.db")
+#analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 """
 createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)

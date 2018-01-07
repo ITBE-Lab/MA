@@ -145,6 +145,8 @@ namespace libMABS
         * BWT-index, position of $
         */
         t_bwtIndex primary; 
+        
+        unsigned int get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
 
 
     protected :
