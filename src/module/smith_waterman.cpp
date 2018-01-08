@@ -72,6 +72,10 @@ int16_t alignSW_SIMD( const NucSeq &rQuerySequence, // query sequence
     return iMaxScore;
 } // function
 
+extern int iGap;
+extern int iExtend;
+extern int iMatch;
+extern int iMissMatch;
 
 std::shared_ptr<Container> SMW::execute(
         std::shared_ptr<ContainerVector> vpInput
@@ -85,10 +89,10 @@ std::shared_ptr<Container> SMW::execute(
 
     // 1. Prepare the SW parameter set ...
     SmithWatermanParamaterSet<int16_t> xSWparameterSet
-    (    1, // score for match (must be positive)
-        -1, // score for mismatch (must be negative)
-        20, // penalty for gap open ("gap" means insertion or deletion)
-        1, // penalty for gap extension
+    (    iMatch, // score for match (must be positive)
+        -iMissMatch, // score for mismatch (must be negative)
+        iGap, // penalty for gap open ("gap" means insertion or deletion)
+        iExtend, // penalty for gap extension
         pQuerySeq->uxAlphabetSize() // alphabet size of input
     );
 

@@ -115,7 +115,7 @@
  * - make efficient NMW (have to wait for SMW)
  * - paired end alignments necessary
  * - mapping quality
- * - different output formats
+ * - different output formats (queue implementation...)
  * - code cleanup
  * - SMW quality
  * - figure out where sequencer reads belong in the missmatch/indel-pic

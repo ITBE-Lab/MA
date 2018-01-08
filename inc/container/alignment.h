@@ -52,11 +52,6 @@ namespace libMABS
         /// The end of the alignment on the reference sequence.
         nucSeqIndex uiEndOnRef;
 
-        int matchScore;
-        int missmatchScore;
-        int gapOpenScore;
-        int gapExtensionScore;
-
         int iScore = 0;
 
     public:
@@ -81,11 +76,7 @@ namespace libMABS
          */
         Alignment(
                 nucSeqIndex uiBeginOnRef, 
-                nucSeqIndex uiEndOnRef,
-                int matchScore, 
-                int missmatchScore,
-                int gapOpenScore, 
-                int gapExtensionScore
+                nucSeqIndex uiEndOnRef
             )
                 :
             data(),
@@ -93,10 +84,6 @@ namespace libMABS
             uiDataStart(0),
             uiBeginOnRef(uiBeginOnRef),
             uiEndOnRef(uiEndOnRef),
-            matchScore(matchScore),
-            missmatchScore(missmatchScore),
-            gapOpenScore(gapOpenScore),
-            gapExtensionScore(gapExtensionScore),
             xStats()
         {}//constructor
 
@@ -113,10 +100,6 @@ namespace libMABS
             uiDataStart(0),
             uiBeginOnRef(uiBeginOnRef),
             uiEndOnRef(0),
-            matchScore(0),
-            missmatchScore(0),
-            gapOpenScore(0),
-            gapExtensionScore(0),
             xStats()
         {}//constructor
 
@@ -171,32 +154,7 @@ namespace libMABS
          * This is used for appending seeds,
          * where simply size of the seed matches need to be appended.
          */
-        void append(MatchType type, nucSeqIndex size)
-        {
-            //adjust the score of the alignment
-            if(type == MatchType::seed || type == MatchType::match)
-                iScore += matchScore * size;
-            else if(type == MatchType::missmatch)
-                iScore += missmatchScore * size;
-            else if(type == MatchType::insertion || type == MatchType::deletion)
-            {
-                if(at(length()-1) != MatchType::insertion && at(length()-1) != MatchType::deletion)
-                    iScore += gapOpenScore;
-                iScore += gapExtensionScore * size-1;
-            }//if
-            /*
-            * we are storing in a compressed format 
-            * since it actually makes quite a lot of things easier
-            * same thing here: just check weather the last symbol is the same as the inserted one
-            *      if so just add the amount of new symbols
-            *      else make a new entry with the correct amount of symbols
-            */
-            if(data.size() != 0 && std::get<0>(data.back()) == type)
-                std::get<1>(data.back()) += size;
-            else
-                data.push_back(std::make_tuple(type, size));
-            uiLength += size;
-        }//function
+        void append(MatchType type, nucSeqIndex size);
 
         /**
          * @brief appends a matchType to the alignment
@@ -277,27 +235,7 @@ namespace libMABS
          * @details
          * Removes parts of the reference at the front and back that overhang the aligned query.
          */
-        void removeDangelingDeletions()
-        {
-            if(data.size() <= 2)
-                return;
-            if(std::get<0>(data[uiDataStart]) == MatchType::deletion)
-            {
-                uiBeginOnRef += std::get<1>(data[uiDataStart]);
-                uiLength -= std::get<1>(data[uiDataStart]);
-                uiDataStart++;
-                iScore -= gapOpenScore;
-                iScore -= gapExtensionScore * std::get<1>(data[uiDataStart])-1;
-            }//if
-            if(std::get<0>(data.back()) == MatchType::deletion)
-            {
-                uiEndOnRef -= std::get<1>(data.back());
-                uiLength -= std::get<1>(data.back());
-                iScore -= gapOpenScore;
-                iScore -= gapExtensionScore * std::get<1>(data.back())-1;
-                data.pop_back();
-            }//if
-        }//function
+        void removeDangelingDeletions();
 
         /**
          * @brief for sorting alignment by their score

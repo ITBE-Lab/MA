@@ -1,6 +1,65 @@
 #include "container/alignment.h"
 using namespace libMABS;
 
+//The scores from needlemanWunsch.cpp
+extern int iGap;
+extern int iExtend;
+extern int iMatch;
+extern int iMissMatch;
+
+void Alignment::append(MatchType type, nucSeqIndex size)
+{
+    //adjust the score of the alignment
+    if(type == MatchType::seed || type == MatchType::match)
+        iScore += iMatch * size;
+    else if(type == MatchType::missmatch)
+        //iMissMatch is a penalty not a score
+        iScore -= iMissMatch * size;
+    else if(type == MatchType::insertion || type == MatchType::deletion)
+    {
+        //iGap & iExtend is a penalty not a score
+        if(at(length()-1) != MatchType::insertion && at(length()-1) != MatchType::deletion)
+            iScore -= iGap;
+        iScore -= iExtend * size-1;
+    }//if
+    /*
+    * we are storing in a compressed format 
+    * since it actually makes quite a lot of things easier
+    * same thing here: just check weather the last symbol is the same as the inserted one
+    *      if so just add the amount of new symbols
+    *      else make a new entry with the correct amount of symbols
+    */
+    if(data.size() != 0 && std::get<0>(data.back()) == type)
+        std::get<1>(data.back()) += size;
+    else
+        data.push_back(std::make_tuple(type, size));
+    uiLength += size;
+}//function
+
+void Alignment::removeDangelingDeletions()
+{
+    if(data.size() <= 2)
+        return;
+    if(std::get<0>(data[uiDataStart]) == MatchType::deletion)
+    {
+        uiBeginOnRef += std::get<1>(data[uiDataStart]);
+        uiLength -= std::get<1>(data[uiDataStart]);
+        uiDataStart++;
+        //iGap is a penalty not a score
+        iScore += iGap;
+        iScore += iExtend * std::get<1>(data[uiDataStart])-1;
+    }//if
+    if(std::get<0>(data.back()) == MatchType::deletion)
+    {
+        uiEndOnRef -= std::get<1>(data.back());
+        uiLength -= std::get<1>(data.back());
+        //iGap is a penalty not a score
+        iScore += iGap;
+        iScore += iExtend * std::get<1>(data.back())-1;
+        data.pop_back();
+    }//if
+}//function
+
 void exportAlignment()
 {
     boost::python::class_<

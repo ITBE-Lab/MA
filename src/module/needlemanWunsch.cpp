@@ -15,7 +15,7 @@ ContainerVector NeedlemanWunsch::getInputType() const
         //the query sequence
         std::shared_ptr<Container>(new NucSeq()),
         //the reference sequence
-        std::shared_ptr<Container>(new Pack()),
+        std::shared_ptr<Container>(new Pack())
     };
 }//function
 
@@ -318,7 +318,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
 
     std::shared_ptr<Alignment> pRet(
-            new Alignment(beginRef, endRef, iMatch, iMissMatch, -iGap, -iExtend)
+            new Alignment(beginRef, endRef)
         );
 
     pRet->xStats = pSeeds->xStats;
@@ -441,5 +441,10 @@ void exportNeedlemanWunsch()
         std::shared_ptr<NeedlemanWunsch>,
         std::shared_ptr<Module> 
     >();
+
+    boost::python::scope().attr("score_gap_open") = &iGap;
+    boost::python::scope().attr("score_gap_extend") = &iExtend;
+    boost::python::scope().attr("score_match") = &iMatch;
+    boost::python::scope().attr("score_missmatch") = &iMissMatch;
 
 }//function
