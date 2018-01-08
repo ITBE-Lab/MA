@@ -112,8 +112,16 @@
  * 
  * @section todos TODOs
  * 
- * - make banded efficient NMW (have to wait for SMW)
- * - STOP ADDING ITEMS TO THIS LIST
+ * - make efficient NMW (have to wait for SMW)
+ * - paired end alignments necessary
+ * - mapping quality
+ * - different output formats
+ * - code cleanup
+ * - SMW quality
+ * - figure out where sequencer reads belong in the missmatch/indel-pic
+ * - be able to deal with short reads
+ * - local alignments
+ * - check if realigning the entire area produces a better score!
  * 
  * @section about_us_sec About Us
  * 

@@ -697,7 +697,7 @@ def test_my_approach(
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
-                    if float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation:
+                    if gap_size > 0 and float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation:
                         max_diag_deviation = float(abs(curr_max_diag_deviation)) / gap_size
                     curr_diag_deviation = 0
                     curr_max_diag_deviation = 0
@@ -774,7 +774,7 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # TODO: optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=200000)
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False),  min_seeds=2, min_seed_length=0.01, max_seeds=6.5, max_seeds_2=7.0, nmw_give_up=200000)
     return
 
     test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
@@ -1491,9 +1491,9 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
 #high quality picture
 
-createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
-#test_my_approaches("/mnt/ssd1/highQual.db")
-#analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 exit()
 
