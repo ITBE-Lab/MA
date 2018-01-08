@@ -48,7 +48,7 @@ def set_up_aligner(
 
     anc = GetAnchors(num_anchors, max_hits)
 
-    soc = StripOfConsideration(strip_size, max_hits, min_seeds, min_seed_length, max_seeds, max_seeds_2)
+    soc = StripOfConsideration(max_hits, min_seeds, min_seed_length, max_seeds, max_seeds_2)
 
     max_sweep_n = 0
     if not max_sweep is None:

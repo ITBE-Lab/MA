@@ -690,13 +690,17 @@ def test_my_approach(
             max_nmw_area=0
             max_diag_deviation = 0.0
             curr_diag_deviation = 0
+            curr_max_diag_deviation = 0
             gap_size = 0
             cur_nmw_h = 0
             cur_nmw_w = 0
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
+                    if float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation:
+                        max_diag_deviation = float(abs(curr_max_diag_deviation)) / gap_size
                     curr_diag_deviation = 0
+                    curr_max_diag_deviation = 0
                     gap_size = 0
                     cur_nmw_h = 0
                     cur_nmw_w = 0
@@ -711,8 +715,8 @@ def test_my_approach(
                     elif match_type == MatchType.missmatch:
                         cur_nmw_w += 1
                         cur_nmw_h += 1
-                    if float(abs(curr_diag_deviation)) / gap_size > max_diag_deviation:
-                        max_diag_deviation = float(abs(curr_diag_deviation)) / gap_size
+                    if curr_diag_deviation > curr_max_diag_deviation:
+                        curr_max_diag_deviation = curr_diag_deviation
                     if cur_nmw_h * cur_nmw_w > max_nmw_area:
                         max_nmw_area = cur_nmw_h * cur_nmw_w
 
@@ -738,6 +742,21 @@ def test_my_approach(
     print("done")
 
 
+def test_my_approaches_rele(db_name):
+    test_my_approach(db_name, human_genome, "non-enclosed pairs", seg=BinarySeeding(True), num_anchors=200, nmw_give_up=20000)
+
+    test_my_approach(db_name, human_genome, "non-enclosed", seg=BinarySeeding(False), num_anchors=200, nmw_give_up=20000)
+
+    #TODO: BWA-MEM seeding technique
+
+    seg = BinarySeeding(False)
+    seg.do16ntevery10ntExtension = True
+    test_my_approach(db_name, human_genome, "BOWTIE 2", seg=seg, num_anchors=200, nmw_give_up=20000)
+
+    seg2 = BinarySeeding(False)
+    seg2.blasrExtension = True
+    test_my_approach(db_name, human_genome, "BLASR", seg=seg2, num_anchors=200, nmw_give_up=20000)
+
 def test_my_approaches(db_name):
     # [p]Bs:<max_ambiguity>,*<max_seeds_fac> 
     # # SoC:<num_SoC>,<SoC_size>nt,\<<max_ambiguity>,\><min_seeds_in_strip>,*<min_coverage>
@@ -748,22 +767,24 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    #clearResults(db_name, human_genome, "quality radix")
-    test_my_approach(db_name, human_genome, "quality radix", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=0)
+    #clearResults(db_name, human_genome, "MABS 1")
+    #clearResults(db_name, human_genome, "MABS 2")
 
     #
-    #optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
-    #TODO: optimize max_sweep
+    # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
+    # TODO: optimize max_sweep
     #
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=200000)
+    return
 
-    #test_my_approach(db_name, human_genome, "pBs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
+    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     test_my_approach(db_name, human_genome, "MABS 1", num_anchors=20, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
-    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+    #test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
 
     #test_my_approach(db_name, human_genome, "MABS 2.1", num_anchors=1000, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=5000)
 
@@ -845,11 +866,11 @@ def analyse_detailed(out_prefix, db_name):
             max_diag_deviations[index].append(max_diag_deviation)
             max_nmw_areas[index].append(max_nmw_area)
 
-        print("required_nmw_area", max_nmw_area)
+        #print("required_nmw_area", max_diag_deviations)
 
         output_file(out_prefix + approach + ".html")
 
-        def bar_plot(data, name, num_buckets=20):
+        def bar_plot(data, name, num_buckets=20, print_data=False):
             plot = figure(title=name,
                     x_axis_label='values',
                     y_axis_label='relative amount'
@@ -870,7 +891,7 @@ def analyse_detailed(out_prefix, db_name):
                 if x > max_val:
                     max_val = x
             bucket_width = float(max_val - min_val) / num_buckets
-            print(max_val, min_val, bucket_width)
+            #print(max_val, min_val, bucket_width)
             buckets_1 = []
             buckets_2 = []
             buckets_x = []
@@ -882,6 +903,9 @@ def analyse_detailed(out_prefix, db_name):
                 buckets_1[int( float(num_buckets*(x - min_val)) / ( (max_val+0.01)-min_val))] += 1.0 / total_amount_1
             for x in data[1]:
                 buckets_2[int( float(num_buckets*(x - min_val)) / ((max_val+0.01)-min_val))] += 1.0 / total_amount_2
+            if print_data:
+                print(buckets_1)
+                print(buckets_2)
             plot.vbar(x=buckets_x, width=bucket_width, bottom=0, top=buckets_1, color="blue", legend="accurate", fill_alpha=0.5)
             plot.vbar(x=buckets_x, width=bucket_width, bottom=0, top=buckets_2, color="red", legend="inaccurate", fill_alpha=0.5)
             return plot
@@ -893,7 +917,7 @@ def analyse_detailed(out_prefix, db_name):
             bar_plot(num_seeds_strip, "number of seeds in strip", 25),
             bar_plot(anc_size, "length of anchor seed", 50),
             bar_plot(anc_ambiguity, "ambiguity of anchor seed", 5),
-            bar_plot(max_diag_deviations, "required nmw strip size to reach maximum possible score", 50),
+            bar_plot(max_diag_deviations, "required nmw strip size to reach maximum possible score", 50, True),
             bar_plot(max_nmw_areas, "maximum area needleman wunsch", 50),
             ]))
 
@@ -901,7 +925,7 @@ def analyse_detailed(out_prefix, db_name):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [] ]
+    plots = [ [], [], [], [], [] ]
 
     for approach_ in approaches:
         approach = approach_[0]
@@ -1019,6 +1043,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0, True)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
+        seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
@@ -1028,14 +1053,15 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[2].append(avg_score)
         if not avg_seeds is None:
             plots[3].append(avg_seeds)
+        if not seed_relevance is None:
+            plots[4].append(seed_relevance)
 
-    save(layout(disp))
+    save(layout(plots))
 
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    #plots = [ [], [], [], [] ]
-    plots = [ [], [], [] ]
+    plots = [ [], [], [], [] ]
     yax = True
     for approach_ in approaches:
         approach = approach_[0]
@@ -1064,7 +1090,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 scores = init(scores, num_mutation, num_indels)
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
 
-            print(result_start, original_start)
+            #print(result_start, original_start)
             if near(result_start, original_start):
                 hits[num_mutation][num_indels] += 1
             tries[num_mutation][num_indels] += 1
@@ -1176,7 +1202,8 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, approach, set_max=1, set_min=0, xax=False, yax=yax)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
         #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
-        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach, yax=yax)
+        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, approach, yax=yax)
+        avg_rel = makePicFromDict(hits, max_mut, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
         yax = False
 
         if not avg_hits is None:
@@ -1185,8 +1212,8 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             plots[1].append(avg_runtime)
         if not avg_seeds is None:
             plots[2].append(avg_seeds)
-        #if not avg_score is None:
-        #    plots[3].append(avg_score)
+        if not avg_rel is None:
+            plots[3].append(avg_rel)
 
     save(gridplot(plots))
 
@@ -1457,8 +1484,6 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
 #memory_test(human_genome, 1)
 #get_ambiguity_distribution(human_genome)
-analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
-exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
@@ -1467,23 +1492,29 @@ exit()
 #high quality picture
 
 createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#test_my_approaches("/mnt/ssd1/highQual.db")
+#analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-
+exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)
 #test_my_approaches("/mnt/ssd1/veryHighQual.db")
 #analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
-"""
-createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)
-test_my_approaches("/mnt/ssd1/stats.db")
-analyse_all_approaches("stats.html","/mnt/ssd1/stats.db", 1000, 100)
-analyse_detailed("stats/", "/mnt/ssd1/stats.db")
-filter_suggestion("/mnt/ssd1/stats.db", min_percentage_cov=0.02, max_num_seeds=4000, min_num_seed_in_strip=2)
-"""
+#createSampleQueries(human_genome, "/mnt/ssd1/seedRelevance.db", 1000, 100, 2**7, True, True)
+test_my_approaches_rele("/mnt/ssd1/seedRelevance.db")
+analyse_all_approaches("seedRelevance.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
+analyse_all_approaches_depre("seedRelevance_depre.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
+#analyse_detailed("seedRelevance/", "/mnt/ssd1/seedRelevance.db")
+
+#createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)
+#test_my_approaches("/mnt/ssd1/stats.db")
+#analyse_all_approaches("stats.html","/mnt/ssd1/stats.db", 1000, 100)
+#analyse_all_approaches_depre("stats_depre.html","/mnt/ssd1/stats.db", 1000, 100)
+#analyse_detailed("stats/", "/mnt/ssd1/stats.db")
+#filter_suggestion("/mnt/ssd1/stats.db", min_percentage_cov=0.02, max_num_seeds=4000, min_num_seed_in_strip=2)
+
 
 #compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)
 #compare_approaches("results_comp_me_me", ["pBs:5 SoC:100,500nt sLs:1", "pBs:5 SoC:1,500nt sLs:inf"], db_name, 1000, 100)

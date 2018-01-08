@@ -22,9 +22,10 @@ namespace libMABS
      * @ingroup module
      */
     class BinarySeeding : public Module{
-    private:
+    public:
         bool bLrExtension;
         bool do16ntevery10ntExtension;
+        bool blasrExtension;
 
         /**
          * @brief Backwards extension using a FMDIndex
@@ -64,6 +65,18 @@ namespace libMABS
          */
         Interval<nucSeqIndex> nonEnclosedExtension(
                 nucSeqIndex center,
+                std::shared_ptr<FMIndex> pFM_index,
+                std::shared_ptr<NucSeq> pQuerySeq,
+                std::shared_ptr<SegmentVector> pSegmentVector
+            );
+
+        void bowtieExtension(
+                std::shared_ptr<FMIndex> pFM_index,
+                std::shared_ptr<NucSeq> pQuerySeq,
+                std::shared_ptr<SegmentVector> pSegmentVector
+            );
+
+        void doBlasrExtension(
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
                 std::shared_ptr<SegmentVector> pSegmentVector
@@ -118,7 +131,8 @@ namespace libMABS
         BinarySeeding(bool bLrExtension = true)
                 :
             bLrExtension(bLrExtension),
-            do16ntevery10ntExtension(false)
+            do16ntevery10ntExtension(false),
+            blasrExtension(false)
         {}//constructor
         
         std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);

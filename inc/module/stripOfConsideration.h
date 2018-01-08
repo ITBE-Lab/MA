@@ -8,6 +8,7 @@
 
 #include "container/segment.h"
 #include "module/module.h"
+#include "module/needlemanWunsch.h"
 #include <cmath>
 
 namespace libMABS
@@ -20,8 +21,6 @@ namespace libMABS
     class StripOfConsideration: public Module
     {
     public:
-        /// @brief The strip of consideration size.
-        nucSeqIndex uiStripSize = 10000;
         /// @brief Maximum ambiguity for a seed to be considered.
         unsigned int uiMaxAmbiguity = 500;
         /// @brief Minimum amount of seeds for a strip to be considered
@@ -61,8 +60,7 @@ namespace libMABS
 
         StripOfConsideration(){}//default constructor
 
-        StripOfConsideration(
-                nucSeqIndex uiStripSize, 
+        StripOfConsideration( 
                 unsigned int uiMaxAmbiguity,
                 unsigned int minSeeds,
                 float minSeedLength,
@@ -70,7 +68,6 @@ namespace libMABS
                 float dMaxSeeds2
             )
                 :
-            uiStripSize(uiStripSize),
             uiMaxAmbiguity(uiMaxAmbiguity),
             minSeeds(minSeeds),
             minSeedLength(minSeedLength),

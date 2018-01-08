@@ -294,14 +294,15 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 }//function
 
 // TODO: i should be my own module
-Interval<nucSeqIndex> BinarySeeding::bowtieExtension(
+// TODO: test me
+void BinarySeeding::bowtieExtension(
         std::shared_ptr<FMIndex> pFM_index,
         std::shared_ptr<NucSeq> pQuerySeq,
         std::shared_ptr<SegmentVector> pSegmentVector
     )
 {
 	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
-    for(nucSeqIndex i = 0; i < pQuerySeq.length()-16; i+= 10)
+    for(nucSeqIndex i = 0; i < pQuerySeq->length()-16; i+= 10)
     {
 
         SAInterval ik(
@@ -309,7 +310,7 @@ Interval<nucSeqIndex> BinarySeeding::bowtieExtension(
                             pFM_index->L2[(int)q[i]] + 1, 
                             pFM_index->L2[(int)q[i] + 1] - pFM_index->L2[(int)q[i]]
                         );
-        for(nucSeqIndex i2 = 0; i < 16; i++)
+        for(nucSeqIndex i2 = 0; i2 < 16; i2++)
         {
             // this is the extension
             // actually forward since we extend backwards on the reverse complement...
@@ -320,7 +321,52 @@ Interval<nucSeqIndex> BinarySeeding::bowtieExtension(
         if(ik.size() == 0)
             continue;
         // found a seed
-        pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(ik.revComp())));
+        pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(i, 16, ik.revComp())));
+    }//for
+}//function
+
+// TODO: i should be my own module
+// TODO: test me 
+// TODO: figure out what the exactly do
+/**
+ * This is what blasr does:
+ * 
+ * for each position in the query:
+ *  extend maximally backwards 
+ *  save a seed that is one shorter than the maximal extension
+ *  if the seed is longer than K = 12 adn maxambiguity = ?
+ */
+void BinarySeeding::doBlasrExtension(
+        std::shared_ptr<FMIndex> pFM_index,
+        std::shared_ptr<NucSeq> pQuerySeq,
+        std::shared_ptr<SegmentVector> pSegmentVector
+    )
+{
+	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
+    for(nucSeqIndex i = 0; i < pQuerySeq->length(); i+= 1)
+    {
+
+        SAInterval ik(
+                            pFM_index->L2[(int)q[i]] + 1, 
+                            pFM_index->L2[complement(q[i])] + 1, 
+                            pFM_index->L2[(int)q[i] + 1] - pFM_index->L2[(int)q[i]]
+                        );
+        SAInterval lk;// will hold the maximal extension
+        SAInterval llk;// will hold the interval one shorter than the maximal extension
+        nucSeqIndex i2 = 0;
+        while(i2 <= i)
+        {
+            llk = lk;
+            lk = ik;
+            ik = extend_backward(ik, q[i - i2], pFM_index);
+            if(ik.size() == 0)
+                break;
+            i2++;
+        }//for
+        if(i2 <= 12)
+            continue;
+        // found a seed
+        pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(i - i2 + 1, i2-1, llk)));
     }//for
 }//function
 
@@ -619,6 +665,8 @@ std::shared_ptr<Container> BinarySeeding::execute(
 
     if(do16ntevery10ntExtension)
 		bowtieExtension(pFM_index, pQuerySeq, pSegmentVector);
+    if(blasrExtension)
+        doBlasrExtension(pFM_index, pQuerySeq, pSegmentVector);
     else
 	{//scope for xPool
 		// setup a threadpool
@@ -651,7 +699,8 @@ void exportBinarySeeding()
 			"BinarySeeding",
 			boost::python::init<bool>()
 		)
-        .def_readwrite("do16ntevery10ntExtension", BinarySeeding::do16ntevery10ntExtension)
+        .def_readwrite("do16ntevery10ntExtension", &BinarySeeding::do16ntevery10ntExtension)
+        .def_readwrite("blasrExtension", &BinarySeeding::blasrExtension)
 		;
 	boost::python::implicitly_convertible< 
 		std::shared_ptr<BinarySeeding>,

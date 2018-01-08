@@ -2,6 +2,10 @@
 using namespace libMABS;
 
 
+int iGap = 16;
+int iExtend = 1;
+int iMatch = 8;
+int iMissMatch = 2;
 
 ContainerVector NeedlemanWunsch::getInputType() const
 {
@@ -19,13 +23,6 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
 {
     return std::shared_ptr<Container>(new Alignment());
 }//function
-
-int iDeletion = -16;//-50
-int iInsertion = -16;//-50
-int iDeletionContinued = -1;
-int iInsertionContinued = -1;
-int iMatch = 8;//20
-int iMissMatch = -2;//-20
 
 void needlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
@@ -82,6 +79,7 @@ void needlemanWunsch(
 
     /*
      * give up for too large areas
+     * TODO: this should split everything into two local alignments instead
      */
     if(uiGiveUpAfter != 0)
     {
@@ -91,11 +89,11 @@ void needlemanWunsch(
             int diagLen = std::min(toRef - fromRef, toQuery - fromQuery);
             int gapLen = std::max(toRef - fromRef, toQuery - fromQuery) - diagLen;
 
-            int scoreMissmatch = iDeletion + iDeletionContinued*gapLen + 
-                                 iMissMatch*diagLen;
+            int scoreMissmatch = -1* (iGap + iExtend*gapLen + 
+                                 iMissMatch*diagLen);
 
-            int scoreIndelOnly = iDeletion + iDeletionContinued*(toRef - fromRef) + 
-                                 iInsertion + iInsertionContinued*(toQuery - fromQuery);
+            int scoreIndelOnly = -1* (iGap*2 + iExtend*(toRef - fromRef) + 
+                                 iExtend*(toQuery - fromQuery));
 
             if(scoreIndelOnly < scoreMissmatch)
             {
@@ -124,18 +122,18 @@ void needlemanWunsch(
 
     s[0][0] = 0;
     dir[0][0] = 1;
-    s[1][0] = iInsertion;
+    s[1][0] = -iGap;
     dir[1][0] = 2;
-    s[0][1] = iDeletion;
+    s[0][1] = -iGap;
     dir[0][1] = 3;
     for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
     {
-        s[uiI][0] = s[uiI - 1][0] + iInsertionContinued;
+        s[uiI][0] = s[uiI - 1][0] - iExtend;
         dir[uiI][0] = 2;
     }//for
     for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
     {
-        s[0][uiI] = s[0][uiI - 1] + iDeletionContinued;
+        s[0][uiI] = s[0][uiI - 1] - iExtend;
         dir[0][uiI] = 3;
     }//for
     for(nucSeqIndex uiI = 1; uiI < toQuery-fromQuery+1; uiI++)
@@ -145,17 +143,17 @@ void needlemanWunsch(
             int newScore;
             //insertion
             if(dir[uiI - 1][uiJ] == 2)
-                newScore = s[uiI - 1][uiJ] + iInsertionContinued;
+                newScore = s[uiI - 1][uiJ] - iExtend;
             else
-                newScore = s[uiI - 1][uiJ] + iInsertion;
+                newScore = s[uiI - 1][uiJ] - iGap;
             s[uiI][uiJ] = newScore;
             dir[uiI][uiJ] = 2;
 
             //deletion
             if(dir[uiI][uiJ - 1] == 3)
-                newScore = s[uiI][uiJ - 1] + iDeletionContinued;
+                newScore = s[uiI][uiJ - 1] - iExtend;
             else
-                newScore = s[uiI][uiJ - 1] + iDeletion;
+                newScore = s[uiI][uiJ - 1] - iGap;
             // for the first alignment we dont want to have a malus for an
             // deletion of the reference at the beginning
             if(fromQuery == 0 && uiI == toQuery-fromQuery)
@@ -170,7 +168,7 @@ void needlemanWunsch(
             if( (*pQuery)[toQuery - uiI] == (*pRef)[toRef - uiJ] )
                 newScore += iMatch;
             else
-                newScore += iMissMatch;
+                newScore -= iMissMatch;
             if(newScore >= s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
@@ -320,7 +318,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
 
     std::shared_ptr<Alignment> pRet(
-            new Alignment(beginRef, endRef, iMatch, iMissMatch, iDeletion, iDeletionContinued)
+            new Alignment(beginRef, endRef, iMatch, iMissMatch, -iGap, -iExtend)
         );
 
     pRet->xStats = pSeeds->xStats;

@@ -1,6 +1,11 @@
 #include "module/stripOfConsideration.h"
 using namespace libMABS;
 
+//TODO: clean up the parameters to some kind of consistent model...
+extern int iGap;// = 16;
+extern int iExtend;// = 1;
+extern int iMatch;// = 8;
+extern int iMissMatch;// = 2;
 
 void StripOfConsideration::linearSort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen)
 {
@@ -145,7 +150,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::static_pointer_cast<Pack>((*vpInput)[3]);
     std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[4]);
 
-    if (false && dMaxSeeds2 > 0 && pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds2)
+    if (
+            dMaxSeeds2 > 0 && 
+            pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds2
+        )
         return std::shared_ptr<Seeds>(new Seeds());
 
     //extract the seeds
@@ -168,8 +176,15 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
     for(Seed& xAnchor : *pAnchors)
     {
-        nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize/2;
-        nucSeqIndex uiSize = uiStripSize;
+        /*
+         * This is the formula from the paper
+         * computes the size required for the strip so that we collect all relevent seeds.
+         */
+        nucSeqIndex uiStripSize = (iMatch * pQuerySeq->length() - iGap) / iExtend;
+
+
+        nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize;
+        nucSeqIndex uiSize = uiStripSize*2;
 
         //TODO: implement accurate strip size!
 
@@ -177,7 +192,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         * FILTER START
         * we make sure that we can never have bridging strips
         */
-        if(uiStripSize/2 > getPositionForBucketing(pQuerySeq->length(), xAnchor))
+        if(uiStripSize > getPositionForBucketing(pQuerySeq->length(), xAnchor))
             uiStart = 0;
         if(uiStart >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
             uiStart = pRefSeq->uiUnpackedSizeForwardPlusReverse() - 1;
@@ -212,15 +227,23 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) < uiEnd
             )
         {
+            //TODO: this should be taken care of in the get anchors module....
+            //if the used anchor has already been collected in another strip abort
+            if(std::get<0>(*iterator) == xAnchor && std::get<1>(*iterator) == false)
+                break;
             pxNew->push_back(std::get<0>(*iterator));
-            //std::get<1>(*iterator) = false;
+            std::get<1>(*iterator) = false;
             ++iterator;
         }//while
+
+        //if the used anchor has already been collected in another strip continue with next anchor
+        if(std::get<0>(*iterator) == xAnchor && std::get<1>(*iterator) == false)
+            continue;
 
         /*
          * FILTER 3
          */
-        if(     false &&
+        if(
                 pxNew->size() < minSeeds &&
                 pxNew->getScore() < minSeedLength * pQuerySeq->length() &&
                 pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds
@@ -251,8 +274,7 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<nucSeqIndex, unsigned int, unsigned int, float, float, float>())
-        .def_readwrite("strip_size", &StripOfConsideration::uiStripSize)
+        .def(boost::python::init<unsigned int, unsigned int, float, float, float>())
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
         .def_readwrite("min_seeds", &StripOfConsideration::minSeeds)
         .def_readwrite("min_seed_length", &StripOfConsideration::minSeedLength)

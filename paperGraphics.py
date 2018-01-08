@@ -910,29 +910,35 @@ def unrelated_non_enclosed_seeds():
     save(plot, "unrelatedNonEnclosedSeeds")
 
 def required_nmw_band_size():
-    data = ([1,2,3,4,5,6,7,8,9], [9,8,7,6,5,4,3,2,1])
-    num_buckets = 9
+    data = ([0.29852045256745025, 0.0008703220191470844, 0.0017406440382941688, 0.0, 0.0, 0.0008703220191470844, 0.0, 0.0, 0.0008703220191470844, 0.0008703220191470844, 0.0017406440382941688, 0.0008703220191470844, 0.0, 0.0017406440382941688, 0.0008703220191470844, 0.0, 0.0, 0.0, 0.0, 0.0008703220191470844, 0.0, 0.0, 0.0, 0.0, 0.0008703220191470844, 0.0008703220191470844, 0.0, 0.0, 0.0, 0.0, 0.0017406440382941688, 0.0, 0.0, 0.0008703220191470844, 0.0008703220191470844, 0.0026109660574412533, 0.0, 0.0008703220191470844, 0.0017406440382941688, 0.0, 0.0017406440382941688, 0.0026109660574412533, 0.0026109660574412533, 0.0026109660574412533, 0.005221932114882507, 0.00783289817232376, 0.014795474325500439, 0.010443864229765015, 0.01566579634464752, 0.616187989556137], [0.04914390275780972, 0.007580708404130186, 0.009410534570644362, 0.010586851391974902, 0.011763168213305442, 0.011371062606195262, 0.013592994379819616, 0.016337733629590886, 0.018298261665141813, 0.018167559796105084, 0.011763168213305442, 0.018298261665141813, 0.02862370931904336, 0.018167559796105084, 0.022480721474317122, 0.018690367272251998, 0.03829564762776126, 0.0177754541889949, 0.021565808391060023, 0.0283623055809699, 0.02104300091491311, 0.021435106522023295, 0.02091229904587638, 0.018036857927068356, 0.0577702261142338, 0.015161416808260336, 0.014115801855966522, 0.019997385962619282, 0.016337733629590886, 0.022350019605280394, 0.016468435498627615, 0.011763168213305442, 0.005750882237616, 0.03450529342569614, 0.010194745784864722, 0.010848255130048355, 0.009541236439681088, 0.022219317736243666, 0.008887727094497455, 0.012024571951378895, 0.008495621487387275, 0.011109658868121809, 0.011109658868121809, 0.00522807476146909, 0.010717553261011628, 0.009018428963534181, 0.0039210560711018146, 0.0048359691543589075, 0.002221931773624362, 0.17370278394980673])
+
+    num_buckets = len(data[0])
+    if len(data[1]) != num_buckets:
+        print("WARNING LENGTHS DIFFER")
+    w = 1.0 / (num_buckets)
     buckets_x = []
     for index in range(num_buckets):
-        buckets_x.append(str(index) + "/" + str(num_buckets))
+        buckets_x.append(index/float(num_buckets))
+    print(buckets_x)
+    print(w)
 
     plot = figure(
             title="Figure X: required DP band size",
             plot_width=resolution, plot_height=resolution,
-            x_range=buckets_x,
             x_axis_label='relative size required', y_axis_label='relative amount'
         )
-    
-    d = {
-        'x': buckets_x,
-        'accurate': data[0],
-        'inaccurate': data[1],
-    }
 
-    source = ColumnDataSource(data=d)''
+    #plot.vbar(x=buckets_x, bottom=0, top=data[1], width=w, color=greys[0], legend=value("inaccurate"))
+    #plot.vbar(x=buckets_x, bottom=0, top=data[0], width=w, color="black", legend=value("accurate"))
+    for i in range(num_buckets):
+        l = buckets_x[i]
+        r = l + w
+        if data[0][i] < data[1][i]:
+            plot.quad(left=l, bottom=-0.001, top=data[1][i], right=r, color=greys[0], line_width=0, legend=value("inaccurate"))
+        plot.quad(left=l, bottom=-0.001, top=data[0][i], right=r, fill_color="black", line_width=0, legend=value("accurate"))
+        if data[0][i] > data[1][i]:
+            plot.quad(left=l, bottom=-0.001, top=data[1][i], right=r, color=greys[0], line_width=0, legend=value("inaccurate"))
 
-    plot.vbar(x=dodge("x", -.125, range=plot.x_range), top='accurate', width=0.2, source=source, color="black", legend=value("accurate"))
-    plot.vbar(x=dodge("x", .125, range=plot.x_range), top='inaccurate', width=0.2, source=source, color=greys[0], legend=value("inaccurate"))
 
     plot.title.text_font=font
     plot.legend.label_text_font=font
