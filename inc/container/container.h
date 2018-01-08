@@ -97,7 +97,7 @@ namespace libMABS
      * @details
      * This can be used to define a vector as input and output of Modules.
      * @note:
-     * TODO: this requires type checking! While the class holds a dummy container as type 
+     * @TODO: this requires type checking! While the class holds a dummy container as type 
      * it does not yet guarantee that all added containers are of the defined type.
      * @ingroup container
      */

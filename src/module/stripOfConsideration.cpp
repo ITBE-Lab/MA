@@ -1,7 +1,7 @@
 #include "module/stripOfConsideration.h"
 using namespace libMABS;
 
-//TODO: clean up the parameters to some kind of consistent model...
+//@TODO: clean up the parameters to some kind of consistent model...
 extern int iGap;// = 16;
 extern int iExtend;// = 1;
 extern int iMatch;// = 8;
@@ -157,7 +157,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         return std::shared_ptr<Seeds>(new Seeds());
 
     //extract the seeds
-    //TODO: tuple unnecessary remove the bool...
+    //@TODO: tuple unnecessary remove the bool...
     std::vector<std::tuple<Seed, bool>> vSeeds;
     forEachNonBridgingSeed(
         pSegments, pFM_index, pRefSeq, pQuerySeq,
@@ -186,7 +186,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize;
         nucSeqIndex uiSize = uiStripSize*2;
 
-        //TODO: implement accurate strip size!
+        //@TODO: implement accurate strip size!
 
         /*
         * FILTER START
@@ -227,7 +227,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) < uiEnd
             )
         {
-            //TODO: this should be taken care of in the get anchors module....
+            //@TODO: this should be taken care of in the get anchors module....
             //if the used anchor has already been collected in another strip abort
             if(std::get<0>(*iterator) == xAnchor && std::get<1>(*iterator) == false)
                 break;

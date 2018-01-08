@@ -67,7 +67,7 @@ SAInterval BinarySeeding::extend_backward(
 	 *
 	 * lets adjust the sizes of the smaller intervals accordingly
 	 * 
-	 * TODO: changed ik.start() < pFM_index->primary && ik.end() >= pFM_index->primary
+	 * @TODO: changed ik.start() < pFM_index->primary && ik.end() >= pFM_index->primary
 	 * to current version... how to check if thats ok?
 	 */
 	if(
@@ -293,8 +293,8 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 	return ret;
 }//function
 
-// TODO: i should be my own module
-// TODO: test me
+// @TODO: i should be my own module
+// @TODO: test me
 void BinarySeeding::bowtieExtension(
         std::shared_ptr<FMIndex> pFM_index,
         std::shared_ptr<NucSeq> pQuerySeq,
@@ -325,9 +325,9 @@ void BinarySeeding::bowtieExtension(
     }//for
 }//function
 
-// TODO: i should be my own module
-// TODO: test me 
-// TODO: figure out what the exactly do
+// @TODO: i should be my own module
+// @TODO: test me 
+// @TODO: figure out what the exactly do
 /**
  * This is what blasr does:
  * 

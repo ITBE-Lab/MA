@@ -747,7 +747,7 @@ def test_my_approaches_rele(db_name):
 
     test_my_approach(db_name, human_genome, "non-enclosed", seg=BinarySeeding(False), num_anchors=200, nmw_give_up=20000)
 
-    #TODO: BWA-MEM seeding technique
+    #@TODO: BWA-MEM seeding technique
 
     seg = BinarySeeding(False)
     seg.do16ntevery10ntExtension = True
@@ -772,7 +772,7 @@ def test_my_approaches(db_name):
 
     #
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
-    # TODO: optimize max_sweep
+    # @TODO: optimize max_sweep
     #
     test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False),  min_seeds=2, min_seed_length=0.01, max_seeds=6.5, max_seeds_2=7.0, nmw_give_up=200000)
     return

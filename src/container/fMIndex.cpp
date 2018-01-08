@@ -3,7 +3,7 @@ using namespace libMABS;
 
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
-//TODO: remove temporary
+//@TODO: remove temporary
 SAInterval extend_backward( 
 		// current interval
 		const SAInterval &ik,
@@ -57,7 +57,7 @@ SAInterval extend_backward(
 	 *
 	 * lets adjust the sizes of the smaller intervals accordingly
 	 * 
-	 * TODO: changed ik.start() < pFM_index->primary && ik.end() >= pFM_index->primary
+	 * @TODO: changed ik.start() < pFM_index->primary && ik.end() >= pFM_index->primary
 	 * to current version... how to check if thats ok?
 	 */
 	if(

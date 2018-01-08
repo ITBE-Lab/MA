@@ -40,7 +40,7 @@ install: all
 	cp libMABS.so /usr/lib
 	pip3 show MABS
 
-#TODO: remove me
+#@TODO: remove me
 vid:
 	gource -f --seconds-per-day 0.1
 
