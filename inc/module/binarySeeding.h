@@ -28,18 +28,6 @@ namespace libMABS
         bool blasrExtension;
 
         /**
-         * @brief Backwards extension using a FMDIndex
-         * @details
-         * Delivers 4 intervals for a single input interval.
-         * Here we use only two fields in the BWT_Interval.
-         */
-        static SAInterval extend_backward(
-                const SAInterval &ik, 
-                const uint8_t c, 
-                std::shared_ptr<FMIndex> pFM_index
-            );
-
-        /**
          * @brief The simplified extension scheme presented in our Paper.
          * @details
          * Computes Two segments for each index as follows:

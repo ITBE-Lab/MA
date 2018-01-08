@@ -3,13 +3,11 @@ using namespace libMABS;
 
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
-//@todo  remove temporary
-SAInterval extend_backward( 
+SAInterval FMIndex::extend_backward( 
 		// current interval
 		const SAInterval &ik,
 		// the character to extend with
-		const uint8_t c,
-		FMIndex* pFM_index
+		const uint8_t c
 	)
 {
 	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
@@ -19,7 +17,7 @@ SAInterval extend_backward(
 	assert(ik.start() > 0);
 
 	//here the intervals seem to be (a,b] while mine are [a,b)
-	pFM_index->bwt_2occ4(
+	bwt_2occ4(
 		// start of SA index interval
 		ik.start() - 1,
 		// end of SA index interval
@@ -56,13 +54,10 @@ SAInterval extend_backward(
 	 * sometimes we do not...
 	 *
 	 * lets adjust the sizes of the smaller intervals accordingly
-	 * 
-	 * @todo  changed ik.start() < pFM_index->primary && ik.end() >= pFM_index->primary
-	 * to current version... how to check if thats ok?
 	 */
 	if(
-			ik.start() <= pFM_index->primary && 
-			ik.end() > pFM_index->primary
+			ik.start() <= primary && 
+			ik.end() > primary
 		)
 	{
 		cntk_2[0]++;
@@ -74,7 +69,7 @@ SAInterval extend_backward(
 	else{
 		if( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) != ik.size() )
 		{
-			std::cout << ik.start() << " " << ik.end() << " " << pFM_index->primary << std::endl;
+			std::cout << ik.start() << " " << ik.end() << " " << primary << std::endl;
 			std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " <<
 				cnts[3] << " = " << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= "
 				<< ik.size() << "(-1)" << std::endl;
@@ -92,7 +87,7 @@ SAInterval extend_backward(
 	//pFM_index->L2[c] start of nuc c in BWT
 	//cntk[c] offset of new interval
 	//cntl[c] end of new interval
-	return SAInterval(pFM_index->L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
+	return SAInterval(L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
 } // method
 
 unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
@@ -107,7 +102,7 @@ unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
 						L2[(int)q[i] + 1] - L2[(int)q[i]]
 					);
     while(i > 0 && ik.size() > 0)
-		ik = extend_backward(ik, q[--i], this);
+		ik = extend_backward(ik, q[--i]);
     return ik.size();
 }//function
 

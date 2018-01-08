@@ -1,7 +1,6 @@
 #include "module/stripOfConsideration.h"
 using namespace libMABS;
 
-//@todo  clean up the parameters to some kind of consistent model...
 extern int iGap;// = 16;
 extern int iExtend;// = 1;
 extern int iMatch;// = 8;
@@ -185,8 +184,6 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
         nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize;
         nucSeqIndex uiSize = uiStripSize*2;
-
-        //@todo  implement accurate strip size!
 
         /*
         * FILTER START

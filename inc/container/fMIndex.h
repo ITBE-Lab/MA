@@ -679,6 +679,19 @@ namespace libMABS
             } // else
         } // method
 
+        /**
+         * @brief perform a backwards extension
+         * @details
+         * perform a backwards extension with the nucleotide c and the SAInterval ik
+         * this also updates the position of the reverse complement interval
+         */
+        SAInterval extend_backward( 
+                // current interval
+                const SAInterval &ik,
+                // the character to extend with
+                const uint8_t c
+            );
+
         /** We keep the reference length private in order to avoid unexpected trouble.
          * Delivers the length of the reference (pack) that belongs to the current FM-index.
          */

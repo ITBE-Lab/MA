@@ -112,16 +112,16 @@
  * 
  * @section todos TODOs
  * 
- * - make efficient NMW (have to wait for SMW)
- * - paired end alignments necessary
- * - mapping quality
- * - different output formats (queue implementation...)
- * - code cleanup
- * - SMW quality
- * - figure out where sequencer reads belong in the missmatch/indel-pic
- * - be able to deal with short reads
- * - local alignments
- * - check if realigning the entire area produces a better score!
+ * @todo make efficient NMW (have to wait for SMW)
+ * @todo paired end alignments necessary
+ * @todo mapping quality
+ * @todo different output formats (queue implementation...)
+ * @todo code cleanup
+ * @todo SMW quality
+ * @todo figure out where sequencer reads belong in the missmatch/indel-pic
+ * @todo be able to deal with short reads
+ * @todo local alignments
+ * @todo check if realigning the entire area produces a better score!
  * 
  * @section about_us_sec About Us
  * 
