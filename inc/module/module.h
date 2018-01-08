@@ -489,7 +489,7 @@ namespace libMABS
             )
         {
             DEBUG(
-                std::cout <<"will cause crashes if used on python modules (@TODO: fix that)"<< std::endl;
+                std::cout <<"will cause crashes if used on python modules (@todo  fix that)"<< std::endl;
             )
             {
                 ThreadPool xPool(numThreads);

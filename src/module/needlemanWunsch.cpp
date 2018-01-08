@@ -79,7 +79,7 @@ void needlemanWunsch(
 
     /*
      * give up for too large areas
-     * @TODO: this should split everything into two local alignments instead
+     * @todo  this should split everything into two local alignments instead
      */
     if(uiGiveUpAfter != 0)
     {
@@ -414,7 +414,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     //cleanup the alignment
     pRet->removeDangelingDeletions();
-    // @TODO: due to NMW changes i might have a lot of dangeling insertions here...
+    // @todo  due to NMW changes i might have a lot of dangeling insertions here...
     // maybe best to keep them around?
 
     DEBUG_2(
