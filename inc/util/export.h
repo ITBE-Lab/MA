@@ -117,7 +117,7 @@
  * @todo mapping quality
  * @todo different output formats (queue implementation...)
  * @todo code cleanup
- * @todo SMW quality
+ * @todo quality of SMW
  * @todo figure out where sequencer reads belong in the missmatch/indel-pic
  * @todo be able to deal with short reads
  * @todo local alignments

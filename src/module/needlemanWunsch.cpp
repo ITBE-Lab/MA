@@ -442,9 +442,9 @@ void exportNeedlemanWunsch()
         std::shared_ptr<Module> 
     >();
 
-    boost::python::scope().attr("score_gap_open") = &iGap;
-    boost::python::scope().attr("score_gap_extend") = &iExtend;
-    boost::python::scope().attr("score_match") = &iMatch;
-    boost::python::scope().attr("score_missmatch") = &iMissMatch;
+    //boost::python::scope().attr("score_gap_open") = &iGap;
+    //boost::python::scope().attr("score_gap_extend") = &iExtend;
+    //boost::python::scope().attr("score_match") = &iMatch;
+    //boost::python::scope().attr("score_missmatch") = &iMissMatch;
 
 }//function

@@ -6,7 +6,7 @@ extern int iExtend;// = 1;
 extern int iMatch;// = 8;
 extern int iMissMatch;// = 2;
 
-void StripOfConsideration::linearSort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen)
+void StripOfConsideration::sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen)
 {
     //we need 34 bits max to express any index on any genome
     unsigned int max_bits_used = 34;
@@ -24,57 +24,58 @@ void StripOfConsideration::linearSort(std::vector<std::tuple<Seed, bool>>& vSeed
                         < getPositionForBucketing(qLen, std::get<0>(b));
             }//lambda
         );//sort function call
-        return;
     }//if
-
-    //radix sort is faster than quicksort
-    unsigned int amount_buckets = max_bits_used/log2(n);
-    if(amount_buckets < 2)
-        amount_buckets = 2;
-    unsigned int iter = 0;
-    std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets1(
-            amount_buckets, std::vector<std::tuple<Seed, bool>>()
-        );
-    std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets2(
-            amount_buckets, std::vector<std::tuple<Seed, bool>>()
-        );
-    for(auto& xSeed : vSeeds)
-        xBuckets2[0].push_back(xSeed);
-    auto pBucketsNow = &xBuckets1;
-    auto pBucketsLast = &xBuckets2;
-
-    //2^max_bits_used maximal possible genome size
-    while(std::pow(amount_buckets,iter) <= std::pow(2,max_bits_used))
+    else
     {
-        for(auto& xBucket : *pBucketsNow)
-            xBucket.clear();
+        //radix sort is faster than quicksort
+        unsigned int amount_buckets = max_bits_used/log2(n);
+        if(amount_buckets < 2)
+            amount_buckets = 2;
+        unsigned int iter = 0;
+        std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets1(
+                amount_buckets, std::vector<std::tuple<Seed, bool>>()
+            );
+        std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets2(
+                amount_buckets, std::vector<std::tuple<Seed, bool>>()
+            );
+        for(auto& xSeed : vSeeds)
+            xBuckets2[0].push_back(xSeed);
+        auto pBucketsNow = &xBuckets1;
+        auto pBucketsLast = &xBuckets2;
+
+        //2^max_bits_used maximal possible genome size
+        while(std::pow(amount_buckets,iter) <= std::pow(2,max_bits_used))
+        {
+            for(auto& xBucket : *pBucketsNow)
+                xBucket.clear();
+            for(auto& xBucket : *pBucketsLast)
+                for(auto& xSeed : xBucket)
+                {
+                    nucSeqIndex index = getPositionForBucketing(qLen, std::get<0>(xSeed));
+                    index = (nucSeqIndex)( index / std::pow(amount_buckets,iter) ) % amount_buckets;
+                    (*pBucketsNow)[index].push_back(xSeed);
+                }//for
+            iter++;
+            //swap last and now
+            auto pBucketsTemp = pBucketsNow;
+            pBucketsNow = pBucketsLast;
+            pBucketsLast = pBucketsTemp;
+        }//while
+        vSeeds.clear();
+        DEBUG(
+            nucSeqIndex last = 0;
+        )//DEBUG
         for(auto& xBucket : *pBucketsLast)
             for(auto& xSeed : xBucket)
             {
-                nucSeqIndex index = getPositionForBucketing(qLen, std::get<0>(xSeed));
-                index = (nucSeqIndex)( index / std::pow(amount_buckets,iter) ) % amount_buckets;
-                (*pBucketsNow)[index].push_back(xSeed);
+                vSeeds.push_back(xSeed);
+                DEBUG(
+                    nucSeqIndex now = getPositionForBucketing(qLen, std::get<0>(xSeed));
+                    assert(now >= last);
+                    last = now;
+                )//DEBUG
             }//for
-        iter++;
-        //swap last and now
-        auto pBucketsTemp = pBucketsNow;
-        pBucketsNow = pBucketsLast;
-        pBucketsLast = pBucketsTemp;
-    }//while
-    vSeeds.clear();
-    DEBUG(
-        nucSeqIndex last = 0;
-    )//DEBUG
-    for(auto& xBucket : *pBucketsLast)
-        for(auto& xSeed : xBucket)
-        {
-            vSeeds.push_back(xSeed);
-            DEBUG(
-                nucSeqIndex now = getPositionForBucketing(qLen, std::get<0>(xSeed));
-                assert(now >= last);
-                last = now;
-            )//DEBUG
-        }//for
+    }//else
 }//function
 
 ContainerVector StripOfConsideration::getInputType() const
@@ -156,18 +157,17 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         return std::shared_ptr<Seeds>(new Seeds());
 
     //extract the seeds
-    //@todo  tuple unnecessary remove the bool...
-    std::vector<std::tuple<Seed, bool>> vSeeds;
+    std::vector<Seed> vSeeds;
     forEachNonBridgingSeed(
         pSegments, pFM_index, pRefSeq, pQuerySeq,
         [&](Seed xSeed)
         {
-            vSeeds.push_back(std::make_tuple(xSeed, true));
+            vSeeds.push_back(xSeed);
         }//lambda
     );//for each
 
     //sort the seeds according to their initial positions
-    linearSort(vSeeds, pQuerySeq->length());
+    sort(vSeeds, pQuerySeq->length());
 
     unsigned int uiAnchorIndex = 0;
 
@@ -210,32 +210,23 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         auto iterator = std::lower_bound(
             vSeeds.begin(), vSeeds.end(), uiStart,
             [&]
-            (const std::tuple<Seed, bool> a, const nucSeqIndex uiStart)
+            (const Seed a, const nucSeqIndex uiStart)
             {
-                return getPositionForBucketing(pQuerySeq->length(), std::get<0>(a)) <= uiStart;
+                return getPositionForBucketing(pQuerySeq->length(), a) <= uiStart;
             }//lambda
         );//binary search function call
         if(iterator != vSeeds.end())
-            assert(getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) >= uiStart);
+            assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
 
         //save all seeds belonging into the strip of consideration
         while(
                 iterator != vSeeds.end() &&
-                getPositionForBucketing(pQuerySeq->length(), std::get<0>(*iterator)) < uiEnd
+                getPositionForBucketing(pQuerySeq->length(), *iterator) < uiEnd
             )
         {
-            //@todo  this should be taken care of in the get anchors module....
-            //if the used anchor has already been collected in another strip abort
-            if(std::get<0>(*iterator) == xAnchor && std::get<1>(*iterator) == false)
-                break;
-            pxNew->push_back(std::get<0>(*iterator));
-            std::get<1>(*iterator) = false;
+            pxNew->push_back(*iterator);
             ++iterator;
         }//while
-
-        //if the used anchor has already been collected in another strip continue with next anchor
-        if(std::get<0>(*iterator) == xAnchor && std::get<1>(*iterator) == false)
-            continue;
 
         /*
          * FILTER 3

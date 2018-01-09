@@ -51,6 +51,10 @@ namespace libMABS
         nucSeqIndex uiBeginOnRef;
         /// The end of the alignment on the reference sequence.
         nucSeqIndex uiEndOnRef;
+        /// The start of the alignment on the query sequence.
+        nucSeqIndex uiBeginOnQuery;
+        /// The end of the alignment on the query sequence.
+        nucSeqIndex uiEndOnQuery;
 
         int iScore = 0;
 
@@ -68,6 +72,8 @@ namespace libMABS
             uiDataStart(0),
             uiBeginOnRef(0),
             uiEndOnRef(0),
+            uiBeginOnQuery(0),
+            uiEndOnQuery(0),
             xStats()
         {}//constructor
         /**
@@ -76,7 +82,9 @@ namespace libMABS
          */
         Alignment(
                 nucSeqIndex uiBeginOnRef, 
-                nucSeqIndex uiEndOnRef
+                nucSeqIndex uiEndOnRef,
+                nucSeqIndex uiBeginOnQuery,
+                nucSeqIndex uiEndOnQuery
             )
                 :
             data(),
@@ -84,6 +92,8 @@ namespace libMABS
             uiDataStart(0),
             uiBeginOnRef(uiBeginOnRef),
             uiEndOnRef(uiEndOnRef),
+            uiBeginOnQuery(uiBeginOnQuery),
+            uiEndOnQuery(uiEndOnQuery),
             xStats()
         {}//constructor
 

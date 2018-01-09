@@ -767,21 +767,21 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    #clearResults(db_name, human_genome, "MABS 1")
-    #clearResults(db_name, human_genome, "MABS 2")
+    #clearResults(db_name, human_genome, "MABS 3")
+    #clearResults(db_name, human_genome, "MABS MAX QUALITY")
 
+    #test_my_approach(db_name, human_genome, "MABS MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
     #
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
-    # @todo  optimize max_sweep
+    # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False),  min_seeds=2, min_seed_length=0.01, max_seeds=6.5, max_seeds_2=7.0, nmw_give_up=200000)
-    return
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=200, seg=BinarySeeding(False))
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=20000)
+    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
-    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=20, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=20, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100)
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
     #test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)

@@ -54,7 +54,7 @@ namespace libMABS
                 nucSeqIndex addSize// = 0 (default)
             );
 
-        void linearSort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen);
+        void sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen);
 
     public:
 
