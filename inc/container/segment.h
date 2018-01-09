@@ -208,48 +208,6 @@ namespace libMABS
             return pRet;
         }//function
 
-        /**
-         * @brief Extracts all seeds from the segment list.
-         */
-        std::shared_ptr<Seeds> extractLargestSeeds(
-                std::shared_ptr<FMIndex> pxFMIndex,
-                unsigned int uiN, // amount of seeds to extract
-                unsigned int uiMAxAmbiguity,
-                bool bSkip = true,
-                bool bAlreadySorted = false
-            )
-        {
-            std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
-            /*
-            * sort the intervals on the query by their length
-            */
-            if(!bAlreadySorted)
-                std::sort(
-                    begin(), end(),
-                    []
-                    (const std::shared_ptr<Segment> a, std::shared_ptr<Segment> b)
-                    {
-                        return a->size() > b->size();
-                    }//lambda
-                );//sort function call
-            assert(size() <= 1 || front()->size() >= back()->size());
-            forEachSeed(
-                pxFMIndex,
-                uiMAxAmbiguity,
-                bSkip,
-                [&pRet, &uiN]
-                (Seed s)
-                {
-                    pRet->push_back(s);
-                    if(pRet->size() >= uiN)
-                        return false;
-                    return true;
-                }//lambda
-            );//for each
-            assert(pRet->size() <= 1 || pRet->front().size() >= pRet->back().size());
-            return pRet;
-        }//function
-
         
         /**
          * @brief returns the number of seeds
@@ -261,9 +219,9 @@ namespace libMABS
                 if(pSegment->xSaInterval.size() <= max_size)
                     uiTotal += pSegment->xSaInterval.size();
             return uiTotal;
-        }//function
-    };
-}//namespace libMABS
+        }// function
+    };// class
+}// namespace libMABS
 
 /**
  * @brief Exposes the SegmentVector to boost python.

@@ -40,10 +40,15 @@ namespace libMABS
         */
         bool bSkipLongBWTIntervals = true;
         
-    private:
-        inline nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS) const 
+        static inline nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS)
         { 
             return xS.start_ref() + (uiQueryLength - xS.start()); 
+        }//function
+
+        
+        static inline nucSeqIndex getStripSize(nucSeqIndex uiQueryLength)
+        {
+            return (iMatch * uiQueryLength - iGap) / iExtend;
         }//function
 
         void forEachNonBridgingSeed(
@@ -54,7 +59,7 @@ namespace libMABS
                 nucSeqIndex addSize// = 0 (default)
             );
 
-        void sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen);
+        void sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen);
 
     public:
 

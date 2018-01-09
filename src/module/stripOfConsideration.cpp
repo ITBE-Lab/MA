@@ -6,7 +6,7 @@ extern int iExtend;// = 1;
 extern int iMatch;// = 8;
 extern int iMissMatch;// = 2;
 
-void StripOfConsideration::sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nucSeqIndex qLen)
+void StripOfConsideration::sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen)
 {
     //we need 34 bits max to express any index on any genome
     unsigned int max_bits_used = 34;
@@ -18,10 +18,10 @@ void StripOfConsideration::sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nuc
         std::sort(
             vSeeds.begin(), vSeeds.end(),
             [&]
-            (const std::tuple<Seed, bool> a, const std::tuple<Seed, bool> b)
+            (const Seed a, const Seed b)
             {
-                return getPositionForBucketing(qLen, std::get<0>(a)) 
-                        < getPositionForBucketing(qLen, std::get<0>(b));
+                return getPositionForBucketing(qLen, a) 
+                        < getPositionForBucketing(qLen,b);
             }//lambda
         );//sort function call
     }//if
@@ -32,11 +32,11 @@ void StripOfConsideration::sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nuc
         if(amount_buckets < 2)
             amount_buckets = 2;
         unsigned int iter = 0;
-        std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets1(
-                amount_buckets, std::vector<std::tuple<Seed, bool>>()
+        std::vector<std::vector<Seed>> xBuckets1(
+                amount_buckets, std::vector<Seed>()
             );
-        std::vector<std::vector<std::tuple<Seed, bool>>> xBuckets2(
-                amount_buckets, std::vector<std::tuple<Seed, bool>>()
+        std::vector<std::vector<Seed>> xBuckets2(
+                amount_buckets, std::vector<Seed>()
             );
         for(auto& xSeed : vSeeds)
             xBuckets2[0].push_back(xSeed);
@@ -51,7 +51,7 @@ void StripOfConsideration::sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nuc
             for(auto& xBucket : *pBucketsLast)
                 for(auto& xSeed : xBucket)
                 {
-                    nucSeqIndex index = getPositionForBucketing(qLen, std::get<0>(xSeed));
+                    nucSeqIndex index = getPositionForBucketing(qLen, xSeed);
                     index = (nucSeqIndex)( index / std::pow(amount_buckets,iter) ) % amount_buckets;
                     (*pBucketsNow)[index].push_back(xSeed);
                 }//for
@@ -70,7 +70,7 @@ void StripOfConsideration::sort(std::vector<std::tuple<Seed, bool>>& vSeeds, nuc
             {
                 vSeeds.push_back(xSeed);
                 DEBUG(
-                    nucSeqIndex now = getPositionForBucketing(qLen, std::get<0>(xSeed));
+                    nucSeqIndex now = getPositionForBucketing(qLen, xSeed);
                     assert(now >= last);
                     last = now;
                 )//DEBUG
@@ -179,7 +179,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
          * This is the formula from the paper
          * computes the size required for the strip so that we collect all relevent seeds.
          */
-        nucSeqIndex uiStripSize = (iMatch * pQuerySeq->length() - iGap) / iExtend;
+        nucSeqIndex uiStripSize = getStripSize(pQuerySeq->length());
 
 
         nucSeqIndex uiStart = getPositionForBucketing(pQuerySeq->length(), xAnchor) - uiStripSize;
