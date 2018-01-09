@@ -7,7 +7,7 @@
 #define GET_ANCHORS_H
 
 #include "container/segment.h"
-#include "module/module.h"
+#include "module/stripOfConsideration.h"
 
 namespace libMABS
 {

@@ -318,7 +318,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
 
     std::shared_ptr<Alignment> pRet(
-            new Alignment(beginRef, endRef)
+            //@todo local alignments!
+            new Alignment(beginRef, endRef, 0, 0)
         );
 
     pRet->xStats = pSeeds->xStats;

@@ -6,6 +6,18 @@ extern int iExtend;// = 1;
 extern int iMatch;// = 8;
 extern int iMissMatch;// = 2;
 
+
+nucSeqIndex StripOfConsideration::getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS)
+{ 
+    return xS.start_ref() + (uiQueryLength - xS.start()); 
+}//function
+
+
+nucSeqIndex StripOfConsideration::getStripSize(nucSeqIndex uiQueryLength)
+{
+    return (iMatch * uiQueryLength - iGap) / iExtend;
+}//function
+
 void StripOfConsideration::sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen)
 {
     //we need 34 bits max to express any index on any genome

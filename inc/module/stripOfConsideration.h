@@ -40,16 +40,10 @@ namespace libMABS
         */
         bool bSkipLongBWTIntervals = true;
         
-        static inline nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS)
-        { 
-            return xS.start_ref() + (uiQueryLength - xS.start()); 
-        }//function
+        static nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS);
 
         
-        static inline nucSeqIndex getStripSize(nucSeqIndex uiQueryLength)
-        {
-            return (iMatch * uiQueryLength - iGap) / iExtend;
-        }//function
+        static nucSeqIndex getStripSize(nucSeqIndex uiQueryLength);
 
         void forEachNonBridgingSeed(
                 std::shared_ptr<SegmentVector> pVector,
