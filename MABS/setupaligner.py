@@ -100,7 +100,7 @@ def set_up_aligner(
 
 
         if strips_of_consideration:
-            anchors_pledge = anc.promise_me(segment_pledge,reference_pledge,fm_index_pledge)
+            anchors_pledge = anc.promise_me(segment_pledge,reference_pledge,fm_index_pledge,query_pledge)
             return_pledges[ret_pl_indx].append(anchors_pledge)
             ret_pl_indx += 1
 

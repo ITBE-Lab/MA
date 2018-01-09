@@ -1,5 +1,5 @@
 from bokeh.plotting import figure, output_file, show
-from bokeh.layouts import row, column
+from bokeh.layouts import row, column, gridplot
 from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead
 from bokeh.palettes import d3
 from bokeh.io import export_png, export_svgs
@@ -186,10 +186,17 @@ def avg(li):
         avg += x
     return avg / len(li)
 
-def save(plot, name):
-    export_png(plot, filename="paperGraphics/" + name + ".png")
-    plot.output_backend = "svg"
-    export_svgs(plot, filename="paperGraphics/" + name + ".svg")
+def save(plot, name, grid=False):
+    if grid:
+        export_png(gridplot(plot), filename="paperGraphics/" + name + ".png")
+        for r in plot:
+            for p in r:
+                p.output_backend = "svg"
+        export_svgs(gridplot(plot), filename="paperGraphics/" + name + ".svg")
+    else:
+        export_png(plot, filename="paperGraphics/" + name + ".png")
+        plot.output_backend = "svg"
+        export_svgs(plot, filename="paperGraphics/" + name + ".svg")
     #show(plot)
 
 resolution = 300
@@ -199,55 +206,55 @@ max_x = 10
 max_y = 10
 
 def ambiguity_per_length():
-    data = [[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], [5150, 1165, 263, 46, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0], [9993, 2136, 456, 104, 24, 5, 1, 0, 0, 0, 0, 0, 0, 0], [19405, 4381, 993, 228, 53, 12, 3, 0, 0, 0, 0, 0, 0, 0], [78004, 17143, 3642, 728, 140, 29, 7, 2, 0, 0, 0, 0, 0, 0], [128484, 31693, 7638, 1840, 439, 104, 24, 6, 1, 0, 0, 0, 0, 0], [252549, 66284, 17353, 4411, 1122, 284, 72, 19, 5, 2, 1, 0, 0, 0], [9156386, 7272230, 5947033, 1072039, 485588, 243296, 132622, 74758, 16771, 25234, 1798, 413, 306, 49]]
-    desc1 = ['index', 'min', 'quantile5%', 'quantile25%', 'median', 'quantile75%', 'quantile95%', 'max']
+    data1 = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-05, 3.0000000000000004e-05, 4e-05, 6e-05], [0.00035000000000000027, 0.0020700000000000046, 0.006419999999999907, 0.012899999999999643, 0.01866999999999941, 0.024689999999999164, 0.029309999999998976, 0.029509999999998968, 0.029589999999998964, 0.02994999999999895], [0.049500000000004485, 0.09312999999999659, 0.10157999999999331, 0.08540999999999958, 0.07046000000000538, 0.0524800000000054, 0.03988000000000154, 0.030989999999998907, 0.023459999999999214, 0.019469999999999377], [0.2835600000001428, 0.2028500000000621, 0.10839999999999067, 0.06604000000000709, 0.04710000000000375, 0.039120000000001307, 0.03392999999999972, 0.02893999999999899, 0.024359999999999177, 0.021269999999999303], [0.584869999999973, 0.19182000000005106, 0.08475999999999984, 0.047250000000003796, 0.02921999999999898, 0.018079999999999433, 0.011219999999999711, 0.00755999999999986, 0.005549999999999942, 0.0035300000000000084], [0.8230899999988889, 0.1222399999999853, 0.032189999999999185, 0.010929999999999723, 0.004100000000000001, 0.0025300000000000058, 0.0013400000000000029, 0.0008200000000000015, 0.0005400000000000008, 0.0004700000000000006], [0.9413299999983508, 0.049270000000004414, 0.006239999999999914, 0.0015000000000000033, 0.0007100000000000012, 0.00031000000000000016, 0.0001, 0.00013000000000000002, 7.000000000000001e-05, 2e-05], [0.9838899999981571, 0.014619999999999573, 0.000990000000000002, 0.00026000000000000003, 0.00011, 4e-05, 3.0000000000000004e-05, 0.0, 0.0, 0.0]]
+    data2 = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06633000000000698, 0.1979700000000572, 0.15913000000001837, 0.10464999999999212, 0.24937000000010862, 0.16641000000002565, 0.04387000000000276], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0029000000000000067, 0.09215999999999697, 0.21072000000006996, 0.15462000000001386, 0.10385999999999243, 0.224770000000084, 0.15348000000001272, 0.04309000000000252, 0.01024999999999975, 0.003020000000000007], [0.00016, 0.0007000000000000012, 0.006189999999999916, 0.046100000000003444, 0.11030999999998993, 0.19924000000005848, 0.13397999999999322, 0.10748999999999102, 0.19883000000005807, 0.1395699999999988, 0.04340000000000262, 0.009899999999999765, 0.0025000000000000057, 0.000990000000000002, 0.0003700000000000003], [0.028599999999999005, 0.053940000000005844, 0.09152999999999721, 0.1085899999999906, 0.08126000000000119, 0.10789999999999086, 0.16968000000002892, 0.1186499999999867, 0.04092000000000186, 0.01098999999999972, 0.0028200000000000065, 0.001010000000000002, 0.0004300000000000005, 0.00016, 4e-05], [0.016279999999999507, 0.028739999999999, 0.05114000000000499, 0.08732999999999884, 0.11884999999998662, 0.08246000000000073, 0.0335399999999996, 0.010659999999999734, 0.002950000000000007, 0.001030000000000002, 0.00035000000000000027, 0.00013000000000000002, 8e-05, 4e-05, 0.0], [0.017829999999999444, 0.02891999999999899, 0.0358400000000003, 0.030989999999998907, 0.01866999999999941, 0.007619999999999858, 0.0028600000000000066, 0.0009400000000000018, 0.0004100000000000004, 0.00018, 8e-05, 5e-05, 1e-05, 3.0000000000000004e-05, 0.0], [0.0031800000000000075, 0.003710000000000009, 0.003800000000000009, 0.002590000000000006, 0.0014700000000000032, 0.0007200000000000012, 0.00035000000000000027, 0.00021, 5e-05, 5e-05, 0.0, 0.0, 0.0, 1e-05, 0.0], [0.00024, 0.00035000000000000027, 0.00038000000000000035, 0.0003300000000000002, 0.00022, 9e-05, 6e-05, 6e-05, 0.0, 1e-05, 1e-05, 0.0, 0.0, 0.0, 0.0], [1e-05, 4e-05, 6e-05, 0.0001, 5e-05, 4e-05, 1e-05, 0.0, 0.0, 0.0, 1e-05, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 2e-05, 0.0, 1e-05, 0.0, 2e-05, 1e-05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
 
-    """
-    ref_len = 3000000000 # three billion => human genome length
+    r1max = 10
+    r2size = 15
+    min_len=10
+    max_len=20
 
-    expected_ambiguity = []
-    q_lens = list(range(10,21,1))
-    for q_len in q_lens:
-        expected_ambiguity.append( (0.25**q_len) * (ref_len - q_len) )
+    color_mapper = LinearColorMapper(
+                    palette=heatmap_palette(light_spec_approximation, 256),
+                    low=0,
+                    high=1
+                )
 
-    plot = figure(title="Figure X: ambiguity for query length",
-            x_axis_label='query length', y_axis_label='expected ambiguity',
-            y_range=(-1,101)
+    plot = figure(title="ambiguity on human genome",
+            x_range=(0,r1max), y_range=(min_len, max_len),
+            x_axis_label='ambiguity', y_axis_label='sequence length',
+            plot_width=resolution*2, plot_height=resolution,
+            min_border_bottom=10, min_border_top=10,
+            min_border_left=10, min_border_right=15
         )
+    plot.image(image=[data1], color_mapper=color_mapper,
+            dh=[max_len - min_len], dw=[r1max], x=[0], y=[min_len])
 
-    plot.line(q_lens, expected_ambiguity, color="black")
-    for i in range(len(data[0])):
-        if data[0][i] < 10:
-            data[0][i] = 10
-        if data[0][i] > 20:
-            data[0][i] = 20
-    """
-    for ii in range(1, len(data)):
-        for i in range(len(data[ii])):
-            if data[ii][i] > 1000:
-                data[ii][i] = 1000
-
-    plot = figure(
-            title="Figure X: ambiguity on the human genome",
-            plot_width=resolution, plot_height=resolution,
-            y_range=(-1,101), x_range=(9.9, 20.1),
-            x_axis_label='sequence length', y_axis_label='ambiguity'
+    plot2 = figure(x_range=(r1max,2**r2size+r1max), y_range=(min_len, max_len),
+            min_border_bottom=10, min_border_top=10,
+            min_border_left=20, min_border_right=15,
+            plot_width=resolution, plot_height=resolution,tools=[],
+            x_axis_type="log"
         )
+    plot2.image(image=[data2], color_mapper=color_mapper,
+            dh=[max_len - min_len], dw=[2**r2size+r1max], x=[r1max], y=[min_len])
 
-    plot.patch(list(reversed(data[0])) + data[0], list(reversed(data[7])) + data[1], legend="0-100%", color=greys[4])
-    plot.patch(data[0] + list(reversed(data[0])), data[2] + list(reversed(data[6])), legend="5-95%", color=greys[2])
-    plot.patch(data[0] + list(reversed(data[0])), data[3] + list(reversed(data[5])), legend="25-75%", color=greys[0])
-    plot.line(data[0], data[4], legend="median", color="black")
+    color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+    color_bar.major_label_text_font=font
+    plot.add_layout(color_bar, 'left')
 
-    plot.title.text_font=font
     plot.legend.label_text_font=font
-    plot.legend.label_text_baseline="bottom"
     plot.axis.axis_label_text_font=font
-    plot.axis.axis_label_text_baseline="bottom"
     plot.axis.major_label_text_font=font
-    plot.xaxis.major_label_standoff = 10
-    plot.legend.location = "top_right"
-    save(plot, "ambiguityPerQueryLen")
+    plot.xaxis.major_label_standoff = 15
+
+    plot2.legend.label_text_font=font
+    plot2.yaxis.visible = False
+    plot2.axis.axis_label_text_font=font
+    plot2.axis.major_label_text_font=font
+    plot2.xaxis.major_label_standoff = 15
+
+    save([[plot, plot2]], "ambiguityPerQueryLen", True)
 
 def theoretical_max_acc():
 
@@ -956,10 +963,10 @@ def required_nmw_band_size():
 # actually call the functions that create the pictures
 
 #unrelated_non_enclosed_seeds()
-#ambiguity_per_length()
+ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()
 #stripOfConsideration()
 #optimal_matching()
-required_nmw_band_size()
+#required_nmw_band_size()

@@ -697,7 +697,8 @@ def test_my_approach(
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
-                    if gap_size > 0 and float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation:
+                    # @todo really filter out all gaps smaller than 10?
+                    if gap_size > 10 and float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation:
                         max_diag_deviation = float(abs(curr_max_diag_deviation)) / gap_size
                     curr_diag_deviation = 0
                     curr_max_diag_deviation = 0
@@ -767,7 +768,7 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    #clearResults(db_name, human_genome, "MABS 3")
+    #clearResults(db_name, human_genome, "MABS 1")
     #clearResults(db_name, human_genome, "MABS MAX QUALITY")
 
     #test_my_approach(db_name, human_genome, "MABS MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
@@ -1418,72 +1419,92 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
             yield q
     fm_index = FMIndex()
     fm_index.load(reference)
-    """
-    total = 0
-    for l in range(min_len, max_len+1):
-        total += 4**l
-    index = 0
-    """
-    pQu = .75
-    pQl = .25
-    pMax = .95
-    pMin = .05
-    data = [
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        []
-    ]
-    for l in range(min_len-2, max_len+2):
-        ambiguity = []
-        for q in get_random_queries(l, 1000000):
-            ambiguity.append(fm_index.get_ambiguity(NucSeq(q)))
-            #if index % 1000000 == 0:
-            #    print(100*index/float(total), "%", file=stderr)
-            #index += 1
-        ambiguity = sorted(ambiguity)
-        data[0].append(l)
-        data[1].append(ambiguity[0])
-        data[2].append(ambiguity[int(len(ambiguity)*pMin)])
-        data[3].append(ambiguity[int(len(ambiguity)*pQl)])
-        data[4].append(ambiguity[int(len(ambiguity)/2)])
-        data[5].append(ambiguity[int(len(ambiguity)*pQu)])
-        data[6].append(ambiguity[int(len(ambiguity)*pMax)])
-        data[7].append(ambiguity[-1])
-    lines = [
-        "index", 
-        "min",
-        "quantile"+str(int(100*pMin)) + "%", 
-        "quantile"+str(int(100*pQl)) + "%", 
-        "median", 
-        "quantile" + str(int(100*pQu)) + "%", 
-        "quantile" + str(int(100*pMax)) + "%", 
-        "max" 
-    ]
+    num_queries = 100000
 
-    print(lines)
-    print(data)
+    r1max = 10
+    r2size = 15
 
-    plot = figure(
-            title="ambiguity on the human genome",
-            y_range=(-1,101),
-            x_axis_label='sequence length', y_axis_label='ambiguity'
+    indices1 = []
+    indices2 = []
+    for i in range(r1max):
+        indices1.append(i)
+    for i in range(r2size):
+        indices2.append(2**i+r1max)
+    data1 = []
+    data2 = []
+    for l in range(min_len, max_len):
+        data1.append( [] )
+        for _ in range(r1max):
+            data1[-1].append(0.0)
+        data2.append( [] )
+        for _ in range(r2size):
+            data2[-1].append(0.0)
+        for q in get_random_queries(l, num_queries):
+            ambiguity = fm_index.get_ambiguity(NucSeq(q))
+            if ambiguity < r1max:
+                data1[-1][int(ambiguity)] += 1.0/num_queries
+            elif int(math.log2(ambiguity - r1max+1)) < r2size:
+                data2[-1][int(math.log2(ambiguity - r1max+1))] += 1.0/num_queries
+
+    print(indices1)
+    print(data1)
+    print(indices2)
+    print(data2)
+
+    color_mapper = LinearColorMapper(
+                    palette=heatmap_palette(light_spec_approximation, 256),
+                    low=0,
+                    high=1
+                )
+
+    plot = figure(title="ambiguity on human genome",
+            x_range=(0,r1max), y_range=(min_len, max_len),
+            x_axis_label='ambiguity', y_axis_label='sequence length',
+            plot_width=700, plot_height=500,
+            min_border_bottom=10, min_border_top=10,
+            min_border_left=10, min_border_right=15,
+            tools=["save"]
         )
+    plot.image(image=[data1], color_mapper=color_mapper,
+            dh=[max_len - min_len], dw=[r1max], x=[0], y=[min_len])
 
-    plot.patch(data[0] + list(reversed(data[0])), data[1] + list(reversed(data[7])), legend="0-100%", color="#E0E0E0")
-    plot.patch(data[0] + list(reversed(data[0])), data[2] + list(reversed(data[6])), legend="5-95%", color="#C0C0C0")
-    plot.patch(data[0] + list(reversed(data[0])), data[3] + list(reversed(data[5])), legend="25-75%", color="#A0A0A0")
-    plot.line(data[0], data[4], legend="50%", color="black")
+    plot2 = figure(x_range=(r1max,2**r2size+r1max), y_range=(min_len, max_len),
+            min_border_bottom=10, min_border_top=10,
+            min_border_left=20, min_border_right=15,
+            plot_width=500, plot_height=500,tools=[],
+            x_axis_type="log"
+        )
+    plot2.image(image=[data2], color_mapper=color_mapper,
+            dh=[max_len - min_len], dw=[2**r2size+r1max], x=[r1max], y=[min_len])
 
-    show(plot)
+    font = "Helvetica"
+    font_size = '15pt'
+    color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+    color_bar.major_label_text_font=font
+    color_bar.major_label_text_font_size=font_size
+    plot.add_layout(color_bar, 'left')
+
+    plot.legend.label_text_font=font
+    plot.legend.label_text_font_size=font_size
+    plot.axis.axis_label_text_font=font
+    plot.axis.major_label_text_font=font
+    plot.axis.axis_label_text_font_size=font_size
+    plot.axis.major_label_text_font_size=font_size
+
+    plot2.legend.label_text_font=font
+    plot2.legend.label_text_font_size=font_size
+    plot2.yaxis.visible = False
+    plot2.axis.axis_label_text_font=font
+    plot2.axis.major_label_text_font=font
+    plot2.axis.axis_label_text_font_size=font_size
+    plot2.axis.major_label_text_font_size=font_size
+
+    show(gridplot( [[plot, plot2]]))
 
 
 #memory_test(human_genome, 1)
-#get_ambiguity_distribution(human_genome)
+get_ambiguity_distribution(human_genome)
+exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
