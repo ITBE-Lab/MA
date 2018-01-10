@@ -2,10 +2,10 @@
 using namespace libMABS;
 
 
-int iGap = 16;
+int iGap = 50;//20
 int iExtend = 1;
-int iMatch = 8;
-int iMissMatch = 2;
+int iMatch = 20;//2
+int iMissMatch = 20;//2
 
 ContainerVector NeedlemanWunsch::getInputType() const
 {
@@ -270,7 +270,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     )
 {
     //switch local or global alignment
-    bool bLocal = false;
+    bool bLocal = true;
 
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
     std::shared_ptr<NucSeq> pQuery 
@@ -349,7 +349,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     if(bLocal)
     {
         endOfLastSeedQuery = pSeeds->front().start();
-        endOfLastSeedReference = pSeeds->front().start_ref();
+        //                          pSeeds->front().start_ref() - beginRef == 0
+        //endOfLastSeedReference = pSeeds->front().start_ref() - beginRef;
     }//if
 
     for(Seed& rSeed : *pSeeds)
