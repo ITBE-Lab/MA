@@ -173,7 +173,8 @@ def get_memory(since=0.0):
     return _VmB('VmSize:') - since
 
 def near(index, index_2):
-    return index + 100 > index_2 and index - 100 < index_2
+    max_d = 1000
+    return index + max_d > index_2 and index - max_d < index_2
 
 
 def mutate(char):
@@ -692,6 +693,7 @@ def test_my_approach(
             gap_size = 0
             cur_nmw_h = 0
             cur_nmw_w = 0
+            
             """
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
@@ -769,7 +771,7 @@ def test_my_approaches(db_name):
     #
 
     #clearResults(db_name, human_genome, "MABS 1")
-    #clearResults(db_name, human_genome, "MABS 2")
+    clearResults(db_name, human_genome, "MABS 2")
     clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
@@ -778,9 +780,9 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=0, max_sweep=100)
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=1000, seg=BinarySeeding(False))
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=1000, seg=BinarySeeding(False), min_seeds=0, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=10**5)
+    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=100, seg=BinarySeeding(False), nmw_give_up=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 

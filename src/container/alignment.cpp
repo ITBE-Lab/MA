@@ -44,10 +44,10 @@ void Alignment::removeDangelingDeletions()
     {
         uiBeginOnRef += std::get<1>(data[uiDataStart]);
         uiLength -= std::get<1>(data[uiDataStart]);
-        uiDataStart++;
         //iGap is a penalty not a score
         iScore += iGap;
         iScore += iExtend * std::get<1>(data[uiDataStart])-1;
+        uiDataStart++;
     }//if
     if(std::get<0>(data.back()) == MatchType::deletion)
     {

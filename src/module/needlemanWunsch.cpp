@@ -308,18 +308,19 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     }//if
     else
     {
+        float fDistFac = 1.5;
         nucSeqIndex beginQuery = pSeeds->front().start();
         beginRef = 0;
-        if( pSeeds->front().start_ref() > beginQuery*2)
-            beginRef = pSeeds->front().start_ref() - beginQuery*2;
+        if( pSeeds->front().start_ref() > (nucSeqIndex)(beginQuery*fDistFac))
+            beginRef = pSeeds->front().start_ref() - (nucSeqIndex)(beginQuery*fDistFac);
         nucSeqIndex endQuery = pSeeds->back().end();
         assert(endQuery <= pQuery->length());
         endRef = pRefPack->uiUnpackedSizeForwardPlusReverse();
         if( 
-                pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2 <
+                pSeeds->back().end_ref() + (nucSeqIndex)((pQuery->length()-endQuery)*fDistFac) <
                 pRefPack->uiUnpackedSizeForwardPlusReverse()
             )
-            endRef = pSeeds->back().end_ref() + (pQuery->length()-endQuery)*2;
+            endRef = pSeeds->back().end_ref() + (nucSeqIndex)((pQuery->length()-endQuery)*fDistFac);
         pRet = std::shared_ptr<Alignment>(
             new Alignment(beginRef, endRef, 0, 0)
         );
@@ -345,7 +346,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     nucSeqIndex endOfLastSeedQuery = 0;
     nucSeqIndex endOfLastSeedReference = 0;
 
-    if(!bLocal)
+    if(bLocal)
     {
         endOfLastSeedQuery = pSeeds->front().start();
         endOfLastSeedReference = pSeeds->front().start_ref();
