@@ -144,12 +144,15 @@ def insertQueries(conn, queries_list):
                     """, queries_list)
     conn.commit()
 
-def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size = None):
+def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size = None, give_orig_pos = False):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
+    select = "sequence, sample_id"
+    if give_orig_pos:
+        select += ", origin"
     if size is None:
         return c.execute("""
-                        SELECT sequence, sample_id
+                        SELECT """ + select + """
                         FROM samples
                         WHERE sample_id NOT IN 
                             (
@@ -162,7 +165,7 @@ def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size
                         AND num_indels % ? == 0
                         """, (approach, reference, res_mut, res_indel)).fetchall()
     return c.execute("""
-                        SELECT sequence, sample_id
+                        SELECT """ + select + """
                         FROM samples
                         WHERE sample_id NOT IN 
                             (

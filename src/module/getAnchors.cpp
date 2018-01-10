@@ -49,7 +49,8 @@ std::shared_ptr<Container> GetAnchors::execute(
         }//lambda
     );//sort function call
     assert(pCastedInput->size() <= 1 || pCastedInput->front()->size() >= pCastedInput->back()->size());
-    //@todo maybe we don't want exclude every anchor in the entire strip
+    // @todo maybe we don't want exclude every anchor in the entire strip
+    // or maybe we actually want that
     nucSeqIndex uiStripSize = StripOfConsideration::getStripSize(pQuerySeq->length());
     pCastedInput->forEachSeed(
         pxFM_index,
@@ -62,14 +63,15 @@ std::shared_ptr<Container> GetAnchors::execute(
             nucSeqIndex uiRootPos = StripOfConsideration::getPositionForBucketing(pQuerySeq->length(), s) + uiStripSize;
 
             auto xIterator = xTakenSpots.lower_bound(uiRootPos - uiStripSize);
-            if(xIterator != xTakenSpots.end() && *xIterator >= uiRootPos + uiStripSize)
+            if(xIterator != xTakenSpots.end() && *xIterator < uiRootPos + uiStripSize)
                 //continue cause this anchor will already be collected in a previous strip
                 return true;
 
             xIterator = xTakenSpots.upper_bound(uiRootPos + uiStripSize);
-            if(xIterator != xTakenSpots.end() && *xIterator <= uiRootPos - uiStripSize)
+            if(xIterator != xTakenSpots.end() && *xIterator > uiRootPos - uiStripSize)
                 //continue cause this anchor will already be collected in a previous strip
                 return true;
+
             //remember the anchor
             pRet->push_back(s);
             if(pRet->size() >= uiN)

@@ -38,7 +38,6 @@ def set_up_aligner(
         strips_of_consideration=True,
         re_seed = None,
         max_sweep = None,
-        strip_size = 1000,
         min_seeds= 2,
         min_seed_length= .05,
         max_seeds=7.0,

@@ -589,7 +589,6 @@ def test_my_approach(
             low_res = False,
             re_seed = None,
             max_sweep = None,
-            strip_size =10000,
             min_seeds=0,
             min_seed_length=0,
             max_seeds=0,
@@ -649,7 +648,6 @@ def test_my_approach(
             strips_of_consideration=strips_of_consideration,
             re_seed=re_seed,
             max_sweep=max_sweep,
-            strip_size=strip_size,
             min_seeds=min_seeds,
             min_seed_length=min_seed_length,
             max_seeds=max_seeds,
@@ -768,21 +766,23 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    #clearResults(db_name, human_genome, "MABS 1")
-    #clearResults(db_name, human_genome, "MABS MAX QUALITY")
+    clearResults(db_name, human_genome, "MABS 1")
+    clearResults(db_name, human_genome, "MABS 2")
+    clearResults(db_name, human_genome, "MABS 3")
+    #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
     #test_my_approach(db_name, human_genome, "MABS MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
     #
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=200, seg=BinarySeeding(False))
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=5*10**5)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=100, seg=BinarySeeding(False), min_seeds=2, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=100)
+    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=1000, seg=BinarySeeding(False), min_seeds=0, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=10**5)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
-    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=20, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100)
+    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, max_sweep=100, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100)
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
     #test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
@@ -978,7 +978,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 for x in w_keys:
                     pic.append( [] )
                     for y in h_keys:
-                        if x not in d or y not in d[x]:
+                        if x not in d or y not in d[x] or divideBy[x][y] == 0:
                             pic[-1].append( float("nan") )
                         else:
                             pic[-1].append( d[x][y] / divideBy[x][y] )
@@ -1041,7 +1041,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             return plot
 
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
-        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0, True)
+        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
         seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
@@ -1115,7 +1115,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 for x in w_keys:
                     pic.append( [] )
                     for y in h_keys:
-                        if x not in d or y not in d[x]:
+                        if x not in d or y not in d[x] or divideBy[x][y] == 0:
                             pic[-1].append( float("nan") )
                         else:
                             pic[-1].append( d[x][y] / divideBy[x][y] )
@@ -1503,8 +1503,8 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
 
 #memory_test(human_genome, 1)
-get_ambiguity_distribution(human_genome)
-exit()
+#get_ambiguity_distribution(human_genome)
+#exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
@@ -1512,21 +1512,22 @@ exit()
 
 #high quality picture
 
-#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 128, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)
-#test_my_approaches("/mnt/ssd1/veryHighQual.db")
-#analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+test_my_approaches("/mnt/ssd1/veryHighQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 #createSampleQueries(human_genome, "/mnt/ssd1/seedRelevance.db", 1000, 100, 2**7, True, True)
-test_my_approaches_rele("/mnt/ssd1/seedRelevance.db")
-analyse_all_approaches("seedRelevance.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
-analyse_all_approaches_depre("seedRelevance_depre.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
+#test_my_approaches_rele("/mnt/ssd1/seedRelevance.db")
+#analyse_all_approaches("seedRelevance.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
+#analyse_all_approaches_depre("seedRelevance_depre.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
 #analyse_detailed("seedRelevance/", "/mnt/ssd1/seedRelevance.db")
 
 #createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)

@@ -115,7 +115,8 @@ namespace libMABS
         {}//container vector
 
         ContainerVector(std::shared_ptr<Container> contentType)
-            :
+                :
+            vector(),
             contentType(contentType)
         {}//container vector
 
@@ -161,11 +162,6 @@ namespace libMABS
         std::vector<std::shared_ptr<Container>> get()
         {
             return *this;
-        }//function
-
-        void push_back_boost(std::shared_ptr<Container> c)
-        {
-            push_back(c);
         }//function
 
     };//class

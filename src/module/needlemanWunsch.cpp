@@ -24,6 +24,8 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
     return std::shared_ptr<Container>(new Alignment());
 }//function
 
+
+
 void needlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
@@ -116,7 +118,23 @@ void needlemanWunsch(
             return;
         }//if
     }//if
+//switch banded (1) non-banded (0)
+#if 0
+    nucSeqIndex uiBandSize = std::min(200, toQuery-fromQuery+1, toRef-fromRef+1);
+    nucSeqIndex uiBandCenter = uiBandSize/2;
+    nucSeqIndex uiBandLength = std::max(toQuery-fromQuery+1, toRef-fromRef+1);
 
+    std::vector<std::vector<int>> s(uiBandLength, std::vector<int>(uiBandSize));
+    std::vector<std::vector<char>> dir(uiBandLength, std::vector<char>(uiBandSize));
+
+    s[0][0] = 0;
+    dir[0][0] = 1;
+    s[1][0] = -iGap;
+    dir[1][0] = 2;
+    s[0][1] = -iGap;
+    dir[0][1] = 3;
+
+#else
     std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
     std::vector<std::vector<char>> dir(toQuery-fromQuery+1, std::vector<char>(toRef-fromRef+1));
 
@@ -241,6 +259,10 @@ void needlemanWunsch(
     DEBUG_2(
         std::cout << std::endl;
     )//DEBUG
+
+#endif
+
+
 }//function
 
 std::shared_ptr<Container> NeedlemanWunsch::execute(
@@ -259,40 +281,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<Alignment> pRet(new Alignment());
         return pRet;
     }//if
-
-//DEPRECATED
-#if 0
-    //remove dangeling fronts and backs
-    if(pSeeds->size() >= 2)
-    {
-        nucSeqIndex iCenter = 0;
-        nucSeqIndex iSize = 0;
-        nucSeqIndex iMaxDist = 10000;
-        for(Seed& rSeed : *pSeeds)
-        {
-            if(rSeed.size() > iSize)
-            {
-                iSize = rSeed.size();
-                iCenter = rSeed.start_ref() + rSeed.size()/2;
-            }
-        }
-        while(pSeeds->size() > 1 && pSeeds->front().end_ref() + iMaxDist < iCenter)
-        {
-            DEBUG(
-                std::cout << "WARNING: removed dangeling front" << std::endl;
-            )
-            pSeeds->pop_front();
-        }//if
-        while(pSeeds->size() > 1 && pSeeds->back().start_ref() > iCenter + iMaxDist)
-        {
-            DEBUG(
-                std::cout << "WARNING: removed dangeling back" << std::endl;
-            )
-            pSeeds->pop_back();
-        }//while
-    }//if
-    assert(pSeeds->size() > 0);
-#endif
 
     DEBUG_2(
         std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
