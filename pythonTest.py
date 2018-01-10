@@ -692,6 +692,7 @@ def test_my_approach(
             gap_size = 0
             cur_nmw_h = 0
             cur_nmw_w = 0
+            """
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
@@ -718,12 +719,13 @@ def test_my_approach(
                         curr_max_diag_deviation = curr_diag_deviation
                     if cur_nmw_h * cur_nmw_w > max_nmw_area:
                         max_nmw_area = cur_nmw_h * cur_nmw_w
+            """
 
             result.append(
                     (
                         sample_id,
                         alignment.get_score(),
-                        alignment.begin_on_ref(),
+                        alignment.begin_on_ref() - alignment.begin_on_query,
                         segment_list.num_seeds(fm_index, max_hits),
                         alignment.stats.index_of_strip,
                         alignment.stats.seed_coverage,
@@ -766,8 +768,8 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    clearResults(db_name, human_genome, "MABS 1")
-    clearResults(db_name, human_genome, "MABS 2")
+    #clearResults(db_name, human_genome, "MABS 1")
+    #clearResults(db_name, human_genome, "MABS 2")
     clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
@@ -776,7 +778,7 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=5*10**5)
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=10000, seg=BinarySeeding(False), nmw_give_up=0, max_sweep=100)
 
     test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=1000, seg=BinarySeeding(False), min_seeds=0, min_seed_length=0.02, max_seeds=4.0, nmw_give_up=10**5)
 
@@ -926,7 +928,7 @@ def analyse_detailed(out_prefix, db_name):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [] ]
 
     for approach_ in approaches:
         approach = approach_[0]
@@ -936,6 +938,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         run_times = {}
         scores = {}
         nums_seeds = {}
+        nums_seeds_chosen = {}
 
         max_indel = 2*query_size/indel_size
         max_mut = query_size
@@ -947,13 +950,14 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 d[x][y] = 0
             return d
 
-        for score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time in results:
+        for score, result_start, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
                 scores = init(scores, num_mutation, num_indels)
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
+            nums_seeds_chosen = init(nums_seeds_chosen, num_mutation, num_indels)
 
             if near(result_start, original_start):
                 hits[num_mutation][num_indels] += 1
@@ -963,6 +967,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 nums_seeds[num_mutation][num_indels] += num_seeds
             if not score is None:
                 scores[num_mutation][num_indels] += score
+            if not num_seed_chosen_strip is None:
+                nums_seeds_chosen[num_mutation][num_indels] += num_seed_chosen_strip
 
 
         def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None):
@@ -1044,6 +1050,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
+        avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, tries, "num seeds in chosen SOC " + approach)
         seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
 
         if not avg_hits is None:
@@ -1054,6 +1061,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[2].append(avg_score)
         if not avg_seeds is None:
             plots[3].append(avg_seeds)
+        if not avg_seeds_ch is None:
+            plots[5].append(avg_seeds_ch)
         if not seed_relevance is None:
             plots[4].append(seed_relevance)
 

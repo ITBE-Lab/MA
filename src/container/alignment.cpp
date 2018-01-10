@@ -140,6 +140,8 @@ void exportAlignment()
                 "arg1: self\n"
             )
         .def_readonly("stats", &Alignment::xStats)
+        .def_readonly("begin_on_query", &Alignment::uiBeginOnQuery)
+        .def_readonly("end_on_query", &Alignment::uiEndOnQuery)
     ;
 
     

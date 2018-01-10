@@ -40,7 +40,7 @@ namespace libMABS
      */
     class Alignment : public Container
     {
-    private:
+    public:
         /// The sparse list of MatchTypes that describe the alignment.
         std::vector<std::tuple<MatchType, nucSeqIndex>> data;
         /// The length of the alignment.
@@ -58,7 +58,6 @@ namespace libMABS
 
         int iScore = 0;
 
-    public:
         //some statistics
         AlignmentStatistics xStats;
 
