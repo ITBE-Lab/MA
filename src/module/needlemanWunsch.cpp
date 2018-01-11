@@ -270,7 +270,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     )
 {
     //switch local or global alignment
-    bool bLocal = false;
+    bool bLocal = true;
 
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
     std::shared_ptr<NucSeq> pQuery 

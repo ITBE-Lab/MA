@@ -316,6 +316,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
         std::static_pointer_cast<Seeds>((*vpInput)[0])));
 
+
     std::vector<ShadowInterval> vShadows = {};
 
     //get the left shadows

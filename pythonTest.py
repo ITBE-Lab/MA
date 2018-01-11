@@ -173,7 +173,7 @@ def get_memory(since=0.0):
     return _VmB('VmSize:') - since
 
 def near(index, index_2):
-    max_d = 10000#20#1000
+    max_d = 100#00#20#1000
     return index + max_d > index_2 and index - max_d < index_2
 
 
@@ -780,7 +780,7 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=1000, seg=BinarySeeding(False), max_sweep=100, nmw_give_up=0, max_hits=5)
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=1000, seg=BinarySeeding(False), max_sweep=100, nmw_give_up=0, max_hits=0)
 
     test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=100)
 

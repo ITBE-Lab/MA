@@ -216,7 +216,7 @@ namespace libMABS
         {
             unsigned int uiTotal = 0;
             for (std::shared_ptr<Segment> pSegment : *this)
-                if(pSegment->xSaInterval.size() <= max_size)
+                if(max_size == 0 || pSegment->xSaInterval.size() <= max_size)
                     uiTotal += pSegment->xSaInterval.size();
             return uiTotal;
         }// function
