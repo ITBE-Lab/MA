@@ -122,6 +122,7 @@
  * @todo be able to deal with short reads
  * @todo local alignments
  * @todo check if realigning the entire area produces a better score!
+ * @todo implement completely radix sort!
  * 
  * @section about_us_sec About Us
  * 

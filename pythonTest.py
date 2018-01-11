@@ -173,7 +173,7 @@ def get_memory(since=0.0):
     return _VmB('VmSize:') - since
 
 def near(index, index_2):
-    max_d = 100#00#20#1000
+    max_d = 10000
     return index + max_d > index_2 and index - max_d < index_2
 
 
@@ -770,8 +770,8 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    #clearResults(db_name, human_genome, "MABS 1")
-    #clearResults(db_name, human_genome, "MABS 2")
+    clearResults(db_name, human_genome, "MABS 1")
+    clearResults(db_name, human_genome, "MABS 2")
     clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
@@ -780,15 +780,15 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=1000, seg=BinarySeeding(False), max_sweep=100, nmw_give_up=0, max_hits=0)
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=1000, max_sweep=1, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=100)
+    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=10, max_sweep=1, seg=BinarySeeding(False), nmw_give_up=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
-    #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, max_sweep=100, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100)
-    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
+    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=10, max_sweep=1, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100, max_hits=100)
+    #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
     #test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
@@ -1526,7 +1526,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #high quality picture
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
+#test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 #analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 exit()

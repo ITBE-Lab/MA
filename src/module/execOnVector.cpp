@@ -95,6 +95,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
         for(unsigned int i = 0; i < nMany; i++)
             end--;
         pResults->erase(pResults->begin(), end);
+        assert(pResults->size() == nMany);
     }//if
 
     return pResults;

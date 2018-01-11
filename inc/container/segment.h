@@ -155,6 +155,7 @@ namespace libMABS
                 //if the interval contains more than uiMAxAmbiguity hits it's of no importance and will produce nothing but noise
 
                 //if bSkip is not set uiJump by is used to not return more than uiMAxAmbiguity
+                
                 t_bwtIndex uiJumpBy = 1;
                 if (pSegment->saInterval().size() > uiMAxAmbiguity && uiMAxAmbiguity != 0)
                 {

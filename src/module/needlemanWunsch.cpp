@@ -355,16 +355,16 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     for(Seed& rSeed : *pSeeds)
     {
-            needlemanWunsch(
-                    pQuery,
-                    pRef,
-                    endOfLastSeedQuery,
-                    rSeed.start(),
-                    endOfLastSeedReference,
-                    rSeed.start_ref() - beginRef,
-                    pRet,
-                    uiGiveUpAfter
-                );
+        needlemanWunsch(
+                pQuery,
+                pRef,
+                endOfLastSeedQuery,
+                rSeed.start(),
+                endOfLastSeedReference,
+                rSeed.start_ref() - beginRef,
+                pRet,
+                uiGiveUpAfter
+            );
         nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start();
         if(rSeed.start() > endOfLastSeedQuery)
             ovQ = 0;
@@ -426,7 +426,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             pRet,
             uiGiveUpAfter
         );
-    }//else
+    }//if
 
     //cleanup the alignment
     pRet->removeDangelingDeletions();

@@ -129,7 +129,7 @@ void StripOfConsideration::forEachNonBridgingSeed(
         {
             // check if the match is bridging the forward/reverse strand 
             // or bridging between two chromosomes
-            if ( pxRefSequence->bridgingSubsection(
+            if ( !pxRefSequence->bridgingSubsection(
                     //prevent negative index
                     xS.start_ref() > addSize ? xS.start_ref() - addSize : 0,//from
                     //prevent index larger than reference
@@ -139,11 +139,9 @@ void StripOfConsideration::forEachNonBridgingSeed(
                     ) //to
                 )
             {
-                //if so ignore this hit
-                //returning true since we want to continue extracting seeds
-                return true;
+                //if bridging ignore the hit
+                fDo(xS);
             }//if
-            fDo(xS);
             //returning true since we want to continue extracting seeds
             return true;
         }//lambda
@@ -227,8 +225,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 return getPositionForBucketing(pQuerySeq->length(), a) <= uiStart;
             }//lambda
         );//binary search function call
-        if(iterator != vSeeds.end())
-            assert(getPositionForBucketing(pQuerySeq->length(), *iterator) >= uiStart);
+        assert(iterator == vSeeds.end() || getPositionForBucketing(pQuerySeq->length(), *iterator) > uiStart);
 
         //save all seeds belonging into the strip of consideration
         while(
@@ -243,14 +240,13 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         /*
          * FILTER 3
          * @todo this is a deprecated filter currently disabled from python...
-         */
         if(
                 pxNew->size() < minSeeds &&
                 pxNew->getScore() < minSeedLength * pQuerySeq->length() &&
                 pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > pQuerySeq->length() * dMaxSeeds
             )
             continue;
-
+         */
 
         /*
          * save some statistics about this strip

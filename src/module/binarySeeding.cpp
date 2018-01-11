@@ -570,7 +570,7 @@ std::shared_ptr<Container> BinarySeeding::execute(
 
     if(do16ntevery10ntExtension)
 		bowtieExtension(pFM_index, pQuerySeq, pSegmentVector);
-    if(blasrExtension)
+    else if(blasrExtension)
         doBlasrExtension(pFM_index, pQuerySeq, pSegmentVector);
     else
 	{//scope for xPool
