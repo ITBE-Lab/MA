@@ -50,7 +50,7 @@ std::shared_ptr<Container> GetAnchors::execute(
             return a->xSaInterval.size() < b->xSaInterval.size();
         }//lambda
     );//sort function call
-    assert(pCastedInput->size() <= 1 || pCastedInput->front()->xSaInterval.size() >= pCastedInput->back()->xSaInterval.size());
+    assert(pCastedInput->size() <= 1 || pCastedInput->front()->xSaInterval.size() <= pCastedInput->back()->xSaInterval.size());
     // @todo maybe we don't want exclude every anchor in the entire strip
     // or maybe we actually want that
     nucSeqIndex uiStripSize = StripOfConsideration::getStripSize(pQuerySeq->length());
@@ -83,7 +83,7 @@ std::shared_ptr<Container> GetAnchors::execute(
             return true;
         }//lambda
     );//for each
-    assert(pRet->size() <= 1 || pRet->front().size() >= pRet->back().size());
+    // assert(pRet->size() <= 1 || pRet->front().size() >= pRet->back().size());
     return pRet;
 }//function
 

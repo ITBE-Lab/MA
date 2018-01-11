@@ -88,13 +88,14 @@ def set_up_aligner(
         return_pledges[ret_pl_indx].append(segment_pledge)
         ret_pl_indx += 1
 
+        segment_pledge_2 = segment_pledge
         if not re_seed is None:
-            segment_pledge = reseed.promise_me(
+            segment_pledge_2 = reseed.promise_me(
                 fm_index_pledge,
                 segment_pledge,
                 query_pledge
             )
-            return_pledges[ret_pl_indx].append(segment_pledge)
+            return_pledges[ret_pl_indx].append(segment_pledge_2)
             ret_pl_indx += 1
 
 
@@ -104,7 +105,7 @@ def set_up_aligner(
             ret_pl_indx += 1
 
             strips_pledge = soc.promise_me(
-                segment_pledge,
+                segment_pledge_2,
                 anchors_pledge,
                 query_pledge,
                 reference_pledge,

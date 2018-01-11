@@ -242,6 +242,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
         /*
          * FILTER 3
+         * @todo this is a deprecated filter currently disabled from python...
          */
         if(
                 pxNew->size() < minSeeds &&

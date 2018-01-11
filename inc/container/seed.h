@@ -196,11 +196,14 @@ namespace libMABS
         //some statistics
         AlignmentStatistics xStats;
 
+        bool bConsistent;
+
         Seeds(std::shared_ptr<Seeds> pOther)
                 :
             vector(),
             Container(),
-            xStats(pOther->xStats)
+            xStats(pOther->xStats),
+            bConsistent(pOther->bConsistent)
         {
             append(pOther);
         }//copy constructor
@@ -209,7 +212,8 @@ namespace libMABS
                 :
             vector(),
             Container(),
-            xStats()
+            xStats(),
+            bConsistent(false)
         {}//default constructor
 
         //overload
@@ -231,13 +235,7 @@ namespace libMABS
         }//function
 
         /*returns the sum off all scores within the list*/
-        nucSeqIndex getScore() const
-        {
-            nucSeqIndex iRet = 0;
-            for(const Seed& rS : *this)
-                iRet += rS.getValue();
-            return iRet;
-        }//function
+        nucSeqIndex getScore() const;
 
         /*append a copy of another list*/
         void append(std::shared_ptr<Seeds> pOther)

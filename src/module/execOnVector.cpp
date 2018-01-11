@@ -86,8 +86,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
                 return a->smaller(b);
             }//lambda
         );//sort function call
-        if(pResults->size() > 1)
-            assert(!pResults->back()->smaller(pResults->front()));
+        assert(pResults->size() <= 1 || !pResults->back()->smaller(pResults->front()));
     }//if
 
     if(nMany != 0 && pResults->size() > nMany)

@@ -173,7 +173,7 @@ def get_memory(since=0.0):
     return _VmB('VmSize:') - since
 
 def near(index, index_2):
-    max_d = 1000
+    max_d = 10000#20#1000
     return index + max_d > index_2 and index - max_d < index_2
 
 
@@ -593,7 +593,7 @@ def test_my_approach(
             min_seeds=0,
             min_seed_length=0,
             max_seeds=0,
-            max_seeds_2=0,
+            max_seeds_2=-1,
             nmw_give_up=0
         ):
     print("collecting samples (" + name + ") ...")
@@ -770,8 +770,8 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    clearResults(db_name, human_genome, "MABS 1")
-    clearResults(db_name, human_genome, "MABS 2")
+    #clearResults(db_name, human_genome, "MABS 1")
+    #clearResults(db_name, human_genome, "MABS 2")
     clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
@@ -780,9 +780,9 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=100000, seg=BinarySeeding(False),nmw_give_up=0)
+    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=1000, seg=BinarySeeding(False), max_sweep=100, nmw_give_up=0, max_hits=5)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=100, seg=BinarySeeding(False), nmw_give_up=100)
+    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=2000, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
@@ -1512,7 +1512,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     plot2.axis.axis_label_text_font_size=font_size
     plot2.axis.major_label_text_font_size=font_size
 
-    show(gridplot( [[plot, plot2]]))
+    show(gridplot( [[plot, plot2]] ))
 
 
 #memory_test(human_genome, 1)

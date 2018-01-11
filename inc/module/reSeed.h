@@ -24,12 +24,6 @@ namespace libMABS
     class ReSeed : public Module{
     private:
 
-        static SAInterval extend_backward(
-                const SAInterval &ik, 
-                const uint8_t c, 
-                std::shared_ptr<FMIndex> pFM_index
-            );
-
         /*
         * bwa style extension
         */

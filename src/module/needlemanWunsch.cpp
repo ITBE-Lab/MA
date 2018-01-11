@@ -270,7 +270,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     )
 {
     //switch local or global alignment
-    bool bLocal = true;
+    bool bLocal = false;
 
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
     std::shared_ptr<NucSeq> pQuery 
@@ -308,7 +308,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     }//if
     else
     {
-        float fDistFac = 1.5;
+        float fDistFac = 1.0;
         nucSeqIndex beginQuery = pSeeds->front().start();
         beginRef = 0;
         if( pSeeds->front().start_ref() > (nucSeqIndex)(beginQuery*fDistFac))

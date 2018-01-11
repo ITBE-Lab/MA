@@ -312,6 +312,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     )
 {
     //copy the input
+    //@todo unecessary copy!!! (well it's necessary since python might delete the old datastructure...)
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
         std::static_pointer_cast<Seeds>((*vpInput)[0])));
 
@@ -329,7 +330,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     DEBUG(
         std::cout << "========" << std::endl;
     )
-    
+
     //get the right shadows
     for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
         vShadows.push_back(getRightShadow(pSeed));
@@ -348,7 +349,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             }//lambda
         );//sort function call
 
-    //copy pSeeds since we want to return it
+    pSeeds->bConsistent = true;
+
     return pSeeds;
 }//function
 

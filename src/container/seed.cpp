@@ -1,6 +1,43 @@
 #include "container/seed.h"
 using namespace libMABS;
 
+extern int iGap;
+extern int iMatch;
+extern int iMissMatch;
+extern int iExtend;
+
+/*returns the sum off all scores within the list*/
+nucSeqIndex Seeds::getScore() const
+{
+    if(bConsistent)
+    {
+        nucSeqIndex iRet = 0;
+        nucSeqIndex uiLastQPos = 0;
+        nucSeqIndex uiLastRPos = 0;
+        for(const Seed& rS : *this)
+        {
+            iRet += rS.getValue() * iMatch;
+            if(uiLastQPos != 0 && uiLastRPos != 0)
+            {
+                nucSeqIndex uiQDist = rS.start() - uiLastQPos;
+                nucSeqIndex uiRDist = rS.start_ref() - uiLastRPos;
+                iRet -= iGap + iExtend * std::min(uiQDist, uiRDist);
+                iRet -= iMissMatch * std::abs(uiQDist - uiRDist);
+                uiLastQPos = rS.start();
+                uiLastRPos = rS.start_ref();
+            }//if
+        }//for
+        return iRet;
+    }//if
+    else
+    {
+        nucSeqIndex iRet = 0;
+        for(const Seed& rS : *this)
+            iRet += rS.getValue();
+        return iRet;
+    }//else
+}//function
+
 void exportSeed()
 {
 
