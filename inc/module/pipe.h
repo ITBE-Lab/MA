@@ -24,7 +24,6 @@ namespace libMABS
         unsigned int uiN;
         std::vector<std::shared_ptr<Pledge>> aIn;
         std::shared_ptr<Pledge> pOut;
-        static std::mutex xLock;
 
         Pipe( 
                 std::vector<std::shared_ptr<Pledge>> aIn,

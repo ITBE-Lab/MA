@@ -1,14 +1,14 @@
-#import "module/pipe.h"
+#include "module/pipe.h"
 
 using namespace libMABS;
 
-Pipe::xLock;
+std::mutex xLock;
 
 ContainerVector Pipe::getInputType() const
 {
     ContainerVector xRet;
     for(unsigned int i=0; i< uiN; i++)
-        xRet.push_back(std::shared_ptr<Container>(new ContainerVector(xIn[i]->getType())));
+        xRet.push_back(std::shared_ptr<Container>(new ContainerVector(aIn[i]->getType())));
     return xRet;
 }//function
 
@@ -30,7 +30,10 @@ std::shared_ptr<Container> Pipe::execute(
             if(pFirst->empty())
                 break;
             for(unsigned int i=0; i< uiN; i++)
-                aIn[i].set( ((*vpInput)[i])->pop_back() );
+            {
+                aIn[i]->set( std::static_pointer_cast<ContainerVector>((*vpInput)[i])->back() );
+                std::static_pointer_cast<ContainerVector>((*vpInput)[i])->pop_back();
+            }//for
         }//end of scope xGuard lock
         pRet->push_back(pOut->get());
     }//while
