@@ -76,7 +76,7 @@ def set_up_aligner(
     if not re_seed is None:
         return_pledges.append([])
     if strips_of_consideration:
-        return_pledges.append([])
+        #return_pledges.append([])
         return_pledges.append([])
 
     for query_pledge in query_pledges_:
@@ -100,13 +100,13 @@ def set_up_aligner(
 
 
         if strips_of_consideration:
-            anchors_pledge = anc.promise_me(segment_pledge,reference_pledge,fm_index_pledge,query_pledge)
-            return_pledges[ret_pl_indx].append(anchors_pledge)
-            ret_pl_indx += 1
+            #anchors_pledge = anc.promise_me(segment_pledge,reference_pledge,fm_index_pledge,#query_pledge)
+            #return_pledges[ret_pl_indx].append(anchors_pledge)
+            #ret_pl_indx += 1
 
             strips_pledge = soc.promise_me(
                 segment_pledge_2,
-                anchors_pledge,
+                #anchors_pledge,
                 query_pledge,
                 reference_pledge,
                 fm_index_pledge
@@ -140,7 +140,6 @@ def set_up_aligner(
             return_pledges[ret_pl_indx].append(strip_pledge)
             ret_pl_indx += 1
 
-            
             best_pledge = chain.promise_me(strip_pledge)
 
             return_pledges[ret_pl_indx].append(best_pledge)

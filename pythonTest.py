@@ -1096,7 +1096,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 d[x][y] = 0
             return d
 
-        for score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time in results:
+        for score, result_start, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
@@ -1527,9 +1527,9 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
 #test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 #analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-exit()
+#exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)

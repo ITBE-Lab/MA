@@ -11,6 +11,8 @@
 #include "module/needlemanWunsch.h"
 #include <cmath>
 
+#define ANCHOR_LESS true
+
 namespace libMABS
 {
 

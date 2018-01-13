@@ -96,8 +96,10 @@ ContainerVector StripOfConsideration::getInputType() const
     {
         //all segments
         std::shared_ptr<Container>(new SegmentVector()),
+    #if ! ANCHOR_LESS
         //the anchors
         std::shared_ptr<Container>(new Seeds()),
+    #endif
         //the query
         std::shared_ptr<Container>(new NucSeq()),
         //the reference
@@ -147,6 +149,126 @@ void StripOfConsideration::forEachNonBridgingSeed(
         }//lambda
     );
 }//function
+
+#if ANCHOR_LESS
+
+std::shared_ptr<Container> StripOfConsideration::execute(
+        std::shared_ptr<ContainerVector> vpInput
+    )
+{
+    std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>((*vpInput)[0]);
+    std::shared_ptr<NucSeq> pQuerySeq = 
+        std::static_pointer_cast<NucSeq>((*vpInput)[1]);
+    std::shared_ptr<Pack> pRefSeq = 
+        std::static_pointer_cast<Pack>((*vpInput)[2]);
+    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[3]);
+
+    nucSeqIndex uiQLen = pQuerySeq->length();
+    
+    /*
+        * This is the formula from the paper
+        * computes the size required for the strip so that we collect all relevent seeds.
+        */
+    nucSeqIndex uiStripSize = getStripSize(uiQLen);
+
+    // FILTER
+    if (
+            dMaxSeeds2 > 0 && 
+            pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > uiQLen * dMaxSeeds2
+        )
+        return std::shared_ptr<ContainerVector>(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
+
+    //extract the seeds
+    std::vector<Seed> vSeeds;
+    forEachNonBridgingSeed(
+        pSegments, pFM_index, pRefSeq, pQuerySeq,
+        [&](Seed xSeed)
+        {
+            vSeeds.push_back(xSeed);
+        }//lambda
+    );//for each
+
+    //sort the seeds according to their initial positions
+    sort(vSeeds, uiQLen);
+
+    //positions to remember the maxima
+    std::vector<std::tuple<nucSeqIndex, std::vector<Seed>::iterator>> xMaxima;
+
+    //find the SOC maxima
+    nucSeqIndex uiCurrScore = 0;
+    nucSeqIndex uiCurrEle = 0;
+    std::vector<Seed>::iterator xStripStart = vSeeds.begin();
+    std::vector<Seed>::iterator xStripEnd = vSeeds.begin();
+    uiCurrScore += xStripEnd->getValue();
+    uiCurrEle++;
+    while(xStripEnd != vSeeds.end())
+    {
+        //move xStripEnd forwards
+        while(
+            ++xStripEnd != vSeeds.end() &&
+            getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
+            < getPositionForBucketing(uiQLen, *xStripEnd))
+        {
+            uiCurrScore += xStripEnd->getValue();
+            uiCurrEle++;
+        }//while
+        //FILTER
+        if(uiCurrEle > minSeeds || uiCurrScore > minSeedLength*uiQLen)
+        {
+            //check if we improved upon the last maxima while dealing with the same area
+            if(
+                !xMaxima.empty() && 
+                getPositionForBucketing(uiQLen, *std::get<1>(xMaxima.back())) + uiStripSize
+                < getPositionForBucketing(uiQLen, *xStripStart) &&
+                std::get<0>(xMaxima.back()) < uiCurrScore)
+                //if so we want to replace the old maxima
+                xMaxima.pop_back();
+            //save the SOC
+            xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
+        }//if
+        //move xStripStart one to the right (this will cause xStripEnd to be adjusted)
+        uiCurrScore -= (xStripStart++)->getValue();
+        uiCurrEle--;
+    }//while
+
+    std::sort(xMaxima.begin(), xMaxima.end(),
+        []
+        (std::tuple<nucSeqIndex, std::vector<Seed>::iterator> a, 
+         std::tuple<nucSeqIndex, std::vector<Seed>::iterator> b)
+        {
+            return std::get<0>(a) > std::get<0>(b);
+        }//lambda
+    );//sort function call
+    assert(xMaxima.size() <= 1 || std::get<0>(xMaxima.front()) >= std::get<0>(xMaxima.back()));
+
+    //the collection of strips of consideration
+    std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
+
+    //extract the required amount of SOCs
+    auto xCollect = xMaxima.begin();
+    while(pRet->size() < 10 && xCollect != xMaxima.end())
+    {
+        //the strip that shall be collected
+        std::shared_ptr<Seeds> pSeeds(new Seeds());
+        //iterator walting till the end of the strip that shall be collected
+        auto xCollect2 = std::get<1>(*xCollect);
+        while(
+            xCollect2 != vSeeds.end() &&
+            getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize 
+            < getPositionForBucketing(uiQLen, *xCollect2))
+            //if the iterator is still within the strip add the seed and increment the iterator
+            pSeeds->push_back(*(xCollect2++));
+        //save the seed
+        pRet->push_back(pSeeds);
+        //move to the next strip
+        xCollect++;
+    }//while
+
+    //return the strip collection
+    return pRet;
+}//function
+
+#else
 
 std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
@@ -262,6 +384,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     }//for
     return pRet;
 }//function
+
+#endif
 
 void exportStripOfConsideration()
 {
