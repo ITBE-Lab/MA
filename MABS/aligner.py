@@ -243,15 +243,6 @@ class NeedlemanWunsch(libMABS.NeedlemanWunsch):
         return super(NeedlemanWunsch, self).promise_me(ContainerVector(*args))
 
 ##
-# @brief python wrapper for LinearLineSweep
-class GetAnchors(libMABS.GetAnchors):
-    def execute(self, *args):
-        return super(GetAnchors, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(GetAnchors, self).promise_me(ContainerVector(*args))
-
-##
 # @brief python wrapper for ExecOnVec
 class ExecOnVec(libMABS.ExecOnVec):
     def execute(self, *args):

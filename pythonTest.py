@@ -585,7 +585,7 @@ def test_my_approach(
             seg=BinarySeeding(False),
             chain=LinearLineSweep(), 
             max_hits=100,
-            num_anchors=10, 
+            num_strips=10, 
             strips_of_consideration=True,
             low_res = False,
             re_seed = None,
@@ -645,7 +645,7 @@ def test_my_approach(
             seg=seg,
             chain=LinearLineSweep(),
             max_hits=max_hits,
-            num_anchors=num_anchors,
+            num_strips=num_strips,
             strips_of_consideration=strips_of_consideration,
             re_seed=re_seed,
             max_sweep=max_sweep,
@@ -780,14 +780,14 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_anchors=1000, max_sweep=1, nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_anchors=10, max_sweep=1, seg=BinarySeeding(False), nmw_give_up=100)
+    test_my_approach(db_name, human_genome, "MABS 2", num_strips=10, max_sweep=1, seg=BinarySeeding(False), nmw_give_up=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
-    test_my_approach(db_name, human_genome, "MABS 1", num_anchors=10, max_sweep=1, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100, max_hits=100)
     #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")

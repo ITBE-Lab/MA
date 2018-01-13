@@ -34,7 +34,7 @@ def set_up_aligner(
         seg=BinarySeeding(False),
         chain=LinearLineSweep(),
         max_hits=5,
-        num_anchors=5,
+        num_strips=5,
         strips_of_consideration=True,
         re_seed = None,
         max_sweep = None,
@@ -45,9 +45,7 @@ def set_up_aligner(
         nmw_give_up=20000
         ):
 
-    anc = GetAnchors(num_anchors, max_hits)
-
-    soc = StripOfConsideration(max_hits, min_seeds, min_seed_length, max_seeds, max_seeds_2)
+    soc = StripOfConsideration(max_hits, min_seeds, num_strips, min_seed_length, max_seeds)
 
     max_sweep_n = 0
     if not max_sweep is None:
@@ -76,7 +74,6 @@ def set_up_aligner(
     if not re_seed is None:
         return_pledges.append([])
     if strips_of_consideration:
-        #return_pledges.append([])
         return_pledges.append([])
 
     for query_pledge in query_pledges_:
@@ -88,25 +85,20 @@ def set_up_aligner(
         return_pledges[ret_pl_indx].append(segment_pledge)
         ret_pl_indx += 1
 
-        segment_pledge_2 = segment_pledge
         if not re_seed is None:
-            segment_pledge_2 = reseed.promise_me(
+            segment_pledge = reseed.promise_me(
                 fm_index_pledge,
                 segment_pledge,
                 query_pledge
             )
-            return_pledges[ret_pl_indx].append(segment_pledge_2)
+            return_pledges[ret_pl_indx].append(segment_pledge)
             ret_pl_indx += 1
 
 
         if strips_of_consideration:
-            #anchors_pledge = anc.promise_me(segment_pledge,reference_pledge,fm_index_pledge,#query_pledge)
-            #return_pledges[ret_pl_indx].append(anchors_pledge)
-            #ret_pl_indx += 1
 
             strips_pledge = soc.promise_me(
-                segment_pledge_2,
-                #anchors_pledge,
+                segment_pledge,
                 query_pledge,
                 reference_pledge,
                 fm_index_pledge

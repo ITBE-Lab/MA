@@ -140,7 +140,6 @@
 #ifndef EXPORT_H
 #define EXPORT_H
 
-#include "module/getAnchors.h"
 #include "module/needlemanWunsch.h"
 #include "module/linesweep.h"
 #include "module/binarySeeding.h"
