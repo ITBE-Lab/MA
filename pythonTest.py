@@ -780,14 +780,15 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1, nmw_give_up=0, max_hits=100)
+    #test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1, nmw_give_up=0, max_hits=100)
 
     test_my_approach(db_name, human_genome, "MABS 2", num_strips=10, max_sweep=1, seg=BinarySeeding(False), nmw_give_up=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
-    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15, nmw_give_up=100, max_hits=100)
+    # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
+    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), nmw_give_up=100, max_hits=100)
     #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
@@ -797,7 +798,6 @@ def test_my_approaches(db_name):
 
     #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality")
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality", num_anchors=10000, max_sweep=0, seg=BinarySeeding(True), min_seeds=0, min_seed_length=0.02, max_seeds=0, max_seeds_2=0, nmw_give_up=0)
-
 
 def filter_suggestion(db_name, min_percentage_cov=0.1, max_num_seeds=5000, min_num_seed_in_strip=3):
     approaches = getApproachesWithData(db_name)

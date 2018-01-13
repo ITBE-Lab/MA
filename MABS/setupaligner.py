@@ -35,13 +35,10 @@ def set_up_aligner(
         chain=LinearLineSweep(),
         max_hits=5,
         num_strips=5,
-        strips_of_consideration=True,
-        re_seed = None,
         max_sweep = None,
         min_seeds= 2,
         min_seed_length= .05,
         max_seeds=7.0,
-        max_seeds_2=6.5,
         nmw_give_up=20000
         ):
 
@@ -59,10 +56,6 @@ def set_up_aligner(
 
     extractAll = ExtractAllSeeds(max_hits)
 
-    reseed = ReSeed()
-    if not re_seed is None:
-        reseed.min_split_len = re_seed
-
 
     query_pledges_ = []
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
@@ -70,11 +63,7 @@ def set_up_aligner(
     else:
         query_pledges_.append(query_pledges)
 
-    return_pledges = [[], [], [], []]
-    if not re_seed is None:
-        return_pledges.append([])
-    if strips_of_consideration:
-        return_pledges.append([])
+    return_pledges = [[], [], [], [], []]
 
     for query_pledge in query_pledges_:
         ret_pl_indx = 0
@@ -85,67 +74,118 @@ def set_up_aligner(
         return_pledges[ret_pl_indx].append(segment_pledge)
         ret_pl_indx += 1
 
-        if not re_seed is None:
-            segment_pledge = reseed.promise_me(
-                fm_index_pledge,
-                segment_pledge,
-                query_pledge
-            )
-            return_pledges[ret_pl_indx].append(segment_pledge)
-            ret_pl_indx += 1
+        strips_pledge = soc.promise_me(
+            segment_pledge,
+            query_pledge,
+            reference_pledge,
+            fm_index_pledge
+        )
+        return_pledges[ret_pl_indx].append(strips_pledge)
+        ret_pl_indx += 1
 
+        chains_pledge = execall.promise_me(
+            strips_pledge,
+        )
 
-        if strips_of_consideration:
+        return_pledges[ret_pl_indx].append(chains_pledge)
+        ret_pl_indx += 1
 
-            strips_pledge = soc.promise_me(
-                segment_pledge,
-                query_pledge,
-                reference_pledge,
-                fm_index_pledge
-            )
-            return_pledges[ret_pl_indx].append(strips_pledge)
-            ret_pl_indx += 1
+        alignments_pledge = nmw_multiple.promise_me(
+            chains_pledge,
+            query_pledge,
+            reference_pledge
+        )
+        return_pledges[ret_pl_indx].append(alignments_pledge)
+        ret_pl_indx += 1
 
-            chains_pledge = execall.promise_me(
-                strips_pledge,
-            )
-
-            return_pledges[ret_pl_indx].append(chains_pledge)
-            ret_pl_indx += 1
-
-            alignments_pledge = nmw_multiple.promise_me(
-                chains_pledge,
-                query_pledge,
-                reference_pledge
-            )
-            return_pledges[ret_pl_indx].append(alignments_pledge)
-            ret_pl_indx += 1
-
-            align_pledge = getBestOnly.promise_me(alignments_pledge)
-            return_pledges[ret_pl_indx].append(align_pledge)
-            ret_pl_indx += 1
-
-        else:
-            strip_pledge = extractAll.promise_me(
-                segment_pledge, fm_index_pledge
-            )
-            return_pledges[ret_pl_indx].append(strip_pledge)
-            ret_pl_indx += 1
-
-            best_pledge = chain.promise_me(strip_pledge)
-
-            return_pledges[ret_pl_indx].append(best_pledge)
-            ret_pl_indx += 1
-
-            align_pledge = nmw.promise_me(
-                best_pledge,
-                query_pledge,
-                reference_pledge
-            )
-            return_pledges[ret_pl_indx].append(align_pledge)
-            ret_pl_indx += 1
+        align_pledge = getBestOnly.promise_me(alignments_pledge)
+        return_pledges[ret_pl_indx].append(align_pledge)
+        ret_pl_indx += 1
 
     if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
         return return_pledges
     else:
         return [item for sublist in return_pledges for item in sublist]
+
+def piped(
+        query,
+        reference,
+        fm_index,
+        seg=BinarySeeding(False),
+        max_hits=5,
+        num_strips=5,
+        max_sweep = None,
+        min_seeds= 2,
+        min_seed_length= .05,
+        max_seeds=7.0,
+        nmw_give_up=20000,
+        threads=32
+        ):
+    #static pledges
+    fm_index_pledge = Pledge(FMIndex())
+    fm_index_pledge.set(fm_index)
+
+    reference_pledge = Pledge(Pack())
+    reference_pledge.set(reference)
+
+    #modules
+    soc = StripOfConsideration(max_hits, min_seeds, num_strips, min_seed_length, max_seeds)
+
+    max_sweep_n = 0
+    if not max_sweep is None:
+        max_sweep_n = max_sweep
+    execall = ExecOnVec(chain, not max_sweep is None, max_sweep_n)
+
+    nmw = NeedlemanWunsch(nmw_give_up)
+    nmw_multiple = ExecOnVec(nmw, True, 0)
+    getBestOnly = Tail(Alignment())
+
+    #setup the pipes
+    pipes = []
+    for th in range(threads):
+        #the in pledge for the pipe
+        query_pledge = Pledge(NucSeq())
+        segment_pledge = seg.promise_me(
+            fm_index_pledge,
+            query_pledge
+        )
+        strips_pledge = soc.promise_me(
+            segment_pledge,
+            query_pledge,
+            reference_pledge,
+            fm_index_pledge
+        )
+
+        chains_pledge = execall.promise_me(
+            strips_pledge,
+        )
+
+
+        alignments_pledge = nmw_multiple.promise_me(
+            chains_pledge,
+            query_pledge,
+            reference_pledge
+        )
+        #the out pledge for the pipe
+        align_pledge = getBestOnly.promise_me(alignments_pledge)
+
+        pipe = Pipe([query_pledge], align_pledge)
+        pipes.append(pipe)
+
+    #setup the query vector pledge
+    query_vec_pledge = []
+    for query in queries:
+        query_vec_pledge.append(Pledge(NucSeq()))
+        query_vec_pledge[-1].set(query)
+
+    pipe_outs = []
+    for pipe in pipes:
+        pipe_outs.append(pipe.promise_me(query_vec_pledge))
+    
+    Pledge.simultaneous_get(pipe_outs, threads)
+
+    out = []
+    for pipe_out in pipe_outs:
+        out.extend(pipe_out)
+
+    return out

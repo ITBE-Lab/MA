@@ -241,6 +241,14 @@ class NeedlemanWunsch(libMABS.NeedlemanWunsch):
 
     def promise_me(self, *args):
         return super(NeedlemanWunsch, self).promise_me(ContainerVector(*args))
+##
+# @brief python wrapper for Pipe
+class Pipe(libMABS.Pipe):
+    def execute(self, *args):
+        return super(Pipe, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(Pipe, self).promise_me(ContainerVector(*args))
 
 ##
 # @brief python wrapper for ExecOnVec
