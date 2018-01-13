@@ -1526,10 +1526,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #high quality picture
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-#test_my_approaches("/mnt/ssd1/highQual.db")
-#analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 #analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-#exit()
+exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)

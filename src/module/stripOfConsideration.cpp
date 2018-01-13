@@ -166,10 +166,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     nucSeqIndex uiQLen = pQuerySeq->length();
     
     /*
-        * This is the formula from the paper
-        * computes the size required for the strip so that we collect all relevent seeds.
-        */
-    nucSeqIndex uiStripSize = getStripSize(uiQLen);
+    * This is the formula from the paper
+    * computes the size required for the strip so that we collect all relevent seeds.
+    */
+    nucSeqIndex uiStripSize = 10000;//getStripSize(uiQLen);
 
     // FILTER
     if (
@@ -199,19 +199,23 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     nucSeqIndex uiCurrEle = 0;
     std::vector<Seed>::iterator xStripStart = vSeeds.begin();
     std::vector<Seed>::iterator xStripEnd = vSeeds.begin();
-    uiCurrScore += xStripEnd->getValue();
-    uiCurrEle++;
-    while(xStripEnd != vSeeds.end())
+    while(xStripStart != vSeeds.end() && xStripEnd != vSeeds.end())
     {
-        //move xStripEnd forwards
+        //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
         while(
-            ++xStripEnd != vSeeds.end() &&
+            xStripEnd != vSeeds.end() &&
             getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
-            < getPositionForBucketing(uiQLen, *xStripEnd))
+            >= getPositionForBucketing(uiQLen, *xStripEnd))
         {
+            //remember the additional score
             uiCurrScore += xStripEnd->getValue();
+            //remember the additional element
             uiCurrEle++;
+            //move the iterator forward
+            xStripEnd++;
         }//while
+        //here xStripEnd points one past the last element within the strip
+        assert(uiCurrEle >= 1);
         //FILTER
         if(uiCurrEle > minSeeds || uiCurrScore > minSeedLength*uiQLen)
         {
@@ -219,14 +223,21 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             if(
                 !xMaxima.empty() && 
                 getPositionForBucketing(uiQLen, *std::get<1>(xMaxima.back())) + uiStripSize
-                < getPositionForBucketing(uiQLen, *xStripStart) &&
-                std::get<0>(xMaxima.back()) < uiCurrScore)
-                //if so we want to replace the old maxima
-                xMaxima.pop_back();
-            //save the SOC
-            xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
+                >= getPositionForBucketing(uiQLen, *xStripStart))
+            {
+                if(std::get<0>(xMaxima.back()) < uiCurrScore)
+                {
+                    //if so we want to replace the old maxima
+                    xMaxima.pop_back();
+                    xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
+                }//if
+            }//if
+            else
+                //save the SOC
+                xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
         }//if
         //move xStripStart one to the right (this will cause xStripEnd to be adjusted)
+        assert(uiCurrScore >= xStripStart->getValue());
         uiCurrScore -= (xStripStart++)->getValue();
         uiCurrEle--;
     }//while
@@ -246,16 +257,16 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
     //extract the required amount of SOCs
     auto xCollect = xMaxima.begin();
-    while(pRet->size() < 10 && xCollect != xMaxima.end())
+    while(pRet->size() < 100 && xCollect != xMaxima.end())
     {
         //the strip that shall be collected
         std::shared_ptr<Seeds> pSeeds(new Seeds());
-        //iterator walting till the end of the strip that shall be collected
+        //iterator walking till the end of the strip that shall be collected
         auto xCollect2 = std::get<1>(*xCollect);
+        nucSeqIndex end = getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize;
         while(
             xCollect2 != vSeeds.end() &&
-            getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize 
-            < getPositionForBucketing(uiQLen, *xCollect2))
+            end >= getPositionForBucketing(uiQLen, *xCollect2))
             //if the iterator is still within the strip add the seed and increment the iterator
             pSeeds->push_back(*(xCollect2++));
         //save the seed
