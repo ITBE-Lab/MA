@@ -3,30 +3,37 @@
 
 #include "module/module.h"
 #include "container/nucSeq.h"
+#include "container/alignment.h"
+#include "container/pack.h"
 #include <fstream>
 
 namespace libMABS
 {
 
-    class FileReader: public Module
+    class FileWriter: public Module
     {
     public:
-        std::shared_ptr<std::ifstream> pFile;
+        std::shared_ptr<std::ostream> pFile;
 
-        FileReader(std::string sFileName)
-                :
-            pFile(new std::ifstream(sFileName))
+        FileWriter(std::string sFileName)
         {
-            if (!pFile->is_open())
+            if(sFileName == "stdout")
+                pFile = std::shared_ptr<std::ostream>(&std::cout);
+            else
+                pFile = std::shared_ptr<std::ostream>(
+                new std::ofstream(sFileName, std::ofstream::out | std::ofstream::trunc));
+            if (!pFile->good())
             {
                 std::cout << "Unable to open file" << std::endl;
                 //@todo exception
             }//if
+            *pFile << "@HD VN:1.5 SO:unknown" << std::endl;
         }//constructor
 
-        ~FileReader()
+        ~FileWriter()
         {
-            pFile->close();
+            if(std::static_pointer_cast<std::ofstream>(pFile) != nullptr)
+                std::static_pointer_cast<std::ofstream>(pFile)->close();
         }//deconstructor
 
         std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);

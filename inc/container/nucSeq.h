@@ -701,6 +701,22 @@ namespace libMABS
                     ret += charAt(i);
             return ret;
         }//function
+        
+        std::string fromTo(unsigned int uiStart, unsigned int uiEnd)
+        {
+            std::string ret = "";
+            for (unsigned int i = uiStart; i <= uiEnd && i < length(); i++)
+                    ret += charAt(i);
+            return ret;
+        }//function
+        
+        std::string fromToQual(unsigned int uiStart, unsigned int uiEnd)
+        {
+            std::string ret = "";
+            for (unsigned int i = uiStart; i <= uiEnd && i < length(); i++)
+                    ret += (char)quality(i);
+            return ret;
+        }//function
 
         /* TO DO: Make the 5 a class constant!
         */

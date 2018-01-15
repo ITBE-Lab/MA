@@ -1510,10 +1510,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
 
 f = FileReader("test.fasta")
-cv = f.execute()
-
-for nuc in cv:
-    print(nuc.fastaq())
+nuc = f.execute()
+print(nuc.fastaq())
+nuc = f.execute()
+print(nuc.fastaq())
 
 exit()
 

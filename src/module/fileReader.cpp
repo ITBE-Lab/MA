@@ -9,83 +9,56 @@ ContainerVector FileReader::getInputType() const
 
 std::shared_ptr<Container> FileReader::getOutputType() const
 {
-    return std::shared_ptr<Container>(new ContainerVector(std::shared_ptr<NucSeq>(new NucSeq())));
-}//function
-
-
-void FileReader::getLines(std::function<void(std::string&)> fDo)
-{
-    std::ifstream xFile (sFileName);
-    if (xFile.is_open())
-    {
-        std::string sLine;
-        while ( std::getline (xFile, sLine) )
-            fDo(sLine);
-        xFile.close();
-    }//if
-    else std::cout << "Unable to open file"; 
+    return std::shared_ptr<Container>(new NucSeq());
 }//function
 
 std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
 {
-    std::shared_ptr<ContainerVector> sRet(
-            new ContainerVector(std::shared_ptr<NucSeq>(new NucSeq()))
-        );
-    bool bFASTA = false;
-    bool bFASTAQ = false;
-    bool bQualNext = false;
-    bool bKnowFormat = false;
-    std::shared_ptr<NucSeq> pLast;
-    getLines(
-        [&]
-        (std::string& sLine)
-        {
-            if(sLine.length() == 0)
-                return;
-
-            //figure out the format if that has not already happened
-            if(!bKnowFormat)
-            {
-                if(sLine[0] == '>')
-                    bFASTA = true;
-                if(sLine[0] == '@')
-                    bFASTAQ = true;
-                bKnowFormat = true;
-            }//if
-
-            //actually parse the file
-            if( (bFASTAQ && sLine[0] == '@') || (bFASTA && sLine[0] == '>') )
-            {
-                if(pLast != nullptr)
-                {
-                    pLast->vTranslateToNumericFormUsingTable(pLast->xNucleotideTranslationTable, 0);
-                    sRet->push_back(pLast);
-                }//if
-                pLast = std::shared_ptr<NucSeq>(new NucSeq());
-                pLast->sName = sLine.substr(1);
-                bQualNext = false;
-            }//if
-            else if(bFASTAQ && sLine[0] == '+')
-                bQualNext = true;
-            else if(bFASTAQ && bQualNext)
-            {
-                for(size_t i=0; i < sLine.length(); i++)
-                    pLast->quality(i) = (uint8_t)sLine[i];
-            }//else
-            else
-            {
-                size_t uiLineSize = sLine.length();
-                std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
-                pLast->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
-            }//else
-        }//lambda
-    );
-    if(pLast != nullptr)
+    std::shared_ptr<NucSeq> pRet(new NucSeq());
+    //FASTA format
+    if(pFile->good() && pFile->peek() == '>')
     {
-        pLast->vTranslateToNumericFormUsingTable(pLast->xNucleotideTranslationTable, 0);
-        sRet->push_back(pLast);
+        std::string sLine;
+        std::getline (*pFile, sLine);
+        pRet->sName = sLine.substr(1);
+        while(pFile->good() && pFile->peek() != '>')
+        {
+            std::getline (*pFile, sLine);
+            size_t uiLineSize = sLine.length();
+            std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
+            pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
+        }//while
+        pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+        return pRet;
     }//if
-    return sRet;
+    //FASTAQ format
+    if(pFile->good() && pFile->peek() == '@')
+    {
+        std::string sLine;
+        std::getline (*pFile, sLine);
+        pRet->sName = sLine.substr(1);
+        while(pFile->good() && pFile->peek() != '+')
+        {
+            std::getline (*pFile, sLine);
+            size_t uiLineSize = sLine.length();
+            std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
+            pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
+        }//while
+        pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+        //quality
+        unsigned int uiPos = 0;
+        while(pFile->good() && pFile->peek() != '@')
+        {
+            std::getline (*pFile, sLine);
+            for(size_t i=0; i < sLine.length(); i++)
+                pRet->quality(i + uiPos) = (uint8_t)sLine[i];
+            uiPos += sLine.length();
+        }//while
+        return pRet;
+    }//if
+    //unknown format @todo print appropriate error message
+    std::cout << "could not read next query" << std::endl;
+    return std::shared_ptr<Nil>(new Nil());
 }//function
 
 void exportFileReader()
