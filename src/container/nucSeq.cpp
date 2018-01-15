@@ -97,7 +97,17 @@ void exportSequence()
                     "returns: nil\n"
                     "\n"
                     "Reverses the sequence.\n"
-                );
+                )
+            .def(
+                    "quality", 
+                    &NucSeq::getQuality
+                )
+            .def(
+                    "fastaq", 
+                    &NucSeq::fastaq
+                )
+            .def_readwrite("name", &NucSeq::sName)
+        ;
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 

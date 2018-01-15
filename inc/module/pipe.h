@@ -46,8 +46,7 @@ namespace libMABS
          * - ContainerVector(x)
          * - ...
          * - ContainerVector(x)
-         * n times
-         * n is a parameter that can be chosen when the pledge is created
+         * n times; n is a is the vector size in the constructor
          */
         ContainerVector getInputType() const;
 

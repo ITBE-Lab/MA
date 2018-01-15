@@ -149,6 +149,7 @@
 #include "module/extractAllSeeds.h"
 #include "module/execOnVector.h"
 #include "module/reSeed.h"
+#include "module/fileReader.h"
 
 
 #endif

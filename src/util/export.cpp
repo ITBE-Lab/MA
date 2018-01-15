@@ -30,4 +30,5 @@ BOOST_PYTHON_MODULE(libMABS)
         exportExtractAllSeeds();
         exportExecOnVector();
         exportReSeed();
-}
+        exportFileReader();
+}//function

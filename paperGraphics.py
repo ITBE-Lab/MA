@@ -5,7 +5,7 @@ from bokeh.palettes import d3
 from bokeh.io import export_png, export_svgs
 from bokeh.models import FuncTickFormatter, FixedTicker, Label, ColorBar, FactorRange
 from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker, LinearColorMapper
-from bokeh.models import ColumnDataSource, CompositeTicker
+from bokeh.models import ColumnDataSource, CompositeTicker, SingleIntervalTicker
 from bokeh.transform import dodge
 from bokeh.core.properties import value
 import math
@@ -223,36 +223,54 @@ def ambiguity_per_length():
     plot = figure(title="ambiguity on human genome",
             x_range=(0,r1max), y_range=(min_len, max_len),
             x_axis_label='ambiguity', y_axis_label='sequence length',
-            plot_width=resolution*2, plot_height=resolution,
+            plot_width=resolution, plot_height=resolution,
             min_border_bottom=10, min_border_top=10,
-            min_border_left=10, min_border_right=15
+            min_border_left=10, min_border_right=15,
+            x_axis_type=None, y_axis_type=None
         )
-    plot.image(image=[data1], color_mapper=color_mapper,
-            dh=[max_len - min_len], dw=[r1max], x=[0], y=[min_len])
+    for index, row in enumerate(data1):
+        plot.image(image=[[row]], color_mapper=color_mapper,
+                dh=[.6], dw=[r1max], x=[0], y=[min_len + index + 0.2])
 
     plot2 = figure(x_range=(r1max,2**r2size+r1max), y_range=(min_len, max_len),
             min_border_bottom=10, min_border_top=10,
             min_border_left=20, min_border_right=15,
-            plot_width=resolution, plot_height=resolution,tools=[],
+            plot_width=resolution*3/4, plot_height=resolution,tools=[],
             x_axis_type="log"
         )
-    plot2.image(image=[data2], color_mapper=color_mapper,
-            dh=[max_len - min_len], dw=[2**r2size+r1max], x=[r1max], y=[min_len])
+    for index, row in enumerate(data2):
+        plot2.image(image=[[row]], color_mapper=color_mapper,
+            dh=[.6], dw=[2**r2size+r1max], x=[r1max], y=[min_len + index + 0.2])
 
+    size = "12pt"
     color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
     color_bar.major_label_text_font=font
-    plot.add_layout(color_bar, 'left')
+    color_bar.major_label_text_font_size=size
 
+    ticker = SingleIntervalTicker(interval=1, num_minor_ticks=0)
+    plot.add_layout(LinearAxis(ticker=ticker), 'left')
+    plot.add_layout(LinearAxis(ticker=ticker), 'below')
+    plot.add_layout(color_bar, 'left')
     plot.legend.label_text_font=font
+    plot.background_fill_color = dark_greys[2]
+    plot.background_fill_alpha = 1
     plot.axis.axis_label_text_font=font
     plot.axis.major_label_text_font=font
+    plot.axis.major_label_text_font_size=size
     plot.xaxis.major_label_standoff = 15
+    plot.xaxis.minor_tick_line_color = None
+    plot.yaxis.minor_tick_line_color = None
+    plot.grid.grid_line_color = None
 
     plot2.legend.label_text_font=font
     plot2.yaxis.visible = False
+    plot2.background_fill_color = dark_greys[2]
+    plot2.background_fill_alpha = 1
     plot2.axis.axis_label_text_font=font
+    plot2.axis.major_label_text_font_size=size
     plot2.axis.major_label_text_font=font
     plot2.xaxis.major_label_standoff = 15
+    plot2.grid.grid_line_color = None
 
     save([[plot, plot2]], "ambiguityPerQueryLen", True)
 

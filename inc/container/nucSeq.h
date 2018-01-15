@@ -337,6 +337,7 @@ namespace libMABS
         /** The encapsulated sequence
          */
         uint8_t *pxSequenceRef;
+        uint8_t *pxQualityRef;
 
         /** Current size of the content of the encapsulated sequence
          */
@@ -354,14 +355,15 @@ namespace libMABS
             /** Allocated memory will be released!
              */
             if ( pxSequenceRef != NULL ) 
-            {
                 free( pxSequenceRef );
-            } // if
+            if ( pxQualityRef != NULL ) 
+                free( pxQualityRef );
         } // protected method
 
         void vResetProtectedAttributes()
         {
             pxSequenceRef = NULL;
+            pxQualityRef = NULL;
             uiSize = 0;
             uxCapacity = 0;
         } // protected method
@@ -379,13 +381,16 @@ namespace libMABS
             * See: http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
             */
             auto pxReallocRef = (uint8_t*)realloc( pxSequenceRef, uxRequestedSize * sizeof(uint8_t) );
+            auto pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxRequestedSize * sizeof(uint8_t) );
 
-            if ( pxReallocRef == NULL )
+
+            if ( pxReallocRef == NULL || pxReallocRef2 == NULL )
             {
                 throw fasta_reader_exception( (std::string( "Memory Reallocation Failed for requested size ") + std::to_string( uxRequestedSize )).c_str() );
             } // if
 
             pxSequenceRef = pxReallocRef;
+            pxQualityRef = pxReallocRef2;
             uxCapacity = uxRequestedSize;
         } // method
 
@@ -393,6 +398,8 @@ namespace libMABS
         /** The table used to translate from base pairs to numeric codes for nucleotides
          */
         static const unsigned char xNucleotideTranslationTable[256];
+
+        std::string sName;
 
         /** Default constructor
          */
@@ -442,6 +449,7 @@ namespace libMABS
             /* We transport the three protected attributes to the receiver ...
             */
             rReceivingSequence.pxSequenceRef = this->pxSequenceRef;
+            rReceivingSequence.pxQualityRef = this->pxQualityRef;
             rReceivingSequence.uiSize = this->uiSize;
             rReceivingSequence.uxCapacity = this->uxCapacity;
 
@@ -481,6 +489,18 @@ namespace libMABS
         {
             assert( uiSubscript < uiSize );
             return pxSequenceRef[uiSubscript];
+        } // method (set)
+
+        inline uint8_t & quality( size_t uiSubscript )
+        {
+            assert( uiSubscript < uiSize );
+            return pxQualityRef[uiSubscript];
+        } // method (set)
+
+        inline uint8_t getQuality( size_t uiSubscript )
+        {
+            assert( uiSubscript < uiSize );
+            return pxQualityRef[uiSubscript];
         } // method (set)
 
         /** Resizes the internal buffer of the sequence to the requested value.
@@ -525,7 +545,7 @@ namespace libMABS
         
         /** WARNING: the inner string might not null-terminated after this operation.
          */
-        inline NucSeq& vAppend( const uint8_t* pSequence, size_t uxNumberOfElements )
+        inline NucSeq& vAppend( const uint8_t* pSequence, const uint8_t* pQuality, size_t uxNumberOfElements )
         {
             size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
 
@@ -537,6 +557,7 @@ namespace libMABS
             /** WARNING: If we work later with non 8-bit data we have to be careful here
              */
             memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof(uint8_t) );
+            memcpy( this->pxQualityRef + uiSize, pQuality, uxNumberOfElements * sizeof(uint8_t) );
 
             uiSize = uxRequestedSize;
 
@@ -545,7 +566,7 @@ namespace libMABS
 
         /** Push back of a single symbol.
          */
-        inline void push_back( const uint8_t xElement )
+        inline void push_back( const uint8_t xElement, const uint8_t xQuality )
         {
             if ( this->uiSize >= this->uxCapacity )
             {
@@ -553,6 +574,7 @@ namespace libMABS
             } // if
 
             pxSequenceRef[uiSize + 1] = xElement;
+            pxQualityRef[uiSize + 1] = xQuality;
             uiSize++;
         } // method
 
@@ -563,6 +585,7 @@ namespace libMABS
             if ( this->uiSize == rOtherSequence.uiSize )
             {
                 return memcmp(this->pxSequenceRef, rOtherSequence.pxSequenceRef, sizeof(uint8_t) * uiSize ) == 0;
+                return memcmp(this->pxQualityRef, rOtherSequence.pxQualityRef, sizeof(uint8_t) * uiSize ) == 0;
             } // if
             return false;
         } // method
@@ -654,10 +677,11 @@ namespace libMABS
         void vAppend( const char* pcString )
         {
             size_t uxSizeBeforeAppendOperation = this->uiSize;
+            std::vector<uint8_t> xQuality(strlen( pcString ), 126);//strlen( pcString ) uint8_t's with value 1
             
             /* WARNING! char and uint8_t must have the same size or we get a serious problem here!
             */
-            vAppend( (const uint8_t*)pcString, strlen( pcString ) );
+            vAppend( (const uint8_t*)pcString, xQuality.data(), strlen( pcString ) );
 
             vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
         } // method
@@ -686,6 +710,17 @@ namespace libMABS
             */
             return 5; // eContentType == SEQUENCE_IS_NUCLEOTIDE ? 5 : 20;
         } // method
+
+        std::string fastaq()
+        {
+            std::string sRet = sName + "\n";
+            for (unsigned int i = 0; i < length(); i++)
+                sRet += charAt(i);
+            sRet += "\n+\n";
+            for (unsigned int i = 0; i < length(); i++)
+                sRet += (char)quality(i);
+            return sRet;
+        }//function
     }; // class NucSeq
 }//namespace libMABS
 

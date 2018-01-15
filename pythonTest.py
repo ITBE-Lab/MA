@@ -173,7 +173,7 @@ def get_memory(since=0.0):
     return _VmB('VmSize:') - since
 
 def near(index, index_2):
-    max_d = 10000
+    max_d = 500#10000
     return index + max_d > index_2 and index - max_d < index_2
 
 
@@ -586,14 +586,11 @@ def test_my_approach(
             chain=LinearLineSweep(), 
             max_hits=100,
             num_strips=10, 
-            strips_of_consideration=True,
             low_res = False,
-            re_seed = None,
             max_sweep = None,
             min_seeds=0,
             min_seed_length=0,
             max_seeds=0,
-            max_seeds_2=-1,
             nmw_give_up=0
         ):
     print("collecting samples (" + name + ") ...")
@@ -646,13 +643,10 @@ def test_my_approach(
             chain=LinearLineSweep(),
             max_hits=max_hits,
             num_strips=num_strips,
-            strips_of_consideration=strips_of_consideration,
-            re_seed=re_seed,
             max_sweep=max_sweep,
             min_seeds=min_seeds,
             min_seed_length=min_seed_length,
             max_seeds=max_seeds,
-            max_seeds_2=max_seeds_2,
             nmw_give_up=nmw_give_up
         )
 
@@ -772,7 +766,7 @@ def test_my_approaches(db_name):
 
     clearResults(db_name, human_genome, "MABS 1")
     clearResults(db_name, human_genome, "MABS 2")
-    clearResults(db_name, human_genome, "MABS 3")
+    #clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
     #test_my_approach(db_name, human_genome, "MABS MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
@@ -780,15 +774,15 @@ def test_my_approaches(db_name):
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     # @todo optimize max_sweep
     #
-    #test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1, nmw_give_up=0, max_hits=100)
+    #test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_strips=10, max_sweep=1, seg=BinarySeeding(False), nmw_give_up=100)
+    test_my_approach(db_name, human_genome, "MABS 2", num_strips=10, max_sweep=1, seg=BinarySeeding(False), nmw_give_up=100, max_hits=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), nmw_give_up=100, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), nmw_give_up=10, max_hits=100)
     #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
@@ -1514,6 +1508,14 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
+
+f = FileReader("test.fasta")
+cv = f.execute()
+
+for nuc in cv:
+    print(nuc.fastaq())
+
+exit()
 
 #memory_test(human_genome, 1)
 #get_ambiguity_distribution(human_genome)
