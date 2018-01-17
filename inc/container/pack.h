@@ -1003,6 +1003,8 @@ namespace libMABS
             if ( uiSize > 0 )
             {
                 riSequenceId = uiSequenceIdForPosition( uiBegin );
+                if(uiBegin + uiSize > uiUnpackedSizeForwardStrand*2)
+                    return true;
                 return    ( bPositionIsOnReversStrand( uiBegin ) != bPositionIsOnReversStrand( (uiBegin + uiSize) - 1 ) ) // bridging forward reverse border
                     || ( riSequenceId != uiSequenceIdForPosition( (uiBegin + uiSize) - 1 ) ); // section crosses different sequences
             } // if

@@ -172,9 +172,9 @@ def get_memory(since=0.0):
     gc.collect()
     return _VmB('VmSize:') - since
 
-def near(index, index_2):
+def near(start, start_2, end, end_2):
     max_d = 500#10000
-    return index + max_d > index_2 and index - max_d < index_2
+    return end_2 + max_d >= start and start_2 - max_d <= start
 
 
 def mutate(char):
@@ -612,7 +612,7 @@ def test_my_approach(
         print("no new queries ... done")
         return
 
-    extract_size = len(all_queries) #2**15
+    extract_size = 2**15
     # break samples into chunks of 2^14
     for index, queries in enumerate(chunks(all_queries, extract_size)):
         print("extracting", len(queries), "samples", index, "/",
@@ -620,10 +620,12 @@ def test_my_approach(
         #setup the query pledges
         query_pledge = []
         ids = []
+        optimal_alignment_in = []
         for sequence, sample_id in queries:
             query_pledge.append(Pledge(NucSeq()))
             query_pledge[-1].set(NucSeq(sequence))
             ids.append(sample_id)
+            optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
 
 
         print("setting up (", name, ") ...")
@@ -650,6 +652,11 @@ def test_my_approach(
             nmw_give_up=nmw_give_up
         )
 
+        smw = SMW()
+        optimal_alignment_out = []
+        for a, b in optimal_alignment_in:
+            optimal_alignment_out.append(smw.promise_me(a, b))
+
         #temp code
         if False:
             num = 0
@@ -668,10 +675,26 @@ def test_my_approach(
         print("computing (", name, ") ...")
         Pledge.simultaneous_get(result_pledge[-1], 32)
 
+        print("computing optimal (", name, ") ...")
+        for index in range(len(queries)):
+            alignment = result_pledge[-1][index].get()
+            query = queries[index][0]
+            optimal_alignment_in[index][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
+            if alignment.begin_on_ref() != alignment.end_on_ref():
+                optimal_alignment_in[index][1].set(
+                    ref_pack.extract_from_to(alignment.begin_on_ref(),alignment.end_on_ref()))
+            else:
+                optimal_alignment_in[index][1].set(NucSeq())
+        Pledge.simultaneous_get(optimal_alignment_out, 32)
+
         print("extracting results (", name, ") ...")
         result = []
         for index in range(len(queries)):
             alignment = result_pledge[-1][index].get()
+            # [0] at the end cause a container vector is returned with all best scoring alignments
+            optimal_alignment = None
+            if len(optimal_alignment_out[index].get()) > 0:
+                optimal_alignment = optimal_alignment_out[index].get()[0]
             segment_list = result_pledge[0][index].get()
 
             total_time = 0
@@ -687,12 +710,23 @@ def test_my_approach(
             gap_size = 0
             cur_nmw_h = 0
             cur_nmw_w = 0
+
+            if not optimal_alignment is None and alignment.get_score() > optimal_alignment.get_score():
+                print("WARNING: alignment computed better than optimal score")
+                query = queries[index][0]
+                AlignmentPrinter().execute(
+                        alignment, 
+                        NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
+                        ref_pack
+                    )
             
             """
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
                     # @todo really filter out all gaps smaller than 10?
+                    # NO: we need to filter out all gaps so small that the pure missmatchscore 
+                    #     must be smaller than the gap score 
                     if gap_size > 10 and float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation:
                         max_diag_deviation = float(abs(curr_max_diag_deviation)) / gap_size
                     curr_diag_deviation = 0
@@ -716,12 +750,17 @@ def test_my_approach(
                     if cur_nmw_h * cur_nmw_w > max_nmw_area:
                         max_nmw_area = cur_nmw_h * cur_nmw_w
             """
+            sc2 = 0
+            if not optimal_alignment is None:
+                sc2 = optimal_alignment.get_score()
 
             result.append(
                     (
                         sample_id,
                         alignment.get_score(),
-                        alignment.begin_on_ref() - alignment.begin_on_query,
+                        sc2,
+                        alignment.begin_on_ref(),
+                        alignment.end_on_ref(),
                         segment_list.num_seeds(fm_index, max_hits),
                         alignment.stats.index_of_strip,
                         alignment.stats.seed_coverage,
@@ -759,7 +798,6 @@ def test_my_approaches(db_name):
     # # SoC:<num_SoC>,<SoC_size>nt,\<<max_ambiguity>,\><min_seeds_in_strip>,*<min_coverage>
     # sLs:<num_nmw>
 
-
     #
     # this is the un optimized hammer method
     #
@@ -776,13 +814,13 @@ def test_my_approaches(db_name):
     #
     #test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_strips=10, max_sweep=1, seg=BinarySeeding(False), nmw_give_up=100, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 2", num_strips=100, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=0, max_hits=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), nmw_give_up=10, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
     #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
@@ -926,7 +964,7 @@ def analyse_detailed(out_prefix, db_name):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [], [] ]
 
     for approach_ in approaches:
         approach = approach_[0]
@@ -935,6 +973,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         tries = {}
         run_times = {}
         scores = {}
+        opt_scores = {}
         nums_seeds = {}
         nums_seeds_chosen = {}
 
@@ -948,17 +987,25 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 d[x][y] = 0
             return d
 
-        for score, result_start, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, run_time in results:
+        for score, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
                 scores = init(scores, num_mutation, num_indels)
+            if not optimal_score is None:
+                opt_scores = init(opt_scores, num_mutation, num_indels)
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
             nums_seeds_chosen = init(nums_seeds_chosen, num_mutation, num_indels)
 
-            if near(result_start, original_start):
+            if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
+                if not optimal_score is None:
+                    if optimal_score < score:
+                        print("WARNING: aligner got better", score, "than optimal score", optimal_score)
+                        opt_scores[num_mutation][num_indels] += 1
+                    else:
+                        opt_scores[num_mutation][num_indels] += score / optimal_score
             tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] += run_time
             if not num_seeds is None:
@@ -1047,6 +1094,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
+        avg_opt_score = makePicFromDict(opt_scores, max_mut, max_indel, hits, "percent optimal score " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
         avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, tries, "num seeds in chosen SOC " + approach)
         seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
@@ -1063,6 +1111,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[5].append(avg_seeds_ch)
         if not seed_relevance is None:
             plots[4].append(seed_relevance)
+        if not avg_opt_score is None:
+            plots[6].append(avg_opt_score)
 
     save(layout(plots))
 
@@ -1090,7 +1140,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 d[x][y] = 0
             return d
 
-        for score, result_start, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, run_time in results:
+        for score, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
@@ -1099,7 +1149,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
 
             #print(result_start, original_start)
-            if near(result_start, original_start):
+            if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
             tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] += run_time
@@ -1508,7 +1558,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
-
+"""
 f = FileReader("test.fasta")
 nuc = f.execute()
 print(nuc.fastaq())
@@ -1516,7 +1566,7 @@ nuc = f.execute()
 print(nuc.fastaq())
 
 exit()
-
+"""
 #memory_test(human_genome, 1)
 #get_ambiguity_distribution(human_genome)
 #exit()
@@ -1528,13 +1578,14 @@ exit()
 #high quality picture
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#test_my_approaches("/mnt/ssd1/highQual.db")
+#analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 #analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-exit()
+#exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 0, True, True)
 test_my_approaches("/mnt/ssd1/veryHighQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/veryHighQual.db", 1000, 100)

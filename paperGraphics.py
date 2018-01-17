@@ -370,7 +370,7 @@ MM = "\=M"
 D = "D"
 query =     [                         "T", "A", "C", "A", "T", "T", "C", "T" ]
 reference = ["T", "T", "C", "A", "G",           "C", "A", "T", "A", "C", "T", "C", "A"]
-l_alignment = [D,D,I,I,M,M,D,D,M,MM,M,M,D,D]
+l_alignment = [D,D,I,I,M,M,D,D,D,M,MM,M,M,D]
 
 def seed_shadows():
     min_x = -1.0
@@ -580,7 +580,7 @@ def alignment():
         )
 
     plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
-    plot.legend.location = "bottom_right"
+    plot.legend.location = None
     plot.toolbar.logo = None
     plot.toolbar_location = None
     grid = []
@@ -635,7 +635,7 @@ def stripOfConsideration():
     plot.line(
         [-.5,7.5],
         [-.5,7.5],
-        color="black",
+        color=dark_greys[2],
         line_width=1,
         line_dash=[2,2]
     )
@@ -643,7 +643,7 @@ def stripOfConsideration():
     plot.line(
         [5.5,12.5],
         [-.5,6.5],
-        color="black",
+        color=dark_greys[2],
         line_width=1,
         line_dash=[2,2]
     )
@@ -652,7 +652,7 @@ def stripOfConsideration():
         [4.5,7.5],
         [1.5,4.5],
         color="black",
-        line_width=6
+        line_width=3
     )
     plot.line(
         [2.5,4.5],
@@ -660,19 +660,6 @@ def stripOfConsideration():
         color="black",
         line_width=1,
         line_dash=[8,2]
-    )
-    #lines to right and left
-    plot.line(
-        [3,6],
-        [3,3],
-        color="black",
-        line_width=1
-    )
-    plot.line(
-        [6,9],
-        [3,3],
-        color="black",
-        line_width=1
     )
 
 
@@ -693,13 +680,13 @@ def stripOfConsideration():
     plot.line(
         [1.5,2.5],
         [1.5,2.5],
-        color=dark_greys[2],
+        color="black",
         line_width=3
     )
     plot.line(
         [-.5,1.5],
         [-.5,1.5],
-        color=dark_greys[2],
+        color="black",
         line_width=1,
         line_dash=[8,2]
     )
@@ -981,10 +968,10 @@ def required_nmw_band_size():
 # actually call the functions that create the pictures
 
 #unrelated_non_enclosed_seeds()
-ambiguity_per_length()
+#ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()
-#stripOfConsideration()
+stripOfConsideration()
 #optimal_matching()
 #required_nmw_band_size()

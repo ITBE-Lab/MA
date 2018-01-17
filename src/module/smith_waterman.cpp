@@ -14,7 +14,7 @@ ContainerVector SMW::getInputType() const
             //the query sequence
             std::shared_ptr<Container>(new NucSeq()),
             //the ref
-            std::shared_ptr<Container>(new Pack())
+            std::shared_ptr<Container>(new NucSeq())
         };
 }//function
 
@@ -83,8 +83,9 @@ std::shared_ptr<Container> SMW::execute(
 {
     std::shared_ptr<NucSeq> pQuerySeq = 
         std::static_pointer_cast<NucSeq>((*vpInput)[0]);
-    std::shared_ptr<Pack> pRefPack = 
-        std::static_pointer_cast<Pack>((*vpInput)[1]);
+    std::shared_ptr<NucSeq> pReference = 
+        std::static_pointer_cast<NucSeq>((*vpInput)[1]);
+    //std::shared_ptr<NucSeq> pReference = pRefPack->vColletionAsNucSeq();
 
 
     // 1. Prepare the SW parameter set ...
@@ -96,15 +97,13 @@ std::shared_ptr<Container> SMW::execute(
         pQuerySeq->uxAlphabetSize() // alphabet size of input
     );
 
-    std::shared_ptr<NucSeq> pReference = pRefPack->vColletionAsNucSeq();
-
     //reversing query and reference in order to obtain start instead of end (markus)
     pQuerySeq->vReverse();
     pReference->vReverse();
     
     // 2. Do the alignment ...
     std::vector<size_t> vMaxScorePositions;
-    /*int16_t imaxScore =*/ alignSW_SIMD( *pQuerySeq, // query sequence
+    int16_t imaxScore = alignSW_SIMD( *pQuerySeq, // query sequence
                                       *pReference, // reference sequence
                                       xSWparameterSet, // Smith Waterman alignment parameter
                                       vMaxScorePositions // vector will recieve positions, where we have a max score
@@ -116,7 +115,8 @@ std::shared_ptr<Container> SMW::execute(
     for(nucSeqIndex revStart : vMaxScorePositions)
     {
         //undo the reversion by substracting from absolute length
-        std::shared_ptr<Container> pAlignment = std::shared_ptr<Alignment>(new Alignment(pRefPack->uiUnpackedSizeForwardPlusReverse() - revStart));
+        std::shared_ptr<Alignment> pAlignment = std::shared_ptr<Alignment>(new Alignment(pReference->length() - revStart));
+        pAlignment->iScore = imaxScore;
         pvRet->push_back(pAlignment);
     }//for
 
@@ -186,8 +186,7 @@ void exportSMW()
             boost::python::bases<Module>,
             std::shared_ptr<SMW>
             >(
-            "SMW",
-            "SMW alignment.\n"
+            "SMW"
         );
     boost::python::implicitly_convertible< 
         std::shared_ptr<SMW>,

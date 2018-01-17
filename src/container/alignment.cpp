@@ -18,9 +18,13 @@ void Alignment::append(MatchType type, nucSeqIndex size)
     else if(type == MatchType::insertion || type == MatchType::deletion)
     {
         //iGap & iExtend is a penalty not a score
-        if(at(length()-1) != MatchType::insertion && at(length()-1) != MatchType::deletion)
+        nucSeqIndex s = size;
+        if(length() == 0 || (at(length()-1) != type) )
+        {
             iScore -= iGap;
-        iScore -= iExtend * size-1;
+            //s--;
+        }//if
+        iScore -= iExtend * s;
     }//if
     /*
     * we are storing in a compressed format 
@@ -36,6 +40,28 @@ void Alignment::append(MatchType type, nucSeqIndex size)
     uiLength += size;
 }//function
 
+int Alignment::reCalcScore() const
+{
+    int iScore = 0;
+    for(unsigned int index = uiDataStart; index < data.size(); index++)
+        switch (std::get<0>(data[index]))
+        {
+            case MatchType::deletion :
+            case MatchType::insertion :
+                iScore -= iGap;
+                iScore -= iExtend * std::get<1>(data[index]);//-1;
+                break;
+            case MatchType::missmatch :
+                iScore -= iMissMatch * std::get<1>(data[index]);
+                break;
+            case MatchType::match :
+            case MatchType::seed :
+                iScore += iMatch * std::get<1>(data[index]);
+                break;
+        }//switch
+    return iScore;
+}//function
+
 void Alignment::removeDangelingDeletions()
 {
     if(data.size() <= 2)
@@ -46,7 +72,7 @@ void Alignment::removeDangelingDeletions()
         uiLength -= std::get<1>(data[uiDataStart]);
         //iGap is a penalty not a score
         iScore += iGap;
-        iScore += iExtend * std::get<1>(data[uiDataStart])-1;
+        iScore += iExtend * std::get<1>(data[uiDataStart]);//-1;
         uiDataStart++;
     }//if
     if(std::get<0>(data.back()) == MatchType::deletion)
@@ -55,7 +81,7 @@ void Alignment::removeDangelingDeletions()
         uiLength -= std::get<1>(data.back());
         //iGap is a penalty not a score
         iScore += iGap;
-        iScore += iExtend * std::get<1>(data.back())-1;
+        iScore += iExtend * std::get<1>(data.back());//-1;
         data.pop_back();
     }//if
 }//function

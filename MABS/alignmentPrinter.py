@@ -37,7 +37,7 @@ class AlignmentPrinter(Module):
     # @brief Execute LineSweep for all given seeds.
     # @details
     # Reimplemented from MABS.aligner.Module.execute.
-    def execute(self, input):
+    def execute(self, *input):
         align = input[0]
         query = input[1]
         ref_pack = input[2]
@@ -66,12 +66,12 @@ class AlignmentPrinter(Module):
                     lines.extend(["", desc, "", "", ""])
 
             #perform double check for messup:
-            if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.deletion or align[counter] == MatchType.missmatch):
+            if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.deletion or align[counter] == MatchType.missmatch):
                 print("This should not happen... (ref)")
                 print(ind_ref)
                 print(len(ref))
                 break
-            if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
+            if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
                 print("This should not happen... (query)")
                 print(ind_query)
                 print(len(query))

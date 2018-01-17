@@ -41,7 +41,7 @@ class Module(libMABS.Module):
     # @brief Execute the implemented algorithm.
     # @details
     # Reimplemented from @ref Module::saveExecute.
-    def execute(self, input):
+    def execute(self, *input):
         self.__store_result = Module.execute(input)
         return self.__store_result
 
@@ -49,7 +49,7 @@ class Module(libMABS.Module):
     # @brief call the execute function with a try catch block
     # @details
     # Reimplemented from @ref Module::saveExecute.
-    def save_execute(self, input):
+    def save_execute(self, *input):
         try:
             return self.execute(input)
         except Exception as e:

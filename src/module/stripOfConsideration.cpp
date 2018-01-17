@@ -197,6 +197,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     while(xStripStart != vSeeds.end() && xStripEnd != vSeeds.end())
     {
         //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
+        nucSeqIndex uiCurrSize = 0;
         while(
             xStripEnd != vSeeds.end() &&
             getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
@@ -204,6 +205,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         {
             //remember the additional score
             uiCurrScore += xStripEnd->getValue();
+            uiCurrSize = xStripStart->start_ref() - xStripEnd->end_ref();
             //remember the additional element
             uiCurrEle++;
             //move the iterator forward
@@ -211,8 +213,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//while
         //here xStripEnd points one past the last element within the strip
         assert(uiCurrEle >= 1);
+        int64_t iDummy;
         //FILTER
-        if(uiCurrEle > minSeeds || uiCurrScore > minSeedLength*uiQLen)
+        if(
+            !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy) &&
+            (uiCurrEle > minSeeds || uiCurrScore > minSeedLength*uiQLen)
+            )
         {
             //check if we improved upon the last maxima while dealing with the same area
             if(

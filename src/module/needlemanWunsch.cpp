@@ -301,9 +301,21 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     if(bLocal)
     {
         beginRef = pSeeds->front().start_ref();
+        //seeds are sorted by ther startpos so we 
+        //actually need to check all seeds to get the proper end
         endRef = pSeeds->back().end_ref();
+        nucSeqIndex endQuery = pSeeds->back().end();
+        for (auto xSeed : *pSeeds)
+        {
+            if(endRef < xSeed.end_ref())
+                endRef = xSeed.end_ref();
+            if(beginRef > xSeed.start_ref())
+                beginRef = xSeed.start_ref();
+            if(endQuery < xSeed.end())
+                endQuery = xSeed.end();
+        }//for
         pRet = std::shared_ptr<Alignment>(
-            new Alignment(beginRef, endRef, pSeeds->front().start(), pSeeds->back().end())
+            new Alignment(beginRef, endRef, pSeeds->front().start(), endQuery)
         );
     }//if
     else
@@ -426,12 +438,11 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             pRet,
             uiGiveUpAfter
         );
+        //cleanup the alignment
+        pRet->removeDangelingDeletions();
+        // @todo  due to NMW changes i might have a lot of dangeling insertions here...
+        // maybe best to keep them around?
     }//if
-
-    //cleanup the alignment
-    pRet->removeDangelingDeletions();
-    // @todo  due to NMW changes i might have a lot of dangeling insertions here...
-    // maybe best to keep them around?
 
     DEBUG_2(
         std::cout << std::endl;

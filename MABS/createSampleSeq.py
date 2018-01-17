@@ -70,7 +70,9 @@ def setUpDbTables(conn, reset = False):
                 (
                     sample_id INTEGER,
                     score REAL,
+                    optimal_score_this_region REAL,
                     result_start INTEGER,
+                    result_end INTEGER,
                     num_seeds INTEGER,
                     index_of_chosen_strip INTEGER,
                     seed_coverage_chosen_strip INTGER,
@@ -210,6 +212,7 @@ def submitResults(db_name, results_list):
                             sample_id,
                             score,
                             result_start,
+                            result_end,
                             num_seeds,
                             index_of_chosen_strip,
                             seed_coverage_chosen_strip,
@@ -221,15 +224,17 @@ def submitResults(db_name, results_list):
                             run_time,
                             approach
                         )
-                        VALUES (?,?,?,?,0,0,0,0,0,0,0,?,?)
+                        VALUES (?,?,?,?,?,0,0,0,0,0,0,0,?,?)
                         """, results_list)
-    else: # len == 13
+    else: # len == 14
         c.executemany("""
                         INSERT INTO results 
                         (
                             sample_id,
                             score,
+                            optimal_score_this_region,
                             result_start,
+                            result_end,
                             num_seeds,
                             index_of_chosen_strip,
                             seed_coverage_chosen_strip,
@@ -241,7 +246,7 @@ def submitResults(db_name, results_list):
                             run_time,
                             approach
                         )
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                         """, results_list)
     conn.commit()
 
@@ -277,7 +282,9 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
         return c.execute("""
                             SELECT 
                                 results.score,
+                                results.optimal_score_this_region,
                                 results.result_start,
+                                results.result_end,
                                 samples.origin,
                                 samples.num_mutation,
                                 samples.num_indels,
@@ -299,6 +306,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
         return c.execute("""
                             SELECT 
                                 results.score,
+                                results.optimal_score_this_region,
                                 results.result_start,
                                 samples.origin,
                                 samples.num_mutation,

@@ -130,14 +130,16 @@ namespace libMABS
             return std::shared_ptr<Container>(new Alignment());
         }//function
 
+        int reCalcScore() const;
+
         /**
          * @returns the type of math for the given position i.
          * @brief Type of math at i.
          */
         MatchType at(nucSeqIndex i) const
         {
-            //everything after the query is a deletion
-            if(i >= uiLength)
+            //everything after and before the query is a deletion
+            if(i >= uiLength || i < 0)
                 return MatchType::deletion;
 
             //the MatchType match type is stored in a compressed format -> extract it
@@ -211,6 +213,8 @@ namespace libMABS
          */
         int score() const
         {
+            //@todo the data.size() == 0 || is to allow SW to put the score directly
+            assert(data.size() == 0 || reCalcScore() == iScore);
             return iScore;
         }
 
