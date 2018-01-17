@@ -14,7 +14,7 @@ ContainerVector MappingQuality::getInputType() const
 
 std::shared_ptr<Container> MappingQuality::getOutputType() const
 {
-    return std::shared_ptr<Container>(new Nil());
+    return std::shared_ptr<Container>(new ContainerVector(std::shared_ptr<Alignment>(new Alignment())));
 }//function
 
 std::shared_ptr<Container> MappingQuality::execute(
@@ -37,7 +37,7 @@ std::shared_ptr<Container> MappingQuality::execute(
 
     }//if
 
-    return std::shared_ptr<Container>(new Nil());;
+    return std::shared_ptr<ContainerVector>(new ContainerVector(pAlignments));
 }//function
 
 void exportMappingQuality()

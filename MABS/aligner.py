@@ -264,6 +264,24 @@ class ExecOnVec(libMABS.ExecOnVec):
         return super(ExecOnVec, self).promise_me(ContainerVector(*args))
 
 ##
+# @brief python wrapper for MappingQuality
+class MappingQuality(libMABS.MappingQuality):
+    def execute(self, *args):
+        return super(MappingQuality, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(MappingQuality, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for Pipe
+class Pipe(libMABS.Pipe):
+    def execute(self, *args):
+        return super(Pipe, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(Pipe, self).promise_me(ContainerVector(*args))
+
+##
 # @brief The Tail Module.
 # @details
 # returns the tail of a container vector

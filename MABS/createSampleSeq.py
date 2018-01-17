@@ -70,6 +70,7 @@ def setUpDbTables(conn, reset = False):
                 (
                     sample_id INTEGER,
                     score REAL,
+                    score2 REAL,
                     optimal_score_this_region REAL,
                     result_start INTEGER,
                     result_end INTEGER,
@@ -82,6 +83,7 @@ def setUpDbTables(conn, reset = False):
                     max_diag_deviation INTEGER,
                     max_nmw_area INTEGER,
                     run_time REAL,
+                    mapping_quality REAL,
                     approach TINYTEXT
                 )
                 """)
@@ -211,6 +213,7 @@ def submitResults(db_name, results_list):
                         (
                             sample_id,
                             score,
+                            score2,
                             result_start,
                             result_end,
                             num_seeds,
@@ -222,16 +225,41 @@ def submitResults(db_name, results_list):
                             max_diag_deviation,
                             max_nmw_area,
                             run_time,
+                            mapping_quality,
                             approach
                         )
-                        VALUES (?,?,?,?,?,0,0,0,0,0,0,0,?,?)
+                        VALUES (?,0,?,?,?,?,0,0,0,0,0,0,0,?,0,?)
                         """, results_list)
-    else: # len == 14
+    if len(results_list[0]) == 7:
         c.executemany("""
                         INSERT INTO results 
                         (
                             sample_id,
                             score,
+                            score2,
+                            result_start,
+                            result_end,
+                            num_seeds,
+                            index_of_chosen_strip,
+                            seed_coverage_chosen_strip,
+                            num_seeds_chosen_strip,
+                            anchor_size,
+                            anchor_ambiguity,
+                            max_diag_deviation,
+                            max_nmw_area,
+                            run_time,
+                            mapping_quality,
+                            approach
+                        )
+                        VALUES (?,0,?,?,?,?,0,0,0,0,0,0,0,?,?,?)
+                        """, results_list)
+    else: # len == 16
+        c.executemany("""
+                        INSERT INTO results 
+                        (
+                            sample_id,
+                            score,
+                            score2,
                             optimal_score_this_region,
                             result_start,
                             result_end,
@@ -244,9 +272,10 @@ def submitResults(db_name, results_list):
                             max_diag_deviation,
                             max_nmw_area,
                             run_time,
+                            mapping_quality,
                             approach
                         )
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                         """, results_list)
     conn.commit()
 
@@ -282,6 +311,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
         return c.execute("""
                             SELECT 
                                 results.score,
+                                results.score2,
                                 results.optimal_score_this_region,
                                 results.result_start,
                                 results.result_end,
@@ -289,6 +319,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 samples.num_mutation,
                                 samples.num_indels,
                                 results.num_seeds,
+                                results.mapping_quality,
                                 results.run_time,
                                 results.index_of_chosen_strip,
                                 results.seed_coverage_chosen_strip,
@@ -306,6 +337,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
         return c.execute("""
                             SELECT 
                                 results.score,
+                                results.score2,
                                 results.optimal_score_this_region,
                                 results.result_start,
                                 results.result_end,
@@ -314,6 +346,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 samples.num_indels,
                                 results.num_seeds,
                                 results.num_seeds_chosen_strip,
+                                results.mapping_quality,
                                 results.run_time
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id

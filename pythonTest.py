@@ -677,7 +677,7 @@ def test_my_approach(
 
         print("computing optimal (", name, ") ...")
         for index in range(len(queries)):
-            alignment = result_pledge[-1][index].get()
+            alignment = result_pledge[-1][index].get()[-1]
             query = queries[index][0]
             optimal_alignment_in[index][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
             if alignment.begin_on_ref() != alignment.end_on_ref():
@@ -690,7 +690,11 @@ def test_my_approach(
         print("extracting results (", name, ") ...")
         result = []
         for index in range(len(queries)):
-            alignment = result_pledge[-1][index].get()
+            # @todo change sorting order
+            alignment = result_pledge[-1][index].get()[-1]
+            alignment2 = None
+            if len(result_pledge[-1][index].get()) > 1:
+                alignment2 = result_pledge[-1][index].get()[-2]
             # [0] at the end cause a container vector is returned with all best scoring alignments
             optimal_alignment = None
             if len(optimal_alignment_out[index].get()) > 0:
@@ -753,11 +757,15 @@ def test_my_approach(
             sc2 = 0
             if not optimal_alignment is None:
                 sc2 = optimal_alignment.get_score()
+            score2 = 0
+            if not alignment2 is None:
+                score2 = alignment2.get_score()
 
             result.append(
                     (
                         sample_id,
                         alignment.get_score(),
+                        score2,
                         sc2,
                         alignment.begin_on_ref(),
                         alignment.end_on_ref(),
@@ -769,6 +777,7 @@ def test_my_approach(
                         alignment.stats.anchor_ambiguity,
                         max_diag_deviation,
                         max_nmw_area,
+                        alignment.mapping_quality,
                         total_time,
                         name
                     )
@@ -886,15 +895,17 @@ def analyse_detailed(out_prefix, db_name):
         anc_ambiguity = ([], [])
         max_diag_deviations = ([], [])
         max_nmw_areas = ([], [])
+        mapping_qual = ([], [])
 
         approach = approach_[0]
         for result in getResults(db_name, approach):
-            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
+            score, score2, optimal_score_this_region, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, mapping_quality, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
 
             index = 1
-            if near(result_start, original_start):
+            if near(result_start, original_start, result_end, original_start+original_size):
                 index = 0
 
+            mapping_qual[index].append(mapping_quality)
             strip_index[index].append(index_of_chosen_strip)
             if not seed_coverage_chosen_strip is None:
                 seed_coverage[index].append(seed_coverage_chosen_strip / original_size)
@@ -949,7 +960,49 @@ def analyse_detailed(out_prefix, db_name):
             plot.vbar(x=buckets_x, width=bucket_width, bottom=0, top=buckets_2, color="red", legend="inaccurate", fill_alpha=0.5)
             return plot
 
+        def true_pos_true_neg(data, name, amount=100):
+            plot = figure(title=name,
+                    y_axis_label='true positive rate',
+                    x_axis_label='false positive rate'
+                )
+
+            total_amount_1 = len(data[0])
+            total_amount_2 = len(data[1])
+            min_val = 1
+            max_val = 0
+            for x in data[0]:
+                if x < min_val:
+                    min_val = x
+                if x > max_val:
+                    max_val = x
+            for x in data[1]:
+                if x < min_val:
+                    min_val = x
+                if x > max_val:
+                    max_val = x
+
+            values = []
+            for i in range(amount):
+                values.append(min_val + i*(max_val-min_val)/float(amount))
+            line_x = []
+            line_y = []
+            for threshold in values:
+                true_pos = 0
+                false_pos = 0
+                for ele in data[0]:
+                    if ele > threshold:
+                        true_pos += 1
+                for ele in data[1]:
+                    if ele > threshold:
+                        false_pos += 1
+                line_x.append(false_pos / total_amount_2)
+                line_y.append(true_pos / total_amount_1)
+            plot.line(line_x, line_y)
+            print(min_val, max_val, line_x, line_y)
+            return plot
+
         save(column([
+            true_pos_true_neg(mapping_qual, "mapping quality"),
             bar_plot(strip_index, "index of Strip of Consideration", 50),
             bar_plot(seed_coverage, "percentage of query covered by seeds in strip", 50),
             bar_plot(num_seeds_tot, "number of seeds total", 50),
@@ -987,7 +1040,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 d[x][y] = 0
             return d
 
-        for score, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, run_time in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, mapping_quality, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
@@ -1140,7 +1193,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 d[x][y] = 0
             return d
 
-        for score, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, run_time in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, mapping_quality, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
@@ -1578,10 +1631,10 @@ exit()
 #high quality picture
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-#test_my_approaches("/mnt/ssd1/highQual.db")
+test_my_approaches("/mnt/ssd1/highQual.db")
 #analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-#exit()
+analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)

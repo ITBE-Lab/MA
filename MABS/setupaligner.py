@@ -52,7 +52,7 @@ def set_up_aligner(
 
     nmw = NeedlemanWunsch(nmw_give_up)
     nmw_multiple = ExecOnVec(nmw, True, 0)
-    getBestOnly = Tail(Alignment())
+    mappingQual = MappingQuality()
 
     extractAll = ExtractAllSeeds(max_hits)
 
@@ -98,7 +98,7 @@ def set_up_aligner(
         return_pledges[ret_pl_indx].append(alignments_pledge)
         ret_pl_indx += 1
 
-        align_pledge = getBestOnly.promise_me(alignments_pledge)
+        align_pledge = mappingQual.promise_me(query_pledge, alignments_pledge)
         return_pledges[ret_pl_indx].append(align_pledge)
         ret_pl_indx += 1
 
