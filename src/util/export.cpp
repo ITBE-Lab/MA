@@ -31,4 +31,6 @@ BOOST_PYTHON_MODULE(libMABS)
         exportExecOnVector();
         exportReSeed();
         exportFileReader();
+        exportMappingQuality();
+        exportPipe();
 }//function

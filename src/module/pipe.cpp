@@ -40,3 +40,18 @@ std::shared_ptr<Container> Pipe::execute(
     return pRet;
 }//function
 
+void exportPipe()
+{
+    //export the Pipe class
+    boost::python::class_<
+            Pipe, 
+            boost::python::bases<Module>, 
+            std::shared_ptr<Pipe>
+        >("Pipe",boost::python::init<std::vector<std::shared_ptr<Pledge>>, std::shared_ptr<Pledge>>())
+    ;
+
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<Pipe>,
+        std::shared_ptr<Module> 
+    >();
+}//function

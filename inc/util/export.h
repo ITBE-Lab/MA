@@ -120,9 +120,6 @@
  * @todo quality of SMW
  * @todo figure out where sequencer reads belong in the missmatch/indel-pic
  * @todo be able to deal with short reads
- * @todo local alignments
- * @todo check if realigning the entire area produces a better score!
- * @todo implement completely radix sort!
  * 
  * @section about_us_sec About Us
  * 
@@ -150,6 +147,8 @@
 #include "module/execOnVector.h"
 #include "module/reSeed.h"
 #include "module/fileReader.h"
+#include "module/mappingQuality.h"
+#include "module/pipe.h"
 
 
 #endif

@@ -308,6 +308,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.score,
                                 results.optimal_score_this_region,
                                 results.result_start,
+                                results.result_end,
                                 samples.origin,
                                 samples.num_mutation,
                                 samples.num_indels,

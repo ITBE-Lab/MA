@@ -173,7 +173,7 @@ def get_memory(since=0.0):
     return _VmB('VmSize:') - since
 
 def near(start, start_2, end, end_2):
-    max_d = 500#10000
+    max_d = 0#10000
     return end_2 + max_d >= start and start_2 - max_d <= start
 
 
@@ -802,8 +802,8 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    clearResults(db_name, human_genome, "MABS 1")
-    clearResults(db_name, human_genome, "MABS 2")
+    #clearResults(db_name, human_genome, "MABS 1")
+    #clearResults(db_name, human_genome, "MABS 2")
     #clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
