@@ -24,18 +24,28 @@ std::shared_ptr<Container> MappingQuality::execute(
     std::shared_ptr<NucSeq> pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[0]);
     std::shared_ptr<ContainerVector> pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[1]);
 
+    std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[pAlignments->size()-1]);
+
+    //mapping quality bast on scores
     if(pAlignments->size() >= 2)
     {
-        std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
-        std::shared_ptr<Alignment> pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[1]);
+        std::shared_ptr<Alignment> pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[pAlignments->size()-2]);
 
-        pFirst->fMappingQuality = std::max(1.0d,
-                ( pFirst->score() - pSecond->score() )
+        pFirst->fMappingQuality =
+                ( pFirst->score() - std::max(0, pSecond->score()) )
                     /
-                (double)( pFirst->score() )
-            );
+                (double)(iMatch * pQuery->length())
+            ;
 
     }//if
+    else
+        pFirst->fMappingQuality = pFirst->score() / (double)(iMatch * pQuery->length());
+
+    //factors
+    //penalty for too little seeds
+    double dA = std::max(std::min(10 * pFirst->numBySeeds() / (double)pQuery->length(), 1.0), 0.1);
+    pFirst->fMappingQuality *= dA;
+
 
     return std::shared_ptr<ContainerVector>(new ContainerVector(pAlignments));
 }//function

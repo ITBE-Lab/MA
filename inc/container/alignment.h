@@ -57,7 +57,7 @@ namespace libMABS
         nucSeqIndex uiEndOnQuery;
 
         int iScore = 0;
-        double fMappingQuality = 1;
+        double fMappingQuality = 0;
 
         //some statistics
         AlignmentStatistics xStats;

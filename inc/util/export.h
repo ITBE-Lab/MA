@@ -114,7 +114,6 @@
  * 
  * @todo make efficient NMW (have to wait for SMW)
  * @todo paired end alignments necessary
- * @todo mapping quality
  * @todo different output formats (queue implementation...)
  * @todo code cleanup
  * @todo quality of SMW

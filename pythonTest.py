@@ -691,11 +691,11 @@ def test_my_approach(
         result = []
         for index in range(len(queries)):
             # @todo change sorting order
+            # [0] at the end cause a container vector is returned with all best scoring alignments
             alignment = result_pledge[-1][index].get()[-1]
             alignment2 = None
             if len(result_pledge[-1][index].get()) > 1:
                 alignment2 = result_pledge[-1][index].get()[-2]
-            # [0] at the end cause a container vector is returned with all best scoring alignments
             optimal_alignment = None
             if len(optimal_alignment_out[index].get()) > 0:
                 optimal_alignment = optimal_alignment_out[index].get()[0]
@@ -811,8 +811,8 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    #clearResults(db_name, human_genome, "MABS 1")
-    #clearResults(db_name, human_genome, "MABS 2")
+    clearResults(db_name, human_genome, "MABS 1")
+    clearResults(db_name, human_genome, "MABS 2")
     #clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
@@ -829,7 +829,7 @@ def test_my_approaches(db_name):
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=1, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=2, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
     #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
@@ -896,6 +896,7 @@ def analyse_detailed(out_prefix, db_name):
         max_diag_deviations = ([], [])
         max_nmw_areas = ([], [])
         mapping_qual = ([], [])
+        score_dif = ([], [])
 
         approach = approach_[0]
         for result in getResults(db_name, approach):
@@ -906,6 +907,10 @@ def analyse_detailed(out_prefix, db_name):
                 index = 0
 
             mapping_qual[index].append(mapping_quality)
+            if not score is None and not score2 is None:
+                score_dif[index].append(abs(score - score2))
+            else:
+                score_dif[index].append(score)
             strip_index[index].append(index_of_chosen_strip)
             if not seed_coverage_chosen_strip is None:
                 seed_coverage[index].append(seed_coverage_chosen_strip / original_size)
@@ -931,11 +936,15 @@ def analyse_detailed(out_prefix, db_name):
             min_val = 10000
             max_val = 0
             for x in data[0]:
+                if x is None:
+                    return plot
                 if x < min_val:
                     min_val = x
                 if x > max_val:
                     max_val = x
             for x in data[1]:
+                if x is None:
+                    return plot
                 if x < min_val:
                     min_val = x
                 if x > max_val:
@@ -980,10 +989,13 @@ def analyse_detailed(out_prefix, db_name):
                     min_val = x
                 if x > max_val:
                     max_val = x
+            adjust = max_val-min_val
+            max_val += adjust*0.1
+            min_val -= adjust*0.1
 
             values = []
             for i in range(amount):
-                values.append(min_val + i*(max_val-min_val)/float(amount))
+                values.append(min_val + i*adjust/float(amount))
             line_x = []
             line_y = []
             for threshold in values:
@@ -998,18 +1010,19 @@ def analyse_detailed(out_prefix, db_name):
                 line_x.append(false_pos / total_amount_2)
                 line_y.append(true_pos / total_amount_1)
             plot.line(line_x, line_y)
-            print(min_val, max_val, line_x, line_y)
+            #print(min_val, max_val, line_x, line_y)
             return plot
 
         save(column([
             true_pos_true_neg(mapping_qual, "mapping quality"),
+            bar_plot(score_dif, "first and second score diff", 50),
             bar_plot(strip_index, "index of Strip of Consideration", 50),
             bar_plot(seed_coverage, "percentage of query covered by seeds in strip", 50),
             bar_plot(num_seeds_tot, "number of seeds total", 50),
             bar_plot(num_seeds_strip, "number of seeds in strip", 25),
             bar_plot(anc_size, "length of anchor seed", 50),
             bar_plot(anc_ambiguity, "ambiguity of anchor seed", 5),
-            bar_plot(max_diag_deviations, "required nmw strip size to reach maximum possible score", 50, True),
+            bar_plot(max_diag_deviations, "required nmw strip size to reach maximum possible score", 50, False),
             bar_plot(max_nmw_areas, "maximum area needleman wunsch", 50),
             ]))
 
@@ -1017,7 +1030,8 @@ def analyse_detailed(out_prefix, db_name):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [], [], [] ]
+    mapping_qual = []
 
     for approach_ in approaches:
         approach = approach_[0]
@@ -1029,6 +1043,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         opt_scores = {}
         nums_seeds = {}
         nums_seeds_chosen = {}
+        mapping_qual.append( ([],[]) )
 
         max_indel = 2*query_size/indel_size
         max_mut = query_size
@@ -1059,6 +1074,9 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                         opt_scores[num_mutation][num_indels] += 1
                     else:
                         opt_scores[num_mutation][num_indels] += score / optimal_score
+                mapping_qual[-1][0].append(mapping_quality)
+            else:
+                mapping_qual[-1][1].append(mapping_quality)
             tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] += run_time
             if not num_seeds is None:
@@ -1167,12 +1185,70 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         if not avg_opt_score is None:
             plots[6].append(avg_opt_score)
 
+    plot = figure(title="BWA-pic",
+        x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
+        x_axis_type="log", y_range=(0,0.4),
+        plot_width=650, plot_height=500,
+        min_border_bottom=10, min_border_top=10,
+        min_border_left=10, min_border_right=15
+    )
+
+    c_palette = heatmap_palette(light_spec_approximation, len(approaches))
+
+    for index, approach_, in enumerate(approaches):
+        approach = approach_[0]
+        data = mapping_qual[index]
+
+        total_amount_1 = len(data[0])
+        total_amount_2 = len(data[1])
+        min_val = 1
+        max_val = 0
+        for x in data[0]:
+            if x < min_val:
+                min_val = x
+            if x > max_val:
+                max_val = x
+        for x in data[1]:
+            if x < min_val:
+                min_val = x
+            if x > max_val:
+                max_val = x
+        values = []
+        amount = 100
+        for i in range(amount):
+            values.append(min_val + i*(max_val-min_val)/float(amount))
+        
+        line_x = []
+        line_y = []
+        for val in values:
+            mapped = 0
+            wrong = 0
+            total = total_amount_1 + total_amount_2
+            for ele in data[0]:
+                if ele > val:
+                    mapped += 1
+            for ele in data[1]:
+                if ele > val:
+                    mapped += 1
+                    wrong += 1
+
+            if mapped > 0:
+                line_x.append( wrong/mapped )
+                line_y.append( mapped/total )
+
+        plot.line(line_x, line_y, legend=approach, color=c_palette[index], line_width=2)
+        plot.x(line_x, line_y, legend=approach, color=c_palette[index], size=6)
+
+    plot.legend.location = "top_left"
+    plots[-1].append(plot)
+
     save(layout(plots))
 
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [] ]
+    plots = [ [], [], [], [], [] ]
+    mapping_qual = []
     yax = True
     for approach_ in approaches:
         approach = approach_[0]
@@ -1182,6 +1258,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
         run_times = {}
         scores = {}
         nums_seeds = {}
+        mapping_qual.append( ([],[]) )
 
         max_indel = 2*query_size/indel_size
         max_mut = query_size
@@ -1204,6 +1281,9 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             #print(result_start, original_start)
             if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
+                mapping_qual[-1][0].append(mapping_quality)
+            else:
+                mapping_qual[-1][1].append(mapping_quality)
             tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] += run_time
             if not num_seeds is None:
@@ -1325,6 +1405,63 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             plots[2].append(avg_seeds)
         if not avg_rel is None:
             plots[3].append(avg_rel)
+
+    plot = figure(title="BWA-pic",
+            x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
+            x_axis_type="log", y_range=(0,0.4),
+            plot_width=650, plot_height=500,
+            min_border_bottom=10, min_border_top=10,
+            min_border_left=10, min_border_right=15
+        )
+
+    c_palette = heatmap_palette(light_spec_approximation, len(approaches))
+
+    for index, approach_, in enumerate(approaches):
+        approach = approach_[0]
+        data = mapping_qual[index]
+
+        total_amount_1 = len(data[0])
+        total_amount_2 = len(data[1])
+        min_val = 1
+        max_val = 0
+        for x in data[0]:
+            if x < min_val:
+                min_val = x
+            if x > max_val:
+                max_val = x
+        for x in data[1]:
+            if x < min_val:
+                min_val = x
+            if x > max_val:
+                max_val = x
+        values = []
+        amount = 100
+        for i in range(amount):
+            values.append(min_val + i*(max_val-min_val)/float(amount))
+        
+        line_x = []
+        line_y = []
+        for val in values:
+            mapped = 0
+            wrong = 0
+            total = total_amount_1 + total_amount_2
+            for ele in data[0]:
+                if ele > val:
+                    mapped += 1
+            for ele in data[1]:
+                if ele > val:
+                    mapped += 1
+                    wrong += 1
+
+            if mapped > 0:
+                line_x.append( wrong/mapped )
+                line_y.append( mapped/total )
+
+        plot.line(line_x, line_y, legend=approach, color=c_palette[index])
+        plot.x(line_x, line_y, legend=approach, color=c_palette[index])
+
+    plot.legend.location = "top_left"
+    plots[-1].append(plot)
 
     save(gridplot(plots))
 
@@ -1632,7 +1769,8 @@ exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
-#analyse_all_approaches_depre("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 exit()
 

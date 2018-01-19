@@ -230,7 +230,7 @@ def submitResults(db_name, results_list):
                         )
                         VALUES (?,0,?,?,?,?,0,0,0,0,0,0,0,?,0,?)
                         """, results_list)
-    if len(results_list[0]) == 7:
+    if len(results_list[0]) == 8:
         c.executemany("""
                         INSERT INTO results 
                         (
@@ -251,7 +251,7 @@ def submitResults(db_name, results_list):
                             mapping_quality,
                             approach
                         )
-                        VALUES (?,0,?,?,?,?,0,0,0,0,0,0,0,?,?,?)
+                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,?,?,?)
                         """, results_list)
     else: # len == 16
         c.executemany("""
@@ -271,8 +271,8 @@ def submitResults(db_name, results_list):
                             anchor_ambiguity,
                             max_diag_deviation,
                             max_nmw_area,
-                            run_time,
                             mapping_quality,
+                            run_time,
                             approach
                         )
                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
