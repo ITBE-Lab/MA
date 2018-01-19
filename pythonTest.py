@@ -612,6 +612,8 @@ def test_my_approach(
         print("no new queries ... done")
         return
 
+    runtimes = []
+
     extract_size = 2**15
     # break samples into chunks of 2^14
     for index, queries in enumerate(chunks(all_queries, extract_size)):
@@ -704,6 +706,9 @@ def test_my_approach(
             total_time = 0
             for step_index in range(len(result_pledge)):
                 total_time += result_pledge[step_index][index].exec_time
+                while len(runtimes) <= step_index:
+                    runtimes.append(0)
+                runtimes[step_index] += result_pledge[step_index][index].exec_time
 
             sample_id = queries[index][1]
 
@@ -723,7 +728,7 @@ def test_my_approach(
                         NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
                         ref_pack
                     )
-            
+
             """
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
@@ -754,6 +759,7 @@ def test_my_approach(
                     if cur_nmw_h * cur_nmw_w > max_nmw_area:
                         max_nmw_area = cur_nmw_h * cur_nmw_w
             """
+
             sc2 = 0
             if not optimal_alignment is None:
                 sc2 = optimal_alignment.get_score()
@@ -784,6 +790,17 @@ def test_my_approach(
                 )
         print("submitting results (", name, ") ...")
         submitResults(db_name, result)
+    
+    r_names = [
+        "(seeding)",
+        "(seed processing: filtering)",
+        "(seed processing: coupeling)",
+        "(optimal alignment)",
+        "(mapping quality)",
+    ]
+    print("total runtimes:")
+    for i, r in enumerate(runtimes):
+        print(r, r_names[i])
     print("done")
 
 
@@ -792,7 +809,7 @@ def test_my_approaches_rele(db_name):
 
     test_my_approach(db_name, human_genome, "non-enclosed", seg=BinarySeeding(False), num_anchors=200, nmw_give_up=20000)
 
-    #@todo  BWA-MEM seeding technique
+    #@todo BWA-MEM seeding technique
 
     seg = BinarySeeding(False)
     seg.do16ntevery10ntExtension = True
@@ -819,17 +836,16 @@ def test_my_approaches(db_name):
     #test_my_approach(db_name, human_genome, "MABS MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
     #
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
-    # @todo optimize max_sweep
     #
     #test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_strips=100, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 2", num_strips=10, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=0, max_hits=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MABS 1", num_strips=25, max_sweep=5, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 1", num_strips=5, max_sweep=5, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
     #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
@@ -1036,6 +1052,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
     approaches = getApproachesWithData(db_name)
     plots = [ [], [], [], [], [], [], [], [] ]
     mapping_qual = []
+    mapping_qual_illumina = []
 
     for approach_ in approaches:
         approach = approach_[0]
@@ -1048,9 +1065,13 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         nums_seeds = {}
         nums_seeds_chosen = {}
         mapping_qual.append( ([],[]) )
+        mapping_qual_illumina.append( ([],[]) )
 
         max_indel = 2*query_size/indel_size
         max_mut = query_size
+
+        sub_illumina = 0.15
+        indel_illumina = 0.05
 
         def init(d, x, y):
             if x not in d:
@@ -1079,8 +1100,12 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                     else:
                         opt_scores[num_mutation][num_indels] += score / optimal_score
                 mapping_qual[-1][0].append(mapping_quality)
+                if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
+                    mapping_qual_illumina[-1][0].append(mapping_quality)
             else:
                 mapping_qual[-1][1].append(mapping_quality)
+                if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
+                    mapping_qual_illumina[-1][1].append(mapping_quality)
             tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] += run_time
             if not num_seeds is None:
@@ -1201,7 +1226,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
     for index, approach_, in enumerate(approaches):
         approach = approach_[0]
-        data = mapping_qual[index]
+        data = mapping_qual_illumina[index]
 
         total_amount_1 = len(data[0])
         total_amount_2 = len(data[1])

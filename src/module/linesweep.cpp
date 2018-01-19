@@ -232,6 +232,8 @@ LinearLineSweep::ShadowInterval LinearLineSweep::getRightShadow(Seeds::iterator 
 }//function
 
 
+
+
 void LinearLineSweep::linesweep(
         std::vector<ShadowInterval>& vShadows, 
         std::shared_ptr<Seeds> pSeeds
