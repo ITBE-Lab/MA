@@ -1010,7 +1010,7 @@ namespace libMABS
             } // if
             else
             {
-                return true;
+                return false;
             } // else
         } // method
 

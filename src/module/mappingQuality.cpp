@@ -24,6 +24,11 @@ std::shared_ptr<Container> MappingQuality::execute(
     std::shared_ptr<NucSeq> pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[0]);
     std::shared_ptr<ContainerVector> pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[1]);
 
+    //if no alignment was found we cannot set any quality...
+    if(pAlignments->size() == 0)
+        return std::shared_ptr<ContainerVector>(
+            new ContainerVector(std::shared_ptr<Alignment>(new Alignment())));
+
     std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[pAlignments->size()-1]);
 
     // mapping quality based on scores

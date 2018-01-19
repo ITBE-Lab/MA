@@ -205,7 +205,11 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         {
             //remember the additional score
             uiCurrScore += xStripEnd->getValue();
-            uiCurrSize = xStripStart->start_ref() - xStripEnd->end_ref();
+            // compute the current SOC size
+            uiCurrSize = xStripStart->start_ref() - xStripEnd->start_ref();
+            // carefull here we might have seeds in the wrong order since we sorted by r - q not r.
+            if(xStripEnd->start_ref() > xStripStart->start_ref())
+                uiCurrSize = xStripEnd->start_ref() - xStripStart->start_ref();
             //remember the additional element
             uiCurrEle++;
             //move the iterator forward
@@ -277,6 +281,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         //move to the next strip
         xCollect++;
     }//while
+
+    //make sure that we return at least an empty seed set if nothing elese
+    if(pRet->size() == 0)
+        pRet->push_back(std::shared_ptr<Seeds>(new Seeds()));
 
     //return the strip collection
     return pRet;
