@@ -38,8 +38,11 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
     //pos
     *pFile << pAlignment->uiBeginOnRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef));
     *pFile << "\t";
-    //mapping quality @todo
-    *pFile << "*";
+    //mapping quality
+    if(isnan(pAlignment->fMappingQuality))
+        *pFile << "255";
+    else
+        *pFile << std::to_string( (int)(pAlignment->fMappingQuality * 254));
     *pFile << "\t";
     //cigar
     std::string sCigar = "";

@@ -33,4 +33,5 @@ BOOST_PYTHON_MODULE(libMABS)
         exportFileReader();
         exportMappingQuality();
         exportPipe();
+        exportPairedReads();
 }//function

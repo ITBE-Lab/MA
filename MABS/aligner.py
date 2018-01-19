@@ -41,17 +41,18 @@ class Module(libMABS.Module):
     # @brief Execute the implemented algorithm.
     # @details
     # Reimplemented from @ref Module::saveExecute.
-    def execute(self, *input):
-        self.__store_result = Module.execute(input)
+    def execute(self, *args):
+        self.__store_result = Module.execute(args)
         return self.__store_result
 
     ##
     # @brief call the execute function with a try catch block
     # @details
     # Reimplemented from @ref Module::saveExecute.
-    def save_execute(self, *input):
+    def save_execute(self, args):
         try:
-            return self.execute(input)
+            #we get a tuple (args) from the cpp code that we then expand into multiple arguments so that execute can be called with an argument list
+            return self.execute(*args)
         except Exception as e:
             traceback.print_exc()
             return None
@@ -60,8 +61,8 @@ class Module(libMABS.Module):
     # @brief Make this module promise to execute it's function on the provided data.
     # @details
     # Reimplemented from @ref Module::promiseMe.
-    def promise_me(self, input):
-        return Pledge.make_pledge(self, self.get_output_type(), input)
+    def promise_me(self, *args):
+        return Pledge.make_pledge(self, self.get_output_type(), args)
 
 
 ##

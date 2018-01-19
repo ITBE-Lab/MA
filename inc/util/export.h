@@ -148,6 +148,7 @@
 #include "module/fileReader.h"
 #include "module/mappingQuality.h"
 #include "module/pipe.h"
+#include "module/pairedReads.h"
 
 
 #endif

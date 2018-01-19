@@ -829,7 +829,7 @@ def test_my_approaches(db_name):
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MABS 1", num_strips=10, max_sweep=2, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MABS 1", num_strips=25, max_sweep=5, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
     #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MABS 2 radix")
@@ -980,11 +980,15 @@ def analyse_detailed(out_prefix, db_name):
             min_val = 1
             max_val = 0
             for x in data[0]:
+                if x is None:
+                    return plot
                 if x < min_val:
                     min_val = x
                 if x > max_val:
                     max_val = x
             for x in data[1]:
+                if x is None:
+                    return plot
                 if x < min_val:
                     min_val = x
                 if x > max_val:
@@ -1201,23 +1205,37 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
         total_amount_1 = len(data[0])
         total_amount_2 = len(data[1])
+        all_data = []
         min_val = 1
         max_val = 0
         for x in data[0]:
+            if x is None:
+                continue
+            all_data.append(x)
             if x < min_val:
                 min_val = x
             if x > max_val:
                 max_val = x
         for x in data[1]:
+            if x is None:
+                continue
+            all_data.append(x)
             if x < min_val:
                 min_val = x
             if x > max_val:
                 max_val = x
+                max_val = x
+
         values = []
-        amount = 100
-        for i in range(amount):
-            values.append(min_val + i*(max_val-min_val)/float(amount))
-        
+        amount = 1000
+        step = len(all_data) / amount
+        c = 0
+        for v in sorted(all_data):
+            if c >= step:
+                c = 0
+                values.append(v)
+            c += 1
+
         line_x = []
         line_y = []
         for val in values:
@@ -1225,10 +1243,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             wrong = 0
             total = total_amount_1 + total_amount_2
             for ele in data[0]:
-                if ele > val:
+                if not ele is None and ele > val:
                     mapped += 1
             for ele in data[1]:
-                if ele > val:
+                if not ele is None and ele > val:
                     mapped += 1
                     wrong += 1
 
@@ -1422,23 +1440,36 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
 
         total_amount_1 = len(data[0])
         total_amount_2 = len(data[1])
+        all_data = []
         min_val = 1
         max_val = 0
         for x in data[0]:
+            if x is None:
+                continue
+            all_data.append(x)
             if x < min_val:
                 min_val = x
             if x > max_val:
                 max_val = x
         for x in data[1]:
+            if x is None:
+                continue
+            all_data.append(x)
             if x < min_val:
                 min_val = x
             if x > max_val:
                 max_val = x
+
         values = []
-        amount = 100
-        for i in range(amount):
-            values.append(min_val + i*(max_val-min_val)/float(amount))
-        
+        amount = 1000
+        step = len(all_data) / amount
+        c = 0
+        for v in sorted(all_data):
+            if c >= step:
+                c = 0
+                values.append(v)
+            c += 1
+
         line_x = []
         line_y = []
         for val in values:
@@ -1446,10 +1477,10 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             wrong = 0
             total = total_amount_1 + total_amount_2
             for ele in data[0]:
-                if ele > val:
+                if not ele is None and ele > val:
                     mapped += 1
             for ele in data[1]:
-                if ele > val:
+                if not ele is None and ele > val:
                     mapped += 1
                     wrong += 1
 

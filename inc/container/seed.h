@@ -156,6 +156,7 @@ namespace libMABS
         unsigned int num_seeds_in_strip;
         unsigned int anchor_size;
         unsigned int anchor_ambiguity;
+        bool bPaired;
 
         AlignmentStatistics()
                 :
@@ -163,7 +164,8 @@ namespace libMABS
             seed_coverage(0),
             num_seeds_in_strip(0),
             anchor_size(0),
-            anchor_ambiguity(0)
+            anchor_ambiguity(0),
+            bPaired(false)
         {}
 
         void operator=(AlignmentStatistics &rOther)
@@ -173,6 +175,7 @@ namespace libMABS
             num_seeds_in_strip = rOther.num_seeds_in_strip;
             anchor_size = rOther.anchor_size;
             anchor_ambiguity = rOther.anchor_ambiguity;
+            bPaired = rOther.bPaired;
         }//function
     };//class
 

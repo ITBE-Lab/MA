@@ -9,6 +9,7 @@
 
 #include "container/segment.h"
 #include "container/seed.h"
+#include <cmath>
 
 
 namespace libMABS
@@ -57,7 +58,7 @@ namespace libMABS
         nucSeqIndex uiEndOnQuery;
 
         int iScore = 0;
-        double fMappingQuality = 0;
+        double fMappingQuality = NAN;
 
         //some statistics
         AlignmentStatistics xStats;
