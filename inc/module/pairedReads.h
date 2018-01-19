@@ -1,6 +1,10 @@
 #ifndef PAIRED_READS_H
 #define PAIRED_READS_H
 
+#include "module/module.h"
+#include "container/alignment.h"
+#include <cmath>
+
 namespace libMABS
 {
 

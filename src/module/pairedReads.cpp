@@ -1,11 +1,10 @@
 #include "module/pairedReads.h"
-#include <cmath>
 
 using namespace libMABS;
 
 extern int iMatch;
 
-#define SQ_12 = std::sqrt(12)
+#define SQ_12 std::sqrt(12)
 
 double PairedReads::p(nucSeqIndex d) const
 {
@@ -19,7 +18,7 @@ double PairedReads::p(nucSeqIndex d) const
          * the mean is thus: (b+a)/2
          * the std is: (b-a)*sqrt(12)
          */
-        return 1 - std::max(  0, std::min(1, ( d - mean - std / (SQ_12*2) ) / ( std/SQ_12 ) )  );
+        return 1 - std::max(  0.0, std::min(1.0, ( d - mean - std/(SQ_12*2) ) / ( std/SQ_12 ) )  );
 
     return 0.0;
 }//function
@@ -59,7 +58,7 @@ std::shared_ptr<Container> PairedReads::execute(
             std::shared_ptr<Alignment> pAlignment2 = std::static_pointer_cast<Alignment>((*pAlignments2)[j]);
 
             // get the distance of the alignments on the reference
-            nucSeqIndex d = std::abs(pAlignments1->beginOnRef() - pAlignments2->beginOnRef());
+            nucSeqIndex d = std::abs(pAlignment1->beginOnRef() - pAlignment2->beginOnRef());
 
             // compute the score by the formula given in:
             // "Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM" 
@@ -80,14 +79,14 @@ std::shared_ptr<Container> PairedReads::execute(
     }//for
 
     // set the paired property in the respective alignment stats
-    pAlignments1[uiI1]->xStats.bPaired = bPaired;
-    pAlignments2[uiI2]->xStats.bPaired = bPaired;
+    std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bPaired = bPaired;
+    std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bPaired = bPaired;
 
     // return the best pair
     return std::shared_ptr<ContainerVector>(new ContainerVector
             {
-                pAlignments1[uiI1],
-                pAlignments2[uiI2]
+                (*pAlignments1)[uiI1],
+                (*pAlignments2)[uiI2]
             }//container vector
         );
 }//function

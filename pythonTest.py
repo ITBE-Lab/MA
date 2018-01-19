@@ -811,8 +811,8 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    clearResults(db_name, human_genome, "MABS 1")
-    clearResults(db_name, human_genome, "MABS 2")
+    #clearResults(db_name, human_genome, "MABS 1")
+    #clearResults(db_name, human_genome, "MABS 2")
     #clearResults(db_name, human_genome, "MABS 3")
     #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
 
@@ -1795,6 +1795,14 @@ exit()
 #createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
+
+
+
+#createSampleQueries(human_genome, "/mnt/ssd1/illumina.db", 50, 5, 64, True, True)
+test_my_approaches("/mnt/ssd1/illumina.db")
+analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 50, 5)
+analyse_all_approaches_depre("illumina_depre.html","/mnt/ssd1/illumina.db", 50, 5)
+exit()
 
 #high quality picture
 
