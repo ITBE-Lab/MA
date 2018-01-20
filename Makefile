@@ -1,13 +1,7 @@
-# location of the Python header files
- 
-PYTHON_VERSION = 3.5
-PYTHON_INCLUDE = /usr/include/python$(PYTHON_VERSION)
- 
 # location of the Boost Python include files and library
- 
-BOOST_INC = $(BOOST_ROOT)
+
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib
-BOOST_LIB = boost_python3-mt dl rt z boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams-mt
+BOOST_LIB = boost_python3-mt boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams-mt
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp))) $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
@@ -17,20 +11,21 @@ CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
 CC=gcc
-CCFLAGS= -Wall -fPIC -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -g -mavx2
-CFLAGS= -Wall -fPIC -DBOOST_ALL_DYN_LINK -Werror -g
-LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 -L$(BOOST_LIB_PATH) $(addprefix -l,$(BOOST_LIB)) -L/usr/lib/python$(PYTHON_VERSION)/config-x86_64-linux-gnu -lpython$(PYTHON_VERSION) -pthread -g
+CCFLAGS= -Wall -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -g -mavx2
+CFLAGS= -Wall -DBOOST_ALL_DYN_LINK -Werror -g
+LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 -pthread -g
+LDLIBS = -L$(BOOST_LIB_PATH) $(addsuffix, $(addprefix -l,$(BOOST_LIB)), $(BOOST_SUFFIX)) $(PYTHON_LIB)
 
 all: libMABS.so
 
 libMABS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
-	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@
+	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@ $(LDLIBS)
 
 obj/%.o: src/%.cpp inc/%.h
-	$(CC) $(CCFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
+	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc -c $< -o $@
 
 obj/%.co: src/%.c inc/%.h
-	$(CC) $(CFLAGS) -I$(PYTHON_INCLUDE) $(addprefix -isystem,$(BOOST_INC)) -Iinc -c $< -o $@
+	$(CC) $(CFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc -c $< -o $@
 
 html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard MABS/*.py) doxygen.config
 	doxygen doxygen.config

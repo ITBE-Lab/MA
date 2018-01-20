@@ -39,7 +39,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
     *pFile << pAlignment->uiBeginOnRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef));
     *pFile << "\t";
     //mapping quality
-    if(isnan(pAlignment->fMappingQuality))
+    if(std::isnan(pAlignment->fMappingQuality))
         *pFile << "255";
     else
         *pFile << std::to_string( (int)(pAlignment->fMappingQuality * 254));
