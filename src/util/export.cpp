@@ -36,8 +36,13 @@ BOOST_PYTHON_MODULE(libMABS)
         exportPairedReads();
 }//function
 
+/**
+ * @brief main function of executable
+ * @details
+ * main function if program is used as executable
+ */
 int main(int argc, char *argv[])
 {
-    std::cout << "HELLO WORD" << std::endl;
+    std::cout << "HELLO WORLD" << std::endl;
     return 0;
 }//main function

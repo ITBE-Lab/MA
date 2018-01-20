@@ -15,7 +15,7 @@ CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -std=c++11 -pthread
 CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -pthread
 LDSFLAGS=-shared
 LDFLAGS=-g -std=c++11
-LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++
+LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ 
 
 ALL=ml.exe
 # add flags required for wondows or linux specifically
