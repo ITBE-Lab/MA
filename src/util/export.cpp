@@ -35,3 +35,9 @@ BOOST_PYTHON_MODULE(libMABS)
         exportPipe();
         exportPairedReads();
 }//function
+
+int main(int argc, char *argv[])
+{
+    std::cout << "HELLO WORD" << std::endl;
+    return 0;
+}//main function

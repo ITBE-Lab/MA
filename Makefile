@@ -1,7 +1,7 @@
 # location of the Boost Python include files and library
 
-BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib
-BOOST_LIB = boost_python3-mt boost_system-mt boost_thread-mt boost_log-mt boost_log_setup-mt boost_filesystem-mt boost_program_options-mt boost_regex-mt boost_iostreams-mt
+BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
+BOOST_LIB = boost_python3 boost_iostreams boost_log boost_filesystem boost_system
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp))) $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
@@ -11,15 +11,31 @@ CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
 CC=gcc
-CCFLAGS= -Wall -std=c++11 -DBOOST_ALL_DYN_LINK -Werror -g -mavx2
-CFLAGS= -Wall -DBOOST_ALL_DYN_LINK -Werror -g
-LDFLAGS= -shared -Wl,--export-dynamic -std=c++11 -pthread -g
-LDLIBS = -L$(BOOST_LIB_PATH) $(addsuffix, $(addprefix -l,$(BOOST_LIB)), $(BOOST_SUFFIX)) $(PYTHON_LIB)
+CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -std=c++11 -pthread
+CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -pthread
+LDSFLAGS=-shared
+LDFLAGS=-g -std=c++11
+LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++
 
-all: libMABS.so
+ALL=ml.exe
+# add flags required for wondows or linux specifically
+ifeq ($(OS),Windows_NT)
+	LDSFLAGS+= -Wl,--export-all-symbols
+	ALL+=
+else
+	CCFLAGS+= -fPIC -mavx2 
+	CFLAGS+= -fPIC
+	LDSFLAGS+= -Wl,--export-dynamic
+	ALL+= libMABS.so
+endif
+
+all: $(ALL)
+
+ml.exe: $(TARGET_OBJ) $(CTARGET_OBJ)
+	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@ $(LDLIBS)
 
 libMABS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
-	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@ $(LDLIBS)
+	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@
 
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc -c $< -o $@
@@ -35,7 +51,7 @@ install: all
 	cp libMABS.so /usr/lib
 	pip3 show MABS
 
-#@todo  remove me
+#@todo remove me
 vid:
 	gource -f --seconds-per-day 0.1
 
