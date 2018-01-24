@@ -3,7 +3,7 @@
 
 using namespace libMABS;
 
-#ifdef FASTA_READER
+//#ifdef FASTA_READER
 
 
 
@@ -495,6 +495,7 @@ using namespace libMABS;
                 NucSeq( *rxFastaDescriptor.pSequenceRef )
             );
     } // method    
+
     void Pack::vAppendFastaFile( const char *pcFileName ) 
     {
         FastaReader xReader;
@@ -580,7 +581,7 @@ using namespace libMABS;
         ); // function call
     } // method
 
-#endif
+//#endif
 
 void exportPack()
 {

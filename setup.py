@@ -6,7 +6,8 @@ src_folders = list(map(lambda x: "src/"+x, listdir("src")))
 
 src_files = []
 for folder in src_folders:
-    src_files.extend(list(map(lambda x: folder+"/"+x, listdir(folder))))
+    if folder[-4:] != ".cpp":
+        src_files.extend(list(map(lambda x: folder+"/"+x, listdir(folder))))
 
 setup(
     name='MABS',

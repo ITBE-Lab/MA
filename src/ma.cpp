@@ -10,6 +10,7 @@
 #include <boost/program_options.hpp>
 #include "container/nucSeq.h"
 #include "container/pack.h"
+#include "container/fMIndex.h"
 #include <thread>
 
 using namespace libMABS;
@@ -99,22 +100,44 @@ int main(int argc, char*argv[])
 
         if (argc <= 1)
             std::cout << gen_desc << std::endl;
-        if(vm.count("index"))
+        if(vm.count("fmdIndex"))
         {
-            Pack xPack;
-
+            if(vm.count("indexIn") == 0 || vm.count("indexOut") == 0 )
+                std::cerr << "--indexIn and --indexOut are compulsory if --fmdIndex is set" << std::endl;
+            else
+            {
+                std::shared_ptr<Pack> pPack(new Pack());
+                //create the pack
+                for(std::string sFileName : vIndexIn)
+                    pPack->vAppendFastaFile(sFileName.c_str());
+                //store the pack
+                pPack->vStoreCollection(sIndexOut);
+                //create the fmd index
+                FMIndex xFMDIndex(pPack);
+                //store the fmd index
+                xFMDIndex.vStoreFMIndex(sIndexOut.c_str());
+            }//else
         }//if
         if(vm.count("align"))
         {
-            //if paired alignment
-            if(bPariedNormal || bPariedUniform)
+            if(vm.count("alignIn") == 0 || vm.count("alignOut") == 0 || vm.count("genome") == 0 )
+                std::cerr << "--alignIn, --alignOut and --genome are compulsory if --align is set" << std::endl;
+            else
             {
+                //if paired alignment
+                if(bPariedNormal || bPariedUniform)
+                {
 
-            }
+                }//if
+                else
+                {
+
+                }//else
+            }//else
         }//if
         if (vm.count("help"))
         {
-            std::cout << "===== MA THE MODULAR ALIGNER =====" << std::endl;
+            std::cout << "\t\t===== MA THE MODULAR ALIGNER =====" << std::endl;
             std::cout << all_desc << std::endl;
             std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;
         }//if

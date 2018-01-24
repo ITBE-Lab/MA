@@ -20,7 +20,7 @@ LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFF
 all:libMABS.so ma.exe
 
 ma.exe: libMABS.so src/ma.cpp
-	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) -lMABS -o ma.exe
+	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) -L./ -lMABS -o ma.exe
 
 libMABS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@
