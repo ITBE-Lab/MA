@@ -1,28 +1,26 @@
 # location of the Boost Python include files and library
 
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
-BOOST_LIB = boost_python3 boost_iostreams boost_log boost_filesystem boost_system
+BOOST_LIB = boost_python3 boost_iostreams boost_log boost_filesystem boost_system boost_program_options
  
 # target files
-TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*.cpp))) $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
-CTARGET = $(subst .c,,$(subst src/,,$(wildcard src/*.c))) $(subst .c,,$(subst src/,,$(wildcard src/*/*.c)))
+TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
+CTARGET = $(subst .c,,$(subst src/,,$(wildcard src/*/*.c)))
 TARGET_OBJ = $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
 CC=gcc
-CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -std=c++11 -pthread
-CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -pthread
-LDSFLAGS=-shared
+CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -std=c++11 -mavx2
+CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -mavx2
+LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
 LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ 
 
-ALL=libMABS.so ml.exe
+all:libMABS.so ma.exe
 
-all: $(ALL)
-
-ml.exe: libMABS.so ml.cpp
-	$(CC) $(CCFLAGS) ml.cpp -o ml.exe $(LDLIBS) -lMABS
+ma.exe: libMABS.so src/ma.cpp
+	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) -lMABS -o ma.exe
 
 libMABS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@

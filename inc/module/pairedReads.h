@@ -33,7 +33,7 @@ namespace libMABS
         ///@brief use uniform distribution for the insert size
         bool bUniformDist = false;
         ///@brief the mean of the insert size
-        double mean = 0;
+        unsigned int mean = 0;
         ///@brief the standard deviation of the insert size
         double std = 1;
 

@@ -11,19 +11,24 @@
 
 #pragma once
 
+#define FASTA_READER
+
 #include <algorithm>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
 #include "container/nucSeq.h"
 #include "util/debug.h"
 #include "util/support.h"
-//#include "container/fasta_reader.h" //DEPRECATED
+
+#ifdef FASTA_READER
+        class FastaDescriptor;
+#endif
 
 namespace libMABS
 {
     /* --- BEGIN DEPRECATED ---
     */
-    #if 0
+#if 0
     /**
      * @brief contains descriptive information about the sequences within the pack.
      */
@@ -81,7 +86,7 @@ namespace libMABS
     /* The translation table.
     */
     extern unsigned char nst_nt4_table[256];
-    #endif
+#endif
     /* --- END DEPRECATED ---
     */
 
@@ -688,28 +693,13 @@ namespace libMABS
             vAppendSequence(std::string(rsName), std::string(rsComment), *pxSequence);
         }
 
-//DEPRECATED
-#if 0
+#ifdef FASTA_READER
         /* Appends a single FASTA record to the collection and pack.
         */
-        void vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor ) 
-        {
-            /* This is a bit inefficient. We could boost performance by allowing a move for the sequence
-            */
-            vAppendSequence( 
-                    rxFastaDescriptor.sName,        // Name of the embedded sequence
-                    rxFastaDescriptor.sComment,    // Comments for the sequence
-                    NucSeq( *rxFastaDescriptor.pSequenceRef )
-                );
-        } // method    
+        void vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor ) ;
         /* Appends a single FASTA record to the collection and pack.
         */
-        void vAppendFastaFile( const char *pcFileName ) 
-        {
-            FastaReader xReader;
-            xReader.vLoadFastaFile(pcFileName);
-            vAppendFastaSequence(xReader);
-        } // method
+        void vAppendFastaFile( const char *pcFileName ) ;
 #endif
 
         /* Creates the reverse strand a saves the collection on the disk.
@@ -771,8 +761,7 @@ namespace libMABS
                     && boost::filesystem::exists( rsPrefix + ".amb" );
         } // method
 
-//DEPRECATED
-#if 0
+#ifdef FASTA_READER
         /* Entry point, for the construction of packs.
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
@@ -780,80 +769,13 @@ namespace libMABS
         void vPackFastaFilesDeprecated( const std::vector<std::string> &rxvFileNameOfFastaFiles, 
                                         const char* pcPackPrefix, 
                                         bool bMakeReverseStand = false 
-                                    )
-        {
-            BOOST_LOG_TRIVIAL( trace ) << "Processing Pack Prefix " << pcPackPrefix;
-            
-            /* Load all FASTA-Files in the given vector and add their content to te pack
-            */
-            for ( const std::string &rsFileName : rxvFileNameOfFastaFiles )
-            {
-                BOOST_LOG_TRIVIAL( trace ) << "Add content of Fasta-File" << rsFileName;
-                
-                /* Open a stream for FASTA File reading.
-                */
-                std::ifstream xFileInputStream( rsFileName, std::ios::in | std::ios::binary );
-            
-                /* We check, whether file opening worked well.
-                */
-                if ( !xFileInputStream.is_open() )
-                {
-                    throw fasta_reader_exception( "File open error." );
-                } // if
-
-                /* Open a FASTA Stream reader using the input stream. The FASTA reader automatically recognizes whether the pack is compressed or not.
-                */
-                FastaStreamReader<GzipInputStream> xFastaReader( xFileInputStream );
-                
-                /* Apply the lambda expression to all records in the file
-                */
-                xFastaReader.forAllSequencesDo
-                (
-                    [&] ( const FastaDescriptor &xFastaRecord ) 
-                    {    /* Add the current FASTA sequence to the pack.
-                        */
-                        vAppendFastaSequence( xFastaRecord );
-                        BOOST_LOG_TRIVIAL( trace ) << "Add sequence " << xFastaRecord.sName;
-                    } // lambda
-                ); // function call
-            } // for
-            
-            vStoreCollection( pcPackPrefix );
-        } // method
+                                    );
 
         /* Entry point, for the construction of packs.
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
         */
-        void vAppendFASTA( const boost::filesystem::path &sFastaFilePath )
-        {    /* Open a stream for FASTA File reading.
-            */
-            std::ifstream xFileInputStream( sFastaFilePath.string(), std::ios::in | std::ios::binary );
-        
-            /* We check, whether file opening worked well.
-            */
-            if ( xFileInputStream.fail() )
-            {    /* Something is wrong with respect to the input-file
-                */
-                throw fasta_reader_exception( "File open error." );
-            } // if
-
-            /* Open a FASTA Stream reader using the input stream. The FASTA reader automatically recognizes whether the pack is compressed or not.
-            */
-            FastaStreamReader<GzipInputStream> xFastaReader( xFileInputStream );
-            
-            /* Apply the lambda expression to all records in the file
-            */
-            xFastaReader.forAllSequencesDo
-            (
-                [&] ( const FastaDescriptor &xFastaRecord ) 
-                {    /* Add the current FASTA sequence to the pack.
-                    */
-                    BOOST_LOG_TRIVIAL( trace ) << "Add sequence " << xFastaRecord.sName;
-                    vAppendFastaSequence( xFastaRecord );
-                } // lambda
-            ); // function call
-        } // method
+        void vAppendFASTA( const boost::filesystem::path &sFastaFilePath );
 #endif
         
         /* Restores a nucleotide sequence collection from the file system using the prefix given as argument.
