@@ -1,5 +1,6 @@
 #include "module/pairedReads.h"
 
+
 using namespace libMABS;
 
 extern int iMatch;
@@ -58,7 +59,10 @@ std::shared_ptr<Container> PairedReads::execute(
             std::shared_ptr<Alignment> pAlignment2 = std::static_pointer_cast<Alignment>((*pAlignments2)[j]);
 
             // get the distance of the alignments on the reference
-            nucSeqIndex d = std::abs(pAlignment1->beginOnRef() - pAlignment2->beginOnRef());
+            nucSeqIndex d = pAlignment1->beginOnRef() - pAlignment2->beginOnRef();
+			// make sure that we do not have underflows here
+			if (pAlignment2->beginOnRef() > pAlignment1->beginOnRef())
+				d = pAlignment2->beginOnRef() - pAlignment1->beginOnRef();
 
             // compute the score by the formula given in:
             // "Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM" 

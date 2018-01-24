@@ -8,6 +8,10 @@
 /* Common code used in Smith-Waterman aligners.
  */
 
+#ifdef _WIN32   
+typedef unsigned __int8 uint8_t;
+#endif
+
 /* As described in the papers:
  * TO DO: insert references
  */

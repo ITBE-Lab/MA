@@ -103,12 +103,17 @@ namespace libMABS
      */
     class SegmentVector : public std::vector<std::shared_ptr<Segment>>, public Container{
 
-    public:
-        /*
-        * exposing the constructors from vector
-        * required for IterableConverter().from_python() to work
-        */
-        using vector::vector;
+	public:
+
+		template< class InputIt >
+		SegmentVector(InputIt xBegin, InputIt xEnd
+			)
+			:
+			vector(xBegin, xEnd)
+		{}//iterator constructor
+
+		SegmentVector()
+		{}//default constructor
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const

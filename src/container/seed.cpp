@@ -6,6 +6,11 @@ extern int iMatch;
 extern int iMissMatch;
 extern int iExtend;
 
+#ifdef _WIN32   
+//getting ambiguous abs otherwise
+#include <cstdlib>
+#endif
+
 /*returns the sum off all scores within the list*/
 nucSeqIndex Seeds::getScore() const
 {
@@ -22,7 +27,10 @@ nucSeqIndex Seeds::getScore() const
                 nucSeqIndex uiQDist = rS.start() - uiLastQPos;
                 nucSeqIndex uiRDist = rS.start_ref() - uiLastRPos;
                 iRet -= iGap + iExtend * std::min(uiQDist, uiRDist);
-                iRet -= iMissMatch * std::abs(uiQDist - uiRDist);
+				nucSeqIndex uiDist = uiQDist - uiRDist;
+				if (uiRDist > uiQDist)
+					uiDist = uiRDist - uiQDist;
+				iRet -= iMissMatch * uiDist;
                 uiLastQPos = rS.start();
                 uiLastRPos = rS.start_ref();
             }//if

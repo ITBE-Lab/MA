@@ -95,7 +95,7 @@ std::shared_ptr<Container> Chaining::execute(
     * WARNING: chaining code is not 100% correct when allowing overlaps
     * (basically each certain match will be scored as possible match only in that case)
     */ 
-    #define STARTS true
+    #define STARTS 1
     #if STARTS
         RMQ<int64_t>::RMQData& a = d1.rmq(
                 veryVerySmall,-1,

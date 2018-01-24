@@ -17,22 +17,12 @@ LDSFLAGS=-shared
 LDFLAGS=-g -std=c++11
 LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ 
 
-ALL=ml.exe
-# add flags required for wondows or linux specifically
-ifeq ($(OS),Windows_NT)
-	LDSFLAGS+= -Wl,--export-all-symbols
-	ALL+=
-else
-	CCFLAGS+= -fPIC -mavx2 
-	CFLAGS+= -fPIC
-	LDSFLAGS+= -Wl,--export-dynamic
-	ALL+= libMABS.so
-endif
+ALL=libMABS.so ml.exe
 
 all: $(ALL)
 
-ml.exe: $(TARGET_OBJ) $(CTARGET_OBJ)
-	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) -o $@ $(LDLIBS)
+ml.exe: libMABS.so ml.cpp
+	$(CC) $(CCFLAGS) ml.cpp -o ml.exe $(LDLIBS) -lMABS
 
 libMABS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@

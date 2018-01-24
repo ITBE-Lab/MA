@@ -14,6 +14,8 @@
 
 namespace libMABS
 {
+	class Pledge;
+
     /**
      * @defgroup container
      * @brief All classes containing data elements.
@@ -107,8 +109,19 @@ namespace libMABS
     {
     private:
         std::shared_ptr<Container> contentType;
-    public:
-        using vector::vector;
+	public:
+		ContainerVector(std::initializer_list<std::shared_ptr<Container>> init)
+			:
+			vector(init)
+		{}//initializer list constructor
+
+		template< class InputIt >
+		ContainerVector(InputIt xBegin, InputIt xEnd
+			)
+			:
+			vector(xBegin, xEnd)
+		{}//iterator constructor
+
         ContainerVector()
             :
             contentType(new Container())

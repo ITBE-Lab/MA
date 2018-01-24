@@ -19,7 +19,7 @@ namespace libMABS
      * @details
      * @li @c match: query and reference have the same nucleotide.
      * @li @c seed: query and reference have the same nucleotide 
-     * (the match was found as part of a seed).
+     * (the match was found as part  of a seed).
      * @li @c missmatch: query and reference have different nucleotides, 
      *      but they are aligned to the same position nonetheless.
      * @li @c insertion: a nucleotide is present on the query that has no counterpart on the reference.

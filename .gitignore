@@ -12,3 +12,4 @@ html/*
 *.png
 *.tmp
 *.exe
+vs/*

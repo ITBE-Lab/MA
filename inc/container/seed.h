@@ -192,10 +192,6 @@ namespace libMABS
     {
     public:
         nucSeqIndex mem_score = 0;
-        //inherit the constructors from vector
-        using vector::vector;
-        //inherit the constructors from Container
-        using Container::Container;
         //some statistics
         AlignmentStatistics xStats;
 
@@ -217,7 +213,13 @@ namespace libMABS
             Container(),
             xStats(),
             bConsistent(false)
-        {}//default constructor
+		{}//default constructor
+
+		template< class InputIt >
+		Seeds(InputIt xBegin, InputIt xEnd)
+				:
+			vector(xBegin, xEnd)
+		{}//iterator constructor
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const
