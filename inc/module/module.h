@@ -70,7 +70,7 @@ namespace libMA
          * @details
          * Expects the given containers to have the correct types.
          */
-        virtual std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> pInput)
+        virtual std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput)
         {
             return nullptr;
         }//function
@@ -80,7 +80,7 @@ namespace libMA
          * @details
          * Used for type checking the inputs before calling execute.
          */
-        virtual ContainerVector getInputType() const
+        virtual ContainerVector EXPORTED getInputType() const
         {
             return ContainerVector{std::shared_ptr<Container>(new Nil())};
         }//function
@@ -90,7 +90,7 @@ namespace libMA
          * @details
          * Used for type checking weather the module returns expected data.
          */
-        virtual std::shared_ptr<Container> getOutputType() const
+        virtual std::shared_ptr<Container> EXPORTED getOutputType() const
         {
             return std::shared_ptr<Container>(new Nil());
         }//function
@@ -101,7 +101,7 @@ namespace libMA
          * Can be used to print a representation of the computational graph.
          * Is also used when creating error messages.
          */
-        virtual std::string getName() const
+        virtual std::string EXPORTED getName() const
         {
             return "Module";
         }//function
@@ -112,7 +112,7 @@ namespace libMA
          * For example a file reader may create different output if called twice on the same file.
          * If this is set to true the pledge will recompute the result each time get is called.
          */
-        virtual bool outputsVolatile() const
+        virtual bool EXPORTED outputsVolatile() const
         {
             return false;
         }//function
@@ -299,6 +299,10 @@ namespace libMA
         std::vector<std::shared_ptr<Pledge>> aSync;
         std::shared_ptr<std::mutex> pMutex;
 
+    public:
+        double execTime;
+    private:
+
         /**
          * @brief Create a new pledge with a cpp module responsible to fullfill it.
          * @details
@@ -343,10 +347,6 @@ namespace libMA
             execTime(0)
         {}//constructor
 
-    public:
-        double execTime;
-    private:
-
         void execForGet()
         {
             bool bVolatile = false;
@@ -362,15 +362,23 @@ namespace libMA
                 throw ModuleIO_Exception("No pledger known");
             if(pledger != nullptr)
             {
+                bool bDry = false;
                 std::shared_ptr<ContainerVector> vInput(new ContainerVector());
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                {
                     vInput->push_back(pFuture->get());
+                    if(vInput->back()->bDry)
+                        bDry = true;
+                }//for
                 try
                 {
                     auto timeStamp = std::chrono::system_clock::now();
                     content = (std::shared_ptr<Container>)pledger->execute(vInput);
                     std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
                     execTime = duration.count();
+                    //content->bDry may be true already we do not want to overwrite it with false
+                    if(bDry)
+                        content->bDry = true;
                     assert(typeCheck(content, type));
                 } catch(...)
                 {
@@ -446,20 +454,10 @@ namespace libMA
             return pledger;
         }//function
 
-        static inline std::shared_ptr<Pledge> makePledge(
+        static EXPORTED std::shared_ptr<Pledge> makePledge(
                 std::shared_ptr<Module> pledger,
                 std::vector<std::shared_ptr<Pledge>> vPredecessors
-            )
-        {
-            std::shared_ptr<Pledge> pRet = std::shared_ptr<Pledge>(
-                new Pledge(pledger, pledger->getOutputType(), vPredecessors)
             );
-            
-            for(std::shared_ptr<Pledge> pPredecessor : vPredecessors)
-                pPredecessor->vSuccessors.push_back(std::weak_ptr<Pledge>(pRet));
-
-            return pRet;
-        }//contructor function
 
         static inline std::shared_ptr<Pledge> makePyPledge(
                 boost::python::object py_pledger,
@@ -569,7 +567,8 @@ namespace libMA
                             //if bLoop is true this loop will keep going until all 
                             //volatile modules are dry.
                             //otherwise one iteration is performed only
-                            while (pPledge->get() != nullptr) if(!bLoop) break;
+                            if(!pPledge->get()->bDry && bLoop)
+                                while(!pPledge->get()->bDry);
                         },//lambda
                         pPledge
                     );

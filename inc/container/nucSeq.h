@@ -705,7 +705,7 @@ namespace libMA
         std::string fromTo(unsigned int uiStart, unsigned int uiEnd)
         {
             std::string ret = "";
-            for (unsigned int i = uiStart; i <= uiEnd && i < length(); i++)
+            for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
                     ret += charAt(i);
             return ret;
         }//function
@@ -713,7 +713,7 @@ namespace libMA
         std::string fromToQual(unsigned int uiStart, unsigned int uiEnd)
         {
             std::string ret = "";
-            for (unsigned int i = uiStart; i <= uiEnd && i < length(); i++)
+            for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
                     ret += (char)quality(i);
             return ret;
         }//function

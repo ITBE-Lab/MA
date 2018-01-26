@@ -575,7 +575,7 @@ using namespace libMA;
             [&] ( const FastaDescriptor &xFastaRecord ) 
             {    /* Add the current FASTA sequence to the pack.
                 */
-                BOOST_LOG_TRIVIAL( trace ) << "Add sequence " << xFastaRecord.sName;
+                //BOOST_LOG_TRIVIAL( trace ) << "Add sequence " << xFastaRecord.sName;
                 vAppendFastaSequence( xFastaRecord );
             } // lambda
         ); // function call

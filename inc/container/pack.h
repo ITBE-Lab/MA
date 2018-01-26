@@ -244,8 +244,9 @@ namespace libMA
                     ) const
         {
             auto rsFileName( rsFileNamePrefix + ".pac" ); // final filename for writing the packed sequence
-            
-            BOOST_LOG_TRIVIAL(trace) << "Storing pack with filename " << rsFileName;
+            DEBUG(
+                BOOST_LOG_TRIVIAL(trace) << "Storing pack with filename " << rsFileName;
+            )
             std::ofstream xFileOutputStream( rsFileName, std::ios::out | std::ios::binary );
 
             /* Write the content of the pack to the file.

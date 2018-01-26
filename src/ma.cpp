@@ -11,6 +11,9 @@
 #include "container/nucSeq.h"
 #include "container/pack.h"
 #include "container/fMIndex.h"
+#include "module/fileReader.h"
+#include "module/fileWriter.h"
+#include "util/export.h"
 #include <thread>
 
 using namespace libMA;
@@ -34,9 +37,9 @@ int main(int argc, char*argv[])
     std::string sParameterSet;
     std::string sSeedSet;
     std::string sGenome;
-    std::vector<std::string> vIndexIn;
-    std::vector<std::string> aAlignOut;
-    std::vector<std::string> vAlignIn;
+    std::vector<std::string> aIndexIn;
+    std::string sAlignOut;
+    std::vector<std::string> aAlignIn;
 
     options_description gen_desc{"General Options"};
     gen_desc.add_options()
@@ -64,8 +67,8 @@ int main(int argc, char*argv[])
 
         options_description align_desc{"Alignment Options"};
         align_desc.add_options()
-            ("alignIn,i", value<std::vector<std::string>>(&vAlignIn)->composing(), "Input file paths [*.fasta/*.fastaq/*]")
-            ("alignOut,o", value<std::vector<std::string>>(&aAlignOut)->composing()->default_value({"stdout"}, "stdout"), "Output file paths [*.sam/*.bam/*]")
+            ("alignIn,i", value<std::vector<std::string>>(&aAlignIn)->composing(), "Input file paths [*.fasta/*.fastaq/*]")
+            ("alignOut,o", value<std::string>(&sAlignOut)->default_value("stdout"), "Output file path [*.sam/*.bam/*]")
             ("reportN,n", value<unsigned int>(&uiReportNBest)->default_value(1), "Report the N best Alignments")
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
@@ -86,7 +89,7 @@ int main(int argc, char*argv[])
 
         options_description index_desc{"FMD-Index Generation Options"};
         index_desc.add_options()
-            ("indexIn,I", value<std::vector<std::string>>(&vIndexIn)->composing(), "FASTA input file paths")
+            ("indexIn,I", value<std::vector<std::string>>(&aIndexIn)->composing(), "FASTA input file paths")
             ("indexOut,O", value<std::string>(&sIndexOut), "FMD-index output file prefix")
         ;
         
@@ -110,8 +113,8 @@ int main(int argc, char*argv[])
             {
                 std::shared_ptr<Pack> pPack(new Pack());
                 //create the pack
-                for(std::string sFileName : vIndexIn)
-                    pPack->vAppendFastaFile(sFileName.c_str());
+                for(std::string sFileName : aIndexIn)
+                    pPack->vAppendFASTA(sFileName.c_str());
                 //store the pack
                 pPack->vStoreCollection(sIndexOut);
                 //create the fmd index
@@ -122,19 +125,55 @@ int main(int argc, char*argv[])
         }//if
         if(vm.count("align"))
         {
-            if(vm.count("alignIn") == 0 || vm.count("alignOut") == 0 || vm.count("genome") == 0 )
-                std::cerr << "--alignIn, --alignOut and --genome are compulsory if --align is set" << std::endl;
+            if(vm.count("alignIn") == 0 || vm.count("genome") == 0 )
+                std::cerr << "--alignIn and --genome are compulsory if --align is set" << std::endl;
             else
             {
-                //if paired alignment
-                if(bPariedNormal || bPariedUniform)
+                /*
+                 *
+                 * Alignment starts here
+                 *
+                 */
+                //setup the alignment input
+                std::shared_ptr<Pledge> pPack(new Pledge(std::shared_ptr<Container>(new Pack())));
+                std::shared_ptr<Pack> pPack_(new Pack());
+                pPack_->vLoadCollection(sGenome);
+                pPack->set(pPack_);
+                std::shared_ptr<Pledge> pFMDIndex(new Pledge(std::shared_ptr<Container>(new FMIndex())));
+                std::shared_ptr<FMIndex> pFMDIndex_(new FMIndex());
+                pFMDIndex_->vLoadFMIndex(sGenome);
+                pFMDIndex->set(pFMDIndex_);
+                std::vector<std::shared_ptr<Pledge>> aQueries;
+                std::shared_ptr<Pledge> pNil(new Pledge(std::shared_ptr<Container>(new Nil())));
+                pNil->set(std::shared_ptr<Container>(new Nil()));
+                for(std::string sFileName : aAlignIn)
                 {
-
-                }//if
-                else
-                {
-
-                }//else
+                    std::shared_ptr<FileReader> pReader(new FileReader(sFileName));
+                    aQueries.push_back(Module::promiseMe(
+                        pReader, 
+                        std::vector<std::shared_ptr<Pledge>>{pNil}
+                    ));
+                }//for
+                std::shared_ptr<Module> pOut(new FileWriter(sAlignOut));
+                //setup the graph
+                std::vector<std::shared_ptr<Pledge>> aGraphSinks = setUpCompGraph(
+                    pPack,
+                    pFMDIndex,
+                    aQueries,
+                    pOut,
+                    uiT,//num threads
+                    uiMaxAmbiguity,
+                    uiNumSOC,
+                    bPariedNormal,
+                    bPariedUniform,
+                    uiPairedMean,
+                    fPairedStd,
+                    dPairedU,
+                    sSeedSet != "complete",
+                    uiReportNBest
+                );
+                //run the alignment
+                Pledge::simultaneousGet(aGraphSinks, true);
             }//else
         }//if
         if (vm.count("help"))
@@ -148,6 +187,14 @@ int main(int argc, char*argv[])
     {
         std::cout << gen_desc << std::endl;
         std::cerr << ex.what() << std::endl;
+    }//catch
+    catch (std::runtime_error &ex)
+    {
+        std::cerr << ex.what() << std::endl;
+    }//catch
+    catch (...)
+    {
+        std::cerr << "unknown exception encountered" << std::endl;
     }//catch
     return 0;
 }//main function

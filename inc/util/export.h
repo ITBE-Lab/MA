@@ -155,7 +155,7 @@
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
     std::shared_ptr<libMA::Pledge> pFMDIndex,
-    std::shared_ptr<libMA::Pledge> pQueries,
+    std::vector<std::shared_ptr<libMA::Pledge>> aQueries,
     std::shared_ptr<libMA::Module> pOut,
     unsigned int uiThreads,
     unsigned int uiMaxAmbiguity,
@@ -165,7 +165,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int uiPairedMean,
     double fPairedStd,
     double dPairedU,
-    unsigned int reportNBest
+    bool bSeedSetPairs,
+    unsigned int uiReportNBest
 );
 
 #endif

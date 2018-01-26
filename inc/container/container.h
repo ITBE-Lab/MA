@@ -34,6 +34,9 @@ namespace libMA
     class Container
     {
     public:
+        //@todo document me
+        ///to remember if one of the inputs is dry
+        bool bDry = false;
         /** 
         * @returns the type of the container as int.
         * @brief Used by @ref Module "module" for type checking its Inputs.

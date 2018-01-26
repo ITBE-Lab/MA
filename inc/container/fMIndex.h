@@ -706,7 +706,7 @@ namespace libMA
         bwtint_t bwt_sa( bwtint_t uiBWTposition )
         {    /* Check uiBWTposition for out of range
             */
-            assert( ( uiBWTposition >= 0 ) && ( uiBWTposition < static_cast<bwtint_t>(uiRefSeqLength) ) ); // Out of range check for uiBWTposition
+            assert( ( uiBWTposition >= 0 ) && ( uiBWTposition <= static_cast<bwtint_t>(uiRefSeqLength) ) ); // Out of range check for uiBWTposition
 
             bwtint_t sa = 0;
             const bwtint_t mask = sa_intv - 1; // this is why sa_intv must be a power of 2 
@@ -891,7 +891,7 @@ namespace libMA
             )
             : FMIndex() // call the default constructor
         {
-            build_FMIndex( *pxSequenceCollection, 2 );
+            build_FMIndex( *pxSequenceCollection, 0 );
         } // constructor
 
     }; // class FMIndex

@@ -1,4 +1,5 @@
 #include "module/module.h"
+#include "module/splitter.h"
 using namespace libMA;
 std::mutex xPython;
 
@@ -64,6 +65,22 @@ std::shared_ptr<Pledge> Module::promiseMe(
     }//if
     return Pledge::makePledge(pThis, vInput);
 }//function
+
+std::shared_ptr<Pledge> Pledge::makePledge(
+                std::shared_ptr<Module> pledger,
+                std::vector<std::shared_ptr<Pledge>> vPredecessors
+            )
+{
+    std::shared_ptr<Pledge> pRet = std::shared_ptr<Pledge>(
+        new Pledge(pledger, pledger->getOutputType(), vPredecessors)
+    );
+    //if the pledge is created by a Lock we do not want it to be reset by previos pledges
+    if(std::dynamic_pointer_cast<Lock>(pledger) == nullptr)
+        for(std::shared_ptr<Pledge> pPredecessor : vPredecessors)
+            pPredecessor->vSuccessors.push_back(std::weak_ptr<Pledge>(pRet));
+
+    return pRet;
+}//contructor function
 
 void exportModule()
 {

@@ -116,6 +116,10 @@ namespace libMA
             return "UnLock";
         }//function
 
+        bool outputsVolatile() const
+        {
+            return true;
+        }//function
     };//class
 
 }//namespace

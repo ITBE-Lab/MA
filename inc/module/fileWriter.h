@@ -13,30 +13,36 @@ namespace libMA
     class FileWriter: public Module
     {
     public:
-        std::shared_ptr<std::ostream> pFile;
+        //holds a file ourstream if necessary
+        std::shared_ptr<std::ofstream> pFile;
+        //points to the used stream
+        std::ostream* pOut;
         std::shared_ptr<std::mutex> pLock;
 
         FileWriter(std::string sFileName)
                 :
             pLock(new std::mutex)
         {
-            if(sFileName == "stdout")
-                pFile = std::shared_ptr<std::ostream>(&std::cout);
-            else
-                pFile = std::shared_ptr<std::ostream>(
-                new std::ofstream(sFileName, std::ofstream::out | std::ofstream::trunc));
-            if (!pFile->good())
+            pOut = &std::cout;
+            if(sFileName != "stdout")
             {
-                std::cout << "Unable to open file" << std::endl;
-                //@todo exception
+                std::cout << sFileName << "." << std::endl;
+                pFile = std::shared_ptr<std::ofstream>(
+                new std::ofstream(sFileName, std::ofstream::out | std::ofstream::trunc));
+                if (!pFile->good())
+                {
+                    std::cout << "Unable to open file" << std::endl;
+                    //@todo exception
+                }//if
+                pOut = &*pFile;
             }//if
-            *pFile << "@HD VN:1.5 SO:unknown" << std::endl;
+            *pOut << "@HD VN:1.5 SO:unknown" << std::endl;
         }//constructor
 
         ~FileWriter()
         {
-            if(std::static_pointer_cast<std::ofstream>(pFile) != nullptr)
-                std::static_pointer_cast<std::ofstream>(pFile)->close();
+            if(pFile != nullptr)
+                pFile->close();
         }//deconstructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

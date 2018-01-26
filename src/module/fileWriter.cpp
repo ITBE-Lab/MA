@@ -29,6 +29,8 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
     for(std::shared_ptr<Container> pA : *pAlignments)
     {
         std::shared_ptr<Alignment> pAlignment = std::static_pointer_cast<Alignment>(pA);
+        if(pAlignment->length() == 0)
+            continue;
         std::string sCigar = "";
         unsigned int iCont = 0;
         for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
@@ -70,38 +72,38 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 
             //print alignment
             //query name
-            *pFile << pQuery->sName;
-            *pFile << "\t";
+            *pOut << pQuery->sName;
+            *pOut << "\t";
             //alignment flag
-            *pFile << "0";
-            *pFile << "\t";
+            *pOut << "0";
+            *pOut << "\t";
             //reference name
-            *pFile << sRefName;
-            *pFile << "\t";
+            *pOut << sRefName;
+            *pOut << "\t";
             //pos
-            *pFile << sRefPos;
-            *pFile << "\t";
+            *pOut << sRefPos;
+            *pOut << "\t";
             //mapping quality
-            *pFile << sMapQual;
-            *pFile << "\t";
+            *pOut << sMapQual;
+            *pOut << "\t";
             //cigar
-            *pFile << sCigar;
-            *pFile << "\t";
+            *pOut << sCigar;
+            *pOut << "\t";
             //Ref. name of the mate/next read ? wut? @todo
-            *pFile << "*";
-            *pFile << "\t";
+            *pOut << "*";
+            *pOut << "\t";
             //Position of the mate/next read ? wut? @todo
-            *pFile << "0";
-            *pFile << "\t";
+            *pOut << "0";
+            *pOut << "\t";
             //observed Template length
-            *pFile << std::to_string(pAlignment->length());
-            *pFile << "\t";
+            *pOut << std::to_string(pAlignment->length());
+            *pOut << "\t";
             //segment sequence
-            *pFile << sSegment;
-            *pFile << "\t";
+            *pOut << sSegment;
+            *pOut << "\t";
             //ASCII of Phred-scaled base Quality+33
-            *pFile << sQual;
-            *pFile << std::endl;
+            *pOut << sQual;
+            *pOut << std::endl;
         }//score xGuard
     }//for
 

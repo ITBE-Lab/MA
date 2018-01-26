@@ -30,6 +30,9 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
     std::shared_ptr<ContainerVector> pResults = std::shared_ptr<ContainerVector>(
             new ContainerVector(pModule->getOutputType(), pInVec->size())
         );
+
+    if(pInVec->empty())
+        return pResults;
     {
         ThreadPool xPool( NUM_THREADS_ALIGNER );
         for(unsigned int i = 0; i < pResults->size(); i++)

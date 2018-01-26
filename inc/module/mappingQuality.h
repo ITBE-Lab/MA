@@ -36,7 +36,7 @@ namespace libMA
          * @brief Used to check the output of execute.
          * @details
          * Returns:
-         * - Nil
+         * - ContainerVector(Alignment)
          */
         std::shared_ptr<Container> EXPORTED getOutputType() const;
 

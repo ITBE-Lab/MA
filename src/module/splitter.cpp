@@ -33,6 +33,9 @@ std::shared_ptr<Container> Lock::getOutputType() const
 
 std::shared_ptr<Container> Lock::execute(std::shared_ptr<ContainerVector> vpInput)
 {
+    DEBUG(
+        std::cout << "lock" << std::endl;
+    )
     //locking in the container is done automatically by the pledge
     return (*vpInput)[0];
 }//function
@@ -50,6 +53,9 @@ std::shared_ptr<Container> UnLock::getOutputType() const
 
 std::shared_ptr<Container> UnLock::execute(std::shared_ptr<ContainerVector> vpInput)
 {
+    DEBUG(
+        std::cout << "unlock" << std::endl;
+    )
     //unlock the given lock
     pLockPledge->set(nullptr);
     pLockPledge->forAllSyncs(

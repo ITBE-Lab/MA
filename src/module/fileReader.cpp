@@ -24,7 +24,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && pFile->peek() != '>')
         {
             std::getline (*pFile, sLine);
-            size_t uiLineSize = sLine.length();
+            size_t uiLineSize = sLine.length() -1;
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
@@ -40,7 +40,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && pFile->peek() != '+')
         {
             std::getline (*pFile, sLine);
-            size_t uiLineSize = sLine.length();
+            size_t uiLineSize = sLine.length() -1;
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
@@ -50,15 +50,15 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && pFile->peek() != '@')
         {
             std::getline (*pFile, sLine);
-            for(size_t i=0; i < sLine.length(); i++)
+            for(size_t i=0; i < sLine.length()-1; i++)
                 pRet->quality(i + uiPos) = (uint8_t)sLine[i];
             uiPos += sLine.length();
         }//while
         return pRet;
     }//if
-    //unknown format @todo print appropriate error message
-    std::cout << "could not read next query" << std::endl;
-    return std::shared_ptr<Nil>(new Nil());
+    std::shared_ptr<Nil> pRet2(new Nil());
+    pRet2->bDry = true;
+    return pRet2;
 }//function
 
 void exportFileReader()

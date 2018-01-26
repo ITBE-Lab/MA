@@ -54,7 +54,7 @@ namespace libMA
 
         bool outputsVolatile() const
         {
-            return pFile->good();
+            return true;
         }//function
 
     };//class
