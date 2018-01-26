@@ -12,6 +12,24 @@ std::shared_ptr<Container> FileReader::getOutputType() const
     return std::shared_ptr<Container>(new NucSeq());
 }//function
 
+size_t len(std::string& sLine)
+{
+    size_t uiLineSize = sLine.length();
+    while( 
+            uiLineSize > 0 &&
+            sLine[uiLineSize-1] != 'A' &&
+            sLine[uiLineSize-1] != 'C' &&
+            sLine[uiLineSize-1] != 'T' &&
+            sLine[uiLineSize-1] != 'G' &&
+            sLine[uiLineSize-1] != 'a' &&
+            sLine[uiLineSize-1] != 'c' &&
+            sLine[uiLineSize-1] != 't' &&
+            sLine[uiLineSize-1] != 'g'
+        )
+        uiLineSize--;
+    return uiLineSize;
+}
+
 std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<NucSeq> pRet(new NucSeq());
@@ -24,7 +42,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && pFile->peek() != '>')
         {
             std::getline (*pFile, sLine);
-            size_t uiLineSize = sLine.length() -1;
+            size_t uiLineSize = len(sLine);
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
@@ -40,7 +58,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && pFile->peek() != '+')
         {
             std::getline (*pFile, sLine);
-            size_t uiLineSize = sLine.length() -1;
+            size_t uiLineSize = len(sLine);
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
@@ -50,9 +68,10 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && pFile->peek() != '@')
         {
             std::getline (*pFile, sLine);
-            for(size_t i=0; i < sLine.length()-1; i++)
+            size_t uiLineSize = len(sLine);
+            for(size_t i=0; i < uiLineSize; i++)
                 pRet->quality(i + uiPos) = (uint8_t)sLine[i];
-            uiPos += sLine.length();
+            uiPos += uiLineSize;
         }//while
         return pRet;
     }//if

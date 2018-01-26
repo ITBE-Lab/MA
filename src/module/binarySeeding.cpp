@@ -570,6 +570,10 @@ std::shared_ptr<Container> BinarySeeding::execute(
     if(pQuerySeq == nullptr)
         return pSegmentVector;
 
+    DEBUG(
+        std::cout << pQuerySeq->fastaq() << std::endl;
+    )
+
     if(do16ntevery10ntExtension)
 		bowtieExtension(pFM_index, pQuerySeq, pSegmentVector);
     else if(blasrExtension)
