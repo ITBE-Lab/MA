@@ -16,7 +16,7 @@
 #include <boost/log/trivial.hpp>
 #include "container/container.h"
 
-namespace libMABS
+namespace libMA
 {
     //class GeneticSequence; //DEPRECATED
     class NucSeq;
@@ -738,7 +738,7 @@ namespace libMABS
             return sRet;
         }//function
     }; // class NucSeq
-}//namespace libMABS
+}//namespace libMA
 
 /**
  * @brief export this @ref Module "modules" to boost python 

@@ -10,7 +10,7 @@ for folder in src_folders:
         src_files.extend(list(map(lambda x: folder+"/"+x, listdir(folder))))
 
 setup(
-    name='MABS',
+    name='MA',
     version='0.0.4',
     description='An aligner for Nucleotide Sequences.',
     author='Markus Schmidt',
@@ -50,7 +50,7 @@ setup(
 
     ext_modules=[
         Extension(
-            'libMABS',
+            'libMA',
             src_files,
             include_dirs=['inc', '/opt/dev/boost_1_65_1'], # project include files
             library_dirs=[
@@ -78,5 +78,5 @@ setup(
                 ] # some other compile args
             ),
         ],
-    packages=["MABS"]
+    packages=["MA"]
 )

@@ -1,7 +1,7 @@
 /**
  * @file execOnVector.h
  * @author Markus Schmidt
- * @brief execute a given module on each element of a given libMABS::ContainerVector.
+ * @brief execute a given module on each element of a given libMA::ContainerVector.
  */
 
 #ifndef EXEC_ON_VECTOR_H
@@ -10,7 +10,7 @@
 #include "module/module.h"
 #include "util/threadPool.h"
 
-namespace libMABS
+namespace libMA
 {
     /**
      * @brief Execute some Module on all elements of a ContainerVector.
@@ -105,7 +105,7 @@ namespace libMABS
             return "Tail";
         }
     };//class
-}//namespace libMABS
+}//namespace libMA
 
 /**
  * @brief Exposes the SweepAllReturnBest @ref Module "module" to boost python.

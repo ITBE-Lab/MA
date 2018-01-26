@@ -1,4 +1,4 @@
-from MABS import *
+from MA import *
 import random
 
 def make(filenames, out_name):

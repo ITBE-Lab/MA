@@ -1,8 +1,8 @@
 #include "module/module.h"
-using namespace libMABS;
+using namespace libMA;
 std::mutex xPython;
 
-bool libMABS::typeCheck(
+bool libMA::typeCheck(
         std::shared_ptr<Container> pData, 
         std::shared_ptr<Container> pExpected
     )
@@ -14,7 +14,7 @@ bool libMABS::typeCheck(
     return false;
 }//function
 
-bool libMABS::typeCheck(
+bool libMA::typeCheck(
         ContainerVector vData, 
         ContainerVector vExpected
     )

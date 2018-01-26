@@ -1,8 +1,8 @@
 ##
-# @package MABS.alignmentPrinter
-# @brief Implements @ref MABS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
+# @package MA.alignmentPrinter
+# @brief Implements @ref MA.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
 # @file alignmentPrinter.py
-# @brief Implements @ref MABS.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
+# @brief Implements @ref MA.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
 # @author Markus Schmidt
 
 from .aligner import *
@@ -22,21 +22,21 @@ class AlignmentPrinter(Module):
     ##
     # @brief returns the @ref ContainerType "container types" alignment, nucSeq, packedNucSeq.
     # @details
-    # Reimplemented from MABS.aligner.Module.get_input_type.
+    # Reimplemented from MA.aligner.Module.get_input_type.
     def get_input_type(self):
         return [ContainerType.alignment, ContainerType.nucSeq, ContainerType.packedNucSeq]
 
     ##
     # @brief returns the @ref ContainerType "container type" nothing.
     # @details
-    # Reimplemented from MABS.aligner.Module.get_output_type.
+    # Reimplemented from MA.aligner.Module.get_output_type.
     def get_output_type(self):
         return ContainerType.nothing
 
     ##
     # @brief Execute LineSweep for all given seeds.
     # @details
-    # Reimplemented from MABS.aligner.Module.execute.
+    # Reimplemented from MA.aligner.Module.execute.
     def execute(self, *input):
         align = input[0]
         query = input[1]

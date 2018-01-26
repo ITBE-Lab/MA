@@ -1,6 +1,6 @@
 #include "module/fileReader.h"
 
-using namespace libMABS;
+using namespace libMA;
 
 ContainerVector FileReader::getInputType() const
 {

@@ -1,5 +1,5 @@
 #include "container/fMIndex.h"
-using namespace libMABS;
+using namespace libMA;
 
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 

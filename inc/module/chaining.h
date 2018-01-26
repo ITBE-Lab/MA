@@ -25,7 +25,7 @@
 #define COST_POSS_MATCH 1
 #define SCORE_MATCH 30
 
-namespace libMABS
+namespace libMA
 {
     class Chaining : public Module
     {
@@ -402,7 +402,7 @@ namespace libMABS
 
     };//class
 
-}//namespace libMABS
+}//namespace libMA
 /**
  * @brief Exposes the Chaining @ref Module "module" to boost python.
  * @ingroup export

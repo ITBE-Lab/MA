@@ -1,6 +1,6 @@
 #include "module/mappingQuality.h"
 
-using namespace libMABS;
+using namespace libMA;
 
 extern int iMatch;
 

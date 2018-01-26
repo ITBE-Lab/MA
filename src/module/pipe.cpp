@@ -1,6 +1,6 @@
 #include "module/pipe.h"
 
-using namespace libMABS;
+using namespace libMA;
 
 std::mutex xLock;
 

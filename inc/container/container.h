@@ -13,7 +13,7 @@
 #include "util/iterableConverter.h"
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
-namespace libMABS
+namespace libMA
 {
 	class Pledge;
 
@@ -181,7 +181,7 @@ namespace libMABS
 
 
     };//class
-}//namespace libMABS
+}//namespace libMA
 
 /** 
  * @brief Function to export Container to boost python.

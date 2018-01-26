@@ -7,15 +7,15 @@
  */
 
 /**
- * @mainpage @ref libMABS::Module "Modular" Aligner using @ref libMABS::BinarySeeding "BinarySeeding" and @ref libMABS::StripOfConsideration "Strips of Consideration"
+ * @mainpage @ref libMA::Module "Modular" Aligner using @ref libMA::BinarySeeding "BinarySeeding" and @ref libMA::StripOfConsideration "Strips of Consideration"
  * @tableofcontents
  * @section intro_sec Introduction
  *
- * MABS is a @ref libMABS::Module "Modular" alignment tool build using C++11 and Boost Python.
- * The alignment process has been seperated into several @ref libMABS::Module "modules".
- * The execution order of the @ref libMABS::Module "modules" is set up using Python.
- * @ref libMABS::Module "Modules" can be implemented in Python or C++. <br>
- * The @ref libMABS::Pledge "Pledge" class allows setting up a @ref comp_graph_page "computational graph", 
+ * MA is a @ref libMA::Module "Modular" alignment tool build using C++11 and Boost Python.
+ * The alignment process has been seperated into several @ref libMA::Module "modules".
+ * The execution order of the @ref libMA::Module "modules" is set up using Python.
+ * @ref libMA::Module "Modules" can be implemented in Python or C++. <br>
+ * The @ref libMA::Pledge "Pledge" class allows setting up a @ref comp_graph_page "computational graph", 
  * that avoids unnecessary jumps between 
  * Python and C++. <br>
  *
@@ -36,20 +36,20 @@
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
- * <tr><td>Seeding <td> libMABS::FMIndex, libMABS::NucSeq <td> libMABS::SegmentVector
- * <tr><td>Seed Processing <td> libMABS::SegmentVector <td> libMABS::SegmentVector
- * <tr><td>Optimal Matching <td> libMABS::SegmentVector,
- * libMABS::NucSeq, libMABS::Pack <td> libMABS::Alignment
+ * <tr><td>Seeding <td> libMA::FMIndex, libMA::NucSeq <td> libMA::SegmentVector
+ * <tr><td>Seed Processing <td> libMA::SegmentVector <td> libMA::SegmentVector
+ * <tr><td>Optimal Matching <td> libMA::SegmentVector,
+ * libMA::NucSeq, libMA::Pack <td> libMA::Alignment
  * </table>
  *
- * @note The python classes can be easily identified by the prefix "MABS." 
- * while C++ classes have "libMABS::" as prefix.
+ * @note The python classes can be easily identified by the prefix "MA." 
+ * while C++ classes have "libMA::" as prefix.
  *
  * @section install_sec Installation
  * 
- * The easiest way to install the MABS library is using pip:
+ * The easiest way to install the MA library is using pip:
  * @code{.sh}
- * pip install MABS
+ * pip install MA
  * @endcode
  * There is a git repo with the full source code here: .... <br>
  * 
@@ -107,7 +107,7 @@
  * Note that this setup does not perform well, since we skipped the seed filtering step.
  *
  * @note for a quick start on how to setup a computational graph,
- * this setup of @ref libMABS::Module "modules" using a
+ * this setup of @ref libMA::Module "modules" using a
  * computation graph can be seen @ref comp_graph_page "here".
  * 
  * @section todos TODOs

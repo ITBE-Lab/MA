@@ -1,6 +1,6 @@
 #include "module/binarySeeding.h"
 
-using namespace libMABS;
+using namespace libMA;
 
 #define INCLUDE_SELF_TESTS (  1 )
 

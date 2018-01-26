@@ -5,7 +5,7 @@
 #include "container/alignment.h"
 #include <cmath>
 
-namespace libMABS
+namespace libMA
 {
 
     /**
@@ -73,7 +73,7 @@ namespace libMABS
             return "PairedReads";
         }
     };//class
-}//namspace libMABS
+}//namspace libMA
 
 /**
  * @brief export the PairedReads and PairedAlignment @ref Module "module" to python.

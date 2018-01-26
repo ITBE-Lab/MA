@@ -1,5 +1,5 @@
 #include "container/alignment.h"
-using namespace libMABS;
+using namespace libMA;
 
 //The scores from needlemanWunsch.cpp
 extern int iGap;

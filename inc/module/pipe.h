@@ -3,7 +3,7 @@
 
 #include "module/module.h"
 
-namespace libMABS
+namespace libMA
 {
 
     /**
@@ -63,7 +63,7 @@ namespace libMABS
             return "Pipe";
         }
     };//class
-}//namspace libMABS
+}//namspace libMA
 
 /**
  * @brief export the Pipe @ref Module "module" to python.

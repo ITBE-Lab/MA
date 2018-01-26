@@ -1,8 +1,8 @@
 ##
-# @package MABS.seedPrinter
-# @brief Implements @ref MABS.seedPrinter.SeedPrinter "SeedPrinter".
+# @package MA.seedPrinter
+# @brief Implements @ref MA.seedPrinter.SeedPrinter "SeedPrinter".
 # @file seedPrinter.py
-# @brief Implements @ref MABS.seedPrinter.SeedPrinter "SeedPrinter".
+# @brief Implements @ref MA.seedPrinter.SeedPrinter "SeedPrinter".
 # @author Markus Schmidt
 from .aligner import *
 

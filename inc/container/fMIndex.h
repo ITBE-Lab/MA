@@ -15,7 +15,7 @@
 #include "container/is.h"
 #include "container/bwt_large.h"
 
-namespace libMABS
+namespace libMA
 {
 
     //extern Configuration xGlobalConfiguration;
@@ -896,7 +896,7 @@ namespace libMABS
 
     }; // class FMIndex
 
-}//namespace libMABS
+}//namespace libMA
 
 /**
  * @brief function called in order to export this @ref Module "module"

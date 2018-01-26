@@ -1,7 +1,7 @@
 #include "container/pack.h"
 #include "container/nucSeq.h"
 
-using namespace libMABS;
+using namespace libMA;
 
 //#ifdef FASTA_READER
 

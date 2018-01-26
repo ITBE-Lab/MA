@@ -7,7 +7,7 @@
 #include "container/pack.h"
 #include <fstream>
 
-namespace libMABS
+namespace libMA
 {
 
     class FileWriter: public Module

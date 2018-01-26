@@ -24,7 +24,7 @@
         class FastaDescriptor;
 #endif
 
-namespace libMABS
+namespace libMA
 {
     /* --- BEGIN DEPRECATED ---
     */
@@ -1179,7 +1179,7 @@ namespace libMABS
             } // else
         } // method
     }; // class
-}//namespace libMABS
+}//namespace libMA
 
 /**
  * @brief exports the Pack class to python.

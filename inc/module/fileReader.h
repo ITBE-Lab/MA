@@ -5,7 +5,7 @@
 #include "container/nucSeq.h"
 #include <fstream>
 
-namespace libMABS
+namespace libMA
 {
 
     class FileReader: public Module

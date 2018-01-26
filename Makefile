@@ -17,12 +17,12 @@ LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
 LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ 
 
-all:libMABS.so ma.exe
+all:libMA.so ma.exe
 
-ma.exe: libMABS.so src/ma.cpp
-	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) -L./ -lMABS -o ma.exe
+ma.exe: libMA.so src/ma.cpp
+	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) -L./ -lMA -o ma.exe
 
-libMABS.so: $(TARGET_OBJ) $(CTARGET_OBJ)
+libMA.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@
 
 obj/%.o: src/%.cpp inc/%.h
@@ -31,13 +31,13 @@ obj/%.o: src/%.cpp inc/%.h
 obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc -c $< -o $@
 
-html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard MABS/*.py) doxygen.config
+html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard MA/*.py) doxygen.config
 	doxygen doxygen.config
 
 install: all
 	pip3 install . --upgrade --no-cache-dir
-	cp libMABS.so /usr/lib
-	pip3 show MABS
+	cp libMA.so /usr/lib
+	pip3 show MA
 
 #@todo remove me
 vid:
@@ -47,7 +47,7 @@ distrib:
 	python setup.py sdist bdist_egg bdist_wheel
 
 clean:
-	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*/*.o) $(wildcard obj/*.co) $(wildcard obj/*/*.co) libMABS.so
+	rm -f -r $(wildcard obj/*.o) $(wildcard obj/*/*.o) $(wildcard obj/*.co) $(wildcard obj/*/*.co) libMA.so
 	rm -r -f dist *.egg-info build
 	rm -r -f html
 

@@ -1,4 +1,4 @@
-from MABS import *
+from MA import *
 import random
 import gc
 import os
@@ -828,30 +828,30 @@ def test_my_approaches(db_name):
     # this is the un optimized hammer method
     #
 
-    clearResults(db_name, human_genome, "MABS 1")
-    clearResults(db_name, human_genome, "MABS 2")
-    #clearResults(db_name, human_genome, "MABS 3")
-    #clearResults(db_name, human_genome, "MABS NMW-Band = 100")
+    clearResults(db_name, human_genome, "MA 1")
+    clearResults(db_name, human_genome, "MA 2")
+    #clearResults(db_name, human_genome, "MA 3")
+    #clearResults(db_name, human_genome, "MA NMW-Band = 100")
 
-    #test_my_approach(db_name, human_genome, "MABS MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
+    #test_my_approach(db_name, human_genome, "MA MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
     #
     # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
     #
-    #test_my_approach(db_name, human_genome, "MABS 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
+    #test_my_approach(db_name, human_genome, "MA 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MABS 2", num_strips=10, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MA 2", num_strips=10, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=0, max_hits=100)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MABS 1", num_strips=5, max_sweep=5, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
-    #test_my_approach(db_name, human_genome, "MABS 1", num_anchors=1000, seg=BinarySeeding(True))
+    test_my_approach(db_name, human_genome, "MA 1", num_strips=5, max_sweep=5, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
+    #test_my_approach(db_name, human_genome, "MA 1", num_anchors=1000, seg=BinarySeeding(True))
 
-    #clearResults(db_name, human_genome, "MABS 2 radix")
-    #test_my_approach(db_name, human_genome, "MABS 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
+    #clearResults(db_name, human_genome, "MA 2 radix")
+    #test_my_approach(db_name, human_genome, "MA 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
 
-    #test_my_approach(db_name, human_genome, "MABS 2.1", num_anchors=1000, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=5000)
+    #test_my_approach(db_name, human_genome, "MA 2.1", num_anchors=1000, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=5000)
 
     #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality")
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality", num_anchors=10000, max_sweep=0, seg=BinarySeeding(True), min_seeds=0, min_seed_length=0.02, max_seeds=0, max_seeds_2=0, nmw_give_up=0)

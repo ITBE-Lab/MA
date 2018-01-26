@@ -1,5 +1,5 @@
 #include "container/nucSeq.h"
-using namespace libMABS;
+using namespace libMA;
 
 /* The translation table for columns.
  * Translates a single character into a 2-bit compressed code.

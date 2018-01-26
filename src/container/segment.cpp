@@ -1,5 +1,5 @@
 #include "container/segment.h"
-using namespace libMABS;
+using namespace libMA;
 
 void exportIntervalTree()
 {

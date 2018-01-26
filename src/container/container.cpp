@@ -1,5 +1,5 @@
 #include "container/container.h"
-using namespace libMABS;
+using namespace libMA;
 
 void exportContainer()
 {

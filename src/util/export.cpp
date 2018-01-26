@@ -7,7 +7,7 @@
  * by calling the respective export*() functions.
  * The main method is generated using boost-python.
  */
-BOOST_PYTHON_MODULE(libMABS)
+BOOST_PYTHON_MODULE(libMA)
 {
         DEBUG_3(
                 std::cout.setf(std::ios::unitbuf);

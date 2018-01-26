@@ -1,5 +1,5 @@
 #include "module/stripOfConsideration.h"
-using namespace libMABS;
+using namespace libMA;
 
 extern int iGap;// = 16;
 extern int iExtend;// = 1;

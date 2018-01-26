@@ -13,7 +13,7 @@
 #include "container/fMIndex.h"
 #include <thread>
 
-using namespace libMABS;
+using namespace libMA;
 using namespace boost::program_options;
 
 /**

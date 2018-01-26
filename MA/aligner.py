@@ -1,16 +1,16 @@
 ##
-# @package MABS
+# @package MA
 # @brief The Python part of the library is within this package
-# @package MABS.aligner
-# @brief Implements @ref MABS.aligner.Module "Module" and 
-# @ref MABS.aligner.SweepAllReturnBest "SweepAllReturnBest".
+# @package MA.aligner
+# @brief Implements @ref MA.aligner.Module "Module" and 
+# @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @file aligner.py
-# @brief Implements @ref MABS.aligner.Module "Module" and 
-# @ref MABS.aligner.SweepAllReturnBest "SweepAllReturnBest".
+# @brief Implements @ref MA.aligner.Module "Module" and 
+# @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @author Markus Schmidt
 #
 
-import libMABS
+import libMA
 import traceback
 
 ##
@@ -21,7 +21,7 @@ import traceback
 # @see the C++ implementation of @ref Module "module".
 # @ingroup module 
 #
-class Module(libMABS.Module):
+class Module(libMA.Module):
 
     ##
     # @brief The expected input types.
@@ -72,7 +72,7 @@ class Module(libMABS.Module):
 #
 # @ingroup container
 #
-class Alignment(libMABS.Alignment):
+class Alignment(libMA.Alignment):
     pass
 
 ##
@@ -84,9 +84,9 @@ class Alignment(libMABS.Alignment):
 #   but they are aligned to the same position nonetheless.
 # - insertion: a nucleotide is present on the query that has no counterpart on the reference.
 # - deletion: a nucleotide is present on the reference that has no counterpart on the query.
-# @note libMABS::MatchType is an enum and therefore does not show up in the class hierarchy.
+# @note libMA::MatchType is an enum and therefore does not show up in the class hierarchy.
 #
-class MatchType(libMABS.MatchType):
+class MatchType(libMA.MatchType):
     pass
 
 ##
@@ -96,7 +96,7 @@ class MatchType(libMABS.MatchType):
 #
 # @ingroup container
 #
-class Pledge(libMABS.Pledge):
+class Pledge(libMA.Pledge):
     pass
 
 ##
@@ -105,7 +105,7 @@ class Pledge(libMABS.Pledge):
 #
 # @ingroup container
 #
-class FMIndex(libMABS.FMIndex):
+class FMIndex(libMA.FMIndex):
     pass
 
 ##
@@ -114,7 +114,7 @@ class FMIndex(libMABS.FMIndex):
 #
 # @ingroup container
 #
-class Nil(libMABS.Nil):
+class Nil(libMA.Nil):
     pass
 
 ##
@@ -124,7 +124,7 @@ class Nil(libMABS.Nil):
 #
 # @ingroup container
 #
-class SegmentVector(libMABS.SegmentVector):
+class SegmentVector(libMA.SegmentVector):
     pass
 
 ##
@@ -134,7 +134,7 @@ class SegmentVector(libMABS.SegmentVector):
 #
 # @ingroup container
 #
-class Seeds(libMABS.Seeds):
+class Seeds(libMA.Seeds):
     pass
 
 ##
@@ -143,7 +143,7 @@ class Seeds(libMABS.Seeds):
 #
 # @ingroup container
 #
-class Segment(libMABS.Segment):
+class Segment(libMA.Segment):
     pass
 
 ##
@@ -152,7 +152,7 @@ class Segment(libMABS.Segment):
 #
 # @ingroup container
 #
-class Pack(libMABS.Pack):
+class Pack(libMA.Pack):
     pass
 
 ##
@@ -161,7 +161,7 @@ class Pack(libMABS.Pack):
 #
 # @ingroup container
 #
-class Seed(libMABS.Seed):
+class Seed(libMA.Seed):
     pass
 
 ##
@@ -170,7 +170,7 @@ class Seed(libMABS.Seed):
 #
 # @ingroup container
 #
-class SAInterval(libMABS.SAInterval):
+class SAInterval(libMA.SAInterval):
     pass
 
 ##
@@ -179,7 +179,7 @@ class SAInterval(libMABS.SAInterval):
 #
 # @ingroup container
 #
-class NucSeq(libMABS.NucSeq):
+class NucSeq(libMA.NucSeq):
     pass
 
 ##
@@ -189,18 +189,18 @@ class NucSeq(libMABS.NucSeq):
 #
 # @ingroup container
 #
-class ContainerVector(libMABS.ContainerVector):
+class ContainerVector(libMA.ContainerVector):
     def __init__(self):
-        libMABS.ContainerVector.__init__(self)
+        libMA.ContainerVector.__init__(self)
 
     def __init__(self, *args):
-        libMABS.ContainerVector.__init__(self, args[0])
+        libMA.ContainerVector.__init__(self, args[0])
         for arg in args:
             self.append(arg)
 
 ##
 # @brief python wrapper for BinarySeeding
-class BinarySeeding(libMABS.BinarySeeding):
+class BinarySeeding(libMA.BinarySeeding):
     def execute(self, *args):
         return super(BinarySeeding, self).execute(ContainerVector(*args))
 
@@ -209,7 +209,7 @@ class BinarySeeding(libMABS.BinarySeeding):
 
 ##
 # @brief python wrapper for StripOfConsideration
-class StripOfConsideration(libMABS.StripOfConsideration):
+class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
         return super(StripOfConsideration, self).execute(ContainerVector(*args))
 
@@ -218,7 +218,7 @@ class StripOfConsideration(libMABS.StripOfConsideration):
 
 ##
 # @brief python wrapper for LinearLineSweep
-class LinearLineSweep(libMABS.LinearLineSweep):
+class LinearLineSweep(libMA.LinearLineSweep):
     def execute(self, *args):
         return super(LinearLineSweep, self).execute(ContainerVector(*args))
 
@@ -227,7 +227,7 @@ class LinearLineSweep(libMABS.LinearLineSweep):
 
 ##
 # @brief python wrapper for LinearLineSweep
-class Chaining(libMABS.Chaining):
+class Chaining(libMA.Chaining):
     def execute(self, *args):
         return super(Chaining, self).execute(ContainerVector(*args))
 
@@ -236,7 +236,7 @@ class Chaining(libMABS.Chaining):
 
 ##
 # @brief python wrapper for FileReader
-class FileReader(libMABS.FileReader):
+class FileReader(libMA.FileReader):
     def execute(self, *args):
         return super(FileReader, self).execute(ContainerVector(*args))
 
@@ -248,7 +248,7 @@ class FileReader(libMABS.FileReader):
 
 ##
 # @brief python wrapper for LinearLineSweep
-class NeedlemanWunsch(libMABS.NeedlemanWunsch):
+class NeedlemanWunsch(libMA.NeedlemanWunsch):
     def execute(self, *args):
         return super(NeedlemanWunsch, self).execute(ContainerVector(*args))
 
@@ -257,7 +257,7 @@ class NeedlemanWunsch(libMABS.NeedlemanWunsch):
 
 ##
 # @brief python wrapper for ExecOnVec
-class ExecOnVec(libMABS.ExecOnVec):
+class ExecOnVec(libMA.ExecOnVec):
     def execute(self, *args):
         return super(ExecOnVec, self).execute(ContainerVector(*args))
 
@@ -266,7 +266,7 @@ class ExecOnVec(libMABS.ExecOnVec):
 
 ##
 # @brief python wrapper for MappingQuality
-class MappingQuality(libMABS.MappingQuality):
+class MappingQuality(libMA.MappingQuality):
     def execute(self, *args):
         return super(MappingQuality, self).execute(ContainerVector(*args))
 
@@ -275,7 +275,7 @@ class MappingQuality(libMABS.MappingQuality):
 
 ##
 # @brief python wrapper for Pipe
-class Pipe(libMABS.Pipe):
+class Pipe(libMA.Pipe):
     def execute(self, *args):
         return super(Pipe, self).execute(ContainerVector(*args))
 
@@ -288,7 +288,7 @@ class Pipe(libMABS.Pipe):
 # returns the tail of a container vector
 # @ingroup module
 #
-class Tail(libMABS.Tail):
+class Tail(libMA.Tail):
     def execute(self, *args):
         return super(Tail, self).execute(ContainerVector(*args))
 
@@ -301,7 +301,7 @@ class Tail(libMABS.Tail):
 # extracts all seeds from a segment list.
 # @ingroup module
 #
-class ExtractAllSeeds(libMABS.ExtractAllSeeds):
+class ExtractAllSeeds(libMA.ExtractAllSeeds):
     def execute(self, *args):
         return super(ExtractAllSeeds, self).execute(ContainerVector(*args))
 
@@ -314,7 +314,7 @@ class ExtractAllSeeds(libMABS.ExtractAllSeeds):
 # extracts all seeds from a segment list.
 # @ingroup module
 #
-class ReSeed(libMABS.ReSeed):
+class ReSeed(libMA.ReSeed):
     def execute(self, *args):
         return super(ReSeed, self).execute(ContainerVector(*args))
 
@@ -325,7 +325,7 @@ class ReSeed(libMABS.ReSeed):
 # @brief The SMW Module.
 # @ingroup module
 #
-class SMW(libMABS.SMW):
+class SMW(libMA.SMW):
     def execute(self, *args):
         return super(SMW, self).execute(ContainerVector(*args))
 

@@ -1,5 +1,5 @@
 #include "container/seed.h"
-using namespace libMABS;
+using namespace libMA;
 
 extern int iGap;
 extern int iMatch;

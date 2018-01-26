@@ -13,7 +13,7 @@
 #include <cmath>
 
 
-namespace libMABS
+namespace libMA
 {
     /**
      * @brief Describes the type of match at one specific position of the alignment.
@@ -267,7 +267,7 @@ namespace libMABS
             return score() < pAlign->score();
         }//function
     };//class
-}//namespace libMABS
+}//namespace libMA
 
 /**
  * @brief Exposes the Alignment container to boost python.

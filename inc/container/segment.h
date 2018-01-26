@@ -12,7 +12,7 @@
 
 #define confMETA_MEASURE_DURATION ( 1 )
 
-namespace libMABS
+namespace libMA
 {
 
     /**
@@ -227,7 +227,7 @@ namespace libMABS
             return uiTotal;
         }// function
     };// class
-}// namespace libMABS
+}// namespace libMA
 
 /**
  * @brief Exposes the SegmentVector to boost python.

@@ -9,7 +9,7 @@
 #include "container/segment.h"
 #include "module/module.h"
 
-namespace libMABS
+namespace libMA
 {
     /**
      * @brief Implements the LinearLineSweep algorithm.
@@ -134,7 +134,7 @@ namespace libMABS
             return "LineSweep2";
         }
     };//class
-}//namespace libMABS
+}//namespace libMA
 
 /**
  * @brief Exposes the LineSweep @ref Module "module" to boost python.

@@ -21,7 +21,7 @@
 /**
  * @brief the C++ code is in this namespace.
  */
-namespace libMABS
+namespace libMA
 {
     extern std::mutex xPython;
     /**
@@ -58,7 +58,7 @@ namespace libMABS
      * @brief Abstract class intended for the implementaiton of various algorithms.
      * @details
      * All computing on data should inherit from this class
-     * @see the Python implementation of @ref MABS.aligner.Module "module".
+     * @see the Python implementation of @ref MA.aligner.Module "module".
      * @ingroup module
      */
     class Module
@@ -508,7 +508,7 @@ namespace libMABS
             }//scope xPool
         }//function
     };//class
-}//namespace libMABS
+}//namespace libMA
 
 
 /**

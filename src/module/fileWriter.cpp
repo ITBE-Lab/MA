@@ -1,6 +1,6 @@
 #include "module/fileWriter.h"
 
-using namespace libMABS;
+using namespace libMA;
 
 ContainerVector FileWriter::getInputType() const
 {

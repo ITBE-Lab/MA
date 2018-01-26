@@ -1,7 +1,7 @@
 #include "module/pairedReads.h"
 
 
-using namespace libMABS;
+using namespace libMA;
 
 extern int iMatch;
 

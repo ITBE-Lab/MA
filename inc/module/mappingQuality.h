@@ -4,7 +4,7 @@
 #include "module/module.h"
 #include "container/alignment.h"
 
-namespace libMABS
+namespace libMA
 {
 
     /**
@@ -45,7 +45,7 @@ namespace libMABS
             return "MappingQuality";
         }
     };//class
-}//namspace libMABS
+}//namspace libMA
 
 /**
  * @brief export the MappingQuality @ref Module "module" to python.

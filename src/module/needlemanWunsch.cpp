@@ -1,5 +1,5 @@
 #include "module/needlemanWunsch.h"
-using namespace libMABS;
+using namespace libMA;
 
 
 int iGap = 50;//20

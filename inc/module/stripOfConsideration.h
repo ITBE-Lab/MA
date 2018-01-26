@@ -11,7 +11,7 @@
 #include "module/needlemanWunsch.h"
 #include <cmath>
 
-namespace libMABS
+namespace libMA
 {
 
     /**
@@ -100,7 +100,7 @@ namespace libMABS
             return "StripOfConsideration";
         }
     };//class
-}//namspace libMABS
+}//namspace libMA
 
 /**
  * @brief export the bucketing @ref Module "module" to python.

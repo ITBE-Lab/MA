@@ -1,5 +1,5 @@
 #include "module/linesweep.h"
-using namespace libMABS;
+using namespace libMA;
 
 //Deprecated
 #if 0

@@ -1,5 +1,5 @@
 #include "module/extractAllSeeds.h"
-using namespace libMABS;
+using namespace libMA;
 
 
 ContainerVector ExtractAllSeeds::getInputType() const
