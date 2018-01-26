@@ -27,15 +27,15 @@ namespace libMA
          * between the paired seed we make an unpaired alignment.
          * The default value is taken from BWA-MEM as we use the same formula for pairing.
          */
-        double u = 17;
+        double u;
         ///@brief use normal distribution for the insert size
-        bool bNormalDist = true;
+        bool bNormalDist;
         ///@brief use uniform distribution for the insert size
-        bool bUniformDist = false;
+        bool bUniformDist;
         ///@brief the mean of the insert size
-        unsigned int mean = 0;
+        unsigned int mean;
         ///@brief the standard deviation of the insert size
-        double std = 1;
+        double std;
 
         /**
          * @brief The probability for a insert size >= d.
@@ -45,7 +45,19 @@ namespace libMA
          */
         double EXPORTED p(nucSeqIndex d) const;
 
-        PairedReads()
+        PairedReads(
+            double u = 17, 
+            bool bNormalDist = true,
+            bool bUniformDist = false,
+            unsigned int mean = 0,
+            double std = 1
+        )
+                :
+            u(u),
+            bNormalDist(bNormalDist),
+            bUniformDist(bUniformDist),
+            mean(mean),
+            std(std)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

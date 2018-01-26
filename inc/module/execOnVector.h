@@ -31,7 +31,7 @@ namespace libMA
         unsigned int nMany;//0 means return all
 
     public:
-        ExecOnVec(std::shared_ptr<Module> pModule, bool sort, unsigned int nMany)
+        ExecOnVec(std::shared_ptr<Module> pModule, bool sort = false, unsigned int nMany = 0)
                 :
             Module(),
             pModule(pModule),

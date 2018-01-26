@@ -52,6 +52,11 @@ namespace libMA
             return "FileReader";
         }//function
 
+        bool outputsVolatile() const
+        {
+            return pFile->good();
+        }//function
+
     };//class
 
 }//namespace

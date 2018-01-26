@@ -1,5 +1,5 @@
-#ifndef FILE_READER_H
-#define FILE_READER_H
+#ifndef FILE_WRITER_H
+#define FILE_WRITER_H
 
 #include "module/module.h"
 #include "container/nucSeq.h"
@@ -14,8 +14,11 @@ namespace libMA
     {
     public:
         std::shared_ptr<std::ostream> pFile;
+        std::shared_ptr<std::mutex> pLock;
 
         FileWriter(std::string sFileName)
+                :
+            pLock(new std::mutex)
         {
             if(sFileName == "stdout")
                 pFile = std::shared_ptr<std::ostream>(&std::cout);
@@ -56,13 +59,13 @@ namespace libMA
 
         std::string getName() const
         {
-            return "FileReader";
+            return "FileWriter";
         }//function
 
     };//class
 
 }//namespace
 
-void exportFileReader();
+void exportFileWriter();
 
 #endif

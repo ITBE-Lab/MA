@@ -146,9 +146,26 @@
 #include "module/execOnVector.h"
 #include "module/reSeed.h"
 #include "module/fileReader.h"
+#include "module/fileWriter.h"
 #include "module/mappingQuality.h"
-#include "module/pipe.h"
 #include "module/pairedReads.h"
+#include "module/splitter.h"
+#include "container/container.h"
 
+std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
+    std::shared_ptr<libMA::Pledge> pPack,
+    std::shared_ptr<libMA::Pledge> pFMDIndex,
+    std::shared_ptr<libMA::Pledge> pQueries,
+    std::shared_ptr<libMA::Module> pOut,
+    unsigned int uiThreads,
+    unsigned int uiMaxAmbiguity,
+    unsigned int uiNumSOC,
+    bool bPariedNormal,
+    bool bPariedUniform,
+    unsigned int uiPairedMean,
+    double fPairedStd,
+    double dPairedU,
+    unsigned int reportNBest
+);
 
 #endif

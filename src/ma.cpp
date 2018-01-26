@@ -24,6 +24,7 @@ int main(int argc, char*argv[])
     unsigned int uiT;
     unsigned int uiMaxAmbiguity;
     unsigned int uiNumSOC;
+    unsigned int uiReportNBest;
     bool bPariedNormal;
     bool bPariedUniform;
     unsigned int uiPairedMean;
@@ -64,7 +65,8 @@ int main(int argc, char*argv[])
         options_description align_desc{"Alignment Options"};
         align_desc.add_options()
             ("alignIn,i", value<std::vector<std::string>>(&vAlignIn)->composing(), "Input file paths [*.fasta/*.fastaq/*]")
-            ("alignOut,o", value<std::vector<std::string>>(&aAlignOut)->composing(), "Output file paths [*.sam/*.bam/*]")
+            ("alignOut,o", value<std::vector<std::string>>(&aAlignOut)->composing()->default_value({"stdout"}, "stdout"), "Output file paths [*.sam/*.bam/*]")
+            ("reportN,n", value<unsigned int>(&uiReportNBest)->default_value(1), "Report the N best Alignments")
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
             ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 100 : 5), "Maximal ambiguity")

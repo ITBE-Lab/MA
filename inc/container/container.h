@@ -108,9 +108,9 @@ namespace libMA
         public Container,
         public std::vector<std::shared_ptr<Container>>
     {
-    private:
-        std::shared_ptr<Container> contentType;
 	public:
+        std::shared_ptr<Container> contentType;
+
 		ContainerVector(std::initializer_list<std::shared_ptr<Container>> init)
 			:
 			vector(init)

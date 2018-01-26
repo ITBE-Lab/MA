@@ -17,10 +17,10 @@ LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
 LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ 
 
-all:libMA.so cmdMA.exe
+all:cmdMA.exe
 
 cmdMA.exe: libMA.so src/ma.cpp
-	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) -L./ -lMA -o cmdMA.exe
+	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) libMA.so -o cmdMA.exe
 
 libMA.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@

@@ -27,8 +27,10 @@ double PairedReads::p(nucSeqIndex d) const
 ContainerVector PairedReads::getInputType() const
 {
     return ContainerVector{
-        std::shared_ptr<Container>(new Alignment()),
-        std::shared_ptr<Container>(new Alignment())
+        std::shared_ptr<ContainerVector>(
+            new ContainerVector(std::shared_ptr<Container>(new Alignment()))),
+        std::shared_ptr<ContainerVector>(
+            new ContainerVector(std::shared_ptr<Container>(new Alignment())))
     };
 }//function
 

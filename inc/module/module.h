@@ -73,7 +73,7 @@ namespace libMA
         virtual std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> pInput)
         {
             return nullptr;
-        }
+        }//function
 
         /**
          * @brief The expected input types.
@@ -83,7 +83,7 @@ namespace libMA
         virtual ContainerVector getInputType() const
         {
             return ContainerVector{std::shared_ptr<Container>(new Nil())};
-        }
+        }//function
 
         /**
          * @brief The expected output type.
@@ -93,10 +93,10 @@ namespace libMA
         virtual std::shared_ptr<Container> getOutputType() const
         {
             return std::shared_ptr<Container>(new Nil());
-        }
+        }//function
 
         /**
-         * @brief return the name of the Module.
+         * @brief Return the name of the Module.
          * @details
          * Can be used to print a representation of the computational graph.
          * Is also used when creating error messages.
@@ -104,7 +104,18 @@ namespace libMA
         virtual std::string getName() const
         {
             return "Module";
-        }
+        }//function
+
+        /**
+         * @brief Can the module return different output for the same input.
+         * @details
+         * For example a file reader may create different output if called twice on the same file.
+         * If this is set to true the pledge will recompute the result each time get is called.
+         */
+        virtual bool outputsVolatile() const
+        {
+            return false;
+        }//function
 
         /**
          * @brief Execute the implemented algorithm.
@@ -285,7 +296,8 @@ namespace libMA
         std::shared_ptr<Container> type;
         std::vector<std::shared_ptr<Pledge>> vPredecessors;
         std::vector<std::weak_ptr<Pledge>> vSuccessors;
-        std::mutex xMutex;
+        std::vector<std::shared_ptr<Pledge>> aSync;
+        std::shared_ptr<std::mutex> pMutex;
 
         /**
          * @brief Create a new pledge with a cpp module responsible to fullfill it.
@@ -304,7 +316,8 @@ namespace libMA
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
-            xMutex(),
+            aSync(),
+            pMutex(new std::mutex),
             execTime(0)
         {}//constructor
 
@@ -325,11 +338,67 @@ namespace libMA
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
-            xMutex(),
+            aSync(),
+            pMutex(new std::mutex),
             execTime(0)
         {}//constructor
+
     public:
         double execTime;
+    private:
+
+        void execForGet()
+        {
+            bool bVolatile = false;
+            //@todo same for py_pledger here
+            if(pledger != nullptr)
+                bVolatile = pledger->outputsVolatile();
+
+            //in this case there is no need to execute again
+            if(!bVolatile && content != nullptr)
+                return;
+
+            if(pledger == nullptr && py_pledger.is_none())
+                throw ModuleIO_Exception("No pledger known");
+            if(pledger != nullptr)
+            {
+                std::shared_ptr<ContainerVector> vInput(new ContainerVector());
+                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                    vInput->push_back(pFuture->get());
+                try
+                {
+                    auto timeStamp = std::chrono::system_clock::now();
+                    content = (std::shared_ptr<Container>)pledger->execute(vInput);
+                    std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
+                    execTime = duration.count();
+                    assert(typeCheck(content, type));
+                } catch(...)
+                {
+                    std::cerr << "unknown exception during execution" << std::endl;
+                }//catch
+            }//if
+            else
+            {
+                boost::python::list vInput;
+                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                    vInput.append(pFuture->get());
+                /*
+                * here we jump to python code to call a function and resume the cpp code 
+                * once python is done...
+                */
+                auto timeStamp = std::chrono::system_clock::now();
+                content = boost::python::extract<
+                        std::shared_ptr<Container>
+                    >(
+                        py_pledger.attr("save_execute")(vInput)
+                    ); 
+                std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
+                execTime = duration.count();
+                assert(typeCheck(content, type));
+            }//else
+        }//function
+
+    public:
         /**
          * @brief Create a new pledge without a module giving the pledge.
          * @details
@@ -345,7 +414,7 @@ namespace libMA
             type(type),
             vPredecessors(),
             vSuccessors(),
-            xMutex(),
+            pMutex(new std::mutex),
             execTime(0)
         {}//constructor
 
@@ -371,7 +440,6 @@ namespace libMA
         {
             return type->getType();
         }//function
-
 
         const std::shared_ptr<Module> getPledger() const
         {
@@ -437,70 +505,71 @@ namespace libMA
         {
             //multithreading is possible thus a guard is required here.
             //deadlock prevention is trivial, since the computational graphs are essentially trees.
-            std::lock_guard<std::mutex> xGuard(xMutex);
-            if(content != nullptr)
-            {
-                return content;
-            }//if
-            if(pledger == nullptr && py_pledger.is_none())
-                throw ModuleIO_Exception("No pledger known");
-            if(pledger != nullptr)
-            {
-                std::shared_ptr<ContainerVector> vInput(new ContainerVector());
-                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    vInput->push_back(pFuture->get());
-                try
-                {
-                    auto timeStamp = std::chrono::system_clock::now();
-                    content = (std::shared_ptr<Container>)pledger->execute(vInput);
-                    std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
-                    execTime = duration.count();
-                    assert(typeCheck(content, type));
-                } catch(...)
-                {
-                    std::cerr << "unknown exception during execution" << std::endl;
-                }
-            }//if
-            else
-            {
-                boost::python::list vInput;
-                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    vInput.append(pFuture->get());
-                /*
-                * here we jump to python code to call a function and resume the cpp code 
-                * once python is done...
-                */
-                auto timeStamp = std::chrono::system_clock::now();
-                content = boost::python::extract<
-                        std::shared_ptr<Container>
-                    >(
-                        py_pledger.attr("save_execute")(vInput)
-                    ); 
-                std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
-                execTime = duration.count();
-                assert(typeCheck(content, type));
-            }//else
+            std::lock_guard<std::mutex> xGuard(*pMutex);
+
+            //execute
+            execForGet();
+            //also execute all the synchronized locks
+            for(std::shared_ptr<Pledge> pSync : aSync)
+                pSync->execForGet();
+
             return content;
         }//function
 
+        /**
+         * @brief Synchronize two pledges.
+         * @details
+         * They will always be executed right one after another.
+         * This can be used to for paired reads,
+         * where we want to read one read from file a and one from file b.
+         * We need to make sure that we always read the pairs together.
+         */
+        static inline void synchronize(std::shared_ptr<Pledge> pA, std::shared_ptr<Pledge> pB)
+        {
+            //add each other to the caller list
+            pA->aSync.push_back(pB);
+            pB->aSync.push_back(pA);
+            //sync the mutex of pA and pB
+            pA->pMutex = pB->pMutex;
+        }//function
+
+        void forAllSyncs(std::function<void(std::shared_ptr<Pledge>)> fDo)
+        {
+            for(std::shared_ptr<Pledge> pSync : aSync)
+                fDo(pSync);
+        }//function
+
+        /**
+         * @brief Gets the given pledges simultaneously.
+         * @details
+         * If bLoop is true the threads will keep going until all volatile modules are dry
+         * if numThreads is not specified numThreads will be equal to the amount of pledges given
+         */
         static inline void simultaneousGet(
                 std::vector<std::shared_ptr<Pledge>> vPledges,
-                unsigned int numThreads
+                bool bLoop = false,
+                unsigned int numThreads = 0
             )
         {
+            if(numThreads == 0)
+                numThreads = vPledges.size();
             DEBUG(
-                std::cout <<"will cause crashes if used on python modules (@todo  fix that)"<< std::endl;
+                std::cout <<"will cause crashes if used on python modules (@todo fix that)"<< std::endl;
             )
             {
                 ThreadPool xPool(numThreads);
                 for(std::shared_ptr<Pledge> pPledge : vPledges)
                 {
                     xPool.enqueue(
-                        []
+                        [&bLoop]
                         (size_t, std::shared_ptr<Pledge> pPledge)
                         {
                             assert(pPledge != nullptr);
-                            pPledge->get();
+
+                            //if bLoop is true this loop will keep going until all 
+                            //volatile modules are dry.
+                            //otherwise one iteration is performed only
+                            while (pPledge->get() != nullptr) if(!bLoop) break;
                         },//lambda
                         pPledge
                     );
