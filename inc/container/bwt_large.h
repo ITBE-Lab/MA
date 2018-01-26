@@ -45,4 +45,4 @@ typedef int64_t sbgint_t;
             bgint_t,
             std::vector<bgint_t>,
             std::vector<unsigned int >
-        > bwtLarge( const char *pcFileNamePack );
+        > EXPORTED bwtLarge( const char *pcFileNamePack );

@@ -28,7 +28,7 @@ namespace libMABS
         /// #brief the amount of SOCs to create
         unsigned int numStrips = 10;
         /// @brief Minimum nucleotides covered by seeds for a strip to be considered
-        float minSeedLength = 0.1;
+        float minSeedLength = 0.1f;
         /// @brief maximum amount of seeds total
         float dMaxSeeds = 7.f;
 
@@ -40,11 +40,11 @@ namespace libMABS
         */
         bool bSkipLongBWTIntervals = true;
         
-        static nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS);
+        static nucSeqIndex EXPORTED getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS);
 
-        static nucSeqIndex getStripSize(nucSeqIndex uiQueryLength);
+        static nucSeqIndex EXPORTED getStripSize(nucSeqIndex uiQueryLength);
 
-        void forEachNonBridgingSeed(
+        void EXPORTED forEachNonBridgingSeed(
                 std::shared_ptr<SegmentVector> pVector,
                 std::shared_ptr<FMIndex> pxFM_index,std::shared_ptr<Pack> pxRefSequence,
                 std::shared_ptr<NucSeq> pxQuerySeq,
@@ -52,7 +52,7 @@ namespace libMABS
                 nucSeqIndex addSize// = 0 (default)
             );
 
-        void sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen);
+        void EXPORTED sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen);
 
     public:
 
@@ -73,7 +73,7 @@ namespace libMABS
             dMaxSeeds(dMaxSeeds)
         {}//constructor
 
-        std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
         /**
          * @brief Used to check the input of execute.
@@ -85,7 +85,7 @@ namespace libMABS
          * - Pack
          * - FMIndex
          */
-        ContainerVector getInputType() const;
+        ContainerVector EXPORTED getInputType() const;
 
         /**
          * @brief Used to check the output of execute.
@@ -93,7 +93,7 @@ namespace libMABS
          * Returns:
          * - ContainerVector(Seeds)
          */
-        std::shared_ptr<Container> getOutputType() const;
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
 
         std::string getName() const
         {

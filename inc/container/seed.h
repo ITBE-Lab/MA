@@ -240,7 +240,7 @@ namespace libMABS
         }//function
 
         /*returns the sum off all scores within the list*/
-        nucSeqIndex getScore() const;
+        nucSeqIndex EXPORTED getScore() const;
 
         /*append a copy of another list*/
         void append(std::shared_ptr<Seeds> pOther)

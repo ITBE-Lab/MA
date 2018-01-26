@@ -6,7 +6,7 @@ extern int iMatch;
 extern int iMissMatch;
 extern int iExtend;
 
-#ifdef _WIN32   
+#ifdef _MSC_VER
 //getting ambiguous abs otherwise
 #include <cstdlib>
 #endif

@@ -696,10 +696,10 @@ namespace libMABS
 #ifdef FASTA_READER
         /* Appends a single FASTA record to the collection and pack.
         */
-        void vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor ) ;
+        void EXPORTED vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor ) ;
         /* Appends a single FASTA record to the collection and pack.
         */
-        void vAppendFastaFile( const char *pcFileName ) ;
+        void EXPORTED vAppendFastaFile( const char *pcFileName ) ;
 #endif
 
         /* Creates the reverse strand a saves the collection on the disk.
@@ -766,7 +766,7 @@ namespace libMABS
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
         */
-        void vPackFastaFilesDeprecated( const std::vector<std::string> &rxvFileNameOfFastaFiles, 
+        void EXPORTED vPackFastaFilesDeprecated( const std::vector<std::string> &rxvFileNameOfFastaFiles, 
                                         const char* pcPackPrefix, 
                                         bool bMakeReverseStand = false 
                                     );
@@ -775,7 +775,7 @@ namespace libMABS
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
         */
-        void vAppendFASTA( const boost::filesystem::path &sFastaFilePath );
+        void EXPORTED vAppendFASTA( const boost::filesystem::path &sFastaFilePath );
 #endif
         
         /* Restores a nucleotide sequence collection from the file system using the prefix given as argument.

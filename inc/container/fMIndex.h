@@ -146,7 +146,7 @@ namespace libMABS
         */
         t_bwtIndex primary; 
         
-        unsigned int get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
+        unsigned int EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
 
 
     protected :
@@ -176,7 +176,7 @@ namespace libMABS
          * We have a serious problem with ambiguous bases over here, because the (compressed) BWT can't represent them.
          * WARNING: Do not pass sequences comprising ambiguous symbols (e.g. symbol 'N').
          */
-        void bwt_pac2bwt_step1( const NucSeq &fn_pac_arg );
+        void EXPORTED bwt_pac2bwt_step1( const NucSeq &fn_pac_arg );
         
 
         /** Retrieve character at position k from the $-removed packed BWT without occurrence counter.
@@ -189,7 +189,7 @@ namespace libMABS
          * Inserts the required space for 4 uint_64 counters each 8 uint_32 blocks and initializes the counters according to the counting.
          * FIX ME: If we get exception over here, we have a memory leak -> use unique poiters are vectors
          */
-        void bwt_bwtupdate_core_step2();
+        void EXPORTED bwt_bwtupdate_core_step2();
 
         /** Retrieve character at position k from the $-removed packed BWT, which comprises occurrence counter.
          * (Note that bwt_t::bwt is not exactly the BWT string and therefore this macro is called bwt_B0 instead of bwt_B.)
@@ -294,14 +294,14 @@ namespace libMABS
         /** Creation of the suffix array (SA is organized on the foundation of 64 bit counters)
          * @param intv Interval size for suffix array (must be a power of 2)
          */
-        void bwt_cal_sa_step3( unsigned int intv );
+        void EXPORTED bwt_cal_sa_step3( unsigned int intv );
 
         /** BWT construction for packs. Is is possible to choose among two different algorithms.
          * uiAlgorithmSelection : 0 manually selected algorithm for small inputs
          *                          1 manually selected algorithm for large inputs
         *                          2 automatic selection on foundation of input size
         */
-        void build_FMIndex( 
+        void EXPORTED build_FMIndex( 
                             const Pack &rxSequenceCollection, // the pack for which we compute a BWT
                             unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
                         );

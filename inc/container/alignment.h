@@ -9,6 +9,7 @@
 
 #include "container/segment.h"
 #include "container/seed.h"
+#include "util/support.h"
 #include <cmath>
 
 
@@ -132,7 +133,7 @@ namespace libMABS
             return std::shared_ptr<Container>(new Alignment());
         }//function
 
-        int reCalcScore() const;
+        int EXPORTED reCalcScore() const;
 
         /**
          * @returns the type of math for the given position i.
@@ -167,7 +168,7 @@ namespace libMABS
          * This is used for appending seeds,
          * where simply size of the seed matches need to be appended.
          */
-        void append(MatchType type, nucSeqIndex size);
+        void EXPORTED append(MatchType type, nucSeqIndex size);
 
         /**
          * @brief appends a matchType to the alignment
@@ -250,7 +251,7 @@ namespace libMABS
          * @details
          * Removes parts of the reference at the front and back that overhang the aligned query.
          */
-        void removeDangelingDeletions();
+        void EXPORTED removeDangelingDeletions();
 
         /**
          * @brief for sorting alignment by their score

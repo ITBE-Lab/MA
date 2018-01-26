@@ -41,7 +41,7 @@ void StripOfConsideration::sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen)
     else
     {
         //radix sort is faster than quicksort
-        unsigned int amount_buckets = max_bits_used/log2(n);
+        unsigned int amount_buckets = (unsigned int) (max_bits_used/log2(n));
         if(amount_buckets < 2)
             amount_buckets = 2;
         unsigned int iter = 0;

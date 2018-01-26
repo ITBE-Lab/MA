@@ -3,7 +3,7 @@
     Unrevised C-code for BWT construction.
     This file is self contained and does not interface to the remaining code.
 */
-
+#define _CRT_SECURE_NO_DEPRECATE
 #include "container/bwt_large.h"
 
 

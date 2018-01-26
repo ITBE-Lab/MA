@@ -90,7 +90,7 @@ namespace libMABS
         * The algorithm has to be run on left and right shadows,
         * therefore it is provided as individual function.
         */
-        void linesweep(
+        void EXPORTED linesweep(
                 std::vector<ShadowInterval>& vShadows, 
                 std::shared_ptr<Seeds> pSeeds
             );
@@ -100,18 +100,18 @@ namespace libMABS
         * @details
         * "Casts" the left shadows.
         */
-        ShadowInterval getLeftShadow(Seeds::iterator pSeed) const;
+        ShadowInterval EXPORTED getLeftShadow(Seeds::iterator pSeed) const;
 
         /**
         * @brief Returns the right shadow of a seed.
         * @details
         * "Casts" the right shadows.
         */
-        ShadowInterval getRightShadow(Seeds::iterator pSeed) const;
+        ShadowInterval EXPORTED getRightShadow(Seeds::iterator pSeed) const;
     public:
 
         //overload
-        std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> pInput);
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
 
         /**
          * @brief Used to check the input of execute.
@@ -119,7 +119,7 @@ namespace libMABS
          * Returns:
          * - Seeds
          */
-        ContainerVector getInputType() const;
+        ContainerVector EXPORTED getInputType() const;
 
         /**
          * @brief Used to check the output of execute.
@@ -127,7 +127,7 @@ namespace libMABS
          * Returns:
          * - Seeds
          */
-        std::shared_ptr<Container> getOutputType() const;
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
 
         std::string getName() const
         {

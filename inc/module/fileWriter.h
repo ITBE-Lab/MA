@@ -36,7 +36,7 @@ namespace libMABS
                 std::static_pointer_cast<std::ofstream>(pFile)->close();
         }//deconstructor
 
-        std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
         /**
          * @brief Used to check the input of execute.
@@ -44,7 +44,7 @@ namespace libMABS
          * Returns:
          * - Nil
          */
-        ContainerVector getInputType() const;
+        ContainerVector EXPORTED getInputType() const;
 
         /**
          * @brief Used to check the output of execute.
@@ -52,7 +52,7 @@ namespace libMABS
          * Returns:
          * - ContainerVector(NucSeq)
          */
-        std::shared_ptr<Container> getOutputType() const;
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
 
         std::string getName() const
         {

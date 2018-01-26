@@ -3,13 +3,14 @@
  * @brief Implements GzipInputStream, vRangeCheckAndThrowInclusive and vRangeCheckAndThrowExclusive
  * @author Arne Kutzner
  */
-#pragma once
+#ifndef SUPPORT_H
+#define SUPPORT_H
 
+#include <vector>
 #include <string>
 #include <sstream>
 #include <stdlib.h>
 #include <iostream>
-#include <vector>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -22,6 +23,9 @@
     
     // SSE2
     #include <emmintrin.h>
+
+    //under gnu EXPORTED is not needed to do anything
+    #define EXPORTED
 #elif _MSC_VER
     /* Several data-type definitions of stdint.h not contained in the MSC compiler
      */
@@ -35,12 +39,21 @@
     typedef signed __int16 int16_t;
 
     typedef unsigned __int64 uint64_t;
+
+    //under msc we need to export or import a function according to weather we are building the dll or using it
+    #ifdef EXPORT
+        #define EXPORTED __declspec(dllexport)
+    #else
+        #define EXPORTED __declspec(dllimport)
+    #endif
 #endif
+
+
 
 
 /* Constructs the full filename for a prefix, suffix combination.
  */
-std::string fullFileName( const char *pcFileNamePrefix, const char *pcSuffix );
+std::string EXPORTED fullFileName( const char *pcFileNamePrefix, const char *pcSuffix );
 
 /**
  * @brief reads gzip files from disk
@@ -63,22 +76,22 @@ protected :
     /* Initializes the gzip filter. Look for the gzip-magic if this absent we work in some uncompressed mode.
      * In derived classes this method together with the default constructor can be used for delayed stream connecting.
      */
-    void vInitialize( std::istream &xInputStream );
+    void EXPORTED vInitialize( std::istream &xInputStream );
 
 public :
     /* The argument of the constructor could be an std::ifstream.
      * WARNING: The stream must have been opened using the mode std::ios::binary.
      *          xInputStream has to exist along with the lifetime of the current object.
      */
-    GzipInputStream( std::istream &xInputStream );
+    EXPORTED GzipInputStream( std::istream &xInputStream );
 
 protected :
     /* This constructor is only for derived classes so that these classes can call vInitialize after creating some input stream.
      */
-    GzipInputStream( );
+    EXPORTED GzipInputStream( );
 
 public :
-    virtual ~GzipInputStream();
+    virtual EXPORTED ~GzipInputStream();
 }; // class
 
 /**
@@ -90,11 +103,11 @@ private :
     std::ifstream xFileInputStream;
 
 public :
-    GzipInputFileStream( const std::string &pcFileName );
+    EXPORTED GzipInputFileStream( const std::string &pcFileName );
 
-    bool is_open();
+    bool EXPORTED is_open();
 
-    virtual ~GzipInputFileStream();
+    virtual EXPORTED ~GzipInputFileStream();
 }; // class
 
 /**
@@ -129,3 +142,5 @@ void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType
                throw std::runtime_error(   (((((((std::string( sText ) += "Out of range for value : ") += std::to_string( xVal )) += " range : [ ") += std::to_string( xRangeMin )) += "..") += std::to_string( xRangeMax )) += ")") ); // runtime error
        } // if
 } // template function
+
+#endif

@@ -8,7 +8,7 @@
 /* Common code used in Smith-Waterman aligners.
  */
 
-#ifdef _WIN32   
+#ifdef _MSC_VER   
 typedef unsigned __int8 uint8_t;
 #endif
 

@@ -39,7 +39,7 @@ namespace libMABS
      * @details
      * This requires a function since we have types like any of none.
      */
-    bool typeCheck(
+    bool EXPORTED typeCheck(
             std::shared_ptr<Container> pData, 
             std::shared_ptr<Container> pExpected
         );
@@ -49,7 +49,7 @@ namespace libMABS
      * @details
      * This requires a function since we have types like any of none.
      */
-    bool typeCheck(
+    bool EXPORTED typeCheck(
             ContainerVector vData, 
             ContainerVector vExpected
         );
@@ -167,7 +167,7 @@ namespace libMABS
          * @note This is static since we need to save a reference to the shared_ptr of the Module 
          * promising.
          */
-        static std::shared_ptr<Pledge> promiseMe(
+        static std::shared_ptr<Pledge> EXPORTED promiseMe(
                 std::shared_ptr<Module> pThis,
                 std::vector<std::shared_ptr<Pledge>> vInput
             );

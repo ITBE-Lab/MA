@@ -32,7 +32,7 @@ namespace libMABS
             maxAmbiguity(maxAmbiguity)
         {}//constructor
 
-        std::shared_ptr<Container> execute(std::shared_ptr<ContainerVector> vpInput);
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
         /**
          * @brief Used to check the input of execute.
@@ -41,7 +41,7 @@ namespace libMABS
          * - SegmentVector
          * - FMIndex
          */
-        ContainerVector getInputType() const;
+        ContainerVector EXPORTED getInputType() const;
 
         /**
          * @brief Used to check the output of execute.
@@ -49,7 +49,7 @@ namespace libMABS
          * Returns:
          * - Seeds
          */
-        std::shared_ptr<Container> getOutputType() const;
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
 
         std::string getName() const
         {
