@@ -1161,20 +1161,23 @@ namespace libMA
             assert(    ( (int64_t)iSequenceBegin <= iAbsolutePosition( iMiddle) ) 
                     && ( iAbsolutePosition( iMiddle ) < (int64_t)iSequenceEnd ) 
                 ); 
-
             if ( !bPositionIsOnReversStrand( iMiddle ) )
             {    /* On forward strand.
                 */
-                riBegin = std::max( (uint64_t)riBegin, iSequenceBegin );
-                riEnd = std::min( (uint64_t)riEnd, iSequenceEnd );
+				if (iSequenceBegin > riBegin)
+					riBegin = iSequenceBegin;
+				if (iSequenceEnd < riEnd)
+					riEnd = iSequenceEnd;
 
                 assert( riBegin <= riEnd ); // consistency check
             } // if
             else
             {    /* On reverse strand.
                 */
-                riBegin = std::max( (uint64_t)riBegin, uiPositionToReverseStrand( iSequenceEnd ) + 1 );
-                riEnd = std::min( (uint64_t)riEnd, uiPositionToReverseStrand( iSequenceBegin ) + 1 );
+				if (uiPositionToReverseStrand(iSequenceEnd) + 1 > riBegin)
+					riBegin = uiPositionToReverseStrand(iSequenceEnd) + 1;
+				if (uiPositionToReverseStrand(iSequenceBegin) + 1 < riEnd)
+					riEnd = uiPositionToReverseStrand(iSequenceBegin) + 1;
 
                 assert( riBegin <= riEnd ); // consistency check
             } // else
