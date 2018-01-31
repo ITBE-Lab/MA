@@ -370,8 +370,6 @@ namespace libMA
                     vInput->push_back(pFuture->get());
                     if(vInput->back()->bDry)
                         bDry = true;
-                    //keep the mutex locked while the execute runs
-                    pFuture->pMutex->lock();
                 }//for
                 try
                 {
@@ -379,7 +377,8 @@ namespace libMA
                     //actually execute the module
                     content = pledger->execute(vInput);
                     std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
-                    execTime = duration.count();
+                    //increase the total executing time for this pledge
+                    execTime += duration.count();
                     assert(typeCheck(content, type));
                     //content->bDry may be true already we do not want to overwrite it with false
                     if(bDry)
@@ -388,9 +387,6 @@ namespace libMA
                 {
                     std::cerr << "unknown exception during execution" << std::endl;
                 }//catch
-                //unlock all locked mutex
-                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    pFuture->pMutex->unlock();
             }//if
             else
             {

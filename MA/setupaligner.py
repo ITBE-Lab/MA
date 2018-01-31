@@ -30,7 +30,7 @@ from .__init__ import *
 class Aligner:
     def __init__(
                 self,
-                max_hits=5,
+                max_hits=100,
                 num_strips=5,
                 complete_seeds = False,
                 threads = 32
@@ -38,6 +38,7 @@ class Aligner:
         self.query_vec_pledge = Pledge(ContainerVector(NucSeq()))
         self.reference_pledge = Pledge(Pack())
         self.fm_index_pledge = Pledge(FMIndex())
+        self.__pledges = [ [], [], [], [] ]
 
         splitter = Splitter(self.query_vec_pledge)
         lock = Lock(NucSeq())
@@ -62,6 +63,7 @@ class Aligner:
             unlock = UnLock(query_pledge)
 
             seeding_pledge = seeding.promise_me(self.fm_index_pledge,query_pledge)
+            self.__pledges[0].append(seeding_pledge)
 
             strips_pledge = soc.promise_me(
                 seeding_pledge,
@@ -69,14 +71,17 @@ class Aligner:
                 self.reference_pledge,
                 self.fm_index_pledge
             )
+            self.__pledges[1].append(strips_pledge)
 
             couple_pledge = couple.promise_me(strips_pledge)
+            self.__pledges[2].append(couple_pledge)
 
             alignments_pledge = optimal.promise_me(
                 couple_pledge,
                 query_pledge,
                 self.reference_pledge
             )
+            self.__pledges[3].append(alignments_pledge)
 
             align_pledge = mappingQual.promise_me(query_pledge, alignments_pledge)
 
@@ -102,6 +107,10 @@ class Aligner:
         self.fm_index_pledge.set(index)
 
     def align(self, queries = None):
+        #reset runtimes
+        for row in self.__pledges:
+            for ele in row:
+                ele.exec_time = 0
         if not queries is None:
             self.setQueries(queries)
         #the actual alignment
@@ -112,4 +121,23 @@ class Aligner:
         #remove the content
         del self.collector.content[:]
         return alignments
+
+    def get_runtimes(self):
+        ret_list = {
+            'seeding': 0,
+            'seed processing: filtering': 0,
+            'seed processing: coupling': 0,
+            'optimal alignment': 0
+        }
+        for ele in self.__pledges[0]:
+            ret_list['seeding'] += ele.exec_time
+        for ele in self.__pledges[1]:
+            ret_list['seed processing: filtering'] += ele.exec_time
+        for ele in self.__pledges[2]:
+            ret_list['seed processing: coupling'] += ele.exec_time
+        for ele in self.__pledges[3]:
+            ret_list['optimal alignment'] += ele.exec_time
+        return ret_list
+
+
 

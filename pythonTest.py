@@ -596,7 +596,7 @@ def test_my_approach(
         print("no new queries ... done")
         return
 
-    runtimes = []
+    runtimes = {}
 
     extract_size = len(all_queries) #2**15
     # break samples into chunks of 2^14
@@ -663,11 +663,11 @@ def test_my_approach(
             index = int(alignment.stats.name)
 
             total_time = 0
-            #for step_index in range(len(result_pledge)):
-            #    total_time += result_pledge[step_index][index].exec_time
-            #    while len(runtimes) <= step_index:
-            #        runtimes.append(0)
-            #    runtimes[step_index] += result_pledge[step_index][index].exec_time
+            for key, value in aligner.get_runtimes().items():
+                if not key in runtimes:
+                    runtimes[key] = 0.0
+                runtimes[key] += value
+                total_time += value
 
             sample_id = queries[index][1]
 
@@ -749,17 +749,9 @@ def test_my_approach(
                 )
         print("submitting results (", name, ") ...")
         submitResults(db_name, result)
-    
-    r_names = [
-        "(seeding)",
-        "(seed processing: filtering)",
-        "(seed processing: coupeling)",
-        "(optimal alignment)",
-        "(mapping quality)",
-    ]
     print("total runtimes:")
-    for i, r in enumerate(runtimes):
-        print(r, r_names[i])
+    for key, value in runtimes.items():
+        print(value, "(", key, ")")
     print("done")
 
 
@@ -798,13 +790,13 @@ def test_my_approaches(db_name):
     #
     #test_my_approach(db_name, human_genome, "MA 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MA 2", max_hits=10, num_strips=10, complete_seeds=True)
+    test_my_approach(db_name, human_genome, "MA 2", max_hits=100, num_strips=10, complete_seeds=True)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MA 1", max_hits=5, num_strips=5, complete_seeds=False)
+    test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=5, complete_seeds=False)
     #test_my_approach(db_name, human_genome, "MA 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MA 2 radix")
