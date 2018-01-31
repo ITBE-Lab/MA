@@ -598,7 +598,7 @@ def test_my_approach(
 
     runtimes = []
 
-    extract_size = 2**15
+    extract_size = len(all_queries) #2**15
     # break samples into chunks of 2^14
     for index, queries in enumerate(chunks(all_queries, extract_size)):
         print("extracting", len(queries), "samples", index, "/",
@@ -798,7 +798,7 @@ def test_my_approaches(db_name):
     #
     #test_my_approach(db_name, human_genome, "MA 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MA 2", max_hits=10, num_strips=10, complete_seeds=False)
+    test_my_approach(db_name, human_genome, "MA 2", max_hits=10, num_strips=10, complete_seeds=True)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
@@ -1781,9 +1781,9 @@ exit()
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
 
 #createSampleQueries(human_genome, "/mnt/ssd1/illumina.db", 50, 5, 64, True, True)
-test_my_approaches("/mnt/ssd1/illumina.db")
-analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 50, 5)
-analyse_all_approaches_depre("illumina_depre.html","/mnt/ssd1/illumina.db", 50, 5)
+#test_my_approaches("/mnt/ssd1/illumina.db")
+#analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 50, 5)
+#analyse_all_approaches_depre("illumina_depre.html","/mnt/ssd1/illumina.db", 50, 5)
 
 
 #high quality picture
