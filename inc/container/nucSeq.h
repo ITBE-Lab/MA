@@ -399,7 +399,7 @@ namespace libMA
          */
         static const unsigned char xNucleotideTranslationTable[256];
 
-        std::string sName;
+        std::string sName = "unknown";
 
         /** Default constructor
          */

@@ -27,165 +27,88 @@ from .__init__ import *
 # @returns a list of pledge tuples
 # @ingroup module
 #
-def set_up_aligner(
-        query_pledges,
-        reference_pledge,
-        fm_index_pledge,
-        seg=BinarySeeding(False),
-        chain=LinearLineSweep(),
-        max_hits=5,
-        num_strips=5,
-        max_sweep = None,
-        min_seeds= 2,
-        min_seed_length= .05,
-        max_seeds=7.0,
-        nmw_give_up=20000
-        ):
+class Aligner:
+    def __init__(
+                self,
+                max_hits=5,
+                num_strips=5,
+                complete_seeds = False,
+                threads = 32
+            ):
+        self.query_vec_pledge = Pledge(ContainerVector(NucSeq()))
+        self.reference_pledge = Pledge(Pack())
+        self.fm_index_pledge = Pledge(FMIndex())
 
-    soc = StripOfConsideration(max_hits, min_seeds, num_strips, min_seed_length, max_seeds)
+        splitter = Splitter(self.query_vec_pledge)
+        lock = Lock(NucSeq())
+        seeding = BinarySeeding(complete_seeds)
+        soc = StripOfConsideration(max_hits, num_strips)
+        couple = ExecOnVec(LinearLineSweep())
+        optimal = ExecOnVec(NeedlemanWunsch())
+        mappingQual = MappingQuality()
 
-    max_sweep_n = 0
-    if not max_sweep is None:
-        max_sweep_n = max_sweep
+        self.collector = Collector(NucSeq())
+        self.return_pledges = []
 
-    execall = ExecOnVec(chain, not max_sweep is None, max_sweep_n)
+        for _ in range(threads):
+            ret_pl_indx = 0
 
-    nmw = NeedlemanWunsch(nmw_give_up)
-    nmw_multiple = ExecOnVec(nmw, True, 0)
-    mappingQual = MappingQuality()
+            nil_pledge = Pledge(Nil())
+            nil_pledge.set(Nil())
+            query_pledge = lock.promise_me(
+                splitter.promise_me(nil_pledge)
+            )
+            unlock = UnLock(query_pledge)
 
-    extractAll = ExtractAllSeeds(max_hits)
+            seeding_pledge = seeding.promise_me(self.fm_index_pledge,query_pledge)
 
+            strips_pledge = soc.promise_me(
+                seeding_pledge,
+                query_pledge,
+                self.reference_pledge,
+                self.fm_index_pledge
+            )
 
-    query_pledges_ = []
-    if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
-        query_pledges_.extend(query_pledges)
-    else:
-        query_pledges_.append(query_pledges)
+            couple_pledge = couple.promise_me(strips_pledge)
 
-    return_pledges = [[], [], [], [], []]
+            alignments_pledge = optimal.promise_me(
+                couple_pledge,
+                query_pledge,
+                self.reference_pledge
+            )
 
-    for query_pledge in query_pledges_:
-        ret_pl_indx = 0
-        segment_pledge = seg.promise_me(
-            fm_index_pledge,
-            query_pledge
-        )
-        return_pledges[ret_pl_indx].append(segment_pledge)
-        ret_pl_indx += 1
+            align_pledge = mappingQual.promise_me(query_pledge, alignments_pledge)
 
-        strips_pledge = soc.promise_me(
-            segment_pledge,
-            query_pledge,
-            reference_pledge,
-            fm_index_pledge
-        )
-        return_pledges[ret_pl_indx].append(strips_pledge)
-        ret_pl_indx += 1
+            collector_pledge = self.collector.promise_me(align_pledge)
 
-        chains_pledge = execall.promise_me(
-            strips_pledge,
-        )
+            unlock_pledge = unlock.promise_me(collector_pledge)
 
-        return_pledges[ret_pl_indx].append(chains_pledge)
-        ret_pl_indx += 1
+            self.return_pledges.append(unlock_pledge)
 
-        alignments_pledge = nmw_multiple.promise_me(
-            chains_pledge,
-            query_pledge,
-            reference_pledge
-        )
-        return_pledges[ret_pl_indx].append(alignments_pledge)
-        ret_pl_indx += 1
+    def setRef(self, pack):
+        self.reference_pledge.set(pack)
 
-        align_pledge = mappingQual.promise_me(query_pledge, alignments_pledge)
-        return_pledges[ret_pl_indx].append(align_pledge)
-        ret_pl_indx += 1
+    def setQueries(self, queries):
+        vec = ContainerVector(NucSeq())
+        del vec[:]
+        vec.extend(queries)
+        self.query_vec_pledge.set(vec)
 
-    if isinstance(query_pledges, list) or isinstance(query_pledges, tuple):
-        return return_pledges
-    else:
-        return [item for sublist in return_pledges for item in sublist]
+    def setRef(self, pack):
+        self.reference_pledge.set(pack)
 
-def piped(
-        query,
-        reference,
-        fm_index,
-        seg=BinarySeeding(False),
-        max_hits=5,
-        num_strips=5,
-        max_sweep = None,
-        min_seeds= 2,
-        min_seed_length= .05,
-        max_seeds=7.0,
-        nmw_give_up=20000,
-        threads=32
-        ):
-    #static pledges
-    fm_index_pledge = Pledge(FMIndex())
-    fm_index_pledge.set(fm_index)
+    def setInd(self, index):
+        self.fm_index_pledge.set(index)
 
-    reference_pledge = Pledge(Pack())
-    reference_pledge.set(reference)
+    def align(self, queries = None):
+        if not queries is None:
+            self.setQueries(queries)
+        #the actual alignment
+        Pledge.simultaneous_get(self.return_pledges, True)
+        alignments = []
+        for alignment in self.collector.content:
+            alignments.append(alignment[0])
+        #remove the content
+        del self.collector.content[:]
+        return alignments
 
-    #modules
-    soc = StripOfConsideration(max_hits, min_seeds, num_strips, min_seed_length, max_seeds)
-
-    max_sweep_n = 0
-    if not max_sweep is None:
-        max_sweep_n = max_sweep
-    execall = ExecOnVec(chain, not max_sweep is None, max_sweep_n)
-
-    nmw = NeedlemanWunsch(nmw_give_up)
-    nmw_multiple = ExecOnVec(nmw, True, 0)
-    getBestOnly = Tail(Alignment())
-
-    #setup the pipes
-    pipes = []
-    for th in range(threads):
-        #the in pledge for the pipe
-        query_pledge = Pledge(NucSeq())
-        segment_pledge = seg.promise_me(
-            fm_index_pledge,
-            query_pledge
-        )
-        strips_pledge = soc.promise_me(
-            segment_pledge,
-            query_pledge,
-            reference_pledge,
-            fm_index_pledge
-        )
-
-        chains_pledge = execall.promise_me(
-            strips_pledge,
-        )
-
-
-        alignments_pledge = nmw_multiple.promise_me(
-            chains_pledge,
-            query_pledge,
-            reference_pledge
-        )
-        #the out pledge for the pipe
-        align_pledge = getBestOnly.promise_me(alignments_pledge)
-
-        pipe = Pipe([query_pledge], align_pledge)
-        pipes.append(pipe)
-
-    #setup the query vector pledge
-    query_vec_pledge = []
-    for query in queries:
-        query_vec_pledge.append(Pledge(NucSeq()))
-        query_vec_pledge[-1].set(query)
-
-    pipe_outs = []
-    for pipe in pipes:
-        pipe_outs.append(pipe.promise_me(query_vec_pledge))
-    
-    Pledge.simultaneous_get(pipe_outs, threads)
-
-    out = []
-    for pipe_out in pipe_outs:
-        out.extend(pipe_out)
-
-    return out

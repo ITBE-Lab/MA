@@ -1164,9 +1164,9 @@ namespace libMA
             if ( !bPositionIsOnReversStrand( iMiddle ) )
             {    /* On forward strand.
                 */
-				if (iSequenceBegin > riBegin)
+				if ((int64_t)iSequenceBegin > riBegin)
 					riBegin = iSequenceBegin;
-				if (iSequenceEnd < riEnd)
+				if ((int64_t)iSequenceEnd < riEnd)
 					riEnd = iSequenceEnd;
 
                 assert( riBegin <= riEnd ); // consistency check
@@ -1174,9 +1174,9 @@ namespace libMA
             else
             {    /* On reverse strand.
                 */
-				if (uiPositionToReverseStrand(iSequenceEnd) + 1 > riBegin)
+				if ((int64_t)uiPositionToReverseStrand(iSequenceEnd) + 1 > riBegin)
 					riBegin = uiPositionToReverseStrand(iSequenceEnd) + 1;
-				if (uiPositionToReverseStrand(iSequenceBegin) + 1 < riEnd)
+				if ((int64_t)uiPositionToReverseStrand(iSequenceBegin) + 1 < riEnd)
 					riEnd = uiPositionToReverseStrand(iSequenceBegin) + 1;
 
                 assert( riBegin <= riEnd ); // consistency check

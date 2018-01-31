@@ -582,29 +582,13 @@ def test_my_approach(
             db_name,
             reference,
             name,
-            seg=BinarySeeding(False),
-            chain=LinearLineSweep(), 
             max_hits=100,
             num_strips=10, 
-            low_res = False,
-            max_sweep = None,
-            min_seeds=0,
-            min_seed_length=0,
-            max_seeds=0,
-            nmw_give_up=0
+            complete_seeds = False
         ):
     print("collecting samples (" + name + ") ...")
-    reference_pledge = Pledge(Pack())
-    fm_index_pledge = Pledge(FMIndex())
 
-    res1 = 1
-    if low_res:
-        res1 = 100
-    res2 = 1
-    if low_res:
-        res2 = 5
-
-    all_queries = getNewQueries(db_name, name, reference, res1, res2)
+    all_queries = getNewQueries(db_name, name, reference, 1, 1)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
     print("having ", len(all_queries), " samples total (", name, ") ...")
@@ -620,66 +604,41 @@ def test_my_approach(
         print("extracting", len(queries), "samples", index, "/",
             len(all_queries)/extract_size, "(", name, ") ...")
         #setup the query pledges
-        query_pledge = []
+        query_container = ContainerVector(NucSeq())
+        del query_container[:]
         ids = []
         optimal_alignment_in = []
-        for sequence, sample_id in queries:
-            query_pledge.append(Pledge(NucSeq()))
-            query_pledge[-1].set(NucSeq(sequence))
+        for position, data in enumerate(queries):
+            sequence, sample_id = data
+            query_container.append(NucSeq(sequence))
+            query_container[-1].name = str(position)
             ids.append(sample_id)
             optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
 
 
         print("setting up (", name, ") ...")
+        aligner = Aligner(max_hits, num_strips, complete_seeds)
+
         ref_pack = Pack()
         ref_pack.load(reference)
-        reference_pledge.set(ref_pack)
+        aligner.setRef(ref_pack)
 
         fm_index = FMIndex()
         fm_index.load(reference)
-        fm_index_pledge.set(fm_index)
-
-        result_pledge = set_up_aligner(
-            query_pledge,
-            reference_pledge,
-            fm_index_pledge,
-            seg=seg,
-            chain=LinearLineSweep(),
-            max_hits=max_hits,
-            num_strips=num_strips,
-            max_sweep=max_sweep,
-            min_seeds=min_seeds,
-            min_seed_length=min_seed_length,
-            max_seeds=max_seeds,
-            nmw_give_up=nmw_give_up
-        )
+        aligner.setInd(fm_index)
 
         smw = SMW()
         optimal_alignment_out = []
         for a, b in optimal_alignment_in:
             optimal_alignment_out.append(smw.promise_me(a, b))
 
-        #temp code
-        if False:
-            num = 0
-            #result_pledge[-1][num].get()
-
-            printer = AlignmentPrinter()
-
-            print("origin: " + str(ids[num]))
-            print("num results: " + str(len(result_pledge[-2][num].get().get())))
-
-            for alignment in result_pledge[-2][num].get().get():
-                printer.execute((alignment, query_pledge[num].get(), ref_pack))
-
-            exit()
-
         print("computing (", name, ") ...")
-        Pledge.simultaneous_get(result_pledge[-1], 32)
+        results = aligner.align(query_container)
 
         print("computing optimal (", name, ") ...")
-        for index in range(len(queries)):
-            alignment = result_pledge[-1][index].get()[-1]
+        for i in range(len(queries)):
+            alignment = results[i]
+            index = int(alignment.stats.name)
             query = queries[index][0]
             optimal_alignment_in[index][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
             if alignment.begin_on_ref() != alignment.end_on_ref():
@@ -691,24 +650,18 @@ def test_my_approach(
 
         print("extracting results (", name, ") ...")
         result = []
-        for index in range(len(queries)):
+        for i in range(len(queries)):
             # @todo change sorting order
-            # [0] at the end cause a container vector is returned with all best scoring alignments
-            alignment = result_pledge[-1][index].get()[-1]
-            alignment2 = None
-            if len(result_pledge[-1][index].get()) > 1:
-                alignment2 = result_pledge[-1][index].get()[-2]
-            optimal_alignment = None
-            if len(optimal_alignment_out[index].get()) > 0:
-                optimal_alignment = optimal_alignment_out[index].get()[0]
-            segment_list = result_pledge[0][index].get()
+            alignment = results[i]
+            print(alignment.stats.name)
+            index = int(alignment.stats.name)
 
             total_time = 0
-            for step_index in range(len(result_pledge)):
-                total_time += result_pledge[step_index][index].exec_time
-                while len(runtimes) <= step_index:
-                    runtimes.append(0)
-                runtimes[step_index] += result_pledge[step_index][index].exec_time
+            #for step_index in range(len(result_pledge)):
+            #    total_time += result_pledge[step_index][index].exec_time
+            #    while len(runtimes) <= step_index:
+            #        runtimes.append(0)
+            #    runtimes[step_index] += result_pledge[step_index][index].exec_time
 
             sample_id = queries[index][1]
 
@@ -775,7 +728,7 @@ def test_my_approach(
                         sc2,
                         alignment.begin_on_ref(),
                         alignment.end_on_ref(),
-                        segment_list.num_seeds(fm_index, max_hits),
+                        0,#segment_list.num_seeds(fm_index, max_hits),
                         alignment.stats.index_of_strip,
                         alignment.stats.seed_coverage,
                         alignment.stats.num_seeds_in_strip,
@@ -839,13 +792,13 @@ def test_my_approaches(db_name):
     #
     #test_my_approach(db_name, human_genome, "MA 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
-    test_my_approach(db_name, human_genome, "MA 2", num_strips=10, max_sweep=10, seg=BinarySeeding(False), nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MA 2", max_hits=10, num_strips=10, complete_seeds=False)
 
     #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
 
     # pretty good mabs 1
     # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
-    test_my_approach(db_name, human_genome, "MA 1", num_strips=5, max_sweep=5, seg=BinarySeeding(True), nmw_give_up=0, max_hits=100)
+    test_my_approach(db_name, human_genome, "MA 1", max_hits=5, num_strips=5, complete_seeds=False)
     #test_my_approach(db_name, human_genome, "MA 1", num_anchors=1000, seg=BinarySeeding(True))
 
     #clearResults(db_name, human_genome, "MA 2 radix")

@@ -64,11 +64,12 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
     std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs));
-    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, 0, uiNumSOC, 0.0f, 0.0f));
+    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, uiNumSOC));
     std::shared_ptr<Module> pCouple(new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep())));
     //we only want to report the best alignment
-    std::shared_ptr<Module> pOptimal(new ExecOnVec(
-        std::shared_ptr<Module>(new NeedlemanWunsch(0)), true, uiReportNBest));
+    std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
+        std::shared_ptr<Module>(new NeedlemanWunsch()), true, uiReportNBest));
+    std::shared_ptr<Module> pMapping(new MappingQuality());
 
     //modules for the paired alignment
     bool bPaired = bPariedNormal || bPariedUniform;
@@ -124,7 +125,24 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     pSOCs
                 }
             );
-        std::shared_ptr<Pledge> pAlignments;
+        //the optimal matching stage
+        std::shared_ptr<Pledge> pOptimal = Module::promiseMe(
+                    pDoOptimal, 
+                    std::vector<std::shared_ptr<Pledge>>
+                    {
+                        pCoupled,
+                        pQuery,
+                        pPack
+                    }
+                );
+        //assign a mapping quality
+        std::shared_ptr<Pledge> pAlignments = Module::promiseMe(
+                    pMapping, 
+                    std::vector<std::shared_ptr<Pledge>>
+                    {
+                        pOptimal
+                    }
+                );
         if(bPaired)
         {
             if(aQueries.size() != 2)
@@ -169,18 +187,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     }
                 );
             //the optimal matching stage
-            std::shared_ptr<Pledge> pAlignments1 = Module::promiseMe(
-                    pOptimal, 
-                    std::vector<std::shared_ptr<Pledge>>
-                    {
-                        pCoupled,
-                        pQuery,
-                        pPack
-                    }
-                );
-            //the optimal matching stage
-            std::shared_ptr<Pledge> pAlignments2 = Module::promiseMe(
-                    pOptimal, 
+            std::shared_ptr<Pledge> pOptimal = Module::promiseMe(
+                    pDoOptimal, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
                         pCoupled2,
@@ -188,12 +196,20 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                         pPack
                     }
                 );
+            //the optimal matching stage
+            std::shared_ptr<Pledge> pAlignments2 = Module::promiseMe(
+                    pMapping, 
+                    std::vector<std::shared_ptr<Pledge>>
+                    {
+                        pOptimal
+                    }
+                );
             //pick the best alignments
             pAlignments = Module::promiseMe(
                     pPaired, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
-                        pAlignments1,
+                        pAlignments,
                         pAlignments2
                     }
                 );
@@ -203,16 +219,6 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         {
             if(aQueries.size() != 1)
                 throw new AlignerException("one input files is required for unpaired alignments");
-            //the optimal matching stage
-            pAlignments = Module::promiseMe(
-                    pOptimal, 
-                    std::vector<std::shared_ptr<Pledge>>
-                    {
-                        pCoupled,
-                        pQuery,
-                        pPack
-                    }
-                );
         }//else
 
         //write the output to a file

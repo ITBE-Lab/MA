@@ -15,7 +15,6 @@ nucSeqIndex StripOfConsideration::getPositionForBucketing(nucSeqIndex uiQueryLen
 //@fixme compute the correct size and put in the formula here...
 nucSeqIndex StripOfConsideration::getStripSize(nucSeqIndex uiQueryLength)
 {
-    return 1000;
     return (iMatch * uiQueryLength - iGap) / iExtend;
 }//function
 
@@ -166,13 +165,6 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     */
     nucSeqIndex uiStripSize = getStripSize(uiQLen);
 
-    // FILTER
-    if (
-            dMaxSeeds > 0 &&
-            pSegments->numSeeds(pFM_index, uiMaxAmbiguity) > uiQLen * dMaxSeeds
-        )
-        return std::shared_ptr<ContainerVector>(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
-
     //extract the seeds
     std::vector<Seed> vSeeds;
     forEachNonBridgingSeed(
@@ -219,10 +211,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         assert(uiCurrEle >= 1);
         int64_t iDummy;
         //FILTER
-        if(
-            !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy) &&
-            (uiCurrEle > minSeeds || uiCurrScore > minSeedLength*uiQLen)
-            )
+        if(!pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy))
         {
             //check if we improved upon the last maxima while dealing with the same area
             if(
@@ -282,7 +271,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         xCollect++;
     }//while
 
-    //make sure that we return at least an empty seed set if nothing elese
+    //make sure that we return at least an empty seed set if nothing else
     if(pRet->size() == 0)
         pRet->push_back(std::shared_ptr<Seeds>(new Seeds()));
 
@@ -298,12 +287,9 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<unsigned int, unsigned int, unsigned int, float, float>())
+        .def(boost::python::init<unsigned int, unsigned int>())
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
-        .def_readwrite("min_seeds", &StripOfConsideration::minSeeds)
-        .def_readwrite("min_seed_length", &StripOfConsideration::minSeedLength)
         .def_readwrite("num_strips", &StripOfConsideration::numStrips)
-        .def_readwrite("max_seeds", &StripOfConsideration::dMaxSeeds)
     ;
 
     boost::python::implicitly_convertible< 

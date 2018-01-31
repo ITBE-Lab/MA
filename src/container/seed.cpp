@@ -66,6 +66,7 @@ void exportSeed()
         .def_readwrite("num_seeds_in_strip", &AlignmentStatistics::num_seeds_in_strip)
         .def_readwrite("anchor_size", &AlignmentStatistics::anchor_size)
         .def_readwrite("anchor_ambiguity", &AlignmentStatistics::anchor_ambiguity)
+        .def_readwrite("name", &AlignmentStatistics::sName)
     ;
 
     //export the Seeds class

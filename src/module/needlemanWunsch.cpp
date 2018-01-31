@@ -33,8 +33,7 @@ void needlemanWunsch(
         nucSeqIndex toQuery,
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
-        std::shared_ptr<Alignment> pAlignment,
-        nucSeqIndex uiGiveUpAfter
+        std::shared_ptr<Alignment> pAlignment
     )
 {
     assert(toQuery <= pQuery->length());
@@ -77,46 +76,6 @@ void needlemanWunsch(
             iX--;
         }//while
         return;
-    }//if
-
-    /*
-     * give up for too large areas
-     * @todo this should split everything into two local alignments instead
-     */
-    if(uiGiveUpAfter != 0)
-    {
-        nucSeqIndex uiArea = (toQuery - fromQuery)*(toRef - fromRef);
-        if(uiArea > uiGiveUpAfter)
-        {
-            int diagLen = std::min(toRef - fromRef, toQuery - fromQuery);
-            int gapLen = std::max(toRef - fromRef, toQuery - fromQuery) - diagLen;
-
-            int scoreMissmatch = -1* (iGap + iExtend*gapLen + 
-                                 iMissMatch*diagLen);
-
-            int scoreIndelOnly = -1* (iGap*2 + iExtend*(toRef - fromRef) + 
-                                 iExtend*(toQuery - fromQuery));
-
-            if(scoreIndelOnly < scoreMissmatch)
-            {
-                if(toRef - fromRef > toQuery - fromQuery)
-                {
-                    pAlignment->append(MatchType::deletion, gapLen);
-                    pAlignment->append(MatchType::missmatch, diagLen);
-                }//if
-                else
-                {
-                    pAlignment->append(MatchType::insertion, gapLen);
-                    pAlignment->append(MatchType::missmatch, diagLen);
-                }//else
-            }//if
-            else
-            {
-                pAlignment->append(MatchType::deletion, toRef - fromRef);
-                pAlignment->append(MatchType::insertion, toQuery - fromQuery);
-            }//else
-            return;
-        }//if
     }//if
 //switch banded (not working yet) (1) non-banded (0)
 #if 0
@@ -340,6 +299,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     //save the strip of consideration stats in the alignment
     pRet->xStats = pSeeds->xStats;
+    pRet->xStats.sName = pQuery->sName;
 
     DEBUG(
         std::cout << beginRef << " " << endRef << std::endl;
@@ -374,8 +334,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                 rSeed.start(),
                 endOfLastSeedReference,
                 rSeed.start_ref() - beginRef,
-                pRet,
-                uiGiveUpAfter
+                pRet
             );
         nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start();
         if(rSeed.start() > endOfLastSeedQuery)
@@ -435,8 +394,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             pQuery->length(),
             endOfLastSeedReference,
             endRef - beginRef,
-            pRet,
-            uiGiveUpAfter
+            pRet
         );
         //cleanup the alignment
         pRet->removeDangelingDeletions();
@@ -459,10 +417,8 @@ void exportNeedlemanWunsch()
         boost::python::bases<Module>,
         std::shared_ptr<NeedlemanWunsch>
     >(
-        "NeedlemanWunsch", 
-        boost::python::init<nucSeqIndex>()
+        "NeedlemanWunsch"
     )
-        .def_readwrite("give_up_after", &NeedlemanWunsch::uiGiveUpAfter)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<NeedlemanWunsch>,

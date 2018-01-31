@@ -82,6 +82,21 @@ std::shared_ptr<Pledge> Pledge::makePledge(
     return pRet;
 }//contructor function
 
+void simGetBoost1(
+    std::vector<std::shared_ptr<Pledge>> vPledges,
+    bool bLoop
+)
+{
+    Pledge::simultaneousGet(vPledges, bLoop);
+}//function
+
+void simGetBoost2(
+    std::vector<std::shared_ptr<Pledge>> vPledges
+)
+{
+    Pledge::simultaneousGet(vPledges);
+}//function
+
 void exportModule()
 {
     //module is an abstract class and should never be initialized
@@ -143,6 +158,14 @@ void exportModule()
             .def(
                     "simultaneous_get",
                     &Pledge::simultaneousGet
+                )
+            .def(
+                    "simultaneous_get",
+                    &simGetBoost1
+                )
+            .def(
+                    "simultaneous_get",
+                    &simGetBoost2
                 )
             .staticmethod("simultaneous_get")
             .def(

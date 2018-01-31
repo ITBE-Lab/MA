@@ -20,11 +20,8 @@ namespace libMA
     class NeedlemanWunsch : public Module
     {
     public:
-        nucSeqIndex uiGiveUpAfter = 0;
 
-        NeedlemanWunsch(nucSeqIndex uiGiveUpAfter)
-                :
-            uiGiveUpAfter(uiGiveUpAfter)
+        NeedlemanWunsch()
         {}//constructor
 
         //overload

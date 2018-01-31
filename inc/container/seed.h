@@ -157,6 +157,7 @@ namespace libMA
         unsigned int anchor_size;
         unsigned int anchor_ambiguity;
         bool bPaired;
+        std::string sName;
 
         AlignmentStatistics()
                 :
@@ -165,7 +166,8 @@ namespace libMA
             num_seeds_in_strip(0),
             anchor_size(0),
             anchor_ambiguity(0),
-            bPaired(false)
+            bPaired(false),
+            sName("unknown")
         {}
 
         void operator=(AlignmentStatistics &rOther)
@@ -176,6 +178,7 @@ namespace libMA
             anchor_size = rOther.anchor_size;
             anchor_ambiguity = rOther.anchor_ambiguity;
             bPaired = rOther.bPaired;
+            sName = rOther.sName;
         }//function
     };//class
 

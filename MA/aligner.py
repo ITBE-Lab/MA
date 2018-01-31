@@ -274,15 +274,6 @@ class MappingQuality(libMA.MappingQuality):
         return super(MappingQuality, self).promise_me(ContainerVector(*args))
 
 ##
-# @brief python wrapper for Pipe
-class Pipe(libMA.Pipe):
-    def execute(self, *args):
-        return super(Pipe, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(Pipe, self).promise_me(ContainerVector(*args))
-
-##
 # @brief The Tail Module.
 # @details
 # returns the tail of a container vector
@@ -331,3 +322,47 @@ class SMW(libMA.SMW):
 
     def promise_me(self, *args):
         return super(SMW, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The Splitter Module.
+# @ingroup module
+#
+class Splitter(libMA.Splitter):
+    def execute(self, *args):
+        return super(Splitter, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(Splitter, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The Collector Module.
+# @ingroup module
+#
+class Collector(libMA.Collector):
+    def execute(self, *args):
+        return super(Collector, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(Collector, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The Lock Module.
+# @ingroup module
+#
+class Lock(libMA.Lock):
+    def execute(self, *args):
+        return super(Lock, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(Lock, self).promise_me(ContainerVector(*args))
+
+##
+# @brief The UnLock Module.
+# @ingroup module
+#
+class UnLock(libMA.UnLock):
+    def execute(self, *args):
+        return super(UnLock, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(UnLock, self).promise_me(ContainerVector(*args))
