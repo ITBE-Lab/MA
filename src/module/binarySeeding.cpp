@@ -287,6 +287,8 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 
 	// query sequence itself
 	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
+
+    assert(center < pQuerySeq->length());
 	
 	/* Initialize ik on the foundation of the single base q[x].
 	 * In order to understand this initialization you should have a look 

@@ -45,11 +45,6 @@ void exportContainer()
                 true
             >());
 
-    //DEPRECATED
-    //make vectors of container-pointers a thing
-    //IterableConverter()
-    //    .from_python<std::shared_ptr<ContainerVector>>();
-
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 
         std::shared_ptr<ContainerVector>,

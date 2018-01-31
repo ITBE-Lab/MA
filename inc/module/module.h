@@ -297,9 +297,9 @@ namespace libMA
         std::vector<std::shared_ptr<Pledge>> vPredecessors;
         std::vector<std::weak_ptr<Pledge>> vSuccessors;
         std::vector<std::shared_ptr<Pledge>> aSync;
-        std::shared_ptr<std::mutex> pMutex;
 
     public:
+        std::shared_ptr<std::mutex> pMutex;
         double execTime;
     private:
 
@@ -366,24 +366,31 @@ namespace libMA
                 std::shared_ptr<ContainerVector> vInput(new ContainerVector());
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
                 {
+                    //here we execute all previous modules in the comp graph
                     vInput->push_back(pFuture->get());
                     if(vInput->back()->bDry)
                         bDry = true;
+                    //keep the mutex locked while the execute runs
+                    pFuture->pMutex->lock();
                 }//for
                 try
                 {
                     auto timeStamp = std::chrono::system_clock::now();
-                    content = (std::shared_ptr<Container>)pledger->execute(vInput);
+                    //actually execute the module
+                    content = pledger->execute(vInput);
                     std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
                     execTime = duration.count();
+                    assert(typeCheck(content, type));
                     //content->bDry may be true already we do not want to overwrite it with false
                     if(bDry)
                         content->bDry = true;
-                    assert(typeCheck(content, type));
                 } catch(...)
                 {
                     std::cerr << "unknown exception during execution" << std::endl;
                 }//catch
+                //unlock all locked mutex
+                for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                    pFuture->pMutex->unlock();
             }//if
             else
             {
@@ -493,6 +500,18 @@ namespace libMA
         }//function
 
         /**
+         * @brief Warpper for boost python
+         * @details
+         * transfers the ownership of the given container from python to the c++ code
+         */
+        void set_boost(std::shared_ptr<Container> c)
+        {
+            std::shared_ptr<Container> swap;
+            swap.swap(c);
+            set(swap);
+        }//function
+
+        /**
          * @brief Get the promised container.
          * @details
          * Checks weather the pledge has already been fullfilled for this call.
@@ -567,8 +586,7 @@ namespace libMA
                             //if bLoop is true this loop will keep going until all 
                             //volatile modules are dry.
                             //otherwise one iteration is performed only
-                            if(!pPledge->get()->bDry && bLoop)
-                                while(!pPledge->get()->bDry);
+                            while(!pPledge->get()->bDry && bLoop);
                         },//lambda
                         pPledge
                     );

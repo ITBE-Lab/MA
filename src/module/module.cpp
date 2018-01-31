@@ -8,6 +8,22 @@ bool libMA::typeCheck(
         std::shared_ptr<Container> pExpected
     )
 {
+    if(pExpected == nullptr)
+    {
+        std::cerr << "Invalid expectation: nullptr" << std::endl;
+        return false;
+    }//if
+    if(pExpected->getType() == nullptr)
+    {
+        std::cerr << "Invalid expectation with type: nullptr" << std::endl;
+        return false;
+    }//if
+    if(pData == nullptr)
+    {
+        std::cerr << "Types did not match. Got: nullptr";
+        std::cerr << " but expected: " << pExpected->getType()->getTypeName() << std::endl;
+        return false;
+    }//if
     if(pExpected->getType()->canCast(pData->getType()))
         return true;
     std::cerr << "Types did not match. Got: " << pData->getType()->getTypeName();
@@ -123,9 +139,9 @@ void exportModule()
         .def(
                 "promise_me",
                 &Module::promiseMe,
-                //boost::python::with_custodian_and_ward_postcall<0,1,
-                boost::python::with_custodian_and_ward_postcall<0,2>()
-                //>()
+                boost::python::with_custodian_and_ward_postcall<0,1,
+                    boost::python::with_custodian_and_ward_postcall<0,2>
+                >()
             )
     ;
     boost::python::class_<
@@ -141,19 +157,18 @@ void exportModule()
                     "make_pledge",
                     &Pledge::makePyPledge,
                     boost::python::with_custodian_and_ward_postcall<0,1,
-                    boost::python::with_custodian_and_ward_postcall<0,3>
+                        boost::python::with_custodian_and_ward_postcall<0,3>
                     >()
                 )
             .staticmethod("make_pledge")
             .def(
                     "set",
-                    &Pledge::set
+                    &Pledge::set_boost
                 )
             .def(
                     "get",
-                    &Pledge::get
-                    //THIS WARD CAUSES THE MEMORY LEAKS
-                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
+                    &Pledge::get,
+                    boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
                     "simultaneous_get",

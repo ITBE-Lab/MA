@@ -173,6 +173,7 @@ namespace libMA
         //overload
         std::shared_ptr<Container> getType() const
         {
+            assert(contentType != nullptr);
             return std::shared_ptr<Container>(new ContainerVector(contentType));
         }//function
 

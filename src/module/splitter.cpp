@@ -18,14 +18,20 @@ std::shared_ptr<Container> Splitter::execute(std::shared_ptr<ContainerVector> vp
 {
     std::shared_ptr<ContainerVector> pContent =
         std::static_pointer_cast<ContainerVector>(pVec->get());
+    //we have to lock the container separately since it is not part of the comp graph
+    std::lock_guard<std::mutex> xGuard(*pVec->pMutex);
     if(pContent->empty())
     {
         std::shared_ptr<Nil> pRet(new Nil());
         pRet->bDry = true;
         return pRet;
     }//if
-    auto pRet = pContent->back();
+    //swap the back of the container out, so that there is no need to copy the element
+    std::shared_ptr<Container> pRet(nullptr);
+    assert(pContent->back() != nullptr);
+    pRet.swap(pContent->back());
     pContent->pop_back();
+    assert(pRet != nullptr);
     return pRet;
 }//function
 
@@ -103,7 +109,13 @@ void exportSplitter()
             Splitter, 
             boost::python::bases<Module>, 
             std::shared_ptr<Splitter>
-        >("Splitter", boost::python::init<std::shared_ptr<Pledge>>())
+        >(
+            "Splitter", 
+            boost::python::init<std::shared_ptr<Pledge>>()
+            // make sure that the given pledge is not deallocated 
+            // before the splitter module
+            [boost::python::with_custodian_and_ward<1,2>()]
+        )
     ;
 
     boost::python::implicitly_convertible< 

@@ -588,7 +588,7 @@ def test_my_approach(
         ):
     print("collecting samples (" + name + ") ...")
 
-    all_queries = getNewQueries(db_name, name, reference, 1, 1)
+    all_queries = getNewQueries(db_name, name, reference)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
     print("having ", len(all_queries), " samples total (", name, ") ...")
@@ -627,33 +627,39 @@ def test_my_approach(
         fm_index.load(reference)
         aligner.setInd(fm_index)
 
-        smw = SMW()
-        optimal_alignment_out = []
-        for a, b in optimal_alignment_in:
-            optimal_alignment_out.append(smw.promise_me(a, b))
-
         print("computing (", name, ") ...")
         results = aligner.align(query_container)
 
-        print("computing optimal (", name, ") ...")
-        for i in range(len(queries)):
-            alignment = results[i]
-            index = int(alignment.stats.name)
-            query = queries[index][0]
-            optimal_alignment_in[index][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
-            if alignment.begin_on_ref() != alignment.end_on_ref():
-                optimal_alignment_in[index][1].set(
-                    ref_pack.extract_from_to(alignment.begin_on_ref(),alignment.end_on_ref()))
-            else:
-                optimal_alignment_in[index][1].set(NucSeq())
-        Pledge.simultaneous_get(optimal_alignment_out, 32)
+        do_optimal = False
+        optimal_alignment = None
+        if do_optimal:
+            smw = SMW()
+            optimal_alignment_out = []
+            for a, b in optimal_alignment_in:
+                optimal_alignment_out.append(smw.promise_me(a, b))
+
+            print("computing optimal (", name, ") ...")
+            for i in range(len(queries)):
+                alignment = results[i]
+                index = int(alignment.stats.name)
+                query = queries[index][0]
+                optimal_alignment_in[index][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
+                if alignment.begin_on_ref() != alignment.end_on_ref():
+                    optimal_alignment_in[index][1].set(
+                        ref_pack.extract_from_to(alignment.begin_on_ref(),alignment.end_on_ref()))
+                else:
+                    optimal_alignment_in[index][1].set(NucSeq(""))
+            Pledge.simultaneous_get(optimal_alignment_out, 32)
 
         print("extracting results (", name, ") ...")
         result = []
         for i in range(len(queries)):
             # @todo change sorting order
             alignment = results[i]
-            print(alignment.stats.name)
+            alignment2 = None
+            #print(alignment.stats.name)
+            if alignment.stats.name == "unknown":
+                continue
             index = int(alignment.stats.name)
 
             total_time = 0
@@ -673,7 +679,7 @@ def test_my_approach(
             cur_nmw_h = 0
             cur_nmw_w = 0
 
-            if not optimal_alignment is None and alignment.get_score() > optimal_alignment.get_score():
+            if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score")
                 query = queries[index][0]
                 AlignmentPrinter().execute(
@@ -713,7 +719,7 @@ def test_my_approach(
                         max_nmw_area = cur_nmw_h * cur_nmw_w
             """
 
-            sc2 = 0
+            sc2 = None
             if not optimal_alignment is None:
                 sc2 = optimal_alignment.get_score()
             score2 = 0
@@ -1077,7 +1083,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 return None
             else:
                 w_keys = sorted(d.keys())
-                h_keys = sorted(d[0].keys())
+                h_keys = sorted(d[list(d.keys())[0]].keys())
 
                 for x in w_keys:
                     pic.append( [] )
@@ -1296,7 +1302,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 return None
             else:
                 w_keys = sorted(d.keys())
-                h_keys = sorted(d[0].keys())
+                h_keys = sorted(d[list(d.keys())[0]].keys())
 
                 for x in w_keys:
                     pic.append( [] )
@@ -1778,7 +1784,7 @@ exit()
 test_my_approaches("/mnt/ssd1/illumina.db")
 analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 50, 5)
 analyse_all_approaches_depre("illumina_depre.html","/mnt/ssd1/illumina.db", 50, 5)
-exit()
+
 
 #high quality picture
 

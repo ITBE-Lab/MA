@@ -29,6 +29,14 @@ std::shared_ptr<Container> MappingQuality::execute(
         return std::shared_ptr<ContainerVector>(
             new ContainerVector(std::shared_ptr<Alignment>(new Alignment())));
 
+    //set the mapping quality for all alignments to zero
+    for(auto pAlign : *pAlignments)
+    {
+        std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pAlign);
+        pCasted->fMappingQuality = 0.0;
+    }//for
+
+    //compute the mapping quality for the best alignment
     std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[pAlignments->size()-1]);
 
     // mapping quality based on scores

@@ -87,6 +87,12 @@ std::shared_ptr<Container> SMW::execute(
         std::static_pointer_cast<NucSeq>((*vpInput)[1]);
     //std::shared_ptr<NucSeq> pReference = pRefPack->vColletionAsNucSeq();
 
+    if(pQuerySeq->length() == 0 || pReference->length() == 0)
+        return std::shared_ptr<ContainerVector>(new ContainerVector());
+
+    DEBUG(
+        std::cout << pQuerySeq->length() << "x" << pReference->length() << std::endl;
+    )//debug
 
     // 1. Prepare the SW parameter set ...
     SmithWatermanParamaterSet<int16_t> xSWparameterSet

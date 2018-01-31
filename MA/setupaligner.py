@@ -50,11 +50,12 @@ class Aligner:
         self.collector = Collector(NucSeq())
         self.return_pledges = []
 
+        nil_pledge = Pledge(Nil())
+        nil_pledge.set(Nil())
+
         for _ in range(threads):
             ret_pl_indx = 0
 
-            nil_pledge = Pledge(Nil())
-            nil_pledge.set(Nil())
             query_pledge = lock.promise_me(
                 splitter.promise_me(nil_pledge)
             )
