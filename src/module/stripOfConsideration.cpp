@@ -12,7 +12,6 @@ nucSeqIndex StripOfConsideration::getPositionForBucketing(nucSeqIndex uiQueryLen
     return xS.start_ref() + (uiQueryLength - xS.start()); 
 }//function
 
-//@fixme compute the correct size and put in the formula here...
 nucSeqIndex StripOfConsideration::getStripSize(nucSeqIndex uiQueryLength)
 {
     return (iMatch * uiQueryLength - iGap) / iExtend;

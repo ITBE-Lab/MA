@@ -75,9 +75,8 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         }//while
         return pRet;
     }//if
-    std::shared_ptr<Nil> pRet2(new Nil());
-    pRet2->bDry = true;
-    return pRet2;
+    //if we reach this point we have read all content of the file
+    throw ModuleDryException();
 }//function
 
 void exportFileReader()

@@ -148,6 +148,15 @@ public:
         ModuleIO_Exception(const char* info) : Annotated_exception(info){}
 };
 
+/**
+ * @brief Exceptions for I/O.
+ */
+class ModuleDryException : public std::exception
+{
+public:
+        ModuleDryException(){}
+};
+
 
 /**
  * @brief A little method for null-pointer exception testing using our exception class.

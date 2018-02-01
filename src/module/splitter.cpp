@@ -21,11 +21,7 @@ std::shared_ptr<Container> Splitter::execute(std::shared_ptr<ContainerVector> vp
     //we have to lock the container separately since it is not part of the comp graph
     std::lock_guard<std::mutex> xGuard(*pVec->pMutex);
     if(pContent->empty())
-    {
-        std::shared_ptr<Nil> pRet(new Nil());
-        pRet->bDry = true;
-        return pRet;
-    }//if
+        throw ModuleDryException();
     //swap the back of the container out, so that there is no need to copy the element
     std::shared_ptr<Container> pRet(nullptr);
     assert(pContent->back() != nullptr);
@@ -48,8 +44,6 @@ std::shared_ptr<Container> Collector::getOutputType() const
 std::shared_ptr<Container> Collector::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     //synchronize container collection
-    if ((*vpInput)[0]->bDry)
-        return std::shared_ptr<Container>(new Nil());
     std::lock_guard<std::mutex> xGuard(*pLock);
     pVec->push_back((*vpInput)[0]);
     return std::shared_ptr<Container>(new Nil());

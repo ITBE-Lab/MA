@@ -2,10 +2,10 @@
 using namespace libMA;
 
 
-int iGap = 50;//20
+int iGap = 6;//50;
 int iExtend = 1;
-int iMatch = 20;//2
-int iMissMatch = 20;//2
+int iMatch = 1;//20;
+int iMissMatch = 4;//20;
 
 ContainerVector NeedlemanWunsch::getInputType() const
 {
@@ -77,6 +77,48 @@ void needlemanWunsch(
         }//while
         return;
     }//if
+#if 0//DEPRECATED
+    /*
+     * give up for too large areas
+     * @todo this should split everything into two local alignments instead
+     */
+    if(uiGiveUpAfter != 0)
+    {
+        nucSeqIndex uiArea = (toQuery - fromQuery)*(toRef - fromRef);
+        if(uiArea > uiGiveUpAfter)
+        {
+            int diagLen = std::min(toRef - fromRef, toQuery - fromQuery);
+            int gapLen = std::max(toRef - fromRef, toQuery - fromQuery) - diagLen;
+
+            int scoreMissmatch = -1* (iGap + iExtend*gapLen + 
+                                 iMissMatch*diagLen);
+
+            int scoreIndelOnly = -1* (iGap*2 + iExtend*(toRef - fromRef) + 
+                                 iExtend*(toQuery - fromQuery));
+
+            if(scoreIndelOnly < scoreMissmatch)
+            {
+                if(toRef - fromRef > toQuery - fromQuery)
+                {
+                    pAlignment->append(MatchType::deletion, gapLen);
+                    pAlignment->append(MatchType::missmatch, diagLen);
+                }//if
+                else
+                {
+                    pAlignment->append(MatchType::insertion, gapLen);
+                    pAlignment->append(MatchType::missmatch, diagLen);
+                }//else
+            }//if
+            else
+            {
+                pAlignment->append(MatchType::deletion, toRef - fromRef);
+                pAlignment->append(MatchType::insertion, toQuery - fromQuery);
+            }//else
+            return;
+        }//if
+    }//if
+#endif
+
 //switch banded (not working yet) (1) non-banded (0)
 #if 0
     nucSeqIndex uiBandSize = std::min(200, toQuery-fromQuery+1, toRef-fromRef+1);
@@ -241,6 +283,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     if(pSeeds->empty())
     {
         std::shared_ptr<Alignment> pRet(new Alignment());
+        pRet->xStats = pSeeds->xStats;
+        pRet->xStats.sName = pQuery->sName;
         return pRet;
     }//if
 
@@ -311,6 +355,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     } catch(std::runtime_error e)
     {
         std::shared_ptr<Alignment> pRet(new Alignment());
+        pRet->xStats = pSeeds->xStats;
+        pRet->xStats.sName = pQuery->sName;
         return pRet;
     }
 

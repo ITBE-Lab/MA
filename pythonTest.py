@@ -599,8 +599,9 @@ def test_my_approach(
     aligner = Aligner(max_hits, num_strips, complete_seeds)
 
     runtimes = {}
+    collect_ids = []
 
-    extract_size = len(all_queries) #2**15
+    extract_size = 2**15
     # break samples into chunks of 2^14
     for index, queries in enumerate(chunks(all_queries, extract_size)):
         print("extracting", len(queries), "samples", index, "/",
@@ -608,13 +609,11 @@ def test_my_approach(
         #setup the query pledges
         query_container = ContainerVector(NucSeq())
         del query_container[:]
-        ids = []
         optimal_alignment_in = []
-        for position, data in enumerate(queries):
+        for data in queries:
             sequence, sample_id = data
             query_container.append(NucSeq(sequence))
-            query_container[-1].name = str(position)
-            ids.append(sample_id)
+            query_container[-1].name = str(sample_id)
             optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
 
         print("setting up (", name, ") ...")
@@ -653,14 +652,12 @@ def test_my_approach(
 
         print("extracting results (", name, ") ...")
         result = []
-        for i in range(len(queries)):
+        for alignment in results:
             # @todo change sorting order
-            alignment = results[i]
             alignment2 = None
             #print(alignment.stats.name)
-            if alignment.stats.name == "unknown":
-                continue
-            index = int(alignment.stats.name)
+            sample_id = int(alignment.stats.name)
+            collect_ids.append(sample_id)
 
             total_time = 0
             for key, value in aligner.get_runtimes().items():
@@ -668,8 +665,6 @@ def test_my_approach(
                     runtimes[key] = 0.0
                 runtimes[key] += value
                 total_time += value
-
-            sample_id = queries[index][1]
 
             max_nmw_area=0
             max_diag_deviation = 0.0
@@ -749,6 +744,11 @@ def test_my_approach(
                 )
         print("submitting results (", name, ") ...")
         submitResults(db_name, result)
+    last = 1
+    for ele in sorted(collect_ids):
+        if ele != last:
+            print("Missed sample with id:", last, "having:", ele)
+        last+=1
     print("total runtimes:")
     for key, value in runtimes.items():
         print(value, "(", key, ")")
@@ -1075,7 +1075,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 return None
             else:
                 w_keys = sorted(d.keys())
-                h_keys = sorted(d[list(d.keys())[0]].keys())
+                h_keys = sorted(d[0].keys())
 
                 for x in w_keys:
                     pic.append( [] )
@@ -1294,7 +1294,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 return None
             else:
                 w_keys = sorted(d.keys())
-                h_keys = sorted(d[list(d.keys())[0]].keys())
+                h_keys = sorted(d[0].keys())
 
                 for x in w_keys:
                     pic.append( [] )

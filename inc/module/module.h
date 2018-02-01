@@ -359,34 +359,21 @@ namespace libMA
                 return;
 
             if(pledger == nullptr && py_pledger.is_none())
-                throw ModuleIO_Exception("No pledger known");
+                throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
             if(pledger != nullptr)
             {
-                bool bDry = false;
                 std::shared_ptr<ContainerVector> vInput(new ContainerVector());
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                {
                     //here we execute all previous modules in the comp graph
                     vInput->push_back(pFuture->get());
-                    if(vInput->back()->bDry)
-                        bDry = true;
-                }//for
-                try
-                {
-                    auto timeStamp = std::chrono::system_clock::now();
-                    //actually execute the module
-                    content = pledger->execute(vInput);
-                    std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
-                    //increase the total executing time for this pledge
-                    execTime += duration.count();
-                    assert(typeCheck(content, type));
-                    //content->bDry may be true already we do not want to overwrite it with false
-                    if(bDry)
-                        content->bDry = true;
-                } catch(...)
-                {
-                    std::cerr << "unknown exception during execution" << std::endl;
-                }//catch
+
+                auto timeStamp = std::chrono::system_clock::now();
+                //actually execute the module
+                content = pledger->execute(vInput);
+                std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
+                //increase the total executing time for this pledge
+                execTime += duration.count();
+                assert(typeCheck(content, type));
             }//if
             else
             {
@@ -579,10 +566,19 @@ namespace libMA
                         {
                             assert(pPledge != nullptr);
 
-                            //if bLoop is true this loop will keep going until all 
-                            //volatile modules are dry.
-                            //otherwise one iteration is performed only
-                            while(!pPledge->get()->bDry && bLoop);
+                            // if bLoop is true this loop will keep going until all 
+                            // volatile modules are dry.
+                            // otherwise one iteration is performed only
+
+                            // @todo here should be a check on weather 
+                            // there is any volatile module in the graph or not
+                            // having potential endless loop...
+                            try
+                            {
+                                do
+                                    pPledge->get();
+                                while(bLoop);
+                            } catch(ModuleDryException e) {}
                         },//lambda
                         pPledge
                     );
