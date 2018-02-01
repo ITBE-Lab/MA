@@ -596,6 +596,8 @@ def test_my_approach(
         print("no new queries ... done")
         return
 
+    aligner = Aligner(max_hits, num_strips, complete_seeds)
+
     runtimes = {}
 
     extract_size = len(all_queries) #2**15
@@ -615,9 +617,7 @@ def test_my_approach(
             ids.append(sample_id)
             optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
 
-
         print("setting up (", name, ") ...")
-        aligner = Aligner(max_hits, num_strips, complete_seeds)
 
         ref_pack = Pack()
         ref_pack.load(reference)
