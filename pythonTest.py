@@ -653,7 +653,6 @@ def test_my_approach(
         print("extracting results (", name, ") ...")
         result = []
         for alignment in results:
-            # @todo change sorting order
             alignment2 = None
             #print(alignment.stats.name)
             sample_id = int(alignment.stats.name)

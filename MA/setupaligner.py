@@ -97,6 +97,7 @@ class Aligner:
 
     def setQueries(self, queries):
         vec = ContainerVector(NucSeq())
+        #@fixme this is due to a bug in the vec initialization...
         del vec[:]
         vec.extend(queries)
         self.query_vec_pledge.set(vec)
