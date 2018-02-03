@@ -57,6 +57,7 @@ void exportSeed()
             boost::python::bases<Interval<nucSeqIndex>>
         >("Seed")
         .def_readwrite("start_ref", &Seed::uiPosOnReference)
+        .def("__eq__", &Seed::operator==)
     ;
 
     //export the Seed class

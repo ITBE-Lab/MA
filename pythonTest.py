@@ -15,39 +15,6 @@ import colorsys
 from statistics import mean, median, stdev
 from sys import stderr
 
-# Computes a single rainbow-color. (Like in C++ and Java-code)
-def rainbow(value):
-    minimum = 0
-    maximum = 1
-    """
-    Local helper function for rgb-value computation.
-    """
-    def clamp(x):
-        """
-        Local helper function for min-max encapsulation.
-        """
-        return max(0, min(x, 255))
-
-    value = min(max(minimum, value), maximum)
-    difference = maximum - minimum
-    red = green = blue = 1.0
-    if value < minimum + 0.25 * difference:
-        red = 0.0
-        green = 4.0 * (value - minimum) / difference
-    else:
-        if value < minimum + 0.5 * difference:
-            red = 0.0
-            blue = 1.0 + 4.0 * (minimum + 0.25 * difference - value) / difference
-        else:
-            if value < minimum + 0.75 * difference:
-                red = 4.0 * (value - minimum - 0.5 * difference) / difference
-                blue = 0.0
-            else:
-                green = 1.0 + 4.0 * (minimum + 0.75 * difference - value) / difference
-                blue = 0.0
-    return (red, green, blue)
-
-
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
     w = 370 + x * (645-370)
@@ -84,43 +51,6 @@ def light_spec_approximation(x):
 
     return (i*r**m,i*g**m,i*b**m)
 
-def hsv_walk(x):
-    return colorsys.hsv_to_rgb(-x*.8+.8, 1, x*.5+.5)
-
-def light_spec_approximation_2(x):
-    #map input [0, 1] to wavelength [350, 645]
-    w = 370 + x * (645-370)
-    r = 0.0
-    g = 0.0
-    b = 0.0
-    if w < 440:
-        r = -(w - 440.) / (440. - 380.)
-        b = 1.0
-    elif w >= 440 and w < 490:
-        g = (w - 440.) / (490. - 440.)
-        b = 1.0
-    elif w >= 490 and w < 580:
-        g = 1.0
-        b = max(0.0, -(w - 510.) / (510. - 490.))
-        r = max(0.0, (w - 510.) / (580. - 510.))
-    elif w >= 580 and w < 645:
-        r = 1.0
-        g = -(w - 645.) / (645. - 580.)
-    elif w >= 645:
-        r = 1.0
-
-    #intensity
-    i = 1.0
-    if w > 650:
-        i = .3 + .7*(780-w)/(780-650)
-    elif w < 420:
-        i = .3 + .7*(w-380)/(420-380)
-
-    #gamma
-    m = .8
-
-    return (i*r**m,i*g**m,i*b**m)
-
 def heatmap_palette(scheme, num_colors):
     def format(rgb):
         def clamp(x):
@@ -130,440 +60,14 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-
-def setup_multiple(module, in_list, perm):
-    ret = []
-    for in_ele in in_list:
-        ret.append(module.promise_me((in_ele, perm)))
-    return [ret]
-
-
 human_genome = "/mnt/ssd0/genome/human"
 
-
-
-_proc_status = '/proc/%d/status' % os.getpid()
-
-_scale = {'kB': 1024.0, 'mB': 1024.0*1024.0,
-          'KB': 1024.0, 'MB': 1024.0*1024.0}
-
-def _VmB(VmKey):
-    '''Private.
-    '''
-    global _proc_status, _scale
-     # get pseudo file  /proc/<pid>/status
-    try:
-        t = open(_proc_status)
-        v = t.read()
-        t.close()
-    except:
-        return 0.0  # non-Linux?
-     # get VmKey line e.g. 'VmRSS:  9999  kB\n ...'
-    i = v.index(VmKey)
-    v = v[i:].split(None, 3)  # whitespace
-    if len(v) < 3:
-        return 0.0  # invalid format?
-     # convert Vm value to bytes
-    return float(v[1]) * _scale[v[2]]
-
-def get_memory(since=0.0):
-    '''Return memory usage in bytes.
-    '''
-    gc.collect()
-    return _VmB('VmSize:') - since
 
 def near(start, start_2, end, end_2):
     max_d = 0#10000
     return end_2 + max_d >= start and start_2 - max_d <= start
 
 
-def mutate(char):
-    num = 0
-    if char == "c":
-        num = 1
-    elif char == "t":
-        num = 2
-    else:
-        num = 3
-    num += random.randint(1,3)
-    num %= 4
-    if num == 0:
-        return 'a'
-    elif num == 2:
-        return 'c'
-    elif num == 3:
-        return 't'
-    else:
-        return 'g'
-
-
-def make_list_pretty(lx, ly):
-    lastx = 0
-    lasty = 0
-    for i in range(len(lx)):
-        if lx[i] is float('nan'):
-            lastx = 0
-            lasty = 0
-            continue
-        if lx[i] < lastx or ly[i] < lasty:
-            add = max(lastx - lx[i], lasty - ly[i])
-            lx[i] += add
-            ly[i] += add
-        else:
-            lastx = lx[i]
-            lasty = ly[i]
-    return lx, ly
-
-
-
-
-def test_chaining(seeds, strip, results):
-    output_file("chaining_comp.html")
-
-    p1 = figure(
-            title="chaining comp", 
-            x_axis_label='reference', 
-            y_axis_label='query',
-            plot_width=800,
-            plot_height=800)
-
-    listx = []
-    listy = []
-    stripx = []
-    stripy = []
-    linex = []
-    liney = []
-    for seed in seeds:
-        listx.append( seed.end_ref() )
-        listy.append( seed.end() )
-
-        linex.append( seed.start_ref() )
-        liney.append( seed.start() )
-        linex.append( seed.end_ref() )
-        liney.append( seed.end() )
-        linex.append( float('nan') )
-        liney.append( float('nan') )
-    for seed in strip:
-        stripx.append( seed.end_ref() )
-        stripy.append( seed.end() )
-
-    p1.circle(listx, listy, size=7, color="black")
-    p1.circle(stripx, stripy, size=10, legend="in strip of cons.", color="red")
-    p1.line(linex, liney, line_width=5 ,color="black")
-
-    for index, result_tuple in enumerate(results):
-        result, color, name = result_tuple
-        listx = []
-        listy = []
-        listx_ = []
-        listy_ = []
-        for seed in result:
-            listx.append(seed.start_ref())
-            listy.append(seed.start())
-            listx.append(seed.end_ref())
-            listy.append(seed.end())
-            listx_.append(seed.end_ref())
-            listy_.append(seed.end())
-        listx, listy = make_list_pretty(listx, listy)
-        dashes = []
-        for i in range(len(results)):
-            if i == index:
-                dashes.append(10)
-                dashes.append(0)
-            else:
-                dashes.append(0)
-                dashes.append(10)
-        p1.line(listx, listy, line_width=3, line_dash=dashes, color=color, legend=name)
-
-    show(p1)
-
-def make_up_seeds():
-    seeds = Seeds()
-    num = 15
-    for _ in range(num):
-        q_pos = random.randint(0,200)
-        ref_pos = 300000000 * random.randint(0,num/5) + random.randint(-10,10) + q_pos
-        seeds.append(Seed(
-            q_pos,#query
-            random.randint(30,30),#length
-            ref_pos))#ref
-    return seeds
-
-def make_up_seeds_simple():
-    seeds = Seeds()
-    num = 15
-    for _ in range(num):
-        q_pos = random.randint(0,200)
-        ref_pos = random.randint(0,200)
-        seeds.append(Seed(
-            q_pos,#query
-            random.randint(30,30),#length
-            ref_pos))#ref
-    return seeds
-
-def compare_chaining_linesweep_visual():
-    ref_seq = Pack()
-    ref_seq.load(human_genome)
-    fm_index = FMIndex()
-    fm_index.load(human_genome)
-    query_seq, query_id = getQueriesFor(db_name, human_genome, 50, 0, 100)[0]
-    query = NucSeq(query_seq)
-
-    query_orig = getOriginOf(db_name, query_id)
-
-    print(query_seq)
-    print(str(ref_seq.extract(query_orig, query_orig+100)))
-
-    segments = BinarySeeding().execute((
-            fm_index,
-            query
-        ))
-
-    anchors = GetAnchors(1).execute((segments,))
-
-    bucketing = Bucketing()
-    bucketing.max_hits = 5
-    tail = Tail(Seeds())
-    extractAll = ExtractAllSeeds()
-    extractAll.max_hits = bucketing.max_hits
-
-    strips = bucketing.execute((segments, anchors, query, ref_seq, fm_index))
-    strip = tail.execute((strips,))
-
-    #only get the best result for linesweep & bucketing
-    ls_res = LineSweep().execute((strip,))
-
-    #strip = extractAll.execute((segments, fm_index))
-
-    ls2_res = LineSweep2().execute((strip,))
-
-    seeds = segments.get_seeds(fm_index, 5)
-    
-    print(len(ls_res))
-    print(len(ls2_res))
-
-
-    test_chaining(seeds, strip, [(ls2_res, "green", "linesweep 2"), (ls_res, "blue", "linesweep")])
-
-def print_runtime_breakdown(distances, runtimes_list, names, module_names):
-    output_file("runtimes_breakdown.html")
-    plots = []
-    for index, runtimes in enumerate(runtimes_list):
-        colors = d3["Category10"][10]
-        p1 = figure(
-                title=names[index],
-                x_axis_label='distance',
-                y_axis_label='seconds',
-                plot_width=800,
-                plot_height=800)
-
-        for index2, runtime in enumerate(runtimes):
-            p1.line(distances, runtime, legend=module_names[index][index2], line_width=5, color=colors[index2])
-
-        plots.append(p1)
-
-    show(row(plots))
-
-def runtime_breakdown_helper(result_pledges):
-    ret = []
-    for index, step in enumerate(result_pledges):
-        avg = 0
-        for pledge in step:
-            avg += pledge.exec_time
-        avg /= len(step)
-        ret.append(avg)
-    return ret
-
-
-def runtime_breakdown(num_test, query_pledge, result_pledges_list, names):
-    distances = []
-
-    #setup a new list
-    module_names = []
-    runtimes_list = []
-    for result_pledges in result_pledges_list:
-        runtimes = []
-        names = []
-        for pledge in result_pledges:
-            runtimes.append([])
-            names.append(pledge[0].get_pledger().get_name())
-        names.append("total")
-        runtimes.append([])
-        runtimes_list.append(runtimes)
-        module_names.append(names)
-
-    max_dist = 15
-    for distance in range(0,max_dist):
-        print(str(distance) + "/" + str(max_dist))
-        distances.append(distance)
-        for i in range(num_test):
-            query_pledge[i].set(get_query(ref_seq, 1000, distance, 10))
-
-        for result_pledges in result_pledges_list:
-            Pledge.simultaneous_get(result_pledges[-1], 10)
-
-        for index1, result_pledges in enumerate(result_pledges_list):
-            total = 0
-            for index, runtime in enumerate(runtime_breakdown_helper(result_pledges)):
-                runtimes_list[index1][index].append(runtime)
-                total += runtime
-            runtimes_list[index1][-1].append(total)
-
-    print_runtime_breakdown(distances, runtimes_list, names, module_names)
-
-##
-# run smith waterman for all new samples within the database and save the results
-#
-def run_smw_for_all_samples(reference_name):
-    query_pledges = []
-    sample_ids = []
-
-    #
-    # collect samples and respective id's
-    #
-    print("collecting new queries for smw...")
-    for sequence, sample_id in getNewQueries(db_name, "smw", human_genome, 100, 10):
-        sample_ids.append(sample_id)
-        query_pledges.append(Pledge(NucSeq()))
-        query_pledges[-1].set(NucSeq(sequence))
-    print("collected " + str(len(sample_ids)) + " new queries for smw")
-
-    #
-    # create pledges
-    #
-    reference_pledge = Pledge(Pack())
-    ref_seq = Pack()
-    ref_seq.load(reference_name)
-    reference_pledge.set(ref_seq)
-    result_pledge = setup_multiple(SMW(), query_pledges, reference_pledge)
-
-    #
-    # run smw for all new samples
-    #
-    print("running smw...")
-    Pledge.simultaneous_get(result_pledge[-1], 16)
-    print("done")
-
-    #
-    # collect the results
-    #
-    print("collecting and saving results...")
-    results = []
-    for alignment_vec, sample_id in zip(result_pledge[-1], sample_ids):
-        for alignment in alignment_vec:
-            result = (
-                        sample_id,
-                        alignment.get_score(),
-                        alignment.begin_on_ref(),
-                        alignment.length(),
-                        "smw"
-                    )
-            results.append(result)
-
-    #
-    # save the results
-    #
-    submitResults(db_name, results)
-    print("done")
-
-#function
-
-#exit()
-
-def make_runtime_breakdown():
-    print("setup...")
-    num_test = 500
-    query_pledge = []
-    for _ in range(num_test):
-        query_pledge.append(Pledge(NucSeq()))
-
-    reference_pledge = Pledge(Pack())
-    fm_index_pledge = Pledge(FMIndex())
-
-
-    ref_seq = Pack()
-    ref_seq.load("/mnt/ssd0/chrom/human/pack")
-    fm_index = FMIndex()
-    fm_index.load("/mnt/ssd0/chrom/human/index")
-
-    reference_pledge.set(ref_seq)
-    fm_index_pledge.set(fm_index)
-
-
-    result_pledges = set_up_aligner(
-        query_pledge,
-        reference_pledge,
-        fm_index_pledge,
-        chain=LineSweep2(),
-        seg=LongestLRSegments()
-    )
-
-    result_pledges_2 = set_up_aligner(
-        query_pledge,
-        reference_pledge,
-        fm_index_pledge,
-        LongestLRSegments()
-    )
-
-    print("done")
-    """
-    while True:
-        for i in range(num_test):
-            query_pledge[i].set(get_query(ref_seq, 100, random.randint(0,5), 10))
-
-        Pledge.simultaneous_get(result_pledges[-1], 32)
-        print("iteration!")
-    """
-
-    runtime_breakdown(num_test, query_pledge, 
-        [result_pledges, result_pledges_2], ["Bs SoC sLs", "Bs SoC Ls"])
-#function
-
-
-def memory_test(reference, test_index):
-    reference_pledge = Pledge(Pack())
-    fm_index_pledge = Pledge(FMIndex())
-    query_pledge = Pledge(NucSeq())
-    
-    ref_pack = Pack()
-    ref_pack.load(reference)
-    reference_pledge.set(ref_pack)
-
-    fm_index = FMIndex()
-    fm_index.load(reference)
-    fm_index_pledge.set(fm_index)
-
-    result_pledge = set_up_aligner(
-        query_pledge,
-        reference_pledge,
-        fm_index_pledge
-    )
-    module = BinarySeeding(True)
-    
-    mem = None
-
-    num = 0
-    print("running")
-    while True:
-        q_from, q, original_nuc_dist, modified_nuc_dist = get_query(ref_pack, 200, 0, 0, 1)
-        query_pledge.set(NucSeq(q))
-
-        #module.execute(fm_index, NucSeq(q))
-
-        result_pledge[test_index].get()
-        #Pledge.simultaneous_get( [result_pledge[test_index]] , 1)
-
-        #query_pledge.get()
-
-        if not mem is None and not get_memory(mem) == 0:
-            print(get_memory(mem), "\t", get_memory())
-            #print(q)
-        mem = get_memory()
-
-        num += 1
-        if num >= 1000:
-            print("marker")
-            num = 0
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -573,7 +77,6 @@ def chunks(l, n):
         for i in range(0, len(l), n):
             yield l[i:i + n]
 
-#run_smw_for_all_samples(human_genome)
 
 #creating samples int the database
 #createSampleQueries(human_genome, db_name, 1000, 100, 256)
@@ -588,7 +91,7 @@ def test_my_approach(
         ):
     print("collecting samples (" + name + ") ...")
 
-    all_queries = getNewQueries(db_name, name, reference)
+    all_queries = getNewQueries(db_name, name, reference, give_orig_pos=True, give_orig_size=True)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
     print("having ", len(all_queries), " samples total (", name, ") ...")
@@ -596,74 +99,109 @@ def test_my_approach(
         print("no new queries ... done")
         return
 
-    aligner = Aligner(max_hits, num_strips, complete_seeds)
-
-    runtimes = {}
+    runtimes = {
+        'seeding': 0,
+        'seed processing: filtering': 0,
+        'seed processing: coupling': 0,
+        'optimal alignment': 0
+    }
     collect_ids = []
 
+    num_covered_irelevant_seeds = 0
+    num_irelevant_seeds = 0
+    num_seeds_total = 0
+
     extract_size = 2**15
-    # break samples into chunks of 2^14
-    for index, queries in enumerate(chunks(all_queries, extract_size)):
+    # break samples into chunks of 2^15
+    for index, queries, in enumerate(chunks(all_queries, extract_size)):
         print("extracting", len(queries), "samples", index, "/",
             len(all_queries)/extract_size, "(", name, ") ...")
-        #setup the query pledges
-        query_container = ContainerVector(NucSeq())
-        del query_container[:]
-        optimal_alignment_in = []
-        for data in queries:
-            sequence, sample_id = data
-            query_container.append(NucSeq(sequence))
-            query_container[-1].name = str(sample_id)
-            optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
 
         print("setting up (", name, ") ...")
-
+        
         ref_pack = Pack()
         ref_pack.load(reference)
-        aligner.setRef(ref_pack)
+        ref_pledge = Pledge(Pack())
+        ref_pledge.set(ref_pack)
 
         fm_index = FMIndex()
         fm_index.load(reference)
-        aligner.setInd(fm_index)
+        fm_pledge = Pledge(FMIndex())
+        fm_pledge.set(fm_index)
+
+        #modules
+        seeding = BinarySeeding(not complete_seeds)
+        soc = StripOfConsideration(max_hits, num_strips)
+        couple = ExecOnVec(LinearLineSweep())
+        optimal = ExecOnVec(NeedlemanWunsch())
+
+        pledges = [ [], [], [], [], [] ]
+        optimal_alignment_in = []
+        for data in queries:
+            sequence, sample_id, origin_pos, orig_size = data
+            pledges[0].append(Pledge(NucSeq()))
+            pledges[0][-1].set(NucSeq(sequence))
+            pledges[0][-1].get().name = str(sample_id)
+            pledges[1].append(seeding.promise_me(
+                    fm_pledge,pledges[0][-1]
+                ))
+            pledges[2].append(soc.promise_me(
+                    pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
+                ))
+            pledges[3].append(couple.promise_me(
+                    pledges[2][-1]
+                ))
+            pledges[4].append(optimal.promise_me(
+                    pledges[3][-1], pledges[0][-1], ref_pledge
+                ))
+
+            optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
+
+        smw = SMW()
+        optimal_alignment_out = []
+        for a, b in optimal_alignment_in:
+            optimal_alignment_out.append(smw.promise_me(a, b))
+
 
         print("computing (", name, ") ...")
-        results = aligner.align(query_container)
+        Pledge.simultaneous_get(pledges[-1], 32)
 
-        do_optimal = False
-        optimal_alignment = None
-        if do_optimal:
-            smw = SMW()
-            optimal_alignment_out = []
-            for a, b in optimal_alignment_in:
-                optimal_alignment_out.append(smw.promise_me(a, b))
 
-            print("computing optimal (", name, ") ...")
-            for i in range(len(queries)):
-                alignment = results[i]
-                index = int(alignment.stats.name)
-                query = queries[index][0]
-                optimal_alignment_in[index][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
-                if alignment.begin_on_ref() != alignment.end_on_ref():
-                    optimal_alignment_in[index][1].set(
-                        ref_pack.extract_from_to(alignment.begin_on_ref(),alignment.end_on_ref()))
-                else:
-                    optimal_alignment_in[index][1].set(NucSeq(""))
-            Pledge.simultaneous_get(optimal_alignment_out, 32)
+        print("setting up optimal (", name, ") ...")
+        for i, query_ in enumerate(queries):
+            alignment = pledges[-1][i].get()[0]
+            index = int(alignment.stats.name)
+            query = query_[0]
+            optimal_alignment_in[i][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
+            if alignment.begin_on_ref() != alignment.end_on_ref():
+                optimal_alignment_in[i][1].set(
+                    ref_pack.extract_from_to(alignment.begin_on_ref(),alignment.end_on_ref()))
+            else:
+                optimal_alignment_in[i][1].set(NucSeq(""))
+        print("computing optimal (", name, ") ...")
+        Pledge.simultaneous_get(optimal_alignment_out, 32)
 
         print("extracting results (", name, ") ...")
         result = []
-        for alignment in results:
+        for i,alignments in enumerate(pledges[-1]):
+            alignment = alignments.get()[0]
             alignment2 = None
+            if len(alignments.get()) > 1:
+                alignment2 = alignments.get()[1]
+            optimal_alignment = optimal_alignment_out[i].get()[0]
             #print(alignment.stats.name)
             sample_id = int(alignment.stats.name)
             collect_ids.append(sample_id)
 
             total_time = 0
-            for key, value in aligner.get_runtimes().items():
-                if not key in runtimes:
-                    runtimes[key] = 0.0
-                runtimes[key] += value
-                total_time += value
+            runtimes["seeding"] += pledges[1][i].exec_time
+            total_time += pledges[1][i].exec_time
+            runtimes["seed processing: filtering"] += pledges[2][i].exec_time
+            total_time += pledges[2][i].exec_time
+            runtimes["seed processing: coupling"] += pledges[3][i].exec_time
+            total_time += pledges[3][i].exec_time
+            runtimes["optimal alignment"] += pledges[4][i].exec_time
+            total_time += pledges[4][i].exec_time
 
             max_nmw_area=0
             max_diag_deviation = 0.0
@@ -682,7 +220,6 @@ def test_my_approach(
                         ref_pack
                     )
 
-            """
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
@@ -711,7 +248,27 @@ def test_my_approach(
                         curr_max_diag_deviation = curr_diag_deviation
                     if cur_nmw_h * cur_nmw_w > max_nmw_area:
                         max_nmw_area = cur_nmw_h * cur_nmw_w
-            """
+
+            #check for how many irrelevant overlapped seeds where there...
+            #first get all relevant seeds:
+            discovered_seeds = pledges[1][i].get().extract_seeds(fm_index, max_hits, True)
+            num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
+            #compute the area covered by relevant seeds
+            covered_area = [-1]*len(pledges[0][i].get())
+            for seed in discovered_seeds:
+                for pos in range(seed.start, seed.start + seed.size):
+                    if covered_area[pos] < seed.size:
+                        covered_area[pos] = seed.size
+            #run over all discovered seeds and count the covered irelevant ones
+            for seed in discovered_seeds:
+                if seed.start >= queries[i][2] and seed.start + seed.size <= queries[i][2] + queries[i][3]:
+                    num_irelevant_seeds += 1
+                    covered = True
+                    for pos in range(seed.start, seed.start + seed.size):
+                        if covered_area[pos] <= seed.size:
+                            covered = False
+                    if covered:
+                        num_covered_irelevant_seeds += 1
 
             sc2 = None
             if not optimal_alignment is None:
@@ -728,7 +285,7 @@ def test_my_approach(
                         sc2,
                         alignment.begin_on_ref(),
                         alignment.end_on_ref(),
-                        0,#segment_list.num_seeds(fm_index, max_hits),
+                        pledges[1][i].get().num_seeds(fm_index, max_hits),
                         alignment.stats.index_of_strip,
                         alignment.stats.seed_coverage,
                         alignment.stats.num_seeds_in_strip,
@@ -743,6 +300,14 @@ def test_my_approach(
                 )
         print("submitting results (", name, ") ...")
         submitResults(db_name, result)
+
+    print("collected", num_irelevant_seeds,
+        "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
+        num_irelevant_seeds/num_seeds_total, "percent")
+    print("collected", num_covered_irelevant_seeds,
+        "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
+        "per alignment and", num_covered_irelevant_seeds/num_seeds_total, "percent" )
+    print("collected", num_seeds_total-num_irelevant_seeds, "relevant seeds")
     last = 1
     for ele in sorted(collect_ids):
         if ele != last:
@@ -770,83 +335,13 @@ def test_my_approaches_rele(db_name):
     test_my_approach(db_name, human_genome, "BLASR", seg=seg2, num_anchors=200, nmw_give_up=20000)
 
 def test_my_approaches(db_name):
-    # [p]Bs:<max_ambiguity>,*<max_seeds_fac> 
-    # # SoC:<num_SoC>,<SoC_size>nt,\<<max_ambiguity>,\><min_seeds_in_strip>,*<min_coverage>
-    # sLs:<num_nmw>
-
-    #
-    # this is the un optimized hammer method
-    #
 
     clearResults(db_name, human_genome, "MA 1")
     clearResults(db_name, human_genome, "MA 2")
-    #clearResults(db_name, human_genome, "MA 3")
-    #clearResults(db_name, human_genome, "MA NMW-Band = 100")
-
-    #test_my_approach(db_name, human_genome, "MA MAX QUALITY", num_anchors=10000, seg=BinarySeeding(False), max_sweep=500, min_seeds=2, min_seed_length=0.01, max_seeds=6.0, max_seeds_2=7.0, nmw_give_up=0)
-    #
-    # optimized in a way that speed is maximal without reducing accuracy by filters (hopefully)
-    #
-    #test_my_approach(db_name, human_genome, "MA 3", num_strips=1000, max_sweep=1000, nmw_give_up=0, max_hits=100)
 
     test_my_approach(db_name, human_genome, "MA 2", max_hits=100, num_strips=10, complete_seeds=True)
 
-    #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality&speed", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.17, nmw_give_up=7500)
-
-    # pretty good mabs 1
-    # min_seeds=2, min_seed_length=0.4, max_seeds=0, max_seeds_2=0.15,
     test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=5, complete_seeds=False)
-    #test_my_approach(db_name, human_genome, "MA 1", num_anchors=1000, seg=BinarySeeding(True))
-
-    #clearResults(db_name, human_genome, "MA 2 radix")
-    #test_my_approach(db_name, human_genome, "MA 2", num_anchors=200, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=1000)
-
-    #test_my_approach(db_name, human_genome, "MA 2.1", num_anchors=1000, max_sweep=0, seg=BinarySeeding(True), min_seeds=2, min_seed_length=0.02, max_seeds=0, max_seeds_2=0.15, nmw_give_up=5000)
-
-    #clearResults(db_name, human_genome, "Bs,SoC,sLs_quality")
-    #test_my_approach(db_name, human_genome, "Bs,SoC,sLs_quality", num_anchors=10000, max_sweep=0, seg=BinarySeeding(True), min_seeds=0, min_seed_length=0.02, max_seeds=0, max_seeds_2=0, nmw_give_up=0)
-
-def filter_suggestion(db_name, min_percentage_cov=0.1, max_num_seeds=5000, min_num_seed_in_strip=3):
-    approaches = getApproachesWithData(db_name)
-    plots = []
-
-    for approach_ in approaches:
-        true_pos = 0
-        true_neg = 0
-        false_pos = 0
-        false_neg = 0
-
-        approach = approach_[0]
-        for result in getResults(db_name, approach):
-            score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
-
-            is_filtered = True
-
-            if seed_coverage_chosen_strip / original_size >= min_percentage_cov:
-                is_filtered = False
-            if num_seeds <= max_num_seeds:
-                is_filtered = False
-            if num_seeds_chosen_strip >= min_num_seed_in_strip:
-                is_filtered = False
-
-            is_kept = not is_filtered
-
-            if near(result_start, original_start) and is_kept:
-                true_pos += 1
-            elif near(result_start, original_start) and not is_kept:
-                false_neg += 1
-            elif not near(result_start, original_start) and is_kept:
-                false_pos += 1
-            elif not near(result_start, original_start) and not is_kept:
-                true_neg += 1
-
-        print("======",approach,"======")
-        print("true  positives:\t", true_pos, "\t*very good*")
-        print("false negatives:\t", false_neg, "\t*very bad*")
-        print("")
-        print("false positives:\t", false_pos, "\t*bad*")
-        print("true  negatives:\t", true_neg, "\t*good*")
-
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1632,20 +1127,6 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
 
     save(row(plots))
 
-#exit()
-def manualCheckSequences():
-    ref_seq = Pack()
-    ref_seq.load(human_genome)
-    for query_seq, query_id in getQueriesFor(db_name, human_genome, 40, 0, 100):
-        query = NucSeq(query_seq)
-
-        query_orig = getOriginOf(db_name, query_id)
-
-        print(query_seq)
-        print(str(ref_seq.extract_from_to(query_orig, query_orig+100)))
-        print("")
-
-
 def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     def get_all_queries(l):
         if l <= 0:
@@ -1793,19 +1274,4 @@ test_my_approaches("/mnt/ssd1/veryHighQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
-#createSampleQueries(human_genome, "/mnt/ssd1/seedRelevance.db", 1000, 100, 2**7, True, True)
-#test_my_approaches_rele("/mnt/ssd1/seedRelevance.db")
-#analyse_all_approaches("seedRelevance.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
-#analyse_all_approaches_depre("seedRelevance_depre.html","/mnt/ssd1/seedRelevance.db", 1000, 100)
-#analyse_detailed("seedRelevance/", "/mnt/ssd1/seedRelevance.db")
 
-#createSampleQueries(human_genome, "/mnt/ssd1/stats.db", 1000, 100, 32, True, True)
-#test_my_approaches("/mnt/ssd1/stats.db")
-#analyse_all_approaches("stats.html","/mnt/ssd1/stats.db", 1000, 100)
-#analyse_all_approaches_depre("stats_depre.html","/mnt/ssd1/stats.db", 1000, 100)
-#analyse_detailed("stats/", "/mnt/ssd1/stats.db")
-#filter_suggestion("/mnt/ssd1/stats.db", min_percentage_cov=0.02, max_num_seeds=4000, min_num_seed_in_strip=2)
-
-
-#compare_approaches("results_comp_me_bwa", ["pBs:5 SoC:100,500nt sLs:1", "bwa"], db_name, 100, 10)
-#compare_approaches("results_comp_me_me", ["pBs:5 SoC:100,500nt sLs:1", "pBs:5 SoC:1,500nt sLs:inf"], db_name, 1000, 100)

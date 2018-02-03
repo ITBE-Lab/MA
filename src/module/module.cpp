@@ -113,6 +113,14 @@ void simGetBoost2(
     Pledge::simultaneousGet(vPledges);
 }//function
 
+void simGetBoost3(
+    std::vector<std::shared_ptr<Pledge>> vPledges,
+    unsigned int uiThreads
+)
+{
+    Pledge::simultaneousGet(vPledges, false, uiThreads);
+}//function
+
 void exportModule()
 {
     //module is an abstract class and should never be initialized
@@ -181,6 +189,10 @@ void exportModule()
             .def(
                     "simultaneous_get",
                     &simGetBoost2
+                )
+            .def(
+                    "simultaneous_get",
+                    &simGetBoost3
                 )
             .staticmethod("simultaneous_get")
             .def(

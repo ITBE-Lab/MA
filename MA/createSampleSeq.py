@@ -148,12 +148,14 @@ def insertQueries(conn, queries_list):
                     """, queries_list)
     conn.commit()
 
-def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size = None, give_orig_pos = False):
+def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size = None, give_orig_pos = False, give_orig_size = False):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     select = "sequence, sample_id"
     if give_orig_pos:
         select += ", origin"
+    if give_orig_size:
+        select += ", original_size"
     if size is None:
         return c.execute("""
                         SELECT """ + select + """
