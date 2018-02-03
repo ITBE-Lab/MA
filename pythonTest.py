@@ -217,6 +217,7 @@ def test_my_approach(
             cur_nmw_w = 0
             seed_coverage = 0.0
 
+
             if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score")
                 query = queries[index][0]
@@ -258,10 +259,12 @@ def test_my_approach(
 
             seed_coverage /= len(pledges[0][i].get())
 
+            seed_coverage_soc = 0.0
             #check for how many irrelevant overlapped seeds where there...
             #first get all relevant seeds:
             discovered_seeds = pledges[1][i].get().extract_seeds(fm_index, max_hits, True)
-            num_soc_seeds += len(pledges[2][i].get()[alignment.stats.index_of_strip])
+            soc_seeds = pledges[2][i].get()[alignment.stats.index_of_strip]
+            num_soc_seeds += len(soc_seeds)
             num_coupled_seeds += len(pledges[3][i].get()[alignment.stats.index_of_strip])
             num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
             #compute the area covered by relevant seeds
@@ -270,6 +273,15 @@ def test_my_approach(
                 for pos in range(seed.start, seed.start + seed.size):
                     if covered_area[pos] < seed.size:
                         covered_area[pos] = seed.size
+            #seed coverage after the soc
+            covered_area_soc = [False]*len(pledges[0][i].get())
+            for seed in soc_seeds:
+                for pos in range(seed.start, seed.start + seed.size):
+                    covered_area[pos] = True
+            for cov in covered_area_soc:
+                if cov:
+                    seed_coverage_soc += 1
+            seed_coverage_soc /= len(pledges[0][i].get())
             #run over all discovered seeds and count the covered irelevant ones
             for seed in discovered_seeds:
                 if not (seed.start_ref >= queries[i][2] and seed.start_ref + seed.size <= queries[i][2] + queries[i][3]):
@@ -298,7 +310,7 @@ def test_my_approach(
                         alignment.end_on_ref(),
                         pledges[1][i].get().num_seeds(fm_index, max_hits),
                         alignment.stats.index_of_strip,
-                        alignment.stats.seed_coverage,
+                        seed_coverage_soc,
                         seed_coverage,
                         alignment.stats.num_seeds_in_strip,
                         alignment.stats.anchor_size,
@@ -675,12 +687,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         for values in opt_scores.values():
             for value in values.values():
                 total_opt_scores += value
-        totoal_nucs_by_seed = 0
-        for values in scores_accurate.values():
-            for value in values.values():
-                total_score += value
 
-        print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "percentage lost:", 100-100*total_score/total_opt_scores)
         print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "percentage lost:", 100-100*total_score/total_opt_scores)
         print(approach, ":\tseed coverage loss:", 
             100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "percent")

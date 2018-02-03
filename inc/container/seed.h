@@ -152,7 +152,6 @@ namespace libMA
     {
     public:
         unsigned int index_of_strip;
-        unsigned int seed_coverage;
         unsigned int num_seeds_in_strip;
         unsigned int anchor_size;
         unsigned int anchor_ambiguity;
@@ -162,7 +161,6 @@ namespace libMA
         AlignmentStatistics()
                 :
             index_of_strip(0),
-            seed_coverage(0),
             num_seeds_in_strip(0),
             anchor_size(0),
             anchor_ambiguity(0),
@@ -173,7 +171,6 @@ namespace libMA
         void operator=(AlignmentStatistics &rOther)
         {
             index_of_strip = rOther.index_of_strip;
-            seed_coverage = rOther.seed_coverage;
             num_seeds_in_strip = rOther.num_seeds_in_strip;
             anchor_size = rOther.anchor_size;
             anchor_ambiguity = rOther.anchor_ambiguity;

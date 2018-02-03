@@ -63,7 +63,6 @@ void exportSeed()
     //export the Seed class
     boost::python::class_<AlignmentStatistics>("AlignmentStatistics", boost::python::init<>())
         .def_readwrite("index_of_strip", &AlignmentStatistics::index_of_strip)
-        .def_readwrite("seed_coverage", &AlignmentStatistics::seed_coverage)
         .def_readwrite("num_seeds_in_strip", &AlignmentStatistics::num_seeds_in_strip)
         .def_readwrite("anchor_size", &AlignmentStatistics::anchor_size)
         .def_readwrite("anchor_ambiguity", &AlignmentStatistics::anchor_ambiguity)

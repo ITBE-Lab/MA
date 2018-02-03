@@ -234,7 +234,7 @@ def submitResults(db_name, results_list):
                         )
                         VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,0,?,?,?)
                         """, results_list)
-    else: # len == 16
+    else: # len == 18
         c.executemany("""
                         INSERT INTO results 
                         (
