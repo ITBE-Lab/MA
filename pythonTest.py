@@ -87,7 +87,8 @@ def test_my_approach(
             name,
             max_hits=100,
             num_strips=10, 
-            complete_seeds = False
+            complete_seeds = False,
+            use_chaining = False
         ):
     print("collecting samples (" + name + ") ...")
 
@@ -110,6 +111,8 @@ def test_my_approach(
     num_covered_irelevant_seeds = 0
     num_irelevant_seeds = 0
     num_seeds_total = 0
+    num_soc_seeds = 0
+    num_coupled_seeds = 0
 
     extract_size = 2**15
     # break samples into chunks of 2^15
@@ -133,6 +136,8 @@ def test_my_approach(
         seeding = BinarySeeding(not complete_seeds)
         soc = StripOfConsideration(max_hits, num_strips)
         couple = ExecOnVec(LinearLineSweep())
+        if use_chaining:
+            couple = ExecOnVec(Chaining())
         optimal = ExecOnVec(NeedlemanWunsch())
 
         pledges = [ [], [], [], [], [] ]
@@ -210,6 +215,7 @@ def test_my_approach(
             gap_size = 0
             cur_nmw_h = 0
             cur_nmw_w = 0
+            seed_coverage = 0.0
 
             if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score")
@@ -223,6 +229,7 @@ def test_my_approach(
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
+                    seed_coverage += 1.0
                     # @todo really filter out all gaps smaller than 10?
                     # NO: we need to filter out all gaps so small that the pure missmatchscore 
                     #     must be smaller than the gap score 
@@ -249,9 +256,13 @@ def test_my_approach(
                     if cur_nmw_h * cur_nmw_w > max_nmw_area:
                         max_nmw_area = cur_nmw_h * cur_nmw_w
 
+            seed_coverage /= len(pledges[0][i].get())
+
             #check for how many irrelevant overlapped seeds where there...
             #first get all relevant seeds:
             discovered_seeds = pledges[1][i].get().extract_seeds(fm_index, max_hits, True)
+            num_soc_seeds += len(pledges[2][i].get()[alignment.stats.index_of_strip])
+            num_coupled_seeds += len(pledges[3][i].get()[alignment.stats.index_of_strip])
             num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
             #compute the area covered by relevant seeds
             covered_area = [-1]*len(pledges[0][i].get())
@@ -261,7 +272,7 @@ def test_my_approach(
                         covered_area[pos] = seed.size
             #run over all discovered seeds and count the covered irelevant ones
             for seed in discovered_seeds:
-                if seed.start >= queries[i][2] and seed.start + seed.size <= queries[i][2] + queries[i][3]:
+                if not (seed.start_ref >= queries[i][2] and seed.start_ref + seed.size <= queries[i][2] + queries[i][3]):
                     num_irelevant_seeds += 1
                     covered = True
                     for pos in range(seed.start, seed.start + seed.size):
@@ -288,6 +299,7 @@ def test_my_approach(
                         pledges[1][i].get().num_seeds(fm_index, max_hits),
                         alignment.stats.index_of_strip,
                         alignment.stats.seed_coverage,
+                        seed_coverage,
                         alignment.stats.num_seeds_in_strip,
                         alignment.stats.anchor_size,
                         alignment.stats.anchor_ambiguity,
@@ -303,11 +315,12 @@ def test_my_approach(
 
     print("collected", num_irelevant_seeds,
         "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
-        num_irelevant_seeds/num_seeds_total, "percent")
+        100*num_irelevant_seeds/num_seeds_total, "percent")
     print("collected", num_covered_irelevant_seeds,
         "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
-        "per alignment and", num_covered_irelevant_seeds/num_seeds_total, "percent" )
+        "per alignment and", 100*num_covered_irelevant_seeds/num_seeds_total, "percent" )
     print("collected", num_seeds_total-num_irelevant_seeds, "relevant seeds")
+    print("having", num_soc_seeds, "seeds in the strip of consideration, having", num_coupled_seeds, "seeds after coupling, thats", 100*(1-num_coupled_seeds/num_soc_seeds), "percent seeds discarded")
     last = 1
     for ele in sorted(collect_ids):
         if ele != last:
@@ -336,12 +349,18 @@ def test_my_approaches_rele(db_name):
 
 def test_my_approaches(db_name):
 
-    clearResults(db_name, human_genome, "MA 1")
-    clearResults(db_name, human_genome, "MA 2")
+    #clearResults(db_name, human_genome, "MA 1")
+    #clearResults(db_name, human_genome, "MA 2")
+    #clearResults(db_name, human_genome, "MA 1 chaining")
+    #clearResults(db_name, human_genome, "MA 2 chaining")
 
     test_my_approach(db_name, human_genome, "MA 2", max_hits=100, num_strips=10, complete_seeds=True)
 
     test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=5, complete_seeds=False)
+
+    test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
+
+    test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -361,7 +380,7 @@ def analyse_detailed(out_prefix, db_name):
 
         approach = approach_[0]
         for result in getResults(db_name, approach):
-            score, score2, optimal_score_this_region, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, mapping_quality, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
+            score, score2, optimal_score_this_region, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, mapping_quality, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
 
             index = 1
             if near(result_start, original_start, result_end, original_start+original_size):
@@ -506,9 +525,12 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         tries = {}
         run_times = {}
         scores = {}
+        scores_accurate = {}
+        seed_coverage_loss = []
         opt_scores = {}
         nums_seeds = {}
         nums_seeds_chosen = {}
+        nucs_by_seed = {}
         mapping_qual.append( ([],[]) )
         mapping_qual_illumina.append( ([],[]) )
 
@@ -525,28 +547,38 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 d[x][y] = 0
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, mapping_quality, run_time in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
                 scores = init(scores, num_mutation, num_indels)
+                scores_accurate = init(scores_accurate, num_mutation, num_indels)
             if not optimal_score is None:
                 opt_scores = init(opt_scores, num_mutation, num_indels)
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
             nums_seeds_chosen = init(nums_seeds_chosen, num_mutation, num_indels)
+            nucs_by_seed = init(nucs_by_seed, num_mutation, num_indels)
 
             if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
-                if not optimal_score is None:
+                if not optimal_score is None and optimal_score > 0:
                     if optimal_score < score:
                         print("WARNING: aligner got better", score, "than optimal score", optimal_score)
-                        opt_scores[num_mutation][num_indels] += 1
+                        opt_scores[num_mutation][num_indels] += score
                     else:
-                        opt_scores[num_mutation][num_indels] += score / optimal_score
+                        opt_scores[num_mutation][num_indels] += optimal_score
                 mapping_qual[-1][0].append(mapping_quality)
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
                     mapping_qual_illumina[-1][0].append(mapping_quality)
+
+                if seed_coverage_chosen_strip == 0:
+                    seed_coverage_loss.append(0)
+                else:
+                    seed_coverage_loss.append(seed_coverage_alignment / seed_coverage_chosen_strip)
+
+                if not score is None and score > 0:
+                    scores_accurate[num_mutation][num_indels] += score
             else:
                 mapping_qual[-1][1].append(mapping_quality)
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
@@ -559,7 +591,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 scores[num_mutation][num_indels] += score
             if not num_seed_chosen_strip is None:
                 nums_seeds_chosen[num_mutation][num_indels] += num_seed_chosen_strip
-
 
         def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None):
             pic = []
@@ -636,10 +667,28 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             return plot
 
+        total_score = 0
+        for values in scores_accurate.values():
+            for value in values.values():
+                total_score += value
+        total_opt_scores = 0
+        for values in opt_scores.values():
+            for value in values.values():
+                total_opt_scores += value
+        totoal_nucs_by_seed = 0
+        for values in scores_accurate.values():
+            for value in values.values():
+                total_score += value
+
+        print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "percentage lost:", 100-100*total_score/total_opt_scores)
+        print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "percentage lost:", 100-100*total_score/total_opt_scores)
+        print(approach, ":\tseed coverage loss:", 
+            100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "percent")
+
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
-        avg_opt_score = makePicFromDict(opt_scores, max_mut, max_indel, hits, "percent optimal score " + approach)
+        avg_opt_score = makePicFromDict(scores_accurate, max_mut, max_indel, opt_scores, "percent optimal score " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
         avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, tries, "num seeds in chosen SOC " + approach)
         seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
@@ -758,7 +807,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 d[x][y] = 0
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, mapping_quality, run_time in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, run_time in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)

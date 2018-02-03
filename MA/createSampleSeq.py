@@ -77,6 +77,7 @@ def setUpDbTables(conn, reset = False):
                     num_seeds INTEGER,
                     index_of_chosen_strip INTEGER,
                     seed_coverage_chosen_strip INTGER,
+                    seed_coverage_alignment INTGER,
                     num_seeds_chosen_strip INTEGER,
                     anchor_size INTEGER,
                     anchor_ambiguity INTEGER,
@@ -221,6 +222,7 @@ def submitResults(db_name, results_list):
                             num_seeds,
                             index_of_chosen_strip,
                             seed_coverage_chosen_strip,
+                            seed_coverage_alignment,
                             num_seeds_chosen_strip,
                             anchor_size,
                             anchor_ambiguity,
@@ -230,7 +232,7 @@ def submitResults(db_name, results_list):
                             mapping_quality,
                             approach
                         )
-                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,?,?,?)
+                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,0,?,?,?)
                         """, results_list)
     else: # len == 16
         c.executemany("""
@@ -245,6 +247,7 @@ def submitResults(db_name, results_list):
                             num_seeds,
                             index_of_chosen_strip,
                             seed_coverage_chosen_strip,
+                            seed_coverage_alignment,
                             num_seeds_chosen_strip,
                             anchor_size,
                             anchor_ambiguity,
@@ -254,7 +257,7 @@ def submitResults(db_name, results_list):
                             run_time,
                             approach
                         )
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                         """, results_list)
     conn.commit()
 
@@ -302,6 +305,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.run_time,
                                 results.index_of_chosen_strip,
                                 results.seed_coverage_chosen_strip,
+                                results.seed_coverage_alignment,
                                 results.num_seeds_chosen_strip,
                                 results.anchor_size,
                                 results.anchor_ambiguity,
@@ -325,6 +329,8 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 samples.num_indels,
                                 results.num_seeds,
                                 results.num_seeds_chosen_strip,
+                                results.seed_coverage_chosen_strip,
+                                results.seed_coverage_alignment,
                                 results.mapping_quality,
                                 results.run_time
                             FROM samples
