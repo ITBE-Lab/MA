@@ -70,24 +70,39 @@ void EXPORTED Alignment::makeLocal()
         if(iScoreCurr <= 0)
         {
             iScoreCurr = 0;
-            iLastStart = index;
+            iLastStart = index+1;
         }//if
+        DEBUG_2(
+            std::cout << std::get<0>(data[index]) << "," << std::get<1>(data[index]) <<
+            " (" << iScoreCurr << ") | ";
+        )
         if(iScoreCurr >= iMaxScore)
         {
             iMaxScore = iScoreCurr;
             iMaxStart = iLastStart;
-            iMaxEnd = index;
+            iMaxEnd = index+1;
         }//if
     }//for
+    DEBUG_2(
+        std::cout << std::endl;
+        std::cout << iMaxStart << " " << iMaxEnd << std::endl;
+    )
     //erase everything before and after
-    data.erase(data.begin()+iMaxEnd+1, data.end());
-    data.erase(data.begin(), data.begin()+iMaxStart+1);
+    if(iMaxEnd < data.size())
+        data.erase(data.begin()+iMaxEnd, data.end());
+    if(iMaxStart > 0)
+        data.erase(data.begin(), data.begin()+iMaxStart);
     //adjust score accordingly
     iScore = iMaxScore;
     //adjust length variable accordingly
     uiLength = 0;
     for(unsigned int index = 0; index < data.size(); index++)
         uiLength += std::get<1>(data[index]);
+    DEBUG(
+        if(reCalcScore() != iScore)
+            std::cerr << "WARNING set wrong score or removed wrong elements in makeLocal" 
+                << std::endl;
+    )
 }//function
 
 int Alignment::reCalcScore() const
