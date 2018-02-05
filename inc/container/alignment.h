@@ -47,8 +47,6 @@ namespace libMA
         std::vector<std::tuple<MatchType, nucSeqIndex>> data;
         /// The length of the alignment.
         nucSeqIndex uiLength;
-        /// Where the actual alignment starts within data.
-        nucSeqIndex uiDataStart;
         /// The start of the alignment on the reference sequence.
         nucSeqIndex uiBeginOnRef;
         /// The end of the alignment on the reference sequence.
@@ -71,7 +69,6 @@ namespace libMA
                 :
             data(),
             uiLength(0),
-            uiDataStart(0),
             uiBeginOnRef(0),
             uiEndOnRef(0),
             uiBeginOnQuery(0),
@@ -91,7 +88,6 @@ namespace libMA
                 :
             data(),
             uiLength(0),
-            uiDataStart(0),
             uiBeginOnRef(uiBeginOnRef),
             uiEndOnRef(uiEndOnRef),
             uiBeginOnQuery(uiBeginOnQuery),
@@ -109,7 +105,6 @@ namespace libMA
                 :
             data(),
             uiLength(0),
-            uiDataStart(0),
             uiBeginOnRef(uiBeginOnRef),
             uiEndOnRef(0),
             xStats()
@@ -147,7 +142,7 @@ namespace libMA
 
             //the MatchType match type is stored in a compressed format -> extract it
             nucSeqIndex j = 0;
-            unsigned int k = uiDataStart;
+            unsigned int k = 0;
             while(k < data.size() && (j += std::get<1>(data[k++])) <= i);
 
             return std::get<0>(data[k-1]);
@@ -247,13 +242,6 @@ namespace libMA
         }
 
         /**
-         * @brief Remove dangeling deletions.
-         * @details
-         * Removes parts of the reference at the front and back that overhang the aligned query.
-         */
-        void EXPORTED removeDangelingDeletions();
-
-        /**
          * @brief for sorting alignment by their score
          * @details
          * When multiple alignments are created we use this function to sort them 
@@ -265,6 +253,23 @@ namespace libMA
             if(pAlign == nullptr)
                 return false;
             return score() < pAlign->score();
+        }//function
+
+        void makeLocal()
+        {
+
+        }//function
+
+        void operator=(const std::shared_ptr<Container> pOther)
+        {
+            data = pOther->data;
+            uiLength = pOther->uiLength;
+            uiBeginOnRef = pOther->uiBeginOnRef;
+            uiEndOnRef = pOther->uiEndOnRef;
+            uiBeginOnQuery = pOther->uiBeginOnQuery;
+            iScore = pOther->iScore;
+            fMappingQuality = pOther->fMappingQuality;
+            xStats = pOther->xStats;
         }//function
     };//class
 }//namespace libMA

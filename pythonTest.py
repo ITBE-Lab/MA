@@ -139,8 +139,9 @@ def test_my_approach(
         if use_chaining:
             couple = ExecOnVec(Chaining())
         optimal = ExecOnVec(NeedlemanWunsch())
+        mappingQual = MappingQuality()
 
-        pledges = [ [], [], [], [], [] ]
+        pledges = [ [], [], [], [], [], [] ]
         optimal_alignment_in = []
         for data in queries:
             sequence, sample_id, origin_pos, orig_size = data
@@ -158,6 +159,9 @@ def test_my_approach(
                 ))
             pledges[4].append(optimal.promise_me(
                     pledges[3][-1], pledges[0][-1], ref_pledge
+                ))
+            pledges[5].append(mappingQual.promise_me(
+                    pledges[0][-1], pledges[4][-1]
                 ))
 
             optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
@@ -277,10 +281,10 @@ def test_my_approach(
             covered_area_soc = [False]*len(pledges[0][i].get())
             for seed in soc_seeds:
                 for pos in range(seed.start, seed.start + seed.size):
-                    covered_area[pos] = True
+                    covered_area_soc[pos] = True
             for cov in covered_area_soc:
                 if cov:
-                    seed_coverage_soc += 1
+                    seed_coverage_soc += 1.0
             seed_coverage_soc /= len(pledges[0][i].get())
             #run over all discovered seeds and count the covered irelevant ones
             for seed in discovered_seeds:
@@ -360,7 +364,6 @@ def test_my_approaches_rele(db_name):
     test_my_approach(db_name, human_genome, "BLASR", seg=seg2, num_anchors=200, nmw_give_up=20000)
 
 def test_my_approaches(db_name):
-
     #clearResults(db_name, human_genome, "MA 1")
     #clearResults(db_name, human_genome, "MA 2")
     #clearResults(db_name, human_genome, "MA 1 chaining")
@@ -714,7 +717,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[4].append(seed_relevance)
         if not avg_opt_score is None:
             plots[6].append(avg_opt_score)
-
+        
+    
     plot = figure(title="BWA-pic",
         x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
         x_axis_type="log", y_range=(0,0.4),
@@ -727,7 +731,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
     for index, approach_, in enumerate(approaches):
         approach = approach_[0]
-        data = mapping_qual_illumina[index]
+        data = mapping_qual[index]
 
         total_amount_1 = len(data[0])
         total_amount_2 = len(data[1])
@@ -1320,7 +1324,7 @@ exit()
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
-analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)

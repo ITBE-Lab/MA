@@ -119,23 +119,6 @@ void needlemanWunsch(
     }//if
 #endif
 
-//switch banded (not working yet) (1) non-banded (0)
-#if 0
-    nucSeqIndex uiBandSize = std::min(200, toQuery-fromQuery+1, toRef-fromRef+1);
-    nucSeqIndex uiBandCenter = uiBandSize/2;
-    nucSeqIndex uiBandLength = std::max(toQuery-fromQuery+1, toRef-fromRef+1);
-
-    std::vector<std::vector<int>> s(uiBandLength, std::vector<int>(uiBandSize));
-    std::vector<std::vector<char>> dir(uiBandLength, std::vector<char>(uiBandSize));
-
-    s[0][0] = 0;
-    dir[0][0] = 1;
-    s[1][0] = -iGap;
-    dir[1][0] = 2;
-    s[0][1] = -iGap;
-    dir[0][1] = 3;
-
-#else
     std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
     std::vector<std::vector<char>> dir(toQuery-fromQuery+1, std::vector<char>(toRef-fromRef+1));
 
@@ -260,19 +243,12 @@ void needlemanWunsch(
     DEBUG_2(
         std::cout << std::endl;
     )//DEBUG
-
-#endif
-
-
 }//function
 
 std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    //switch local or global alignment
-    bool bLocal = true;
-
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
     std::shared_ptr<NucSeq> pQuery 
         = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
@@ -301,45 +277,23 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     std::shared_ptr<Alignment> pRet;
     nucSeqIndex beginRef;
     nucSeqIndex endRef;
-    if(bLocal)
+    beginRef = pSeeds->front().start_ref();
+    //seeds are sorted by ther startpos so we 
+    //actually need to check all seeds to get the proper end
+    endRef = pSeeds->back().end_ref();
+    nucSeqIndex endQuery = pSeeds->back().end();
+    for (auto xSeed : *pSeeds)
     {
-        beginRef = pSeeds->front().start_ref();
-        //seeds are sorted by ther startpos so we 
-        //actually need to check all seeds to get the proper end
-        endRef = pSeeds->back().end_ref();
-        nucSeqIndex endQuery = pSeeds->back().end();
-        for (auto xSeed : *pSeeds)
-        {
-            if(endRef < xSeed.end_ref())
-                endRef = xSeed.end_ref();
-            if(beginRef > xSeed.start_ref())
-                beginRef = xSeed.start_ref();
-            if(endQuery < xSeed.end())
-                endQuery = xSeed.end();
-        }//for
-        pRet = std::shared_ptr<Alignment>(
-            new Alignment(beginRef, endRef, pSeeds->front().start(), endQuery)
-        );
-    }//if
-    else
-    {
-        float fDistFac = 1.0;
-        nucSeqIndex beginQuery = pSeeds->front().start();
-        beginRef = 0;
-        if( pSeeds->front().start_ref() > (nucSeqIndex)(beginQuery*fDistFac))
-            beginRef = pSeeds->front().start_ref() - (nucSeqIndex)(beginQuery*fDistFac);
-        nucSeqIndex endQuery = pSeeds->back().end();
-        assert(endQuery <= pQuery->length());
-        endRef = pRefPack->uiUnpackedSizeForwardPlusReverse();
-        if( 
-                pSeeds->back().end_ref() + (nucSeqIndex)((pQuery->length()-endQuery)*fDistFac) <
-                pRefPack->uiUnpackedSizeForwardPlusReverse()
-            )
-            endRef = pSeeds->back().end_ref() + (nucSeqIndex)((pQuery->length()-endQuery)*fDistFac);
-        pRet = std::shared_ptr<Alignment>(
-            new Alignment(beginRef, endRef, 0, 0)
-        );
-    }//else
+        if(endRef < xSeed.end_ref())
+            endRef = xSeed.end_ref();
+        if(beginRef > xSeed.start_ref())
+            beginRef = xSeed.start_ref();
+        if(endQuery < xSeed.end())
+            endQuery = xSeed.end();
+    }//for
+    pRet = std::shared_ptr<Alignment>(
+        new Alignment(beginRef, endRef, pSeeds->front().start(), endQuery)
+    );
 
     //save the strip of consideration stats in the alignment
     pRet->xStats = pSeeds->xStats;
@@ -364,13 +318,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     nucSeqIndex endOfLastSeedQuery = 0;
     nucSeqIndex endOfLastSeedReference = 0;
 
-    if(bLocal)
-    {
-        endOfLastSeedQuery = pSeeds->front().start();
-        //                          pSeeds->front().start_ref() - beginRef == 0
-        //endOfLastSeedReference = pSeeds->front().start_ref() - beginRef;
-    }//if
-
+    endOfLastSeedQuery = pSeeds->front().start();
     for(Seed& rSeed : *pSeeds)
     {
         needlemanWunsch(
@@ -430,23 +378,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         if(rSeed.end_ref() > endOfLastSeedReference + beginRef)
             endOfLastSeedReference = rSeed.end_ref() - beginRef;
     }//for
-
-    if(!bLocal)
-    {
-        needlemanWunsch(
-            pQuery,
-            pRef,
-            endOfLastSeedQuery,
-            pQuery->length(),
-            endOfLastSeedReference,
-            endRef - beginRef,
-            pRet
-        );
-        //cleanup the alignment
-        pRet->removeDangelingDeletions();
-        // @todo  due to NMW changes i might have a lot of dangeling insertions here...
-        // maybe best to keep them around?
-    }//if
 
     DEBUG_2(
         std::cout << std::endl;

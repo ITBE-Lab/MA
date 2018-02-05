@@ -43,7 +43,7 @@ void Alignment::append(MatchType type, nucSeqIndex size)
 int Alignment::reCalcScore() const
 {
     int iScore = 0;
-    for(unsigned int index = uiDataStart; index < data.size(); index++)
+    for(unsigned int index = 0; index < data.size(); index++)
         switch (std::get<0>(data[index]))
         {
             case MatchType::deletion :
@@ -62,29 +62,6 @@ int Alignment::reCalcScore() const
     return iScore;
 }//function
 
-void Alignment::removeDangelingDeletions()
-{
-    if(data.size() <= 2)
-        return;
-    if(std::get<0>(data[uiDataStart]) == MatchType::deletion)
-    {
-        uiBeginOnRef += std::get<1>(data[uiDataStart]);
-        uiLength -= std::get<1>(data[uiDataStart]);
-        //iGap is a penalty not a score
-        iScore += iGap;
-        iScore += iExtend * std::get<1>(data[uiDataStart]);//-1;
-        uiDataStart++;
-    }//if
-    if(std::get<0>(data.back()) == MatchType::deletion)
-    {
-        uiEndOnRef -= std::get<1>(data.back());
-        uiLength -= std::get<1>(data.back());
-        //iGap is a penalty not a score
-        iScore += iGap;
-        iScore += iExtend * std::get<1>(data.back());//-1;
-        data.pop_back();
-    }//if
-}//function
 
 void exportAlignment()
 {
