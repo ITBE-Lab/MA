@@ -32,11 +32,8 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         if(pAlignment->length() == 0)
             continue;
         std::string sCigar = "";
-        unsigned int iCont = 0;
         for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
         {
-            if(iCont++ < pAlignment->uiDataStart)
-                continue;
             sCigar += std::to_string(std::get<0>(section));
             switch (std::get<1>(section))
             {

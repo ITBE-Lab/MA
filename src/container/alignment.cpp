@@ -40,6 +40,56 @@ void Alignment::append(MatchType type, nucSeqIndex size)
     uiLength += size;
 }//function
 
+void EXPORTED Alignment::makeLocal()
+{
+    if(uiLength == 0)
+        return;
+    std::vector<int> vScores;
+    int iMaxScore = 0;
+    unsigned int iMaxStart = 0;
+    unsigned int iMaxEnd = 0;
+    unsigned int iLastStart = 0;
+    int iScoreCurr = 0;
+    for(unsigned int index = 0; index < data.size(); index++)
+    {
+        switch (std::get<0>(data[index]))
+        {
+            case MatchType::deletion :
+            case MatchType::insertion :
+                iScoreCurr -= iGap;
+                iScoreCurr -= iExtend * std::get<1>(data[index]);
+                break;
+            case MatchType::missmatch :
+                iScoreCurr -= iMissMatch * std::get<1>(data[index]);
+                break;
+            case MatchType::match :
+            case MatchType::seed :
+                iScoreCurr += iMatch * std::get<1>(data[index]);
+                break;
+        }//switch
+        if(iScoreCurr <= 0)
+        {
+            iScoreCurr = 0;
+            iLastStart = index;
+        }//if
+        if(iScoreCurr >= iMaxScore)
+        {
+            iMaxScore = iScoreCurr;
+            iMaxStart = iLastStart;
+            iMaxEnd = index;
+        }//if
+    }//for
+    //erase everything before and after
+    data.erase(data.begin()+iMaxEnd+1, data.end());
+    data.erase(data.begin(), data.begin()+iMaxStart+1);
+    //adjust score accordingly
+    iScore = iMaxScore;
+    //adjust length variable accordingly
+    uiLength = 0;
+    for(unsigned int index = 0; index < data.size(); index++)
+        uiLength += std::get<1>(data[index]);
+}//function
+
 int Alignment::reCalcScore() const
 {
     int iScore = 0;
@@ -49,7 +99,7 @@ int Alignment::reCalcScore() const
             case MatchType::deletion :
             case MatchType::insertion :
                 iScore -= iGap;
-                iScore -= iExtend * std::get<1>(data[index]);//-1;
+                iScore -= iExtend * std::get<1>(data[index]);
                 break;
             case MatchType::missmatch :
                 iScore -= iMissMatch * std::get<1>(data[index]);
@@ -140,6 +190,11 @@ void exportAlignment()
         .def(
                 "num_by_seeds", 
                 &Alignment::numBySeeds,
+                "arg1: self\n"
+            )
+        .def(
+                "make_local", 
+                &Alignment::makeLocal,
                 "arg1: self\n"
             )
         .def_readonly("stats", &Alignment::xStats)

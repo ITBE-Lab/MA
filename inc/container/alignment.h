@@ -255,12 +255,9 @@ namespace libMA
             return score() < pAlign->score();
         }//function
 
-        void makeLocal()
-        {
+        void EXPORTED makeLocal();
 
-        }//function
-
-        void operator=(const std::shared_ptr<Container> pOther)
+        void operator=(const std::shared_ptr<Alignment> pOther)
         {
             data = pOther->data;
             uiLength = pOther->uiLength;

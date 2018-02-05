@@ -382,6 +382,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     DEBUG_2(
         std::cout << std::endl;
     )
+    pRet->makeLocal();
+
     return pRet;
 
 }//function
