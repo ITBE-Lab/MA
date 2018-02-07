@@ -1,10 +1,12 @@
 /** 
  * @file qSufSort.h
  * @brief Faster Suffix Sorting
+ * @author N. Jesper Larsson, Kunihiko Sadakane, Wong Chi-Kwong
  * @details
  *
  * Header file for QSufSort.c
  *
+ * @copyright
  * This file contains an implementation of the algorithm presented in "Faster
  * Suffix Sorting" by N. Jesper Larsson (jesper@cs.lth.se) and Kunihiko
  * Sadakane (sada@is.s.u-tokyo.ac.jp).

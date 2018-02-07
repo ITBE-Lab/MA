@@ -275,12 +275,10 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
 
     std::shared_ptr<Alignment> pRet;
-    nucSeqIndex beginRef;
-    nucSeqIndex endRef;
-    beginRef = pSeeds->front().start_ref();
+    nucSeqIndex beginRef = pSeeds->front().start_ref();
+    nucSeqIndex endRef = pSeeds->back().end_ref();
     //seeds are sorted by ther startpos so we 
     //actually need to check all seeds to get the proper end
-    endRef = pSeeds->back().end_ref();
     nucSeqIndex endQuery = pSeeds->back().end();
     for (auto xSeed : *pSeeds)
     {
@@ -341,21 +339,21 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         DEBUG(
             std::cout << "overlap: " << overlap << std::endl;
         )//DEBUG
-        if(ovQ > ovR)
-            pRet->append(MatchType::deletion, ovQ - ovR);
-        DEBUG_2(
-            for(nucSeqIndex i = ovR; i < ovQ; i++)
-                std::cout << "d";
-        )
-        if(ovR > ovQ)
-            pRet->append(MatchType::insertion, ovR - ovQ);
-        DEBUG_2(
-            for(nucSeqIndex i = ovQ; i < ovR; i++)
-                std::cout << "i";
-            std::cout << std::endl;
-        )//DEBUG
         if(len > overlap)
         {
+            if(ovQ > ovR)
+                pRet->append(MatchType::deletion, ovQ - ovR);
+            DEBUG_2(
+                for(nucSeqIndex i = ovR; i < ovQ; i++)
+                    std::cout << "d";
+            )
+            if(ovR > ovQ)
+                pRet->append(MatchType::insertion, ovR - ovQ);
+            DEBUG_2(
+                for(nucSeqIndex i = ovQ; i < ovR; i++)
+                    std::cout << "i";
+                std::cout << std::endl;
+            )//DEBUG
             pRet->append(MatchType::seed, len - overlap);
             DEBUG_2(
                 std::cout << len - overlap << std::endl;
@@ -379,6 +377,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             endOfLastSeedReference = rSeed.end_ref() - beginRef;
     }//for
 
+    assert(std::get<0>(pRet->data.front()) == MatchType::seed);
+    assert(std::get<0>(pRet->data.back()) == MatchType::seed);
+
     DEBUG_2(
         std::cout << std::endl;
     )
@@ -398,15 +399,21 @@ void exportNeedlemanWunsch()
     >(
         "NeedlemanWunsch"
     )
+        .def_readwrite("penalty_gap_open", &iGap)
+        .def_readwrite("penalty_gap_extend", &iExtend)
+        .def_readwrite("score_match", &iMatch)
+        .def_readwrite("penalty_missmatch", &iMissMatch)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<NeedlemanWunsch>,
         std::shared_ptr<Module> 
     >();
 
-    //boost::python::scope().attr("score_gap_open") = &iGap;
-    //boost::python::scope().attr("score_gap_extend") = &iExtend;
-    //boost::python::scope().attr("score_match") = &iMatch;
-    //boost::python::scope().attr("score_missmatch") = &iMissMatch;
+    /*
+    boost::python::scope().attr("penalty_gap_open") = &iGap;
+    boost::python::scope().attr("penalty_gap_extend") = &iExtend;
+    boost::python::scope().attr("score_match") = &iMatch;
+    boost::python::scope().attr("penalty_missmatch") = &iMissMatch;
+    */
 
 }//function

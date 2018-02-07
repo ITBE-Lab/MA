@@ -37,23 +37,22 @@ std::shared_ptr<Container> MappingQuality::execute(
     }//for
 
     //compute the mapping quality for the best alignment
-    std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[pAlignments->size()-1]);
+    std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
 
     // mapping quality based on scores
     if(pAlignments->size() >= 2)
     {
-        std::shared_ptr<Alignment> pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[pAlignments->size()-2]);
+        std::shared_ptr<Alignment> pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[1]);
         // this formula is given in the paper and is very similar to Heng li's approach in BWA-SW
-        pFirst->fMappingQuality = std::max(0.0,
-                ( pFirst->score() - std::max(0, pSecond->score()) )
+        pFirst->fMappingQuality =
+                ( pFirst->score() - pSecond->score() )
                     /
-                (double)(iMatch * pQuery->length())
-            );
-
+                (double)( pFirst->score() )
+            ;
     }//if
     else
         // the score of the second best alignment is 0 if we do not even find one...
-        pFirst->fMappingQuality = pFirst->score() / (double)(iMatch * pQuery->length());
+        pFirst->fMappingQuality = 1;// pFirst->score() / (double)(iMatch * pQuery->length());
 
     // factors
     // penalty for too little seeds

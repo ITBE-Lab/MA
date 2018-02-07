@@ -177,16 +177,11 @@ def test_my_approach(
 
 
         print("setting up optimal (", name, ") ...")
-        for i, query_ in enumerate(queries):
+        for i, _ in enumerate(queries):
             alignment = pledges[-1][i].get()[0]
-            index = int(alignment.stats.name)
-            query = query_[0]
-            optimal_alignment_in[i][0].set(NucSeq(query[alignment.begin_on_query:alignment.end_on_query]))
-            if alignment.begin_on_ref() != alignment.end_on_ref():
-                optimal_alignment_in[i][1].set(
-                    ref_pack.extract_from_to(alignment.begin_on_ref(),alignment.end_on_ref()))
-            else:
-                optimal_alignment_in[i][1].set(NucSeq(""))
+            dist = 100
+            optimal_alignment_in[i][0].set(NucSeq(sequence[alignment.begin_on_query : alignment.end_on_query]))
+            optimal_alignment_in[i][1].set(ref_pack.extract_from_to(alignment.begin_on_ref(), alignment.end_on_ref()))
         print("computing optimal (", name, ") ...")
         Pledge.simultaneous_get(optimal_alignment_out, 32)
 
@@ -197,7 +192,9 @@ def test_my_approach(
             alignment2 = None
             if len(alignments.get()) > 1:
                 alignment2 = alignments.get()[1]
-            optimal_alignment = optimal_alignment_out[i].get()[0]
+            optimal_alignment = None
+            if len(optimal_alignment_out[i].get()) > 0:
+                optimal_alignment = optimal_alignment_out[i].get()[0]
             #print(alignment.stats.name)
             sample_id = int(alignment.stats.name)
             collect_ids.append(sample_id)
@@ -213,7 +210,9 @@ def test_my_approach(
             total_time += pledges[4][i].exec_time
 
             max_nmw_area=0
-            max_diag_deviation = 0.0
+            nmw_area=0
+            max_diag_deviation_percent = 0.0
+            max_diag_deviation = 0
             curr_diag_deviation = 0
             curr_max_diag_deviation = 0
             gap_size = 0
@@ -224,7 +223,15 @@ def test_my_approach(
 
             if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score")
-                query = queries[index][0]
+                query = queries[i][0]
+                AlignmentPrinter().execute(
+                        alignment, 
+                        NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
+                        ref_pack
+                    )
+            if optimal_alignment != None and alignment.get_score() < optimal_alignment.get_score():
+                print("got worse than optimal score")
+                query = queries[i][0]
                 AlignmentPrinter().execute(
                         alignment, 
                         NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
@@ -235,14 +242,16 @@ def test_my_approach(
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
                     seed_coverage += 1.0
-                    # @todo really filter out all gaps smaller than 10?
-                    # NO: we need to filter out all gaps so small that the pure missmatchscore 
-                    #     must be smaller than the gap score 
-                    if gap_size > 10 and float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation:
-                        max_diag_deviation = float(abs(curr_max_diag_deviation)) / gap_size
+                    nmw = NeedlemanWunsch()
+                    if gap_size > 100 and nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open + nmw.penalty_gap_extend * gap_size: 
+                        if float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation_percent:
+                            max_diag_deviation_percent = float(abs(curr_max_diag_deviation)) / gap_size
+                    if abs(curr_max_diag_deviation) > max_diag_deviation:
+                        max_diag_deviation = abs(curr_max_diag_deviation)
                     curr_diag_deviation = 0
                     curr_max_diag_deviation = 0
                     gap_size = 0
+                    nmw_area += cur_nmw_h * cur_nmw_w
                     cur_nmw_h = 0
                     cur_nmw_w = 0
                 else:
@@ -320,7 +329,9 @@ def test_my_approach(
                         alignment.stats.anchor_size,
                         alignment.stats.anchor_ambiguity,
                         max_diag_deviation,
+                        max_diag_deviation_percent,
                         max_nmw_area,
+                        nmw_area,
                         alignment.mapping_quality,
                         total_time,
                         name
@@ -364,8 +375,8 @@ def test_my_approaches_rele(db_name):
     test_my_approach(db_name, human_genome, "BLASR", seg=seg2, num_anchors=200, nmw_give_up=20000)
 
 def test_my_approaches(db_name):
-    #clearResults(db_name, human_genome, "MA 1")
-    #clearResults(db_name, human_genome, "MA 2")
+    clearResults(db_name, human_genome, "MA 1")
+    clearResults(db_name, human_genome, "MA 2")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
@@ -373,9 +384,9 @@ def test_my_approaches(db_name):
 
     test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=5, complete_seeds=False)
 
-    test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
+    #test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
 
-    test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True)
+    #test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -389,13 +400,15 @@ def analyse_detailed(out_prefix, db_name):
         anc_size = ([], [])
         anc_ambiguity = ([], [])
         max_diag_deviations = ([], [])
+        max_diag_deviations_percent = ([], [])
         max_nmw_areas = ([], [])
+        nmw_areas = ([], [])
         mapping_qual = ([], [])
         score_dif = ([], [])
 
         approach = approach_[0]
         for result in getResults(db_name, approach):
-            score, score2, optimal_score_this_region, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, mapping_quality, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_nmw_area, original_size = result
+            score, score2, optimal_score_this_region, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, mapping_quality, run_time, index_of_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, num_seeds_chosen_strip, anchor_size, anchor_ambiguity, max_diag_deviation, max_diag_deviation_percent, max_nmw_area, nmw_area, original_size = result
 
             index = 1
             if near(result_start, original_start, result_end, original_start+original_size):
@@ -414,7 +427,9 @@ def analyse_detailed(out_prefix, db_name):
             anc_size[index].append(anchor_size)
             anc_ambiguity[index].append(anchor_ambiguity)
             max_diag_deviations[index].append(max_diag_deviation)
+            max_diag_deviations_percent[index].append(max_diag_deviation_percent)
             max_nmw_areas[index].append(max_nmw_area)
+            nmw_areas[index].append(nmw_area)
 
         #print("required_nmw_area", max_diag_deviations)
 
@@ -521,8 +536,10 @@ def analyse_detailed(out_prefix, db_name):
             bar_plot(num_seeds_strip, "number of seeds in strip", 25),
             bar_plot(anc_size, "length of anchor seed", 50),
             bar_plot(anc_ambiguity, "ambiguity of anchor seed", 5),
-            bar_plot(max_diag_deviations, "required nmw strip size to reach maximum possible score", 50, False),
+            bar_plot(max_diag_deviations, "required nmw strip size to reach maximum possible score", 50),
+            bar_plot(max_diag_deviations_percent, "required nmw strip size to reach maximum possible score", 50, False),
             bar_plot(max_nmw_areas, "maximum area needleman wunsch", 50),
+            bar_plot(nmw_areas, "maximum area needleman wunsch", 50),
             ]))
 
 
@@ -543,6 +560,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         scores_accurate = {}
         seed_coverage_loss = []
         opt_scores = {}
+        opt_score_loss = {}
         nums_seeds = {}
         nums_seeds_chosen = {}
         nucs_by_seed = {}
@@ -571,6 +589,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 scores_accurate = init(scores_accurate, num_mutation, num_indels)
             if not optimal_score is None:
                 opt_scores = init(opt_scores, num_mutation, num_indels)
+            opt_score_loss = init(opt_score_loss, num_mutation, num_indels)
             nums_seeds = init(nums_seeds, num_mutation, num_indels)
             nums_seeds_chosen = init(nums_seeds_chosen, num_mutation, num_indels)
             nucs_by_seed = init(nucs_by_seed, num_mutation, num_indels)
@@ -581,8 +600,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                     if optimal_score < score:
                         print("WARNING: aligner got better", score, "than optimal score", optimal_score)
                         opt_scores[num_mutation][num_indels] += score
+                        opt_score_loss[num_mutation][num_indels] += optimal_score/score
                     else:
                         opt_scores[num_mutation][num_indels] += optimal_score
+                        opt_score_loss[num_mutation][num_indels] += 1.0
                 mapping_qual[-1][0].append(mapping_quality)
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
                     mapping_qual_illumina[-1][0].append(mapping_quality)
@@ -691,14 +712,16 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             for value in values.values():
                 total_opt_scores += value
 
-        print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "percentage lost:", 100-100*total_score/total_opt_scores)
-        print(approach, ":\tseed coverage loss:", 
+        if total_opt_scores > 0:
+            print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "percentage lost:", 100-100*total_score/total_opt_scores)
+        if len(seed_coverage_loss) > 0:
+            print(approach, ":\tseed coverage loss:", 
             100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "percent")
 
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
-        avg_opt_score = makePicFromDict(scores_accurate, max_mut, max_indel, opt_scores, "percent optimal score " + approach)
+        avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, tries, "optimal scores " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
         avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, tries, "num seeds in chosen SOC " + approach)
         seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
@@ -808,7 +831,9 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
         nums_seeds = {}
         mapping_qual.append( ([],[]) )
 
-        max_indel = 2*query_size/indel_size
+        max_indel = 0
+        if indel_size > 0:
+            max_indel = 2*query_size/indel_size
         max_mut = query_size
 
         def init(d, x, y):
@@ -936,23 +961,22 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             plot.axis.major_label_text_font_size=font_size
 
             return plot
+        if indel_size > 0:
+            avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, approach, set_max=1, set_min=0, xax=False, yax=yax)
+            avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
+            #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
+            avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, approach, yax=yax)
+            avg_rel = makePicFromDict(hits, max_mut, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
+            yax = False
 
-
-        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, approach, set_max=1, set_min=0, xax=False, yax=yax)
-        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
-        #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
-        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, approach, yax=yax)
-        avg_rel = makePicFromDict(hits, max_mut, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
-        yax = False
-
-        if not avg_hits is None:
-            plots[0].append(avg_hits)
-        if not avg_runtime is None:
-            plots[1].append(avg_runtime)
-        if not avg_seeds is None:
-            plots[2].append(avg_seeds)
-        if not avg_rel is None:
-            plots[3].append(avg_rel)
+            if not avg_hits is None:
+                plots[0].append(avg_hits)
+            if not avg_runtime is None:
+                plots[1].append(avg_runtime)
+            if not avg_seeds is None:
+                plots[2].append(avg_seeds)
+            if not avg_rel is None:
+                plots[3].append(avg_rel)
 
     plot = figure(title="BWA-pic",
             x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
@@ -1312,11 +1336,10 @@ exit()
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
 
-#createSampleQueries(human_genome, "/mnt/ssd1/illumina.db", 50, 5, 64, True, True)
+#create_as_sequencer_reads("/mnt/ssd1/illumina.db", 1000)
 #test_my_approaches("/mnt/ssd1/illumina.db")
-#analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 50, 5)
-#analyse_all_approaches_depre("illumina_depre.html","/mnt/ssd1/illumina.db", 50, 5)
-
+#analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 150, 0)
+#exit()
 
 #high quality picture
 
@@ -1324,7 +1347,7 @@ exit()
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
-#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)

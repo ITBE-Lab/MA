@@ -47,9 +47,10 @@ void EXPORTED Alignment::makeLocal()
     std::vector<int> vScores;
     int iMaxScore = 0;
     unsigned int iMaxStart = 0;
-    unsigned int iMaxEnd = 0;
+    unsigned int iMaxEnd = data.size();
     unsigned int iLastStart = 0;
     int iScoreCurr = 0;
+
     for(unsigned int index = 0; index < data.size(); index++)
     {
         switch (std::get<0>(data[index]))
@@ -87,6 +88,38 @@ void EXPORTED Alignment::makeLocal()
         std::cout << std::endl;
         std::cout << iMaxStart << " " << iMaxEnd << std::endl;
     )
+    //adjust the begin/end on ref/query
+    if(iMaxStart <= iMaxEnd)
+    {
+        for(unsigned int index = 0; index < iMaxStart; index++)
+            switch (std::get<0>(data[index]))
+            {
+                case MatchType::deletion :
+                    uiBeginOnRef += std::get<1>(data[index]);
+                    break;
+                case MatchType::insertion :
+                    uiBeginOnQuery += std::get<1>(data[index]);
+                    break;
+                default :
+                    uiBeginOnRef += std::get<1>(data[index]);
+                    uiBeginOnQuery += std::get<1>(data[index]);
+                    break;
+            }//switch
+        for(unsigned int index = iMaxEnd; index < data.size(); index++)
+            switch (std::get<0>(data[index]))
+            {
+                case MatchType::deletion :
+                    uiEndOnRef -= std::get<1>(data[index]);
+                    break;
+                case MatchType::insertion :
+                    uiEndOnQuery -= std::get<1>(data[index]);
+                    break;
+                default :
+                    uiEndOnRef -= std::get<1>(data[index]);
+                    uiEndOnQuery -= std::get<1>(data[index]);
+                    break;
+            }//switch
+    }//if
     //erase everything before and after
     if(iMaxEnd < data.size())
         data.erase(data.begin()+iMaxEnd, data.end());
@@ -99,6 +132,13 @@ void EXPORTED Alignment::makeLocal()
     for(unsigned int index = 0; index < data.size(); index++)
         uiLength += std::get<1>(data[index]);
     DEBUG(
+        if(uiEndOnRef < uiBeginOnRef)
+        {
+            std::cout << "---" << std::endl;
+            for(unsigned int index = 0; index < data.size(); index++)
+                std::cout << std::get<0>(data[index]) << "," << std::get<1>(data[index]) << std::endl;
+                exit(0);
+        }
         if(reCalcScore() != iScore)
             std::cerr << "WARNING set wrong score or removed wrong elements in makeLocal" 
                 << std::endl;

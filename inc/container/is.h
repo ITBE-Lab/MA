@@ -1,7 +1,7 @@
 /**
  * @file is.h
  * @brief Implements functions for the generation of suffix arrays.
- * @details
+ * @copyright
  * sais.c for sais-lite
  * Copyright (c) 2008 Yuta Mori All Rights Reserved.
  *

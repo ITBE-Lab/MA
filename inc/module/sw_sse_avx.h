@@ -145,7 +145,7 @@ struct SW_SIMD_Aligner
             throw AlignerException("Possible maximum for query exceeds maximum of scoring datatype");
         } // if
 
-        /* Allocation memory for the query profile and the 4 auxiliary vectors.
+        /* Allocating memory for the query profile and the 4 auxiliary vectors.
          * (We allocate this memory as a single block!)
          */
         pStartOfReservedMemory = (T__mXXXi*)malloc(  (__mXXXi_SIZE - 1)    // space for alignment 
@@ -157,7 +157,7 @@ struct SW_SIMD_Aligner
         } // if
         
         /* Align with respect to the reserved memory for efficiency improvements.
-         * For T__mxxxi we need 16 byte aligned memory or things are uniefficent.
+         * For T__mxxxi we need 16 byte aligned memory or things are inefficient.
          */
         pAlignedAllocatedMemoryRef = (T__mXXXi*)(((T_size_t)pStartOfReservedMemory + (__mXXXi_SIZE - 1)) / __mXXXi_SIZE * __mXXXi_SIZE);
 
@@ -238,14 +238,14 @@ struct SW_SIMD_Aligner
         // Repeatedly used zero vector
         T__mXXXi zero = _mmXXX_set1_epi32(0);  
     
-        /* Intialize the vectors for the gaps.
+        /* Initialize the vectors for the gaps.
          * T_scoring must be equal to int16_t or we are in trouble here
          */
         T__mXXXi gapoePar8 = _mmXXX_set1_epi16( (int16_t)(pSWparameterSetRef.iGapOpen + pSWparameterSetRef.iGapExtend) ); 
         T__mXXXi gapePar8 = _mmXXX_set1_epi16( (int16_t)pSWparameterSetRef.iGapExtend ); 
         
         /* We initialize the E, H0 and Hmax vectors with zero.
-         * Idea: here we could take something build in function.
+         * Idea: here we could take some build in function.
          */
         for( T_size_t uxIterator = 0; uxIterator < uiNumberOfBlocks; ++uxIterator ) 
         {
@@ -292,7 +292,7 @@ struct SW_SIMD_Aligner
                 h = _mmXXX_max_epi16( h, e ); 
                 h = _mmXXX_max_epi16( h, f ); 
                 
-                /* At this point we have the correct h-values in h, reagrding finding the maximum.
+                /* At this point we have the correct h-values in h, regarding finding the maximum.
                  * However, f is not integrated here.
                  */
                 maxima = _mmXXX_max_epi16( maxima, h ); 
@@ -361,7 +361,7 @@ struct SW_SIMD_Aligner
             if( iMaxScoreOfCurrentRow >= iOverallMaxScore )
             {
                 if( iMaxScoreOfCurrentRow > iOverallMaxScore )
-                {    // fresh overall maxium detected 
+                {    // fresh overall maximum detected 
                     rvMaxScorePositions.clear();
                     iOverallMaxScore = iMaxScoreOfCurrentRow;
                 }

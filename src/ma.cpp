@@ -41,6 +41,30 @@ int main(int argc, char*argv[])
     std::string sAlignOut;
     std::vector<std::string> aAlignIn;
 
+    std::string sCopyrightNotice = 
+        "Copyright (C) 2018 Markus Schmidt, Arne Kutzner\n"
+        "This program comes with ABSOLUTELY NO WARRANTY; for details type `--help'.\n"
+        "This is free software, and you are welcome to redistribute it\n"
+        "under certain conditions; type `--copyright' for details.\n"
+    ;
+    std::string sCopyrightLong = 
+        "Copyright (C) 2018 Markus Schmidt, Arne Kutzner\n"
+        "\n"
+        "This program is free software: you can redistribute it and/or modify\n"
+        "it under the terms of the GNU General Public License as published by\n"
+        "the Free Software Foundation, either version 3 of the License, or\n"
+        "(at your option) any later version.\n"
+        "\n"
+        "This program is distributed in the hope that it will be useful,\n"
+        "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+        "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+        "GNU General Public License for more details.\n"
+        "\n"
+        "You should have received a copy of the GNU General Public License\n"
+        "along with this program.  If not, see <https://www.gnu.org/licenses/>."
+    ;
+    
+
     options_description gen_desc{"General Options"};
     gen_desc.add_options()
         ("help,h", "Complete help screen")
@@ -48,6 +72,13 @@ int main(int argc, char*argv[])
         ("threads,t", value<unsigned int>(&uiT)->default_value(std::thread::hardware_concurrency()), "Used concurency")
         ("fmdIndex,f", "FMD-index generation")
     ;
+
+    if (argc <= 1)
+    {
+        std::cout << "\t\t===== MA THE MODULAR ALIGNER =====" << std::endl;
+        std::cout << sCopyrightNotice << std::endl;
+        std::cout << gen_desc << std::endl;
+    }//if
 
     try
     {
@@ -76,6 +107,7 @@ int main(int argc, char*argv[])
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "complete" : "pairs"), "Used seed set [complete/pairs]")
             ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 10 : 5), "Strip of consideration amount")
             ("global,G", "Perform global alignment")
+            ("copyright,c", "Print the copyright")
         ;
 
         options_description p_desc{"Paired Reads Options"};
@@ -103,8 +135,18 @@ int main(int argc, char*argv[])
         bPariedNormal = vm.count("normal") != 0;
         bPariedUniform = vm.count("uniform") != 0;
 
-        if (argc <= 1)
-            std::cout << gen_desc << std::endl;
+        if (vm.count("help"))
+        {
+            std::cout << "\t\t===== MA THE MODULAR ALIGNER =====" << std::endl;
+            std::cout << sCopyrightNotice << std::endl;
+            std::cout << all_desc << std::endl;
+            std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;
+        }//if
+        if (vm.count("copyright"))
+        {
+            std::cout << "\t\t===== MA THE MODULAR ALIGNER =====" << std::endl;
+            std::cout << sCopyrightLong << std::endl;
+        }//if
         if(vm.count("fmdIndex"))
         {
             if(vm.count("indexIn") == 0 || vm.count("indexOut") == 0 )
@@ -176,15 +218,10 @@ int main(int argc, char*argv[])
                 Pledge::simultaneousGet(aGraphSinks, true);
             }//else
         }//if
-        if (vm.count("help"))
-        {
-            std::cout << "\t\t===== MA THE MODULAR ALIGNER =====" << std::endl;
-            std::cout << all_desc << std::endl;
-            std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;
-        }//if
     }//try
     catch (const error &ex)
     {
+        std::cout << sCopyrightNotice << std::endl;
         std::cout << gen_desc << std::endl;
         std::cerr << ex.what() << std::endl;
     }//catch

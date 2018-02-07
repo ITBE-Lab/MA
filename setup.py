@@ -23,7 +23,7 @@ setup(
     zip_safe=False,
     python_requires='>=3',
  
-    license='MIT', #@todo  lookup correct license
+    license='GNU', #@todo  lookup correct license
 
     classifiers=[ 
         # How mature is this project? Common values are 

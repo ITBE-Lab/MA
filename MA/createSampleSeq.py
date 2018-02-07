@@ -15,6 +15,8 @@ import random
 from random import shuffle
 from math import floor
 import operator
+import os
+import csv 
 
 def mutate(char):
     num = 0
@@ -59,8 +61,10 @@ def setUpDbTables(conn, reset = False):
                     num_indels INTEGER,
                     original_size INTEGER,
                     origin INTEGER,
+                    paired_origin INTEGER,
                     indel_size REAL,
                     sequence TEXT,
+                    paired_sequence TEXT,
                     reference TINYTEXT
                 )
                 """)
@@ -82,7 +86,9 @@ def setUpDbTables(conn, reset = False):
                     anchor_size INTEGER,
                     anchor_ambiguity INTEGER,
                     max_diag_deviation INTEGER,
+                    max_diag_deviation_percent INTEGER,
                     max_nmw_area INTEGER,
+                    nmw_area INTEGER,
                     run_time REAL,
                     mapping_quality REAL,
                     approach TINYTEXT
@@ -134,19 +140,26 @@ def setUpDbTables(conn, reset = False):
 
 def insertQueries(conn, queries_list):
     c = conn.cursor()
-    c.executemany("""
-                    INSERT INTO samples 
-                    (
-                        num_mutation,
-                        num_indels,
-                        original_size,
-                        origin,
-                        indel_size,
-                        sequence,
-                        reference
-                    )
-                    VALUES (?,?,?,?,?,?,?)
-                    """, queries_list)
+    insert_str = """
+        INSERT INTO samples 
+        (
+            num_mutation,
+            num_indels,
+            original_size,
+            origin,
+            paired_origin,
+            indel_size,
+            sequence,
+            paired_sequence,
+            reference
+        ) 
+        """
+
+    if len(queries_list[0]) == 7:
+        insert_str += "VALUES (?,?,?,?,-1,?,?,\"\",?)"
+    else:
+        insert_str += "VALUES (?,?,?,?,?,?,?,?,?)"
+    c.executemany(insert_str, queries_list)
     conn.commit()
 
 def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size = None, give_orig_pos = False, give_orig_size = False):
@@ -227,14 +240,16 @@ def submitResults(db_name, results_list):
                             anchor_size,
                             anchor_ambiguity,
                             max_diag_deviation,
+                            max_diag_deviation_percent,
                             max_nmw_area,
+                            nmw_area,
                             run_time,
                             mapping_quality,
                             approach
                         )
-                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,0,?,?,?)
+                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,0,0,0,?,?,?)
                         """, results_list)
-    else: # len == 18
+    else: # len == 20
         c.executemany("""
                         INSERT INTO results 
                         (
@@ -252,12 +267,14 @@ def submitResults(db_name, results_list):
                             anchor_size,
                             anchor_ambiguity,
                             max_diag_deviation,
+                            max_diag_deviation_percent,
                             max_nmw_area,
+                            nmw_area,
                             mapping_quality,
                             run_time,
                             approach
                         )
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                         """, results_list)
     conn.commit()
 
@@ -310,7 +327,9 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.anchor_size,
                                 results.anchor_ambiguity,
                                 results.max_diag_deviation,
+                                results.max_diag_deviation_percent,
                                 results.max_nmw_area,
+                                results.nmw_area,
                                 samples.original_size
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id
@@ -600,6 +619,66 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
         operator.sub, nuc_distrib_count_mod, nuc_distrib_count_orig), [1./float(sum(nuc_distrib_count_orig))]*5)))
     print("total amount: ", sum(nuc_distrib_count_orig))
 #function
+
+def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
+    print("setting up db...")
+    conn = sqlite3.connect(db_name)
+    setUpDbTables(conn, True)
+    size = 0
+    chrom = []
+    for i in range(1,23):
+        chrom.append("chr" + str(i) + ".fna")
+    chrom.append("chrX.fna")
+    chrom.append("chrY.fna")
+    os.system("mkdir .temp_art")
+    print("done")
+    print("running simulator...")
+    for in_file in chrom:
+        print(in_file)
+        command = "~/art_bin_MountRainier/"
+        if technology == "HS25":
+            size = 1000
+            command += "art_illumina -ss HS25 -sam -i /mnt/ssd0/chrom/human/" + in_file + " -l " + str(size)
+            if paired:
+                command += " -p -m 200 -s 10"
+            command += " -q -c " + str(amount) + " -o .temp_art/" + in_file
+
+        os.system(command)
+    print("done")
+    print("extracting sequences...")
+    genome = "/mnt/ssd0/genome/human"
+    pack = Pack()
+    pack.load(genome)
+
+    origin = 0
+    first = True
+    sequence = ""
+    sequences = []
+    for in_file in chrom:
+        print(in_file)
+        with open(".temp_art/" + in_file + ".sam", "r") as csv_file:
+            reader = csv.reader(csv_file, delimiter='\t')
+            skip = 3
+            for row in reader:
+                if skip > 0:
+                    skip -= 1
+                    continue
+                if paired:
+                    if first:
+                        origin = pack.start_of_sequence(row[2]) + int(row[3])
+                        sequence = row[9]
+                    else:
+                        sequences.append( [0,0,size,origin,pack.start_of_sequence(row[2]) + int(row[3]) - 1,0,sequence,row[9],genome] )
+                    first = not first
+                else:
+                    sequences.append( [0,0,size,pack.start_of_sequence(row[2]) + int(row[3]) - 1,0,row[9],genome] )
+
+    os.system("rm -r .temp_art/")
+    print("done")
+    print("commiting...")
+    insertQueries(conn, sequences)
+    print("done")
+
 
 
 db_name = "/mnt/ssd1/alignmentSamples.db"
