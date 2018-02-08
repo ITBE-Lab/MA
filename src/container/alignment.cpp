@@ -68,7 +68,7 @@ void EXPORTED Alignment::makeLocal()
                 iScoreCurr += iMatch * std::get<1>(data[index]);
                 break;
         }//switch
-        if(iScoreCurr <= 0)
+        if(iScoreCurr < 0)
         {
             iScoreCurr = 0;
             iLastStart = index+1;

@@ -114,7 +114,9 @@ namespace libMA
 		ContainerVector(std::initializer_list<std::shared_ptr<Container>> init)
 			:
 			vector(init)
-		{}//initializer list constructor
+		{
+            contentType = front()->getType();
+        }//initializer list constructor
 
 		template< class InputIt >
 		ContainerVector(InputIt xBegin, InputIt xEnd

@@ -8,6 +8,12 @@
 #include "module/smith_waterman.h"
 using namespace libMA;
 
+
+extern int iGap;
+extern int iExtend;
+extern int iMatch;
+extern int iMissMatch;
+
 ContainerVector SMW::getInputType() const
 {
     return ContainerVector{
@@ -96,7 +102,7 @@ std::shared_ptr<Container> SMW::execute(
 
     // 1. Prepare the SW parameter set ...
     SmithWatermanParamaterSet<int16_t> xSWparameterSet
-    (    iMatch, // score for match (must be positive)
+    (   iMatch, // score for match (must be positive)
         -iMissMatch, // score for mismatch (must be negative)
         iGap, // penalty for gap open ("gap" means insertion or deletion)
         iExtend, // penalty for gap extension
@@ -142,10 +148,10 @@ void demoCode()
 
     // 1. Prepare the SW parameter set ...
     SmithWatermanParamaterSet<int16_t> xSWparameterSet
-    (    10, // score for match (must be positive)
-        -3, // score for mismatch (must be negative)
-        4, // penalty for gap open ("gap" means insertion or deletion)
-        1, // penalty for gap extension
+    (   iMatch, // score for match (must be positive)
+        -iMissMatch, // score for mismatch (must be negative)
+        iGap, // penalty for gap open ("gap" means insertion or deletion)
+        iExtend, // penalty for gap extension
         xReference.uxAlphabetSize() // alphabet size of input
     );
     

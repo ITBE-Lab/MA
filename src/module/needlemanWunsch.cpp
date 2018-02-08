@@ -124,9 +124,9 @@ void needlemanWunsch(
 
     s[0][0] = 0;
     dir[0][0] = 1;
-    s[1][0] = -iGap;
+    s[1][0] = - (iGap + iExtend);
     dir[1][0] = 2;
-    s[0][1] = -iGap;
+    s[0][1] = - (iGap + iExtend);
     dir[0][1] = 3;
     for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
     {
@@ -147,7 +147,7 @@ void needlemanWunsch(
             if(dir[uiI - 1][uiJ] == 2)
                 newScore = s[uiI - 1][uiJ] - iExtend;
             else
-                newScore = s[uiI - 1][uiJ] - iGap;
+                newScore = s[uiI - 1][uiJ] - (iGap + iExtend);
             s[uiI][uiJ] = newScore;
             dir[uiI][uiJ] = 2;
 
@@ -155,7 +155,7 @@ void needlemanWunsch(
             if(dir[uiI][uiJ - 1] == 3)
                 newScore = s[uiI][uiJ - 1] - iExtend;
             else
-                newScore = s[uiI][uiJ - 1] - iGap;
+                newScore = s[uiI][uiJ - 1] - (iGap + iExtend);
             // for the first alignment we dont want to have a malus for an
             // deletion of the reference at the beginning
             if(fromQuery == 0 && uiI == toQuery-fromQuery)
@@ -313,21 +313,19 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     }
 
     //create the actual alignment
-    nucSeqIndex endOfLastSeedQuery = 0;
-    nucSeqIndex endOfLastSeedReference = 0;
+    nucSeqIndex endOfLastSeedQuery = pSeeds->front().end();
+    nucSeqIndex endOfLastSeedReference = pSeeds->front().end_ref() - beginRef;
 
-    endOfLastSeedQuery = pSeeds->front().start();
+    pRet->append(MatchType::seed, pSeeds->front().size());
+    bool bSkip = true;
     for(Seed& rSeed : *pSeeds)
     {
-        needlemanWunsch(
-                pQuery,
-                pRef,
-                endOfLastSeedQuery,
-                rSeed.start(),
-                endOfLastSeedReference,
-                rSeed.start_ref() - beginRef,
-                pRet
-            );
+        //skip the first seed
+        if(bSkip)
+        {
+            bSkip = false;
+            continue;
+        }//if
         nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start();
         if(rSeed.start() > endOfLastSeedQuery)
             ovQ = 0;
@@ -341,6 +339,15 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         )//DEBUG
         if(len > overlap)
         {
+            needlemanWunsch(
+                    pQuery,
+                    pRef,
+                    endOfLastSeedQuery,
+                    rSeed.start(),
+                    endOfLastSeedReference,
+                    rSeed.start_ref() - beginRef,
+                    pRet
+                );
             if(ovQ > ovR)
                 pRet->append(MatchType::deletion, ovQ - ovR);
             DEBUG_2(
@@ -370,11 +377,11 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                 for(nucSeqIndex i = 0; i < len - overlap; i++)
                     std::cout << "m";
             )//DEBUG_2
+            if(rSeed.end() > endOfLastSeedQuery)
+                endOfLastSeedQuery = rSeed.end();
+            if(rSeed.end_ref() > endOfLastSeedReference + beginRef)
+                endOfLastSeedReference = rSeed.end_ref() - beginRef;
         }//if
-        if(rSeed.end() > endOfLastSeedQuery)
-            endOfLastSeedQuery = rSeed.end();
-        if(rSeed.end_ref() > endOfLastSeedReference + beginRef)
-            endOfLastSeedReference = rSeed.end_ref() - beginRef;
     }//for
 
     assert(std::get<0>(pRet->data.front()) == MatchType::seed);

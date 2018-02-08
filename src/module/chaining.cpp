@@ -11,7 +11,7 @@ ContainerVector Chaining::getInputType() const
 
 std::shared_ptr<Container> Chaining::getOutputType() const
 {
-    return std::shared_ptr<Container>(new Seeds());
+    return std::shared_ptr<Container>(new ContainerVector(std::shared_ptr<Container>(new Seeds())));
 }//function
 
 
@@ -23,12 +23,12 @@ std::shared_ptr<Container> Chaining::execute(
 
     //take care of the two special cases
     if(pSeeds->size() == 0)
-        return std::shared_ptr<Seeds>(new Seeds());
+        return std::shared_ptr<Container>(new ContainerVector{std::shared_ptr<Seeds>(new Seeds())});
     if(pSeeds->size() == 1)
     {
         std::shared_ptr<Seeds> ret = std::shared_ptr<Seeds>(new Seeds());
         ret->push_back( pSeeds->front() );
-        return ret;
+        return std::shared_ptr<Container>(new ContainerVector{ret});
     }//if
 
     //normal case where we have >= 2 seeds and actually need to make a decision on what to keep.
@@ -218,10 +218,22 @@ std::shared_ptr<Container> Chaining::execute(
         pRet->push_back(bestChain->s);
         bestChain = bestChain->pred;
     }//while
+    
+    //seeds need to be sorted for the following steps
+    std::sort(
+            pRet->begin(), pRet->end(),
+            [](const Seed& xA, const Seed& xB)
+            {
+                if(xA.start_ref() == xB.start_ref())
+                    return xA.start() < xB.start();
+                return xA.start_ref() < xB.start_ref();
+            }//lambda
+        );//sort function call
+    
     DEBUG(
         std::cout << "done" << std::endl;
     )
-    return pRet;
+    return std::shared_ptr<Container>(new ContainerVector{pRet});
 }//function
 
 void exportChaining()
@@ -231,19 +243,7 @@ void exportChaining()
         Chaining, 
         boost::python::bases<Module>,
         std::shared_ptr<Chaining>
-        >(
-        "Chaining",
-        "Uses chaining to remove contradicting "
-        "matches within one strip of consideration.\n"
-        "\n"
-        "Execution:\n"
-        "    Expects query, ref, strip_vec as input.\n"
-        "        query: the query as NucSeq\n"
-        "        ref: the reference sequence as Pack\n"
-        "        strip_vec: the areas that shall be evaluated as StripOfConsiderationVector\n"
-        "    returns strip_vec.\n"
-        "        strip_vec: the evaluated areas\n"
-    );
+        >("Chaining");
     boost::python::implicitly_convertible< 
         std::shared_ptr<Chaining>,
         std::shared_ptr<Module> 

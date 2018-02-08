@@ -341,7 +341,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     //perform the line sweep algorithm on the right shadows
     linesweep(vShadows, pSeeds);
 
-    //shadows need to be sorted for the following steps
+    //seeds need to be sorted for the following steps
     std::sort(
             pSeeds->begin(), pSeeds->end(),
             [](const Seed& xA, const Seed& xB)
