@@ -222,12 +222,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 {
                     //if so we want to replace the old maxima
                     xMaxima.pop_back();
-                    xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
+                    xMaxima.push_back(std::make_tuple(uiCurrScore * pow(fPenalty, (double)uiCurrEle), xStripStart));
                 }//if
             }//if
             else
                 //save the SOC
-                xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
+                xMaxima.push_back(std::make_tuple(uiCurrScore * pow(fPenalty, (double)uiCurrEle), xStripStart));
         }//if
         //move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         assert(uiCurrScore >= xStripStart->getValue());
@@ -286,7 +286,7 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<unsigned int, unsigned int>())
+        .def(boost::python::init<unsigned int, unsigned int, double>())
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
         .def_readwrite("num_strips", &StripOfConsideration::numStrips)
     ;

@@ -363,6 +363,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                         SELECT 
                             results.score,
                             results.result_start,
+                            results.result_end,
                             samples.origin,
                             samples.num_mutation,
                             samples.num_indels,
@@ -376,8 +377,9 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
 
 
 min_accuracy = 100
-def near(index, index_2):
-    return index + min_accuracy > index_2 and index - min_accuracy < index_2
+def near(start, start_2, end, end_2):
+    max_d = 0#10000
+    return end_2 + max_d >= start and start_2 - max_d <= start
 
 def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size, 
         indel_size, reference=None):
@@ -401,9 +403,9 @@ def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size
         results = getResults(db_name, approach, size, indel_size, reference)
 
         # fill in the matrix
-        for score, result_start, original_start, num_mutation, num_indels in results:
+        for score, result_start, result_end, original_start, num_mutation, num_indels in results:
             samplesMatrix[num_mutation][num_indels] += 1
-            if near(original_start, result_start):
+            if near(original_start, result_start, original_start+size, result_end):
                 accurateMatrix[num_mutation][num_indels] += 1
 
         # divide the matrices
@@ -413,7 +415,7 @@ def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size
 
         # plot results
         color_mapper = LinearColorMapper(palette="Viridis256", low=0, high=1)
-        plot = figure(title="accuracy " + aligner_desc[index],
+        plot = figure(title="accuracy " + approach,
                 x_range=(0,max_indels), y_range=(0,size),
                 x_axis_label='num indels', y_axis_label='num mutations'
             )

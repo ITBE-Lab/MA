@@ -1,3 +1,6 @@
 {
-    "python.pythonPath": "C:\\ProgramData\\Miniconda3\\envs\\py27\\python.exe"
+    "python.pythonPath": "C:\\Program Files\\Python36\\python.exe",
+    "files.associations": {
+        "memory": "cpp"
+    }
 }

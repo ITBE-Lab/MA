@@ -49,7 +49,7 @@ def light_spec_approximation(x):
     #gamma
     m = .8
 
-    return (i*r**m,i*g**m,i*b**m)
+    return (i*r**m, i*g**m, i*b**m)
 
 def heatmap_palette(scheme, num_colors):
     def format(rgb):
@@ -61,13 +61,6 @@ def heatmap_palette(scheme, num_colors):
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
 human_genome = "/mnt/ssd0/genome/human"
-
-
-def near(start, start_2, end, end_2):
-    max_d = 0#10000
-    return end_2 + max_d >= start and start_2 - max_d <= start
-
-
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -82,14 +75,14 @@ def chunks(l, n):
 #createSampleQueries(human_genome, db_name, 1000, 100, 256)
 
 def test_my_approach(
-            db_name,
-            reference,
-            name,
-            max_hits=100,
-            num_strips=10, 
-            complete_seeds = False,
-            use_chaining = False
-        ):
+        db_name,
+        reference,
+        name,
+        max_hits=100,
+        num_strips=10,
+        complete_seeds=False,
+        use_chaining=False
+    ):
     print("collecting samples (" + name + ") ...")
 
     all_queries = getNewQueries(db_name, name, reference, give_orig_pos=True, give_orig_size=True)
@@ -118,10 +111,10 @@ def test_my_approach(
     # break samples into chunks of 2^15
     for index, queries, in enumerate(chunks(all_queries, extract_size)):
         print("extracting", len(queries), "samples", index, "/",
-            len(all_queries)/extract_size, "(", name, ") ...")
+              len(all_queries)/extract_size, "(", name, ") ...")
 
         print("setting up (", name, ") ...")
-        
+
         ref_pack = Pack()
         ref_pack.load(reference)
         ref_pledge = Pledge(Pack())
@@ -134,14 +127,14 @@ def test_my_approach(
 
         #modules
         seeding = BinarySeeding(not complete_seeds)
-        soc = StripOfConsideration(max_hits, num_strips)
+        soc = StripOfConsideration(max_hits, num_strips, .96)
         ex = ExtractAllSeeds(max_hits)
         couple = ExecOnVec(LinearLineSweep())
         chain = Chaining()
         optimal = ExecOnVec(NeedlemanWunsch())
         mappingQual = MappingQuality()
 
-        pledges = [ [], [], [], [], [], [] ]
+        pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
         for data in queries:
             sequence, sample_id, origin_pos, orig_size = data
@@ -149,30 +142,30 @@ def test_my_approach(
             pledges[0][-1].set(NucSeq(sequence))
             pledges[0][-1].get().name = str(sample_id)
             pledges[1].append(seeding.promise_me(
-                    fm_pledge,pledges[0][-1]
-                ))
+                fm_pledge, pledges[0][-1]
+            ))
             if use_chaining:
                 pledges[2].append(ex.promise_me(
-                        pledges[1][-1], fm_pledge
-                    ))
+                    pledges[1][-1], fm_pledge
+                ))
                 pledges[3].append(chain.promise_me(
-                        pledges[2][-1]
-                    ))
+                    pledges[2][-1]
+                ))
             else:
                 pledges[2].append(soc.promise_me(
-                        pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
-                    ))
+                    pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
+                ))
                 pledges[3].append(couple.promise_me(
-                        pledges[2][-1]
-                    ))
+                    pledges[2][-1]
+                ))
             pledges[4].append(optimal.promise_me(
-                    pledges[3][-1], pledges[0][-1], ref_pledge
-                ))
+                pledges[3][-1], pledges[0][-1], ref_pledge
+            ))
             pledges[5].append(mappingQual.promise_me(
-                    pledges[0][-1], pledges[4][-1]
-                ))
+                pledges[0][-1], pledges[4][-1]
+            ))
 
-            optimal_alignment_in.append( (Pledge(NucSeq()),Pledge(NucSeq())) )
+            optimal_alignment_in.append((Pledge(NucSeq()), Pledge(NucSeq())))
 
         smw = SMW()
         optimal_alignment_out = []
@@ -188,14 +181,18 @@ def test_my_approach(
         for i, query_ in enumerate(queries):
             alignment = pledges[-1][i].get()[0]
             query = query_[0]
-            optimal_alignment_in[i][0].set(NucSeq(query[alignment.begin_on_query : alignment.end_on_query]))
-            optimal_alignment_in[i][1].set(ref_pack.extract_from_to(alignment.begin_on_ref(), alignment.end_on_ref()))
+            optimal_alignment_in[i][0].set(
+                NucSeq(query[alignment.begin_on_query : alignment.end_on_query])
+            )
+            optimal_alignment_in[i][1].set(
+                ref_pack.extract_from_to(alignment.begin_on_ref(), alignment.end_on_ref())
+            )
         print("computing optimal (", name, ") ...")
         Pledge.simultaneous_get(optimal_alignment_out, 32)
 
         print("extracting results (", name, ") ...")
         result = []
-        for i,alignments in enumerate(pledges[-1]):
+        for i, alignments in enumerate(pledges[-1]):
             alignment = alignments.get()[0]
             alignment2 = None
             if len(alignments.get()) > 1:
@@ -217,8 +214,8 @@ def test_my_approach(
             runtimes["optimal alignment"] += pledges[4][i].exec_time
             total_time += pledges[4][i].exec_time
 
-            max_nmw_area=0
-            nmw_area=0
+            max_nmw_area = 0
+            nmw_area = 0
             max_diag_deviation_percent = 0.0
             max_diag_deviation = 0
             curr_diag_deviation = 0
@@ -230,28 +227,33 @@ def test_my_approach(
 
 
             if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
-                print("WARNING: alignment computed better than optimal score", alignment.get_score(), optimal_alignment.get_score())
+                print("WARNING: alignment computed better than optimal score",
+                      alignment.get_score(), optimal_alignment.get_score()
+                )
                 query = queries[i][0]
                 AlignmentPrinter().execute(
-                        alignment, 
-                        NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
-                        ref_pack
-                    )
+                    alignment, 
+                    NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
+                    ref_pack
+                )
             if optimal_alignment != None and alignment.get_score() < optimal_alignment.get_score():
-                print("got worse than optimal score", alignment.get_score(), optimal_alignment.get_score())
+                print("got worse than optimal score", alignment.get_score(),
+                      optimal_alignment.get_score()
+                )
                 query = queries[i][0]
                 AlignmentPrinter().execute(
-                        alignment, 
-                        NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
-                        ref_pack
-                    )
+                    alignment, 
+                    NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
+                    ref_pack
+                )
 
             for pos in range(len(alignment)):
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
                     seed_coverage += 1.0
                     nmw = NeedlemanWunsch()
-                    if gap_size > 100 and nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open + nmw.penalty_gap_extend * gap_size: 
+                    if (gap_size > 100 and nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open +
+                        nmw.penalty_gap_extend * gap_size): 
                         if float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation_percent:
                             max_diag_deviation_percent = float(abs(curr_max_diag_deviation)) / gap_size
                     if abs(curr_max_diag_deviation) > max_diag_deviation:
@@ -371,6 +373,7 @@ def test_my_approach(
 
 
 def test_my_approaches_rele(db_name):
+    """
     test_my_approach(db_name, human_genome, "non-enclosed pairs", seg=BinarySeeding(True), num_anchors=200, nmw_give_up=20000)
 
     test_my_approach(db_name, human_genome, "non-enclosed", seg=BinarySeeding(False), num_anchors=200, nmw_give_up=20000)
@@ -384,6 +387,7 @@ def test_my_approaches_rele(db_name):
     seg2 = BinarySeeding(False)
     seg2.blasrExtension = True
     test_my_approach(db_name, human_genome, "BLASR", seg=seg2, num_anchors=200, nmw_give_up=20000)
+    """
 
 def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA 1")
@@ -1065,7 +1069,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     save(gridplot(plots))
 
 
-
+"""
 def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 10):
     output_file(out + ".html")
     plots = []
@@ -1161,9 +1165,7 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
                                                 clamp(int(blue * 255)))
 
         def heatmap_palette(num_colors):
-            """
-            Color palette for visualization.
-            """
+            #Color palette for visualization.
             return [rgb(-1, 1, x) for x in np.linspace(-1, 1, num_colors)]
 
         max_ = -100000
@@ -1186,10 +1188,7 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
         if log:
             color_mapper = LogColorMapper(palette=heatmap_palette(255), low=-range_, high=range_)
 
-        tick_formater = FuncTickFormatter(code="""
-            return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
-                    Math.max(Math.floor( (tick)/2),0)"""
-            )
+        tick_formater = FuncTickFormatter(code="return Math.max(Math.floor( (tick+1)/2),0) + '; ' + Math.max(Math.floor( (tick)/2),0)")
         #tick_formater = FuncTickFormatter(code="return 'a')
 
         plot = figure(title=title,
@@ -1224,6 +1223,7 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
         plots.append(avg_seeds)
 
     save(row(plots))
+"""
 
 def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     def get_all_queries(l):

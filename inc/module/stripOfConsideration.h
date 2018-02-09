@@ -23,8 +23,10 @@ namespace libMA
     public:
         /// @brief Maximum ambiguity for a seed to be considered.
         unsigned int uiMaxAmbiguity = 500;
-        /// #brief the amount of SOCs to create
+        /// @brief the amount of SOCs to create
         unsigned int numStrips = 10;
+        /// @brief penalty for multiple seeds
+        double fPenalty = .95;
 
         /**
         * @brief skip seeds with too much ambiguity
@@ -54,11 +56,13 @@ namespace libMA
 
         StripOfConsideration( 
                 unsigned int uiMaxAmbiguity,
-                unsigned int numStrips
+                unsigned int numStrips,
+                double fPenalty
             )
                 :
             uiMaxAmbiguity(uiMaxAmbiguity),
-            numStrips(numStrips)
+            numStrips(numStrips),
+            fPenalty(fPenalty)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

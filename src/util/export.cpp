@@ -64,7 +64,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
     std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs));
-    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, uiNumSOC));
+    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, uiNumSOC, .95));
     std::shared_ptr<Module> pCouple(new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep())));
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(

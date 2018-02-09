@@ -4,7 +4,7 @@
 # @brief Implements @ref MA.set_up_aligner "set_up_aligner".
 # @author Markus Schmidt
 
-from .__init__ import *
+from .aligner import *
 
 ##
 # @brief Setup the @ref comp_graph_sec "computational graph" 
@@ -43,7 +43,7 @@ class Aligner:
         splitter = Splitter(self.query_vec_pledge)
         lock = Lock(NucSeq())
         seeding = BinarySeeding(complete_seeds)
-        soc = StripOfConsideration(max_hits, num_strips)
+        soc = StripOfConsideration(max_hits, num_strips, .95)
         couple = ExecOnVec(LinearLineSweep())
         optimal = ExecOnVec(NeedlemanWunsch())
         mappingQual = MappingQuality()
