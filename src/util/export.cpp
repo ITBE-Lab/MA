@@ -53,7 +53,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     double fPairedStd,
     double dPairedU,
     bool bSeedSetPairs,
-    unsigned int uiReportNBest
+    unsigned int uiReportNBest,
+    bool bLocal
 )
 {
     if(uiNumSOC < uiReportNBest)
@@ -64,11 +65,11 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
     std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs));
-    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, uiNumSOC, .95));
+    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, uiNumSOC));
     std::shared_ptr<Module> pCouple(new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep())));
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
-        std::shared_ptr<Module>(new NeedlemanWunsch()), true, uiReportNBest));
+        std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), true, uiReportNBest));
     std::shared_ptr<Module> pMapping(new MappingQuality());
 
     //modules for the paired alignment

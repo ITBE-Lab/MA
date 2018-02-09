@@ -212,7 +212,8 @@ int main(int argc, char*argv[])
                     fPairedStd,
                     dPairedU,
                     sSeedSet != "complete",
-                    uiReportNBest
+                    uiReportNBest,
+                    !vm.count("global")
                 );
                 //run the alignment
                 Pledge::simultaneousGet(aGraphSinks, true);

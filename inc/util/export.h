@@ -166,7 +166,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     double fPairedStd,
     double dPairedU,
     bool bSeedSetPairs,
-    unsigned int uiReportNBest
+    unsigned int uiReportNBest,
+    bool bLocal
 );
 
 #endif

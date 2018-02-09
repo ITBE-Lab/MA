@@ -366,7 +366,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                             results.result_end,
                             samples.origin,
                             samples.num_mutation,
-                            samples.num_indels,
+                            samples.num_indels
                         FROM samples
                         JOIN results ON results.sample_id = samples.sample_id
                         AND results.approach == ?

@@ -81,7 +81,8 @@ def test_my_approach(
         max_hits=100,
         num_strips=10,
         complete_seeds=False,
-        use_chaining=False
+        use_chaining=False,
+        local=False
     ):
     print("collecting samples (" + name + ") ...")
 
@@ -127,11 +128,11 @@ def test_my_approach(
 
         #modules
         seeding = BinarySeeding(not complete_seeds)
-        soc = StripOfConsideration(max_hits, num_strips, .96)
+        soc = StripOfConsideration(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         couple = ExecOnVec(LinearLineSweep())
         chain = Chaining()
-        optimal = ExecOnVec(NeedlemanWunsch())
+        optimal = ExecOnVec(NeedlemanWunsch(local))
         mappingQual = MappingQuality()
 
         pledges = [[], [], [], [], [], []]
@@ -229,20 +230,20 @@ def test_my_approach(
             if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score",
                       alignment.get_score(), optimal_alignment.get_score()
-                )
+                     )
                 query = queries[i][0]
                 AlignmentPrinter().execute(
-                    alignment, 
+                    alignment,
                     NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
                     ref_pack
                 )
             if optimal_alignment != None and alignment.get_score() < optimal_alignment.get_score():
                 print("got worse than optimal score", alignment.get_score(),
                       optimal_alignment.get_score()
-                )
+                     )
                 query = queries[i][0]
                 AlignmentPrinter().execute(
-                    alignment, 
+                    alignment,
                     NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
                     ref_pack
                 )
@@ -251,11 +252,13 @@ def test_my_approach(
                 match_type = alignment[pos]
                 if match_type == MatchType.seed:
                     seed_coverage += 1.0
-                    nmw = NeedlemanWunsch()
+                    nmw = NeedlemanWunsch(False)
                     if (gap_size > 100 and nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open +
-                        nmw.penalty_gap_extend * gap_size): 
-                        if float(abs(curr_max_diag_deviation)) / gap_size > max_diag_deviation_percent:
-                            max_diag_deviation_percent = float(abs(curr_max_diag_deviation)) / gap_size
+                            nmw.penalty_gap_extend * gap_size):
+                        if (float(abs(curr_max_diag_deviation)) / gap_size >
+                                max_diag_deviation_percent):
+                            max_diag_deviation_percent = float(abs(curr_max_diag_deviation))
+                            max_diag_deviation_percent /= gap_size
                     if abs(curr_max_diag_deviation) > max_diag_deviation:
                         max_diag_deviation = abs(curr_max_diag_deviation)
                     curr_diag_deviation = 0
@@ -309,7 +312,8 @@ def test_my_approach(
                 seed_coverage_soc /= len(pledges[0][i].get())
             #run over all discovered seeds and count the covered irelevant ones
             for seed in discovered_seeds:
-                if not (seed.start_ref >= queries[i][2] and seed.start_ref + seed.size <= queries[i][2] + queries[i][3]):
+                if not (seed.start_ref >= queries[i][2] and
+                        seed.start_ref + seed.size <= queries[i][2] + queries[i][3]):
                     num_irelevant_seeds += 1
                     covered = True
                     for pos in range(seed.start, seed.start + seed.size):
@@ -326,46 +330,48 @@ def test_my_approach(
                 score2 = alignment2.get_score()
 
             result.append(
-                    (
-                        sample_id,
-                        alignment.get_score(),
-                        score2,
-                        sc2,
-                        alignment.begin_on_ref(),
-                        alignment.end_on_ref(),
-                        pledges[1][i].get().num_seeds(fm_index, max_hits),
-                        alignment.stats.index_of_strip,
-                        seed_coverage_soc,
-                        seed_coverage,
-                        alignment.stats.num_seeds_in_strip,
-                        alignment.stats.anchor_size,
-                        alignment.stats.anchor_ambiguity,
-                        max_diag_deviation,
-                        max_diag_deviation_percent,
-                        max_nmw_area,
-                        nmw_area,
-                        alignment.mapping_quality,
-                        total_time,
-                        name
-                    )
+                (
+                    sample_id,
+                    alignment.get_score(),
+                    score2,
+                    sc2,
+                    alignment.begin_on_ref(),
+                    alignment.end_on_ref(),
+                    pledges[1][i].get().num_seeds(fm_index, max_hits),
+                    alignment.stats.index_of_strip,
+                    seed_coverage_soc,
+                    seed_coverage,
+                    alignment.stats.num_seeds_in_strip,
+                    alignment.stats.anchor_size,
+                    alignment.stats.anchor_ambiguity,
+                    max_diag_deviation,
+                    max_diag_deviation_percent,
+                    max_nmw_area,
+                    nmw_area,
+                    alignment.mapping_quality,
+                    total_time,
+                    name
                 )
+            )
         print("submitting results (", name, ") ...")
         submitResults(db_name, result)
 
     print("collected", num_irelevant_seeds,
-        "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
-        100*num_irelevant_seeds/num_seeds_total, "percent")
+          "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
+          100*num_irelevant_seeds/num_seeds_total, "percent")
     print("collected", num_covered_irelevant_seeds,
-        "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
-        "per alignment and", 100*num_covered_irelevant_seeds/num_seeds_total, "percent" )
+          "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
+          "per alignment and", 100*num_covered_irelevant_seeds/num_seeds_total, "percent")
     print("collected", num_seeds_total-num_irelevant_seeds, "relevant seeds")
     if num_soc_seeds > 0:
-        print("having", num_soc_seeds, "seeds in the strip of consideration, having", num_coupled_seeds, "seeds after coupling, thats", 100*(1-num_coupled_seeds/num_soc_seeds), "percent seeds discarded")
+        print("having", num_soc_seeds, "seeds in the strip of consideration, having",
+              num_coupled_seeds, "seeds after coupling, thats",
+              100*(1-num_coupled_seeds/num_soc_seeds), "percent seeds discarded")
     last = 1
     for ele in sorted(collect_ids):
         if ele != last:
             print("Missed sample with id:", last, "having:", ele)
-        last+=1
+        last += 1
     print("total runtimes:")
     for key, value in runtimes.items():
         print(value, "(", key, ")")
@@ -374,14 +380,16 @@ def test_my_approach(
 
 def test_my_approaches_rele(db_name):
     """
-    test_my_approach(db_name, human_genome, "non-enclosed pairs", seg=BinarySeeding(True), num_anchors=200, nmw_give_up=20000)
+    test_my_approach(db_name, human_genome, "non-enclosed pairs", seg=BinarySeeding(True),
+                     num_anchors=200, nmw_give_up=20000)
 
-    test_my_approach(db_name, human_genome, "non-enclosed", seg=BinarySeeding(False), num_anchors=200, nmw_give_up=20000)
+    test_my_approach(db_name, human_genome, "non-enclosed", seg=BinarySeeding(False),
+                     num_anchors=200, nmw_give_up=20000)
 
     #@todo BWA-MEM seeding technique
 
     seg = BinarySeeding(False)
-    seg.do16ntevery10ntExtension = True
+    seg.do16ntEvery10ntExtension = True
     test_my_approach(db_name, human_genome, "BOWTIE 2", seg=seg, num_anchors=200, nmw_give_up=20000)
 
     seg2 = BinarySeeding(False)
@@ -390,16 +398,16 @@ def test_my_approaches_rele(db_name):
     """
 
 def test_my_approaches(db_name):
-    clearResults(db_name, human_genome, "MA 1")
-    clearResults(db_name, human_genome, "MA 2")
-    clearResults(db_name, human_genome, "MA 1 chaining")
-    clearResults(db_name, human_genome, "MA 2 chaining")
+    #clearResults(db_name, human_genome, "MA 1")
+    #clearResults(db_name, human_genome, "MA 2")
+    #clearResults(db_name, human_genome, "MA 1 chaining")
+    #clearResults(db_name, human_genome, "MA 2 chaining")
 
     test_my_approach(db_name, human_genome, "MA 2", max_hits=100, num_strips=10, complete_seeds=True)
 
-    #test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=5, complete_seeds=False)
+    test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=5, complete_seeds=False)
 
-    test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
+    #test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
 
     #test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True)
 
@@ -597,7 +605,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             return d
 
         for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time in results:
-            nmw_total += nmw_area
+            if not nmw_area is None:
+                nmw_total += nmw_area
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
@@ -735,6 +744,13 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             print(approach, ":\tseed coverage loss:", 
             100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "percent")
         print(approach, ":\ttotal nmw area:", nmw_total)
+        def dict_sum(d):
+            total = 0
+            for x in d.values():
+                for y in x.values():
+                    total += y
+            return total
+        print(approach, ":\taverage accuracy:", 100*dict_sum(hits)/dict_sum(tries), "percent")
 
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
@@ -836,7 +852,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [] ]
+    plots = [ [], [] ]
     mapping_qual = []
     yax = True
     for approach_ in approaches:
@@ -889,37 +905,34 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             max_ = 0.0
             if len(d.keys()) == 0:
                 return None
-            else:
-                w_keys = sorted(d.keys())
-                h_keys = sorted(d[0].keys())
 
-                for x in w_keys:
-                    pic.append( [] )
-                    for y in h_keys:
-                        if x not in d or y not in d[x] or divideBy[x][y] == 0:
-                            pic[-1].append( float("nan") )
-                        else:
-                            pic[-1].append( d[x][y] / divideBy[x][y] )
-                            if pic[-1][-1] < min_:
-                                min_ = pic[-1][-1]
-                            if pic[-1][-1] > max_:
-                                max_ = pic[-1][-1]
+            for x in range(0,401,20):
+                pic.append( [] )
+                for y in range(0,20,2):
+                    if x not in d or y not in d[x] or divideBy[x][y] == 0:
+                        pic[-1].append( float("nan") )
+                    else:
+                        pic[-1].append( d[x][y] / divideBy[x][y] )
+                        if pic[-1][-1] < min_:
+                            min_ = pic[-1][-1]
+                        if pic[-1][-1] > max_:
+                            max_ = pic[-1][-1]
 
-                for _ in range(ignore_max_n):
-                    max_x = 0
-                    max_y = 0
-                    for x, row in enumerate(pic):
-                        for y, p in enumerate(row):
-                            if p > pic[max_x][max_y]:
-                                max_x = x
-                                max_y = y
-                    pic[max_x][max_y] = float('nan')
-                if ignore_max_n > 0:
-                    max_ = 0
-                    for row in pic:
-                        for p in row:
-                            if p > max_:
-                                max_ = p
+            for _ in range(ignore_max_n):
+                max_x = 0
+                max_y = 0
+                for x, row in enumerate(pic):
+                    for y, p in enumerate(row):
+                        if p > pic[max_x][max_y]:
+                            max_x = x
+                            max_y = y
+                pic[max_x][max_y] = float('nan')
+            if ignore_max_n > 0:
+                max_ = 0
+                for row in pic:
+                    for p in row:
+                        if p > max_:
+                            max_ = p
 
             if set_max is not None:
                 max_ = set_max
@@ -980,21 +993,21 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
 
             return plot
         if indel_size > 0:
-            avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, approach, set_max=1, set_min=0, xax=False, yax=yax)
-            avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
+            avg_hits = makePicFromDict(hits, 400, max_indel, tries, approach, set_max=1, set_min=0, yax=yax)
+            #avg_runtime = makePicFromDict(run_times, 400, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
             #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
-            avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, approach, yax=yax)
-            avg_rel = makePicFromDict(hits, max_mut, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
+            #avg_seeds = makePicFromDict(nums_seeds, 400, max_indel, tries, approach, yax=yax)
+            #avg_rel = makePicFromDict(hits, 400, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
             yax = False
 
             if not avg_hits is None:
                 plots[0].append(avg_hits)
-            if not avg_runtime is None:
-                plots[1].append(avg_runtime)
-            if not avg_seeds is None:
-                plots[2].append(avg_seeds)
-            if not avg_rel is None:
-                plots[3].append(avg_rel)
+            #if not avg_runtime is None:
+            #    plots[1].append(avg_runtime)
+            #if not avg_seeds is None:
+            #    plots[2].append(avg_seeds)
+            #if not avg_rel is None:
+            #    plots[3].append(avg_rel)
 
     plot = figure(title="BWA-pic",
             x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
@@ -1068,22 +1081,18 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
 
     save(gridplot(plots))
 
-
-"""
 def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 10):
-    output_file(out + ".html")
+    output_file(out)
     plots = []
 
     max_indel = 2*query_size/indel_size
     max_mut = query_size
 
     def get_data(db_name, approach, query_size, indel_size):
-        results = getResults(db_name, approach, query_size, indel_size)
+        results = getResults(db_name, approach, query_size, indel_size, human_genome)
         hits = {}
         tries = {}
-        run_times = {}
         scores = {}
-        nums_seeds = {}
 
         def init(d, x, y):
             if x not in d:
@@ -1092,22 +1101,18 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
                 d[x][y] = 0
             return d
 
-        for score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time in results:
+        for score, result_start, result_end, original_start, num_mutation, num_indels in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
-            run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
                 scores = init(scores, num_mutation, num_indels)
-            nums_seeds = init(nums_seeds, num_mutation, num_indels)
-            if near(result_start, original_start):
+            if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
             tries[num_mutation][num_indels] += 1
-            run_times[num_mutation][num_indels] += run_time
-            nums_seeds[num_mutation][num_indels] += num_seeds
             if not score is None:
                 scores[num_mutation][num_indels] += score
 
-        return (hits, tries, run_times, scores, nums_seeds)
+        return (hits, tries, scores)
 
     def convertToList(d, w, h, divideBy):
         pic = []
@@ -1139,14 +1144,8 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
     hits = sub(convertToList(l_1[0], max_indel, max_mut, l_1[1]),
             convertToList(l_2[0], max_indel, max_mut, l_2[1]))
 
-    run_times = sub(convertToList(l_1[2], max_indel, max_mut, l_1[1]),
+    scores = sub(convertToList(l_1[2], max_indel, max_mut, l_1[1]),
             convertToList(l_2[2], max_indel, max_mut, l_2[1]))
-
-    scores = sub(convertToList(l_1[3], max_indel, max_mut, l_1[1]),
-            convertToList(l_2[3], max_indel, max_mut, l_2[1]))
-
-    nums_seeds = sub(convertToList(l_1[4], max_indel, max_mut, l_1[1]),
-            convertToList(l_2[4], max_indel, max_mut, l_2[1]))
 
 
     def makePic(pic, w, h, title, log = False):
@@ -1209,21 +1208,15 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
     desc = approaches[0] + " - " + approaches[1]
 
     avg_hits = makePic(hits, max_mut, max_indel, "accuracy " + desc)
-    avg_runtime = makePic(run_times, max_mut, max_indel, "runtime " + desc)
     avg_score = makePic(scores, max_mut, max_indel, "score " + desc)
-    avg_seeds = makePic(nums_seeds, max_mut, max_indel, "num seeds " + desc)
 
     if not avg_hits is None:
         plots.append(avg_hits)
-    if not avg_runtime is None:
-        plots.append(avg_runtime)
     if not avg_score is None:
         plots.append(avg_score)
-    if not avg_seeds is None:
-        plots.append(avg_seeds)
 
     save(row(plots))
-"""
+
 
 def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     def get_all_queries(l):
@@ -1360,6 +1353,8 @@ exit()
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
 analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
+compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
 analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
 analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 exit()

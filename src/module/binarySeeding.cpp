@@ -612,7 +612,7 @@ void exportBinarySeeding()
 			"BinarySeeding",
 			boost::python::init<bool>()
 		)
-        .def_readwrite("do16ntevery10ntExtension", &BinarySeeding::do16ntevery10ntExtension)
+        .def_readwrite("do16ntEvery10ntExtension", &BinarySeeding::do16ntevery10ntExtension)
         .def_readwrite("blasrExtension", &BinarySeeding::blasrExtension)
 		;
 	boost::python::implicitly_convertible< 

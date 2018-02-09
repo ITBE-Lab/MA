@@ -2,10 +2,10 @@
 using namespace libMA;
 
 
-int iGap = 6;//50;
+int iGap = 6;
 int iExtend = 1;
-int iMatch = 1;//20;
-int iMissMatch = 4;//20;
+int iMatch = 1;
+int iMissMatch = 4;
 
 ContainerVector NeedlemanWunsch::getInputType() const
 {
@@ -24,8 +24,6 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
     return std::shared_ptr<Container>(new Alignment());
 }//function
 
-
-
 void needlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
@@ -33,9 +31,14 @@ void needlemanWunsch(
         nucSeqIndex toQuery,
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
-        std::shared_ptr<Alignment> pAlignment
+        std::shared_ptr<Alignment> pAlignment,
+        bool bNoGapAtBeginning = false,
+        bool bNoGapAtEnd = false
     )
 {
+    /*
+     * break conditions for actually empty areas
+     */
     assert(toQuery <= pQuery->length());
     assert(toRef <= pRef->length());
     if(toRef <= fromRef)
@@ -119,14 +122,28 @@ void needlemanWunsch(
     }//if
 #endif
 
+    /*
+     * beginning of the actual NW
+     */
     std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
     std::vector<std::vector<char>> dir(toQuery-fromQuery+1, std::vector<char>(toRef-fromRef+1));
 
+    /*
+     * initialization:
+     *      this part sets the scores for the last row and column (reverse order)
+     * 
+     * Note:
+     *      if we do not want a gap at the end since the alignment ends there we need to 
+     *      set the initial values along the reference to 0.
+     *      we do not want a complete global alignment,
+     *      merely a global alignment with respect to the query
+     */
     s[0][0] = 0;
     dir[0][0] = 1;
     s[1][0] = - (iGap + iExtend);
     dir[1][0] = 2;
-    s[0][1] = - (iGap + iExtend);
+    if(!bNoGapAtEnd)//see note above
+        s[0][1] = - (iGap + iExtend);
     dir[0][1] = 3;
     for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
     {
@@ -135,9 +152,24 @@ void needlemanWunsch(
     }//for
     for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
     {
-        s[0][uiI] = s[0][uiI - 1] - iExtend;
+        if(bNoGapAtEnd)//see note above
+            s[0][uiI] = 0;
+        else
+            s[0][uiI] = s[0][uiI - 1] - iExtend;
         dir[0][uiI] = 3;
     }//for
+    /*
+     * dynamic programming loop
+     * Note: 
+     *      we iterate in the reverse order on reference and query
+     *      so that the backtracking can be done in forward order
+     * 
+     * This works as follows:
+     *      for each cell compute the scores if resuling from an insertion deletion match/missmatch
+     *      in this order. Store the score from the insertion and overwrite the score with the del
+     *      match of missmatch score if any of them is higher. Also keep track of which direction
+     *      we came from in the dir matrix.
+     */
     for(nucSeqIndex uiI = 1; uiI < toQuery-fromQuery+1; uiI++)
     {
         for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef+1; uiJ++)
@@ -156,10 +188,6 @@ void needlemanWunsch(
                 newScore = s[uiI][uiJ - 1] - iExtend;
             else
                 newScore = s[uiI][uiJ - 1] - (iGap + iExtend);
-            // for the first alignment we dont want to have a malus for an
-            // deletion of the reference at the beginning
-            if(fromQuery == 0 && uiI == toQuery-fromQuery)
-                newScore = s[uiI][uiJ - 1];
             if(newScore > s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
@@ -180,6 +208,9 @@ void needlemanWunsch(
     }//for
 
     DEBUG_3(
+        /*
+        * sanity prints
+        */
         for(nucSeqIndex uiI = 0; uiI < toRef-fromRef+1; uiI++)
         {
             if(uiI == 0)
@@ -200,8 +231,26 @@ void needlemanWunsch(
         }//for
     )//DEBUG
 
+    /*
+     * backtracking
+     */
     nucSeqIndex iX = toQuery-fromQuery;
     nucSeqIndex iY = toRef-fromRef;
+    
+    /*
+    * if there is no gap cost for the beginning 
+    * we should start backtracking where the score is maximal
+    * along the reference
+    */
+    if(bNoGapAtBeginning)
+    {
+        for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef+1; uiJ++)
+            if(s[toQuery - iX][uiJ] > s[toQuery - iX][iY])
+                iY = uiJ;
+        for(nucSeqIndex uiJ = toRef-fromRef; uiJ > iY; uiJ--)
+            pAlignment->append(MatchType::deletion);
+    }//if
+
     while(iX > 0 || iY > 0)
     {
         if(dir[iX][iY] == 1)
@@ -223,6 +272,14 @@ void needlemanWunsch(
             iX--;
             iY--;
         }//if
+        else if(dir[iX][iY] == 2)
+        {
+            pAlignment->append(MatchType::insertion);
+            iX--;
+            DEBUG_2(
+                std::cout << "I";
+            )//DEBUG
+        }//if
         else if(dir[iX][iY] == 3)
         {
             pAlignment->append(MatchType::deletion);
@@ -231,14 +288,16 @@ void needlemanWunsch(
                 std::cout << "D";
             )//DEBUG        
         }//if
-        else
-        {
-            pAlignment->append(MatchType::insertion);
-            iX--;
-            DEBUG_2(
-                std::cout << "I";
-            )//DEBUG
-        }//if
+        else{
+            std::cerr << "WARNING: no direction set dynamic programming" << std::endl;
+        }//else
+
+        /*
+         * if there is no gap cost for the end 
+         * we should stop backtracking once we reached the end of the query
+         */
+        //if(bNoGapAtEnd && iX <= 0)
+        //    break;
     }//while
     DEBUG_2(
         std::cout << std::endl;
@@ -289,6 +348,17 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         if(endQuery < xSeed.end())
             endQuery = xSeed.end();
     }//for
+    if(!bLocal)
+    {
+        beginRef -= (nucSeqIndex)( pSeeds->front().start() * fRelativePadding );
+        if(beginRef > endRef)//check for underflow
+            beginRef = 0;
+        assert(pQuery->length() >= endQuery);
+        endRef += (nucSeqIndex)( (pQuery->length() - endQuery) * fRelativePadding );
+        if(beginRef > endRef)//check for overflow
+            endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
+        endQuery = pQuery->length();
+    }//if
     pRet = std::shared_ptr<Alignment>(
         new Alignment(beginRef, endRef, pSeeds->front().start(), endQuery)
     );
@@ -313,6 +383,21 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     }
 
     //create the actual alignment
+
+    if(!bLocal)
+    {
+        needlemanWunsch(
+            pQuery,
+            pRef,
+            0,
+            pSeeds->front().start(),
+            beginRef,
+            pSeeds->front().start_ref() - beginRef,
+            pRet,
+            true
+        );
+    }//else
+
     nucSeqIndex endOfLastSeedQuery = pSeeds->front().end();
     nucSeqIndex endOfLastSeedReference = pSeeds->front().end_ref() - beginRef;
 
@@ -384,13 +469,29 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         }//if
     }//for
 
-    assert(std::get<0>(pRet->data.front()) == MatchType::seed);
+    if(bLocal)
+        assert(std::get<0>(pRet->data.front()) == MatchType::seed);
     assert(std::get<0>(pRet->data.back()) == MatchType::seed);
 
     DEBUG_2(
         std::cout << std::endl;
     )
-    pRet->makeLocal();
+    if(bLocal)
+        pRet->makeLocal();
+    else
+    {
+        needlemanWunsch(
+            pQuery,
+            pRef,
+            endOfLastSeedQuery,
+            endQuery-1,
+            endOfLastSeedReference,
+            endRef-beginRef-1,
+            pRet,
+            false,
+            true
+        );
+    }//else
 
     return pRet;
 
@@ -404,23 +505,19 @@ void exportNeedlemanWunsch()
         boost::python::bases<Module>,
         std::shared_ptr<NeedlemanWunsch>
     >(
-        "NeedlemanWunsch"
+        "NeedlemanWunsch",
+        boost::python::init<bool>()
     )
         .def_readwrite("penalty_gap_open", &iGap)
         .def_readwrite("penalty_gap_extend", &iExtend)
         .def_readwrite("score_match", &iMatch)
         .def_readwrite("penalty_missmatch", &iMissMatch)
+        .def_readwrite("local", &NeedlemanWunsch::bLocal)
+        .def_readwrite("relative_padding", &NeedlemanWunsch::fRelativePadding)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<NeedlemanWunsch>,
         std::shared_ptr<Module> 
     >();
-
-    /*
-    boost::python::scope().attr("penalty_gap_open") = &iGap;
-    boost::python::scope().attr("penalty_gap_extend") = &iExtend;
-    boost::python::scope().attr("score_match") = &iMatch;
-    boost::python::scope().attr("penalty_missmatch") = &iMissMatch;
-    */
 
 }//function

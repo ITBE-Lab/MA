@@ -28,13 +28,17 @@ from .aligner import *
 # @ingroup module
 #
 class Aligner:
+    ##
+    # @brief sets up a new computational graph for a aligner
+    #
     def __init__(
-                self,
-                max_hits=100,
-                num_strips=5,
-                complete_seeds = False,
-                threads = 32
-            ):
+            self,
+            max_hits=100,
+            num_strips=5,
+            complete_seeds = False,
+            threads = 32,
+            local = False
+        ):
         self.query_vec_pledge = Pledge(ContainerVector(NucSeq()))
         self.reference_pledge = Pledge(Pack())
         self.fm_index_pledge = Pledge(FMIndex())
@@ -43,9 +47,9 @@ class Aligner:
         splitter = Splitter(self.query_vec_pledge)
         lock = Lock(NucSeq())
         seeding = BinarySeeding(complete_seeds)
-        soc = StripOfConsideration(max_hits, num_strips, .95)
+        soc = StripOfConsideration(max_hits, num_strips)
         couple = ExecOnVec(LinearLineSweep())
-        optimal = ExecOnVec(NeedlemanWunsch())
+        optimal = ExecOnVec(NeedlemanWunsch(local))
         mappingQual = MappingQuality()
 
         self.collector = Collector(NucSeq())
@@ -92,9 +96,15 @@ class Aligner:
 
             self.return_pledges.append(unlock_pledge)
 
+    ##
+    # @brief sets the reference
+    #
     def setRef(self, pack):
         self.reference_pledge.set(pack)
 
+    ##
+    # @brief sets the queries
+    #
     def setQueries(self, queries):
         vec = ContainerVector(NucSeq())
         #@fixme this is due to a bug in the vec initialization...
@@ -102,12 +112,15 @@ class Aligner:
         vec.extend(queries)
         self.query_vec_pledge.set(vec)
 
-    def setRef(self, pack):
-        self.reference_pledge.set(pack)
-
+    ##
+    # @brief sets the reference index
+    #
     def setInd(self, index):
         self.fm_index_pledge.set(index)
 
+    ##
+    # @brief trigger the alignment optionally sets the queries
+    #
     def align(self, queries = None):
         #reset runtimes
         for row in self.__pledges:
@@ -124,6 +137,9 @@ class Aligner:
         del self.collector.content[:]
         return alignments
 
+    ##
+    # @brief returns the runtimes of the important stages
+    #
     def get_runtimes(self):
         ret_list = {
             'seeding': 0,

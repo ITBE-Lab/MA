@@ -20,8 +20,13 @@ namespace libMA
     class NeedlemanWunsch : public Module
     {
     public:
+        bool bLocal;
+        /// @brief the realtive padding before the first and after the last seed in global alignment
+        double fRelativePadding = 1.1;
 
-        NeedlemanWunsch()
+        NeedlemanWunsch(bool bLocal)
+                :
+            bLocal(bLocal)
         {}//constructor
 
         //overload

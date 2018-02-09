@@ -80,24 +80,32 @@ class AlignmentPrinter(Module):
             #check for match or missmatch
             #print str(ind_ref) + " of " + str(align.end_on_ref() - align.begin_on_ref())
             if align[counter] is MatchType.match:
-                lines[-3] += ref[ind_ref]
                 if ref[ind_ref] != query[ind_query]:
-                    lines[-2] += 'X'
+                    lines[-2] += 'x'
                     atLeastOneMistake = True
                 else:
                     lines[-2] += '|'
+                lines[-3] += ref[ind_ref]
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
             if align[counter] is MatchType.seed:
+                if ref[ind_ref] != query[ind_query]:
+                    lines[-2] += 'X'
+                    atLeastOneMistake = True
+                else:
+                    lines[-2] += 'I'
                 lines[-3] += ref[ind_ref]
-                lines[-2] += 'I'
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
             elif align[counter] is MatchType.missmatch:
+                if ref[ind_ref] == query[ind_query]:
+                    lines[-2] += ':'
+                    atLeastOneMistake = True
+                else:
+                    lines[-2] += ' '
                 lines[-3] += ref[ind_ref]
-                lines[-2] += ' '
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
