@@ -82,7 +82,9 @@ def test_my_approach(
         num_strips=10,
         complete_seeds=False,
         use_chaining=False,
-        local=False
+        local=True,
+        reseed=False,
+        full_analysis=False
     ):
     print("collecting samples (" + name + ") ...")
 
@@ -107,6 +109,7 @@ def test_my_approach(
     num_seeds_total = 0
     num_soc_seeds = 0
     num_coupled_seeds = 0
+    warn_once = True
 
     extract_size = 2**15
     # break samples into chunks of 2^15
@@ -128,11 +131,13 @@ def test_my_approach(
 
         #modules
         seeding = BinarySeeding(not complete_seeds)
+        reseeding = ReSeed()
         soc = StripOfConsideration(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         couple = ExecOnVec(LinearLineSweep())
         chain = Chaining()
-        optimal = ExecOnVec(NeedlemanWunsch(local))
+        nmw = NeedlemanWunsch(local)
+        optimal = ExecOnVec(nmw)
         mappingQual = MappingQuality()
 
         pledges = [[], [], [], [], [], []]
@@ -145,6 +150,10 @@ def test_my_approach(
             pledges[1].append(seeding.promise_me(
                 fm_pledge, pledges[0][-1]
             ))
+            if reseed:
+                pledges[1][-1] =reseeding.promise_me(
+                    fm_pledge, pledges[1][-1], pledges[0][-1]
+                )
             if use_chaining:
                 pledges[2].append(ex.promise_me(
                     pledges[1][-1], fm_pledge
@@ -208,12 +217,16 @@ def test_my_approach(
             total_time = 0
             runtimes["seeding"] += pledges[1][i].exec_time
             total_time += pledges[1][i].exec_time
+            pledges[1][i].exec_time = 0
             runtimes["seed processing: filtering"] += pledges[2][i].exec_time
             total_time += pledges[2][i].exec_time
+            pledges[2][i].exec_time = 0
             runtimes["seed processing: coupling"] += pledges[3][i].exec_time
             total_time += pledges[3][i].exec_time
+            pledges[3][i].exec_time = 0
             runtimes["optimal alignment"] += pledges[4][i].exec_time
             total_time += pledges[4][i].exec_time
+            pledges[4][i].exec_time = 0
 
             max_nmw_area = 0
             nmw_area = 0
@@ -226,7 +239,6 @@ def test_my_approach(
             cur_nmw_w = 0
             seed_coverage = 0.0
 
-
             if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score",
                       alignment.get_score(), optimal_alignment.get_score()
@@ -237,10 +249,13 @@ def test_my_approach(
                     NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
                     ref_pack
                 )
-            if optimal_alignment != None and alignment.get_score() < optimal_alignment.get_score():
+            if (warn_once and local and optimal_alignment != None and
+                    alignment.get_score() < optimal_alignment.get_score()):
+                warn_once = False
                 print("got worse than optimal score", alignment.get_score(),
                       optimal_alignment.get_score()
                      )
+                print("this warning is just printed once")
                 query = queries[i][0]
                 AlignmentPrinter().execute(
                     alignment,
@@ -248,79 +263,78 @@ def test_my_approach(
                     ref_pack
                 )
 
-            for pos in range(len(alignment)):
-                match_type = alignment[pos]
-                if match_type == MatchType.seed:
-                    seed_coverage += 1.0
-                    nmw = NeedlemanWunsch(False)
-                    if (gap_size > 100 and nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open +
-                            nmw.penalty_gap_extend * gap_size):
-                        if (float(abs(curr_max_diag_deviation)) / gap_size >
-                                max_diag_deviation_percent):
-                            max_diag_deviation_percent = float(abs(curr_max_diag_deviation))
-                            max_diag_deviation_percent /= gap_size
-                    if abs(curr_max_diag_deviation) > max_diag_deviation:
-                        max_diag_deviation = abs(curr_max_diag_deviation)
-                    curr_diag_deviation = 0
-                    curr_max_diag_deviation = 0
-                    gap_size = 0
-                    nmw_area += cur_nmw_h * cur_nmw_w
-                    cur_nmw_h = 0
-                    cur_nmw_w = 0
-                else:
-                    gap_size += 1
-                    if match_type == MatchType.insertion:
-                        curr_diag_deviation += 1
-                        cur_nmw_h += 1
-                    elif match_type == MatchType.deletion:
-                        curr_diag_deviation -= 1
-                        cur_nmw_w += 1
-                    elif match_type == MatchType.missmatch:
-                        cur_nmw_w += 1
-                        cur_nmw_h += 1
-                    if curr_diag_deviation > curr_max_diag_deviation:
-                        curr_max_diag_deviation = curr_diag_deviation
-                    if cur_nmw_h * cur_nmw_w > max_nmw_area:
-                        max_nmw_area = cur_nmw_h * cur_nmw_w
-
-            seed_coverage /= len(pledges[0][i].get())
-
             seed_coverage_soc = 0.0
-            #check for how many irrelevant overlapped seeds where there...
-            #first get all relevant seeds:
-            discovered_seeds = pledges[1][i].get().extract_seeds(fm_index, max_hits, True)
-            soc_seeds = pledges[2][i].get()[alignment.stats.index_of_strip]
-            if not use_chaining:
-                num_soc_seeds += len(soc_seeds)
-            num_coupled_seeds += len(pledges[3][i].get()[alignment.stats.index_of_strip])
-            num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
-            #compute the area covered by relevant seeds
-            covered_area = [-1]*len(pledges[0][i].get())
-            for seed in discovered_seeds:
-                for pos in range(seed.start, seed.start + seed.size):
-                    if covered_area[pos] < seed.size:
-                        covered_area[pos] = seed.size
-            #seed coverage after the soc
-            if not use_chaining:
-                covered_area_soc = [False]*len(pledges[0][i].get())
-                for seed in soc_seeds:
+            if full_analysis:
+                for match_type in alignment.extract():
+                    if match_type == MatchType.seed:
+                        seed_coverage += 1.0
+                        if (gap_size > 100 and nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open +
+                                nmw.penalty_gap_extend * gap_size):
+                            if (float(abs(curr_max_diag_deviation)) / gap_size >
+                                    max_diag_deviation_percent):
+                                max_diag_deviation_percent = float(abs(curr_max_diag_deviation))
+                                max_diag_deviation_percent /= gap_size
+                        if abs(curr_max_diag_deviation) > max_diag_deviation:
+                            max_diag_deviation = abs(curr_max_diag_deviation)
+                        curr_diag_deviation = 0
+                        curr_max_diag_deviation = 0
+                        gap_size = 0
+                        nmw_area += cur_nmw_h * cur_nmw_w
+                        cur_nmw_h = 0
+                        cur_nmw_w = 0
+                    else:
+                        gap_size += 1
+                        if match_type == MatchType.insertion:
+                            curr_diag_deviation += 1
+                            cur_nmw_h += 1
+                        elif match_type == MatchType.deletion:
+                            curr_diag_deviation -= 1
+                            cur_nmw_w += 1
+                        elif match_type == MatchType.missmatch:
+                            cur_nmw_w += 1
+                            cur_nmw_h += 1
+                        if curr_diag_deviation > curr_max_diag_deviation:
+                            curr_max_diag_deviation = curr_diag_deviation
+                        if cur_nmw_h * cur_nmw_w > max_nmw_area:
+                            max_nmw_area = cur_nmw_h * cur_nmw_w
+
+                seed_coverage /= len(pledges[0][i].get())
+
+                #check for how many irrelevant overlapped seeds where there...
+                #first get all relevant seeds:
+                discovered_seeds = pledges[1][i].get().extract_seeds(fm_index, max_hits, True)
+                soc_seeds = pledges[2][i].get()[alignment.stats.index_of_strip]
+                if not use_chaining:
+                    num_soc_seeds += len(soc_seeds)
+                num_coupled_seeds += len(pledges[3][i].get()[alignment.stats.index_of_strip])
+                num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
+                #compute the area covered by relevant seeds
+                covered_area = [-1]*len(pledges[0][i].get())
+                for seed in discovered_seeds:
                     for pos in range(seed.start, seed.start + seed.size):
-                        covered_area_soc[pos] = True
-                for cov in covered_area_soc:
-                    if cov:
-                        seed_coverage_soc += 1.0
-                seed_coverage_soc /= len(pledges[0][i].get())
-            #run over all discovered seeds and count the covered irelevant ones
-            for seed in discovered_seeds:
-                if not (seed.start_ref >= queries[i][2] and
-                        seed.start_ref + seed.size <= queries[i][2] + queries[i][3]):
-                    num_irelevant_seeds += 1
-                    covered = True
-                    for pos in range(seed.start, seed.start + seed.size):
-                        if covered_area[pos] <= seed.size:
-                            covered = False
-                    if covered:
-                        num_covered_irelevant_seeds += 1
+                        if covered_area[pos] < seed.size:
+                            covered_area[pos] = seed.size
+                #seed coverage after the soc
+                if not use_chaining:
+                    covered_area_soc = [False]*len(pledges[0][i].get())
+                    for seed in soc_seeds:
+                        for pos in range(seed.start, seed.start + seed.size):
+                            covered_area_soc[pos] = True
+                    for cov in covered_area_soc:
+                        if cov:
+                            seed_coverage_soc += 1.0
+                    seed_coverage_soc /= len(pledges[0][i].get())
+                #run over all discovered seeds and count the covered irelevant ones
+                for seed in discovered_seeds:
+                    if not (seed.start_ref >= queries[i][2] and
+                            seed.start_ref + seed.size <= queries[i][2] + queries[i][3]):
+                        num_irelevant_seeds += 1
+                        covered = True
+                        for pos in range(seed.start, seed.start + seed.size):
+                            if covered_area[pos] <= seed.size:
+                                covered = False
+                        if covered:
+                            num_covered_irelevant_seeds += 1
 
             sc2 = None
             if not optimal_alignment is None:
@@ -356,12 +370,13 @@ def test_my_approach(
         print("submitting results (", name, ") ...")
         submitResults(db_name, result)
 
-    print("collected", num_irelevant_seeds,
-          "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
-          100*num_irelevant_seeds/num_seeds_total, "percent")
-    print("collected", num_covered_irelevant_seeds,
-          "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
-          "per alignment and", 100*num_covered_irelevant_seeds/num_seeds_total, "percent")
+    if num_seeds_total > 0 :
+        print("collected", num_irelevant_seeds,
+            "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
+            100*num_irelevant_seeds/num_seeds_total, "percent")
+        print("collected", num_covered_irelevant_seeds,
+            "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
+            "per alignment and", 100*num_covered_irelevant_seeds/num_seeds_total, "percent")
     print("collected", num_seeds_total-num_irelevant_seeds, "relevant seeds")
     if num_soc_seeds > 0:
         print("having", num_soc_seeds, "seeds in the strip of consideration, having",
@@ -398,14 +413,16 @@ def test_my_approaches_rele(db_name):
     """
 
 def test_my_approaches(db_name):
-    #clearResults(db_name, human_genome, "MA 1")
-    #clearResults(db_name, human_genome, "MA 2")
+    full_analysis = False
+
+    clearResults(db_name, human_genome, "MA 1")
+    clearResults(db_name, human_genome, "MA 2")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
-    test_my_approach(db_name, human_genome, "MA 2", max_hits=100, num_strips=10, complete_seeds=True)
+    test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=5, complete_seeds=False)
+    test_my_approach(db_name, human_genome, "MA 1", max_hits=0, num_strips=5, complete_seeds=False, full_analysis=full_analysis)
 
     #test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
 

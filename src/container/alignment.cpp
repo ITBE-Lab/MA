@@ -7,7 +7,7 @@ extern int iExtend;
 extern int iMatch;
 extern int iMissMatch;
 
-void Alignment::append(MatchType type, nucSeqIndex size)
+void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
 {
     //adjust the score of the alignment
     if(type == MatchType::seed || type == MatchType::match)
@@ -252,6 +252,10 @@ void exportAlignment()
                 &Alignment::makeLocal,
                 "arg1: self\n"
             )
+        .def(
+                "extract", 
+                &Alignment::extract
+            )
         .def_readonly("stats", &Alignment::xStats)
         .def_readonly("begin_on_query", &Alignment::uiBeginOnQuery)
         .def_readonly("end_on_query", &Alignment::uiEndOnQuery)
@@ -266,6 +270,19 @@ void exportAlignment()
         .value("missmatch", MatchType::missmatch)
         .value("insertion", MatchType::insertion)
         .value("deletion", MatchType::deletion);
+
+    boost::python::class_<std::vector<MatchType>
+    >("MatchTypeVector")
+    .def(boost::python::vector_indexing_suite<
+            std::vector<MatchType>,
+            /*
+            *    true = noproxy this means that the content of the vector is already exposed by
+            *    boost python. 
+            *    if this is kept as false, Container would be exposed a second time.
+            *    the two Containers would be different and not inter castable.
+            */
+            true
+        >());
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 

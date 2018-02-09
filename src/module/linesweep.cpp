@@ -341,6 +341,15 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     //perform the line sweep algorithm on the right shadows
     linesweep(vShadows, pSeeds);
 
+    /*
+     * @todo here needs to be some kind of filter that prevents the execution of 
+     * NW on almost empty queries
+     */
+    if(false)
+    {
+        pSeeds->clear();
+    }//if
+
     //seeds need to be sorted for the following steps
     std::sort(
             pSeeds->begin(), pSeeds->end(),

@@ -24,14 +24,14 @@ class AlignmentPrinter(Module):
     # @details
     # Reimplemented from MA.aligner.Module.get_input_type.
     def get_input_type(self):
-        return [ContainerType.alignment, ContainerType.nucSeq, ContainerType.packedNucSeq]
+        return [Alignment(), NucSeq(), Pack()]
 
     ##
     # @brief returns the @ref ContainerType "container type" nothing.
     # @details
     # Reimplemented from MA.aligner.Module.get_output_type.
     def get_output_type(self):
-        return ContainerType.nothing
+        return Nil()
 
     ##
     # @brief Execute LineSweep for all given seeds.

@@ -158,6 +158,18 @@ namespace libMA
         }//operator
 
         /**
+         * @brief extract the alignment as vector
+         */
+        std::vector<MatchType> extract() const
+        {
+            std::vector<MatchType> aRet;
+            for(std::tuple<MatchType, nucSeqIndex> xElement : data)
+                for(unsigned int i = 0; i < std::get<1>(xElement); i++)
+                    aRet.push_back(std::get<0>(xElement));
+            return aRet;
+        }//function
+
+        /**
          * @brief appends multiple matchTypes to the alignment
          * @details
          * This is used for appending seeds,

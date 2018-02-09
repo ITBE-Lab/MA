@@ -24,7 +24,14 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
     return std::shared_ptr<Container>(new Alignment());
 }//function
 
-void needlemanWunsch(
+/*
+ * the NW dynamic programming algorithm
+ * 
+ * if bNoGapAtBeginning || bNoGapAtEnd
+ *  returns the gap at the beginning or end
+ * returns 0 otherwise
+ */
+nucSeqIndex needlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
         nucSeqIndex fromQuery,
@@ -36,6 +43,7 @@ void needlemanWunsch(
         bool bNoGapAtEnd = false
     )
 {
+    assert(!(bNoGapAtBeginning && bNoGapAtEnd));
     /*
      * break conditions for actually empty areas
      */
@@ -43,7 +51,7 @@ void needlemanWunsch(
     assert(toRef <= pRef->length());
     if(toRef <= fromRef)
         if(toQuery <= fromQuery)
-            return;
+            return 0;
     DEBUG_2(
         std::cout << toQuery-fromQuery << std::endl;
         for(nucSeqIndex i = fromQuery; i < toQuery; i++)
@@ -65,7 +73,7 @@ void needlemanWunsch(
             )//DEBUG
             iY--;
         }//while
-        return;
+        return 0;
     }//if
     if(toRef <= fromRef)
     {
@@ -78,7 +86,7 @@ void needlemanWunsch(
             )//DEBUG
             iX--;
         }//while
-        return;
+        return 0;
     }//if
 #if 0//DEPRECATED
     /*
@@ -137,12 +145,26 @@ void needlemanWunsch(
      *      set the initial values along the reference to 0.
      *      we do not want a complete global alignment,
      *      merely a global alignment with respect to the query
+     * 
+     * @todo this can happen:
+
+CATTACTTTATAGATTGGGAACAATCCCATTCAAAGT-------------------------------------------        reference
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII|~~
+CATTACTTTATAGATTGGGAACAATCCCATTCAAAAAAGAGCGCTTCATCTTAACTTAGGGGTAGGTCCATTAGATAGCC        query
+
+800-880
+---------------------------------------------------------AAAGAAGGACTTGGCATCTGCCA        reference
+                                                       ~~IIIIIIIIIIIIIIIIIIIIIII
+CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA        query
+
      */
     s[0][0] = 0;
     dir[0][0] = 1;
     s[1][0] = - (iGap + iExtend);
     dir[1][0] = 2;
-    if(!bNoGapAtEnd)//see note above
+    if(bNoGapAtEnd)//see note above
+        s[0][1] = 0;
+    else
         s[0][1] = - (iGap + iExtend);
     dir[0][1] = 3;
     for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
@@ -160,19 +182,19 @@ void needlemanWunsch(
     }//for
     /*
      * dynamic programming loop
-     * Note: 
+     * Note:
      *      we iterate in the reverse order on reference and query
      *      so that the backtracking can be done in forward order
-     * 
+     *
      * This works as follows:
      *      for each cell compute the scores if resuling from an insertion deletion match/missmatch
      *      in this order. Store the score from the insertion and overwrite the score with the del
      *      match of missmatch score if any of them is higher. Also keep track of which direction
      *      we came from in the dir matrix.
      */
-    for(nucSeqIndex uiI = 1; uiI < toQuery-fromQuery+1; uiI++)
+    for(nucSeqIndex uiI = 1; uiI < (toQuery-fromQuery)+1; uiI++)
     {
-        for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef+1; uiJ++)
+        for(nucSeqIndex uiJ = 1; uiJ < (toRef-fromRef)+1; uiJ++)
         {
             int newScore;
             //insertion
@@ -195,7 +217,8 @@ void needlemanWunsch(
             }//if
             //match / missmatch
             newScore = s[uiI - 1][uiJ - 1];
-            if( (*pQuery)[toQuery - uiI] == (*pRef)[toRef - uiJ] )
+            //added the two -1s @todo confirm correctness
+            if( (*pQuery)[toQuery - uiI - 1] == (*pRef)[toRef - uiJ - 1] )
                 newScore += iMatch;
             else
                 newScore -= iMissMatch;
@@ -231,6 +254,8 @@ void needlemanWunsch(
         }//for
     )//DEBUG
 
+    nucSeqIndex uiRet = 0;
+
     /*
      * backtracking
      */
@@ -244,11 +269,13 @@ void needlemanWunsch(
     */
     if(bNoGapAtBeginning)
     {
-        for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef+1; uiJ++)
-            if(s[toQuery - iX][uiJ] > s[toQuery - iX][iY])
+        for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef; uiJ++)
+            if(s[iX][uiJ] > s[iX][iY])
                 iY = uiJ;
-        for(nucSeqIndex uiJ = toRef-fromRef; uiJ > iY; uiJ--)
-            pAlignment->append(MatchType::deletion);
+        uiRet = (toRef-fromRef) - iY;
+        DEBUG_2(
+            std::cout << (toRef-fromRef) - iY << "D";
+        )//DEBUG
     }//if
 
     while(iX > 0 || iY > 0)
@@ -296,12 +323,13 @@ void needlemanWunsch(
          * if there is no gap cost for the end 
          * we should stop backtracking once we reached the end of the query
          */
-        //if(bNoGapAtEnd && iX <= 0)
-        //    break;
+        if(bNoGapAtEnd && iX <= 0)
+            return iY;
     }//while
     DEBUG_2(
         std::cout << std::endl;
     )//DEBUG
+    return uiRet;
 }//function
 
 std::shared_ptr<Container> NeedlemanWunsch::execute(
@@ -339,6 +367,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     //seeds are sorted by ther startpos so we 
     //actually need to check all seeds to get the proper end
     nucSeqIndex endQuery = pSeeds->back().end();
+    nucSeqIndex beginQuery = pSeeds->front().start();
     for (auto xSeed : *pSeeds)
     {
         if(endRef < xSeed.end_ref())
@@ -350,7 +379,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     }//for
     if(!bLocal)
     {
-        beginRef -= (nucSeqIndex)( pSeeds->front().start() * fRelativePadding );
+        beginRef -= (nucSeqIndex)( beginQuery * fRelativePadding );
         if(beginRef > endRef)//check for underflow
             beginRef = 0;
         assert(pQuery->length() >= endQuery);
@@ -358,9 +387,10 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         if(beginRef > endRef)//check for overflow
             endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
         endQuery = pQuery->length();
+        beginQuery = 0;
     }//if
     pRet = std::shared_ptr<Alignment>(
-        new Alignment(beginRef, endRef, pSeeds->front().start(), endQuery)
+        new Alignment(beginRef, endRef, beginQuery, endQuery)
     );
 
     //save the strip of consideration stats in the alignment
@@ -386,12 +416,12 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     if(!bLocal)
     {
-        needlemanWunsch(
+        pRet->uiBeginOnRef += needlemanWunsch(
             pQuery,
             pRef,
             0,
             pSeeds->front().start(),
-            beginRef,
+            0,
             pSeeds->front().start_ref() - beginRef,
             pRet,
             true
@@ -480,7 +510,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         pRet->makeLocal();
     else
     {
-        needlemanWunsch(
+        pRet->uiEndOnRef -= needlemanWunsch(
             pQuery,
             pRef,
             endOfLastSeedQuery,

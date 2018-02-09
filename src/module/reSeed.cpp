@@ -20,6 +20,7 @@ void ReSeed::extend(
 {
     assert(min >= 0);
     assert(max < pQuerySeq->length());
+    assert(max > 0);
     // query sequence itself
     const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
     
@@ -44,21 +45,16 @@ void ReSeed::extend(
             std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
         )
         assert(ik.size() > 0);
-        SAInterval ok = pFM_index->extend_backward(ik, q[i]);
+        ik = pFM_index->extend_backward(ik, q[i]);
 
         DEBUG_2(
             std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
             std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
         )
 
-        /*
-        * In fact, if ok.getSize is zero, then there are no matches any more.
-        * This should never be the case
-        if (ok.size() == 0)
-            max = i-1;
-            break; // the SA-index interval size is too small to be extended further
-        */
-        ik = ok;
+        //unsigned -> so prevent underflows
+        if(i == 0)
+            break;
     }//for
     std::shared_ptr<Segment> pSeg(new Segment(min,max-min,ik));
     assert(pSeg->end() < pQuerySeq->length());
@@ -100,7 +96,7 @@ std::shared_ptr<Container> ReSeed::execute(
         pSegmentVector->push_back(pxNode);
 
         if(pxNode->size() > 2)
-            extend(pSegmentVector, pxNode->start() + 1, pxNode->end() - 1, pFM_index, pQuerySeq);
+            extend(pSegmentVector, pxNode->start() + 1, pxNode->end() - 2, pFM_index, pQuerySeq);
     }//for
 
     return pSegmentVector;
