@@ -131,7 +131,7 @@ def test_my_approach(
 
         #modules
         seeding = BinarySeeding(not complete_seeds)
-        reseeding = ReSeed()
+        reseeding = ReSeed(max_hits)
         soc = StripOfConsideration(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         couple = ExecOnVec(LinearLineSweep())
@@ -151,7 +151,7 @@ def test_my_approach(
                 fm_pledge, pledges[0][-1]
             ))
             if reseed:
-                pledges[1][-1] =reseeding.promise_me(
+                pledges[1][-1] = reseeding.promise_me(
                     fm_pledge, pledges[1][-1], pledges[0][-1]
                 )
             if use_chaining:
@@ -422,7 +422,9 @@ def test_my_approaches(db_name):
 
     test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA 1", max_hits=0, num_strips=5, complete_seeds=False, full_analysis=full_analysis)
+    test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
+
+    #test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=1000, complete_seeds=True, full_analysis=full_analysis)
 
     #test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
 

@@ -217,8 +217,8 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
             }//if
             //match / missmatch
             newScore = s[uiI - 1][uiJ - 1];
-            //added the two -1s @todo confirm correctness
-            if( (*pQuery)[toQuery - uiI - 1] == (*pRef)[toRef - uiJ - 1] )
+            //@todo try -1s here and see what happens
+            if( (*pQuery)[toQuery - uiI] == (*pRef)[toRef - uiJ] )
                 newScore += iMatch;
             else
                 newScore -= iMissMatch;

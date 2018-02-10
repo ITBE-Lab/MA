@@ -27,17 +27,23 @@ namespace libMA
         /*
         * bwa style extension
         */
-        static void extend(
+        void extend(
                 std::shared_ptr<SegmentVector> pxVector,
-                nucSeqIndex min,
-                nucSeqIndex max,
+                nucSeqIndex extend,
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq
             );
 
 
     public:
-        nucSeqIndex minSplitLen = 16;
+        t_bwtIndex maxAmbiguity = 10;
+
+        ReSeed() {}//default constructor
+        ReSeed(t_bwtIndex maxAmbiguity) 
+            :
+            maxAmbiguity(maxAmbiguity)
+        {}///constructor
+
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 

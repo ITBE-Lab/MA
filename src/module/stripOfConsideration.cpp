@@ -178,11 +178,11 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     sort(vSeeds, uiQLen);
 
     //positions to remember the maxima
-    std::vector<std::tuple<nucSeqIndex, std::vector<Seed>::iterator>> xMaxima;
+    std::vector<std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned int>> xMaxima;
 
     //find the SOC maxima
     nucSeqIndex uiCurrScore = 0;
-    nucSeqIndex uiCurrEle = 0;
+    unsigned int uiCurrEle = 0;
     std::vector<Seed>::iterator xStripStart = vSeeds.begin();
     std::vector<Seed>::iterator xStripEnd = vSeeds.begin();
     while(xStripStart != vSeeds.end() && xStripEnd != vSeeds.end())
@@ -222,12 +222,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 {
                     //if so we want to replace the old maxima
                     xMaxima.pop_back();
-                    xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
+                    xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart, uiCurrEle));
                 }//if
             }//if
             else
                 //save the SOC
-                xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart));
+                xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart, uiCurrEle));
         }//if
         //move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         assert(uiCurrScore >= xStripStart->getValue());
@@ -239,9 +239,11 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     // so that we can extract the best SOC first
     std::sort(xMaxima.begin(), xMaxima.end(),
         []
-        (std::tuple<nucSeqIndex, std::vector<Seed>::iterator> a, 
-         std::tuple<nucSeqIndex, std::vector<Seed>::iterator> b)
+        (std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned int> a, 
+         std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned int> b)
         {
+            if(std::get<0>(a) == std::get<0>(b))
+                return std::get<2>(a) < std::get<2>(b);
             return std::get<0>(a) > std::get<0>(b);
         }//lambda
     );//sort function call

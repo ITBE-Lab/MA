@@ -208,8 +208,11 @@ void BinarySeeding::bowtieExtension(
         std::shared_ptr<SegmentVector> pSegmentVector
     )
 {
+    unsigned int iSize = 16;
+    unsigned int iStep = 1;
+
 	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
-    for(nucSeqIndex i = 0; i < pQuerySeq->length()-16; i+= 10)
+    for(nucSeqIndex i = 0; i < pQuerySeq->length()-iSize; i+= iStep)
     {
 
         SAInterval ik(
@@ -217,7 +220,7 @@ void BinarySeeding::bowtieExtension(
                             pFM_index->L2[(int)q[i]] + 1, 
                             pFM_index->L2[(int)q[i] + 1] - pFM_index->L2[(int)q[i]]
                         );
-        for(nucSeqIndex i2 = 0; i2 < 16; i2++)
+        for(nucSeqIndex i2 = 1; i2 <= iSize; i2++)
         {
             // this is the extension
             // actually forward since we extend backwards on the reverse complement...
@@ -228,7 +231,7 @@ void BinarySeeding::bowtieExtension(
         if(ik.size() == 0)
             continue;
         // found a seed
-        pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(i, 16, ik.revComp())));
+        pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(i, iSize, ik.revComp())));
     }//for
 }//function
 

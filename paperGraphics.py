@@ -85,7 +85,9 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-def simulate_max_length(q_len, mutation_amount, indel_amount, indel_size, sim_amount):
+def simulate_max_length(q_len, mutation_amount, indel_amount,
+                        indel_size, sim_amount, max_missmatches
+                       ):
     match_lens = []
     if mutation_amount + indel_amount/2 * indel_size >= q_len:
         return None
@@ -144,19 +146,27 @@ def simulate_max_length(q_len, mutation_amount, indel_amount, indel_size, sim_am
             for _ in range(indel_size):
                 q = q[:pos] + [-2] + q[pos:]
 
+        #get the starting positions for every match
+        starts = []
+        last = -1
+        s_ind = 0
+        for ind, num in enumerate(q):
+            if num != last + 1:
+                starts.append(s_ind)
+                s_ind = ind
+            last = num
+        starts.append(s_ind)
+
         # get the results
         matches = []
-        last = -2
-        match_len = 1
-        for num in q:
-            if num == last + 1:
-                match_len += 1
-            elif not num == -2:
-                matches.append(match_len)
-                match_len = 1
-            last = num
-        matches = matches[1:]
-        matches.append(match_len)
+        for start in starts:
+            length = 0
+            num_mm = 0
+            while start+length+1 < len(q) and num_mm <= max_missmatches:
+                if q[start] + length + 1 != q[start+length+1]:
+                    num_mm += 1
+                length += 1
+            matches.append(length)
 
         match_lens.append(matches)
 
@@ -306,22 +316,32 @@ def theoretical_max_acc():
 
     ref_len = 3000000000 # three billion => human genome length
     q_len = 1000
-    indel_size = 3
+    indel_size = 100
     prob_refindable = []
-    quality = 100
+    quality = 20
+    depth = 64
+    max_missmatches = 0
+    check_for_min_size_instead = None
 
     print("creating query length matrix...")
     max_indels = int(q_len/indel_size)*2
     for num_mut in range(0, q_len, max(10,int(q_len/quality))):
         prob_refindable.append( [] )
         for num_indel in range(0,max_indels, max(2,int(max_indels/quality))):
-            q_len_e = simulate_max_length(q_len, num_mut, num_indel, indel_size, 512)
+            q_len_e = simulate_max_length(q_len, num_mut, num_indel, indel_size, depth, max_missmatches)
             if q_len_e is None:
                 prob_refindable[-1].append(float('NaN'))
             else:
                 probs = []
                 for x in q_len_e:
-                    probs.append(prob_all_non_enclosed(x, ref_len))
+                    if check_for_min_size_instead is None:
+                        probs.append(prob_all_non_enclosed(x, ref_len))
+                    else:
+                        p = 0
+                        for e in x:
+                            if e >= check_for_min_size_instead:
+                                p = 1
+                        probs.append(p)
                 prob_refindable[-1].append(avg(probs))
             #prob_refindable[-1].append(q_len_e)
         if num_mut % 100 == 0:
@@ -360,7 +380,7 @@ def theoretical_max_acc():
     plot.axis.axis_label_text_font=font
     plot.axis.major_label_text_font=font
     plot.legend.label_text_baseline="bottom"
-    save(plot, "upperBoundShortIndels")
+    save(plot, "upperBound")
 
 
 #static stuff
@@ -969,9 +989,9 @@ def required_nmw_band_size():
 
 #unrelated_non_enclosed_seeds()
 #ambiguity_per_length()
-#theoretical_max_acc()
+theoretical_max_acc()
 #seed_shadows()
 #alignment()
-stripOfConsideration()
+#stripOfConsideration()
 #optimal_matching()
 #required_nmw_band_size()

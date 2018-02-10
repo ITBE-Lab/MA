@@ -12,15 +12,15 @@ using namespace libMA;
 
 void ReSeed::extend(
         std::shared_ptr<SegmentVector> pxVector,
-        nucSeqIndex min,
-        nucSeqIndex max,
+        nucSeqIndex center,
         std::shared_ptr<FMIndex> pFM_index,
         std::shared_ptr<NucSeq> pQuerySeq
     )
 {
-    assert(min >= 0);
-    assert(max < pQuerySeq->length());
-    assert(max > 0);
+    if(center == 0)
+        return;
+    if(center == pQuerySeq->length()-1)
+        return;
     // query sequence itself
     const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
     
@@ -32,31 +32,65 @@ void ReSeed::extend(
     // because very first string in SA-array starts with $
     // size in T and T' is equal due to symmetry
     SAInterval ik(
-                        pFM_index->L2[(int)q[max]] + 1, 
-                        pFM_index->L2[complement(q[max])] + 1, 
-                        pFM_index->L2[(int)q[max] + 1] - pFM_index->L2[(int)q[max]]
-                    );
+        pFM_index->L2[(int)q[center]] + 1,
+        pFM_index->L2[complement(q[center])] + 1,
+        pFM_index->L2[(int)q[center] + 1] - pFM_index->L2[(int)q[center]]
+    );
 
     std::list<Segment> curr = std::list<Segment>();
-    for(nucSeqIndex i = max-1; i >= min; i--)
+    bool bBackwards = true;
+    nucSeqIndex lower = center - 1;
+    nucSeqIndex higher = center + 1;
+    /*
+     * extend the segment on both ends until the ambiguity is small enough for us to use it.
+     */
+    while(ik.size() >= maxAmbiguity)
     {
+        //unsigned so check for underflows of lower...
+        if(lower > higher && bBackwards)
+            return;
+        //make sure we dont extend past the query length
+        if(higher >= pQuerySeq->length() && !bBackwards)
+            return;
+
         DEBUG_2(
             std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
             std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
         )
+
         assert(ik.size() > 0);
-        ik = pFM_index->extend_backward(ik, q[i]);
+        /*
+         * the extends forwads and backwards in turns,
+         * while always reversing the resulting SA_Interval
+         */
+        ik = pFM_index->extend_backward(
+            ik, 
+            /*
+             * if we extend backwards we just need to use the nucleotide at the correct position
+             * otherwise we need the complement of the nucleotide at position "higher"
+             */
+            bBackwards ? q[lower--] : complement(q[higher++])
+        ).revComp();
+
+        bBackwards = !bBackwards;
 
         DEBUG_2(
             std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
             std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
         )
-
-        //unsigned -> so prevent underflows
-        if(i == 0)
-            break;
     }//for
-    std::shared_ptr<Segment> pSeg(new Segment(min,max-min,ik));
+
+    /*
+    * make sure we always get the forward interval as the main one
+    */
+    if(!bBackwards)
+        ik = ik.revComp();
+    /*
+        * save the correct segment
+        * second parameter is the length but lower and higher always point to the elements
+        * one past the last extended one therefore -2
+        */
+    std::shared_ptr<Segment> pSeg(new Segment(lower+1,higher-lower-2,ik));
     assert(pSeg->end() < pQuerySeq->length());
     pxVector->push_back(pSeg);
 }//function
@@ -95,8 +129,7 @@ std::shared_ptr<Container> ReSeed::execute(
     {
         pSegmentVector->push_back(pxNode);
 
-        if(pxNode->size() > 2)
-            extend(pSegmentVector, pxNode->start() + 1, pxNode->end() - 2, pFM_index, pQuerySeq);
+        extend(pSegmentVector, pxNode->center(), pFM_index, pQuerySeq);
     }//for
 
     return pSegmentVector;
@@ -109,8 +142,8 @@ void exportReSeed()
             ReSeed,
             boost::python::bases<Module>,
             std::shared_ptr<ReSeed>
-        >("ReSeed")
-        .def_readwrite("min_split_len", &ReSeed::minSplitLen)
+        >("ReSeed", boost::python::init<int>())
+        .def_readwrite("max_ambiguity", &ReSeed::maxAmbiguity)
     ;
 
     boost::python::implicitly_convertible< 
