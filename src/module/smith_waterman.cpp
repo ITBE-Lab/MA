@@ -4,9 +4,11 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include "container/nucSeq.h" // sequence slices
+using namespace libMA;
 #include "module/sw_sse_avx.h"
 #include "module/smith_waterman.h"
-using namespace libMA;
+#include "module/SW_sequential.h"
 
 
 extern int iGap;
@@ -49,12 +51,16 @@ std::string randomNucSeq(const int uiLen) {
 
 /* SIMD (SSE, AVX2) boosted Smith-Waterman alignments. 
  */
-int16_t alignSW_SIMD( const NucSeq &rQuerySequence, // query sequence
-                      const NucSeq &rReferenceSequence, // reference sequence
+int16_t alignSW_SIMD( NucSeq &rQuerySequence, // query sequence
+                      NucSeq &rReferenceSequence, // reference sequence
                       SmithWatermanParamaterSet<int16_t> &rSWparameterSet, // Smith Waterman alignment parameter
                       std::vector<size_t> &rvMaxScorePositions // vector will recieve positions, where we have a max score
                     )
 {
+    //reversing query and reference in order to obtain start instead of end (markus)
+    rQuerySequence.vReverse();
+    rReferenceSequence.vReverse();
+
     int16_t iMaxScore = 0;
 
     try
@@ -109,30 +115,96 @@ std::shared_ptr<Container> SMW::execute(
         pQuerySeq->uxAlphabetSize() // alphabet size of input
     );
 
-    //reversing query and reference in order to obtain start instead of end (markus)
-    pQuerySeq->vReverse();
-    pReference->vReverse();
-    
-    // 2. Do the alignment ...
-    std::vector<size_t> vMaxScorePositions;
-    int16_t imaxScore = alignSW_SIMD( *pQuerySeq, // query sequence
-                                      *pReference, // reference sequence
-                                      xSWparameterSet, // Smith Waterman alignment parameter
-                                      vMaxScorePositions // vector will recieve positions, where we have a max score
-                                    );
-
-    // 3. collect the results ...
-    auto pvRet = std::make_shared<ContainerVector>();
-
-    for(nucSeqIndex revStart : vMaxScorePositions)
+    if(bBacktrack)
     {
-        //undo the reversion by substracting from absolute length
-        std::shared_ptr<Alignment> pAlignment = std::shared_ptr<Alignment>(new Alignment(pReference->length() - revStart));
-        pAlignment->iScore = imaxScore;
-        pvRet->push_back(pAlignment);
-    }//for
+        /* Create aligner object */
+        SW_align_type <
+            true, // create data for backtracking
+            int16_t> // forward type for scoring
+            xAligner( pQuerySeq->length(), // length query
+                    &(*pQuerySeq)[0], // address first query symbol
+                    pReference->length(), // length reference
+                    &(*pReference)[0], // address first reference symbol
+                    xSWparameterSet ); // SW-parameter
 
-    return std::shared_ptr<ContainerVector>(new ContainerVector(pvRet));
+        /* Prepare variables that will receive aligner output */
+        size_t uiColumnIndexOfMaxScore; // Receives column of max-score
+        size_t uiRowIndexOfMaxScore; // Receives row of max-score
+        size_t indexOfMaxElementInScoringTable; // linear index for max-position in matrix
+        std::vector<std::pair<size_t, size_t>> vMaxScorePositions; // receives the maximum positions as tuples (row, col)
+
+        /* Do the actual alignment... */
+        xAligner.swAlign( &uiColumnIndexOfMaxScore, 
+                                        &uiRowIndexOfMaxScore, 
+                                        indexOfMaxElementInScoringTable,
+                                        vMaxScorePositions );
+                                        
+        // collect the results ...
+        auto pvRet = std::make_shared<ContainerVector>();
+
+        /* store all alignments with best score */
+        for( auto &rxPair : vMaxScorePositions )
+        {
+            alignment_description<char> vTemp;
+            size_t index = ((std::get<0>(rxPair) + 1) * pQuerySeq->length()) + (std::get<1>(rxPair) + 1);
+            size_t startPositionQuery = 0;
+            size_t endPositionQuery = 0;
+            size_t startPositionRef = 0;
+            size_t endPositionRef = 0;
+            xAligner.alignmentOutcomeMatrix.backtrackFromIndex(
+                index,
+                vTemp,
+                startPositionQuery,
+                endPositionQuery,
+                startPositionRef,
+                endPositionRef
+            );
+            std::shared_ptr<Alignment> pAlignment = std::shared_ptr<Alignment>(
+                new Alignment(startPositionRef, endPositionRef, startPositionQuery, endPositionQuery));
+            for(auto pos : vTemp)
+                switch (pos.eElementKind){
+                    case EQUAL_PAIR:
+                        pAlignment->append(MatchType::match);
+                        break;
+                    case INSERTION_AT_ROW_SIDE://ref -> deletion
+                        pAlignment->append(MatchType::deletion);
+                        break;
+                    case INSERTION_AT_COLUMN_SIDE://query -> insertion
+                        pAlignment->append(MatchType::insertion);
+                        break;
+                    case UNEQUAL_PAIR:
+                        pAlignment->append(MatchType::missmatch);
+                        break;
+                }//switch
+            //for
+            pvRet->push_back(pAlignment);
+        } // for
+        return pvRet;
+    }//if
+    else
+    {
+        // 2. Do the alignment ...
+        std::vector<size_t> vMaxScorePositions;
+        int16_t imaxScore = alignSW_SIMD( *pQuerySeq, // query sequence
+                                        *pReference, // reference sequence
+                                        xSWparameterSet, // Smith Waterman alignment parameter
+                                        vMaxScorePositions // vector will recieve positions, where we have a max score
+                                        );
+
+        // 3. collect the results ...
+        auto pvRet = std::make_shared<ContainerVector>();
+
+        for(nucSeqIndex revStart : vMaxScorePositions)
+        {
+            //undo the reversion by substracting from absolute length
+            std::shared_ptr<Alignment> pAlignment = std::shared_ptr<Alignment>(new Alignment(
+                pReference->length() - revStart));
+            pAlignment->iScore = imaxScore;
+            pvRet->push_back(pAlignment);
+        }//for
+
+        return pvRet;
+    }//else
 }//function
 
 

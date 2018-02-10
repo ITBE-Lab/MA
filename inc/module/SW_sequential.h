@@ -1,7 +1,7 @@
 #pragma once
 /* Naive implementation of Smith-Waterman for debugging purposes */
-#include "sequence.h"
-#include "sw_common.h"
+#include "container/nucSeq.h"
+#include "module/sw_common.h"
 #include <vector>
 #include <functional>
 
@@ -245,7 +245,7 @@ struct AlignmentOutcomeMatrix
 
 		for( size_t uxIteratorColum = 1; uxIteratorColum < numberOfColumns; uxIteratorColum++ )
 		{
-			std::cout << NucleotideSequence::translateACGTCodeToCharacter(puxColumnSequenceRef[ uxIteratorColum - 1 ]) << "\t";
+			std::cout << NucSeq::translateACGTCodeToCharacter(puxColumnSequenceRef[ uxIteratorColum - 1 ]) << "\t";
 		}
 
 		std::cout << std::endl;
@@ -253,7 +253,7 @@ struct AlignmentOutcomeMatrix
 		for( size_t uxIteratorRow = 0; uxIteratorRow < numberOfRows; uxIteratorRow++ )
 		{
 			if (uxIteratorRow > 0)
-				std::cout << NucleotideSequence::translateACGTCodeToCharacter(puxRowSequenceRef [uxIteratorRow - 1]) << " : ";
+				std::cout << NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef [uxIteratorRow - 1]) << " : ";
 			else
 				std::cout << "- : ";
 
@@ -302,8 +302,8 @@ struct AlignmentOutcomeMatrix
 			*/
 			if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
 			{
-				*(rowSequenceIterator++) = NucleotideSequence::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
-				*(columnSequenceIterator++) = NucleotideSequence::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
+				*(rowSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
+				*(columnSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
 				ruiNumberMatches++;
 			} // if
 			else
@@ -320,7 +320,7 @@ struct AlignmentOutcomeMatrix
 					break;
 				case UP :
 					ruiNumberInsertions++;
-					*(rowSequenceIterator++) = NucleotideSequence::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
+					*(rowSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
 				} // switch
 
 				switch ( backtrackMatrix[index] )
@@ -329,7 +329,7 @@ struct AlignmentOutcomeMatrix
 					*(columnSequenceIterator++) = 'x';
 					break;
 				case LEFT :
-					*(columnSequenceIterator++) = NucleotideSequence::translateACGTCodeToCharacter(puxColumnSequenceRef[uxColumn - 1]);
+					*(columnSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxColumnSequenceRef[uxColumn - 1]);
 					break;
 				case UP :
 					*(columnSequenceIterator++) = '+';
@@ -382,8 +382,8 @@ struct AlignmentOutcomeMatrix
 				/* They match, so we insert a match into the vector. (push_back using &&)
 				*/
 				alignmentOutcomeVector.push_back( alignment_description_element<char> ( EQUAL_PAIR, 
-												  NucleotideSequence::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-												  NucleotideSequence::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+												  NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+												  NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
 			} // if
 			else
 			{	
@@ -391,17 +391,17 @@ struct AlignmentOutcomeMatrix
 				{
 				case LEFT_UP :
 					alignmentOutcomeVector.push_back( alignment_description_element<char> ( UNEQUAL_PAIR, 
-													  NucleotideSequence::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-													  NucleotideSequence::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+													  NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+													  NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
 					break;
 				case LEFT :
 					alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_ROW_SIDE, 
 													  '+', 
-													  NucleotideSequence::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+													  NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
 					break;
 				case UP :
 					alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_COLUMN_SIDE, 
-													  NucleotideSequence::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+													  NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
 													  '+' ) );
 				case STOP :
 					;

@@ -21,7 +21,7 @@
 #include <limits> 
 // #include "sw_common.h"
 #include "util/exception.h" // code throws aligner exceptions
-#include "container/nucSeq.h" // sequence slices
+#include "module/sw_common.h" // parameter set
 
 /* Current Problem: Horizontal and vertical gap must be identical! */
 #define GAP_EXT_HORIZONAL ( 1 )
@@ -132,8 +132,8 @@ struct SW_SIMD_Aligner
 	 */
 	SW_SIMD_Aligner( const NucSeq &rQuerySequence, // query sequence of alignment
 					 const SmithWatermanParamaterSet<SCORE_TP> &SWparameterSet ) // alignment parameter
-		: uiQueryLen( rQuerySequence.getSize() ),
-		  uiNumberOfBlocks( ( rQuerySequence.getSize() + scoresPerBlock - 1 ) / scoresPerBlock ),
+		: uiQueryLen( rQuerySequence.length() ),
+		  uiNumberOfBlocks( ( rQuerySequence.length() + scoresPerBlock - 1 ) / scoresPerBlock ),
 		  pSWparameterSetRef( SWparameterSet )
 	{	
 		if( sizeof(SCORE_TP) != 2 )
@@ -208,7 +208,7 @@ struct SW_SIMD_Aligner
 					 * (Don't take 0 instead of min, because then we get faulty values.)
 					 */
 					*profileReference++ = (k >= uiQueryLen ? std::numeric_limits<SCORE_TP>::min() // non existing column
-						: scroringTableRow[(rQuerySequence.getSequenceRefInHost())[k]]
+						: scroringTableRow[rQuerySequence[k]]
 						);
 				} // for k - iteration over p, where p = 16 or 8 or 4
 			} // for i - iteration over segment size
@@ -232,8 +232,8 @@ struct SW_SIMD_Aligner
 #endif
 					 ) 
 	{
-		auto pReference = pReferenceSeq.getSequenceRefInHost(); // uint_8t
-		auto uiLenReference = pReferenceSeq.getSize();
+		auto pReference = pReferenceSeq; // uint_8t
+		auto uiLenReference = pReferenceSeq.length();
 		
 		SCORE_TP iOverallMaxScore = 0;
 
