@@ -94,23 +94,23 @@ public:
 	*/
 	const SCORE_TP iWeightMatch;
 	const SCORE_TP iWeightMismatch;
+	/* This size of the alphabet for out parameter set.
+	*/
+	const unsigned int uiAlphabetSize;
 
 	const SimilarityMatrix<SCORE_TP> similarityMatrix;
 
 	const SCORE_TP iGapOpen;
 	const SCORE_TP iGapExtend;
 
-	/* This size of the alphabet for out parameter set.
-	*/
-	const unsigned int uiAlphabetSize;
 
 	SmithWatermanParamaterSet(SCORE_TP xWeightMatch, SCORE_TP xWeightMismatch, SCORE_TP xGapo, SCORE_TP xGape, uint8_t uiAlphabetSize)
 		: iWeightMatch(xWeightMatch),
 		iWeightMismatch(xWeightMismatch),
-		iGapOpen(xGapo),
-		iGapExtend(xGape),
 		uiAlphabetSize(uiAlphabetSize),
-		similarityMatrix(xWeightMatch, xWeightMismatch, uiAlphabetSize)
+		similarityMatrix(xWeightMatch, xWeightMismatch, uiAlphabetSize),
+		iGapOpen(xGapo),
+		iGapExtend(xGape)
 	{ } // constructor
 
 	SCORE_TP xGetApproximatedBackTrackDistance(size_t uxSequenceSize, SCORE_TP xScore)

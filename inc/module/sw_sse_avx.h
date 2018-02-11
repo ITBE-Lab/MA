@@ -225,15 +225,14 @@ struct SW_SIMD_Aligner
 	/* Align for 16 bit sized scores.
 	 * Returns maximum score.
 	 */
-	SCORE_TP align( const NucSeq &pReferenceSeq,
+	SCORE_TP align( const NucSeq &pReference,
 					 std::vector<T_size_t> &rvMaxScorePositions // vector will keep the positions of occurences of max score
 #if (DO_CHECKS == 1)
 					 , std::vector<T_scoring> &rvSwRowMaxima // vector collecting row maxima (for debugging)
 #endif
 					 ) 
 	{
-		auto pReference = pReferenceSeq; // uint_8t
-		auto uiLenReference = pReferenceSeq.length();
+		auto uiLenReference = pReference.length();
 		
 		SCORE_TP iOverallMaxScore = 0;
 
@@ -326,7 +325,7 @@ struct SW_SIMD_Aligner
 			 * This loop can become quite expensive in specific situations.
 			 * Observation: short queries (20 nt) create large k values. 
 			 */
-			for( int k = 0; k < __mXXXi_SIZE / 2; ++k )
+			for( unsigned int k = 0; k < __mXXXi_SIZE / 2; ++k )
 			{
 				f = _mm_slli_siXXX(f, 2); 
 				for( T_size_t j = 0; j < uiNumberOfBlocks; ++j ) 

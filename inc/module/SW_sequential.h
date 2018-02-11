@@ -181,10 +181,10 @@ struct AlignmentOutcomeMatrix
 	SequenceString &rColumnSequenceString;
 #endif
 
-	const uint8_t* puxRowSequenceRef;
-	const T_size_t numberOfRows;
-	const uint8_t* puxColumnSequenceRef;
 	const T_size_t numberOfColumns;
+	const uint8_t* puxColumnSequenceRef;
+	const T_size_t numberOfRows;
+	const uint8_t* puxRowSequenceRef;
 
 
 	/* Initializes the first column and the first row.
@@ -546,18 +546,17 @@ struct SW_align_type
 				   size_t numberOfRows, 
 				   const uint8_t *rowSequence, 
 				   SmithWatermanParamaterSet<SCORE_TP> &SWparameterSet
-	) : pSWparameterSetRef( SWparameterSet ),
-
+	) : 
+		numberOfColumns(numberOfColumns),
+		columnSequence(columnSequence),
+		numberOfRows(numberOfRows),
+		rowSequence(rowSequence),
+		alphabetSize( SWparameterSet.uiAlphabetSize ),
 		/* Initialize the scoring matrix
 		*/
 		alignmentOutcomeMatrix(numberOfColumns, columnSequence, numberOfRows, rowSequence ),
-
-		numberOfColumns(numberOfColumns),
-		numberOfRows(numberOfRows),
-		columnSequence(columnSequence),
-		rowSequence(rowSequence),
-		alphabetSize( SWparameterSet.uiAlphabetSize ),
-		similarityMatrix( SWparameterSet.iWeightMatch, SWparameterSet.iWeightMismatch, alphabetSize )
+		similarityMatrix(SWparameterSet.iWeightMatch, SWparameterSet.iWeightMismatch, alphabetSize),
+        pSWparameterSetRef( SWparameterSet )
 	{ } // constructor
 
 		/* The central alignment method
