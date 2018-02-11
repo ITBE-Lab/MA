@@ -39,13 +39,13 @@ class AlignmentPrinter(Module):
     # Reimplemented from MA.aligner.Module.execute.
     def execute(self, *input):
         align = input[0]
-        query = input[1]
-        ref_pack = input[2]
-
-        ref = ref_pack.extract_from_to(align.begin_on_ref(), align.end_on_ref())
+        query = input[1][align.begin_on_query:align.end_on_query]
+        ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
 
         lines = [
-            "score: " + str(align.get_score()) + "; position: " + str(align.begin_on_ref())
+            "score: " + str(align.get_score()),
+            "reference: " + str(align.begin_on_ref) + " - " + str(align.end_on_ref),
+            "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query)
         ]
         counter = 0
         ind_query = 0

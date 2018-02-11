@@ -257,8 +257,10 @@ void exportAlignment()
                 &Alignment::extract
             )
         .def_readonly("stats", &Alignment::xStats)
-        .def_readonly("begin_on_query", &Alignment::uiBeginOnQuery)
-        .def_readonly("end_on_query", &Alignment::uiEndOnQuery)
+        .def_readwrite("begin_on_query", &Alignment::uiBeginOnQuery)
+        .def_readwrite("end_on_query", &Alignment::uiEndOnQuery)
+        .def_readwrite("begin_on_ref", &Alignment::uiBeginOnRef)
+        .def_readwrite("end_on_ref", &Alignment::uiEndOnRef)
         .def_readwrite("mapping_quality", &Alignment::fMappingQuality)
     ;
 

@@ -1,4 +1,4 @@
-from MA import *
+from .MA import *
 import random
 import gc
 import os
@@ -177,7 +177,7 @@ def test_my_approach(
 
             optimal_alignment_in.append((Pledge(NucSeq()), Pledge(NucSeq())))
 
-        smw = SMW()
+        smw = SMW(full_analysis)
         optimal_alignment_out = []
         for a, b in optimal_alignment_in:
             optimal_alignment_out.append(smw.promise_me(a, b))
@@ -195,7 +195,7 @@ def test_my_approach(
                 NucSeq(query[alignment.begin_on_query : alignment.end_on_query])
             )
             optimal_alignment_in[i][1].set(
-                ref_pack.extract_from_to(alignment.begin_on_ref(), alignment.end_on_ref())
+                ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
             )
         print("computing optimal (", name, ") ...")
         Pledge.simultaneous_get(optimal_alignment_out, 32)
@@ -210,6 +210,12 @@ def test_my_approach(
             optimal_alignment = None
             if len(optimal_alignment_out[i].get()) > 0:
                 optimal_alignment = optimal_alignment_out[i].get()[0]
+                # adjust the scores to the slice that 
+                # was actually computed with the optimal alignment
+                optimal_alignment.begin_on_query += alignment.begin_on_query
+                optimal_alignment.end_on_query += alignment.begin_on_query
+                optimal_alignment.begin_on_ref += alignment.begin_on_ref
+                optimal_alignment.end_on_ref += alignment.begin_on_ref
             #print(alignment.stats.name)
             sample_id = int(alignment.stats.name)
             collect_ids.append(sample_id)
@@ -239,16 +245,26 @@ def test_my_approach(
             cur_nmw_w = 0
             seed_coverage = 0.0
 
+            def print_alignments():
+                print("computed alignment:")
+                AlignmentPrinter().execute(
+                    alignment,
+                    pledges[0][i].get(),
+                    ref_pack
+                )
+                if full_analysis:
+                    print("optimal alignment:")
+                    AlignmentPrinter().execute(
+                        optimal_alignment,
+                        pledges[0][i].get(),
+                        ref_pack
+                    )
+
             if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score",
                       alignment.get_score(), optimal_alignment.get_score()
                      )
-                query = queries[i][0]
-                AlignmentPrinter().execute(
-                    alignment,
-                    NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
-                    ref_pack
-                )
+                print_alignments()
             if (warn_once and local and optimal_alignment != None and
                     alignment.get_score() < optimal_alignment.get_score()):
                 warn_once = False
@@ -256,12 +272,7 @@ def test_my_approach(
                       optimal_alignment.get_score()
                      )
                 print("this warning is just printed once")
-                query = queries[i][0]
-                AlignmentPrinter().execute(
-                    alignment,
-                    NucSeq(query[alignment.begin_on_query:alignment.end_on_query]),
-                    ref_pack
-                )
+                print_alignments()
 
             seed_coverage_soc = 0.0
             if full_analysis:
@@ -349,8 +360,8 @@ def test_my_approach(
                     alignment.get_score(),
                     score2,
                     sc2,
-                    alignment.begin_on_ref(),
-                    alignment.end_on_ref(),
+                    alignment.begin_on_ref,
+                    alignment.end_on_ref,
                     pledges[1][i].get().num_seeds(fm_index, max_hits),
                     alignment.stats.index_of_strip,
                     seed_coverage_soc,
@@ -413,7 +424,7 @@ def test_my_approaches_rele(db_name):
     """
 
 def test_my_approaches(db_name):
-    full_analysis = False
+    full_analysis = True
 
     clearResults(db_name, human_genome, "MA 1")
     clearResults(db_name, human_genome, "MA 2")
@@ -1368,21 +1379,32 @@ exit()
 #exit()
 
 #high quality picture
+amount = 1
+#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 2**11, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 500, amount, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 50, amount, True, True, 1)
+createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 500, amount, True, True, 0)
+test_my_approaches("/mnt/ssd1/default.db")
+test_my_approaches("/mnt/ssd1/short.db")
+test_my_approaches("/mnt/ssd1/shortIndels.db")
+test_my_approaches("/mnt/ssd1/longIndels.db")
+test_my_approaches("/mnt/ssd1/insertionOnly.db")
+test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
-#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
-analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
-analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-exit()
+#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
+#compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
+#analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
+#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 0, True, True)
-test_my_approaches("/mnt/ssd1/veryHighQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
-analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+#test_my_approaches("/mnt/ssd1/veryHighQual.db")
+#analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+#analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
 
 

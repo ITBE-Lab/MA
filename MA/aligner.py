@@ -10,7 +10,7 @@
 # @author Markus Schmidt
 #
 
-import libMA
+from .. import libMA
 import traceback
 
 ##
@@ -180,7 +180,16 @@ class SAInterval(libMA.SAInterval):
 # @ingroup container
 #
 class NucSeq(libMA.NucSeq):
-    pass
+    ##
+    # @brief enable slicing a NucSeq
+    def __getitem__(self, val):
+        if isinstance(val, slice):
+            ret = NucSeq()
+            for index in range(val.start or 0, val.stop or len(self), val.step or 1):
+                ret.append(libMA.NucSeq.__getitem__(self, index))
+            return ret
+        else:
+            return libMA.NucSeq.__getitem__(self, val)
 
 ##
 # @brief The ContainerVector Module.

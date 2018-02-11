@@ -427,7 +427,7 @@ def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size
 
     show(row(plots))
 
-def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
+def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_del_ratio=0.5):
     q = ""
     original_nuc_dist = [0, 0, 0, 0, 0]
     modified_nuc_dist = [0, 0, 0, 0, 0]
@@ -490,8 +490,8 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
                 spots[index] -= start
         return spots
 
-    deletion_amount = floor(indel_amount/2)
-    insertion_amount = floor( (indel_amount+1) /2)
+    deletion_amount = floor((1-in_to_del_ratio) * indel_amount)
+    insertion_amount = floor( in_to_del_ratio*(indel_amount+1))
 
     # deletion
     deletion_spots = get_random_spots(deletion_amount, len(q), indel_size + 1)
@@ -542,7 +542,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size):
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
-def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, high_qual=False):
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, high_qual=False, in_to_del_ratio=0.5):
     conn = sqlite3.connect(db_name)
 
     setUpDbTables(conn, reset)
@@ -580,7 +580,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
                 #
                 # extract the query sequence
                 #
-                q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size)
+                q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size, in_to_del_ratio)
 
                 nuc_distrib_count_orig = list(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
                 nuc_distrib_count_mod = list(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))

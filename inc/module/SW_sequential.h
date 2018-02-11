@@ -373,6 +373,7 @@ struct AlignmentOutcomeMatrix
 			*/
 			T_size_t uxColumn = currentIndex % numberOfColumns;
 			T_size_t uxRow = currentIndex / numberOfColumns;
+			assert( uxColumn > 0 && uxRow > 0 );
 
 			/* We check whether the two symbols match
 			* WARNING: The scoring matrix is shifted into X as well Y direction by one position
@@ -429,6 +430,7 @@ struct AlignmentOutcomeMatrix
 		/* Finally we inform about the begin and end of our sequences
 		* Here we take 1 way, so we get values according to a counting starting with 0 instead of 1
 		*/
+        assert(previousIndex % numberOfColumns > 0);
 		startPositionInColumn = (previousIndex % numberOfColumns) - 1;
 		endPositionInColumn = (startIndex % numberOfColumns) - 1;
 
@@ -816,6 +818,8 @@ struct SW_align_type
 				{	// fresh overall maximum detected 
 					rvMaxScorePositions.clear();
 					maxScoreValue = maxScoreInCurrentRow;
+                    columnIndexOfMaxScore = indexOfMaxScoreInCurrentRow;//added by markus
+                    rowIndexOfMaxScore = uxIteratorRow;//added by markus
 				} // if
 				  /* Log pairs (row, column (max-pos within row) )*/
 				rvMaxScorePositions.push_back( std::pair<size_t, size_t>( uxIteratorRow, indexOfMaxScoreInCurrentRow) );
@@ -855,10 +859,13 @@ struct SW_align_type
 			*pRowIndexOfMaxScore = rowIndexOfMaxScore + 1;
 		} // if
 
-		if( pColumnIndexOfMaxScore && pRowIndexOfMaxScore )
-		{
-			std::cout << "Max score is: " << maxScoreValue << std::endl;
-		} // if
+        
+        DEBUG(
+            if( pColumnIndexOfMaxScore && pRowIndexOfMaxScore )
+            {
+                std::cout << "Max score is: " << maxScoreValue << std::endl;
+            } // if
+        )
 
 		  /* The index of the maximum within the table.
 		  */

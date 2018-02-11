@@ -17,6 +17,11 @@ namespace libMA
     public:
         bool bBacktrack = true;
 
+        SMW(bool bBacktrack)
+                :
+            bBacktrack(bBacktrack)
+        {}//constructor
+
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 

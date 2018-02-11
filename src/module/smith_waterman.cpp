@@ -122,9 +122,9 @@ std::shared_ptr<Container> SMW::execute(
             true, // create data for backtracking
             int16_t> // forward type for scoring
             xAligner( pQuerySeq->length(), // length query
-                    &(*pQuerySeq)[0], // address first query symbol
+                    pQuerySeq->pGetSequenceRef(), // address first query symbol
                     pReference->length(), // length reference
-                    &(*pReference)[0], // address first reference symbol
+                    pReference->pGetSequenceRef(), // address first reference symbol
                     xSWparameterSet ); // SW-parameter
 
         /* Prepare variables that will receive aligner output */
@@ -134,51 +134,51 @@ std::shared_ptr<Container> SMW::execute(
         std::vector<std::pair<size_t, size_t>> vMaxScorePositions; // receives the maximum positions as tuples (row, col)
 
         /* Do the actual alignment... */
-        xAligner.swAlign( &uiColumnIndexOfMaxScore, 
-                                        &uiRowIndexOfMaxScore, 
-                                        indexOfMaxElementInScoringTable,
-                                        vMaxScorePositions );
-                                        
+        xAligner.swAlign(
+            &uiColumnIndexOfMaxScore,
+            &uiRowIndexOfMaxScore,
+            indexOfMaxElementInScoringTable,
+            vMaxScorePositions
+        );
         // collect the results ...
-        auto pvRet = std::make_shared<ContainerVector>();
+        auto pvRet = std::shared_ptr<ContainerVector>(
+            new ContainerVector(std::shared_ptr<Alignment>(new Alignment()))
+        );
 
-        /* store all alignments with best score */
-        for( auto &rxPair : vMaxScorePositions )
-        {
-            alignment_description<char> vTemp;
-            size_t index = ((std::get<0>(rxPair) + 1) * pQuerySeq->length()) + (std::get<1>(rxPair) + 1);
-            size_t startPositionQuery = 0;
-            size_t endPositionQuery = 0;
-            size_t startPositionRef = 0;
-            size_t endPositionRef = 0;
-            xAligner.alignmentOutcomeMatrix.backtrackFromIndex(
-                index,
-                vTemp,
-                startPositionQuery,
-                endPositionQuery,
-                startPositionRef,
-                endPositionRef
-            );
-            std::shared_ptr<Alignment> pAlignment = std::shared_ptr<Alignment>(
-                new Alignment(startPositionRef, endPositionRef, startPositionQuery, endPositionQuery));
-            for(auto pos : vTemp)
-                switch (pos.eElementKind){
-                    case EQUAL_PAIR:
-                        pAlignment->append(MatchType::match);
-                        break;
-                    case INSERTION_AT_ROW_SIDE://ref -> deletion
-                        pAlignment->append(MatchType::deletion);
-                        break;
-                    case INSERTION_AT_COLUMN_SIDE://query -> insertion
-                        pAlignment->append(MatchType::insertion);
-                        break;
-                    case UNEQUAL_PAIR:
-                        pAlignment->append(MatchType::missmatch);
-                        break;
-                }//switch
-            //for
-            pvRet->push_back(pAlignment);
-        } // for
+        alignment_description<char> vTemp;
+        size_t startPositionQuery = 0;
+        size_t endPositionQuery = 0;
+        size_t startPositionRef = 0;
+        size_t endPositionRef = 0;
+        xAligner.alignmentOutcomeMatrix.backtrackFromIndex(
+            indexOfMaxElementInScoringTable,
+            vTemp,
+            startPositionQuery,
+            endPositionQuery,
+            startPositionRef,
+            endPositionRef
+        );
+        std::shared_ptr<Alignment> pAlignment = std::shared_ptr<Alignment>(
+            new Alignment(startPositionRef, endPositionRef+1, startPositionQuery, endPositionQuery+1));
+        for(auto pos : vTemp)
+            switch (pos.eElementKind){
+                case EQUAL_PAIR:
+                    pAlignment->append(MatchType::match);
+                    break;
+                case UNEQUAL_PAIR:
+                    pAlignment->append(MatchType::missmatch);
+                    break;
+                case INSERTION_AT_ROW_SIDE://ref -> deletion
+                    pAlignment->append(MatchType::insertion);
+                    break;
+                case INSERTION_AT_COLUMN_SIDE://query -> insertion
+                    pAlignment->append(MatchType::deletion);
+                    break;
+                default:
+                    std::cout << "unkown symbol in alignment" << std::endl;
+            }//switch
+        //for
+        pvRet->push_back(pAlignment);
         return pvRet;
     }//if
     else
@@ -269,9 +269,8 @@ void exportSMW()
             SMW, 
             boost::python::bases<Module>,
             std::shared_ptr<SMW>
-            >(
-            "SMW"
-        );
+            >("SMW",boost::python::init<bool>())
+        ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<SMW>,
         std::shared_ptr<Module> 
