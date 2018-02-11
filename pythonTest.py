@@ -190,6 +190,10 @@ def test_my_approach(
         print("setting up optimal (", name, ") ...")
         for i, query_ in enumerate(queries):
             alignment = pledges[-1][i].get()[0]
+            if alignment.begin_on_query == alignment.end_on_query:
+                optimal_alignment_in[i][0].set(NucSeq())
+                optimal_alignment_in[i][1].set(NucSeq())
+                continue
             query = query_[0]
             optimal_alignment_in[i][0].set(
                 NucSeq(query[alignment.begin_on_query : alignment.end_on_query])
@@ -426,12 +430,12 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = True
 
-    clearResults(db_name, human_genome, "MA 1")
-    clearResults(db_name, human_genome, "MA 2")
+    #clearResults(db_name, human_genome, "MA 1")
+    #clearResults(db_name, human_genome, "MA 2")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
-    test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
+    test_my_approach(db_name, human_genome, "MA 2", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
     test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
@@ -1379,8 +1383,8 @@ exit()
 #exit()
 
 #high quality picture
-amount = 1
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 2**11, True, True)
+amount = 2**11
 createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount, True, True)
 createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount, True, True)
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount, True, True)

@@ -174,15 +174,21 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//lambda
     );//for each
 
+    //make sure that we return at least an empty seed set if nothing else
+    if(vSeeds.empty())
+        return std::shared_ptr<ContainerVector>(
+            new ContainerVector {std::shared_ptr<Seeds>(new Seeds())}
+        );
+
     //sort the seeds according to their initial positions
     sort(vSeeds, uiQLen);
 
     //positions to remember the maxima
-    std::vector<std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned int>> xMaxima;
+    std::vector<std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long>> xMaxima;
 
     //find the SOC maxima
     nucSeqIndex uiCurrScore = 0;
-    unsigned int uiCurrEle = 0;
+    unsigned long uiCurrEle = 0;
     std::vector<Seed>::iterator xStripStart = vSeeds.begin();
     std::vector<Seed>::iterator xStripEnd = vSeeds.begin();
     while(xStripStart != vSeeds.end() && xStripEnd != vSeeds.end())
@@ -239,8 +245,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     // so that we can extract the best SOC first
     std::sort(xMaxima.begin(), xMaxima.end(),
         []
-        (std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned int> a, 
-         std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned int> b)
+        (std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long> a, 
+         std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long> b)
         {
             if(std::get<0>(a) == std::get<0>(b))
                 return std::get<2>(a) < std::get<2>(b);
