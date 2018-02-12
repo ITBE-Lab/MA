@@ -50,7 +50,17 @@ void EXPORTED Alignment::makeLocal()
     unsigned int iMaxEnd = data.size();
     unsigned int iLastStart = 0;
     int iScoreCurr = 0;
-
+    /*
+     * the purpose of this loop is to set iMaxStart & iMaxEnd correctly.
+     * this is done using an approach similar to SW backtracking:
+     * - run from the beginning to the end of the alignment
+     * - always keep track of the current score
+     * - always keep track of the last index where the score was zero
+     * - if the current score is the largest so far encountered score do the following:
+     *      - overwrite iMaxStart with the last index where the score was zero
+     *      - overwrite iMaxEnd with the current index
+     * once the loop finished iMaxStart & iMaxEnd are set correctly.
+     */
     for(unsigned int index = 0; index < data.size(); index++)
     {
         switch (std::get<0>(data[index]))
@@ -88,7 +98,7 @@ void EXPORTED Alignment::makeLocal()
         std::cout << std::endl;
         std::cout << iMaxStart << " " << iMaxEnd << std::endl;
     )
-    //adjust the begin/end on ref/query
+    //adjust the begin/end on ref/query according to the area that will be erased
     if(iMaxStart <= iMaxEnd)
     {
         for(unsigned int index = 0; index < iMaxStart; index++)

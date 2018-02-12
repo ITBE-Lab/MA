@@ -1,4 +1,4 @@
-from .MA import *
+from MA import *
 import random
 import gc
 import os
@@ -264,11 +264,13 @@ def test_my_approach(
                         ref_pack
                     )
 
-            if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
+            if warn_once and optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score",
                       alignment.get_score(), optimal_alignment.get_score()
                      )
+                print("this warning is just printed once")
                 print_alignments()
+                warn_once = False
             if (warn_once and local and optimal_alignment != None and
                     alignment.get_score() < optimal_alignment.get_score()):
                 warn_once = False
@@ -430,8 +432,8 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = True
 
-    #clearResults(db_name, human_genome, "MA 1")
-    #clearResults(db_name, human_genome, "MA 2")
+    clearResults(db_name, human_genome, "MA 1")
+    clearResults(db_name, human_genome, "MA 2")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
@@ -630,6 +632,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
         sub_illumina = 0.15
         indel_illumina = 0.05
+        better_than_optima_count = 0
 
         def init(d, x, y):
             if x not in d:
@@ -658,7 +661,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 hits[num_mutation][num_indels] += 1
                 if not optimal_score is None and optimal_score > 0:
                     if optimal_score < score:
-                        print("WARNING: aligner got better", score, "than optimal score", optimal_score)
+                        better_than_optima_count += 1
                         opt_scores[num_mutation][num_indels] += score
                         opt_score_loss[num_mutation][num_indels] += optimal_score/score
                     else:
@@ -687,6 +690,11 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 scores[num_mutation][num_indels] += score
             if not num_seed_chosen_strip is None:
                 nums_seeds_chosen[num_mutation][num_indels] += num_seed_chosen_strip
+
+        if better_than_optima_count > 0:
+            print("WARNING: aligner got better than optimal score",
+                  better_than_optima_count, "times"
+                 )
 
         def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None):
             pic = []
@@ -1380,10 +1388,18 @@ exit()
 #create_as_sequencer_reads("/mnt/ssd1/illumina.db", 1000)
 #test_my_approaches("/mnt/ssd1/illumina.db")
 #analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 150, 0)
-#exit()
 
 #high quality picture
-#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 2**11, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
+compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
+analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
+analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+
+exit()
+
 amount = 2**11
 createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount, True, True)
 createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount, True, True)
@@ -1398,11 +1414,6 @@ test_my_approaches("/mnt/ssd1/longIndels.db")
 test_my_approaches("/mnt/ssd1/insertionOnly.db")
 test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
-#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-#compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
-#compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
-#analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
-#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
 #createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)

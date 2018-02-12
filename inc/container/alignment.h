@@ -267,6 +267,12 @@ namespace libMA
             return score() < pAlign->score();
         }//function
 
+        /**
+         * @brief transform any alignment into a local one
+         * @details
+         * When an alignment is computed on the foundation of seeds it might not be local.
+         * This function has a linear complexity with regard to the compressed alignment length.
+         */
         void EXPORTED makeLocal();
 
         void operator=(const std::shared_ptr<Alignment> pOther)

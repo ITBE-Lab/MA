@@ -10,7 +10,7 @@
 # @author Markus Schmidt
 #
 
-from .. import libMA
+import libMA
 import traceback
 
 ##
@@ -199,10 +199,10 @@ class NucSeq(libMA.NucSeq):
 # @ingroup container
 #
 class ContainerVector(libMA.ContainerVector):
-    def __init__(self):
-        libMA.ContainerVector.__init__(self)
-
     def __init__(self, *args):
+        if len(args) == 0:
+            libMA.ContainerVector.__init__(self)
+            return
         libMA.ContainerVector.__init__(self, args[0])
         for arg in args:
             self.append(arg)
@@ -246,9 +246,6 @@ class Chaining(libMA.Chaining):
 ##
 # @brief python wrapper for FileReader
 class FileReader(libMA.FileReader):
-    def execute(self, *args):
-        return super(FileReader, self).execute(ContainerVector(*args))
-
     def execute(self):
         return super(FileReader, self).execute(ContainerVector(Nil()))
 

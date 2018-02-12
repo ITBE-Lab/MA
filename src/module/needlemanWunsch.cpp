@@ -2,9 +2,9 @@
 using namespace libMA;
 
 
-int iGap = 6;
+int iGap = 20;
 int iExtend = 1;
-int iMatch = 1;
+int iMatch = 10;
 int iMissMatch = 4;
 
 ContainerVector NeedlemanWunsch::getInputType() const

@@ -109,6 +109,7 @@ namespace libMA
         */
         ShadowInterval EXPORTED getRightShadow(Seeds::iterator pSeed) const;
     public:
+        bool optimisticGapEstimation = false;
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
