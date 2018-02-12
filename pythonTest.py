@@ -85,6 +85,7 @@ def test_my_approach(
         local=True,
         reseed=False,
         full_analysis=False
+        #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
 
@@ -134,7 +135,9 @@ def test_my_approach(
         reseeding = ReSeed(max_hits)
         soc = StripOfConsideration(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
-        couple = ExecOnVec(LinearLineSweep())
+        ls = LinearLineSweep()
+        #ls.optimistic_gap_estimation = optimistic_gap_estimation
+        couple = ExecOnVec(ls)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw)
@@ -190,7 +193,7 @@ def test_my_approach(
         print("setting up optimal (", name, ") ...")
         for i, query_ in enumerate(queries):
             alignment = pledges[-1][i].get()[0]
-            if alignment.begin_on_query == alignment.end_on_query:
+            if alignment.begin_on_query == alignment.end_on_query or not full_analysis:
                 optimal_alignment_in[i][0].set(NucSeq())
                 optimal_alignment_in[i][1].set(NucSeq())
                 continue
@@ -214,12 +217,15 @@ def test_my_approach(
             optimal_alignment = None
             if len(optimal_alignment_out[i].get()) > 0:
                 optimal_alignment = optimal_alignment_out[i].get()[0]
-                # adjust the scores to the slice that 
-                # was actually computed with the optimal alignment
-                optimal_alignment.begin_on_query += alignment.begin_on_query
-                optimal_alignment.end_on_query += alignment.begin_on_query
-                optimal_alignment.begin_on_ref += alignment.begin_on_ref
-                optimal_alignment.end_on_ref += alignment.begin_on_ref
+                if optimal_alignment.end_on_query == 0 or optimal_alignment.end_on_ref == 0:
+                    optimal_alignment = None
+                else:
+                    # adjust the scores to the slice that 
+                    # was actually computed with the optimal alignment
+                    optimal_alignment.begin_on_query += alignment.begin_on_query
+                    optimal_alignment.end_on_query += alignment.begin_on_query
+                    optimal_alignment.begin_on_ref += alignment.begin_on_ref
+                    optimal_alignment.end_on_ref += alignment.begin_on_ref
             #print(alignment.stats.name)
             sample_id = int(alignment.stats.name)
             collect_ids.append(sample_id)
@@ -256,7 +262,7 @@ def test_my_approach(
                     pledges[0][i].get(),
                     ref_pack
                 )
-                if full_analysis:
+                if optimal_alignment != None:
                     print("optimal alignment:")
                     AlignmentPrinter().execute(
                         optimal_alignment,
@@ -430,10 +436,10 @@ def test_my_approaches_rele(db_name):
     """
 
 def test_my_approaches(db_name):
-    full_analysis = True
+    full_analysis = False
 
-    clearResults(db_name, human_genome, "MA 1")
-    clearResults(db_name, human_genome, "MA 2")
+    #clearResults(db_name, human_genome, "MA 1")
+    #clearResults(db_name, human_genome, "MA 2")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
@@ -894,7 +900,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [] ]
+    plots = [ [], [], [] ]
     mapping_qual = []
     yax = True
     for approach_ in approaches:
@@ -1019,10 +1025,10 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 color_bar.major_label_text_font_size=font_size
                 plot.add_layout(color_bar, 'left')
 
-            if not xax:
-                plot.xaxis.visible = False
-            if not yax:
-                plot.yaxis.visible = False
+            #if not xax:
+            #    plot.xaxis.visible = False
+            #if not yax:
+            #    plot.yaxis.visible = False
             if not title is None:
                 plot.title.text_font=font
                 plot.title.text_font_size=font_size
@@ -1035,8 +1041,8 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
 
             return plot
         if indel_size > 0:
-            avg_hits = makePicFromDict(hits, 400, max_indel, tries, approach, set_max=1, set_min=0, yax=yax)
-            #avg_runtime = makePicFromDict(run_times, 400, max_indel, tries, None, 0, False, 0.01, 0, yax=yax)
+            avg_hits = makePicFromDict(hits, 400, max_indel, tries, approach, set_max=1, set_min=0, yax=False)
+            avg_runtime = makePicFromDict(run_times, 400, max_indel, tries, None, 0, False, 0.1, 0, yax=False)
             #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
             #avg_seeds = makePicFromDict(nums_seeds, 400, max_indel, tries, approach, yax=yax)
             #avg_rel = makePicFromDict(hits, 400, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
@@ -1044,8 +1050,8 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
 
             if not avg_hits is None:
                 plots[0].append(avg_hits)
-            #if not avg_runtime is None:
-            #    plots[1].append(avg_runtime)
+            if not avg_runtime is None:
+                plots[1].append(avg_runtime)
             #if not avg_seeds is None:
             #    plots[2].append(avg_seeds)
             #if not avg_rel is None:
@@ -1368,22 +1374,6 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
-"""
-f = FileReader("test.fasta")
-nuc = f.execute()
-print(nuc.fastaq())
-nuc = f.execute()
-print(nuc.fastaq())
-
-exit()
-"""
-#memory_test(human_genome, 1)
-#get_ambiguity_distribution(human_genome)
-#exit()
-
-#createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 3, 128, True)
-#test_my_approaches("/mnt/ssd1/shortIndels.db")
-#analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 3)
 
 #create_as_sequencer_reads("/mnt/ssd1/illumina.db", 1000)
 #test_my_approaches("/mnt/ssd1/illumina.db")
@@ -1391,35 +1381,34 @@ exit()
 
 #high quality picture
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
-analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
-analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-
-exit()
+#test_my_approaches("/mnt/ssd1/highQual.db")
+#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+#compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
+#compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
+#analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
+#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+#
+#exit()
 
 amount = 2**11
-createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount, True, True)
-createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount, True, True)
-createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount, True, True)
-createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 500, amount, True, True)
-createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 50, amount, True, True, 1)
-createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 500, amount, True, True, 0)
-test_my_approaches("/mnt/ssd1/default.db")
-test_my_approaches("/mnt/ssd1/short.db")
-test_my_approaches("/mnt/ssd1/shortIndels.db")
-test_my_approaches("/mnt/ssd1/longIndels.db")
-test_my_approaches("/mnt/ssd1/insertionOnly.db")
-test_my_approaches("/mnt/ssd1/deletionOnly.db")
+#createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, True, True, 1)
+#createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, True, True, 0)
 
 
-#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**13, True, True)
-#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 2**7, True, True)
-#createSampleQueries(human_genome, "/mnt/ssd1/veryHighQual.db", 1000, 100, 0, True, True)
-#test_my_approaches("/mnt/ssd1/veryHighQual.db")
-#analyse_all_approaches("highQual.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
-#analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/veryHighQual.db", 1000, 100)
+#test_my_approaches("/mnt/ssd1/default.db")
+#test_my_approaches("/mnt/ssd1/short.db")
+#test_my_approaches("/mnt/ssd1/shortIndels.db")
+#test_my_approaches("/mnt/ssd1/longIndels.db")
+#test_my_approaches("/mnt/ssd1/insertionOnly.db")
+#test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
-
+analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
+#analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
+#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)

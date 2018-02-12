@@ -125,19 +125,20 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    //copy the input
-    //@todo unecessary copy!!! (well it's necessary since python might delete the old datastructure...)
+    // copy the input
+    // @todo unecessary copy!!! 
+    // (well it's necessary since python might delete the old datastructure...)
     std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
         std::static_pointer_cast<Seeds>((*vpInput)[0])));
 
 
     std::vector<ShadowInterval> vShadows = {};
 
-    //get the left shadows
+    // get the left shadows
     for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
         vShadows.push_back(getLeftShadow(pSeed));
 
-    //perform the line sweep algorithm on the left shadows
+    // perform the line sweep algorithm on the left shadows
     linesweep(vShadows, pSeeds);
 
     vShadows.clear();
@@ -146,14 +147,19 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         std::cout << "========" << std::endl;
     )
 
-    //get the right shadows
+    // get the right shadows
     for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
         vShadows.push_back(getRightShadow(pSeed));
 
-    //perform the line sweep algorithm on the right shadows
+    // perform the line sweep algorithm on the right shadows
     linesweep(vShadows, pSeeds);
 
-    //seeds need to be sorted for the following steps
+    pSeeds->bConsistent = true;
+
+    if(pSeeds->size() <= 1)
+        return pSeeds;
+
+    // seeds need to be sorted for the following steps
     std::sort(
             pSeeds->begin(), pSeeds->end(),
             [](const Seed& xA, const Seed& xB)
@@ -165,6 +171,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         );//sort function call
 
     /*
+     * FILTER:
      * do a linear gap cost estimation 
      * this does not improve quality but performance
      * since we might remove some seeds that are too far from another
@@ -192,6 +199,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
      */
     for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
     {
+        assert(pSeed->start() <= pSeed->end());
         //adjust the score correctly
         uiScore += iMatch * pSeed->getValue();
         /*
@@ -246,14 +254,12 @@ std::shared_ptr<Container> LinearLineSweep::execute(
      * We then simply remove all known suboptimal seeds
      * this is an optimistic estimation so some suboptimal regions might remain
      */
-    if(pOptimalStart != pSeeds->begin())
-        if(++pOptimalStart != pSeeds->begin())
+    if(pOptimalStart != pSeeds->end())
+        if(++pOptimalStart != pSeeds->end())
             pSeeds->erase(pSeeds->begin(), pOptimalStart);
     if(pOptimalEnd != pSeeds->end())
         if(++pOptimalEnd != pSeeds->end())
             pSeeds->erase(pOptimalEnd, pSeeds->end());
-
-    pSeeds->bConsistent = true;
 
     return pSeeds;
 }//function

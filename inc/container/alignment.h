@@ -107,6 +107,8 @@ namespace libMA
             uiLength(0),
             uiBeginOnRef(uiBeginOnRef),
             uiEndOnRef(0),
+            uiBeginOnQuery(0),
+            uiEndOnQuery(0),
             xStats()
         {}//constructor
 

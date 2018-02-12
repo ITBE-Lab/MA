@@ -417,6 +417,7 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 				{
 					// save the interval
 					pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(ik)));
+                    assert(ik.start() <= ik.end());
 					assert(ik.end() <= pQuerySeq->length());
 					// we need to remember that we already found a interval this iteration
 					bHaveOne = true;
@@ -461,6 +462,7 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 		assert(pPrev->front().size() >= pPrev->back().size());
 
 		pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(pPrev->front())));
+        assert(pPrev->front().start() <= pPrev->front().end());
 		assert(pPrev->front().end() <= pQuerySeq->length());
 		
 		DEBUG_2(

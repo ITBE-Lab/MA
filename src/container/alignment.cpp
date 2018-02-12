@@ -18,21 +18,17 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     else if(type == MatchType::insertion || type == MatchType::deletion)
     {
         //iGap & iExtend is a penalty not a score
-        nucSeqIndex s = size;
         if(length() == 0 || (at(length()-1) != type) )
-        {
             iScore -= iGap;
-            //s--;
-        }//if
-        iScore -= iExtend * s;
+        iScore -= iExtend * size;
     }//if
     /*
-    * we are storing in a compressed format 
-    * since it actually makes quite a lot of things easier
-    * same thing here: just check weather the last symbol is the same as the inserted one
-    *      if so just add the amount of new symbols
-    *      else make a new entry with the correct amount of symbols
-    */
+     * we are storing in a compressed format 
+     * since it actually makes quite a lot of things easier
+     * same thing here: just check weather the last symbol is the same as the inserted one
+     *      if so just add the amount of new symbols
+     *      else make a new entry with the correct amount of symbols
+     */
     if(data.size() != 0 && std::get<0>(data.back()) == type)
         std::get<1>(data.back()) += size;
     else
@@ -288,11 +284,11 @@ void exportAlignment()
     .def(boost::python::vector_indexing_suite<
             std::vector<MatchType>,
             /*
-            *    true = noproxy this means that the content of the vector is already exposed by
-            *    boost python. 
-            *    if this is kept as false, Container would be exposed a second time.
-            *    the two Containers would be different and not inter castable.
-            */
+             *    true = noproxy this means that the content of the vector is already exposed by
+             *    boost python. 
+             *    if this is kept as false, Container would be exposed a second time.
+             *    the two Containers would be different and not inter castable.
+             */
             true
         >());
 

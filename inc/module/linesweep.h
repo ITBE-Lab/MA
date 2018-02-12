@@ -109,6 +109,20 @@ namespace libMA
         */
         ShadowInterval EXPORTED getRightShadow(Seeds::iterator pSeed) const;
     public:
+        /**
+         * @brief true: estimate all possible position as matches in the gap cost filter
+         * @details
+         * After the linesweep picks a subset of all seeds so that the overall score
+         * becomes optimal.
+         * This filter has a linear time complexity.
+         * It estimates the penalty for gaps between seeds.
+         * We have two options here:
+         * True -> the gapcost is estimated optimistically (as small as possible)
+         * False -> we assume that the score for matches/missmatches is roughly equal within the gap
+         * 
+         * @note not beeing optimistic here has no negative affect on the accuracy
+         * but improves runtime significantly
+         */
         bool optimisticGapEstimation = false;
 
         //overload

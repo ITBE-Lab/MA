@@ -342,6 +342,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     std::shared_ptr<Pack> pRefPack = 
         std::static_pointer_cast<Pack>((*vpInput)[2]);
 
+    if(pSeeds == nullptr)
+        return std::shared_ptr<Alignment>(new Alignment());
     //no seeds => no spot found at all...
     if(pSeeds->empty())
     {
@@ -376,19 +378,20 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             beginRef = xSeed.start_ref();
         if(endQuery < xSeed.end())
             endQuery = xSeed.end();
+        assert(xSeed.start() <= xSeed.end());
     }//for
     if(!bLocal)
     {
         beginRef -= (nucSeqIndex)( beginQuery * fRelativePadding );
         if(beginRef > endRef)//check for underflow
             beginRef = 0;
-        assert(pQuery->length() >= endQuery);
         endRef += (nucSeqIndex)( (pQuery->length() - endQuery) * fRelativePadding );
         if(beginRef > endRef)//check for overflow
             endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
         endQuery = pQuery->length();
         beginQuery = 0;
     }//if
+    assert(endQuery <= pQuery->length());
     pRet = std::shared_ptr<Alignment>(
         new Alignment(beginRef, endRef, beginQuery, endQuery)
     );

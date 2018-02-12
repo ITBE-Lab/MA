@@ -131,8 +131,8 @@ void StripOfConsideration::forEachNonBridgingSeed(
                     xS.start_ref() > addSize ? xS.start_ref() - addSize : 0,//from
                     //prevent index larger than reference
                     xS.end_ref() + addSize < pxFM_index->getRefSeqLength() ?
-                        xS.size() + addSize :
-                        pxFM_index->getRefSeqLength() - xS.start_ref() 
+                        xS.size() - 1 + addSize :
+                        pxFM_index->getRefSeqLength() - xS.start_ref() - 1
                     ) //to
                 )
             {
@@ -270,8 +270,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         while(
             xCollect2 != vSeeds.end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))
+        {
+            assert(xCollect2->start() <= xCollect2->end());
+            assert(xCollect2->end() <= pQuerySeq->length());
             //if the iterator is still within the strip add the seed and increment the iterator
             pSeeds->push_back(*(xCollect2++));
+        }//while
         //save the seed
         pRet->push_back(pSeeds);
         //move to the next strip
