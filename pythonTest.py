@@ -270,13 +270,12 @@ def test_my_approach(
                         ref_pack
                     )
 
-            if warn_once and optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
+            if optimal_alignment != None and alignment.get_score() > optimal_alignment.get_score():
                 print("WARNING: alignment computed better than optimal score",
                       alignment.get_score(), optimal_alignment.get_score()
                      )
                 print("this warning is just printed once")
                 print_alignments()
-                warn_once = False
             if (warn_once and local and optimal_alignment != None and
                     alignment.get_score() < optimal_alignment.get_score()):
                 warn_once = False
@@ -438,8 +437,8 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = False
 
-    #clearResults(db_name, human_genome, "MA 1")
-    #clearResults(db_name, human_genome, "MA 2")
+    clearResults(db_name, human_genome, "MA 1")
+    clearResults(db_name, human_genome, "MA 2")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
@@ -1399,7 +1398,7 @@ amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, True, True, 0)
 
 
-#test_my_approaches("/mnt/ssd1/default.db")
+test_my_approaches("/mnt/ssd1/default.db")
 #test_my_approaches("/mnt/ssd1/short.db")
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
 #test_my_approaches("/mnt/ssd1/longIndels.db")

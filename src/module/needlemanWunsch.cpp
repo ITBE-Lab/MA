@@ -222,7 +222,7 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
                 newScore += iMatch;
             else
                 newScore -= iMissMatch;
-            if(newScore >= s[uiI][uiJ])
+            if(newScore > s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
                 dir[uiI][uiJ] = 1;

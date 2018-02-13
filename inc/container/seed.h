@@ -97,6 +97,7 @@ namespace libMA
          * @brief Returns the value of the seed.
          * @details
          * A seeds value corresponds to its size.
+         * @todo check if the size()/uiAmbiguity is actually helpful
          */
         nucSeqIndex getValue() const
         {

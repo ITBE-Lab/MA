@@ -378,36 +378,36 @@ struct AlignmentOutcomeMatrix
 			/* We check whether the two symbols match
 			* WARNING: The scoring matrix is shifted into X as well Y direction by one position
 			*/
-			if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
-			{
-				/* They match, so we insert a match into the vector. (push_back using &&)
-				*/
-				alignmentOutcomeVector.push_back( alignment_description_element<char> ( EQUAL_PAIR, 
-												  NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-												  NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
-			} // if
-			else
-			{	
-				switch ( backtrackMatrix[currentIndex] )
-				{
-				case LEFT_UP :
-					alignmentOutcomeVector.push_back( alignment_description_element<char> ( UNEQUAL_PAIR, 
-													  NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-													  NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
-					break;
-				case LEFT :
-					alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_ROW_SIDE, 
-													  '+', 
-													  NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
-					break;
-				case UP :
-					alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_COLUMN_SIDE, 
-													  NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-													  '+' ) );
-				case STOP :
-					;
-				} // switch
-			} // else
+            switch ( backtrackMatrix[currentIndex] )
+            {
+            case LEFT_UP :
+                if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
+                {
+                    /* They match, so we insert a match into the vector. (push_back using &&)
+                    */
+                    alignmentOutcomeVector.push_back( alignment_description_element<char> ( EQUAL_PAIR, 
+                                                    NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+                                                    NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+                } // if
+                else
+                {	
+                    alignmentOutcomeVector.push_back( alignment_description_element<char> ( UNEQUAL_PAIR, 
+                                                    NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+                                                    NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+                } // else
+                break;
+            case LEFT :
+                alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_ROW_SIDE, 
+                                                    '+', 
+                                                    NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+                break;
+            case UP :
+                alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_COLUMN_SIDE, 
+                                                    NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+                                                    '+' ) );
+            case STOP :
+                ;
+            } // switch
 
 			  /* Now we do the real backtracking.
 			  */
@@ -743,7 +743,10 @@ struct SW_align_type
 
 				h += referenceToQueryProfileRow[uxIteratorColumn]; // H(i-1, j-1) + Score(i, j)
 
-				if (e > h)
+                /*
+                 * NOTE: the >= is very important for the backtracking
+                 */
+				if (e >= h)
 				{
 					h = e;
 					if ( CONF_FILL_OUTCOME_MATRIX )
@@ -752,7 +755,10 @@ struct SW_align_type
 					}
 				}
 
-				if (f > h)
+                /*
+                 * NOTE: the >= is very important for the backtracking
+                 */
+				if (f >= h)
 				{
 					h = f;
 					if ( CONF_FILL_OUTCOME_MATRIX )

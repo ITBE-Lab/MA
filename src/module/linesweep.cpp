@@ -200,6 +200,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
     {
         assert(pSeed->start() <= pSeed->end());
+        assert(pSeed->size() <= 10000);
         //adjust the score correctly
         uiScore += iMatch * pSeed->getValue();
         /*
@@ -253,13 +254,22 @@ std::shared_ptr<Container> LinearLineSweep::execute(
      *
      * We then simply remove all known suboptimal seeds
      * this is an optimistic estimation so some suboptimal regions might remain
+     * 
+     * NOTE: order is significant:
+     * """
+     * --- Iterator validity ---
+     * Iterators, pointers and references pointing to position (or first) and beyond are
+     * invalidated, with all iterators, pointers and references to elements before position
+     * (or first) are guaranteed to keep referring to the same elements they were referring to
+     * before the call.
+     * """
      */
-    if(pOptimalStart != pSeeds->end())
-        if(++pOptimalStart != pSeeds->end())
-            pSeeds->erase(pSeeds->begin(), pOptimalStart);
     if(pOptimalEnd != pSeeds->end())
         if(++pOptimalEnd != pSeeds->end())
             pSeeds->erase(pOptimalEnd, pSeeds->end());
+    if(pOptimalStart != pSeeds->end())
+        if(++pOptimalStart != pSeeds->end())
+            pSeeds->erase(pSeeds->begin(), pOptimalStart);
 
     return pSeeds;
 }//function
