@@ -256,14 +256,14 @@ def test_my_approach(
             seed_coverage = 0.0
 
             def print_alignments():
-                print("computed alignment:")
+                print("MA alignment:")
                 AlignmentPrinter().execute(
                     alignment,
                     pledges[0][i].get(),
                     ref_pack
                 )
                 if optimal_alignment != None:
-                    print("optimal alignment:")
+                    print("SA alignment:")
                     AlignmentPrinter().execute(
                         optimal_alignment,
                         pledges[0][i].get(),
@@ -274,7 +274,7 @@ def test_my_approach(
                 print("WARNING: alignment computed better than optimal score",
                       alignment.get_score(), optimal_alignment.get_score()
                      )
-                print("this warning is just printed once")
+                #print("this warning is just printed once")
                 print_alignments()
             if (warn_once and local and optimal_alignment != None and
                     alignment.get_score() < optimal_alignment.get_score()):
@@ -290,10 +290,15 @@ def test_my_approach(
                 for match_type in alignment.extract():
                     if match_type == MatchType.seed:
                         seed_coverage += 1.0
-                        if (gap_size > 100 and nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open +
-                                nmw.penalty_gap_extend * gap_size):
-                            if (float(abs(curr_max_diag_deviation)) / gap_size >
-                                    max_diag_deviation_percent):
+                        if (
+                                gap_size > 100 and
+                                nmw.penalty_missmatch * gap_size < nmw.penalty_gap_open +
+                                nmw.penalty_gap_extend * gap_size
+                            ):
+                            if (
+                                    float(abs(curr_max_diag_deviation)) / gap_size >
+                                    max_diag_deviation_percent
+                                ):
                                 max_diag_deviation_percent = float(abs(curr_max_diag_deviation))
                                 max_diag_deviation_percent /= gap_size
                         if abs(curr_max_diag_deviation) > max_diag_deviation:
@@ -435,7 +440,7 @@ def test_my_approaches_rele(db_name):
     """
 
 def test_my_approaches(db_name):
-    full_analysis = False
+    full_analysis = True
 
     clearResults(db_name, human_genome, "MA 1")
     clearResults(db_name, human_genome, "MA 2")
@@ -1399,13 +1404,13 @@ amount = 2**11
 
 
 test_my_approaches("/mnt/ssd1/default.db")
-#test_my_approaches("/mnt/ssd1/short.db")
-#test_my_approaches("/mnt/ssd1/shortIndels.db")
-#test_my_approaches("/mnt/ssd1/longIndels.db")
-#test_my_approaches("/mnt/ssd1/insertionOnly.db")
-#test_my_approaches("/mnt/ssd1/deletionOnly.db")
+test_my_approaches("/mnt/ssd1/short.db")
+test_my_approaches("/mnt/ssd1/shortIndels.db")
+test_my_approaches("/mnt/ssd1/longIndels.db")
+test_my_approaches("/mnt/ssd1/insertionOnly.db")
+test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
-analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 #analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
 #analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)

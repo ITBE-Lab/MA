@@ -61,7 +61,7 @@ std::shared_ptr<Container> Lock::getOutputType() const
 
 std::shared_ptr<Container> Lock::execute(std::shared_ptr<ContainerVector> vpInput)
 {
-    DEBUG(
+    DEBUG_3(
         std::cout << "lock" << std::endl;
     )
     //locking in the container is done automatically by the pledge
@@ -81,7 +81,7 @@ std::shared_ptr<Container> UnLock::getOutputType() const
 
 std::shared_ptr<Container> UnLock::execute(std::shared_ptr<ContainerVector> vpInput)
 {
-    DEBUG(
+    DEBUG_3(
         std::cout << "unlock" << std::endl;
     )
     //unlock the given lock

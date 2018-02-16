@@ -73,7 +73,7 @@ void LinearLineSweep::linesweep(
     //this is the line sweeping part
     for(ShadowInterval& rInterval : vShadows)
     {
-        DEBUG(
+        DEBUG_2(
             std::cout << "Current Sweep position: " << rInterval.start() << std::endl;
             std::cout << "\tat start of interval " << rInterval.start() <<
                 ", " << rInterval.end() << std::endl;
@@ -94,7 +94,7 @@ void LinearLineSweep::linesweep(
                 xItervalEnds.front().remove(pSeeds);
                 continue;
             }//if
-            DEBUG(
+            DEBUG_2(
                 std::cout << "\tremoving: " << xItervalEnds.front().end() << std::endl;
             )
             // delete the first seed
@@ -105,7 +105,7 @@ void LinearLineSweep::linesweep(
             ++iterator;
             while(iterator != xItervalEnds.end() && iterator->end() >= rInterval.end())
             {
-                DEBUG(
+                DEBUG_2(
                     std::cout << "\tremoving: " << iterator->end() << std::endl;
                 )
                 iterator->remove(pSeeds);
@@ -143,7 +143,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
     vShadows.clear();
 
-    DEBUG(
+    DEBUG_2(
         std::cout << "========" << std::endl;
     )
 

@@ -137,7 +137,7 @@ void EXPORTED Alignment::makeLocal()
     uiLength = 0;
     for(unsigned int index = 0; index < data.size(); index++)
         uiLength += std::get<1>(data[index]);
-    DEBUG(
+    DEBUG_2(
         if(uiEndOnRef < uiBeginOnRef)
         {
             std::cout << "---" << std::endl;
@@ -145,6 +145,8 @@ void EXPORTED Alignment::makeLocal()
                 std::cout << std::get<0>(data[index]) << "," << std::get<1>(data[index]) << std::endl;
                 exit(0);
         }
+    )
+    DEBUG(
         if(reCalcScore() != iScore)
             std::cerr << "WARNING set wrong score or removed wrong elements in makeLocal" 
                 << std::endl;

@@ -409,7 +409,7 @@ Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
 					std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
 					std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
 				)
-				DEBUG(
+				DEBUG_2(
 					std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
 				)
 				// check if the extension resulted in a non enclosed interval
@@ -498,7 +498,7 @@ void BinarySeeding::procesInterval(
 {
 	nucSeqIndex uiStart = xAreaToCover.start();
 	nucSeqIndex uiEnd = xAreaToCover.end();
-	DEBUG(
+	DEBUG_2(
 		std::cout << "interval (" << uiStart << "," << uiEnd << ")" << std::endl;
 	)
 
@@ -513,7 +513,7 @@ void BinarySeeding::procesInterval(
 	// extract how far the extension got on the query.
 	nucSeqIndex uiFrom = xAreaCovered.start();
 	nucSeqIndex uiTo = xAreaCovered.end();
-	DEBUG(
+	DEBUG_2(
 		std::cout << "splitting interval (" << uiStart << "," << uiEnd << ") at (" << uiFrom << "," << uiTo << ")" << std::endl;
 	)
 
@@ -577,7 +577,7 @@ std::shared_ptr<Container> BinarySeeding::execute(
     if(pQuerySeq == nullptr)
         return pSegmentVector;
 
-    DEBUG(
+    DEBUG_2(
         std::cout << pQuerySeq->fastaq() << std::endl;
     )
 

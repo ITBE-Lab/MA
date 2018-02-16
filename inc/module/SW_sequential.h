@@ -166,10 +166,9 @@ public:
 	} // method
 }; // class
 
-
-/* Class for the description of scoring matrices.
- * Scoring matrices can be used by the serial aligner for backtracking purposes.
- */
+   /* Class for the description of scoring matrices.
+   * Scoring matrices can be used by the serial aligner for backtracking purposes.
+   */
 template<class SCORE_TP, class T_size_t>
 struct AlignmentOutcomeMatrix
 {
@@ -181,10 +180,10 @@ struct AlignmentOutcomeMatrix
 	SequenceString &rColumnSequenceString;
 #endif
 
-	const T_size_t numberOfColumns;
-	const uint8_t* puxColumnSequenceRef;
-	const T_size_t numberOfRows;
 	const uint8_t* puxRowSequenceRef;
+	const T_size_t numberOfRows;
+	const uint8_t* puxColumnSequenceRef;
+	const T_size_t numberOfColumns;
 
 
 	/* Initializes the first column and the first row.
@@ -209,10 +208,11 @@ struct AlignmentOutcomeMatrix
 	   */
 	AlignmentOutcomeMatrix( T_size_t numberOfColumns, const uint8_t*columnSequence, 
 							T_size_t numberOfRows, const uint8_t*rowSequence ) 
-		: numberOfColumns( numberOfColumns + 1 ), // + 1 because the matrix gets a virtual first column 
-		puxColumnSequenceRef( columnSequence ),
+		: 
+		puxRowSequenceRef( rowSequence ),
 		numberOfRows( numberOfRows + 1 ), // + 1 because the matrix gets a virtual first row
-		puxRowSequenceRef( rowSequence )
+		puxColumnSequenceRef( columnSequence ),
+        numberOfColumns( numberOfColumns + 1 ) //+ 1 because the matrix gets a virtual first column
 	{
 		const T_size_t sizesOfOutcomeAndBacktrackingMatrix = (this->numberOfColumns) * (this->numberOfRows);
 
@@ -271,22 +271,24 @@ struct AlignmentOutcomeMatrix
 	  * The caller has to deliver enough space in resultingSequenceForRow as well as resultingSequenceForColumn.
 	  */
 	void backtrackFromIndexText( size_t startIndex,
-								 char *resultingSequenceForRow,
-								 char *resultingSequenceForColumn,
+								 std::vector<char> &resultingSequenceForRow,
+								 std::vector<char> &resultingSequenceForColumn,
 								 size_t &ruiNumberMatches,
 								 size_t &ruiNumberMismatches,
 								 size_t &ruiNumberInsertions,
-								 size_t &ruiNumberDeletions
+								 size_t &ruiNumberDeletions,
+								 size_t &ruiNumberGapOpen
 	)
 	{
 		size_t index = startIndex;
 		size_t endIndex = startIndex;
 		ruiNumberMatches = ruiNumberMismatches = ruiNumberInsertions = ruiNumberDeletions = 0;
+		bool bLastWasGap = true;
 
 		/* We store the initial references for later reversing
 		*/
-		char *rowSequenceIterator = resultingSequenceForRow;
-		char *columnSequenceIterator = resultingSequenceForColumn;
+		//// char *rowSequenceIterator = resultingSequenceForRow;
+		//// char *columnSequenceIterator = resultingSequenceForColumn;
 
 		while( backtrackMatrix[index] != STOP && (scoringOutcomeMatrix[index] > 0) )
 		{
@@ -300,41 +302,61 @@ struct AlignmentOutcomeMatrix
 			/* We check whether the two symbols match
 			* WARNING: The scoring matrix is currently shifted into X as well Y direction by one position
 			*/
-			if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
-			{
-				*(rowSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
-				*(columnSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
-				ruiNumberMatches++;
-			} // if
-			else
-			{	
-				switch ( backtrackMatrix[index] )
-				{
-				case LEFT_UP :
-					ruiNumberMismatches++;
-					*(rowSequenceIterator++) = 'x';
-					break;
-				case LEFT :
-					ruiNumberDeletions++;
-					*(rowSequenceIterator++) = '+';
-					break;
-				case UP :
-					ruiNumberInsertions++;
-					*(rowSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]);
-				} // switch
 
-				switch ( backtrackMatrix[index] )
+
+			switch ( backtrackMatrix[index] )
+			{
+			case LEFT_UP :
+				if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
 				{
-				case LEFT_UP :
-					*(columnSequenceIterator++) = 'x';
-					break;
-				case LEFT :
-					*(columnSequenceIterator++) = NucSeq::translateACGTCodeToCharacter(puxColumnSequenceRef[uxColumn - 1]);
-					break;
-				case UP :
-					*(columnSequenceIterator++) = '+';
-				} // switch
-			} // else
+					resultingSequenceForRow.push_back( NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]) );
+					ruiNumberMatches++;
+				} // if
+				else
+				{
+					ruiNumberMismatches++;
+					resultingSequenceForRow.push_back( 'x' );
+				} // else
+				bLastWasGap = false;
+				break;
+			case LEFT :
+				ruiNumberDeletions++;
+				resultingSequenceForRow.push_back( '+' );
+				if( ! bLastWasGap )
+				{
+					bLastWasGap = true;
+					ruiNumberGapOpen++;
+				}
+				break;
+			case UP :
+				ruiNumberInsertions++;
+				resultingSequenceForRow.push_back( NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]) );
+				if( ! bLastWasGap )
+				{
+					bLastWasGap = true;
+					ruiNumberGapOpen++;
+				}
+			} // switch
+
+			switch ( backtrackMatrix[index] )
+			{
+			case LEFT_UP :
+				if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
+				{
+					resultingSequenceForColumn.push_back( NucSeq::translateACGTCodeToCharacter(puxRowSequenceRef[uxRow - 1]) );
+				} // if
+				else
+				{
+					resultingSequenceForColumn.push_back( 'x' );
+				} // else
+				break;
+			case LEFT :
+				resultingSequenceForColumn.push_back( NucSeq::translateACGTCodeToCharacter(puxColumnSequenceRef[uxColumn - 1]) );
+				break;
+			case UP :
+				resultingSequenceForColumn.push_back( '+' );
+			} // switch
+
 
 			  /* Now we do the real backtracking.
 			  */
@@ -373,41 +395,41 @@ struct AlignmentOutcomeMatrix
 			*/
 			T_size_t uxColumn = currentIndex % numberOfColumns;
 			T_size_t uxRow = currentIndex / numberOfColumns;
-			assert( uxColumn > 0 && uxRow > 0 );
 
-			/* We check whether the two symbols match
-			* WARNING: The scoring matrix is shifted into X as well Y direction by one position
-			*/
-            switch ( backtrackMatrix[currentIndex] )
-            {
-            case LEFT_UP :
-                if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
-                {
-                    /* They match, so we insert a match into the vector. (push_back using &&)
-                    */
-                    alignmentOutcomeVector.push_back( alignment_description_element<char> ( EQUAL_PAIR, 
-                                                    NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-                                                    NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
-                } // if
-                else
-                {	
-                    alignmentOutcomeVector.push_back( alignment_description_element<char> ( UNEQUAL_PAIR, 
-                                                    NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-                                                    NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
-                } // else
-                break;
-            case LEFT :
-                alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_ROW_SIDE, 
-                                                    '+', 
-                                                    NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
-                break;
-            case UP :
-                alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_COLUMN_SIDE, 
-                                                    NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
-                                                    '+' ) );
-            case STOP :
-                ;
-            } // switch
+
+			switch ( backtrackMatrix[currentIndex] )
+			{
+			case LEFT_UP :
+				/* We check whether the two symbols match
+				* WARNING: The scoring matrix is shifted into X as well Y direction by one position
+				*/
+				if ( puxRowSequenceRef[uxRow - 1] == puxColumnSequenceRef[uxColumn - 1] )
+				{
+					/* They match, so we insert a match into the vector. (push_back using &&)
+					*/
+					alignmentOutcomeVector.push_back( alignment_description_element<char> ( EQUAL_PAIR, 
+														NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+														NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+				} // if
+				else
+				{
+					alignmentOutcomeVector.push_back( alignment_description_element<char>( UNEQUAL_PAIR,
+														NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ),
+														NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+				} // else
+				break;
+			case LEFT :
+				alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_ROW_SIDE, 
+													'+', 
+													NucSeq::translateACGTCodeToCharacter( puxColumnSequenceRef[uxColumn - 1] ) ) );
+				break;
+			case UP :
+				alignmentOutcomeVector.push_back( alignment_description_element<char> ( INSERTION_AT_COLUMN_SIDE, 
+													NucSeq::translateACGTCodeToCharacter( puxRowSequenceRef[uxRow - 1] ), 
+													'+' ) );
+			case STOP :
+				;
+			} // switch
 
 			  /* Now we do the real backtracking.
 			  */
@@ -430,7 +452,6 @@ struct AlignmentOutcomeMatrix
 		/* Finally we inform about the begin and end of our sequences
 		* Here we take 1 way, so we get values according to a counting starting with 0 instead of 1
 		*/
-        assert(previousIndex % numberOfColumns > 0);
 		startPositionInColumn = (previousIndex % numberOfColumns) - 1;
 		endPositionInColumn = (startIndex % numberOfColumns) - 1;
 
@@ -443,47 +464,88 @@ struct AlignmentOutcomeMatrix
 		std::reverse( alignmentOutcomeVector.begin(), alignmentOutcomeVector.end() );
 	}
 
-	void dumpAlignmentFromRowColumn( SCORE_TP score, T_size_t row, T_size_t column )
+	long long dumpAlignmentFromRowColumn( SCORE_TP score,
+										  T_size_t row,
+										  T_size_t column,
+										  SmithWatermanParamaterSet<SCORE_TP> &rxSW_Parameter )
 	{
 		//// std::cout << "row is here " << row << " and column is here " << column << std::endl;
 		T_size_t index = ((row + 1) * numberOfColumns) + (column + 1);
 		assert( scoringOutcomeMatrix[index] == score );
 		//// std::cout << "index is here " << index;
-		dumpAlignmentFromIndex( index, scoringOutcomeMatrix[index] );
+		return dumpAlignmentFromIndex( index, scoringOutcomeMatrix[index], rxSW_Parameter );
 	}
 
-	void dumpAlignmentFromIndex( T_size_t index, SCORE_TP score )
+	long long dumpAlignmentFromIndex( T_size_t index, 
+									  SCORE_TP score, 
+									  SmithWatermanParamaterSet<SCORE_TP> &rxSW_Parameter )
 	{
 		auto bufferSize = numberOfColumns + numberOfRows + 1;
 
 		//// char *textBufferforRow = (char *)malloc( bufferSize * sizeof(char) );
 		//// char *textBufferforColumn = (char *)malloc( bufferSize * sizeof(char) );
 
-		std::vector<char> textBufferforRow( bufferSize );
-		std::vector<char> textBufferforColumn( bufferSize );
+		std::vector<char> textBufferforRow;
+		std::vector<char> textBufferforColumn;
 
 		size_t uiNumberMatches = 0;
 		size_t uiNumberMismatches = 0;
 		size_t uiNumberInsertions = 0;
 		size_t uiNumberDeletions = 0;
+		size_t uiNumberGapOpen = 0;
 
 		//// std::cout << "index " << index << " has score " << score << " :: " << std::endl;
 		backtrackFromIndexText( index,
-								&textBufferforRow[0],
-								&textBufferforColumn[0],
+								textBufferforRow,
+								textBufferforColumn,
 								uiNumberMatches,
 								uiNumberMismatches,
 								uiNumberInsertions,
-								uiNumberDeletions);
-		//// startColumn, endColumn, startRow, endRow);
-		std::cout << "Query: " << (char*)(&textBufferforColumn[0]) << "|\n"
-			<< "Refer: " << (char*)(&textBufferforRow[0]) << "|\n" 
-			<< "Statistic: Matches " << uiNumberMatches << "  Mismatches " << uiNumberMismatches 
-			<< "  Insertions " << uiNumberInsertions << "  Deletions " << uiNumberDeletions << std::endl;
-	}
+								uiNumberDeletions,
+								uiNumberGapOpen);
 
-	/* Dumps all alignments for the current matrix
-	*/
+		assert( textBufferforRow.size() == textBufferforColumn.size() );
+		std::string sLineRef = "";
+		std::string sLineQuery = "";
+		std::reverse( textBufferforRow.begin(), textBufferforRow.end() );
+		std::reverse( textBufferforColumn.begin(), textBufferforColumn.end() );
+		size_t counter = 0;
+		while( true )
+		{
+			if( counter >= textBufferforRow.size() )
+			{
+				std::cout << sLineRef << "\n"
+					<< sLineQuery << std::endl;
+				break;
+			}
+			sLineRef += textBufferforRow[counter];
+			sLineQuery += textBufferforColumn[counter];
+			counter++;
+			if( counter % 80 == 0 )
+			{
+				std::cout << sLineRef << "\n"
+					<< sLineQuery << "\n" << std::endl;
+				sLineRef = "";
+				sLineQuery = "";
+			} // if
+
+		} 
+		//// startColumn, endColumn, startRow, endRow);
+		std::cout ////<< "Query: " << (char*)(&textBufferforColumn[0]) << "|\n"
+				  ////<< "Refer: " << (char*)(&textBufferforRow[0]) << "|\n" 
+			<< "Statistic: Matches " << uiNumberMatches << "  Mismatches " << uiNumberMismatches 
+			<< "  Insertions " << uiNumberInsertions << "  Deletions " << uiNumberDeletions <<
+			" GapOpen: " << uiNumberGapOpen << std::endl;
+
+		long long iScore = (long long)rxSW_Parameter.iWeightMatch * uiNumberMatches
+			+ (long long)rxSW_Parameter.iWeightMismatch * uiNumberMismatches
+			- (long long)rxSW_Parameter.iGapExtend * ( uiNumberInsertions + uiNumberDeletions )
+			- (long long)rxSW_Parameter.iGapOpen * uiNumberGapOpen;
+		return iScore;
+	} // method
+
+	  /* Dumps all alignments for the current matrix
+	  */
 	void dumpAllAlignments() 
 	{
 		T_size_t matrixSize = numberOfRows * numberOfColumns;
@@ -508,6 +570,22 @@ struct AlignmentOutcomeMatrix
 		} // for
 
 		delete[] swAlignmentOutcomes;
+	}
+	  /* Dumps all alignments for the current matrix
+	  */
+	T_size_t getMaxIndex() 
+	{
+		T_size_t matrixSize = numberOfRows * numberOfColumns;
+        SCORE_TP max = 0;
+        T_size_t index = 0;
+
+		for(T_size_t uxIterator = 0; uxIterator < matrixSize; uxIterator++ )
+            if(scoringOutcomeMatrix[ uxIterator ] > max)
+            {
+                max = scoringOutcomeMatrix[ uxIterator ];
+                index = uxIterator;
+            }//if
+        return index;
 	}
 };
 
@@ -548,14 +626,13 @@ struct SW_align_type
 				   size_t numberOfRows, 
 				   const uint8_t *rowSequence, 
 				   SmithWatermanParamaterSet<SCORE_TP> &SWparameterSet
-	) : 
+	)
+            :
 		numberOfColumns(numberOfColumns),
 		columnSequence(columnSequence),
 		numberOfRows(numberOfRows),
 		rowSequence(rowSequence),
 		alphabetSize( SWparameterSet.uiAlphabetSize ),
-		/* Initialize the scoring matrix
-		*/
 		alignmentOutcomeMatrix(numberOfColumns, columnSequence, numberOfRows, rowSequence ),
 		similarityMatrix(SWparameterSet.iWeightMatch, SWparameterSet.iWeightMismatch, alphabetSize),
         pSWparameterSetRef( SWparameterSet )
@@ -571,20 +648,16 @@ struct SW_align_type
 #if (CONF_SET_INITIAL_SCORE_VALUE == 1)
 		int initalScoreValue,
 #endif
-		size_t *pColumnIndexOfMaxScore, 
-		size_t *pRowIndexOfMaxScore,
-		size_t &indexOfMaxElementInScoringTable,
 		std::vector<std::pair<size_t, size_t>> &rvMaxScorePositions // vector that receives the max-positions
 	)
 	{
 		size_t uxIteratorRow; 
-		size_t uxIteratorColumn, start, end;
+		size_t uxIteratorColumn; //  , start, end;
 		SCORE_TP maxScoreValue;
-		long long rowIndexOfMaxScore, columnIndexOfMaxScore; 
 
 		SCORE_TP gapoe = pSWparameterSetRef.iGapOpen + pSWparameterSetRef.iGapExtend;
 
-		int scoreTableRowIterator;
+		int cNuc;
 		int queryProfileIterator;
 
 #if 0
@@ -606,60 +679,20 @@ struct SW_align_type
 		*/
 		SCORE_TP* queryProfile = (SCORE_TP *)malloc( numberOfColumns * alphabetSize * sizeof(SCORE_TP));
 		generic_eh_type<SCORE_TP> *h_and_e_Columns = (generic_eh_type<SCORE_TP> *)calloc( numberOfColumns + 1, sizeof(generic_eh_type<SCORE_TP>) ); // memory for the score array
-
-																																					/* Generate the query profile by using the scoring table
+  		/* Generate the query profile by using the scoring table
 																																					*/
 		queryProfileIterator = 0;
-		for (scoreTableRowIterator = 0; scoreTableRowIterator < alphabetSize; ++scoreTableRowIterator) {
-			SCORE_TP *referenceToStartOfRow = &similarityMatrix.pSimilarityMatrixRef[scoreTableRowIterator * alphabetSize];
+		for (cNuc = 0; cNuc < alphabetSize; ++cNuc) {
+			SCORE_TP *referenceToStartOfRow = &similarityMatrix.pSimilarityMatrixRef[cNuc * alphabetSize];
 
-			for (uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn) {
+			for (uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn) 
+			{
+				//// std::cout << ":" << (int)columnSequence[uxIteratorColumn] << " " << referenceToStartOfRow[columnSequence[uxIteratorColumn]] << " | ";
 				queryProfile[queryProfileIterator] = referenceToStartOfRow[ columnSequence[uxIteratorColumn] ];
 				queryProfileIterator++;
 			} // for
+			//// std::cout << std::endl;
 		} // for
-
-		  /* Initialize the h-elements of the scoreArray.
-		  * The e-elements are set 0 by the initialization
-		  */
-#if (CONF_SET_INITIAL_SCORE_VALUE == 1)
-		h_and_e_Columns[0].h = initalScoreValue; 
-		h_and_e_Columns[1].h = initalScoreValue > gapoe ? initalScoreValue - gapoe 
-			: 0;
-#else
-		h_and_e_Columns[0].h = 0;
-		h_and_e_Columns[1].h = 0;
-#endif
-
-		for( uxIteratorColumn = 2; 
-
-			 uxIteratorColumn <= numberOfColumns
-			 && h_and_e_Columns[uxIteratorColumn-1].h > pSWparameterSetRef.iGapExtend;
-
-			 ++uxIteratorColumn)
-		{
-			h_and_e_Columns[uxIteratorColumn].h = h_and_e_Columns[uxIteratorColumn-1].h - pSWparameterSetRef.iGapExtend;
-		} // for
-
-
-#if (CONF_BAND_LIMITATION == 1)
-		  /* adjust $w if it is too large
-		  * gape = 1; gapo = 3; gapoe = 4;
-		  */
-		sizeOfMatrix = alphabetSize * alphabetSize;
-		maxScoreValue = 0;
-		for (uxIteratorRow = 0;  uxIteratorRow < sizeOfMatrix; ++uxIteratorRow) // get the max score
-			maxScoreValue = maxScoreValue > similarityMatrix[uxIteratorRow] ? maxScoreValue 
-			: similarityMatrix[uxIteratorRow];
-
-		upperLimitOfGapValue = (int)((double)(numberOfColumns * maxScoreValue - gapo) / gape + 1.);
-
-		upperLimitOfGapValue = upperLimitOfGapValue > 1 ? upperLimitOfGapValue 
-			: 1;
-
-		w = w < upperLimitOfGapValue ? w 
-			: upperLimitOfGapValue;
-#endif
 
 		/* computation of H matrix
 		*/
@@ -669,17 +702,14 @@ struct SW_align_type
 		maxScoreValue = 0;
 #endif
 
-		/* rowIndexOfMaxScore and columnIndexOfMaxScore were originally initialized to -1 !
-		* they should be of type int instead of size_t
-		*/
-		rowIndexOfMaxScore = 0; 
-		columnIndexOfMaxScore = 0;
-		start = 0;
-		end = numberOfColumns;
+
+		for( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
+		{
+			h_and_e_Columns[uxIteratorColumn].h = 0;
+			h_and_e_Columns[uxIteratorColumn].e = 0;
+		}
 
 		for (uxIteratorRow = 0; uxIteratorRow < numberOfRows; ++uxIteratorRow) {
-			SCORE_TP f = 0;
-			SCORE_TP hInNextRound;
 			long long indexOfMaxScoreInCurrentRow = -1;
 			SCORE_TP maxScoreInCurrentRow = 0;
 
@@ -687,33 +717,9 @@ struct SW_align_type
 			*/
 			SCORE_TP *referenceToQueryProfileRow = &queryProfile[ rowSequence[uxIteratorRow] * numberOfColumns ];
 
-			/* compute the first column
-			*/
-#if (CONF_SET_INITIAL_SCORE_VALUE == 1)
-			hInNextRound = initalScoreValue - (gapo + gape * (uxIteratorRow + 1));
-			if (hInNextRound < 0) 
-				hInNextRound = 0;
-#else
-			hInNextRound = 0;
-#endif
-
-#if (CONF_BAND_LIMITATION == 1)
-			/* apply the band and the constraint (if provided)
-			* w seem to a 'band' that limits the computational space to +- w elements
-			*/
-			if (start < uxIteratorRow - w) 
-				start = uxIteratorRow - w;
-
-			if (end > uxIteratorRow + w + 1) 
-				end = uxIteratorRow + w + 1;
-
-			if (end > numberOfColumns) 
-				end = numberOfColumns;
-#endif
-
 			/* The outcome Matrix has size (numberOfRows + 1) x (numberOfColumns + 1)
 			*/
-			auto uxMatrixStartShift = CONF_FILL_OUTCOME_MATRIX ? ( ( (uxIteratorRow + 1) * (numberOfColumns + 1) ) + (start + 1) )
+			auto uxMatrixStartShift = CONF_FILL_OUTCOME_MATRIX ? ( ( (uxIteratorRow + 1) * (numberOfColumns + 1) ) + (1) )
 															   : 0;
 
 			SCORE_TP *queryOutcomeMatrixIterator = CONF_FILL_OUTCOME_MATRIX ? alignmentOutcomeMatrix.scoringOutcomeMatrix + uxMatrixStartShift
@@ -722,51 +728,50 @@ struct SW_align_type
 			sw_direction_t *backtrackingMatrixIterator = CONF_FILL_OUTCOME_MATRIX ? alignmentOutcomeMatrix.backtrackMatrix + uxMatrixStartShift
 																				  : NULL;
 
-			for ( uxIteratorColumn = start; uxIteratorColumn < end; ++uxIteratorColumn ) {
-				/* At the beginning of the loop: scoreArray[j] = { H(i - 1, j - 1), E(i, j) }, 
-				*								 f = F(i, j) 
-				*                               hInNextRound = new value for H(i, j - 1)
-				*/
-				generic_eh_type<SCORE_TP> *refIntoScoreArrayForColumn = &h_and_e_Columns[uxIteratorColumn];
-				SCORE_TP h = refIntoScoreArrayForColumn->h; // get H(i-1,j-1)
-				SCORE_TP e = refIntoScoreArrayForColumn->e; // get E(i,j)
+			SCORE_TP h = 0;
+			SCORE_TP f = 0;
+			SCORE_TP h_left_up = 0;
 
-															/* 1. add match or mismatch distance
-															* 2. h = H(i,j)= max{H(i-1, j-1) + Score(i, j), E(i, j), F(i, j)}
-															* Here we can imply the entry in the H matrix as well as the backtracking direction !
-															*/
+			for ( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn ) 
+			{
+				SCORE_TP e_up = h_and_e_Columns[uxIteratorColumn].e;
+				SCORE_TP h_up = h_and_e_Columns[uxIteratorColumn].h;
+				SCORE_TP h_left = h;
+				SCORE_TP e = std::max( h_up - gapoe, e_up - pSWparameterSetRef.iGapExtend );
+				
+				f = std::max( h_left - gapoe, f - pSWparameterSetRef.iGapExtend );
+				
+				h = h_left_up + referenceToQueryProfileRow[uxIteratorColumn]; 
+				
 				sw_direction_t eDirection;
-				if ( CONF_FILL_OUTCOME_MATRIX )
-				{
-					eDirection = LEFT_UP;
-				}
-
-				h += referenceToQueryProfileRow[uxIteratorColumn]; // H(i-1, j-1) + Score(i, j)
-
-                /*
-                 * NOTE: the >= is very important for the backtracking
-                 */
+				eDirection = LEFT_UP;
 				if (e >= h)
 				{
 					h = e;
-					if ( CONF_FILL_OUTCOME_MATRIX )
-					{
-						eDirection = UP;
-					}
+					eDirection = UP;
 				}
-
-                /*
-                 * NOTE: the >= is very important for the backtracking
-                 */
+	
 				if (f >= h)
 				{
 					h = f;
-					if ( CONF_FILL_OUTCOME_MATRIX )
-					{
-						eDirection = LEFT;
-					}
+					eDirection = LEFT;
 				}
 
+				if( h < 0 )
+				{
+					h = 0;
+					eDirection = STOP;
+				}
+
+				h_left_up = h_up;
+				h_and_e_Columns[uxIteratorColumn].e = e;
+				h_and_e_Columns[uxIteratorColumn].h = h;
+				
+				indexOfMaxScoreInCurrentRow = maxScoreInCurrentRow > h ? 
+                                        indexOfMaxScoreInCurrentRow : uxIteratorColumn;
+				maxScoreInCurrentRow = std::max( maxScoreInCurrentRow, h);   
+                // m is stored at eh[mj+1]
+				
 				/* We store h in the Matrix for later analysis
 				*/
 				if ( CONF_FILL_OUTCOME_MATRIX )
@@ -774,48 +779,13 @@ struct SW_align_type
 					*(queryOutcomeMatrixIterator++) = h;
 					*(backtrackingMatrixIterator++) = eDirection;
 				}
-
-				refIntoScoreArrayForColumn->h = hInNextRound; // set H(i,j-1) for the next row
-				hInNextRound = h; // save H(i,j) to hInNextRound for storage in the next iteration.
-
-				indexOfMaxScoreInCurrentRow = maxScoreInCurrentRow > h ? indexOfMaxScoreInCurrentRow 
-					: uxIteratorColumn;
-
-				maxScoreInCurrentRow = maxScoreInCurrentRow > h ? maxScoreInCurrentRow 
-					: h;   // m is stored at eh[mj+1]
-
-						   /* Compute new e value and store this value for the next round
-						   * E(i + 1,j) = max{H(i, j) - gapo, E(i,j)} - gape
-						   */
-				h -= gapoe;
-				h = h > 0 ? h 
-					: 0;
-				e -= pSWparameterSetRef.iGapExtend;
-				e = e > h ? e 
-					: h;   
-				refIntoScoreArrayForColumn->e = e; // save E(i + 1, j) for the next row
-
-												   /* Compute new f value and store this for the next iteration
-												   * F(i,j+1) = max{H(i, j) - gapo, F(i,j)} - gape
-												   */
-				f -= pSWparameterSetRef.iGapExtend;
-				f = f > h ? f 
-					: h;  
 			} // inner for
-
 			  /* Save the final hInNextRound, because there are no more iterations.
 			  * Seems to be necessary for begin and end management
 			  */
 #if (CONF_FOLLOW_MAX_PATH_OPTIMIZATION == 1)
 			h_and_e_Columns[end].h = hInNextRound; 
 			h_and_e_Columns[end].e = 0;
-#endif
-#if 0
-			if (maxScoreInCurrentRow == 0) 
-			{	/* There is no reason to continue, because all scores were zero
-				*/
-				break;
-			}
 #endif
 			/* Logging of the maximum scores */
 			if( maxScoreInCurrentRow >= maxScoreValue )
@@ -824,8 +794,6 @@ struct SW_align_type
 				{	// fresh overall maximum detected 
 					rvMaxScorePositions.clear();
 					maxScoreValue = maxScoreInCurrentRow;
-                    columnIndexOfMaxScore = indexOfMaxScoreInCurrentRow;//added by markus
-                    rowIndexOfMaxScore = uxIteratorRow;//added by markus
 				} // if
 				  /* Log pairs (row, column (max-pos within row) )*/
 				rvMaxScorePositions.push_back( std::pair<size_t, size_t>( uxIteratorRow, indexOfMaxScoreInCurrentRow) );
@@ -853,29 +821,9 @@ struct SW_align_type
 		free(h_and_e_Columns); 
 		free(queryProfile);
 
-		/* We return the position (row and column index) of the maximum score value.
-		* The values are relative to the matrix. (+1 applied)
-		*/
-		if ( pColumnIndexOfMaxScore )
-		{
-			*pColumnIndexOfMaxScore = columnIndexOfMaxScore + 1;
-		} // if
-		if ( pRowIndexOfMaxScore )
-		{
-			*pRowIndexOfMaxScore = rowIndexOfMaxScore + 1;
-		} // if
-
-        
-        DEBUG(
-            if( pColumnIndexOfMaxScore && pRowIndexOfMaxScore )
-            {
-                std::cout << "Max score is: " << maxScoreValue << std::endl;
-            } // if
-        )
-
-		  /* The index of the maximum within the table.
-		  */
-		indexOfMaxElementInScoringTable = (rowIndexOfMaxScore + 1) * alignmentOutcomeMatrix.numberOfColumns + (columnIndexOfMaxScore + 1);
 		return maxScoreValue;
 	}
 }; // struct
+
+
+

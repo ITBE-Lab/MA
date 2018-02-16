@@ -102,7 +102,7 @@ std::shared_ptr<Container> SMW::execute(
     if(pQuerySeq->length() == 0 || pReference->length() == 0)
         return std::shared_ptr<ContainerVector>(new ContainerVector());
 
-    DEBUG(
+    DEBUG_2(
         std::cout << pQuerySeq->length() << "x" << pReference->length() << std::endl;
     )//debug
 
@@ -128,30 +128,39 @@ std::shared_ptr<Container> SMW::execute(
                     xSWparameterSet ); // SW-parameter
 
         /* Prepare variables that will receive aligner output */
-        size_t uiColumnIndexOfMaxScore; // Receives column of max-score
-        size_t uiRowIndexOfMaxScore; // Receives row of max-score
-        size_t indexOfMaxElementInScoringTable; // linear index for max-position in matrix
-        std::vector<std::pair<size_t, size_t>> vMaxScorePositions; // receives the maximum positions as tuples (row, col)
+        // receives the maximum positions as tuples (row, col)
+        std::vector<std::pair<size_t, size_t>> vMaxScorePositions; 
 
         /* Do the actual alignment... */
-        xAligner.swAlign(
-            &uiColumnIndexOfMaxScore,
-            &uiRowIndexOfMaxScore,
-            indexOfMaxElementInScoringTable,
-            vMaxScorePositions
-        );
+        auto uiMaxScore = xAligner.swAlign(vMaxScorePositions);
+
         // collect the results ...
         auto pvRet = std::shared_ptr<ContainerVector>(
             new ContainerVector(std::shared_ptr<Alignment>(new Alignment()))
         );
+        assert(!vMaxScorePositions.empty());
 
+        auto uiIndex = ((vMaxScorePositions[0].first + 2) * xAligner.numberOfColumns) +
+            (vMaxScorePositions[0].second + 1);
+        DEBUG(
+            if(xAligner.alignmentOutcomeMatrix.getMaxIndex() != uiIndex)
+                std::cout << "( "
+                    << vMaxScorePositions[0].first 
+                    << " + 2 ) * "
+                    << xAligner.numberOfColumns
+                    << " + ( "
+                    << vMaxScorePositions[0].second 
+                    << " + 1 ) != "
+                    << xAligner.alignmentOutcomeMatrix.getMaxIndex()
+                    << std::endl;
+        )
         alignment_description<char> vTemp;
         size_t startPositionQuery = 0;
         size_t endPositionQuery = 0;
         size_t startPositionRef = 0;
         size_t endPositionRef = 0;
         xAligner.alignmentOutcomeMatrix.backtrackFromIndex(
-            indexOfMaxElementInScoringTable,
+            uiIndex,
             vTemp,
             startPositionQuery,
             endPositionQuery,
@@ -179,6 +188,7 @@ std::shared_ptr<Container> SMW::execute(
             }//switch
         //for
         pvRet->push_back(pAlignment);
+        assert(uiMaxScore == pAlignment->score());
         return pvRet;
     }//if
     else

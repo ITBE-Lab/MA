@@ -159,7 +159,7 @@ namespace libMA
         */
         bool debugCheckSequenceDescriptorVector()
         {
-            DEBUG(
+            DEBUG_2(
                 std::cout << "Check description vector for consistency." << std::endl;
             )
             decltype( SequenceInPack::uiStartOffsetUnpacked ) uiRunningStartOffsetUnpacked = 0;
@@ -244,7 +244,7 @@ namespace libMA
                     ) const
         {
             auto rsFileName( rsFileNamePrefix + ".pac" ); // final filename for writing the packed sequence
-            DEBUG(
+            DEBUG_2(
                 BOOST_LOG_TRIVIAL(trace) << "Storing pack with filename " << rsFileName;
             )
             std::ofstream xFileOutputStream( rsFileName, std::ios::out | std::ios::binary );

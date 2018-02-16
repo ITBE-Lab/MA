@@ -553,7 +553,7 @@ namespace libMA
         {
             if(numThreads == 0)
                 numThreads = vPledges.size();
-            DEBUG(
+            DEBUG_2(
                 std::cout <<"will cause crashes if used on python modules (@todo fix that)"<< std::endl;
             )
             {

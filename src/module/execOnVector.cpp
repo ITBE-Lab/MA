@@ -23,7 +23,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
         std::static_pointer_cast<ContainerVector>((*vpInput)[0]));
 
-    DEBUG(
+    DEBUG_2(
         std::cout << "executing on: " << pInVec->size() << std::endl;
     )
 

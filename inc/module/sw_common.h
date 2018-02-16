@@ -32,19 +32,11 @@ private:
 		/* initialize scoring matrix
 		*/
 		size_t matrixIterator = 0;
-		for (uint8_t i = 0; i < uxAlphabetSize - 1; ++i)
+		for (uint8_t i = 0; i < uxAlphabetSize; ++i)
 		{
-			for (uint8_t j = 0; j < uxAlphabetSize - 1; ++j)
+			for (uint8_t j = 0; j < uxAlphabetSize; ++j)
 				pSimilarityMatrixRef[matrixIterator++] = i == j ? this->xWeightMatch
 				: this->xWeightMismatch;
-
-			pSimilarityMatrixRef[matrixIterator++] = 0; // ambiguous base
-		}
-		/* Fill the final row of the scoring matrix with zeros.
-		*/
-		for (int j = 0; j < uxAlphabetSize; ++j)
-		{
-			pSimilarityMatrixRef[matrixIterator++] = 0;
 		}
 	} // method
 

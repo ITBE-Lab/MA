@@ -169,7 +169,7 @@ std::shared_ptr<Container> Chaining::execute(
         //this makes our global chaining into a local chaining
         if(chain->score > addScore + chain->pred->score)
         {
-            DEBUG(
+            DEBUG_2(
                 std::cout << "best chain not worth"<< std::endl;
             )
             chain->pred = nullptr;
@@ -181,7 +181,7 @@ std::shared_ptr<Container> Chaining::execute(
         }//else
 
 
-        DEBUG(
+        DEBUG_2(
             std::cout << "current score: "<< chain->score << std::endl;
         )
 
@@ -230,7 +230,7 @@ std::shared_ptr<Container> Chaining::execute(
             }//lambda
         );//sort function call
     
-    DEBUG(
+    DEBUG_2(
         std::cout << "done" << std::endl;
     )
     return std::shared_ptr<Container>(new ContainerVector{pRet});

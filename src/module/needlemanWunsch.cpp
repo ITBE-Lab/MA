@@ -2,7 +2,7 @@
 using namespace libMA;
 
 
-int iGap = 20;
+int iGap = 4;
 int iExtend = 1;
 int iMatch = 10;
 int iMissMatch = 4;
@@ -222,7 +222,7 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
                 newScore += iMatch;
             else
                 newScore -= iMissMatch;
-            if(newScore > s[uiI][uiJ])
+            if(newScore >= s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
                 dir[uiI][uiJ] = 1;
@@ -400,7 +400,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     pRet->xStats = pSeeds->xStats;
     pRet->xStats.sName = pQuery->sName;
 
-    DEBUG(
+    DEBUG_2(
         std::cout << beginRef << " " << endRef << std::endl;
     )
     std::shared_ptr<NucSeq> pRef;
@@ -452,7 +452,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             ovR = 0;
         nucSeqIndex len = rSeed.size();
         nucSeqIndex overlap = std::max(ovQ, ovR);
-        DEBUG(
+        DEBUG_2(
             std::cout << "overlap: " << overlap << std::endl;
         )//DEBUG
         if(len > overlap)
@@ -483,7 +483,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             DEBUG_2(
                 std::cout << len - overlap << std::endl;
             )//DEBUG_2
-            DEBUG(
+            DEBUG_2(
                 for(nucSeqIndex i = overlap; i < len; i++)
                     std::cout << pQuery->charAt(i + rSeed.start());
                 std::cout << std::endl;
