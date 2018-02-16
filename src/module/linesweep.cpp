@@ -17,142 +17,85 @@ std::shared_ptr<Container> LinearLineSweep::getOutputType() const
     return std::shared_ptr<Container>(new Seeds());
 }//function
 
-/**
- * determine the start and end positions this match casts on the left border of the given bucket
- * pxMatch is the container this match is stored in.
- */
-LinearLineSweep::ShadowInterval LinearLineSweep::getLeftShadow(Seeds::iterator pSeed) const
-{
-    return ShadowInterval(
-            pSeed->start(),
-            pSeed->end_ref() - (int64_t)pSeed->start(),
-            pSeed
-        );
-}//function
-
-/**
- * determine the start and end positions this match casts on the right border of the given bucket
- * pxMatch is the container this match is stored in.
- */
-LinearLineSweep::ShadowInterval LinearLineSweep::getRightShadow(Seeds::iterator pSeed) const
-{
-    return ShadowInterval(
-            pSeed->start_ref(),
-            pSeed->end() - (int64_t)pSeed->start_ref(),
-            pSeed
-        );
-}//function
-
-
-
-
-void LinearLineSweep::linesweep(
-        std::vector<ShadowInterval>& vShadows, 
-        std::shared_ptr<Seeds> pSeeds
+std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
+    LinearLineSweep::linesweep(
+        std::shared_ptr<std::vector<
+            std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
+        >> pShadows
     )
 {
     //sort shadows (increasingly) by start coordinate of the match
     std::sort(
-            vShadows.begin(),
-            vShadows.end(),
-            [](ShadowInterval xA, ShadowInterval xB)
+            pShadows->begin(),
+            pShadows->end(),
+            [](std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex> xA,
+                std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex> xB)
             {
                 /*
                 * sort by the interval starts
                 * if two intervals start at the same point the larger one shall be treated first
                 */
-                if(xA.start() == xB.start())
-                    return xA.end() > xB.end();
-                return xA.start() < xB.start();
+                if(std::get<1>(xA) == std::get<1>(xB))
+                    return std::get<2>(xA) > std::get<2>(xB);
+                return std::get<1>(xA) < std::get<1>(xB);
             }//lambda
         );//sort function call
 
-    //records the interval ends
-    std::list<ShadowInterval> xItervalEnds = std::list<ShadowInterval>();
+    auto pItervalEnds = std::make_shared<
+            std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
+        >();
 
+    nucSeqIndex x = 0;
     //this is the line sweeping part
-    for(ShadowInterval& rInterval : vShadows)
+    for(std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>& xTup : *pShadows)
     {
-        DEBUG_2(
-            std::cout << "Current Sweep position: " << rInterval.start() << std::endl;
-            std::cout << "\tat start of interval " << rInterval.start() <<
-                ", " << rInterval.end() << std::endl;
-            std::cout << "\t(start_ref, end_ref; start_query, end_query) " 
-                << rInterval.pSeed->start_ref() << ", " << rInterval.pSeed->end_ref() << "; "
-                << rInterval.pSeed->start() << ", " << rInterval.pSeed->end() << std::endl;
-        )
-        //check weather there are contradictions to the current seed
-        if(!xItervalEnds.empty() && xItervalEnds.front().end() >= rInterval.end())
+        if(x < std::get<2>(xTup))
         {
-            //yes there are some!
-
-            // special case: we have a duplicate seed => we do not want to remove both instances
-            // cause mereley a duplicate is not a contradiction
-            // note: we do not need to check for duplicates later due to the ordering of the seeds
-            if(rInterval.within(xItervalEnds.front()))
-            {
-                xItervalEnds.front().remove(pSeeds);
-                continue;
-            }//if
-            DEBUG_2(
-                std::cout << "\tremoving: " << xItervalEnds.front().end() << std::endl;
-            )
-            // delete the first seed
-            xItervalEnds.front().remove(pSeeds);
-            // check if following seeds need also be deleted
-            auto iterator = xItervalEnds.begin();
-            // we dealed with the first element already
-            ++iterator;
-            while(iterator != xItervalEnds.end() && iterator->end() >= rInterval.end())
-            {
-                DEBUG_2(
-                    std::cout << "\tremoving: " << iterator->end() << std::endl;
-                )
-                iterator->remove(pSeeds);
-                iterator = xItervalEnds.erase(iterator);
-            }//while
-            // remove the current seed since there were contradictions to it.
-            rInterval.remove(pSeeds);
+            pItervalEnds->push_back(xTup);
+            x = std::get<2>(xTup);
         }//if
-
-        //there are no contradictions -> remember the end of the seed
         else
-            xItervalEnds.push_front(rInterval);
+            while(!pItervalEnds->empty() && std::get<2>(pItervalEnds->back()) >= std::get<2>(xTup))
+                pItervalEnds->pop_back();
     }//for
+    return pItervalEnds;
 }//function
 
 std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    // copy the input
-    // @todo unecessary copy!!! 
-    // (well it's necessary since python might delete the old datastructure...)
-    std::shared_ptr<Seeds> pSeeds = std::shared_ptr<Seeds>(new Seeds(
-        std::static_pointer_cast<Seeds>((*vpInput)[0])));
+    std::shared_ptr<Seeds> pSeedsIn = std::static_pointer_cast<Seeds>((*vpInput)[0]);
 
-
-    std::vector<ShadowInterval> vShadows = {};
+    auto pShadows = std::make_shared<
+            std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
+        >();
 
     // get the left shadows
-    for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
-        vShadows.push_back(getLeftShadow(pSeed));
+    for(Seeds::iterator pSeed = pSeedsIn->begin(); pSeed != pSeedsIn->end(); pSeed++)
+        pShadows->push_back(std::make_tuple(
+                pSeed,
+                pSeed->start(),
+                pSeed->end_ref()
+            ));
 
     // perform the line sweep algorithm on the left shadows
-    linesweep(vShadows, pSeeds);
-
-    vShadows.clear();
-
-    DEBUG_2(
-        std::cout << "========" << std::endl;
-    )
+    pShadows = linesweep(pShadows);
 
     // get the right shadows
-    for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
-        vShadows.push_back(getRightShadow(pSeed));
+    for(auto &xT : *pShadows)
+        pShadows->push_back(std::make_tuple(
+                std::get<0>(xT),
+                std::get<0>(xT)->start_ref(),
+                std::get<0>(xT)->end()
+            ));
 
     // perform the line sweep algorithm on the right shadows
-    linesweep(vShadows, pSeeds);
+    pShadows = linesweep(pShadows);
+
+    auto pSeeds = std::make_shared<Seeds>();
+    for(auto &xT : *pShadows)
+        pSeeds->push_back(*std::get<0>(xT));
 
     pSeeds->bConsistent = true;
 

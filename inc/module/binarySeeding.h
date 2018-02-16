@@ -80,7 +80,7 @@ namespace libMA
                 std::shared_ptr<SegmentVector> pSegmentVector,
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
-                ThreadPoolAllowingRecursiveEnqueues* pxPool
+                ThreadPoolAllowingRecursiveEnqueue* pxPool
             );
         
         /*
@@ -95,7 +95,7 @@ namespace libMA
                 std::shared_ptr<SegmentVector> pSegmentVector,
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
-                ThreadPoolAllowingRecursiveEnqueues* pxPool
+                ThreadPoolAllowingRecursiveEnqueue* pxPool
             )
         {
             obj->procesInterval(

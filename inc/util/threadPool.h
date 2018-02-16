@@ -30,7 +30,7 @@
  * https://github.com/progschj/ThreadPool
  * Changes:
  * - The thread id extension was added by Arne Kutzner.
- * - ThreadPoolAllowingRecursiveEnqueues was added by Markus Schmidt.
+ * - ThreadPoolAllowingRecursiveEnqueue was added by Markus Schmidt.
  */
 
 
@@ -375,7 +375,7 @@ inline ThreadPool::~ThreadPool()
  *
  * @note This pool allows enqueues from within a worker thread.
  */
-class ThreadPoolAllowingRecursiveEnqueues {
+class ThreadPoolAllowingRecursiveEnqueue {
 
 private:
 	/* need to keep track of threads so we can join them
@@ -397,11 +397,11 @@ public:
 
 	/* External definition
 	*/
-	ThreadPoolAllowingRecursiveEnqueues(size_t);
+	ThreadPoolAllowingRecursiveEnqueue(size_t);
 
 	/* External definition
 	*/
-	~ThreadPoolAllowingRecursiveEnqueues();
+	~ThreadPoolAllowingRecursiveEnqueue();
 
 	/* add new work item to the pool
 	*/
@@ -451,7 +451,7 @@ public:
 
 /* Constructor just launches some amount of workers
 */
-inline ThreadPoolAllowingRecursiveEnqueues::ThreadPoolAllowingRecursiveEnqueues(size_t threads)
+inline ThreadPoolAllowingRecursiveEnqueue::ThreadPoolAllowingRecursiveEnqueue(size_t threads)
 		:
 	bStop( false ), // stop must be false in the beginning
 	threads(threads)
@@ -505,7 +505,7 @@ inline ThreadPoolAllowingRecursiveEnqueues::ThreadPoolAllowingRecursiveEnqueues(
 
 /* the destructor joins all threads
 */
-inline ThreadPoolAllowingRecursiveEnqueues::~ThreadPoolAllowingRecursiveEnqueues()
+inline ThreadPoolAllowingRecursiveEnqueue::~ThreadPoolAllowingRecursiveEnqueue()
 {
 	//if the threadpool is set to have 0 threads, we will execute every task in the main thread
 	//immediately, thus we dont need to setup threads at all.

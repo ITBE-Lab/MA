@@ -79,5 +79,7 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "*.ipp": "cpp"
-    }
+    },
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.enablePreviewFromQuickOpen": false
 }

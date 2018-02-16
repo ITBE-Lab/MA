@@ -493,7 +493,7 @@ void BinarySeeding::procesInterval(
 			std::shared_ptr<SegmentVector> pSegmentVector,
 			std::shared_ptr<FMIndex> pFM_index,
 			std::shared_ptr<NucSeq> pQuerySeq,
-			ThreadPoolAllowingRecursiveEnqueues* pxPool
+			ThreadPoolAllowingRecursiveEnqueue* pxPool
 		)
 {
 	nucSeqIndex uiStart = xAreaToCover.start();
@@ -588,7 +588,7 @@ std::shared_ptr<Container> BinarySeeding::execute(
     else
 	{//scope for xPool
 		// setup a threadpool
-		ThreadPoolAllowingRecursiveEnqueues xPool( NUM_THREADS_ALIGNER );
+		ThreadPoolAllowingRecursiveEnqueue xPool( NUM_THREADS_ALIGNER );
 
 		//enqueue the root interval (spanning the entire query) for processing
 		xPool.enqueue( 

@@ -142,18 +142,6 @@ std::shared_ptr<Container> SMW::execute(
 
         auto uiIndex = ((vMaxScorePositions[0].first + 2) * xAligner.numberOfColumns) +
             (vMaxScorePositions[0].second + 1);
-        DEBUG(
-            if(xAligner.alignmentOutcomeMatrix.getMaxIndex() != uiIndex)
-                std::cout << "( "
-                    << vMaxScorePositions[0].first 
-                    << " + 2 ) * "
-                    << xAligner.numberOfColumns
-                    << " + ( "
-                    << vMaxScorePositions[0].second 
-                    << " + 1 ) != "
-                    << xAligner.alignmentOutcomeMatrix.getMaxIndex()
-                    << std::endl;
-        )
         alignment_description<char> vTemp;
         size_t startPositionQuery = 0;
         size_t endPositionQuery = 0;
@@ -188,7 +176,27 @@ std::shared_ptr<Container> SMW::execute(
             }//switch
         //for
         pvRet->push_back(pAlignment);
-        assert(uiMaxScore == pAlignment->score());
+        DEBUG(
+            if(uiMaxScore != pAlignment->score())
+            {
+                std::cout 
+                    << "( "
+                    << vMaxScorePositions[0].first 
+                    << " + 2 ) * "
+                    << xAligner.numberOfColumns
+                    << " + ( "
+                    << vMaxScorePositions[0].second 
+                    << " + 1 ) ?= "
+                    << xAligner.alignmentOutcomeMatrix.getMaxIndex()
+                    << std::endl;
+                std::cout 
+                    << "got a score of: "
+                    << pAlignment->score()
+                    << " but expected "
+                    << uiMaxScore
+                    << std::endl;
+            }
+        )
         return pvRet;
     }//if
     else

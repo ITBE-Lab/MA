@@ -56,27 +56,6 @@ namespace libMA
                 pSeed(rOther.pSeed)
             {}//copy constructor
 
-            /**
-             * @brief Removes this or all interfering seeds.
-             * @details
-             * Checks weather this seed is more valuable than the interfering ones.
-             */
-            void remove(
-                    std::shared_ptr<Seeds> pSeeds
-                )
-            {
-                //reached an already invalidated iterator
-                if(pSeed == pSeeds->end())
-                {
-                    DEBUG(
-                        std::cout << "\treached invalid iterator" << std::endl;
-                    )
-                    return;
-                }
-                pSeeds->erase(pSeed);
-                pSeed = pSeeds->end();
-            }//function
-
             bool within(const ShadowInterval& rOther)
             {
                 return start() >= rOther.start() && end() <= rOther.end();
@@ -90,24 +69,13 @@ namespace libMA
         * The algorithm has to be run on left and right shadows,
         * therefore it is provided as individual function.
         */
-        void EXPORTED linesweep(
-                std::vector<ShadowInterval>& vShadows, 
-                std::shared_ptr<Seeds> pSeeds
-            );
+        std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
+        EXPORTED linesweep(
+            std::shared_ptr<std::vector<
+                std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
+            >> pShadows
+        );
 
-        /**
-        * @brief Returns the left shadow of a seed.
-        * @details
-        * "Casts" the left shadows.
-        */
-        ShadowInterval EXPORTED getLeftShadow(Seeds::iterator pSeed) const;
-
-        /**
-        * @brief Returns the right shadow of a seed.
-        * @details
-        * "Casts" the right shadows.
-        */
-        ShadowInterval EXPORTED getRightShadow(Seeds::iterator pSeed) const;
     public:
         /**
          * @brief true: estimate all possible position as matches in the gap cost filter
