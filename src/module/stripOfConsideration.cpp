@@ -191,7 +191,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     unsigned long uiCurrEle = 0;
     std::vector<Seed>::iterator xStripStart = vSeeds.begin();
     std::vector<Seed>::iterator xStripEnd = vSeeds.begin();
-    while(xStripStart != vSeeds.end() && xStripEnd != vSeeds.end())
+    while(xStripEnd != vSeeds.end())
     {
         //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
         nucSeqIndex uiCurrSize = 0;

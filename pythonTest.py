@@ -274,7 +274,6 @@ def test_my_approach(
                 print("WARNING: alignment computed better than optimal score",
                       alignment.get_score(), optimal_alignment.get_score()
                      )
-                #print("this warning is just printed once")
                 print_alignments()
             if (warn_once and local and optimal_alignment != None and
                     alignment.get_score() < optimal_alignment.get_score()):
@@ -1385,14 +1384,14 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
 #high quality picture
 #createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-#test_my_approaches("/mnt/ssd1/highQual.db")
-#analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-#compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
-#compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
-#analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
-#analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
-#
-#exit()
+test_my_approaches("/mnt/ssd1/highQual.db")
+analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
+compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
+compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
+analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
+analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+
+exit()
 
 amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount, True, True)

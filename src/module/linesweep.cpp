@@ -80,10 +80,11 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             ));
 
     // perform the line sweep algorithm on the left shadows
-    pShadows = linesweep(pShadows);
+    auto pShadows2 = linesweep(pShadows);
+    pShadows->clear();
 
     // get the right shadows
-    for(auto &xT : *pShadows)
+    for(auto &xT : *pShadows2)
         pShadows->push_back(std::make_tuple(
                 std::get<0>(xT),
                 std::get<0>(xT)->start_ref(),
