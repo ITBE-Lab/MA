@@ -205,7 +205,7 @@ def test_my_approach(
                 ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
             )
         print("computing optimal (", name, ") ...")
-        Pledge.simultaneous_get(optimal_alignment_out, 32)
+        Pledge.simultaneous_get(optimal_alignment_out, 1)
 
         print("extracting results (", name, ") ...")
         result = []
@@ -1383,12 +1383,12 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 150, 0)
 
 #high quality picture
-#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 100, 10, 32, True, True)
 test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
-analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
+analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 100, 10)
+compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 100, 10)
+compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 100, 10)
+analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 100, 10)
 analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
 
 exit()

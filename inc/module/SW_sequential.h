@@ -389,7 +389,7 @@ struct AlignmentOutcomeMatrix
 		T_size_t currentIndex = startIndex;
 		T_size_t previousIndex = startIndex;
 
-		while( backtrackMatrix[currentIndex] != STOP && (scoringOutcomeMatrix[currentIndex] > 0) )
+		while( backtrackMatrix[currentIndex] != STOP && (scoringOutcomeMatrix[currentIndex] >= 0) )
 		{
 			/* We calculate the current column and row on the foundation of the current index
 			*/
@@ -437,12 +437,16 @@ struct AlignmentOutcomeMatrix
 			switch ( backtrackMatrix[currentIndex] )
 			{
 			case LEFT_UP :
+                assert(uxColumn != 0);
+                assert(uxRow != 0);
 				currentIndex = ((uxRow - 1) * numberOfColumns) + (uxColumn - 1);
 				break;
 			case LEFT :
+                assert(uxColumn != 0);
 				currentIndex--;
 				break;
 			case UP :
+                assert(uxRow != 0);
 				currentIndex = ((uxRow - 1) * numberOfColumns) + uxColumn;
 			case STOP :
 				;
@@ -641,13 +645,6 @@ struct SW_align_type
 		/* The central alignment method
 		*/
 	SCORE_TP swAlign( 
-#if (CONF_BAND_LIMITATION == 1)
-		int w, 
-#endif
-
-#if (CONF_SET_INITIAL_SCORE_VALUE == 1)
-		int initalScoreValue,
-#endif
 		std::vector<std::pair<size_t, size_t>> &rvMaxScorePositions // vector that receives the max-positions
 	)
 	{
@@ -660,19 +657,6 @@ struct SW_align_type
 		int cNuc;
 		int queryProfileIterator;
 
-#if 0
-		std::cout << "One element of scoring values has " << sizeof(T_scoring) << " bytes" << std::endl;
-#endif
-
-#if (CONF_BAND_LIMITATION == 1)
-		int sizeOfMatrix, upperLimitOfGapValue;
-#endif
-
-#if (CONF_SET_INITIAL_SCORE_VALUE == 1)
-		if (initalScoreValue < 0)
-			initalScoreValue = 0;
-#endif
-
 		/* allocate memory
 		* 1. Query Profile (see ppt-file)
 		* 2. h_and_e_Columns : Two one dimensional array for intermediate data storage (see ppt-file)
@@ -680,7 +664,7 @@ struct SW_align_type
 		SCORE_TP* queryProfile = (SCORE_TP *)malloc( numberOfColumns * alphabetSize * sizeof(SCORE_TP));
 		generic_eh_type<SCORE_TP> *h_and_e_Columns = (generic_eh_type<SCORE_TP> *)calloc( numberOfColumns + 1, sizeof(generic_eh_type<SCORE_TP>) ); // memory for the score array
   		/* Generate the query profile by using the scoring table
-																																					*/
+		*/
 		queryProfileIterator = 0;
 		for (cNuc = 0; cNuc < alphabetSize; ++cNuc) {
 			SCORE_TP *referenceToStartOfRow = &similarityMatrix.pSimilarityMatrixRef[cNuc * alphabetSize];
@@ -689,6 +673,7 @@ struct SW_align_type
 			{
 				//// std::cout << ":" << (int)columnSequence[uxIteratorColumn] << " " << referenceToStartOfRow[columnSequence[uxIteratorColumn]] << " | ";
 				queryProfile[queryProfileIterator] = referenceToStartOfRow[ columnSequence[uxIteratorColumn] ];
+                assert(queryProfile[queryProfileIterator] != 0);
 				queryProfileIterator++;
 			} // for
 			//// std::cout << std::endl;
@@ -696,11 +681,7 @@ struct SW_align_type
 
 		/* computation of H matrix
 		*/
-#if (CONF_SET_INITIAL_SCORE_VALUE == 1)
-		maxScoreValue = initalScoreValue;
-#else
 		maxScoreValue = 0;
-#endif
 
 
 		for( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
@@ -719,14 +700,11 @@ struct SW_align_type
 
 			/* The outcome Matrix has size (numberOfRows + 1) x (numberOfColumns + 1)
 			*/
-			auto uxMatrixStartShift = CONF_FILL_OUTCOME_MATRIX ? ( ( (uxIteratorRow + 1) * (numberOfColumns + 1) ) + (1) )
-															   : 0;
+			auto uxMatrixStartShift = ( ( (uxIteratorRow + 1) * (numberOfColumns + 1) ) + (1) );
 
-			SCORE_TP *queryOutcomeMatrixIterator = CONF_FILL_OUTCOME_MATRIX ? alignmentOutcomeMatrix.scoringOutcomeMatrix + uxMatrixStartShift
-																			: NULL;
+			SCORE_TP *queryOutcomeMatrixIterator = alignmentOutcomeMatrix.scoringOutcomeMatrix + uxMatrixStartShift;
 
-			sw_direction_t *backtrackingMatrixIterator = CONF_FILL_OUTCOME_MATRIX ? alignmentOutcomeMatrix.backtrackMatrix + uxMatrixStartShift
-																				  : NULL;
+			sw_direction_t *backtrackingMatrixIterator = alignmentOutcomeMatrix.backtrackMatrix + uxMatrixStartShift;
 
 			SCORE_TP h = 0;
 			SCORE_TP f = 0;
@@ -738,30 +716,78 @@ struct SW_align_type
 				SCORE_TP h_up = h_and_e_Columns[uxIteratorColumn].h;
 				SCORE_TP h_left = h;
 				SCORE_TP e = std::max( h_up - gapoe, e_up - pSWparameterSetRef.iGapExtend );
-				
+
 				f = std::max( h_left - gapoe, f - pSWparameterSetRef.iGapExtend );
-				
+
 				h = h_left_up + referenceToQueryProfileRow[uxIteratorColumn]; 
-				
+                assert(referenceToQueryProfileRow[uxIteratorColumn] != 0);
+
 				sw_direction_t eDirection;
 				eDirection = LEFT_UP;
-				if (e >= h)
+				if (e >= h && e > 0)
 				{
 					h = e;
 					eDirection = UP;
 				}
+                else
+                    e = 0;
 	
-				if (f >= h)
+				if (f >= h && f > 0)
 				{
 					h = f;
+                    e = 0;
 					eDirection = LEFT;
 				}
+                else
+                    f = 0;
 
 				if( h < 0 )
 				{
 					h = 0;
 					eDirection = STOP;
 				}
+
+#if 0
+                DEBUG(
+                    SCORE_TP score_check = 0;
+                    bool bFromGap = false;
+                    size_t currentIndex = uxMatrixStartShift + uxIteratorColumn;
+                    while( alignmentOutcomeMatrix.backtrackMatrix[currentIndex] != STOP)
+                    {
+                        size_t uxColumn = currentIndex % numberOfColumns;
+                        size_t uxRow = currentIndex / numberOfColumns;
+                        switch ( alignmentOutcomeMatrix.backtrackMatrix[currentIndex] )
+                        {
+                        case LEFT_UP :
+                            if ( alignmentOutcomeMatrix.puxRowSequenceRef[uxRow - 1] == alignmentOutcomeMatrix.puxColumnSequenceRef[uxColumn - 1] )
+                                score_check += pSWparameterSetRef.iWeightMatch;
+                            else
+                                score_check += pSWparameterSetRef.iWeightMismatch;
+                            currentIndex = ((uxRow - 1) * numberOfColumns) + (uxColumn - 1);
+                            bFromGap = false;
+                            break;
+                        case LEFT :
+                            assert(uxColumn != 0);
+                            if(!bFromGap)
+                                score_check -= pSWparameterSetRef.iGapOpen;
+                            score_check -= pSWparameterSetRef.iGapExtend;
+                            bFromGap = true;
+                            currentIndex--;
+                            break;
+                        case UP :
+                            assert(uxRow != 0);
+                            if(!bFromGap)
+                                score_check -= pSWparameterSetRef.iGapOpen;
+                            score_check -= pSWparameterSetRef.iGapExtend;
+                            bFromGap = true;
+                            currentIndex = ((uxRow - 1) * numberOfColumns) + uxColumn;
+                        case STOP :
+                            ;
+                        }//switch
+                    }//while
+                    assert(score_check == h);
+                )//DEBUG
+#endif
 
 				h_left_up = h_up;
 				h_and_e_Columns[uxIteratorColumn].e = e;
@@ -771,23 +797,18 @@ struct SW_align_type
                                         indexOfMaxScoreInCurrentRow : uxIteratorColumn;
 				maxScoreInCurrentRow = std::max( maxScoreInCurrentRow, h);   
                 // m is stored at eh[mj+1]
-				
-				/* We store h in the Matrix for later analysis
-				*/
+
+				/* We store h in the Matrix for later analysis */
 				if ( CONF_FILL_OUTCOME_MATRIX )
 				{
 					*(queryOutcomeMatrixIterator++) = h;
 					*(backtrackingMatrixIterator++) = eDirection;
 				}
 			} // inner for
-			  /* Save the final hInNextRound, because there are no more iterations.
-			  * Seems to be necessary for begin and end management
-			  */
-#if (CONF_FOLLOW_MAX_PATH_OPTIMIZATION == 1)
-			h_and_e_Columns[end].h = hInNextRound; 
-			h_and_e_Columns[end].e = 0;
-#endif
-			/* Logging of the maximum scores */
+            /* Save the final hInNextRound, because there are no more iterations.
+            * Seems to be necessary for begin and end management
+            */
+            /* Logging of the maximum scores */
 			if( maxScoreInCurrentRow >= maxScoreValue )
 			{
 				if( maxScoreInCurrentRow > maxScoreValue )
@@ -798,22 +819,6 @@ struct SW_align_type
 				  /* Log pairs (row, column (max-pos within row) )*/
 				rvMaxScorePositions.push_back( std::pair<size_t, size_t>( uxIteratorRow, indexOfMaxScoreInCurrentRow) );
 			} // if
-
-#if (CONF_FOLLOW_MAX_PATH_OPTIMIZATION == 1)
-			  /* We count down from the maximum position until we find score 0 or we reach the first column
-			  */
-			for (uxIteratorColumn = indexOfMaxScoreInCurrentRow; uxIteratorColumn >= start && h_and_e_Columns[uxIteratorColumn].h; --uxIteratorColumn)
-				;
-			start = uxIteratorColumn + 1;
-
-			/* We do something similar for the end
-			*/
-			for (uxIteratorColumn = indexOfMaxScoreInCurrentRow + 2; uxIteratorColumn <= end && h_and_e_Columns[uxIteratorColumn].h; ++uxIteratorColumn)
-				;
-			end = uxIteratorColumn;
-#endif
-
-			//beg = 0; end = qlen; // uncomment this line for debugging
 		} // outer for
 
 		  /* Free all allocated memory
