@@ -16,6 +16,9 @@ namespace libMA
     {
     public:
         bool bBacktrack = true;
+        DEBUG(
+            bool bPrint = false;
+        )//DEBUG
 
         SMW(bool bBacktrack)
                 :

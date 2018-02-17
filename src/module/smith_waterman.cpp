@@ -178,7 +178,7 @@ std::shared_ptr<Container> SMW::execute(
         //for
         pvRet->push_back(pAlignment);
         DEBUG(
-            if(uiMaxScore != pAlignment->score())
+            if(uiMaxScore != pAlignment->score() || bPrint)
             {
                 auto best = xAligner.alignmentOutcomeMatrix.getMaxIndex();
                 if(best != uiIndex)
@@ -231,8 +231,8 @@ std::shared_ptr<Container> SMW::execute(
                     }//if
                 std::cout << std::endl;
                 exit(0);
-            }
-        )
+            } // if
+        ) // DEBUG
         return pvRet;
     }//if
     else
@@ -268,6 +268,9 @@ void exportSMW()
             boost::python::bases<Module>,
             std::shared_ptr<SMW>
             >("SMW",boost::python::init<bool>())
+            DEBUG(
+                .def_readwrite("print", &SMW::bPrint)
+            )//DEBUG
         ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<SMW>,

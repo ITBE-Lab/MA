@@ -12,7 +12,9 @@
 
 #if DEBUG_LEVEL >= 1
 #define DEBUG(x) x
+#define DEBUG_PARAM(x) ,x
 #else //DEBUG_LEVEL
+#define DEBUG_PARAM(x)
 #define DEBUG(x)
 #endif //DEBUG_LEVEL
 

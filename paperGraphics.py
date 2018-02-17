@@ -21,6 +21,11 @@ dark_greys = [
         "#868686",
 ]
 
+green = "#77933C"
+blue = "#376092"
+red = "#953735"
+purple = "#604A7B"
+
 greys = [
         "#acacac",
         "#b9b9b9",
@@ -414,11 +419,10 @@ def seed_shadows():
                 x_range=[-1,13], y_range=[-1,8]
             )
     # x y size draw_shadow?
-    c_palette = heatmap_palette(light_spec_approximation, 5)
     seeds = [
-        (1.5,1.5,2, c_palette[2]),
-        (5.5,2.5,2, c_palette[1]),
-        (-.5,3.5,3, c_palette[4])
+        (1.5,1.5,2, red),
+        (5.5,2.5,2, green),
+        (-.5,3.5,3, blue)
     ]
 
     for x, y, size, color in seeds:
@@ -586,15 +590,15 @@ def alignment():
             m_x,
             m_y,
             legend="ma",
-            color="black",
+            color=green,
             line_width=5
         )
 
     plot.multi_line(
             mm_x,
             mm_y,
-            legend="mis",
-            color=greys[0],
+            legend="mm",
+            color=red,
             line_width=5
         )
 
@@ -602,18 +606,16 @@ def alignment():
             i_x,
             i_y,
             legend="ins_____",
-            color="black",
-            line_width=2,
-            line_dash=[2,2]
+            color=blue,
+            line_width=2
         )
 
     plot.multi_line(
             d_x,
             d_y,
             legend="del",
-            color="black",
-            line_width=2,
-            line_dash=[5,5]
+            color=purple,
+            line_width=2
         )
 
     plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
@@ -661,8 +663,8 @@ def stripOfConsideration():
     plot.patch(
             [-.5,7.5,12.5,12.5,5.5],
             [-.5,7.5,7.5,6.5,-.5],
-            fill_color=greys[2],
-            fill_alpha=.75,
+            fill_color=green,
+            fill_alpha=.3,
             line_color=None,
             #line_width=2,
             #line_dash=[2,2],
@@ -672,7 +674,7 @@ def stripOfConsideration():
     plot.line(
         [-.5,7.5],
         [-.5,7.5],
-        color=dark_greys[2],
+        color=green,
         line_width=1,
         line_dash=[2,2]
     )
@@ -680,7 +682,7 @@ def stripOfConsideration():
     plot.line(
         [5.5,12.5],
         [-.5,6.5],
-        color=dark_greys[2],
+        color=green,
         line_width=1,
         line_dash=[2,2]
     )
@@ -688,13 +690,14 @@ def stripOfConsideration():
     plot.line(
         [4.5,7.5],
         [1.5,4.5],
-        color="black",
+        color=blue,
         line_width=3
     )
     plot.line(
         [2.5,4.5],
         [-.5,1.5],
-        color="black",
+        color=blue,
+        line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
     )
@@ -703,13 +706,14 @@ def stripOfConsideration():
     plot.line(
         [10.5,11.5],
         [1.5,2.5],
-        color=dark_greys[2],
+        color=red,
         line_width=3
     )
     plot.line(
         [8.5,10.5],
         [-.5,1.5],
-        color=dark_greys[2],
+        color=red,
+        line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
     )
@@ -717,13 +721,14 @@ def stripOfConsideration():
     plot.line(
         [1.5,2.5],
         [1.5,2.5],
-        color="black",
+        color=blue,
         line_width=3
     )
     plot.line(
         [-.5,1.5],
         [-.5,1.5],
-        color="black",
+        color=blue,
+        line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
     )
@@ -731,13 +736,14 @@ def stripOfConsideration():
     plot.line(
         [-.5,2.5],
         [3.5,6.5],
-        color=dark_greys[2],
+        color=red,
         line_width=3
     )
     plot.line(
         [-1.0,-.5],
         [3.0,3.5],
-        color=dark_greys[2],
+        color=red,
+        line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
     )
@@ -745,20 +751,21 @@ def stripOfConsideration():
     plot.line(
         [0.5,1.5],
         [-.5,0.5],
-        color="black",
+        color=blue,
         line_width=3
     )
 
     plot.line(
         [9.5,11.5],
         [4.5,6.5],
-        color="black",
+        color=blue,
         line_width=3
     )
     plot.line(
         [4.5,9.5],
         [-.5,4.5],
-        color="black",
+        color=blue,
+        line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
     )
@@ -814,8 +821,8 @@ def optimal_matching():
     plot.patch(
             [1.5,1.5,4.5,4.5],
             [.5,1.5,1.5,0.5],
-            fill_color=greys[2],
-            fill_alpha=.75,
+            fill_color=green,
+            fill_alpha=.3,
             line_color=None,
             #line_width=2,
             #line_dash=[2,2],
@@ -823,8 +830,8 @@ def optimal_matching():
     plot.patch(
             [10.5,10.5,max_x,max_x],
             [5.5,max_y,max_y,5.5],
-            fill_color=greys[2],
-            fill_alpha=.75,
+            fill_color=green,
+            fill_alpha=.3,
             line_color=None,
             #line_width=2,
             #line_dash=[2,2],
@@ -832,8 +839,8 @@ def optimal_matching():
     plot.patch(
             [min_x,min_x,0.5,0.5],
             [min_y,-.5,-.5,min_y],
-            fill_color=greys[2],
-            fill_alpha=.75,
+            fill_color=green,
+            fill_alpha=.3,
             line_color=None,
             #line_width=2,
             #line_dash=[2,2],
@@ -842,19 +849,19 @@ def optimal_matching():
     plot.line(
         [0.5,1.5],
         [-.5,0.5],
-        color="black",
+        color=blue,
         line_width=3
     )
     plot.line(
         [4.5,7.5],
         [1.5,4.5],
-        color="black",
+        color=blue,
         line_width=3
     )
     plot.line(
         [9.5,10.5],
         [4.5,5.5],
-        color="black",
+        color=blue,
         line_width=3
     )
 
@@ -902,22 +909,20 @@ def unrelated_non_enclosed_seeds():
                 y_range=["reference", "1", "2", "3", "query1", "query2", "query3", "query4"]
             )
 
-    c_palette = heatmap_palette(light_spec_approximation, 5)
-
     seeds = [
-        ("query1", 0, [500], c_palette[2], 20),
-        ("query1", 24, [525], c_palette[2], 13),
-        ("query1", 47, [547], c_palette[2], 24),
+        ("query1", 0, [500], green, 20),
+        ("query1", 24, [525], green, 13),
+        ("query1", 47, [547], green, 24),
 
-        ("query2", 22, [320], c_palette[1], 5),
-        ("query2", 36, [1000], c_palette[1], 12),
+        ("query2", 22, [320], blue, 5),
+        ("query2", 36, [1000], blue, 12),
         
-        ("query3", 19, [1500], c_palette[1], 4),
-        ("query3", 35, [320, 1000, 1477], c_palette[4], 3),
-        ("query3", 46, [800], c_palette[4], 5),
+        ("query3", 19, [1500], blue, 4),
+        ("query3", 35, [320, 1000, 1477], red, 3),
+        ("query3", 46, [800], red, 5),
 
-        ("query4", 20, [30, 800], c_palette[4], 4),
-        ("query4", 45, [1340], c_palette[4], 4)
+        ("query4", 20, [30, 800], red, 4),
+        ("query4", 45, [1340], red, 4)
     ]
 
     max_q = 0
@@ -935,7 +940,7 @@ def unrelated_non_enclosed_seeds():
                 [seed[1]+seed[-1], (end+seed[-1])*r_fac, end*r_fac, seed[1]],
                 [seed[0], "reference", "reference", seed[0]],
                 fill_color=seed[-2],
-                fill_alpha=.2,
+                fill_alpha=.3,
                 line_color=None,
             )
     plot.line([0, max_q], ["reference", "reference"], color="black", line_width=3)
@@ -1009,8 +1014,8 @@ def required_nmw_band_size():
 #unrelated_non_enclosed_seeds()
 #ambiguity_per_length()
 #theoretical_max_acc()
-seed_shadows()
-#alignment()
+#seed_shadows()
+alignment()
 #stripOfConsideration()
 #optimal_matching()
 #required_nmw_band_size()

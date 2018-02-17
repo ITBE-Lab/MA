@@ -54,7 +54,21 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
             pItervalEnds->push_back(xTup);
             x = std::get<2>(xTup);
         }//if
-        else
+        /*
+         * sometimes a seeding algorithm may deliver equal seeds
+         * in that case these seeds are obviously not contradicting
+         *
+         * This is not mentioned in the paper since we talk of seed SETs there.
+         * A set cannot have the same element twice,
+         * however the vector we use in practice can...
+         *
+         * Anyways we just need to add one simple check for equality here
+         * operator!= is not implemented so we rely on ! of ==.
+         */
+        else if(
+                ! pItervalEnds->empty() 
+                && ! (*std::get<0>(xTup) == *std::get<0>(pItervalEnds->back())) 
+            )
             while(!pItervalEnds->empty() && std::get<2>(pItervalEnds->back()) >= std::get<2>(xTup))
                 pItervalEnds->pop_back();
     }//for

@@ -722,22 +722,27 @@ struct SW_align_type
 				h = h_left_up + referenceToQueryProfileRow[uxIteratorColumn]; 
                 assert(referenceToQueryProfileRow[uxIteratorColumn] != 0);
 
+                /*
+                 * NOTE: f & e values need to be set to zero if they cannot be used 
+                 * in the following backtracking steps
+                 */
 				sw_direction_t eDirection;
 				eDirection = LEFT_UP;
-				if (e >= h && e > 0)
+				if (e >= h)
 				{
 					h = e;
 					eDirection = UP;
-				}
+				}//if
                 else
                     e = 0;
 	
-				if (f >= h && f > 0)
+				if (f >= h)
 				{
+                    if(f > h)
+                        e = 0;
 					h = f;
-                    e = 0;
 					eDirection = LEFT;
-				}
+				}//if
                 else
                     f = 0;
 
@@ -745,7 +750,7 @@ struct SW_align_type
 				{
 					h = 0;
 					eDirection = STOP;
-				}
+				}//if
 
 #if 0
                 DEBUG(
@@ -788,11 +793,12 @@ struct SW_align_type
                     assert(score_check == h);
                 )//DEBUG
 #endif
-
+                //save the values for the next iteration
 				h_left_up = h_up;
 				h_and_e_Columns[uxIteratorColumn].e = e;
 				h_and_e_Columns[uxIteratorColumn].h = h;
-				
+
+                //record the maximum position
 				indexOfMaxScoreInCurrentRow = maxScoreInCurrentRow > h ? 
                                         indexOfMaxScoreInCurrentRow : uxIteratorColumn;
 				maxScoreInCurrentRow = std::max( maxScoreInCurrentRow, h);   

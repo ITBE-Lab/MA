@@ -1,8 +1,12 @@
 #include "module/needlemanWunsch.h"
 using namespace libMA;
 
+/*
+ * iGap must be smaller than iMatch for NW and SW to work...
+ * 
+ */
 
-int iGap = 20;
+int iGap = 6;
 int iExtend = 1;
 int iMatch = 10;
 int iMissMatch = 4;
@@ -41,6 +45,7 @@ nucSeqIndex needlemanWunsch(
         std::shared_ptr<Alignment> pAlignment,
         bool bNoGapAtBeginning = false,
         bool bNoGapAtEnd = false
+        DEBUG_PARAM(bool bPrintMatrix = false)
     )
 {
     assert(!(bNoGapAtBeginning && bNoGapAtEnd));
@@ -158,19 +163,24 @@ CATTACTTTATAGATTGGGAACAATCCCATTCAAAAAAGAGCGCTTCATCTTAACTTAGGGGTAGGTCCATTAGATAGCC
 CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA        query
 
      */
+
+    #define DIA 1
+    #define INS 2
+    #define DEL 3
+
     s[0][0] = 0;
-    dir[0][0] = 1;
+    dir[0][0] = DIA;
     s[1][0] = - (iGap + iExtend);
-    dir[1][0] = 2;
+    dir[1][0] = INS;
     if(bNoGapAtEnd)//see note above
         s[0][1] = 0;
     else
         s[0][1] = - (iGap + iExtend);
-    dir[0][1] = 3;
+    dir[0][1] = DEL;
     for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
     {
         s[uiI][0] = s[uiI - 1][0] - iExtend;
-        dir[uiI][0] = 2;
+        dir[uiI][0] = INS;
     }//for
     for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
     {
@@ -178,13 +188,14 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
             s[0][uiI] = 0;
         else
             s[0][uiI] = s[0][uiI - 1] - iExtend;
-        dir[0][uiI] = 3;
+        dir[0][uiI] = DEL;
     }//for
     /*
      * dynamic programming loop
      * Note:
      *      we iterate in the reverse order on reference and query
      *      so that the backtracking can be done in forward order
+     *      this saves us the work to reverse the result
      *
      * This works as follows:
      *      for each cell compute the scores if resuling from an insertion deletion match/missmatch
@@ -198,34 +209,33 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
         {
             int newScore;
             //insertion
-            if(dir[uiI - 1][uiJ] == 2)
+            if(dir[uiI - 1][uiJ] == INS)
                 newScore = s[uiI - 1][uiJ] - iExtend;
             else
                 newScore = s[uiI - 1][uiJ] - (iGap + iExtend);
             s[uiI][uiJ] = newScore;
-            dir[uiI][uiJ] = 2;
+            dir[uiI][uiJ] = INS;
 
             //deletion
-            if(dir[uiI][uiJ - 1] == 3)
+            if(dir[uiI][uiJ - 1] == DEL)
                 newScore = s[uiI][uiJ - 1] - iExtend;
             else
                 newScore = s[uiI][uiJ - 1] - (iGap + iExtend);
             if(newScore > s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
-                dir[uiI][uiJ] = 3;
+                dir[uiI][uiJ] = DEL;
             }//if
             //match / missmatch
             newScore = s[uiI - 1][uiJ - 1];
-            //@todo try -1s here and see what happens
             if( (*pQuery)[toQuery - uiI] == (*pRef)[toRef - uiJ] )
                 newScore += iMatch;
             else
                 newScore -= iMissMatch;
-            if(newScore >= s[uiI][uiJ])
+            if(newScore > s[uiI][uiJ])
             {
                 s[uiI][uiJ] = newScore;
-                dir[uiI][uiJ] = 1;
+                dir[uiI][uiJ] = DIA;
             }//if
         }//for
     }//for
@@ -280,7 +290,7 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
 
     while(iX > 0 || iY > 0)
     {
-        if(dir[iX][iY] == 1)
+        if(dir[iX][iY] == DIA)
         {
             if( (*pQuery)[toQuery - iX] == (*pRef)[toRef - iY] )
             {
@@ -299,7 +309,7 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
             iX--;
             iY--;
         }//if
-        else if(dir[iX][iY] == 2)
+        else if(dir[iX][iY] == INS)
         {
             pAlignment->append(MatchType::insertion);
             iX--;
@@ -307,7 +317,7 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
                 std::cout << "I";
             )//DEBUG
         }//if
-        else if(dir[iX][iY] == 3)
+        else if(dir[iX][iY] == DEL)
         {
             pAlignment->append(MatchType::deletion);
             iY--;
@@ -316,7 +326,7 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
             )//DEBUG        
         }//if
         else{
-            std::cerr << "WARNING: no direction set dynamic programming" << std::endl;
+            std::cerr << "WARNING: no direction set in dynamic programming" << std::endl;
         }//else
 
         /*
@@ -326,11 +336,58 @@ CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA
         if(bNoGapAtEnd && iX <= 0)
             return iY;
     }//while
+
     DEBUG_2(
         std::cout << std::endl;
     )//DEBUG
+
+    //print the entire matrix if necessary
+    DEBUG(
+        if(bPrintMatrix)
+        {
+            std::cout << "\t";
+            for(auto i = toRef; i > fromRef; i--)
+                std::cout << "\t" << NucSeq::translateACGTCodeToCharacter((*pRef)[i - 1]);
+            for(auto j = fromQuery; j < toQuery; j++)
+            {
+                std::cout << "\n";
+                if(j > fromQuery)
+                    std::cout << NucSeq::translateACGTCodeToCharacter((*pQuery)[toQuery - j]);
+                for(auto i = fromRef; i < toRef; i++)
+                    std::cout
+                        << "\t"
+                        << s[j - fromQuery][i - fromRef]
+                        << " ("
+                        << (dir[j - fromQuery][i - fromRef] == DEL ? "D" :
+                           (dir[j - fromQuery][i - fromRef] == INS ? "I" :
+                           (dir[j - fromQuery][i - fromRef] == DIA ? "M" : "?")))
+                        << ")"
+                        ;
+            }//for
+            std::cout << std::endl;
+        }//if
+    )//DEBUG
     return uiRet;
 }//function
+
+DEBUG(
+    void debugNW(std::shared_ptr<NucSeq> q, std::shared_ptr<NucSeq> r)
+    {
+        auto pAlignment = std::make_shared<Alignment>();
+        needlemanWunsch(
+            q,
+            r,
+            0,
+            q->length(),
+            0,
+            r->length(),
+            pAlignment,
+            false,
+            false,
+            true
+        );
+    }//function
+)//DEBUG
 
 std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
@@ -532,6 +589,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
 void exportNeedlemanWunsch()
 {
+    DEBUG(
+        boost::python::def("debugNW", &debugNW);
+    )//DEBUG
      //export the segmentation class
     boost::python::class_<
         NeedlemanWunsch, 

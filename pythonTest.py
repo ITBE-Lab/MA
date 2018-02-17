@@ -275,6 +275,12 @@ def test_my_approach(
                       alignment.get_score(), optimal_alignment.get_score()
                      )
                 print_alignments()
+                sw = SMW(True)
+                sw.print = True
+                sw.execute(
+                    pledges[0][i].get(),
+                    ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
+                )
             if (warn_once and local and optimal_alignment != None and
                     alignment.get_score() < optimal_alignment.get_score()):
                 warn_once = False
@@ -443,8 +449,8 @@ def test_my_approaches(db_name):
 
     clearResults(db_name, human_genome, "MA 1")
     clearResults(db_name, human_genome, "MA 2")
-    #clearResults(db_name, human_genome, "MA 1 chaining")
-    #clearResults(db_name, human_genome, "MA 2 chaining")
+    clearResults(db_name, human_genome, "MA 1 chaining")
+    clearResults(db_name, human_genome, "MA 2 chaining")
 
     test_my_approach(db_name, human_genome, "MA 2", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
@@ -452,9 +458,9 @@ def test_my_approaches(db_name):
 
     #test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=1000, complete_seeds=True, full_analysis=full_analysis)
 
-    #test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True)
+    test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True, full_analysis=full_analysis)
 
-    #test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True)
+    test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True, full_analysis=full_analysis)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -790,10 +796,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 total_opt_scores += value
 
         if total_opt_scores > 0:
-            print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "percentage lost:", 100-100*total_score/total_opt_scores)
+            print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "lost:", 100-100*total_score/total_opt_scores, "%")
         if len(seed_coverage_loss) > 0:
             print(approach, ":\tseed coverage loss:", 
-            100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "percent")
+            100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "%")
         print(approach, ":\ttotal nmw area:", nmw_total)
         def dict_sum(d):
             total = 0
@@ -801,7 +807,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 for y in x.values():
                     total += y
             return total
-        print(approach, ":\taverage accuracy:", 100*dict_sum(hits)/dict_sum(tries), "percent")
+        print(approach, ":\taverage accuracy:", 100*dict_sum(hits)/dict_sum(tries), "%")
 
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
@@ -1376,6 +1382,29 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     plot2.axis.major_label_text_font_size=font_size
 
     show(gridplot( [[plot, plot2]] ))
+
+"""
+int iGap = 20;
+int iExtend = 1;
+int iMatch = 10;
+int iMissMatch = 4;
+
+MA:
+GGACTGTCAACAAGGAGGCCAATTAGTGTCCATTATAGC---AATGGATTTTGTGATGTG--------------------        reference
+IIIIIIIIIIIIIIIIIIIIIIIIII |    ||| |||   IIIIIIIIIIIIIIIIII
+GGACTGTCAACAAGGAGGCCAATTAGAGCG--TTA-AGCTGGAATGGATTTTGTGATGTG--------------------        query
+
+SW:
+GGACTGTCAACAAGGAGGCCAATTAGTGTCCATTATAGC---AATGGATTTTGTGATGTG--------------------        reference
+IIIIIIIIIIIIIIIIIIIIIIIIII |  | ||| |||   IIIIIIIIIIIIIIIIII
+GGACTGTCAACAAGGAGGCCAATTAGAG--CGTTA-AGCTGGAATGGATTTTGTGATGTG--------------------        query
+libMA.debugNW(
+    NucSeq("GGACTGTCAACAAGGAGGCCAATTAGAGCGTTAAGCTGGAATGGATTTTGTGATGTG"),
+    NucSeq("GGACTGTCAACAAGGAGGCCAATTAGTGTCCATTATAGCAATGGATTTTGTGATGTG")
+)
+
+exit()
+"""
 
 
 #create_as_sequencer_reads("/mnt/ssd1/illumina.db", 1000)
