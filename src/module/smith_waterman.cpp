@@ -220,17 +220,30 @@ std::shared_ptr<Container> SMW::execute(
                         }//if
                         std::cout
                             << xAligner.alignmentOutcomeMatrix.scoringOutcomeMatrix[i]
-                            << " ("
-                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrix[i] == LEFT 
+                            << " (h"
+                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrixH[i] == LEFT 
                                 ? "L" :
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[i] == UP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixH[i] == UP 
                                 ? "U" : 
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[i] == STOP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixH[i] == STOP 
+                                ? "S" : "D")))
+                            << "e"
+                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrixE[i] == LEFT 
+                                ? "L" :
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixE[i] == UP 
+                                ? "U" : 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixE[i] == STOP 
+                                ? "S" : "D")))
+                            << "f"
+                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrixF[i] == LEFT 
+                                ? "L" :
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixF[i] == UP 
+                                ? "U" : 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixF[i] == STOP 
                                 ? "S" : "D")))
                             << ")\t";
                     }//if
                 std::cout << std::endl;
-                exit(0);
             } // if
         ) // DEBUG
         return pvRet;

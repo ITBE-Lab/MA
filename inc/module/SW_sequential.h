@@ -173,7 +173,9 @@ template<class SCORE_TP, class T_size_t>
 struct AlignmentOutcomeMatrix
 {
 	SCORE_TP* scoringOutcomeMatrix;
-	sw_direction_t*	backtrackMatrix;
+	sw_direction_t*	backtrackMatrixH;
+	sw_direction_t*	backtrackMatrixE;
+	sw_direction_t*	backtrackMatrixF;
 
 #if 0
 	SequenceString &rRowSequenceString;
@@ -194,13 +196,17 @@ struct AlignmentOutcomeMatrix
 		for(T_size_t uxIterator = 0; uxIterator < numberOfColumns; uxIterator++ )
 		{
 			scoringOutcomeMatrix[ uxIterator ] = 0;
-			backtrackMatrix[ uxIterator ] = STOP;
+			backtrackMatrixH[ uxIterator ] = STOP;
+			backtrackMatrixE[ uxIterator ] = STOP;
+			backtrackMatrixF[ uxIterator ] = STOP;
 		} // for
 
 		for(T_size_t uxIterator = 0; uxIterator < numberOfRows; uxIterator++ )
 		{
 			scoringOutcomeMatrix[ uxIterator * numberOfColumns ] = 0;
-			backtrackMatrix[ uxIterator * numberOfColumns ] = STOP;
+			backtrackMatrixH[ uxIterator * numberOfColumns ] = STOP;
+			backtrackMatrixE[ uxIterator * numberOfColumns ] = STOP;
+			backtrackMatrixF[ uxIterator * numberOfColumns ] = STOP;
 		} // for
 	}  // method
 
@@ -219,7 +225,9 @@ struct AlignmentOutcomeMatrix
 		/* Reserve memory for the matrices with scoring and backtracking information
 		*/
 		scoringOutcomeMatrix = new SCORE_TP[sizesOfOutcomeAndBacktrackingMatrix];
-		backtrackMatrix = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
+		backtrackMatrixH = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
+		backtrackMatrixE = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
+		backtrackMatrixF = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
 
 		initializeFristColumnAndFirstRow();
 	} // constructor
@@ -229,7 +237,9 @@ struct AlignmentOutcomeMatrix
 	~AlignmentOutcomeMatrix()
 	{
 		delete[] scoringOutcomeMatrix;
-		delete[] backtrackMatrix;
+		delete[] backtrackMatrixH;
+		delete[] backtrackMatrixE;
+		delete[] backtrackMatrixF;
 	} // destructor
 
 	  /* Dumps the matrix to cout for debugging purposes
@@ -259,7 +269,7 @@ struct AlignmentOutcomeMatrix
 
 			for( size_t uxIteratorColum = 0; uxIteratorColum < numberOfColumns; uxIteratorColum++ )
 			{
-				std::cout << directionSymbols[backtrackMatrix[uxIteratorRow * numberOfColumns + uxIteratorColum]]
+				std::cout << directionSymbols[backtrackMatrixH[uxIteratorRow * numberOfColumns + uxIteratorColum]]
 					<< scoringOutcomeMatrix[(uxIteratorRow * numberOfColumns + uxIteratorColum)]
 					<< " "; // << "\t";
 			} // for uxIteratorColum
@@ -280,6 +290,9 @@ struct AlignmentOutcomeMatrix
 								 size_t &ruiNumberGapOpen
 	)
 	{
+        //DEPRECATED old backtracking code
+        assert(false);
+#if 0
 		size_t index = startIndex;
 		size_t endIndex = startIndex;
 		ruiNumberMatches = ruiNumberMismatches = ruiNumberInsertions = ruiNumberDeletions = 0;
@@ -373,6 +386,7 @@ struct AlignmentOutcomeMatrix
 				index = ((uxRow - 1) * numberOfColumns) + uxColumn;
 			} // switch
 		}
+#endif
 	} // method
 
 	  /* Performs a backtrack within the scoring matrix. The outcome is here an STL vector. 
@@ -388,6 +402,7 @@ struct AlignmentOutcomeMatrix
 	{
 		T_size_t currentIndex = startIndex;
 		T_size_t previousIndex = startIndex;
+        sw_direction_t*	backtrackMatrix = backtrackMatrixH;
 
 		while( backtrackMatrix[currentIndex] != STOP && (scoringOutcomeMatrix[currentIndex] >= 0) )
 		{
@@ -440,14 +455,17 @@ struct AlignmentOutcomeMatrix
                 assert(uxColumn != 0);
                 assert(uxRow != 0);
 				currentIndex = ((uxRow - 1) * numberOfColumns) + (uxColumn - 1);
+                backtrackMatrix = backtrackMatrixH;
 				break;
 			case LEFT :
                 assert(uxColumn != 0);
 				currentIndex--;
+                backtrackMatrix = backtrackMatrixF;
 				break;
 			case UP :
                 assert(uxRow != 0);
 				currentIndex = ((uxRow - 1) * numberOfColumns) + uxColumn;
+                backtrackMatrix = backtrackMatrixE;
 			case STOP :
 				;
 			}
@@ -704,7 +722,9 @@ struct SW_align_type
 
 			SCORE_TP *queryOutcomeMatrixIterator = alignmentOutcomeMatrix.scoringOutcomeMatrix + uxMatrixStartShift;
 
-			sw_direction_t *backtrackingMatrixIterator = alignmentOutcomeMatrix.backtrackMatrix + uxMatrixStartShift;
+			sw_direction_t *backtrackingMatrixHIterator = alignmentOutcomeMatrix.backtrackMatrixH + uxMatrixStartShift;
+			sw_direction_t *backtrackingMatrixEIterator = alignmentOutcomeMatrix.backtrackMatrixE + uxMatrixStartShift;
+			sw_direction_t *backtrackingMatrixFIterator = alignmentOutcomeMatrix.backtrackMatrixF + uxMatrixStartShift;
 
 			SCORE_TP h = 0;
 			SCORE_TP f = 0;
@@ -723,33 +743,73 @@ struct SW_align_type
                 assert(referenceToQueryProfileRow[uxIteratorColumn] != 0);
 
                 /*
-                 * NOTE: f & e values need to be set to zero if they cannot be used 
-                 * in the following backtracking steps
+                 * NOTE: We need to save three directions in this way:
+                 * if the last direction was LEFT_UP
+                 *      the correct direction for the current pos is stored in eDirectionH
+                 * if the last direction was LEFT
+                 *      the correct direction for the current pos is stored in eDirectionF
+                 * if the last direction was UP
+                 *      the correct direction for the current pos is stored in eDirectionE
+                 * So each direction corresponds to one of the three values 
+                 * used to compute the scores
+                 * Sometimes there is a cell that on it's own gets the max score from LEFT_UP
+                 * However when the following cells are considered the max score might be achieved
+                 * by opening a gap (so LEFT / UP) in the cell.
+                 * WE CANNOT MAKE THIS DECISION LOCALLY IN THAT CELL!!!!!
+                 * therefore we store the h the e and f value separately
+                 * and therefore we also need to store three directions for each cell 
+                 * as described above.
+                 * 
+                 * 
+                 * (
+                 *  so actually the inital algorithm was correct but we messed up the backtracking.
+                 *  while trying to fix the backtracking i then messed up the actual algorithm.....
+                 *  now i'm pretty sure everything is fine though!
+                 *  Also: now the code from the SW paper is correct
+                 *  and also backtracking is implementable.
+                 *  Idea: we should check weather this 3Direction backtracking is published yet
+                 *  otherwise this might be worth a short letter or sth along those lines....
+                 *  Maybe i should make a lab presentation about all this?
+                 * )
                  */
-				sw_direction_t eDirection;
-				eDirection = LEFT_UP;
+				sw_direction_t eDirectionH, eDirectionE, eDirectionF;
+				eDirectionH = LEFT_UP;
+				eDirectionE = UP;
+				eDirectionF = LEFT;
 				if (e >= h)
 				{
 					h = e;
-					eDirection = UP;
+					eDirectionH = UP;
 				}//if
-                else
-                    e = 0;
 	
 				if (f >= h)
 				{
-                    if(f > h)
-                        e = 0;
 					h = f;
-					eDirection = LEFT;
+					eDirectionH = LEFT;
 				}//if
-                else
-                    f = 0;
+
+                if( h - gapoe >= e - pSWparameterSetRef.iGapExtend )
+					eDirectionE = LEFT_UP;
+
+                if( h - gapoe >= f - pSWparameterSetRef.iGapExtend )
+					eDirectionF = LEFT_UP;
 
 				if( h < 0 )
 				{
 					h = 0;
-					eDirection = STOP;
+					eDirectionH = STOP;
+				}//if
+
+				if( e < 0 )
+				{
+					e = 0;
+					eDirectionE = STOP;
+				}//if
+
+				if( f < 0 )
+				{
+					f = 0;
+					eDirectionF = STOP;
 				}//if
 
 #if 0
@@ -804,17 +864,24 @@ struct SW_align_type
 				maxScoreInCurrentRow = std::max( maxScoreInCurrentRow, h);   
                 // m is stored at eh[mj+1]
 
-				/* We store h in the Matrix for later analysis */
+				/* We store h in the Matrix for later analysis 
+                 * We also store all directions
+                 */
 				if ( CONF_FILL_OUTCOME_MATRIX )
 				{
 					*(queryOutcomeMatrixIterator++) = h;
-					*(backtrackingMatrixIterator++) = eDirection;
+					*(backtrackingMatrixHIterator++) = eDirectionH;
+					*(backtrackingMatrixEIterator++) = eDirectionE;
+					*(backtrackingMatrixFIterator++) = eDirectionF;
 				}
 			} // inner for
             /* Save the final hInNextRound, because there are no more iterations.
             * Seems to be necessary for begin and end management
             */
-            /* Logging of the maximum scores */
+            /* Logging of the maximum scores 
+             * Since this is the SW algorithm the maximum must be found in a H value...
+             * We can therefore just store the max positions with respect to H
+             */
 			if( maxScoreInCurrentRow >= maxScoreValue )
 			{
 				if( maxScoreInCurrentRow > maxScoreValue )

@@ -2,10 +2,10 @@
 using namespace libMA;
 
 /*
+ * WARNING:
  * iGap must be smaller than iMatch for NW and SW to work...
- * 
+ * otherwise the decisions for the optimal direction cannot be made locally anymore
  */
-
 int iGap = 6;
 int iExtend = 1;
 int iMatch = 10;
@@ -139,7 +139,13 @@ nucSeqIndex needlemanWunsch(
      * beginning of the actual NW
      */
     std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
-    std::vector<std::vector<char>> dir(toQuery-fromQuery+1, std::vector<char>(toRef-fromRef+1));
+    std::vector<std::vector<std::vector<char>>> dir(
+        3,
+        std::vector<std::vector<char>>(
+            toQuery-fromQuery+1,
+            std::vector<char>(toRef-fromRef+1)
+        )
+    );
 
     /*
      * initialization:
@@ -150,18 +156,6 @@ nucSeqIndex needlemanWunsch(
      *      set the initial values along the reference to 0.
      *      we do not want a complete global alignment,
      *      merely a global alignment with respect to the query
-     * 
-     * @todo this can happen:
-
-CATTACTTTATAGATTGGGAACAATCCCATTCAAAGT-------------------------------------------        reference
-IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII|~~
-CATTACTTTATAGATTGGGAACAATCCCATTCAAAAAAGAGCGCTTCATCTTAACTTAGGGGTAGGTCCATTAGATAGCC        query
-
-800-880
----------------------------------------------------------AAAGAAGGACTTGGCATCTGCCA        reference
-                                                       ~~IIIIIIIIIIIIIIIIIIIIIII
-CAATCGGACCTATACATGGGGAGCTATATTTTATATACTCGCCCACCAATGGAGTGTAAAGAAGGACTTGGCATCTGCCA        query
-
      */
 
     #define DIA 1
