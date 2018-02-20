@@ -1,4 +1,6 @@
 #include "module/needlemanWunsch.h"
+#include <bitset>
+
 using namespace libMA;
 
 /*
@@ -138,7 +140,13 @@ nucSeqIndex needlemanWunsch(
     /*
      * beginning of the actual NW
      */
-    std::vector<std::vector<int>> s(toQuery-fromQuery+1, std::vector<int>(toRef-fromRef+1));
+    std::vector<std::vector<std::vector<int>>> s(
+        3,
+        std::vector<std::vector<int>>(
+            toQuery-fromQuery+1,
+            std::vector<int>(toRef-fromRef+1)
+        )
+    );
     std::vector<std::vector<std::vector<char>>> dir(
         3,
         std::vector<std::vector<char>>(
@@ -158,31 +166,55 @@ nucSeqIndex needlemanWunsch(
      *      merely a global alignment with respect to the query
      */
 
-    #define DIA 1
-    #define INS 2
-    #define DEL 3
+    #define DIA        0b000001
+    #define INS        0b000010
+    #define DEL        0b000100
+    #define DIR_0_NEXT 0b001000
+    #define DIR_1_NEXT 0b010000
+    #define DIR_2_NEXT 0b100000
 
-    s[0][0] = 0;
-    dir[0][0] = DIA;
-    s[1][0] = - (iGap + iExtend);
-    dir[1][0] = INS;
+    // used to prevent the DP to make extensions from positions where this is set...
+    // -iGap*10 should be more than enough
+    #define LOWER -iGap*10
+
+    s[0][0][0] = 0;
+    s[1][0][0] = LOWER;
+    s[2][0][0] = LOWER;
+    dir[0][0][0] = 0;// this position will throw an error is the backtracker tries to use it
+    dir[1][0][0] = 0;// this position will throw an error is the backtracker tries to use it
+    dir[2][0][0] = 0;// this position will throw an error is the backtracker tries to use it
+
+    s[0][1][0] = LOWER;
+    dir[0][1][0] = 0;// this position will throw an error is the backtracker tries to use it
+    s[1][1][0] = - (iGap + iExtend);
+    dir[1][1][0] = INS | DIR_0_NEXT;
+    s[2][1][0] = LOWER;
+    dir[2][1][0] = 0;// this position will throw an error is the backtracker tries to use it
+    
+    s[0][0][1] = LOWER;
+    dir[0][0][1] = 0;// this position will throw an error is the backtracker tries to use it
+    s[1][0][1] = LOWER;
+    dir[1][0][1] = 0;// this position will throw an error is the backtracker tries to use it
     if(bNoGapAtEnd)//see note above
-        s[0][1] = 0;
+        s[2][0][1] = 0;
     else
-        s[0][1] = - (iGap + iExtend);
-    dir[0][1] = DEL;
-    for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
+        s[2][0][1] = - (iGap + iExtend);
+    dir[2][0][1] = DEL | DIR_0_NEXT;
+    for(unsigned int x=0; x < 3; x++)
     {
-        s[uiI][0] = s[uiI - 1][0] - iExtend;
-        dir[uiI][0] = INS;
-    }//for
-    for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
-    {
-        if(bNoGapAtEnd)//see note above
-            s[0][uiI] = 0;
-        else
-            s[0][uiI] = s[0][uiI - 1] - iExtend;
-        dir[0][uiI] = DEL;
+        for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
+        {
+            s[x][uiI][0] = s[x][uiI - 1][0] - iExtend;
+            dir[x][uiI][0] = INS | DIR_1_NEXT;
+        }//for
+        for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
+        {
+            if(bNoGapAtEnd)//see note above
+                s[x][0][uiI] = 0;
+            else
+                s[x][0][uiI] = s[x][0][uiI - 1] - iExtend;
+            dir[x][0][uiI] = DEL | DIR_2_NEXT;
+        }//for
     }//for
     /*
      * dynamic programming loop
@@ -197,40 +229,69 @@ nucSeqIndex needlemanWunsch(
      *      match of missmatch score if any of them is higher. Also keep track of which direction
      *      we came from in the dir matrix.
      */
+    int a, b;
+    char c;
     for(nucSeqIndex uiI = 1; uiI < (toQuery-fromQuery)+1; uiI++)
     {
         for(nucSeqIndex uiJ = 1; uiJ < (toRef-fromRef)+1; uiJ++)
         {
-            int newScore;
-            //insertion
-            if(dir[uiI - 1][uiJ] == INS)
-                newScore = s[uiI - 1][uiJ] - iExtend;
+            //match / missmatch
+            a = s[0][uiI - 1][uiJ - 1];
+            c = DIA | DIR_0_NEXT;
+            b = s[1][uiI - 1][uiJ - 1];
+            if(b > a)
+            {
+                a = b;
+                c = DIA | DIR_1_NEXT;
+            }//if
+            b = s[2][uiI - 1][uiJ - 1];
+            if(b > a)
+            {
+                a = b;
+                c = DIA | DIR_2_NEXT;
+            }//if
+            if( (*pQuery)[toQuery - uiI] == (*pRef)[toRef - uiJ] )
+                a += iMatch;
             else
-                newScore = s[uiI - 1][uiJ] - (iGap + iExtend);
-            s[uiI][uiJ] = newScore;
-            dir[uiI][uiJ] = INS;
+                a -= iMissMatch;
+            dir[0][uiI][uiJ] = c;
+            s[0][uiI][uiJ] = a;
+
+            //insertion
+            a = s[1][uiI - 1][uiJ] - iExtend;
+            c = INS | DIR_1_NEXT;
+            b = s[0][uiI - 1][uiJ] - (iGap + iExtend);
+            if(b >= a)
+            {
+                a = b;
+                c = INS | DIR_0_NEXT;
+            }//if
+            b = s[2][uiI - 1][uiJ] - (iGap + iExtend);
+            if(b > a)
+            {
+                a = b;
+                c = INS | DIR_2_NEXT;
+            }//if
+            dir[1][uiI][uiJ] = c;
+            s[1][uiI][uiJ] = a;
 
             //deletion
-            if(dir[uiI][uiJ - 1] == DEL)
-                newScore = s[uiI][uiJ - 1] - iExtend;
-            else
-                newScore = s[uiI][uiJ - 1] - (iGap + iExtend);
-            if(newScore > s[uiI][uiJ])
+            a = s[2][uiI][uiJ - 1] - iExtend;
+            c = DEL | DIR_2_NEXT;
+            b = s[0][uiI][uiJ - 1] - (iGap + iExtend);
+            if(b >= a)
             {
-                s[uiI][uiJ] = newScore;
-                dir[uiI][uiJ] = DEL;
+                a = b;
+                c = DEL | DIR_0_NEXT;
             }//if
-            //match / missmatch
-            newScore = s[uiI - 1][uiJ - 1];
-            if( (*pQuery)[toQuery - uiI] == (*pRef)[toRef - uiJ] )
-                newScore += iMatch;
-            else
-                newScore -= iMissMatch;
-            if(newScore > s[uiI][uiJ])
+            b = s[1][uiI][uiJ - 1] - (iGap + iExtend);
+            if(b > a)
             {
-                s[uiI][uiJ] = newScore;
-                dir[uiI][uiJ] = DIA;
+                a = b;
+                c = DEL | DIR_1_NEXT;
             }//if
+            dir[2][uiI][uiJ] = c;
+            s[2][uiI][uiJ] = a;
         }//for
     }//for
 
@@ -266,25 +327,49 @@ nucSeqIndex needlemanWunsch(
     nucSeqIndex iX = toQuery-fromQuery;
     nucSeqIndex iY = toRef-fromRef;
     
+    char cLastDir = DIR_0_NEXT;
     /*
     * if there is no gap cost for the beginning 
     * we should start backtracking where the score is maximal
     * along the reference
+    * also: in this case the last direction must be a match
     */
     if(bNoGapAtBeginning)
     {
         for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef; uiJ++)
-            if(s[iX][uiJ] > s[iX][iY])
+            if(s[0][iX][uiJ] > s[0][iX][iY])
                 iY = uiJ;
         uiRet = (toRef-fromRef) - iY;
         DEBUG_2(
             std::cout << (toRef-fromRef) - iY << "D";
         )//DEBUG
     }//if
-
+    else // in this case the first direction might be an insertion or deletion
+    {
+        int a = s[0][iX][iY];
+        int b = s[1][iX][iY];
+        if(b > a)
+        {
+            a = b;
+            cLastDir = DIR_1_NEXT;
+        }//if
+        b = s[2][iX][iY];
+        if(b > a)
+            cLastDir = DIR_2_NEXT;
+    }//else
     while(iX > 0 || iY > 0)
     {
-        if(dir[iX][iY] == DIA)
+        //load the direction value from the correct matrix
+        if(cLastDir & DIR_0_NEXT)
+            cLastDir = dir[0][iX][iY];
+        else if(cLastDir & DIR_1_NEXT)
+            cLastDir = dir[1][iX][iY];
+        else if(cLastDir & DIR_2_NEXT)
+            cLastDir = dir[2][iX][iY];
+        else
+            std::cerr << "WARNING: no next pointer set in dynamic programming" << std::endl;
+        //do the backtracking
+        if(cLastDir & DIA)
         {
             if( (*pQuery)[toQuery - iX] == (*pRef)[toRef - iY] )
             {
@@ -292,18 +377,18 @@ nucSeqIndex needlemanWunsch(
                 DEBUG_2(
                     std::cout << "M";
                 )//DEBUG
-            }
+            }//if
             else
             {
                 pAlignment->append(MatchType::missmatch);
                 DEBUG_2(
                     std::cout << "W";
                 )//DEBUG
-            }
+            }//else
             iX--;
             iY--;
         }//if
-        else if(dir[iX][iY] == INS)
+        else if(cLastDir & INS)
         {
             pAlignment->append(MatchType::insertion);
             iX--;
@@ -311,7 +396,7 @@ nucSeqIndex needlemanWunsch(
                 std::cout << "I";
             )//DEBUG
         }//if
-        else if(dir[iX][iY] == DEL)
+        else if(cLastDir & DEL)
         {
             pAlignment->append(MatchType::deletion);
             iY--;
@@ -342,19 +427,25 @@ nucSeqIndex needlemanWunsch(
             std::cout << "\t";
             for(auto i = toRef; i > fromRef; i--)
                 std::cout << "\t" << NucSeq::translateACGTCodeToCharacter((*pRef)[i - 1]);
-            for(auto j = fromQuery; j < toQuery; j++)
+            for(auto j = fromQuery; j <= toQuery; j++)
             {
                 std::cout << "\n";
                 if(j > fromQuery)
                     std::cout << NucSeq::translateACGTCodeToCharacter((*pQuery)[toQuery - j]);
-                for(auto i = fromRef; i < toRef; i++)
+                for(auto i = fromRef; i <= toRef; i++)
                     std::cout
                         << "\t"
-                        << s[j - fromQuery][i - fromRef]
+                        << s[0][j - fromQuery][i - fromRef]
+                        << ","
+                        << s[1][j - fromQuery][i - fromRef]
+                        << ","
+                        << s[2][j - fromQuery][i - fromRef]
                         << " ("
-                        << (dir[j - fromQuery][i - fromRef] == DEL ? "D" :
-                           (dir[j - fromQuery][i - fromRef] == INS ? "I" :
-                           (dir[j - fromQuery][i - fromRef] == DIA ? "M" : "?")))
+                        << std::bitset<6>(dir[0][j - fromQuery][i - fromRef])
+                        << ","
+                        << std::bitset<6>(dir[1][j - fromQuery][i - fromRef])
+                        << ","
+                        << std::bitset<6>(dir[2][j - fromQuery][i - fromRef])
                         << ")"
                         ;
             }//for

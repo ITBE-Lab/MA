@@ -759,18 +759,18 @@ struct SW_align_type
                  * therefore we store the h the e and f value separately
                  * and therefore we also need to store three directions for each cell 
                  * as described above.
-                 * 
-                 * 
+                 *
                  * (
                  *  so actually the inital algorithm was correct but we messed up the backtracking.
                  *  while trying to fix the backtracking i then messed up the actual algorithm.....
                  *  now i'm pretty sure everything is fine though!
                  *  Also: now the code from the SW paper is correct
                  *  and also backtracking is implementable.
-                 *  Idea: we should check weather this 3Direction backtracking is published yet
-                 *  otherwise this might be worth a short letter or sth along those lines....
                  *  Maybe i should make a lab presentation about all this?
                  * )
+                 *
+                 * see lecture notes here:
+                 * https://www.cs.cmu.edu/~ckingsf/bioinfo-lectures/gaps.pdf
                  */
 				sw_direction_t eDirectionH, eDirectionE, eDirectionF;
 				eDirectionH = LEFT_UP;
@@ -788,12 +788,25 @@ struct SW_align_type
 					eDirectionH = LEFT;
 				}//if
 
+                /*
+                 * already here we can check if the e extension for the next step would
+                 * extend the gap or open a new one.
+                 * According to this information we set the E-direction correctly
+                 */
                 if( h - gapoe >= e - pSWparameterSetRef.iGapExtend )
 					eDirectionE = LEFT_UP;
 
+                /*
+                 * already here we can check if the f extension for the next step would
+                 * extend the gap or open a new one.
+                 * According to this information we set the F-direction correctly
+                 */
                 if( h - gapoe >= f - pSWparameterSetRef.iGapExtend )
 					eDirectionF = LEFT_UP;
 
+                /*
+                 * If any of the extensions leads to a negative score we set its direction to STOP.
+                 */
 				if( h < 0 )
 				{
 					h = 0;
@@ -878,7 +891,7 @@ struct SW_align_type
             /* Save the final hInNextRound, because there are no more iterations.
             * Seems to be necessary for begin and end management
             */
-            /* Logging of the maximum scores 
+            /* Logging of the maximum scores
              * Since this is the SW algorithm the maximum must be found in a H value...
              * We can therefore just store the max positions with respect to H
              */
