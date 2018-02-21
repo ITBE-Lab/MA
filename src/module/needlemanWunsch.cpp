@@ -3,11 +3,6 @@
 
 using namespace libMA;
 
-/*
- * WARNING:
- * iGap must be smaller than iMatch for NW and SW to work...
- * otherwise the decisions for the optimal direction cannot be made locally anymore
- */
 int iGap = 6;
 int iExtend = 1;
 int iMatch = 10;
@@ -175,7 +170,7 @@ nucSeqIndex needlemanWunsch(
 
     // used to prevent the DP to make extensions from positions where this is set...
     // -iGap*10 should be more than enough
-    #define LOWER -iGap*10
+    #define LOWER -iGap*1000
 
     s[0][0][0] = 0;
     s[1][0][0] = LOWER;
@@ -205,7 +200,7 @@ nucSeqIndex needlemanWunsch(
         for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
         {
             s[x][uiI][0] = s[x][uiI - 1][0] - iExtend;
-            dir[x][uiI][0] = INS | DIR_1_NEXT;
+            dir[1][uiI][0] = INS | DIR_1_NEXT;
         }//for
         for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
         {
@@ -213,7 +208,7 @@ nucSeqIndex needlemanWunsch(
                 s[x][0][uiI] = 0;
             else
                 s[x][0][uiI] = s[x][0][uiI - 1] - iExtend;
-            dir[x][0][uiI] = DEL | DIR_2_NEXT;
+            dir[2][0][uiI] = DEL | DIR_2_NEXT;
         }//for
     }//for
     /*

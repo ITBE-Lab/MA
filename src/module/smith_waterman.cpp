@@ -178,7 +178,7 @@ std::shared_ptr<Container> SMW::execute(
         //for
         pvRet->push_back(pAlignment);
         DEBUG(
-            if(uiMaxScore != pAlignment->score() || bPrint)
+            if( (uiMaxScore != pAlignment->score() || bPrint))
             {
                 auto best = xAligner.alignmentOutcomeMatrix.getMaxIndex();
                 if(best != uiIndex)
@@ -220,26 +220,26 @@ std::shared_ptr<Container> SMW::execute(
                         }//if
                         std::cout
                             << xAligner.alignmentOutcomeMatrix.scoringOutcomeMatrix[i]
-                            << " (h"
-                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrixH[i] == LEFT 
+                            << " ("
+                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrix[0][i] == LEFT 
                                 ? "L" :
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixH[i] == UP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[0][i] == UP 
                                 ? "U" : 
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixH[i] == STOP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[0][i] == STOP 
                                 ? "S" : "D")))
-                            << "e"
-                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrixE[i] == LEFT 
+                            << ","
+                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrix[1][i] == LEFT 
                                 ? "L" :
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixE[i] == UP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[1][i] == UP 
                                 ? "U" : 
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixE[i] == STOP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[1][i] == STOP 
                                 ? "S" : "D")))
-                            << "f"
-                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrixF[i] == LEFT 
+                            << ","
+                            << (xAligner.alignmentOutcomeMatrix.backtrackMatrix[2][i] == LEFT 
                                 ? "L" :
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixF[i] == UP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[2][i] == UP 
                                 ? "U" : 
-                                (xAligner.alignmentOutcomeMatrix.backtrackMatrixF[i] == STOP 
+                                (xAligner.alignmentOutcomeMatrix.backtrackMatrix[2][i] == STOP 
                                 ? "S" : "D")))
                             << ")\t";
                     }//if

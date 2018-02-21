@@ -205,7 +205,7 @@ def test_my_approach(
                 ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
             )
         print("computing optimal (", name, ") ...")
-        Pledge.simultaneous_get(optimal_alignment_out, 1)
+        Pledge.simultaneous_get(optimal_alignment_out, 32)
 
         print("extracting results (", name, ") ...")
         result = []
@@ -281,13 +281,13 @@ def test_my_approach(
                     pledges[0][i].get(),
                     ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
                 )
-            if (local and optimal_alignment != None and
+            if (warn_once and local and optimal_alignment != None and
                     alignment.get_score() < optimal_alignment.get_score()):
-                #warn_once = False
+                warn_once = False
                 print("got worse than optimal score", alignment.get_score(),
                       optimal_alignment.get_score()
                      )
-                #print("this warning is just printed once")
+                print("this warning is just printed once")
                 print_alignments()
 
             seed_coverage_soc = 0.0
@@ -1398,7 +1398,14 @@ libMA.debugNW(
     NucSeq("AGATATT"),
     NucSeq("CCAGTGG")
 )
+exit()
+smw = SMW(True)
+smw.print = True
 
+smw.execute(
+    NucSeq("AGATATT"),
+    NucSeq("CCAGTGG")
+)
 exit()
 """
 
@@ -1408,13 +1415,16 @@ exit()
 #analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 150, 0)
 
 #high quality picture
-createSampleQueries(human_genome, "/mnt/ssd1/highQual.db", 1000, 100, 32, True, True)
-test_my_approaches("/mnt/ssd1/highQual.db")
-analyse_all_approaches("highQual.html","/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/highQual.db", 1000, 100)
-compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/highQual.db", 1000, 100)
-analyse_all_approaches_depre("highQual_depre.html","/mnt/ssd1/highQual.db", 1000, 100)
-analyse_detailed("stats/", "/mnt/ssd1/highQual.db")
+
+l = 1000
+il = 100
+createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, True)
+test_my_approaches("/mnt/ssd1/test.db")
+analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
+compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)
+compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/test.db", l, il)
+analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", l, il)
+analyse_detailed("stats/", "/mnt/ssd1/test.db")
 
 exit()
 

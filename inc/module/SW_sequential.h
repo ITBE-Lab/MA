@@ -5,11 +5,15 @@
 #include <vector>
 #include <functional>
 
+/*
+ * WARNING:
+ * the values here needs to be in the exact same order as the backrack matrices
+ */
 typedef enum {
-	STOP	= 0,
-	LEFT_UP = 1,
-	UP		= 2,
-	LEFT	= 3
+	LEFT_UP = 0,
+	UP		= 1,
+	LEFT	= 2,
+	STOP	= 3
 } sw_direction_t;
 
 typedef enum {
@@ -28,7 +32,7 @@ typedef enum
 
 template<class SCORE_TP>
 struct generic_eh_type {
-	SCORE_TP h, e;
+	SCORE_TP h, e, f;
 };
 
 template<class SCORE_TP>
@@ -173,9 +177,7 @@ template<class SCORE_TP, class T_size_t>
 struct AlignmentOutcomeMatrix
 {
 	SCORE_TP* scoringOutcomeMatrix;
-	sw_direction_t*	backtrackMatrixH;
-	sw_direction_t*	backtrackMatrixE;
-	sw_direction_t*	backtrackMatrixF;
+	sw_direction_t*	backtrackMatrix[3];//the three backtrack matrices
 
 #if 0
 	SequenceString &rRowSequenceString;
@@ -196,17 +198,17 @@ struct AlignmentOutcomeMatrix
 		for(T_size_t uxIterator = 0; uxIterator < numberOfColumns; uxIterator++ )
 		{
 			scoringOutcomeMatrix[ uxIterator ] = 0;
-			backtrackMatrixH[ uxIterator ] = STOP;
-			backtrackMatrixE[ uxIterator ] = STOP;
-			backtrackMatrixF[ uxIterator ] = STOP;
+			backtrackMatrix[LEFT_UP][ uxIterator ] = STOP;
+			backtrackMatrix[UP][ uxIterator ] = STOP;
+			backtrackMatrix[LEFT][ uxIterator ] = STOP;
 		} // for
 
 		for(T_size_t uxIterator = 0; uxIterator < numberOfRows; uxIterator++ )
 		{
 			scoringOutcomeMatrix[ uxIterator * numberOfColumns ] = 0;
-			backtrackMatrixH[ uxIterator * numberOfColumns ] = STOP;
-			backtrackMatrixE[ uxIterator * numberOfColumns ] = STOP;
-			backtrackMatrixF[ uxIterator * numberOfColumns ] = STOP;
+			backtrackMatrix[LEFT_UP][ uxIterator * numberOfColumns ] = STOP;
+			backtrackMatrix[UP][ uxIterator * numberOfColumns ] = STOP;
+			backtrackMatrix[LEFT][ uxIterator * numberOfColumns ] = STOP;
 		} // for
 	}  // method
 
@@ -225,9 +227,9 @@ struct AlignmentOutcomeMatrix
 		/* Reserve memory for the matrices with scoring and backtracking information
 		*/
 		scoringOutcomeMatrix = new SCORE_TP[sizesOfOutcomeAndBacktrackingMatrix];
-		backtrackMatrixH = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
-		backtrackMatrixE = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
-		backtrackMatrixF = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
+		backtrackMatrix[LEFT_UP] = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
+		backtrackMatrix[UP] = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
+		backtrackMatrix[LEFT] = new sw_direction_t[sizesOfOutcomeAndBacktrackingMatrix];
 
 		initializeFristColumnAndFirstRow();
 	} // constructor
@@ -237,9 +239,9 @@ struct AlignmentOutcomeMatrix
 	~AlignmentOutcomeMatrix()
 	{
 		delete[] scoringOutcomeMatrix;
-		delete[] backtrackMatrixH;
-		delete[] backtrackMatrixE;
-		delete[] backtrackMatrixF;
+		delete[] backtrackMatrix[LEFT_UP];
+		delete[] backtrackMatrix[UP];
+		delete[] backtrackMatrix[LEFT];
 	} // destructor
 
 	  /* Dumps the matrix to cout for debugging purposes
@@ -269,7 +271,7 @@ struct AlignmentOutcomeMatrix
 
 			for( size_t uxIteratorColum = 0; uxIteratorColum < numberOfColumns; uxIteratorColum++ )
 			{
-				std::cout << directionSymbols[backtrackMatrixH[uxIteratorRow * numberOfColumns + uxIteratorColum]]
+				std::cout << directionSymbols[backtrackMatrix[LEFT_UP][uxIteratorRow * numberOfColumns + uxIteratorColum]]
 					<< scoringOutcomeMatrix[(uxIteratorRow * numberOfColumns + uxIteratorColum)]
 					<< " "; // << "\t";
 			} // for uxIteratorColum
@@ -389,8 +391,9 @@ struct AlignmentOutcomeMatrix
 #endif
 	} // method
 
-	  /* Performs a backtrack within the scoring matrix. The outcome is here an STL vector. 
-	  * The caller has to deliver an empty vector and is responsible for the memory allocation and deallocation.
+	  /* Performs a backtrack within the scoring matrix. The outcome is here an STL vector.
+	  * The caller has to deliver an empty vector
+      * and is responsible for the memory allocation and deallocation.
 	  */
 	void backtrackFromIndex( T_size_t startIndex,
 							 alignment_description<char> &alignmentOutcomeVector,
@@ -402,17 +405,20 @@ struct AlignmentOutcomeMatrix
 	{
 		T_size_t currentIndex = startIndex;
 		T_size_t previousIndex = startIndex;
-        sw_direction_t*	backtrackMatrix = backtrackMatrixH;
+        //WARNING this assumes that the given startIndex is a maximum
+        sw_direction_t direction = LEFT_UP;
 
-		while( backtrackMatrix[currentIndex] != STOP && (scoringOutcomeMatrix[currentIndex] >= 0) )
+		while( 
+                backtrackMatrix[direction][currentIndex] != STOP &&
+                scoringOutcomeMatrix[currentIndex] >= 0
+             )
 		{
 			/* We calculate the current column and row on the foundation of the current index
 			*/
 			T_size_t uxColumn = currentIndex % numberOfColumns;
 			T_size_t uxRow = currentIndex / numberOfColumns;
 
-
-			switch ( backtrackMatrix[currentIndex] )
+			switch ( direction )
 			{
 			case LEFT_UP :
 				/* We check whether the two symbols match
@@ -445,31 +451,33 @@ struct AlignmentOutcomeMatrix
 			case STOP :
 				;
 			} // switch
-
-			  /* Now we do the real backtracking.
-			  */
+            /* Now we do the real backtracking.
+             */
 			previousIndex = currentIndex;
-			switch ( backtrackMatrix[currentIndex] )
+			switch ( direction )
 			{
 			case LEFT_UP :
                 assert(uxColumn != 0);
                 assert(uxRow != 0);
 				currentIndex = ((uxRow - 1) * numberOfColumns) + (uxColumn - 1);
-                backtrackMatrix = backtrackMatrixH;
 				break;
 			case LEFT :
                 assert(uxColumn != 0);
 				currentIndex--;
-                backtrackMatrix = backtrackMatrixF;
 				break;
 			case UP :
                 assert(uxRow != 0);
 				currentIndex = ((uxRow - 1) * numberOfColumns) + uxColumn;
-                backtrackMatrix = backtrackMatrixE;
 			case STOP :
 				;
-			}
-		}
+			}// switch
+
+            /*
+             * update the direction
+             * We get the direction from the previousIndex see note in the DP below.
+             */
+            direction = backtrackMatrix[direction][previousIndex];
+		}// while
 
 		/* Finally we inform about the begin and end of our sequences
 		* Here we take 1 way, so we get values according to a counting starting with 0 instead of 1
@@ -706,7 +714,8 @@ struct SW_align_type
 		{
 			h_and_e_Columns[uxIteratorColumn].h = 0;
 			h_and_e_Columns[uxIteratorColumn].e = 0;
-		}
+			h_and_e_Columns[uxIteratorColumn].f = 0;
+		}// for
 
 		for (uxIteratorRow = 0; uxIteratorRow < numberOfRows; ++uxIteratorRow) {
 			long long indexOfMaxScoreInCurrentRow = -1;
@@ -722,28 +731,36 @@ struct SW_align_type
 
 			SCORE_TP *queryOutcomeMatrixIterator = alignmentOutcomeMatrix.scoringOutcomeMatrix + uxMatrixStartShift;
 
-			sw_direction_t *backtrackingMatrixHIterator = alignmentOutcomeMatrix.backtrackMatrixH + uxMatrixStartShift;
-			sw_direction_t *backtrackingMatrixEIterator = alignmentOutcomeMatrix.backtrackMatrixE + uxMatrixStartShift;
-			sw_direction_t *backtrackingMatrixFIterator = alignmentOutcomeMatrix.backtrackMatrixF + uxMatrixStartShift;
+            sw_direction_t *backtrackingMatrixIterator[3];
+
+            for(unsigned int i=0; i<3; i++)
+                backtrackingMatrixIterator[i] = alignmentOutcomeMatrix.backtrackMatrix[i] + uxMatrixStartShift;
 
 			SCORE_TP h = 0;
 			SCORE_TP f = 0;
+			SCORE_TP f_up = 0;
 			SCORE_TP h_left_up = 0;
+            SCORE_TP e = 0;
+            SCORE_TP e_up = 0;
+            SCORE_TP e_left_up = 0;
+            SCORE_TP f_left_up = 0;
+            SCORE_TP h_up = 0;
 
 			for ( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn ) 
 			{
-				SCORE_TP e_up = h_and_e_Columns[uxIteratorColumn].e;
-				SCORE_TP h_up = h_and_e_Columns[uxIteratorColumn].h;
+				h_left_up = h_up;
+                e_left_up = e_up;
+                f_left_up = f_up;
+				h_up = h_and_e_Columns[uxIteratorColumn].h;
+				e_up = h_and_e_Columns[uxIteratorColumn].e;
+				f_up = h_and_e_Columns[uxIteratorColumn].f;
 				SCORE_TP h_left = h;
-				SCORE_TP e = std::max( h_up - gapoe, e_up - pSWparameterSetRef.iGapExtend );
-
-				f = std::max( h_left - gapoe, f - pSWparameterSetRef.iGapExtend );
-
-				h = h_left_up + referenceToQueryProfileRow[uxIteratorColumn]; 
-                assert(referenceToQueryProfileRow[uxIteratorColumn] != 0);
+				SCORE_TP e_left = e;
+				SCORE_TP f_left = f;
 
                 /*
                  * NOTE: We need to save three directions in this way:
+                 * @todo make me accurate again...
                  * if the last direction was LEFT_UP
                  *      the correct direction for the current pos is stored in eDirectionH
                  * if the last direction was LEFT
@@ -772,57 +789,74 @@ struct SW_align_type
                  * see lecture notes here:
                  * https://www.cs.cmu.edu/~ckingsf/bioinfo-lectures/gaps.pdf
                  */
-				sw_direction_t eDirectionH, eDirectionE, eDirectionF;
-				eDirectionH = LEFT_UP;
-				eDirectionE = UP;
-				eDirectionF = LEFT;
-				if (e >= h)
-				{
-					h = e;
-					eDirectionH = UP;
-				}//if
-	
-				if (f >= h)
-				{
-					h = f;
-					eDirectionH = LEFT;
-				}//if
+				sw_direction_t eDirection[3];
+				eDirection[LEFT_UP] = LEFT_UP;
+				eDirection[UP] = UP;
+				eDirection[LEFT] = LEFT;
 
-                /*
-                 * already here we can check if the e extension for the next step would
-                 * extend the gap or open a new one.
-                 * According to this information we set the E-direction correctly
-                 */
-                if( h - gapoe >= e - pSWparameterSetRef.iGapExtend )
-					eDirectionE = LEFT_UP;
+                //compute the three scores
 
-                /*
-                 * already here we can check if the f extension for the next step would
-                 * extend the gap or open a new one.
-                 * According to this information we set the F-direction correctly
-                 */
-                if( h - gapoe >= f - pSWparameterSetRef.iGapExtend )
-					eDirectionF = LEFT_UP;
+                //compute the h score
+                h = h_left_up;
+                if(h < e_left_up)
+                {
+                    h = e_left_up;
+                    eDirection[LEFT_UP] = UP;
+                }//if
+                if(h < f_left_up)
+                {
+                    h = f_left_up;
+                    eDirection[LEFT_UP] = LEFT;
+                }//if
+                h += referenceToQueryProfileRow[uxIteratorColumn];
+                assert(referenceToQueryProfileRow[uxIteratorColumn] != 0);
+
+                //compute the e score
+				e = e_up - pSWparameterSetRef.iGapExtend;
+                if(e <= h_up - gapoe)
+                {
+                    e = h_up - gapoe;
+                    eDirection[UP] = LEFT_UP;
+                }//if
+                if(e < f_up - gapoe)
+                {
+                    e = f_up - gapoe;
+                    eDirection[UP] = LEFT;
+                }//if
+
+                //update the f score
+				f = f_left - pSWparameterSetRef.iGapExtend;
+                if(f <= h_left - gapoe)
+                {
+                    f = h_left - gapoe;
+                    eDirection[LEFT] = LEFT_UP;
+                }//if
+                if(f < e_left - gapoe)
+                {
+                    f = e_left - gapoe;
+                    eDirection[LEFT] = UP;
+                }//if
 
                 /*
                  * If any of the extensions leads to a negative score we set its direction to STOP.
+                 * and the score to zero
                  */
 				if( h < 0 )
 				{
 					h = 0;
-					eDirectionH = STOP;
+					eDirection[LEFT_UP] = STOP;
 				}//if
 
 				if( e < 0 )
 				{
 					e = 0;
-					eDirectionE = STOP;
+					eDirection[UP] = STOP;
 				}//if
 
 				if( f < 0 )
 				{
 					f = 0;
-					eDirectionF = STOP;
+					eDirection[LEFT] = STOP;
 				}//if
 
 #if 0
@@ -867,9 +901,9 @@ struct SW_align_type
                 )//DEBUG
 #endif
                 //save the values for the next iteration
-				h_left_up = h_up;
-				h_and_e_Columns[uxIteratorColumn].e = e;
 				h_and_e_Columns[uxIteratorColumn].h = h;
+				h_and_e_Columns[uxIteratorColumn].e = e;
+				h_and_e_Columns[uxIteratorColumn].f = f;
 
                 //record the maximum position
 				indexOfMaxScoreInCurrentRow = maxScoreInCurrentRow > h ? 
@@ -883,10 +917,9 @@ struct SW_align_type
 				if ( CONF_FILL_OUTCOME_MATRIX )
 				{
 					*(queryOutcomeMatrixIterator++) = h;
-					*(backtrackingMatrixHIterator++) = eDirectionH;
-					*(backtrackingMatrixEIterator++) = eDirectionE;
-					*(backtrackingMatrixFIterator++) = eDirectionF;
-				}
+                    for(unsigned int i=0; i<3; i++)
+					    *(backtrackingMatrixIterator[i]++) = eDirection[i];
+				}// if
 			} // inner for
             /* Save the final hInNextRound, because there are no more iterations.
             * Seems to be necessary for begin and end management
