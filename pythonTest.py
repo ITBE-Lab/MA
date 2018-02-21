@@ -334,20 +334,19 @@ def test_my_approach(
 
                 #check for how many irrelevant overlapped seeds where there...
                 #first get all relevant seeds:
-                discovered_seeds = pledges[1][i].get().extract_seeds(fm_index, max_hits, True)
-                soc_seeds = pledges[2][i].get()[alignment.stats.index_of_strip]
                 if not use_chaining:
+                    discovered_seeds = pledges[1][i].get().extract_seeds(fm_index, max_hits, True)
+                    soc_seeds = pledges[2][i].get()[alignment.stats.index_of_strip]
                     num_soc_seeds += len(soc_seeds)
-                num_coupled_seeds += len(pledges[3][i].get()[alignment.stats.index_of_strip])
-                num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
-                #compute the area covered by relevant seeds
-                covered_area = [-1]*len(pledges[0][i].get())
-                for seed in discovered_seeds:
-                    for pos in range(seed.start, seed.start + seed.size):
-                        if covered_area[pos] < seed.size:
-                            covered_area[pos] = seed.size
+                    num_coupled_seeds += len(pledges[3][i].get()[alignment.stats.index_of_strip])
+                    num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
+                    #compute the area covered by relevant seeds
+                    covered_area = [-1]*len(pledges[0][i].get())
+                    for seed in discovered_seeds:
+                        for pos in range(seed.start, seed.start + seed.size):
+                            if covered_area[pos] < seed.size:
+                                covered_area[pos] = seed.size
                 #seed coverage after the soc
-                if not use_chaining:
                     covered_area_soc = [False]*len(pledges[0][i].get())
                     for seed in soc_seeds:
                         for pos in range(seed.start, seed.start + seed.size):
@@ -1416,9 +1415,9 @@ exit()
 
 #high quality picture
 
-l = 1000
-il = 100
-createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, True)
+l = 100
+il = 10
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 2**11, True, True)
 test_my_approaches("/mnt/ssd1/test.db")
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
 compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)

@@ -160,13 +160,13 @@ nucSeqIndex needlemanWunsch(
      *      we do not want a complete global alignment,
      *      merely a global alignment with respect to the query
      */
-
-    #define DIA        0b000001
-    #define INS        0b000010
-    #define DEL        0b000100
-    #define DIR_0_NEXT 0b001000
-    #define DIR_1_NEXT 0b010000
-    #define DIR_2_NEXT 0b100000
+    //                  BINARY       DECIMAL
+    #define DIA         /*000001*/   1
+    #define INS         /*000010*/   2
+    #define DEL         /*000100*/   4
+    #define DIR_0_NEXT  /*001000*/   8
+    #define DIR_1_NEXT  /*010000*/   16
+    #define DIR_2_NEXT  /*100000*/   32
 
     // used to prevent the DP to make extensions from positions where this is set...
     // -iGap*10 should be more than enough
