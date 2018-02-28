@@ -11,6 +11,7 @@
 
 namespace libMA
 {
+
     /**
      * @brief implements NMW
      * @details

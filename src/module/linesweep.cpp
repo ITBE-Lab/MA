@@ -4,6 +4,7 @@ using namespace libMA;
 extern int iGap;
 extern int iExtend;
 extern int iMatch;
+extern int iMissMatch;
 
 ContainerVector LinearLineSweep::getInputType() const
 {

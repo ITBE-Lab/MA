@@ -1,11 +1,10 @@
 #include "module/stripOfConsideration.h"
 using namespace libMA;
 
-extern int iGap;// = 16;
-extern int iExtend;// = 1;
-extern int iMatch;// = 8;
-extern int iMissMatch;// = 2;
-
+extern int iGap;
+extern int iExtend;
+extern int iMatch;
+extern int iMissMatch;
 
 nucSeqIndex StripOfConsideration::getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS)
 { 

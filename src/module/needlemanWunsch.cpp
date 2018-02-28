@@ -8,6 +8,7 @@ int iExtend = 1;
 int iMatch = 10;
 int iMissMatch = 4;
 
+
 ContainerVector NeedlemanWunsch::getInputType() const
 {
     return ContainerVector{

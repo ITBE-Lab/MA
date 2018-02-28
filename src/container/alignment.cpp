@@ -1,7 +1,7 @@
 #include "container/alignment.h"
 using namespace libMA;
 
-//The scores from needlemanWunsch.cpp
+
 extern int iGap;
 extern int iExtend;
 extern int iMatch;

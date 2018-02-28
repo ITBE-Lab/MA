@@ -19,8 +19,8 @@ LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFF
 
 all:cmdMA.exe
 
-cmdMA.exe: libMA.so src/ma.cpp
-	$(CC) $(CCFLAGS) src/ma.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) libMA.so -o cmdMA.exe
+cmdMA.exe: libMA.so src/cmdMa.cpp
+	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) libMA.so -o cmdMA.exe
 
 libMA.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@

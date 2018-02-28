@@ -8,7 +8,6 @@
 
 #include "container/segment.h"
 #include "module/module.h"
-#include "module/needlemanWunsch.h"
 #include <cmath>
 
 namespace libMA

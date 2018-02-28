@@ -1,15 +1,15 @@
 #include "container/seed.h"
 using namespace libMA;
 
-extern int iGap;
-extern int iMatch;
-extern int iMissMatch;
-extern int iExtend;
-
 #ifdef _MSC_VER
 //getting ambiguous abs otherwise
 #include <cstdlib>
 #endif
+
+extern int iGap;
+extern int iExtend;
+extern int iMatch;
+extern int iMissMatch;
 
 /*returns the sum off all scores within the list*/
 nucSeqIndex Seeds::getScore() const

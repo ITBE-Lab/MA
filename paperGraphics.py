@@ -1,11 +1,11 @@
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import row, column, gridplot
-from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead
+from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead, AdaptiveTicker, FixedTicker
 from bokeh.palettes import d3
 from bokeh.io import export_png, export_svgs
 from bokeh.models import FuncTickFormatter, FixedTicker, Label, ColorBar, FactorRange
 from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker, LinearColorMapper
-from bokeh.models import ColumnDataSource, CompositeTicker, SingleIntervalTicker
+from bokeh.models import ColumnDataSource, CompositeTicker, SingleIntervalTicker, BasicTickFormatter
 from bokeh.transform import dodge
 from bokeh.core.properties import value
 import math
@@ -25,6 +25,7 @@ green = "#77933C"
 blue = "#376092"
 red = "#953735"
 purple = "#604A7B"
+orange = "#E46C0A"
 
 greys = [
         "#acacac",
@@ -221,6 +222,8 @@ max_x = 10
 max_y = 10
 
 def ambiguity_per_length():
+    high = 99
+    low = 1
     data1_ = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-05, 3.0000000000000004e-05, 4e-05, 6e-05], [0.00035000000000000027, 0.0020700000000000046, 0.006419999999999907, 0.012899999999999643, 0.01866999999999941, 0.024689999999999164, 0.029309999999998976, 0.029509999999998968, 0.029589999999998964, 0.02994999999999895], [0.049500000000004485, 0.09312999999999659, 0.10157999999999331, 0.08540999999999958, 0.07046000000000538, 0.0524800000000054, 0.03988000000000154, 0.030989999999998907, 0.023459999999999214, 0.019469999999999377], [0.2835600000001428, 0.2028500000000621, 0.10839999999999067, 0.06604000000000709, 0.04710000000000375, 0.039120000000001307, 0.03392999999999972, 0.02893999999999899, 0.024359999999999177, 0.021269999999999303], [0.584869999999973, 0.19182000000005106, 0.08475999999999984, 0.047250000000003796, 0.02921999999999898, 0.018079999999999433, 0.011219999999999711, 0.00755999999999986, 0.005549999999999942, 0.0035300000000000084], [0.8230899999988889, 0.1222399999999853, 0.032189999999999185, 0.010929999999999723, 0.004100000000000001, 0.0025300000000000058, 0.0013400000000000029, 0.0008200000000000015, 0.0005400000000000008, 0.0004700000000000006], [0.9413299999983508, 0.049270000000004414, 0.006239999999999914, 0.0015000000000000033, 0.0007100000000000012, 0.00031000000000000016, 0.0001, 0.00013000000000000002, 7.000000000000001e-05, 2e-05], [0.9838899999981571, 0.014619999999999573, 0.000990000000000002, 0.00026000000000000003, 0.00011, 4e-05, 3.0000000000000004e-05, 0.0, 0.0, 0.0]]
     data2_ = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06633000000000698, 0.1979700000000572, 0.15913000000001837, 0.10464999999999212, 0.24937000000010862, 0.16641000000002565, 0.04387000000000276], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0029000000000000067, 0.09215999999999697, 0.21072000000006996, 0.15462000000001386, 0.10385999999999243, 0.224770000000084, 0.15348000000001272, 0.04309000000000252, 0.01024999999999975, 0.003020000000000007], [0.00016, 0.0007000000000000012, 0.006189999999999916, 0.046100000000003444, 0.11030999999998993, 0.19924000000005848, 0.13397999999999322, 0.10748999999999102, 0.19883000000005807, 0.1395699999999988, 0.04340000000000262, 0.009899999999999765, 0.0025000000000000057, 0.000990000000000002, 0.0003700000000000003], [0.028599999999999005, 0.053940000000005844, 0.09152999999999721, 0.1085899999999906, 0.08126000000000119, 0.10789999999999086, 0.16968000000002892, 0.1186499999999867, 0.04092000000000186, 0.01098999999999972, 0.0028200000000000065, 0.001010000000000002, 0.0004300000000000005, 0.00016, 4e-05], [0.016279999999999507, 0.028739999999999, 0.05114000000000499, 0.08732999999999884, 0.11884999999998662, 0.08246000000000073, 0.0335399999999996, 0.010659999999999734, 0.002950000000000007, 0.001030000000000002, 0.00035000000000000027, 0.00013000000000000002, 8e-05, 4e-05, 0.0], [0.017829999999999444, 0.02891999999999899, 0.0358400000000003, 0.030989999999998907, 0.01866999999999941, 0.007619999999999858, 0.0028600000000000066, 0.0009400000000000018, 0.0004100000000000004, 0.00018, 8e-05, 5e-05, 1e-05, 3.0000000000000004e-05, 0.0], [0.0031800000000000075, 0.003710000000000009, 0.003800000000000009, 0.002590000000000006, 0.0014700000000000032, 0.0007200000000000012, 0.00035000000000000027, 0.00021, 5e-05, 5e-05, 0.0, 0.0, 0.0, 1e-05, 0.0], [0.00024, 0.00035000000000000027, 0.00038000000000000035, 0.0003300000000000002, 0.00022, 9e-05, 6e-05, 6e-05, 0.0, 1e-05, 1e-05, 0.0, 0.0, 0.0, 0.0], [1e-05, 4e-05, 6e-05, 0.0001, 5e-05, 4e-05, 1e-05, 0.0, 0.0, 0.0, 1e-05, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 2e-05, 0.0, 1e-05, 0.0, 2e-05, 1e-05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
 
@@ -228,22 +231,23 @@ def ambiguity_per_length():
     for row in data1_:
         data1.append( [] )
         for ele in row:
-            data1[-1].append(ele * 98 +1)
+            data1[-1].append(ele * (high-low) + low)
     data2 = []
     for row in data2_:
         data2.append( [] )
         for ele in row:
-            data2[-1].append(ele * 98 +1)
+            data2[-1].append(ele * (high-low) + low)
 
     r1max = 10
     r2size = 15
     min_len=10
     max_len=20
 
+
     color_mapper = LogColorMapper(
                     palette=heatmap_palette(light_spec_approximation, 256),
-                    low=1,
-                    high=99
+                    low=low,
+                    high=high
                 )
 
     plot = figure(title="ambiguity on human genome",
@@ -268,10 +272,18 @@ def ambiguity_per_length():
         plot2.image(image=[[row]], color_mapper=color_mapper,
             dh=[.6], dw=[2**r2size+r1max], x=[r1max], y=[min_len + index + 0.2])
 
+    ticks = []
+    num_ticks = 6
+    for tick in range(num_ticks):
+        ticks.append( math.exp( (tick/float(num_ticks-1)) * math.log(high)) )#(*(high-low)) / float(math.exp(num_ticks)) + low )
+
+    print(ticks)
+
     size = "12pt"
-    color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+    color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0), ticker=FixedTicker(ticks=ticks))
     color_bar.major_label_text_font=font
     color_bar.major_label_text_font_size=size
+    color_bar.label_standoff = 20
 
     ticker = SingleIntervalTicker(interval=1, num_minor_ticks=0)
     plot.add_layout(LinearAxis(ticker=ticker), 'left')
@@ -420,7 +432,7 @@ def seed_shadows():
             )
     # x y size draw_shadow?
     seeds = [
-        (1.5,1.5,2, red),
+        (1.5,1.5,2, orange),
         (5.5,2.5,2, green),
         (-.5,3.5,3, blue)
     ]
@@ -598,7 +610,7 @@ def alignment():
             mm_x,
             mm_y,
             legend="mm",
-            color=red,
+            color=orange,
             line_width=5
         )
 
@@ -607,7 +619,7 @@ def alignment():
             i_y,
             legend="ins_____",
             color=blue,
-            line_width=2
+            line_width=5
         )
 
     plot.multi_line(
@@ -615,7 +627,7 @@ def alignment():
             d_y,
             legend="del",
             color=purple,
-            line_width=2
+            line_width=5
         )
 
     plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
@@ -706,13 +718,13 @@ def stripOfConsideration():
     plot.line(
         [10.5,11.5],
         [1.5,2.5],
-        color=red,
+        color=orange,
         line_width=3
     )
     plot.line(
         [8.5,10.5],
         [-.5,1.5],
-        color=red,
+        color=orange,
         line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
@@ -736,13 +748,13 @@ def stripOfConsideration():
     plot.line(
         [-.5,2.5],
         [3.5,6.5],
-        color=red,
+        color=orange,
         line_width=3
     )
     plot.line(
         [-1.0,-.5],
         [3.0,3.5],
-        color=red,
+        color=orange,
         line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
@@ -918,11 +930,11 @@ def unrelated_non_enclosed_seeds():
         ("query2", 36, [1000], blue, 12),
         
         ("query3", 19, [1500], blue, 4),
-        ("query3", 35, [320, 1000, 1477], red, 3),
-        ("query3", 46, [800], red, 5),
+        ("query3", 35, [320, 1000, 1477], orange, 3),
+        ("query3", 46, [800], orange, 5),
 
-        ("query4", 20, [30, 800], red, 4),
-        ("query4", 45, [1340], red, 4)
+        ("query4", 20, [30, 800], orange, 4),
+        ("query4", 45, [1340], orange, 4)
     ]
 
     max_q = 0

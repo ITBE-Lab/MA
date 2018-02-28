@@ -9,7 +9,7 @@ using namespace libMA;
 #include "module/sw_sse_avx.h"
 #include "module/smith_waterman.h"
 #include "module/SW_sequential.h"
-
+#include "module/needlemanWunsch.h"
 
 extern int iGap;
 extern int iExtend;

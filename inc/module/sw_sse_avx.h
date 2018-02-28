@@ -74,9 +74,9 @@
 	} while (0)
 #else
 	// SSE2 - 128 bit registers
-	#ifdef __GNUC__
+	//#ifdef __GNUC__
 		#include <emmintrin.h> // SSE2 header
-	#endif
+	//#endif
 
 	#define T__mXXXi __m128i
 	#define _mmXXX_set1_epi32(x) _mm_set1_epi32((x))
