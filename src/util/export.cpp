@@ -2,6 +2,12 @@
 
 using namespace libMA;
 
+
+extern int iGap;
+extern int iExtend;
+extern int iMatch;
+extern int iMissMatch;
+
 /**
  * @brief The boost-python main method.
  *
@@ -54,9 +60,18 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     double dPairedU,
     bool bSeedSetPairs,
     unsigned int uiReportNBest,
-    bool bLocal
+    bool bLocal,
+    int iMatch_,
+    int iMisMatch_,
+    int iGap_,
+    int iExtend_
 )
 {
+    iMatch = iMatch_;
+    iExtend = iExtend_;
+    iGap = iGap_;
+    iMissMatch = iMisMatch_;
+
     if(uiNumSOC < uiReportNBest)
         throw new AlignerException("cannot report more alignments than computed (increase strip of consideration amount)");
 
