@@ -19,25 +19,25 @@ namespace libMA
         std::ostream* pOut;
         std::shared_ptr<std::mutex> pLock;
 
-        FileWriter(std::string sFileName)
-                :
-            pLock(new std::mutex)
-        {
-            pOut = &std::cout;
-            if(sFileName != "stdout")
-            {
-                std::cout << sFileName << "." << std::endl;
-                pFile = std::shared_ptr<std::ofstream>(
-                new std::ofstream(sFileName, std::ofstream::out | std::ofstream::trunc));
-                if (!pFile->good())
-                {
-                    std::cout << "Unable to open file" << std::endl;
-                    //@todo exception
-                }//if
-                pOut = &*pFile;
-            }//if
-            *pOut << "@HD VN:1.5 SO:unknown" << std::endl;
-        }//constructor
+		FileWriter(std::string sFileName)
+			:
+			pLock(new std::mutex)
+		{
+			pOut = &std::cout;
+			if (sFileName != "stdout")
+			{
+				std::cout << sFileName << "." << std::endl;
+				pFile = std::shared_ptr<std::ofstream>(
+					new std::ofstream(sFileName, std::ofstream::out | std::ofstream::trunc));
+				if (!pFile->good())
+				{
+					std::cout << "Unable to open file" << std::endl;
+					//@todo exception
+				}//if
+				pOut = &*pFile;
+			}//if
+			*pOut << "@HD VN:1.5 SO:unknown" << std::endl;
+		}//constructor
 
         ~FileWriter()
         {

@@ -172,7 +172,7 @@ public:
             return start();
         if(i == 1)
             return end();
-        throw new NullPointerException("can only access index 0 and 1 of interval");
+        throw NullPointerException("can only access index 0 and 1 of interval");
     }//operator
 
     /*

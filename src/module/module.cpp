@@ -77,7 +77,7 @@ std::shared_ptr<Pledge> Module::promiseMe(
     if(!typeCheck(vCastInput, pThis->getInputType()))
     {
         std::cerr << "promise of module " << pThis->getName() << " had the wrong type" << std::endl;
-        throw new ModuleIO_Exception("Input type and expected input type did not match.");
+        throw ModuleIO_Exception("Input type and expected input type did not match.");
     }//if
     return Pledge::makePledge(pThis, vInput);
 }//function

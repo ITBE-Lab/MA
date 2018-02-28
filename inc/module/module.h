@@ -128,13 +128,13 @@ namespace libMA
             if(!typeCheck(*vInput, getInputType()))
             {
                 std::cerr << "input of module " << getName() << " had the wrong type" << std::endl;
-                throw new ModuleIO_Exception("Input type and expected input type did not match.");
+                throw ModuleIO_Exception("Input type and expected input type did not match.");
             }//if
             std::shared_ptr<Container> pRet = execute(vInput);
             if(!typeCheck(pRet, getOutputType()))
             {
                 std::cerr << "output of module " << getName() << " had the wrong type" << std::endl;
-                throw new ModuleIO_Exception("Module produced output of wrong type.");
+                throw ModuleIO_Exception("Module produced output of wrong type.");
             }//if
             return pRet;
         }//function

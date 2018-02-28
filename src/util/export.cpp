@@ -73,7 +73,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     iMissMatch = iMisMatch_;
 
     if(uiNumSOC < uiReportNBest)
-        throw new AlignerException("cannot report more alignments than computed (increase strip of consideration amount)");
+        throw AlignerException("cannot report more alignments than computed (increase strip of consideration amount)");
 
     //setup all modules
 
@@ -156,13 +156,14 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     pMapping, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
+                        pQuery,
                         pOptimal
                     }
                 );
         if(bPaired)
         {
             if(aQueries.size() != 2)
-                throw new AlignerException("two input files are required for paired alignments");
+                throw AlignerException("two input files are required for paired alignments");
             //lock the query in for this subgraph
             std::shared_ptr<Pledge> pQuery2 = Module::promiseMe(
                     pLockQuery, 
@@ -217,6 +218,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     pMapping, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
+                        pQuery2,
                         pOptimal
                     }
                 );
@@ -234,7 +236,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         else
         {
             if(aQueries.size() != 1)
-                throw new AlignerException("one input files is required for unpaired alignments");
+                throw AlignerException("one input files is required for unpaired alignments");
         }//else
 
         //write the output to a file
