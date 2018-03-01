@@ -548,6 +548,7 @@ namespace libMA
         static inline void simultaneousGet(
                 std::vector<std::shared_ptr<Pledge>> vPledges,
                 bool bLoop = false,
+                std::function<void()> callback = [](){},
                 unsigned int numThreads = 0
             )
         {
@@ -561,7 +562,7 @@ namespace libMA
                 for(std::shared_ptr<Pledge> pPledge : vPledges)
                 {
                     xPool.enqueue(
-                        [&bLoop]
+                        [&bLoop, &callback]
                         (size_t, std::shared_ptr<Pledge> pPledge)
                         {
                             assert(pPledge != nullptr);
@@ -576,7 +577,10 @@ namespace libMA
                             try
                             {
                                 do
+                                {
                                     pPledge->get();
+                                    callback();
+                                }//do
                                 while(bLoop);
                             } catch(ModuleDryException e) {}
                         },//lambda

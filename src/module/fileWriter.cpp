@@ -2,6 +2,8 @@
 
 using namespace libMA;
 
+
+
 ContainerVector FileWriter::getInputType() const
 {
     return ContainerVector{
@@ -34,27 +36,40 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         std::string sCigar = "";
         for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
         {
-            sCigar += std::to_string(std::get<0>(section));
+            sCigar.append(std::to_string(std::get<0>(section)));
             switch (std::get<1>(section))
             {
                 case MatchType::seed:
                 case MatchType::match:
-                    sCigar += "=";
+                    sCigar.append("=");
                     break;
                 case MatchType::missmatch:
-                    sCigar += "X";
+                    sCigar.append("X");
                     break;
                 case MatchType::insertion:
-                    sCigar += "I";
+                    sCigar.append("I");
                     break;
                 case MatchType::deletion:
-                    sCigar += "D";
+                    sCigar.append("D");
                     break;
             }//switch
         }//for
 
+        char flag = 0;
+
+        if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+            flag |= REVERSE_COMPLEMENTED;
+
+        //paired
+        if(pAlignment->xStats.bPaired)
+        {
+            flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
+            flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
+        }//if
+
         std::string sRefName = pPack->nameOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef));
-        std::string sRefPos = std::to_string( pAlignment->uiBeginOnRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef)));
+        //1 based index... 
+        std::string sRefPos = std::to_string( 1 + pAlignment->uiBeginOnRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef)));
         std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
@@ -69,38 +84,27 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 
             //print alignment
             //query name
-            *pOut << pQuery->sName;
-            *pOut << "\t";
+            *pOut << pQuery->sName << "\t";
             //alignment flag
-            *pOut << "0";
-            *pOut << "\t";
+            *pOut << std::to_string(flag) << "\t";
             //reference name
-            *pOut << sRefName;
-            *pOut << "\t";
+            *pOut << sRefName << "\t";
             //pos
-            *pOut << sRefPos;
-            *pOut << "\t";
+            *pOut << sRefPos << "\t";
             //mapping quality
-            *pOut << sMapQual;
-            *pOut << "\t";
+            *pOut << sMapQual << "\t";
             //cigar
-            *pOut << sCigar;
-            *pOut << "\t";
+            *pOut << sCigar  << "\t";
             //Ref. name of the mate/next read ? wut? @todo
-            *pOut << "*";
-            *pOut << "\t";
+            *pOut << "*" << "\t";
             //Position of the mate/next read ? wut? @todo
-            *pOut << "0";
-            *pOut << "\t";
+            *pOut << "0" << "\t";
             //observed Template length
-            *pOut << std::to_string(pAlignment->length());
-            *pOut << "\t";
+            *pOut << std::to_string(pAlignment->length()) << "\t";
             //segment sequence
-            *pOut << sSegment;
-            *pOut << "\t";
+            *pOut << sSegment << "\t";
             //ASCII of Phred-scaled base Quality+33
-            *pOut << sQual;
-            *pOut << std::endl;
+            *pOut << sQual << "\n";
         }//score xGuard
     }//for
 

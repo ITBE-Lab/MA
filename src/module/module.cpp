@@ -118,7 +118,7 @@ void simGetBoost3(
     unsigned int uiThreads
 )
 {
-    Pledge::simultaneousGet(vPledges, false, uiThreads);
+    Pledge::simultaneousGet(vPledges, false, [](){}, uiThreads);
 }//function
 
 void exportModule()

@@ -10,40 +10,88 @@
 namespace libMA
 {
 
+    class OutStream
+    {
+    public:
+        virtual OutStream& operator<<(std::string) {return *this;};
+    };//class
+
+    class StdOutStream : public OutStream
+    {
+    public:
+        StdOutStream& operator<<(std::string s)
+        {
+            std::cout << s;
+            return *this;
+        }//function
+    };//class
+
+    class FileOutStream : public OutStream
+    {
+    public:
+        std::ofstream file;
+
+        FileOutStream(std::string sFileName)
+            :
+            file(sFileName, std::ofstream::out | std::ofstream::trunc)
+        {
+            if (!file.good())
+            {
+                std::cout << "Unable to open file\n";
+                //@todo exception
+            }//if
+        }//constructor
+
+        ~FileOutStream()
+        {
+            file.close();
+        }//deconstructor
+
+        FileOutStream& operator<<(std::string s)
+        {
+            file << s;
+            return *this;
+        }//function
+    };//class
+
     class FileWriter: public Module
     {
     public:
+        #define MULTIPLE_SEGMENTS_IN_TEMPLATE        0x001
+        #define SEGMENT_PROPERLY_ALIGNED             0x002
+        #define SEGMENT_UNMAPPED                     0x004
+        #define NEXT_SEGMENT_UNMAPPED                0x008
+        #define REVERSE_COMPLEMENTED                 0x010
+        #define NEXT_REVERSE_COMPLEMENTED            0x020
+        #define FIRST_IN_TEMPLATE                    0x040
+        #define LAST_IN_TEMPLATE                     0x080
+        #define SECONDARY_ALIGNMENT                  0x100
+        #define NOT_PASSING_FILTERS                  0x200
+        #define PCR_OR_DUPLICATE                     0x400
+        #define SUPPLEMENTARY_ALIGNMENT              0x800
+
         //holds a file ourstream if necessary
-        std::shared_ptr<std::ofstream> pFile;
-        //points to the used stream
-        std::ostream* pOut;
+        std::shared_ptr<OutStream> pOut;
         std::shared_ptr<std::mutex> pLock;
 
 		FileWriter(std::string sFileName)
 			:
 			pLock(new std::mutex)
 		{
-			pOut = &std::cout;
 			if (sFileName != "stdout")
-			{
-				std::cout << sFileName << "." << std::endl;
-				pFile = std::shared_ptr<std::ofstream>(
-					new std::ofstream(sFileName, std::ofstream::out | std::ofstream::trunc));
-				if (!pFile->good())
-				{
-					std::cout << "Unable to open file" << std::endl;
-					//@todo exception
-				}//if
-				pOut = &*pFile;
-			}//if
-			*pOut << "@HD VN:1.5 SO:unknown" << std::endl;
+                pOut = std::shared_ptr<OutStream>(new FileOutStream(sFileName));
+            else
+                pOut = std::shared_ptr<OutStream>(new StdOutStream());
+			*pOut << "@HD VN:1.5 SO:unknown\n";
 		}//constructor
 
-        ~FileWriter()
-        {
-            if(pFile != nullptr)
-                pFile->close();
-        }//deconstructor
+		FileWriter(std::shared_ptr<OutStream> pOut)
+			:
+            pOut(pOut),
+			pLock(new std::mutex)
+		{
+			*pOut << "@HD VN:1.5 SO:unknown\n";
+		}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
