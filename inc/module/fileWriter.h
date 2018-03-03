@@ -118,6 +118,45 @@ namespace libMA
 
     };//class
 
+    class RadableFileWriter: public Module
+    {
+    public:
+        //holds a file ourstream if necessary
+        std::shared_ptr<OutStream> pOut;
+        std::shared_ptr<std::mutex> pLock;
+        unsigned int uiNucsPerLine = 80;
+
+		RadableFileWriter(std::shared_ptr<OutStream> pOut)
+			:
+            pOut(pOut),
+			pLock(new std::mutex)
+		{}//constructor
+
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - Nil
+         */
+        ContainerVector EXPORTED getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - ContainerVector(NucSeq)
+         */
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
+
+        std::string getName() const
+        {
+            return "ReadableFileWriter";
+        }//function
+
+    };//class
+
 }//namespace
 
 void exportFileWriter();

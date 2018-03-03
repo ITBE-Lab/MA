@@ -333,7 +333,7 @@ namespace libMA
      */
     class NucSeq : public Container
     {
-    private:
+    public:
         /** The encapsulated sequence
          */
         uint8_t *pxSequenceRef;
