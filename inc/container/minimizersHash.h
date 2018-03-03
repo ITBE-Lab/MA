@@ -4,8 +4,8 @@
  * @author Markus Schmidt
  */
 
-#ifndef ALIGNMENT_H
-#define ALIGNMENT_H
+#ifndef MINIMIZER_HASH_H
+#define MINIMIZER_HASH_H
 
 #include "container/segment.h"
 #include "container/seed.h"
@@ -61,9 +61,9 @@ namespace libMA
          * @brief Compares two minimizers lexicographically according to the alphabet order given by
          * ordering()
          */
-        int compare(uint8_t* pOtherSeq) const
+        int compare(const uint8_t* pOtherSeq) const
         {
-            size_t uiPos = 0;
+            unsigned int uiPos = 0;
             while(uiPos < k)
             {
                 int res = ordering(xSeq[uiPos], pOtherSeq[uiPos], uiPos);
@@ -78,7 +78,7 @@ namespace libMA
          * @brief Compares two minimizers lexicographically according to the alphabet order given by
          * ordering()
          */
-        bool operator<(Minimizer& rOther) const
+        bool operator<(const Minimizer& rOther) const
         {
             return compare(rOther.xSeq) < 0;
         }//operator
@@ -87,7 +87,7 @@ namespace libMA
          * @brief Compares two minimizers lexicographically according to the alphabet order given by
          * ordering()
          */
-        bool operator<=(Minimizer& rOther) const
+        bool operator<=(const Minimizer& rOther) const
         {
             return compare(rOther.xSeq) <= 0;
         }//operator
@@ -96,18 +96,18 @@ namespace libMA
          * @brief Compares two minimizers lexicographically according to the alphabet order given by
          * ordering()
          */
-        bool operator>(Minimizer& rOther) const
+        bool operator>(const Minimizer& rOther) const
         {
             return compare(rOther.xSeq) > 0;
         }//operator
 
-        void operator=(uint8_t* pOtherSeq)
+        void operator=(const uint8_t* pOtherSeq)
         {
-            for(size_t i = 0; i < k; i++)
-                xSeq[k] = pOtherSeq[k];
+            for(unsigned int i = 0; i < k; i++)
+                xSeq[i] = pOtherSeq[i];
         }//operator
 
-        void operator=(Minimizer& rOther)
+        void operator=(const Minimizer& rOther)
         {
             operator=(rOther.xSeq);
         }//operator
@@ -116,20 +116,31 @@ namespace libMA
          * @brief Compares two minimizers lexicographically according to the alphabet order given by
          * ordering()
          */
-        bool operator==(Minimizer& rOther) const
+        bool operator==(const Minimizer& rOther) const
         {
-            return compare(&rOther.xSeq) == 0;
+            return compare(rOther.xSeq) == 0;
         }//operator
 
-        Minimizer(NucSeq& xInit, nucSeqIndex uiStart)
+        /**
+         * @brief Compares two minimizers lexicographically according to the alphabet order given by
+         * ordering()
+         */
+        bool operator!=(const Minimizer& rOther) const
         {
-            assert(xInit.length() < k + uiStart);
+            return compare(rOther.xSeq) != 0;
+        }//operator
+
+        Minimizer(std::shared_ptr<NucSeq> pInit, nucSeqIndex uiStart)
+        {
+            assert(pInit->length() > k + uiStart);
             //this makes sure that a sequence and it's reverse complement have the same minimizer
             uint8_t xSeq2[k];
-            for(size_t i = 0; i < k; i++)
+            for(int i = 0; i < (int)k; i++)
             {
-                xSeq[i] = xInit[i + uiStart];
-                xSeq2[k-i-1] = complement(xInit[i + uiStart]);
+                xSeq[i] = (*pInit)[i + uiStart];
+                assert( ((int)k)-(i+1) >= 0);
+                assert( ((int)k)-(i+1) < (int)k);
+                xSeq2[k-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
             }//for
 
             //if the reverse complement minimizer is smaller switch to that
@@ -137,9 +148,9 @@ namespace libMA
                 *this = xSeq2;
         }//constructor
 
-        Minimizer(NucSeq& xInit)
+        Minimizer(std::shared_ptr<NucSeq> pInit)
                 :
-            Minimizer(xInit, 0)
+            Minimizer(pInit, 0)
         {}//constructor
 
         Minimizer()
@@ -231,18 +242,48 @@ namespace libMA
          * This makes the class serializable
          */
         template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
+        void save(Archive & ar, const unsigned int version) const
         {
-            size_t check = k;
+            ar & k;
+            ar & w;
+            ar & xHashMap.size();
+            for(auto& rContent : xHashMap)
+            {
+                ar & rContent.first;
+                ar & rContent.second.size();
+                for(auto& rElement : rContent.second)
+                    ar & rElement;
+            }//for
+        }//function
+        template<class Archive>
+        void load(Archive & ar, const unsigned int version)
+        {
+            size_t check;
             ar & check;
             if(k != check)
                 throw "@todo proper exception";
-            check = w;
             ar & check;
             if(w != check)
                 throw "@todo proper exception";
-            ar & xHashMap;
+            size_t size = 0;
+            ar & size;
+            //variables to load into
+            Minimizer<k> a;
+            size_t s;
+            nucSeqIndex b;
+            while(size-- > 0)
+            {
+                ar & a;
+                ar & s;
+                auto pVec = &xHashMap[a];
+                while(s-- > 0)
+                {
+                    ar & b;
+                    pVec->push_back(b);
+                }//while
+            }//while
         }//function
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
     public:
         static std::shared_ptr<MinimizersHash> fromFile(std::string sFileName)
         {
@@ -264,16 +305,22 @@ namespace libMA
             oa << *this;
         }
 
+        std::vector<nucSeqIndex>& operator[](Minimizer<k>& rKey)
+        {
+            return xHashMap[rKey];
+        }//function
+
         class iterator : public Container
         {
         public:
-            std::priority_queue<std::tuple<
+            typedef std::tuple< //content
                     Minimizer<k>, //minimizer sequence
                     std::vector<nucSeqIndex>::iterator, // reference position
                     nucSeqIndex, // query position
                     std::vector<nucSeqIndex>::iterator // end iterator
-                >> xQueue;
-
+                > queueContent;
+            typedef std::function<bool(queueContent,queueContent)> queueCompFunc;
+            std::priority_queue<queueContent, std::vector<queueContent>, queueCompFunc> xQueue;
             iterator(
                     std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers, 
                     MinimizersHash& rHash
@@ -282,15 +329,25 @@ namespace libMA
                 xQueue(
                     []
                     (
-                        std::tuple<Minimizer<k>, std::vector<nucSeqIndex>::iterator, nucSeqIndex> a,
-                        std::tuple<Minimizer<k>, std::vector<nucSeqIndex>::iterator, nucSeqIndex> b
+                        std::tuple<
+                            Minimizer<k>, 
+                            std::vector<nucSeqIndex>::iterator, 
+                            nucSeqIndex, 
+                            std::vector<nucSeqIndex>::iterator
+                        > a,
+                        std::tuple<
+                            Minimizer<k>, 
+                            std::vector<nucSeqIndex>::iterator, 
+                            nucSeqIndex, 
+                            std::vector<nucSeqIndex>::iterator
+                        > b
                     )
                     {
-                        if(*std::get<0>(a) == *std::get<0>(b))
+                        if(*std::get<1>(a) == *std::get<1>(b))
                             //sort so that larger query positions come first
                             return std::get<2>(a) > std::get<2>(b);
                         //sort so that smaller reference positions come first (with priority)
-                        return *std::get<0>(a) < *std::get<0>(b);
+                        return *std::get<1>(a) < *std::get<1>(b);
                     }//lambda
                 )//constructor for priority queue
             {
@@ -337,30 +394,36 @@ namespace libMA
             Seed operator*() const
             {
                 assert(!xQueue.empty());
-                return Seed(std::get<2>(xQueue.top()), k, std::get<1>(xQueue.top()).front());
+                return Seed(std::get<2>(xQueue.top()), k, *std::get<1>(xQueue.top()));
             }//operator
 
-            iterator& ++operator()
+            iterator& operator++()
             {
-                auto xTuple = xQueue.top();
+                //copy the top element
+                queueContent xTuple;
+                xTuple = xQueue.top();
+                //increment the vector iterator of the top element
                 std::get<1>(xTuple)++;
+                //remove the top element from the priority queue
                 xQueue.pop();
+                //if there are still elements left in the reference vector
+                //readd the previous top element
                 if(std::get<1>(xTuple) != std::get<3>(xTuple))
                     xQueue.push(xTuple);
                 return *this;
             }//operator
         };//class
 
-        iterator begin(std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers) const
+        iterator begin(std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers)
         {
             return iterator(pQueryMinimizers, *this);
         }//function
 
-        std::shared_ptr<Seeds> toSeeds(std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers) const
+        std::shared_ptr<Seeds> toSeeds(std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers)
         {
             auto it = begin(pQueryMinimizers);
             auto pRet = std::make_shared<Seeds>();
-            while(!it->empty())
+            while(!it.empty())
             {
                 pRet->push_back(*it);
                 ++it;
@@ -373,8 +436,10 @@ namespace libMA
     template<size_t w, size_t k>
     std::shared_ptr<MinimizersHash<w,k>> MinimizersVector<w,k>::toHash()
     {
+        assert(!this->empty());
         //sort now so that there is no need to sort for the SOC
         //sideeffect: lets us fill the hashtable much faster and easier
+        std::cout << "sorting..." << std::endl;
         std::sort(
             this->begin(), 
             this->end(),
@@ -389,26 +454,33 @@ namespace libMA
                 return a.first < b.first;
             }//lambda
         );//sort function call
+        std::cout << "done sorting" << std::endl;
         auto pRet = std::make_shared<MinimizersHash<w,k>>();
         //remember the vector in the hash table that we are currently filling
-        auto xCurrent = this->begin();
+        auto pCurrent = this->begin();
         //remember the last element we inserted so that we know when to change to the next vec
-        auto xLast = xCurrent->first;
+        auto xLast = pCurrent->first;
+        //this is in order to check for duplicates
+        nucSeqIndex uiLast = (nucSeqIndex)-1;// set to max value...
         //fill in the first element
-        std::vector<nucSeqIndex>* pAppend = &pRet[xLast];
+        std::vector<nucSeqIndex>* pAppend = &(*pRet)[xLast];
+        unsigned int i = 0;
         //fill in all other elements
-        while(++xCurrent != this->end())
+        while(++pCurrent != this->end())
         {
+            if(i++ % 1000000 == 0)
+                std::cout << i << "/" << this->size() << std::endl;
             //check that there are no duplicates
-            assert(xLast.second != xCurrent.second);
+            assert(uiLast != pCurrent->second);
             //in this case we need to create a new vector in the hash table
-            if(xCurrent->first != xLast)
+            if(pCurrent->first != xLast)
             {
-                xLast = xCurrent->first;
-                pAppend = &pRet[xLast];
+                xLast = pCurrent->first;
+                pAppend = &(*pRet)[xLast];
             }//if
             //save the current element
-            pAppend->push_back(xCurrent->second);
+            pAppend->push_back(pCurrent->second);
+            uiLast = pCurrent->second;
         }//while
         return pRet;
     }//function

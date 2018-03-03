@@ -20,6 +20,22 @@ def make(filenames, out_name):
     fm_index = FMIndex(ref_seq)
     fm_index.store(out_name)
 
+def make_hash(name):
+    print("loading pack...")
+    ref_seq = Pack()
+    ref_seq.load(name)
+    print("done loading pack\nextracting sequence...")
+    seq = ref_seq.extract_forward_strand()
+    print("done extracting sequence")
+    #seq = NucSeq("ACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTAC")
+    minimizer = Minimizers()
+    minimizer.print = True
+    hash_index = minimizer.execute(seq).toHash()
+    print("saving...")
+    hash_index.to_file(name + ".maRef")
+    print("done saving")
+
+
 def makeRandom(out_name, size):
     file_all = open(out_name + "bwa", "w")
     ref_seq = Pack()
@@ -60,7 +76,8 @@ def chrNames(prefix, num, suffix):
     return ret
 
 
-make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human")
+#make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human")
+make_hash("/mnt/ssd0/genome/human")
 #make(
 #    ["/mnt/ssd0/chrom/human/GCF_000001405.37_GRCh38.p11_genomic.fna"], "/mnt/ssd0/genome/human")
 #make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "/mnt/ssd0/chrom/mouse/all")

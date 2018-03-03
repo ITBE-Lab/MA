@@ -1409,6 +1409,8 @@ exit()
 """
 
 
+
+
 #create_as_sequencer_reads("/mnt/ssd1/illumina.db", 1000)
 #test_my_approaches("/mnt/ssd1/illumina.db")
 #analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 150, 0)

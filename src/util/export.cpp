@@ -43,6 +43,8 @@ BOOST_PYTHON_MODULE(libMA)
         exportMappingQuality();
         exportPairedReads();
         exportSplitter();
+        exportMinimizers();
+        exportMinimizersHash();
 }//function
 
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph(

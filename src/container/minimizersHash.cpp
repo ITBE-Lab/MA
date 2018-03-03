@@ -5,21 +5,39 @@ using namespace libMA;
 
 void exportMinimizersHash()
 {
-    /*
+    
     boost::python::class_<
-            MinimizersHash, 
+            MinimizersHash<Minimizers::w,Minimizers::k>, 
             boost::python::bases<Container>, 
-            std::shared_ptr<MinimizersHash>
+            std::shared_ptr<MinimizersHash<Minimizers::w,Minimizers::k>>
         >(
-                "MinimizersHash",
-                "contains the final output of the aligner\n"
+                "MinimizersHash"
             )
+        .def("to_file", &MinimizersHash<Minimizers::w,Minimizers::k>::toFile)
+        .def("from_file", &MinimizersHash<Minimizers::w,Minimizers::k>::fromFile)
+        .staticmethod("from_file")
     ;
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible< 
-        std::shared_ptr<MinimizersHash>,
+        std::shared_ptr<MinimizersHash<Minimizers::w,Minimizers::k>>,
         std::shared_ptr<Container> 
-    >();*/
+    >();
+    
+    boost::python::class_<
+            MinimizersVector<Minimizers::w,Minimizers::k>, 
+            boost::python::bases<Container>, 
+            std::shared_ptr<MinimizersVector<Minimizers::w,Minimizers::k>>
+        >(
+                "MinimizersVector"
+            )
+        .def("toHash", &MinimizersVector<Minimizers::w,Minimizers::k>::toHash)
+    ;
+
+    //tell boost python that pointers of these classes can be converted implicitly
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<MinimizersVector<Minimizers::w,Minimizers::k>>,
+        std::shared_ptr<Container> 
+    >();
 
 }

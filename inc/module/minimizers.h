@@ -3,8 +3,8 @@
  * @brief Implements a segmentation algorithm.
  * @author Markus Schmidt
  */
-#ifndef BINARY_SEEDING_H
-#define BINARY_SEEDING_H
+#ifndef MINIMIZERS_H
+#define MINIMIZERS_H
 
 #include "util/system.h"
 #include "module/module.h"
@@ -18,6 +18,7 @@ namespace libMA
     class Minimizers : public Module{
     public:
         const static unsigned int w = 5, k = 15;
+        bool bPrint = false;
 
         Minimizers()
         {}//constructor
@@ -28,7 +29,6 @@ namespace libMA
          * @brief Used to check the input of execute.
          * @details
          * Returns:
-         * - FMIndex
          * - NucSeq
          */
         ContainerVector EXPORTED getInputType() const;

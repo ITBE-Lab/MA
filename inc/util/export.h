@@ -155,8 +155,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/fileWriter.h"
 #include "module/mappingQuality.h"
 #include "module/pairedReads.h"
+#include "module/minimizers.h"
 #include "module/splitter.h"
 #include "container/container.h"
+#include "container/minimizersHash.h"
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
