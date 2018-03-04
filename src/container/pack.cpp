@@ -612,7 +612,7 @@ void exportPack()
                 "\n"
                 "Appends seq at the end of the pack.\n"
             )
-#if 0 //DEPRECATED
+#if 1 //DEPRECATED
         .def(
                 "append_fasta_file", 
                 &Pack::vAppendFastaFile,
