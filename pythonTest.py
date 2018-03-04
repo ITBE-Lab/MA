@@ -60,7 +60,7 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-human_genome = "/mnt/ssd0/genome/human"
+human_genome = "/mnt/ssd0/genome/humanchr1"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -129,8 +129,7 @@ def test_my_approach(
         fm_pledge = None
 
         if do_minimizers:
-            minimizersHash = MinimizersHash()
-            minimizersHash.from_file(reference + ".maRef")
+            minimizersHash = MinimizersHash().from_file(reference + ".maRef")
             fm_pledge = Pledge(MinimizersHash())
             fm_pledge.set(minimizersHash)
         else:
@@ -405,7 +404,8 @@ def test_my_approach(
                     sc2,
                     alignment.begin_on_ref,
                     alignment.end_on_ref,
-                    pledges[1][i].get().num_seeds(fm_index, max_hits),
+                    len(pledges[1][i].get()),
+                    #pledges[1][i].get().num_seeds(fm_index, max_hits),
                     alignment.stats.index_of_strip,
                     seed_coverage_soc,
                     seed_coverage,

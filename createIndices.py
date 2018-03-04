@@ -26,6 +26,7 @@ def make_hash(name):
     ref_seq.load(name)
     print("done loading pack\nextracting sequence...")
     seq = ref_seq.extract_forward_strand()
+    #seq = ref_seq.extract_from_to(0,10000000)
     print("done extracting sequence")
     #seq = NucSeq("ACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTACACCCCTGTGTTGTCACATCGATACGACTACGACACATCAGCACTACGACTAC")
     minimizer = Minimizers()
@@ -77,8 +78,8 @@ def chrNames(prefix, num, suffix):
 
 
 #make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human")
-make(["/mnt/ssd0/chrom/human/chr1.fna" ], "/mnt/ssd0/genome/humanchr1")
-make_hash("/mnt/ssd0/genome/humanchr1")
+#make(["/mnt/ssd0/chrom/human/chr1.fna" ], "/mnt/ssd0/genome/humanchr1")
+make_hash("/mnt/ssd0/genome/human")
 #make(
 #    ["/mnt/ssd0/chrom/human/GCF_000001405.37_GRCh38.p11_genomic.fna"], "/mnt/ssd0/genome/human")
 #make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "/mnt/ssd0/chrom/mouse/all")

@@ -39,7 +39,7 @@ std::shared_ptr<Container> Minimizers::execute(
     for(nucSeqIndex i = 0; i < pQuerySeq->length() - w - k; i++)
     {
         if(bPrint && i % 1000000 == 0)
-            std::cout << i << "/" << ( pQuerySeq->length() - w - k) << std::endl;
+            std::cout << i/1000000 << "/" << ( pQuerySeq->length() - w - k)/1000000 << std::endl;
 
         vCur.clear();
         Minimizer<k> xFirst(pQuerySeq, i);
@@ -103,6 +103,7 @@ std::shared_ptr<Container> MinimizersToSeeds::execute(
 {
 	auto pIndex = std::dynamic_pointer_cast<
         MinimizersHash<Minimizers::w,Minimizers::k>>((*vpInput)[0]);
+    assert(!pIndex->vKeys.empty());
 	auto pMinimizers = std::dynamic_pointer_cast<
         MinimizersVector<Minimizers::w,Minimizers::k>>((*vpInput)[1]);
     return pIndex->toSeeds(pMinimizers);

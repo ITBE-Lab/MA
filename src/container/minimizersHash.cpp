@@ -8,6 +8,7 @@ void exportMinimizersHash()
     
     boost::python::class_<
             MinimizersHash<Minimizers::w,Minimizers::k>, 
+            boost::noncopyable,
             boost::python::bases<Container>, 
             std::shared_ptr<MinimizersHash<Minimizers::w,Minimizers::k>>
         >(
@@ -16,6 +17,7 @@ void exportMinimizersHash()
         .def("to_file", &MinimizersHash<Minimizers::w,Minimizers::k>::toFile)
         .def("from_file", &MinimizersHash<Minimizers::w,Minimizers::k>::fromFile)
         .staticmethod("from_file")
+        .def("key_len", &MinimizersHash<Minimizers::w,Minimizers::k>::keyLen)
     ;
 
     //tell boost python that pointers of these classes can be converted implicitly
