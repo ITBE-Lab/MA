@@ -14,6 +14,8 @@
 #include <fstream>
 #include <queue>
 #include <vector>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
@@ -154,6 +156,17 @@ namespace libMA
         Minimizer()
         {}//default constructor
 
+    private:
+        friend class boost::serialization::access;
+        /**
+         * This makes the class serializable
+         */
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+        {
+            for(size_t i = 0; i < k; i++)
+                ar & xSeq[i];
+        }
     };//class
 
     template<size_t w, size_t k>
@@ -198,7 +211,8 @@ namespace libMA
     class MinimizersHash : public Container
     {
     public:
-        std::vector<std::pair<Minimizer<k>, std::vector<nucSeqIndex>> xHashMap;
+        //it might be better to actually use a hash table here...
+        std::map<Minimizer<k>, std::vector<nucSeqIndex>> xHashMap;
 
 
         MinimizersHash()
@@ -276,8 +290,9 @@ namespace libMA
             auto pRet = std::make_shared<MinimizersHash>();
             // create and open an archive for input
             std::ifstream ifs(sFileName.c_str());
-
-
+            boost::archive::text_iarchive ia(ifs);
+            // read class state from archive
+            ia >> *pRet;
             // archive and stream closed when destructors are called
             return pRet;
         }
@@ -285,18 +300,9 @@ namespace libMA
         void toFile(std::string sFileName)
         {
             std::ofstream ofs(sFileName.c_str());
-
-            
-            ofs << k;
-            ofs << w;
-            ofs << xHashMap.size();
-            for(auto& rContent : xHashMap)
-            {
-                ar & rContent.first;
-                ar & rContent.second.size();
-                for(auto& rElement : rContent.second)
-                    ar & rElement;
-            }//for
+            boost::archive::text_oarchive oa(ofs);
+            // write class instance to archive
+            oa << *this;
         }
 
         std::vector<nucSeqIndex>& operator[](Minimizer<k>& rKey)
@@ -337,10 +343,6 @@ namespace libMA
                         > b
                     )
                     {
-                        //@fixme temporary sorting to satisfy the current SOCs
-                        return ((int64_t)*std::get<1>(a)) - ((int64_t)std::get<2>(a)) <
-                            ((int64_t)*std::get<1>(b)) - ((int64_t)std::get<2>(b));
-
                         if(*std::get<1>(a) == *std::get<1>(b))
                             //sort so that larger query positions come first
                             return std::get<2>(a) > std::get<2>(b);
