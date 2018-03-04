@@ -30,31 +30,6 @@ namespace libMA
          */
         uint8_t xSeq[k];
 
-        static uint32_t getMaxIndex() const
-        {
-            assert(k*2 < 32);//make sure we cannot have overflows..
-            uint32_t uiIndex = 0;
-            for(unsigned int i = 0; i < k; i++)
-            {
-                uiIndex |= 4;
-                uiIndex << 2;
-            }//for
-            return uiIndex;
-        }//function
-
-        uint32_t toIndex() const
-        {
-            assert(k*2 < 32);//make sure we cannot have overflows..
-            uint32_t uiIndex = 0;
-            for(unsigned int i = 0; i < k; i++)
-            {
-                assert(xSeq[i] < 4);//make sure we mereley have two bits here
-                uiIndex |= xSeq[i];
-                uiIndex << 2;
-            }//for
-            return uiIndex;
-        }//function
-
         int ordering (uint8_t a, uint8_t b, unsigned int iPos) const
         {
             /*
@@ -223,19 +198,11 @@ namespace libMA
     class MinimizersHash : public Container
     {
     public:
-        std::vector<nucSeqIndex> vValues;
-        std::vector<uint32_t> vKeys;
+        std::vector<std::pair<Minimizer<k>, std::vector<nucSeqIndex>> xHashMap;
 
 
-        MinimizersHash(uint32_t numValues)
-                :
-            vValues(),
-            vKeys()
-        {
-            //reserve the memory for the vectors (will be multiple GB of memory)
-            vValues.reserve(numValues);
-            vKeys.reserve(Minimizer<w>::getMaxIndex());
-        }//constructor
+        MinimizersHash()
+        {}//constructor
 
 
         //overload
@@ -331,14 +298,10 @@ namespace libMA
                     ar & rElement;
             }//for
         }
-        nucSeqIndex* getStart(Minimizer<k>& rKey)
-        {
-            return &vValues[vKeys[rKey.toIndex()]];
-        }//function
 
-        uint32_t* getSize(Minimizer<k>& rKey)
+        std::vector<nucSeqIndex>& operator[](Minimizer<k>& rKey)
         {
-            return vKeys[rKey.toIndex() + 1] - vKeys[rKey.toIndex()];
+            return xHashMap[rKey];
         }//function
 
         class iterator : public Container
@@ -482,22 +445,23 @@ namespace libMA
             (std::pair<Minimizer<k>, nucSeqIndex>& a, 
                 std::pair<Minimizer<k>, nucSeqIndex>& b)
             {
-                if(a.first.toIndex() == b.first.toIndex())
+                if(a.first == b.first)
                     //the soc order
                     return a.second < b.second;
-                else
-                    //the hash order (this takes priority)
-                    return a.first.toIndex() < b.first.toIndex();
+                //the fill order (this takes priority)
+                return a.first < b.first;
             }//lambda
         );//sort function call
         std::cout << "done sorting" << std::endl;
-        auto pRet = std::make_shared<MinimizersHash<w,k>>(this->size());
+        auto pRet = std::make_shared<MinimizersHash<w,k>>();
         //remember the vector in the hash table that we are currently filling
         auto pCurrent = this->begin();
         //remember the last element we inserted so that we know when to change to the next vec
         auto xLast = pCurrent->first;
         //this is in order to check for duplicates
         nucSeqIndex uiLast = (nucSeqIndex)-1;// set to max value...
+        //fill in the first element
+        std::vector<nucSeqIndex>* pAppend = &(*pRet)[xLast];
         unsigned int i = 0;
         //fill in all other elements
         while(++pCurrent != this->end())
@@ -510,9 +474,10 @@ namespace libMA
             if(pCurrent->first != xLast)
             {
                 xLast = pCurrent->first;
+                pAppend = &(*pRet)[xLast];
             }//if
             //save the current element
-            pRet->vValues.push_back(pCurrent->second);
+            pAppend->push_back(pCurrent->second);
             uiLast = pCurrent->second;
         }//while
         return pRet;
