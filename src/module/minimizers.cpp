@@ -124,5 +124,18 @@ void exportMinimizers()
 		std::shared_ptr<Minimizers>,
 		std::shared_ptr<Module> 
 	>();
+	//export the BinarySeeding class
+	boost::python::class_<
+			MinimizersToSeeds, 
+			boost::python::bases<Module>,
+        	std::shared_ptr<MinimizersToSeeds>
+		>(
+			"MinimizersToSeeds"
+		)
+		;
+	boost::python::implicitly_convertible< 
+		std::shared_ptr<MinimizersToSeeds>,
+		std::shared_ptr<Module> 
+	>();
 
 }//function

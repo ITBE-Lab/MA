@@ -84,7 +84,8 @@ def test_my_approach(
         use_chaining=False,
         local=True,
         reseed=False,
-        full_analysis=False
+        full_analysis=False,
+        do_minimizers=True
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -125,15 +126,26 @@ def test_my_approach(
         ref_pledge = Pledge(Pack())
         ref_pledge.set(ref_pack)
 
-        fm_index = FMIndex()
-        fm_index.load(reference)
-        fm_pledge = Pledge(FMIndex())
-        fm_pledge.set(fm_index)
+        fm_pledge = None
+
+        if do_minimizers:
+            minimizersHash = MinimizersHash()
+            minimizersHash.from_file(reference + ".maRef")
+            fm_pledge = Pledge(MinimizersHash())
+            fm_pledge.set(minimizersHash)
+        else:
+            fm_index = FMIndex()
+            fm_index.load(reference)
+            fm_pledge = Pledge(FMIndex())
+            fm_pledge.set(fm_index)
 
         #modules
         seeding = BinarySeeding(not complete_seeds)
         reseeding = ReSeed(max_hits)
+        minimizers = Minimizers()
+        minimizersExtract = MinimizersToSeeds()
         soc = StripOfConsideration(max_hits, num_strips)
+        soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
         #ls.optimistic_gap_estimation = optimistic_gap_estimation
@@ -150,27 +162,38 @@ def test_my_approach(
             pledges[0].append(Pledge(NucSeq()))
             pledges[0][-1].set(NucSeq(sequence))
             pledges[0][-1].get().name = str(sample_id)
-            pledges[1].append(seeding.promise_me(
-                fm_pledge, pledges[0][-1]
-            ))
-            if reseed:
-                pledges[1][-1] = reseeding.promise_me(
-                    fm_pledge, pledges[1][-1], pledges[0][-1]
-                )
-            if use_chaining:
-                pledges[2].append(ex.promise_me(
-                    pledges[1][-1], fm_pledge
+            if do_minimizers:
+                pledges[1].append(minimizersExtract.promise_me(
+                    fm_pledge, minimizers.promise_me(pledges[0][-1])
                 ))
-                pledges[3].append(chain.promise_me(
-                    pledges[2][-1]
-                ))
-            else:
-                pledges[2].append(soc.promise_me(
-                    pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
+                pledges[2].append(soc2.promise_me(
+                    pledges[1][-1], pledges[0][-1], ref_pledge
                 ))
                 pledges[3].append(couple.promise_me(
                     pledges[2][-1]
                 ))
+            else:
+                pledges[1].append(seeding.promise_me(
+                    fm_pledge, pledges[0][-1]
+                ))
+                if reseed:
+                    pledges[1][-1] = reseeding.promise_me(
+                        fm_pledge, pledges[1][-1], pledges[0][-1]
+                    )
+                if use_chaining:
+                    pledges[2].append(ex.promise_me(
+                        pledges[1][-1], fm_pledge
+                    ))
+                    pledges[3].append(chain.promise_me(
+                        pledges[2][-1]
+                    ))
+                else:
+                    pledges[2].append(soc.promise_me(
+                        pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
+                    ))
+                    pledges[3].append(couple.promise_me(
+                        pledges[2][-1]
+                    ))
             pledges[4].append(optimal.promise_me(
                 pledges[3][-1], pledges[0][-1], ref_pledge
             ))
@@ -444,12 +467,12 @@ def test_my_approaches_rele(db_name):
     """
 
 def test_my_approaches(db_name):
-    full_analysis = True
+    full_analysis = False
 
     clearResults(db_name, human_genome, "MA 1")
     clearResults(db_name, human_genome, "MA 2")
-    clearResults(db_name, human_genome, "MA 1 chaining")
-    clearResults(db_name, human_genome, "MA 2 chaining")
+    #clearResults(db_name, human_genome, "MA 1 chaining")
+    #clearResults(db_name, human_genome, "MA 2 chaining")
 
     test_my_approach(db_name, human_genome, "MA 2", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
@@ -457,9 +480,9 @@ def test_my_approaches(db_name):
 
     #test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=1000, complete_seeds=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True, full_analysis=full_analysis)
+    #test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True, full_analysis=full_analysis)
+    #test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True, full_analysis=full_analysis)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1417,9 +1440,9 @@ exit()
 
 #high quality picture
 
-l = 100
-il = 10
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 2**11, True, True)
+l = 1000
+il = 100
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, True)
 test_my_approaches("/mnt/ssd1/test.db")
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
 compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)

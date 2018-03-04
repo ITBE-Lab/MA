@@ -87,6 +87,63 @@ namespace libMA
             return "StripOfConsideration";
         }
     };//class
+
+    /**
+     * @brief Used to quickly find areas with high density of @ref Seed "seeds".
+     * @ingroup module
+     */
+    class StripOfConsideration2: public Module
+    {
+    public:
+        /// @brief Maximum ambiguity for a seed to be considered.
+        unsigned int uiMaxAmbiguity = 500;
+        /// @brief the amount of SOCs to create
+        unsigned int numStrips = 10;
+
+        static nucSeqIndex EXPORTED getStripSize(nucSeqIndex uiQueryLength);
+
+        static nucSeqIndex EXPORTED getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS);
+
+    public:
+
+        StripOfConsideration2(){}//default constructor
+
+        StripOfConsideration2( 
+                unsigned int uiMaxAmbiguity,
+                unsigned int numStrips
+            )
+                :
+            uiMaxAmbiguity(uiMaxAmbiguity),
+            numStrips(numStrips)
+        {}//constructor
+
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - SegmentVector
+         * - Seeds
+         * - NucSeq
+         * - Pack
+         * - FMIndex
+         */
+        ContainerVector EXPORTED getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - ContainerVector(Seeds)
+         */
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
+
+        std::string getName() const
+        {
+            return "StripOfConsideration2";
+        }
+    };//class
 }//namspace libMA
 
 /**

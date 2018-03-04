@@ -14,8 +14,6 @@
 #include <fstream>
 #include <queue>
 #include <vector>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
 
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
@@ -31,6 +29,31 @@ namespace libMA
          * @brief The minimizer sequence
          */
         uint8_t xSeq[k];
+
+        static uint32_t getMaxIndex() const
+        {
+            assert(k*2 < 32);//make sure we cannot have overflows..
+            uint32_t uiIndex = 0;
+            for(unsigned int i = 0; i < k; i++)
+            {
+                uiIndex |= 4;
+                uiIndex << 2;
+            }//for
+            return uiIndex;
+        }//function
+
+        uint32_t toIndex() const
+        {
+            assert(k*2 < 32);//make sure we cannot have overflows..
+            uint32_t uiIndex = 0;
+            for(unsigned int i = 0; i < k; i++)
+            {
+                assert(xSeq[i] < 4);//make sure we mereley have two bits here
+                uiIndex |= xSeq[i];
+                uiIndex << 2;
+            }//for
+            return uiIndex;
+        }//function
 
         int ordering (uint8_t a, uint8_t b, unsigned int iPos) const
         {
@@ -156,17 +179,6 @@ namespace libMA
         Minimizer()
         {}//default constructor
 
-    private:
-        friend class boost::serialization::access;
-        /**
-         * This makes the class serializable
-         */
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-        {
-            for(size_t i = 0; i < k; i++)
-                ar & xSeq[i];
-        }
     };//class
 
     template<size_t w, size_t k>
@@ -211,12 +223,19 @@ namespace libMA
     class MinimizersHash : public Container
     {
     public:
-        //it might be better to actually use a hash table here...
-        std::map<Minimizer<k>, std::vector<nucSeqIndex>> xHashMap;
+        std::vector<nucSeqIndex> vValues;
+        std::vector<uint32_t> vKeys;
 
 
-        MinimizersHash()
-        {}//constructor
+        MinimizersHash(uint32_t numValues)
+                :
+            vValues(),
+            vKeys()
+        {
+            //reserve the memory for the vectors (will be multiple GB of memory)
+            vValues.reserve(numValues);
+            vKeys.reserve(Minimizer<w>::getMaxIndex());
+        }//constructor
 
 
         //overload
@@ -290,9 +309,8 @@ namespace libMA
             auto pRet = std::make_shared<MinimizersHash>();
             // create and open an archive for input
             std::ifstream ifs(sFileName.c_str());
-            boost::archive::text_iarchive ia(ifs);
-            // read class state from archive
-            ia >> *pRet;
+
+
             // archive and stream closed when destructors are called
             return pRet;
         }
@@ -300,14 +318,27 @@ namespace libMA
         void toFile(std::string sFileName)
         {
             std::ofstream ofs(sFileName.c_str());
-            boost::archive::text_oarchive oa(ofs);
-            // write class instance to archive
-            oa << *this;
-        }
 
-        std::vector<nucSeqIndex>& operator[](Minimizer<k>& rKey)
+            
+            ofs << k;
+            ofs << w;
+            ofs << xHashMap.size();
+            for(auto& rContent : xHashMap)
+            {
+                ar & rContent.first;
+                ar & rContent.second.size();
+                for(auto& rElement : rContent.second)
+                    ar & rElement;
+            }//for
+        }
+        nucSeqIndex* getStart(Minimizer<k>& rKey)
         {
-            return xHashMap[rKey];
+            return &vValues[vKeys[rKey.toIndex()]];
+        }//function
+
+        uint32_t* getSize(Minimizer<k>& rKey)
+        {
+            return vKeys[rKey.toIndex() + 1] - vKeys[rKey.toIndex()];
         }//function
 
         class iterator : public Container
@@ -343,6 +374,10 @@ namespace libMA
                         > b
                     )
                     {
+                        //@fixme temporary sorting to satisfy the current SOCs
+                        return ((int64_t)*std::get<1>(a)) - ((int64_t)std::get<2>(a)) <
+                            ((int64_t)*std::get<1>(b)) - ((int64_t)std::get<2>(b));
+
                         if(*std::get<1>(a) == *std::get<1>(b))
                             //sort so that larger query positions come first
                             return std::get<2>(a) > std::get<2>(b);
@@ -447,23 +482,22 @@ namespace libMA
             (std::pair<Minimizer<k>, nucSeqIndex>& a, 
                 std::pair<Minimizer<k>, nucSeqIndex>& b)
             {
-                if(a.first == b.first)
+                if(a.first.toIndex() == b.first.toIndex())
                     //the soc order
                     return a.second < b.second;
-                //the fill order (this takes priority)
-                return a.first < b.first;
+                else
+                    //the hash order (this takes priority)
+                    return a.first.toIndex() < b.first.toIndex();
             }//lambda
         );//sort function call
         std::cout << "done sorting" << std::endl;
-        auto pRet = std::make_shared<MinimizersHash<w,k>>();
+        auto pRet = std::make_shared<MinimizersHash<w,k>>(this->size());
         //remember the vector in the hash table that we are currently filling
         auto pCurrent = this->begin();
         //remember the last element we inserted so that we know when to change to the next vec
         auto xLast = pCurrent->first;
         //this is in order to check for duplicates
         nucSeqIndex uiLast = (nucSeqIndex)-1;// set to max value...
-        //fill in the first element
-        std::vector<nucSeqIndex>* pAppend = &(*pRet)[xLast];
         unsigned int i = 0;
         //fill in all other elements
         while(++pCurrent != this->end())
@@ -476,10 +510,9 @@ namespace libMA
             if(pCurrent->first != xLast)
             {
                 xLast = pCurrent->first;
-                pAppend = &(*pRet)[xLast];
             }//if
             //save the current element
-            pAppend->push_back(pCurrent->second);
+            pRet->vValues.push_back(pCurrent->second);
             uiLast = pCurrent->second;
         }//while
         return pRet;

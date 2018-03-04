@@ -156,6 +156,15 @@ class Pack(libMA.Pack):
     pass
 
 ##
+# @brief the minimizer hash index.
+# @details
+#
+# @ingroup container
+#
+class MinimizersHash(libMA.MinimizersHash):
+    pass
+
+##
 # @brief A single seed.
 # @details
 #
@@ -226,6 +235,15 @@ class Minimizers(libMA.Minimizers):
         return super(Minimizers, self).promise_me(ContainerVector(*args))
 
 ##
+# @brief python wrapper for MinimizersToSeeds
+class MinimizersToSeeds(libMA.MinimizersToSeeds):
+    def execute(self, *args):
+        return super(MinimizersToSeeds, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(MinimizersToSeeds, self).promise_me(ContainerVector(*args))
+
+##
 # @brief python wrapper for StripOfConsideration
 class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
@@ -233,6 +251,15 @@ class StripOfConsideration(libMA.StripOfConsideration):
 
     def promise_me(self, *args):
         return super(StripOfConsideration, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for StripOfConsideration2
+class StripOfConsideration2(libMA.StripOfConsideration2):
+    def execute(self, *args):
+        return super(StripOfConsideration2, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(StripOfConsideration2, self).promise_me(ContainerVector(*args))
 
 ##
 # @brief python wrapper for LinearLineSweep
