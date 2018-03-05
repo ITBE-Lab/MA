@@ -29,6 +29,7 @@ namespace libMA
          * @brief The minimizer sequence
          */
         uint8_t xSeq[k];
+        //bool bRevComp = false;
 
         static uint32_t maxIndex()
         {
@@ -132,18 +133,21 @@ namespace libMA
         {
             assert(pInit->length() > k + uiStart);
             //this makes sure that a sequence and it's reverse complement have the same minimizer
-            uint8_t xSeq2[k];
+            //uint8_t xSeq2[k];
             for(int i = 0; i < (int)k; i++)
             {
                 xSeq[i] = (*pInit)[i + uiStart];
-                assert( ((int)k)-(i+1) >= 0);
-                assert( ((int)k)-(i+1) < (int)k);
-                xSeq2[k-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
+                //assert( ((int)k)-(i+1) >= 0);
+                //assert( ((int)k)-(i+1) < (int)k);
+                //xSeq2[k-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
             }//for
 
             //if the reverse complement minimizer is smaller switch to that
-            if(toIndex() < toIndex(xSeq2))
-                *this = xSeq2;
+            //if(toIndex() < toIndex(xSeq2))
+            //{
+            //    *this = xSeq2;
+            //    bRevComp = true;
+            //}//if
         }//constructor
 
         Minimizer(std::shared_ptr<NucSeq> pInit)
@@ -406,8 +410,6 @@ namespace libMA
             Seed operator*() const
             {
                 assert(!xQueue.empty());
-                if(std::get<1>(xQueue.top()) + k >= 1000)
-                    std::cout << std::get<1>(xQueue.top()) + k << std::endl;
                 return Seed(std::get<1>(xQueue.top()), k, *std::get<0>(xQueue.top()));
             }//operator
 

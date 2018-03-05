@@ -209,7 +209,7 @@ def test_my_approach(
 
 
         print("computing (", name, ") ...")
-        Pledge.simultaneous_get(pledges[-1], 1)
+        Pledge.simultaneous_get(pledges[-1], 32)
 
 
         print("setting up optimal (", name, ") ...")

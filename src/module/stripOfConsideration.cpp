@@ -267,7 +267,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         auto xCollect2 = std::get<1>(*xCollect);
         nucSeqIndex end = getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize;
         while(
-            xCollect2 != xMaxima.end() &&
+            xCollect2 != vSeeds.end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))
         {
             assert(xCollect2->start() <= xCollect2->end());
@@ -337,8 +337,19 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
     */
     nucSeqIndex uiStripSize = getStripSize(uiQLen);
 
-    for(auto xSeed : *pSeeds)
-        assert(xSeed.end() <= pQuerySeq->length());
+    DEBUG(
+        //verify that all seeds are correct
+        for(auto xSeed : *pSeeds)
+        {
+            auto qSeg = pQuerySeq->fromTo(xSeed.start(), xSeed.end());
+            auto rSeg = pRefSeq->vExtract(xSeed.start_ref(), xSeed.end_ref())->toString();
+            if(qSeg != rSeg)
+            {
+                std::cout << "faulty seed: " << qSeg << " != " << rSeg << std::endl;
+                assert(false);
+            }
+        }//for
+    )//DEBUG
 
 
     //make sure that we return at least an empty seed set if nothing else
@@ -422,20 +433,17 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 
-    for(auto xSeed : xMaxima)
-        assert(std::get<1>(xSeed)->end() <= pQuerySeq->length());
-
     //extract the required amount of SOCs
     auto xCollect = xMaxima.begin();
     while(pRet->size() < numStrips && xCollect != xMaxima.end())
     {
         //the strip that shall be collected
-        std::shared_ptr<Seeds> pSeeds(new Seeds());
+        std::shared_ptr<Seeds> pSeedsNew(new Seeds());
         //iterator walking till the end of the strip that shall be collected
         auto xCollect2 = std::get<1>(*xCollect);
         nucSeqIndex end = getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize;
         while(
-            xCollect2 != xMaxima->end() &&
+            xCollect2 != pSeeds->end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))
         {
             assert(xCollect2->start() <= xCollect2->end());
@@ -443,10 +451,10 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
                 std::cout << xCollect2->end() << std::endl;
             assert(xCollect2->end() <= pQuerySeq->length());
             //if the iterator is still within the strip add the seed and increment the iterator
-            pSeeds->push_back(*(xCollect2++));
+            pSeedsNew->push_back(*(xCollect2++));
         }//while
         //save the seed
-        pRet->push_back(pSeeds);
+        pRet->push_back(pSeedsNew);
         //move to the next strip
         xCollect++;
     }//while
