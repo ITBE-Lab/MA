@@ -347,7 +347,7 @@ def theoretical_max_acc():
     indel_size = 100
     prob_refindable = []
     quality = 20
-    depth = 64
+    depth = 16
     max_missmatches = 0
     check_for_min_size_instead = None
 
@@ -1025,9 +1025,9 @@ def required_nmw_band_size():
 
 #unrelated_non_enclosed_seeds()
 #ambiguity_per_length()
-#theoretical_max_acc()
+theoretical_max_acc()
 #seed_shadows()
-alignment()
+#alignment()
 #stripOfConsideration()
 #optimal_matching()
 #required_nmw_band_size()

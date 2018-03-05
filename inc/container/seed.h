@@ -13,7 +13,7 @@
 namespace libMA
 {
     ///@brief any index on the query or reference nucleotide sequence is given in this datatype
-    typedef uint64_t nucSeqIndex;
+    typedef uint32_t nucSeqIndex;
 
     /**
      * @brief A seed.

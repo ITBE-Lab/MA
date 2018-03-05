@@ -41,10 +41,10 @@ namespace libMA
             //check for potential overflows
             assert(k*2 < 32);
             /*
-            * ordering in nucSeq is 'A', 'C', 'G', 'T', N
-            * we want to have C, A, T, G, N however therefore translation table:
+            * ordering in nucSeq is 'A', 'C', 'G', 'T'
+            * we want to have C, A, T, G however therefore translation table:
             */
-            static const uint8_t translate[5] = {1, 0, 3, 2};
+            static const uint8_t translate[4] = {1, 0, 3, 2};
 
             uint32_t uiRet = 0;
             /*
@@ -58,11 +58,15 @@ namespace libMA
             */
             for(unsigned int i = 0; i < k; i++)
             {
-                assert(pSeq[i] < 4);
-                if(i % 2 == 0)
-                    uiRet |= translate[pSeq[i]];
+                uint8_t uiNuc;
+                if(pSeq[i] >= 4)
+                    uiNuc = std::rand() % 4;
                 else
-                    uiRet |= 3 - translate[pSeq[i]];
+                    uiNuc = translate[pSeq[i]];
+                if(i % 2 == 0)
+                    uiRet |= uiNuc;
+                else
+                    uiRet |= 3 - uiNuc;
                 uiRet <<= 2;
             }//for
             return uiRet;
@@ -131,7 +135,7 @@ namespace libMA
 
         Minimizer(std::shared_ptr<NucSeq> pInit, nucSeqIndex uiStart)
         {
-            assert(pInit->length() > k + uiStart);
+            assert(pInit->length() >= k + uiStart);
             //this makes sure that a sequence and it's reverse complement have the same minimizer
             uint8_t xSeq2[k];
             for(int i = 0; i < (int)k; i++)
@@ -176,7 +180,10 @@ namespace libMA
         /**
          * creates a hash table from the vector
          */
-        std::shared_ptr<MinimizersHash<w,k>> toHash(nucSeqIndex uiRefSize);
+        std::shared_ptr<MinimizersHash<w,k>> toHash(
+            nucSeqIndex uiRefSize 
+            DEBUG_PARAM(std::shared_ptr<Pack> pPack)
+        );
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const
@@ -432,7 +439,7 @@ namespace libMA
                     k, 
                     //check weather we need to reverse complement the reference position
                     std::get<3>(xQueue.top()) ? 
-                        uiRefSize - *std::get<0>(xQueue.top())
+                        uiRefSize - (*std::get<0>(xQueue.top()) + k)
                         :
                         *std::get<0>(xQueue.top())
                 );
@@ -480,9 +487,16 @@ namespace libMA
     };//inner class
 
     template<size_t w, size_t k>
-    std::shared_ptr<MinimizersHash<w,k>> MinimizersVector<w,k>::toHash(nucSeqIndex uiRefSize)
+    std::shared_ptr<MinimizersHash<w,k>> MinimizersVector<w,k>::toHash(
+        nucSeqIndex uiRefSize
+        DEBUG_PARAM(std::shared_ptr<Pack> pPack)
+        )
     {
         assert(!this->empty());
+        DEBUG(
+            for(auto xElement : *this)
+                xElement.first.toIndex();
+        )//DEBUG
         //sort now so that there is no need to sort for the SOC
         //sideeffect: lets us fill the hashtable much faster and easier
         std::cout << "sorting..." << std::endl;
@@ -495,8 +509,8 @@ namespace libMA
             {
                 if(a.first.toIndex() == b.first.toIndex())
                     //the soc order
-                    return (a.first.bRevComp ? uiRefSize - a.second : a.second) < 
-                        (b.first.bRevComp ? uiRefSize - b.second : b.second);
+                    return (a.first.bRevComp ? uiRefSize - (a.second + k) : a.second) < 
+                        (b.first.bRevComp ? uiRefSize - (b.second + k) : b.second);
                 //the fill order (this takes priority)
                 return a.first.toIndex() < b.first.toIndex();
             }//lambda
@@ -512,22 +526,64 @@ namespace libMA
         unsigned int i = 0;
         //fill in the first key
         pRet->vKeys.emplace_back(pCurrent->first.toIndex(), i);
-        pRet->vValues[0] = pCurrent->first.bRevComp ? 
-            uiRefSize - pCurrent->second : pCurrent->second;
+        pRet->vValues[i] = pCurrent->first.bRevComp ? 
+            uiRefSize - (pCurrent->second + k) : pCurrent->second;
+        DEBUG(
+            auto xCheck = Minimizer<k>(pPack->vExtract(pRet->vValues[i], pRet->vValues[i]+k), 0);
+            if(pCurrent->first != xCheck )
+            {
+                std::cout << k << "-Minimizer complement:" << pCurrent->first.bRevComp << " wrong ";
+                for(size_t f = 0; f < k; f++)
+                    std::cout << (int)pCurrent->first.xSeq[f];
+                std::cout << " != ";
+                for(size_t f = 0; f < k; f++)
+                    std::cout << (int)xCheck.xSeq[f];
+                std::cout << std::endl;
+                std::cout << pPack->vExtract(pRet->vValues[i]-k, pRet->vValues[i])->toString() 
+                    << std::endl;
+                std::cout << pPack->vExtract(pCurrent->second, pCurrent->second+k)->toString() 
+                    << std::endl;
+                exit(0);
+            }//if
+        )//DEBUG
         //fill in all other elements
         while(++pCurrent != this->end())
         {
             if(i % 1000000 == 0)
                 std::cout << i/1000000 << "/" << this->size()/1000000 << std::endl;
             //check that there are no duplicates
-            assert(uiLast != pCurrent->second);
+            if(uiLast == pCurrent->second)
+            {
+                //we skipped one element so we need to remove that element from the vector
+                pRet->vValues.pop_back();
+                continue;
+            }//if
             uiLast = pCurrent->second;
             //in this case we need to create a new vector in the hash table
             if(pCurrent->first.toIndex() != pRet->vKeys.back().first)
                 pRet->vKeys.emplace_back(pCurrent->first.toIndex(), i);
             //save the current element
             pRet->vValues[++i] = pCurrent->first.bRevComp ? 
-                uiRefSize - pCurrent->second : pCurrent->second;
+                uiRefSize - (pCurrent->second + k) : pCurrent->second;
+            DEBUG(
+                auto xCheck = Minimizer<k>(pPack->vExtract(pRet->vValues[i], pRet->vValues[i]+k), 0);
+                if(pCurrent->first != xCheck )
+                {
+                    std::cout << k << "-Minimizer complement:" 
+                        << pCurrent->first.bRevComp << " wrong ";
+                    for(size_t f = 0; f < k; f++)
+                        std::cout << (int)pCurrent->first.xSeq[f];
+                    std::cout << " != ";
+                    for(size_t f = 0; f < k; f++)
+                        std::cout << (int)xCheck.xSeq[f];
+                    std::cout << std::endl;
+                    std::cout << pPack->vExtract(pRet->vValues[i]-k, pRet->vValues[i])->toString() 
+                        << std::endl;
+                    std::cout << pPack->vExtract(pCurrent->second, pCurrent->second+k)->toString() 
+                        << std::endl;
+                    exit(0);
+                }//if
+            )//DEBUG
         }//while
         pRet->vKeys.emplace_back(Minimizer<k>::maxIndex(), i);
         return pRet;

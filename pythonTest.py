@@ -60,7 +60,7 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-human_genome = "/mnt/ssd0/genome/humanchr1"
+human_genome = "/mnt/ssd0/genome/fragment"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1442,7 +1442,7 @@ exit()
 
 l = 1000
 il = 100
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 8, True, True)
 test_my_approaches("/mnt/ssd1/test.db")
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
 compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)
