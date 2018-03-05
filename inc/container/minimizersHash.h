@@ -29,7 +29,7 @@ namespace libMA
          * @brief The minimizer sequence
          */
         uint8_t xSeq[k];
-        //bool bRevComp = false;
+        bool bRevComp = false;
 
         static uint32_t maxIndex()
         {
@@ -133,21 +133,21 @@ namespace libMA
         {
             assert(pInit->length() > k + uiStart);
             //this makes sure that a sequence and it's reverse complement have the same minimizer
-            //uint8_t xSeq2[k];
+            uint8_t xSeq2[k];
             for(int i = 0; i < (int)k; i++)
             {
                 xSeq[i] = (*pInit)[i + uiStart];
-                //assert( ((int)k)-(i+1) >= 0);
-                //assert( ((int)k)-(i+1) < (int)k);
-                //xSeq2[k-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
+                assert( ((int)k)-(i+1) >= 0);
+                assert( ((int)k)-(i+1) < (int)k);
+                xSeq2[k-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
             }//for
 
             //if the reverse complement minimizer is smaller switch to that
-            //if(toIndex() < toIndex(xSeq2))
-            //{
-            //    *this = xSeq2;
-            //    bRevComp = true;
-            //}//if
+            if(toIndex() < toIndex(xSeq2))
+            {
+                *this = xSeq2;
+                bRevComp = true;
+            }//if
         }//constructor
 
         Minimizer(std::shared_ptr<NucSeq> pInit)
@@ -176,7 +176,7 @@ namespace libMA
         /**
          * creates a hash table from the vector
          */
-        std::shared_ptr<MinimizersHash<w,k>> EXPORTED toHash();
+        std::shared_ptr<MinimizersHash<w,k>> toHash(nucSeqIndex uiRefSize);
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const
@@ -202,6 +202,7 @@ namespace libMA
     {
     public:
         static const size_t FILE_VERSION = 1;
+        const nucSeqIndex uiRefSize;
 
         //it might be better to actually use a hash table here...
         std::vector<nucSeqIndex> vValues;
@@ -209,8 +210,9 @@ namespace libMA
         std::vector<std::pair<uint32_t,uint32_t>> vKeys;
 
 
-        MinimizersHash(uint32_t vValuesSize = 0, uint32_t vKeysSize = 0)
+        MinimizersHash(nucSeqIndex uiRefSize = 0, uint32_t vValuesSize = 0, uint32_t vKeysSize = 0)
                 :
+            uiRefSize(uiRefSize),
             vValues(),
             vKeys()
         {
@@ -257,6 +259,8 @@ namespace libMA
                 std::cerr << "cant read file 1: " << check << std::endl;
                 throw "@todo proper exception";
             }
+            nucSeqIndex uiRefSize;
+            ifs.read((char*)&uiRefSize, sizeof(nucSeqIndex));
             ifs.read((char*)&check, sizeof(size_t));
             if(k != check)
             {
@@ -275,7 +279,7 @@ namespace libMA
             size_t uiValueSize;
             ifs.read((char*)&uiKeySize, sizeof(size_t));
             ifs.read((char*)&uiValueSize, sizeof(size_t));
-            auto pRet = std::make_shared<MinimizersHash>(uiValueSize, uiKeySize);
+            auto pRet = std::make_shared<MinimizersHash>(uiRefSize, uiValueSize, uiKeySize);
 
             ifs.read((char*)&pRet->vKeys[0], pRet->vKeys.size() * sizeof(uint32_t)*2);
             ifs.read((char*)&pRet->vValues[0], pRet->vValues.size() * sizeof(nucSeqIndex));
@@ -293,6 +297,7 @@ namespace libMA
             // write class instance to archive
             size_t out = FILE_VERSION;
             ofs.write((char*)&out, sizeof(size_t));
+            ofs.write((char*)&uiRefSize, sizeof(nucSeqIndex));
             out = k;
             ofs.write((char*)&out, sizeof(size_t));
             out = w;
@@ -335,10 +340,12 @@ namespace libMA
         class iterator : public Container
         {
         public:
+            const nucSeqIndex uiRefSize;
             typedef std::tuple< //content
                     nucSeqIndex*, // reference position
                     nucSeqIndex, // query position
-                    uint32_t // remaining reference positions
+                    uint32_t, // remaining reference positions
+                    bool //reverse complement ref positions
                 > queueContent;
             typedef std::function<bool(queueContent,queueContent)> queueCompFunc;
             std::priority_queue<queueContent, std::vector<queueContent>, queueCompFunc> xQueue;
@@ -347,21 +354,26 @@ namespace libMA
                     MinimizersHash& rHash
                 )
                     :
+                uiRefSize(rHash.uiRefSize),
                 xQueue(
-                    []
+                    [&]
                     (
                         queueContent a,
                         queueContent b
                     )
                     {
+                        auto aRefPos = 
+                            std::get<3>(a) ? uiRefSize - *std::get<0>(a) : *std::get<0>(a);
+                        auto bRefPos = 
+                            std::get<3>(b) ? uiRefSize - *std::get<0>(b) : *std::get<0>(b);
                         //@todo remove me (temporary sorting for SOCs...)
-                        return *std::get<0>(a) + std::get<1>(b) > *std::get<0>(b) + std::get<1>(a);
+                        return aRefPos + std::get<1>(b) > bRefPos + std::get<1>(a);
 
-                        if(*std::get<0>(a) == *std::get<0>(b))
+                        if(aRefPos == bRefPos)
                             //sort so that larger query positions come first
                             return std::get<1>(a) > std::get<1>(b);
                         //sort so that smaller reference positions come first (with priority)
-                        return *std::get<0>(a) < *std::get<0>(b);
+                        return aRefPos < bRefPos;
                     }//lambda
                 )//constructor for priority queue
             {
@@ -371,9 +383,13 @@ namespace libMA
                     auto xHashPair = rHash[xIter->first];
                     if(xHashPair.second > 0)
                         xQueue.push(std::make_tuple(
-                            xHashPair.first, //reference positions pointer
+                            xIter->first.bRevComp ? 
+                                 // we want to reverse the order for complemented minimizers
+                                xHashPair.first + xHashPair.second - 1
+                                : xHashPair.first, //reference positions pointer
                             xIter->second, // query position
-                            xHashPair.second// amount reference positions
+                            xHashPair.second,// amount reference positions
+                            xIter->first.bRevComp// was the minimizer reverse complemented
                         ));
                     xIter++;
                 }//while
@@ -381,6 +397,7 @@ namespace libMA
 
             iterator()
                     :
+                uiRefSize(0),
                 xQueue()
             {}//default constructor
             
@@ -410,7 +427,15 @@ namespace libMA
             Seed operator*() const
             {
                 assert(!xQueue.empty());
-                return Seed(std::get<1>(xQueue.top()), k, *std::get<0>(xQueue.top()));
+                return Seed(
+                    std::get<1>(xQueue.top()), 
+                    k, 
+                    //check weather we need to reverse complement the reference position
+                    std::get<3>(xQueue.top()) ? 
+                        uiRefSize - *std::get<0>(xQueue.top())
+                        :
+                        *std::get<0>(xQueue.top())
+                );
             }//operator
 
             iterator& operator++()
@@ -421,7 +446,11 @@ namespace libMA
                 //remove the top element from the priority queue
                 xQueue.pop();
                 //increment the vector iterator of the top element
-                std::get<0>(xTuple)++;
+                if(std::get<3>(xQueue.top()))
+                    //remember: we need to reverse the order for complemented minimizers
+                    std::get<0>(xTuple)--;
+                else
+                    std::get<0>(xTuple)++;
                 //if there are still elements left in the reference vector
                 std::get<2>(xTuple) = std::get<2>(xTuple)-1;
                 if(std::get<2>(xTuple) > 0)
@@ -451,7 +480,7 @@ namespace libMA
     };//inner class
 
     template<size_t w, size_t k>
-    std::shared_ptr<MinimizersHash<w,k>> MinimizersVector<w,k>::toHash()
+    std::shared_ptr<MinimizersHash<w,k>> MinimizersVector<w,k>::toHash(nucSeqIndex uiRefSize)
     {
         assert(!this->empty());
         //sort now so that there is no need to sort for the SOC
@@ -460,13 +489,14 @@ namespace libMA
         std::sort(
             this->begin(), 
             this->end(),
-            []
+            [&]
             (std::pair<Minimizer<k>, nucSeqIndex>& a, 
                 std::pair<Minimizer<k>, nucSeqIndex>& b)
             {
                 if(a.first.toIndex() == b.first.toIndex())
                     //the soc order
-                    return a.second < b.second;
+                    return (a.first.bRevComp ? uiRefSize - a.second : a.second) < 
+                        (b.first.bRevComp ? uiRefSize - b.second : b.second);
                 //the fill order (this takes priority)
                 return a.first.toIndex() < b.first.toIndex();
             }//lambda
@@ -494,7 +524,8 @@ namespace libMA
             if(pCurrent->first.toIndex() != pRet->vKeys.back().first)
                 pRet->vKeys.emplace_back(pCurrent->first.toIndex(), i);
             //save the current element
-            pRet->vValues[i++] = pCurrent->second;
+            pRet->vValues[i++] = pCurrent->first.bRevComp ? 
+                uiRefSize - pCurrent->second : pCurrent->second;
         }//while
         pRet->vKeys.emplace_back(Minimizer<k>::maxIndex(), i);
         return pRet;
