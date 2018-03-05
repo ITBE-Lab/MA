@@ -34,7 +34,50 @@ std::shared_ptr<Container> Minimizers::execute(
     MinimizersVector<w,k> vLast;
     auto pRet = std::make_shared<MinimizersVector<w,k>>();
     /*
-     * we collect all minimizers
+     * we collect all (u,k)-start-minimizers for 1 <= u < w
+     */
+    for(nucSeqIndex u = 1; u < w; u++)
+    {
+        vCur.clear();
+        Minimizer<k> xFirst(pQuerySeq, 0);
+        //save the minimum minimizers in vCur (initially the first element is the minimum)
+        vCur.push_back(std::make_pair(xFirst, 0));
+        for(nucSeqIndex j = 1; j < u; j++)
+        {
+            Minimizer<k> xAlt(pQuerySeq, j);
+            assert(!vCur.empty());
+
+            //if we found a new minimum clear vCur and save the new minimum
+            if(xAlt <= vCur[0].first)
+            {
+                if(xAlt < vCur[0].first)
+                    vCur.clear();
+                vCur.push_back(std::make_pair(xAlt, j));
+            }//if
+        }//for
+        //save the minimizer(s)
+        for(auto& xMini : vCur)
+        {
+            assert(xMini.second + k < pQuerySeq->length());
+            //check if the minimizer was in vLast if so ignore it...
+            bool bNew = true;
+            for(auto& xMini2 : vLast)
+            {
+                if(xMini2.second == xMini.second)
+                    bNew = false;
+                if(xMini2.second >= xMini.second)
+                    break;
+            }//for
+            //save the new minimizer(s)
+            if(bNew)
+                pRet->push_back(xMini);
+        }//for
+        //save the current minimizers so that we can check for duplicates in the nxt iteration
+        //(this required constant time...)
+        vLast.swap(vCur);
+    }//for
+    /*
+     * we collect all (w,k)-minimizers
      */
     for(nucSeqIndex i = 0; i < pQuerySeq->length() - w - k; i++)
     {
@@ -56,6 +99,50 @@ std::shared_ptr<Container> Minimizers::execute(
                 if(xAlt < vCur[0].first)
                     vCur.clear();
                 vCur.push_back(std::make_pair(xAlt, j));
+            }//if
+        }//for
+        //save the minimizer(s)
+        for(auto& xMini : vCur)
+        {
+            assert(xMini.second + k < pQuerySeq->length());
+            //check if the minimizer was in vLast if so ignore it...
+            bool bNew = true;
+            for(auto& xMini2 : vLast)
+            {
+                if(xMini2.second == xMini.second)
+                    bNew = false;
+                if(xMini2.second >= xMini.second)
+                    break;
+            }//for
+            //save the new minimizer(s)
+            if(bNew)
+                pRet->push_back(xMini);
+        }//for
+        //save the current minimizers so that we can check for duplicates in the nxt iteration
+        //(this required constant time...)
+        vLast.swap(vCur);
+    }//for
+    /*
+     * we collect all (u,k)-end-minimizers for 1 <= u < w
+     */
+    for(nucSeqIndex u = 1; u < w; u++)
+    {
+        vCur.clear();
+        Minimizer<k> xFirst(pQuerySeq, 0);
+        auto uiOffset = pQuerySeq->length() - w - k;
+        //save the minimum minimizers in vCur (initially the first element is the minimum)
+        vCur.push_back(std::make_pair(xFirst, uiOffset));
+        for(nucSeqIndex j = 1; j < u; j++)
+        {
+            Minimizer<k> xAlt(pQuerySeq, j + uiOffset);
+            assert(!vCur.empty());
+
+            //if we found a new minimum clear vCur and save the new minimum
+            if(xAlt <= vCur[0].first)
+            {
+                if(xAlt < vCur[0].first)
+                    vCur.clear();
+                vCur.push_back(std::make_pair(xAlt, j + uiOffset));
             }//if
         }//for
         //save the minimizer(s)
