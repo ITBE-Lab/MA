@@ -502,7 +502,7 @@ namespace libMA
             }//lambda
         );//sort function call
         std::cout << "done sorting" << std::endl;
-        auto pRet = std::make_shared<MinimizersHash<w,k>>(this->size());
+        auto pRet = std::make_shared<MinimizersHash<w,k>>(uiRefSize, this->size());
         //remember the vector in the hash table that we are currently filling
         auto pCurrent = this->begin();
         //this is in order to check for duplicates
@@ -512,6 +512,8 @@ namespace libMA
         unsigned int i = 0;
         //fill in the first key
         pRet->vKeys.emplace_back(pCurrent->first.toIndex(), i);
+        pRet->vValues[0] = pCurrent->first.bRevComp ? 
+            uiRefSize - pCurrent->second : pCurrent->second;
         //fill in all other elements
         while(++pCurrent != this->end())
         {
@@ -524,7 +526,7 @@ namespace libMA
             if(pCurrent->first.toIndex() != pRet->vKeys.back().first)
                 pRet->vKeys.emplace_back(pCurrent->first.toIndex(), i);
             //save the current element
-            pRet->vValues[i++] = pCurrent->first.bRevComp ? 
+            pRet->vValues[++i] = pCurrent->first.bRevComp ? 
                 uiRefSize - pCurrent->second : pCurrent->second;
         }//while
         pRet->vKeys.emplace_back(Minimizer<k>::maxIndex(), i);
