@@ -332,7 +332,6 @@ namespace libMA
         {
         public:
             typedef std::tuple< //content
-                    Minimizer<k>, //minimizer sequence
                     nucSeqIndex*, // reference position
                     nucSeqIndex, // query position
                     uint32_t // remaining reference positions
@@ -347,28 +346,18 @@ namespace libMA
                 xQueue(
                     []
                     (
-                        std::tuple<
-                            Minimizer<k>, 
-                            nucSeqIndex*, 
-                            nucSeqIndex, 
-                            uint32_t
-                        > a,
-                        std::tuple<
-                            Minimizer<k>, 
-                            nucSeqIndex*, 
-                            nucSeqIndex, 
-                            uint32_t
-                        > b
+                        queueContent a,
+                        queueContent b
                     )
                     {
                         //@todo remove me (temporary sorting for SOCs...)
-                        return *std::get<1>(a) + std::get<2>(b) > *std::get<1>(b) + std::get<2>(a);
+                        return *std::get<0>(a) + std::get<1>(b) > *std::get<0>(b) + std::get<1>(a);
 
-                        if(*std::get<1>(a) == *std::get<1>(b))
+                        if(*std::get<0>(a) == *std::get<0>(b))
                             //sort so that larger query positions come first
-                            return std::get<2>(a) > std::get<2>(b);
+                            return std::get<1>(a) > std::get<1>(b);
                         //sort so that smaller reference positions come first (with priority)
-                        return *std::get<1>(a) < *std::get<1>(b);
+                        return *std::get<0>(a) < *std::get<0>(b);
                     }//lambda
                 )//constructor for priority queue
             {
@@ -378,7 +367,6 @@ namespace libMA
                     auto xHashPair = rHash[xIter->first];
                     if(xHashPair.second > 0)
                         xQueue.push(std::make_tuple(
-                            xIter->first, //minimizer sequence
                             xHashPair.first, //reference positions pointer
                             xIter->second, // query position
                             xHashPair.second// amount reference positions
@@ -418,7 +406,9 @@ namespace libMA
             Seed operator*() const
             {
                 assert(!xQueue.empty());
-                return Seed(std::get<2>(xQueue.top()), k, *std::get<1>(xQueue.top()));
+                if(std::get<1>(xQueue.top()) + k >= 1000)
+                    std::cout << std::get<1>(xQueue.top()) + k << std::endl;
+                return Seed(std::get<1>(xQueue.top()), k, *std::get<0>(xQueue.top()));
             }//operator
 
             iterator& operator++()
@@ -429,10 +419,10 @@ namespace libMA
                 //remove the top element from the priority queue
                 xQueue.pop();
                 //increment the vector iterator of the top element
-                std::get<1>(xTuple)++;
+                std::get<0>(xTuple)++;
                 //if there are still elements left in the reference vector
-                std::get<3>(xTuple) = std::get<3>(xTuple)-1;
-                if(std::get<3>(xTuple) > 0)
+                std::get<2>(xTuple) = std::get<2>(xTuple)-1;
+                if(std::get<2>(xTuple) > 0)
                     //readd the previous top element
                     xQueue.push(xTuple);
                 return *this;

@@ -61,6 +61,7 @@ std::shared_ptr<Container> Minimizers::execute(
         //save the minimizer(s)
         for(auto& xMini : vCur)
         {
+            assert(xMini.second + k < pQuerySeq->length());
             //check if the minimizer was in vLast if so ignore it...
             bool bNew = true;
             for(auto& xMini2 : vLast)

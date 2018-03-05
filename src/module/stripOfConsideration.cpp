@@ -267,7 +267,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         auto xCollect2 = std::get<1>(*xCollect);
         nucSeqIndex end = getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize;
         while(
-            xCollect2 != vSeeds.end() &&
+            xCollect2 != xMaxima.end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))
         {
             assert(xCollect2->start() <= xCollect2->end());
@@ -336,6 +336,9 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
     * computes the size required for the strip so that we collect all relevent seeds.
     */
     nucSeqIndex uiStripSize = getStripSize(uiQLen);
+
+    for(auto xSeed : *pSeeds)
+        assert(xSeed.end() <= pQuerySeq->length());
 
 
     //make sure that we return at least an empty seed set if nothing else
@@ -419,6 +422,9 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 
+    for(auto xSeed : xMaxima)
+        assert(std::get<1>(xSeed)->end() <= pQuerySeq->length());
+
     //extract the required amount of SOCs
     auto xCollect = xMaxima.begin();
     while(pRet->size() < numStrips && xCollect != xMaxima.end())
@@ -429,10 +435,12 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
         auto xCollect2 = std::get<1>(*xCollect);
         nucSeqIndex end = getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize;
         while(
-            xCollect2 != pSeeds->end() &&
+            xCollect2 != xMaxima->end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))
         {
             assert(xCollect2->start() <= xCollect2->end());
+            if(xCollect2->end() > pQuerySeq->length())
+                std::cout << xCollect2->end() << std::endl;
             assert(xCollect2->end() <= pQuerySeq->length());
             //if the iterator is still within the strip add the seed and increment the iterator
             pSeeds->push_back(*(xCollect2++));
