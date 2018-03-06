@@ -18,6 +18,7 @@ void exportMinimizersHash()
         .def("from_file", &MinimizersHash<Minimizers::w,Minimizers::k>::fromFile)
         .staticmethod("from_file")
         .def("key_len", &MinimizersHash<Minimizers::w,Minimizers::k>::keyLen)
+        .def("verify", &MinimizersHash<Minimizers::w,Minimizers::k>::verify)
     ;
 
     //tell boost python that pointers of these classes can be converted implicitly

@@ -60,7 +60,7 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-human_genome = "/mnt/ssd0/genome/fragment"
+human_genome = "/mnt/ssd0/genome/humanchr1"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -130,6 +130,7 @@ def test_my_approach(
 
         if do_minimizers:
             minimizersHash = MinimizersHash().from_file(reference + ".maRef")
+            minimizersHash.verify(ref_pack)# self tests...
             fm_pledge = Pledge(MinimizersHash())
             fm_pledge.set(minimizersHash)
         else:
@@ -163,7 +164,7 @@ def test_my_approach(
             pledges[0][-1].get().name = str(sample_id)
             if do_minimizers:
                 pledges[1].append(minimizersExtract.promise_me(
-                    fm_pledge, minimizers.promise_me(pledges[0][-1])
+                    fm_pledge, minimizers.promise_me(pledges[0][-1]), ref_pledge
                 ))
                 pledges[2].append(soc2.promise_me(
                     pledges[1][-1], pledges[0][-1], ref_pledge
@@ -209,7 +210,7 @@ def test_my_approach(
 
 
         print("computing (", name, ") ...")
-        Pledge.simultaneous_get(pledges[-1], 1)
+        Pledge.simultaneous_get(pledges[-1], 32)
 
 
         print("setting up optimal (", name, ") ...")
@@ -1442,7 +1443,7 @@ exit()
 
 l = 1000
 il = 100
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 8, True, True)
+createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, True)
 test_my_approaches("/mnt/ssd1/test.db")
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
 compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)

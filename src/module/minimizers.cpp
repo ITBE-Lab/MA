@@ -128,8 +128,8 @@ std::shared_ptr<Container> Minimizers::execute(
     for(nucSeqIndex u = 1; u < w; u++)
     {
         vCur.clear();
-        Minimizer<k> xFirst(pQuerySeq, 0);
         auto uiOffset = pQuerySeq->length() - w - k;
+        Minimizer<k> xFirst(pQuerySeq, uiOffset);
         //save the minimum minimizers in vCur (initially the first element is the minimum)
         vCur.push_back(std::make_pair(xFirst, uiOffset));
         for(nucSeqIndex j = 1; j < u; j++)
@@ -166,6 +166,21 @@ std::shared_ptr<Container> Minimizers::execute(
         //(this required constant time...)
         vLast.swap(vCur);
     }//for
+
+     DEBUG(
+        for(auto xPair : *pRet)
+        {
+            auto xCheck = Minimizer<k>(pQuerySeq, xPair.second);
+            if(xPair.first != xCheck )
+            {
+                std::cout << k << "-Minimizer wrong; is complement:" 
+                    << (xPair.first.bRevComp ? "true" : "false") << std::endl;
+                exit(0);
+            }//if
+        }//for
+    )//DEBUG
+
+
     return pRet;
 }//function
 
@@ -178,6 +193,8 @@ ContainerVector MinimizersToSeeds::getInputType() const
         std::shared_ptr<Container>(new MinimizersHash<Minimizers::w,Minimizers::k>()),
         //the query sequence
         std::shared_ptr<Container>(new MinimizersVector<Minimizers::w,Minimizers::k>())
+        //the reference
+        DEBUG_PARAM(std::shared_ptr<Container>(new Pack()))
     };
 }
 std::shared_ptr<Container> MinimizersToSeeds::getOutputType() const
@@ -194,7 +211,14 @@ std::shared_ptr<Container> MinimizersToSeeds::execute(
     assert(!pIndex->vKeys.empty());
 	auto pMinimizers = std::dynamic_pointer_cast<
         MinimizersVector<Minimizers::w,Minimizers::k>>((*vpInput)[1]);
-    return pIndex->toSeeds(pMinimizers);
+    DEBUG(
+        std::shared_ptr<Pack> pRefSeq = 
+            std::static_pointer_cast<Pack>((*vpInput)[2]);
+    )
+    return pIndex->toSeeds(
+            pMinimizers
+            DEBUG_PARAM(pRefSeq)
+        );
 }//function
 
 void exportMinimizers()

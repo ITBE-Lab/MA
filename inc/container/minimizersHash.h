@@ -9,6 +9,7 @@
 
 #include "container/segment.h"
 #include "container/seed.h"
+#include "container/pack.h"
 #include "util/support.h"
 #include <map>
 #include <fstream>
@@ -28,7 +29,7 @@ namespace libMA
         /**
          * @brief The minimizer sequence
          */
-        uint8_t xSeq[k];
+        std::vector<uint8_t> vSeq; 
         bool bRevComp = false;
 
         static uint32_t maxIndex()
@@ -39,12 +40,12 @@ namespace libMA
         bool isAmbiguous()
         {
             for(unsigned int i = 0; i < k; i++)
-                if(xSeq[i] >= 4)//found ambiguous character..
+                if(vSeq.at(i) >= 4)//found ambiguous character..
                     return true;
             return false;
         }//function
 
-        uint32_t toIndex(const uint8_t* pSeq) const
+        uint32_t toIndex(const std::vector<uint8_t>& vSeq) const
         {
             //check for potential overflows
             assert(k*2 < 32);
@@ -54,7 +55,6 @@ namespace libMA
             */
             static const uint8_t translate[4] = {1, 0, 3, 2};
 
-            uint32_t uiRet = 0;
             /*
             * In DNA sequences, the letters C and G often occur less frequently than
             * A and T.We assign the values 0, 1, 2, 3 to C, A, T, G, respectively,
@@ -64,23 +64,23 @@ namespace libMA
             * of a match) letters C and G, and makes the minimum k-mer
             * CGCGCG.... There are many other possibilities.
             */
+            uint32_t uiRet = 0;
             for(unsigned int i = 0; i < k; i++)
             {
-                if(pSeq[i] >= 4)
+                if(vSeq.at(i) >= 4)
                     return maxIndex();
-                uint8_t uiNuc = translate[pSeq[i]];
                 uiRet <<= 2;
                 if(i % 2 == 0)
-                    uiRet |= uiNuc;
+                    uiRet |= translate[vSeq.at(i)];
                 else
-                    uiRet |= 3 - uiNuc;
+                    uiRet |= 3 - translate[vSeq.at(i)];
             }//for
             return uiRet;
         }//function
 
         uint32_t toIndex() const
         {
-            return toIndex(xSeq);
+            return toIndex(vSeq);
         }//function
 
         /**
@@ -110,15 +110,16 @@ namespace libMA
             return toIndex() > rOther.toIndex();
         }//operator
 
-        void operator=(const uint8_t* pOtherSeq)
+        void operator=(const std::vector<uint8_t>& vOtherSeq)
         {
             for(unsigned int i = 0; i < k; i++)
-                xSeq[i] = pOtherSeq[i];
+                vSeq[i] = vOtherSeq[i];
         }//operator
 
         void operator=(const Minimizer& rOther)
         {
-            operator=(rOther.xSeq);
+            operator=(rOther.vSeq);
+            bRevComp = rOther.bRevComp;
         }//operator
 
         /**
@@ -140,22 +141,24 @@ namespace libMA
         }//operator
 
         Minimizer(std::shared_ptr<NucSeq> pInit, nucSeqIndex uiStart)
+                :
+            vSeq(k)
         {
             assert(pInit->length() >= k + uiStart);
             //this makes sure that a sequence and it's reverse complement have the same minimizer
-            uint8_t xSeq2[k];
+            std::vector<uint8_t> vSeq2(k);
             for(int i = 0; i < (int)k; i++)
             {
-                xSeq[i] = (*pInit)[i + uiStart];
-                assert( ((int)k)-(i+1) >= 0);
-                assert( ((int)k)-(i+1) < (int)k);
-                xSeq2[((int)k)-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
+                vSeq.at(i) = (*pInit)[i + uiStart];
+                assert( ((int)k)-(i+1) >= 0 );
+                assert( ((int)k)-(i+1) < (int)k );
+                vSeq2.at(((int)k)-(i+1)) = (uint8_t)complement((*pInit)[i + uiStart]);
             }//for
 
             //if the reverse complement minimizer is smaller switch to that
-            if(toIndex() < toIndex(xSeq2))
+            if(toIndex() > toIndex(vSeq2))
             {
-                *this = xSeq2;
+                *this = vSeq2;
                 bRevComp = true;
             }//if
         }//constructor
@@ -166,6 +169,8 @@ namespace libMA
         {}//constructor
 
         Minimizer()
+                :
+            vSeq(k)
         {}//default constructor
     };//class
 
@@ -210,17 +215,55 @@ namespace libMA
         }//function
     };//class
 
+    struct KeyAddrPair
+    {
+        /*
+         * a uint32_t pair
+         * first value is the data
+         * second the index in the values array
+         */
+        uint64_t uiData;
+
+        uint32_t key() const
+        {
+            return (uint32_t)(uiData >> 32);
+        }//function
+
+        uint32_t addr() const
+        {
+            return (uint32_t)(uiData & (uint64_t)0x00000000FFFFFFFF);
+        }//function
+
+        void set(uint32_t key, uint32_t addr)
+        {
+            uiData = 0;
+            uiData |= key;
+            uiData <<= 32;
+            uiData |= addr;
+        }//function
+
+        KeyAddrPair(uint32_t key, uint32_t addr)
+        {
+            set(key, addr);
+        }//constructor
+
+        KeyAddrPair()
+        {}//default constructor
+    };//struct
+
     template<size_t w, size_t k>
     class MinimizersHash : public Container
     {
     public:
+
+
         static const size_t FILE_VERSION = 1;
         const nucSeqIndex uiRefSize;
 
         //it might be better to actually use a hash table here...
         std::vector<nucSeqIndex> vValues;
         //pair: key , index in value of the key
-        std::vector<std::pair<uint32_t,uint32_t>> vKeys;
+        std::vector<KeyAddrPair> vKeys;
 
 
         MinimizersHash(nucSeqIndex uiRefSize = 0, uint32_t vValuesSize = 0, uint32_t vKeysSize = 0)
@@ -294,13 +337,18 @@ namespace libMA
             ifs.read((char*)&uiValueSize, sizeof(size_t));
             auto pRet = std::make_shared<MinimizersHash>(uiRefSize, uiValueSize, uiKeySize);
 
-            ifs.read((char*)&pRet->vKeys[0], pRet->vKeys.size() * sizeof(uint32_t)*2);
+            
+            assert(pRet->vKeys.size() == uiKeySize);
+            ifs.read((char*)&pRet->vKeys[0], pRet->vKeys.size() * sizeof(KeyAddrPair));
+            assert(pRet->vValues.size() == uiValueSize);
             ifs.read((char*)&pRet->vValues[0], pRet->vValues.size() * sizeof(nucSeqIndex));
 
             ifs.close();
 
             assert(!pRet->vKeys.empty());
             assert(!pRet->vValues.empty());
+            assert(pRet->vKeys.back().addr() == uiValueSize);
+            assert(pRet->vKeys.front().addr() == 0);
             return pRet;
         }//function
 
@@ -328,26 +376,78 @@ namespace libMA
         }//function
 
         //returns a pointer to the position and the size
-        std::pair<nucSeqIndex*, uint32_t> operator[](Minimizer<k>& rKey)
+        std::pair<const nucSeqIndex*, uint32_t> operator[](const Minimizer<k>& rKey) const
         {
             assert(!vKeys.empty());
             auto xItLower = std::lower_bound(
                 vKeys.begin(),
-                vKeys.end(),
+                //the last index is a pseudo entry 
+                //(since we need the end of every interval)
+                vKeys.end()-1,
                 rKey.toIndex(),
                 []
-                (std::pair<uint32_t,uint32_t> xKey , uint32_t xVal)
+                (KeyAddrPair xKey , uint32_t xVal)
                 {
-                    return xKey.first < xVal;
+                    return xKey.key() < xVal;
                 }//lambda
             );//lower bound function call
-            if(xItLower == vKeys.end() || xItLower->first != rKey.toIndex())
+            if(xItLower == vKeys.end() || xItLower->key() != rKey.toIndex())
                 return std::make_pair(nullptr, 0);
             auto xItNext = xItLower + 1;
-            assert(xItNext->first != xItLower->first);
-            uint32_t uiSize = xItNext->second - xItLower->second;
-            assert(uiSize > 0);
-            return std::make_pair(&vValues[xItLower->second], uiSize);
+            assert(xItNext->key() > xItLower->key());
+            uint32_t uiSize = xItNext->addr() - xItLower->addr();
+            DEBUG(
+                if(xItNext->addr() <= xItLower->addr())
+                {
+                    std::cout << xItNext->addr() << " " << xItLower->addr() << std::endl;
+                    assert(false);
+                }//if
+            )//DEBUG
+            return std::make_pair(&vValues[xItLower->addr()], uiSize);
+        }//function
+
+        void verify(std::shared_ptr<Pack> pPack)
+        {
+            std::cout << "self checks..." << std::endl;
+            bool bTerminate = false;
+            for(auto pKey = vKeys.begin(); pKey != vKeys.end()-1; ++pKey)
+            {
+                
+                for(uint32_t uiIndex = pKey->addr(); uiIndex < (pKey+1)->addr() - 1; uiIndex++)
+                    if(vValues[uiIndex] >= vValues[uiIndex+1])
+                    {
+                        std::cout << vValues[uiIndex] << " " << vValues[uiIndex+1] << std::endl;
+                        bTerminate = true;
+                    }//if
+                auto pCheck = pPack->vExtract(vValues[pKey->addr()], vValues[pKey->addr()]+k);
+                for(unsigned int i = pKey->addr(); i < (pKey+1)->addr(); i++)
+                {
+                    auto pCheck2 = pPack->vExtract(vValues[i], vValues[i]+k);
+                    if(pKey->key() != Minimizer<k>(pCheck2,0).toIndex() )
+                    {
+                        std::cout << k << "-Minimizer wrong (case 1)" << std::endl;
+                        bTerminate = true;
+                    }//if
+                    if( pCheck->toString() != pCheck2->toString() )
+                    {
+                        std::cout << k << "-Minimizer wrong (case 2)" << std::endl;
+                        bTerminate = true;
+                    }//if
+                }//for
+                auto xPair = operator[](Minimizer<k>(pCheck,0));
+                if(&vValues[pKey->addr()] != xPair.first)
+                {
+                    std::cout << "operator[].first has problems" << std::endl;
+                }//if
+                if(&vValues[(pKey+1)->addr()] != xPair.first + xPair.second)
+                {
+                    std::cout << "operator[].second has problems" << std::endl;
+                }//if
+            }//for
+
+            if(bTerminate)
+                exit(0);
+            std::cout << "passed self checks" << std::endl;
         }//function
 
         class iterator : public Container
@@ -355,16 +455,21 @@ namespace libMA
         public:
             const nucSeqIndex uiRefSize;
             typedef std::tuple< //content
-                    nucSeqIndex*, // reference position
+                    const nucSeqIndex*, // reference position
                     nucSeqIndex, // query position
                     uint32_t, // remaining reference positions
                     bool //reverse complement ref positions
+                    DEBUG_PARAM(Minimizer<k>)// original minimizer
+                    DEBUG_PARAM(uint32_t)// incrementations done
+                    DEBUG_PARAM(uint32_t)// total interval size
                 > queueContent;
             typedef std::function<bool(queueContent,queueContent)> queueCompFunc;
             std::priority_queue<queueContent, std::vector<queueContent>, queueCompFunc> xQueue;
+            DEBUG(std::shared_ptr<Pack> pRefSeq;)
             iterator(
                     std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers, 
-                    MinimizersHash& rHash
+                    const MinimizersHash& rHash
+                    DEBUG_PARAM(std::shared_ptr<Pack> pRefSeq)
                 )
                     :
                 uiRefSize(rHash.uiRefSize),
@@ -389,21 +494,41 @@ namespace libMA
                         return aRefPos < bRefPos;
                     }//lambda
                 )//constructor for priority queue
+                DEBUG_PARAM(pRefSeq(pRefSeq))
             {
                 auto xIter = pQueryMinimizers->begin();
                 while(xIter != pQueryMinimizers->end())
                 {
                     auto xHashPair = rHash[xIter->first];
                     if(xHashPair.second > 0)
+                    {
+                        auto pRefStart = xIter->first.bRevComp ? 
+                                    // we want to reverse the order for complemented minimizers
+                                    xHashPair.first + xHashPair.second - 1
+                                    : xHashPair.first;
                         xQueue.push(std::make_tuple(
-                            xIter->first.bRevComp ? 
-                                 // we want to reverse the order for complemented minimizers
-                                xHashPair.first + xHashPair.second - 1
-                                : xHashPair.first, //reference positions pointer
+                            pRefStart, //reference positions pointer
                             xIter->second, // query position
                             xHashPair.second,// amount reference positions
                             xIter->first.bRevComp// was the minimizer reverse complemented
+                            DEBUG_PARAM(xIter->first)
+                            DEBUG_PARAM(0)
+                            DEBUG_PARAM(xHashPair.second)
                         ));
+                        DEBUG(
+                            auto rSeg = pRefSeq->vExtract(*pRefStart, (*pRefStart) + k);
+                            if(xIter->first != Minimizer<k>(rSeg,0))
+                            {
+                                std::cout
+                                    << "faulty seed: "
+                                    << rSeg->toString() 
+                                    << " on rev comp strand: "
+                                    << (pRefSeq->bPositionIsOnReversStrand(*pRefStart) ? "true " : "false")
+                                    << std::endl;
+                                assert(false);
+                            }//if
+                        )//DEBUG
+                    }
                     xIter++;
                 }//while
             }//constructor
@@ -441,10 +566,10 @@ namespace libMA
             {
                 assert(!xQueue.empty());
                 return Seed(
-                    std::get<1>(xQueue.top()), 
-                    k, 
+                    std::get<1>(xQueue.top()),
+                    k,
                     //check weather we need to reverse complement the reference position
-                    std::get<3>(xQueue.top()) ? 
+                    std::get<3>(xQueue.top()) ?
                         uiRefSize - (*std::get<0>(xQueue.top()) + k)
                         :
                         *std::get<0>(xQueue.top())
@@ -459,28 +584,64 @@ namespace libMA
                 //remove the top element from the priority queue
                 xQueue.pop();
                 //increment the vector iterator of the top element
-                if(std::get<3>(xQueue.top()))
+                if(std::get<3>(xTuple))
                     //remember: we need to reverse the order for complemented minimizers
                     std::get<0>(xTuple)--;
                 else
                     std::get<0>(xTuple)++;
+
+                std::get<2>(xTuple)--;
                 //if there are still elements left in the reference vector
-                std::get<2>(xTuple) = std::get<2>(xTuple)-1;
                 if(std::get<2>(xTuple) > 0)
+                {
+                    DEBUG(
+                        auto rSeg = pRefSeq->vExtract(*std::get<0>(xTuple), (*std::get<0>(xTuple)) + k);
+                        if(std::get<4>(xTuple) != Minimizer<k>(rSeg,0))
+                        {
+                            std::cout
+                                << "faulty seed: "
+                                << rSeg->toString() 
+                                << " on rev comp strand: "
+                                << (pRefSeq->bPositionIsOnReversStrand(*std::get<0>(xTuple)) ? "true " : "false")
+                                << " elements left "
+                                << std::get<2>(xTuple)
+                                << " elements passed "
+                                << std::get<5>(xTuple)
+                                << " interval size "
+                                << std::get<6>(xTuple)
+                                << std::endl;
+                            //assert(false);
+                        }//if
+                        std::get<5>(xTuple)++;
+                    )//DEBUG
                     //readd the previous top element
                     xQueue.push(xTuple);
+                }
                 return *this;
             }//operator
         };//class
 
-        iterator begin(std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers)
+        iterator begin(
+                std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers
+                DEBUG_PARAM(std::shared_ptr<Pack> pRefSeq)
+            ) const
         {
-            return iterator(pQueryMinimizers, *this);
+            return iterator(
+                    pQueryMinimizers, 
+                    *this
+                    DEBUG_PARAM(pRefSeq)
+                );
         }//function
 
-        std::shared_ptr<Seeds> toSeeds(std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers)
+        std::shared_ptr<Seeds> toSeeds(
+                std::shared_ptr<MinimizersVector<w,k>> pQueryMinimizers
+                DEBUG_PARAM(std::shared_ptr<Pack> pRefSeq)
+            ) const
         {
-            auto it = begin(pQueryMinimizers);
+            auto it = begin(
+                    pQueryMinimizers
+                    DEBUG_PARAM(pRefSeq) 
+                );
             auto pRet = std::make_shared<Seeds>();
             while(!it.empty())
             {
@@ -528,32 +689,11 @@ namespace libMA
         //this is in order to check for duplicates
         // set to max value so that the first element does not trigger the check...
         nucSeqIndex uiLast = (nucSeqIndex)-1;
+        uint32_t uiLastIndex = Minimizer<k>::maxIndex();
         //for the progress print
         unsigned int i = 0;
-        //fill in the first key
-        pRet->vKeys.emplace_back(pCurrent->first.toIndex(), i);
-        pRet->vValues[i] = pCurrent->first.bRevComp ? 
-            uiRefSize - (pCurrent->second + k) : pCurrent->second;
-        DEBUG(
-            auto xCheck = Minimizer<k>(pPack->vExtract(pRet->vValues[i], pRet->vValues[i]+k), 0);
-            if(pCurrent->first != xCheck )
-            {
-                std::cout << k << "-Minimizer complement:" << pCurrent->first.bRevComp << " wrong ";
-                for(size_t f = 0; f < k; f++)
-                    std::cout << (int)pCurrent->first.xSeq[f];
-                std::cout << " != ";
-                for(size_t f = 0; f < k; f++)
-                    std::cout << (int)xCheck.xSeq[f];
-                std::cout << std::endl;
-                std::cout << pPack->vExtract(pRet->vValues[i]-k, pRet->vValues[i])->toString() 
-                    << std::endl;
-                std::cout << pPack->vExtract(pCurrent->second, pCurrent->second+k)->toString() 
-                    << std::endl;
-                exit(0);
-            }//if
-        )//DEBUG
-        //fill in all other elements
-        while(++pCurrent != this->end())
+        //fill in all elements
+        for(;pCurrent != this->end(); pCurrent++)
         {
             if(i % 1000000 == 0)
                 std::cout << i/1000000 << "/" << this->size()/1000000 << std::endl;
@@ -566,22 +706,26 @@ namespace libMA
             }//if
             uiLast = pCurrent->second;
             //in this case we need to create a new vector in the hash table
-            if(pCurrent->first.toIndex() != pRet->vKeys.back().first)
-                pRet->vKeys.emplace_back(pCurrent->first.toIndex(), i);
+            if(pCurrent->first.toIndex() != uiLastIndex)
+            {
+                pRet->vKeys.push_back(KeyAddrPair(pCurrent->first.toIndex(), i));
+                uiLastIndex = pCurrent->first.toIndex();
+            }//if
             //save the current element
-            pRet->vValues[++i] = pCurrent->first.bRevComp ? 
+            pRet->vValues[i] = pCurrent->first.bRevComp ? 
                 uiRefSize - (pCurrent->second + k) : pCurrent->second;
             DEBUG(
-                auto xCheck = Minimizer<k>(pPack->vExtract(pRet->vValues[i], pRet->vValues[i]+k), 0);
+                auto xCheck = 
+                    Minimizer<k>(pPack->vExtract(pRet->vValues[i], pRet->vValues[i]+k), 0);
                 if(pCurrent->first != xCheck )
                 {
-                    std::cout << k << "-Minimizer complement:" 
-                        << pCurrent->first.bRevComp << " wrong ";
+                    std::cout << k << "-Minimizer wrong; is complement:" 
+                        << (pCurrent->first.bRevComp ? "true" : "false");
                     for(size_t f = 0; f < k; f++)
-                        std::cout << (int)pCurrent->first.xSeq[f];
+                        std::cout << (int)pCurrent->first.vSeq[f];
                     std::cout << " != ";
                     for(size_t f = 0; f < k; f++)
-                        std::cout << (int)xCheck.xSeq[f];
+                        std::cout << (int)xCheck.vSeq[f];
                     std::cout << std::endl;
                     std::cout << pPack->vExtract(pRet->vValues[i]-k, pRet->vValues[i])->toString() 
                         << std::endl;
@@ -590,8 +734,13 @@ namespace libMA
                     exit(0);
                 }//if
             )//DEBUG
+            i++;
         }//while
-        pRet->vKeys.emplace_back(Minimizer<k>::maxIndex(), i);
+        pRet->vKeys.push_back(KeyAddrPair(Minimizer<k>::maxIndex(), pRet->vValues.size()));
+        assert(i == pRet->vValues.size());
+        DEBUG(
+            pRet->verify(pPack);
+        )//DEBUG
         return pRet;
     }//function
 
