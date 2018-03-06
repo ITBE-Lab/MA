@@ -342,12 +342,19 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
         for(auto xSeed : *pSeeds)
         {
             auto qSeg = pQuerySeq->fromTo(xSeed.start(), xSeed.end());
-            auto rSeg = pRefSeq->vExtract(xSeed.start_ref(), xSeed.end_ref())->toString();
-            if(qSeg != rSeg)
+            auto rSeg = pRefSeq->vExtract(xSeed.start_ref(), xSeed.end_ref());
+            //account for seeds on the reverse complement strand
+            if(pRefSeq->bPositionIsOnReversStrand(xSeed.start_ref()))
             {
-                std::cout << "faulty seed: " << qSeg << " != " << rSeg << std::endl;
-                assert(false);
-            }
+                rSeg->vReverse();
+                rSeg->vSwitchAllBasePairsToComplement();
+            }//if
+            if(qSeg != rSeg->toString())
+            {
+                std::cout << "faulty seed: " << qSeg << " != " << rSeg->toString() 
+                    << " on rev comp strand " << pRefSeq->bPositionIsOnReversStrand(xSeed.start_ref()) << std::endl;
+                //assert(false);
+            }//if
         }//for
     )//DEBUG
 

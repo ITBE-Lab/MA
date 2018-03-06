@@ -66,15 +66,14 @@ namespace libMA
             */
             for(unsigned int i = 0; i < k; i++)
             {
-                uint8_t uiNuc;
                 if(pSeq[i] >= 4)
                     return maxIndex();
-                uiNuc = translate[pSeq[i]];
+                uint8_t uiNuc = translate[pSeq[i]];
+                uiRet <<= 2;
                 if(i % 2 == 0)
                     uiRet |= uiNuc;
                 else
                     uiRet |= 3 - uiNuc;
-                uiRet <<= 2;
             }//for
             return uiRet;
         }//function
