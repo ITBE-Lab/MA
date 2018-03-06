@@ -1442,7 +1442,7 @@ exit()
 
 l = 1000
 il = 100
-createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 8, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 8, True, True)
 test_my_approaches("/mnt/ssd1/test.db")
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
 compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)

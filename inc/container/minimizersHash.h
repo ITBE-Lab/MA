@@ -36,6 +36,14 @@ namespace libMA
             return std::numeric_limits<uint32_t>::max();
         }//function
 
+        bool isAmbiguous()
+        {
+            for(unsigned int i = 0; i < k; i++)
+                if(xSeq[i] >= 4)//found ambiguous character..
+                    return true;
+            return false;
+        }//function
+
         uint32_t toIndex(const uint8_t* pSeq) const
         {
             //check for potential overflows
@@ -60,9 +68,8 @@ namespace libMA
             {
                 uint8_t uiNuc;
                 if(pSeq[i] >= 4)
-                    uiNuc = std::rand() % 4;
-                else
-                    uiNuc = translate[pSeq[i]];
+                    return maxIndex();
+                uiNuc = translate[pSeq[i]];
                 if(i % 2 == 0)
                     uiRet |= uiNuc;
                 else
@@ -143,7 +150,7 @@ namespace libMA
                 xSeq[i] = (*pInit)[i + uiStart];
                 assert( ((int)k)-(i+1) >= 0);
                 assert( ((int)k)-(i+1) < (int)k);
-                xSeq2[k-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
+                xSeq2[((int)k)-(i+1)] = (uint8_t)complement((*pInit)[i + uiStart]);
             }//for
 
             //if the reverse complement minimizer is smaller switch to that
@@ -551,8 +558,8 @@ namespace libMA
         {
             if(i % 1000000 == 0)
                 std::cout << i/1000000 << "/" << this->size()/1000000 << std::endl;
-            //check that there are no duplicates
-            if(uiLast == pCurrent->second)
+            //check that there are no duplicates and ignore all minimizers with Ns 
+            if(uiLast == pCurrent->second || pCurrent->first.isAmbiguous())
             {
                 //we skipped one element so we need to remove that element from the vector
                 pRet->vValues.pop_back();
