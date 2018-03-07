@@ -241,14 +241,14 @@ namespace libMA
 
         void set(uint32_t key, uint64_t addr)
         {
-            assert(key & 0xC0000000 == 0);
-            assert(addr & 0xFFFFFFFC00000000 == 0);
+            assert( (key & 0xC0000000) == 0);
+            assert( (addr & 0xFFFFFFFC00000000) == 0);
             uiData = 0;
             uiData |= key;
             uiData <<= 34;
             uiData |= addr;
-            assert(key() == key);
-            assert(addr() == addr);
+            assert( this->key() == key);
+            assert( this->addr() == addr);
         }//function
 
         KeyAddrPair(uint32_t key, uint64_t addr)
