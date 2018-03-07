@@ -1446,37 +1446,45 @@ exit()
 
 #high quality picture
 
-l = 30000
-il = 100
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, False)
-test_my_approaches("/mnt/ssd1/test.db")
-analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
+#l = 200
+#il = 10
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, high_qual=False, smaller_box=True)
+#test_my_approaches("/mnt/ssd1/test.db")
+#analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
 #compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)
 #compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/test.db", l, il)
-analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", l, il)
+#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", l, il)
 #analyse_detailed("stats/", "/mnt/ssd1/test.db")
-
-exit()
+#exit()
 
 amount = 2**11
-#createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount, True, True)
-#createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount, True, True)
-#createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount, True, True)
-#createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount, True, True)
-#createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, True, True, 1)
-#createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, True, True, 0)
+createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
+createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
+createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
+createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
+import measure_time
 
-test_my_approaches("/mnt/ssd1/default.db")
-test_my_approaches("/mnt/ssd1/short.db")
-test_my_approaches("/mnt/ssd1/shortIndels.db")
-test_my_approaches("/mnt/ssd1/longIndels.db")
-test_my_approaches("/mnt/ssd1/insertionOnly.db")
-test_my_approaches("/mnt/ssd1/deletionOnly.db")
+measure_time.test_all()
 
-#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
-#analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
-#analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
-#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
-#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
-#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+#test_my_approaches("/mnt/ssd1/default.db")
+#test_my_approaches("/mnt/ssd1/short.db")
+#test_my_approaches("/mnt/ssd1/shortIndels.db")
+#test_my_approaches("/mnt/ssd1/longIndels.db")
+#test_my_approaches("/mnt/ssd1/insertionOnly.db")
+#test_my_approaches("/mnt/ssd1/deletionOnly.db")
+
+analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
+analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
+analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
+analyse_all_approaches("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 100)
+analyse_all_approaches("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 100)
+analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 100)
+analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
+analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)

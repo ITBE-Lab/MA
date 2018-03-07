@@ -542,7 +542,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
-def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, high_qual=False, in_to_del_ratio=0.5):
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False):
     conn = sqlite3.connect(db_name)
 
     setUpDbTables(conn, reset)
@@ -556,21 +556,31 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = False, h
     nuc_distrib_count_orig = [0,0,0,0,0]
     nuc_distrib_count_mod = [0,0,0,0,0]
 
-    skip_x = int(size/10)
-    skip_y = int(max_indels/10)
+    skip_x = max(1, int(size/50))
+    skip_y = max(2, int(max_indels/50))
 
     if high_qual:
-        skip_x = max(1, int(size/50))
-        skip_y = max(2, int(max_indels/50))
+        skip_x = 1
+        skip_y = 2
     
     if skip_y % 1 == 1:
         skip_y += 1
 
+    max_x = size
+    max_y = max_indels
+
+    if smaller_box:
+        max_x = int(max_x / 5)
+        max_y = int(max_y / 5)
+
+    if only_first_row:
+        max_y = 1
+
     #
     # iterate over the given range of mutations indels and number of sequences
     #
-    for mutation_amount in range(0, size, skip_x):
-        for indel_amount in range(0, max_indels, skip_y):
+    for mutation_amount in range(0, max_x, skip_x):
+        for indel_amount in range(0, max_y, skip_y):
 
             #dont put sequences that can't be found
             if mutation_amount + indel_amount/2 * indel_size >= size - 1:
