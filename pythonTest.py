@@ -60,7 +60,7 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-human_genome = "/mnt/ssd0/genome/humanchr1"
+human_genome = "/mnt/ssd0/genome/human"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -85,7 +85,7 @@ def test_my_approach(
         local=True,
         reseed=False,
         full_analysis=False,
-        do_minimizers=True
+        do_minimizers=False
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -397,6 +397,12 @@ def test_my_approach(
             if not alignment2 is None:
                 score2 = alignment2.get_score()
 
+            num_seeds = None
+            if do_minimizers:
+                num_seeds = len(pledges[1][i].get())
+            else:
+                num_seeds = pledges[1][i].get().num_seeds(fm_index, max_hits)
+
             result.append(
                 (
                     sample_id,
@@ -405,8 +411,7 @@ def test_my_approach(
                     sc2,
                     alignment.begin_on_ref,
                     alignment.end_on_ref,
-                    len(pledges[1][i].get()),
-                    #pledges[1][i].get().num_seeds(fm_index, max_hits),
+                    num_seeds,
                     alignment.stats.index_of_strip,
                     seed_coverage_soc,
                     seed_coverage,
@@ -1441,15 +1446,15 @@ exit()
 
 #high quality picture
 
-l = 1000
+l = 30000
 il = 100
-createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, True)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, True, False)
 test_my_approaches("/mnt/ssd1/test.db")
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
-compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)
-compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/test.db", l, il)
+#compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)
+#compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/test.db", l, il)
 analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", l, il)
-analyse_detailed("stats/", "/mnt/ssd1/test.db")
+#analyse_detailed("stats/", "/mnt/ssd1/test.db")
 
 exit()
 
