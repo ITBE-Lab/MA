@@ -34,7 +34,11 @@ namespace libMA
 
         static uint32_t maxIndex()
         {
-            return std::numeric_limits<uint32_t>::max();
+            //maximal value that can be achieved with k*2 bits
+            uint32_t uiRet = 0;
+            for(unsigned int i = 0; i < k; i++)
+                uiRet = (uiRet | 3) << 2;
+            return uiRet;
         }//function
 
         bool isAmbiguous()
@@ -226,23 +230,28 @@ namespace libMA
 
         uint32_t key() const
         {
-            return (uint32_t)(uiData >> 32);
+            return (uint32_t)(uiData >> 34);
         }//function
 
-        uint32_t addr() const
+        uint64_t addr() const
         {
-            return (uint32_t)(uiData & (uint64_t)0x00000000FFFFFFFF);
+            // 34 bit for the address
+            return uiData & (uint64_t)0x00000003FFFFFFFF;
         }//function
 
-        void set(uint32_t key, uint32_t addr)
+        void set(uint32_t key, uint64_t addr)
         {
+            assert( (key & 0xC0000000) == 0);
+            assert( (addr & 0xFFFFFFFC00000000) == 0);
             uiData = 0;
             uiData |= key;
-            uiData <<= 32;
+            uiData <<= 34;
             uiData |= addr;
+            assert( this->key() == key);
+            assert( this->addr() == addr);
         }//function
 
-        KeyAddrPair(uint32_t key, uint32_t addr)
+        KeyAddrPair(uint32_t key, uint64_t addr)
         {
             set(key, addr);
         }//constructor
@@ -257,7 +266,7 @@ namespace libMA
     public:
 
 
-        static const size_t FILE_VERSION = 1;
+        static const size_t FILE_VERSION = 2;
         const nucSeqIndex uiRefSize;
 
         //it might be better to actually use a hash table here...
