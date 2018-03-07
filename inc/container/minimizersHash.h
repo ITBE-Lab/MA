@@ -266,7 +266,7 @@ namespace libMA
     public:
 
 
-        static const size_t FILE_VERSION = 1;
+        static const size_t FILE_VERSION = 2;
         const nucSeqIndex uiRefSize;
 
         //it might be better to actually use a hash table here...
