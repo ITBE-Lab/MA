@@ -199,7 +199,7 @@ def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size
                         AND original_size == ?
                         """, (approach, reference, res_mut, res_indel, size)).fetchall()
 
-def getQueriesFor(db_name, reference, mut = 1, indel = 1, size = 100):
+def getQueriesFor(db_name, reference, mut=1, indel=1, size=100):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     return c.execute("""
@@ -210,6 +210,42 @@ def getQueriesFor(db_name, reference, mut = 1, indel = 1, size = 100):
                         AND num_indels == ?
                         AND original_size == ?
                         """, (reference, mut, indel, size)).fetchall()
+
+def getQueriesAsASDMatrix(db_name, approach, reference):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    indel_amounts = c.execute("""
+                        SELECT DISTINCT num_indels
+                        FROM samples
+                        AND reference == ?
+                        """, (approach, reference)).fetchall()
+    mut_amounts = c.execute("""
+                        SELECT DISTINCT num_mutation
+                        FROM samples
+                        AND reference == ?
+                        """, (approach, reference)).fetchall()
+    result = []
+    for mut_amount in mut_amounts:
+        result.append( [] )
+        for indel_amount in indel_amounts:
+            result[-1].extend(
+                c.execute("""
+                        SELECT sequence, sample_id, origin
+                        FROM samples
+                        WHERE sample_id NOT IN 
+                            (
+                                SELECT DISTINCT sample_id
+                                FROM results
+                                WHERE approach == ?
+                            )
+                        AND reference == ?
+                        AND num_mutation == ?
+                        AND num_indels == ?
+                        """, (approach, reference, mut_amount, indel_amount)).fetchall()
+            )
+    return result
+
+
 
 def getOriginOf(db_name, sample_id):
     conn = sqlite3.connect(db_name)

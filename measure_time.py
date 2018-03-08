@@ -194,53 +194,54 @@ def test(
     for name, aligner in l:
         print("collecting samples (" + name + ") ...")
 
-        queries = getNewQueries(db_name, name, reference, give_orig_pos = True)
+        matrix = getQueriesAsASDMatrix(db_name, name, reference)
+        for row in matrix:
+            for queries in row:
+                print("extracting " + str(len(queries)) + " samples (" + name + ")...")
+                #setup the query pledges
+                query_list = ContainerVector(NucSeq())
+                # @todo temp bugfix
+                del query_list[:]
+                origins = []
+                assert(len(query_list) == 0)
+                for sequence, sample_id, origin in queries:
+                    query_list.append(NucSeq(sequence))
+                    origins.append(origin)
 
-        print("extracting " + str(len(queries)) + " samples (" + name + ")...")
-        #setup the query pledges
-        query_list = ContainerVector(NucSeq())
-        # @todo temp bugfix
-        del query_list[:]
-        origins = []
-        assert(len(query_list) == 0)
-        for sequence, sample_id, origin in queries:
-            query_list.append(NucSeq(sequence))
-            origins.append(origin)
 
+                print("setting up (" + name + ") ...")
 
-        print("setting up (" + name + ") ...")
+                query_vec_pledge = Pledge(ContainerVector(NucSeq()))
 
-        query_vec_pledge = Pledge(ContainerVector(NucSeq()))
+                #fullfill the made promises
+                query_vec_pledge.set(query_list)
 
-        #fullfill the made promises
-        query_vec_pledge.set(query_list)
+                result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
 
-        result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
+                print("computing (" + name + ") ...")
+                result_pledge.get()
 
-        print("computing (" + name + ") ...")
-        result_pledge.get()
-
-        result = []
-        for index in range(len(queries)):
-            alignment = result_pledge.get()[index]
-            #print(index, "->", alignment.begin_on_ref(), origins[index])
-            #total_time = result_pledge.exec_time / 1
-            sample_id = queries[index][1]
-            result.append(
-                (
-                    sample_id,
-                    float('nan'),
-                    alignment.begin_on_ref,
-                    alignment.end_on_ref,
-                    float('nan'),
-                    aligner.elapsed_time,
-                    alignment.mapping_quality,
-                    name
-                )
-            )
-        print("submitting results (" + name + ") ...")
-        if len(result) > 0:
-            submitResults(db_name, result)
+                result = []
+                for index in range(len(queries)):
+                    alignment = result_pledge.get()[index]
+                    #print(index, "->", alignment.begin_on_ref(), origins[index])
+                    #total_time = result_pledge.exec_time / 1
+                    sample_id = queries[index][1]
+                    result.append(
+                        (
+                            sample_id,
+                            float('nan'),
+                            alignment.begin_on_ref,
+                            alignment.end_on_ref,
+                            float('nan'),
+                            aligner.elapsed_time,
+                            alignment.mapping_quality,
+                            name
+                        )
+                    )
+                print("submitting results (" + name + ") ...")
+                if len(result) > 0:
+                    submitResults(db_name, result)
     print("done")
 
 def test_all():

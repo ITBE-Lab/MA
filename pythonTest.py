@@ -1457,9 +1457,9 @@ exit()
 #analyse_detailed("stats/", "/mnt/ssd1/test.db")
 #exit()
 
-amount = 2**11
+amount = 2**10
 createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
+#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
 createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
 createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
@@ -1480,7 +1480,7 @@ measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
-analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
+#analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
 analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
 analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
 analyse_all_approaches("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 100)
