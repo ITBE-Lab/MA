@@ -1458,15 +1458,15 @@ exit()
 #exit()
 
 amount = 2**10
-createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
+#createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
-createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
-createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
-createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
+#createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
+#createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
+#createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
+#createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
+#createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
+#createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
+#createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
 import measure_time
 

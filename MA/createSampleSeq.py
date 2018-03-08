@@ -217,18 +217,18 @@ def getQueriesAsASDMatrix(db_name, approach, reference):
     indel_amounts = c.execute("""
                         SELECT DISTINCT num_indels
                         FROM samples
-                        AND reference == ?
-                        """, (approach, reference)).fetchall()
+                        WHERE reference == ?
+                        """, (reference,)).fetchall()
     mut_amounts = c.execute("""
                         SELECT DISTINCT num_mutation
                         FROM samples
-                        AND reference == ?
-                        """, (approach, reference)).fetchall()
+                        WHERE reference == ?
+                        """, (reference,)).fetchall()
     result = []
     for mut_amount in mut_amounts:
         result.append( [] )
         for indel_amount in indel_amounts:
-            result[-1].extend(
+            result[-1].append(
                 c.execute("""
                         SELECT sequence, sample_id, origin
                         FROM samples
@@ -241,7 +241,7 @@ def getQueriesAsASDMatrix(db_name, approach, reference):
                         AND reference == ?
                         AND num_mutation == ?
                         AND num_indels == ?
-                        """, (approach, reference, mut_amount, indel_amount)).fetchall()
+                        """, (approach, reference, mut_amount[0], indel_amount[0])).fetchall()
             )
     return result
 
