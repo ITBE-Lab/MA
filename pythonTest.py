@@ -1471,7 +1471,6 @@ amount = 2**10
 import measure_time
 
 measure_time.test_all()
-
 #test_my_approaches("/mnt/ssd1/default.db")
 #test_my_approaches("/mnt/ssd1/short.db")
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
@@ -1489,3 +1488,5 @@ analyse_all_approaches("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 
 analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 100)
 analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
 analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)
+
+createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)

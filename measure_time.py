@@ -172,14 +172,16 @@ def test(
     reference_pledge = Pledge(Pack())
     reference_pledge.set(ref_pack)
 
+    num_threads = 1
+
     l = [
-        ("BOWTIE 2", Bowtie2(reference, 1)),
-        ("MINIMAP 2", Minimap2(reference, 1)),
-        ("BLASR", Blasr(reference, 1, "/mnt/ssd0/genome/humanbwa")),
-        ("BWA MEM", BWA_MEM(reference, 1)),
-        ("BWA SW", BWA_SW(reference, 1)),
-        ("MA Fast", MA(reference, 1, True)),
-        ("MA Accurate", MA(reference, 1, False)),
+        ("BOWTIE 2", Bowtie2(reference, num_threads)),
+        ("MINIMAP 2", Minimap2(reference, num_threads)),
+        #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa")),
+        ("BWA MEM", BWA_MEM(reference, num_threads)),
+        ("BWA SW", BWA_SW(reference, num_threads)),
+        ("MA Fast", MA(reference, num_threads, True)),
+        ("MA Accurate", MA(reference, num_threads, False)),
     ]
 
     for name, aligner in l:
@@ -238,11 +240,11 @@ def test(
 
 def test_all():
     test("/mnt/ssd1/default.db", human_genome)
-    #test("/mnt/ssd1/short.db", human_genome)
-    #test("/mnt/ssd1/shortIndels.db", human_genome)
-    #test("/mnt/ssd1/longIndels.db", human_genome)
-    #test("/mnt/ssd1/insertionOnly.db", human_genome)
-    #test("/mnt/ssd1/deletionOnly.db", human_genome)
-    #test("/mnt/ssd1/illumina.db", human_genome)
-    #test("/mnt/ssd1/zoomLine.db", human_genome)
-    #test("/mnt/ssd1/zoomSquare.db", human_genome)
+    test("/mnt/ssd1/short.db", human_genome)
+    test("/mnt/ssd1/shortIndels.db", human_genome)
+    test("/mnt/ssd1/longIndels.db", human_genome)
+    test("/mnt/ssd1/insertionOnly.db", human_genome)
+    test("/mnt/ssd1/deletionOnly.db", human_genome)
+    test("/mnt/ssd1/illumina.db", human_genome)
+    test("/mnt/ssd1/zoomLine.db", human_genome)
+    test("/mnt/ssd1/zoomSquare.db", human_genome)
