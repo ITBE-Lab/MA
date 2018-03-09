@@ -1,3 +1,8 @@
+/** 
+ * @file fileReader.h
+ * @brief Reads queries from a file.
+ * @author Markus Schmidt
+ */
 #ifndef FILE_READER_H
 #define FILE_READER_H
 
@@ -8,11 +13,19 @@
 namespace libMA
 {
 
+    /**
+     * @brief Reads Queries from a file.
+     * @details
+     * Reads (multi-)fasta or fastaq format.
+     */
     class FileReader: public Module
     {
     public:
         std::shared_ptr<std::ifstream> pFile;
 
+        /**
+         * @brief creates a new FileReader.
+         */
         FileReader(std::string sFileName)
                 :
             pFile(new std::ifstream(sFileName))
@@ -47,11 +60,13 @@ namespace libMA
          */
         std::shared_ptr<Container> EXPORTED getOutputType() const;
 
+        // @override
         std::string getName() const
         {
             return "FileReader";
         }//function
 
+        // @override
         bool outputsVolatile() const
         {
             return true;

@@ -1,3 +1,8 @@
+/** 
+ * @file pairedReads.h
+ * @brief Picks alignment pairs for alignming paired reads.
+ * @author Markus Schmidt
+ */
 #ifndef PAIRED_READS_H
 #define PAIRED_READS_H
 

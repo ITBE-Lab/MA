@@ -1,3 +1,8 @@
+/** 
+ * @file fileWriter.h
+ * @brief Writes alignments to a file.
+ * @author Markus Schmidt
+ */
 #ifndef FILE_WRITER_H
 #define FILE_WRITER_H
 
@@ -9,13 +14,20 @@
 
 namespace libMA
 {
-
+    /**
+     * @brief wrapper for various out streams.
+     * @details
+     * this exists, so that alignments can be written to a GUI element if so desired.
+     */
     class OutStream
     {
     public:
         virtual OutStream& operator<<(std::string) {return *this;};
     };//class
 
+    /**
+     * @brief wraps the std outstream.
+     */
     class StdOutStream : public OutStream
     {
     public:
@@ -26,6 +38,11 @@ namespace libMA
         }//function
     };//class
 
+    /**
+     * @brief wraps a file outstream.
+     * @details
+     * truncates the file if it already exists
+     */
     class FileOutStream : public OutStream
     {
     public:
@@ -54,6 +71,9 @@ namespace libMA
         }//function
     };//class
 
+    /**
+     * @brief Writes SAM output.
+     */
     class FileWriter: public Module
     {
     public:
@@ -74,6 +94,13 @@ namespace libMA
         std::shared_ptr<OutStream> pOut;
         std::shared_ptr<std::mutex> pLock;
 
+        /**
+         * @brief creates a new FileWriter.
+         * @details 
+         * if sFileName is "stdout" the writer will output to stdout instead of the file.
+         * Otherwise sFileName is used as the filename to write to.
+         * The file will be truncated is it already exists.
+         */
 		FileWriter(std::string sFileName)
 			:
 			pLock(new std::mutex)
@@ -85,6 +112,11 @@ namespace libMA
 			*pOut << "@HD VN:1.5 SO:unknown\n";
 		}//constructor
 
+        /**
+         * @brief creates a new FileWriter.
+         * @details 
+         * Allows more control of the output by using a given OutStream.
+         */
 		FileWriter(std::shared_ptr<OutStream> pOut)
 			:
             pOut(pOut),
@@ -118,6 +150,10 @@ namespace libMA
 
     };//class
 
+    /**
+     * @brief Writes human readable alignment output.
+     * @details this format is loosely based on blast.
+     */
     class RadableFileWriter: public Module
     {
     public:
@@ -126,6 +162,9 @@ namespace libMA
         std::shared_ptr<std::mutex> pLock;
         unsigned int uiNucsPerLine = 80;
 
+        /**
+         * @brief creates a new RadableFileWriter.
+         */
 		RadableFileWriter(std::shared_ptr<OutStream> pOut)
 			:
             pOut(pOut),

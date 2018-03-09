@@ -1,6 +1,6 @@
 /** 
  * @file extractAllSeeds.h
- * @brief Implements a Bucketing.
+ * @brief Implements ExtractAllSeeds.
  * @author Markus Schmidt
  */
 #ifndef EXTRACT_ALL_SEEDS_H
