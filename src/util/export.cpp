@@ -41,15 +41,11 @@ BOOST_PYTHON_MODULE(libMA)
         exportSMW();
         exportExtractAllSeeds();
         exportExecOnVector();
-        exportReSeed();
         exportFileReader();
         exportFileWriter();
         exportMappingQuality();
         exportPairedReads();
         exportSplitter();
-        exportMinimizers();
-        exportMinimizersHash();
-        exportOtherSeeding();
 }//function
 
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
