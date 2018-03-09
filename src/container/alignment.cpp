@@ -1,3 +1,8 @@
+/** 
+ * @file alignment.cpp
+ * @author Markus Schmidt
+ */
+
 #include "container/alignment.h"
 using namespace libMA;
 

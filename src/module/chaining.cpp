@@ -1,3 +1,7 @@
+/** 
+ * @file chaining.cpp
+ * @author Markus Schmidt
+ */
 #include "module/chaining.h"
 using namespace libMA;
 

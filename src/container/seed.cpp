@@ -1,3 +1,7 @@
+/** 
+ * @file seed.cpp
+ * @author Markus Schmidt
+ */
 #include "container/seed.h"
 using namespace libMA;
 

@@ -1,3 +1,7 @@
+/** 
+ * @file pairedReads.cpp
+ * @author Markus Schmidt
+ */
 #include "module/pairedReads.h"
 
 

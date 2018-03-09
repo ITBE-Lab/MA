@@ -1,3 +1,7 @@
+/** 
+ * @file minimizers.cpp
+ * @author Markus Schmidt
+ */
 #include "module/minimizers.h"
 
 using namespace libMA;

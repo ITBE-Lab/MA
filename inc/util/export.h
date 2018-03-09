@@ -30,10 +30,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  *
  * The general aligner structure is as follows:
  * - Seeding
- * - Seed Processing
+ * - Seed set assembling
  *   -# Filtering
- *   -# Coupeling
- * - Optimal Matching
+ *   -# Harmonization
+ * - Dynamic programming
  * 
  * 
  * A C++ Module is available for each of these tasks, respectively.
@@ -114,17 +114,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * Here we perform the alignment process and print the results. <br>
  * Note that this setup does not perform well, since we skipped the seed filtering step.
  *
- * @note for a quick start on how to setup a computational graph,
- * this setup of @ref libMA::Module "modules" using a
+ * @note this setup of @ref libMA::Module "modules" using a
  * computation graph can be seen @ref comp_graph_page "here".
  * 
  * @section todos TODOs
  * 
- * @todo make efficient NMW (have to wait for SMW)
- * @todo different output formats (queue implementation...)
+ * @todo make efficient NMW
+ * @todo different output formats
  * @todo code cleanup
- * @todo be able to deal with short reads
- * @todo figure out how to include BWA copyright
  * 
  * @section about_us_sec About Us
  * 

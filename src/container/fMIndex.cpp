@@ -1,3 +1,7 @@
+/** 
+ * @file fMIndex.cpp
+ * @author Arne Kutzner
+ */
 #include "container/fMIndex.h"
 using namespace libMA;
 

@@ -1,3 +1,7 @@
+/** 
+ * @file fileReader.cpp
+ * @author Markus Schmidt
+ */
 #include "module/fileReader.h"
 
 using namespace libMA;

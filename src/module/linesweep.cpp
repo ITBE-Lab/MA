@@ -1,3 +1,7 @@
+/** 
+ * @file linesweep.cpp
+ * @author Markus Schmidt
+ */
 #include "module/linesweep.h"
 using namespace libMA;
 

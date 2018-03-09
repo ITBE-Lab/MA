@@ -31,7 +31,7 @@ obj/%.o: src/%.cpp inc/%.h
 obj/%.co: src/%.c inc/%.h
 	$(CC) $(CFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc -c $< -o $@
 
-html/index.html: $(wildcard inc/*.h) $(wildcard inc/*/*.h) $(wildcard MA/*.py) doxygen.config
+html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildcard src/*/*) $(wildcard MA/*.py) doxygen.config
 	doxygen doxygen.config
 
 install: all

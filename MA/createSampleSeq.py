@@ -228,8 +228,7 @@ def getQueriesAsASDMatrix(db_name, approach, reference):
     for mut_amount in mut_amounts:
         result.append( [] )
         for indel_amount in indel_amounts:
-            result[-1].append(
-                c.execute("""
+            elements = c.execute("""
                         SELECT sequence, sample_id, origin
                         FROM samples
                         WHERE sample_id NOT IN 
@@ -242,7 +241,9 @@ def getQueriesAsASDMatrix(db_name, approach, reference):
                         AND num_mutation == ?
                         AND num_indels == ?
                         """, (approach, reference, mut_amount[0], indel_amount[0])).fetchall()
-            )
+            if len(elements) == 0:
+                continue
+            result[-1].append(elements)
     return result
 
 

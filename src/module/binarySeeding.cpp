@@ -1,3 +1,7 @@
+/** 
+ * @file binarySeeding.cpp
+ * @author Markus Schmidt
+ */
 #include "module/binarySeeding.h"
 
 using namespace libMA;

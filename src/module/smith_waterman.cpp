@@ -1,5 +1,7 @@
-// SwithWaterman.cpp : Defines the entry point for the console application.
-//
+/** 
+ * @file smith_waterman.cpp
+ * @author Markus Schmidt
+ */
 
 #include <string>
 #include <iostream>

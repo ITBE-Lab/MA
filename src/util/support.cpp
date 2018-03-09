@@ -1,3 +1,7 @@
+/** 
+ * @file support.cpp
+ * @author Arne Kutzner
+ */
 #include <vector>
 #include "util/support.h"
 

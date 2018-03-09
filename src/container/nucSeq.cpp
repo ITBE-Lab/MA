@@ -1,3 +1,7 @@
+/** 
+ * @file nucSeq.cpp
+ * @author Arne Kutzner
+ */
 #include "container/nucSeq.h"
 using namespace libMA;
 

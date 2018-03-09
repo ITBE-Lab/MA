@@ -1,3 +1,7 @@
+/** 
+ * @file pack.cpp
+ * @author Arne Kutzner
+ */
 #include "container/pack.h"
 #include "container/nucSeq.h"
 

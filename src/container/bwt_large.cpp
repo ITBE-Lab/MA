@@ -1,3 +1,7 @@
+/** 
+ * @file btw_large.cpp
+ * @author Arne Kutzner
+ */
 /*
     BWT-Index Construction for large inputs
     Unrevised C-code for BWT construction.

@@ -1,3 +1,7 @@
+/** 
+ * @file needlemanWunsch.cpp
+ * @author Markus Schmidt
+ */
 #include "module/needlemanWunsch.h"
 #include <bitset>
 

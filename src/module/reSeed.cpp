@@ -1,4 +1,7 @@
-
+/** 
+ * @file reSeed.cpp
+ * @author Markus Schmidt
+ */
 #include "module/reSeed.h"
 
 

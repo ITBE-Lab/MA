@@ -1,3 +1,7 @@
+/** 
+ * @file execOnVector.cpp
+ * @author Markus Schmidt
+ */
 #include "module/execOnVector.h"
 using namespace libMA;
 

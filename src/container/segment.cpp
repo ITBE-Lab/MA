@@ -1,3 +1,7 @@
+/** 
+ * @file segment.cpp
+ * @author Markus Schmidt
+ */
 #include "container/segment.h"
 using namespace libMA;
 

@@ -1,4 +1,4 @@
-/* QSufSort.c
+/* @file QSufSort.c
 
    Original source from qsufsort.c
 

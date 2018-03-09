@@ -1,3 +1,7 @@
+/** 
+ * @file extractAllSeeds.cpp
+ * @author Markus Schmidt
+ */
 #include "module/extractAllSeeds.h"
 using namespace libMA;
 

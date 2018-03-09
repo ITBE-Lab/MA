@@ -1,3 +1,7 @@
+/** 
+ * @file splitter.cpp
+ * @author Markus Schmidt
+ */
 #include "module/splitter.h"
 
 using namespace libMA;

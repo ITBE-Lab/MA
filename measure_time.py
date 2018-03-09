@@ -8,17 +8,10 @@ class CommandLine(Module):
 
     def __init__(self):
         self.elapsed_time = 0
-        #create index for the sequences
-
-    def __create_command(self, in_filename):
-        return ""
-
-    def __out_to_alignment(self):
-        return None
 
     def __get_sam(self, index_str, queries):
 
-        in_filename = ".tem_file.fq"
+        in_filename = ".tem_file.fasta"
 
         f = open(in_filename, "w")
         for index, query in enumerate(queries):
@@ -35,7 +28,7 @@ class CommandLine(Module):
 
         f.close()
         #assemble the shell command
-        cmd_str = self.__create_command(in_filename)
+        cmd_str = self.create_command(in_filename)
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -48,18 +41,16 @@ class CommandLine(Module):
             print(result.stderr.decode('utf-8')[:-1])
             return None
 
-        samFile = result.stdout.decode('utf-8')
+        sam_file = result.stdout.decode('utf-8')
 
-
-        return samFile
+        return sam_file
 
     def __align(self, index_str, queries, pack):
         sam = self.__get_sam(index_str, queries)
         #print(sam)
 
         lines = sam.split("\n")
-        #print(lines)
-        while len(lines) > 0 and (len(lines[0]) == 0 or lines[0][0] is '@'):
+        while len(lines) > 0 and ( len(lines[0]) == 0 or lines[0][0] is '@' ):
             lines = lines[1:]
 
         #transform sam file into list data structure
@@ -109,7 +100,7 @@ class Bowtie2(CommandLine):
         self.index_str = index_str + "bowtie2"
         self.threads = threads
 
-    def __create_command(self, in_filename):
+    def create_command(self, in_filename):
         cmd_str = self.bowtie2_home + "bowtie2 -p " + str(self.threads)
         index_str = "-x " + self.index_str
         input_str = "-f -U " + in_filename
@@ -121,7 +112,7 @@ class Minimap2(CommandLine):
         self.index_str = index_str + ".mmi"
         self.threads = threads
 
-    def __create_command(self, in_filename):
+    def create_command(self, in_filename):
         cmd_str = self.minimap2_home + "minimap2 -t " + str(self.threads) + " -a "
         return cmd_str + " " + self.index_str + " " + in_filename
 
@@ -132,7 +123,7 @@ class Blasr(CommandLine):
         self.genome_str = genome_str
         self.threads = threads
 
-    def __create_command(self, in_filename):
+    def create_command(self, in_filename):
         cmd_str = self.blasr_home + "blasr " + in_filename
         return cmd_str + " " + self.genome_str + " -m 1 --bestn 1 --nproc " + str(self.threads) + " --hitPolicy leftmost --sa " + self.index_str
 
@@ -142,7 +133,7 @@ class BWA_MEM(CommandLine):
         self.index_str = index_str + "bwa"
         self.threads = threads
 
-    def __create_command(self, in_filename):
+    def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa mem -t " + str(self.threads)
         return cmd_str + " " + self.index_str + " " + in_filename
 
@@ -152,7 +143,7 @@ class BWA_SW(CommandLine):
         self.index_str = index_str + "bwa"
         self.threads = threads
 
-    def __create_command(self, in_filename):
+    def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa bwasw -t " + str(self.threads)
         return cmd_str + " " + self.index_str + " " + in_filename
 
@@ -165,7 +156,7 @@ class MA(CommandLine):
         if fast:
             self.fast = "fast"
 
-    def __create_command(self, in_filename):
+    def create_command(self, in_filename):
         cmd_str = self.bwa_home + "cmdMA.exe -t " + str(self.threads) + " -p " + self.fast
         return cmd_str + " -g " + self.index_str + " -i " + in_filename
 
@@ -192,7 +183,9 @@ def test(
     ]
 
     for name, aligner in l:
+        clearResults(db_name, reference, name)
         print("collecting samples (" + name + ") ...")
+        result = []
 
         matrix = getQueriesAsASDMatrix(db_name, name, reference)
         for row in matrix:
@@ -221,7 +214,6 @@ def test(
                 print("computing (" + name + ") ...")
                 result_pledge.get()
 
-                result = []
                 for index in range(len(queries)):
                     alignment = result_pledge.get()[index]
                     #print(index, "->", alignment.begin_on_ref(), origins[index])
@@ -239,18 +231,18 @@ def test(
                             name
                         )
                     )
-                print("submitting results (" + name + ") ...")
-                if len(result) > 0:
-                    submitResults(db_name, result)
+        print("submitting results (" + name + ") ...")
+        if len(result) > 0:
+            submitResults(db_name, result)
     print("done")
 
 def test_all():
     test("/mnt/ssd1/default.db", human_genome)
-    test("/mnt/ssd1/short.db", human_genome)
-    test("/mnt/ssd1/shortIndels.db", human_genome)
-    test("/mnt/ssd1/longIndels.db", human_genome)
-    test("/mnt/ssd1/insertionOnly.db", human_genome)
-    test("/mnt/ssd1/deletionOnly.db", human_genome)
-    test("/mnt/ssd1/illumina.db", human_genome)
-    test("/mnt/ssd1/zoomLine.db", human_genome)
-    test("/mnt/ssd1/zoomSquare.db", human_genome)
+    #test("/mnt/ssd1/short.db", human_genome)
+    #test("/mnt/ssd1/shortIndels.db", human_genome)
+    #test("/mnt/ssd1/longIndels.db", human_genome)
+    #test("/mnt/ssd1/insertionOnly.db", human_genome)
+    #test("/mnt/ssd1/deletionOnly.db", human_genome)
+    #test("/mnt/ssd1/illumina.db", human_genome)
+    #test("/mnt/ssd1/zoomLine.db", human_genome)
+    #test("/mnt/ssd1/zoomSquare.db", human_genome)

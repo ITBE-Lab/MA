@@ -1,3 +1,7 @@
+/** 
+ * @file mappinQuality.cpp
+ * @author Markus Schmidt
+ */
 #include "module/mappingQuality.h"
 
 using namespace libMA;

@@ -1,3 +1,7 @@
+/** 
+ * @file minimizersHash.cpp
+ * @author Markus Schmidt
+ */
 #include "container/minimizersHash.h"
 #include "module/minimizers.h"
 using namespace libMA;

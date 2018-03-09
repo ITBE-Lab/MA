@@ -1,5 +1,5 @@
 /** 
- * @file ma.cpp
+ * @file cmdMa.cpp
  * @brief Parses the program options
  * @details
  * Sets up the computational graph and executes it.

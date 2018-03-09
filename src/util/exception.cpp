@@ -1,3 +1,7 @@
+/** 
+ * @file exception.cpp
+ * @author Markus Schmidt
+ */
 #include "util/exception.h"
 
 void translator(ModuleIO_Exception const& x) {

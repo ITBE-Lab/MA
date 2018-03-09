@@ -1,3 +1,7 @@
+/** 
+ * @file fileWriter.cpp
+ * @author Markus Schmidt
+ */
 #include "module/fileWriter.h"
 
 using namespace libMA;

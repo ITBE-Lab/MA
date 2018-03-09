@@ -1,3 +1,7 @@
+/** 
+ * @file export.cpp
+ * @author Markus Schmidt
+ */
 #include "util/export.h"
 
 using namespace libMA;

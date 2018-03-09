@@ -1,4 +1,7 @@
-
+/** 
+ * @file is.cpp
+ * @author Arne Kutzner
+ */
 #include <stdlib.h>
 
 #ifdef USE_MALLOC_WRAPPERS

@@ -1,3 +1,7 @@
+/** 
+ * @file threadPool.cpp
+ * @author Arne Kutzner
+ */
 #include <iostream>
 #include <vector>
 #include <chrono>

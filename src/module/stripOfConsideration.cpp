@@ -1,3 +1,9 @@
+/** 
+ * @file stripOfConsideration.cpp
+ * @brief Implements a Strip of Consideration.
+ * @author Markus Schmidt
+ */
+
 #include "module/stripOfConsideration.h"
 #include "container/minimizersHash.h"
 using namespace libMA;
