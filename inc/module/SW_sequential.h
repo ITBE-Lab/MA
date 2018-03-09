@@ -758,9 +758,8 @@ struct SW_align_type
 				SCORE_TP e_left = e;
 				SCORE_TP f_left = f;
 
-                /*
+                /**
                  * NOTE: We need to save three directions in this way:
-                 * @todo make me accurate again...
                  * if the last direction was LEFT_UP
                  *      the correct direction for the current pos is stored in eDirectionH
                  * if the last direction was LEFT

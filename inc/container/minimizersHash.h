@@ -493,7 +493,7 @@ namespace libMA
                             std::get<3>(a) ? uiRefSize - *std::get<0>(a) : *std::get<0>(a);
                         auto bRefPos = 
                             std::get<3>(b) ? uiRefSize - *std::get<0>(b) : *std::get<0>(b);
-                        //@todo remove me (temporary sorting for SOCs...)
+                        ///@todo remove me (temporary sorting for SOCs...)
                         return aRefPos + std::get<1>(b) > bRefPos + std::get<1>(a);
 
                         if(aRefPos == bRefPos)

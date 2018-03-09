@@ -49,6 +49,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportSplitter();
         exportMinimizers();
         exportMinimizersHash();
+        exportOtherSeeding();
 }//function
 
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph(

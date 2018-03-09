@@ -90,7 +90,7 @@ namespace libMA
     /* --- END DEPRECATED ---
     */
 
-    /* @todo  study http://stackoverflow.com/questions/3180268/why-are-c-stl-iostreams-not-exception-friendly
+    /* study http://stackoverflow.com/questions/3180268/why-are-c-stl-iostreams-not-exception-friendly
     *       study http://gehrcke.de/2011/06/reading-files-in-c-using-ifstream-dealing-correctly-with-badbit-failbit-eofbit-and-perror/
     */
     /**

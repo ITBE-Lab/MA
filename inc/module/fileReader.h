@@ -20,7 +20,7 @@ namespace libMA
             if (!pFile->is_open())
             {
                 std::cout << "Unable to open file" << std::endl;
-                //@todo exception
+                ///@todo exception
             }//if
         }//constructor
 

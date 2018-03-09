@@ -103,20 +103,20 @@ std::shared_ptr<Container> Chaining::execute(
     #if STARTS
         RMQ<int64_t>::RMQData& a = d1.rmq(
                 veryVerySmall,-1,
-                (int64_t)chain->s.start_ref()-(int64_t)chain->s.start() , chain->s.start() //@todo  replace with function
+                (int64_t)chain->s.start_ref()-(int64_t)chain->s.start() , chain->s.start() ///@todo  replace with function
             );
         RMQ<int64_t>::RMQData& b = d2.rmq(
                 -1,(int64_t)chain->s.start()-(int64_t)chain->s.start_ref(),
-                chain->s.start_ref() ,veryVerySmall //@todo  replace with function
+                chain->s.start_ref() ,veryVerySmall ///@todo  replace with function
             );
     #else
         RMQ<int64_t>::RMQData& a = d1.rmq(
                 veryVerySmall,-1,
-                (int64_t)chain->s.end_ref()-(int64_t)chain->s.end() - 1, chain->s.end() - 1//@todo  replace with function
+                (int64_t)chain->s.end_ref()-(int64_t)chain->s.end() - 1, chain->s.end() - 1///@todo  replace with function
             );
         RMQ<int64_t>::RMQData& b = d2.rmq(
                 -1,(int64_t)chain->s.end()-(int64_t)chain->s.end_ref() - 1,
-                chain->s.end_ref() - 1,veryVerySmall //@todo  replace with function
+                chain->s.end_ref() - 1,veryVerySmall ///@todo  replace with function
             );
     #endif
         DEBUG_2(
@@ -218,7 +218,7 @@ std::shared_ptr<Container> Chaining::execute(
                     << bestChain->s.start_ref() << " "
                     << bestChain->s.size() << std::endl;
         )
-        //@todo  possible that this gives reverse output...
+        ///@todo  possible that this gives reverse output...
         pRet->push_back(bestChain->s);
         bestChain = bestChain->pred;
     }//while

@@ -153,6 +153,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/mappingQuality.h"
 #include "module/pairedReads.h"
 #include "module/minimizers.h"
+#include "module/otherSeeding.h"
 #include "module/splitter.h"
 #include "container/container.h"
 #include "container/minimizersHash.h"

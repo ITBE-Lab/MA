@@ -96,7 +96,7 @@ nucSeqIndex needlemanWunsch(
         return 0;
     }//if
 #if 0//DEPRECATED
-    /*
+    /**
      * give up for too large areas
      * @todo this should split everything into two local alignments instead
      */

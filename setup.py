@@ -23,7 +23,7 @@ setup(
     zip_safe=False,
     python_requires='>=3',
  
-    license='GNU', #@todo  lookup correct license
+    license='GNU', ##@todo  lookup correct license
 
     classifiers=[ 
         # How mature is this project? Common values are 
@@ -38,7 +38,7 @@ setup(
         'Topic :: Scientific/Engineering :: Bio-Informatics', 
 
         # Pick your license as you wish (should match "license" above) 
-        'License :: OSI Approved :: MIT License', #@todo  lookup correct license
+        'License :: OSI Approved :: MIT License', ##@todo  lookup correct license
 
 
         # Specify the Python versions you support here. In particular, ensure 

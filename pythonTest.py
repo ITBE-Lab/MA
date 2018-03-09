@@ -461,7 +461,7 @@ def test_my_approaches_rele(db_name):
     test_my_approach(db_name, human_genome, "non-enclosed", seg=BinarySeeding(False),
                      num_anchors=200, nmw_give_up=20000)
 
-    #@todo BWA-MEM seeding technique
+    ##@todo BWA-MEM seeding technique
 
     seg = BinarySeeding(False)
     seg.do16ntEvery10ntExtension = True

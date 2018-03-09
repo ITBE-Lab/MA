@@ -225,7 +225,7 @@ namespace libMA
          */
         int score() const
         {
-            //@todo the data.size() == 0 || is to allow SW to put the score directly
+            // the data.size() == 0 is to allow SW to set the score directly
             assert(data.size() == 0 || reCalcScore() == iScore);
             return iScore;
         }

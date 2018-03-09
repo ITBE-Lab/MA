@@ -24,8 +24,6 @@ namespace libMA
     class BinarySeeding : public Module{
     public:
         bool bLrExtension;
-        bool do16ntevery10ntExtension;
-        bool blasrExtension;
 
         /**
          * @brief The simplified extension scheme presented in our Paper.
@@ -53,18 +51,6 @@ namespace libMA
          */
         Interval<nucSeqIndex> nonEnclosedExtension(
                 nucSeqIndex center,
-                std::shared_ptr<FMIndex> pFM_index,
-                std::shared_ptr<NucSeq> pQuerySeq,
-                std::shared_ptr<SegmentVector> pSegmentVector
-            );
-
-        void bowtieExtension(
-                std::shared_ptr<FMIndex> pFM_index,
-                std::shared_ptr<NucSeq> pQuerySeq,
-                std::shared_ptr<SegmentVector> pSegmentVector
-            );
-
-        void doBlasrExtension(
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
                 std::shared_ptr<SegmentVector> pSegmentVector
@@ -118,9 +104,7 @@ namespace libMA
          */
         BinarySeeding(bool bLrExtension = true)
                 :
-            bLrExtension(bLrExtension),
-            do16ntevery10ntExtension(false),
-            blasrExtension(false)
+            bLrExtension(bLrExtension)
         {}//constructor
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

@@ -350,7 +350,7 @@ namespace libMA
         void execForGet()
         {
             bool bVolatile = false;
-            //@todo same for py_pledger here
+            ///@todo same for py_pledger here
             if(pledger != nullptr)
                 bVolatile = pledger->outputsVolatile();
 
@@ -571,7 +571,7 @@ namespace libMA
                             // volatile modules are dry.
                             // otherwise one iteration is performed only
 
-                            // @todo here should be a check on weather 
+                            /// @todo here should be a check on weather 
                             // there is any volatile module in the graph or not
                             // having potential endless loop...
                             try

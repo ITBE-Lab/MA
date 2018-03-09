@@ -38,7 +38,7 @@ namespace libMA
             if (!file.good())
             {
                 std::cout << "Unable to open file\n";
-                //@todo exception
+                ///@todo exception
             }//if
         }//constructor
 

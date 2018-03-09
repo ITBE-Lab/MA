@@ -39,7 +39,7 @@ install: all
 	cp libMA.so /usr/lib
 	pip3 show MA
 
-#@todo remove me
+##@todo remove me
 vid:
 	gource -f --seconds-per-day 0.1
 
