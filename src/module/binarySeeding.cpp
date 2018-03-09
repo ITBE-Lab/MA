@@ -18,7 +18,7 @@ using namespace libMA;
  
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
-Interval<nucSeqIndex> BinarySeeding::lrExtension(
+Interval<nucSeqIndex> BinarySeeding::maximallySpanningExtension(
 		nucSeqIndex center,
 		std::shared_ptr<FMIndex> pFM_index,
 		std::shared_ptr<NucSeq> pQuerySeq,
@@ -205,7 +205,7 @@ Interval<nucSeqIndex> BinarySeeding::lrExtension(
 	return ret;
 }//function
 
-Interval<nucSeqIndex> BinarySeeding::nonEnclosedExtension(
+Interval<nucSeqIndex> BinarySeeding::smemExtension(
 		nucSeqIndex center,
 		std::shared_ptr<FMIndex> pFM_index,
 		std::shared_ptr<NucSeq> pQuerySeq,
@@ -433,9 +433,9 @@ void BinarySeeding::procesInterval(
 	// performs extension and records any found seeds
 	// here we use bLrExtension to choose the extension scheme
 	if(bLrExtension)
-		xAreaCovered = lrExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
+		xAreaCovered = maximallySpanningExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
 	else
-		xAreaCovered = nonEnclosedExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
+		xAreaCovered = smemExtension(xAreaToCover.center(), pFM_index, pQuerySeq, pSegmentVector);
 
 	// extract how far the extension got on the query.
 	nucSeqIndex uiFrom = xAreaCovered.start();

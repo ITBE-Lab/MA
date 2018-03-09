@@ -35,7 +35,7 @@ namespace libMA
          * Returns an interval spanning the entire covered area.
          * Segments are saved in pSegmentVector.
          */
-        Interval<nucSeqIndex> lrExtension(
+        Interval<nucSeqIndex> maximallySpanningExtension(
                 nucSeqIndex center,
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
@@ -49,7 +49,7 @@ namespace libMA
          * Returns an interval spanning the entire covered area.
          * Segments are saved in pSegmentVector.
          */
-        Interval<nucSeqIndex> nonEnclosedExtension(
+        Interval<nucSeqIndex> smemExtension(
                 nucSeqIndex center,
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
