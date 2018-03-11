@@ -158,7 +158,6 @@ class MA(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
-        print(cmd_str + " -g " + self.index_str + " -i " + in_filename)
         return cmd_str + " -g " + self.index_str + " -i " + in_filename
 
 human_genome = "/mnt/ssd0/genome/human"
@@ -182,7 +181,7 @@ def test(
         #("BWA MEM", BWA_MEM(reference, num_threads)),
         #("BWA SW", BWA_SW(reference, num_threads)),
         ("MA Fast", MA(reference, num_threads, True)),
-        #("MA Accurate", MA(reference, num_threads, False)),
+        ("MA Accurate", MA(reference, num_threads, False)),
     ]
 
     for name, aligner in l:
