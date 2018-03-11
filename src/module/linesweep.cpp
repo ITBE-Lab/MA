@@ -192,14 +192,13 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 uiGap = (pSeed->start_ref() - uiLastR) - uiGap;
             }//else
         }//if
-        //limit the maximal gap here
-        if(uiGap <= uiMaxGap)
-        {
-            uiGap *= iExtend;
-            if(uiGap > 0)
-                uiGap += iGap;
-        }//if
-        if(uiGap > uiMaxGap || uiScore < uiGap)
+        uiGap *= iExtend;
+        if(uiGap > 0)
+            uiGap += iGap;
+        if( (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
+            (pSeed->start_ref() >= uiLastR ? pSeed->start_ref() - uiLastR : 1)
+                > uiMaxGap || 
+            uiScore < uiGap)
         {
             uiScore = 0;
             pLastStart = pSeed;
