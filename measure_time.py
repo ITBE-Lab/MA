@@ -157,7 +157,7 @@ class MA(CommandLine):
             self.fast = "fast"
 
     def create_command(self, in_filename):
-        cmd_str = self.bwa_home + "cmdMA.exe -t " + str(self.threads) + " -p " + self.fast
+        cmd_str = self.ma_home + "cmdMA.exe -t " + str(self.threads) + " -p " + self.fast
         return cmd_str + " -g " + self.index_str + " -i " + in_filename
 
 human_genome = "/mnt/ssd0/genome/human"
@@ -239,6 +239,8 @@ def test(
     print("done")
 
 def test_all():
+    test("/mnt/ssd1/test.db", human_genome)
+    return
     test("/mnt/ssd1/default.db", human_genome)
     test("/mnt/ssd1/short.db", human_genome)
     test("/mnt/ssd1/shortIndels.db", human_genome)
