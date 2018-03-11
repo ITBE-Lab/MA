@@ -43,6 +43,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         std::string sLine;
         std::getline (*pFile, sLine);
         pRet->sName = sLine.substr(1);
+        //make sure that the name contains no spaces
+        //in fact everythin past the first space is considered description rather than name
+        pRet->sName = pRet->sName.substr(0,pRet->sName.find(" "));
         while(pFile->good() && pFile->peek() != '>')
         {
             std::getline (*pFile, sLine);
@@ -59,6 +62,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         std::string sLine;
         std::getline (*pFile, sLine);
         pRet->sName = sLine.substr(1);
+        //make sure that the name contains no spaces
+        //in fact everythin past the first space is considered description rather than name
+        pRet->sName = pRet->sName.substr(0,pRet->sName.find(" "));
         while(pFile->good() && pFile->peek() != '+')
         {
             std::getline (*pFile, sLine);

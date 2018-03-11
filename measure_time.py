@@ -69,7 +69,7 @@ class CommandLine(Module):
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start)
             except:
-                print("oh oh")
+                print("oh oh:" + line)
                 pass
 
         #transform list into alignment data structure
