@@ -117,12 +117,14 @@ int main(int argc, char*argv[])
 
         bPariedNormal = vm.count("normal") != 0;
         bPariedUniform = vm.count("uniform") != 0;
+        bool bDoneSth = false;
 
         if (vm.count("help"))
         {
             std::cout << "\t\t===== MA THE MODULAR ALIGNER =====" << std::endl;
             std::cout << all_desc << std::endl;
             std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;
+            bDoneSth = true;
         }//if
         if(vm.count("fmdIndex"))
         {
@@ -141,6 +143,7 @@ int main(int argc, char*argv[])
                 //store the fmd index
                 xFMDIndex.vStoreFMIndex(sIndexOut.c_str());
             }//else
+            bDoneSth = true;
         }//if
         if(vm.count("align"))
         {
@@ -194,8 +197,11 @@ int main(int argc, char*argv[])
                 );
                 //run the alignment
                 Pledge::simultaneousGet(aGraphSinks, true);
+                bDoneSth = true;
             }//else
         }//if
+        if(!bDoneSth)
+            std::cout << "No task was specified. Use one of the following: -h, -a, -f" << std::endl;
     }//try
     catch (const error &ex)
     {

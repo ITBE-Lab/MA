@@ -977,7 +977,8 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             else:
                 mapping_qual[-1][1].append(mapping_quality)
             tries[num_mutation][num_indels] += 1
-            run_times[num_mutation][num_indels] += run_time
+            #in the current test scenario the total runtime is saved in every sample of the cell
+            run_times[num_mutation][num_indels] = run_time
             if not num_seeds is None:
                 nums_seeds[num_mutation][num_indels] += num_seeds
             if not score is None:

@@ -3,8 +3,8 @@
  * @brief Implements a segmentation algorithm.
  * @author Markus Schmidt
  */
-#ifndef BINARY_SEEDING_H
-#define BINARY_SEEDING_H
+#ifndef OTHER_SEEDING_H
+#define OTHER_SEEDING_H
 
 #include "util/system.h"
 #include "module/module.h"
@@ -43,7 +43,7 @@ namespace libMA
          */
         OtherSeeding(bool bBowtie = true)
                 :
-            bBowtie(bBowtie),
+            bBowtie(bBowtie)
         {}//constructor
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

@@ -11,7 +11,7 @@ class CommandLine(Module):
 
     def __get_sam(self, index_str, queries):
 
-        in_filename = ".tem_file.fasta"
+        in_filename = ".temp_file.fasta"
 
         f = open(in_filename, "w")
         for index, query in enumerate(queries):
@@ -157,7 +157,8 @@ class MA(CommandLine):
             self.fast = "fast"
 
     def create_command(self, in_filename):
-        cmd_str = self.ma_home + "cmdMA.exe -t " + str(self.threads) + " -p " + self.fast
+        cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
+        print(cmd_str + " -g " + self.index_str + " -i " + in_filename)
         return cmd_str + " -g " + self.index_str + " -i " + in_filename
 
 human_genome = "/mnt/ssd0/genome/human"
@@ -175,13 +176,13 @@ def test(
     num_threads = 1
 
     l = [
-        ("BOWTIE 2", Bowtie2(reference, num_threads)),
-        ("MINIMAP 2", Minimap2(reference, num_threads)),
+        #("BOWTIE 2", Bowtie2(reference, num_threads)),
+        #("MINIMAP 2", Minimap2(reference, num_threads)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa")),
-        ("BWA MEM", BWA_MEM(reference, num_threads)),
-        ("BWA SW", BWA_SW(reference, num_threads)),
+        #("BWA MEM", BWA_MEM(reference, num_threads)),
+        #("BWA SW", BWA_SW(reference, num_threads)),
         ("MA Fast", MA(reference, num_threads, True)),
-        ("MA Accurate", MA(reference, num_threads, False)),
+        #("MA Accurate", MA(reference, num_threads, False)),
     ]
 
     for name, aligner in l:
