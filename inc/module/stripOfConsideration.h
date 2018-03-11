@@ -88,6 +88,8 @@ namespace libMA
         }
     };//class
 
+}//namespace
+
 /**
  * @brief export the bucketing @ref Module "module" to python.
  * @ingroup export

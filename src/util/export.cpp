@@ -37,7 +37,6 @@ BOOST_PYTHON_MODULE(libMA)
         exportLinesweep();
         exportNeedlemanWunsch();
         exportStripOfConsideration();
-        exportChaining();
         exportSMW();
         exportExtractAllSeeds();
         exportExecOnVector();
