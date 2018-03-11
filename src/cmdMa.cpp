@@ -36,6 +36,7 @@ int main(int argc, char*argv[])
     unsigned int uiMaxAmbiguity;
     unsigned int uiNumSOC;
     unsigned int uiReportNBest;
+    unsigned int uiMaxGapArea;
     bool bPariedNormal;
     bool bPariedUniform;
     unsigned int uiPairedMean;
@@ -90,6 +91,7 @@ int main(int argc, char*argv[])
             ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 100 : 5), "Maximal ambiguity")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "complete" : "pairs"), "Used seed set [complete/pairs]")
             ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 10 : 5), "Strip of consideration amount")
+            ("nwLimit,l", value<unsigned int>(&uiMaxGapArea)->default_value(10000), "Maximal DP matrix size")
             ("global,G", "Perform global alignment")
         ;
 
@@ -193,7 +195,8 @@ int main(int argc, char*argv[])
                     dPairedU,
                     sSeedSet != "complete",
                     uiReportNBest,
-                    !vm.count("global")
+                    !vm.count("global"),
+                    uiMaxGapArea
                 );
                 //run the alignment
                 Pledge::simultaneousGet(aGraphSinks, true);

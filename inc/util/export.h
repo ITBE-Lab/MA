@@ -173,7 +173,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     int iMatch = 10,
     int iMisMatch = 4,
     int iGap = 6,
-    int iExtend = 1
+    int iExtend = 1,
+    unsigned int uiMaxGapArea = 10000
 );
 
 #endif
