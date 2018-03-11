@@ -195,9 +195,11 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         uiGap *= iExtend;
         if(uiGap > 0)
             uiGap += iGap;
-        if( (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
+        if( //check for the maximal allowed gap area
+            (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
             (pSeed->start_ref() >= uiLastR ? pSeed->start_ref() - uiLastR : 1)
-                > uiMaxGap || 
+                > uiMaxGapArea || 
+            //check for negative score
             uiScore < uiGap)
         {
             uiScore = 0;
@@ -249,7 +251,7 @@ void exportLinesweep()
             std::shared_ptr<LinearLineSweep>
         >("LinearLineSweep")
         .def_readwrite("optimistic_gap_estimation", &LinearLineSweep::optimisticGapEstimation)
-        .def_readwrite("max_gap", &LinearLineSweep::uiMaxGap)
+        .def_readwrite("max_gap_area", &LinearLineSweep::uiMaxGapArea)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<LinearLineSweep>,

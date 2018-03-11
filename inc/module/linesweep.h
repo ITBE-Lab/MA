@@ -92,8 +92,8 @@ namespace libMA
          * but improves runtime significantly
          */
         bool optimisticGapEstimation = false;
-        /// @brief the maximal allowed gap (caps the SW runtime maximum)
-        unsigned int uiMaxGap = 10000;
+        /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
+        unsigned int uiMaxGapArea = 10000;
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
