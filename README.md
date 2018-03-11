@@ -6,21 +6,26 @@ There are three options to get MA running:
 2. Cloning & Compiling
 3. using pip (coming soon)
 
-## The installer
+### The installer
 
-The installer is available on the It-Be homepage:
+The installer is available on the It-Be homepage: 
+
     http://itbe.hanyang.ac.kr/research-articles/alignment/
+
 The installer is for 64bit **Windows** only.
 
-## Cloning & Compiling
+
+### Cloning & Compiling
 This software uses boost 1.65.
+
 After downloading, set $(BOOST_ROOT) then execute following commands:
+
     git clone https://github.com/ItBeLab/ma
     cd ma
     make
     ./ma -h
 
-## Pip
+### Pip
 
 coming soon!
 
