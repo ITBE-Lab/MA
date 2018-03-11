@@ -13,3 +13,6 @@ html/*
 *.tmp
 *.exe
 vs/*
+paperGraphics*
+.vscode/*
+pythonTest.py
