@@ -143,7 +143,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/linesweep.h"
 #include "module/binarySeeding.h"
 #include "module/stripOfConsideration.h"
-#include "module/chaining.h"
 #include "module/smith_waterman.h"
 #include "module/extractAllSeeds.h"
 #include "module/execOnVector.h"
