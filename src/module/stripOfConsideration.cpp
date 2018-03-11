@@ -5,7 +5,6 @@
  */
 
 #include "module/stripOfConsideration.h"
-#include "container/minimizersHash.h"
 using namespace libMA;
 
 extern int iGap;

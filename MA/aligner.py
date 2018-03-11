@@ -156,15 +156,6 @@ class Pack(libMA.Pack):
     pass
 
 ##
-# @brief the minimizer hash index.
-# @details
-#
-# @ingroup container
-#
-class MinimizersHash(libMA.MinimizersHash):
-    pass
-
-##
 # @brief A single seed.
 # @details
 #
