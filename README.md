@@ -1,28 +1,27 @@
 
 ## Getting started
 
+Getting a running executable:
+
+
+
+Compiling on your own:
+
+This software uses boost 1.65.
+After downloading, set $(BOOST_ROOT) then execute following commands:
     git clone https://github.com/ItBeLab/ma
     cd ma
     make
-    ./bwa index ref.fa
-    ./bwa mem ref.fa read-se.fq.gz | gzip -3 > aln-se.sam.gz
-    ./bwa mem ref.fa read1.fq read2.fq | gzip -3 > aln-pe.sam.gz
+    ./ma -h
 
 ## Introduction
 
 @todo
 
-## Availability
+## Citing MA
 
-@todo
+MA is unpublished so far.
 
-## Seeking help
+## The It-Be Lab
 
-@todo
-
-## Citing BWA
-
-@todo
-
-## Frequently asked questions (FAQs)
-@todo
+The homepage of the Information Technology – Bio Engineering Lab at Hanyang University can be found here http://itbe.hanyang.ac.kr/.

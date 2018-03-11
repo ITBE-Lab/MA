@@ -1,0 +1,16 @@
+*.o
+*.so
+obj/*
+build/*
+dist/*
+*.egg-info/*
+core
+html/*
+*.pyc
+.tempdir*
+*.svg
+*.png
+*.tmp
+*.exe
+vs/*
+.vscode/*
