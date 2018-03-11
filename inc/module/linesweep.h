@@ -95,6 +95,13 @@ namespace libMA
         /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
         unsigned int uiMaxGapArea = 10000;
 
+        LinearLineSweep() {}//default constructor
+
+        LinearLineSweep(unsigned int uiMaxGapArea)
+                :
+            uiMaxGapArea(uiMaxGapArea)
+        {}//constructor
+
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
 

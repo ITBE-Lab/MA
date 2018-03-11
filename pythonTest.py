@@ -1470,9 +1470,9 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-#import measure_time
+import measure_time
 
-#measure_time.test_all()
+measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/default.db")
 #test_my_approaches("/mnt/ssd1/short.db")
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
@@ -1482,7 +1482,6 @@ amount = 2**10
 
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
 
-exit()
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)

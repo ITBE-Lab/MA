@@ -175,11 +175,11 @@ def test(
     num_threads = 1
 
     l = [
-        #("BOWTIE 2", Bowtie2(reference, num_threads)),
-        #("MINIMAP 2", Minimap2(reference, num_threads)),
+        ("BOWTIE 2", Bowtie2(reference, num_threads)),
+        ("MINIMAP 2", Minimap2(reference, num_threads)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa")),
-        #("BWA MEM", BWA_MEM(reference, num_threads)),
-        #("BWA SW", BWA_SW(reference, num_threads)),
+        ("BWA MEM", BWA_MEM(reference, num_threads)),
+        ("BWA SW", BWA_SW(reference, num_threads)),
         ("MA Fast", MA(reference, num_threads, True)),
         ("MA Accurate", MA(reference, num_threads, False)),
     ]
@@ -240,9 +240,9 @@ def test(
 
 def test_all():
     test("/mnt/ssd1/test.db", human_genome)
-    return
     test("/mnt/ssd1/default.db", human_genome)
     test("/mnt/ssd1/short.db", human_genome)
+    #test("/mnt/ssd1/long.db", human_genome)
     test("/mnt/ssd1/shortIndels.db", human_genome)
     test("/mnt/ssd1/longIndels.db", human_genome)
     test("/mnt/ssd1/insertionOnly.db", human_genome)
