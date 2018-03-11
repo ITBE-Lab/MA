@@ -1080,7 +1080,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             return plot
         if indel_size > 0:
             avg_hits = makePicFromDict(hits, 400, max_indel, tries, approach, set_max=1, set_min=0, yax=False)
-            avg_runtime = makePicFromDict(run_times, 400, max_indel, tries, None, 0, False, 0.1, 0, yax=False)
+            avg_runtime = makePicFromDict(run_times, 400, max_indel, tries, None, 0, False, 0.2, 0, yax=False)
             #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
             #avg_seeds = makePicFromDict(nums_seeds, 400, max_indel, tries, approach, yax=yax)
             #avg_rel = makePicFromDict(hits, 400, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
@@ -1470,9 +1470,9 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-import measure_time
+#import measure_time
 
-measure_time.test_all()
+#measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/default.db")
 #test_my_approaches("/mnt/ssd1/short.db")
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
