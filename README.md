@@ -10,7 +10,7 @@ There are three options to get MA running:
 
 The installer is available on the It-Be homepage: 
 
-    http://itbe.hanyang.ac.kr/research-articles/alignment/
+http://itbe.hanyang.ac.kr/research-articles/alignment/
 
 The installer is for 64bit **Windows** only.
 
@@ -39,4 +39,4 @@ MA is unpublished so far.
 
 ## The It-Be Lab
 
-The homepage of the Information Technology – Bio Engineering Lab at Hanyang University can be found here http://itbe.hanyang.ac.kr/.
+The homepage of the **Information Technology – Bio Engineering** Lab at Hanyang University can be found here http://itbe.hanyang.ac.kr/.
