@@ -835,6 +835,64 @@ def stripOfConsideration():
     save(plot, "stripOfConsideration")
 
 
+def forced_gap():
+    plot = figure(
+                #title="Figure X: Forced Gaps",
+                plot_width=resolution, plot_height=resolution,
+                x_range=[-1,13], y_range=[-1,8]
+            )
+    plot.line(
+        [1.5,3.5],
+        [1.5,3.5],
+        color=blue,
+        line_width=3
+    )
+
+    plot.line(
+        [8.5,10.5],
+        [5.5,7.5],
+        color=blue,
+        line_width=3
+    )
+
+    plot.xaxis.major_tick_line_color = None
+    plot.yaxis.major_tick_line_color = None
+    plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
+    plot.legend.location = "top_left"
+    plot.toolbar.logo = None
+    plot.toolbar_location = None
+    grid = []
+    for p in range(-1,len(reference)):
+        grid.append(p+.5)
+    plot.xgrid.ticker = FixedTicker(ticks=grid)
+    plot.xgrid.band_fill_color = greys[3]
+    plot.xgrid.band_fill_alpha = 0.2
+    plot.xgrid.grid_line_color = greys[0]
+    plot.xaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % reference)
+    plot.yaxis.ticker = FixedTicker(ticks=range(len(query)))
+    grid = []
+    for p in range(-1,len(query)):
+        grid.append(p+.5)
+    plot.ygrid.ticker = FixedTicker(ticks=grid)
+    plot.ygrid.band_fill_color = greys[3]
+    plot.ygrid.band_fill_alpha = 0.2
+    plot.ygrid.grid_line_color = greys[0]
+    plot.yaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % query)
+
+    plot.title.text_font=font
+    plot.legend.label_text_font=font
+    plot.legend.label_text_baseline="hanging"
+    plot.axis.axis_label_text_font=font
+    plot.axis.major_label_text_font=font
+    save(plot, "forcedGap")
+
+
 def optimal_matching():
     min_x = -1.0
     min_y = -1.0
@@ -937,19 +995,22 @@ def unrelated_non_enclosed_seeds():
             )
 
     seeds = [
-        ("query1", 0, [500], green, 20),
+        ("query1", 0, [450], green, 7),
+        ("query1", 7, [500], green, 13),
         ("query1", 24, [525], green, 13),
         ("query1", 47, [547], green, 24),
 
-        ("query2", 22, [320], blue, 5),
-        ("query2", 36, [1000], blue, 12),
+        ("query2", 5, [270], orange, 3),
+        ("query2", 22, [150], blue, 5),
+        ("query2", 36, [1200], blue, 20),
         
+        ("query3", 6, [20,1340], orange, 2),
         ("query3", 19, [1500], blue, 4),
-        ("query3", 35, [320, 1000, 1477], orange, 3),
-        ("query3", 46, [800], orange, 5),
+        ("query3", 35, [320, 1150, 1477], orange, 3),
+        ("query3", 46, [1000], orange, 13),
 
-        ("query4", 20, [30, 800], orange, 4),
-        ("query4", 45, [1340], orange, 4)
+        ("query4", 20, [30, 750], orange, 4),
+        ("query4", 33, [800], orange, 4),
     ]
 
     max_q = 0
@@ -1039,7 +1100,8 @@ def required_nmw_band_size():
 # actually call the functions that create the pictures
 
 #unrelated_non_enclosed_seeds()
-ambiguity_per_length()
+forced_gap()
+#ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()

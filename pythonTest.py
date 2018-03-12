@@ -1427,9 +1427,9 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
-import createIndices
-get_ambiguity_distribution(random_genome)
-exit()
+#import createIndices
+#get_ambiguity_distribution(random_genome)
+#exit()
 
 """
 int iGap = 20;
