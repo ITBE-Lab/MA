@@ -219,13 +219,13 @@ namespace libMA
             Container(),
             xStats(),
             bConsistent(false)
-		{}//default constructor
+        {}//default constructor
 
-		template< class InputIt >
-		Seeds(InputIt xBegin, InputIt xEnd)
-				:
-			vector(xBegin, xEnd)
-		{}//iterator constructor
+        template< class InputIt >
+        Seeds(InputIt xBegin, InputIt xEnd)
+                :
+            vector(xBegin, xEnd)
+        {}//iterator constructor
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const

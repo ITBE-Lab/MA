@@ -31,10 +31,10 @@ nucSeqIndex Seeds::getScore() const
                 nucSeqIndex uiQDist = rS.start() - uiLastQPos;
                 nucSeqIndex uiRDist = rS.start_ref() - uiLastRPos;
                 iRet -= iGap + iExtend * std::min(uiQDist, uiRDist);
-				nucSeqIndex uiDist = uiQDist - uiRDist;
-				if (uiRDist > uiQDist)
-					uiDist = uiRDist - uiQDist;
-				iRet -= iMissMatch * uiDist;
+                nucSeqIndex uiDist = uiQDist - uiRDist;
+                if (uiRDist > uiQDist)
+                    uiDist = uiRDist - uiQDist;
+                iRet -= iMissMatch * uiDist;
                 uiLastQPos = rS.start();
                 uiLastRPos = rS.start_ref();
             }//if

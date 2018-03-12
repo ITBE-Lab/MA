@@ -29,7 +29,7 @@ void OtherSeeding::bowtieExtension(
     unsigned int iSize = 16;
     unsigned int iStep = 1;
 
-	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
+    const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
     for(nucSeqIndex i = 0; i < pQuerySeq->length()-iSize; i+= iStep)
     {
 
@@ -68,7 +68,7 @@ void OtherSeeding::doBlasrExtension(
         std::shared_ptr<SegmentVector> pSegmentVector
     )
 {
-	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
+    const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
     for(nucSeqIndex i = 0; i < pQuerySeq->length(); i+= 1)
     {
 
@@ -99,28 +99,28 @@ void OtherSeeding::doBlasrExtension(
 
 ContainerVector OtherSeeding::getInputType() const
 {
-	return ContainerVector{
-			//the forward fm_index
-			std::shared_ptr<Container>(new FMIndex()),
-			//the query sequence
-			std::shared_ptr<Container>(new NucSeq()),
-		};
+    return ContainerVector{
+            //the forward fm_index
+            std::shared_ptr<Container>(new FMIndex()),
+            //the query sequence
+            std::shared_ptr<Container>(new NucSeq()),
+        };
 }
 std::shared_ptr<Container> OtherSeeding::getOutputType() const
 {
-	return std::shared_ptr<Container>(new SegmentVector());
+    return std::shared_ptr<Container>(new SegmentVector());
 }
 
 
 std::shared_ptr<Container> OtherSeeding::execute(
-		std::shared_ptr<ContainerVector> vpInput
-	)
+        std::shared_ptr<ContainerVector> vpInput
+    )
 {
-	std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[0]);
-	std::shared_ptr<NucSeq> pQuerySeq = 
-		std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]);
+    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[0]);
+    std::shared_ptr<NucSeq> pQuerySeq = 
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]);
 
-	std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
+    std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
     if(pQuerySeq == nullptr)
         return pSegmentVector;
 
@@ -129,28 +129,28 @@ std::shared_ptr<Container> OtherSeeding::execute(
     )
 
     if(bBowtie)
-		bowtieExtension(pFM_index, pQuerySeq, pSegmentVector);
+        bowtieExtension(pFM_index, pQuerySeq, pSegmentVector);
     else
         doBlasrExtension(pFM_index, pQuerySeq, pSegmentVector);
 
-	return pSegmentVector;
+    return pSegmentVector;
 }//function
 
 void exportOtherSeeding()
 {
-	//export the OtherSeeding class
-	boost::python::class_<
-			OtherSeeding, 
-			boost::python::bases<Module>,
-        	std::shared_ptr<OtherSeeding>
-		>(
-			"OtherSeeding",
-			boost::python::init<bool>()
-		)
-		;
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<OtherSeeding>,
-		std::shared_ptr<Module> 
-	>();
+    //export the OtherSeeding class
+    boost::python::class_<
+            OtherSeeding, 
+            boost::python::bases<Module>,
+            std::shared_ptr<OtherSeeding>
+        >(
+            "OtherSeeding",
+            boost::python::init<bool>()
+        )
+        ;
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<OtherSeeding>,
+        std::shared_ptr<Module> 
+    >();
 
 }//function

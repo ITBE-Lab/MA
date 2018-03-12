@@ -18,22 +18,22 @@ using namespace libMA;
 
 ContainerVector Minimizers::getInputType() const
 {
-	return ContainerVector{
-			//the query sequence
-			std::shared_ptr<Container>(new NucSeq()),
-		};
+    return ContainerVector{
+            //the query sequence
+            std::shared_ptr<Container>(new NucSeq()),
+        };
 }
 std::shared_ptr<Container> Minimizers::getOutputType() const
 {
-	return std::shared_ptr<Container>(new MinimizersVector<w,k>());
+    return std::shared_ptr<Container>(new MinimizersVector<w,k>());
 }
 
 
 std::shared_ptr<Container> Minimizers::execute(
-		std::shared_ptr<ContainerVector> vpInput
-	)
+        std::shared_ptr<ContainerVector> vpInput
+    )
 {
-	std::shared_ptr<NucSeq> pQuerySeq = std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]);
+    std::shared_ptr<NucSeq> pQuerySeq = std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]);
     MinimizersVector<w,k> vCur;
     MinimizersVector<w,k> vLast;
     auto pRet = std::make_shared<MinimizersVector<w,k>>();
@@ -191,7 +191,7 @@ std::shared_ptr<Container> Minimizers::execute(
 
 ContainerVector MinimizersToSeeds::getInputType() const
 {
-	return ContainerVector
+    return ContainerVector
     {
         //the hashindex
         std::shared_ptr<Container>(new MinimizersHash<Minimizers::w,Minimizers::k>()),
@@ -203,17 +203,17 @@ ContainerVector MinimizersToSeeds::getInputType() const
 }
 std::shared_ptr<Container> MinimizersToSeeds::getOutputType() const
 {
-	return std::shared_ptr<Container>(new Seeds());
+    return std::shared_ptr<Container>(new Seeds());
 }
 
 std::shared_ptr<Container> MinimizersToSeeds::execute(
-		std::shared_ptr<ContainerVector> vpInput
-	)
+        std::shared_ptr<ContainerVector> vpInput
+    )
 {
-	auto pIndex = std::dynamic_pointer_cast<
+    auto pIndex = std::dynamic_pointer_cast<
         MinimizersHash<Minimizers::w,Minimizers::k>>((*vpInput)[0]);
     assert(!pIndex->vKeys.empty());
-	auto pMinimizers = std::dynamic_pointer_cast<
+    auto pMinimizers = std::dynamic_pointer_cast<
         MinimizersVector<Minimizers::w,Minimizers::k>>((*vpInput)[1]);
     DEBUG(
         std::shared_ptr<Pack> pRefSeq = 
@@ -227,32 +227,32 @@ std::shared_ptr<Container> MinimizersToSeeds::execute(
 
 void exportMinimizers()
 {
-	//export the BinarySeeding class
-	boost::python::class_<
-			Minimizers, 
-			boost::python::bases<Module>,
-        	std::shared_ptr<Minimizers>
-		>(
-			"Minimizers"
-		)
+    //export the BinarySeeding class
+    boost::python::class_<
+            Minimizers, 
+            boost::python::bases<Module>,
+            std::shared_ptr<Minimizers>
+        >(
+            "Minimizers"
+        )
         .def_readwrite("print", &Minimizers::bPrint)
-		;
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<Minimizers>,
-		std::shared_ptr<Module> 
-	>();
-	//export the BinarySeeding class
-	boost::python::class_<
-			MinimizersToSeeds, 
-			boost::python::bases<Module>,
-        	std::shared_ptr<MinimizersToSeeds>
-		>(
-			"MinimizersToSeeds"
-		)
-		;
-	boost::python::implicitly_convertible< 
-		std::shared_ptr<MinimizersToSeeds>,
-		std::shared_ptr<Module> 
-	>();
+        ;
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<Minimizers>,
+        std::shared_ptr<Module> 
+    >();
+    //export the BinarySeeding class
+    boost::python::class_<
+            MinimizersToSeeds, 
+            boost::python::bases<Module>,
+            std::shared_ptr<MinimizersToSeeds>
+        >(
+            "MinimizersToSeeds"
+        )
+        ;
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<MinimizersToSeeds>,
+        std::shared_ptr<Module> 
+    >();
 
 }//function

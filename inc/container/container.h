@@ -15,7 +15,7 @@
 
 namespace libMA
 {
-	class Pledge;
+    class Pledge;
 
     /**
      * @defgroup container
@@ -108,22 +108,22 @@ namespace libMA
         public Container,
         public std::vector<std::shared_ptr<Container>>
     {
-	public:
+    public:
         std::shared_ptr<Container> contentType;
 
-		ContainerVector(std::initializer_list<std::shared_ptr<Container>> init)
-			:
-			vector(init)
-		{
+        ContainerVector(std::initializer_list<std::shared_ptr<Container>> init)
+            :
+            vector(init)
+        {
             contentType = front()->getType();
         }//initializer list constructor
 
-		template< class InputIt >
-		ContainerVector(InputIt xBegin, InputIt xEnd
-			)
-			:
-			vector(xBegin, xEnd)
-		{}//iterator constructor
+        template< class InputIt >
+        ContainerVector(InputIt xBegin, InputIt xEnd
+            )
+            :
+            vector(xBegin, xEnd)
+        {}//iterator constructor
 
         ContainerVector()
             :

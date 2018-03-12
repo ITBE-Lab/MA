@@ -74,24 +74,24 @@ namespace libMA
         std::shared_ptr<OutStream> pOut;
         std::shared_ptr<std::mutex> pLock;
 
-		FileWriter(std::string sFileName)
-			:
-			pLock(new std::mutex)
-		{
-			if (sFileName != "stdout")
+        FileWriter(std::string sFileName)
+            :
+            pLock(new std::mutex)
+        {
+            if (sFileName != "stdout")
                 pOut = std::shared_ptr<OutStream>(new FileOutStream(sFileName));
             else
                 pOut = std::shared_ptr<OutStream>(new StdOutStream());
-			*pOut << "@HD VN:1.5 SO:unknown\n";
-		}//constructor
+            *pOut << "@HD VN:1.5 SO:unknown\n";
+        }//constructor
 
-		FileWriter(std::shared_ptr<OutStream> pOut)
-			:
+        FileWriter(std::shared_ptr<OutStream> pOut)
+            :
             pOut(pOut),
-			pLock(new std::mutex)
-		{
-			*pOut << "@HD VN:1.5 SO:unknown\n";
-		}//constructor
+            pLock(new std::mutex)
+        {
+            *pOut << "@HD VN:1.5 SO:unknown\n";
+        }//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
@@ -126,11 +126,11 @@ namespace libMA
         std::shared_ptr<std::mutex> pLock;
         unsigned int uiNucsPerLine = 80;
 
-		RadableFileWriter(std::shared_ptr<OutStream> pOut)
-			:
+        RadableFileWriter(std::shared_ptr<OutStream> pOut)
+            :
             pOut(pOut),
-			pLock(new std::mutex)
-		{}//constructor
+            pLock(new std::mutex)
+        {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
