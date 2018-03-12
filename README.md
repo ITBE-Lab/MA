@@ -12,9 +12,11 @@ http://itbe.hanyang.ac.kr/research-articles/alignment/
 Note: The installer is currently the only way to obtain the GUI version of MA.
 
 #### 2. Cloning & Compiling
-This software uses boost 1.65.
+This software uses boost 1.65. And python 3.
 
-After installing boost, set $(BOOST_ROOT) and execute following commands:
+@todo make the Makefile nicer...
+After installing boost and python, set $(BOOST_ROOT) and $(PYTHON_ROOT) 
+then execute following commands:
 
     git clone https://github.com/ItBeLab/ma
     cd ma
