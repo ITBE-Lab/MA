@@ -61,6 +61,7 @@ def heatmap_palette(scheme, num_colors):
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
 human_genome = "/mnt/ssd0/genome/human"
+random_genome = "/mnt/ssd0/genome/random"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1314,6 +1315,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
                 yield q + "C"
                 yield q + "G"
                 yield q + "T"
+
     def get_random_queries(l, amount):
         for _ in range(amount):
             q = ""
@@ -1328,8 +1330,21 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
                 elif char == 4:
                     q += "T"
             yield q
+
+    def get_random_pos_queries(l, amount, pack):
+        max_pos = pack.unpacked_size() - l - 1
+        for _ in range(amount):
+            pos = random.randint(0, max_pos)
+            while pack.is_bridging(pos, l):
+                pos = random.randint(0, max_pos)
+            yield str(pack.extract_from_to(pos, pos+l))
+
     fm_index = FMIndex()
     fm_index.load(reference)
+
+    pack = Pack()
+    pack.load(reference)
+
     num_queries = 100000
 
     r1max = 10
@@ -1350,7 +1365,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
         data2.append( [] )
         for _ in range(r2size):
             data2[-1].append(0.0)
-        for q in get_random_queries(l, num_queries):
+        for q in get_random_pos_queries(l, num_queries, pack):
             ambiguity = fm_index.get_ambiguity(NucSeq(q))
             if ambiguity < r1max:
                 data1[-1][int(ambiguity)] += 1.0/num_queries
@@ -1411,6 +1426,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     plot2.axis.major_label_text_font_size=font_size
 
     show(gridplot( [[plot, plot2]] ))
+
+import createIndices
+get_ambiguity_distribution(random_genome)
+exit()
 
 """
 int iGap = 20;
