@@ -103,17 +103,17 @@ namespace libMA
      */
     class SegmentVector : public std::vector<std::shared_ptr<Segment>>, public Container{
 
-	public:
+    public:
 
-		template< class InputIt >
-		SegmentVector(InputIt xBegin, InputIt xEnd
-			)
-			:
-			vector(xBegin, xEnd)
-		{}//iterator constructor
+        template< class InputIt >
+        SegmentVector(InputIt xBegin, InputIt xEnd
+            )
+            :
+            vector(xBegin, xEnd)
+        {}//iterator constructor
 
-		SegmentVector()
-		{}//default constructor
+        SegmentVector()
+        {}//default constructor
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const

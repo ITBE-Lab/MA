@@ -23,7 +23,7 @@ using namespace libMA;
     class FastaDescriptor
     {
     public :
-        std::string sName;	// name of the FASTA Record
+        std::string sName;    // name of the FASTA Record
         std::string sComment; // comment for the entry
         TextSequence qualifier; // qualifier (describes quality of a read.)
 
@@ -177,7 +177,7 @@ using namespace libMA;
                         {
                             break;
                         } // if
-                    } // for			
+                    } // for            
                 } // if
                 else 
                 {                                                                                                       
@@ -297,7 +297,7 @@ using namespace libMA;
         
             /* We read the core sequence
             */
-            while (	true ) 
+            while (    true ) 
             { 
                 if ( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
                 {
@@ -345,7 +345,7 @@ using namespace libMA;
 
             /* TO OD; Fore a reserve for qualifier using the size of the sequence
             */
-            while (	true ) 
+            while (    true ) 
             { 
                 if ( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
                 {
@@ -364,7 +364,7 @@ using namespace libMA;
                 } // if
             } // while
 
-    #ifdef USE_STL		
+    #ifdef USE_STL        
             if ( fastaRecord.pSequenceRef->length() != fastaRecord.qualifier.length() ) // <- if ( fastaRecord.pSequenceRef->uxGetSequenceSize() != fastaRecord.qualifier.uxGetSequenceSize() )
     #else
             if ( fastaRecord.pSequenceRef->uxGetSequenceSize() != fastaRecord.qualifier.uxGetSequenceSize() )
@@ -415,7 +415,7 @@ using namespace libMA;
         * This stream is invisible to the outside and constructed as part of the buffer.
         * TP must be: 
         * std::istream for GzipInputStream (std::istream is the source for GzipInputStream)
-        * std::istream for std::istream	 
+        * std::istream for std::istream     
         */
         template<typename TP> 
         FastaStreamReader( TP &rxBufferedStreamConstructorArg ) : 
@@ -426,7 +426,7 @@ using namespace libMA;
         {
             /* Automatic call of the superclass destructor
             */
-        } // destructor	
+        } // destructor    
     }; // class
 
     /**

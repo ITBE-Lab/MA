@@ -8,105 +8,105 @@ using namespace libMA;
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
 SAInterval FMIndex::extend_backward( 
-		// current interval
-		const SAInterval &ik,
-		// the character to extend with
-		const uint8_t c
-	)
+        // current interval
+        const SAInterval &ik,
+        // the character to extend with
+        const uint8_t c
+    )
 {
-	bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
-	bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
+    bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
+    bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
-	assert(ik.start() < ik.end());
-	assert(ik.start() > 0);
+    assert(ik.start() < ik.end());
+    assert(ik.start() > 0);
 
-	//here the intervals seem to be (a,b] while mine are [a,b)
-	bwt_2occ4(
-		// start of SA index interval
-		ik.start() - 1,
-		// end of SA index interval
-		ik.end() - 1,
-		cntk,						// output: Number of A, C, G, T until start of interval
-		cntl						// output: Number of A, C, G, T until end of interval
-	);
+    //here the intervals seem to be (a,b] while mine are [a,b)
+    bwt_2occ4(
+        // start of SA index interval
+        ik.start() - 1,
+        // end of SA index interval
+        ik.end() - 1,
+        cntk,                        // output: Number of A, C, G, T until start of interval
+        cntl                        // output: Number of A, C, G, T until end of interval
+    );
 
-	for(unsigned int i = 0; i < 4; i++)
-		assert(cntk[i] <= cntl[i]);
+    for(unsigned int i = 0; i < 4; i++)
+        assert(cntk[i] <= cntl[i]);
 
-	bwt64bitCounter cnts[4]; // Number of A, C, G, T in BWT interval ik
-	//the cnts calculated here might be off by one
-	for(unsigned int i = 0; i < 4; i++)
-		cnts[i] = cntl[i] - cntk[i];
+    bwt64bitCounter cnts[4]; // Number of A, C, G, T in BWT interval ik
+    //the cnts calculated here might be off by one
+    for(unsigned int i = 0; i < 4; i++)
+        cnts[i] = cntl[i] - cntk[i];
 
-	DEBUG_2(
-		std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " << cnts[3] << " = " 
-				  << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= " 
-				  << ik.size() << "(-1)" << std::endl;
-	)
+    DEBUG_2(
+        std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " << cnts[3] << " = " 
+                  << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= " 
+                  << ik.size() << "(-1)" << std::endl;
+    )
 
-	bwt64bitCounter cntk_2[4];
-	cntk_2[0] = ik.startRevComp();
-	/*
-	 * PROBLEM:
-	 * 
-	 * the representation of the $ in the count part of the FM_index is indirect
-	 * 		done by storing the position of the $
-	 * if have two bwt indices k and l
-	 * the counts do not return the $ obviously...
-	 * 
-	 * The result may be off by one since sometimes we have a $ before the current pos 
-	 * sometimes we do not...
-	 *
-	 * lets adjust the sizes of the smaller intervals accordingly
-	 */
-	if(
-			ik.start() <= primary && 
-			ik.end() > primary
-		)
-	{
-		cntk_2[0]++;
-		DEBUG_2(
-			std::cout << "adjusted cntk_2[0] because of primary" << std::endl;
-		)
-		assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() - 1 );
-	}//if
-	else{
-		if( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) != ik.size() )
-		{
-			std::cout << ik.start() << " " << ik.end() << " " << primary << std::endl;
-			std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " <<
-				cnts[3] << " = " << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= "
-				<< ik.size() << "(-1)" << std::endl;
-		}//if
-		assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() );
-	}//else
-	//for all nucleotides
-	for(unsigned int i = 1; i < 4; i++)
-		cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
+    bwt64bitCounter cntk_2[4];
+    cntk_2[0] = ik.startRevComp();
+    /*
+     * PROBLEM:
+     * 
+     * the representation of the $ in the count part of the FM_index is indirect
+     *         done by storing the position of the $
+     * if have two bwt indices k and l
+     * the counts do not return the $ obviously...
+     * 
+     * The result may be off by one since sometimes we have a $ before the current pos 
+     * sometimes we do not...
+     *
+     * lets adjust the sizes of the smaller intervals accordingly
+     */
+    if(
+            ik.start() <= primary && 
+            ik.end() > primary
+        )
+    {
+        cntk_2[0]++;
+        DEBUG_2(
+            std::cout << "adjusted cntk_2[0] because of primary" << std::endl;
+        )
+        assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() - 1 );
+    }//if
+    else{
+        if( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) != ik.size() )
+        {
+            std::cout << ik.start() << " " << ik.end() << " " << primary << std::endl;
+            std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " <<
+                cnts[3] << " = " << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= "
+                << ik.size() << "(-1)" << std::endl;
+        }//if
+        assert( (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) == ik.size() );
+    }//else
+    //for all nucleotides
+    for(unsigned int i = 1; i < 4; i++)
+        cntk_2[i] = cntk_2[i-1] + cnts[complement(i-1)];
 
     assert(cnts[c] >= 0);
 
 
-	//BWAs SA intervals seem to be (a,b] while mine are [a,b)
-	//pFM_index->L2[c] start of nuc c in BWT
-	//cntk[c] offset of new interval
-	//cntl[c] end of new interval
-	return SAInterval(L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
+    //BWAs SA intervals seem to be (a,b] while mine are [a,b)
+    //pFM_index->L2[c] start of nuc c in BWT
+    //cntk[c] offset of new interval
+    //cntl[c] end of new interval
+    return SAInterval(L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
 } // method
 
 unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
 {
     // query sequence itself 
-	const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
-	
-	unsigned int i = pQuerySeq->length()-1;
-	SAInterval ik(
-						L2[(int)q[i]] + 1, 
-						L2[complement(q[i])] + 1, 
-						L2[(int)q[i] + 1] - L2[(int)q[i]]
-					);
+    const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
+    
+    unsigned int i = pQuerySeq->length()-1;
+    SAInterval ik(
+                        L2[(int)q[i]] + 1, 
+                        L2[complement(q[i])] + 1, 
+                        L2[(int)q[i] + 1] - L2[(int)q[i]]
+                    );
     while(i > 0 && ik.size() > 0)
-		ik = extend_backward(ik, q[--i]);
+        ik = extend_backward(ik, q[--i]);
     return ik.size();
 }//function
 

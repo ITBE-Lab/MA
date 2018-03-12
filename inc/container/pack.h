@@ -1164,20 +1164,20 @@ namespace libMA
             if ( !bPositionIsOnReversStrand( iMiddle ) )
             {    /* On forward strand.
                 */
-				if ((int64_t)iSequenceBegin > riBegin)
-					riBegin = iSequenceBegin;
-				if ((int64_t)iSequenceEnd < riEnd)
-					riEnd = iSequenceEnd;
+                if ((int64_t)iSequenceBegin > riBegin)
+                    riBegin = iSequenceBegin;
+                if ((int64_t)iSequenceEnd < riEnd)
+                    riEnd = iSequenceEnd;
 
                 assert( riBegin <= riEnd ); // consistency check
             } // if
             else
             {    /* On reverse strand.
                 */
-				if ((int64_t)uiPositionToReverseStrand(iSequenceEnd) + 1 > riBegin)
-					riBegin = uiPositionToReverseStrand(iSequenceEnd) + 1;
-				if ((int64_t)uiPositionToReverseStrand(iSequenceBegin) + 1 < riEnd)
-					riEnd = uiPositionToReverseStrand(iSequenceBegin) + 1;
+                if ((int64_t)uiPositionToReverseStrand(iSequenceEnd) + 1 > riBegin)
+                    riBegin = uiPositionToReverseStrand(iSequenceEnd) + 1;
+                if ((int64_t)uiPositionToReverseStrand(iSequenceBegin) + 1 < riEnd)
+                    riEnd = uiPositionToReverseStrand(iSequenceBegin) + 1;
 
                 assert( riBegin <= riEnd ); // consistency check
             } // else
