@@ -1024,8 +1024,8 @@ def required_nmw_band_size():
 # actually call the functions that create the pictures
 
 #unrelated_non_enclosed_seeds()
-#ambiguity_per_length()
-theoretical_max_acc()
+ambiguity_per_length()
+#theoretical_max_acc()
 #seed_shadows()
 #alignment()
 #stripOfConsideration()

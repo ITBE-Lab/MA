@@ -13,7 +13,7 @@ setup(
     name='MA',
     version='0.0.4',
     description='An aligner for Nucleotide Sequences.',
-    author='Markus Schmidt',
+    author='Markus Schmidt, Arne Kutzner',
  
     author_email='markus.rainer.schmidt@gmail.com',
  
@@ -23,7 +23,7 @@ setup(
     zip_safe=False,
     python_requires='>=3',
  
-    license='GNU', ##@todo  lookup correct license
+    license='MIT',
 
     classifiers=[ 
         # How mature is this project? Common values are 
@@ -32,13 +32,12 @@ setup(
         #   5 - Production/Stable 
         'Development Status :: 3 - Alpha', 
 
-
         # Indicate who your project is intended for 
         'Intended Audience :: Developers', 
         'Topic :: Scientific/Engineering :: Bio-Informatics', 
 
         # Pick your license as you wish (should match "license" above) 
-        'License :: OSI Approved :: MIT License', ##@todo  lookup correct license
+        'License :: OSI Approved :: MIT License',
 
 
         # Specify the Python versions you support here. In particular, ensure 
