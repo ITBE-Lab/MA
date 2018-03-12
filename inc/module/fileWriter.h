@@ -101,29 +101,29 @@ namespace libMA
          * Otherwise sFileName is used as the filename to write to.
          * The file will be truncated is it already exists.
          */
-		FileWriter(std::string sFileName)
-			:
-			pLock(new std::mutex)
-		{
-			if (sFileName != "stdout")
+        FileWriter(std::string sFileName)
+            :
+            pLock(new std::mutex)
+        {
+            if (sFileName != "stdout")
                 pOut = std::shared_ptr<OutStream>(new FileOutStream(sFileName));
             else
                 pOut = std::shared_ptr<OutStream>(new StdOutStream());
-			*pOut << "@HD VN:1.5 SO:unknown\n";
-		}//constructor
+            *pOut << "@HD VN:1.5 SO:unknown\n";
+        }//constructor
 
         /**
          * @brief creates a new FileWriter.
          * @details 
          * Allows more control of the output by using a given OutStream.
          */
-		FileWriter(std::shared_ptr<OutStream> pOut)
-			:
+        FileWriter(std::shared_ptr<OutStream> pOut)
+            :
             pOut(pOut),
-			pLock(new std::mutex)
-		{
-			*pOut << "@HD VN:1.5 SO:unknown\n";
-		}//constructor
+            pLock(new std::mutex)
+        {
+            *pOut << "@HD VN:1.5 SO:unknown\n";
+        }//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
@@ -165,11 +165,11 @@ namespace libMA
         /**
          * @brief creates a new RadableFileWriter.
          */
-		RadableFileWriter(std::shared_ptr<OutStream> pOut)
-			:
+        RadableFileWriter(std::shared_ptr<OutStream> pOut)
+            :
             pOut(pOut),
-			pLock(new std::mutex)
-		{}//constructor
+            pLock(new std::mutex)
+        {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
