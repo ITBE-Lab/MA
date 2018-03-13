@@ -841,12 +841,28 @@ def forced_gap():
                 x_range=[-1,13], y_range=[-1,8]
             )
     plot.line(
+        [-1,9],
+        [-1,9],
+        color=blue,
+        line_alpha=.3,
+        line_width=1,
+        line_dash=[8,2]
+    )
+    plot.line(
         [1.5,3.5],
         [1.5,3.5],
         color=blue,
         line_width=3
     )
 
+    plot.line(
+        [2,12],
+        [-1,9],
+        color=blue,
+        line_alpha=.3,
+        line_width=1,
+        line_dash=[8,2]
+    )
     plot.line(
         [8.5,10.5],
         [5.5,7.5],
@@ -1099,8 +1115,8 @@ def required_nmw_band_size():
 # actually call the functions that create the pictures
 
 #unrelated_non_enclosed_seeds()
-#forced_gap()
-ambiguity_per_length()
+forced_gap()
+#ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()
