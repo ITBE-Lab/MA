@@ -45,7 +45,7 @@ def makeRandom(out_name, size):
     file_all = open(out_name + "bwa", "w")
     ref_seq = Pack()
 
-    file_all.write(">random sequence/n")
+    file_all.write(">randomSequence/n")
     seq = ""
     for index in range(size):
         num = random.randint(0,3)
@@ -63,7 +63,11 @@ def makeRandom(out_name, size):
             file_all.write("G")
         if index % 20 == 0:
             file_all.write("\n")
-    ref_seq.append( "randomSequence", "noDesc", NucSeq(seq) )
+        if index % 50000 == 0:
+            ref_seq.append( "randomSequence" + str(index), "noDesc", NucSeq(seq) )
+            seq = ""
+    if seq != "":
+        ref_seq.append( "randomSequenceLast", "noDesc", NucSeq(seq) )
     file_all.close()
 
     ref_seq.store(out_name)
@@ -84,8 +88,7 @@ def chrNames(prefix, num, suffix):
 #make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human")
 #make(["/mnt/ssd0/chrom/human/chr1.fna" ], "/mnt/ssd0/genome/humanchr1")
 #make_hash("/mnt/ssd0/genome/human")
-#make(
-#    ["/mnt/ssd0/chrom/human/GCF_000001405.37_GRCh38.p11_genomic.fna"], "/mnt/ssd0/genome/human")
+#make(["/mnt/ssd0/chrom/plasmodium/genome.fasta"], "/mnt/ssd0/genome/plasmodium")
 #make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "/mnt/ssd0/chrom/mouse/all")
-#makeRandom("/mnt/ssd0/genome/random2", 3 * 10**9)
-makeRandom("/mnt/ssd0/genome/random2", 3 * 10**9)
+#makeRandom("/mnt/ssd0/genome/random", 3 * 10**9)
+#makeRandom("/mnt/ssd0/genome/random_3_10_7", 3 * 10**7)

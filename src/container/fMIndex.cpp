@@ -94,7 +94,8 @@ SAInterval FMIndex::extend_backward(
     return SAInterval(L2[c] + cntk[c] + 1, cntk_2[complement(c)], cnts[c]);
 } // method
 
-unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
+
+SAInterval FMIndex::getInterval( std::shared_ptr<NucSeq> pQuerySeq )
 {
     // query sequence itself 
     const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
@@ -107,8 +108,31 @@ unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
                     );
     while(i > 0 && ik.size() > 0)
         ik = extend_backward(ik, q[--i]);
-    return ik.size();
+    return ik;
 }//function
+
+unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
+{
+    return getInterval(pQuerySeq).size();
+}//function
+
+bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack)
+{
+    SAInterval ik = getInterval(pQuerySeq);
+    for (
+            auto ulCurrPos = ik.start(); 
+            ulCurrPos < ik.end(); 
+            ulCurrPos ++
+        )
+    {
+        //calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
+        bwtint_t ulIndexOnRefSeq = bwt_sa(ulCurrPos);
+        if(!pPack->vExtract(ulIndexOnRefSeq, ulIndexOnRefSeq+pQuerySeq->length())->equal(*pQuerySeq))
+            return false;
+    }//for
+
+    return true;
+}//fuction
 
 
 void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
@@ -411,6 +435,10 @@ void exportFM_index()
         .def(
                 "get_ambiguity", 
                 &FMIndex::get_ambiguity
+            )
+        .def(
+                "test_sa_interval", 
+                &FMIndex::testSaInterval
             )
         .def(
                 "bwt_2occ4", 

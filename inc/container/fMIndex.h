@@ -145,8 +145,13 @@ namespace libMA
         * BWT-index, position of $
         */
         t_bwtIndex primary; 
+
+        
+        SAInterval EXPORTED getInterval( std::shared_ptr<NucSeq> pQuerySeq );
         
         unsigned int EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
+        
+        bool EXPORTED testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack);
 
 
     protected :
@@ -893,7 +898,6 @@ namespace libMA
         {
             build_FMIndex( *pxSequenceCollection, 0 );
         } // constructor
-
     }; // class FMIndex
 
 }//namespace libMA

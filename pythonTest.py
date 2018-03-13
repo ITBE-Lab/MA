@@ -61,7 +61,7 @@ def heatmap_palette(scheme, num_colors):
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
 human_genome = "/mnt/ssd0/genome/human"
-random_genome = "/mnt/ssd0/genome/random2"
+random_genome = "/mnt/ssd0/genome/random"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1305,7 +1305,7 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
     save(row(plots))
 
 
-def get_ambiguity_distribution(reference, min_len=10, max_len=20):
+def get_ambiguity_distribution(reference, min_len=1, max_len=100):
     def get_all_queries(l):
         if l <= 0:
             yield ""
@@ -1367,6 +1367,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
             data2[-1].append(0.0)
         for q in get_random_pos_queries(l, num_queries, pack):
             ambiguity = fm_index.get_ambiguity(NucSeq(q))
+            #if not fm_index.test_sa_interval(NucSeq(q), pack):
+            #    print(q)
+            #    print("found error")
+            #    exit()
             if ambiguity == 0:
                 print(ambiguity)
                 print(q)
@@ -1430,7 +1434,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
-get_ambiguity_distribution(random_genome)
+get_ambiguity_distribution("/mnt/ssd0/genome/random_3_10_7")
 exit()
 
 """
