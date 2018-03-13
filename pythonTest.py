@@ -61,7 +61,7 @@ def heatmap_palette(scheme, num_colors):
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
 human_genome = "/mnt/ssd0/genome/human"
-random_genome = "/mnt/ssd0/genome/random"
+random_genome = "/mnt/ssd0/genome/random2"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1367,8 +1367,11 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
             data2[-1].append(0.0)
         for q in get_random_pos_queries(l, num_queries, pack):
             ambiguity = fm_index.get_ambiguity(NucSeq(q))
+            if ambiguity == 0:
+                print(ambiguity)
+                print(q)
             if ambiguity < r1max:
-                data1[-1][int(ambiguity)] += 1.0/num_queries
+                data1[-1][ambiguity] += 1.0/num_queries
             elif int(math.log2(ambiguity - r1max+1)) < r2size:
                 data2[-1][int(math.log2(ambiguity - r1max+1))] += 1.0/num_queries
 
@@ -1427,9 +1430,8 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
-#import createIndices
-#get_ambiguity_distribution(random_genome)
-#exit()
+get_ambiguity_distribution(random_genome)
+exit()
 
 """
 int iGap = 20;

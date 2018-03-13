@@ -50,20 +50,20 @@ def makeRandom(out_name, size):
     for index in range(size):
         num = random.randint(0,3)
         if num == 0:
-            seq += 'a'
-            file_all.write("a")
+            seq += 'A'
+            file_all.write("A")
         elif num == 2:
-            seq += 'c'
-            file_all.write("c")
+            seq += 'C'
+            file_all.write("C")
         elif num == 3:
-            seq += 't'
-            file_all.write("t")
+            seq += 'T'
+            file_all.write("T")
         else:
-            seq += 'g'
-            file_all.write("g")
+            seq += 'G'
+            file_all.write("G")
         if index % 20 == 0:
             file_all.write("\n")
-    ref_seq.append( "random sequence", "no desc", NucSeq(seq) )
+    ref_seq.append( "randomSequence", "noDesc", NucSeq(seq) )
     file_all.close()
 
     ref_seq.store(out_name)
@@ -87,4 +87,5 @@ def chrNames(prefix, num, suffix):
 #make(
 #    ["/mnt/ssd0/chrom/human/GCF_000001405.37_GRCh38.p11_genomic.fna"], "/mnt/ssd0/genome/human")
 #make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "/mnt/ssd0/chrom/mouse/all")
-makeRandom("/mnt/ssd0/genome/random", 3 * 10**9)
+#makeRandom("/mnt/ssd0/genome/random2", 3 * 10**9)
+makeRandom("/mnt/ssd0/genome/random2", 3 * 10**9)
