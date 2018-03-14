@@ -302,7 +302,7 @@ void FMIndex::build_FMIndex(
     {
         uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() < 50000000 ? 0 : 1; // automatic selection depending on size of pack
     } // if
-    uiAlgorithmSelection = 0;
+    uiAlgorithmSelection = 1;
 
     /*
     * Step 1: Create the basic BWT.
