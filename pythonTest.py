@@ -62,6 +62,9 @@ def heatmap_palette(scheme, num_colors):
 
 human_genome = "/mnt/ssd0/genome/human"
 random_genome = "/mnt/ssd0/genome/random"
+small_random_genome = "/mnt/ssd0/genome/random_3_10_7"
+mouse_genome = "/mnt/ssd0/genome/mouse"
+plasmodium_genome = "/mnt/ssd0/genome/plasmodium"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1305,7 +1308,7 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
     save(row(plots))
 
 
-def get_ambiguity_distribution(reference, min_len=1, max_len=100):
+def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     def get_all_queries(l):
         if l <= 0:
             yield ""
@@ -1380,9 +1383,10 @@ def get_ambiguity_distribution(reference, min_len=1, max_len=100):
                 data2[-1][int(math.log2(ambiguity - r1max+1))] += 1.0/num_queries
 
     print(indices1)
-    print(data1)
     print(indices2)
-    print(data2)
+    print("[copy here]")
+    print( (data1, data2) )
+    print("[copy here end]")
 
     color_mapper = LinearColorMapper(
                     palette=heatmap_palette(light_spec_approximation, 256),
@@ -1434,7 +1438,10 @@ def get_ambiguity_distribution(reference, min_len=1, max_len=100):
 
     show(gridplot( [[plot, plot2]] ))
 
-get_ambiguity_distribution("/mnt/ssd0/genome/random_3_10_7")
+get_ambiguity_distribution(plasmodium_genome, 1, 100)
+get_ambiguity_distribution(random_genome, 1, 100)
+get_ambiguity_distribution(plasmodium_genome)
+get_ambiguity_distribution(random_genome)
 exit()
 
 """

@@ -166,7 +166,7 @@ def test(
             db_name,
             reference
         ):
-    
+    print("working on " + db_name + "...")
     ref_pack = Pack()
     ref_pack.load(reference)
     reference_pledge = Pledge(Pack())
@@ -185,14 +185,14 @@ def test(
     ]
 
     for name, aligner in l:
+        print("evaluating " + name + "...")
         clearResults(db_name, reference, name)
-        print("collecting samples (" + name + ") ...")
         result = []
 
         matrix = getQueriesAsASDMatrix(db_name, name, reference)
         for row in matrix:
             for queries in row:
-                print("extracting " + str(len(queries)) + " samples (" + name + ")...")
+                #print("extracting " + str(len(queries)) + " samples (" + name + ")...")
                 #setup the query pledges
                 query_list = ContainerVector(NucSeq())
                 # @todo temp bugfix
@@ -204,7 +204,7 @@ def test(
                     origins.append(origin)
 
 
-                print("setting up (" + name + ") ...")
+                #print("setting up (" + name + ") ...")
 
                 query_vec_pledge = Pledge(ContainerVector(NucSeq()))
 
@@ -213,7 +213,7 @@ def test(
 
                 result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
 
-                print("computing (" + name + ") ...")
+                #print("computing (" + name + ") ...")
                 result_pledge.get()
 
                 for index in range(len(queries)):
@@ -233,10 +233,10 @@ def test(
                             name
                         )
                     )
-        print("submitting results (" + name + ") ...")
+        #print("submitting results (" + name + ") ...")
         if len(result) > 0:
             submitResults(db_name, result)
-    print("done")
+    print("done working on " + db_name)
 
 def test_all():
     test("/mnt/ssd1/test.db", human_genome)
