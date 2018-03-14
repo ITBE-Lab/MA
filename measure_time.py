@@ -10,10 +10,7 @@ class CommandLine(Module):
         self.elapsed_time = 0
 
     def __get_sam(self, index_str, queries):
-
-        in_filename = ".temp_file.fasta"
-
-        f = open(in_filename, "w")
+        f = open(self.in_filename, "w")
         for index, query in enumerate(queries):
             f.write(">" + str(index) + " sequence" + str(index) + "\n" )
             query_string = str(query)
@@ -28,13 +25,13 @@ class CommandLine(Module):
 
         f.close()
         #assemble the shell command
-        cmd_str = self.create_command(in_filename)
+        cmd_str = self.create_command(self.in_filename)
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         self.elapsed_time = time.time() - start_time
 
-        os.remove(in_filename)
+        os.remove(self.in_filename)
 
         if result.returncode != 0:
             print("subprocess returned with ERROR:")
@@ -95,10 +92,11 @@ class CommandLine(Module):
         return self.__align(self.index_str, queries, pack)
 
 class Bowtie2(CommandLine):
-    def __init__(self, index_str, threads):
+    def __init__(self, index_str, threads, db_name):
         self.bowtie2_home = "/usr/home/markus/workspace/bowtie2/bowtie2-2.3.3.1/"
         self.index_str = index_str + "bowtie2"
         self.threads = threads
+        self.in_filename = ".temp" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bowtie2_home + "bowtie2 -p " + str(self.threads)
@@ -107,54 +105,59 @@ class Bowtie2(CommandLine):
         return cmd_str + " " + index_str + " " + input_str
 
 class Minimap2(CommandLine):
-    def __init__(self, index_str, threads):
+    def __init__(self, index_str, threads, db_name):
         self.minimap2_home = "/usr/home/markus/workspace/minimap2/"
         self.index_str = index_str + ".mmi"
         self.threads = threads
+        self.in_filename = ".temp" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.minimap2_home + "minimap2 -t " + str(self.threads) + " -a "
         return cmd_str + " " + self.index_str + " " + in_filename
 
 class Blasr(CommandLine):
-    def __init__(self, index_str, threads, genome_str):
+    def __init__(self, index_str, threads, genome_str, db_name):
         self.blasr_home = "/usr/home/markus/workspace/blasr/build/bin/"
         self.index_str = index_str + "blasr"
         self.genome_str = genome_str
         self.threads = threads
+        self.in_filename = ".temp" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.blasr_home + "blasr " + in_filename
         return cmd_str + " " + self.genome_str + " -m 1 --bestn 1 --nproc " + str(self.threads) + " --hitPolicy leftmost --sa " + self.index_str
 
 class BWA_MEM(CommandLine):
-    def __init__(self, index_str, threads):
+    def __init__(self, index_str, threads, db_name):
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
+        self.in_filename = ".temp" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa mem -t " + str(self.threads)
         return cmd_str + " " + self.index_str + " " + in_filename
 
 class BWA_SW(CommandLine):
-    def __init__(self, index_str, threads):
+    def __init__(self, index_str, threads, db_name):
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
+        self.in_filename = ".temp" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa bwasw -t " + str(self.threads)
         return cmd_str + " " + self.index_str + " " + in_filename
 
 class MA(CommandLine):
-    def __init__(self, index_str, threads, fast):
+    def __init__(self, index_str, threads, fast, db_name):
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
         self.threads = threads
         self.fast = "accurate"
         if fast:
             self.fast = "fast"
+        self.in_filename = ".temp" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
@@ -175,21 +178,21 @@ def test(
     num_threads = 1
 
     l = [
-        #("BOWTIE 2", Bowtie2(reference, num_threads)),
-        #("MINIMAP 2", Minimap2(reference, num_threads)),
+        ("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
+        ("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa")),
-        #("BWA MEM", BWA_MEM(reference, num_threads)),
-        #("BWA SW", BWA_SW(reference, num_threads)),
-        ("MA Fast", MA(reference, num_threads, True)),
-        #("MA Accurate", MA(reference, num_threads, False)),
+        ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
+        ("BWA SW", BWA_SW(reference, num_threads, db_name)),
+        #("MA Fast", MA(reference, num_threads, True, db_name)),
+        #("MA Accurate", MA(reference, num_threads, False, db_name)),
     ]
 
     for name, aligner in l:
         print("evaluating " + name + "...")
-        clearResults(db_name, reference, name) # CAREFUL WITH THE CLEARING
+        clearResults("/mnt/ssd1/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
         result = []
 
-        matrix = getQueriesAsASDMatrix(db_name, name, reference)
+        matrix = getQueriesAsASDMatrix("/mnt/ssd1/"+db_name, name, reference)
         for row in matrix:
             for queries in row:
                 print(".", end="", flush=True)#print a line of dots
@@ -236,19 +239,21 @@ def test(
                     )
         #print("submitting results (" + name + ") ...")
         if len(result) > 0:
-            submitResults(db_name, result)
+            submitResults("/mnt/ssd1/"+db_name, result)
     print("", end="")#print a newline
     print("done working on " + db_name)
 
 def test_all():
-    test("/mnt/ssd1/test.db", human_genome)
-    #test("/mnt/ssd1/default.db", human_genome)
-    #test("/mnt/ssd1/short.db", human_genome)
-    #test("/mnt/ssd1/long.db", human_genome)
-    #test("/mnt/ssd1/shortIndels.db", human_genome)
-    #test("/mnt/ssd1/longIndels.db", human_genome)
-    #test("/mnt/ssd1/insertionOnly.db", human_genome)
-    #test("/mnt/ssd1/deletionOnly.db", human_genome)
-    #test("/mnt/ssd1/illumina.db", human_genome)
-    #test("/mnt/ssd1/zoomLine.db", human_genome)
-    #test("/mnt/ssd1/zoomSquare.db", human_genome)
+    test("test.db", human_genome)
+    test("default.db", human_genome)
+    test("short.db", human_genome)
+    test("long.db", human_genome)
+    test("shortIndels.db", human_genome)
+    test("longIndels.db", human_genome)
+
+    #test("insertionOnly.db", human_genome)
+    #test("deletionOnly.db", human_genome)
+    #test("zoomLine.db", human_genome)
+    #test("zoomSquare.db", human_genome)
+
+    #test("illumina.db", human_genome)

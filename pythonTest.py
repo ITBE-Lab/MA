@@ -1370,10 +1370,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
             data2[-1].append(0.0)
         for q in get_random_pos_queries(l, num_queries, pack):
             ambiguity = fm_index.get_ambiguity(NucSeq(q))
-            #if not fm_index.test_sa_interval(NucSeq(q), pack):
-            #    print(q)
-            #    print("found error")
-            #    exit()
+            if not fm_index.test_sa_interval(NucSeq(q), pack):
+                print(q)
+                print("found error")
+                exit()
             if ambiguity == 0:
                 print(ambiguity)
                 print(q)
@@ -1439,10 +1439,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     show(gridplot( [[plot, plot2]] ))
 
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
-#get_ambiguity_distribution(random_genome, 1, 100)
+get_ambiguity_distribution(mouse_genome, 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
-#get_ambiguity_distribution(random_genome)
-#exit()
+get_ambiguity_distribution(mouse_genome)
+exit()
 
 """
 int iGap = 20;
@@ -1502,9 +1502,10 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-import measure_time
+#import measure_time
 
-measure_time.test_all()
+#measure_time.test_all()
+
 
 #test_my_approaches("/mnt/ssd1/default.db")
 #test_my_approaches("/mnt/ssd1/short.db")

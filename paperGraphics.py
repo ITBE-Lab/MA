@@ -237,7 +237,7 @@ def plasmodium():
 def ambiguity_per_length():
     high = 99
     low = 1
-    data1_, data2_ = plasmodium()
+    data1_, data2_ = plasmodium_large()
 
     data1 = []
     for row in data1_:
@@ -252,7 +252,7 @@ def ambiguity_per_length():
 
     r1max = 10
     r2size = 15
-    min_len=10
+    min_len=1
     max_len=20
 
 

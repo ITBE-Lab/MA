@@ -493,19 +493,17 @@ using namespace libMA;
     {
         /* This is a bit inefficient. We could boost performance by allowing a move for the sequence
         */
+        if(rxFastaDescriptor.pSequenceRef->length() == 0)
+            return;
+        if(rxFastaDescriptor.pSequenceRef->length() > 50000)
+            return;
+
         vAppendSequence( 
                 rxFastaDescriptor.sName,        // Name of the embedded sequence
                 rxFastaDescriptor.sComment,    // Comments for the sequence
                 NucSeq( *rxFastaDescriptor.pSequenceRef )
             );
     } // method    
-
-    void Pack::vAppendFastaFile( const char *pcFileName ) 
-    {
-        FastaReader xReader;
-        xReader.vLoadFastaFile(pcFileName);
-        vAppendFastaSequence(xReader);
-    } // method
 
     void Pack::vPackFastaFilesDeprecated( const std::vector<std::string> &rxvFileNameOfFastaFiles, 
                                             const char* pcPackPrefix, 
@@ -583,6 +581,11 @@ using namespace libMA;
                 vAppendFastaSequence( xFastaRecord );
             } // lambda
         ); // function call
+    } // method
+
+    void Pack::vAppendFastaFile( const char *pcFileName ) 
+    {
+        vAppendFASTA(pcFileName);
     } // method
 
 //#endif

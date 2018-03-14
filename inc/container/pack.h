@@ -915,6 +915,13 @@ namespace libMA
             return uiMid;
         } // method
 
+        /* Name of the sequence on position.
+        */
+        std::string nameOfSequenceForPosition( uint64_t uiPosition ) const
+        {
+            return std::string(nameOfSequenceWithId(uiSequenceIdForPosition(uiPosition)));
+        } // method
+
         /** Returns true if the section defined by both arguments has bridging properties.
          * Returns false for a non-bridging section, where the sequence id belonging to the section is transferred via the reference variable.
          * Returns the sequence id additionally.
@@ -961,6 +968,13 @@ namespace libMA
                 return uiPositionToReverseStrand(startOfSequenceWithId(iSequenceId / 2));
             return endOfSequenceWithId(iSequenceId / 2);
         }//function
+
+        /* Maps a forward strand position to the reverse strand.
+        */
+        inline uint64_t posInSequence( uint64_t uiPosition ) const
+        {
+            return 0;
+        } // method
         
         /** Returns true if the section defined by both arguments has bridging properties.
          * Returns false for a non-bridging section.

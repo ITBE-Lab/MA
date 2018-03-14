@@ -87,9 +87,9 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
         }//if
 
-        std::string sRefName = pPack->nameOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef));
+        std::string sRefName = pPack->nameOfSequenceForPosition(pAlignment->uiBeginOnRef);
         //1 based index... 
-        std::string sRefPos = std::to_string( 1 + pAlignment->uiBeginOnRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef)));
+        std::string sRefPos = std::to_string( 1 - pPack->posInSequence(pAlignment->uiBeginOnRef));
         std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
