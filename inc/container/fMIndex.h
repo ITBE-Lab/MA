@@ -896,7 +896,7 @@ namespace libMA
             )
             : FMIndex() // call the default constructor
         {
-            build_FMIndex( *pxSequenceCollection, 0 );
+            build_FMIndex( *pxSequenceCollection, 2 );//@fixme here might be the problem try 0 and 1
         } // constructor
     }; // class FMIndex
 
