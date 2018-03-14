@@ -175,23 +175,24 @@ def test(
     num_threads = 1
 
     l = [
-        ("BOWTIE 2", Bowtie2(reference, num_threads)),
-        ("MINIMAP 2", Minimap2(reference, num_threads)),
+        #("BOWTIE 2", Bowtie2(reference, num_threads)),
+        #("MINIMAP 2", Minimap2(reference, num_threads)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa")),
-        ("BWA MEM", BWA_MEM(reference, num_threads)),
-        ("BWA SW", BWA_SW(reference, num_threads)),
+        #("BWA MEM", BWA_MEM(reference, num_threads)),
+        #("BWA SW", BWA_SW(reference, num_threads)),
         ("MA Fast", MA(reference, num_threads, True)),
-        ("MA Accurate", MA(reference, num_threads, False)),
+        #("MA Accurate", MA(reference, num_threads, False)),
     ]
 
     for name, aligner in l:
         print("evaluating " + name + "...")
-        clearResults(db_name, reference, name)
+        clearResults(db_name, reference, name) # CAREFUL WITH THE CLEARING
         result = []
 
         matrix = getQueriesAsASDMatrix(db_name, name, reference)
         for row in matrix:
             for queries in row:
+                print(".", end="", flush=True)#print a line of dots
                 #print("extracting " + str(len(queries)) + " samples (" + name + ")...")
                 #setup the query pledges
                 query_list = ContainerVector(NucSeq())
@@ -236,17 +237,18 @@ def test(
         #print("submitting results (" + name + ") ...")
         if len(result) > 0:
             submitResults(db_name, result)
+    print("", end="")#print a newline
     print("done working on " + db_name)
 
 def test_all():
     test("/mnt/ssd1/test.db", human_genome)
-    test("/mnt/ssd1/default.db", human_genome)
-    test("/mnt/ssd1/short.db", human_genome)
+    #test("/mnt/ssd1/default.db", human_genome)
+    #test("/mnt/ssd1/short.db", human_genome)
     #test("/mnt/ssd1/long.db", human_genome)
-    test("/mnt/ssd1/shortIndels.db", human_genome)
-    test("/mnt/ssd1/longIndels.db", human_genome)
-    test("/mnt/ssd1/insertionOnly.db", human_genome)
-    test("/mnt/ssd1/deletionOnly.db", human_genome)
-    test("/mnt/ssd1/illumina.db", human_genome)
-    test("/mnt/ssd1/zoomLine.db", human_genome)
-    test("/mnt/ssd1/zoomSquare.db", human_genome)
+    #test("/mnt/ssd1/shortIndels.db", human_genome)
+    #test("/mnt/ssd1/longIndels.db", human_genome)
+    #test("/mnt/ssd1/insertionOnly.db", human_genome)
+    #test("/mnt/ssd1/deletionOnly.db", human_genome)
+    #test("/mnt/ssd1/illumina.db", human_genome)
+    #test("/mnt/ssd1/zoomLine.db", human_genome)
+    #test("/mnt/ssd1/zoomSquare.db", human_genome)

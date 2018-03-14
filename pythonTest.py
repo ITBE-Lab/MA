@@ -1438,11 +1438,11 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
-get_ambiguity_distribution(plasmodium_genome, 1, 100)
-get_ambiguity_distribution(random_genome, 1, 100)
-get_ambiguity_distribution(plasmodium_genome)
-get_ambiguity_distribution(random_genome)
-exit()
+#get_ambiguity_distribution(plasmodium_genome, 1, 100)
+#get_ambiguity_distribution(random_genome, 1, 100)
+#get_ambiguity_distribution(plasmodium_genome)
+#get_ambiguity_distribution(random_genome)
+#exit()
 
 """
 int iGap = 20;
@@ -1505,6 +1505,7 @@ amount = 2**10
 import measure_time
 
 measure_time.test_all()
+
 #test_my_approaches("/mnt/ssd1/default.db")
 #test_my_approaches("/mnt/ssd1/short.db")
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
@@ -1513,7 +1514,7 @@ measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
 analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
-
+exit()
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
@@ -1526,4 +1527,4 @@ analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 10
 analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
 analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)
 
-createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
+#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)

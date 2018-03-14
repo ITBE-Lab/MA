@@ -63,7 +63,7 @@ def makeRandom(out_name, size):
             file_all.write("G")
         if index % 20 == 0:
             file_all.write("\n")
-        if index % 50000 == 0:
+        if index % 10000 == 0:
             ref_seq.append( "randomSequence" + str(index), "noDesc", NucSeq(seq) )
             seq = ""
     if seq != "":
