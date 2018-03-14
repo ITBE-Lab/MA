@@ -495,8 +495,8 @@ using namespace libMA;
         */
         if(rxFastaDescriptor.pSequenceRef->length() == 0)
             return;
-        if(rxFastaDescriptor.pSequenceRef->length() > 50000)
-            return;
+        //if(rxFastaDescriptor.pSequenceRef->length() > 50000)
+        //    return;
 
         vAppendSequence( 
                 rxFastaDescriptor.sName,        // Name of the embedded sequence
