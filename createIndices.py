@@ -85,7 +85,7 @@ def chrNames(prefix, num, suffix):
     return ret
 
 
-#make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human_bugged")
+make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human_bugged")
 #make(["/mnt/ssd0/chrom/human/chr1.fna" ], "/mnt/ssd0/genome/humanchr1_bugged")
 #make_hash("/mnt/ssd0/genome/human")
 #make(["/mnt/ssd0/chrom/plasmodium/genome.fasta"], "/mnt/ssd0/genome/plasmodium")

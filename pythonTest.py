@@ -1439,10 +1439,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     show(gridplot( [[plot, plot2]] ))
 
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
-get_ambiguity_distribution("/mnt/ssd0/genome/humanchr1_bugged", 1, 100)
+#get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged", 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
-get_ambiguity_distribution("/mnt/ssd0/genome/humanchr1_bugged")
-exit()
+#get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged")
+#exit()
 
 """
 int iGap = 20;
