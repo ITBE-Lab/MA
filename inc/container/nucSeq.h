@@ -397,7 +397,7 @@ namespace libMA
     public:
         /** The table used to translate from base pairs to numeric codes for nucleotides
          */
-        static const unsigned char xNucleotideTranslationTable[256];
+        static const EXPORTED unsigned char xNucleotideTranslationTable[256];
 
         std::string sName = "unknown";
 

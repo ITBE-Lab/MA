@@ -87,9 +87,36 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
         }//if
 
-        std::string sRefName = pPack->nameOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef));
-        //1 based index... 
-        std::string sRefPos = std::to_string( 1 + pAlignment->uiBeginOnRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(pAlignment->uiBeginOnRef)));
+        std::string sRefName = pPack->nameOfSequenceForPosition(pAlignment->uiBeginOnRef);
+        auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef);
+
+        DEBUG(// check if the position that is saved to the file is correct
+            bool bWrong = false;
+            if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+            {
+
+            }//if
+            else
+            {
+                if( pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName(sRefName) + uiRefPos)
+                    bWrong = true;
+            }//else
+
+            if(bWrong)
+            {
+                std::cerr << "Error: Tried to write wrong index to file" << std::endl;
+                std::cout << "Have: " << sRefName
+                          << " (= " << pPack->startOfSequenceWithName(sRefName) << ") "
+                          << uiRefPos << std::endl;
+                std::cout << "Wanted: " << pAlignment->uiBeginOnRef << " " << uiRefPos << std::endl;
+                if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+                    std::cout << "Is reverse: True" << std::endl;
+                else
+                    std::cout << "Is reverse: False" << std::endl;
+                exit(0);
+            }//if
+        )//DEBUG
+
         std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
@@ -110,7 +137,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             //reference name
             *pOut << sRefName << "\t";
             //pos
-            *pOut << sRefPos << "\t";
+            *pOut << std::to_string(uiRefPos) << "\t";
             //mapping quality
             *pOut << sMapQual << "\t";
             //cigar
