@@ -973,7 +973,9 @@ namespace libMA
         */
         inline uint64_t posInSequence( uint64_t uiPosition ) const
         {
-            return 0;
+            return uiPosition - startOfSequenceWithId(
+                uiSequenceIdForPosition(iAbsolutePosition(uiPosition))
+            );
         } // method
         
         /** Returns true if the section defined by both arguments has bridging properties.
