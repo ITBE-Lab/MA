@@ -184,7 +184,7 @@ def test(
         #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, db_name)),
         ("MA Fast", MA(reference, num_threads, True, db_name)),
-        #("MA Accurate", MA(reference, num_threads, False, db_name)),
+        ("MA Accurate", MA(reference, num_threads, False, db_name)),
     ]
 
     for name, aligner in l:
@@ -244,13 +244,13 @@ def test(
     print("done working on " + db_name)
 
 def test_all():
-    test("test.db", human_genome)
-    #test("default.db", human_genome)
-    #test("short.db", human_genome)
-    #test("long.db", human_genome)
-    #test("shortIndels.db", human_genome)
-    #test("longIndels.db", human_genome)
+    #test("test.db", human_genome)
+    test("default.db", human_genome)
+    test("short.db", human_genome)
+    test("long.db", human_genome)
+    test("shortIndels.db", human_genome)
 
+    #test("longIndels.db", human_genome)
     #test("insertionOnly.db", human_genome)
     #test("deletionOnly.db", human_genome)
     #test("zoomLine.db", human_genome)

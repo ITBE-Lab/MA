@@ -153,6 +153,10 @@ int main(int argc, char*argv[])
                 std::cerr << "--alignIn and --genome are compulsory if --align is set" << std::endl;
             else
             {
+                if(vm.count("global") == 1)//input is for local
+                    std::cerr 
+                        << "WARNING: Currently global alignments will drastically decrease speed"
+                        << std::endl;
                 /*
                  *
                  * Alignment starts here

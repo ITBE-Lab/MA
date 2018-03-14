@@ -1370,10 +1370,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
             data2[-1].append(0.0)
         for q in get_random_pos_queries(l, num_queries, pack):
             ambiguity = fm_index.get_ambiguity(NucSeq(q))
-            if not fm_index.test_sa_interval(NucSeq(q), pack):
-                print(q)
-                print("found error")
-                exit()
+            #if not fm_index.test_sa_interval(NucSeq(q), pack):
+            #    print(q)
+            #    print("found error")
+            #    exit()
             if ambiguity == 0:
                 print(ambiguity)
                 print(q)
@@ -1439,10 +1439,10 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     show(gridplot( [[plot, plot2]] ))
 
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
-#get_ambiguity_distribution("/mnt/ssd0/genome/humanchr1_bugged", 1, 100)
+get_ambiguity_distribution("/mnt/ssd0/genome/humanchr1_bugged", 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
-#get_ambiguity_distribution("/mnt/ssd0/genome/humanchr1_bugged")
-#exit()
+get_ambiguity_distribution("/mnt/ssd0/genome/humanchr1_bugged")
+exit()
 
 """
 int iGap = 20;
@@ -1514,8 +1514,9 @@ measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/insertionOnly.db")
 #test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
-analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
 exit()
+analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
+analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
