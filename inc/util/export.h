@@ -123,6 +123,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * @todo different output formats
  * @todo code cleanup
  * @todo test with queries from the reverse complement...
+ * @todo self check for genomes
  * 
  * @section about_us_sec About Us
  * 

@@ -1441,8 +1441,8 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
 #get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged", 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
-#get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged")
-#exit()
+get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged2")
+exit()
 
 """
 int iGap = 20;
