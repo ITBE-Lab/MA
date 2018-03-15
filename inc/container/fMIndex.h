@@ -153,7 +153,7 @@ namespace libMA
         
         bool EXPORTED testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack);
 
-        bool EXPORTED test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest) const;
+        bool EXPORTED test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest);
 
     protected :
         typedef int64_t bwtint_t;
@@ -901,7 +901,7 @@ namespace libMA
             DEBUG(
                 if(!test(pxSequenceCollection, 10000))// test 10000 sequences
                 {
-                    std:cerr << "WARNING: suffix array test failed" << std::endl;
+                    std::cerr << "WARNING: suffix array test failed" << std::endl;
                     exit(0);
                 }//if
             )

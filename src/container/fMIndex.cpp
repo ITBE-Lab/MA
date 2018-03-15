@@ -117,7 +117,7 @@ unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
     return getInterval(pQuerySeq).size();
 }//function
 
-bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack) const
+bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack)
 {
     SAInterval ik = getInterval(pQuerySeq);
     for (
@@ -136,11 +136,11 @@ bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::share
 }//fuction
 
 
-bool FMIndex::test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest) const
+bool FMIndex::test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest)
 {
     while(uiNumTest-- > 0)
     {
-        nucSeqIndex uiPos = std::rand() % pPack->uiUnpackedSizeForwardPlusReverse();
+        auto uiPos = std::rand() % pPack->uiUnpackedSizeForwardPlusReverse();
         if(!testSaInterval(pPack->vExtract(uiPos, uiPos+10), pPack))
             return false;
     }//while
