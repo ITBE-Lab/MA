@@ -86,9 +86,9 @@ def chrNames(prefix, num, suffix):
 
 
 #make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human_bugged2")
+make(chrNames("/mnt/ssd0/chrom/mouse/chr", 19, ".fna"), "/mnt/ssd0/genome/mouse")
+#make(["/mnt/ssd0/chrom/plasmodium/genome.fasta"], "/mnt/ssd0/genome/plasmodium")
+#makeRandom("/mnt/ssd0/genome/random", 3 * 10**9)
 #make(["/mnt/ssd0/chrom/human/chr1.fna" ], "/mnt/ssd0/genome/humanchr1_bugged")
 #make_hash("/mnt/ssd0/genome/human")
-#make(["/mnt/ssd0/chrom/plasmodium/genome.fasta"], "/mnt/ssd0/genome/plasmodium")
-#make(chrNames("/mnt/ssd0/chrom/mouse/chr", 21, ".fna"), "/mnt/ssd0/chrom/mouse/all")
-#makeRandom("/mnt/ssd0/genome/random", 3 * 10**9)
 #makeRandom("/mnt/ssd0/genome/random_3_10_7", 3 * 10**7)

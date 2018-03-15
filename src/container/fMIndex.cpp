@@ -3,6 +3,7 @@
  * @author Arne Kutzner
  */
 #include "container/fMIndex.h"
+#include <cstdlib>
 using namespace libMA;
 
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
@@ -116,7 +117,7 @@ unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
     return getInterval(pQuerySeq).size();
 }//function
 
-bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack)
+bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack) const
 {
     SAInterval ik = getInterval(pQuerySeq);
     for (
@@ -134,6 +135,17 @@ bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<
     return true;
 }//fuction
 
+
+bool FMIndex::test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest) const
+{
+    while(uiNumTest-- > 0)
+    {
+        nucSeqIndex uiPos = std::rand() % pPack->uiUnpackedSizeForwardPlusReverse();
+        if(!testSaInterval(pPack->vExtract(uiPos, uiPos+10), pPack))
+            return false;
+    }//while
+    return true;
+}//function
 
 void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
 {
@@ -302,7 +314,6 @@ void FMIndex::build_FMIndex(
     {
         uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() < 50000000 ? 0 : 1; // automatic selection depending on size of pack
     } // if
-    uiAlgorithmSelection = 1;//@fixme remove me!!!
 
     /*
     * Step 1: Create the basic BWT.

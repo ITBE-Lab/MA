@@ -151,8 +151,9 @@ namespace libMA
         
         unsigned int EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
         
-        bool EXPORTED testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack);
+        bool EXPORTED testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack);
 
+        bool EXPORTED test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest) const;
 
     protected :
         typedef int64_t bwtint_t;
@@ -896,7 +897,14 @@ namespace libMA
             )
             : FMIndex() // call the default constructor
         {
-            build_FMIndex( *pxSequenceCollection, 2 );//@fixme here might be the problem try 0 and 1
+            build_FMIndex( *pxSequenceCollection, 2 );
+            DEBUG(
+                if(!test(pxSequenceCollection, 10000))// test 10000 sequences
+                {
+                    std:cerr << "WARNING: suffix array test failed" << std::endl;
+                    exit(0);
+                }//if
+            )
         } // constructor
     }; // class FMIndex
 

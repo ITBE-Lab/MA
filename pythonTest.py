@@ -1385,7 +1385,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     print(indices1)
     print(indices2)
     print("[copy here]")
-    print( (data1, data2) )
+    print( (min_len, max_len, data1, data2) )#the tuple to be copied
     print("[copy here end]")
 
     color_mapper = LinearColorMapper(
@@ -1441,8 +1441,15 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
 #get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged", 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
-get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged2")
-exit()
+#print("human")
+#get_ambiguity_distribution(human_genome)
+#print("random")
+#get_ambiguity_distribution(random_genome)
+#print("plasmodium")
+#get_ambiguity_distribution(plasmodium_genome, 5, 15)
+#print("mouse")
+#get_ambiguity_distribution(mouse_genome)
+#exit()
 
 """
 int iGap = 20;
@@ -1502,9 +1509,9 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-import measure_time
+#import measure_time
 
-measure_time.test_all()
+#measure_time.test_all()
 
 
 #test_my_approaches("/mnt/ssd1/default.db")
@@ -1514,12 +1521,12 @@ measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/insertionOnly.db")
 #test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
-exit()
-analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
-analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
+#analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
+#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+exit()
 #analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
 analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
 analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
