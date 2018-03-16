@@ -1335,12 +1335,30 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
             yield q
 
     def get_random_pos_queries(l, amount, pack):
-        max_pos = pack.unpacked_size() - l - 1
-        for _ in range(amount):
-            pos = random.randint(0, max_pos)
-            while pack.is_bridging(pos, l):
-                pos = random.randint(0, max_pos)
-            yield str(pack.extract_from_to(pos, pos+l))
+        if 4**l <= amount: # in this case there are not enough samples...
+            print("computing all samples")
+            for q in get_all_queries(l):
+                yield q
+        else: # compute the random unique samples
+            print("computing samples from random location")
+            already_seen = set()
+            already_seen.add("")
+            max_pos = pack.unpacked_size() - l - 1
+            tries = 0
+            for index in range(amount):
+                sequence = ""
+                while sequence in already_seen:
+                    tries += 1
+                    pos = random.randint(0, max_pos)
+                    while pack.is_bridging(pos, l):
+                        pos = random.randint(0, max_pos)
+                    sequence = str(pack.extract_from_to(pos, pos+l))
+                assert(sequence != "")
+                already_seen.add(sequence)
+                if (index+1) % 10000 == 0:
+                    print(100*(index+1)/amount, "% num_tries:", tries/10000)
+                    tries = 0
+                yield sequence
 
     fm_index = FMIndex()
     fm_index.load(reference)
@@ -1362,6 +1380,8 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     data1 = []
     data2 = []
     for l in range(min_len, max_len):
+        print(l, " of [", min_len, ", ", max_len, ")")
+        num_queries_actual = 0
         data1.append( [] )
         for _ in range(r1max):
             data1[-1].append(0.0)
@@ -1370,6 +1390,9 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
             data2[-1].append(0.0)
         for q in get_random_pos_queries(l, num_queries, pack):
             ambiguity = fm_index.get_ambiguity(NucSeq(q))
+            #in this case an ambiguity of 0 might occur
+            if l <= 4**num_queries and ambiguity == 0:
+                continue
             #if not fm_index.test_sa_interval(NucSeq(q), pack):
             #    print(q)
             #    print("found error")
@@ -1378,9 +1401,15 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
                 print(ambiguity)
                 print(q)
             if ambiguity < r1max:
-                data1[-1][ambiguity] += 1.0/num_queries
+                data1[-1][ambiguity] += 1.0
             elif int(math.log2(ambiguity - r1max+1)) < r2size:
-                data2[-1][int(math.log2(ambiguity - r1max+1))] += 1.0/num_queries
+                data2[-1][int(math.log2(ambiguity - r1max+1))] += 1.0
+            num_queries_actual += 1
+        for index, number in enumerate(data1[-1]):
+            data1[-1][index] = number / num_queries_actual
+        for index, number in enumerate(data2[-1]):
+            data2[-1][index] = number / num_queries_actual
+
 
     print(indices1)
     print(indices2)
@@ -1441,15 +1470,15 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
 #get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged", 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
-#print("human")
-#get_ambiguity_distribution(human_genome)
 #print("random")
 #get_ambiguity_distribution(random_genome)
-#print("plasmodium")
-#get_ambiguity_distribution(plasmodium_genome, 5, 15)
-#print("mouse")
-#get_ambiguity_distribution(mouse_genome)
-#exit()
+print("plasmodium")
+get_ambiguity_distribution(plasmodium_genome, 5, 15)
+print("mouse")
+get_ambiguity_distribution(mouse_genome)
+print("human")
+get_ambiguity_distribution(human_genome)
+exit()
 
 """
 int iGap = 20;
@@ -1509,9 +1538,9 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-#import measure_time
+import measure_time
 
-#measure_time.test_all()
+measure_time.test_all()
 
 
 #test_my_approaches("/mnt/ssd1/default.db")
