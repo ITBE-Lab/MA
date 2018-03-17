@@ -261,12 +261,12 @@ namespace libMA
          * When multiple alignments are created we use this function to sort them 
          * overload from Module
          */
-        bool smaller(const std::shared_ptr<Container> pOther) const
+        bool larger(const std::shared_ptr<Container> pOther) const
         {
             const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
-            return score() < pAlign->score();
+            return score() > pAlign->score();
         }//function
 
         /**

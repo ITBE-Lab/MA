@@ -156,7 +156,8 @@ def test_my_approach(
         couple = ExecOnVec(ls)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
-        optimal = ExecOnVec(nmw)
+        sort_after_score = True
+        optimal = ExecOnVec(nmw, sort_after_score)
         mappingQual = MappingQuality()
 
         pledges = [[], [], [], [], [], []]
@@ -243,6 +244,9 @@ def test_my_approach(
             alignment2 = None
             if len(alignments.get()) > 1:
                 alignment2 = alignments.get()[1]
+                if not alignment.get_score() >= alignment2.get_score():
+                    print("Warning", alignment.get_score(), "not >=", alignment2.get_score())
+                    assert(not sort_after_score or False)
             optimal_alignment = None
             if len(optimal_alignment_out[i].get()) > 0:
                 optimal_alignment = optimal_alignment_out[i].get()[0]
@@ -1542,7 +1546,7 @@ amount = 2**10
 
 #test_my_approaches("/mnt/ssd1/test.db")
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-
+#exit()
 import measure_time
 
 measure_time.test_all()

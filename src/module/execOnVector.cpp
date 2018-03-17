@@ -85,23 +85,22 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
 
     if(sort)
     {
+        //sort ascendingly
         std::sort(
             pResults->begin(), pResults->end(),
             []
             (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
             {
-                return a->smaller(b);
+                return a->larger(b);
             }//lambda
         );//sort function call
-        assert(pResults->size() <= 1 || !pResults->back()->smaller(pResults->front()));
+        assert(pResults->size() <= 1 || !pResults->back()->larger(pResults->front()));
     }//if
 
     if(nMany != 0 && pResults->size() > nMany)
     {
-        auto end = pResults->end();
-        for(unsigned int i = 0; i < nMany; i++)
-            end--;
-        pResults->erase(pResults->begin(), end);
+        //remove the smallest elements
+        pResults->erase(pResults->begin()+nMany, pResults->end());
         assert(pResults->size() == nMany);
     }//if
 

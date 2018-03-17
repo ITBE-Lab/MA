@@ -255,12 +255,12 @@ namespace libMA
                 push_back(rS);
         }//function
 
-        bool smaller(const std::shared_ptr<Container> pOther) const
+        bool larger(const std::shared_ptr<Container> pOther) const
         {
             const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>(pOther);
             if(pSeeds == nullptr)
                 return false;
-            return getScore() < pSeeds->getScore();
+            return getScore() > pSeeds->getScore();
         }// operator
 
     };//class

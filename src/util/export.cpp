@@ -94,7 +94,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         );
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
-        std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), true, uiReportNBest));
+        // false here is counter intuitive by experiments did show that soting by soc score is better...
+        std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), false, uiReportNBest));
     std::shared_ptr<Module> pMapping(new MappingQuality());
 
     //modules for the paired alignment

@@ -57,9 +57,9 @@ namespace libMA
          * @details
          * used by ExecOnVec to sort containers in order
          */
-        virtual bool smaller(const std::shared_ptr<Container> other) const
+        virtual bool larger(const std::shared_ptr<Container> other) const
         {
-            return true;
+            return false;
         }// operator
     };//class
 

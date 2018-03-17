@@ -13,9 +13,7 @@ class CommandLine(Module):
     def check(self):
         okay = True
         for index, existence in enumerate(self.check_existence):
-            if existence == 0:
-                print("Warning: index", index, "had", existence, "alignments associated")
-            elif existence > 1:
+            if existence > 1:
                 print("Error: index", index, "had", existence, "alignments associated")
                 okay = False
         return okay
@@ -222,12 +220,12 @@ def test(
 
     l = [
         #("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
-        ("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
+        #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa", db_name)),
-        ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
+        #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, db_name)),
         ("MA Fast", MA(reference, num_threads, True, db_name)),
-        ("MA Accurate", MA(reference, num_threads, False, db_name)),
+        #("MA Accurate", MA(reference, num_threads, False, db_name)),
     ]
 
     for name, aligner in l:
