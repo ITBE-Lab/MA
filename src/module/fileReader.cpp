@@ -53,6 +53,12 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
         pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+
+        //run self tests for the nucSeq
+        DEBUG(
+            pRet->check();
+        )//DEBUG
+
         return pRet;
     }//if
     //FASTAQ format

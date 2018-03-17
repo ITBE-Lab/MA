@@ -587,7 +587,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
     ref_seq = Pack()
     ref_seq.load(ref)
 
-    max_indels = int(size/indel_size)*2
+    max_indels = 1
+    if indel_size != 0:
+        max_indels = int(size/indel_size)*2
     queries_list = []
 
     nuc_distrib_count_orig = [0,0,0,0,0]

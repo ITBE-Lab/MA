@@ -35,9 +35,9 @@ html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildc
 	doxygen doxygen.config
 
 install: all
-	pip3 install . --upgrade --no-cache-dir
+	#pip3 install . --upgrade --no-cache-dir #no pip installation at the moment
 	cp libMA.so /usr/lib
-	pip3 show MA
+	#pip3 show MA #no pip installation at the moment
 
 ##@todo remove me
 vid:

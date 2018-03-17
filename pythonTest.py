@@ -238,6 +238,8 @@ def test_my_approach(
         result = []
         for i, alignments in enumerate(pledges[-1]):
             alignment = alignments.get()[0]
+            if len(alignment) == 0:
+                continue
             alignment2 = None
             if len(alignments.get()) > 1:
                 alignment2 = alignments.get()[1]
@@ -479,14 +481,14 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = False
 
-    clearResults(db_name, human_genome, "MA 1")
-    clearResults(db_name, human_genome, "MA 2")
+    #clearResults(db_name, human_genome, "MA Accurate")
+    clearResults(db_name, human_genome, "MA Fast")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
-    test_my_approach(db_name, human_genome, "MA 2", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
+    #test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA 1", max_hits=100, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
+    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
     #test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=1000, complete_seeds=True, full_analysis=full_analysis)
 
@@ -839,7 +841,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 for y in x.values():
                     total += y
             return total
-        print(approach, ":\taverage accuracy:", 100*dict_sum(hits)/dict_sum(tries), "%")
+        print(approach, ":\taverage accuracy:", 100*dict_sum(hits)/max(dict_sum(tries),1), "%")
 
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
@@ -1472,13 +1474,13 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #get_ambiguity_distribution(plasmodium_genome)
 #print("random")
 #get_ambiguity_distribution(random_genome)
-print("plasmodium")
-get_ambiguity_distribution(plasmodium_genome, 5, 15)
-print("mouse")
-get_ambiguity_distribution(mouse_genome)
-print("human")
-get_ambiguity_distribution(human_genome)
-exit()
+#print("plasmodium")
+#get_ambiguity_distribution(plasmodium_genome, 5, 15)
+#print("mouse")
+#get_ambiguity_distribution(mouse_genome)
+#print("human")
+#get_ambiguity_distribution(human_genome)
+#exit()
 
 """
 int iGap = 20;
@@ -1538,6 +1540,9 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
+#test_my_approaches("/mnt/ssd1/test.db")
+#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
+
 import measure_time
 
 measure_time.test_all()
@@ -1551,11 +1556,11 @@ measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
 #analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
-#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
+analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
+exit()
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
-exit()
 #analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
 analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
 analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)

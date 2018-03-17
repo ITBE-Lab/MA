@@ -8,6 +8,17 @@ class CommandLine(Module):
 
     def __init__(self):
         self.elapsed_time = 0
+        self.check_existence = []
+
+    def check(self):
+        okay = True
+        for index, existence in enumerate(self.check_existence):
+            if existence == 0:
+                print("Warning: index", index, "had", existence, "alignments associated")
+            elif existence > 1:
+                print("Error: index", index, "had", existence, "alignments associated")
+                okay = False
+        return okay
 
     def __get_sam(self, index_str, queries):
         f = open(self.in_filename, "w")
@@ -18,7 +29,7 @@ class CommandLine(Module):
             assert(len(query_string) > 0)
             while len(query_string) > 60:
                 line = query_string[:60]
-                query_string = query_string[61:]
+                query_string = query_string[60:]
                 f.write(line + "\n")
             f.write(query_string + "\n")
 
@@ -28,7 +39,7 @@ class CommandLine(Module):
         cmd_str = self.create_command(self.in_filename)
 
         start_time = time.time()
-        result = subprocess.run(cmd_str, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
         self.elapsed_time = time.time() - start_time
 
         os.remove(self.in_filename)
@@ -52,9 +63,12 @@ class CommandLine(Module):
 
         #transform sam file into list data structure
         alignments = []
+        #check how often each query was aligned
+        del self.check_existence[:]
 
         for _ in range(len(queries)):
             alignments.append(Alignment())
+            self.check_existence.append(0)
 
         for line in lines:
             if len(line) == 0:
@@ -65,6 +79,7 @@ class CommandLine(Module):
                 #print(str(int(columns[3])) + " " + str(pack.start_of_sequence(columns[2])))
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start)
+                self.check_existence[int(columns[0])] += 1
             except:
                 print("oh oh:" + line)
                 pass
@@ -75,6 +90,10 @@ class CommandLine(Module):
 
         for alignment in alignments:
             ret.append(alignment)
+
+        if self.do_checks():
+            if not self.check():
+                return None
 
         return ret
 
@@ -93,6 +112,7 @@ class CommandLine(Module):
 
 class Bowtie2(CommandLine):
     def __init__(self, index_str, threads, db_name):
+        super().__init__()
         self.bowtie2_home = "/usr/home/markus/workspace/bowtie2/bowtie2-2.3.3.1/"
         self.index_str = index_str + "bowtie2"
         self.threads = threads
@@ -104,8 +124,12 @@ class Bowtie2(CommandLine):
         input_str = "-f -U " + in_filename
         return cmd_str + " " + index_str + " " + input_str
 
+    def do_checks(self):
+        return False
+
 class Minimap2(CommandLine):
     def __init__(self, index_str, threads, db_name):
+        super().__init__()
         self.minimap2_home = "/usr/home/markus/workspace/minimap2/"
         self.index_str = index_str + ".mmi"
         self.threads = threads
@@ -115,8 +139,12 @@ class Minimap2(CommandLine):
         cmd_str = self.minimap2_home + "minimap2 -t " + str(self.threads) + " -a "
         return cmd_str + " " + self.index_str + " " + in_filename
 
+    def do_checks(self):
+        return False
+
 class Blasr(CommandLine):
     def __init__(self, index_str, threads, genome_str, db_name):
+        super().__init__()
         self.blasr_home = "/usr/home/markus/workspace/blasr/build/bin/"
         self.index_str = index_str + "blasr"
         self.genome_str = genome_str
@@ -127,8 +155,12 @@ class Blasr(CommandLine):
         cmd_str = self.blasr_home + "blasr " + in_filename
         return cmd_str + " " + self.genome_str + " -m 1 --bestn 1 --nproc " + str(self.threads) + " --hitPolicy leftmost --sa " + self.index_str
 
+    def do_checks(self):
+        return False
+
 class BWA_MEM(CommandLine):
     def __init__(self, index_str, threads, db_name):
+        super().__init__()
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
@@ -138,8 +170,12 @@ class BWA_MEM(CommandLine):
         cmd_str = self.bwa_home + "bwa mem -t " + str(self.threads)
         return cmd_str + " " + self.index_str + " " + in_filename
 
+    def do_checks(self):
+        return False
+
 class BWA_SW(CommandLine):
     def __init__(self, index_str, threads, db_name):
+        super().__init__()
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
@@ -149,8 +185,12 @@ class BWA_SW(CommandLine):
         cmd_str = self.bwa_home + "bwa bwasw -t " + str(self.threads)
         return cmd_str + " " + self.index_str + " " + in_filename
 
+    def do_checks(self):
+        return False
+
 class MA(CommandLine):
     def __init__(self, index_str, threads, fast, db_name):
+        super().__init__()
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
         self.threads = threads
@@ -162,6 +202,9 @@ class MA(CommandLine):
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
         return cmd_str + " -g " + self.index_str + " -i " + in_filename
+
+    def do_checks(self):
+        return True
 
 human_genome = "/mnt/ssd0/genome/human"
 
@@ -179,12 +222,12 @@ def test(
 
     l = [
         #("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
-        #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
-        #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa")),
-        #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
+        ("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
+        #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa", db_name)),
+        ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, db_name)),
         ("MA Fast", MA(reference, num_threads, True, db_name)),
-        #("MA Accurate", MA(reference, num_threads, False, db_name)),
+        ("MA Accurate", MA(reference, num_threads, False, db_name)),
     ]
 
     for name, aligner in l:
@@ -244,8 +287,8 @@ def test(
     print("done working on " + db_name)
 
 def test_all():
-    #test("test.db", human_genome)
-    test("default.db", human_genome)
+    test("test.db", human_genome)
+    #test("default.db", human_genome)
     #test("short.db", human_genome)
     #test("long.db", human_genome)
     #test("shortIndels.db", human_genome)
