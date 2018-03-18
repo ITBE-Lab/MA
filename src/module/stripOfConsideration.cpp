@@ -264,6 +264,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 
+    unsigned int uiSoCIndex = 0;
     //extract the required amount of SOCs
     auto xCollect = xMaxima.begin();
     while(pRet->size() < numStrips && xCollect != xMaxima.end())
@@ -272,11 +273,27 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<Seeds> pSeeds(new Seeds());
         //iterator walking till the end of the strip that shall be collected
         auto xCollect2 = std::get<1>(*xCollect);
+        //save SoC index
+        pSeeds->xStats.index_of_strip = uiSoCIndex++;
+        pSeeds->xStats.uiInitialQueryBegin = xCollect2->start();
+        pSeeds->xStats.uiInitialRefBegin = xCollect2->start_ref();
+        pSeeds->xStats.uiInitialQueryEnd = xCollect2->end();
+        pSeeds->xStats.uiInitialRefEnd = xCollect2->end_ref();
         nucSeqIndex end = getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize;
         while(
             xCollect2 != vSeeds.end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))
         {
+            //save the beginning and end of the SoC
+            if(xCollect2->start() < pSeeds->xStats.uiInitialQueryBegin)
+                pSeeds->xStats.uiInitialQueryBegin = xCollect2->start();
+            if(xCollect2->start_ref() < pSeeds->xStats.uiInitialRefBegin)
+                pSeeds->xStats.uiInitialRefBegin = xCollect2->start_ref();
+            if(xCollect2->end() > pSeeds->xStats.uiInitialQueryEnd)
+                pSeeds->xStats.uiInitialQueryEnd = xCollect2->end();
+            if(xCollect2->end_ref() > pSeeds->xStats.uiInitialRefEnd)
+                pSeeds->xStats.uiInitialRefEnd = xCollect2->end_ref();
+            pSeeds->xStats.num_seeds_in_strip++;
             assert(xCollect2->start() <= xCollect2->end());
             assert(xCollect2->end() <= pQuerySeq->length());
             //if the iterator is still within the strip add the seed and increment the iterator

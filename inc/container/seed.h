@@ -161,6 +161,10 @@ namespace libMA
         bool bPaired;
         bool bFirst;
         std::string sName;
+        nucSeqIndex uiInitialQueryBegin;
+        nucSeqIndex uiInitialRefBegin;
+        nucSeqIndex uiInitialQueryEnd;
+        nucSeqIndex uiInitialRefEnd;
 
         AlignmentStatistics()
                 :
@@ -170,7 +174,11 @@ namespace libMA
             anchor_ambiguity(0),
             bPaired(false),
             bFirst(false),
-            sName("unknown")
+            sName("unknown"),
+            uiInitialQueryBegin(0),
+            uiInitialRefBegin(0),
+            uiInitialQueryEnd(0),
+            uiInitialRefEnd(0)
         {}
 
         void operator=(AlignmentStatistics &rOther)
@@ -182,6 +190,10 @@ namespace libMA
             bPaired = rOther.bPaired;
             bFirst = rOther.bFirst;
             sName = rOther.sName;
+            uiInitialQueryBegin = rOther.uiInitialQueryBegin;
+            uiInitialRefBegin = rOther.uiInitialRefBegin;
+            uiInitialQueryEnd = rOther.uiInitialQueryEnd;
+            uiInitialRefEnd = rOther.uiInitialRefEnd;
         }//function
     };//class
 

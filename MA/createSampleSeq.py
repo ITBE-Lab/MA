@@ -414,9 +414,8 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
 
 
 min_accuracy = 100
-def near(start, start_2, end, end_2):
-    max_d = 0#10000
-    return end_2 + max_d >= start and start_2 - max_d <= start
+def near(start_align, start_orig, end_align, end_orig):
+    return end_align >= start_orig and start_align <= end_orig
 
 def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size, 
         indel_size, reference=None):

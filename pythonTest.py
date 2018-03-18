@@ -89,7 +89,8 @@ def test_my_approach(
         local=True,
         reseed=False,
         full_analysis=False,
-        do_minimizers=False
+        do_minimizers=False,
+        sort_after_score=True
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -116,6 +117,7 @@ def test_my_approach(
     num_soc_seeds = 0
     num_coupled_seeds = 0
     warn_once = True
+    picked_wrong_count = 0
 
     extract_size = 2**15
     # break samples into chunks of 2^15
@@ -156,7 +158,6 @@ def test_my_approach(
         couple = ExecOnVec(ls)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
-        sort_after_score = True
         optimal = ExecOnVec(nmw, sort_after_score)
         mappingQual = MappingQuality()
 
@@ -235,6 +236,7 @@ def test_my_approach(
         print("computing optimal (", name, ") ...")
         Pledge.simultaneous_get(optimal_alignment_out, 32)
 
+
         print("extracting results (", name, ") ...")
         result = []
         for i, alignments in enumerate(pledges[-1]):
@@ -244,9 +246,50 @@ def test_my_approach(
             alignment2 = None
             if len(alignments.get()) > 1:
                 alignment2 = alignments.get()[1]
-                if not alignment.get_score() >= alignment2.get_score():
-                    print("Warning", alignment.get_score(), "not >=", alignment2.get_score())
-                    assert(not sort_after_score or False)
+                #
+                # check if the second alignment was accurate and the first was not...
+                #
+                _, _, origin_pos, orig_size = queries[i]
+                align_1_hit = near(
+                    alignment.begin_on_ref,
+                    origin_pos,
+                    alignment.end_on_ref,
+                    origin_pos+orig_size)
+                align_2_hit = near(
+                    alignment2.begin_on_ref,
+                    origin_pos,
+                    alignment2.end_on_ref,
+                    origin_pos+orig_size)
+                if align_2_hit and not align_1_hit:
+                    def get_seed_coverage(alignment):
+                        return (
+                            "Query: " + str(alignment.stats.initial_q_beg) + " - " +
+                            str(alignment.stats.initial_q_end) + " Reference: " +
+                            str(alignment.stats.initial_r_beg) + " - " +
+                            str(alignment.stats.initial_r_end)
+                            )
+                    def print_seeds(alignment):
+                        print("Num Seeds: ", alignment.stats.num_seeds_in_strip,
+                             " SoC index:", alignment.stats.index_of_strip)
+                        for seed in pledges[2][i].get()[alignment.stats.index_of_strip]:
+                            print( (seed.start, seed.start_ref, seed.size) )
+                    print("Warning picked wrong alignment",
+                        alignment.get_score(), "?>=", alignment2.get_score())
+                    print("Alignment 1 is hit: ", align_1_hit)
+                    print("Alignment 1 seed coverage: ", get_seed_coverage(alignment))
+                    print("Alignment 1 seeds: ")
+                    print_seeds(alignment)
+                    AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
+                    print("Alignment 2 is hit: ", align_2_hit)
+                    print("Alignment 2 seed coverage: ", get_seed_coverage(alignment2))
+                    print("Alignment 2 seeds: ")
+                    print_seeds(alignment2)
+                    AlignmentPrinter().execute(alignment2, pledges[0][i].get(), ref_pack)
+                    picked_wrong_count += 1
+                assert(not sort_after_score or alignment.get_score() >= alignment2.get_score())
+                #
+                # end of check
+                #
             optimal_alignment = None
             if len(optimal_alignment_out[i].get()) > 0:
                 optimal_alignment = optimal_alignment_out[i].get()[0]
@@ -453,10 +496,13 @@ def test_my_approach(
               num_coupled_seeds, "seeds after coupling, thats",
               100*(1-num_coupled_seeds/num_soc_seeds), "percent seeds discarded")
     last = 1
+    num_missed = 0
     for ele in sorted(collect_ids):
         if ele != last:
-            print("Missed sample with id:", last, "having:", ele)
+            num_missed += 1
         last += 1
+    print("Missed", num_missed, "samples")
+    print("Picked wrong SoC", picked_wrong_count, "times")
     print("total runtimes:")
     for key, value in runtimes.items():
         print(value, "(", key, ")")
@@ -1544,9 +1590,10 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-#test_my_approaches("/mnt/ssd1/test.db")
-#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-#exit()
+test_my_approaches("/mnt/ssd1/test.db")
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
+exit()
+
 import measure_time
 
 measure_time.test_all()

@@ -54,7 +54,6 @@ void exportSeed()
 {
 
     exportInterval<nucSeqIndex>();
-
     //export the Seed class
     boost::python::class_<
             Seed,
@@ -64,6 +63,7 @@ void exportSeed()
         .def("__eq__", &Seed::operator==)
     ;
 
+
     //export the Seed class
     boost::python::class_<AlignmentStatistics>("AlignmentStatistics", boost::python::init<>())
         .def_readwrite("index_of_strip", &AlignmentStatistics::index_of_strip)
@@ -71,6 +71,10 @@ void exportSeed()
         .def_readwrite("anchor_size", &AlignmentStatistics::anchor_size)
         .def_readwrite("anchor_ambiguity", &AlignmentStatistics::anchor_ambiguity)
         .def_readwrite("name", &AlignmentStatistics::sName)
+        .def_readwrite("initial_q_beg", &AlignmentStatistics::uiInitialQueryBegin)
+        .def_readwrite("initial_r_beg", &AlignmentStatistics::uiInitialRefBegin)
+        .def_readwrite("initial_q_end", &AlignmentStatistics::uiInitialQueryEnd)
+        .def_readwrite("initial_r_end", &AlignmentStatistics::uiInitialRefEnd)
     ;
 
     //export the Seeds class

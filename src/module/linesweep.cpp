@@ -63,7 +63,7 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
          * sometimes a seeding algorithm may deliver equal seeds
          * in that case these seeds are obviously not contradicting
          *
-         * This is not mentioned in the paper since we talk of seed SETs there.
+         * This is not mentioned in the paper since we talk of seed SETS there.
          * A set cannot have the same element twice,
          * however the vector we use in practice can...
          *
@@ -114,6 +114,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     pShadows = linesweep(pShadows);
 
     auto pSeeds = std::make_shared<Seeds>();
+    pSeeds->xStats = pSeedsIn->xStats;
     for(auto &xT : *pShadows)
         pSeeds->push_back(*std::get<0>(xT));
 
@@ -196,9 +197,11 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         if(uiGap > 0)
             uiGap += iGap;
         if( //check for the maximal allowed gap area
-            (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
-            (pSeed->start_ref() >= uiLastR ? pSeed->start_ref() - uiLastR : 1)
-                > uiMaxGapArea || 
+            (uiMaxGapArea > 0 && //0 == disabled
+                (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
+                (pSeed->start_ref() >= uiLastR ? pSeed->start_ref() - uiLastR : 1)
+                    > uiMaxGapArea) 
+                || 
             //check for negative score
             uiScore < uiGap)
         {
