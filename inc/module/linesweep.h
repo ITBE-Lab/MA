@@ -93,7 +93,8 @@ namespace libMA
          */
         bool optimisticGapEstimation = false;
         /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
-        nucSeqIndex uiMaxGapArea = 0;
+        //accuracy drops if parameter is set smaller than 10^6
+        nucSeqIndex uiMaxGapArea = 1000000;
 
         LinearLineSweep() {}//default constructor
 
