@@ -45,8 +45,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         //make sure that the name contains no spaces
         //in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr(1, sLine.find(' '));
-        while(pFile->good() && !pFile->eof() && pFile->peek() != '>')
+        while(pFile->good() && !pFile->eof() && pFile->peek() != '>' && pFile->peek() != ' ')
         {
+            sLine = "";//in the case that we hit an empty line getline does nothing...
             std::getline (*pFile, sLine);
             DEBUG(
                 for(auto character : sLine)
@@ -86,8 +87,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         //make sure that the name contains no spaces
         //in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr(1, sLine.find(' '));
-        while(pFile->good() && !pFile->eof() && pFile->peek() != '+')
+        while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
         {
+            sLine = "";
             std::getline (*pFile, sLine);
             size_t uiLineSize = len(sLine);
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
