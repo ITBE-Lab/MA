@@ -159,7 +159,7 @@ def test_my_approach(
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw, sort_after_score)
-        mappingQual = MappingQuality(1)#give me two alignments
+        mappingQual = MappingQuality(1)#give me x alignments
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -216,9 +216,8 @@ def test_my_approach(
 
         ## print the computational graph description
         print("computational graphs: ")
-        for ends in pledges[-1]:
-            print(ends.get_graph_desc())
-            exit()
+        print(pledges[-1][0].get_graph_desc())
+        #    exit()
 
         print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)
@@ -501,12 +500,12 @@ def test_my_approach(
         print("having", num_soc_seeds, "seeds in the strip of consideration, having",
               num_coupled_seeds, "seeds after coupling, thats",
               100*(1-num_coupled_seeds/num_soc_seeds), "percent seeds discarded")
-    last = 1
+    last = 0
     num_missed = 0
     for ele in sorted(collect_ids):
-        if ele != last:
+        if ele != last + 1:
             num_missed += 1
-        last += 1
+        last  = ele
     print("Missed", num_missed, "samples")
     print("Picked wrong SoC", picked_wrong_count, "times")
     print("total runtimes:")

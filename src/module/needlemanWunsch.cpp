@@ -326,7 +326,7 @@ nucSeqIndex needlemanWunsch(
             else
                 std::cout << pQuery->charAt(toQuery - uiI) << "\t";
             for(nucSeqIndex uiJ = 0; uiJ < toRef-fromRef+1; uiJ++)
-                std::cout << s[uiI][uiJ] << "\t";
+                std::cout << s[2][uiI][uiJ] << "\t";
             std::cout << std::endl;
         }//for
     )//DEBUG

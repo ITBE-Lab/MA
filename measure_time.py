@@ -4,12 +4,14 @@ from MA import *
 import sys
 import time
 
+
 class CommandLine(Module):
 
     def __init__(self):
         self.elapsed_time = 0
         self.check_existence = []
         self.skip_count = 0
+        self.warn_once = True
 
     def check(self):
         okay = True
@@ -30,6 +32,7 @@ class CommandLine(Module):
     def __get_sam(self, index_str, queries):
         f = open(self.in_filename, "w")
         for index, query in enumerate(queries):
+            check = ""
             f.write(">" + str(index) + " sequence" + str(index) + "\n" )
             query_string = str(query)
             assert(len(query) > 0)
@@ -38,13 +41,18 @@ class CommandLine(Module):
                 line = query_string[:60]
                 query_string = query_string[60:]
                 f.write(line + "\n")
+                check += line
             f.write(query_string + "\n")
+            check += query_string
+            if not check == str(query):
+                print(check, "!=", str(query))
+                assert(False)
         f.close()
 
         #assemble the shell command
         cmd_str = self.create_command(self.in_filename)
-        #print(cmd_str)
-        #exit()
+        print(cmd_str)
+        exit()
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
@@ -73,7 +81,6 @@ class CommandLine(Module):
         alignments = []
         #check how often each query was aligned
         del self.check_existence[:]
-        self.skip_count = 0
 
         for _ in range(len(queries)):
             alignments.append(Alignment())
@@ -107,8 +114,9 @@ class CommandLine(Module):
                         exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start, start + align_length)
-                if int(columns[1]) & 0x010:
-                    print("Warning: rev comp flag set (python code cant handle this):", columns[1])
+                if int(columns[1]) & 0x010 and self.warn_once:
+                    self.warn_once = False
+                    print("Warning: rev comp flag set (python code cant handle this; printed once):", columns[1])
                 self.check_existence[int(columns[0])] += 1
             except:
                 print("oh oh:" + line)
@@ -275,7 +283,7 @@ def test(
                 del query_list[:]
                 origins = []
                 assert(len(query_list) == 0)
-                for sequence, sample_id, origin in queries:
+                for sequence, _, origin in queries:
                     query_list.append(NucSeq(sequence))
                     origins.append(origin)
 

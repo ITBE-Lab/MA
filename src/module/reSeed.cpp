@@ -56,11 +56,6 @@ void ReSeed::extend(
         if(higher >= pQuerySeq->length() && !bBackwards)
             return;
 
-        DEBUG_2(
-            std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
-            std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
-        )
-
         assert(ik.size() > 0);
         /*
          * the extends forwads and backwards in turns,
@@ -77,10 +72,6 @@ void ReSeed::extend(
 
         bBackwards = !bBackwards;
 
-        DEBUG_2(
-            std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
-            std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
-        )
     }//for
 
     /*

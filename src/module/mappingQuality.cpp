@@ -34,6 +34,7 @@ std::shared_ptr<Container> MappingQuality::execute(
             new ContainerVector(std::shared_ptr<Alignment>(new Alignment())));
 
     //set the mapping quality for all alignments to zero
+    //mapping qual of best one will be overridden
     for(auto pAlign : *pAlignments)
     {
         std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pAlign);

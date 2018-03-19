@@ -38,16 +38,30 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
 {
     std::shared_ptr<NucSeq> pRet(new NucSeq());
     //FASTA format
-    if(pFile->good() && pFile->peek() == '>')
+    if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
     {
         std::string sLine;
         std::getline (*pFile, sLine);
         //make sure that the name contains no spaces
         //in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr(1, sLine.find(' '));
-        while(pFile->good() && pFile->peek() != '>')
+        while(pFile->good() && !pFile->eof() && pFile->peek() != '>')
         {
             std::getline (*pFile, sLine);
+            DEBUG(
+                for(auto character : sLine)
+                {
+                    bool bOkay = false;
+                    for(char c : std::vector<char>{ 'A', 'C', 'T', 'G', 'a', 'c', 't', 'g'})
+                        if(c == character)
+                            bOkay = true;
+                    if(!bOkay)
+                    {
+                        std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
+                        throw AlignerException("Invalid symbol in fasta");
+                    }//if
+                }//for
+            )//DEBUG
             size_t uiLineSize = len(sLine);
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
@@ -55,6 +69,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
 
         //run self tests for the nucSeq
+        DEBUG_2(
+            std::cout << pRet->fastaq() << std::endl;
+        )//DEBUG_@
         DEBUG(
             pRet->check();
         )//DEBUG
@@ -62,14 +79,14 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         return pRet;
     }//if
     //FASTAQ format
-    if(pFile->good() && pFile->peek() == '@')
+    if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
     {
         std::string sLine;
         std::getline (*pFile, sLine);
         //make sure that the name contains no spaces
         //in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr(1, sLine.find(' '));
-        while(pFile->good() && pFile->peek() != '+')
+        while(pFile->good() && !pFile->eof() && pFile->peek() != '+')
         {
             std::getline (*pFile, sLine);
             size_t uiLineSize = len(sLine);
@@ -79,7 +96,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
         //quality
         unsigned int uiPos = 0;
-        while(pFile->good() && pFile->peek() != '@')
+        while(pFile->good() && !pFile->eof() && pFile->peek() != '@')
         {
             std::getline (*pFile, sLine);
             size_t uiLineSize = len(sLine);
