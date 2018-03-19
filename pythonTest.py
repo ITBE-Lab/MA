@@ -1625,9 +1625,8 @@ test_my_approaches("/mnt/ssd1/test.db")
 import measure_time
 measure_time.test_all()
 
-analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-expecting_same_results("MA Fast", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
-exit()
+#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
+#expecting_same_results("MA Fast", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
 
 
 #test_my_approaches("/mnt/ssd1/default.db")
@@ -1642,7 +1641,7 @@ exit()
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
-exit()
+
 #analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
 analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
 analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
