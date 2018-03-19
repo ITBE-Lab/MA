@@ -118,13 +118,13 @@ namespace libMA
          */
         Alignment(
                 nucSeqIndex uiBeginOnRef,
-                nucSeqIndex uiBeginOnRef
+                nucSeqIndex uiEndOnRef
             )
                 :
             data(),
             uiLength(0),
             uiBeginOnRef(uiBeginOnRef),
-            uiEndOnRef(uiBeginOnRef),
+            uiEndOnRef(uiEndOnRef),
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
             xStats()

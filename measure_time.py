@@ -75,14 +75,25 @@ class CommandLine(Module):
             try:
                 #print(str(int(columns[3])) + " " + str(pack.start_of_sequence(columns[2])))
                 align_length = 0
-                for char in columns[5]:.
+                ##
+                # brief helper function to read cigars...
+                def read_cigar(cigar):
+                    number_start = 0
+                    while number_start < len(cigar):
+                        symbol_start = number_start
+                        while cigar[symbol_start] in [str(x) for x in range(10)]:
+                            symbol_start += 1
+                        yield int(cigar[number_start:symbol_start]), cigar[symbol_start]
+                        number_start = symbol_start + 1
+        
+                for amount, char in read_cigar(columns[5]):
                     if char in ['M', 'X', '=', 'D', 'N']:
-                        align_length += 1
+                        align_length += amount
                     elif not char in ['I', 'S', 'H', 'P']:#sanity check...
                         print("Error: got wierd cigar symbol", char, "in cigar", columns[5])
                         exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
-                alignments[int(columns[0])] = Alignment(start, start + length)
+                alignments[int(columns[0])] = Alignment(start, start + align_length)
                 self.check_existence[int(columns[0])] += 1
             except:
                 print("oh oh:" + line)

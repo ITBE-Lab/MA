@@ -412,8 +412,6 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                         AND samples.reference == ?
                         """, (approach, size, indel_size, reference)).fetchall()
 
-
-min_accuracy = 100
 def near(start_align, start_orig, end_align, end_orig):
     return end_align >= start_orig and start_align <= end_orig
 

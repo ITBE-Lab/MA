@@ -56,8 +56,8 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         std::string sCigar = "";
         for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
         {
-            sCigar.append(std::to_string(std::get<0>(section)));
-            switch (std::get<1>(section))
+            sCigar.append(std::to_string(std::get<1>(section)));
+            switch (std::get<0>(section))
             {
                 case MatchType::seed:
                 case MatchType::match:
