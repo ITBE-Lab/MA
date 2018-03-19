@@ -203,6 +203,10 @@ void exportModule()
                     "get_pledger",
                     &Pledge::getPledger
                 )
+            .def(
+                    "get_graph_desc",
+                    &Pledge::getGraphDesc
+                )
             .def_readwrite("exec_time", &Pledge::execTime)
         ;
 

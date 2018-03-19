@@ -94,7 +94,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             bool bWrong = false;
             if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
             {
-
+                //@todo frill in this self check...
             }//if
             else
             {

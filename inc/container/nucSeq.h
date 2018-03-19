@@ -739,21 +739,17 @@ namespace libMA
         }//function
 
         /**
-         * @note does not allow Ns in the sequence...
+         * checks for untranslated characters in the sequence..
          */
         inline void check()
         {
             for(unsigned int i=0; i < length(); i++)
             {
-                bool bOkay = false;
-                //check if the current symbol is one of the allowed ones...
-                for( char c : std::vector<char>{'a','A','c','C','g','G','t','T'} )
-                    if(charAt(i) == c)
-                        bOkay = true;
-                if(!bOkay)
+                if(pxSequenceRef[i] > 4)
                 {
                     //if was not allow print error and throw exception
-                    std::cerr << "Having invalid character in string: '" << charAt(i) 
+                    std::cerr << "Having invalid character in string: '" 
+                                << pxSequenceRef[i] 
                                 << "' at position: " << i 
                                 << " full fastaq: " << fastaq() << std::endl;
                     throw AlignerException("Found invalid character in nucSeq.");

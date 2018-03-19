@@ -36,7 +36,7 @@ int main(int argc, char*argv[])
     unsigned int uiMaxAmbiguity;
     unsigned int uiNumSOC;
     unsigned int uiReportNBest;
-    unsigned int uiMaxGapArea;
+    nucSeqIndex uiMaxGapArea;
     bool bPariedNormal;
     bool bPariedUniform;
     unsigned int uiPairedMean;
@@ -91,7 +91,7 @@ int main(int argc, char*argv[])
             ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 100 : 10), "Maximal ambiguity")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
             ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 10 : 2), "Strip of consideration amount")
-            ("nwLimit,l", value<unsigned int>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
+            ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
             ("global,G", "Perform global alignment")
         ;
 
@@ -106,6 +106,11 @@ int main(int argc, char*argv[])
 
         options_description index_desc{"FMD-Index Generation Options"};
         index_desc.add_options()
+            ("info,z", "Print comp. graph info & abort")
+        ;
+
+        options_description hidden_desc{"Hidden Options"};
+        hidden_desc.add_options()
             ("indexIn,I", value<std::vector<std::string>>(&aIndexIn)->composing(), "FASTA input file paths")
             ("indexOut,O", value<std::string>(&sIndexOut), "FMD-index output file prefix")
         ;
@@ -113,8 +118,11 @@ int main(int argc, char*argv[])
         options_description all_desc{"All Options"};
         all_desc.add(gen_desc).add(align_desc).add(p_desc).add(index_desc);
 
+        options_description comp_desc{"Complete Options"};
+        comp_desc.add(gen_desc).add(align_desc).add(p_desc).add(index_desc).add(hidden_desc);
+
         variables_map vm;
-        store(parse_command_line(argc, argv, all_desc), vm);
+        store(parse_command_line(argc, argv, comp_desc), vm);
         notify(vm);
 
         bPariedNormal = vm.count("normal") != 0;
@@ -200,8 +208,19 @@ int main(int argc, char*argv[])
                     sSeedSet != "SMEMs",
                     uiReportNBest,
                     vm.count("global") == 0,//input is for local
-                    uiMaxGapArea
+                    uiMaxGapArea,
+                    10, // iMatch
+                    4, // iMissMatch
+                    6, // iGap
+                    1 // iExtend
                 );
+                if(vm.count("info") > 0)
+                {
+                    std::cout << "computational Graph:" << std::endl;
+                    for(auto pledge : aGraphSinks)
+                        std::cout << pledge->getGraphDesc() << std::endl;
+                    return 0;
+                }//if
                 //run the alignment
                 Pledge::simultaneousGet(aGraphSinks, true);
                 bDoneSth = true;

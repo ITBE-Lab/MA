@@ -126,6 +126,14 @@ namespace libMA
         {
             return "LineSweep2";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("LineSweep2(") + 
+                std::to_string(optimisticGapEstimation) + "," +
+                std::to_string(uiMaxGapArea) + ")"
+                ;
+        }//function
     };//class
 }//namespace libMA
 

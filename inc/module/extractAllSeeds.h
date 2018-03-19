@@ -55,6 +55,12 @@ namespace libMA
         {
             return "ExtractAllSeeds";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("ExtractAllSeeds(") + 
+                std::to_string(maxAmbiguity) + ")";
+        }//function
     };//class
 }//namespace libMA
 

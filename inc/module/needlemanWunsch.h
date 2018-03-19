@@ -55,6 +55,14 @@ namespace libMA
         {
             return "NeedlemanWunsch";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("NeedlemanWunsch(") + 
+                std::to_string(bLocal) + "," + 
+                std::to_string(fRelativePadding) + ")"
+                ;
+        }//function
     };//class
 }//namespace libMA
 

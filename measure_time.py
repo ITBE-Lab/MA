@@ -9,6 +9,7 @@ class CommandLine(Module):
     def __init__(self):
         self.elapsed_time = 0
         self.check_existence = []
+        self.skip_count = 0
 
     def check(self):
         okay = True
@@ -16,7 +17,15 @@ class CommandLine(Module):
             if existence > 1:
                 print("Error: index", index, "had", existence, "alignments associated")
                 okay = False
+            if existence == 0:
+                self.skip_count += 1
         return okay
+
+    def final_checks(self):
+        if not self.do_checks():
+            return
+        if self.skip_count > 0:
+            print("Warning: Aligner skipped", self.skip_count, "queries")
 
     def __get_sam(self, index_str, queries):
         f = open(self.in_filename, "w")
@@ -34,6 +43,8 @@ class CommandLine(Module):
 
         #assemble the shell command
         cmd_str = self.create_command(self.in_filename)
+        #print(cmd_str)
+        #exit()
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
@@ -62,6 +73,7 @@ class CommandLine(Module):
         alignments = []
         #check how often each query was aligned
         del self.check_existence[:]
+        self.skip_count = 0
 
         for _ in range(len(queries)):
             alignments.append(Alignment())
@@ -81,6 +93,7 @@ class CommandLine(Module):
                     number_start = 0
                     while number_start < len(cigar):
                         symbol_start = number_start
+                        #increase symbol_start while cigar[symbol_start] is a number...
                         while cigar[symbol_start] in [str(x) for x in range(10)]:
                             symbol_start += 1
                         yield int(cigar[number_start:symbol_start]), cigar[symbol_start]
@@ -94,6 +107,8 @@ class CommandLine(Module):
                         exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start, start + align_length)
+                if int(columns[1]) & 0x010:
+                    print("Warning: rev comp flag set (python code cant handle this):", columns[1])
                 self.check_existence[int(columns[0])] += 1
             except:
                 print("oh oh:" + line)
@@ -299,6 +314,7 @@ def test(
                 if len(result) > 0:
                     submitResults("/mnt/ssd1/"+db_name, result)
         print("")#print a newline
+        aligner.final_checks()#do a final consistency check
     print("done working on " + db_name)
 
 def test_all():

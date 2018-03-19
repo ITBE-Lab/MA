@@ -116,6 +116,11 @@ namespace libMA
             return "FileWriter";
         }//function
 
+        std::string getFullDesc() const
+        {
+            return "FileWriter";
+        }//function
+
     };//class
 
     class RadableFileWriter: public Module

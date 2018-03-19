@@ -130,6 +130,12 @@ namespace libMA
         {
             return "BinarySeeding";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("BinarySeeding(") + 
+                std::to_string(bLrExtension) + ")";
+        }//function
     };//class
 
 }//namespace

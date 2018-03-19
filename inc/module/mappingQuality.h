@@ -44,6 +44,11 @@ namespace libMA
         {
             return "MappingQuality";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("MappingQuality");
+        }//function
     };//class
 }//namspace libMA
 

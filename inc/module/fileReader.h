@@ -52,6 +52,11 @@ namespace libMA
             return "FileReader";
         }//function
 
+        std::string getFullDesc() const
+        {
+            return std::string("FileReader");
+        }//function
+
         bool outputsVolatile() const
         {
             return true;

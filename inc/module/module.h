@@ -103,7 +103,18 @@ namespace libMA
          */
         virtual std::string EXPORTED getName() const
         {
-            return "Module";
+            throw AlignerException("No Name available");
+        }//function
+
+        /**
+         * @brief Return a description of the Module.
+         * @details
+         * Can be used to print a representation of the computational graph.
+         * Is also used when creating error messages.
+         */
+        virtual std::string EXPORTED getFullDesc() const
+        {
+            throw AlignerException("No full desc available");
         }//function
 
         /**
@@ -431,6 +442,19 @@ namespace libMA
         std::string getTypeName() const
         {
             return "Pledge";
+        }//function
+
+        std::string getGraphDesc() const
+        {
+            std::string sDesc = "";
+            if(pledger != nullptr)
+            {
+                sDesc += pledger->getFullDesc();
+            }//if
+            sDesc += "{";
+            for(std::shared_ptr<Pledge> pPre : vPredecessors)
+                sDesc += pPre->getGraphDesc() + "; ";
+            return sDesc + "}";
         }//function
 
         //overload

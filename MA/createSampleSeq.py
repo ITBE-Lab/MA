@@ -371,6 +371,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id
                             AND results.approach == ?
+                            ORDER BY results.sample_id
                             """, (approach, )).fetchall()
     elif reference is None:
         return c.execute("""
@@ -395,6 +396,7 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                             WHERE results.approach == ?
                             AND samples.original_size == ?
                             AND samples.indel_size == ?
+                            ORDER BY results.sample_id
                             """, (approach, size, indel_size)).fetchall()
     return c.execute("""
                         SELECT 
@@ -473,7 +475,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
     q_from = 0
     #do - while loop
     while True:#do
-        q_from = random.randint(0, ref_seq.unpacked_size()/2 - q_len)
+        q_from = random.randint(0, ref_seq.unpacked_size() - q_len)
         q_to = q_from + q_len
     #while
         if ref_seq.is_bridging(q_from, q_len):

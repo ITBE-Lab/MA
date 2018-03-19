@@ -176,11 +176,11 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     bool bSeedSetPairs,
     unsigned int uiReportNBest,
     bool bLocal,
-    int iMatch = 10,
-    int iMisMatch = 4,
-    int iGap = 6,
-    int iExtend = 1,
-    unsigned int uiMaxGapArea = 10000
+    unsigned int uiMaxGapArea,
+    int iMatch, 
+    int iMisMatch,
+    int iGap,
+    int iExtend
 );
 
 #endif

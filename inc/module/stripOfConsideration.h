@@ -86,6 +86,13 @@ namespace libMA
         {
             return "StripOfConsideration";
         }
+
+        std::string getFullDesc() const
+        {
+            return "StripOfConsideration(" + 
+                std::to_string(uiMaxAmbiguity) + "," +
+                std::to_string(numStrips) + ")";
+        }//function
     };//class
 
     /**

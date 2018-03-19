@@ -47,6 +47,11 @@ namespace libMA
             return true;
         }//function
 
+        std::string getFullDesc() const
+        {
+            return std::string("Splitter");
+        }//function
+
     };//class
 
     class Collector: public Module
@@ -84,6 +89,11 @@ namespace libMA
             return "Collector";
         }//function
 
+        std::string getFullDesc() const
+        {
+            return std::string("Collector");
+        }//function
+
     };//class
 
     class Lock: public Module
@@ -119,6 +129,11 @@ namespace libMA
             return "Lock";
         }//function
 
+        std::string getFullDesc() const
+        {
+            return std::string("Lock");
+        }//function
+
     };//class
 
     class UnLock: public Module
@@ -150,6 +165,11 @@ namespace libMA
         std::shared_ptr<Container> EXPORTED getOutputType() const;
 
         std::string getName() const
+        {
+            return "UnLock";
+        }//function
+
+        std::string getFullDesc() const
         {
             return "UnLock";
         }//function

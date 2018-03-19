@@ -214,6 +214,11 @@ def test_my_approach(
         for a, b in optimal_alignment_in:
             optimal_alignment_out.append(smw.promise_me(a, b))
 
+        ## print the computational graph description
+        #print("computational graphs: ")
+        #for ends in pledges[-1]:
+        #    print(ends.get_graph_desc())
+        #exit()
 
         print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)
@@ -532,20 +537,12 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = False
 
-    clearResults(db_name, human_genome, "MA Accurate")
-    clearResults(db_name, human_genome, "MA Fast")
-    #clearResults(db_name, human_genome, "MA 1 chaining")
-    #clearResults(db_name, human_genome, "MA 2 chaining")
+    #clearResults(db_name, human_genome, "MA Accurate PY")
+    clearResults(db_name, human_genome, "MA Fast PY")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
+    #test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
-
-    #test_my_approach(db_name, human_genome, "MA 2", max_hits=0, num_strips=1000, complete_seeds=True, full_analysis=full_analysis)
-
-    #test_my_approach(db_name, human_genome, "MA 2 chaining", max_hits=100, num_strips=10, complete_seeds=True, use_chaining=True, full_analysis=full_analysis)
-
-    #test_my_approach(db_name, human_genome, "MA 1 chaining", max_hits=100, num_strips=5, complete_seeds=False, use_chaining=True, full_analysis=full_analysis)
+    test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -701,11 +698,35 @@ def analyse_detailed(out_prefix, db_name):
             bar_plot(nmw_areas, "maximum area needleman wunsch", 50),
             ]))
 
+##
+# checks weather the database entries of two approaches are equal
+#
+def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
+    results1 = getResults(db_name, a, query_size, indel_size)
+    results2 = getResults(db_name, b, query_size, indel_size)
+
+    for index in range(len(results1)):
+        tup1 = results1[index]
+        tup2 = results2[index]
+        if tup1 is None:
+            print("tup1 is none")
+            print(tup2)
+            return
+        if tup2 is None:
+            print("tup2 is none")
+            print(tup1)
+            return
+        if tup1[3] != tup2[3]:#result_start
+            print("Having unequal db entries")
+            print(tup1)
+            print(tup2)
+            return
+    print("Having equal db entries")
 
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [], [], [], [] ]
     mapping_qual = []
     mapping_qual_illumina = []
 
@@ -722,7 +743,9 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         opt_score_loss = {}
         nums_seeds = {}
         nums_seeds_chosen = {}
+        num_aligned = {}
         nucs_by_seed = {}
+        one = {}
         mapping_qual.append( ([],[]) )
         mapping_qual_illumina.append( ([],[]) )
         nmw_total = 0
@@ -745,6 +768,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             if not nmw_area is None:
                 nmw_total += nmw_area
             hits = init(hits, num_mutation, num_indels)
+            num_aligned = init(num_aligned, num_mutation, num_indels)
+            num_aligned[num_mutation][num_indels] += 1
+            one = init(one, num_mutation, num_indels)
+            one[num_mutation][num_indels] = 1
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
@@ -901,6 +928,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
         avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, tries, "num seeds in chosen SOC " + approach)
         seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
+        avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, one, "Queries aligned " + approach)
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
@@ -916,6 +944,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[4].append(seed_relevance)
         if not avg_opt_score is None:
             plots[6].append(avg_opt_score)
+        #if not avg_aligned is None:
+        #    plots[7].append(avg_aligned)
         
     
     plot = figure(title="BWA-pic",
@@ -1591,13 +1621,13 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-#test_my_approaches("/mnt/ssd1/test.db")
+test_my_approaches("/mnt/ssd1/test.db")
 
 import measure_time
-
 measure_time.test_all()
 
 analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
+expecting_same_results("MA Fast", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
 exit()
 
 
