@@ -51,8 +51,8 @@ class CommandLine(Module):
 
         #assemble the shell command
         cmd_str = self.create_command(self.in_filename)
-        print(cmd_str)
-        exit()
+        #print(cmd_str)
+        #exit()
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)

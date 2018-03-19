@@ -134,7 +134,8 @@ std::shared_ptr<Container> SMW::execute(
         std::vector<std::pair<size_t, size_t>> vMaxScorePositions; 
 
         /* Do the actual alignment... */
-        auto uiMaxScore = xAligner.swAlign(vMaxScorePositions);
+        DEBUG(auto uiMaxScore =)
+            xAligner.swAlign(vMaxScorePositions);
 
         // collect the results ...
         auto pvRet = std::shared_ptr<ContainerVector>(
