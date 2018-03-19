@@ -7,11 +7,23 @@
 
 using namespace libMA;
 
-int iGap = 6;
-int iExtend = 1;
 int iMatch = 10;
 int iMissMatch = 4;
+int iGap = 6;
+int iExtend = 1;
 
+
+std::string NeedlemanWunsch::getFullDesc() const
+{
+    return std::string("NeedlemanWunsch(") + 
+        std::to_string(iMatch) + "," + 
+        std::to_string(iMissMatch) + "," + 
+        std::to_string(iGap) + "," + 
+        std::to_string(iExtend) + "," + 
+        std::to_string(bLocal) + "," + 
+        std::to_string(fRelativePadding) + ")"
+        ;
+}//function
 
 ContainerVector NeedlemanWunsch::getInputType() const
 {

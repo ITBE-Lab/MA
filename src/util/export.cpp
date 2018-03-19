@@ -94,8 +94,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         );
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
-        std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), true, uiReportNBest));
-    std::shared_ptr<Module> pMapping(new MappingQuality());
+        std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), true, 0));
+    std::shared_ptr<Module> pMapping(new MappingQuality(uiReportNBest));
 
     //modules for the paired alignment
     bool bPaired = bPariedNormal || bPariedUniform;

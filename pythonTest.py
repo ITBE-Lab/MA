@@ -159,7 +159,7 @@ def test_my_approach(
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw, sort_after_score)
-        mappingQual = MappingQuality()
+        mappingQual = MappingQuality(1)#give me two alignments
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -215,10 +215,10 @@ def test_my_approach(
             optimal_alignment_out.append(smw.promise_me(a, b))
 
         ## print the computational graph description
-        #print("computational graphs: ")
-        #for ends in pledges[-1]:
-        #    print(ends.get_graph_desc())
-        #exit()
+        print("computational graphs: ")
+        for ends in pledges[-1]:
+            print(ends.get_graph_desc())
+            exit()
 
         print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)

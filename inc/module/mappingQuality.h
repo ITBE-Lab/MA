@@ -17,8 +17,14 @@ namespace libMA
     class MappingQuality: public Module
     {
     public:
+        unsigned int uiReportNBest;
 
         MappingQuality()
+        {}//constructor
+
+        MappingQuality(unsigned int uiReportNBest)
+                :
+            uiReportNBest(uiReportNBest)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -47,7 +53,7 @@ namespace libMA
 
         std::string getFullDesc() const
         {
-            return std::string("MappingQuality");
+            return "MappingQuality(" + std::to_string(uiReportNBest) + ")";
         }//function
     };//class
 }//namspace libMA

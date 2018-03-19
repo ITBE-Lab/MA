@@ -64,8 +64,15 @@ std::shared_ptr<Container> MappingQuality::execute(
     double dA = std::max(std::min(5* pFirst->numBySeeds() / (double)pQuery->length(), 1.0), 0.01);
     pFirst->fMappingQuality *= dA;
 
-
-    return std::shared_ptr<ContainerVector>(new ContainerVector(pAlignments));
+    /// maybe this should be moved into it's own module but whatever...
+    auto pRet = std::shared_ptr<ContainerVector>(new ContainerVector(pAlignments));
+    if(uiReportNBest != 0 && pRet->size() > uiReportNBest)
+    {
+        //remove the smallest elements
+        pRet->erase(pRet->begin()+uiReportNBest, pRet->end());
+        assert(pRet->size() == uiReportNBest);
+    }//if
+    return pRet;
 }//function
 
 void exportMappingQuality()
@@ -75,7 +82,7 @@ void exportMappingQuality()
             MappingQuality, 
             boost::python::bases<Module>, 
             std::shared_ptr<MappingQuality>
-        >("MappingQuality")
+        >("MappingQuality", boost::python::init<unsigned int>())
     ;
 
     boost::python::implicitly_convertible< 
