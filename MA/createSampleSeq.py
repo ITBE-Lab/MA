@@ -604,7 +604,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
     if skip_y % 1 == 1:
         skip_y += 1
 
-    max_x = size
+    max_x = int(size * 4 / 10)
     max_y = max_indels
 
     if smaller_box:
@@ -657,7 +657,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
             #for _ in range(amount) end
 
         #for indel_amount in range(max_indels) end
-        print(str(mutation_amount) + "/" + str(size))
+        print(mutation_amount, "/", max_x)
     #for mutation_amount in range(size) end
     print("saving...")
     if len(queries_list) > 0:

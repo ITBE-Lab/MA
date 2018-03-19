@@ -80,6 +80,7 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
     return pItervalEnds;
 }//function
 
+/// @todo this can deliver nullptrs for some data ?!?
 std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput
     )

@@ -25,14 +25,13 @@ class CommandLine(Module):
             query_string = str(query)
             assert(len(query) > 0)
             assert(len(query_string) > 0)
-            while len(query_string) > 60:
+            while len(query_string) >= 60:
                 line = query_string[:60]
                 query_string = query_string[60:]
                 f.write(line + "\n")
             f.write(query_string + "\n")
-
-
         f.close()
+
         #assemble the shell command
         cmd_str = self.create_command(self.in_filename)
 
@@ -75,8 +74,15 @@ class CommandLine(Module):
             #print(columns[0], columns[2], columns[3], columns[4])
             try:
                 #print(str(int(columns[3])) + " " + str(pack.start_of_sequence(columns[2])))
+                align_length = 0
+                for char in columns[5]:.
+                    if char in ['M', 'X', '=', 'D', 'N']:
+                        align_length += 1
+                    elif not char in ['I', 'S', 'H', 'P']:#sanity check...
+                        print("Error: got wierd cigar symbol", char, "in cigar", columns[5])
+                        exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
-                alignments[int(columns[0])] = Alignment(start)
+                alignments[int(columns[0])] = Alignment(start, start + length)
                 self.check_existence[int(columns[0])] += 1
             except:
                 print("oh oh:" + line)
@@ -231,7 +237,6 @@ def test(
     for name, aligner in l:
         print("evaluating " + name)
         clearResults("/mnt/ssd1/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
-        result = []
 
         matrix = getQueriesAsASDMatrix("/mnt/ssd1/"+db_name, name, reference)
         for row in matrix:
@@ -261,6 +266,7 @@ def test(
                 #print("computing (" + name + ") ...")
                 result_pledge.get()
 
+                result = []
                 for index in range(len(queries)):
                     alignment = result_pledge.get()[index]
                     #print(index, "->", alignment.begin_on_ref(), origins[index])
@@ -278,23 +284,23 @@ def test(
                             name
                         )
                     )
-        #print("submitting results (" + name + ") ...")
-        if len(result) > 0:
-            submitResults("/mnt/ssd1/"+db_name, result)
-    print("", end="")#print a newline
+                #print("submitting results (" + name + ") ...")
+                if len(result) > 0:
+                    submitResults("/mnt/ssd1/"+db_name, result)
+        print("")#print a newline
     print("done working on " + db_name)
 
 def test_all():
     test("test.db", human_genome)
-    #test("default.db", human_genome)
-    #test("short.db", human_genome)
+    return
+    test("default.db", human_genome)
+    test("short.db", human_genome)
     #test("long.db", human_genome)
-    #test("shortIndels.db", human_genome)
-
-    #test("longIndels.db", human_genome)
-    #test("insertionOnly.db", human_genome)
-    #test("deletionOnly.db", human_genome)
-    #test("zoomLine.db", human_genome)
-    #test("zoomSquare.db", human_genome)
+    test("shortIndels.db", human_genome)
+    test("longIndels.db", human_genome)
+    test("insertionOnly.db", human_genome)
+    test("deletionOnly.db", human_genome)
+    test("zoomLine.db", human_genome)
+    test("zoomSquare.db", human_genome)
 
     #test("illumina.db", human_genome)

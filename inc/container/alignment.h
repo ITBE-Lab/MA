@@ -112,6 +112,24 @@ namespace libMA
             xStats()
         {}//constructor
 
+        /**
+         * @brief Creates an empty alignment, 
+         * where the interval of the reference that is used is already known.
+         */
+        Alignment(
+                nucSeqIndex uiBeginOnRef,
+                nucSeqIndex uiBeginOnRef
+            )
+                :
+            data(),
+            uiLength(0),
+            uiBeginOnRef(uiBeginOnRef),
+            uiEndOnRef(uiBeginOnRef),
+            uiBeginOnQuery(0),
+            uiEndOnQuery(0),
+            xStats()
+        {}//constructor
+
         //overload
         bool canCast(std::shared_ptr<Container> c) const
         {

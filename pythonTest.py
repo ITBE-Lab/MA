@@ -260,7 +260,8 @@ def test_my_approach(
                     origin_pos,
                     alignment2.end_on_ref,
                     origin_pos+orig_size)
-                if align_2_hit and not align_1_hit:
+                if warn_once and align_2_hit and not align_1_hit:
+                    warn_once = False
                     def get_seed_coverage(alignment):
                         return (
                             "Query: " + str(alignment.stats.initial_q_beg) + " - " +
@@ -531,12 +532,12 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = False
 
-    #clearResults(db_name, human_genome, "MA Accurate")
+    clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
     #clearResults(db_name, human_genome, "MA 1 chaining")
     #clearResults(db_name, human_genome, "MA 2 chaining")
 
-    #test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
     test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
@@ -727,7 +728,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         nmw_total = 0
 
         max_indel = 2*query_size/indel_size
-        max_mut = query_size
+        max_mut = int(query_size * 4 / 10)
 
         sub_illumina = 0.15
         indel_illumina = 0.05
@@ -1590,13 +1591,14 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-test_my_approaches("/mnt/ssd1/test.db")
-analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-exit()
+#test_my_approaches("/mnt/ssd1/test.db")
 
 import measure_time
 
 measure_time.test_all()
+
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
+exit()
 
 
 #test_my_approaches("/mnt/ssd1/default.db")
@@ -1607,11 +1609,11 @@ measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/deletionOnly.db")
 
 #analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
-analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
-exit()
+#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 
 analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
 analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+exit()
 #analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
 analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
 analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
@@ -1621,4 +1623,4 @@ analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 10
 analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
 analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)
 
-#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
