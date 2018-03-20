@@ -10,6 +10,10 @@
 #define DEBUG_LEVEL 0
 #endif //DEBUG_LEVEL
 
+#if DEBUG_LEVEL < 0 
+#define NDEBUG
+#endif
+
 #if DEBUG_LEVEL >= 1
 #define DEBUG(x) x
 #define DEBUG_PARAM(x) ,x
@@ -31,3 +35,6 @@
 #endif //DEBUG_LEVEL
 
 #endif
+
+
+#include <assert.h>

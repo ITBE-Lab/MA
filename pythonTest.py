@@ -809,7 +809,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
                     mapping_qual_illumina[-1][1].append(mapping_quality)
             tries[num_mutation][num_indels] += 1
-            run_times[num_mutation][num_indels] += run_time
+            run_times[num_mutation][num_indels] = run_time
             if not num_seeds is None:
                 nums_seeds[num_mutation][num_indels] += num_seeds
             if not score is None:
@@ -1620,10 +1620,14 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-test_my_approaches("/mnt/ssd1/test.db")
-
 import measure_time
 measure_time.test_all()
+
+analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+exit()
+
+#test_my_approaches("/mnt/ssd1/test.db")
+
 
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
 #expecting_same_results("MA Fast", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
