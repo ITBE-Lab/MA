@@ -596,7 +596,9 @@ namespace libMA
                                             : xVectorOfSequenceDescriptors.back().uiStartOffsetUnpacked + xVectorOfSequenceDescriptors.back().uiLengthUnpacked;
             
             assert( uiOffsetDistance == uiUnpackedSizeForwardStrand );
-            auto uiInitialUnpackedSize = uiUnpackedSizeForwardStrand;
+            DEBUG(
+                auto uiInitialUnpackedSize = uiUnpackedSizeForwardStrand;
+            )//DEBUG
 
             /* TO DO: Put this into the vector of sequence descriptions.
             */

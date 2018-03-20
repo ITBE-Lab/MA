@@ -10,7 +10,8 @@
 #define DEBUG_LEVEL 0
 #endif //DEBUG_LEVEL
 
-#if DEBUG_LEVEL < 0 
+#if DEBUG_LEVEL == 0 
+//disable instertions
 #define NDEBUG
 #endif
 
@@ -35,6 +36,5 @@
 #endif //DEBUG_LEVEL
 
 #endif
-
 
 #include <assert.h>
