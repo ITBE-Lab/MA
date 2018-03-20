@@ -31,8 +31,10 @@ SAInterval FMIndex::extend_backward(
         cntl                        // output: Number of A, C, G, T until end of interval
     );
 
-    for(unsigned int i = 0; i < 4; i++)
-        assert(cntk[i] <= cntl[i]);
+    DEBUG(
+        for(unsigned int i = 0; i < 4; i++)
+            assert(cntk[i] <= cntl[i]);
+    )// DEBUG
 
     bwt64bitCounter cnts[4]; // Number of A, C, G, T in BWT interval ik
     //the cnts calculated here might be off by one

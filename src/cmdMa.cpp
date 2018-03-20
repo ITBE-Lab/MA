@@ -90,7 +90,7 @@ int main(int argc, char*argv[])
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
             ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 100 : 10), "Maximal ambiguity")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
-            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 10 : 2), "Strip of consideration amount")
+            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 5 : 2), "Strip of consideration amount")
             ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
             ("global,G", "Perform global alignment")
         ;

@@ -403,7 +403,6 @@ namespace libMA
         * The descriptors must be stored in ascending with respect to uiStartOffsetUnpacked.
         * Throws an exception, if something goes wrong.
         * Deserialization of the vector for sequence descriptors.
-        * TO DO: Insert code for throwing some exception.
         */
         void vLoadSequenceDescriptorVector( const char *pcFileNamePrefix )
         {
@@ -456,7 +455,6 @@ namespace libMA
         
         * Throws an exception, if something goes wrong.
         * Deserialization of the vector for hole descriptors.
-        * TO DO: Insert code for throwing some exception.
         */
         void vLoadHoleDescriptorVector( const char *pcFileNamePrefix )
         {

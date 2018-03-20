@@ -156,7 +156,7 @@ class Bowtie2(CommandLine):
         self.bowtie2_home = "/usr/home/markus/workspace/bowtie2/bowtie2-2.3.3.1/"
         self.index_str = index_str + "bowtie2"
         self.threads = threads
-        self.in_filename = ".temp" + db_name + ".fasta"
+        self.in_filename = ".tempBowtie2" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bowtie2_home + "bowtie2 -p " + str(self.threads)
@@ -173,7 +173,7 @@ class Minimap2(CommandLine):
         self.minimap2_home = "/usr/home/markus/workspace/minimap2/"
         self.index_str = index_str + ".mmi"
         self.threads = threads
-        self.in_filename = ".temp" + db_name + ".fasta"
+        self.in_filename = ".tempMinimap2" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.minimap2_home + "minimap2 -t " + str(self.threads) + " -a "
@@ -189,7 +189,7 @@ class Blasr(CommandLine):
         self.index_str = index_str + "blasr"
         self.genome_str = genome_str
         self.threads = threads
-        self.in_filename = ".temp" + db_name + ".fasta"
+        self.in_filename = ".tempBlasr" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.blasr_home + "blasr " + in_filename
@@ -204,7 +204,7 @@ class BWA_MEM(CommandLine):
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
-        self.in_filename = ".temp" + db_name + ".fasta"
+        self.in_filename = ".tempBwaMem" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa mem -t " + str(self.threads)
@@ -219,7 +219,7 @@ class BWA_SW(CommandLine):
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
-        self.in_filename = ".temp" + db_name + ".fasta"
+        self.in_filename = ".tempBwaSw" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa bwasw -t " + str(self.threads)
@@ -237,7 +237,7 @@ class MA(CommandLine):
         self.fast = "accurate"
         if fast:
             self.fast = "fast"
-        self.in_filename = ".temp" + db_name + ".fasta"
+        self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
@@ -264,9 +264,9 @@ def test(
         #("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa", db_name)),
-        ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
+        #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, db_name)),
-        #("MA Fast", MA(reference, num_threads, True, db_name)),
+        ("MA Fast", MA(reference, num_threads, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, False, db_name)),
     ]
 
