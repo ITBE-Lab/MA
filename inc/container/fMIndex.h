@@ -598,7 +598,7 @@ namespace libMA
          * IMPORTANT: The indices are inclusive, i. e. we count 
          * IMPORTANT: Requires k <= l
          */
-        void bwt_2occ4( t_bwtIndex k,                                        // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
+        inline void bwt_2occ4( t_bwtIndex k,                                        // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
                         t_bwtIndex l,                                        // second end index in BWT (l can be negative: (t_bwtIndex)(-1) )
                         bwt64bitCounter cntk[4], bwt64bitCounter cntl[4]    // (outputs) counter for k and l
                     )

@@ -1107,11 +1107,275 @@ def required_nmw_band_size():
     plot.legend.location = "top_center"
     save(plot, "nmwBandSize")
 
+def get_accuracy_data():
+    return [("", [[0]], [[0]], ([0], [0]))]
+
+def accuracy_pics():
+
+    data = get_accuracy_data()
+
+    max_runtime = 0
+    #get the maximal runtime
+    for _, _, _, _, runtime_mat, _ in data:
+        for row in runtime_mat:
+            for ele in row:
+                if ele > max_runtime:
+                    max_runtime = ele
+
+    #make all runtimes percentages
+    for i0, x in enumerate(data):
+        for i1, row in enumerate(x[4]):
+            for i2, ele in enumerate(row):
+                data[i0][4][i1][i2] = ele / max_runtime
+
+    plots = [[], []]
+
+    
+    color_mapper = LinearColorMapper(
+                    palette=heatmap_palette(light_spec_approximation, 256),
+                    low=0,
+                    high=1
+                )
+    color_mapper_fake = LinearColorMapper(
+                    palette=heatmap_palette(light_spec_approximation, 256),
+                    low=0,
+                    high=max_runtime
+                )
+    plot = figure(
+        x_range=(0,h), y_range=(0,w),
+        plot_width=resolution, plot_height=resolution/2
+        )
+    color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+    color_bar.major_label_text_font=font
+    color_bar.major_label_text_font_size=font_size
+    plot.add_layout(color_bar, 'left')
+    plots[0].append(plot)
+    plot1 = figure(
+        x_range=(0,h), y_range=(0,w),
+        plot_width=resolution, plot_height=resolution/2
+        )
+    color_bar1 = ColorBar(color_mapper=color_mapper_fake, border_line_color=None, location=(0,0))
+    color_bar1.major_label_text_font=font
+    color_bar1.major_label_text_font_size=font_size
+    plot1.add_layout(color_bar1, 'left')
+    plots[1].append(plot1)
+
+    for w, h, approach, qual_mat, runtime_mat, mapping_qual in data:
+        plot = figure(
+            x_range=(0,h), y_range=(0,w),
+            plot_width=resolution, plot_height=resolution/2
+            )
+
+        plots[0].append(plot)
+        plot.image(image=[qual_mat], color_mapper=color_mapper, dh=[w], dw=[h], x=[0], y=[0])
+
+        plot2 = figure(
+            x_range=(0,h), y_range=(0,w),
+            plot_width=resolution, plot_height=resolution/2
+            )
+
+        plot2.image(image=[runtime_mat], color_mapper=color_mapper, dh=[w], dw=[h], x=[0], y=[0])
+        plots[1].append(plot2)
+
+    save(plots, "accuracyPics", True)
+    #code from python test:
+    """
+        
+            plots = [ [], [], [] ]
+
+            def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None, xax=True, yax=True):
+                pic = []
+                min_ = 10000.0
+                max_ = 0.0
+                if len(d.keys()) == 0:
+                    return None
+
+                for x in range(0,401,20):
+                    pic.append( [] )
+                    for y in range(0,20,2):
+                        if x not in d or y not in d[x] or divideBy[x][y] == 0:
+                            pic[-1].append( float("nan") )
+                        else:
+                            pic[-1].append( d[x][y] / divideBy[x][y] )
+                            if pic[-1][-1] < min_:
+                                min_ = pic[-1][-1]
+                            if pic[-1][-1] > max_:
+                                max_ = pic[-1][-1]
+
+                for _ in range(ignore_max_n):
+                    max_x = 0
+                    max_y = 0
+                    for x, row in enumerate(pic):
+                        for y, p in enumerate(row):
+                            if p > pic[max_x][max_y]:
+                                max_x = x
+                                max_y = y
+                    pic[max_x][max_y] = float('nan')
+                if ignore_max_n > 0:
+                    max_ = 0
+                    for row in pic:
+                        for p in row:
+                            if p > max_:
+                                max_ = p
+
+                if set_max is not None:
+                    max_ = set_max
+                if set_min is not None:
+                    min_ = set_min
+
+                color_mapper = LinearColorMapper(
+                        palette=heatmap_palette(light_spec_approximation, 256),
+                        low=min_,
+                        high=max_
+                    )
+                if log:
+                    color_mapper = LogColorMapper(
+                            palette=heatmap_palette(light_spec_approximation, 256),
+                            low=min_,
+                            high=max_
+                        )
+
+                plot_width=500
+                if yax:
+                    plot_width += 150
+                plot_height=500
+                if xax:
+                    plot_height += 40
+                plot = figure(title=title,
+                        x_range=(0,h), y_range=(0,w),
+                        x_axis_label=str(indel_size) + 'nt indels', y_axis_label='mutations',
+                        plot_width=plot_width, plot_height=plot_height,
+                        min_border_bottom=10, min_border_top=10,
+                        min_border_left=10, min_border_right=15,
+                        tools=["save"]
+                    )
+                #plot.xaxis.formatter = tick_formater
+                plot.image(image=[pic], color_mapper=color_mapper,
+                        dh=[w], dw=[h], x=[0], y=[0])
+
+                font = "Helvetica"
+                font_size = '15pt'
+                if yax:
+                    color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+                    color_bar.major_label_text_font=font
+                    color_bar.major_label_text_font_size=font_size
+                    plot.add_layout(color_bar, 'left')
+
+                #if not xax:
+                #    plot.xaxis.visible = False
+                #if not yax:
+                #    plot.yaxis.visible = False
+                if not title is None:
+                    plot.title.text_font=font
+                    plot.title.text_font_size=font_size
+                plot.legend.label_text_font=font
+                plot.legend.label_text_font_size=font_size
+                plot.axis.axis_label_text_font=font
+                plot.axis.major_label_text_font=font
+                plot.axis.axis_label_text_font_size=font_size
+                plot.axis.major_label_text_font_size=font_size
+
+                return plot
+            if indel_size > 0:
+                avg_hits = makePicFromDict(hits, 400, max_indel, tries, approach, set_max=1, set_min=0, yax=False)
+                avg_runtime = makePicFromDict(run_times, 400, max_indel, tries, None, 0, False, 0.2, 0, yax=False)
+                #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
+                #avg_seeds = makePicFromDict(nums_seeds, 400, max_indel, tries, approach, yax=yax)
+                #avg_rel = makePicFromDict(hits, 400, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
+                yax = False
+
+                if not avg_hits is None:
+                    plots[0].append(avg_hits)
+                if not avg_runtime is None:
+                    plots[1].append(avg_runtime)
+                #if not avg_seeds is None:
+                #    plots[2].append(avg_seeds)
+                #if not avg_rel is None:
+                #    plots[3].append(avg_rel)
+
+        plot = figure(title="BWA-pic",
+                x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
+                x_axis_type="log", y_range=(0,0.4),
+                plot_width=650, plot_height=500,
+                min_border_bottom=10, min_border_top=10,
+                min_border_left=10, min_border_right=15
+            )
+
+
+        c_palette = heatmap_palette(light_spec_approximation, len(approaches))
+
+        for index, approach_, in enumerate(approaches):
+            approach = approach_[0]
+            data = mapping_qual[index]
+
+            total_amount_1 = len(data[0])
+            total_amount_2 = len(data[1])
+            all_data = []
+            min_val = 1
+            max_val = 0
+            for x in data[0]:
+                if x is None:
+                    continue
+                all_data.append(x)
+                if x < min_val:
+                    min_val = x
+                if x > max_val:
+                    max_val = x
+            for x in data[1]:
+                if x is None:
+                    continue
+                all_data.append(x)
+                if x < min_val:
+                    min_val = x
+                if x > max_val:
+                    max_val = x
+
+            values = []
+            amount = 1000
+            step = len(all_data) / amount
+            c = 0
+            for v in sorted(all_data):
+                if c >= step:
+                    c = 0
+                    values.append(v)
+                c += 1
+
+            line_x = []
+            line_y = []
+            for val in values:
+                mapped = 0
+                wrong = 0
+                total = total_amount_1 + total_amount_2
+                for ele in data[0]:
+                    if not ele is None and ele > val:
+                        mapped += 1
+                for ele in data[1]:
+                    if not ele is None and ele > val:
+                        mapped += 1
+                        wrong += 1
+
+                if mapped > 0:
+                    line_x.append( wrong/mapped )
+                    line_y.append( mapped/total )
+
+            plot.line(line_x, line_y, legend=approach, color=c_palette[index])
+            plot.x(line_x, line_y, legend=approach, color=c_palette[index])
+
+        plot.legend.location = "top_left"
+        plots[-1].append(plot)
+
+        save(gridplot(plots))
+    """
+
+
+
+
 # actually call the functions that create the pictures
 
+accuracy_pics()
 #unrelated_non_enclosed_seeds()
 #forced_gap()
-ambiguity_per_length()
+#ambiguity_per_length()
 #theoretical_max_acc()
 #seed_shadows()
 #alignment()

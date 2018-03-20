@@ -54,7 +54,7 @@ public:
     /**
      * @returns the end of the interval.
      * @brief Interval end.
-     * @note end = start = size
+     * @note end = start + size
      */
     inline const T end() const
     {

@@ -1023,23 +1023,31 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [] ]
-    mapping_qual = []
     yax = True
+
+    # list of tuples:
+    # (
+    #   w,
+    #   h,
+    #   approach name,
+    #   accuracy picture,    <- matrix with accuracy as values
+    #   runtime picture,     <- matrix runtimes as values
+    #   mapping quality list <- tuple (accurate, inaccurate) of vectors with map. qual. as values
+    # )
+    out_list = []
+
     for approach_ in approaches:
         approach = approach_[0]
         results = getResults(db_name, approach, query_size, indel_size)
         hits = {}
         tries = {}
         run_times = {}
-        scores = {}
-        nums_seeds = {}
-        mapping_qual.append( ([],[]) )
+        mapping_qual = ([], [])
 
         max_indel = 0
         if indel_size > 0:
             max_indel = 2*query_size/indel_size
-        max_mut = query_size
+        max_mut = int(query_size * 4 / 10)
 
         def init(d, x, y):
             if x not in d:
@@ -1052,206 +1060,50 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
-            if not score is None:
-                scores = init(scores, num_mutation, num_indels)
-            nums_seeds = init(nums_seeds, num_mutation, num_indels)
 
             #print(result_start, original_start)
             if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
-                mapping_qual[-1][0].append(mapping_quality)
+                mapping_qual[0].append(mapping_quality)
             else:
-                mapping_qual[-1][1].append(mapping_quality)
+                mapping_qual[1].append(mapping_quality)
             tries[num_mutation][num_indels] += 1
             #in the current test scenario the total runtime is saved in every sample of the cell
             run_times[num_mutation][num_indels] = run_time
-            if not num_seeds is None:
-                nums_seeds[num_mutation][num_indels] += num_seeds
-            if not score is None:
-                scores[num_mutation][num_indels] += score
 
-
-        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None, xax=True, yax=True):
+        def format(d, w, h, divideBy):
             pic = []
-            min_ = 10000.0
-            max_ = 0.0
             if len(d.keys()) == 0:
-                return None
+                return [ [] ]
+            else:
+                w_keys = sorted(d.keys())
+                h_keys = sorted(d[0].keys())
 
-            for x in range(0,401,20):
-                pic.append( [] )
-                for y in range(0,20,2):
-                    if x not in d or y not in d[x] or divideBy[x][y] == 0:
-                        pic[-1].append( float("nan") )
-                    else:
-                        pic[-1].append( d[x][y] / divideBy[x][y] )
-                        if pic[-1][-1] < min_:
-                            min_ = pic[-1][-1]
-                        if pic[-1][-1] > max_:
-                            max_ = pic[-1][-1]
+                for x in w_keys:
+                    pic.append( [] )
+                    for y in h_keys:
+                        if x not in d or y not in d[x] or (not divideBy is None and divideBy[x][y] == 0):
+                            pic[-1].append( float("nan") )
+                        else:
+                            if divideBy is None:
+                                pic[-1].append( d[x][y] )
+                            else:
+                                pic[-1].append( d[x][y] / divideBy[x][y] )
+            return pic
 
-            for _ in range(ignore_max_n):
-                max_x = 0
-                max_y = 0
-                for x, row in enumerate(pic):
-                    for y, p in enumerate(row):
-                        if p > pic[max_x][max_y]:
-                            max_x = x
-                            max_y = y
-                pic[max_x][max_y] = float('nan')
-            if ignore_max_n > 0:
-                max_ = 0
-                for row in pic:
-                    for p in row:
-                        if p > max_:
-                            max_ = p
-
-            if set_max is not None:
-                max_ = set_max
-            if set_min is not None:
-                min_ = set_min
-
-            color_mapper = LinearColorMapper(
-                    palette=heatmap_palette(light_spec_approximation, 256),
-                    low=min_,
-                    high=max_
-                )
-            if log:
-                color_mapper = LogColorMapper(
-                        palette=heatmap_palette(light_spec_approximation, 256),
-                        low=min_,
-                        high=max_
-                    )
-
-            plot_width=500
-            if yax:
-                plot_width += 150
-            plot_height=500
-            if xax:
-                plot_height += 40
-            plot = figure(title=title,
-                    x_range=(0,h), y_range=(0,w),
-                    x_axis_label=str(indel_size) + 'nt indels', y_axis_label='mutations',
-                    plot_width=plot_width, plot_height=plot_height,
-                    min_border_bottom=10, min_border_top=10,
-                    min_border_left=10, min_border_right=15,
-                    tools=["save"]
-                )
-            #plot.xaxis.formatter = tick_formater
-            plot.image(image=[pic], color_mapper=color_mapper,
-                    dh=[w], dw=[h], x=[0], y=[0])
-
-            font = "Helvetica"
-            font_size = '15pt'
-            if yax:
-                color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
-                color_bar.major_label_text_font=font
-                color_bar.major_label_text_font_size=font_size
-                plot.add_layout(color_bar, 'left')
-
-            #if not xax:
-            #    plot.xaxis.visible = False
-            #if not yax:
-            #    plot.yaxis.visible = False
-            if not title is None:
-                plot.title.text_font=font
-                plot.title.text_font_size=font_size
-            plot.legend.label_text_font=font
-            plot.legend.label_text_font_size=font_size
-            plot.axis.axis_label_text_font=font
-            plot.axis.major_label_text_font=font
-            plot.axis.axis_label_text_font_size=font_size
-            plot.axis.major_label_text_font_size=font_size
-
-            return plot
-        if indel_size > 0:
-            avg_hits = makePicFromDict(hits, 400, max_indel, tries, approach, set_max=1, set_min=0, yax=False)
-            avg_runtime = makePicFromDict(run_times, 400, max_indel, tries, None, 0, False, 0.2, 0, yax=False)
-            #avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach, yax=yax)
-            #avg_seeds = makePicFromDict(nums_seeds, 400, max_indel, tries, approach, yax=yax)
-            #avg_rel = makePicFromDict(hits, 400, max_indel, nums_seeds, approach, yax=yax, set_min=0, set_max=0.01)
-            yax = False
-
-            if not avg_hits is None:
-                plots[0].append(avg_hits)
-            if not avg_runtime is None:
-                plots[1].append(avg_runtime)
-            #if not avg_seeds is None:
-            #    plots[2].append(avg_seeds)
-            #if not avg_rel is None:
-            #    plots[3].append(avg_rel)
-
-    plot = figure(title="BWA-pic",
-            x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
-            x_axis_type="log", y_range=(0,0.4),
-            plot_width=650, plot_height=500,
-            min_border_bottom=10, min_border_top=10,
-            min_border_left=10, min_border_right=15
+        out_list.append(
+            (
+                max_mut,
+                max_indel,
+                approach,
+                format(hits, max_mut, max_indel, tries),
+                format(run_times, max_mut, max_indel, None),
+                mapping_qual
+            )
         )
-
-    c_palette = heatmap_palette(light_spec_approximation, len(approaches))
-
-    for index, approach_, in enumerate(approaches):
-        approach = approach_[0]
-        data = mapping_qual[index]
-
-        total_amount_1 = len(data[0])
-        total_amount_2 = len(data[1])
-        all_data = []
-        min_val = 1
-        max_val = 0
-        for x in data[0]:
-            if x is None:
-                continue
-            all_data.append(x)
-            if x < min_val:
-                min_val = x
-            if x > max_val:
-                max_val = x
-        for x in data[1]:
-            if x is None:
-                continue
-            all_data.append(x)
-            if x < min_val:
-                min_val = x
-            if x > max_val:
-                max_val = x
-
-        values = []
-        amount = 1000
-        step = len(all_data) / amount
-        c = 0
-        for v in sorted(all_data):
-            if c >= step:
-                c = 0
-                values.append(v)
-            c += 1
-
-        line_x = []
-        line_y = []
-        for val in values:
-            mapped = 0
-            wrong = 0
-            total = total_amount_1 + total_amount_2
-            for ele in data[0]:
-                if not ele is None and ele > val:
-                    mapped += 1
-            for ele in data[1]:
-                if not ele is None and ele > val:
-                    mapped += 1
-                    wrong += 1
-
-            if mapped > 0:
-                line_x.append( wrong/mapped )
-                line_y.append( mapped/total )
-
-        plot.line(line_x, line_y, legend=approach, color=c_palette[index])
-        plot.x(line_x, line_y, legend=approach, color=c_palette[index])
-
-    plot.legend.location = "top_left"
-    plots[-1].append(plot)
-
-    save(gridplot(plots))
+    print("[COPY HERE]")
+    print(out_list)
+    print("[END COPY HERE]")
 
 def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 10):
     output_file(out)
@@ -1620,17 +1472,19 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-import measure_time
-measure_time.test_all()
-
-analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
 exit()
 
 #test_my_approaches("/mnt/ssd1/test.db")
+import measure_time
+measure_time.test_all()
 
 
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-#expecting_same_results("MA Fast", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
+analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+#expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
+exit()
+
 
 
 #test_my_approaches("/mnt/ssd1/default.db")
