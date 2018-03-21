@@ -254,6 +254,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         (std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long> a, 
          std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long> b)
         {
+            //float s_a = std::get<0>(a);
+            //s_a /= std::get<2>(a);
+            //float s_b = std::get<0>(b);
+            //s_b /= std::get<2>(b);
+            //return s_a > s_b;
+
             if(std::get<0>(a) == std::get<0>(b))
                 return std::get<2>(a) < std::get<2>(b);
             return std::get<0>(a) > std::get<0>(b);
@@ -279,7 +285,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         pSeeds->xStats.uiInitialRefBegin = xCollect2->start_ref();
         pSeeds->xStats.uiInitialQueryEnd = xCollect2->end();
         pSeeds->xStats.uiInitialRefEnd = xCollect2->end_ref();
-        nucSeqIndex end = getPositionForBucketing(uiQLen, *std::get<1>(*xCollect)) + uiStripSize;
+        nucSeqIndex end = getPositionForBucketing(uiQLen, *xCollect2) + uiStripSize;
         while(
             xCollect2 != vSeeds.end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))

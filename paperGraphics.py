@@ -81,14 +81,14 @@ for x in np.linspace(0, 1, 100):
         return (clamp(r),clamp(g),clamp(b))
     print(format(light_spec_approximation(x)))
 """
+def format(rgb):
+    def clamp(x):
+        return max(0, min(x, 255))
+    red, green, blue = rgb
+    return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
+                                            clamp(int(blue * 255)))
 
 def heatmap_palette(scheme, num_colors):
-    def format(rgb):
-        def clamp(x):
-            return max(0, min(x, 255))
-        red, green, blue = rgb
-        return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
-                                               clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
 def simulate_max_length(q_len, mutation_amount, indel_amount,
@@ -1125,11 +1125,12 @@ def accuracy_pics():
                 if ele > max_runtime:
                     max_runtime = ele
 
-    #make all runtimes percentages
+    #make all runtimes percentages and invert them so that the fastest is RED
     for i0, x in enumerate(data):
         for i1, row in enumerate(x[4]):
             for i2, ele in enumerate(row):
-                data[i0][4][i1][i2] = ele / max_runtime
+                if not ele is nan:
+                    data[i0][4][i1][i2] = 1 - ele / max_runtime
 
     plots = [[], []]
 
@@ -1145,7 +1146,7 @@ def accuracy_pics():
                     high=max_runtime
                 )
     plot = figure(
-        plot_width=resolution, plot_height=resolution/2
+        plot_width=resolution, plot_height=resolution
         )
     color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
     color_bar.major_label_text_font=font
@@ -1153,7 +1154,7 @@ def accuracy_pics():
     plot.add_layout(color_bar, 'left')
     plots[0].append(plot)
     plot1 = figure(
-        plot_width=resolution, plot_height=resolution/2
+        plot_width=resolution, plot_height=resolution
         )
     color_bar1 = ColorBar(color_mapper=color_mapper_fake, border_line_color=None, location=(0,0))
     color_bar1.major_label_text_font=font
@@ -1162,24 +1163,43 @@ def accuracy_pics():
     plots[1].append(plot1)
 
     for w, h, approach, qual_mat, runtime_mat, mapping_qual in data:
+        def draw_matrix(plot, matrix, w, h, palette):
+            m_h = w/float(len(matrix))
+            m_w = h/float(len(matrix[0]))
+            xs = []
+            ys = []
+            xs2 = []
+            ys2 = []
+            cs = []
+            for y, row in enumerate(matrix):
+                for x, ele in enumerate(row):
+                    xs.append(x*m_w)
+                    ys.append(y*m_h)
+                    xs2.append((x+1)*m_w)
+                    ys2.append((y+1)*m_h)
+                    if ele is nan:
+                        cs.append("#AAAAAA")
+                    else:
+                        cs.append(format(palette(ele)))
+            plot.quad(left=xs, bottom=ys, right=xs2, top=ys2, color=cs)
+
         print(approach)
         plot = figure(
-            x_range=(0,h*100), y_range=(0,w*100),
-            plot_width=resolution, plot_height=resolution/2
+            x_range=(0,h), y_range=(0,w),
+            plot_width=resolution, plot_height=resolution
             )
+        plot.axis.visible = False
 
+        draw_matrix(plot, qual_mat, w, h, light_spec_approximation)
         plots[0].append(plot)
-
-        def 
-
-        plot.image(image=[qual_mat], color_mapper=color_mapper, dh=[w*100], dw=[h*100], x=[0], y=[0])
 
         plot2 = figure(
             x_range=(0,h), y_range=(0,w),
-            plot_width=resolution, plot_height=resolution/2
+            plot_width=resolution, plot_height=resolution
             )
+        plot2.axis.visible = False
 
-        plot2.image(image=[runtime_mat], color_mapper=color_mapper, dh=[w], dw=[h], x=[0], y=[0])
+        draw_matrix(plot2, runtime_mat, w, h, light_spec_approximation)
         plots[1].append(plot2)
 
     save(plots, "accuracyPics", True)

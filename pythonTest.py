@@ -90,7 +90,8 @@ def test_my_approach(
         reseed=False,
         full_analysis=False,
         do_minimizers=False,
-        sort_after_score=True
+        sort_after_score=True,
+        cheat=False
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -159,7 +160,7 @@ def test_my_approach(
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw, sort_after_score)
-        mappingQual = MappingQuality(1)#give me x alignments
+        mappingQual = MappingQuality(30)#give me x alignments
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -245,56 +246,86 @@ def test_my_approach(
         result = []
         for i, alignments in enumerate(pledges[-1]):
             alignment = alignments.get()[0]
+            if cheat:
+                ##
+                # pretend backend is perfect...
+                if not near(
+                        alignment.begin_on_ref,
+                        origin_pos,
+                        alignment.end_on_ref,
+                        origin_pos+orig_size):
+                    for soc in pledges[2][i].get():
+                        if len(soc) == 0:
+                            continue
+                        begin_on_ref = soc[0].start_ref
+                        end_on_ref = begin_on_ref + soc[0].size
+                        for seed in soc:
+                            if begin_on_ref > seed.start_ref:
+                                begin_on_ref = seed.start_ref
+                            if end_on_ref < seed.start_ref + seed.size:
+                                end_on_ref = seed.start_ref + seed.size
+                        _, _, origin_pos, orig_size = queries[i]
+                        x_hit = near(
+                            begin_on_ref,
+                            origin_pos,
+                            end_on_ref,
+                            origin_pos+orig_size)
+                        if x_hit:
+                            alignment.begin_on_ref = begin_on_ref
+                            alignment.end_on_ref = end_on_ref
+                ##
+                # pretend backend is perfect end
+
             if len(alignment) == 0:
                 continue
             alignment2 = None
-            if len(alignments.get()) > 1:
-                alignment2 = alignments.get()[1]
-                #
-                # check if the second alignment was accurate and the first was not...
-                #
-                _, _, origin_pos, orig_size = queries[i]
-                align_1_hit = near(
-                    alignment.begin_on_ref,
-                    origin_pos,
-                    alignment.end_on_ref,
-                    origin_pos+orig_size)
-                align_2_hit = near(
-                    alignment2.begin_on_ref,
-                    origin_pos,
-                    alignment2.end_on_ref,
-                    origin_pos+orig_size)
-                if warn_once and align_2_hit and not align_1_hit:
-                    warn_once = False
-                    def get_seed_coverage(alignment):
-                        return (
-                            "Query: " + str(alignment.stats.initial_q_beg) + " - " +
-                            str(alignment.stats.initial_q_end) + " Reference: " +
-                            str(alignment.stats.initial_r_beg) + " - " +
-                            str(alignment.stats.initial_r_end)
-                            )
-                    def print_seeds(alignment):
-                        print("Num Seeds: ", alignment.stats.num_seeds_in_strip,
-                             " SoC index:", alignment.stats.index_of_strip)
-                        for seed in pledges[2][i].get()[alignment.stats.index_of_strip]:
-                            print( (seed.start, seed.start_ref, seed.size) )
-                    print("Warning picked wrong alignment",
-                        alignment.get_score(), "?>=", alignment2.get_score())
-                    print("Alignment 1 is hit: ", align_1_hit)
-                    print("Alignment 1 seed coverage: ", get_seed_coverage(alignment))
-                    print("Alignment 1 seeds: ")
-                    print_seeds(alignment)
-                    AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
-                    print("Alignment 2 is hit: ", align_2_hit)
-                    print("Alignment 2 seed coverage: ", get_seed_coverage(alignment2))
-                    print("Alignment 2 seeds: ")
-                    print_seeds(alignment2)
-                    AlignmentPrinter().execute(alignment2, pledges[0][i].get(), ref_pack)
-                    picked_wrong_count += 1
-                assert(not sort_after_score or alignment.get_score() >= alignment2.get_score())
-                #
-                # end of check
-                #
+            #if len(alignments.get()) > 1:
+            #    alignment2 = alignments.get()[1]
+            #    #
+            #    # check if the second alignment was accurate and the first was not...
+            #    #
+            #    _, _, origin_pos, orig_size = queries[i]
+            #    align_1_hit = near(
+            #        alignment.begin_on_ref,
+            #        origin_pos,
+            #        alignment.end_on_ref,
+            #        origin_pos+orig_size)
+            #    align_2_hit = near(
+            #        alignment2.begin_on_ref,
+            #        origin_pos,
+            #        alignment2.end_on_ref,
+            #        origin_pos+orig_size)
+            #    if warn_once and align_2_hit and not align_1_hit:
+            #        warn_once = False
+            #        def get_seed_coverage(alignment):
+            #            return (
+            #                "Query: " + str(alignment.stats.initial_q_beg) + " - " +
+            #                str(alignment.stats.initial_q_end) + " Reference: " +
+            #                str(alignment.stats.initial_r_beg) + " - " +
+            #                str(alignment.stats.initial_r_end)
+            #                )
+            #        def print_seeds(alignment):
+            #            print("Num Seeds: ", alignment.stats.num_seeds_in_strip,
+            #                 " SoC index:", alignment.stats.index_of_strip)
+            #            for seed in pledges[2][i].get()[alignment.stats.index_of_strip]:
+            #                print( (seed.start, seed.start_ref, seed.size) )
+            #        print("Warning picked wrong alignment",
+            #            alignment.get_score(), "?>=", alignment2.get_score())
+            #        print("Alignment 1 is hit: ", align_1_hit)
+            #        print("Alignment 1 seed coverage: ", get_seed_coverage(alignment))
+            #        print("Alignment 1 seeds: ")
+            #        print_seeds(alignment)
+            #        AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
+            #        print("Alignment 2 is hit: ", align_2_hit)
+            #        print("Alignment 2 seed coverage: ", get_seed_coverage(alignment2))
+            #        print("Alignment 2 seeds: ")
+            #        print_seeds(alignment2)
+            #        AlignmentPrinter().execute(alignment2, pledges[0][i].get(), ref_pack)
+            #        picked_wrong_count += 1
+            #    assert(not sort_after_score or alignment.get_score() >= alignment2.get_score())
+            #    #
+            #    # end of check
+            #    #
             optimal_alignment = None
             if len(optimal_alignment_out[i].get()) > 0:
                 optimal_alignment = optimal_alignment_out[i].get()[0]
@@ -536,12 +567,17 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = False
 
-    #clearResults(db_name, human_genome, "MA Accurate PY")
-    clearResults(db_name, human_genome, "MA Fast PY")
+    clearResults(db_name, human_genome, "MA Accurate PY")
+    clearResults(db_name, human_genome, "MA Accurate PY 200")
+    #clearResults(db_name, human_genome, "MA Fast PY")
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
+    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=True, cheat=True)
+
+    test_my_approach(db_name, human_genome, "MA Accurate PY 200", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, cheat=True)
+
+    #test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -805,7 +841,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 if not score is None and score > 0:
                     scores_accurate[num_mutation][num_indels] += score
             else:
-                print("Misaligned", approach, num_mutation, sequence)
                 mapping_qual[-1][1].append(mapping_quality)
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
                     mapping_qual_illumina[-1][1].append(mapping_quality)
@@ -1461,7 +1496,7 @@ exit()
 #analyse_detailed("stats/", "/mnt/ssd1/test.db")
 #exit()
 
-amount = 128#2**8
+amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32)
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
@@ -1470,19 +1505,19 @@ amount = 128#2**8
 #createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
 #createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
-#createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
+#createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
 #analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
 #exit()
 
-#test_my_approaches("/mnt/ssd1/test.db")
+#test_my_approaches("/mnt/ssd1/zoomLine.db")
 import measure_time
 measure_time.test_all()
 
 
-#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
+#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100)
+#analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
 exit()
 

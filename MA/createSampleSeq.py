@@ -607,9 +607,8 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
     if skip_y % 1 == 1:
         skip_y += 1
 
-    max_x = 3 # int(size * 4 / 10)
-    skip_x = 1
-    max_y = 1 #max_indels
+    max_x = int(size * 4 / 10)
+    max_y = max_indels
 
     if smaller_box:
         max_x = int(max_x / 5)

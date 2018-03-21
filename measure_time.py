@@ -51,13 +51,12 @@ class CommandLine(Module):
 
         #assemble the shell command
         cmd_str = self.create_command(self.in_filename)
-        print(cmd_str)
+        #print(cmd_str)
         #exit()
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
         self.elapsed_time = time.time() - start_time
-        print(self.elapsed_time)
 
         os.remove(self.in_filename)
 
@@ -232,18 +231,21 @@ class BWA_SW(CommandLine):
         return False
 
 class MA(CommandLine):
-    def __init__(self, index_str, threads, fast, db_name):
+    def __init__(self, index_str, threads, fast, db_name, num_soc=None):
         super().__init__()
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
         self.threads = threads
         self.fast = "accurate"
+        self.num_soc = num_soc
         if fast:
             self.fast = "fast"
         self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
+        if not self.num_soc is None:
+            cmd_str += " -G -S " + str(self.num_soc)
         return cmd_str + " -g " + self.index_str + " -i " + in_filename
 
     def do_checks(self):
@@ -266,11 +268,12 @@ def test(
     l = [
         ("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
-        #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa", db_name)),
+        #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/chrom/human/n_less.fasta", db_name)),
         ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
-        #("BWA SW", BWA_SW(reference, num_threads, db_name)),
-        ("MA Fast", MA(reference, num_threads, True, db_name)),
+        ("BWA SW", BWA_SW(reference, num_threads, db_name)),
+        #("MA Fast", MA(reference, num_threads, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, False, db_name)),
+        #("MA Accurate 30 SOC G", MA(reference, num_threads, False, db_name, 30)),
     ]
 
     for name, aligner in l:
@@ -278,18 +281,18 @@ def test(
         clearResults("/mnt/ssd1/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
 
         matrix = getQueriesAsASDMatrix("/mnt/ssd1/"+db_name, name, reference)
-        c = 1
+        #c = 1
         for row in matrix:
-            if c <= 0:
-                print("break")
-                break
-            c -= 1
-            count = 3
+            #if c <= 0:
+            #    print("break")
+            #    break
+            #c -= 1
+            #count = 3
             for queries in row:
-                if count <= 0:
-                    print("break")
-                    break
-                count -= 1
+                #if count <= 0:
+                #    print("break")
+                #    break
+                #count -= 1
                 print(".", end="", flush=True)#print a line of dots
                 #print("extracting " + str(len(queries)) + " samples (" + name + ")...")
                 #setup the query pledges
@@ -342,14 +345,14 @@ def test(
 
 def test_all():
     #test("test.db", human_genome)
-    #test("default.db", human_genome)
+    test("default.db", human_genome)
     test("short.db", human_genome)
     #test("long.db", human_genome)
-    #test("shortIndels.db", human_genome)
-    #test("longIndels.db", human_genome)
-    #test("insertionOnly.db", human_genome)
-    #test("deletionOnly.db", human_genome)
-    #test("zoomLine.db", human_genome)
-    #test("zoomSquare.db", human_genome)
+    test("shortIndels.db", human_genome)
+    test("longIndels.db", human_genome)
+    test("insertionOnly.db", human_genome)
+    test("deletionOnly.db", human_genome)
+    test("zoomLine.db", human_genome)
+    test("zoomSquare.db", human_genome)
 
     #test("illumina.db", human_genome)

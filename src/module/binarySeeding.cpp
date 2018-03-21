@@ -51,12 +51,22 @@ void BinarySeeding::procesInterval(
                 pSegmentVector
             );
         else
+        {
             xAreaCovered = smemExtension(
                 xAreaToCover.center(), 
                 pFM_index,
                 pQuerySeq, 
-                pSegmentVector
+                pSegmentVector,
+                3
             );
+            //smemExtension(
+            //    xAreaCovered.center(), 
+            //    pFM_index,
+            //    pQuerySeq, 
+            //    pSegmentVector,
+            //    3
+            //);
+        }//else
 
         DEBUG_2(
             std::cout << "splitting interval (" << xAreaToCover.start() << "," << xAreaToCover.end() << ") at (" << xAreaCovered.start() << "," << xAreaCovered.end() << ")" << std::endl;

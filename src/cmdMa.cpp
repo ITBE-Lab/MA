@@ -94,6 +94,7 @@ int main(int argc, char*argv[])
             ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
             ("global,G", "Perform global alignment")
         ;
+        //@todo warn if seed set is not valid
 
         options_description p_desc{"Paired Reads Options"};
         p_desc.add_options()

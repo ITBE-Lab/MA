@@ -234,7 +234,8 @@ namespace libMA
                 nucSeqIndex center,
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
-                std::shared_ptr<SegmentVector> pSegmentVector
+                std::shared_ptr<SegmentVector> pSegmentVector,
+                const unsigned int uiMinIntv
             )
             {
                 //to remember the covered area
@@ -297,7 +298,7 @@ namespace libMA
                     * In fact, if ok.getSize is zero, then there are no matches any more.
                     * thus we can stop extending forwards
                     */
-                    if (ok.size() == 0)
+                    if (ok.size() <= uiMinIntv)
                         break; // the SA-index interval size is too small to be extended further
                     // if we get here we can forget the old interval and save the current interval.
                     ik = ok;
@@ -365,7 +366,7 @@ namespace libMA
                                 std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
                             )
                             // check if the extension resulted in a non enclosed interval
-                            if(ok.size() == 0 && !bHaveOne)
+                            if(ok.size() <= uiMinIntv && !bHaveOne)
                             {
                                 // save the interval
                                 pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(ik)));
@@ -375,7 +376,7 @@ namespace libMA
                                 bHaveOne = true;
                             }// if
                             // check if we can extend this interval further
-                            else if(ok.size() > 0)
+                            else if(ok.size() > uiMinIntv)
                             {
                                 // if so add the intervals to the list
                                 Segment xSeg = Segment(i, ik.size()+1, ok);
