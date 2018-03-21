@@ -218,16 +218,18 @@ def getQueriesAsASDMatrix(db_name, approach, reference):
                         SELECT DISTINCT num_indels
                         FROM samples
                         WHERE reference == ?
+                        ORDER BY num_indels
                         """, (reference,)).fetchall()
     mut_amounts = c.execute("""
                         SELECT DISTINCT num_mutation
                         FROM samples
                         WHERE reference == ?
+                        ORDER BY num_mutation
                         """, (reference,)).fetchall()
     result = []
-    for mut_amount in mut_amounts:
+    for indel_amount in indel_amounts:
         result.append( [] )
-        for indel_amount in indel_amounts:
+        for mut_amount in mut_amounts:
             elements = c.execute("""
                         SELECT sequence, sample_id, origin
                         FROM samples
@@ -390,7 +392,8 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.seed_coverage_alignment,
                                 results.mapping_quality,
                                 results.nmw_area,
-                                results.run_time
+                                results.run_time,
+                                samples.sequence
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id
                             WHERE results.approach == ?
@@ -475,7 +478,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
     q_from = 0
     #do - while loop
     while True:#do
-        q_from = random.randint(0, ref_seq.unpacked_size() - q_len)
+        q_from = random.randint(0, ref_seq.unpacked_size()/2 - q_len)
         q_to = q_from + q_len
     #while
         if ref_seq.is_bridging(q_from, q_len):
@@ -604,8 +607,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
     if skip_y % 1 == 1:
         skip_y += 1
 
-    max_x = int(size * 4 / 10)
-    max_y = max_indels
+    max_x = 3 # int(size * 4 / 10)
+    skip_x = 1
+    max_y = 1 #max_indels
 
     if smaller_box:
         max_x = int(max_x / 5)

@@ -1,24 +1,56 @@
 from MA import *
 import random
 
-def make(filenames, out_name):
-    file_all = open(out_name + "bwa", "w")
-    ref_seq = Pack()
-
+def replace_n(filenames, out_file):
+    file_out = open(out_file, "w")
     for name in filenames:
-        ref_seq.append_fasta_file( name )
         file = open(name , "r")
         line = file.readline()
         while line:
-            file_all.write(line)
+            if line[0] != '>':
+                i = 0
+                while i < len(line):
+                    if line[i] == 'N' or line[i] == 'n':
+                        line = line[:i] + line[i+1:] #remove the N
+                    else:
+                        i += 1
+            else:
+                print(line[0:-1])
+            if len(line) > 1:
+                file_out.write(line)
             line = file.readline()
         file.close()
-    file_all.close()
+    file_out.close()
+    print("self check...")
+    file = open(out_file , "r")
+    line = file.readline()
+    while line:
+        if line[0] != '>':
+            assert(not 'N' in line)
+            assert(not 'n' in line)
+            assert(len(line) > 1)
+        line = file.readline()
+    file.close()
+    print("[OK]")
 
+bowtie2_home = "/usr/home/markus/workspace/bowtie2/bowtie2-2.3.3.1/bowtie2-build "
+blasr_home = "/usr/home/markus/workspace/blasr/build/bin/sawriter "
+bwa_home = "/usr/home/markus/workspace/bwa/baw "
+def make(filename, out_name):
+    # my pack + fmd Index
+    ref_seq = Pack()
+    ref_seq.append_fasta_file( filename )
     ref_seq.store(out_name)
 
     fm_index = FMIndex(ref_seq)
     fm_index.store(out_name)
+
+    #BWA fmd index
+    os.system(bwa_home + "-p" + out_name + "bwa" + " " + filename)
+    # #bowtie index
+    # os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
+    # #blasr index
+    # os.system(blasr_home + out_name + "blasr" + " " + filename)
 
 def make_hash(name):
     print("loading pack...")
@@ -85,9 +117,15 @@ def chrNames(prefix, num, suffix):
     return ret
 
 
-#make(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/genome/human_bugged2")
-make(chrNames("/mnt/ssd0/chrom/mouse/chr", 19, ".fna"), "/mnt/ssd0/genome/mouse")
-#make(["/mnt/ssd0/chrom/plasmodium/genome.fasta"], "/mnt/ssd0/genome/plasmodium")
+replace_n(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/chrom/human/n_free.fasta")
+make("/mnt/ssd0/chrom/human/n_free.fasta", "/mnt/ssd0/genome/human")
+
+replace_n(chrNames("/mnt/ssd0/chrom/mouse/chr", 19, ".fna"), "/mnt/ssd0/chrom/mouse/n_free.fasta")
+make("/mnt/ssd0/chrom/mouse/n_free.fasta", "/mnt/ssd0/genome/mouse")
+
+replace_n(["/mnt/ssd0/chrom/plasmodium/genome.fasta"], "/mnt/ssd0/chrom/plasmodium/n_free.fasta")
+make("/mnt/ssd0/chrom/plasmodium/n_free.fasta", "/mnt/ssd0/genome/plasmodium")
+
 #makeRandom("/mnt/ssd0/genome/random", 3 * 10**9)
 #make(["/mnt/ssd0/chrom/human/chr1.fna" ], "/mnt/ssd0/genome/humanchr1_bugged")
 #make_hash("/mnt/ssd0/genome/human")

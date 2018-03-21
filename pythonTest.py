@@ -763,7 +763,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 d[x][y] = 0
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence in results:
             if not nmw_area is None:
                 nmw_total += nmw_area
             hits = init(hits, num_mutation, num_indels)
@@ -805,6 +805,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 if not score is None and score > 0:
                     scores_accurate[num_mutation][num_indels] += score
             else:
+                print("Misaligned", approach, num_mutation, sequence)
                 mapping_qual[-1][1].append(mapping_quality)
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
                     mapping_qual_illumina[-1][1].append(mapping_quality)
@@ -921,7 +922,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         print(approach, ":\taverage accuracy:", 100*dict_sum(hits)/max(dict_sum(tries),1), "%")
 
         avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
-        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, tries, "runtime " + approach, 0)
+        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, one, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
         avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, tries, "optimal scores " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
@@ -1093,9 +1094,9 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
 
         out_list.append(
             (
-                max_mut,
-                max_indel,
-                approach,
+                max_mut, 
+                max_indel, 
+                approach, 
                 format(hits, max_mut, max_indel, tries),
                 format(run_times, max_mut, max_indel, None),
                 mapping_qual
@@ -1460,7 +1461,7 @@ exit()
 #analyse_detailed("stats/", "/mnt/ssd1/test.db")
 #exit()
 
-amount = 2**10
+amount = 128#2**8
 #createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32)
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
@@ -1472,8 +1473,8 @@ amount = 2**10
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, high_qual=True, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
-analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
-exit()
+#analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
+#exit()
 
 #test_my_approaches("/mnt/ssd1/test.db")
 import measure_time
@@ -1481,7 +1482,7 @@ measure_time.test_all()
 
 
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
 exit()
 

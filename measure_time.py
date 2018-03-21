@@ -51,12 +51,13 @@ class CommandLine(Module):
 
         #assemble the shell command
         cmd_str = self.create_command(self.in_filename)
-        #print(cmd_str)
+        print(cmd_str)
         #exit()
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
         self.elapsed_time = time.time() - start_time
+        print(self.elapsed_time)
 
         os.remove(self.in_filename)
 
@@ -116,12 +117,13 @@ class CommandLine(Module):
                         exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start, start + align_length)
-                alignments[int(columns[0])].mapping_quality = int(columns[5])
+                alignments[int(columns[0])].mapping_quality = int(columns[4])
                 if int(columns[1]) & 0x010 and self.warn_once:
                     self.warn_once = False
                     print("Warning: rev comp flag set (python code cant handle this; printed once):", columns[1])
                 self.check_existence[int(columns[0])] += 1
-            except:
+            except Exception as e:
+                print(e)
                 print("oh oh:" + line)
                 pass
 
@@ -262,10 +264,10 @@ def test(
     num_threads = 1
 
     l = [
-        #("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
+        ("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/genome/humanbwa", db_name)),
-        #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
+        ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, db_name)),
         ("MA Fast", MA(reference, num_threads, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, False, db_name)),
@@ -276,8 +278,18 @@ def test(
         clearResults("/mnt/ssd1/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
 
         matrix = getQueriesAsASDMatrix("/mnt/ssd1/"+db_name, name, reference)
+        c = 1
         for row in matrix:
+            if c <= 0:
+                print("break")
+                break
+            c -= 1
+            count = 3
             for queries in row:
+                if count <= 0:
+                    print("break")
+                    break
+                count -= 1
                 print(".", end="", flush=True)#print a line of dots
                 #print("extracting " + str(len(queries)) + " samples (" + name + ")...")
                 #setup the query pledges
@@ -330,8 +342,8 @@ def test(
 
 def test_all():
     #test("test.db", human_genome)
-    test("default.db", human_genome)
-    #test("short.db", human_genome)
+    #test("default.db", human_genome)
+    test("short.db", human_genome)
     #test("long.db", human_genome)
     #test("shortIndels.db", human_genome)
     #test("longIndels.db", human_genome)
