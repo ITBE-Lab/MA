@@ -151,6 +151,44 @@ void StripOfConsideration::forEachNonBridgingSeed(
     );
 }//function
 
+/**
+ * used to determine more complex orders of SoCs 
+ */
+class SoCOrder
+{
+public:
+    nucSeqIndex uiAccumulativeLength = 0;
+    unsigned int uiSeedAmount = 0;
+
+
+    inline void operator+=(const Seed& rS)
+    {
+        uiSeedAmount++;
+        uiAccumulativeLength += rS.size();
+    }//operator
+
+    inline void operator-=(const Seed& rS)
+    {
+        assert(uiSeedAmount > 0);
+        uiSeedAmount--;
+        assert(uiAccumulativeLength >= rS.size());
+        uiAccumulativeLength -= rS.size();
+    }//operator
+
+    inline bool operator<(const SoCOrder& rOther) const
+    {
+        if(uiAccumulativeLength == rOther.uiAccumulativeLength)
+            return uiSeedAmount > rOther.uiSeedAmount;
+        return uiAccumulativeLength < rOther.uiAccumulativeLength;
+    }//operator
+
+    inline void operator=(const SoCOrder& rOther)
+    {
+        uiAccumulativeLength = rOther.uiAccumulativeLength;
+        uiSeedAmount = rOther.uiSeedAmount;
+    }//operator
+}; //class
+
 std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
@@ -190,11 +228,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     sort(vSeeds, uiQLen);
 
     //positions to remember the maxima
-    std::vector<std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long>> xMaxima;
+    std::vector<std::pair<SoCOrder, std::vector<Seed>::iterator>> xMaxima;
 
     //find the SOC maxima
-    nucSeqIndex uiCurrScore = 0;
-    unsigned long uiCurrEle = 0;
+    SoCOrder xCurrScore;
     std::vector<Seed>::iterator xStripStart = vSeeds.begin();
     std::vector<Seed>::iterator xStripEnd = vSeeds.begin();
     while(xStripEnd != vSeeds.end())
@@ -207,14 +244,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             >= getPositionForBucketing(uiQLen, *xStripEnd))
         {
             //remember the additional score
-            uiCurrScore += xStripEnd->getValue();
+            xCurrScore += *xStripEnd;
             // compute the current SOC size
             uiCurrSize = xStripStart->start_ref() - xStripEnd->start_ref();
             // carefull here we might have seeds in the wrong order since we sorted by r - q not r.
             if(xStripEnd->start_ref() > xStripStart->start_ref())
                 uiCurrSize = xStripEnd->start_ref() - xStripStart->start_ref();
-            //remember the additional element
-            uiCurrEle++;
             //move the iterator forward
             xStripEnd++;
         }//while
@@ -227,45 +262,39 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             //check if we improved upon the last maxima while dealing with the same area
             if(
                 !xMaxima.empty() && 
-                getPositionForBucketing(uiQLen, *std::get<1>(xMaxima.back())) + uiStripSize
+                getPositionForBucketing(uiQLen, *xMaxima.back().second) + uiStripSize
                 >= getPositionForBucketing(uiQLen, *xStripStart))
             {
-                if(std::get<0>(xMaxima.back()) < uiCurrScore)
+                if(xMaxima.back().first < xCurrScore)
                 {
                     //if so we want to replace the old maxima
                     xMaxima.pop_back();
-                    xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart, uiCurrEle));
+                    xMaxima.push_back(std::make_pair(xCurrScore, xStripStart));
                 }//if
             }//if
             else
                 //save the SOC
-                xMaxima.push_back(std::make_tuple(uiCurrScore, xStripStart, uiCurrEle));
+                xMaxima.push_back(std::make_pair(xCurrScore, xStripStart));
         }//if
         //move xStripStart one to the right (this will cause xStripEnd to be adjusted)
-        assert(uiCurrScore >= xStripStart->getValue());
-        uiCurrScore -= (xStripStart++)->getValue();
-        uiCurrEle--;
+        xCurrScore -= *(xStripStart++);
     }//while
 
     // sort the SOC starting points according to the scores, 
     // so that we can extract the best SOC first
-    std::sort(xMaxima.begin(), xMaxima.end(),
+    std::sort(
+        xMaxima.begin(), xMaxima.end(), 
         []
-        (std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long> a, 
-         std::tuple<nucSeqIndex, std::vector<Seed>::iterator, unsigned long> b)
+        (
+            const std::pair<SoCOrder, std::vector<Seed>::iterator>& rA,
+            const std::pair<SoCOrder, std::vector<Seed>::iterator>& rB
+        )
         {
-            //float s_a = std::get<0>(a);
-            //s_a /= std::get<2>(a);
-            //float s_b = std::get<0>(b);
-            //s_b /= std::get<2>(b);
-            //return s_a > s_b;
-
-            if(std::get<0>(a) == std::get<0>(b))
-                return std::get<2>(a) < std::get<2>(b);
-            return std::get<0>(a) > std::get<0>(b);
+            //reverse the order of rA and rB here so that we sort descending instead of ascending
+            return rB.first < rA.first;
         }//lambda
     );//sort function call
-    assert(xMaxima.size() <= 1 || std::get<0>(xMaxima.front()) >= std::get<0>(xMaxima.back()));
+    assert(xMaxima.size() <= 1 || xMaxima.front().first >= xMaxima.back().first);
 
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
@@ -278,7 +307,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         //the strip that shall be collected
         std::shared_ptr<Seeds> pSeeds(new Seeds());
         //iterator walking till the end of the strip that shall be collected
-        auto xCollect2 = std::get<1>(*xCollect);
+        auto xCollect2 = xCollect->second;
         //save SoC index
         pSeeds->xStats.index_of_strip = uiSoCIndex++;
         pSeeds->xStats.uiInitialQueryBegin = xCollect2->start();

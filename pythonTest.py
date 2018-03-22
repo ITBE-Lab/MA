@@ -91,6 +91,7 @@ def test_my_approach(
         full_analysis=False,
         do_minimizers=False,
         sort_after_score=True,
+        max_nmw = 10,
         cheat=False
         #,optimistic_gap_estimation=False
     ):
@@ -156,7 +157,7 @@ def test_my_approach(
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
         #ls.optimistic_gap_estimation = optimistic_gap_estimation
-        couple = ExecOnVec(ls)
+        couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw, sort_after_score)
@@ -568,14 +569,15 @@ def test_my_approaches(db_name):
     full_analysis = False
 
     clearResults(db_name, human_genome, "MA Accurate PY")
-    clearResults(db_name, human_genome, "MA Accurate PY 200")
     #clearResults(db_name, human_genome, "MA Fast PY")
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=True, cheat=True)
+    #test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=True, cheat=True)
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY 200", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, cheat=True)
+    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=0)
+
+    #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
     #test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
@@ -1511,12 +1513,12 @@ amount = 2**11
 #analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
 #exit()
 
-#test_my_approaches("/mnt/ssd1/zoomLine.db")
-import measure_time
-measure_time.test_all()
+test_my_approaches("/mnt/ssd1/zoomLine.db")
+#import measure_time
+#measure_time.test_all()
 
 
-#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100)
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
 exit()
