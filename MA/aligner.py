@@ -226,6 +226,15 @@ class BinarySeeding(libMA.BinarySeeding):
         return super(BinarySeeding, self).promise_me(ContainerVector(*args))
 
 ##
+# @brief python wrapper for OtherSeeding
+class OtherSeeding(libMA.OtherSeeding):
+    def execute(self, *args):
+        return super(OtherSeeding, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(OtherSeeding, self).promise_me(ContainerVector(*args))
+
+##
 # @brief python wrapper for Minimizers
 class Minimizers(libMA.Minimizers):
     def execute(self, *args):

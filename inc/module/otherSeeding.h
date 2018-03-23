@@ -41,7 +41,7 @@ namespace libMA
         /**
          * @brief Initialize a OtherSeeding Module
          */
-        OtherSeeding(bool bBowtie = true)
+        OtherSeeding(bool bBowtie)
                 :
             bBowtie(bBowtie)
         {}//constructor
@@ -69,6 +69,13 @@ namespace libMA
         {
             return "OtherSeeding";
         }
+
+
+        std::string getFullDesc() const
+        {
+            return std::string("OtherSeeding(") + 
+                std::to_string(bBowtie) + ")";
+        }//function
     };//class
 
 }//namespace

@@ -211,7 +211,7 @@ def getQueriesFor(db_name, reference, mut=1, indel=1, size=100):
                         AND original_size == ?
                         """, (reference, mut, indel, size)).fetchall()
 
-def getQueriesAsASDMatrix(db_name, approach, reference):
+def getQueriesAsASDMatrix(db_name, approach, reference, give_seed_length = False):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     indel_amounts = c.execute("""
@@ -230,8 +230,11 @@ def getQueriesAsASDMatrix(db_name, approach, reference):
     for indel_amount in indel_amounts:
         result.append( [] )
         for mut_amount in mut_amounts:
+            select = "sequence, sample_id, origin"
+            if give_seed_length:
+                select += ", original_size"
             elements = c.execute("""
-                        SELECT sequence, sample_id, origin
+                        SELECT """ + select + """
                         FROM samples
                         WHERE sample_id NOT IN 
                             (
