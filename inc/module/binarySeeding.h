@@ -80,7 +80,7 @@ namespace libMA
                 /*
                 * In fact, if ok.getSize is zero, then there are no matches any more.
                 */
-                if (ok.size() == 0)
+                if (ok.size() <= uiMinAmbiguity)
                     break; // the SA-index interval size is too small to be extended further
                 end = i;
                 ik = ok;
@@ -112,7 +112,7 @@ namespace libMA
                     /*
                     * In fact, if ok.getSize is zero, then there are no matches any more.
                     */
-                    if (ok.size() == 0)
+                    if (ok.size() <= uiMinAmbiguity)
                         break; // the SA-index interval size is too small to be extended further
                     start = i;
                     ik = ok;
@@ -163,7 +163,7 @@ namespace libMA
                     /*
                     * In fact, if ok.getSize is zero, then there are no matches any more.
                     */
-                    if (ok.size() == 0)
+                    if (ok.size() <= uiMinAmbiguity)
                         break; // the SA-index interval size is too small to be extended further
                     start = i;
                     ik = ok;
@@ -198,7 +198,7 @@ namespace libMA
                 /*
                 * In fact, if ok.getSize is zero, then there are no matches any more.
                 */
-                if (ok.size() == 0)
+                if (ok.size() <= uiMinAmbiguity)
                     break; // the SA-index interval size is too small to be extended further
                 end = i;
                 ik = ok;

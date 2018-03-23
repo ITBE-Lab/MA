@@ -126,14 +126,14 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
     // seeds need to be sorted for the following steps
     std::sort(
-            pSeeds->begin(), pSeeds->end(),
-            [](const Seed& xA, const Seed& xB)
-            {
-                if(xA.start_ref() == xB.start_ref())
-                    return xA.start() < xB.start();
-                return xA.start_ref() < xB.start_ref();
-            }//lambda
-        );//sort function call
+        pSeeds->begin(), pSeeds->end(),
+        [](const Seed& xA, const Seed& xB)
+        {
+            if(xA.start_ref() == xB.start_ref())
+                return xA.start() < xB.start();
+            return xA.start_ref() < xB.start_ref();
+        }//lambda
+    );//sort function call
 
     /*
      * FILTER:
@@ -144,104 +144,107 @@ std::shared_ptr<Container> LinearLineSweep::execute(
      * this is much like the backtracking in SW/NW
      * we make sure that we can only have a positive score
      */
-    //query position of last encountered seed
-    nucSeqIndex uiLastQ = pSeeds->front().start();
-    //reference position of last encountered seed
-    nucSeqIndex uiLastR = pSeeds->front().start_ref();
-    //running score
-    nucSeqIndex uiScore = 0;
-    //maximal score
-    nucSeqIndex uiMaxScore = 0;
-    //points to the last seed that had a score of 0
-    Seeds::iterator pLastStart = pSeeds->begin();
-    //outcome
-    Seeds::iterator pOptimalStart = pSeeds->begin();
-    //outcome
-    Seeds::iterator pOptimalEnd = pSeeds->end();
-
-    /*
-     * the goal of this loop is to set pOptimalStart & end correctly
-     */
-    for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
+    if(bLocal)
     {
-        assert(pSeed->start() <= pSeed->end());
-        assert(pSeed->size() <= 10000);
-        //adjust the score correctly
-        uiScore += iMatch * pSeed->getValue();
+        //query position of last encountered seed
+        nucSeqIndex uiLastQ = pSeeds->front().start();
+        //reference position of last encountered seed
+        nucSeqIndex uiLastR = pSeeds->front().start_ref();
+        //running score
+        unsigned long uiScore = 0;
+        //maximal score
+        nucSeqIndex uiMaxScore = 0;
+        //points to the last seed that had a score of 0
+        Seeds::iterator pLastStart = pSeeds->begin();
+        //outcome
+        Seeds::iterator pOptimalStart = pSeeds->begin();
+        //outcome
+        Seeds::iterator pOptimalEnd = pSeeds->end();
+
         /*
-         * we need to extract the gap between the seeds in order to do that.
-         * we will assume that any gap can be spanned by a single indel
-         * while all nucleotides give matches.
-         * Therefore we need to get the width x and height y of the rectangular gap
-         * number of matches equals min(x, y)
-         * gap size equals |x-y|
-         */
-        nucSeqIndex uiGap = 0;
-        if(pSeed->start() > uiLastQ)
-            uiGap = pSeed->start() - uiLastQ;
-        if(pSeed->start_ref() > uiLastR)
+        * the goal of this loop is to set pOptimalStart & end correctly
+        */
+        for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
         {
-            if(pSeed->start_ref() - uiLastR < uiGap)
+            assert(pSeed->start() <= pSeed->end());
+            assert(pSeed->size() <= 10000);
+            //adjust the score correctly
+            uiScore += iMatch * pSeed->getValue();
+            /*
+            * we need to extract the gap between the seeds in order to do that.
+            * we will assume that any gap can be spanned by a single indel
+            * while all nucleotides give matches.
+            * Therefore we need to get the width x and height y of the rectangular gap
+            * number of matches equals min(x, y)
+            * gap size equals |x-y|
+            */
+            nucSeqIndex uiGap = 0;
+            if(pSeed->start() > uiLastQ)
+                uiGap = pSeed->start() - uiLastQ;
+            if(pSeed->start_ref() > uiLastR)
             {
-                uiGap -= pSeed->start_ref() - uiLastR;
-                if(optimisticGapEstimation)
-                    uiScore += iMatch * (pSeed->start_ref() - uiLastR);
+                if(pSeed->start_ref() - uiLastR < uiGap)
+                {
+                    uiGap -= pSeed->start_ref() - uiLastR;
+                    if(optimisticGapEstimation)
+                        uiScore += iMatch * (pSeed->start_ref() - uiLastR);
+                }//if
+                else
+                {
+                    if(optimisticGapEstimation)
+                        uiScore += iMatch * uiGap;
+                    uiGap = (pSeed->start_ref() - uiLastR) - uiGap;
+                }//else
+            }//if
+            uiGap *= iExtend;
+            if(uiGap > 0)
+                uiGap += iGap;
+            if( //check for the maximal allowed gap area
+                (uiMaxGapArea > 0 && //0 == disabled
+                    (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
+                    (pSeed->start_ref() >= uiLastR ? pSeed->start_ref() - uiLastR : 1)
+                        > uiMaxGapArea) 
+                    || 
+                //check for negative score
+                uiScore < uiGap)
+            {
+                uiScore = 0;
+                pLastStart = pSeed;
             }//if
             else
+                uiScore -= uiGap;
+            if(uiScore > uiMaxScore)
             {
-                if(optimisticGapEstimation)
-                    uiScore += iMatch * uiGap;
-                uiGap = (pSeed->start_ref() - uiLastR) - uiGap;
-            }//else
-        }//if
-        uiGap *= iExtend;
-        if(uiGap > 0)
-            uiGap += iGap;
-        if( //check for the maximal allowed gap area
-            (uiMaxGapArea > 0 && //0 == disabled
-                (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
-                (pSeed->start_ref() >= uiLastR ? pSeed->start_ref() - uiLastR : 1)
-                    > uiMaxGapArea) 
-                || 
-            //check for negative score
-            uiScore < uiGap)
-        {
-            uiScore = 0;
-            pLastStart = pSeed;
-        }//if
-        else
-            uiScore -= uiGap;
-        if(uiScore > uiMaxScore)
-        {
-            uiMaxScore = uiScore;
-            pOptimalStart = pLastStart;
-            pOptimalEnd = pSeed;
-        }//if
-    }//for
+                uiMaxScore = uiScore;
+                pOptimalStart = pLastStart;
+                pOptimalEnd = pSeed;
+            }//if
+        }//for
 
-    /*
-     * we need to increment both iterator but check if they extend past the end of pSeeds
-     * (check twice because incrementing an iterator pointing to end will
-     * result in undefined behaviour)
-     *
-     * We then simply remove all known suboptimal seeds
-     * this is an optimistic estimation so some suboptimal regions might remain
-     * 
-     * NOTE: order is significant:
-     * """
-     * --- Iterator validity ---
-     * Iterators, pointers and references pointing to position (or first) and beyond are
-     * invalidated, with all iterators, pointers and references to elements before position
-     * (or first) are guaranteed to keep referring to the same elements they were referring to
-     * before the call.
-     * """
-     */
-    if(pOptimalEnd != pSeeds->end())
-        if(++pOptimalEnd != pSeeds->end())
-            pSeeds->erase(pOptimalEnd, pSeeds->end());
-    if(pOptimalStart != pSeeds->end())
-        if(++pOptimalStart != pSeeds->end())
-            pSeeds->erase(pSeeds->begin(), pOptimalStart);
+        /*
+        * we need to increment both iterator but check if they extend past the end of pSeeds
+        * (check twice because incrementing an iterator pointing to end will
+        * result in undefined behaviour)
+        *
+        * We then simply remove all known suboptimal seeds
+        * this is an optimistic estimation so some suboptimal regions might remain
+        * 
+        * NOTE: order is significant:
+        * """
+        * --- Iterator validity ---
+        * Iterators, pointers and references pointing to position (or first) and beyond are
+        * invalidated, with all iterators, pointers and references to elements before position
+        * (or first) are guaranteed to keep referring to the same elements they were referring to
+        * before the call.
+        * """
+        */
+        if(pOptimalEnd != pSeeds->end())
+            if(++pOptimalEnd != pSeeds->end())
+                pSeeds->erase(pOptimalEnd, pSeeds->end());
+        if(pOptimalStart != pSeeds->end())
+            if(++pOptimalStart != pSeeds->end())
+                pSeeds->erase(pSeeds->begin(), pOptimalStart);
+    }//if
 
     /*
      * One more thing: 
@@ -275,6 +278,7 @@ void exportLinesweep()
         >("LinearLineSweep")
         .def_readwrite("optimistic_gap_estimation", &LinearLineSweep::optimisticGapEstimation)
         .def_readwrite("max_gap_area", &LinearLineSweep::uiMaxGapArea)
+        .def_readwrite("local", &LinearLineSweep::bLocal)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<LinearLineSweep>,

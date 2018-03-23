@@ -92,7 +92,8 @@ def test_my_approach(
         do_minimizers=False,
         sort_after_score=True,
         max_nmw = 10,
-        cheat=False
+        cheat=False,
+        min_ambiguity=-2
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -148,14 +149,15 @@ def test_my_approach(
             fm_pledge.set(fm_index)
 
         #modules
-        seeding = BinarySeeding(not complete_seeds, 3)
+        seeding = BinarySeeding(not complete_seeds, min_ambiguity)
         reseeding = ReSeed(max_hits)
         minimizers = Minimizers()
         minimizersExtract = MinimizersToSeeds()
-        soc = StripOfConsideration(max_hits, num_strips, -2)
+        soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2)
         soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
+        ls.local = local
         #ls.optimistic_gap_estimation = optimistic_gap_estimation
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
@@ -222,25 +224,25 @@ def test_my_approach(
         #    exit()
 
         print("computing (", name, ") ...")
-        Pledge.simultaneous_get(pledges[-1], 32)
+        Pledge.simultaneous_get(pledges[-1], 64)
 
 
-        print("setting up optimal (", name, ") ...")
-        for i, query_ in enumerate(queries):
-            alignment = pledges[-1][i].get()[0]
-            if alignment.begin_on_query == alignment.end_on_query or not full_analysis:
-                optimal_alignment_in[i][0].set(NucSeq())
-                optimal_alignment_in[i][1].set(NucSeq())
-                continue
-            query = query_[0]
-            optimal_alignment_in[i][0].set(
-                NucSeq(query[alignment.begin_on_query : alignment.end_on_query])
-            )
-            optimal_alignment_in[i][1].set(
-                ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
-            )
-        print("computing optimal (", name, ") ...")
-        Pledge.simultaneous_get(optimal_alignment_out, 32)
+        #print("setting up optimal (", name, ") ...")
+        #for i, query_ in enumerate(queries):
+        #    alignment = pledges[-1][i].get()[0]
+        #    if alignment.begin_on_query == alignment.end_on_query or not full_analysis:
+        #        optimal_alignment_in[i][0].set(NucSeq())
+        #        optimal_alignment_in[i][1].set(NucSeq())
+        #        continue
+        #    query = query_[0]
+        #    optimal_alignment_in[i][0].set(
+        #        NucSeq(query[alignment.begin_on_query : alignment.end_on_query])
+        #    )
+        #    optimal_alignment_in[i][1].set(
+        #        ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
+        #    )
+        #print("computing optimal (", name, ") ...")
+        #Pledge.simultaneous_get(optimal_alignment_out, 32)
 
 
         print("extracting results (", name, ") ...")
@@ -328,17 +330,17 @@ def test_my_approach(
             #    # end of check
             #    #
             optimal_alignment = None
-            if len(optimal_alignment_out[i].get()) > 0:
-                optimal_alignment = optimal_alignment_out[i].get()[0]
-                if optimal_alignment.end_on_query == 0 or optimal_alignment.end_on_ref == 0:
-                    optimal_alignment = None
-                else:
-                    # adjust the scores to the slice that 
-                    # was actually computed with the optimal alignment
-                    optimal_alignment.begin_on_query += alignment.begin_on_query
-                    optimal_alignment.end_on_query += alignment.begin_on_query
-                    optimal_alignment.begin_on_ref += alignment.begin_on_ref
-                    optimal_alignment.end_on_ref += alignment.begin_on_ref
+            #if len(optimal_alignment_out[i].get()) > 0:
+            #    optimal_alignment = optimal_alignment_out[i].get()[0]
+            #    if optimal_alignment.end_on_query == 0 or optimal_alignment.end_on_ref == 0:
+            #        optimal_alignment = None
+            #    else:
+            #        # adjust the scores to the slice that 
+            #        # was actually computed with the optimal alignment
+            #        optimal_alignment.begin_on_query += alignment.begin_on_query
+            #        optimal_alignment.end_on_query += alignment.begin_on_query
+            #        optimal_alignment.begin_on_ref += alignment.begin_on_ref
+            #        optimal_alignment.end_on_ref += alignment.begin_on_ref
             #print(alignment.stats.name)
             sample_id = int(alignment.stats.name)
             collect_ids.append(sample_id)
@@ -570,12 +572,12 @@ def test_my_approaches(db_name):
     full_analysis = False
 
     #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
-    #clearResults(db_name, human_genome, "MA Accurate PY")
+    clearResults(db_name, human_genome, "MA Accurate PY")
     #clearResults(db_name, human_genome, "MA Fast PY")
 
-    #test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
+    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=3)
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30)
+    #test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=1000, num_strips=10, complete_seeds=False, full_analysis=full_analysis, local=False, max_nmw=3, min_ambiguity=0)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -964,7 +966,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, num_queries, "optimal scores " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, num_queries, "num seeds " + approach)
         avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, num_queries, "num seeds in chosen SOC " + approach)
-        seed_relevance = makePicFromDict(hits, max_mut, max_indel, num_queries, "seed relevance " + approach, set_max=0.01, set_min=0)
+        seed_relevance = makePicFromDict(hits, max_mut, max_indel, num_queries, "seed relevance " + approach)
         avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, 1, "Queries aligned " + approach)
 
         if not avg_hits is None:
