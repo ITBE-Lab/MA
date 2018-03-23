@@ -148,11 +148,11 @@ def test_my_approach(
             fm_pledge.set(fm_index)
 
         #modules
-        seeding = BinarySeeding(not complete_seeds)
+        seeding = BinarySeeding(not complete_seeds, 3)
         reseeding = ReSeed(max_hits)
         minimizers = Minimizers()
         minimizersExtract = MinimizersToSeeds()
-        soc = StripOfConsideration(max_hits, num_strips)
+        soc = StripOfConsideration(max_hits, num_strips, -2)
         soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
@@ -518,7 +518,8 @@ def test_my_approach(
                 )
             )
         print("submitting results (", name, ") ...")
-        submitResults(db_name, result)
+        if len(result) > 0:
+            submitResults(db_name, result)
 
     if num_seeds_total > 0 :
         print("collected", num_irelevant_seeds,
@@ -568,14 +569,15 @@ def test_my_approaches_rele(db_name):
 def test_my_approaches(db_name):
     full_analysis = False
 
-    clearResults(db_name, human_genome, "MA Accurate PY")
+    #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
+    #clearResults(db_name, human_genome, "MA Accurate PY")
     #clearResults(db_name, human_genome, "MA Fast PY")
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis)
 
-    #test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=True, cheat=True)
+    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30)
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=0)
+    #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
@@ -760,18 +762,18 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10):
+def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, num_queries=32):
     output_file(out)
     approaches = getApproachesWithData(db_name)
     plots = [ [], [], [], [], [], [], [], [], [] ]
     mapping_qual = []
     mapping_qual_illumina = []
+    all_hits = []
 
     for approach_ in approaches:
         approach = approach_[0]
         results = getResults(db_name, approach, query_size, indel_size)
         hits = {}
-        tries = {}
         run_times = {}
         scores = {}
         scores_accurate = {}
@@ -809,7 +811,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             num_aligned[num_mutation][num_indels] += 1
             one = init(one, num_mutation, num_indels)
             one[num_mutation][num_indels] = 1
-            tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
                 scores = init(scores, num_mutation, num_indels)
@@ -846,7 +847,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 mapping_qual[-1][1].append(mapping_quality)
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
                     mapping_qual_illumina[-1][1].append(mapping_quality)
-            tries[num_mutation][num_indels] += 1
             run_times[num_mutation][num_indels] = run_time
             if not num_seeds is None:
                 nums_seeds[num_mutation][num_indels] += num_seeds
@@ -873,10 +873,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 for x in w_keys:
                     pic.append( [] )
                     for y in h_keys:
-                        if x not in d or y not in d[x] or divideBy[x][y] == 0:
+                        if x not in d or y not in d[x]:
                             pic[-1].append( float("nan") )
                         else:
-                            pic[-1].append( d[x][y] / divideBy[x][y] )
+                            pic[-1].append( d[x][y] / divideBy )
                             if pic[-1][-1] < min_:
                                 min_ = pic[-1][-1]
                             if pic[-1][-1] > max_:
@@ -946,26 +946,26 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
         if total_opt_scores > 0:
             print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "lost:", 100-100*total_score/total_opt_scores, "%")
-        if len(seed_coverage_loss) > 0:
-            print(approach, ":\tseed coverage loss:", 
-            100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "%")
-        print(approach, ":\ttotal nmw area:", nmw_total)
+        #if len(seed_coverage_loss) > 0:
+        #    print(approach, ":\tseed coverage loss:", 
+        #    100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "%")
+        #print(approach, ":\ttotal nmw area:", nmw_total)
         def dict_sum(d):
             total = 0
             for x in d.values():
                 for y in x.values():
                     total += y
             return total
-        print(approach, ":\taverage accuracy:", 100*dict_sum(hits)/max(dict_sum(tries),1), "%")
+        print(approach, ":\tamount hits:", dict_sum(hits))
 
-        avg_hits = makePicFromDict(hits, max_mut, max_indel, tries, "accuracy " + approach, set_max=1, set_min=0)
-        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, one, "runtime " + approach, 0)
-        avg_score = makePicFromDict(scores, max_mut, max_indel, tries, "score " + approach)
-        avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, tries, "optimal scores " + approach)
-        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, tries, "num seeds " + approach)
-        avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, tries, "num seeds in chosen SOC " + approach)
-        seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, set_max=0.01, set_min=0)
-        avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, one, "Queries aligned " + approach)
+        avg_hits = makePicFromDict(hits, max_mut, max_indel, num_queries, "accuracy " + approach, set_max=1, set_min=0)
+        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, 1, "runtime " + approach, 0)
+        avg_score = makePicFromDict(scores, max_mut, max_indel, num_queries, "score " + approach)
+        avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, num_queries, "optimal scores " + approach)
+        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, num_queries, "num seeds " + approach)
+        avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, num_queries, "num seeds in chosen SOC " + approach)
+        seed_relevance = makePicFromDict(hits, max_mut, max_indel, num_queries, "seed relevance " + approach, set_max=0.01, set_min=0)
+        avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, 1, "Queries aligned " + approach)
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
@@ -983,7 +983,27 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[6].append(avg_opt_score)
         #if not avg_aligned is None:
         #    plots[7].append(avg_aligned)
+        all_hits.append(hits)
+
+    c_palette = heatmap_palette(light_spec_approximation, len(approaches))
+    plot2 = figure(title="NoIndels",
+        x_axis_label='mutations', y_axis_label='hits',
+        plot_width=1500, plot_height=500,
+    )
+
+    for index, approach_, in enumerate(approaches):
+        approach = approach_[0]
+        hits = all_hits[index]
         
+        line_x = sorted(list(hits.keys()))
+        line_y = []
+        for element in line_x:
+            line_y.append(hits[element][0])
+
+        plot2.line(line_x, line_y, legend=approach, color=c_palette[index], line_width=2)
+        plot2.x(line_x, line_y, legend=approach, color=c_palette[index], size=6)
+
+    plots[-2].append(plot2)
     
     plot = figure(title="BWA-pic",
         x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
@@ -992,8 +1012,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         min_border_bottom=10, min_border_top=10,
         min_border_left=10, min_border_right=15
     )
-
-    c_palette = heatmap_palette(light_spec_approximation, len(approaches))
 
     for index, approach_, in enumerate(approaches):
         approach = approach_[0]
@@ -1498,7 +1516,7 @@ exit()
 #analyse_detailed("stats/", "/mnt/ssd1/test.db")
 #exit()
 
-amount = 2**11
+amount = 255#2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32)
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
@@ -1513,12 +1531,13 @@ amount = 2**11
 #analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
 #exit()
 
-test_my_approaches("/mnt/ssd1/zoomLine.db")
+test_my_approaches("/mnt/ssd1/default.db")
 #import measure_time
 #measure_time.test_all()
 
 
-analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100)
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/default.db", 1000, 100, amount)
+#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
 exit()

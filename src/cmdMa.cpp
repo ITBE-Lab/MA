@@ -213,7 +213,9 @@ int main(int argc, char*argv[])
                     10, // iMatch
                     4, // iMissMatch
                     6, // iGap
-                    1 // iExtend
+                    1, // iExtend
+                    3, // minimum ambiguity
+                    -.5
                 );
                 if(vm.count("info") > 0)
                 {

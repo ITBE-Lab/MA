@@ -24,6 +24,14 @@ namespace libMA
         unsigned int uiMaxAmbiguity = 500;
         /// @brief the amount of SOCs to create
         unsigned int numStrips = 10;
+        /**
+         * @brief Minimal SoC score.
+         * @details
+         * Must be [0,-inf]!
+         * The minimal score that should be allowed during SoC collection.
+         * Is interpreted relative to the query length.
+         */
+        const float fScoreMinimum = 0;
 
         /**
         * @brief skip seeds with too much ambiguity
@@ -35,7 +43,7 @@ namespace libMA
         
         static nucSeqIndex EXPORTED getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS);
 
-        static nucSeqIndex EXPORTED getStripSize(nucSeqIndex uiQueryLength);
+        nucSeqIndex EXPORTED getStripSize(nucSeqIndex uiQueryLength) const;
 
         void EXPORTED forEachNonBridgingSeed(
                 std::shared_ptr<SegmentVector> pVector,
@@ -53,11 +61,13 @@ namespace libMA
 
         StripOfConsideration( 
                 unsigned int uiMaxAmbiguity,
-                unsigned int numStrips
+                unsigned int numStrips,
+                float fScoreMinimum
             )
                 :
             uiMaxAmbiguity(uiMaxAmbiguity),
-            numStrips(numStrips)
+            numStrips(numStrips),
+            fScoreMinimum(fScoreMinimum)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -91,6 +101,7 @@ namespace libMA
         {
             return "StripOfConsideration(" + 
                 std::to_string(uiMaxAmbiguity) + "," +
+                std::to_string(fScoreMinimum) + "," +
                 std::to_string(numStrips) + ")";
         }//function
     };//class

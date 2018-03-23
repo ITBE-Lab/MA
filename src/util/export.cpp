@@ -72,7 +72,9 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     int iMatch_,
     int iMisMatch_,
     int iGap_,
-    int iExtend_
+    int iExtend_,
+    unsigned int uiMinAmbiguity,
+    float fMinAllowedScore
 )
 {
     iMatch = iMatch_;
@@ -87,8 +89,9 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
 
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
-    std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs));
-    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, uiNumSOC));
+    std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs, uiMinAmbiguity));
+    std::shared_ptr<Module> pSOC(new StripOfConsideration(
+        uiMaxAmbiguity, uiNumSOC, bLocal ? 0 : fMinAllowedScore));
     std::shared_ptr<Module> pCouple(
             new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep(uiMaxGapArea)))
         );

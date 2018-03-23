@@ -25,6 +25,7 @@ namespace libMA
     class BinarySeeding : public Module{
     public:
         bool bLrExtension;
+        const unsigned int uiMinAmbiguity;
 
         /**
          * @brief The simplified extension scheme presented in our Paper.
@@ -234,8 +235,7 @@ namespace libMA
                 nucSeqIndex center,
                 std::shared_ptr<FMIndex> pFM_index,
                 std::shared_ptr<NucSeq> pQuerySeq,
-                std::shared_ptr<SegmentVector> pSegmentVector,
-                const unsigned int uiMinIntv
+                std::shared_ptr<SegmentVector> pSegmentVector
             )
             {
                 //to remember the covered area
@@ -298,7 +298,7 @@ namespace libMA
                     * In fact, if ok.getSize is zero, then there are no matches any more.
                     * thus we can stop extending forwards
                     */
-                    if (ok.size() <= uiMinIntv)
+                    if (ok.size() <= uiMinAmbiguity)
                         break; // the SA-index interval size is too small to be extended further
                     // if we get here we can forget the old interval and save the current interval.
                     ik = ok;
@@ -366,7 +366,7 @@ namespace libMA
                                 std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
                             )
                             // check if the extension resulted in a non enclosed interval
-                            if(ok.size() <= uiMinIntv && !bHaveOne)
+                            if(ok.size() <= uiMinAmbiguity && !bHaveOne)
                             {
                                 // save the interval
                                 pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(ik)));
@@ -376,7 +376,7 @@ namespace libMA
                                 bHaveOne = true;
                             }// if
                             // check if we can extend this interval further
-                            else if(ok.size() > uiMinIntv)
+                            else if(ok.size() > uiMinAmbiguity)
                             {
                                 // if so add the intervals to the list
                                 Segment xSeg = Segment(i, ik.size()+1, ok);
@@ -448,9 +448,10 @@ namespace libMA
          * Our approach is faster and computes seeds of higher quality.
          * However Li et Al.s approach will increase the overall accuracy of the alignment.
          */
-        BinarySeeding(bool bLrExtension = true)
+        BinarySeeding(bool bLrExtension, unsigned int uiMinAmbiguity)
                 :
-            bLrExtension(bLrExtension)
+            bLrExtension(bLrExtension),
+            uiMinAmbiguity(uiMinAmbiguity)
         {}//constructor
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -480,7 +481,8 @@ namespace libMA
         std::string getFullDesc() const
         {
             return std::string("BinarySeeding(") + 
-                std::to_string(bLrExtension) + ")";
+                std::to_string(bLrExtension) + "," +
+                std::to_string(uiMinAmbiguity) + ")";
         }//function
     };//class
 

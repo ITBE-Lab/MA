@@ -180,7 +180,9 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     int iMatch, 
     int iMisMatch,
     int iGap,
-    int iExtend
+    int iExtend,
+    unsigned int uiMinAmbiguity,
+    float fMinAllowedScore
 );
 
 #endif

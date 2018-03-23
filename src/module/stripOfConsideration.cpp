@@ -18,9 +18,9 @@ nucSeqIndex StripOfConsideration::getPositionForBucketing(nucSeqIndex uiQueryLen
     return xS.start_ref() + (uiQueryLength - xS.start()); 
 }//function
 
-nucSeqIndex StripOfConsideration::getStripSize(nucSeqIndex uiQueryLength)
+nucSeqIndex StripOfConsideration::getStripSize(nucSeqIndex uiQueryLength) const
 {
-    return (iMatch * uiQueryLength - iGap) / iExtend;
+    return (iMatch * uiQueryLength - iGap) / iExtend - (nucSeqIndex)(fScoreMinimum * uiQueryLength);
 }//function
 
 void StripOfConsideration::sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen)
@@ -152,15 +152,14 @@ void StripOfConsideration::forEachNonBridgingSeed(
 }//function
 
 /**
- * used to determine more complex orders of SoCs 
+ * @brief used to determine more complex orders of SoCs 
  */
 class SoCOrder
 {
-public:
     nucSeqIndex uiAccumulativeLength = 0;
     unsigned int uiSeedAmount = 0;
 
-
+public:
     inline void operator+=(const Seed& rS)
     {
         uiSeedAmount++;
@@ -545,9 +544,10 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<unsigned int, unsigned int>())
+        .def(boost::python::init<unsigned int, unsigned int, float>())
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
         .def_readwrite("num_strips", &StripOfConsideration::numStrips)
+        .def_readonly("min_score", &StripOfConsideration::fScoreMinimum)
     ;
 
     boost::python::implicitly_convertible< 

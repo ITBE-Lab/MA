@@ -358,17 +358,8 @@ namespace libMA
             execTime(0)
         {}//constructor
 
-        void execForGet()
+        inline void execForGet()
         {
-            bool bVolatile = false;
-            ///@todo same for py_pledger here
-            if(pledger != nullptr)
-                bVolatile = pledger->outputsVolatile();
-
-            //in this case there is no need to execute again
-            if(!bVolatile && content != nullptr)
-                return;
-
             if(pledger == nullptr && py_pledger.is_none())
                 throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
             if(pledger != nullptr)
@@ -405,6 +396,27 @@ namespace libMA
                 execTime = duration.count();
                 assert(typeCheck(content, type));
             }//else
+        }//function
+
+        /**
+         * @brief Used to synchronize the execution of pledges in the comp. graph.
+         * @details
+         * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
+         * Does not lock otherwise.
+         * In either case fDo is called.
+         */
+        inline void lockIfNecessary(std::function<void()> fDo)
+        {
+            if(vSuccessors.size() > 1)
+            {
+                // multithreading is possible thus a guard is required here.
+                // deadlock prevention is trivial, 
+                // since the computational graphs are essentially trees.
+                std::lock_guard<std::mutex> xGuard(*pMutex);
+                fDo();
+            }//if
+            else
+                fDo();
         }//function
 
     public:
@@ -527,15 +539,31 @@ namespace libMA
          */
         std::shared_ptr<Container> get()
         {
-            //multithreading is possible thus a guard is required here.
-            //deadlock prevention is trivial, since the computational graphs are essentially trees.
-            std::lock_guard<std::mutex> xGuard(*pMutex);
+            bool bVolatile = false;
+            ///@todo same for py_pledger here
+            if(pledger != nullptr)
+                bVolatile = pledger->outputsVolatile();
 
-            //execute
-            execForGet();
-            //also execute all the synchronized locks
-            for(std::shared_ptr<Pledge> pSync : aSync)
-                pSync->execForGet();
+            //in this case there is no need to execute again
+            if(!bVolatile && content != nullptr)
+                return content;
+
+            // locks a mutex if this pledge can be reached from multiple leaves in the graph
+            // does not lock otherwise...
+            lockIfNecessary(
+                [&]
+                ()
+                {
+                    //execute
+                    execForGet();
+
+                    //@note the mutex gets synchronized between synchronized pledges, 
+                    //so no special sync needed :)
+                    //also execute all the synchronized locks
+                    for(std::shared_ptr<Pledge> pSync : aSync)
+                        pSync->execForGet();
+                }//lambda
+            );//function call
 
             return content;
         }//function

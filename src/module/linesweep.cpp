@@ -243,6 +243,25 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         if(++pOptimalStart != pSeeds->end())
             pSeeds->erase(pSeeds->begin(), pOptimalStart);
 
+    /*
+     * One more thing: 
+     * sometimes we do not have any seeds remaining after the cupling:
+     * in these cases we simple return the longest seed
+     */
+    if(pSeeds->empty())
+    {
+        auto xItt = pSeedsIn->begin();
+        auto xLongest = xItt;
+        while(++xItt != pSeedsIn->end())
+            if(xItt->size() > xLongest->size())
+                xLongest = xItt;
+        auto pRet = std::make_shared<Seeds>();
+        pRet->push_back(*xLongest);
+        assert(!pRet->empty());
+        return pRet;
+    }//if
+
+    assert(!pSeeds->empty());
     return pSeeds;
 }//function
 

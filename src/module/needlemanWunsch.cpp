@@ -7,7 +7,7 @@
 
 using namespace libMA;
 
-int iMatch = 10;
+int iMatch = 2;
 int iMissMatch = 4;
 int iGap = 6;
 int iExtend = 1;
