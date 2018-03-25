@@ -7,7 +7,7 @@
 #define DEBUG_H
 
 #ifndef DEBUG_LEVEL
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 1
 #endif //DEBUG_LEVEL
 
 #if DEBUG_LEVEL == 0 

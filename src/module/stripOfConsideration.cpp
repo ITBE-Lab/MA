@@ -292,7 +292,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             return rB.first < rA.first;
         }//lambda
     );//sort function call
-    assert(xMaxima.size() <= 1 || xMaxima.front() >= xMaxima.back());
+    assert(xMaxima.size() <= 1 || ! (xMaxima.front().first < xMaxima.back().first) );
 
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
