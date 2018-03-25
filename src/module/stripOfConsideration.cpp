@@ -278,9 +278,9 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         xCurrScore -= *(xStripStart++);
     }//while
 
-    // sort the SOC starting points according to the scores, 
+    // make max heap from the SOC starting points according to the scores, 
     // so that we can extract the best SOC first
-    std::sort(
+    std::make_heap(
         xMaxima.begin(), xMaxima.end(), 
         []
         (
@@ -335,7 +335,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         //save the seed
         pRet->push_back(pSeeds);
         //move to the next strip
-        xCollect++;
+        std::pop_heap (xMaxima.begin(),xMaxima.end()); xMaxima.pop_back();
+        xCollect = xMaxima.begin();
     }//while
 
     //make sure that we return at least an empty seed set if nothing else

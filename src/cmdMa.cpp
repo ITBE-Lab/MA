@@ -35,11 +35,13 @@ int main(int argc, char*argv[])
     unsigned int uiT;
     unsigned int uiMaxAmbiguity;
     unsigned int uiNumSOC;
+    unsigned int uiNumNW;
     unsigned int uiReportNBest;
     nucSeqIndex uiMaxGapArea;
     bool bPariedNormal;
     bool bPariedUniform;
     unsigned int uiPairedMean;
+    unsigned int uiMinAmbiguity;
     double fPairedStd;
     double dPairedU;
     std::string sIndexOut;
@@ -88,9 +90,11 @@ int main(int argc, char*argv[])
             ("reportN,n", value<unsigned int>(&uiReportNBest)->default_value(1), "Report the N best Alignments")
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
-            ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 100 : 10), "Maximal ambiguity")
+            ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 1000 : 10), "Maximal ambiguity")
+            ("minAmbiguity,B", value<unsigned int>(&uiMinAmbiguity)->default_value(bAccurate ? 2 : 0), "Minimal ambiguity")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
-            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 5 : 2), "Strip of consideration amount")
+            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 60 : 2), "Strip of consideration amount")
+            ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(bAccurate ? 10 : 2), "apply NW to x SoC")
             ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
             ("global,G", "Perform global alignment")
         ;
@@ -210,12 +214,13 @@ int main(int argc, char*argv[])
                     uiReportNBest,
                     vm.count("global") == 0,//input is for local
                     uiMaxGapArea,
-                    10, // iMatch
+                    2, // iMatch
                     4, // iMissMatch
                     6, // iGap
                     1, // iExtend
-                    3, // minimum ambiguity
-                    -.5
+                    uiMinAmbiguity, // minimum ambiguity
+                    -2.0, // socMinimal score
+                    uiNumNW
                 );
                 if(vm.count("info") > 0)
                 {

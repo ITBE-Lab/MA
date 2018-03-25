@@ -599,7 +599,7 @@ def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, min_ambiguity=3)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, min_ambiguity=2)
 
     test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
 
@@ -1583,7 +1583,7 @@ test_my_approaches("/mnt/ssd1/shortIndels.db")
 #measure_time.test_all()
 
 
-analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/shortIndels.db", 1000, 50, 32)
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/shortIndels.db", 1000, 50, 2**10)
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)

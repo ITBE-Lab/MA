@@ -74,7 +74,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     int iGap_,
     int iExtend_,
     unsigned int uiMinAmbiguity,
-    float fMinAllowedScore
+    float fMinAllowedScore,
+    unsigned int uiNumNW
 )
 {
     iMatch = iMatch_;
@@ -93,7 +94,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::shared_ptr<Module> pSOC(new StripOfConsideration(
         uiMaxAmbiguity, uiNumSOC, bLocal ? 0 : fMinAllowedScore));
     std::shared_ptr<Module> pCouple(
-            new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep(uiMaxGapArea)))
+            new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep(uiMaxGapArea)), true, uiNumNW)
         );
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
