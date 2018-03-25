@@ -289,10 +289,9 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         )
         {
             //reverse the order of rA and rB here so that we sort descending instead of ascending
-            return rB.first < rA.first;
+            return rA.first < rB.first;
         }//lambda
-    );//sort function call
-    assert(xMaxima.size() <= 1 || ! (xMaxima.front().first < xMaxima.back().first) );
+    );//make heap function call
 
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));

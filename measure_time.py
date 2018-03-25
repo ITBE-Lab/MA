@@ -269,11 +269,10 @@ def test(
         #("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/chrom/human/n_less.fasta", db_name)),
-        ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
+        #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, db_name)),
-        #("MA Fast", MA(reference, num_threads, True, db_name)),
-        #("MA Accurate", MA(reference, num_threads, False, db_name)),
-        #("MA Accurate 30 SOC G", MA(reference, num_threads, False, db_name, 30)),
+        ("MA Fast", MA(reference, num_threads, True, db_name)),
+        ("MA Accurate", MA(reference, num_threads, False, db_name)),
     ]
 
     for name, aligner in l:
@@ -345,14 +344,14 @@ def test(
 
 def test_all():
     #test("test.db", human_genome)
-    #test("default.db", human_genome)
-    #test("short.db", human_genome)
-    #test("long.db", human_genome)
+    test("default.db", human_genome)
+    test("short.db", human_genome)
+    test("long.db", human_genome)
     test("shortIndels.db", human_genome)
-    #test("longIndels.db", human_genome)
-    #test("insertionOnly.db", human_genome)
-    #test("deletionOnly.db", human_genome)
-    #test("zoomLine.db", human_genome)
-    #test("zoomSquare.db", human_genome)
+    test("longIndels.db", human_genome)
+    test("insertionOnly.db", human_genome)
+    test("deletionOnly.db", human_genome)
+    test("zoomLine.db", human_genome)
+    test("zoomSquare.db", human_genome)
 
     #test("illumina.db", human_genome)

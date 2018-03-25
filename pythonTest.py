@@ -1601,8 +1601,8 @@ exit()
 #analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
 #analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 
-analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
-analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
 
 #analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
 analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
@@ -1613,4 +1613,4 @@ analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 10
 analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
 analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)
 
-createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
+#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
