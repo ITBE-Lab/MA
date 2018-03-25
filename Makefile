@@ -20,7 +20,7 @@ LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build $(addprefix -l,
 all: ma
 
 ma: libMA.so src/cmdMa.cpp
-	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc $(LDLIBS) libMA.so -o ma
+	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -Iinc $(LDLIBS) libMA.so -o ma
 
 libMA.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@

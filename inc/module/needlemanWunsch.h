@@ -8,7 +8,6 @@
 
 #include "container/alignment.h"
 #include "module/module.h"
-
 // The NW library:
 #include "parasail.h"
 #include "parasail/matrices/blosum62.h"
@@ -16,7 +15,6 @@
 
 namespace libMA
 {
-
     /**
      * @brief implements NMW
      * @details
@@ -33,15 +31,23 @@ namespace libMA
         //the match missmatch matrix
         const parasail_matrix_t *matrix;
 
-        NeedlemanWunsch(bool bLocal)
-                :
-            bLocal(bLocal)
-        {
-            matrix = parasail_matrix_create("ACGT", iMatch, -iMissMatch);
-        }//constructor
+        NeedlemanWunsch(bool bLocal);
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        nucSeqIndex needlemanWunsch(
+            std::shared_ptr<NucSeq> pQuery, 
+            std::shared_ptr<NucSeq> pRef,
+            nucSeqIndex fromQuery,
+            nucSeqIndex toQuery,
+            nucSeqIndex fromRef,
+            nucSeqIndex toRef,
+            std::shared_ptr<Alignment> pAlignment,
+            bool bNoGapAtBeginning,
+            bool bNoGapAtEnd
+            DEBUG_PARAM(bool bPrintMatrix)
+        );
 
         /**
          * @brief Used to check the input of execute.

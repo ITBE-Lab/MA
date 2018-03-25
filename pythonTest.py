@@ -1574,16 +1574,16 @@ amount = 2**11
 #analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
 #exit()
 
-relevance("/mnt/ssd1/relevance.db")
+#relevance("/mnt/ssd1/relevance.db")
 #analyse_all_approaches_depre("relevance.html","/mnt/ssd1/relevancetest.db", 1000, 50, 32, print_relevance=True)
-exit()
+#exit()
 
-#test_my_approaches("/mnt/ssd1/shortIndels.db")
+test_my_approaches("/mnt/ssd1/test.db")
 #import measure_time
 #measure_time.test_all()
 
 
-#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/shortIndels.db", 1000, 50, amount)
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100, amount)
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
