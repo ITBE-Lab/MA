@@ -1411,7 +1411,7 @@ def seed_relevance_pics():
     data = []
     high = 99
     low = 1
-    for row in max_spannning():
+    for row in kmer():
         data.append( [] )
         for ele in row:
             data[-1].append( math.log(ele * high + low) )
