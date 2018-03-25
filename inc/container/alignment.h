@@ -295,6 +295,14 @@ namespace libMA
          */
         void EXPORTED makeLocal();
 
+        /**
+         * @brief removes dangeling Deletions
+         * @details
+         * When the alignment is created there might be some dangeling deletions at 
+         * the beginning or end. This function removes them
+         */
+        void EXPORTED removeDangeling();
+
         void operator=(const std::shared_ptr<Alignment> pOther)
         {
             data = pOther->data;

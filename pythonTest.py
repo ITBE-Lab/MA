@@ -112,10 +112,10 @@ def test_my_approach(
         return
 
     runtimes = {
-        'seeding': 0,
-        'seed processing: filtering': 0,
-        'seed processing: coupling': 0,
-        'optimal alignment': 0
+        'Seeding': 0,
+        'SoC': 0,
+        'Harmonization': 0,
+        'NW': 0
     }
     collect_ids = []
 
@@ -357,16 +357,16 @@ def test_my_approach(
             collect_ids.append(sample_id)
 
             total_time = 0
-            runtimes["seeding"] += pledges[1][i].exec_time
+            runtimes["Seeding"] += pledges[1][i].exec_time
             total_time += pledges[1][i].exec_time
             pledges[1][i].exec_time = 0
-            runtimes["seed processing: filtering"] += pledges[2][i].exec_time
+            runtimes["SoC"] += pledges[2][i].exec_time
             total_time += pledges[2][i].exec_time
             pledges[2][i].exec_time = 0
-            runtimes["seed processing: coupling"] += pledges[3][i].exec_time
+            runtimes["Harmonization"] += pledges[3][i].exec_time
             total_time += pledges[3][i].exec_time
             pledges[3][i].exec_time = 0
-            runtimes["optimal alignment"] += pledges[4][i].exec_time
+            runtimes["NW"] += pledges[4][i].exec_time
             total_time += pledges[4][i].exec_time
             pledges[4][i].exec_time = 0
 
@@ -596,12 +596,12 @@ def test_my_approaches(db_name):
     full_analysis = False
 
     #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
-    clearResults(db_name, human_genome, "MA Accurate PY")
-    clearResults(db_name, human_genome, "MA Fast PY")
+    clearResults(db_name, human_genome, "MA Accurate")
+    clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=3)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, min_ambiguity=3)
 
-    test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
+    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1578,12 +1578,12 @@ amount = 2**11
 #analyse_all_approaches_depre("relevance.html","/mnt/ssd1/relevancetest.db", 1000, 50, 32, print_relevance=True)
 #exit()
 
-test_my_approaches("/mnt/ssd1/test.db")
+test_my_approaches("/mnt/ssd1/shortIndels.db")
 #import measure_time
 #measure_time.test_all()
 
 
-analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100, amount)
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/shortIndels.db", 1000, 50, 32)
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)

@@ -72,9 +72,25 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         DEBUG_PARAM(bool bPrintMatrix)
     )
 {
+    if(toRef <= fromRef)
+        if(toQuery <= fromQuery)
+            return 0;
+    if(toQuery <= fromQuery)
+    {
+        pAlignment->append(MatchType::deletion, toRef-fromRef);
+        return 0;
+    }//if
+    if(toRef <= fromRef)
+    {
+        pAlignment->append(MatchType::insertion, toQuery-fromQuery);
+        return 0;
+    }//if
+    
     const char* seqA = pQuery->fromTo(fromQuery, toQuery).c_str();
     const char* seqB = pRef->fromTo(fromRef, toRef).c_str();
     //do the alignment
+
+    
     parasail_result_t* pResult = parasail_nw_trace_scan_32(
             seqA, toQuery - fromQuery,
             seqB, toRef - fromRef,
@@ -92,7 +108,7 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
         switch (c)
         {
-            case 'M':
+            case '=':
                 pAlignment->append(MatchType::match, uiLen);
                 break;
             case 'I':
@@ -103,6 +119,9 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
                 break;
             case 'X':
                 pAlignment->append(MatchType::missmatch, uiLen);
+                break;
+            default:
+                assert(false);
                 break;
         }//switch
     }//for
@@ -115,19 +134,19 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
 DEBUG(
     void debugNW(std::shared_ptr<NucSeq> q, std::shared_ptr<NucSeq> r)
     {
-        auto pAlignment = std::make_shared<Alignment>();
-        needlemanWunsch(
-            q,
-            r,
-            0,
-            q->length(),
-            0,
-            r->length(),
-            pAlignment,
-            false,
-            false,
-            true
-        );
+        //auto pAlignment = std::make_shared<Alignment>();
+        //needlemanWunsch(
+        //    q,
+        //    r,
+        //    0,
+        //    q->length(),
+        //    0,
+        //    r->length(),
+        //    pAlignment,
+        //    false,
+        //    false,
+        //    true
+        //);
     }//function
 )//DEBUG
 
@@ -326,6 +345,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             false,
             true
         );
+        pRet->removeDangeling();
     }//else
 
     return pRet;

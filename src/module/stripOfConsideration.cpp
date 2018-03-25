@@ -253,7 +253,6 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             xStripEnd++;
         }//while
         //here xStripEnd points one past the last element within the strip
-        assert(uiCurrEle >= 1);
         int64_t iDummy;
         //FILTER
         if(!pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy))
@@ -293,7 +292,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             return rB.first < rA.first;
         }//lambda
     );//sort function call
-    assert(xMaxima.size() <= 1 || xMaxima.front().first >= xMaxima.back().first);
+    assert(xMaxima.size() <= 1 || xMaxima.front() >= xMaxima.back());
 
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));

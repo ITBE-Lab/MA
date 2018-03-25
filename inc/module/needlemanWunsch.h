@@ -46,7 +46,7 @@ namespace libMA
             std::shared_ptr<Alignment> pAlignment,
             bool bNoGapAtBeginning,
             bool bNoGapAtEnd
-            DEBUG_PARAM(bool bPrintMatrix)
+            DEBUG_PARAM(bool bPrintMatrix = false)
         );
 
         /**

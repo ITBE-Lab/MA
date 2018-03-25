@@ -158,6 +158,25 @@ void EXPORTED Alignment::makeLocal()
     )
 }//function
 
+void EXPORTED Alignment::removeDangeling()
+{
+    while(std::get<0>(data.front()) == MatchType::deletion)
+    {
+        iScore += iGap + iExtend * std::get<1>(data.front());
+        data.erase(data.begin(), data.begin()+1);
+    }//if
+    while(std::get<0>(data.back()) == MatchType::deletion)
+    {
+        iScore += iGap + iExtend * std::get<1>(data.back());
+        data.pop_back();
+    }//if
+    DEBUG(
+        if(reCalcScore() != iScore)
+            std::cerr << "WARNING set wrong score or removed wrong elements in makeLocal" 
+                << std::endl;
+    )
+}//function
+
 int Alignment::reCalcScore() const
 {
     int iScore = 0;
