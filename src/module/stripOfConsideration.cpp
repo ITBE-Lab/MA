@@ -278,10 +278,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         xCurrScore -= *(xStripStart++);
     }//while
 
+
     // make max heap from the SOC starting points according to the scores, 
     // so that we can extract the best SOC first
-    std::make_heap(
-        xMaxima.begin(), xMaxima.end(), 
+    auto vHeapOrder = 
         []
         (
             const std::pair<SoCOrder, std::vector<Seed>::iterator>& rA,
@@ -291,7 +291,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             //reverse the order of rA and rB here so that we sort descending instead of ascending
             return rA.first < rB.first;
         }//lambda
-    );//make heap function call
+    ;
+    std::make_heap(xMaxima.begin(), xMaxima.end(), vHeapOrder);//make heap function call
 
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
@@ -307,6 +308,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         auto xCollect2 = xCollect->second;
         //save SoC index
         pSeeds->xStats.index_of_strip = uiSoCIndex++;
+        // all these things are not used at the moment...
         pSeeds->xStats.uiInitialQueryBegin = xCollect2->start();
         pSeeds->xStats.uiInitialRefBegin = xCollect2->start_ref();
         pSeeds->xStats.uiInitialQueryEnd = xCollect2->end();
@@ -316,7 +318,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             xCollect2 != vSeeds.end() &&
             end >= getPositionForBucketing(uiQLen, *xCollect2))
         {
-            //save the beginning and end of the SoC
+            // save the beginning and end of the SoC
+            // all these things are not used at the moment...
             if(xCollect2->start() < pSeeds->xStats.uiInitialQueryBegin)
                 pSeeds->xStats.uiInitialQueryBegin = xCollect2->start();
             if(xCollect2->start_ref() < pSeeds->xStats.uiInitialRefBegin)
@@ -334,7 +337,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         //save the seed
         pRet->push_back(pSeeds);
         //move to the next strip
-        std::pop_heap (xMaxima.begin(),xMaxima.end()); xMaxima.pop_back();
+        std::pop_heap (xMaxima.begin(), xMaxima.end(), vHeapOrder); xMaxima.pop_back();
         xCollect = xMaxima.begin();
     }//while
 
