@@ -15,7 +15,7 @@ CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -std=c++11 -mavx2 -O3
 CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -mavx2 -O3
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
-LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ 
+LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ -lparasail
 
 all: ma
 
@@ -26,10 +26,10 @@ libMA.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@
 
 obj/%.o: src/%.cpp inc/%.h
-	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc -c $< -o $@
+	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -Iinc -c $< -o $@
 
 obj/%.co: src/%.c inc/%.h
-	$(CC) $(CFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -Iinc -c $< -o $@
+	$(CC) $(CFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -Iinc -c $< -o $@
 
 html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildcard src/*/*) $(wildcard MA/*.py) doxygen.config
 	doxygen doxygen.config

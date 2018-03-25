@@ -9,6 +9,11 @@
 #include "container/alignment.h"
 #include "module/module.h"
 
+// The NW library:
+#include "parasail.h"
+#include "parasail/matrices/blosum62.h"
+#include "parasail/matrix_lookup.h"
+
 namespace libMA
 {
 
@@ -25,10 +30,15 @@ namespace libMA
         /// @brief the realtive padding before the first and after the last seed in global alignment
         double fRelativePadding = 1.1;
 
+        //the match missmatch matrix
+        const parasail_matrix_t *matrix;
+
         NeedlemanWunsch(bool bLocal)
                 :
             bLocal(bLocal)
-        {}//constructor
+        {
+            matrix = parasail_matrix_create("ACGT", iMatch, -iMissMatch);
+        }//constructor
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
