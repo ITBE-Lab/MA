@@ -599,7 +599,7 @@ def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=1000, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, min_ambiguity=2)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=2)
 
     test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
 
@@ -788,13 +788,16 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, num_queries=32, print_relevance=False):
+def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [], [] ]
     mapping_qual = []
     mapping_qual_illumina = []
     all_hits = []
+
+    num_queries = len(getQueriesAsASDMatrix(db_name, "null", human_genome)[0][0])
+    print(num_queries, "queries per cell")
 
     for approach_ in approaches:
         approach = approach_[0]
@@ -999,12 +1002,12 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         avg_hits = makePicFromDict(hits, max_mut, max_indel, num_queries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, 1, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, num_queries, "score " + approach)
-        avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, num_queries, "optimal scores " + approach)
+        #avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, num_queries, "optimal scores " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, num_queries, "num seeds " + approach)
         avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, num_queries, "num seeds in chosen SOC " + approach)
-        seed_relevance = makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, print_out=print_relevance)
+        makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, print_out=print_relevance)
         #avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, 1, "Queries aligned " + approach)
-        avg_query_coverage = makePicFromDict(query_cov, max_mut, max_indel, num_queries, "Queries coverage " + approach)
+        #avg_query_coverage = makePicFromDict(query_cov, max_mut, max_indel, num_queries, "Queries coverage " + approach)
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
@@ -1016,12 +1019,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[3].append(avg_seeds)
         if not avg_seeds_ch is None:
             plots[5].append(avg_seeds_ch)
-        if not seed_relevance is None:
-            plots[4].append(seed_relevance)
-        if not avg_opt_score is None:
-            plots[6].append(avg_opt_score)
-        if not avg_query_coverage is None:
-            plots[7].append(avg_query_coverage)
+        #if not avg_query_coverage is None:
+        #    plots[4].append(avg_query_coverage)
         #if not avg_aligned is None:
         #    plots[7].append(avg_aligned)
         all_hits.append(hits)
@@ -1153,7 +1152,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 d[x][y] = 0
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
@@ -1578,16 +1577,16 @@ amount = 2**11
 #analyse_all_approaches_depre("relevance.html","/mnt/ssd1/relevancetest.db", 1000, 50, 32, print_relevance=True)
 #exit()
 
-#test_my_approaches("/mnt/ssd1/shortIndels.db")
-import measure_time
-measure_time.test_all()
+test_my_approaches("/mnt/ssd1/shortIndels.db")
+#import measure_time
+#measure_time.test_all()
 
 
-#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/shortIndels.db", 1000, 50, 2**10)
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/shortIndels.db", 1000, 50)
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
-#exit()
+exit()
 
 
 
@@ -1601,16 +1600,16 @@ measure_time.test_all()
 #analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
 #analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 
-#analyse_all_approaches("default.html","/mnt/ssd1/default.db", 1000, 100)
+analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
 
 #analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
-analyse_all_approaches("short.html","/mnt/ssd1/short.db", 250, 25)
-analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
-analyse_all_approaches("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 100)
-analyse_all_approaches("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 100)
-analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 100)
-analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
-analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)
+analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
+#analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
+#analyse_all_approaches("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 100)
+#analyse_all_approaches("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 100)
+#analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 100)
+#analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
+#analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)
 
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)

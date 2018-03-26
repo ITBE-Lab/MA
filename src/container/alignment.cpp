@@ -14,6 +14,8 @@ extern int iMissMatch;
 
 void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
 {
+    if(size == 0)
+        return;
     //adjust the score of the alignment
     if(type == MatchType::seed || type == MatchType::match)
         iScore += iMatch * size;

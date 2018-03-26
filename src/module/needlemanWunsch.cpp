@@ -87,66 +87,121 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
     }//if
     
     const char* seqA = pQuery->fromTo(fromQuery, toQuery).c_str();
+    DEBUG_2(std::cout << seqA << std::endl;)
     const char* seqB = pRef->fromTo(fromRef, toRef).c_str();
+    DEBUG_2(std::cout << seqB << std::endl;)
     //do the alignment
 
-    
-    parasail_result_t* pResult = parasail_nw_trace_scan_32(
+    // Note: parasail does not follow the usual theme where for opening a gap 
+    //       extend and open penalty are applied
+    parasail_result_t* pResult;
+    if(bNoGapAtBeginning || bNoGapAtEnd)
+    {
+        pResult = parasail_sg_trace_scan_16(
             seqA, toQuery - fromQuery,
             seqB, toRef - fromRef,
-            iGap, iExtend, matrix
+            iGap + iExtend, iExtend, matrix
         );
+        DEBUG_2(std::cout << "semi global" << std::endl;)
+    }//if
+    else
+    {
+        pResult = parasail_nw_trace_scan_16(
+            seqA, toQuery - fromQuery,
+            seqB, toRef - fromRef,
+            iGap + iExtend, iExtend, matrix
+        );
+        DEBUG_2(std::cout << "global" << std::endl;)
+    }//else
 
     //get the cigar
     parasail_cigar_t* pCigar = parasail_result_get_cigar(pResult, seqA, toQuery - fromQuery, 
         seqB, toRef - fromRef, matrix);
 
+    DEBUG_2(
+        std::cout << "cigar length: " << pCigar->len << std::endl;
+        std::cout << pCigar->beg_query << ", " << pCigar->beg_ref << std::endl;
+    )
+
+    if(!bNoGapAtBeginning)
+        pAlignment->append(MatchType::deletion, pCigar->beg_query);
+    pAlignment->append(MatchType::insertion, pCigar->beg_ref);
+
+    nucSeqIndex uiQPos = pCigar->beg_query;
+    nucSeqIndex uiRPos = pCigar->beg_ref;
     //decode the cigar
     for(int i = 0; i < pCigar->len; i++)
     {
         char c = parasail_cigar_decode_op(pCigar->seq[i]);
         uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
+        DEBUG_2(std::cout << c << " x" << uiLen << std::endl;)
         switch (c)
         {
             case '=':
                 pAlignment->append(MatchType::match, uiLen);
+                uiQPos += uiLen;
+                uiRPos += uiLen;
                 break;
             case 'I':
                 pAlignment->append(MatchType::insertion, uiLen);
+                uiQPos += uiLen;
                 break;
             case 'D':
                 pAlignment->append(MatchType::deletion, uiLen);
+                uiRPos += uiLen;
                 break;
             case 'X':
                 pAlignment->append(MatchType::missmatch, uiLen);
+                uiQPos += uiLen;
+                uiRPos += uiLen;
                 break;
             default:
                 assert(false);
                 break;
         }//switch
     }//for
+    
+    DEBUG_2(
+        std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
+    )
 
+    pAlignment->append(MatchType::insertion, pRef->length() - uiRPos);
+    if(!bNoGapAtEnd)
+        pAlignment->append(MatchType::deletion, pQuery->length() - uiQPos);
+
+    auto uiBeg = pCigar->beg_query;
     parasail_cigar_free(pCigar);
     parasail_result_free(pResult);
+    if(bNoGapAtBeginning)
+        return uiBeg;
+    if(bNoGapAtEnd)
+        return pQuery->length() - uiQPos;
     return 0;
 }//function
 
 DEBUG(
-    void debugNW(std::shared_ptr<NucSeq> q, std::shared_ptr<NucSeq> r)
+    std::shared_ptr<Alignment> debugNW(
+            std::shared_ptr<NucSeq> q, std::shared_ptr<NucSeq> r,
+            bool bNoGapAtBeginning, bool bNoGapAtEnd
+        )
     {
-        //auto pAlignment = std::make_shared<Alignment>();
-        //needlemanWunsch(
-        //    q,
-        //    r,
-        //    0,
-        //    q->length(),
-        //    0,
-        //    r->length(),
-        //    pAlignment,
-        //    false,
-        //    false,
-        //    true
-        //);
+        auto pAlignment = std::make_shared<Alignment>(0, r->length(), 0, q->length());
+        auto uiRes = NeedlemanWunsch(true).needlemanWunsch(
+            q,
+            r,
+            0,
+            q->length(),
+            0,
+            r->length(),
+            pAlignment,
+            bNoGapAtBeginning,
+            bNoGapAtEnd
+        );
+        if(bNoGapAtBeginning)
+            pAlignment->uiBeginOnRef += uiRes;
+        if(bNoGapAtEnd)
+            pAlignment->uiEndOnRef -= uiRes;
+        return pAlignment;
     }//function
 )//DEBUG
 
