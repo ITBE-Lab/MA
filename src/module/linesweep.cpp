@@ -85,7 +85,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<Seeds> pSeedsIn = std::static_pointer_cast<Seeds>((*vpInput)[0]);
+    const std::shared_ptr<Seeds>& pSeedsIn = std::static_pointer_cast<Seeds>((*vpInput)[0]);
 
     auto pShadows = std::make_shared<
             std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
@@ -242,18 +242,15 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
     /*
      * One more thing: 
-     * sometimes we do not have any seeds remaining after the cupling:
-     * in these cases we simple return the longest seed
+     * sometimes we have one or less seeds remaining after the cupling:
+     * in these cases we simply return the center seed (judging by the delta from SoCs)
+     * This is less efficient but increases accuracy since the aligner is guided towards the correct
+     * position rather than giving it the sound seed
      */
-    if(pSeeds->empty())
+    if(pSeeds->size() <= 1)
     {
-        auto xItt = pSeedsIn->begin();
-        auto xLongest = xItt;
-        while(++xItt != pSeedsIn->end())
-            if(xItt->size() > xLongest->size())
-                xLongest = xItt;
         auto pRet = std::make_shared<Seeds>();
-        pRet->push_back(*xLongest);
+        pRet->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
         assert(!pRet->empty());
         return pRet;
     }//if

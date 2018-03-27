@@ -301,7 +301,9 @@ def test_my_approach(
                         origin_pos,
                         alignment.end_on_ref,
                         origin_pos+orig_size)
-                    for index, alignment2 in enumerate(alignments.get()[1:]):
+                    found_correct_alignment = align_1_hit
+                    for index_, alignment2 in enumerate(alignments.get()[1:]):
+                        index = index_ + 1
                         #
                         # check if the second alignment was accurate and the first was not...
                         #
@@ -311,8 +313,10 @@ def test_my_approach(
                             alignment2.end_on_ref,
                             origin_pos+orig_size)
                         if align_2_hit and not align_1_hit:
+                            found_correct_alignment = True
                             print("Warning picked wrong alignment")
                             print("correct was:", index)
+                            print("query id: ", i)
                             def get_seed_coverage(alignment):
                                 return (
                                     "Query: " + str(alignment.stats.initial_q_beg) + " - " +
@@ -325,8 +329,7 @@ def test_my_approach(
                                     " SoC index:", alignment.stats.index_of_strip)
                                 for seed in pledges[2][i].get()[alignment.stats.index_of_strip]:
                                     print( (seed.start, seed.start_ref, seed.size) )
-                            print("Warning picked wrong alignment",
-                                alignment.get_score(), "?>=", alignment2.get_score())
+                            print("scores are:",alignment.get_score(),"?>=", alignment2.get_score())
                             print("Alignment 0 is hit: ", align_1_hit)
                             print("Alignment 0 seed coverage: ", get_seed_coverage(alignment))
                             print("Alignment 0 seeds: ")
@@ -342,6 +345,69 @@ def test_my_approach(
                         #
                         # end of check
                         #
+                    #
+                    # another check
+                    #
+                    if not found_correct_alignment:
+                        correct_soc = -1
+                        for index, soc in enumerate(pledges[2][i].get()):
+                            if len(soc) == 0:
+                                continue
+                            begin_on_ref = soc[0].start_ref
+                            end_on_ref = begin_on_ref + soc[0].size
+                            for seed in soc:
+                                if begin_on_ref > seed.start_ref:
+                                    begin_on_ref = seed.start_ref
+                                if end_on_ref < seed.start_ref + seed.size:
+                                    end_on_ref = seed.start_ref + seed.size
+                            _, _, origin_pos, orig_size = queries[i]
+                            x_hit = near(
+                                begin_on_ref,
+                                origin_pos,
+                                end_on_ref,
+                                origin_pos+orig_size)
+                            if x_hit:
+                                correct_soc = index
+                                break
+                        if not correct_soc == -1:
+                            print("WARNING: found correct SOC (index:", correct_soc, ") but no correct alignment")
+                            for seed in soc:
+                                print( (seed.start, seed.start_ref, seed.size) )
+                            # now look for correct harmonized SoC
+                            found_ham = False
+                            for index2, harm in enumerate(pledges[3][i].get()):
+                                if len(harm) == 0:
+                                    continue
+                                for seed in harm:
+                                    for seed2 in soc:
+                                        if seed.start == seed2.start and seed.start_ref == seed2.start_ref and seed.size == seed2.size:
+                                            print("Found correct harmonized SoC", index2)
+                                            for seed in harm:
+                                                print( (seed.start, seed.start_ref, seed.size) )
+                                            found_ham = True
+                                            break
+                                if found_ham:
+                                    break
+                            if not found_ham:
+                                print("Could not find respective harmonized SoC")
+                                print("found", len(pledges[2][i].get()), "SoCs; after harmonization", len(pledges[3][i].get()), "remain")
+
+                            found_soc_index = False
+                            for index2, alignment in enumerate(alignments.get()):
+                                if alignment.stats.index_of_strip == index:
+                                    print("Incorrect alignment for correct SoC. Index:", index2)
+                                    AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
+                                    found_soc_index = True
+                                    break
+                            if not found_correct_alignment:
+                                print("aligner discared correct SoC.")
+
+
+
+
+                    #
+                    # end of check
+                    #
                 if len(optimal_alignment_out[i].get()) > 0:
                     optimal_alignment = optimal_alignment_out[i].get()[0]
                     if optimal_alignment.end_on_query == 0 or optimal_alignment.end_on_ref == 0:
@@ -599,7 +665,7 @@ def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=200, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=3, match=10)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3, match=10)
 
     test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0, match=10)
 
@@ -1559,7 +1625,7 @@ exit()
 #createSampleQueries(human_genome, "/mnt/ssd1/relevancetest.db", 1000, 50, 32)
 amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/relevance.db", 1000, 50, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, only_first_row=True)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 128, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
@@ -1578,9 +1644,9 @@ amount = 2**11
 #exit()
 
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
-test_my_approaches("/mnt/ssd1/test.db")
-#import measure_time
-#measure_time.test_all()
+#test_my_approaches("/mnt/ssd1/test.db")
+import measure_time
+measure_time.test_all()
 
 
 analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)

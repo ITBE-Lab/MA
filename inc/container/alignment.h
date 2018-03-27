@@ -286,10 +286,16 @@ namespace libMA
          */
         bool larger(const std::shared_ptr<Container> pOther) const
         {
-            const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
+            const std::shared_ptr<Alignment>& pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
-            return localscore() > pAlign->localscore();
+            auto uiS1 = localscore();
+            auto uiS2 = pAlign->localscore();
+            if(uiS1 == uiS2)
+                // if both alignments have the same score output the one with 
+                // the higher SoC score first (this is determined by the lower SoC index)
+                return xStats.index_of_strip < pAlign->xStats.index_of_strip;
+            return uiS1 > uiS2;
         }//function
 
         /**

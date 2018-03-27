@@ -85,7 +85,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
 
     if(sort)
     {
-        //sort ascendingly
+        //sort ascending
         std::sort(
             pResults->begin(), pResults->end(),
             []

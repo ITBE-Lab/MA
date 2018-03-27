@@ -822,9 +822,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         refEnd += ( pQuery->length() - endQuery ) * fRelativePadding;
 
         nucSeqIndex refWidth = refEnd - refStart;
-        if(refStart + refWidth > pRefPack->uiUnpackedSizeForwardPlusReverse())
+        if(refStart + refWidth >= pRefPack->uiUnpackedSizeForwardPlusReverse())
             refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
-        if (pRefPack->bridgingSubsection(refStart, refWidth))
+        if(pRefPack->bridgingSubsection(refStart, refWidth))
             pRefPack->unBridgeSubsection(refStart, refWidth);
         //extract the reference
         std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
