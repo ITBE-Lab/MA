@@ -29,9 +29,14 @@ namespace libMA
         double fRelativePadding = 1.1;
 
         //the match missmatch matrix
-        const parasail_matrix_t *matrix;
+        parasail_matrix_t *matrix;
 
         NeedlemanWunsch(bool bLocal);
+
+        ~NeedlemanWunsch()
+        {
+            parasail_matrix_free(matrix);
+        }//deconstructor
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

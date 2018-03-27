@@ -86,37 +86,23 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         return 0;
     }//if
     
-    const char* seqA = pQuery->fromTo(fromQuery, toQuery).c_str();
+    std::string seqA = pQuery->fromTo(fromQuery, toQuery);
     DEBUG_2(std::cout << seqA << std::endl;)
-    const char* seqB = pRef->fromTo(fromRef, toRef).c_str();
+    std::string seqB = pRef->fromTo(fromRef, toRef);
     DEBUG_2(std::cout << seqB << std::endl;)
     //do the alignment
 
     // Note: parasail does not follow the usual theme where for opening a gap 
     //       extend and open penalty are applied
-    parasail_result_t* pResult;
-    if(bNoGapAtBeginning || bNoGapAtEnd)
-    {
-        pResult = parasail_sg_trace_scan_16(
-            seqA, toQuery - fromQuery,
-            seqB, toRef - fromRef,
-            iGap + iExtend, iExtend, matrix
-        );
-        DEBUG_2(std::cout << "semi global" << std::endl;)
-    }//if
-    else
-    {
-        pResult = parasail_nw_trace_scan_16(
-            seqA, toQuery - fromQuery,
-            seqB, toRef - fromRef,
-            iGap + iExtend, iExtend, matrix
-        );
-        DEBUG_2(std::cout << "global" << std::endl;)
-    }//else
+    parasail_result_t* pResult = parasail_nw_trace_scan_16(
+        seqA.c_str(), toQuery - fromQuery,
+        seqB.c_str(), toRef - fromRef,
+        iGap + iExtend, iExtend, matrix
+    );
 
     //get the cigar
-    parasail_cigar_t* pCigar = parasail_result_get_cigar(pResult, seqA, toQuery - fromQuery, 
-        seqB, toRef - fromRef, matrix);
+    parasail_cigar_t* pCigar = parasail_result_get_cigar(pResult, seqA.c_str(), toQuery - fromQuery,
+        seqB.c_str(), toRef - fromRef, matrix);
 
     DEBUG_2(
         std::cout << "cigar length: " << pCigar->len << std::endl;
