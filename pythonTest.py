@@ -599,7 +599,7 @@ def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=2)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, min_ambiguity=2)
 
     test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
 
@@ -1018,11 +1018,11 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         if not avg_seeds is None:
             plots[3].append(avg_seeds)
         if not avg_seeds_ch is None:
-            plots[5].append(avg_seeds_ch)
+            plots[4].append(avg_seeds_ch)
         #if not avg_query_coverage is None:
-        #    plots[4].append(avg_query_coverage)
+        #    plots[5].append(avg_query_coverage)
         #if not avg_aligned is None:
-        #    plots[7].append(avg_aligned)
+        #    plots[6].append(avg_aligned)
         all_hits.append(hits)
 
     c_palette = heatmap_palette(light_spec_approximation, len(approaches))

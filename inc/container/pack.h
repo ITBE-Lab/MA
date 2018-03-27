@@ -1015,6 +1015,10 @@ namespace libMA
          */
         void unBridgeSubsection( uint64_t& uiBegin, uint64_t& uiSize) const
         {
+            DEBUG(
+                assert( bridgingSubsection(uiBegin, uiSize) );
+                uint64_t& uiSizeOriginal = uiSize;
+            )
             assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse() );
             int64_t startId = uiSequenceIdForPositionOrRev( uiBegin );
 
@@ -1029,6 +1033,9 @@ namespace libMA
             {
                 uiSize = uiSplit - uiBegin;
             }//else
+            DEBUG(
+                assert(uiSize <= uiSizeOriginal);
+            )
         } // method
 
         /* Extracts some subsequence from the packed sequence. (original name bns_get_seq)

@@ -80,7 +80,8 @@ namespace libMA
          */
         std::shared_ptr<Alignment> smithWaterman(
             std::shared_ptr<NucSeq> pQuery, 
-            std::shared_ptr<NucSeq> pRef
+            std::shared_ptr<NucSeq> pRef,
+            nucSeqIndex uiOffsetRef
         );
 
         /**

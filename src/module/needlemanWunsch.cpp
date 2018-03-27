@@ -482,7 +482,8 @@ nucSeqIndex naiveNeedlemanWunsch(
 
 std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
         std::shared_ptr<NucSeq> pQuery, 
-        std::shared_ptr<NucSeq> pRef
+        std::shared_ptr<NucSeq> pRef,
+        nucSeqIndex uiOffsetRef
     )
 {
     auto pAlignment = std::make_shared<Alignment>();
@@ -543,7 +544,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
      *  2) translate the cigar symbols into insertions deletions matches and missmatches
      */
     pAlignment->uiBeginOnQuery = pCigar->beg_query;
-    pAlignment->uiBeginOnRef = pCigar->beg_ref;
+    pAlignment->uiBeginOnRef = pCigar->beg_ref + uiOffsetRef;
 
     nucSeqIndex uiQPos = pCigar->beg_query;
     nucSeqIndex uiRPos = pCigar->beg_ref;
@@ -586,7 +587,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
     )
     
     pAlignment->uiEndOnQuery = pQuery->length() - uiQPos;
-    pAlignment->uiEndOnRef = pRef->length() - uiRPos;
+    pAlignment->uiEndOnRef = pRef->length() - uiRPos + uiOffsetRef;
 
     //@TODO: here we need to create cpp wrappers to make this code exception save...
     parasail_cigar_free(pCigar);
@@ -603,14 +604,14 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
         std::shared_ptr<Alignment> pAlignment,
-        bool bNoGapAtBeginning, //disabled at the moment
-        bool bNoGapAtEnd //disabled at the moment
+        bool bNoGapAtBeginning,
+        bool bNoGapAtEnd
         DEBUG_PARAM(bool bPrintMatrix)
     )
 {
     // in these cases parasail does not offer the wanted alignment approach
     // so we use our own slow implementation
-    if(bNoGapAtBeginning || bNoGapAtEnd)
+    if(bNoGapAtBeginning || bNoGapAtEnd || true)
         return naiveNeedlemanWunsch(
             pQuery, pRef,
             fromQuery, toQuery,
@@ -664,17 +665,16 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         std::cout << pCigar->beg_query << ", " << pCigar->beg_ref << std::endl;
     )
 
-    /*
-     * Decode the cigar:
-     *  this involves two steps
-     *  1) find the beginning and end of the cigar and add insertions deletion accordingly
-     *  2) translate the cigar symbols into insertions deletions matches and missmatches
-     */
-    pAlignment->append(MatchType::deletion, pCigar->beg_query);
-    pAlignment->append(MatchType::insertion, pCigar->beg_ref);
+    //Due to using NW this should hold:
+    assert(pCigar->beg_query == 0);
+    assert(pCigar->beg_ref == 0);
 
-    nucSeqIndex uiQPos = pCigar->beg_query;
-    nucSeqIndex uiRPos = pCigar->beg_ref;
+    /*
+     * Decode the cigar
+     */
+
+    nucSeqIndex uiQPos = 0;
+    nucSeqIndex uiRPos = 0;
     //decode the cigar
     for(int i = 0; i < pCigar->len; i++)
     {
@@ -709,12 +709,13 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         }//switch
     }//for
     
+    //Due to using NW this should hold:
+    assert(uiQPos == toQuery - fromQuery);
+    assert(uiRPos == toRef - fromRef);
+    
     DEBUG_2(
         std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
     )
-
-    pAlignment->append(MatchType::insertion, pRef->length() - uiRPos);
-    pAlignment->append(MatchType::deletion, pQuery->length() - uiQPos);
 
     //@TODO: here we need to create cpp wrappers to make this code exception save...
     parasail_cigar_free(pCigar);
@@ -809,13 +810,28 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     if(endQuery - beginQuery < pQuery->length() * fMinimalQueryCoverage)
     {
         DEBUG_2(std::cout << "computing SW for entire area" << std::endl;)
-        nucSeqIndex refCenter = beginRef + endRef / 2;
-        nucSeqIndex refWidth = (nucSeqIndex)(fRelativePadding*pQuery->length()/2.0f);
+        //figure out the correct reference location
+        nucSeqIndex refCenter = (beginRef + endRef) / 2;
+        nucSeqIndex refWidthHalf = (nucSeqIndex)(fRelativePadding*pQuery->length()/2.0f);
+
+        nucSeqIndex refStart = refWidthHalf > refCenter ? 0 : refCenter - refWidthHalf;
+        nucSeqIndex refWidth = refWidthHalf * 2;
+        if(refStart + refWidth > pRefPack->uiUnpackedSizeForwardPlusReverse())
+            refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
+        if (pRefPack->bridgingSubsection(refStart, refWidth))
+            pRefPack->unBridgeSubsection(refStart, refWidth);
+        //extract the reference
         std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
-            refCenter - refWidth,
-            refCenter + refWidth
+            refStart,
+            refStart + refWidth
         );
-        return smithWaterman(pQuery, pRef);
+        //compute the SW alignment
+        auto pRet = smithWaterman(pQuery, pRef, refStart);
+        //copy the stats
+        pRet->xStats = pSeeds->xStats;
+        pRet->xStats.sName = pQuery->sName;
+        // return the SW alignment
+        return pRet;
     }//if
 
     // here we have enough query coverage to attemt to fill in the gaps merely
