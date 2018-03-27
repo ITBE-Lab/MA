@@ -66,14 +66,14 @@ namespace libMA
             nucSeqIndex end = center;
             for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
             {
-                DEBUG_2(
+                DEBUG_3(
                     std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
                     std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
                 )
                 assert(ik.size() > 0);
                 SAInterval ok = pFM_index->extend_backward(ik, complement(q[i]));
 
-                DEBUG_2(
+                DEBUG_3(
                     std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
                     std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
                 )
@@ -85,7 +85,7 @@ namespace libMA
                 end = i;
                 ik = ok;
             }//for
-            DEBUG_2(
+            DEBUG_3(
                 std::cout << "swap" << std::endl;
             )
             //this is required in order to extend the other way
@@ -98,13 +98,13 @@ namespace libMA
             {
                 for(nucSeqIndex i = center-1; i >= 0; i--)
                 {
-                    DEBUG_2(
+                    DEBUG_3(
                         std::cout << i+1 << " -> " << ik.start() << " " << ik.end() << std::endl;
                         std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
                     )
                     assert(ik.size() > 0);
                     SAInterval ok = pFM_index->extend_backward(ik, q[i]);
-                    DEBUG_2(
+                    DEBUG_3(
                         std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
                         std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
                     )
@@ -126,7 +126,7 @@ namespace libMA
             assert(end < pQuerySeq->length());
             assert(pRightLeft->end() < pQuerySeq->length());
             pSegmentVector->push_back(pRightLeft);
-            DEBUG_2(
+            DEBUG_3(
                 std::cout << "--other way--" << std::endl;
             )
             /* Initialize ik on the foundation of the single base q[x].
@@ -149,13 +149,13 @@ namespace libMA
             {
                 for(nucSeqIndex i = center-1; i >= 0; i--)
                 {
-                    DEBUG_2(
+                    DEBUG_3(
                         std::cout << i+1 << " -> " << ik.start() << " " << ik.end() << std::endl;
                         std::cout << i+1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
                     )
                     assert(ik.size() > 0);
                     SAInterval ok = pFM_index->extend_backward(ik, q[i]);
-                    DEBUG_2(
+                    DEBUG_3(
                         std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
                         std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
                     )
@@ -172,7 +172,7 @@ namespace libMA
                         break;
                 }//for
             }//if
-            DEBUG_2(
+            DEBUG_3(
                 std::cout << "swap" << std::endl;
             )
             //this is required in order to extend the other way
@@ -183,14 +183,14 @@ namespace libMA
             */
             for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
             {
-                DEBUG_2(
+                DEBUG_3(
                     std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
                     std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
                 )
                 assert(ik.size() > 0);
                 SAInterval ok = pFM_index->extend_backward(ik, complement(q[i]));
 
-                DEBUG_2(
+                DEBUG_3(
                     std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
                     std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
                 )
@@ -270,7 +270,7 @@ namespace libMA
                 // extend until the end of the query
                 for(nucSeqIndex i = center+1; i < pQuerySeq->length(); i++)
                 {
-                    DEBUG_2(
+                    DEBUG_3(
                         std::cout << i-1 << " -> " << ik.start() << " " << ik.end() << std::endl;
                         std::cout << i-1 << " ~> " << ik.revComp().start() << " " << ik.revComp().end() << std::endl;
                     )
@@ -290,7 +290,7 @@ namespace libMA
                         // in the other direction
                         curr.push_back(Segment(center, i-center, ok.revComp()));
 
-                    DEBUG_2(
+                    DEBUG_3(
                         std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
                         std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
                     )
@@ -305,7 +305,7 @@ namespace libMA
                     // remember that we covered this area
                     ret.end(i);
                 }//for
-                DEBUG_2(
+                DEBUG_3(
                     std::cout << "swap" << std::endl;
                 )
                 /*
@@ -352,17 +352,17 @@ namespace libMA
                         */
                         for(Segment& ik : *pPrev)
                         {
-                            DEBUG_2(
+                            DEBUG_3(
                                 std::cout << i+1 << " -> " << ik.saInterval().start() << " " << ik.saInterval().end() << std::endl;
                                 std::cout << i+1 << " ~> " << ik.saInterval().revComp().start() << " " << ik.saInterval().revComp().end() << std::endl;
                             )
                             // actually extend the current interval
                             SAInterval ok = pFM_index->extend_backward(ik.saInterval(), q[i]);
-                            DEBUG_2(
+                            DEBUG_3(
                                 std::cout << i << " -> " << ok.start() << " " << ok.end() << std::endl;
                                 std::cout << i << " ~> " << ok.revComp().start() << " " << ok.revComp().end() << std::endl;
                             )
-                            DEBUG_2(
+                            DEBUG_3(
                                 std::cout << ik.start() << ", " << ik.end() << ": " << ik.saInterval().size() << " -> " << ok.size() << std::endl;
                             )
                             // check if the extension resulted in a non enclosed interval

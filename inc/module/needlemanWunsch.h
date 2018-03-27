@@ -25,8 +25,11 @@ namespace libMA
     {
     public:
         bool bLocal;
-        /// @brief the realtive padding before the first and after the last seed in global alignment
+        /// @brief The realtive padding before the first and after the last seed.
         double fRelativePadding = 1.1;
+        /// @brief If the seeds cover less that x percent of the query we use SW, 
+        /// otherwise we fill in the gaps.
+        double fMinimalQueryCoverage = .25;
 
         //the match missmatch matrix
         parasail_matrix_t *matrix;

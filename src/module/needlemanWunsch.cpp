@@ -764,6 +764,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     if(pSeeds == nullptr)
         return std::shared_ptr<Alignment>(new Alignment());
+
     //no seeds => no spot found at all...
     if(pSeeds->empty())
     {
@@ -784,7 +785,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     // Determine the query and reverence coverage of the seeds
 
-    std::shared_ptr<Alignment> pRet;
     nucSeqIndex beginRef = pSeeds->front().start_ref();
     nucSeqIndex endRef = pSeeds->back().end_ref();
     //seeds are sorted by ther startpos so we 
@@ -803,10 +803,25 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     }//for
 
     /*
-     * Her we decide weather to actually perform NW in the gaps between seeds or 
+     * Here we decide weather to actually perform NW in the gaps between seeds or 
      * if we use SW to align the entire thing. @todo
      */
+    if(endQuery - beginQuery < pQuery->length() * fMinimalQueryCoverage)
+    {
+        DEBUG_2(std::cout << "computing SW for entire area" << std::endl;)
+        nucSeqIndex refCenter = beginRef + endRef / 2;
+        nucSeqIndex refWidth = (nucSeqIndex)(fRelativePadding*pQuery->length()/2.0f);
+        std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
+            refCenter - refWidth,
+            refCenter + refWidth
+        );
+        return smithWaterman(pQuery, pRef);
+    }//if
 
+    // here we have enough query coverage to attemt to fill in the gaps merely
+    DEBUG_2(std::cout << "filling in gaps" << std::endl;)
+
+    std::shared_ptr<Alignment> pRet;
 
     if(!bLocal)
     {

@@ -74,9 +74,9 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
                         std::cerr << "unknown exception when executing" << std::endl;
                     }
                     if((*pResults)[i] == nullptr)
-                        std::cerr << "linesweep deleviered nullpointer as result" << std::endl;
+                        std::cerr << pModule->getName() << " deleviered nullpointer as result" << std::endl;
                     if((*pResults)[i] == nullptr)
-                        throw NullPointerException("linesweep deleviered nullpointer as result");
+                        throw NullPointerException("module deleviered nullpointer as result");
                 },//lambda
                 pInVec, pModule, i
             );
