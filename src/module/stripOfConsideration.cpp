@@ -13,87 +13,6 @@ extern int iExtend;
 extern int iMatch;
 extern int iMissMatch;
 
-nucSeqIndex StripOfConsideration::getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS)
-{ 
-    return xS.start_ref() + (uiQueryLength - xS.start()); 
-}//function
-
-nucSeqIndex StripOfConsideration::getStripSize(nucSeqIndex uiQueryLength) const
-{
-    return (iMatch * uiQueryLength - iGap) / iExtend - (nucSeqIndex)(fScoreMinimum * uiQueryLength);
-}//function
-
-void StripOfConsideration::sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen)
-{
-    //we need 34 bits max to express any index on any genome
-    unsigned int max_bits_used = 34;
-    unsigned int n = vSeeds.size();
-
-    if( true /*2*max_bits_used*n / log2(n) > n*log2(n)*/ )
-    {
-        //quicksort is faster
-        std::sort(
-            vSeeds.begin(), vSeeds.end(),
-            [&]
-            (const Seed a, const Seed b)
-            {
-                return getPositionForBucketing(qLen, a) 
-                        < getPositionForBucketing(qLen,b);
-            }//lambda
-        );//sort function call
-    }//if
-    else
-    {
-        //radix sort is faster than quicksort
-        unsigned int amount_buckets = (unsigned int) (max_bits_used/log2(n));
-        if(amount_buckets < 2)
-            amount_buckets = 2;
-        unsigned int iter = 0;
-        std::vector<std::vector<Seed>> xBuckets1(
-                amount_buckets, std::vector<Seed>()
-            );
-        std::vector<std::vector<Seed>> xBuckets2(
-                amount_buckets, std::vector<Seed>()
-            );
-        for(auto& xSeed : vSeeds)
-            xBuckets2[0].push_back(xSeed);
-        auto pBucketsNow = &xBuckets1;
-        auto pBucketsLast = &xBuckets2;
-
-        //2^max_bits_used maximal possible genome size
-        while(std::pow(amount_buckets,iter) <= std::pow(2,max_bits_used))
-        {
-            for(auto& xBucket : *pBucketsNow)
-                xBucket.clear();
-            for(auto& xBucket : *pBucketsLast)
-                for(auto& xSeed : xBucket)
-                {
-                    nucSeqIndex index = getPositionForBucketing(qLen, xSeed);
-                    index = (nucSeqIndex)( index / std::pow(amount_buckets,iter) ) % amount_buckets;
-                    (*pBucketsNow)[index].push_back(xSeed);
-                }//for
-            iter++;
-            //swap last and now
-            auto pBucketsTemp = pBucketsNow;
-            pBucketsNow = pBucketsLast;
-            pBucketsLast = pBucketsTemp;
-        }//while
-        vSeeds.clear();
-        DEBUG(
-            nucSeqIndex last = 0;
-        )//DEBUG
-        for(auto& xBucket : *pBucketsLast)
-            for(auto& xSeed : xBucket)
-            {
-                vSeeds.push_back(xSeed);
-                DEBUG(
-                    nucSeqIndex now = getPositionForBucketing(qLen, xSeed);
-                    assert(now >= last);
-                    last = now;
-                )//DEBUG
-            }//for
-    }//else
-}//function
 
 ContainerVector StripOfConsideration::getInputType() const
 {
@@ -128,7 +47,7 @@ void StripOfConsideration::forEachNonBridgingSeed(
 {
     pVector->forEachSeed(
         pxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals,
-        [&](Seed xS)
+        [&](const Seed& xS)
         {
             // check if the match is bridging the forward/reverse strand 
             // or bridging between two chromosomes
@@ -192,26 +111,27 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<SegmentVector> pSegments = std::static_pointer_cast<SegmentVector>((*vpInput)[0]);
-    std::shared_ptr<NucSeq> pQuerySeq = 
+    const std::shared_ptr<SegmentVector>& pSegments = std::static_pointer_cast<SegmentVector>((*vpInput)[0]);
+    const std::shared_ptr<NucSeq>& pQuerySeq = 
         std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-    std::shared_ptr<Pack> pRefSeq = 
+    const std::shared_ptr<Pack>& pRefSeq = 
         std::static_pointer_cast<Pack>((*vpInput)[2]);
-    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[3]);
+    const std::shared_ptr<FMIndex>& pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[3]);
 
-    nucSeqIndex uiQLen = pQuerySeq->length();
+    const nucSeqIndex uiQLen = pQuerySeq->length();
     
     /*
     * This is the formula from the paper
     * computes the size required for the strip so that we collect all relevent seeds.
     */
-    nucSeqIndex uiStripSize = getStripSize(uiQLen);
+    const nucSeqIndex uiStripSize = this->getStripSize(uiQLen, iMatch, iExtend, iGap);
 
     //extract the seeds
     std::vector<Seed> vSeeds;
+    vSeeds.reserve(pSegments->numSeeds(uiMaxAmbiguity));
     forEachNonBridgingSeed(
         pSegments, pFM_index, pRefSeq, pQuerySeq,
-        [&](Seed xSeed)
+        [&](const Seed& xSeed)
         {
             vSeeds.push_back(xSeed);
         }//lambda
@@ -224,7 +144,15 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         );
 
     //sort the seeds according to their initial positions
-    sort(vSeeds, uiQLen);
+    std::sort(
+        vSeeds.begin(), vSeeds.end(),
+        [&]
+        (const Seed &a, const Seed &b)
+        {
+            return getPositionForBucketing(qLen, a) 
+                    < getPositionForBucketing(qLen,b);
+        }//lambda
+    );//sort function call
 
     //positions to remember the maxima
     std::vector<std::pair<SoCOrder, std::vector<Seed>::iterator>> xMaxima;
@@ -383,10 +311,10 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
-    std::shared_ptr<NucSeq> pQuerySeq = 
+    const std::shared_ptr<Seeds>& pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
+    const std::shared_ptr<NucSeq>& pQuerySeq = 
         std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-    std::shared_ptr<Pack> pRefSeq = 
+    const std::shared_ptr<Pack>& pRefSeq = 
         std::static_pointer_cast<Pack>((*vpInput)[2]);
 
     nucSeqIndex uiQLen = pQuerySeq->length();
@@ -395,7 +323,7 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
     * This is the formula from the paper
     * computes the size required for the strip so that we collect all relevent seeds.
     */
-    nucSeqIndex uiStripSize = getStripSize(uiQLen);
+    const nucSeqIndex uiStripSize = getStripSize(uiQLen);
 
     DEBUG(
         //verify that all seeds are correct

@@ -51,7 +51,7 @@ namespace libMA
                 const nucSeqIndex uiPosOnQuery, 
                 const nucSeqIndex uiLength, 
                 const nucSeqIndex uiPosOnReference,
-                unsigned int uiAmbiguity
+                const unsigned int uiAmbiguity
             )
                 :
             Interval(uiPosOnQuery, uiLength),
@@ -80,7 +80,7 @@ namespace libMA
         /**
          * @brief Returns the beginning of the seed on the reference.
          */
-        nucSeqIndex start_ref() const
+        inline nucSeqIndex start_ref() const
         {
             return uiPosOnReference;
         }//function
@@ -88,7 +88,7 @@ namespace libMA
         /**
          * @brief Returns the end of the seed on the reference.
          */
-        nucSeqIndex end_ref() const
+        inline nucSeqIndex end_ref() const
         {
             return uiPosOnReference + size();
         }//function
@@ -99,7 +99,7 @@ namespace libMA
          * A seeds value corresponds to its size.
          * @todo check if the size()/uiAmbiguity is actually helpful
          */
-        nucSeqIndex getValue() const
+        inline nucSeqIndex getValue() const
         {
             if(uiAmbiguity == 0)
                 return size();
@@ -127,19 +127,19 @@ namespace libMA
         }// operator
 
         //overload
-        bool canCast(std::shared_ptr<Container> c) const
+        inline bool canCast(const std::shared_ptr<Container>& c) const
         {
             return std::dynamic_pointer_cast<Seed>(c) != nullptr;
         }//function
 
         //overload
-        std::string getTypeName() const
+        inline std::string getTypeName() const
         {
             return "Seed";
         }//function
 
         //overload
-        std::shared_ptr<Container> getType() const
+        inline std::shared_ptr<Container> getType() const
         {
             return std::shared_ptr<Container>(new Seed());
         }//function

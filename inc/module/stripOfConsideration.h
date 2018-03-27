@@ -41,9 +41,20 @@ namespace libMA
         */
         bool bSkipLongBWTIntervals = true;
         
-        static nucSeqIndex EXPORTED getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS);
+        inline static nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed& xS)
+        { 
+            return xS.start_ref() + (uiQueryLength - xS.start()); 
+        }//function
 
-        nucSeqIndex EXPORTED getStripSize(nucSeqIndex uiQueryLength) const;
+        inline nucSeqIndex getStripSize(
+                nucSeqIndex uiQueryLength,
+                int iMatch,
+                int iExtend,
+                int iGap
+            ) const
+        {
+            return (iMatch * uiQueryLength - iGap) / iExtend - (nucSeqIndex)(fScoreMinimum * uiQueryLength);
+        }//function
 
         void EXPORTED forEachNonBridgingSeed(
                 std::shared_ptr<SegmentVector> pVector,
@@ -52,8 +63,6 @@ namespace libMA
                 std::function<void(Seed)> fDo,
                 nucSeqIndex addSize// = 0 (default)
             );
-
-        void EXPORTED sort(std::vector<Seed>& vSeeds, nucSeqIndex qLen);
 
     public:
 

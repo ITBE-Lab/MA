@@ -144,7 +144,7 @@ namespace libMA
                 std::shared_ptr<FMIndex> pxFMIndex,
                 unsigned int uiMAxAmbiguity,
                 bool bSkip,
-                std::function<bool(Seed s)> fDo
+                std::function<bool(const Seed& s)> fDo
             )
         {
             //iterate over all the intervals that have been recorded using pushBackBwtInterval()
@@ -218,7 +218,7 @@ namespace libMA
         /**
          * @brief returns the number of seeds
          */
-        unsigned int numSeeds(std::shared_ptr<FMIndex> pxFMIndex, unsigned int max_size)
+        inline unsigned int numSeeds(unsigned int max_size) const
         {
             unsigned int uiTotal = 0;
             for (std::shared_ptr<Segment> pSegment : *this)

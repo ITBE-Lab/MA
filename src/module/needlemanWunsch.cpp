@@ -8,7 +8,7 @@
 
 using namespace libMA;
 
-int iMatch = 2;
+int iMatch = 10;
 int iMissMatch = 4;
 int iGap = 6;
 int iExtend = 1;
@@ -611,7 +611,7 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
 {
     // in these cases parasail does not offer the wanted alignment approach
     // so we use our own slow implementation
-    if(bNoGapAtBeginning || bNoGapAtEnd || true)
+    if(bNoGapAtBeginning || bNoGapAtEnd)
         return naiveNeedlemanWunsch(
             pQuery, pRef,
             fromQuery, toQuery,
