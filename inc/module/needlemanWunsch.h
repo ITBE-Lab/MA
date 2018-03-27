@@ -41,6 +41,16 @@ namespace libMA
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
+        /**
+         * @brief the NW dynamic programming algorithm
+         * @details 
+         * Uses parasail to have an efficient vectorized implementation.
+         * For the moment: is either bNoGapAtBeginning or bNoGapAtEnd it jumps to 
+         * the naive implementation.
+         * 
+         * @TODO: at the moment ugly C code is used here (free functions).. 
+         * find a way to replace that?
+         */
         nucSeqIndex needlemanWunsch(
             std::shared_ptr<NucSeq> pQuery, 
             std::shared_ptr<NucSeq> pRef,
@@ -52,6 +62,22 @@ namespace libMA
             bool bNoGapAtBeginning,
             bool bNoGapAtEnd
             DEBUG_PARAM(bool bPrintMatrix = false)
+        );
+
+        /**
+         * @brief the SW dynamic programming algorithm
+         * @details 
+         * Uses parasail to have an efficient vectorized implementation.
+         * We use SW if the query coverage of the seeds is so little
+         * that there is no point in filling gaps.
+         * 
+         * 
+         * @TODO: at the moment ugly C code is used here (free functions).. 
+         * find a way to replace that?
+         */
+        std::shared_ptr<Alignment> smithWaterman(
+            std::shared_ptr<NucSeq> pQuery, 
+            std::shared_ptr<NucSeq> pRef
         );
 
         /**
