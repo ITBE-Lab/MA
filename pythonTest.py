@@ -164,7 +164,6 @@ def test_my_approach(
         soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
-        ls.local = local
         #ls.optimistic_gap_estimation = optimistic_gap_estimation
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
@@ -174,7 +173,7 @@ def test_my_approach(
         nmw.penalty_gap_open = gap
         nmw.penalty_missmatch = missmatch
         optimal = ExecOnVec(nmw, sort_after_score)
-        mappingQual = MappingQuality(30)#give me x alignments
+        mappingQual = MappingQuality(max_nmw)#give me x alignments
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -237,23 +236,23 @@ def test_my_approach(
         print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)
 
-
-        #print("setting up optimal (", name, ") ...")
-        #for i, query_ in enumerate(queries):
-        #    alignment = pledges[-1][i].get()[0]
-        #    if alignment.begin_on_query == alignment.end_on_query or not full_analysis:
-        #        optimal_alignment_in[i][0].set(NucSeq())
-        #        optimal_alignment_in[i][1].set(NucSeq())
-        #        continue
-        #    query = query_[0]
-        #    optimal_alignment_in[i][0].set(
-        #        NucSeq(query[alignment.begin_on_query : alignment.end_on_query])
-        #    )
-        #    optimal_alignment_in[i][1].set(
-        #        ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
-        #    )
-        #print("computing optimal (", name, ") ...")
-        #Pledge.simultaneous_get(optimal_alignment_out, 32)
+        if full_analysis:
+            print("setting up optimal (", name, ") ...")
+            for i, query_ in enumerate(queries):
+                alignment = pledges[-1][i].get()[0]
+                if alignment.begin_on_query == alignment.end_on_query or not full_analysis:
+                    optimal_alignment_in[i][0].set(NucSeq())
+                    optimal_alignment_in[i][1].set(NucSeq())
+                    continue
+                query = query_[0]
+                optimal_alignment_in[i][0].set(
+                    NucSeq(query[alignment.begin_on_query : alignment.end_on_query])
+                )
+                optimal_alignment_in[i][1].set(
+                    ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
+                )
+            print("computing optimal (", name, ") ...")
+            Pledge.simultaneous_get(optimal_alignment_out, 32)
 
 
         print("extracting results (", name, ") ...")
@@ -293,66 +292,67 @@ def test_my_approach(
             if len(alignment) == 0:
                 continue
             alignment2 = None
-            #if len(alignments.get()) > 1:
-            #    alignment2 = alignments.get()[1]
-            #    #
-            #    # check if the second alignment was accurate and the first was not...
-            #    #
-            #    _, _, origin_pos, orig_size = queries[i]
-            #    align_1_hit = near(
-            #        alignment.begin_on_ref,
-            #        origin_pos,
-            #        alignment.end_on_ref,
-            #        origin_pos+orig_size)
-            #    align_2_hit = near(
-            #        alignment2.begin_on_ref,
-            #        origin_pos,
-            #        alignment2.end_on_ref,
-            #        origin_pos+orig_size)
-            #    if warn_once and align_2_hit and not align_1_hit:
-            #        warn_once = False
-            #        def get_seed_coverage(alignment):
-            #            return (
-            #                "Query: " + str(alignment.stats.initial_q_beg) + " - " +
-            #                str(alignment.stats.initial_q_end) + " Reference: " +
-            #                str(alignment.stats.initial_r_beg) + " - " +
-            #                str(alignment.stats.initial_r_end)
-            #                )
-            #        def print_seeds(alignment):
-            #            print("Num Seeds: ", alignment.stats.num_seeds_in_strip,
-            #                 " SoC index:", alignment.stats.index_of_strip)
-            #            for seed in pledges[2][i].get()[alignment.stats.index_of_strip]:
-            #                print( (seed.start, seed.start_ref, seed.size) )
-            #        print("Warning picked wrong alignment",
-            #            alignment.get_score(), "?>=", alignment2.get_score())
-            #        print("Alignment 1 is hit: ", align_1_hit)
-            #        print("Alignment 1 seed coverage: ", get_seed_coverage(alignment))
-            #        print("Alignment 1 seeds: ")
-            #        print_seeds(alignment)
-            #        AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
-            #        print("Alignment 2 is hit: ", align_2_hit)
-            #        print("Alignment 2 seed coverage: ", get_seed_coverage(alignment2))
-            #        print("Alignment 2 seeds: ")
-            #        print_seeds(alignment2)
-            #        AlignmentPrinter().execute(alignment2, pledges[0][i].get(), ref_pack)
-            #        picked_wrong_count += 1
-            #    assert(not sort_after_score or alignment.get_score() >= alignment2.get_score())
-            #    #
-            #    # end of check
-            #    #
             optimal_alignment = None
-            #if len(optimal_alignment_out[i].get()) > 0:
-            #    optimal_alignment = optimal_alignment_out[i].get()[0]
-            #    if optimal_alignment.end_on_query == 0 or optimal_alignment.end_on_ref == 0:
-            #        optimal_alignment = None
-            #    else:
-            #        # adjust the scores to the slice that 
-            #        # was actually computed with the optimal alignment
-            #        optimal_alignment.begin_on_query += alignment.begin_on_query
-            #        optimal_alignment.end_on_query += alignment.begin_on_query
-            #        optimal_alignment.begin_on_ref += alignment.begin_on_ref
-            #        optimal_alignment.end_on_ref += alignment.begin_on_ref
-            #print(alignment.stats.name)
+            if full_analysis:
+                if len(alignments.get()) > 1:
+                    _, _, origin_pos, orig_size = queries[i]
+                    align_1_hit = near(
+                        alignment.begin_on_ref,
+                        origin_pos,
+                        alignment.end_on_ref,
+                        origin_pos+orig_size)
+                    for index, alignment2 in enumerate(alignments.get()[1:]):
+                        #
+                        # check if the second alignment was accurate and the first was not...
+                        #
+                        align_2_hit = near(
+                            alignment2.begin_on_ref,
+                            origin_pos,
+                            alignment2.end_on_ref,
+                            origin_pos+orig_size)
+                        if align_2_hit and not align_1_hit:
+                            print("Warning picked wrong alignment")
+                            print("correct was:", index)
+                            def get_seed_coverage(alignment):
+                                return (
+                                    "Query: " + str(alignment.stats.initial_q_beg) + " - " +
+                                    str(alignment.stats.initial_q_end) + " Reference: " +
+                                    str(alignment.stats.initial_r_beg) + " - " +
+                                    str(alignment.stats.initial_r_end)
+                                    )
+                            def print_seeds(alignment):
+                                print("Num Seeds: ", alignment.stats.num_seeds_in_strip,
+                                    " SoC index:", alignment.stats.index_of_strip)
+                                for seed in pledges[2][i].get()[alignment.stats.index_of_strip]:
+                                    print( (seed.start, seed.start_ref, seed.size) )
+                            print("Warning picked wrong alignment",
+                                alignment.get_score(), "?>=", alignment2.get_score())
+                            print("Alignment 0 is hit: ", align_1_hit)
+                            print("Alignment 0 seed coverage: ", get_seed_coverage(alignment))
+                            print("Alignment 0 seeds: ")
+                            print_seeds(alignment)
+                            AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
+                            print("Alignment", index, "is hit: ", align_2_hit)
+                            print("Alignment", index, "seed coverage: ", get_seed_coverage(alignment2))
+                            print("Alignment", index, "seeds: ")
+                            print_seeds(alignment2)
+                            AlignmentPrinter().execute(alignment2, pledges[0][i].get(), ref_pack)
+                            picked_wrong_count += 1
+                        assert(not sort_after_score or alignment.get_local_score() >= alignment2.get_local_score())
+                        #
+                        # end of check
+                        #
+                if len(optimal_alignment_out[i].get()) > 0:
+                    optimal_alignment = optimal_alignment_out[i].get()[0]
+                    if optimal_alignment.end_on_query == 0 or optimal_alignment.end_on_ref == 0:
+                        optimal_alignment = None
+                    else:
+                        # adjust the scores to the slice that 
+                        # was actually computed with the optimal alignment
+                        optimal_alignment.begin_on_query += alignment.begin_on_query
+                        optimal_alignment.end_on_query += alignment.begin_on_query
+                        optimal_alignment.begin_on_ref += alignment.begin_on_ref
+                        optimal_alignment.end_on_ref += alignment.begin_on_ref
             sample_id = int(alignment.stats.name)
             collect_ids.append(sample_id)
 
@@ -465,7 +465,7 @@ def test_my_approach(
                     soc_seeds = pledges[2][i].get()[alignment.stats.index_of_strip]
                     num_soc_seeds += len(soc_seeds)
                     #num_coupled_seeds += len(pledges[3][i].get()[alignment.stats.index_of_strip])
-                    num_seeds_total += pledges[1][i].get().num_seeds(fm_index, max_hits)
+                    num_seeds_total += pledges[1][i].get().num_seeds(max_hits)
                     #compute the area covered by relevant seeds
                     covered_area = [-1]*len(pledges[0][i].get())
                     for seed in discovered_seeds:
@@ -504,7 +504,7 @@ def test_my_approach(
             if do_minimizers:
                 num_seeds = len(pledges[1][i].get())
             else:
-                num_seeds = pledges[1][i].get().num_seeds(fm_index, max_hits)
+                num_seeds = pledges[1][i].get().num_seeds(max_hits)
 
             result.append(
                 (
@@ -593,15 +593,15 @@ def relevance(db_name):
     print(analyse(OtherSeeding(True)))
 
 def test_my_approaches(db_name):
-    full_analysis = False
+    full_analysis = True
 
     #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
     clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=60, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, min_ambiguity=2)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=200, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=3, match=10)
 
-    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
+    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0, match=10)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1559,7 +1559,7 @@ exit()
 #createSampleQueries(human_genome, "/mnt/ssd1/relevancetest.db", 1000, 50, 32)
 amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/relevance.db", 1000, 50, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, only_first_row=True)
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)

@@ -43,6 +43,35 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     uiLength += size;
 }//function
 
+unsigned int EXPORTED Alignment::localscore() const
+{
+    unsigned int uiMaxScore = 0;
+    int iScoreCurr = 0;
+    for(unsigned int index = 0; index < data.size(); index++)
+    {
+        switch (std::get<0>(data[index]))
+        {
+            case MatchType::deletion :
+            case MatchType::insertion :
+                iScoreCurr -= iGap;
+                iScoreCurr -= iExtend * std::get<1>(data[index]);
+                break;
+            case MatchType::missmatch :
+                iScoreCurr -= iMissMatch * std::get<1>(data[index]);
+                break;
+            case MatchType::match :
+            case MatchType::seed :
+                iScoreCurr += iMatch * std::get<1>(data[index]);
+                break;
+        }//switch
+        if(iScoreCurr < 0)
+            iScoreCurr = 0;
+        if(uiMaxScore < (unsigned int)iScoreCurr)
+            uiMaxScore = (unsigned int)iScoreCurr;
+    }//for
+    return uiMaxScore;
+} //function
+
 void EXPORTED Alignment::makeLocal()
 {
     if(uiLength == 0)
@@ -164,11 +193,15 @@ void EXPORTED Alignment::removeDangeling()
 {
     while(std::get<0>(data.front()) == MatchType::deletion)
     {
+        uiBeginOnRef += std::get<1>(data.front());
+        uiLength -= std::get<1>(data.front());
         iScore += iGap + iExtend * std::get<1>(data.front());
         data.erase(data.begin(), data.begin()+1);
     }//if
     while(std::get<0>(data.back()) == MatchType::deletion)
     {
+        uiEndOnRef -= std::get<1>(data.back());
+        uiLength -= std::get<1>(data.front());
         iScore += iGap + iExtend * std::get<1>(data.back());
         data.pop_back();
     }//if
@@ -275,6 +308,11 @@ void exportAlignment()
         .def(
                 "get_score", 
                 &Alignment::score,
+                "arg1: self\n"
+            )
+        .def(
+                "get_local_score", 
+                &Alignment::localscore,
                 "arg1: self\n"
             )
         .def(

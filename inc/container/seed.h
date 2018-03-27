@@ -97,13 +97,13 @@ namespace libMA
          * @brief Returns the value of the seed.
          * @details
          * A seeds value corresponds to its size.
-         * @todo check if the size()/uiAmbiguity is actually helpful
+         * @TODO: check if the size()/uiAmbiguity is actually helpful
          */
         inline nucSeqIndex getValue() const
         {
             if(uiAmbiguity == 0)
                 return size();
-            return size()/uiAmbiguity;
+            return size();///uiAmbiguity;
         }//function
 
         /**
@@ -212,6 +212,7 @@ namespace libMA
         nucSeqIndex mem_score = 0;
         //some statistics
         AlignmentStatistics xStats;
+
 
         bool bConsistent;
 

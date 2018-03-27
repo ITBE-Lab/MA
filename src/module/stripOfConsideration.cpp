@@ -82,15 +82,15 @@ public:
     inline void operator+=(const Seed& rS)
     {
         uiSeedAmount++;
-        uiAccumulativeLength += rS.size();
+        uiAccumulativeLength += rS.getValue();
     }//operator
 
     inline void operator-=(const Seed& rS)
     {
         assert(uiSeedAmount > 0);
         uiSeedAmount--;
-        assert(uiAccumulativeLength >= rS.size());
-        uiAccumulativeLength -= rS.size();
+        assert(uiAccumulativeLength >= rS.getValue());
+        uiAccumulativeLength -= rS.getValue();
     }//operator
 
     inline bool operator<(const SoCOrder& rOther) const

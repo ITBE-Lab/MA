@@ -43,7 +43,7 @@ class AlignmentPrinter(Module):
         ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
 
         lines = [
-            "score: " + str(align.get_score()),
+            "score: " + str(align.get_score()) + " cigar length: " + str(len(align)),
             "reference: " + str(align.begin_on_ref) + " - " + str(align.end_on_ref),
             "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query)
         ]
@@ -68,13 +68,24 @@ class AlignmentPrinter(Module):
             #perform double check for messup:
             if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.deletion or align[counter] == MatchType.missmatch):
                 print("This should not happen... (ref)")
+                print(align[counter])
                 print(ind_ref)
                 print(len(ref))
+                #@todo it would be nice if the cpp code would simply support slicing the alignment
+                s = []
+                for index in range(counter, len(align)):
+                    s.append(align[counter])
+                print("remaining cigar:", s)
                 break
             if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
                 print("This should not happen... (query)")
+                print(align[counter])
                 print(ind_query)
                 print(len(query))
+                s = []
+                for index in range(counter, len(align)):
+                    s.append(align[counter])
+                print("remaining cigar:", s)
                 break
 
             #check for match or missmatch

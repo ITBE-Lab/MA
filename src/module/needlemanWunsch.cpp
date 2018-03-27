@@ -8,7 +8,7 @@
 
 using namespace libMA;
 
-int iMatch = 10;
+int iMatch = 2;
 int iMissMatch = 4;
 int iGap = 6;
 int iExtend = 1;
@@ -503,7 +503,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
         return pAlignment;
     }//if
 
-    // okay if we reached here we actually have to align something
+    // if we reached this point we actually have to align something
     
     //@TODO: this in inefficent rather than creating strings we should translate sequences im memory
     std::string seqA = pQuery->toString();
@@ -576,7 +576,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
                 break;
             default:
                 // there are different symbols allowed 
-                // but parasail should hopefully never generate any of them
+                // but parasail should never generate any of them
                 assert(false);
                 break;
         }//switch
@@ -586,12 +586,14 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
         std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
     )
     
-    pAlignment->uiEndOnQuery = pQuery->length() - uiQPos;
-    pAlignment->uiEndOnRef = pRef->length() - uiRPos + uiOffsetRef;
+    pAlignment->uiEndOnQuery = uiQPos;
+    pAlignment->uiEndOnRef = uiRPos + uiOffsetRef;
 
     //@TODO: here we need to create cpp wrappers to make this code exception save...
     parasail_cigar_free(pCigar);
     parasail_result_free(pResult);
+
+    pAlignment->removeDangeling();
 
     return pAlignment;
 }//function
@@ -800,22 +802,26 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             beginRef = xSeed.start_ref();
         if(endQuery < xSeed.end())
             endQuery = xSeed.end();
+        if(beginQuery > xSeed.end())
+            beginQuery = xSeed.start();
         assert(xSeed.start() <= xSeed.end());
     }//for
 
     /*
      * Here we decide weather to actually perform NW in the gaps between seeds or 
-     * if we use SW to align the entire thing. @todo
+     * if we use SW to align the entire thing.
      */
     if(endQuery - beginQuery < pQuery->length() * fMinimalQueryCoverage)
     {
         DEBUG_2(std::cout << "computing SW for entire area" << std::endl;)
         //figure out the correct reference location
-        nucSeqIndex refCenter = (beginRef + endRef) / 2;
-        nucSeqIndex refWidthHalf = (nucSeqIndex)(fRelativePadding*pQuery->length()/2.0f);
+        nucSeqIndex refStart = beginRef;
+        if(refStart >= beginQuery * fRelativePadding)
+            refStart -= beginQuery * fRelativePadding;
+        nucSeqIndex refEnd = endRef;
+        refEnd += ( pQuery->length() - endQuery ) * fRelativePadding;
 
-        nucSeqIndex refStart = refWidthHalf > refCenter ? 0 : refCenter - refWidthHalf;
-        nucSeqIndex refWidth = refWidthHalf * 2;
+        nucSeqIndex refWidth = refEnd - refStart;
         if(refStart + refWidth > pRefPack->uiUnpackedSizeForwardPlusReverse())
             refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
         if (pRefPack->bridgingSubsection(refStart, refWidth))
@@ -986,7 +992,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             false,
             true
         );
-        pRet->removeDangeling();
     }//else
 
     return pRet;

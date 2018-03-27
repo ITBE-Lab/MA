@@ -53,7 +53,7 @@ namespace libMA
                 int iGap
             ) const
         {
-            return (iMatch * uiQueryLength - iGap) / iExtend - (nucSeqIndex)(fScoreMinimum * uiQueryLength);
+            return (iMatch * uiQueryLength - iGap) / iExtend - (int64_t)(fScoreMinimum * uiQueryLength);
         }//function
 
         void EXPORTED forEachNonBridgingSeed(

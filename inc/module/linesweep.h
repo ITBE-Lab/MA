@@ -95,8 +95,6 @@ namespace libMA
         /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
         //accuracy drops if parameter is set smaller than 10^6
         nucSeqIndex uiMaxGapArea = 1000000;
-        /// @brief performance optimization for local alignments
-        bool bLocal = true;
 
         LinearLineSweep() {}//default constructor
 

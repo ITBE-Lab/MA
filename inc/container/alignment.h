@@ -249,6 +249,11 @@ namespace libMA
         }
 
         /**
+         * @brief the NMW score for this alignment
+         */
+        unsigned int EXPORTED localscore() const;
+
+        /**
          * @brief returns how many nucleotides within this alignment are determined by seeds 
          * as a percentage
          */
@@ -284,7 +289,7 @@ namespace libMA
             const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
-            return score() > pAlign->score();
+            return localscore() > pAlign->localscore();
         }//function
 
         /**
