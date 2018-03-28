@@ -1107,6 +1107,83 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
 }//function
 
+std::string LocalToGlobal::getFullDesc() const
+{
+    return std::string("LocalToGlobal(") + 
+        std::to_string(fMappingQualMin) + ")"
+        ;
+}//function
+
+ContainerVector LocalToGlobal::getInputType() const
+{
+    return ContainerVector{
+        //the local alignment
+        std::make_shared<ContainerVector>( std::make_shared<Alignment>() ),
+        //the query sequence
+        std::shared_ptr<Container>(new NucSeq()),
+        //the reference sequence
+        std::shared_ptr<Container>(new Pack())
+    };
+}//function
+
+std::shared_ptr<Container> LocalToGlobal::getOutputType() const
+{
+    return std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
+}//function
+
+
+std::shared_ptr<Container> LocalToGlobal::execute(
+        std::shared_ptr<ContainerVector> vpInput
+    )
+{
+    const auto& pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
+    const std::shared_ptr<NucSeq>& pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
+    const std::shared_ptr<Pack>& pRefPack = std::static_pointer_cast<Pack>((*vpInput)[2]);
+
+    if(pAlignments->empty())
+        return pAlignments;
+
+    if(std::static_pointer_cast<Alignment>((*pAlignments)[0])->fMappingQuality > fMappingQualMin)
+        return pAlignments;
+
+    auto pRet = getOutputType();
+
+    for(const auto& pElement : *pAlignments )
+    {
+        const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
+
+        std::shared_ptr<Alignment> pAppend(new Alignment());
+        pAppend->xStats = pAlignment->xStats;
+
+        
+
+        pAppend->append(*pAlignment);
+
+
+
+        pRet->push_back(pAppend);
+    }//for
+
+    //sort ascending
+    std::sort(
+        pRet->begin(), pRet->end(),
+        []
+        (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
+        {
+            return a->larger(b);
+        }//lambda
+    );//sort function call
+    assert(pRet->size() <= 1 || !pRet->back()->larger(pRet->front()));
+    if(nMany != 0 && pRet->size() > nMany)
+    {
+        //remove the smallest elements
+        pRet->erase(pRet->begin()+nMany, pRet->end());
+        assert(pRet->size() == nMany);
+    }//if
+    return pRet;
+}//function
+
+
 void exportNeedlemanWunsch()
 {
     DEBUG(

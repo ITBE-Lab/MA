@@ -105,6 +105,57 @@ namespace libMA
 
         std::string getFullDesc() const;
     };//class
+
+    
+    /**
+     * @brief Converts a local to an global alignment
+     * @details
+     * Checks the mapping quality of the best alignment.
+     * If the mapping quality is low we convert into a global alignment 
+     * hopefully improving our decision.
+     * @ingroup module
+     */
+    class LocalToGlobal : public Module
+    {
+    public:
+        /// @brief The realtive padding before the first and after the last seed.
+        const double fMappingQualMin;
+        const unsigned int uiReturnBestN;
+
+        LocalToGlobal(const double fMappingQualMin, const unsigned int uiReturnBestN)
+                :
+            fMappingQualMin(fMappingQualMin),
+            uiReturnBestN(uiReturnBestN)
+        {}//constructor
+
+        //overload
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - Seeds
+         * - NucSeq
+         * - Pack
+         */
+        ContainerVector EXPORTED getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - Alignment
+         */
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
+
+        std::string getName() const
+        {
+            return "LocalToGlobal";
+        }
+
+        std::string getFullDesc() const;
+    };//class
 }//namespace libMA
 
 /**

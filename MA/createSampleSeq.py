@@ -638,13 +638,14 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
                 continue
 
             validated_queries = []
+            num_discarded = 0
             while len(validated_queries) < amount:
                 #
                 # extract random query sequences and modify them
                 #
                 proposed_queries = []
                 optimal_alignment_in = []
-                while len(proposed_queries) < amount:
+                while len(proposed_queries) < amount or len(proposed_queries) < 16:
                     q_from, query, original_nuc_dist, modified_nuc_dist = get_query(
                         ref_seq, size, mutation_amount, indel_amount, indel_size, in_to_del_ratio)
                     if validate_using_sw:
@@ -662,28 +663,36 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
 
                     Pledge.simultaneous_get(optimal_alignment_out, 32)
 
-                    num_discarded = 0
                     for index, alignments in enumerate(optimal_alignment_out):
-                        if len(alignments.get()) > 1:
-                            num_discarded += 1
-                            continue
-                        alignment = alignments.get()[0]
-                        q_from = proposed_queries[index][0]
-                        q_to = q_from + len(proposed_queries[index][1])
-                        if not(q_from <= alignment.begin_on_ref and q_to >= alignment.begin_on_ref):
+                        if len(validated_queries) == amount:
+                            break
+                        found_it = False
+                        for alignment in alignments.get():
+                            q_from = proposed_queries[index][0]
+                            q_to = q_from + len(proposed_queries[index][1])
+                            if not(q_from <= alignment.begin_on_ref and q_to >= alignment.begin_on_ref):
+                                found_it = True
+                                break
+                        if not found_it:
                             num_discarded += 1
                             continue
                         # if we arrive here the query is okay
                         validated_queries.append(proposed_queries[index])
-
                     if num_discarded > 0:
                         print("discarded", num_discarded, "queries due to SW.")
                         print("mutation amount:", mutation_amount, "indel amount:", indel_amount)
+                    # if we tried 10*amount samples and still dont have enough we give up
+                    if num_discarded > 10*amount:
+                        del validated_queries[:]
+                        break
+                else:
+                    validated_queries.extend(proposed_queries)
+
 
             #
             # append the validated queries
             #
-            for q_from, query, original_nuc_dist, modified_nuc_dist in range(validated_queries):
+            for q_from, query, original_nuc_dist, modified_nuc_dist in validated_queries:
                 nuc_distrib_count_orig = list(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
                 nuc_distrib_count_mod = list(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))
 
