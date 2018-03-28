@@ -585,7 +585,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
-def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False):
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_sw = True):
     conn = sqlite3.connect(db_name)
 
     setUpDbTables(conn, reset)
@@ -621,6 +621,12 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
     if only_first_row:
         max_y = 1
 
+    smw = SMW(False)
+    genome = Pledge(NucSeq())
+    if validate_using_sw:
+        genome_seq = ref_seq.extract_complete()
+        genome.set(genome_seq)
+
     #
     # iterate over the given range of mutations indels and number of sequences
     #
@@ -631,12 +637,51 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
             if mutation_amount + indel_amount/2 * indel_size >= size - 1:
                 continue
 
-            for _ in range(amount):
+            validated_queries = []
+            while len(validated_queries) < amount:
                 #
-                # extract the query sequence
+                # extract random query sequences and modify them
                 #
-                q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size, in_to_del_ratio)
+                proposed_queries = []
+                optimal_alignment_in = []
+                while len(proposed_queries) < amount:
+                    q_from, query, original_nuc_dist, modified_nuc_dist = get_query(
+                        ref_seq, size, mutation_amount, indel_amount, indel_size, in_to_del_ratio)
+                    if validate_using_sw:
+                        p1 = Pledge(NucSeq())
+                        p1.set(NucSeq(query))
+                        optimal_alignment_in.append( (p1, genome) )
+                    proposed_queries.append( (q_from, query, original_nuc_dist, modified_nuc_dist) )
+                #
+                # validate the query sequences using SW
+                #
+                if validate_using_sw:
+                    optimal_alignment_out = []
+                    for a, b in optimal_alignment_in:
+                        optimal_alignment_out.append(smw.promise_me(a, b))
 
+                    Pledge.simultaneous_get(optimal_alignment_out, 32)
+
+                    for index, alignments in enumerate(optimal_alignment_out):
+                        if len(alignments.get()) > 0:
+                            del proposed_queries[index]
+                        alignment = alignments.get()[0]
+                        q_from = proposed_queries[index][0]
+                        q_to = q_from + len(proposed_queries[index][1])
+                        if not(q_from <= alignment.begin_on_ref and q_to >= alignment.begin_on_ref):
+                            del proposed_queries[index]
+                #
+                # append the validated queries to the list
+                #
+                if len(proposed_queries) < amount:
+                    print("discarded", amount - len(proposed_queries), "queries due to SW.")
+                    print("mutation amount:", mutation_amount, "indel amount:", indel_amount)
+                validated_queries.extend(proposed_queries)
+
+            #
+            # append the validated queries
+            #
+            for q_from, query, original_nuc_dist, modified_nuc_dist in range(validated_queries):
                 nuc_distrib_count_orig = list(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
                 nuc_distrib_count_mod = list(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))
 

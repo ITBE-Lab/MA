@@ -205,6 +205,15 @@ namespace libMA
             append(type, 1);
         }//function
 
+        /**
+         * @brief appends another alignment
+         */
+        void append(const Alignment& rOther)
+        {
+            for(auto xTuple : rOther.data)
+                append(std::get<0>(xTuple), std::get<1>(xTuple));
+        }//function
+
         ///@brief wrapper for boost-python
         void append_boost1(MatchType type, nucSeqIndex size)
         {
@@ -281,8 +290,8 @@ namespace libMA
         /**
          * @brief for sorting alignment by their score
          * @details
-         * When multiple alignments are created we use this function to sort them 
-         * overload from Module
+         * When multiple alignments are created we use this function to sort them.
+         * Overload from Module.
          */
         bool larger(const std::shared_ptr<Container> pOther) const
         {
