@@ -662,21 +662,23 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
 
                     Pledge.simultaneous_get(optimal_alignment_out, 32)
 
+                    num_discarded = 0
                     for index, alignments in enumerate(optimal_alignment_out):
-                        if len(alignments.get()) > 0:
-                            del proposed_queries[index]
+                        if len(alignments.get()) > 1:
+                            num_discarded += 1
+                            continue
                         alignment = alignments.get()[0]
                         q_from = proposed_queries[index][0]
                         q_to = q_from + len(proposed_queries[index][1])
                         if not(q_from <= alignment.begin_on_ref and q_to >= alignment.begin_on_ref):
-                            del proposed_queries[index]
-                #
-                # append the validated queries to the list
-                #
-                if len(proposed_queries) < amount:
-                    print("discarded", amount - len(proposed_queries), "queries due to SW.")
-                    print("mutation amount:", mutation_amount, "indel amount:", indel_amount)
-                validated_queries.extend(proposed_queries)
+                            num_discarded += 1
+                            continue
+                        # if we arrive here the query is okay
+                        validated_queries.append(proposed_queries[index])
+
+                    if num_discarded > 0:
+                        print("discarded", num_discarded, "queries due to SW.")
+                        print("mutation amount:", mutation_amount, "indel amount:", indel_amount)
 
             #
             # append the validated queries
