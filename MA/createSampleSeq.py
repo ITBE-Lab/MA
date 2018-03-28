@@ -396,7 +396,8 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.mapping_quality,
                                 results.nmw_area,
                                 results.run_time,
-                                samples.sequence
+                                samples.sequence,
+                                results.sample_id
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id
                             WHERE results.approach == ?

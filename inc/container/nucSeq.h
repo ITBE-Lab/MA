@@ -634,9 +634,10 @@ namespace libMA
 
         /** transforms the character representation into a representation on the foundation of digits.
          */
-        void vTranslateToNumericFormUsingTable( const unsigned char *alphabetTranslationTable,
-                                                size_t uxStartIndex
-                                            )
+        inline void vTranslateToNumericFormUsingTable( 
+                const unsigned char *alphabetTranslationTable,
+                size_t uxStartIndex
+            )
         {
             for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
             {
@@ -659,6 +660,38 @@ namespace libMA
                 return 'N';
             } // else
         } // static method
+
+        /** transforms the numeric representation into a character representation.
+         */
+        inline void vTranslateToCharacterForm( size_t uxStartIndex )
+        {
+            for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
+            {
+                pxSequenceRef[uxIterator] = (uint8_t)translateACGTCodeToCharacter(
+                    pxSequenceRef[uxIterator]);
+            } // for
+        } // method
+
+        /** transforms the character representation into a representation on the foundation of digits.
+         */
+        inline void vTranslateToNumericForm( size_t uxStartIndex )
+        {
+            vTranslateToNumericFormUsingTable(xNucleotideTranslationTable, uxStartIndex);
+        } // method
+
+        /** transforms the character representation into a representation on the foundation of digits.
+         */
+        inline void vTranslateToNumericForm()
+        {
+            vTranslateToNumericForm(0);
+        } // method
+
+        /** transforms the numeric representation into a character representation.
+         */
+        inline void vTranslateToCharacterForm()
+        {
+            vTranslateToCharacterForm(0);
+        } // method
 
         /** The symbol on some position in textual form.
          * We count starting from 0.

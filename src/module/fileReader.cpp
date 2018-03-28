@@ -67,7 +67,8 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
-        pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+        //the translation is done in the vAppend
+        //pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
 
         //run self tests for the nucSeq
         DEBUG_2(
@@ -95,7 +96,8 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
             std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
             pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
-        pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+        //the translation is done in the vAppend
+        //pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
         //quality
         unsigned int uiPos = 0;
         while(pFile->good() && !pFile->eof() && pFile->peek() != '@')

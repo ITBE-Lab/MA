@@ -80,7 +80,6 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
     return pItervalEnds;
 }//function
 
-/// @todo this can deliver nullptrs for some data ?!?
 std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
@@ -224,7 +223,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     * We then simply remove all known suboptimal seeds
     * this is an optimistic estimation so some suboptimal regions might remain
     * 
-    * NOTE: order is significant:
+    * NOTE: order is significant!
     * """
     * --- Iterator validity ---
     * Iterators, pointers and references pointing to position (or first) and beyond are
@@ -239,13 +238,20 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     if(pOptimalStart != pSeeds->end())
         if(++pOptimalStart != pSeeds->end())
             pSeeds->erase(pSeeds->begin(), pOptimalStart);
+    /*
+     * end of FILTER
+     */
 
     /*
      * One more thing: 
      * sometimes we have one or less seeds remaining after the cupling:
      * in these cases we simply return the center seed (judging by the delta from SoCs)
-     * This is less efficient but increases accuracy since the aligner is guided towards the correct
-     * position rather than giving it the sound seed
+     * This increases accuracy since the aligner is guided towards the correct
+     * position rather than giving it the sound seed or no seed...
+     * 
+     * Note: returning the longest or leas ambiguous seed does not make sense here;
+     * In most cases where this condition triggeres we have seeds that are roughly the same length
+     * and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
      */
     if(pSeeds->size() <= 1)
     {

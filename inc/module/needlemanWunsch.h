@@ -32,14 +32,10 @@ namespace libMA
         double fMinimalQueryCoverage = .25;
 
         //the match missmatch matrix
-        parasail_matrix_t *matrix;
+        parasail_matrix_t matrix;
+        std::vector<int> vMatrixContent;
 
         NeedlemanWunsch(bool bLocal);
-
-        ~NeedlemanWunsch()
-        {
-            parasail_matrix_free(matrix);
-        }//deconstructor
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

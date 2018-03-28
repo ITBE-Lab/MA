@@ -98,7 +98,9 @@ def test_my_approach(
         missmatch=4,
         gap=6,
         extend=1,
-        kMerExtension=False
+        kMerExtension=False,
+        reportN = 1,
+        clean_up_db = False
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -173,7 +175,7 @@ def test_my_approach(
         nmw.penalty_gap_open = gap
         nmw.penalty_missmatch = missmatch
         optimal = ExecOnVec(nmw, sort_after_score)
-        mappingQual = MappingQuality(max_nmw)#give me x alignments
+        mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -301,6 +303,9 @@ def test_my_approach(
                         origin_pos,
                         alignment.end_on_ref,
                         origin_pos+orig_size)
+                    if not align_1_hit:
+                        print("Warning picked wrong alignment")
+                        print("query id: ", i)
                     found_correct_alignment = align_1_hit
                     for index_, alignment2 in enumerate(alignments.get()[1:]):
                         index = index_ + 1
@@ -314,9 +319,7 @@ def test_my_approach(
                             origin_pos+orig_size)
                         if align_2_hit and not align_1_hit:
                             found_correct_alignment = True
-                            print("Warning picked wrong alignment")
                             print("correct was:", index)
-                            print("query id: ", i)
                             def get_seed_coverage(alignment):
                                 return (
                                     "Query: " + str(alignment.stats.initial_q_beg) + " - " +
@@ -370,7 +373,7 @@ def test_my_approach(
                                 correct_soc = index
                                 break
                         if not correct_soc == -1:
-                            print("WARNING: found correct SOC (index:", correct_soc, ") but no correct alignment")
+                            print("found correct SOC (index:", correct_soc, ") but no correct alignment")
                             for seed in soc:
                                 print( (seed.start, seed.start_ref, seed.size) )
                             # now look for correct harmonized SoC
@@ -386,6 +389,8 @@ def test_my_approach(
                                                 print( (seed.start, seed.start_ref, seed.size) )
                                             found_ham = True
                                             break
+                                    if found_ham:
+                                        break
                                 if found_ham:
                                     break
                             if not found_ham:
@@ -572,30 +577,31 @@ def test_my_approach(
             else:
                 num_seeds = pledges[1][i].get().num_seeds(max_hits)
 
-            result.append(
-                (
-                    sample_id,
-                    alignment.get_score(),
-                    score2,
-                    sc2,
-                    alignment.begin_on_ref,
-                    alignment.end_on_ref,
-                    num_seeds,
-                    alignment.stats.index_of_strip,
-                    seed_coverage_soc,
-                    seed_coverage,
-                    alignment.stats.num_seeds_in_strip,
-                    alignment.stats.anchor_size,
-                    alignment.stats.anchor_ambiguity,
-                    max_diag_deviation,
-                    max_diag_deviation_percent,
-                    max_nmw_area,
-                    nmw_area,
-                    alignment.mapping_quality,
-                    total_time,
-                    name
+            for alignment in alignments.get()[:reportN]:
+                result.append(
+                    (
+                        sample_id,
+                        alignment.get_score(),
+                        score2,
+                        sc2,
+                        alignment.begin_on_ref,
+                        alignment.end_on_ref,
+                        num_seeds,
+                        alignment.stats.index_of_strip,
+                        seed_coverage_soc,
+                        seed_coverage,
+                        alignment.stats.num_seeds_in_strip,
+                        alignment.stats.anchor_size,
+                        alignment.stats.anchor_ambiguity,
+                        max_diag_deviation,
+                        max_diag_deviation_percent,
+                        max_nmw_area,
+                        nmw_area,
+                        alignment.mapping_quality,
+                        total_time,
+                        name
+                    )
                 )
-            )
         print("submitting results (", name, ") ...")
         if len(result) > 0:
             submitResults(db_name, result)
@@ -665,9 +671,9 @@ def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3, match=10)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3)
 
-    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0, match=10)
+    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -868,6 +874,40 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
     for approach_ in approaches:
         approach = approach_[0]
         results = getResults(db_name, approach, query_size, indel_size)
+
+        ##
+        # picks the correct alignment if multiple alignments are reported for one query...
+        #
+        def filter_if_multiple(results):
+            ret = []
+            by_sample_id = {}
+            for result in results:
+                sample_id = result[-1]
+                if not sample_id in by_sample_id:
+                    by_sample_id[sample_id] = []
+                by_sample_id[sample_id].append(result)
+
+            ret = []
+
+            for result_list in by_sample_id.values():
+                found_one = False
+                for result in result_list:
+                    # get the interesting parts of the tuple...
+                    _, _, _, result_start, result_end, original_start, _, _, _, _, _, _, _, _, _, _, _ = result
+                    if near(result_start, original_start, result_end, original_start+query_size):
+                        ret.append(result)
+                        found_one = True
+                        break
+                # if multiple alignments are returned but none correct we add a random one...
+                if not found_one:
+                    ret.append(result_list[0])
+
+            return ret
+
+
+        results = filter_if_multiple(results)
+
+
         hits = {}
         run_times = {}
         scores = {}
@@ -899,7 +939,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 d[x][y] = 0
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence, _ in results:
             if not nmw_area is None:
                 nmw_total += nmw_area
             hits = init(hits, num_mutation, num_indels)
@@ -1113,7 +1153,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
     
     plot = figure(title="BWA-pic",
         x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
-        x_axis_type="log", y_range=(0,0.4),
+        x_axis_type="log",
         plot_width=650, plot_height=500,
         min_border_bottom=10, min_border_top=10,
         min_border_left=10, min_border_right=15
@@ -1218,7 +1258,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
                 d[x][y] = 0
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seeds_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence, sample_id in results:
             hits = init(hits, num_mutation, num_indels)
             tries = init(tries, num_mutation, num_indels)
             run_times = init(run_times, num_mutation, num_indels)
@@ -1644,9 +1684,9 @@ amount = 2**11
 #exit()
 
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
-#test_my_approaches("/mnt/ssd1/test.db")
-import measure_time
-measure_time.test_all()
+#import measure_time
+#measure_time.test_all()
+test_my_approaches("/mnt/ssd1/test.db")
 
 
 analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)

@@ -13,12 +13,137 @@ int iMissMatch = 4;
 int iGap = 6;
 int iExtend = 1;
 
+/**
+ * @brief wrapper for parsail results.
+ * @details
+ * This will automatically call free the result in the deconstructor and therefore make everything
+ * exception save.
+ */
+class ParsailResultWrapper
+{
+    parasail_result_t* pContent;
+public:
+
+    ParsailResultWrapper(parasail_result_t* pContent)
+            :
+        pContent(pContent)
+    {}//constructor
+
+    ~ParsailResultWrapper()
+    {
+        parasail_result_free(pContent);
+    }//deconstructor
+
+    const parasail_result_t& operator*() const
+    {
+        return *pContent;
+    }//operator
+
+    const parasail_result_t* get() const
+    {
+        return pContent;
+    }//operator
+
+    parasail_result_t* get()
+    {
+        return pContent;
+    }//operator
+
+    const parasail_result_t* operator->() const
+    {
+        return pContent;
+    }//operator
+};//class
+
+/**
+ * @brief wrapper for parsail cigars.
+ * @details
+ * This will automatically call free the result in the deconstructor and therefore make everything
+ * exception save.
+ */
+class ParsailCigarWrapper
+{
+    parasail_cigar_t* pContent;
+public:
+
+    ParsailCigarWrapper(parasail_cigar_t* pContent)
+            :
+        pContent(pContent)
+    {}//constructor
+
+    ~ParsailCigarWrapper()
+    {
+        parasail_cigar_free(pContent);
+    }//deconstructor
+
+    const parasail_cigar_t& operator*() const
+    {
+        return *pContent;
+    }//operator
+
+    const parasail_cigar_t* get() const
+    {
+        return pContent;
+    }//operator
+
+    parasail_cigar_t* get()
+    {
+        return pContent;
+    }//operator
+
+    const parasail_cigar_t* operator->() const
+    {
+        return pContent;
+    }//operator
+};//class
+
+/*
+ * We want to avoid translating the numeric representation into characters
+ * so we will trick parasail...
+ */
+static const int parasail_custom_map[256] = {
+     0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+};
 
 NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
         :
     bLocal(bLocal)
 {
-    matrix = parasail_matrix_create("ACGT", iMatch, -iMissMatch);
+    //configure the parasail matrix
+    matrix.name = "";
+    matrix.size = 4;
+    for(int i=0; i < 4; i++)
+    {
+        for(int j=0; j < 4; j++)
+        {
+            if(i == 4 || j == 4)
+                vMatrixContent.push_back(0);
+            if(i == j)
+                vMatrixContent.push_back(iMatch);
+            else
+                vMatrixContent.push_back(-iMissMatch);
+        }//for
+    }//for
+    matrix.matrix = &vMatrixContent[0];
+    matrix.mapper = parasail_custom_map;
+    matrix.max = iMatch;
+    matrix.min = -iMissMatch;
+    matrix.user_matrix = &vMatrixContent[0];
 }//constructor
 
 std::string NeedlemanWunsch::getFullDesc() const
@@ -504,12 +629,6 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
     }//if
 
     // if we reached this point we actually have to align something
-    
-    //@TODO: this in inefficent rather than creating strings we should translate sequences im memory
-    std::string seqA = pQuery->toString();
-    DEBUG_2(std::cout << seqA << std::endl;)
-    std::string seqB = pRef->toString();
-    DEBUG_2(std::cout << seqB << std::endl;)
 
     /*
      * do the SW alignment
@@ -517,20 +636,20 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
 
     // Note: parasail does not follow the usual theme where for opening a gap 
     //       extend and open penalty are applied
-    parasail_result_t* pResult = parasail_sw_trace_scan_16(
-        seqA.c_str(), pQuery->length(),
-        seqB.c_str(), pRef->length(),
+    ParsailResultWrapper pResult(parasail_sw_trace_scan_16(
+        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
+        (const char*)pRef->pGetSequenceRef(), pRef->length(),
         iGap + iExtend, iExtend,
-        matrix
-    );
+        &matrix
+    ));
 
     //get the cigar
-    parasail_cigar_t* pCigar = parasail_result_get_cigar(
-        pResult,
-        seqA.c_str(), pQuery->length(),
-        seqB.c_str(), pRef->length(),
-        matrix
-    );
+    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
+        pResult.get(),
+        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
+        (const char*)pRef->pGetSequenceRef(), pRef->length(),
+        &matrix
+    ));
 
     DEBUG_2(
         std::cout << "cigar length: " << pCigar->len << std::endl;
@@ -575,7 +694,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
                 uiRPos += uiLen;
                 break;
             default:
-                // there are different symbols allowed 
+                // there are different CIGAR symbols allowed in the SAM format
                 // but parasail should never generate any of them
                 assert(false);
                 break;
@@ -585,13 +704,9 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
     DEBUG_2(
         std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
     )
-    
+
     pAlignment->uiEndOnQuery = uiQPos;
     pAlignment->uiEndOnRef = uiRPos + uiOffsetRef;
-
-    //@TODO: here we need to create cpp wrappers to make this code exception save...
-    parasail_cigar_free(pCigar);
-    parasail_result_free(pResult);
 
     pAlignment->removeDangeling();
 
@@ -639,28 +754,25 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
     }//if
 
     // okay if we reached here we actually have to align something
-    
-    //@TODO: this in inefficent rather than creating strings we should translate sequences im memory
-    std::string seqA = pQuery->fromTo(fromQuery, toQuery);
-    DEBUG_2(std::cout << seqA << std::endl;)
-    std::string seqB = pRef->fromTo(fromRef, toRef);
-    DEBUG_2(std::cout << seqB << std::endl;)
 
     /*
      * do the NW alignment
      */
 
     // Note: parasail does not follow the usual theme where for opening a gap 
-    //       extend and open penalty are applied
-    parasail_result_t* pResult = parasail_nw_trace_scan_16(
-        seqA.c_str(), toQuery - fromQuery,
-        seqB.c_str(), toRef - fromRef,
-        iGap + iExtend, iExtend, matrix
-    );
+   ParsailResultWrapper pResult(parasail_nw_trace_scan_16(
+        (const char*)pQuery->pGetSequenceRef() + fromQuery, toQuery - fromQuery,
+        (const char*)pRef->pGetSequenceRef() + fromRef, toRef - fromRef,
+        iGap + iExtend, iExtend, &matrix
+    ));
 
     //get the cigar
-    parasail_cigar_t* pCigar = parasail_result_get_cigar(pResult, seqA.c_str(), toQuery - fromQuery,
-        seqB.c_str(), toRef - fromRef, matrix);
+    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
+        pResult.get(),
+        (const char*)pQuery->pGetSequenceRef() + fromQuery, toQuery - fromQuery,
+        (const char*)pRef->pGetSequenceRef() + fromRef, toRef - fromRef,
+        &matrix
+    ));
 
     DEBUG_2(
         std::cout << "cigar length: " << pCigar->len << std::endl;
@@ -704,8 +816,8 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
                 uiRPos += uiLen;
                 break;
             default:
-                // there are different symbols allowed 
-                // but parasail should hopefully never generate any of them
+                // there are different CIGAR symbols allowed in the SAM format
+                // but parasail should never generate any of them
                 assert(false);
                 break;
         }//switch
@@ -719,9 +831,6 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
     )
 
-    //@TODO: here we need to create cpp wrappers to make this code exception save...
-    parasail_cigar_free(pCigar);
-    parasail_result_free(pResult);
     //since we use the naive implementation for semi-global alignments we can always return 0 here
     return 0;
 }//function
