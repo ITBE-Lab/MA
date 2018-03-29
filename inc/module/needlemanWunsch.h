@@ -121,6 +121,8 @@ namespace libMA
         /// @brief The realtive padding before the first and after the last seed.
         const double fMappingQualMin;
         const unsigned int uiReturnBestN;
+        /// @brief The realtive padding before the first and after the last seed.
+        double fRelativePadding = 1.1;
 
         LocalToGlobal(const double fMappingQualMin, const unsigned int uiReturnBestN)
                 :

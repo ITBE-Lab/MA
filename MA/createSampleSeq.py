@@ -669,8 +669,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
                         found_it = False
                         for alignment in alignments.get():
                             q_from = proposed_queries[index][0]
-                            q_to = q_from + len(proposed_queries[index][1])
-                            if not(q_from <= alignment.begin_on_ref and q_to >= alignment.begin_on_ref):
+                            l = len(proposed_queries[index][1])
+                            q_to = q_from + l
+                            if q_from <= alignment.begin_on_ref + l and q_to >= alignment.begin_on_ref:
                                 found_it = True
                                 break
                         if not found_it:
@@ -683,6 +684,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
                         print("mutation amount:", mutation_amount, "indel amount:", indel_amount)
                     # if we tried 10*amount samples and still dont have enough we give up
                     if num_discarded > 10*amount:
+                        print("Gave up due to to many tries")
                         del validated_queries[:]
                         break
                 else:

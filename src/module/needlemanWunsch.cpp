@@ -1155,11 +1155,49 @@ std::shared_ptr<Container> LocalToGlobal::execute(
         std::shared_ptr<Alignment> pAppend(new Alignment());
         pAppend->xStats = pAlignment->xStats;
 
-        
+        nucSeqIndex beginRef =
+            pAlignment->uiBeginOnRef - pAlignment->uiBeginOnQuery * fRelativePadding;
+        nucSeqIndex endRef =
+            pAlignment->uiEndOnRef +
+            (pQuery->length() - pAlignment->uiEndOnQuery) * fRelativePadding;
+
+        std::shared_ptr<NucSeq> pRef;
+        try
+        {
+            pRef = pRefPack->vExtract(beginRef, endRef);
+        } catch(std::runtime_error e)
+        {
+            std::shared_ptr<Alignment> pRet(new Alignment());
+            pRet->xStats = pSeeds->xStats;
+            pRet->xStats.sName = pQuery->sName;
+            return pRet;
+        }// catch
+
+        pAppend->uiBeginOnRef += naiveNeedlemanWunsch(
+            pQuery,
+            pRef,
+            0,
+            pAlignment->uiBeginOnQuery,
+            0,
+            pAlignment->uiBeginOnRef - beginRef,
+            pRet,
+            true,
+            false
+        );
 
         pAppend->append(*pAlignment);
 
-
+        pAppend->uiEndOnRef -= naiveNeedlemanWunsch(
+            pQuery,
+            pRef,
+            pAlignment->uiEndOnQuery,
+            pQuery->length(),
+            pAlignment->uiEndOnRef - beginRef,
+            pRef->length(),
+            pRet,
+            false,
+            true
+        );
 
         pRet->push_back(pAppend);
     }//for
