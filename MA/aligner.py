@@ -307,6 +307,15 @@ class NeedlemanWunsch(libMA.NeedlemanWunsch):
         return super(NeedlemanWunsch, self).promise_me(ContainerVector(*args))
 
 ##
+# @brief python wrapper for LinearLineSweep
+class LocalToGlobal(libMA.LocalToGlobal):
+    def execute(self, *args):
+        return super(LocalToGlobal, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(LocalToGlobal, self).promise_me(ContainerVector(*args))
+
+##
 # @brief python wrapper for ExecOnVec
 class ExecOnVec(libMA.ExecOnVec):
     def execute(self, *args):

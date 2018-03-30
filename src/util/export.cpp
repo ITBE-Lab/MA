@@ -11,6 +11,7 @@ extern int iGap;
 extern int iExtend;
 extern int iMatch;
 extern int iMissMatch;
+extern nucSeqIndex uiMaxGapArea;
 
 /**
  * @brief The boost-python main method.
@@ -68,7 +69,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     bool bSeedSetPairs,
     unsigned int uiReportNBest,
     bool bLocal,
-    unsigned int uiMaxGapArea,
+    unsigned int uiMaxGapArea_,
     int iMatch_,
     int iMisMatch_,
     int iGap_,
@@ -82,6 +83,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     iExtend = iExtend_;
     iGap = iGap_;
     iMissMatch = iMisMatch_;
+    uiMaxGapArea = uiMaxGapArea_;
 
     if(uiNumSOC < uiReportNBest)
         throw AlignerException("cannot report more alignments than computed (increase strip of consideration amount)");
@@ -94,7 +96,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::shared_ptr<Module> pSOC(new StripOfConsideration(
         uiMaxAmbiguity, uiNumSOC, bLocal ? 0 : fMinAllowedScore));
     std::shared_ptr<Module> pCouple(
-            new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep(uiMaxGapArea)), true, uiNumNW)
+            new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep()), true, uiNumNW)
         );
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(

@@ -32,6 +32,14 @@ namespace libMA
          * Is interpreted relative to the query length.
          */
         const float fScoreMinimum = 0;
+        /**
+         * @brief Minimal SoC score.
+         * @details
+         * Must be [0,-inf]!
+         * The minimal score that should be allowed during SoC collection.
+         * Is interpreted relative to the query length.
+         */
+        const float fGiveUp = 0.1;
 
         /**
         * @brief skip seeds with too much ambiguity

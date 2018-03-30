@@ -12,7 +12,9 @@ int iMatch = 2;
 int iMissMatch = 4;
 int iGap = 6;
 int iExtend = 1;
-
+/// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
+//accuracy drops if parameter is set smaller than 10^6
+nucSeqIndex uiMaxGapArea = 1000000;
 /**
  * @brief wrapper for parsail results.
  * @details
@@ -153,6 +155,7 @@ std::string NeedlemanWunsch::getFullDesc() const
         std::to_string(iMissMatch) + "," + 
         std::to_string(iGap) + "," + 
         std::to_string(iExtend) + "," + 
+        std::to_string(uiMaxGapArea) + "," + 
         std::to_string(bLocal) + "," + 
         std::to_string(fRelativePadding) + ")"
         ;
@@ -1146,14 +1149,12 @@ std::shared_ptr<Container> LocalToGlobal::execute(
     if(std::static_pointer_cast<Alignment>((*pAlignments)[0])->fMappingQuality > fMappingQualMin)
         return pAlignments;
 
-    auto pRet = getOutputType();
+    auto pRet = std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
 
-    for(const auto& pElement : *pAlignments )
+    for( const auto& pElement : *pAlignments )
     {
         const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
 
-        std::shared_ptr<Alignment> pAppend(new Alignment());
-        pAppend->xStats = pAlignment->xStats;
 
         nucSeqIndex beginRef =
             pAlignment->uiBeginOnRef - pAlignment->uiBeginOnQuery * fRelativePadding;
@@ -1161,43 +1162,59 @@ std::shared_ptr<Container> LocalToGlobal::execute(
             pAlignment->uiEndOnRef +
             (pQuery->length() - pAlignment->uiEndOnQuery) * fRelativePadding;
 
+        std::shared_ptr<Alignment> pAppend(new Alignment(beginRef, endRef, 0, pQuery->length()));
+        pAppend->xStats = pAlignment->xStats;
+
         std::shared_ptr<NucSeq> pRef;
         try
         {
             pRef = pRefPack->vExtract(beginRef, endRef);
         } catch(std::runtime_error e)
         {
-            std::shared_ptr<Alignment> pRet(new Alignment());
-            pRet->xStats = pSeeds->xStats;
-            pRet->xStats.sName = pQuery->sName;
-            return pRet;
+            pRet->push_back(pAlignment);
+            continue;
         }// catch
 
-        pAppend->uiBeginOnRef += naiveNeedlemanWunsch(
-            pQuery,
-            pRef,
-            0,
-            pAlignment->uiBeginOnQuery,
-            0,
-            pAlignment->uiBeginOnRef - beginRef,
-            pRet,
-            true,
-            false
-        );
+        // limit the maximal area that NW computes; 0 means unlimited
+        if(uiMaxGapArea != 0 && pAlignment->uiBeginOnQuery * (pAlignment->uiBeginOnRef - beginRef) > uiMaxGapArea )
+        {
+            pAppend->uiBeginOnRef = pAlignment->uiBeginOnRef;
+            pAppend->uiBeginOnQuery = pAlignment->uiBeginOnQuery;
+        }//if
+        else
+            pAppend->uiBeginOnRef += naiveNeedlemanWunsch(
+                pQuery,
+                pRef,
+                0,
+                pAlignment->uiBeginOnQuery,
+                0,
+                pAlignment->uiBeginOnRef - beginRef,
+                pAppend,
+                true,
+                false
+            );
 
         pAppend->append(*pAlignment);
 
-        pAppend->uiEndOnRef -= naiveNeedlemanWunsch(
-            pQuery,
-            pRef,
-            pAlignment->uiEndOnQuery,
-            pQuery->length(),
-            pAlignment->uiEndOnRef - beginRef,
-            pRef->length(),
-            pRet,
-            false,
-            true
-        );
+        // limit the maximal area that NW computes; 0 means unlimited
+        if(uiMaxGapArea != 0 && (pQuery->length() - pAlignment->uiEndOnQuery) * 
+            (pRef->length() - pAlignment->uiEndOnRef - beginRef) > uiMaxGapArea )
+        {
+            pAppend->uiEndOnQuery = pAlignment->uiEndOnQuery;
+            pAppend->uiEndOnRef = pAlignment->uiEndOnRef;
+        }//if
+        else
+            pAppend->uiEndOnRef -= naiveNeedlemanWunsch(
+                pQuery,
+                pRef,
+                pAlignment->uiEndOnQuery,
+                pQuery->length(),
+                pAlignment->uiEndOnRef - beginRef,
+                pRef->length(),
+                pAppend,
+                false,
+                true
+            );
 
         pRet->push_back(pAppend);
     }//for
@@ -1212,11 +1229,11 @@ std::shared_ptr<Container> LocalToGlobal::execute(
         }//lambda
     );//sort function call
     assert(pRet->size() <= 1 || !pRet->back()->larger(pRet->front()));
-    if(nMany != 0 && pRet->size() > nMany)
+    if(uiReturnBestN != 0 && pRet->size() > uiReturnBestN)
     {
         //remove the smallest elements
-        pRet->erase(pRet->begin()+nMany, pRet->end());
-        assert(pRet->size() == nMany);
+        pRet->erase(pRet->begin()+uiReturnBestN, pRet->end());
+        assert(pRet->size() == uiReturnBestN);
     }//if
     return pRet;
 }//function
@@ -1236,15 +1253,36 @@ void exportNeedlemanWunsch()
         "NeedlemanWunsch",
         boost::python::init<bool>()
     )
+        // These are constants among the entire code...
+        // We set them using the NW class for simplicity
+        // @todo: this should be changed ...
         .def_readwrite("penalty_gap_open", &iGap)
         .def_readwrite("penalty_gap_extend", &iExtend)
         .def_readwrite("score_match", &iMatch)
         .def_readwrite("penalty_missmatch", &iMissMatch)
+        .def_readwrite("max_gap_Area", &uiMaxGapArea)
+        // actual parameters of NW
         .def_readwrite("local", &NeedlemanWunsch::bLocal)
         .def_readwrite("relative_padding", &NeedlemanWunsch::fRelativePadding)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<NeedlemanWunsch>,
+        std::shared_ptr<Module> 
+    >();
+
+     //export the LocalToGlobal class
+    boost::python::class_<
+        LocalToGlobal, 
+        boost::python::bases<Module>,
+        std::shared_ptr<LocalToGlobal>
+    >(
+        "LocalToGlobal",
+        boost::python::init<double, unsigned int>()
+    )
+        .def_readwrite("relative_padding", &LocalToGlobal::fRelativePadding)
+    ;
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<LocalToGlobal>,
         std::shared_ptr<Module> 
     >();
 

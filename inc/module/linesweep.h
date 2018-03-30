@@ -92,16 +92,8 @@ namespace libMA
          * but improves runtime significantly
          */
         bool optimisticGapEstimation = false;
-        /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
-        //accuracy drops if parameter is set smaller than 10^6
-        nucSeqIndex uiMaxGapArea = 1000000;
 
         LinearLineSweep() {}//default constructor
-
-        LinearLineSweep(nucSeqIndex uiMaxGapArea)
-                :
-            uiMaxGapArea(uiMaxGapArea)
-        {}//constructor
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
@@ -130,8 +122,7 @@ namespace libMA
         std::string getFullDesc() const
         {
             return std::string("LineSweep2(") + 
-                std::to_string(optimisticGapEstimation) + "," +
-                std::to_string(uiMaxGapArea) + ")"
+                std::to_string(optimisticGapEstimation) + ")"
                 ;
         }//function
     };//class

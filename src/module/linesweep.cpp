@@ -9,6 +9,7 @@ extern int iGap;
 extern int iExtend;
 extern int iMatch;
 extern int iMissMatch;
+extern nucSeqIndex uiMaxGapArea;
 
 ContainerVector LinearLineSweep::getInputType() const
 {
@@ -274,7 +275,6 @@ void exportLinesweep()
             std::shared_ptr<LinearLineSweep>
         >("LinearLineSweep")
         .def_readwrite("optimistic_gap_estimation", &LinearLineSweep::optimisticGapEstimation)
-        .def_readwrite("max_gap_area", &LinearLineSweep::uiMaxGapArea)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<LinearLineSweep>,

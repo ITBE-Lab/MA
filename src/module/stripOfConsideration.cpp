@@ -224,6 +224,13 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 
+    /*
+     * if the best SoC quality is lower than x we give up the alignment here...
+     */
+    if(vMaxima.front().first.uiAccumulativeLength < fGiveUp * uiQLen)
+        return pRet;
+
+
     unsigned int uiSoCIndex = 0;
     //extract the required amount of SOCs
     while(pRet->size() < numStrips && !vMaxima.empty())

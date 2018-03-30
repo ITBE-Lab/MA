@@ -99,8 +99,9 @@ def test_my_approach(
         gap=6,
         extend=1,
         kMerExtension=False,
-        reportN = 1,
-        clean_up_db = False
+        reportN=1,
+        clean_up_db=False,
+        toGlobal=True
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -155,6 +156,12 @@ def test_my_approach(
             fm_pledge = Pledge(FMIndex())
             fm_pledge.set(fm_index)
 
+        #DP scoring scheme
+        NeedlemanWunsch(False).score_match = match
+        NeedlemanWunsch(False).penalty_gap_extend = extend
+        NeedlemanWunsch(False).penalty_gap_open = gap
+        NeedlemanWunsch(False).penalty_missmatch = missmatch
+        NeedlemanWunsch(False).max_gap_area = 1000000 if local else 0
         #modules
         seeding = BinarySeeding(not complete_seeds, min_ambiguity)
         if kMerExtension:
@@ -170,12 +177,9 @@ def test_my_approach(
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
-        nmw.score_match = match
-        nmw.penalty_gap_extend = extend
-        nmw.penalty_gap_open = gap
-        nmw.penalty_missmatch = missmatch
         optimal = ExecOnVec(nmw, sort_after_score)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
+        localToGlobal = LocalToGlobal(0.1, max_nmw)
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -222,6 +226,13 @@ def test_my_approach(
             pledges[5].append(mappingQual.promise_me(
                 pledges[0][-1], pledges[4][-1]
             ))
+            if local and toGlobal:
+                pledges[5][-1] = localToGlobal.promise_me(
+                    pledges[5][-1], pledges[0][-1], ref_pledge
+                )
+                pledges[5][-1] = mappingQual.promise_me(
+                    pledges[0][-1], pledges[5][-1]
+                )
 
             optimal_alignment_in.append((Pledge(NucSeq()), Pledge(NucSeq())))
 
@@ -665,15 +676,16 @@ def relevance(db_name):
     print(analyse(OtherSeeding(True)))
 
 def test_my_approaches(db_name):
-    full_analysis = True
+    full_analysis = False
 
     #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
     clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
+    clearResults(db_name, human_genome, "MA Fast no to global")
 
     test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3)
 
-    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=2, min_ambiguity=0)
+    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=5, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=5, min_ambiguity=0)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1666,6 +1678,7 @@ exit()
 amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/relevance.db", 1000, 50, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/test_sw.db", 1000, 100, 32, only_first_row=True)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 128, validate_using_sw=False)
 #exit()
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
