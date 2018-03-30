@@ -101,7 +101,8 @@ def test_my_approach(
         kMerExtension=False,
         reportN=1,
         clean_up_db=False,
-        toGlobal=True
+        toGlobal=True,
+        give_up=0.05
         #,optimistic_gap_estimation=False
     ):
     print("collecting samples (" + name + ") ...")
@@ -169,7 +170,7 @@ def test_my_approach(
         reseeding = ReSeed(max_hits)
         minimizers = Minimizers()
         minimizersExtract = MinimizersToSeeds()
-        soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2)
+        soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2, give_up)
         soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
@@ -271,6 +272,8 @@ def test_my_approach(
         print("extracting results (", name, ") ...")
         result = []
         for i, alignments in enumerate(pledges[-1]):
+            if len(alignments.get()) == 0:
+                continue
             alignment = alignments.get()[0]
             if cheat:
                 ##
@@ -679,13 +682,12 @@ def test_my_approaches(db_name):
     full_analysis = False
 
     #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
-    clearResults(db_name, human_genome, "MA Accurate")
+    #clearResults(db_name, human_genome, "MA Accurate")
     clearResults(db_name, human_genome, "MA Fast")
-    clearResults(db_name, human_genome, "MA Fast no to global")
 
-    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3)
+    test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3, give_up=0.075)
 
-    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=5, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=5, min_ambiguity=0)
+    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=0, give_up=0.01)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1156,7 +1158,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         line_x = sorted(list(hits.keys()))
         line_y = []
         for element in line_x:
-            line_y.append(hits[element][0])
+            if 0 not in hits[element]:
+                line_y.append(0)
+            else:
+                line_y.append(hits[element][0])
 
         plot2.line(line_x, line_y, legend=approach, color=c_palette[index], line_width=2)
         plot2.x(line_x, line_y, legend=approach, color=c_palette[index], size=6)
@@ -1175,8 +1180,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         approach = approach_[0]
         data = mapping_qual[index]
 
-        total_amount_1 = len(data[0])
-        total_amount_2 = len(data[1])
         all_data = []
         min_val = 1
         max_val = 0
@@ -1213,7 +1216,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         for val in values:
             mapped = 0
             wrong = 0
-            total = total_amount_1 + total_amount_2
+            total = num_queries
             for ele in data[0]:
                 if not ele is None and ele > val:
                     mapped += 1

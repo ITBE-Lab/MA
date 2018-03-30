@@ -94,7 +94,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
     std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs, uiMinAmbiguity));
     std::shared_ptr<Module> pSOC(new StripOfConsideration(
-        uiMaxAmbiguity, uiNumSOC, bLocal ? 0 : fMinAllowedScore));
+        uiMaxAmbiguity, uiNumSOC, bLocal ? 0 : fMinAllowedScore, 0.01));
     std::shared_ptr<Module> pCouple(
             new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep()), true, uiNumNW)
         );

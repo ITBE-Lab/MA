@@ -33,13 +33,12 @@ namespace libMA
          */
         const float fScoreMinimum = 0;
         /**
-         * @brief Minimal SoC score.
+         * @brief If the best SoC has seeds of accumulative length smaller than this, abort.
          * @details
-         * Must be [0,-inf]!
-         * The minimal score that should be allowed during SoC collection.
-         * Is interpreted relative to the query length.
+         * Is multiplied by query length.
+         * 0 = never abort.
          */
-        const float fGiveUp = 0.1;
+        const float fGiveUp = 0;
 
         /**
         * @brief skip seeds with too much ambiguity
@@ -79,12 +78,14 @@ namespace libMA
         StripOfConsideration( 
                 unsigned int uiMaxAmbiguity,
                 unsigned int numStrips,
-                float fScoreMinimum
+                float fScoreMinimum,
+                float fGiveUp
             )
                 :
             uiMaxAmbiguity(uiMaxAmbiguity),
             numStrips(numStrips),
-            fScoreMinimum(fScoreMinimum)
+            fScoreMinimum(fScoreMinimum),
+            fGiveUp(fGiveUp)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

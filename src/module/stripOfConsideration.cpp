@@ -225,11 +225,11 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 
     /*
-     * if the best SoC quality is lower than x we give up the alignment here...
+     * if the best SoC quality is lower than fGiveUp * uiQLen we give up the entire process here
+     * fGiveUp = 0 disables this.
      */
-    if(vMaxima.front().first.uiAccumulativeLength < fGiveUp * uiQLen)
+    if(fGiveUp != 0 && vMaxima.front().first.uiAccumulativeLength < fGiveUp * uiQLen)
         return pRet;
-
 
     unsigned int uiSoCIndex = 0;
     //extract the required amount of SOCs
@@ -480,7 +480,7 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<unsigned int, unsigned int, float>())
+        .def(boost::python::init<unsigned int, unsigned int, float, float>())
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
         .def_readwrite("num_strips", &StripOfConsideration::numStrips)
         .def_readonly("min_score", &StripOfConsideration::fScoreMinimum)
