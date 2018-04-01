@@ -482,7 +482,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
     q_from = 0
     #do - while loop
     while True:#do
-        q_from = random.randint(0, ref_seq.unpacked_size()/2 - q_len)
+        q_from = random.randint(0, ref_seq.unpacked_size() - q_len)
         q_to = q_from + q_len
     #while
         if ref_seq.is_bridging(q_from, q_len):
@@ -661,7 +661,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
                 Pledge.simultaneous_get(optimal_alignment_out, 32)
 
                 for index, alignments in enumerate(optimal_alignment_out):
-                    #just ose the first SW alignment for the correct position...
+                    #just use the first SW alignment for the correct position...
                     queries[index][0] = alignments.get()[0].begin_on_ref
 
             #

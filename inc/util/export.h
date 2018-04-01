@@ -183,7 +183,10 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     int iExtend,
     unsigned int uiMinAmbiguity,
     float fMinAllowedScore,
-    unsigned int uiNumNW
+    unsigned int uiNumNW,
+    float fGiveUp,
+    float fMappingQualMin,
+    float fRelativePadding_
 );
 
 #endif

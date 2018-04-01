@@ -179,8 +179,8 @@ def test_my_approach(
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw, sort_after_score)
+        localToGlobal = LocalToGlobal(0.1)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
-        localToGlobal = LocalToGlobal(0.1, max_nmw)
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -224,16 +224,13 @@ def test_my_approach(
             pledges[4].append(optimal.promise_me(
                 pledges[3][-1], pledges[0][-1], ref_pledge
             ))
+            if local and toGlobal:
+                pledges[4][-1] = localToGlobal.promise_me(
+                    pledges[4][-1], pledges[0][-1], ref_pledge
+                )
             pledges[5].append(mappingQual.promise_me(
                 pledges[0][-1], pledges[4][-1]
             ))
-            if local and toGlobal:
-                pledges[5][-1] = localToGlobal.promise_me(
-                    pledges[5][-1], pledges[0][-1], ref_pledge
-                )
-                pledges[5][-1] = mappingQual.promise_me(
-                    pledges[0][-1], pledges[5][-1]
-                )
 
             optimal_alignment_in.append((Pledge(NucSeq()), Pledge(NucSeq())))
 
@@ -687,7 +684,7 @@ def test_my_approaches(db_name):
 
     test_my_approach(db_name, human_genome, "MA Accurate", max_hits=100, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3, give_up=0.075)
 
-    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=0, give_up=0.01)
+    test_my_approach(db_name, human_genome, "MA Fast", max_hits=10, num_strips=5, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=5, min_ambiguity=0, give_up=0.01)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1216,7 +1213,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         for val in values:
             mapped = 0
             wrong = 0
-            total = num_queries
             for ele in data[0]:
                 if not ele is None and ele > val:
                     mapped += 1
@@ -1227,7 +1223,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             if mapped > 0:
                 line_x.append( wrong/mapped )
-                line_y.append( mapped/total )
+                line_y.append( mapped/num_queries )
 
         plot.line(line_x, line_y, legend=approach, color=c_palette[index], line_width=2)
         plot.x(line_x, line_y, legend=approach, color=c_palette[index], size=6)
@@ -1681,7 +1677,7 @@ exit()
 amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/relevance.db", 1000, 50, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/test_sw.db", 1000, 100, 32, only_first_row=True)
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 128, validate_using_sw=False)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, validate_using_sw=False)
 #exit()
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)

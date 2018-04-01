@@ -15,6 +15,8 @@ int iExtend = 1;
 /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
 //accuracy drops if parameter is set smaller than 10^6
 nucSeqIndex uiMaxGapArea = 1000000;
+/// @brief the padding on the left and right end of each alignment
+float fRelativePadding = 1.1f;
 /**
  * @brief wrapper for parsail results.
  * @details
@@ -1143,10 +1145,19 @@ std::shared_ptr<Container> LocalToGlobal::execute(
     const std::shared_ptr<NucSeq>& pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
     const std::shared_ptr<Pack>& pRefPack = std::static_pointer_cast<Pack>((*vpInput)[2]);
 
-    if(pAlignments->empty())
+    if(pAlignments->size() < 2)
         return pAlignments;
 
-    if(std::static_pointer_cast<Alignment>((*pAlignments)[0])->fMappingQuality > fMappingQualMin)
+    // check if the mapping quality is lower than the threshold
+    auto pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
+    auto pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[1]);
+    float fQual = pFirst->fMappingQuality =
+                ( pFirst->score() - pSecond->score() )
+                    /
+                (double)( pFirst->score() )
+            ;
+
+    if(fQual > fMappingQualMin)
         return pAlignments;
 
     auto pRet = std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
@@ -1217,6 +1228,7 @@ std::shared_ptr<Container> LocalToGlobal::execute(
             );
 
         pRet->push_back(pAppend);
+        pAppend->fMappingQuality = 0.0;
     }//for
 
     //sort ascending
@@ -1229,12 +1241,7 @@ std::shared_ptr<Container> LocalToGlobal::execute(
         }//lambda
     );//sort function call
     assert(pRet->size() <= 1 || !pRet->back()->larger(pRet->front()));
-    if(uiReturnBestN != 0 && pRet->size() > uiReturnBestN)
-    {
-        //remove the smallest elements
-        pRet->erase(pRet->begin()+uiReturnBestN, pRet->end());
-        assert(pRet->size() == uiReturnBestN);
-    }//if
+
     return pRet;
 }//function
 
@@ -1263,7 +1270,6 @@ void exportNeedlemanWunsch()
         .def_readwrite("max_gap_Area", &uiMaxGapArea)
         // actual parameters of NW
         .def_readwrite("local", &NeedlemanWunsch::bLocal)
-        .def_readwrite("relative_padding", &NeedlemanWunsch::fRelativePadding)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<NeedlemanWunsch>,
@@ -1277,10 +1283,8 @@ void exportNeedlemanWunsch()
         std::shared_ptr<LocalToGlobal>
     >(
         "LocalToGlobal",
-        boost::python::init<double, unsigned int>()
-    )
-        .def_readwrite("relative_padding", &LocalToGlobal::fRelativePadding)
-    ;
+        boost::python::init<double>()
+    );
     boost::python::implicitly_convertible< 
         std::shared_ptr<LocalToGlobal>,
         std::shared_ptr<Module> 

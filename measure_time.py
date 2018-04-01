@@ -117,9 +117,8 @@ class CommandLine(Module):
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start, start + align_length)
                 alignments[int(columns[0])].mapping_quality = int(columns[4])
-                if int(columns[1]) & 0x010 and self.warn_once:
-                    self.warn_once = False
-                    print("Warning: rev comp flag set (python code cant handle this; printed once):", columns[1])
+                if int(columns[1]) & 0x010:
+                    
                 self.check_existence[int(columns[0])] += 1
             except Exception as e:
                 print(e)

@@ -51,7 +51,14 @@ int main(int argc, char*argv[])
     std::vector<std::string> aIndexIn;
     std::string sAlignOut;
     std::vector<std::string> aAlignIn;
-    
+    float fGiveUp;
+    float fMappingQualMin;
+    float fRelativePadding;
+    unsigned int iMatch;
+    unsigned int iExtend;
+    unsigned int iMissMatch;
+    unsigned int iGap;
+    float fMinGlob;
 
     options_description gen_desc{"General Options"};
     gen_desc.add_options()
@@ -96,6 +103,14 @@ int main(int argc, char*argv[])
             ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 60 : 2), "Strip of consideration amount")
             ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(bAccurate ? 10 : 2), "apply NW to x SoC")
             ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
+            ("giveUp,v", value<float>(&fGiveUp)->default_value(bAccurate ? 0.075 : 0.01), "Give up if the best SoC score is lower")
+            ("toGlobal,T", value<float>(&fMappingQualMin)->default_value(bAccurate ? 0 : 0.1), "Transform lower mapping qual local alignments to global")
+            ("padding,P", value<float>(&fRelativePadding)->default_value(0.1), "Relative padding for global alignments.")
+            ("Match", value<unsigned int>(&iMatch)->default_value(2), "NW match score.")
+            ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "NW missmatch penalty.")
+            ("Gap", value<unsigned int>(&iGap)->default_value(2), "NW gap open penalty.")
+            ("Extend", value<unsigned int>(&iExtend)->default_value(2), "NW gap extend penalty.")
+            ("socMinScore", value<float>(&fMinGlob)->default_value(-2.0), "Minimum score for SoC width.")
             ("global,G", "Perform global alignment")
         ;
         //@todo warn if seed set is not valid
@@ -111,13 +126,13 @@ int main(int argc, char*argv[])
 
         options_description index_desc{"FMD-Index Generation Options"};
         index_desc.add_options()
-            ("info,z", "Print comp. graph info & abort")
+            ("indexIn,I", value<std::vector<std::string>>(&aIndexIn)->composing(), "FASTA input file paths")
+            ("indexOut,O", value<std::string>(&sIndexOut), "FMD-index output file prefix")
         ;
 
         options_description hidden_desc{"Hidden Options"};
         hidden_desc.add_options()
-            ("indexIn,I", value<std::vector<std::string>>(&aIndexIn)->composing(), "FASTA input file paths")
-            ("indexOut,O", value<std::string>(&sIndexOut), "FMD-index output file prefix")
+            ("info,z", "Print comp. graph info & abort")
         ;
         
         options_description all_desc{"All Options"};
@@ -129,6 +144,7 @@ int main(int argc, char*argv[])
         variables_map vm;
         store(parse_command_line(argc, argv, comp_desc), vm);
         notify(vm);
+
 
         bPariedNormal = vm.count("normal") != 0;
         bPariedUniform = vm.count("uniform") != 0;
@@ -214,13 +230,16 @@ int main(int argc, char*argv[])
                     uiReportNBest,
                     vm.count("global") == 0,//input is for local
                     uiMaxGapArea,
-                    2, // iMatch
-                    4, // iMissMatch
-                    6, // iGap
-                    1, // iExtend
-                    uiMinAmbiguity, // minimum ambiguity
-                    -2.0, // socMinimal score
-                    uiNumNW
+                    iMatch,
+                    iMissMatch,
+                    iGap,
+                    iExtend,
+                    uiMinAmbiguity,
+                    fMinGlob, // socMinimal score
+                    uiNumNW,
+                    fGiveUp,
+                    fMappingQualMin,
+                    fRelativePadding
                 );
                 if(vm.count("info") > 0)
                 {

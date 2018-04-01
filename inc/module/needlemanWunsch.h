@@ -25,8 +25,6 @@ namespace libMA
     {
     public:
         bool bLocal;
-        /// @brief The realtive padding before the first and after the last seed.
-        double fRelativePadding = 1.1;
         /// @brief If the seeds cover less that x percent of the query we use SW, 
         /// otherwise we fill in the gaps.
         double fMinimalQueryCoverage = .25;
@@ -120,14 +118,10 @@ namespace libMA
     public:
         /// @brief The realtive padding before the first and after the last seed.
         const double fMappingQualMin;
-        const unsigned int uiReturnBestN;
-        /// @brief The realtive padding before the first and after the last seed.
-        double fRelativePadding = 1.1;
 
-        LocalToGlobal(const double fMappingQualMin, const unsigned int uiReturnBestN)
+        LocalToGlobal(const double fMappingQualMin)
                 :
-            fMappingQualMin(fMappingQualMin),
-            uiReturnBestN(uiReturnBestN)
+            fMappingQualMin(fMappingQualMin)
         {}//constructor
 
         //overload
