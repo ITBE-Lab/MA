@@ -394,7 +394,16 @@ namespace libMA
                     ); 
                 std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
                 execTime = duration.count();
-                assert(typeCheck(content, type));
+                DEBUG(
+                    if(!typeCheck(content, type))
+                    {
+                        if(pledger != nullptr)
+                            std::cerr << pledger->getFullDesc() << std::endl;
+                        else
+                            std::cerr << "pledger is nullpointer" << std::endl;
+                        assert(false);
+                    }//if
+                );
             }//else
         }//function
 

@@ -98,14 +98,14 @@ int main(int argc, char*argv[])
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
             ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 1000 : 10), "Maximal ambiguity")
-            ("minAmbiguity,B", value<unsigned int>(&uiMinAmbiguity)->default_value(bAccurate ? 2 : 0), "Minimal ambiguity")
+            ("minAmbiguity,B", value<unsigned int>(&uiMinAmbiguity)->default_value(bAccurate ? 3 : 0), "Minimal ambiguity")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
-            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 60 : 2), "Strip of consideration amount")
-            ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(bAccurate ? 10 : 2), "apply NW to x SoC")
+            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 30 : 5), "Strip of consideration amount")
+            ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(bAccurate ? 30 : 5), "apply NW to x SoC")
             ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
             ("giveUp,v", value<float>(&fGiveUp)->default_value(bAccurate ? 0.075 : 0.01), "Give up if the best SoC score is lower")
             ("toGlobal,T", value<float>(&fMappingQualMin)->default_value(bAccurate ? 0 : 0.1), "Transform lower mapping qual local alignments to global")
-            ("padding,P", value<float>(&fRelativePadding)->default_value(0.1), "Relative padding for global alignments.")
+            ("padding,P", value<float>(&fRelativePadding)->default_value(1.1), "Relative padding for global alignments.")
             ("Match", value<unsigned int>(&iMatch)->default_value(2), "NW match score.")
             ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "NW missmatch penalty.")
             ("Gap", value<unsigned int>(&iGap)->default_value(2), "NW gap open penalty.")
@@ -132,7 +132,7 @@ int main(int argc, char*argv[])
 
         options_description hidden_desc{"Hidden Options"};
         hidden_desc.add_options()
-            ("info,z", "Print comp. graph info & abort")
+            ("info", "Print comp. graph info & abort")
         ;
         
         options_description all_desc{"All Options"};
@@ -185,6 +185,10 @@ int main(int argc, char*argv[])
                 if(vm.count("global") == 1)//input is for local
                     std::cerr 
                         << "WARNING: Currently global alignments will drastically decrease speed"
+                        << std::endl;
+                if(fRelativePadding <= 1)//input is for local
+                    std::cerr 
+                        << "WARNING: Relative padding should be larger or equal to one"
                         << std::endl;
                 /*
                  *

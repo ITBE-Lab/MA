@@ -41,7 +41,7 @@ SAInterval FMIndex::extend_backward(
     for(unsigned int i = 0; i < 4; i++)
         cnts[i] = cntl[i] - cntk[i];
 
-    DEBUG_2(
+    DEBUG_3(
         std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " << cnts[3] << " = " 
                   << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= " 
                   << ik.size() << "(-1)" << std::endl;

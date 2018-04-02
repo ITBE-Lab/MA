@@ -58,12 +58,13 @@ class CommandLine(Module):
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
         self.elapsed_time = time.time() - start_time
 
-        os.remove(self.in_filename)
-
         if result.returncode != 0:
             print("subprocess returned with ERROR:")
+            print("Error:")
             print(result.stderr.decode('utf-8')[:-1])
-            return None
+            exit()
+
+        os.remove(self.in_filename)
 
         sam_file = result.stdout.decode('utf-8')
 
@@ -117,8 +118,6 @@ class CommandLine(Module):
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start, start + align_length)
                 alignments[int(columns[0])].mapping_quality = int(columns[4])
-                if int(columns[1]) & 0x010:
-                    
                 self.check_existence[int(columns[0])] += 1
             except Exception as e:
                 print(e)
@@ -268,10 +267,10 @@ def test(
         #("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
         #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/chrom/human/n_less.fasta", db_name)),
-        ("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
-        #("BWA SW", BWA_SW(reference, num_threads, db_name)),
-        #("MA Fast", MA(reference, num_threads, True, db_name)),
-        #("MA Accurate", MA(reference, num_threads, False, db_name)),
+        #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
+        ("MA Fast", MA(reference, num_threads, True, db_name)),
+        ("MA Accurate", MA(reference, num_threads, False, db_name)),
+        ("BWA SW", BWA_SW(reference, num_threads, db_name)),
     ]
 
     for name, aligner in l:

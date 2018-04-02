@@ -482,7 +482,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
     q_from = 0
     #do - while loop
     while True:#do
-        q_from = random.randint(0, ref_seq.unpacked_size() - q_len)
+        q_from = random.randint(0, ref_seq.unpacked_size()/2 - q_len)
         q_to = q_from + q_len
     #while
         if ref_seq.is_bridging(q_from, q_len):
@@ -504,11 +504,27 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
 
     #
     # apply modifications
-    # deletions, mutations, insertions
+    # revcomp, deletions, mutations, insertions
     # the order is important.
     # code makes sure that the same nucleotide is never modified twice
     # also indels must be at least one nuc apart from each other...
     #
+
+    #reverse complement
+    if random.randint(0,1) == 1:
+        comp = {
+            'A' : 'T',
+            'T' : 'A',
+
+            'G' : 'C',
+            'C' : 'G'
+        }# dict
+        q_ = ""
+        for nuc in reversed(q):
+            q_ += comp[nuc.upper()]
+        q = q_
+
+
 
     ##
     # helper function

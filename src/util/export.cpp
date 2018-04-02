@@ -71,10 +71,10 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     unsigned int uiReportNBest,
     bool bLocal,
     unsigned int uiMaxGapArea_,
-    int iMatch_,
-    int iMisMatch_,
-    int iGap_,
-    int iExtend_,
+    unsigned int iMatch_,
+    unsigned int iMisMatch_,
+    unsigned int iGap_,
+    unsigned int iExtend_,
     unsigned int uiMinAmbiguity,
     float fMinAllowedScore,
     unsigned int uiNumNW,
@@ -175,6 +175,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                         pPack
                     }
                 );
+        //convert local to global alignment if map qual is to low
         if(bToGlobal)
             pOptimal = Module::promiseMe(
                     pToGlobal, 
@@ -238,7 +239,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     }
                 );
             //the optimal matching stage
-            std::shared_ptr<Pledge> pOptimal = Module::promiseMe(
+            std::shared_ptr<Pledge> pOptimal2 = Module::promiseMe(
                     pDoOptimal, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
@@ -248,12 +249,12 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     }
                 );
             if(bToGlobal)
-                pOptimal = Module::promiseMe(
+                pOptimal2 = Module::promiseMe(
                         pToGlobal, 
                         std::vector<std::shared_ptr<Pledge>>
                         {
-                            pOptimal,
-                            pQuery,
+                            pOptimal2,
+                            pQuery2,
                             pPack
                         }
                     );
@@ -263,7 +264,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     std::vector<std::shared_ptr<Pledge>>
                     {
                         pQuery2,
-                        pOptimal
+                        pOptimal2
                     }
                 );
             //pick the best alignments

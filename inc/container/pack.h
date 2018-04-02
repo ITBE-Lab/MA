@@ -993,7 +993,7 @@ namespace libMA
             } // if
             else
             {
-                return true;
+                return false;
             } // else
         } // method
 
@@ -1017,7 +1017,7 @@ namespace libMA
         {
             DEBUG(
                 assert( bridgingSubsection(uiBegin, uiSize) );
-                uint64_t& uiSizeOriginal = uiSize;
+                uint64_t uiSizeOriginal = uiSize;
             )
             assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse() );
             int64_t startId = uiSequenceIdForPositionOrRev( uiBegin );

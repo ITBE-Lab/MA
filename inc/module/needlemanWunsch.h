@@ -119,7 +119,7 @@ namespace libMA
         /// @brief The realtive padding before the first and after the last seed.
         const double fMappingQualMin;
 
-        LocalToGlobal(const double fMappingQualMin)
+        LocalToGlobal(double fMappingQualMin)
                 :
             fMappingQualMin(fMappingQualMin)
         {}//constructor

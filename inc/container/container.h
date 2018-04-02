@@ -166,7 +166,7 @@ namespace libMA
         //overload
         std::string getTypeName() const
         {
-            return "ContainerVector";
+            return "ContainerVector(" + contentType->getTypeName() + ")";
         }//function
 
         //overload

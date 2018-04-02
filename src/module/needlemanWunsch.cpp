@@ -208,8 +208,18 @@ nucSeqIndex naiveNeedlemanWunsch(
     /*
      * break conditions for actually empty areas
      */
-    assert(toQuery <= pQuery->length());
-    assert(toRef <= pRef->length());
+    DEBUG(
+        if(toQuery > pQuery->length())
+        {
+            std::cerr << toQuery << " " << pQuery->length() << std::endl;
+            assert(false);
+        }//if
+        if(toRef > pRef->length())
+        {
+            std::cerr << toRef << " " << pRef->length() << std::endl;
+            assert(false);
+        }//if
+    )// DEBUG
     if(toRef <= fromRef)
         if(toQuery <= fromQuery)
             return 0;
@@ -634,6 +644,10 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
     }//if
 
     // if we reached this point we actually have to align something
+    DEBUG(
+        std::cout << pQuery->toString() << std::endl;
+        std::cout << pRef->toString() << std::endl;
+    )
 
     /*
      * do the SW alignment
@@ -898,7 +912,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             std::cout << rSeed.start_ref() << ", " << rSeed.end_ref() << "; "
                 << rSeed.start() << ", " << rSeed.end() << std::endl;
         }//for
-    )
+    )// DEBUG
 
     // Determine the query and reverence coverage of the seeds
 
@@ -920,6 +934,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             beginQuery = xSeed.start();
         assert(xSeed.start() <= xSeed.end());
     }//for
+    DEBUG_2(
+        std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl;
+    )// DEEBUG
 
     /*
      * Here we decide weather to actually perform NW in the gaps between seeds or 
@@ -932,14 +949,23 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         nucSeqIndex refStart = beginRef;
         if(refStart >= beginQuery * fRelativePadding)
             refStart -= beginQuery * fRelativePadding;
+        else
+            refStart = 0;
         nucSeqIndex refEnd = endRef;
+        assert(endQuery <= pQuery->length());
         refEnd += ( pQuery->length() - endQuery ) * fRelativePadding;
 
+        assert(refEnd > refStart);
         nucSeqIndex refWidth = refEnd - refStart;
         if(refStart + refWidth >= pRefPack->uiUnpackedSizeForwardPlusReverse())
             refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
+        assert(refWidth > 0);
         if(pRefPack->bridgingSubsection(refStart, refWidth))
+        {
+            DEBUG_2(std::cout << "Un-bridging from " << refStart << ", " << refWidth;)
             pRefPack->unBridgeSubsection(refStart, refWidth);
+            DEBUG_2(std::cout << " to: " << refStart << ", " << refWidth << std::endl;)
+        }
         //extract the reference
         std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
             refStart,
@@ -1158,7 +1184,7 @@ std::shared_ptr<Container> LocalToGlobal::execute(
             ;
 
     if(fQual > fMappingQualMin)
-        return pAlignments;
+        return std::make_shared<ContainerVector>( pAlignments );
 
     auto pRet = std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
 
@@ -1166,12 +1192,21 @@ std::shared_ptr<Container> LocalToGlobal::execute(
     {
         const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
 
-
         nucSeqIndex beginRef =
-            pAlignment->uiBeginOnRef - pAlignment->uiBeginOnQuery * fRelativePadding;
+            pAlignment->uiBeginOnRef - (nucSeqIndex)(pAlignment->uiBeginOnQuery * fRelativePadding);
+        //check for underflow
+        if(pAlignment->uiBeginOnQuery * fRelativePadding > pAlignment->uiBeginOnRef)
+            beginRef = 0;
+        DEBUG(
+            if(pAlignment->uiBeginOnRef < beginRef)
+            {
+                std::cerr << pAlignment->uiBeginOnRef << " " << beginRef << " " << pAlignment->uiBeginOnQuery << " " << fRelativePadding << std::endl;
+                assert(false);
+            }// if
+        )// DEBUG
         nucSeqIndex endRef =
             pAlignment->uiEndOnRef +
-            (pQuery->length() - pAlignment->uiEndOnQuery) * fRelativePadding;
+            (nucSeqIndex)((pQuery->length() - pAlignment->uiEndOnQuery) * fRelativePadding);
 
         std::shared_ptr<Alignment> pAppend(new Alignment(beginRef, endRef, 0, pQuery->length()));
         pAppend->xStats = pAlignment->xStats;
@@ -1228,7 +1263,6 @@ std::shared_ptr<Container> LocalToGlobal::execute(
             );
 
         pRet->push_back(pAppend);
-        pAppend->fMappingQuality = 0.0;
     }//for
 
     //sort ascending
