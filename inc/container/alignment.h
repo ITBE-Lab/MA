@@ -58,6 +58,7 @@ namespace libMA
 
         int iScore = 0;
         double fMappingQuality = NAN;
+        bool bSecondary;
 
         //some statistics
         AlignmentStatistics xStats;
@@ -73,7 +74,8 @@ namespace libMA
             uiEndOnRef(0),
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
-            xStats()
+            xStats(),
+            bSecondary(false)
         {}//constructor
         /**
          * @brief Creates an empty alignment, 
@@ -92,7 +94,8 @@ namespace libMA
             uiEndOnRef(uiEndOnRef),
             uiBeginOnQuery(uiBeginOnQuery),
             uiEndOnQuery(uiEndOnQuery),
-            xStats()
+            xStats(),
+            bSecondary(false)
         {}//constructor
 
         /**
@@ -109,7 +112,8 @@ namespace libMA
             uiEndOnRef(0),
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
-            xStats()
+            xStats(),
+            bSecondary(false)
         {}//constructor
 
         /**
@@ -127,7 +131,8 @@ namespace libMA
             uiEndOnRef(uiEndOnRef),
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
-            xStats()
+            xStats(),
+            bSecondary(false)
         {}//constructor
 
         //overload

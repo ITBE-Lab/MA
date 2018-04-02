@@ -335,6 +335,7 @@ void exportAlignment()
         .def_readwrite("begin_on_ref", &Alignment::uiBeginOnRef)
         .def_readwrite("end_on_ref", &Alignment::uiEndOnRef)
         .def_readwrite("mapping_quality", &Alignment::fMappingQuality)
+        .def_readwrite("secondary", &Alignment::bSecondary)
     ;
 
     

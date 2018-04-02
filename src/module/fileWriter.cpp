@@ -87,8 +87,11 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
         }//if
 
+        if(pAlignment->bSecondary)
+            flag |= SECONDARY_ALIGNMENT;
+
         std::string sRefName = pPack->nameOfSequenceForPosition(pAlignment->uiBeginOnRef);
-        auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef);
+        auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef, pAlignment->uiEndOnRef);
 
         DEBUG(// check if the position that is saved to the file is correct
             bool bWrong = false;
@@ -203,7 +206,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
         {
             //synchronize output
             std::lock_guard<std::mutex> xGuard(*pLock);
-            *pOut << "Score: " << std::to_string(pAlignment->score()) << "\nBegin on reference sequence: " << sRefName << " at position: " << sRefPos << "\nBegin on Query: " << sQueryPos << "\n";
+            *pOut << "Score: " << std::to_string(pAlignment->score()) << "\nBegin on reference sequence: " << sRefName << " at position: " << sRefPos << "\nBegin on Query: " << sQueryPos << (pAlignment->bSecondary ? " Secondary\n" : "\n");
             for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
             {
                 for(unsigned int i=0; i< std::get<1>(section);i++)

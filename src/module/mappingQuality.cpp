@@ -39,10 +39,12 @@ std::shared_ptr<Container> MappingQuality::execute(
     {
         std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pAlign);
         pCasted->fMappingQuality = 0.0;
+        pCasted->bSecondary = true;
     }//for
 
     //compute the mapping quality for the best alignment
     std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
+    pFirst->bSecondary = false;
 
     // mapping quality based on scores
     if(pAlignments->size() >= 2)

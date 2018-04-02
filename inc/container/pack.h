@@ -849,6 +849,13 @@ namespace libMA
             return bPositionIsOnReversStrand( uiPosition ) ? uiUnpackedSizeForwardPlusReverse() - (uiPosition + 1) : uiPosition;
         } // method
 
+        /* Gives the absolute start position of a sequence
+        */
+        inline int64_t iAbsolutePosition( uint64_t uiBegin, uint64_t uiEnd ) const
+        {
+            return bPositionIsOnReversStrand( uiEnd ) ? uiUnpackedSizeForwardPlusReverse() - (uiEnd + 1) : uiBegin;
+        } // method
+
         /* Maps a forward strand position to the reverse strand.
         */
         inline uint64_t uiPositionToReverseStrand( uint64_t uiPositionOnForwardStrand ) const
@@ -969,13 +976,12 @@ namespace libMA
             return endOfSequenceWithId(iSequenceId / 2);
         }//function
 
-        /* Maps a forward strand position to the reverse strand.
+        /* Gives the relative position
         */
-        inline uint64_t posInSequence( uint64_t uiPosition ) const
+        inline uint64_t posInSequence( uint64_t uiBegin, uint64_t uiEnd ) const
         {
-            return uiPosition - startOfSequenceWithId(
-                uiSequenceIdForPosition(iAbsolutePosition(uiPosition))
-            );
+            auto uiPosition = iAbsolutePosition(uiBegin, uiEnd);
+            return uiPosition - startOfSequenceWithId(uiSequenceIdForPosition(uiPosition));
         } // method
         
         /** Returns true if the section defined by both arguments has bridging properties.

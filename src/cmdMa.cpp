@@ -59,6 +59,7 @@ int main(int argc, char*argv[])
     unsigned int iMissMatch;
     unsigned int iGap;
     float fMinGlob;
+    bool bGlobal;
 
     options_description gen_desc{"General Options"};
     gen_desc.add_options()
@@ -111,7 +112,7 @@ int main(int argc, char*argv[])
             ("Gap", value<unsigned int>(&iGap)->default_value(2), "NW gap open penalty.")
             ("Extend", value<unsigned int>(&iExtend)->default_value(2), "NW gap extend penalty.")
             ("socMinScore", value<float>(&fMinGlob)->default_value(-2.0), "Minimum score for SoC width.")
-            ("global,G", "Perform global alignment")
+            ("global,G", value<bool>(&bGlobal)->default_value(bAccurate ? true : false), "Perform global alignment")
         ;
         //@todo warn if seed set is not valid
 
@@ -182,10 +183,6 @@ int main(int argc, char*argv[])
                 std::cerr << "--alignIn and --genome are compulsory if --align is set" << std::endl;
             else
             {
-                if(vm.count("global") == 1)//input is for local
-                    std::cerr 
-                        << "WARNING: Currently global alignments will drastically decrease speed"
-                        << std::endl;
                 if(fRelativePadding <= 1)//input is for local
                     std::cerr 
                         << "WARNING: Relative padding should be larger or equal to one"
@@ -232,7 +229,7 @@ int main(int argc, char*argv[])
                     dPairedU,
                     sSeedSet != "SMEMs",
                     uiReportNBest,
-                    vm.count("global") == 0,//input is for local
+                    !bGlobal,//input is for local
                     uiMaxGapArea,
                     iMatch,
                     iMissMatch,

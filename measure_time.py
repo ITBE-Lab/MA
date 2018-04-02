@@ -109,7 +109,7 @@ class CommandLine(Module):
                         yield int(cigar[number_start:symbol_start]), cigar[symbol_start]
                         number_start = symbol_start + 1
 
-                assert(len(column) >= 5)
+                assert(len(columns) >= 5)
                 for amount, char in read_cigar(columns[5]):
                     if char in ['M', 'X', '=', 'D', 'N']:
                         align_length += amount
@@ -153,74 +153,79 @@ class CommandLine(Module):
         return self.__align(self.index_str, queries, pack)
 
 class Bowtie2(CommandLine):
-    def __init__(self, index_str, threads, db_name):
+    def __init__(self, index_str, threads, num_results, db_name):
         super().__init__()
         self.bowtie2_home = "/usr/home/markus/workspace/bowtie2/bowtie2-2.3.3.1/"
         self.index_str = index_str + "bowtie2"
         self.threads = threads
+        self.num_results = num_results
         self.in_filename = ".tempBowtie2" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bowtie2_home + "bowtie2 -p " + str(self.threads)
         index_str = "-x " + self.index_str
         input_str = "-f -U " + in_filename
-        return cmd_str + " " + index_str + " " + input_str
+        return cmd_str + " " + index_str + " " + input_str + " -k " self.num_results
 
     def do_checks(self):
         return False
 
 class Minimap2(CommandLine):
-    def __init__(self, index_str, threads, db_name):
+    def __init__(self, index_str, threads, num_results, db_name):
         super().__init__()
         self.minimap2_home = "/usr/home/markus/workspace/minimap2/"
         self.index_str = index_str + ".mmi"
         self.threads = threads
+        self.num_results = num_results
         self.in_filename = ".tempMinimap2" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.minimap2_home + "minimap2 -t " + str(self.threads) + " -a "
-        return cmd_str + " " + self.index_str + " " + in_filename
+        return cmd_str + " " + self.index_str + " " + in_filename + " --secondary=yes -N " self.num_results
 
     def do_checks(self):
         return False
 
 class Blasr(CommandLine):
-    def __init__(self, index_str, threads, genome_str, db_name):
+    def __init__(self, index_str, threads, num_results, genome_str, db_name):
         super().__init__()
         self.blasr_home = "/usr/home/markus/workspace/blasr/build/bin/"
         self.index_str = index_str + "blasr"
         self.genome_str = genome_str
         self.threads = threads
+        self.num_results = num_results
         self.in_filename = ".tempBlasr" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.blasr_home + "blasr " + in_filename
-        return cmd_str + " " + self.genome_str + " -m 1 --bestn 1 --nproc " + str(self.threads) + " --hitPolicy leftmost --sa " + self.index_str
+        return cmd_str + " " + self.genome_str + " --sam --bestn " + self.num_results + " --nproc " + str(self.threads) + " --hitPolicy leftmost --sa " + self.index_str
 
     def do_checks(self):
         return False
 
 class BWA_MEM(CommandLine):
-    def __init__(self, index_str, threads, db_name):
+    def __init__(self, index_str, threads, num_results, db_name):
         super().__init__()
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
+        self.num_results = num_results
         self.in_filename = ".tempBwaMem" + db_name + ".fasta"
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa mem -t " + str(self.threads)
-        return cmd_str + " " + self.index_str + " " + in_filename
+        return cmd_str + " " + self.index_str + " " + in_filename + " -a"
 
     def do_checks(self):
         return False
 
 class BWA_SW(CommandLine):
-    def __init__(self, index_str, threads, db_name):
+    def __init__(self, index_str, threads, num_results, db_name):
         super().__init__()
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.threads = threads
+        self.num_results = num_results
         self.in_filename = ".tempBwaSw" + db_name + ".fasta"
 
     def create_command(self, in_filename):
@@ -230,12 +235,31 @@ class BWA_SW(CommandLine):
     def do_checks(self):
         return False
 
+
+class G_MAP(CommandLine):
+    def __init__(self, index_str, threads, num_results, genome_str, db_name):
+        super().__init__()
+        self.g_home = "/usr/home/markus/workspace/graphmap/bin/Linux-x64/"
+        self.genome_str = genome_str
+        self.threads = threads
+        self.num_results = num_results
+        self.index_str = index_str
+        self.in_filename = ".tempBlasr" + db_name + ".fasta"
+
+    def create_command(self, in_filename):
+        cmd_str = self.g_home + "graphmap align -r " + self.genome_str
+        return cmd_str + " -d " + in_filename + " -t " + str(self.threads) + " -Z"
+
+    def do_checks(self):
+        return False
+
 class MA(CommandLine):
-    def __init__(self, index_str, threads, fast, db_name, num_soc=None):
+    def __init__(self, index_str, threads, num_results, fast, db_name, num_soc=None):
         super().__init__()
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
         self.threads = threads
+        self.num_results = num_results
         self.fast = "accurate"
         self.num_soc = num_soc
         if fast:
@@ -264,15 +288,17 @@ def test(
     reference_pledge.set(ref_pack)
 
     num_threads = 1
+    num_results = 3
 
     l = [
-        #("BOWTIE 2", Bowtie2(reference, num_threads, db_name)),
-        #("MINIMAP 2", Minimap2(reference, num_threads, db_name)),
-        #("BLASR", Blasr(reference, num_threads, "/mnt/ssd0/chrom/human/n_less.fasta", db_name)),
-        #("BWA MEM", BWA_MEM(reference, num_threads, db_name)),
-        ("MA Fast", MA(reference, num_threads, True, db_name)),
-        ("MA Accurate", MA(reference, num_threads, False, db_name)),
-        ("BWA SW", BWA_SW(reference, num_threads, db_name)),
+        #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
+        #("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),
+        #("BLASR", Blasr(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
+        ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
+        #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
+        ("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
+        ("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
+        ("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
     ]
 
     for name, aligner in l:
@@ -343,7 +369,7 @@ def test(
     print("done working on " + db_name)
 
 def test_all():
-    test("test.db", human_genome)
+    test("test_corner.db", human_genome)
     #test("default.db", human_genome)
     #test("short.db", human_genome)
     #test("long.db", human_genome)
