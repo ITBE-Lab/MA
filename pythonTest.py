@@ -875,7 +875,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=2):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [], [] ]
     mapping_qual = []
     mapping_qual_illumina = []
     all_hits = []
@@ -886,7 +886,6 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
     for approach_ in approaches:
         approach = approach_[0]
         results = getResults(db_name, approach, query_size, indel_size)
-        print(len(results), "entries")
 
         ##
         # picks the correct alignment if multiple alignments are reported for one query...
@@ -895,13 +894,14 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             ret = []
             by_sample_id = {}
             for result in results:
-                sample_id = result[16]
+                sample_id = result[-2]
                 if not sample_id in by_sample_id:
                     by_sample_id[sample_id] = []
                 by_sample_id[sample_id].append(result)
 
             ret = []
 
+            found_none = 0
             for result_list in by_sample_id.values():
                 found_one = False
                 found_primary = False
@@ -928,7 +928,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                         break
                 # if multiple alignments are returned but none correct we add a random one...
                 if not found_one:
+                    found_none += 1
                     ret.append(result_list[0])
+
+            print("found none in", found_none, "cases")
 
             return ret
 
@@ -968,7 +971,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 d[x][y] = z
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence, _, secondary in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence, _, _ in results:
             if not nmw_area is None:
                 nmw_total += nmw_area
             hits = init(hits, num_mutation, num_indels)
@@ -1712,17 +1715,19 @@ exit()
 amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/relevance.db", 1000, 50, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/test_sw.db", 1000, 100, 32, only_first_row=True)
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, validate_using_sw=False)
+
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
+
 #exit()
-#createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
-#createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
-#createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, only_first_row=True)
-#createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
+createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
+createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
+createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
+createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, only_first_row=True)
+createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 
 #analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
 #exit()
@@ -1732,16 +1737,16 @@ amount = 2**11
 #exit()
 
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
-#import measure_time
-#measure_time.test_all()
+import measure_time
+measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/test_corner.db")
 
 
-analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
+#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
-exit()
+#exit()
 
 
 

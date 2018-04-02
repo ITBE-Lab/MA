@@ -120,6 +120,7 @@ namespace libMA
             return "StripOfConsideration(" + 
                 std::to_string(uiMaxAmbiguity) + "," +
                 std::to_string(fScoreMinimum) + "," +
+                std::to_string(fGiveUp) + "," +
                 std::to_string(numStrips) + ")";
         }//function
     };//class
