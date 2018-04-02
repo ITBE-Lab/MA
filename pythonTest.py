@@ -875,7 +875,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=2):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [], [], [] ]
     mapping_qual = []
     mapping_qual_illumina = []
     all_hits = []
@@ -886,6 +886,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
     for approach_ in approaches:
         approach = approach_[0]
         results = getResults(db_name, approach, query_size, indel_size)
+        print(len(results), "entries")
 
         ##
         # picks the correct alignment if multiple alignments are reported for one query...
@@ -894,7 +895,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             ret = []
             by_sample_id = {}
             for result in results:
-                sample_id = result[-1]
+                sample_id = result[16]
                 if not sample_id in by_sample_id:
                     by_sample_id[sample_id] = []
                 by_sample_id[sample_id].append(result)
@@ -910,7 +911,9 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                     _, _, _, result_start, result_end, original_start, _, _, _, _, _, _, _, _, _, _, _, secondary_ = result
                     secondary = True if secondary_ == 1 else False
                     if not secondary:
-                        assert(not found_primary)
+                        if found_primary:
+                            print(result_list)
+                            assert(False)
                         found_primary = True
                     else:
                         # make sure that we look at no more than max_secondary alignments
@@ -946,6 +949,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         nucs_by_seed = {}
         query_cov = {}
         one = {}
+        correlation = {}
         mapping_qual.append( ([],[]) )
         mapping_qual_illumina.append( ([],[]) )
         nmw_total = 0
@@ -957,20 +961,22 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         indel_illumina = 0.05
         better_than_optima_count = 0
 
-        def init(d, x, y):
+        def init(d, x, y, z=0):
             if x not in d:
                 d[x] = {}
             if y not in d[x]:
-                d[x][y] = 0
+                d[x][y] = z
             return d
 
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence, _ in results:
+        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence, _, secondary in results:
             if not nmw_area is None:
                 nmw_total += nmw_area
             hits = init(hits, num_mutation, num_indels)
             num_aligned = init(num_aligned, num_mutation, num_indels)
             num_aligned[num_mutation][num_indels] += 1
             one = init(one, num_mutation, num_indels)
+            correlation = init(correlation, num_mutation, num_indels, ([],[]))
+            correlation[num_mutation][num_indels][0].append(mapping_quality)
             one[num_mutation][num_indels] = 1
             run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
@@ -987,6 +993,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
+                correlation[num_mutation][num_indels][1].append(1)
                 if not optimal_score is None and optimal_score > 0:
                     if optimal_score < score:
                         better_than_optima_count += 1
@@ -1007,6 +1014,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 if not score is None and score > 0:
                     scores_accurate[num_mutation][num_indels] += score
             else:
+                correlation[num_mutation][num_indels][1].append(0)
                 mapping_qual[-1][1].append(mapping_quality)
                 if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
                     mapping_qual_illumina[-1][1].append(mapping_quality)
@@ -1130,6 +1138,16 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             return total
         print(approach, ":\tamount hits:", dict_sum(hits))
 
+        #turn the two arrays in correlation into the actual correlation coefficient
+        def corr(c):
+            ret = {}
+            for k, d in c.items():
+                ret[k] = {}
+                for k2, ele in d.items():
+                    ret[k][k2] = np.correlate(ele[0], ele[1])[0]
+            return ret
+        correlation = corr(correlation)
+
         avg_hits = makePicFromDict(hits, max_mut, max_indel, num_queries, "accuracy " + approach, set_max=1, set_min=0)
         avg_runtime = makePicFromDict(run_times, max_mut, max_indel, 1, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, num_queries, "score " + approach)
@@ -1139,6 +1157,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, print_out=print_relevance)
         #avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, 1, "Queries aligned " + approach)
         #avg_query_coverage = makePicFromDict(query_cov, max_mut, max_indel, num_queries, "Queries coverage " + approach)
+        avg_corr = makePicFromDict(correlation, max_mut, max_indel, 1, "Map Qual. Accuracy correlation " + approach)
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
@@ -1150,6 +1169,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             plots[3].append(avg_seeds)
         if not avg_seeds_ch is None:
             plots[4].append(avg_seeds_ch)
+        if not avg_corr is None:
+            plots[5].append(avg_corr)
         #if not avg_query_coverage is None:
         #    plots[5].append(avg_query_coverage)
         #if not avg_aligned is None:
@@ -1711,8 +1732,8 @@ amount = 2**11
 #exit()
 
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
-import measure_time
-measure_time.test_all()
+#import measure_time
+#measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/test_corner.db")
 
 

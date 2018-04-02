@@ -401,7 +401,8 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.nmw_area,
                                 results.run_time,
                                 samples.sequence,
-                                results.sample_id
+                                results.sample_id,
+                                results.secondary
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id
                             WHERE results.approach == ?

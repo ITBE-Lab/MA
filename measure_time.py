@@ -84,7 +84,6 @@ class CommandLine(Module):
         del self.check_existence[:]
 
         for _ in range(len(queries)):
-            alignments.append(Alignment())
             self.check_existence.append(0)
 
         for line in lines:
@@ -117,12 +116,14 @@ class CommandLine(Module):
                         print("Error: got wierd cigar symbol", char, "in cigar", columns[5])
                         exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
-                alignments[int(columns[0])] = Alignment(start, start + align_length)
-                alignments[int(columns[0])].mapping_quality = int(columns[4])
+                alignment = Alignment(start, start + align_length)
+                alignment.mapping_quality = int(columns[4])
+                alignment.stats.name = columns[0]
                 # set the secondary flag for secondary alignments
-                alignments[int(columns[0])].secondary = True if int(columns[1]) | 0x100 > 0 else False
-                if not alignments[int(columns[0])].secondary:
+                alignment.secondary = True if int(columns[1]) | 0x100 > 0 else False
+                if not alignment.secondary:
                     self.check_existence[int(columns[0])] += 1
+                alignments.append(alignment)
             except Exception as e:
                 print("Error:", e)
                 print(line)
@@ -299,8 +300,8 @@ def test(
         ("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         ("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
         ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
-        ("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
-        ("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
+        #("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
+        #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
         #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
     ]
 
@@ -347,14 +348,10 @@ def test(
                 result_pledge.get()
 
                 result = []
-                for index in range(len(queries)):
-                    alignment = result_pledge.get()[index]
-                    #print(index, "->", alignment.begin_on_ref(), origins[index])
-                    #total_time = result_pledge.exec_time / 1
-                    sample_id = queries[index][1]
+                for alignment in result_pledge.get():
                     result.append(
                         (
-                            sample_id,
+                            int(alignment.stats.name),
                             float('nan'),
                             alignment.begin_on_ref,
                             alignment.end_on_ref,
