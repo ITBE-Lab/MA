@@ -108,7 +108,8 @@ class CommandLine(Module):
                             symbol_start += 1
                         yield int(cigar[number_start:symbol_start]), cigar[symbol_start]
                         number_start = symbol_start + 1
-        
+
+                assert(len(column) >= 5)
                 for amount, char in read_cigar(columns[5]):
                     if char in ['M', 'X', '=', 'D', 'N']:
                         align_length += amount
@@ -120,8 +121,9 @@ class CommandLine(Module):
                 alignments[int(columns[0])].mapping_quality = int(columns[4])
                 self.check_existence[int(columns[0])] += 1
             except Exception as e:
-                print(e)
-                print("oh oh:" + line)
+                print("Error:", e)
+                print(line)
+                traceback.print_exc()
                 pass
 
         #transform list into alignment data structure

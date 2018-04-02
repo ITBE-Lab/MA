@@ -644,7 +644,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
     }//if
 
     // if we reached this point we actually have to align something
-    DEBUG(
+    DEBUG_2(
         std::cout << pQuery->toString() << std::endl;
         std::cout << pRef->toString() << std::endl;
     )
