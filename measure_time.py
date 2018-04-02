@@ -119,7 +119,10 @@ class CommandLine(Module):
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignments[int(columns[0])] = Alignment(start, start + align_length)
                 alignments[int(columns[0])].mapping_quality = int(columns[4])
-                self.check_existence[int(columns[0])] += 1
+                # set the secondary flag for secondary alignments
+                alignments[int(columns[0])].secondary = True if int(columns[1]) | 0x100 > 0 else False
+                if not alignments[int(columns[0])].secondary:
+                    self.check_existence[int(columns[0])] += 1
             except Exception as e:
                 print("Error:", e)
                 print(line)
@@ -165,7 +168,7 @@ class Bowtie2(CommandLine):
         cmd_str = self.bowtie2_home + "bowtie2 -p " + str(self.threads)
         index_str = "-x " + self.index_str
         input_str = "-f -U " + in_filename
-        return cmd_str + " " + index_str + " " + input_str + " -k " self.num_results
+        return cmd_str + " " + index_str + " " + input_str + " -k " + self.num_results
 
     def do_checks(self):
         return False
@@ -181,7 +184,7 @@ class Minimap2(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.minimap2_home + "minimap2 -t " + str(self.threads) + " -a "
-        return cmd_str + " " + self.index_str + " " + in_filename + " --secondary=yes -N " self.num_results
+        return cmd_str + " " + self.index_str + " " + in_filename + " --secondary=yes -N " + self.num_results
 
     def do_checks(self):
         return False
@@ -270,7 +273,7 @@ class MA(CommandLine):
         cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
         if not self.num_soc is None:
             cmd_str += " -G -S " + str(self.num_soc)
-        return cmd_str + " -g " + self.index_str + " -i " + in_filename
+        return cmd_str + " -g " + self.index_str + " -i " + in_filename + " -n " + self.num_results
 
     def do_checks(self):
         return True
@@ -288,16 +291,16 @@ def test(
     reference_pledge.set(ref_pack)
 
     num_threads = 1
-    num_results = 3
+    num_results = "3"
 
     l = [
-        ("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),
         #("BLASR", Blasr(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
-        ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
         ("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         ("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
+        ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
         ("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
+        ("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
         #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
     ]
 

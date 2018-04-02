@@ -58,10 +58,10 @@ namespace libMA
 
         int iScore = 0;
         double fMappingQuality = NAN;
-        bool bSecondary;
 
         //some statistics
         AlignmentStatistics xStats;
+        bool bSecondary;
 
         /**
          * @brief Creates an empty alignment.
@@ -337,6 +337,7 @@ namespace libMA
             uiBeginOnQuery = pOther->uiBeginOnQuery;
             iScore = pOther->iScore;
             fMappingQuality = pOther->fMappingQuality;
+            bSecondary = pOther->bSecondary;
             xStats = pOther->xStats;
         }//function
     };//class

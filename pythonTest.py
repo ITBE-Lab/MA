@@ -1691,7 +1691,7 @@ exit()
 amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/relevance.db", 1000, 50, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/test_sw.db", 1000, 100, 32, only_first_row=True)
-createSampleQueries(human_genome, "/mnt/ssd1/test_corner.db", 200, 20, 32, validate_using_sw=False, smaller_box=True)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, validate_using_sw=False)
 #exit()
 #createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
@@ -1711,12 +1711,12 @@ createSampleQueries(human_genome, "/mnt/ssd1/test_corner.db", 200, 20, 32, valid
 #exit()
 
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
-#import measure_time
-#measure_time.test_all()
-test_my_approaches("/mnt/ssd1/test_corner.db")
+import measure_time
+measure_time.test_all()
+#test_my_approaches("/mnt/ssd1/test_corner.db")
 
 
-analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test_corner.db", 200, 20)
+analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
 #analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
 #expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
