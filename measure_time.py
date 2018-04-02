@@ -291,14 +291,14 @@ def test(
     num_results = 3
 
     l = [
-        #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
+        ("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),
         #("BLASR", Blasr(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
         ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
-        #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
+        ("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         ("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
         ("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
-        ("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
+        #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
     ]
 
     for name, aligner in l:
@@ -358,7 +358,8 @@ def test(
                             float('nan'),
                             aligner.elapsed_time,
                             alignment.mapping_quality,
-                            name
+                            name,
+                            1 if alignment.secondary else 0
                         )
                     )
                 #print("submitting results (" + name + ") ...")
@@ -369,7 +370,7 @@ def test(
     print("done working on " + db_name)
 
 def test_all():
-    test("test_corner.db", human_genome)
+    test("test.db", human_genome)
     #test("default.db", human_genome)
     #test("short.db", human_genome)
     #test("long.db", human_genome)

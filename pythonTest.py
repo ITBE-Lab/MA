@@ -610,7 +610,8 @@ def test_my_approach(
                         nmw_area,
                         alignment.mapping_quality,
                         total_time,
-                        name
+                        name,
+                        1 if alignment.secondary else 0
                     )
                 )
         print("submitting results (", name, ") ...")
@@ -871,7 +872,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False):
+def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=2):
     output_file(out)
     approaches = getApproachesWithData(db_name)
     plots = [ [], [], [], [], [], [], [] ]
@@ -902,9 +903,22 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             for result_list in by_sample_id.values():
                 found_one = False
+                found_primary = False
+                secondary_counter = 0
                 for result in result_list:
                     # get the interesting parts of the tuple...
-                    _, _, _, result_start, result_end, original_start, _, _, _, _, _, _, _, _, _, _, _ = result
+                    _, _, _, result_start, result_end, original_start, _, _, _, _, _, _, _, _, _, _, _, secondary_ = result
+                    secondary = True if secondary_ == 1 else False
+                    if not secondary:
+                        assert(not found_primary)
+                        found_primary = True
+                    else:
+                        # make sure that we look at no more than max_secondary alignments
+                        # (and the primary one)
+                        if secondary_counter >= max_secondary:
+                            continue
+                        else:
+                            secondary_counter += 1
                     if near(result_start, original_start, result_end, original_start+query_size):
                         ret.append(result)
                         found_one = True

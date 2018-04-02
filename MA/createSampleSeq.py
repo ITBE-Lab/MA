@@ -91,7 +91,8 @@ def setUpDbTables(conn, reset = False):
                     nmw_area INTEGER,
                     run_time REAL,
                     mapping_quality REAL,
-                    approach TINYTEXT
+                    approach TINYTEXT,
+                    secondary TINYINT
                 )
                 """)
 
@@ -265,7 +266,7 @@ def getOriginOf(db_name, sample_id):
 def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    if len(results_list[0]) == 8:
+    if len(results_list[0]) == 9:
         c.executemany("""
                         INSERT INTO results 
                         (
@@ -287,9 +288,10 @@ def submitResults(db_name, results_list):
                             nmw_area,
                             run_time,
                             mapping_quality,
-                            approach
+                            approach,
+                            secondary
                         )
-                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,0,0,0,?,?,?)
+                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,0,0,0,?,?,?,?)
                         """, results_list)
     else: # len == 20
         c.executemany("""
@@ -314,9 +316,10 @@ def submitResults(db_name, results_list):
                             nmw_area,
                             mapping_quality,
                             run_time,
-                            approach
+                            approach,
+                            secondary
                         )
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                         """, results_list)
     conn.commit()
 
@@ -372,7 +375,8 @@ def getResults(db_name, approach, size=None, indel_size=None, reference=None):
                                 results.max_diag_deviation_percent,
                                 results.max_nmw_area,
                                 results.nmw_area,
-                                samples.original_size
+                                samples.original_size,
+                                results.secondary
                             FROM samples
                             JOIN results ON results.sample_id = samples.sample_id
                             AND results.approach == ?
