@@ -182,8 +182,17 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//while
         //here xStripEnd points one past the last element within the strip
         int64_t iDummy;
+
         //FILTER
-        if(!pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy))
+        /*
+         * if the best SoC quality is lower than fGiveUp * uiQLen we give up the entire 
+         * process here
+         * fGiveUp = 0 disables this.
+         */
+        if(
+            ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fGiveUp * uiQLen ) && 
+            !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
+            )
         {
             //check if we improved upon the last maxima while dealing with the same area
             if(
@@ -223,14 +232,6 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
-
-    /*
-     * @todo: move this into the SoC loop!!! (should save an insane amount of runtime)
-     * if the best SoC quality is lower than fGiveUp * uiQLen we give up the entire process here
-     * fGiveUp = 0 disables this.
-     */
-    if(fGiveUp != 0 && vMaxima.front().first.uiAccumulativeLength < fGiveUp * uiQLen)
-        return pRet;
 
     unsigned int uiSoCIndex = 0;
     //extract the required amount of SOCs

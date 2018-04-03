@@ -117,7 +117,7 @@ class CommandLine(Module):
                         exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
                 alignment = Alignment(start, start + align_length)
-                alignment.mapping_quality = int(columns[4])
+                alignment.mapping_quality = int(columns[4])/255
                 alignment.stats.name = columns[0]
                 # set the secondary flag for secondary alignments
                 alignment.secondary = True if int(columns[1]) | 0x100 > 0 else False
@@ -297,8 +297,8 @@ def test(
     l = [
         #("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),
         #("BLASR", Blasr(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
-        ("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
-        ("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
+        #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
+        #("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
         ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
         #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),

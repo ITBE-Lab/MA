@@ -589,6 +589,11 @@ def test_my_approach(
                 num_seeds = pledges[1][i].get().num_seeds(max_hits)
 
             for alignment in alignments.get()[:reportN]:
+                forw = ref_pack.unpacked_size_single_strand
+                if alignment.begin_on_ref > forw:
+                    b = alignment.begin_on_ref
+                    alignment.begin_on_ref = forw*2 - alignment.end_on_ref
+                    alignment.end_on_ref = forw*2 - b
                 result.append(
                     (
                         sample_id,
@@ -680,8 +685,8 @@ def test_my_approaches(db_name):
     full_analysis = False
 
     #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
-    #clearResults(db_name, human_genome, "MA Accurate")
-    #clearResults(db_name, human_genome, "MA Fast")
+    clearResults(db_name, human_genome, "MA Accurate PY")
+    clearResults(db_name, human_genome, "MA Fast PY")
 
     test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=5, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=5, min_ambiguity=0, give_up=0.01)
 
@@ -875,7 +880,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=2):
     output_file(out)
     approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [], [] ]
+    plots = [ [], [], [], [], [], [], [], [] ]
     mapping_qual = []
     mapping_qual_illumina = []
     all_hits = []
@@ -979,7 +984,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             num_aligned[num_mutation][num_indels] += 1
             one = init(one, num_mutation, num_indels)
             correlation = init(correlation, num_mutation, num_indels, ([],[]))
-            correlation[num_mutation][num_indels][0].append(mapping_quality)
+            if not mapping_quality is None:
+                correlation[num_mutation][num_indels][0].append(mapping_quality)
             one[num_mutation][num_indels] = 1
             run_times = init(run_times, num_mutation, num_indels)
             if not score is None:
@@ -996,7 +1002,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
-                correlation[num_mutation][num_indels][1].append(1)
+                if not mapping_quality is None:
+                    correlation[num_mutation][num_indels][1].append(1)
                 if not optimal_score is None and optimal_score > 0:
                     if optimal_score < score:
                         better_than_optima_count += 1
@@ -1702,14 +1709,13 @@ exit()
 
 #l = 200
 #il = 10
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, high_qual=False, smaller_box=True)
-#test_my_approaches("/mnt/ssd1/short.db")
-#analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
-#compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)
-#compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/test.db", l, il)
-#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", l, il)
+#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, high_qual=False)
+test_my_approaches("/mnt/ssd1/test.db")
+#import measure_time
+#measure_time.test("test.db", human_genome)
+analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 #analyse_detailed("stats/", "/mnt/ssd1/test.db")
-#exit()
+exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/relevancetest.db", 1000, 50, 32)
 amount = 2**11
@@ -1721,12 +1727,15 @@ amount = 2**11
 
 import measure_time
 #createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
-measure_time.test("short.db", human_genome)
-analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
+#measure_time.test("short.db", human_genome)
+#analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
+
 
 createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 measure_time.test("default.db", human_genome)
 analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
+
+exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
