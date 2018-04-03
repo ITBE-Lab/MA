@@ -119,11 +119,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * 
  * @section todos TODOs
  * 
- * @todo make efficient NMW (for global alignments)
+ * @todo make banded SW
  * @todo different output formats
  * @todo code cleanup
- * @todo test with queries from the reverse complement...
- * @todo self check for genomes
  * 
  * @section about_us_sec About Us
  * 

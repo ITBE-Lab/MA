@@ -259,47 +259,6 @@ nucSeqIndex naiveNeedlemanWunsch(
         }//while
         return 0;
     }//if
-#if 0//DEPRECATED
-    /**
-     * give up for too large areas
-     * @todo this should split everything into two local alignments instead
-     */
-    if(uiGiveUpAfter != 0)
-    {
-        nucSeqIndex uiArea = (toQuery - fromQuery)*(toRef - fromRef);
-        if(uiArea > uiGiveUpAfter)
-        {
-            int diagLen = std::min(toRef - fromRef, toQuery - fromQuery);
-            int gapLen = std::max(toRef - fromRef, toQuery - fromQuery) - diagLen;
-
-            int scoreMissmatch = -1* (iGap + iExtend*gapLen + 
-                                 iMissMatch*diagLen);
-
-            int scoreIndelOnly = -1* (iGap*2 + iExtend*(toRef - fromRef) + 
-                                 iExtend*(toQuery - fromQuery));
-
-            if(scoreIndelOnly < scoreMissmatch)
-            {
-                if(toRef - fromRef > toQuery - fromQuery)
-                {
-                    pAlignment->append(MatchType::deletion, gapLen);
-                    pAlignment->append(MatchType::missmatch, diagLen);
-                }//if
-                else
-                {
-                    pAlignment->append(MatchType::insertion, gapLen);
-                    pAlignment->append(MatchType::missmatch, diagLen);
-                }//else
-            }//if
-            else
-            {
-                pAlignment->append(MatchType::deletion, toRef - fromRef);
-                pAlignment->append(MatchType::insertion, toQuery - fromQuery);
-            }//else
-            return;
-        }//if
-    }//if
-#endif
 
     /*
      * beginning of the actual NW

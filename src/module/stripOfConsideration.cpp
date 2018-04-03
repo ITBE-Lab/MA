@@ -225,6 +225,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
 
     /*
+     * @todo: move this into the SoC loop!!! (should save an insane amount of runtime)
      * if the best SoC quality is lower than fGiveUp * uiQLen we give up the entire process here
      * fGiveUp = 0 disables this.
      */

@@ -55,7 +55,7 @@ class CommandLine(Module):
         #exit()
 
         start_time = time.time()
-        result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
+        result = subprocess.run(cmd_str, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
         self.elapsed_time = time.time() - start_time
 
         if result.returncode != 0:
@@ -300,9 +300,9 @@ def test(
         ("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         ("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
         ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
-        ("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
-        ("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
-        ("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
+        #("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
+        #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
+        #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
     ]
 
     for name, aligner in l:

@@ -45,7 +45,6 @@ namespace libMA
          * For the moment: is either bNoGapAtBeginning or bNoGapAtEnd it jumps to 
          * the naive implementation.
          * 
-         * @TODO: at the moment ugly C code is used here (free functions).. 
          * find a way to replace that?
          */
         nucSeqIndex needlemanWunsch(
@@ -69,7 +68,6 @@ namespace libMA
          * that there is no point in filling gaps.
          * 
          * 
-         * @TODO: at the moment ugly C code is used here (free functions).. 
          * find a way to replace that?
          */
         std::shared_ptr<Alignment> smithWaterman(

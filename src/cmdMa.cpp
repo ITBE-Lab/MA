@@ -114,7 +114,6 @@ int main(int argc, char*argv[])
             ("socMinScore", value<float>(&fMinGlob)->default_value(-2.0), "Minimum score for SoC width.")
             ("global,G", value<bool>(&bGlobal)->default_value(bAccurate ? true : false), "Perform global alignment")
         ;
-        //@todo warn if seed set is not valid
 
         options_description p_desc{"Paired Reads Options"};
         p_desc.add_options()
@@ -187,6 +186,8 @@ int main(int argc, char*argv[])
                     std::cerr 
                         << "WARNING: Relative padding should be larger or equal to one"
                         << std::endl;
+                if(sSeedSet != "SMEMs" && sSeedSet != "maxSpanning")
+                    std::cerr << "WARNING: selected invalid seed set; using maxSpanning" << std::endl;
                 /*
                  *
                  * Alignment starts here
