@@ -650,6 +650,25 @@ namespace libMA
                 }//for
             }//scope xPool
         }//function
+
+        /*
+         * clears the comp graph in font of this pledge
+         */
+        void clear_graph()
+        {
+            pledger.reset();
+            content.reset();
+            type.reset();
+            for(auto pOther : vPredecessors)
+                if(pOther != nullptr)
+                {
+                    pOther->clear_graph();
+                    pOther.reset();
+                }//if
+            vPredecessors.clear();
+            vSuccessors.clear();
+            aSync.clear();
+        }//function
     };//class
 }//namespace libMA
 

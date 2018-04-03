@@ -183,6 +183,11 @@ void exportModule()
                     //,boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
+                    "clear_graph",
+                    &Pledge::clear_graph
+                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
+                )
+            .def(
                     "simultaneous_get",
                     &Pledge::simultaneousGet
                 )

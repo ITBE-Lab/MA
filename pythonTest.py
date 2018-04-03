@@ -14,6 +14,7 @@ import numpy as np
 import colorsys
 from statistics import mean, median, stdev
 from sys import stderr
+import measure_time
 
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
@@ -633,6 +634,11 @@ def test_my_approach(
         if len(result) > 0:
             submitResults(db_name, result)
 
+        # this should not be necessary but for some reason it is...
+        # @todo: fix memory managemet in python code
+        for pledge in pledges[-1]:
+            pledge.clear_graph()
+
     if not quitet:
         if num_seeds_total > 0 :
             print("collected", num_irelevant_seeds,
@@ -691,6 +697,36 @@ def relevance(db_name):
     print(analyse(BinarySeeding(False, 0)))
     print("16-mer")
     print(analyse(OtherSeeding(True)))
+"""
+class MA_Parameter(CommandLine):
+    def __init__(self, index_str, fast, db_name, num_soc, max_hits, min_ambiguity, match, give_up):
+        super().__init__()
+        self.ma_home = "/usr/home/markus/workspace/aligner/"
+        self.index_str = index_str
+        self.threads = 32
+        self.num_results = 3
+        self.fast = "accurate"
+        self.num_soc = num_soc
+        self.max_hits = max_hits
+        self.min_ambiguity = min_ambiguity
+        self.match = match
+        self.give_up = give_up
+        if fast:
+            self.fast = "fast"
+        self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
+
+    def create_command(self, in_filename):
+        cmd_str = self.ma_home + "ma -a -t " + str(self.threads) + " -p " + self.fast
+        cmd_str += " -S " + str(self.num_soc)
+        cmd_str += " -A " + str(self.max_hits)
+        cmd_str += " -B " + str(self.min_ambiguity)
+        cmd_str += " --Match " + str(self.match)
+        cmd_str += " -v " + str(self.give_up)
+        return cmd_str + " -g " + self.index_str + " -i " + in_filename + " -n " + self.num_results
+
+    def do_checks(self):
+        return True
+"""
 
 def try_out_parameters(db_name):
     for query_size, indel_size in [ (1000, 100), (200, 20), (30000, 100) ]:
@@ -1789,7 +1825,6 @@ amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
 #exit()
 
-import measure_time
 #createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
 #measure_time.test("short.db", human_genome)
 #analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
