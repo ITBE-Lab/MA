@@ -606,7 +606,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
-def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_sw=False):
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_sw=False, quiet=False):
     conn = sqlite3.connect(db_name)
 
     setUpDbTables(conn, reset)
@@ -709,25 +709,30 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
                 # save the queries to the database
                 #
                 if len(queries_list) > 10000:
-                    print("saving...")
+                    if not quiet:
+                        print("saving...")
                     insertQueries(conn, queries_list)
                     queries_list = []
-                    print("done saving")
+                    if not quiet:
+                        print("done saving")
             #for _ in range(amount) end
 
         #for indel_amount in range(max_indels) end
-        print(mutation_amount, "/", max_x)
+        if not quiet:
+            print(mutation_amount, "/", max_x)
     #for mutation_amount in range(size) end
-    print("saving...")
+    if not quiet:
+        print("saving...")
     if len(queries_list) > 0:
         insertQueries(conn, queries_list)
-    print("done saving")
+    if not quiet:
+        print("done saving")
 
-    print("nuc distrib (A, C, G, T, N) originally: ", nuc_distrib_count_orig)
-    print("nuc distrib (A, C, G, T, N) changed: ", nuc_distrib_count_mod)
-    print("nuc distrib (A, C, G, T, N) changed by: ", list(map(operator.mul, map(
-        operator.sub, nuc_distrib_count_mod, nuc_distrib_count_orig), [1./float(sum(nuc_distrib_count_orig))]*5)))
-    print("total amount: ", sum(nuc_distrib_count_orig))
+        print("nuc distrib (A, C, G, T, N) originally: ", nuc_distrib_count_orig)
+        print("nuc distrib (A, C, G, T, N) changed: ", nuc_distrib_count_mod)
+        print("nuc distrib (A, C, G, T, N) changed by: ", list(map(operator.mul, map(
+            operator.sub, nuc_distrib_count_mod, nuc_distrib_count_orig), [1./float(sum(nuc_distrib_count_orig))]*5)))
+        print("total amount: ", sum(nuc_distrib_count_orig))
 #function
 
 def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):

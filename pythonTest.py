@@ -102,18 +102,21 @@ def test_my_approach(
         reportN=1,
         clean_up_db=False,
         toGlobal=True,
-        give_up=0.05
+        give_up=0.05,
+        quitet=False
         #,optimistic_gap_estimation=False
     ):
-    print("collecting samples (" + name + ") ...")
+    if not quitet:
+        print("collecting samples (" + name + ") ...")
 
     all_queries = getNewQueries(db_name, name, reference, give_orig_pos=True, give_orig_size=True)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
-    print("having ", len(all_queries), " samples total (", name, ") ...")
-    if len(all_queries) == 0:
-        print("no new queries ... done")
-        return
+    if not quitet:
+        print("having ", len(all_queries), " samples total (", name, ") ...")
+        if len(all_queries) == 0:
+            print("no new queries ... done")
+            return
 
     runtimes = {
         'Seeding': 0,
@@ -134,10 +137,11 @@ def test_my_approach(
     extract_size = 2**15
     # break samples into chunks of 2^15
     for index, queries, in enumerate(chunks(all_queries, extract_size)):
-        print("extracting", len(queries), "samples", index, "/",
-              len(all_queries)/extract_size, "(", name, ") ...")
+        if not quitet:
+            print("extracting", len(queries), "samples", index, "/",
+                len(all_queries)/extract_size, "(", name, ") ...")
 
-        print("setting up (", name, ") ...")
+            print("setting up (", name, ") ...")
 
         ref_pack = Pack()
         ref_pack.load(reference)
@@ -238,17 +242,20 @@ def test_my_approach(
         optimal_alignment_out = []
         for a, b in optimal_alignment_in:
             optimal_alignment_out.append(smw.promise_me(a, b))
+        
+        if not quitet:
+            ## print the computational graph description
+            print("computational graphs: ")
+            print(pledges[-1][0].get_graph_desc())
+            #    exit()
 
-        ## print the computational graph description
-        print("computational graphs: ")
-        print(pledges[-1][0].get_graph_desc())
-        #    exit()
-
-        print("computing (", name, ") ...")
+        if not quitet:
+            print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)
 
         if full_analysis:
-            print("setting up optimal (", name, ") ...")
+            if not quitet:
+                print("setting up optimal (", name, ") ...")
             for i, query_ in enumerate(queries):
                 alignment = pledges[-1][i].get()[0]
                 if alignment.begin_on_query == alignment.end_on_query or not full_analysis:
@@ -262,11 +269,13 @@ def test_my_approach(
                 optimal_alignment_in[i][1].set(
                     ref_pack.extract_from_to(alignment.begin_on_ref, alignment.end_on_ref)
                 )
-            print("computing optimal (", name, ") ...")
+            if not quitet:
+                print("computing optimal (", name, ") ...")
             Pledge.simultaneous_get(optimal_alignment_out, 32)
 
 
-        print("extracting results (", name, ") ...")
+        if not quitet:
+            print("extracting results (", name, ") ...")
         result = []
         for i, alignments in enumerate(pledges[-1]):
             if len(alignments.get()) == 0:
@@ -619,34 +628,36 @@ def test_my_approach(
                         1 if alignment.secondary else 0
                     )
                 )
-        print("submitting results (", name, ") ...")
+        if not quitet:
+            print("submitting results (", name, ") ...")
         if len(result) > 0:
             submitResults(db_name, result)
 
-    if num_seeds_total > 0 :
-        print("collected", num_irelevant_seeds,
-            "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
-            100*num_irelevant_seeds/num_seeds_total, "percent")
-        print("collected", num_covered_irelevant_seeds,
-            "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
-            "per alignment and", 100*num_covered_irelevant_seeds/num_seeds_total, "percent")
-    print("collected", num_seeds_total-num_irelevant_seeds, "relevant seeds")
-    if num_soc_seeds > 0:
-        print("having", num_soc_seeds, "seeds in the strip of consideration, having",
-              num_coupled_seeds, "seeds after coupling, thats",
-              100*(1-num_coupled_seeds/num_soc_seeds), "percent seeds discarded")
-    last = 0
-    num_missed = 0
-    for ele in sorted(collect_ids):
-        if ele != last + 1:
-            num_missed += 1
-        last  = ele
-    print("Missed", num_missed, "samples")
-    print("Picked wrong SoC", picked_wrong_count, "times")
-    print("total runtimes:")
-    for key, value in runtimes.items():
-        print(value, "(", key, ")")
-    print("done")
+    if not quitet:
+        if num_seeds_total > 0 :
+            print("collected", num_irelevant_seeds,
+                "irrelevant seeds. Thats", num_irelevant_seeds/len(all_queries), "per alignment and",
+                100*num_irelevant_seeds/num_seeds_total, "percent")
+            print("collected", num_covered_irelevant_seeds,
+                "covered irrelevant seeds. Thats", num_covered_irelevant_seeds/len(all_queries),
+                "per alignment and", 100*num_covered_irelevant_seeds/num_seeds_total, "percent")
+        print("collected", num_seeds_total-num_irelevant_seeds, "relevant seeds")
+        if num_soc_seeds > 0:
+            print("having", num_soc_seeds, "seeds in the strip of consideration, having",
+                num_coupled_seeds, "seeds after coupling, thats",
+                100*(1-num_coupled_seeds/num_soc_seeds), "percent seeds discarded")
+        last = 0
+        num_missed = 0
+        for ele in sorted(collect_ids):
+            if ele != last + 1:
+                num_missed += 1
+            last  = ele
+        print("Missed", num_missed, "samples")
+        print("Picked wrong SoC", picked_wrong_count, "times")
+        print("total runtimes:")
+        for key, value in runtimes.items():
+            print(value, "(", key, ")")
+        print("done")
 
 
 def relevance(db_name):
@@ -680,6 +691,56 @@ def relevance(db_name):
     print(analyse(BinarySeeding(False, 0)))
     print("16-mer")
     print(analyse(OtherSeeding(True)))
+
+def try_out_parameters(db_name):
+    for query_size, indel_size in [ (1000, 100), (200, 20), (30000, 100) ]:
+        print("query_size", query_size, "indel_size", indel_size)
+        createSampleQueries(human_genome, db_name, query_size, indel_size, 32, high_qual=False, quiet=True)
+        for match in [1, 2, 3, 4, 5, 6]:
+            for max_hits in [10, 100, 1000]:
+                for num_soc in [3, 5, 30]:
+                    for min_ambiguity in [0, 1, 2, 3]:
+                        for give_up in [.01, .02, .03, .05, .07, .08]:
+                            suffix = str(max_hits) + "_" + str(num_soc) + "_" + str(min_ambiguity) + "_" + str(give_up)
+                            test_my_approach(db_name, human_genome, "Fast_" + suffix, max_hits=max_hits, num_strips=num_soc, complete_seeds=False, full_analysis=False, local=True, max_nmw=3, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
+
+                            test_my_approach(db_name, human_genome, "Acc_" + suffix, max_hits=max_hits, num_strips=num_soc, complete_seeds=True, full_analysis=False, local=False, max_nmw=10, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
+
+        approaches = getApproachesWithData(db_name)
+        result = []
+        for approach_ in approaches:
+            approach = approach_[0]
+            results = getResults(db_name, approach, query_size, indel_size)
+
+            ##
+            # picks the correct alignment if multiple alignments are reported for one query...
+            #
+            def amunt_hits(results, approach):
+                ret = []
+                by_sample_id = {}
+                runtime = 0
+                for result in results:
+                    runtime += retult[10]
+                    sample_id = result[-2]
+                    if not sample_id in by_sample_id:
+                        by_sample_id[sample_id] = []
+                    by_sample_id[sample_id].append(result)
+
+                hits = 0
+                for result_list in by_sample_id.values():
+                    for result in result_list:
+                        # get the interesting parts of the tuple...
+                        _, _, _, result_start, result_end, original_start, _, _, _, _, _, _, _, _, _, _, _, secondary_ = result
+                        if near(result_start, original_start, result_end, original_start+query_size):
+                            hits += 1
+                            break
+                return hits, approach, runtime
+
+            result.append( amunt_hits(results) )
+
+        #sort by second item and print in order
+        for hits, approach, runtime in sorted(results, key=lambda x: x[1]):
+            print(approach, ":", hits, "hits in", runtime, "seconds")
 
 def test_my_approaches(db_name):
     full_analysis = False
@@ -1712,11 +1773,11 @@ exit()
 
 #l = 200
 #il = 10
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, high_qual=False)
-test_my_approaches("/mnt/ssd1/test.db")
+#test_my_approaches("/mnt/ssd1/test.db")
+try_out_parameters("/mnt/ssd1/parameters.db")
 #import measure_time
 #measure_time.test("test.db", human_genome)
-analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
+#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 #analyse_detailed("stats/", "/mnt/ssd1/test.db")
 exit()
 
@@ -1738,7 +1799,6 @@ createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
 measure_time.test("default.db", human_genome)
 analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
 
-exit()
 
 #createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
@@ -1796,11 +1856,11 @@ analyse_all_approaches_depre("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 
 #analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
 #analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
 
-analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
 #analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
 
 #analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
-analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
+#analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
 #analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
 #analyse_all_approaches("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 100)
 #analyse_all_approaches("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 100)

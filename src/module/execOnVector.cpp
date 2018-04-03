@@ -153,13 +153,17 @@ void exportExecOnVector()
         >(
         "ExecOnVec",
         boost::python::init<std::shared_ptr<Module>, bool, unsigned int>()
-            [boost::python::with_custodian_and_ward_postcall<0,1>()]
+            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
     )
-        .def(boost::python::init<
+        .def(
+            boost::python::init<
             std::shared_ptr<Module>, bool>()
-            [boost::python::with_custodian_and_ward_postcall<0,1>()])
-        .def(boost::python::init<std::shared_ptr<Module>>()
-            [boost::python::with_custodian_and_ward_postcall<0,1>()])
+            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
+            )
+        .def(
+            boost::python::init<std::shared_ptr<Module>>()
+            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
+            )
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<ExecOnVec>,
@@ -173,9 +177,10 @@ void exportExecOnVector()
             std::shared_ptr<Tail>
         >(
         "Tail",
-        boost::python::init<std::shared_ptr<Container>>()[
-            boost::python::with_custodian_and_ward_postcall<0,1>()
-        ]
+        boost::python::init<std::shared_ptr<Container>>()
+        //[
+        //    boost::python::with_custodian_and_ward_postcall<0,1>()
+        //]
     );
     boost::python::implicitly_convertible< 
         std::shared_ptr<Tail>,

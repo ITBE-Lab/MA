@@ -150,10 +150,10 @@ void exportModule()
             )
         .def(
                 "promise_me",
-                &Module::promiseMe,
-                boost::python::with_custodian_and_ward_postcall<0,1,
-                    boost::python::with_custodian_and_ward_postcall<0,2>
-                >()
+                &Module::promiseMe
+                //,boost::python::with_custodian_and_ward_postcall<0,1,
+                //    boost::python::with_custodian_and_ward_postcall<0,2>
+                //>()
             )
     ;
     boost::python::class_<
@@ -167,10 +167,10 @@ void exportModule()
         )
             .def(
                     "make_pledge",
-                    &Pledge::makePyPledge,
-                    boost::python::with_custodian_and_ward_postcall<0,1,
-                        boost::python::with_custodian_and_ward_postcall<0,3>
-                    >()
+                    &Pledge::makePyPledge
+                    //,boost::python::with_custodian_and_ward_postcall<0,1,
+                    //    boost::python::with_custodian_and_ward_postcall<0,3>
+                    //>()
                 )
             .staticmethod("make_pledge")
             .def(
@@ -179,8 +179,8 @@ void exportModule()
                 )
             .def(
                     "get",
-                    &Pledge::get,
-                    boost::python::with_custodian_and_ward_postcall<1,0>()
+                    &Pledge::get
+                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
                     "simultaneous_get",

@@ -28,8 +28,8 @@ void exportIntervalTree()
         >("SegmentVector")
             .def(
                     "extract_seeds", 
-                    &SegmentVector::extractSeeds,
-                    boost::python::with_custodian_and_ward_postcall<1,0>()
+                    &SegmentVector::extractSeeds
+                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
                     "num_seeds", 

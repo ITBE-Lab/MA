@@ -112,7 +112,7 @@ void exportSplitter()
             boost::python::init<std::shared_ptr<Pledge>>()
             // make sure that the given pledge is not deallocated 
             // before the splitter module
-            [boost::python::with_custodian_and_ward<1,2>()]
+            //[boost::python::with_custodian_and_ward<1,2>()]
         )
     ;
 
