@@ -329,7 +329,7 @@ void exportAlignment()
                 "extract", 
                 &Alignment::extract
             )
-        .def_readwrite("stats", &Alignment::xStats)
+        .def_readonly("stats", &Alignment::xStats)
         .def_readwrite("begin_on_query", &Alignment::uiBeginOnQuery)
         .def_readwrite("end_on_query", &Alignment::uiEndOnQuery)
         .def_readwrite("begin_on_ref", &Alignment::uiBeginOnRef)

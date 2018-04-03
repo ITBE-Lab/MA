@@ -257,8 +257,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     if(pSeeds->size() <= 1)
     {
         auto pRet = std::make_shared<Seeds>();
-        pRet->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
-        assert(!pRet->empty());
+        if(!pSeedsIn->empty())
+            pRet->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
         return pRet;
     }//if
 

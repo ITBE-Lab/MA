@@ -683,9 +683,9 @@ def test_my_approaches(db_name):
     #clearResults(db_name, human_genome, "MA Accurate")
     #clearResults(db_name, human_genome, "MA Fast")
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3, give_up=0.075)
-
     test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=5, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=5, min_ambiguity=0, give_up=0.01)
+
+    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3, give_up=0.075)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1703,7 +1703,7 @@ exit()
 #l = 200
 #il = 10
 #createSampleQueries(human_genome, "/mnt/ssd1/test.db", l, il, 32, high_qual=False, smaller_box=True)
-#test_my_approaches("/mnt/ssd1/test.db")
+#test_my_approaches("/mnt/ssd1/short.db")
 #analyse_all_approaches("test.html","/mnt/ssd1/test.db", l, il)
 #compare_approaches("comp.html", ["BWA-MEM", "MA 1"],"/mnt/ssd1/test.db", l, il)
 #compare_approaches("comp2.html", ["BWA-MEM", "MA 2"],"/mnt/ssd1/test.db", l, il)
@@ -1717,17 +1717,42 @@ amount = 2**11
 #createSampleQueries(human_genome, "/mnt/ssd1/test_sw.db", 1000, 100, 32, only_first_row=True)
 
 #createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
-
 #exit()
+
+import measure_time
+#createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
+measure_time.test("short.db", human_genome)
+analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
+
 createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
+measure_time.test("default.db", human_genome)
+analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
+
+#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
 createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
+measure_time.test("shortIndels.db", human_genome)
+analyse_all_approaches_depre("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
+
 createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
+measure_time.test("longIndels.db", human_genome)
+analyse_all_approaches_depre("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 200)
+
+
 createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
+measure_time.test("insertionOnly.db", human_genome)
+analyse_all_approaches_depre("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 100)
+
 createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
+measure_time.test("deletionOnly.db", human_genome)
+analyse_all_approaches_depre("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 200)
+
 createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, only_first_row=True)
+measure_time.test("zoomLine.db", human_genome)
+analyse_all_approaches_depre("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 200)
+
 createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
+measure_time.test("zoomSquare.db", human_genome)
+analyse_all_approaches_depre("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 200)
 
 #analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
 #exit()
@@ -1737,8 +1762,7 @@ createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, 
 #exit()
 
 #test_my_approaches("/mnt/ssd1/shortIndels.db")
-import measure_time
-measure_time.test_all()
+#measure_time.test_all()
 #test_my_approaches("/mnt/ssd1/test_corner.db")
 
 

@@ -27,7 +27,7 @@ class CommandLine(Module):
         if not self.do_checks():
             return
         if self.skip_count > 0:
-            print("Warning: Aligner skipped", self.skip_count, "queries")
+            print("Aligner skipped", self.skip_count, "queries")
 
     def __get_sam(self, index_str, queries):
         f = open(self.in_filename, "w")
@@ -373,7 +373,7 @@ def test_all():
     #test("test.db", human_genome)
     test("default.db", human_genome)
     test("short.db", human_genome)
-    test("long.db", human_genome)
+    #test("long.db", human_genome)
     test("shortIndels.db", human_genome)
     test("longIndels.db", human_genome)
     test("insertionOnly.db", human_genome)

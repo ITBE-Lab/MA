@@ -998,6 +998,80 @@ def optimal_matching():
     plot.axis.major_label_text_font=font
     save(plot, "optimalMatching")
 
+def contradicting_seeds():
+    min_x = -1.0
+    min_y = -1.0
+    max_x = 13
+    max_y = 8
+    reference = ["G", "C", "G", "A", "T", "A", "T", "A", "C", "G", "G"]
+    query = ["G", "C", "A", "T", "T", "G", "G"]
+    plot = figure(
+                plot_width=resolution, plot_height=resolution*len(query)/len(reference)
+            )
+
+    plot.line(
+        [-.5,1.5],
+        [-.5,1.5],
+        color=blue,
+        line_width=3
+    )
+    plot.line(
+        [2.5,4.5],
+        [1.5,3.5],
+        color=blue,
+        line_width=3
+    )
+    plot.line(
+        [4.5,6.5],
+        [1.5,3.5],
+        color=blue,
+        line_width=3
+    )
+    plot.line(
+        [8.5,10.5],
+        [4.5,6.5],
+        color=blue,
+        line_width=3
+    )
+
+
+    plot.xaxis.major_tick_line_color = None
+    plot.yaxis.major_tick_line_color = None
+    plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
+    plot.legend.location = "top_left"
+    plot.toolbar.logo = None
+    plot.toolbar_location = None
+    grid = []
+    for p in range(-1,len(reference)):
+        grid.append(p+.5)
+    plot.xgrid.ticker = FixedTicker(ticks=grid)
+    plot.xgrid.band_fill_color = greys[3]
+    plot.xgrid.band_fill_alpha = 0.2
+    plot.xgrid.grid_line_color = greys[0]
+    plot.xaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % reference)
+    plot.yaxis.ticker = FixedTicker(ticks=range(len(query)))
+    grid = []
+    for p in range(-1,len(query)):
+        grid.append(p+.5)
+    plot.ygrid.ticker = FixedTicker(ticks=grid)
+    plot.ygrid.band_fill_color = greys[3]
+    plot.ygrid.band_fill_alpha = 0.2
+    plot.ygrid.grid_line_color = greys[0]
+    plot.yaxis.formatter = FuncTickFormatter(code="""
+        var labels = %s;
+        return labels[tick];
+    """ % query)
+
+    plot.title.text_font=font
+    plot.legend.label_text_font=font
+    plot.legend.label_text_baseline="hanging"
+    plot.axis.axis_label_text_font=font
+    plot.axis.major_label_text_font=font
+    save(plot, "contradicting_seeds")
+
 def unrelated_non_enclosed_seeds():
     plot = figure(
                 plot_width=resolution, plot_height=resolution/2,
@@ -1447,7 +1521,7 @@ def seed_relevance_pics():
 
 # actually call the functions that create the pictures
 
-seed_relevance_pics()
+#seed_relevance_pics()
 #accuracy_pics()
 #unrelated_non_enclosed_seeds()
 #forced_gap()
@@ -1457,4 +1531,5 @@ seed_relevance_pics()
 #alignment()
 #stripOfConsideration()
 #optimal_matching()
+contradicting_seeds()
 #required_nmw_band_size()
