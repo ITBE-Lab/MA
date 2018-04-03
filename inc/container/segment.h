@@ -137,7 +137,7 @@ namespace libMA
          * @brief Extracts all seeds from the tree.
          * @details
          * Calls fDo for all recorded hits.
-         * fDo shall return false to terminate the iteration shall end.
+         * fDo shall return false to terminate the iteration.
          * @Note pushBackBwtInterval records an interval of hits
          */
         void forEachSeed(
@@ -156,7 +156,7 @@ namespace libMA
                         std::cout << "WARNING: found nullptr in SegmentVector!" << std::endl;
                     )
                     continue;
-                }
+                }// if
                 //if the interval contains more than uiMAxAmbiguity hits it's of no importance and will produce nothing but noise
 
                 //if bSkip is not set uiJump by is used to not return more than uiMAxAmbiguity

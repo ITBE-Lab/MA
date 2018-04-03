@@ -55,10 +55,10 @@ void StripOfConsideration::forEachNonBridgingSeed(
                     //prevent negative index
                     xS.start_ref() > addSize ? xS.start_ref() - addSize : 0,//from
                     //prevent index larger than reference
-                    xS.end_ref() + addSize < pxFM_index->getRefSeqLength() ?
+                    xS.end_ref() + addSize <= pxFM_index->getRefSeqLength() ?
                         xS.size() - 1 + addSize :
-                        pxFM_index->getRefSeqLength() - xS.start_ref() - 1
-                    ) //to
+                        pxFM_index->getRefSeqLength() - xS.start_ref() - 1//to
+                    ) 
                 )
             {
                 //if bridging ignore the hit
@@ -185,13 +185,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
         //FILTER
         /*
-         * if the best SoC quality is lower than fGiveUp * uiQLen we give up the entire 
-         * process here
+         * if the best SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at all
          * fGiveUp = 0 disables this.
          */
         if(
-            ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fGiveUp * uiQLen ) && 
-            !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
+                ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fGiveUp * uiQLen ) && 
+                !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
             )
         {
             //check if we improved upon the last maxima while dealing with the same area
@@ -206,6 +205,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                     vMaxima.pop_back();
                     vMaxima.push_back(std::make_pair(xCurrScore, xStripStart));
                 }//if
+                //else we ignore the SoC
             }//if
             else
                 //save the SOC
@@ -213,10 +213,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//if
         //move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         xCurrScore -= *(xStripStart++);
-    }//while
+    }// while
 
 
-    // make max heap from the SOC starting points according to the scores, 
+    // make a max heap from the SOC starting points according to the scores, 
     // so that we can extract the best SOC first
     auto vHeapOrder = 
         []
@@ -228,7 +228,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             return rA.first < rB.first;
         }//lambda
     ;
-    std::make_heap(vMaxima.begin(), vMaxima.end(), vHeapOrder);//make heap function call
+    std::make_heap(vMaxima.begin(), vMaxima.end(), vHeapOrder);
 
     //the collection of strips of consideration
     std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));

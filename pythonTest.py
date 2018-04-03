@@ -179,7 +179,7 @@ def test_my_approach(
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw, sort_after_score)
-        localToGlobal = LocalToGlobal(0.1)
+        localToGlobal = LocalToGlobal(0.05)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
 
         pledges = [[], [], [], [], [], []]
@@ -688,9 +688,9 @@ def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA Accurate PY")
     clearResults(db_name, human_genome, "MA Fast PY")
 
-    test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=5, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=5, min_ambiguity=0, give_up=0.01)
+    test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=0, give_up=0.01)
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=30, min_ambiguity=3, give_up=0.075)
+    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=3, give_up=0.03)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -984,7 +984,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             num_aligned[num_mutation][num_indels] += 1
             one = init(one, num_mutation, num_indels)
             correlation = init(correlation, num_mutation, num_indels, ([],[]))
-            if not mapping_quality is None:
+            if not mapping_quality is None and mapping_quality <= 1 and mapping_quality >= 0:
                 correlation[num_mutation][num_indels][0].append(mapping_quality)
             one[num_mutation][num_indels] = 1
             run_times = init(run_times, num_mutation, num_indels)
@@ -1002,7 +1002,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             if near(result_start, original_start, result_end, original_start+query_size):
                 hits[num_mutation][num_indels] += 1
-                if not mapping_quality is None:
+                if not mapping_quality is None and mapping_quality <= 1 and mapping_quality >= 0:
                     correlation[num_mutation][num_indels][1].append(1)
                 if not optimal_score is None and optimal_score > 0:
                     if optimal_score < score:
@@ -1154,7 +1154,10 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             for k, d in c.items():
                 ret[k] = {}
                 for k2, ele in d.items():
-                    ret[k][k2] = np.correlate(ele[0], ele[1])[0]
+                    if len(ele[0]) == 0:
+                        ret[k][k2] = 0
+                    else:
+                        ret[k][k2] = (np.correlate(ele[0], ele[1])[0]) / len(ele[0])
             return ret
         correlation = corr(correlation)
 
