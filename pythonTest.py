@@ -1002,9 +1002,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
     mapping_qual_illumina = []
     all_hits = []
 
-    #@todo
-    num_queries = 32# len(getQueriesAsASDMatrix(db_name, "null", working_genome)[0][0])
-    print(num_queries, "queries per cell")
+    num_queries = getNumQueriesDict(db_name, working_genome)
 
     for approach_ in approaches:
         approach = approach_[0]
@@ -1397,9 +1395,14 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                     mapped += 1
                     wrong += 1
 
+            total = 0
+            for key, value in num_queries.items():
+                for key, value in value.items():
+                    total += value
+
             if mapped > 0:
                 line_x.append( wrong/mapped )
-                line_y.append( mapped/num_queries )
+                line_y.append( mapped/total )
 
         plot.line(line_x, line_y, legend=approach, color=c_palette[index], line_width=2)
         plot.x(line_x, line_y, legend=approach, color=c_palette[index], size=6)

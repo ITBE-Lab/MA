@@ -253,6 +253,41 @@ def getQueriesAsASDMatrix(db_name, approach, reference, give_seed_length = False
             result[-1].append(elements)
     return result
 
+def getNumQueriesDict(db_name, reference):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    indel_amounts = c.execute("""
+                        SELECT DISTINCT num_indels
+                        FROM samples
+                        WHERE reference == ?
+                        ORDER BY num_indels
+                        """, (reference,)).fetchall()
+    mut_amounts = c.execute("""
+                        SELECT DISTINCT num_mutation
+                        FROM samples
+                        WHERE reference == ?
+                        ORDER BY num_mutation
+                        """, (reference,)).fetchall()
+    result = {}
+    for indel_amount in indel_amounts:
+        result[indel_amount] = {}
+        for mut_amount in mut_amounts:
+            elements = c.execute("""
+                        SELECT sample_id
+                        FROM samples
+                        WHERE sample_id NOT IN 
+                            (
+                                SELECT DISTINCT sample_id
+                                FROM results
+                                WHERE approach == ?
+                            )
+                        AND reference == ?
+                        AND num_mutation == ?
+                        AND num_indels == ?
+                        """, (approach, reference, mut_amount[0], indel_amount[0])).fetchall()
+            result[indel_amount][mut_amount] = len(elements)
+    return result
+
 
 
 def getOriginOf(db_name, sample_id):
