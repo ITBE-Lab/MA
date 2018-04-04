@@ -36,21 +36,22 @@ def replace_n(filenames, out_file):
 bowtie2_home = "/usr/home/markus/workspace/bowtie2/bowtie2-2.3.3.1/bowtie2-build "
 blasr_home = "/usr/home/markus/workspace/blasr/build/bin/sawriter "
 bwa_home = "/usr/home/markus/workspace/bwa/bwa index "
+minimap_home = "/usr/home/markus/workspace/minimap2/minimap2 -d "
 def make(filename, out_name):
     # my pack + fmd Index
-    #ref_seq = Pack()
-    #ref_seq.append_fasta_file( filename )
-    #ref_seq.store(out_name)
-
-    #fm_index = FMIndex(ref_seq)
-    #fm_index.store(out_name)
-
-    #BWA fmd index
+    ref_seq = Pack()
+    ref_seq.append_fasta_file( filename )
+    ref_seq.store(out_name)
+    fm_index = FMIndex(ref_seq)
+    fm_index.store(out_name)
+    # BWA fmd index
     os.system(bwa_home + "-p " + out_name + "bwa " + filename)
-    # #bowtie index
-    #os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
-    # #blasr index
-    #os.system(blasr_home + out_name + "blasr " + filename)
+    # bowtie index
+    os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
+    # blasr index
+    os.system(blasr_home + out_name + "blasr " + filename)
+    # minimap2 index
+    os.system(minimap_home + out_name + ".mmi " + filename)
 
 def make_hash(name):
     print("loading pack...")
@@ -121,10 +122,10 @@ def chrNames(prefix, num, suffix):
 make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
 
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
-make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
+#make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
 
 #replace_n(["/MAdata/chrom/plasmodium/genome.fasta"], "/MAdata/chrom/plasmodium/n_free.fasta")
-make("/MAdata/chrom/plasmodium/n_free.fasta", "/MAdata/genome/plasmodium")
+#make("/MAdata/chrom/plasmodium/n_free.fasta", "/MAdata/genome/plasmodium")
 
 #makeRandom("/MAdata/genome/random", 3 * 10**9)
 #make(["/MAdata/chrom/human/chr1.fna" ], "/MAdata/genome/humanchr1_bugged")

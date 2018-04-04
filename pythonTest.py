@@ -733,17 +733,16 @@ def try_out_parameters(db_name):
         print("query_size", query_size, "indel_size", indel_size)
         createSampleQueries(human_genome, db_name, query_size, indel_size, 32, high_qual=False, quiet=True)
         for match in [1, 2, 3, 4, 5, 6]:
-            for max_hits in [10, 100, 1000]:
-                for num_soc in [3, 5, 30]:
-                    for min_ambiguity in [0, 1, 2, 3]:
-                        for give_up in [.01, .02, .03, .05, .07, .08]:
-                            suffix = str(max_hits) + "_" + str(num_soc) + "_" + str(min_ambiguity) + "_" + str(give_up)
-                            test_my_approach(db_name, human_genome, "Fast_" + suffix, max_hits=max_hits, num_strips=num_soc, complete_seeds=False, full_analysis=False, local=True, max_nmw=3, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
+            for num_soc in [3, 5, 30]:
+                for min_ambiguity in [0, 1, 2, 3]:
+                    for give_up in [.01, .02, .03, .05, .07, .08]: # seems to not matter
+                        suffix = str(num_soc) + "_" + str(min_ambiguity) + "_" + str(give_up) + "_" + str(match)
+                        test_my_approach(db_name, human_genome, "Fast_" + suffix, num_strips=num_soc, complete_seeds=False, full_analysis=False, local=True, max_nmw=3, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
 
-                            test_my_approach(db_name, human_genome, "Acc_" + suffix, max_hits=max_hits, num_strips=num_soc, complete_seeds=True, full_analysis=False, local=False, max_nmw=10, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
+                        test_my_approach(db_name, human_genome, "Acc_" + suffix, num_strips=num_soc, complete_seeds=True, full_analysis=False, local=False, max_nmw=10, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
 
         approaches = getApproachesWithData(db_name)
-        result = []
+        final_result = []
         for approach_ in approaches:
             approach = approach_[0]
             results = getResults(db_name, approach, query_size, indel_size)
@@ -756,27 +755,32 @@ def try_out_parameters(db_name):
                 by_sample_id = {}
                 runtime = 0
                 for result in results:
-                    runtime += retult[10]
+                    runtime += result[10]
                     sample_id = result[-2]
                     if not sample_id in by_sample_id:
                         by_sample_id[sample_id] = []
                     by_sample_id[sample_id].append(result)
 
                 hits = 0
+                hits_first_c = 0
                 for result_list in by_sample_id.values():
                     for result in result_list:
                         # get the interesting parts of the tuple...
-                        _, _, _, result_start, result_end, original_start, _, _, _, _, _, _, _, _, _, _, _, secondary_ = result
+                        _, _, _, result_start, result_end, original_start, _, num_indels, _, _, _, _, _, _, _, _, _, secondary_ = result
                         if near(result_start, original_start, result_end, original_start+query_size):
+                            if num_indels == 0:
+                                hits_first_c += 1
                             hits += 1
                             break
-                return hits, approach, runtime
+                return (hits, approach, runtime, hits_first_c)
 
-            result.append( amunt_hits(results, approach) )
+            final_result.append( amunt_hits(results, approach) )
 
         #sort by second item and print in order
-        for hits, approach, runtime in sorted(results, key=lambda x: x[1]):
-            print(approach, ":", hits, "hits in", runtime, "seconds")
+        print("F/A_numSoc_minAmbiguity_giveUp_matchScore")
+        print("approach", "hits", "hits first column", "runtime", sep="\t")
+        for hits, approach, runtime, hits_first_c in sorted(final_result, key=lambda x: x[0]):
+            print(approach, hits, hits_first_c, runtime, sep="\t")
 
 def test_my_approaches(db_name):
     full_analysis = False
@@ -785,9 +789,9 @@ def test_my_approaches(db_name):
     clearResults(db_name, human_genome, "MA Accurate PY")
     clearResults(db_name, human_genome, "MA Fast PY")
 
-    test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=0, give_up=0.01)
+    test_my_approach(db_name, human_genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", max_hits=1000, num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=3, give_up=0.03)
+    test_my_approach(db_name, human_genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.1)
 
     #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1267,7 +1271,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, print_out=print_relevance)
         #avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, 1, "Queries aligned " + approach)
         #avg_query_coverage = makePicFromDict(query_cov, max_mut, max_indel, num_queries, "Queries coverage " + approach)
-        avg_corr = makePicFromDict(correlation, max_mut, max_indel, 1, "Map Qual. Accuracy correlation " + approach)
+        avg_corr = makePicFromDict(correlation, max_mut, max_indel, 1, "Map Qual. Accuracy correlation " + approach, set_max=1, set_min=0)
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
@@ -1809,11 +1813,17 @@ exit()
 
 #l = 200
 #il = 10
-#test_my_approaches("/MAdata/db/test.db")
-try_out_parameters("/MAdata/db/parameters.db")
-#import measure_time
-#measure_time.test("test.db", human_genome)
-#analyse_all_approaches_depre("test_depre.html","/MAdata/db/test.db", 1000, 100)
+
+#createSampleQueries(human_genome, "/MAdata/db/test2.db", 1000, 100, 32)
+test_my_approaches("/MAdata/db/test2.db")
+
+
+#try_out_parameters("/MAdata/db/parameters.db")
+
+
+import measure_time
+measure_time.test("test2.db", human_genome)
+analyse_all_approaches_depre("test_depre.html","/MAdata/db/test2.db", 1000, 100)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 

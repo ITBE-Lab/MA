@@ -300,16 +300,16 @@ def test(
         #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
         ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
-        ("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
-        ("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
-        ("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
+        #("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
+        #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
+        #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
     ]
 
     for name, aligner in l:
         print("evaluating " + name)
-        clearResults("/MAdata/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
+        clearResults("/MAdata/db/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
 
-        matrix = getQueriesAsASDMatrix("/MAdata/"+db_name, name, reference)
+        matrix = getQueriesAsASDMatrix("/MAdata/db/"+db_name, name, reference)
         #c = 1
         for row in matrix:
             #if c <= 0:
@@ -364,21 +364,21 @@ def test(
                     )
                 #print("submitting results (" + name + ") ...")
                 if len(result) > 0:
-                    submitResults("/MAdata/"+db_name, result)
+                    submitResults("/MAdata/db/"+db_name, result)
         print("")#print a newline
         aligner.final_checks()#do a final consistency check
     print("done working on " + db_name)
 
 def test_all():
-    #test("test.db", human_genome)
-    test("default.db", human_genome)
-    test("short.db", human_genome)
+    test("test.db", human_genome)
+    #test("default.db", human_genome)
+    #test("short.db", human_genome)
     #test("long.db", human_genome)
-    test("shortIndels.db", human_genome)
-    test("longIndels.db", human_genome)
-    test("insertionOnly.db", human_genome)
-    test("deletionOnly.db", human_genome)
-    test("zoomLine.db", human_genome)
-    test("zoomSquare.db", human_genome)
+    #test("shortIndels.db", human_genome)
+    #test("longIndels.db", human_genome)
+    #test("insertionOnly.db", human_genome)
+    #test("deletionOnly.db", human_genome)
+    #test("zoomLine.db", human_genome)
+    #test("zoomSquare.db", human_genome)
 
     #test("illumina.db", human_genome)
