@@ -772,7 +772,7 @@ def try_out_parameters(db_name):
                             break
                 return hits, approach, runtime
 
-            result.append( amunt_hits(results) )
+            result.append( amunt_hits(results, approach) )
 
         #sort by second item and print in order
         for hits, approach, runtime in sorted(results, key=lambda x: x[1]):
