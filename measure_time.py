@@ -218,7 +218,9 @@ class BWA_MEM(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa mem -t " + str(self.threads)
-        return cmd_str + " " + self.index_str + " " + in_filename + " -a"
+        if self.num_results > 1:
+            cmd_str += " -a"
+        return cmd_str + " " + self.index_str + " " + in_filename
 
     def do_checks(self):
         return False
@@ -283,7 +285,8 @@ human_genome = "/MAdata/genome/human"
 
 def test(
             db_name,
-            reference
+            reference,
+            no_time=True
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -310,6 +313,12 @@ def test(
         clearResults("/MAdata/db/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
 
         matrix = getQueriesAsASDMatrix("/MAdata/db/"+db_name, name, reference)
+
+        if no_time:
+            def red(mat):
+                return [ j for i in mat for j in i ]
+            matrix = [[ red(red(matrix)) ]]
+
         #c = 1
         for row in matrix:
             #if c <= 0:
@@ -349,6 +358,7 @@ def test(
 
                 result = []
                 for alignment in result_pledge.get():
+                    #print(alignment.begin_on_ref, queries[int(alignment.stats.name)][-1])
                     result.append(
                         (
                             queries[int(alignment.stats.name)][1],

@@ -63,9 +63,9 @@ def heatmap_palette(scheme, num_colors):
 
 human_genome = "/MAdata/genome/human"
 random_genome = "/MAdata/genome/random"
-small_random_genome = "/MAdata/genome/random_3_10_7"
 mouse_genome = "/MAdata/genome/mouse"
 plasmodium_genome = "/MAdata/genome/plasmodium"
+working_genome = human_genome
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -77,7 +77,7 @@ def chunks(l, n):
 
 
 #creating samples int the database
-#createSampleQueries(human_genome, db_name, 1000, 100, 256)
+#createSampleQueries(working_genome, db_name, 1000, 100, 256)
 
 def test_my_approach(
         db_name,
@@ -104,7 +104,8 @@ def test_my_approach(
         clean_up_db=False,
         toGlobal=True,
         give_up=0.05,
-        quitet=False
+        quitet=False,
+        missed_alignments_db=None
         #,optimistic_gap_estimation=False
     ):
     if not quitet:
@@ -112,6 +113,11 @@ def test_my_approach(
 
     all_queries = getNewQueries(db_name, name, reference, give_orig_pos=True, give_orig_size=True)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
+
+    
+    if not missed_alignments_db is None:
+        conn = sqlite3.connect(missed_alignments_db)
+        setUpDbTables(conn)
 
     if not quitet:
         print("having ", len(all_queries), " samples total (", name, ") ...")
@@ -162,6 +168,8 @@ def test_my_approach(
             fm_pledge = Pledge(FMIndex())
             fm_pledge.set(fm_index)
 
+        missed_list = []
+
         #DP scoring scheme
         NeedlemanWunsch(False).score_match = match
         NeedlemanWunsch(False).penalty_gap_extend = extend
@@ -190,7 +198,7 @@ def test_my_approach(
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
         for data in queries:
-            sequence, sample_id, origin_pos, orig_size = data
+            sequence, sample_id, origin_pos, orig_size, _, _, _ = data
             pledges[0].append(Pledge(NucSeq()))
             pledges[0][-1].set(NucSeq(sequence))
             pledges[0][-1].get().name = str(sample_id)
@@ -279,7 +287,9 @@ def test_my_approach(
             print("extracting results (", name, ") ...")
         result = []
         for i, alignments in enumerate(pledges[-1]):
-            if len(alignments.get()) == 0:
+            if len(alignments.get()) == 0 or len(alignments.get()[0]) == 0:
+                sequence, sample_id, origin_pos, orig_size, num_mutation, num_indels, indel_size = queries[i]
+                missed_list.append( (num_mutation, num_indels, orig_size, origin_pos, indel_size, sequence, working_genome) )
                 continue
             alignment = alignments.get()[0]
             if cheat:
@@ -313,6 +323,8 @@ def test_my_approach(
                 # pretend backend is perfect end
 
             if len(alignment) == 0:
+                print("Should never print this")
+                assert(False)
                 continue
             alignment2 = None
             optimal_alignment = None
@@ -639,6 +651,10 @@ def test_my_approach(
         for pledge in pledges[-1]:
             pledge.clear_graph()
 
+        print(missed_list)
+        if not missed_alignments_db is None and len(missed_list) > 0:
+            insertQueries(conn, missed_list)
+
     if not quitet:
         if num_seeds_total > 0 :
             print("collected", num_irelevant_seeds,
@@ -667,10 +683,10 @@ def test_my_approach(
 
 
 def relevance(db_name):
-    all_queries = getQueriesAsASDMatrix(db_name, "blank", human_genome, True)
+    all_queries = getQueriesAsASDMatrix(db_name, "blank", working_genome, True)
 
     fm_index = FMIndex()
-    fm_index.load(human_genome)
+    fm_index.load(working_genome)
 
     def analyse(seeding):
         result = []
@@ -731,15 +747,15 @@ class MA_Parameter(CommandLine):
 def try_out_parameters(db_name):
     for query_size, indel_size in [ (1000, 100), (200, 20), (30000, 100) ]:
         print("query_size", query_size, "indel_size", indel_size)
-        createSampleQueries(human_genome, db_name, query_size, indel_size, 32, high_qual=False, quiet=True)
-        for match in [1, 2, 3, 4, 5, 6]:
+        createSampleQueries(working_genome, db_name, query_size, indel_size, 32, high_qual=False, quiet=True)
+        for match in [1, 2, 3, 4, 5, 6]: # 3 seems to be best
             for num_soc in [3, 5, 30]:
                 for min_ambiguity in [0, 1, 2, 3]:
                     for give_up in [.01, .02, .03, .05, .07, .08]: # seems to not matter
                         suffix = str(num_soc) + "_" + str(min_ambiguity) + "_" + str(give_up) + "_" + str(match)
-                        test_my_approach(db_name, human_genome, "Fast_" + suffix, num_strips=num_soc, complete_seeds=False, full_analysis=False, local=True, max_nmw=3, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
+                        test_my_approach(db_name, working_genome, "Fast_" + suffix, num_strips=num_soc, complete_seeds=False, full_analysis=False, local=True, max_nmw=3, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
 
-                        test_my_approach(db_name, human_genome, "Acc_" + suffix, num_strips=num_soc, complete_seeds=True, full_analysis=False, local=False, max_nmw=10, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
+                        test_my_approach(db_name, working_genome, "Acc_" + suffix, num_strips=num_soc, complete_seeds=True, full_analysis=False, local=False, max_nmw=10, min_ambiguity=min_ambiguity, give_up=give_up, match=match, quitet=True)
 
         approaches = getApproachesWithData(db_name)
         final_result = []
@@ -782,22 +798,22 @@ def try_out_parameters(db_name):
         for hits, approach, runtime, hits_first_c in sorted(final_result, key=lambda x: x[0]):
             print(approach, hits, hits_first_c, runtime, sep="\t")
 
-def test_my_approaches(db_name):
+def test_my_approaches(db_name, missed_alignments_db=None):
     full_analysis = False
 
-    #clearResults(db_name, human_genome, "MA Accurate PY (cheat) 2")
-    clearResults(db_name, human_genome, "MA Accurate PY")
-    clearResults(db_name, human_genome, "MA Fast PY")
+    #clearResults(db_name, working_genome, "MA Accurate PY (cheat) 2")
+    clearResults(db_name, working_genome, "MA Accurate PY")
+    #clearResults(db_name, working_genome, "MA Fast PY")
 
-    test_my_approach(db_name, human_genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
+    #test_my_approach(db_name, working_genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach(db_name, human_genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.1)
+    test_my_approach(db_name, working_genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05, missed_alignments_db=missed_alignments_db)
 
-    #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
+    #test_my_approach(db_name, working_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
-    #test_my_approach(db_name, human_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
+    #test_my_approach(db_name, working_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    #test_my_approach(db_name, human_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
+    #test_my_approach(db_name, working_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -978,7 +994,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=2):
+def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=4, out_failures=None):
     output_file(out)
     approaches = getApproachesWithData(db_name)
     plots = [ [], [], [], [], [], [], [], [] ]
@@ -986,7 +1002,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
     mapping_qual_illumina = []
     all_hits = []
 
-    num_queries = len(getQueriesAsASDMatrix(db_name, "null", human_genome)[0][0])
+    #@todo
+    num_queries = 32# len(getQueriesAsASDMatrix(db_name, "null", working_genome)[0][0])
     print(num_queries, "queries per cell")
 
     for approach_ in approaches:
@@ -997,6 +1014,8 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         # picks the correct alignment if multiple alignments are reported for one query...
         #
         def filter_if_multiple(results):
+            out_list = []
+            #print("approach", "num_mutation", "num_indels", "sequence", sep="\t")
             ret = []
             by_sample_id = {}
             for result in results:
@@ -1014,7 +1033,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                 secondary_counter = 0
                 for result in result_list:
                     # get the interesting parts of the tuple...
-                    _, _, _, result_start, result_end, original_start, _, _, _, _, _, _, _, _, _, _, _, secondary_ = result
+                    _, _, _, result_start, result_end, original_start, num_mutation, num_indels, _, _, _, _, _, _, _, sequence, _, secondary_ = result
                     secondary = True if secondary_ == 1 else False
                     if not secondary:
                         if found_primary:
@@ -1034,10 +1053,16 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                         break
                 # if multiple alignments are returned but none correct we add a random one...
                 if not found_one:
+                    #print(approach, num_mutation, num_indels, sequence, sep="\t")
+                    out_list.append( (num_mutation, num_indels, len(sequence) , original_start, indel_size, sequence, working_genome) )
                     found_none += 1
                     ret.append(result_list[0])
 
             print("found none in", found_none, "cases")
+            if not out_failures is None:
+                conn = sqlite3.connect(out_failures)
+                setUpDbTables(conn)
+                insertQueries(conn, out_list)
 
             return ret
 
@@ -1275,16 +1300,18 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
         if not avg_hits is None:
             plots[0].append(avg_hits)
-        if not avg_runtime is None:
-            plots[1].append(avg_runtime)
-        if not avg_score is None:
-            plots[2].append(avg_score)
-        if not avg_seeds is None:
-            plots[3].append(avg_seeds)
-        if not avg_seeds_ch is None:
-            plots[4].append(avg_seeds_ch)
-        if not avg_corr is None:
-            plots[5].append(avg_corr)
+
+        ##if not avg_runtime is None:
+        ##    plots[1].append(avg_runtime)
+        ##if not avg_score is None:
+        ##    plots[2].append(avg_score)
+        ##if not avg_seeds is None:
+        ##    plots[3].append(avg_seeds)
+        ##if not avg_seeds_ch is None:
+        ##    plots[4].append(avg_seeds_ch)
+        ##if not avg_corr is None:
+        ##    plots[5].append(avg_corr)
+
         #if not avg_query_coverage is None:
         #    plots[5].append(avg_query_coverage)
         #if not avg_aligned is None:
@@ -1475,7 +1502,7 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
     max_mut = query_size
 
     def get_data(db_name, approach, query_size, indel_size):
-        results = getResults(db_name, approach, query_size, indel_size, human_genome)
+        results = getResults(db_name, approach, query_size, indel_size, working_genome)
         hits = {}
         tries = {}
         scores = {}
@@ -1773,7 +1800,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #print("mouse")
 #get_ambiguity_distribution(mouse_genome)
 #print("human")
-#get_ambiguity_distribution(human_genome)
+#get_ambiguity_distribution(working_genome)
 #exit()
 
 """
@@ -1813,62 +1840,66 @@ exit()
 
 #l = 200
 #il = 10
+#measure_time.test("test2.db", working_genome)
+createSampleQueries(working_genome, "bwaValidated.db", 1000, 100, 128, validate_using_bwa=True)
+createSampleQueries(working_genome, "bwaValidatedShort.db", 200, 20, 128, validate_using_bwa=True)
+createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
+exit()
+#test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-#createSampleQueries(human_genome, "/MAdata/db/test2.db", 1000, 100, 32)
 test_my_approaches("/MAdata/db/test2.db")
 
 
-#try_out_parameters("/MAdata/db/parameters.db")
+try_out_parameters("/MAdata/db/parameters.db")
 
 
-import measure_time
-measure_time.test("test2.db", human_genome)
+#measure_time.test("test2.db", working_genome)
 analyse_all_approaches_depre("test_depre.html","/MAdata/db/test2.db", 1000, 100)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 
-#createSampleQueries(human_genome, "/MAdata/db/relevancetest.db", 1000, 50, 32)
+#createSampleQueries(working_genome, "/MAdata/db/relevancetest.db", 1000, 50, 32)
 amount = 2**11
-#createSampleQueries(human_genome, "/MAdata/db/relevance.db", 1000, 50, amount)
-#createSampleQueries(human_genome, "/MAdata/db/test_sw.db", 1000, 100, 32, only_first_row=True)
+#createSampleQueries(working_genome, "/MAdata/db/relevance.db", 1000, 50, amount)
+#createSampleQueries(working_genome, "/MAdata/db/test_sw.db", 1000, 100, 32, only_first_row=True)
 
-#createSampleQueries(human_genome, "/MAdata/db/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
+#createSampleQueries(working_genome, "/MAdata/db/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
 #exit()
 
-#createSampleQueries(human_genome, "/MAdata/db/short.db", 250, 25, amount)
-#measure_time.test("short.db", human_genome)
+#createSampleQueries(working_genome, "/MAdata/db/short.db", 250, 25, amount)
+#measure_time.test("short.db", working_genome)
 #analyse_all_approaches_depre("short.html","/MAdata/db/short.db", 250, 25)
 
 
-createSampleQueries(human_genome, "/MAdata/db/default.db", 1000, 100, amount)
-measure_time.test("default.db", human_genome)
+createSampleQueries(working_genome, "/MAdata/db/default.db", 1000, 100, amount)
+measure_time.test("default.db", working_genome)
 analyse_all_approaches_depre("default.html","/MAdata/db/default.db", 1000, 100)
 
 
-#createSampleQueries(human_genome, "/MAdata/db/long.db", 30000, 100, amount)
-createSampleQueries(human_genome, "/MAdata/db/shortIndels.db", 1000, 50, amount)
-measure_time.test("shortIndels.db", human_genome)
+#createSampleQueries(working_genome, "/MAdata/db/long.db", 30000, 100, amount)
+createSampleQueries(working_genome, "/MAdata/db/shortIndels.db", 1000, 50, amount)
+measure_time.test("shortIndels.db", working_genome)
 analyse_all_approaches_depre("shortIndels.html","/MAdata/db/shortIndels.db", 1000, 50)
 
-createSampleQueries(human_genome, "/MAdata/db/longIndels.db", 1000, 200, amount)
-measure_time.test("longIndels.db", human_genome)
+createSampleQueries(working_genome, "/MAdata/db/longIndels.db", 1000, 200, amount)
+measure_time.test("longIndels.db", working_genome)
 analyse_all_approaches_depre("longIndels.html","/MAdata/db/longIndels.db", 1000, 200)
 
 
-createSampleQueries(human_genome, "/MAdata/db/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
-measure_time.test("insertionOnly.db", human_genome)
+createSampleQueries(working_genome, "/MAdata/db/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
+measure_time.test("insertionOnly.db", working_genome)
 analyse_all_approaches_depre("insertionOnly.html","/MAdata/db/insertionOnly.db", 1000, 100)
 
-createSampleQueries(human_genome, "/MAdata/db/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
-measure_time.test("deletionOnly.db", human_genome)
+createSampleQueries(working_genome, "/MAdata/db/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
+measure_time.test("deletionOnly.db", working_genome)
 analyse_all_approaches_depre("deletionOnly.html","/MAdata/db/deletionOnly.db", 1000, 200)
 
-createSampleQueries(human_genome, "/MAdata/db/zoomLine.db", 1000, 100, amount, only_first_row=True)
-measure_time.test("zoomLine.db", human_genome)
+createSampleQueries(working_genome, "/MAdata/db/zoomLine.db", 1000, 100, amount, only_first_row=True)
+measure_time.test("zoomLine.db", working_genome)
 analyse_all_approaches_depre("zoomLine.html","/MAdata/db/zoomLine.db", 1000, 200)
 
-createSampleQueries(human_genome, "/MAdata/db/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
-measure_time.test("zoomSquare.db", human_genome)
+createSampleQueries(working_genome, "/MAdata/db/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
+measure_time.test("zoomSquare.db", working_genome)
 analyse_all_approaches_depre("zoomSquare.html","/MAdata/db/zoomSquare.db", 1000, 200)
 
 #analyse_all_approaches("default.html","/MAdata/db/test.db", 1000, 100)
@@ -1913,4 +1944,4 @@ analyse_all_approaches_depre("zoomSquare.html","/MAdata/db/zoomSquare.db", 1000,
 #analyse_all_approaches("zoomLine.html","/MAdata/db/zoomLine.db", 1000, 100)
 #analyse_all_approaches("zoomSquare.html","/MAdata/db/zoomSquare.db", 1000, 100)
 
-#createSampleQueries(human_genome, "/MAdata/db/long.db", 30000, 100, amount)
+#createSampleQueries(working_genome, "/MAdata/db/long.db", 30000, 100, amount)

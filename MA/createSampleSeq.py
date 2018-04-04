@@ -17,6 +17,7 @@ from math import floor
 import operator
 import os
 import csv 
+from measure_time import *
 
 def mutate(char):
     num = 0
@@ -170,7 +171,7 @@ def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size
     if give_orig_pos:
         select += ", origin"
     if give_orig_size:
-        select += ", original_size"
+        select += ", original_size, num_mutation, num_indels, indel_size"
     if size is None:
         return c.execute("""
                         SELECT """ + select + """
@@ -606,13 +607,15 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
-def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_sw=False, quiet=False):
-    conn = sqlite3.connect(db_name)
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_bwa=False, quiet=False):
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
 
     setUpDbTables(conn, reset)
 
     ref_seq = Pack()
     ref_seq.load(ref)
+    reference_pledge = Pledge(Pack())
+    reference_pledge.set(ref_seq)
 
     max_indels = 1
     if indel_size != 0:
@@ -642,9 +645,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
     if only_first_row:
         max_y = 1
 
-    smw = SMW(False)
+    bwa = BWA_MEM(ref, 32, 1, db_name)
     genome = Pledge(NucSeq())
-    if validate_using_sw:
+    if validate_using_bwa:
         genome_seq = ref_seq.extract_complete()
         genome.set(genome_seq)
 
@@ -662,28 +665,33 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
             # extract random query sequences and modify them
             #
             queries = []
-            optimal_alignment_in = []
+            query_list = ContainerVector(NucSeq())
+            # @todo temp bugfix
+            del query_list[:]
             for _ in range(amount):
                 q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size, in_to_del_ratio)
                 queries.append( [q_from, query, original_nuc_dist, modified_nuc_dist] )
 
                 #set up the validation pledges if we need them
-                if validate_using_sw:
-                    p1 = Pledge(NucSeq())
-                    p1.set(NucSeq(query))
-                    optimal_alignment_in.append( (p1, genome) )
+                if validate_using_bwa:
+                    query_list.append( NucSeq(query) )
             #
-            # validate the query sequences using SW
+            # validate the query sequences using BWA MEM
             #
-            if validate_using_sw:
-                optimal_alignment_out = []
-                for a, b in optimal_alignment_in:
-                    optimal_alignment_out.append(smw.promise_me(a, b))
-                Pledge.simultaneous_get(optimal_alignment_out, 32)
+            if validate_using_bwa:
+                query_vec_pledge = Pledge(ContainerVector(NucSeq()))
+                query_vec_pledge.set(query_list)
+                result_pledge = bwa.promise_me(query_vec_pledge, reference_pledge)
 
-                for index, alignments in enumerate(optimal_alignment_out):
-                    #just use the first SW alignment for the correct position...
-                    queries[index][0] = alignments.get()[0].begin_on_ref
+                problem_queries = []
+                for alignment in result_pledge.get():
+                    #check if there was an ambiguous alignment
+                    if alignment.mapping_quality <= 0:
+                        problem_queries.append( int(alignment.stats.name) )
+                if len(problem_queries) > 0:
+                    print("deleting", len(problem_queries), "queries")
+                for index in reversed(sorted(problem_queries)):
+                    del queries[index]
 
             #
             # append the validated queries
