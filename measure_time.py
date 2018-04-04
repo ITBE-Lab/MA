@@ -279,7 +279,7 @@ class MA(CommandLine):
     def do_checks(self):
         return True
 
-human_genome = "/mnt/ssd0/genome/human"
+human_genome = "/MAdata/genome/human"
 
 def test(
             db_name,
@@ -296,20 +296,20 @@ def test(
 
     l = [
         #("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),
-        #("BLASR", Blasr(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
+        #("BLASR", Blasr(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
         #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
         ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
         ("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
         ("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
-        ("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/mnt/ssd0/chrom/human/n_free.fasta", db_name)),
+        ("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
     ]
 
     for name, aligner in l:
         print("evaluating " + name)
-        clearResults("/mnt/ssd1/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
+        clearResults("/MAdata/"+db_name, reference, name) # CAREFUL WITH THE CLEARING
 
-        matrix = getQueriesAsASDMatrix("/mnt/ssd1/"+db_name, name, reference)
+        matrix = getQueriesAsASDMatrix("/MAdata/"+db_name, name, reference)
         #c = 1
         for row in matrix:
             #if c <= 0:
@@ -364,7 +364,7 @@ def test(
                     )
                 #print("submitting results (" + name + ") ...")
                 if len(result) > 0:
-                    submitResults("/mnt/ssd1/"+db_name, result)
+                    submitResults("/MAdata/"+db_name, result)
         print("")#print a newline
         aligner.final_checks()#do a final consistency check
     print("done working on " + db_name)

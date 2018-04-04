@@ -753,7 +753,7 @@ def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
         command = "~/art_bin_MountRainier/"
         if technology == "HS25":
             size = 1000
-            command += "art_illumina -ss HS25 -sam -i /mnt/ssd0/chrom/human/" + in_file + " -l " + str(size)
+            command += "art_illumina -ss HS25 -sam -i /MAdata/chrom/human/" + in_file + " -l " + str(size)
             if paired:
                 command += " -p -m 200 -s 10"
             command += " -q -c " + str(amount) + " -o .temp_art/" + in_file
@@ -761,7 +761,7 @@ def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
         os.system(command)
     print("done")
     print("extracting sequences...")
-    genome = "/mnt/ssd0/genome/human"
+    genome = "/MAdata/genome/human"
     pack = Pack()
     pack.load(genome)
 
@@ -796,6 +796,6 @@ def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
 
 
 
-db_name = "/mnt/ssd1/alignmentSamples.db"
+db_name = "/MAdata/alignmentSamples.db"
 
-#createSampleQueries("/mnt/ssd0/chrom/human/all", db_name, 1000, 100, 50, 64)
+#createSampleQueries("/MAdata/chrom/human/all", db_name, 1000, 100, 50, 64)

@@ -60,7 +60,7 @@ def make_hash(name):
     #seq = ref_seq.extract_from_to(500, 600)
     #ref_seq = Pack()
     #ref_seq.append("a", "b", seq)
-    #ref_seq.store("/mnt/ssd0/genome/minimal")
+    #ref_seq.store("/MAdata/genome/minimal")
     #exit()
     seq = ref_seq.extract_forward_strand()
     print("done extracting sequence")
@@ -117,16 +117,16 @@ def chrNames(prefix, num, suffix):
     return ret
 
 
-#replace_n(chrNames("/mnt/ssd0/chrom/human/chr", 22, ".fna"), "/mnt/ssd0/chrom/human/n_free.fasta")
-make("/mnt/ssd0/chrom/human/n_free.fasta", "/mnt/ssd0/genome/human")
+#replace_n(chrNames("/MAdata/chrom/human/chr", 22, ".fna"), "/MAdata/chrom/human/n_free.fasta")
+make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
 
-#replace_n(chrNames("/mnt/ssd0/chrom/mouse/chr", 19, ".fna"), "/mnt/ssd0/chrom/mouse/n_free.fasta")
-make("/mnt/ssd0/chrom/mouse/n_free.fasta", "/mnt/ssd0/genome/mouse")
+#replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
+make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
 
-#replace_n(["/mnt/ssd0/chrom/plasmodium/genome.fasta"], "/mnt/ssd0/chrom/plasmodium/n_free.fasta")
-make("/mnt/ssd0/chrom/plasmodium/n_free.fasta", "/mnt/ssd0/genome/plasmodium")
+#replace_n(["/MAdata/chrom/plasmodium/genome.fasta"], "/MAdata/chrom/plasmodium/n_free.fasta")
+make("/MAdata/chrom/plasmodium/n_free.fasta", "/MAdata/genome/plasmodium")
 
-#makeRandom("/mnt/ssd0/genome/random", 3 * 10**9)
-#make(["/mnt/ssd0/chrom/human/chr1.fna" ], "/mnt/ssd0/genome/humanchr1_bugged")
-#make_hash("/mnt/ssd0/genome/human")
-#makeRandom("/mnt/ssd0/genome/random_3_10_7", 3 * 10**7)
+#makeRandom("/MAdata/genome/random", 3 * 10**9)
+#make(["/MAdata/chrom/human/chr1.fna" ], "/MAdata/genome/humanchr1_bugged")
+#make_hash("/MAdata/genome/human")
+#makeRandom("/MAdata/genome/random_3_10_7", 3 * 10**7)

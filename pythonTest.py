@@ -61,11 +61,11 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-human_genome = "/mnt/ssd0/genome/human"
-random_genome = "/mnt/ssd0/genome/random"
-small_random_genome = "/mnt/ssd0/genome/random_3_10_7"
-mouse_genome = "/mnt/ssd0/genome/mouse"
-plasmodium_genome = "/mnt/ssd0/genome/plasmodium"
+human_genome = "/MAdata/genome/human"
+random_genome = "/MAdata/genome/random"
+small_random_genome = "/MAdata/genome/random_3_10_7"
+mouse_genome = "/MAdata/genome/mouse"
+plasmodium_genome = "/MAdata/genome/plasmodium"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1760,7 +1760,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     show(gridplot( [[plot, plot2]] ))
 
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
-#get_ambiguity_distribution("/mnt/ssd0/genome/human_bugged", 1, 100)
+#get_ambiguity_distribution("/MAdata/genome/human_bugged", 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
 #print("random")
 #get_ambiguity_distribution(random_genome)
@@ -1801,106 +1801,106 @@ exit()
 
 
 
-#create_as_sequencer_reads("/mnt/ssd1/illumina.db", 1000)
-#test_my_approaches("/mnt/ssd1/illumina.db")
-#analyse_all_approaches("illumina.html","/mnt/ssd1/illumina.db", 150, 0)
+#create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)
+#test_my_approaches("/MAdata/db/illumina.db")
+#analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
 
 #high quality picture
 
 #l = 200
 #il = 10
-#test_my_approaches("/mnt/ssd1/test.db")
-try_out_parameters("/mnt/ssd1/parameters.db")
+#test_my_approaches("/MAdata/db/test.db")
+try_out_parameters("/MAdata/db/parameters.db")
 #import measure_time
 #measure_time.test("test.db", human_genome)
-#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
-#analyse_detailed("stats/", "/mnt/ssd1/test.db")
+#analyse_all_approaches_depre("test_depre.html","/MAdata/db/test.db", 1000, 100)
+#analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 
-#createSampleQueries(human_genome, "/mnt/ssd1/relevancetest.db", 1000, 50, 32)
+#createSampleQueries(human_genome, "/MAdata/db/relevancetest.db", 1000, 50, 32)
 amount = 2**11
-#createSampleQueries(human_genome, "/mnt/ssd1/relevance.db", 1000, 50, amount)
-#createSampleQueries(human_genome, "/mnt/ssd1/test_sw.db", 1000, 100, 32, only_first_row=True)
+#createSampleQueries(human_genome, "/MAdata/db/relevance.db", 1000, 50, amount)
+#createSampleQueries(human_genome, "/MAdata/db/test_sw.db", 1000, 100, 32, only_first_row=True)
 
-#createSampleQueries(human_genome, "/mnt/ssd1/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
+#createSampleQueries(human_genome, "/MAdata/db/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
 #exit()
 
-#createSampleQueries(human_genome, "/mnt/ssd1/short.db", 250, 25, amount)
+#createSampleQueries(human_genome, "/MAdata/db/short.db", 250, 25, amount)
 #measure_time.test("short.db", human_genome)
-#analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
+#analyse_all_approaches_depre("short.html","/MAdata/db/short.db", 250, 25)
 
 
-createSampleQueries(human_genome, "/mnt/ssd1/default.db", 1000, 100, amount)
+createSampleQueries(human_genome, "/MAdata/db/default.db", 1000, 100, amount)
 measure_time.test("default.db", human_genome)
-analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
+analyse_all_approaches_depre("default.html","/MAdata/db/default.db", 1000, 100)
 
 
-#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
-createSampleQueries(human_genome, "/mnt/ssd1/shortIndels.db", 1000, 50, amount)
+#createSampleQueries(human_genome, "/MAdata/db/long.db", 30000, 100, amount)
+createSampleQueries(human_genome, "/MAdata/db/shortIndels.db", 1000, 50, amount)
 measure_time.test("shortIndels.db", human_genome)
-analyse_all_approaches_depre("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
+analyse_all_approaches_depre("shortIndels.html","/MAdata/db/shortIndels.db", 1000, 50)
 
-createSampleQueries(human_genome, "/mnt/ssd1/longIndels.db", 1000, 200, amount)
+createSampleQueries(human_genome, "/MAdata/db/longIndels.db", 1000, 200, amount)
 measure_time.test("longIndels.db", human_genome)
-analyse_all_approaches_depre("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 200)
+analyse_all_approaches_depre("longIndels.html","/MAdata/db/longIndels.db", 1000, 200)
 
 
-createSampleQueries(human_genome, "/mnt/ssd1/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
+createSampleQueries(human_genome, "/MAdata/db/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
 measure_time.test("insertionOnly.db", human_genome)
-analyse_all_approaches_depre("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 100)
+analyse_all_approaches_depre("insertionOnly.html","/MAdata/db/insertionOnly.db", 1000, 100)
 
-createSampleQueries(human_genome, "/mnt/ssd1/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
+createSampleQueries(human_genome, "/MAdata/db/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
 measure_time.test("deletionOnly.db", human_genome)
-analyse_all_approaches_depre("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 200)
+analyse_all_approaches_depre("deletionOnly.html","/MAdata/db/deletionOnly.db", 1000, 200)
 
-createSampleQueries(human_genome, "/mnt/ssd1/zoomLine.db", 1000, 100, amount, only_first_row=True)
+createSampleQueries(human_genome, "/MAdata/db/zoomLine.db", 1000, 100, amount, only_first_row=True)
 measure_time.test("zoomLine.db", human_genome)
-analyse_all_approaches_depre("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 200)
+analyse_all_approaches_depre("zoomLine.html","/MAdata/db/zoomLine.db", 1000, 200)
 
-createSampleQueries(human_genome, "/mnt/ssd1/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
+createSampleQueries(human_genome, "/MAdata/db/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
 measure_time.test("zoomSquare.db", human_genome)
-analyse_all_approaches_depre("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 200)
+analyse_all_approaches_depre("zoomSquare.html","/MAdata/db/zoomSquare.db", 1000, 200)
 
-#analyse_all_approaches("default.html","/mnt/ssd1/test.db", 1000, 100)
+#analyse_all_approaches("default.html","/MAdata/db/test.db", 1000, 100)
 #exit()
 
-#relevance("/mnt/ssd1/relevance.db")
-#analyse_all_approaches_depre("relevance.html","/mnt/ssd1/relevancetest.db", 1000, 50, 32, print_relevance=True)
+#relevance("/MAdata/db/relevance.db")
+#analyse_all_approaches_depre("relevance.html","/MAdata/db/relevancetest.db", 1000, 50, 32, print_relevance=True)
 #exit()
 
-#test_my_approaches("/mnt/ssd1/shortIndels.db")
+#test_my_approaches("/MAdata/db/shortIndels.db")
 #measure_time.test_all()
-#test_my_approaches("/mnt/ssd1/test_corner.db")
+#test_my_approaches("/MAdata/db/test_corner.db")
 
 
-#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/test.db", 1000, 100)
-#analyse_all_approaches_depre("test_depre_py.html","/mnt/ssd1/zoomLine.db", 1000, 100, 255)
-#analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/short.db", 250, 25)
-#expecting_same_results("MA Fast PY 2", "MA Fast PY", "/mnt/ssd1/test.db", 1000, 100)
+#analyse_all_approaches_depre("test_depre_py.html","/MAdata/db/test.db", 1000, 100)
+#analyse_all_approaches_depre("test_depre_py.html","/MAdata/db/zoomLine.db", 1000, 100, 255)
+#analyse_all_approaches_depre("default_depre.html","/MAdata/db/short.db", 250, 25)
+#expecting_same_results("MA Fast PY 2", "MA Fast PY", "/MAdata/db/test.db", 1000, 100)
 #exit()
 
 
 
-#test_my_approaches("/mnt/ssd1/default.db")
-#test_my_approaches("/mnt/ssd1/short.db")
-#test_my_approaches("/mnt/ssd1/shortIndels.db")
-#test_my_approaches("/mnt/ssd1/longIndels.db")
-#test_my_approaches("/mnt/ssd1/insertionOnly.db")
-#test_my_approaches("/mnt/ssd1/deletionOnly.db")
+#test_my_approaches("/MAdata/db/default.db")
+#test_my_approaches("/MAdata/db/short.db")
+#test_my_approaches("/MAdata/db/shortIndels.db")
+#test_my_approaches("/MAdata/db/longIndels.db")
+#test_my_approaches("/MAdata/db/insertionOnly.db")
+#test_my_approaches("/MAdata/db/deletionOnly.db")
 
-#analyse_all_approaches("test.html","/mnt/ssd1/test.db", 1000, 100)
-#analyse_all_approaches_depre("test_depre.html","/mnt/ssd1/test.db", 1000, 100)
+#analyse_all_approaches("test.html","/MAdata/db/test.db", 1000, 100)
+#analyse_all_approaches_depre("test_depre.html","/MAdata/db/test.db", 1000, 100)
 
-#analyse_all_approaches_depre("default.html","/mnt/ssd1/default.db", 1000, 100)
-#analyse_all_approaches_depre("default_depre.html","/mnt/ssd1/default.db", 1000, 100)
+#analyse_all_approaches_depre("default.html","/MAdata/db/default.db", 1000, 100)
+#analyse_all_approaches_depre("default_depre.html","/MAdata/db/default.db", 1000, 100)
 
-#analyse_all_approaches("long.html","/mnt/ssd1/long.db", 30000, 100)
-#analyse_all_approaches_depre("short.html","/mnt/ssd1/short.db", 250, 25)
-#analyse_all_approaches("shortIndels.html","/mnt/ssd1/shortIndels.db", 1000, 50)
-#analyse_all_approaches("longIndels.html","/mnt/ssd1/longIndels.db", 1000, 100)
-#analyse_all_approaches("insertionOnly.html","/mnt/ssd1/insertionOnly.db", 1000, 100)
-#analyse_all_approaches("deletionOnly.html","/mnt/ssd1/deletionOnly.db", 1000, 100)
-#analyse_all_approaches("zoomLine.html","/mnt/ssd1/zoomLine.db", 1000, 100)
-#analyse_all_approaches("zoomSquare.html","/mnt/ssd1/zoomSquare.db", 1000, 100)
+#analyse_all_approaches("long.html","/MAdata/db/long.db", 30000, 100)
+#analyse_all_approaches_depre("short.html","/MAdata/db/short.db", 250, 25)
+#analyse_all_approaches("shortIndels.html","/MAdata/db/shortIndels.db", 1000, 50)
+#analyse_all_approaches("longIndels.html","/MAdata/db/longIndels.db", 1000, 100)
+#analyse_all_approaches("insertionOnly.html","/MAdata/db/insertionOnly.db", 1000, 100)
+#analyse_all_approaches("deletionOnly.html","/MAdata/db/deletionOnly.db", 1000, 100)
+#analyse_all_approaches("zoomLine.html","/MAdata/db/zoomLine.db", 1000, 100)
+#analyse_all_approaches("zoomSquare.html","/MAdata/db/zoomSquare.db", 1000, 100)
 
-#createSampleQueries(human_genome, "/mnt/ssd1/long.db", 30000, 100, amount)
+#createSampleQueries(human_genome, "/MAdata/db/long.db", 30000, 100, amount)
