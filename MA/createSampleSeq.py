@@ -723,9 +723,11 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, hi
                     #check if there was an ambiguous alignment
                     if alignment.mapping_quality <= 0:
                         problem_queries.append( int(alignment.stats.name) )
+                #get unique sorted (descending) elements
+                problem_queries = list(reversed(sorted(set(problem_queries))))
                 if len(problem_queries) > 0:
                     print("deleting", len(problem_queries), "queries")
-                for index in reversed(sorted(problem_queries)):
+                for index in problem_queries:
                     del queries[index]
 
             #
