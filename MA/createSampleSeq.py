@@ -17,7 +17,6 @@ from math import floor
 import operator
 import os
 import csv 
-from measure_time import *
 
 def mutate(char):
     num = 0
@@ -269,23 +268,17 @@ def getNumQueriesDict(db_name, reference):
                         ORDER BY num_mutation
                         """, (reference,)).fetchall()
     result = {}
-    for indel_amount in indel_amounts:
-        result[indel_amount] = {}
-        for mut_amount in mut_amounts:
+    for mut_amount in mut_amounts:
+        result[mut_amount[0]] = {}
+        for indel_amount in indel_amounts:
             elements = c.execute("""
-                        SELECT sample_id
+                        SELECT DISTINCT sample_id
                         FROM samples
-                        WHERE sample_id NOT IN 
-                            (
-                                SELECT DISTINCT sample_id
-                                FROM results
-                                WHERE approach == ?
-                            )
-                        AND reference == ?
+                        WHERE reference == ?
                         AND num_mutation == ?
                         AND num_indels == ?
-                        """, (approach, reference, mut_amount[0], indel_amount[0])).fetchall()
-            result[indel_amount][mut_amount] = len(elements)
+                        """, (reference, mut_amount[0], indel_amount[0])).fetchall()
+            result[mut_amount[0]][indel_amount[0]] = len(elements)
     return result
 
 
@@ -641,144 +634,6 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
             modified_nuc_dist[4] += 1
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
-
-def createSampleQueries(ref, db_name, size, indel_size, amount, reset = True, high_qual=False, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_bwa=False, quiet=False):
-    conn = sqlite3.connect("/MAdata/db/" + db_name)
-
-    setUpDbTables(conn, reset)
-
-    ref_seq = Pack()
-    ref_seq.load(ref)
-    reference_pledge = Pledge(Pack())
-    reference_pledge.set(ref_seq)
-
-    max_indels = 1
-    if indel_size != 0:
-        max_indels = int(size/indel_size)*2
-    queries_list = []
-
-    nuc_distrib_count_orig = [0,0,0,0,0]
-    nuc_distrib_count_mod = [0,0,0,0,0]
-
-    skip_x = max(1, int(size/50))
-    skip_y = max(2, int(max_indels/50))
-
-    if high_qual:
-        skip_x = 1
-        skip_y = 2
-    
-    if skip_y % 1 == 1:
-        skip_y += 1
-
-    max_x = int(size * 4 / 10)
-    max_y = max_indels
-
-    if smaller_box:
-        max_x = int(max_x / 5)
-        max_y = int(max_y / 5)
-
-    if only_first_row:
-        max_y = 1
-
-    bwa = BWA_MEM(ref, 32, 1, db_name)
-    genome = Pledge(NucSeq())
-    if validate_using_bwa:
-        genome_seq = ref_seq.extract_complete()
-        genome.set(genome_seq)
-
-    #
-    # iterate over the given range of mutations indels and number of sequences
-    #
-    for mutation_amount in range(0, max_x, skip_x):
-        for indel_amount in range(0, max_y, skip_y):
-
-            #dont put sequences that can't be found
-            if mutation_amount + indel_amount/2 * indel_size >= size - 1:
-                continue
-
-            #
-            # extract random query sequences and modify them
-            #
-            queries = []
-            query_list = ContainerVector(NucSeq())
-            # @todo temp bugfix
-            del query_list[:]
-            for _ in range(amount):
-                q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size, in_to_del_ratio)
-                queries.append( [q_from, query, original_nuc_dist, modified_nuc_dist] )
-
-                #set up the validation pledges if we need them
-                if validate_using_bwa:
-                    query_list.append( NucSeq(query) )
-            #
-            # validate the query sequences using BWA MEM
-            #
-            if validate_using_bwa:
-                query_vec_pledge = Pledge(ContainerVector(NucSeq()))
-                query_vec_pledge.set(query_list)
-                result_pledge = bwa.promise_me(query_vec_pledge, reference_pledge)
-
-                problem_queries = []
-                for alignment in result_pledge.get():
-                    #check if there was an ambiguous alignment
-                    if alignment.mapping_quality <= 0:
-                        problem_queries.append( int(alignment.stats.name) )
-                #get unique sorted (descending) elements
-                problem_queries = list(reversed(sorted(set(problem_queries))))
-                if len(problem_queries) > 0:
-                    print("deleting", len(problem_queries), "queries")
-                for index in problem_queries:
-                    del queries[index]
-
-            #
-            # append the validated queries
-            #
-            for q_from, query, original_nuc_dist, modified_nuc_dist in queries:
-                nuc_distrib_count_orig = list(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
-                nuc_distrib_count_mod = list(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))
-
-                #
-                # construct the query tuple
-                #
-                queries_list.append((
-                        mutation_amount,
-                        indel_amount,
-                        size,
-                        q_from,
-                        indel_size,
-                        query,
-                        ref
-                    ))
-
-                #
-                # save the queries to the database
-                #
-                if len(queries_list) > 10000:
-                    if not quiet:
-                        print("saving...")
-                    insertQueries(conn, queries_list)
-                    queries_list = []
-                    if not quiet:
-                        print("done saving")
-            #for _ in range(amount) end
-
-        #for indel_amount in range(max_indels) end
-        if not quiet:
-            print(mutation_amount, "/", max_x)
-    #for mutation_amount in range(size) end
-    if not quiet:
-        print("saving...")
-    if len(queries_list) > 0:
-        insertQueries(conn, queries_list)
-    if not quiet:
-        print("done saving")
-
-        print("nuc distrib (A, C, G, T, N) originally: ", nuc_distrib_count_orig)
-        print("nuc distrib (A, C, G, T, N) changed: ", nuc_distrib_count_mod)
-        print("nuc distrib (A, C, G, T, N) changed by: ", list(map(operator.mul, map(
-            operator.sub, nuc_distrib_count_mod, nuc_distrib_count_orig), [1./float(sum(nuc_distrib_count_orig))]*5)))
-        print("total amount: ", sum(nuc_distrib_count_orig))
-#function
 
 def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
     print("setting up db...")

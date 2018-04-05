@@ -75,38 +75,24 @@ def make_hash(name):
 
 
 def makeRandom(out_name, size):
-    file_all = open(out_name + "bwa", "w")
-    ref_seq = Pack()
+    file_all = open(out_name, "w")
 
-    file_all.write(">randomSequence/n")
-    seq = ""
+    file_all.write(">randomSequence0 description/n")
     for index in range(size):
         num = random.randint(0,3)
         if num == 0:
-            seq += 'A'
             file_all.write("A")
         elif num == 2:
-            seq += 'C'
             file_all.write("C")
         elif num == 3:
-            seq += 'T'
             file_all.write("T")
         else:
-            seq += 'G'
             file_all.write("G")
-        if index % 20 == 0:
+        if index % 50 == 0:
             file_all.write("\n")
-        if index % 10000 == 0:
-            ref_seq.append( "randomSequence" + str(index), "noDesc", NucSeq(seq) )
-            seq = ""
-    if seq != "":
-        ref_seq.append( "randomSequenceLast", "noDesc", NucSeq(seq) )
+            if index % 50000 == 0:
+                file_all.write(">randomSequence" + str(index) + " description/n")
     file_all.close()
-
-    ref_seq.store(out_name)
-
-    fm_index = FMIndex(ref_seq)
-    fm_index.store(out_name)
 
 def chrNames(prefix, num, suffix):
     ret = []
@@ -127,7 +113,7 @@ def chrNames(prefix, num, suffix):
 #replace_n(["/MAdata/chrom/plasmodium/genome.fasta"], "/MAdata/chrom/plasmodium/n_free.fasta")
 #make("/MAdata/chrom/plasmodium/n_free.fasta", "/MAdata/genome/plasmodium")
 
-#makeRandom("/MAdata/chrom/random", 3 * 10**9)
-#make("/MAdata/chrom/random", "/MAdata/genome/random")
+makeRandom("/MAdata/chrom/random.fasta", 3 * 10**9)
+make("/MAdata/chrom/random.fasta", "/MAdata/genome/random")
 #make_hash("/MAdata/genome/human")
 #makeRandom("/MAdata/genome/random_3_10_7", 3 * 10**7)

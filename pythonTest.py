@@ -14,7 +14,7 @@ import numpy as np
 import colorsys
 from statistics import mean, median, stdev
 from sys import stderr
-import measure_time
+from measure_time import *
 
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
@@ -65,7 +65,7 @@ human_genome = "/MAdata/genome/human"
 random_genome = "/MAdata/genome/random"
 mouse_genome = "/MAdata/genome/mouse"
 plasmodium_genome = "/MAdata/genome/plasmodium"
-working_genome = human_genome
+working_genome = random_genome
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1182,7 +1182,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
                             pic[-1].append( float("nan") )
                         else:
                             if isinstance(divideBy, dict):
-                                if divideBy[x][y] is None or divideBy[x][y] == 0:
+                                if not x in divideBy or not y in divideBy[x] or divideBy[x][y] is None or divideBy[x][y] == 0:
                                     pic[-1].append( float('nan') )
                                 else:
                                     pic[-1].append( d[x][y] / divideBy[x][y] )
@@ -1286,7 +1286,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         correlation = corr(correlation)
 
         avg_hits = makePicFromDict(hits, max_mut, max_indel, num_queries, "accuracy " + approach, set_max=1, set_min=0)
-        avg_runtime = makePicFromDict(run_times, max_mut, max_indel, 1, "runtime " + approach, 0)
+        #avg_runtime = makePicFromDict(run_times, max_mut, max_indel, 1, "runtime " + approach, 0)
         avg_score = makePicFromDict(scores, max_mut, max_indel, num_queries, "score " + approach)
         #avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, num_queries, "optimal scores " + approach)
         avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, num_queries, "num seeds " + approach)
@@ -1299,16 +1299,16 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
         if not avg_hits is None:
             plots[0].append(avg_hits)
 
-        ##if not avg_runtime is None:
-        ##    plots[1].append(avg_runtime)
-        ##if not avg_score is None:
-        ##    plots[2].append(avg_score)
-        ##if not avg_seeds is None:
-        ##    plots[3].append(avg_seeds)
-        ##if not avg_seeds_ch is None:
-        ##    plots[4].append(avg_seeds_ch)
-        ##if not avg_corr is None:
-        ##    plots[5].append(avg_corr)
+        #if not avg_runtime is None:
+        #    plots[1].append(avg_runtime)
+        if not avg_score is None:
+            plots[2].append(avg_score)
+        if not avg_seeds is None:
+            plots[3].append(avg_seeds)
+        if not avg_seeds_ch is None:
+            plots[4].append(avg_seeds_ch)
+        if not avg_corr is None:
+            plots[5].append(avg_corr)
 
         #if not avg_query_coverage is None:
         #    plots[5].append(avg_query_coverage)
@@ -1841,23 +1841,25 @@ exit()
 
 #high quality picture
 
+createSampleQueries(working_genome, "random.db", 1000, 100, 128, validate_using_bwa=False)
+
 #l = 200
 #il = 10
 #measure_time.test("test2.db", working_genome)
-createSampleQueries(working_genome, "bwaValidated.db", 1000, 100, 128, validate_using_bwa=True)
-createSampleQueries(working_genome, "bwaValidatedShort.db", 200, 20, 128, validate_using_bwa=True)
-createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
-exit()
+#createSampleQueries(working_genome, "bwaValidated.db", 1000, 100, 128, validate_using_bwa=True)
+#createSampleQueries(working_genome, "bwaValidatedShort.db", 200, 20, 128, validate_using_bwa=True)
+#createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
+
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-test_my_approaches("/MAdata/db/test2.db")
+test_my_approaches("/MAdata/db/random.db")
 
 
-try_out_parameters("/MAdata/db/parameters.db")
+#try_out_parameters("/MAdata/db/parameters.db")
 
 
-#measure_time.test("test2.db", working_genome)
-analyse_all_approaches_depre("test_depre.html","/MAdata/db/test2.db", 1000, 100)
+measure_time.test("random.db", working_genome)
+analyse_all_approaches_depre("test_depre.html","/MAdata/db/random.db", 1000, 100)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 
