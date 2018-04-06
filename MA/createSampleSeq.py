@@ -51,7 +51,9 @@ def setUpDbTables(conn, reset = False):
 
     if reset:
         c.execute("DROP TABLE IF EXISTS samples")
+        c.execute("DROP TABLE IF EXISTS samples_optima")
         c.execute("DROP TABLE IF EXISTS results")
+        c.execute("DROP TABLE IF EXISTS runtimes")
 
     c.execute("""
                 CREATE TABLE IF NOT EXISTS samples
@@ -61,11 +63,15 @@ def setUpDbTables(conn, reset = False):
                     num_indels INTEGER,
                     original_size INTEGER,
                     origin INTEGER,
-                    paired_origin INTEGER,
-                    indel_size REAL,
-                    sequence TEXT,
-                    paired_sequence TEXT,
-                    reference TINYTEXT
+                    sequence TEXT
+                )
+                """)
+
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS samples_optima
+                (
+                    sample_id INTEGER,
+                    optima INTEGER
                 )
                 """)
 
@@ -73,26 +79,22 @@ def setUpDbTables(conn, reset = False):
                 CREATE TABLE IF NOT EXISTS results
                 (
                     sample_id INTEGER,
-                    score REAL,
-                    score2 REAL,
-                    optimal_score_this_region REAL,
-                    result_start INTEGER,
-                    result_end INTEGER,
-                    num_seeds INTEGER,
-                    index_of_chosen_strip INTEGER,
-                    seed_coverage_chosen_strip INTGER,
-                    seed_coverage_alignment INTGER,
-                    num_seeds_chosen_strip INTEGER,
-                    anchor_size INTEGER,
-                    anchor_ambiguity INTEGER,
-                    max_diag_deviation INTEGER,
-                    max_diag_deviation_percent INTEGER,
-                    max_nmw_area INTEGER,
-                    nmw_area INTEGER,
+                    start INTEGER,
+                    end INTEGER,
                     run_time REAL,
                     mapping_quality REAL,
                     approach TINYTEXT,
                     secondary TINYINT
+                )
+                """)
+
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS runtimes
+                (
+                    num_mutation INTEGER,
+                    num_indels INTEGER,
+                    run_time REAL,
+                    approach TINYTEXT
                 )
                 """)
 
@@ -118,6 +120,14 @@ def setUpDbTables(conn, reset = False):
                 """)
 
     c.execute("""
+                CREATE INDEX IF NOT EXISTS samples_index_1 ON runtimes
+                (
+                    num_indels,
+                    num_mutation
+                )
+                """)
+
+    c.execute("""
                 CREATE INDEX IF NOT EXISTS samples_index_2 ON samples
                 (
                     original_size
@@ -137,6 +147,13 @@ def setUpDbTables(conn, reset = False):
                     sample_id
                 )
                 """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS samples_optima_index_1 ON samples_optima
+                (
+                    sample_id
+                )
+                """)
     conn.commit()
 
 def insertQueries(conn, queries_list):
@@ -148,105 +165,52 @@ def insertQueries(conn, queries_list):
             num_indels,
             original_size,
             origin,
-            paired_origin,
-            indel_size,
-            sequence,
-            paired_sequence,
-            reference
+            sequence
         ) 
+        VALUES (?,?,?,?,?)
         """
-
-    if len(queries_list[0]) == 7:
-        insert_str += "VALUES (?,?,?,?,-1,?,?,\"\",?)"
-    else:
-        insert_str += "VALUES (?,?,?,?,?,?,?,?,?)"
     c.executemany(insert_str, queries_list)
     conn.commit()
 
-def getNewQueries(db_name, approach, reference, res_mut = 1, res_indel = 1, size = None, give_orig_pos = False, give_orig_size = False):
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
-    select = "sequence, sample_id"
-    if give_orig_pos:
-        select += ", origin"
-    if give_orig_size:
-        select += ", original_size, num_mutation, num_indels, indel_size"
-    if size is None:
-        return c.execute("""
-                        SELECT """ + select + """
-                        FROM samples
-                        WHERE sample_id NOT IN 
-                            (
-                                SELECT DISTINCT sample_id
-                                FROM results
-                                WHERE approach == ?
-                            )
-                        AND reference == ?
-                        AND num_mutation % ? == 0
-                        AND num_indels % ? == 0
-                        """, (approach, reference, res_mut, res_indel)).fetchall()
-    return c.execute("""
-                        SELECT """ + select + """
-                        FROM samples
-                        WHERE sample_id NOT IN 
-                            (
-                                SELECT DISTINCT sample_id
-                                FROM results
-                                WHERE approach == ?
-                            )
-                        AND reference == ?
-                        AND num_mutation % ? == 0
-                        AND num_indels % ? == 0
-                        AND original_size == ?
-                        """, (approach, reference, res_mut, res_indel, size)).fetchall()
-
-def getQueriesFor(db_name, reference, mut=1, indel=1, size=100):
+def getQueries(db_name):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     return c.execute("""
                         SELECT sequence, sample_id
                         FROM samples
-                        WHERE reference == ?
-                        AND num_mutation == ?
-                        AND num_indels == ?
-                        AND original_size == ?
-                        """, (reference, mut, indel, size)).fetchall()
+                        """).fetchall()
 
-def getQueriesAsASDMatrix(db_name, approach, reference, give_seed_length = False):
+
+def getIndelsAndMuts(db_name):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     indel_amounts = c.execute("""
                         SELECT DISTINCT num_indels
                         FROM samples
-                        WHERE reference == ?
                         ORDER BY num_indels
-                        """, (reference,)).fetchall()
+                        """).fetchall()
     mut_amounts = c.execute("""
                         SELECT DISTINCT num_mutation
                         FROM samples
-                        WHERE reference == ?
                         ORDER BY num_mutation
-                        """, (reference,)).fetchall()
+                        """).fetchall()
+
+    return indel_amounts, mut_amounts
+
+def getQueriesAsASDMatrix(db_name):
+    indel_amounts, mut_amounts = getIndelsAndMuts(db_name)
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
     result = []
     for indel_amount in indel_amounts:
         result.append( [] )
         for mut_amount in mut_amounts:
-            select = "sequence, sample_id, origin"
-            if give_seed_length:
-                select += ", original_size"
             elements = c.execute("""
-                        SELECT """ + select + """
+                        SELECT sequence, sample_id
                         FROM samples
-                        WHERE sample_id NOT IN 
-                            (
-                                SELECT DISTINCT sample_id
-                                FROM results
-                                WHERE approach == ?
-                            )
-                        AND reference == ?
                         AND num_mutation == ?
                         AND num_indels == ?
-                        """, (approach, reference, mut_amount[0], indel_amount[0])).fetchall()
+                        """, (mut_amount[0], indel_amount[0])).fetchall()
             if len(elements) == 0:
                 continue
             result[-1].append(elements)
@@ -281,84 +245,64 @@ def getNumQueriesDict(db_name, reference):
             result[mut_amount[0]][indel_amount[0]] = len(elements)
     return result
 
+def submitOptima(db_name, optima_list):
+    results_list = []
+    # convert the list
+    for sample_id, score, positions in optima_list:
+        for position in positions:
+            results_list.append( (sample_id, position, score) )
 
-
-def getOriginOf(db_name, sample_id):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    return c.execute("""
-                        SELECT origin
-                        FROM samples
-                        WHERE sample_id == ?
-                        """, (sample_id,)).fetchone()[0]
-
-def submitResults(db_name, results_list):
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
-    if len(results_list[0]) == 9:
-        c.executemany("""
-                        INSERT INTO results 
-                        (
-                            sample_id,
-                            score,
-                            score2,
-                            result_start,
-                            result_end,
-                            num_seeds,
-                            index_of_chosen_strip,
-                            seed_coverage_chosen_strip,
-                            seed_coverage_alignment,
-                            num_seeds_chosen_strip,
-                            anchor_size,
-                            anchor_ambiguity,
-                            max_diag_deviation,
-                            max_diag_deviation_percent,
-                            max_nmw_area,
-                            nmw_area,
-                            run_time,
-                            mapping_quality,
-                            approach,
-                            secondary
-                        )
-                        VALUES (?,?,0,?,?,?,0,0,0,0,0,0,0,0,0,0,?,?,?,?)
-                        """, results_list)
-    else: # len == 20
-        c.executemany("""
-                        INSERT INTO results 
-                        (
-                            sample_id,
-                            score,
-                            score2,
-                            optimal_score_this_region,
-                            result_start,
-                            result_end,
-                            num_seeds,
-                            index_of_chosen_strip,
-                            seed_coverage_chosen_strip,
-                            seed_coverage_alignment,
-                            num_seeds_chosen_strip,
-                            anchor_size,
-                            anchor_ambiguity,
-                            max_diag_deviation,
-                            max_diag_deviation_percent,
-                            max_nmw_area,
-                            nmw_area,
-                            mapping_quality,
-                            run_time,
-                            approach,
-                            secondary
-                        )
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                        """, results_list)
+    c.execute("""DELETE FROM samples_optima""")
+    c.executemany("""
+                    INSERT INTO samples_optima 
+                    (
+                        sample_id,
+                        optima
+                    )
+                    VALUES (?,?)
+                    """, results_list)
     conn.commit()
 
-def clearResults(db_name, ref, approach):
+def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("""
                 DELETE FROM results 
                 WHERE approach = ?
+                """, (results_list[-2],))
+    c.executemany("""
+                    INSERT INTO results 
+                    (
+                        sample_id,
+                        start,
+                        end,
+                        mapping_quality,
+                        approach,
+                        secondary
+                    )
+                    VALUES (?,?,?,?,?,?,?)
+                    """, results_list)
+    conn.commit()
+
+def submitRuntimes(db_name, results_list):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("""
+                DELETE FROM runtimes 
+                WHERE approach = ?
                 """, (approach,))
+    c.executemany("""
+                    INSERT INTO runtimes 
+                    (
+                        num_mutation,
+                        num_indels,
+                        run_time,
+                        approach
+                    )
+                    VALUES (?,?,?,?)
+                    """, results_list)
     conn.commit()
 
 def getApproachesWithData(db_name):
@@ -369,140 +313,106 @@ def getApproachesWithData(db_name):
                         FROM results
                     """).fetchall()
 
-##
-# returns a list of tuples.
-# the tuple consists of:
-#
-# ( score, result_start, original_start, num_mutation, num_indels, num_seeds, run_time )
-#
-# returns the results for the specified reference and approach only
-# if no reference is specified the tuple contains the reference
-def getResults(db_name, approach, size=None, indel_size=None, reference=None):
+def getOptimalPositions(db_name):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    if size is None and indel_size is None:
-        return c.execute("""
-                            SELECT 
-                                results.score,
-                                results.score2,
-                                results.optimal_score_this_region,
-                                results.result_start,
-                                results.result_end,
-                                samples.origin,
-                                samples.num_mutation,
-                                samples.num_indels,
-                                results.num_seeds,
-                                results.mapping_quality,
-                                results.run_time,
-                                results.index_of_chosen_strip,
-                                results.seed_coverage_chosen_strip,
-                                results.seed_coverage_alignment,
-                                results.num_seeds_chosen_strip,
-                                results.anchor_size,
-                                results.anchor_ambiguity,
-                                results.max_diag_deviation,
-                                results.max_diag_deviation_percent,
-                                results.max_nmw_area,
-                                results.nmw_area,
-                                samples.original_size,
-                                results.secondary
-                            FROM samples
-                            JOIN results ON results.sample_id = samples.sample_id
-                            AND results.approach == ?
-                            ORDER BY results.sample_id
-                            """, (approach, )).fetchall()
-    elif reference is None:
-        return c.execute("""
-                            SELECT 
-                                results.score,
-                                results.score2,
-                                results.optimal_score_this_region,
-                                results.result_start,
-                                results.result_end,
-                                samples.origin,
-                                samples.num_mutation,
-                                samples.num_indels,
-                                results.num_seeds,
-                                results.num_seeds_chosen_strip,
-                                results.seed_coverage_chosen_strip,
-                                results.seed_coverage_alignment,
-                                results.mapping_quality,
-                                results.nmw_area,
-                                results.run_time,
-                                samples.sequence,
-                                results.sample_id,
-                                results.secondary
-                            FROM samples
-                            JOIN results ON results.sample_id = samples.sample_id
-                            WHERE results.approach == ?
-                            AND samples.original_size == ?
-                            AND samples.indel_size == ?
-                            ORDER BY results.sample_id
-                            """, (approach, size, indel_size)).fetchall()
     return c.execute("""
                         SELECT 
-                            results.score,
-                            results.result_start,
-                            results.result_end,
-                            samples.origin,
+                            samples.sample_id,
+                            samples_optima.optima,
+                            samples.original_size,
                             samples.num_mutation,
                             samples.num_indels
                         FROM samples
-                        JOIN results ON results.sample_id = samples.sample_id
-                        AND results.approach == ?
-                        WHERE samples.original_size == ?
-                        AND samples.indel_size == ?
-                        AND samples.reference == ?
-                        """, (approach, size, indel_size, reference)).fetchall()
+                        JOIN samples_optima ON samples.sample_id = samples_optima.sample_id
+                    """).fetchall()
+
+def getResults(db_name, approach):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT 
+                            samples.sample_id,
+                            results.secondary,
+                            results.start,
+                            results.end,
+                            results.mapping_quality
+                        FROM samples
+                        JOIN results ON samples.sample_id = results.sample_id
+                    """).fetchall()
+
+def getRuntimes(db_name, approach):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT 
+                            num_mutation,
+                            num_indels,
+                            run_time
+                        FROM runtimes
+                        WHERE approach = ?
+                    """, (approach,) ).fetchall()
 
 def near(start_align, start_orig, end_align, end_orig):
     return end_align >= start_orig and start_align <= end_orig
 
-def analyzeAccuracy(db_name, out_file_name, approaches, res_mut, res_indel, size, 
-        indel_size, reference=None):
-    plots = []
-    output_file(out_file_name)
+def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
+    # get the indel and mut amounts so that we know the size of the resulting matrix
+    indel_amounts, mut_amounts = getIndelsAndMuts(db_name)
+    hits = [[0]*len(indel_amounts)]*len(mut_amounts)
+    samples = [[0]*len(indel_amounts)]*len(mut_amounts)
 
-    # analyze results
-    max_indels = int(size/indel_size)*4
-    for approach in approaches:
-        # create empty matrix
-        accurateMatrix = []
-        samplesMatrix = []
-        for _ in floor(size/res_mut):
-            accurateMatrix.append( [] )
-            samplesMatrix.append( [] )
-            for _ in floor(max_indels/res_indel):
-                accurateMatrix[-1].append( [] )
-                samplesMatrix[-1].append( [] )
+    # store the aligner results in a dict of sample id
+    aligner_results = {}
+    for sample_id, secondary, start, end, mapping_quality in getResults(db_name, approach):
+        if not sample_id in aligner_results:
+            aligner_results[sample_id] = []
+        if secondary: # append secondary ones
+            aligner_results[sample_id].append( (start, end, mapping_quality) )
+        else: # prepend the primary alignment so that we always use that one first
+            aligner_results[sample_id] = [ (start, end, mapping_quality) ] + aligner_results[sample_id]
 
-        # collect results
-        results = getResults(db_name, approach, size, indel_size, reference)
+    # store the optimal positions in a dict of sample id
+    optimal_pos = {}
+    for sample_id, optima_end, original_size, num_mutation, num_indels in getOptimalPositions(db_name):
+        if not sample_id in optimal_pos:
+            optimal_pos[sample_id] = ([], num_mutation, num_indels)
+        optimal_pos[sample_id].append( (optima_end-original_size, optima_end) )
 
-        # fill in the matrix
-        for score, result_start, result_end, original_start, num_mutation, num_indels in results:
-            samplesMatrix[num_mutation][num_indels] += 1
-            if near(original_start, result_start, original_start+size, result_end):
-                accurateMatrix[num_mutation][num_indels] += 1
+    # iterate over all samples
+    for sample_id, value in optimal_pos.items():
+        positions, num_mutation, num_indels = value
+        # record the sample amount
+        samples[num_indels][num_mutation] += 1
 
-        # divide the matrices
-        for x, row in enumerate(accurateMatrix):
-            for y, ele in enumerate(row):
-                accurateMatrix[x][y] = ele / samplesMatrix[x][y]
+        # figure out if within the first max_tries tries of the aligner 
+        # there was a hit to one optimal position
+        hit = False
+        for start, end, mapping_quality in aligner_results[sample_id][:max_tries]:
+            for start_orig, end_orig, in positions:
+                if near(start, start_orig, end, end_orig):
+                    hit = True
+                    break
+            if hit:
+                break
+        if hit:
+            hits[num_indels][num_mutation] += 1
 
-        # plot results
-        color_mapper = LinearColorMapper(palette="Viridis256", low=0, high=1)
-        plot = figure(title="accuracy " + approach,
-                x_range=(0,max_indels), y_range=(0,size),
-                x_axis_label='num indels', y_axis_label='num mutations'
-            )
-        plot.image(image=[accurateMatrix], color_mapper=color_mapper,
-                dh=[size], dw=[max_indels], x=[0], y=[0])
-        color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
-        plot.add_layout(color_bar, 'left')
-        plots.append(plot)
+    # compute the accuracy
+    accuracy = []
+    for hit_row, sample_row in zip(hits, samples):
+        accuracy.append( [] )
+        for hit, sample in zip(hit_row, sample_row):
+            if sample == 0: # if there were no samples we want to return NAN
+                accuracy[-1].append( float('nan') )
+            else: # compute the accuracy for that cell
+                accuracy[-1].append( hit/sample )
 
-    show(row(plots))
+    runtime = [[float('nan')]*len(indel_amounts)]*len(mut_amounts)
+    for num_mutation, num_indels, run_time in getRuntimes(db_name, approach):
+        runtime[num_indels][num_mutation] = run_time
+
+    return accuracy, runtime
 
 def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_del_ratio=0.5):
     q = ""

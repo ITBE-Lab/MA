@@ -110,10 +110,10 @@ def chrNames(prefix, num, suffix):
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
 #make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
 
-#replace_n(["/MAdata/chrom/plasmodium/genome.fasta"], "/MAdata/chrom/plasmodium/n_free.fasta")
+replace_n(["/MAdata/chrom/zebrafish/genome.fasta"], "/MAdata/chrom/zebrafish/n_free.fasta")
 #make("/MAdata/chrom/plasmodium/n_free.fasta", "/MAdata/genome/plasmodium")
 
-makeRandom("/MAdata/chrom/random.fasta", 3 * 10**9)
-make("/MAdata/chrom/random.fasta", "/MAdata/genome/random")
+#makeRandom("/MAdata/chrom/random.fasta", 3 * 10**9)
+make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
 #make_hash("/MAdata/genome/human")
 #makeRandom("/MAdata/genome/random_3_10_7", 3 * 10**7)

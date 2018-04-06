@@ -79,18 +79,4 @@ void exportSW_GPU()
             */
             true
         >());
-
-
-    //export the Tail class
-    //boost::python::class_<
-    //        SW_GPU, 
-    //        boost::python::bases<Module>,
-    //        std::shared_ptr<SW_GPU>
-    //    >(
-    //    "SW_GPU"
-    //);
-    //boost::python::implicitly_convertible< 
-    //    std::shared_ptr<SW_GPU>,
-    //    std::shared_ptr<Module> 
-    //>();
 }//function
