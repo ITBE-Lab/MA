@@ -65,7 +65,7 @@ human_genome = "/MAdata/genome/human"
 random_genome = "/MAdata/genome/random"
 mouse_genome = "/MAdata/genome/mouse"
 plasmodium_genome = "/MAdata/genome/plasmodium"
-working_genome = random_genome
+working_genome = plasmodium_genome
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -782,12 +782,12 @@ def try_out_parameters(db_name):
         for hits, approach, runtime, hits_first_c in sorted(final_result, key=lambda x: x[0]):
             print(approach, hits, hits_first_c, runtime, sep="\t")
 
-def test_my_approaches(db_name, missed_alignments_db=None):
+def test_my_approaches(db_name, genome, missed_alignments_db=None):
     full_analysis = False
 
     #test_my_approach(db_name, working_genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, working_genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05)
 
     #test_my_approach(db_name, working_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -977,218 +977,36 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=4, out_failures=None):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
-    approaches = getApproachesWithData(db_name)
-    plots = [ [], [], [], [], [], [], [], [] ]
-    mapping_qual = []
-    mapping_qual_illumina = []
-    all_hits = []
+    plots = [ [], [] ]
 
-    num_queries = getNumQueriesDict(db_name, working_genome)
+    approaches = getApproachesWithData(db_name)
 
     for approach_ in approaches:
         approach = approach_[0]
-        results = getResults(db_name, approach, query_size, indel_size)
+        accuracy, runtime = getAccuracyAndRuntimeOfAligner(db_name, approach, 1)
 
-        ##
-        # picks the correct alignment if multiple alignments are reported for one query...
-        #
-        def filter_if_multiple(results):
-            out_list = []
-            #print("approach", "num_mutation", "num_indels", "sequence", sep="\t")
-            ret = []
-            by_sample_id = {}
-            for result in results:
-                sample_id = result[-2]
-                if not sample_id in by_sample_id:
-                    by_sample_id[sample_id] = []
-                by_sample_id[sample_id].append(result)
-
-            ret = []
-
-            found_none = 0
-            for result_list in by_sample_id.values():
-                found_one = False
-                found_primary = False
-                secondary_counter = 0
-                for result in result_list:
-                    # get the interesting parts of the tuple...
-                    _, _, _, result_start, result_end, original_start, num_mutation, num_indels, _, _, _, _, _, _, _, sequence, _, secondary_ = result
-                    secondary = True if secondary_ == 1 else False
-                    if not secondary:
-                        if found_primary:
-                            print(result_list)
-                            assert(False)
-                        found_primary = True
-                    else:
-                        # make sure that we look at no more than max_secondary alignments
-                        # (and the primary one)
-                        if secondary_counter >= max_secondary:
-                            continue
-                        else:
-                            secondary_counter += 1
-                    if near(result_start, original_start, result_end, original_start+query_size):
-                        ret.append(result)
-                        found_one = True
-                        break
-                # if multiple alignments are returned but none correct we add a random one...
-                if not found_one:
-                    #print(approach, num_mutation, num_indels, sequence, sep="\t")
-                    out_list.append( (num_mutation, num_indels, len(sequence) , original_start, indel_size, sequence, working_genome) )
-                    found_none += 1
-                    ret.append(result_list[0])
-
-            print("found none in", found_none, "cases")
-            if not out_failures is None:
-                conn = sqlite3.connect(out_failures)
-                setUpDbTables(conn)
-                insertQueries(conn, out_list)
-
-            return ret
-
-
-        results = filter_if_multiple(results)
-
-
-        hits = {}
-        run_times = {}
-        scores = {}
-        scores_accurate = {}
-        seed_coverage_loss = []
-        opt_scores = {}
-        opt_score_loss = {}
-        nums_seeds = {}
-        nums_seeds_chosen = {}
-        num_aligned = {}
-        nucs_by_seed = {}
-        query_cov = {}
-        one = {}
-        correlation = {}
-        mapping_qual.append( ([],[]) )
-        mapping_qual_illumina.append( ([],[]) )
-        nmw_total = 0
-
-        max_indel = 2*query_size/indel_size
-        max_mut = int(query_size * 4 / 10)
-
-        sub_illumina = 0.15
-        indel_illumina = 0.05
-        better_than_optima_count = 0
-
-        def init(d, x, y, z=0):
-            if x not in d:
-                d[x] = {}
-            if y not in d[x]:
-                d[x][y] = z
-            return d
-
-        for score, score2, optimal_score, result_start, result_end, original_start, num_mutation, num_indels, num_seeds, num_seed_chosen_strip, seed_coverage_chosen_strip, seed_coverage_alignment, mapping_quality, nmw_area, run_time, sequence, _, _ in results:
-            if not nmw_area is None:
-                nmw_total += nmw_area
-            hits = init(hits, num_mutation, num_indels)
-            num_aligned = init(num_aligned, num_mutation, num_indels)
-            num_aligned[num_mutation][num_indels] += 1
-            one = init(one, num_mutation, num_indels)
-            correlation = init(correlation, num_mutation, num_indels, ([],[]))
-            if not mapping_quality is None and mapping_quality <= 1 and mapping_quality >= 0:
-                correlation[num_mutation][num_indels][0].append(mapping_quality)
-            one[num_mutation][num_indels] = 1
-            run_times = init(run_times, num_mutation, num_indels)
-            if not score is None:
-                scores = init(scores, num_mutation, num_indels)
-                scores_accurate = init(scores_accurate, num_mutation, num_indels)
-            if not optimal_score is None:
-                opt_scores = init(opt_scores, num_mutation, num_indels)
-            opt_score_loss = init(opt_score_loss, num_mutation, num_indels)
-            nums_seeds = init(nums_seeds, num_mutation, num_indels)
-            nums_seeds_chosen = init(nums_seeds_chosen, num_mutation, num_indels)
-            nucs_by_seed = init(nucs_by_seed, num_mutation, num_indels)
-            query_cov = init(query_cov, num_mutation, num_indels)
-            query_cov[num_mutation][num_indels] += len(sequence)/query_size
-
-            if near(result_start, original_start, result_end, original_start+query_size):
-                hits[num_mutation][num_indels] += 1
-                if not mapping_quality is None and mapping_quality <= 1 and mapping_quality >= 0:
-                    correlation[num_mutation][num_indels][1].append(1)
-                if not optimal_score is None and optimal_score > 0:
-                    if optimal_score < score:
-                        better_than_optima_count += 1
-                        opt_scores[num_mutation][num_indels] += score
-                        opt_score_loss[num_mutation][num_indels] += optimal_score/score
-                    else:
-                        opt_scores[num_mutation][num_indels] += optimal_score
-                        opt_score_loss[num_mutation][num_indels] += 1.0
-                mapping_qual[-1][0].append(mapping_quality)
-                if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
-                    mapping_qual_illumina[-1][0].append(mapping_quality)
-
-                if seed_coverage_chosen_strip == 0:
-                    seed_coverage_loss.append(0)
-                else:
-                    seed_coverage_loss.append(seed_coverage_alignment / seed_coverage_chosen_strip)
-
-                if not score is None and score > 0:
-                    scores_accurate[num_mutation][num_indels] += score
-            else:
-                correlation[num_mutation][num_indels][1].append(0)
-                mapping_qual[-1][1].append(mapping_quality)
-                if num_mutation/query_size < sub_illumina and num_indels/query_size < indel_illumina:
-                    mapping_qual_illumina[-1][1].append(mapping_quality)
-            run_times[num_mutation][num_indels] = run_time
-            if not num_seeds is None:
-                nums_seeds[num_mutation][num_indels] += num_seeds
-            if not score is None:
-                scores[num_mutation][num_indels] += score
-            if not num_seed_chosen_strip is None:
-                nums_seeds_chosen[num_mutation][num_indels] += num_seed_chosen_strip
-
-        if better_than_optima_count > 0:
-            print("WARNING: aligner got better than optimal score",
-                  better_than_optima_count, "times"
-                 )
-
-        def makePicFromDict(d, w, h, divideBy, title, ignore_max_n = 0, log = False, set_max = None, set_min=None, print_out=False):
+        def makePicFromDict(d, title, log = False, set_max = None, set_min=None, print_out=False):
             pic = []
             min_ = 10000.0
             max_ = 0.0
-            if len(d.keys()) == 0:
-                return None
-            else:
-                w_keys = sorted(d.keys())
-                h_keys = sorted(d[0].keys())
+            w_keys = sorted(d.keys())
+            h_keys = sorted(d[0].keys())
+            w = 0
+            h = 0
 
+            for y in h_keys:
+                pic.append( [] )
+                w = max(w, y)
                 for x in w_keys:
-                    pic.append( [] )
-                    for y in h_keys:
-                        if x not in d or y not in d[x]:
-                            pic[-1].append( float("nan") )
-                        else:
-                            if isinstance(divideBy, dict):
-                                if not x in divideBy or not y in divideBy[x] or divideBy[x][y] is None or divideBy[x][y] == 0:
-                                    pic[-1].append( float('nan') )
-                                else:
-                                    pic[-1].append( d[x][y] / divideBy[x][y] )
-                            else:
-                                pic[-1].append( d[x][y] / divideBy )
-                            if pic[-1][-1] < min_:
-                                min_ = pic[-1][-1]
-                            if pic[-1][-1] > max_:
-                                max_ = pic[-1][-1]
-
-                for _ in range(ignore_max_n):
-                    max_x = 0
-                    max_y = 0
-                    for x, row in enumerate(pic):
-                        for y, p in enumerate(row):
-                            if p > pic[max_x][max_y]:
-                                max_x = x
-                                max_y = y
-                    pic[max_x][max_y] = float('nan')
-                if ignore_max_n > 0:
-                    max_ = 0
-                    for row in pic:
-                        for p in row:
-                            if p > max_:
-                                max_ = p
+                    h = max(h, x)
+                    if x not in d or y not in d[x]:
+                        pic[-1].append( float("nan") )
+                    else:
+                        pic[-1].append( d[x][y] )
+                        if pic[-1][-1] < min_:
+                            min_ = pic[-1][-1]
+                        if pic[-1][-1] > max_:
+                            max_ = pic[-1][-1]
 
             if print_out:
                 print(title, pic)
@@ -1230,166 +1048,11 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             return plot
 
-        total_score = 0
-        for values in scores_accurate.values():
-            for value in values.values():
-                total_score += value
-        total_opt_scores = 0
-        for values in opt_scores.values():
-            for value in values.values():
-                total_opt_scores += value
+        acc_pic = makePicFromDict(accuracy,  "accuracy " + approach)
+        run_pic = makePicFromDict(runtime, "score " + approach)
 
-        if total_opt_scores > 0:
-            print(approach, ":\ttotalscore:", total_score, "optimal total score:", total_opt_scores, "lost:", 100-100*total_score/total_opt_scores, "%")
-        #if len(seed_coverage_loss) > 0:
-        #    print(approach, ":\tseed coverage loss:", 
-        #    100-100*sum(seed_coverage_loss)/len(seed_coverage_loss), "%")
-        #print(approach, ":\ttotal nmw area:", nmw_total)
-        def dict_sum(d):
-            total = 0
-            for x in d.values():
-                for y in x.values():
-                    total += y
-            return total
-        print(approach, ":\tamount hits:", dict_sum(hits))
-
-        #turn the two arrays in correlation into the actual correlation coefficient
-        def corr(c):
-            ret = {}
-            for k, d in c.items():
-                ret[k] = {}
-                for k2, ele in d.items():
-                    if len(ele[0]) == 0:
-                        ret[k][k2] = 0
-                    else:
-                        ret[k][k2] = (np.correlate(ele[0], ele[1])[0]) / len(ele[0])
-            return ret
-        correlation = corr(correlation)
-
-        avg_hits = makePicFromDict(hits, max_mut, max_indel, num_queries, "accuracy " + approach, set_max=1, set_min=0)
-        #avg_runtime = makePicFromDict(run_times, max_mut, max_indel, 1, "runtime " + approach, 0)
-        avg_score = makePicFromDict(scores, max_mut, max_indel, num_queries, "score " + approach)
-        #avg_opt_score = makePicFromDict(opt_score_loss, max_mut, max_indel, num_queries, "optimal scores " + approach)
-        avg_seeds = makePicFromDict(nums_seeds, max_mut, max_indel, num_queries, "num seeds " + approach)
-        avg_seeds_ch = makePicFromDict(nums_seeds_chosen, max_mut, max_indel, num_queries, "num seeds in chosen SOC " + approach)
-        makePicFromDict(hits, max_mut, max_indel, nums_seeds, "seed relevance " + approach, print_out=print_relevance)
-        #avg_aligned = makePicFromDict(num_aligned, max_mut, max_indel, 1, "Queries aligned " + approach)
-        #avg_query_coverage = makePicFromDict(query_cov, max_mut, max_indel, num_queries, "Queries coverage " + approach)
-        avg_corr = makePicFromDict(correlation, max_mut, max_indel, 1, "Map Qual. Accuracy correlation " + approach, set_max=1, set_min=0)
-
-        if not avg_hits is None:
-            plots[0].append(avg_hits)
-
-        #if not avg_runtime is None:
-        #    plots[1].append(avg_runtime)
-        if not avg_score is None:
-            plots[2].append(avg_score)
-        if not avg_seeds is None:
-            plots[3].append(avg_seeds)
-        if not avg_seeds_ch is None:
-            plots[4].append(avg_seeds_ch)
-        if not avg_corr is None:
-            plots[5].append(avg_corr)
-
-        #if not avg_query_coverage is None:
-        #    plots[5].append(avg_query_coverage)
-        #if not avg_aligned is None:
-        #    plots[6].append(avg_aligned)
-        all_hits.append(hits)
-
-    c_palette = heatmap_palette(light_spec_approximation, len(approaches))
-    plot2 = figure(title="NoIndels",
-        x_axis_label='mutations', y_axis_label='hits',
-        plot_width=1500, plot_height=500,
-    )
-
-    for index, approach_, in enumerate(approaches):
-        approach = approach_[0]
-        hits = all_hits[index]
-        
-        line_x = sorted(list(hits.keys()))
-        line_y = []
-        for element in line_x:
-            if 0 not in hits[element]:
-                line_y.append(0)
-            else:
-                line_y.append(hits[element][0])
-
-        plot2.line(line_x, line_y, legend=approach, color=c_palette[index], line_width=2)
-        plot2.x(line_x, line_y, legend=approach, color=c_palette[index], size=6)
-
-    plots[-2].append(plot2)
-    
-    plot = figure(title="BWA-pic",
-        x_axis_label='#wrong / #mapped', y_axis_label='#mapped / total',
-        x_axis_type="log",
-        plot_width=650, plot_height=500,
-        min_border_bottom=10, min_border_top=10,
-        min_border_left=10, min_border_right=15
-    )
-
-    for index, approach_, in enumerate(approaches):
-        approach = approach_[0]
-        data = mapping_qual[index]
-
-        all_data = []
-        min_val = 1
-        max_val = 0
-        for x in data[0]:
-            if x is None:
-                continue
-            all_data.append(x)
-            if x < min_val:
-                min_val = x
-            if x > max_val:
-                max_val = x
-        for x in data[1]:
-            if x is None:
-                continue
-            all_data.append(x)
-            if x < min_val:
-                min_val = x
-            if x > max_val:
-                max_val = x
-                max_val = x
-
-        values = []
-        amount = 1000
-        step = len(all_data) / amount
-        c = 0
-        for v in sorted(all_data):
-            if c >= step:
-                c = 0
-                values.append(v)
-            c += 1
-
-        line_x = []
-        line_y = []
-        for val in values:
-            mapped = 0
-            wrong = 0
-            for ele in data[0]:
-                if not ele is None and ele > val:
-                    mapped += 1
-            for ele in data[1]:
-                if not ele is None and ele > val:
-                    mapped += 1
-                    wrong += 1
-
-            total = 0
-            for key, value in num_queries.items():
-                for key, value in value.items():
-                    total += value
-
-            if mapped > 0:
-                line_x.append( wrong/mapped )
-                line_y.append( mapped/total )
-
-        plot.line(line_x, line_y, legend=approach, color=c_palette[index], line_width=2)
-        plot.x(line_x, line_y, legend=approach, color=c_palette[index], size=6)
-
-    plot.legend.location = "top_left"
-    plots[-1].append(plot)
+        plots[0].append(acc_pic)
+        plots[1].append(run_pic)
 
     save(layout(plots))
 
@@ -1820,7 +1483,7 @@ exit()
 
 #high quality picture
 
-#createSampleQueries(plasmodium_genome, "sw_plasmodium.db", 1000, 100, 1, validate_using_sw=True)
+createSampleQueries(plasmodium_genome, "sw_plasmodium.db", 1000, 100, 32, validate_using_sw=True)
 
 #l = 200
 #il = 10
@@ -1831,7 +1494,7 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-test_my_approaches("sw_plasmodium.db")
+test_my_approaches("sw_plasmodium.db", plasmodium_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")

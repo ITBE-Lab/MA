@@ -222,15 +222,13 @@ def getNumQueriesDict(db_name, reference):
     indel_amounts = c.execute("""
                         SELECT DISTINCT num_indels
                         FROM samples
-                        WHERE reference == ?
                         ORDER BY num_indels
-                        """, (reference,)).fetchall()
+                        """).fetchall()
     mut_amounts = c.execute("""
                         SELECT DISTINCT num_mutation
                         FROM samples
-                        WHERE reference == ?
                         ORDER BY num_mutation
-                        """, (reference,)).fetchall()
+                        """).fetchall()
     result = {}
     for mut_amount in mut_amounts:
         result[mut_amount[0]] = {}
@@ -238,10 +236,9 @@ def getNumQueriesDict(db_name, reference):
             elements = c.execute("""
                         SELECT DISTINCT sample_id
                         FROM samples
-                        WHERE reference == ?
-                        AND num_mutation == ?
+                        WHERE num_mutation == ?
                         AND num_indels == ?
-                        """, (reference, mut_amount[0], indel_amount[0])).fetchall()
+                        """, (mut_amount[0], indel_amount[0])).fetchall()
             result[mut_amount[0]][indel_amount[0]] = len(elements)
     return result
 
@@ -354,8 +351,8 @@ def near(start_align, start_orig, end_align, end_orig):
 def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
     # get the indel and mut amounts so that we know the size of the resulting matrix
     indel_amounts, mut_amounts = getIndelsAndMuts(db_name)
-    hits = [[0]*len(indel_amounts)]*len(mut_amounts)
-    samples = [[0]*len(indel_amounts)]*len(mut_amounts)
+    hits = {}
+    samples = {}
 
     # store the aligner results in a dict of sample id
     aligner_results = {}
@@ -369,23 +366,41 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
 
     # store the optimal positions in a dict of sample id
     optimal_pos = {}
+    runtime = {}
     for sample_id, optima_end, original_size, num_mutation, num_indels, origin in getOptimalPositions(db_name):
         if not sample_id in optimal_pos:
             optimal_pos[sample_id] = ([], num_mutation, num_indels, origin, origin+original_size)
-        optimal_pos[sample_id].append( (optima_end-original_size, optima_end) )
+        optimal_pos[sample_id][0].append( (optima_end-original_size, optima_end) )
 
     # iterate over all samples
     for sample_id, value in optimal_pos.items():
         positions, num_mutation, num_indels, origin_start, origin_end = value
         # record the sample amount
+        if num_indels not in samples:
+            samples[num_indels] = {}
+        if num_mutation not in samples[num_indels]:
+            samples[num_indels][num_mutation] = 0
         samples[num_indels][num_mutation] += 1
+
+        if num_indels not in hits:
+            hits[num_indels] = {}
+        if num_mutation not in hits[num_indels]:
+            hits[num_indels][num_mutation] = 0
+
+        if num_indels not in runtime:
+            runtime[num_indels] = {}
+        if num_mutation not in runtime[num_indels]:
+            runtime[num_indels][num_mutation] = 0
 
         # figure out if within the first max_tries tries of the aligner 
         # there was a hit to one optimal position
         # or the original position
-        hit = near(start, origin_start, end, origin_end)
+        hit = False
         if not hit:
-            for start, end, mapping_quality in aligner_results[sample_id][:max_tries]:
+            for start, end, mapping_quality in aligner_results[sample_id][:max_tries+1]:
+                if near(start, origin_start, end, origin_end):
+                    hit = True
+                    break
                 for start_orig, end_orig, in positions:
                     if near(start, start_orig, end, end_orig):
                         hit = True
@@ -396,16 +411,17 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
             hits[num_indels][num_mutation] += 1
 
     # compute the accuracy
-    accuracy = []
-    for hit_row, sample_row in zip(hits, samples):
-        accuracy.append( [] )
-        for hit, sample in zip(hit_row, sample_row):
+    accuracy = {}
+    for hit_row, sample_row in zip(hits.items(), samples.items()):
+        key1, value = sample_row
+        accuracy[key1] = {}
+        for hit, tup in zip(hit_row[1].items(), value.items()):
+            key2, sample = tup
             if sample == 0: # if there were no samples we want to return NAN
-                accuracy[-1].append( float('nan') )
+                accuracy[key1][key2] = float('nan')
             else: # compute the accuracy for that cell
-                accuracy[-1].append( hit/sample )
+                accuracy[key1][key2] = hit[1]/sample
 
-    runtime = [[float('nan')]*len(indel_amounts)]*len(mut_amounts)
     for num_mutation, num_indels, run_time in getRuntimes(db_name, approach):
         runtime[num_indels][num_mutation] = run_time
 
