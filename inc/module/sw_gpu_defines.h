@@ -1,6 +1,6 @@
 #pragma once
 
-#define GAP_INIT ( 4 )
+#define GAP_INIT ( 6 )
 #define GAP_EXT ( 1 )
 #define GAP_EXT_HORIZONAL ( 1 )
 

@@ -95,7 +95,7 @@ def test_my_approach(
         max_nmw = 10,
         cheat=False,
         min_ambiguity=0,
-        match=2,
+        match=3,
         missmatch=4,
         gap=6,
         extend=1,
@@ -111,7 +111,7 @@ def test_my_approach(
     if not quitet:
         print("collecting samples (" + name + ") ...")
 
-    all_queries = getNewQueries(db_name, name, reference, give_orig_pos=True, give_orig_size=True)
+    all_queries = getQueries(db_name)
     #queries = getQueriesFor(db_name, reference, 40, 0, size)
 
     
@@ -197,8 +197,7 @@ def test_my_approach(
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
-        for data in queries:
-            sequence, sample_id, origin_pos, orig_size, _, _, _ = data
+        for sequence, sample_id in queries:
             pledges[0].append(Pledge(NucSeq()))
             pledges[0][-1].set(NucSeq(sequence))
             pledges[0][-1].get().name = str(sample_id)
@@ -619,24 +618,9 @@ def test_my_approach(
                 result.append(
                     (
                         sample_id,
-                        alignment.get_score(),
-                        score2,
-                        sc2,
                         alignment.begin_on_ref,
                         alignment.end_on_ref,
-                        num_seeds,
-                        alignment.stats.index_of_strip,
-                        seed_coverage_soc,
-                        seed_coverage,
-                        alignment.stats.num_seeds_in_strip,
-                        alignment.stats.anchor_size,
-                        alignment.stats.anchor_ambiguity,
-                        max_diag_deviation,
-                        max_diag_deviation_percent,
-                        max_nmw_area,
-                        nmw_area,
                         alignment.mapping_quality,
-                        total_time,
                         name,
                         1 if alignment.secondary else 0
                     )
@@ -801,13 +785,9 @@ def try_out_parameters(db_name):
 def test_my_approaches(db_name, missed_alignments_db=None):
     full_analysis = False
 
-    #clearResults(db_name, working_genome, "MA Accurate PY (cheat) 2")
-    clearResults(db_name, working_genome, "MA Accurate PY")
-    #clearResults(db_name, working_genome, "MA Fast PY")
-
     #test_my_approach(db_name, working_genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach(db_name, working_genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05, missed_alignments_db=missed_alignments_db)
+    test_my_approach("/MAdata/db/"+db_name, working_genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05)
 
     #test_my_approach(db_name, working_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -995,6 +975,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
     print("Having equal db entries")
 
 def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=4, out_failures=None):
+    db_name = "/MAdata/db/" + db_name
     output_file(out)
     approaches = getApproachesWithData(db_name)
     plots = [ [], [], [], [], [], [], [], [] ]
@@ -1833,31 +1814,13 @@ exit()
 """
 
 
-p = Pack()
-p.load(plasmodium_genome)
-
-queries = ContainerVector(NucSeq())
-del queries[:]
-
-for _ in range(30):
-    queries.append(NucSeq("G"*1000))
-
-results = libMA.testGPUSW(queries, p.extract_complete())
-for result in results:
-    print(result.iMaxScore)
-    for pos in result.vMaxPos:
-        print(pos)
-
-exit()
-
-
 #create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)
 #test_my_approaches("/MAdata/db/illumina.db")
 #analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
 
 #high quality picture
 
-createSampleQueries(working_genome, "random.db", 1000, 100, 128, validate_using_bwa=False)
+#createSampleQueries(plasmodium_genome, "sw_plasmodium.db", 1000, 100, 1, validate_using_sw=True)
 
 #l = 200
 #il = 10
@@ -1868,14 +1831,14 @@ createSampleQueries(working_genome, "random.db", 1000, 100, 128, validate_using_
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-test_my_approaches("/MAdata/db/random.db")
+test_my_approaches("sw_plasmodium.db")
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
 
 
-measure_time.test("random.db", working_genome)
-analyse_all_approaches_depre("test_depre.html","/MAdata/db/random.db", 1000, 100)
+test("sw_plasmodium.db", plasmodium_genome)
+analyse_all_approaches_depre("test_depre.html","sw_plasmodium.db")
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 

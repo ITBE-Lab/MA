@@ -48,10 +48,10 @@ std::vector<char> randomNucleoitdeCodesSeq( const size_t uiLen )
 	return vNucSeq;
 } // function
 
-int xScoreMatrix[NUM_OF_SYMBOLS][NUM_OF_SYMBOLS] = { {10, -3, -3, -3},
-													 {-3, 10, -3, -3},
-													 {-3, -3, 10, -3},
-													 {-3, -3, -3, 10} };
+int xScoreMatrix[NUM_OF_SYMBOLS][NUM_OF_SYMBOLS] = { {3, -4, -4, -4},
+													 {-4, 3, -4, -4},
+													 {-4, -4, 3, -4},
+													 {-4, -4, -4, 3} };
 
 
 
@@ -1628,7 +1628,7 @@ std::vector<GPUReturn> cudaAlignTmpl
         std::vector<size_t> vMaxScorePositions;
 
 	    /* Do the core alignment */
-	    metaMeasureAndLogDuration<true>
+	    metaMeasureAndLogDuration<false>
 	    (	"GPU time",	// logging text
 	    	[&] () // lambda by reference
 	    	{

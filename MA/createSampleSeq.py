@@ -208,7 +208,7 @@ def getQueriesAsASDMatrix(db_name):
             elements = c.execute("""
                         SELECT sequence, sample_id
                         FROM samples
-                        AND num_mutation == ?
+                        WHERE num_mutation == ?
                         AND num_indels == ?
                         """, (mut_amount[0], indel_amount[0])).fetchall()
             if len(elements) == 0:
@@ -245,13 +245,7 @@ def getNumQueriesDict(db_name, reference):
             result[mut_amount[0]][indel_amount[0]] = len(elements)
     return result
 
-def submitOptima(db_name, optima_list):
-    results_list = []
-    # convert the list
-    for sample_id, score, positions in optima_list:
-        for position in positions:
-            results_list.append( (sample_id, position, score) )
-
+def submitOptima(db_name, results_list):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("""DELETE FROM samples_optima""")
@@ -270,8 +264,8 @@ def submitResults(db_name, results_list):
     c = conn.cursor()
     c.execute("""
                 DELETE FROM results 
-                WHERE approach = ?
-                """, (results_list[-2],))
+                WHERE approach == ?
+                """, (results_list[0][-2],))
     c.executemany("""
                     INSERT INTO results 
                     (
@@ -282,7 +276,7 @@ def submitResults(db_name, results_list):
                         approach,
                         secondary
                     )
-                    VALUES (?,?,?,?,?,?,?)
+                    VALUES (?,?,?,?,?,?)
                     """, results_list)
     conn.commit()
 
@@ -322,7 +316,8 @@ def getOptimalPositions(db_name):
                             samples_optima.optima,
                             samples.original_size,
                             samples.num_mutation,
-                            samples.num_indels
+                            samples.num_indels,
+                            samples.origin
                         FROM samples
                         JOIN samples_optima ON samples.sample_id = samples_optima.sample_id
                     """).fetchall()
@@ -374,27 +369,29 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
 
     # store the optimal positions in a dict of sample id
     optimal_pos = {}
-    for sample_id, optima_end, original_size, num_mutation, num_indels in getOptimalPositions(db_name):
+    for sample_id, optima_end, original_size, num_mutation, num_indels, origin in getOptimalPositions(db_name):
         if not sample_id in optimal_pos:
-            optimal_pos[sample_id] = ([], num_mutation, num_indels)
+            optimal_pos[sample_id] = ([], num_mutation, num_indels, origin, origin+original_size)
         optimal_pos[sample_id].append( (optima_end-original_size, optima_end) )
 
     # iterate over all samples
     for sample_id, value in optimal_pos.items():
-        positions, num_mutation, num_indels = value
+        positions, num_mutation, num_indels, origin_start, origin_end = value
         # record the sample amount
         samples[num_indels][num_mutation] += 1
 
         # figure out if within the first max_tries tries of the aligner 
         # there was a hit to one optimal position
-        hit = False
-        for start, end, mapping_quality in aligner_results[sample_id][:max_tries]:
-            for start_orig, end_orig, in positions:
-                if near(start, start_orig, end, end_orig):
-                    hit = True
+        # or the original position
+        hit = near(start, origin_start, end, origin_end)
+        if not hit:
+            for start, end, mapping_quality in aligner_results[sample_id][:max_tries]:
+                for start_orig, end_orig, in positions:
+                    if near(start, start_orig, end, end_orig):
+                        hit = True
+                        break
+                if hit:
                     break
-            if hit:
-                break
         if hit:
             hits[num_indels][num_mutation] += 1
 
@@ -467,8 +464,6 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
         for nuc in reversed(q):
             q_ += comp[nuc.upper()]
         q = q_
-
-
 
     ##
     # helper function
@@ -603,6 +598,124 @@ def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
     print("commiting...")
     insertQueries(conn, sequences)
     print("done")
+
+
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_sw=False, quiet=False):
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
+
+    setUpDbTables(conn, reset)
+
+    ref_seq = Pack()
+    ref_seq.load(ref)
+    reference_pledge = Pledge(Pack())
+    reference_pledge.set(ref_seq)
+
+    max_indels = 1
+    if indel_size != 0:
+        max_indels = int(size/indel_size)*2
+    queries_list = []
+
+    nuc_distrib_count_orig = [0,0,0,0,0]
+    nuc_distrib_count_mod = [0,0,0,0,0]
+
+    skip_x = max(1, int(size/10))
+    skip_y = max(2, int(max_indels/10))
+
+    if skip_y % 1 == 1:
+        skip_y += 1
+
+    max_x = int(size * 4 / 10)
+    max_y = max_indels
+
+    if smaller_box:
+        max_x = int(max_x / 5)
+        max_y = int(max_y / 5)
+
+    if only_first_row:
+        max_y = 1
+
+    #
+    # iterate over the given range of mutations indels and number of sequences
+    #
+    for mutation_amount in range(0, max_x, skip_x):
+        for indel_amount in range(0, max_y, skip_y):
+
+            #dont put sequences that can't be found
+            if mutation_amount + indel_amount/2 * indel_size >= size - 1:
+                continue
+
+            #
+            # extract random query sequences and modify them
+            #
+            for _ in range(amount):
+                q_from, query, original_nuc_dist, modified_nuc_dist = get_query(ref_seq, size, mutation_amount, indel_amount, indel_size, in_to_del_ratio)
+
+                nuc_distrib_count_orig = list(map(operator.add, nuc_distrib_count_orig, original_nuc_dist))
+                nuc_distrib_count_mod = list(map(operator.add, modified_nuc_dist, nuc_distrib_count_mod))
+
+                #
+                # construct the query tuple
+                #
+                queries_list.append((
+                        mutation_amount,
+                        indel_amount,
+                        size,
+                        q_from,
+                        query
+                    ))
+
+                #
+                # save the queries to the database
+                #
+                if len(queries_list) > 10000:
+                    if not quiet:
+                        print("saving...")
+                    insertQueries(conn, queries_list)
+                    queries_list = []
+                    if not quiet:
+                        print("done saving")
+            #for _ in range(amount) end
+
+        #for indel_amount in range(max_indels) end
+        if not quiet:
+            print(mutation_amount, "/", max_x)
+    #for mutation_amount in range(size) end
+    if not quiet:
+        print("saving...")
+    if len(queries_list) > 0:
+        insertQueries(conn, queries_list)
+    if not quiet:
+        print("done saving")
+
+        print("nuc distrib (A, C, G, T, N) originally: ", nuc_distrib_count_orig)
+        print("nuc distrib (A, C, G, T, N) changed: ", nuc_distrib_count_mod)
+        print("nuc distrib (A, C, G, T, N) changed by: ", list(map(operator.mul, map(
+            operator.sub, nuc_distrib_count_mod, nuc_distrib_count_orig), [1./float(sum(nuc_distrib_count_orig))]*5)))
+        print("total amount: ", sum(nuc_distrib_count_orig))
+    conn.commit()
+    conn.close()
+    if validate_using_sw:
+        if not quiet:
+            print("computing optimal positions using SW...")
+        ref_nuc_seq = ref_seq.extract_complete()
+        queries = ContainerVector(NucSeq())
+        del queries[:]
+        sample_ids = []
+        for sequence, sample_id in getQueries("/MAdata/db/" + db_name):
+            queries.append(NucSeq(sequence))
+            sample_ids.append(sample_id)
+
+        optima_list = []
+        for results, sample_id in zip(libMA.testGPUSW(queries, ref_nuc_seq), sample_ids):
+            for result in results.vMaxPos:
+                optima_list.append( (sample_id, result) )
+        submitOptima("/MAdata/db/" + db_name, optima_list)
+        if not quiet:
+            print("done")
+
+#function
+
+
 
 
 
