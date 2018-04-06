@@ -24,35 +24,6 @@ public:
     }// operator
 };// class
 
-//from the separately compiled file...
-extern std::vector<GPUReturn> cudaAlign
-(   std::vector<char> &rvRefSeq, // reference sequence
-	std::vector<std::vector<char>> &rvQuerySeqs // vector of query sequences
-);
-
-ContainerVector SW_GPU::getInputType() const
-{
-    return ContainerVector{
-                std::shared_ptr<ContainerVector>(new ContainerVector(std::make_shared<NucSeq>())),
-                std::make_shared<NucSeq>(),
-            };
-}//function
-
-std::shared_ptr<Container> SW_GPU::getOutputType() const
-{
-    return nullptr;
-}//function
-
-
-std::shared_ptr<Container> SW_GPU::execute(std::shared_ptr<ContainerVector> vpInput)
-{
-    //const std::shared_ptr<ContainerVector>& pQueries = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
-    //const std::shared_ptr<NucSeq>& pRef = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-
-    //AUFRUF
-    return nullptr;
-}//function
-
 
 std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std::shared_ptr<NucSeq> b)
 {
