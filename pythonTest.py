@@ -974,7 +974,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10, print_relevance=False, max_secondary=4, out_failures=None):
+def analyse_all_approaches_depre(out, db_name, print_relevance=False):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
     plots = [ [], [] ]
@@ -1036,7 +1036,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
 
             plot = figure(title=title,
                     x_range=(0,h), y_range=(0,w),
-                    x_axis_label='num ' + str(indel_size) + ' nt insertions; num ' + str(indel_size) + ' nt deletions', y_axis_label='num mutations', tools="save"
+                    x_axis_label='num insertions; num deletions', y_axis_label='num mutations', tools="save"
                 )
             plot.xaxis.formatter = tick_formater
             plot.image(image=[pic], color_mapper=color_mapper,
@@ -1049,7 +1049,7 @@ def analyse_all_approaches_depre(out, db_name, query_size = 100, indel_size = 10
             return plot
 
         acc_pic = makePicFromDict(accuracy,  "accuracy " + approach)
-        run_pic = makePicFromDict(runtime, "score " + approach)
+        run_pic = makePicFromDict(runtime, "runtime " + approach)
 
         plots[0].append(acc_pic)
         plots[1].append(run_pic)
@@ -1483,7 +1483,7 @@ exit()
 
 #high quality picture
 
-createSampleQueries(plasmodium_genome, "sw_plasmodium.db", 1000, 100, 32, validate_using_sw=True)
+#createSampleQueries(plasmodium_genome, "sw_plasmodium.db", 1000, 100, 32, validate_using_sw=True)
 
 #l = 200
 #il = 10
@@ -1494,13 +1494,13 @@ createSampleQueries(plasmodium_genome, "sw_plasmodium.db", 1000, 100, 32, valida
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-test_my_approaches("sw_plasmodium.db", plasmodium_genome)
+#test_my_approaches("sw_plasmodium.db", plasmodium_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
 
 
-test("sw_plasmodium.db", plasmodium_genome)
+#test("sw_plasmodium.db", plasmodium_genome)
 analyse_all_approaches_depre("test_depre.html","sw_plasmodium.db")
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
