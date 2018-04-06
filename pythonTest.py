@@ -1833,6 +1833,22 @@ exit()
 """
 
 
+p = Pack()
+p.load(plasmodium_genome)
+
+queries = ContainerVector(NucSeq())
+del queries[:]
+
+for _ in range(30):
+    queries.append(NucSeq("G"*1000))
+
+results = libMA.testGPUSW(queries, p.extract_complete())
+for result in results:
+    print(result.iMaxScore)
+    for pos in result.vMaxPos:
+        print(pos)
+
+exit()
 
 
 #create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)

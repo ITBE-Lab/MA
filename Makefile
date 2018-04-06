@@ -2,6 +2,7 @@
 
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
 BOOST_LIB = boost_python3 boost_iostreams boost_log boost_filesystem boost_system boost_program_options
+CUDA_PATH = /usr/local/cuda-9.1/lib64/
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
@@ -15,7 +16,7 @@ CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -std=c++11 -O3
 CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -O3
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
-LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -lm -lpthread -lstdc++ -lparasail
+LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -L$(CUDA_PATH) -lm -lpthread -lstdc++ -lparasail -lcudart
 
 all: ma
 
@@ -23,7 +24,7 @@ ma: libMA.so src/cmdMa.cpp
 	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -Iinc $(LDLIBS) libMA.so -o ma
 
 libMA.so: $(TARGET_OBJ) $(CTARGET_OBJ)
-	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) -o $@
+	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) sw_gpu.o -o $@
 
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -Iinc -c $< -o $@
