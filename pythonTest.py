@@ -61,7 +61,8 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-human_genome = "/MAdata/genome/human"
+human_genome = "/MAdata/genome/zebrafish"
+zebrafish_genome = "/MAdata/genome/human"
 random_genome = "/MAdata/genome/random"
 mouse_genome = "/MAdata/genome/mouse"
 plasmodium_genome = "/MAdata/genome/plasmodium"
@@ -1476,14 +1477,16 @@ smw.execute(
 exit()
 """
 
-
 #create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)
 #test_my_approaches("/MAdata/db/illumina.db")
 #analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
 
 #high quality picture
 
-#createSampleQueries(plasmodium_genome, "sw_plasmodium.db", 1000, 100, 32, validate_using_sw=True)
+print("zebrafish genome:")
+createSampleQueries(zebrafish_genome, "sw_zebrafish.db", 1000, 100, 32, validate_using_sw=True)
+print("human genome:")
+createSampleQueries(human_genome, "sw_human.db", 1000, 100, 32, validate_using_sw=True)
 
 #l = 200
 #il = 10

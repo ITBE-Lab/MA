@@ -24,6 +24,11 @@ public:
     }// operator
 };// class
 
+extern std::vector<GPUReturn> cudaAlign
+(
+    std::vector<char> &rvRefSeq, // reference sequence
+	std::vector<std::vector<char>> &rvQuerySeqs // vector of query sequences
+);
 
 std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std::shared_ptr<NucSeq> b)
 {

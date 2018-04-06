@@ -39,11 +39,11 @@ bwa_home = "/usr/home/markus/workspace/bwa/bwa index "
 minimap_home = "/usr/home/markus/workspace/minimap2/minimap2 -d "
 def make(filename, out_name):
     # my pack + fmd Index
-    ref_seq = Pack()
-    ref_seq.append_fasta_file( filename )
-    ref_seq.store(out_name)
-    fm_index = FMIndex(ref_seq)
-    fm_index.store(out_name)
+    #ref_seq = Pack()
+    #ref_seq.append_fasta_file( filename )
+    #ref_seq.store(out_name)
+    #fm_index = FMIndex(ref_seq)
+    #fm_index.store(out_name)
     # BWA fmd index
     os.system(bwa_home + "-p " + out_name + "bwa " + filename)
     # bowtie index
@@ -110,7 +110,7 @@ def chrNames(prefix, num, suffix):
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
 #make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
 
-replace_n(["/MAdata/chrom/zebrafish/genome.fasta"], "/MAdata/chrom/zebrafish/n_free.fasta")
+#replace_n(["/MAdata/chrom/zebrafish/genome.fasta"], "/MAdata/chrom/zebrafish/n_free.fasta")
 #make("/MAdata/chrom/plasmodium/n_free.fasta", "/MAdata/genome/plasmodium")
 
 #makeRandom("/MAdata/chrom/random.fasta", 3 * 10**9)
