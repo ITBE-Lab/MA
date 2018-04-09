@@ -316,7 +316,7 @@ def getOptimalPositions(db_name):
                             samples.num_indels,
                             samples.origin
                         FROM samples
-                        JOIN samples_optima ON samples.sample_id = samples_optima.sample_id
+                        LEFT JOIN samples_optima ON samples.sample_id = samples_optima.sample_id
                     """).fetchall()
 
 def getResults(db_name, approach):
@@ -331,7 +331,8 @@ def getResults(db_name, approach):
                             results.mapping_quality
                         FROM samples
                         JOIN results ON samples.sample_id = results.sample_id
-                    """).fetchall()
+                        WHERE results.approach = ?
+                    """, (approach,)).fetchall()
 
 def getRuntimes(db_name, approach):
     conn = sqlite3.connect(db_name)
@@ -348,7 +349,7 @@ def getRuntimes(db_name, approach):
 def near(start_align, start_orig, end_align, end_orig):
     return end_align >= start_orig and start_align <= end_orig
 
-def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
+def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
     # get the indel and mut amounts so that we know the size of the resulting matrix
     indel_amounts, mut_amounts = getIndelsAndMuts(db_name)
     hits = {}
@@ -359,7 +360,7 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
     for sample_id, secondary, start, end, mapping_quality in getResults(db_name, approach):
         if not sample_id in aligner_results:
             aligner_results[sample_id] = []
-        if secondary: # append secondary ones
+        if secondary == 1: # append secondary ones
             aligner_results[sample_id].append( (start, end, mapping_quality) )
         else: # prepend the primary alignment so that we always use that one first
             aligner_results[sample_id] = [ (start, end, mapping_quality) ] + aligner_results[sample_id]
@@ -370,7 +371,9 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
     for sample_id, optima_end, original_size, num_mutation, num_indels, origin in getOptimalPositions(db_name):
         if not sample_id in optimal_pos:
             optimal_pos[sample_id] = ([], num_mutation, num_indels, origin, origin+original_size)
-        optimal_pos[sample_id][0].append( (optima_end-original_size, optima_end) )
+        if allow_sw_hits and not optima_end is None:
+            optimal_pos[sample_id][0].append( (optima_end-original_size, optima_end) )
+
 
     # iterate over all samples
     for sample_id, value in optimal_pos.items():
@@ -397,16 +400,17 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries):
         # or the original position
         hit = False
         if not hit:
-            for start, end, mapping_quality in aligner_results[sample_id][:max_tries+1]:
-                if near(start, origin_start, end, origin_end):
-                    hit = True
-                    break
-                for start_orig, end_orig, in positions:
-                    if near(start, start_orig, end, end_orig):
+            if sample_id in aligner_results:
+                for start, end, mapping_quality in aligner_results[sample_id][:max_tries+1]:
+                    if near(start, origin_start, end, origin_end):
                         hit = True
                         break
-                if hit:
-                    break
+                    for start_orig, end_orig, in positions:
+                        if near(start, start_orig, end, end_orig):
+                            hit = True
+                            break
+                    if hit:
+                        break
         if hit:
             hits[num_indels][num_mutation] += 1
 

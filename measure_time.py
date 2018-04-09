@@ -30,9 +30,9 @@ class CommandLine(Module):
 
     def __get_sam(self, index_str, queries):
         f = open(self.in_filename, "w")
-        for index, query in enumerate(queries):
+        for query in queries:
             check = ""
-            f.write(">" + str(index) + " sequence" + str(index) + "\n" )
+            f.write(">" + query.name + " sequence" + query.name + "\n" )
             query_string = str(query)
             assert(len(query) > 0)
             assert(len(query_string) > 0)
@@ -68,6 +68,17 @@ class CommandLine(Module):
         sam_file = result.stdout.decode('utf-8')
 
         return sam_file
+
+    ##
+    # @origin https://stackoverflow.com/questions/10321978/integer-to-bitfield-as-a-list
+    def bitfield(self, num):
+        return list(reversed([True if digit=='1' else False for digit in bin(num)[2:]]))
+
+    def secondary(self, string):
+        bits = self.bitfield(int(string))
+        if len(bits) <= 8:
+            return False
+        return bits[8]
 
     def __align(self, index_str, queries, pack):
         sam = self.__get_sam(index_str, queries)
@@ -119,7 +130,7 @@ class CommandLine(Module):
                 alignment.mapping_quality = int(columns[4])/255
                 alignment.stats.name = columns[0]
                 # set the secondary flag for secondary alignments
-                alignment.secondary = True if int(columns[1]) | 0x100 > 0 else False
+                alignment.secondary = True if self.secondary(columns[1]) else False
                 if not alignment.secondary:
                     self.check_existence[int(columns[0])] += 1
                 alignments.append(alignment)
@@ -294,7 +305,7 @@ def test(
     reference_pledge.set(ref_pack)
 
     num_threads = 1
-    num_results = "3"
+    num_results = "5"
 
     l = [
         #("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),

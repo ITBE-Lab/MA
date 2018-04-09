@@ -61,12 +61,11 @@ def heatmap_palette(scheme, num_colors):
                                                clamp(int(blue * 255)))
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
-human_genome = "/MAdata/genome/zebrafish"
-zebrafish_genome = "/MAdata/genome/human"
+human_genome = "/MAdata/genome/human"
+zebrafish_genome = "/MAdata/genome/zebrafish"
 random_genome = "/MAdata/genome/random"
 mouse_genome = "/MAdata/genome/mouse"
 plasmodium_genome = "/MAdata/genome/plasmodium"
-working_genome = plasmodium_genome
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -289,7 +288,7 @@ def test_my_approach(
         for i, alignments in enumerate(pledges[-1]):
             if len(alignments.get()) == 0 or len(alignments.get()[0]) == 0:
                 sequence, sample_id, origin_pos, orig_size, num_mutation, num_indels, indel_size = queries[i]
-                missed_list.append( (num_mutation, num_indels, orig_size, origin_pos, indel_size, sequence, working_genome) )
+                missed_list.append( (num_mutation, num_indels, orig_size, origin_pos, indel_size, sequence, reference) )
                 continue
             alignment = alignments.get()[0]
             if cheat:
@@ -667,7 +666,7 @@ def test_my_approach(
         print("done")
 
 
-def relevance(db_name):
+def relevance(db_name, working_genome):
     all_queries = getQueriesAsASDMatrix(db_name, "blank", working_genome, True)
 
     fm_index = FMIndex()
@@ -729,7 +728,7 @@ class MA_Parameter(CommandLine):
         return True
 """
 
-def try_out_parameters(db_name):
+def try_out_parameters(db_name, working_genome):
     for query_size, indel_size in [ (1000, 100), (200, 20), (30000, 100) ]:
         print("query_size", query_size, "indel_size", indel_size)
         createSampleQueries(working_genome, db_name, query_size, indel_size, 32, high_qual=False, quiet=True)
@@ -786,15 +785,15 @@ def try_out_parameters(db_name):
 def test_my_approaches(db_name, genome, missed_alignments_db=None):
     full_analysis = False
 
-    #test_my_approach(db_name, working_genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
+    #test_my_approach(db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05, reportN=5)
 
-    #test_my_approach(db_name, working_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
+    #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
-    #test_my_approach(db_name, working_genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
+    #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    #test_my_approach(db_name, working_genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
+    #test_my_approach(db_name, genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -975,7 +974,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, print_relevance=False):
+def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
     plots = [ [], [] ]
@@ -984,38 +983,41 @@ def analyse_all_approaches_depre(out, db_name, print_relevance=False):
 
     for approach_ in approaches:
         approach = approach_[0]
-        accuracy, runtime = getAccuracyAndRuntimeOfAligner(db_name, approach, 1)
+        accuracy, runtime = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits)
 
         def makePicFromDict(d, title, log = False, set_max = None, set_min=None, print_out=False):
             pic = []
             min_ = 10000.0
             max_ = 0.0
-            w_keys = sorted(d.keys())
-            h_keys = sorted(d[0].keys())
             w = 0
             h = 0
+            w_keys = sorted(d.keys())
+            if len(w_keys) > 0:
+                h_keys = sorted(d[w_keys[0]].keys())
 
-            for y in h_keys:
-                pic.append( [] )
-                w = max(w, y)
-                for x in w_keys:
-                    h = max(h, x)
-                    if x not in d or y not in d[x]:
-                        pic[-1].append( float("nan") )
-                    else:
-                        pic[-1].append( d[x][y] )
-                        if pic[-1][-1] < min_:
-                            min_ = pic[-1][-1]
-                        if pic[-1][-1] > max_:
-                            max_ = pic[-1][-1]
+                for y in h_keys:
+                    pic.append( [] )
+                    w = max(w, y)
+                    for x in w_keys:
+                        h = max(h, x)
+                        if x not in d or y not in d[x]:
+                            pic[-1].append( float("nan") )
+                        else:
+                            pic[-1].append( d[x][y] )
+                            if pic[-1][-1] < min_:
+                                min_ = pic[-1][-1]
+                            if pic[-1][-1] > max_:
+                                max_ = pic[-1][-1]
 
-            if print_out:
-                print(title, pic)
+                if print_out:
+                    print(title, pic)
 
-            if set_max is not None:
-                max_ = set_max
-            if set_min is not None:
-                min_ = set_min
+                if set_max is not None:
+                    max_ = set_max
+                if set_min is not None:
+                    min_ = set_min
+            else:
+                pic.append( [0] )
 
             color_mapper = LinearColorMapper(
                     palette=heatmap_palette(light_spec_approximation, 127),
@@ -1142,7 +1144,7 @@ def analyse_all_approaches(out, db_name, query_size = 100, indel_size = 10):
     print(out_list)
     print("[END COPY HERE]")
 
-def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 10):
+def compare_approaches(out, approaches, db_name, genome, query_size = 100, indel_size = 10):
     output_file(out)
     plots = []
 
@@ -1150,7 +1152,7 @@ def compare_approaches(out, approaches, db_name, query_size = 100, indel_size = 
     max_mut = query_size
 
     def get_data(db_name, approach, query_size, indel_size):
-        results = getResults(db_name, approach, query_size, indel_size, working_genome)
+        results = getResults(db_name, approach, query_size, indel_size, genome)
         hits = {}
         tries = {}
         scores = {}
@@ -1448,7 +1450,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 #print("mouse")
 #get_ambiguity_distribution(mouse_genome)
 #print("human")
-#get_ambiguity_distribution(working_genome)
+#get_ambiguity_distribution(human_genome)
 #exit()
 
 """
@@ -1483,10 +1485,10 @@ exit()
 
 #high quality picture
 
-print("zebrafish genome:")
-createSampleQueries(zebrafish_genome, "sw_zebrafish.db", 1000, 100, 32, validate_using_sw=True)
-print("human genome:")
-createSampleQueries(human_genome, "sw_human.db", 1000, 100, 32, validate_using_sw=True)
+#print("zebrafish genome:")
+#createSampleQueries(zebrafish_genome, "sw_zebrafish.db", 1000, 100, 32, validate_using_sw=True)
+#print("human genome:")
+#createSampleQueries(human_genome, "sw_human.db", 1000, 100, 32, validate_using_sw=True)
 
 #l = 200
 #il = 10
@@ -1497,14 +1499,14 @@ createSampleQueries(human_genome, "sw_human.db", 1000, 100, 32, validate_using_s
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-#test_my_approaches("sw_plasmodium.db", plasmodium_genome)
+#test_my_approaches("sw_zebrafish_temp.db", human_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
 
 
-#test("sw_plasmodium.db", plasmodium_genome)
-analyse_all_approaches_depre("test_depre.html","sw_plasmodium.db")
+test("sw_zebrafish_temp.db", human_genome)
+analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=1)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 
