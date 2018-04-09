@@ -177,13 +177,13 @@ def test_my_approach(
         NeedlemanWunsch(False).penalty_missmatch = missmatch
         NeedlemanWunsch(False).max_gap_area = 1000000 if local else 0
         #modules
-        seeding = BinarySeeding(not complete_seeds, min_ambiguity)
+        seeding = BinarySeeding(not complete_seeds, min_ambiguity, max_hits)
         if kMerExtension:
             seeding = OtherSeeding(True)
         reseeding = ReSeed(max_hits)
         minimizers = Minimizers()
         minimizersExtract = MinimizersToSeeds()
-        soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2, give_up)
+        soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2, give_up, 0)
         soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
@@ -191,6 +191,7 @@ def test_my_approach(
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
+        nmw.min_coverage = 1.1 # force SW alignment @todo remove me
         optimal = ExecOnVec(nmw, sort_after_score)
         localToGlobal = LocalToGlobal(0.05)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
@@ -286,10 +287,11 @@ def test_my_approach(
             print("extracting results (", name, ") ...")
         result = []
         for i, alignments in enumerate(pledges[-1]):
-            if len(alignments.get()) == 0 or len(alignments.get()[0]) == 0:
-                sequence, sample_id, origin_pos, orig_size, num_mutation, num_indels, indel_size = queries[i]
-                missed_list.append( (num_mutation, num_indels, orig_size, origin_pos, indel_size, sequence, reference) )
-                continue
+            #if len(alignments.get()) == 0 or len(alignments.get()[0]) == 0:
+            #    print(queries[i])
+            #    sequence, sample_id, origin_pos, orig_size, num_mutation, num_indels, indel_size = queries[i]
+            #    missed_list.append( (num_mutation, num_indels, orig_size, origin_pos, indel_size, sequence, reference) )
+            #    continue
             alignment = alignments.get()[0]
             if cheat:
                 ##
@@ -322,8 +324,8 @@ def test_my_approach(
                 # pretend backend is perfect end
 
             if len(alignment) == 0:
-                print("Should never print this")
-                assert(False)
+                #print("Should never print this")
+                #assert(False)
                 continue
             alignment2 = None
             optimal_alignment = None
@@ -457,6 +459,8 @@ def test_my_approach(
                         optimal_alignment.begin_on_ref += alignment.begin_on_ref
                         optimal_alignment.end_on_ref += alignment.begin_on_ref
             sample_id = int(alignment.stats.name)
+            if sample_id == 421:
+                print("FOUND IT")
             collect_ids.append(sample_id)
 
             total_time = 0
@@ -785,9 +789,9 @@ def try_out_parameters(db_name, working_genome):
 def test_my_approaches(db_name, genome, missed_alignments_db=None):
     full_analysis = False
 
-    #test_my_approach(db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05, reportN=5)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=200, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=200, min_ambiguity=3, give_up=0.05, reportN=200)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1486,7 +1490,8 @@ exit()
 #high quality picture
 
 #print("zebrafish genome:")
-#createSampleQueries(zebrafish_genome, "sw_zebrafish.db", 1000, 100, 32, validate_using_sw=True)
+#createSampleQueries(zebrafish_genome, "sw_zebrafish.db", 1000, 100, 32, validate_using_sw=Tru
+# e)
 #print("human genome:")
 #createSampleQueries(human_genome, "sw_human.db", 1000, 100, 32, validate_using_sw=True)
 
@@ -1499,14 +1504,16 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-#test_my_approaches("sw_zebrafish_temp.db", human_genome)
+test_my_approaches("sw_zebrafish_temp.db", human_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
 
+#print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 421))
+#print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
 #test("sw_zebrafish_temp.db", human_genome)
-#analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=1)
+analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=200, print_fails=True)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 

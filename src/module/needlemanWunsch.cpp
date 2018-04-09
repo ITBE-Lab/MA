@@ -906,13 +906,13 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         DEBUG_2(std::cout << "computing SW for entire area" << std::endl;)
         //figure out the correct reference location
         nucSeqIndex refStart = beginRef;
-        if(refStart >= beginQuery * fRelativePadding)
-            refStart -= beginQuery * fRelativePadding;
+        if(refStart >= pQuery->length() * fRelativePadding)
+            refStart -=  pQuery->length() * fRelativePadding;
         else
             refStart = 0;
         nucSeqIndex refEnd = endRef;
         assert(endQuery <= pQuery->length());
-        refEnd += ( pQuery->length() - endQuery ) * fRelativePadding;
+        refEnd += pQuery->length()  * fRelativePadding;
 
         assert(refEnd > refStart);
         nucSeqIndex refWidth = refEnd - refStart;
@@ -946,10 +946,10 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     if(!bLocal)
     {
-        beginRef -= (nucSeqIndex)( beginQuery * fRelativePadding );
+        beginRef -= (nucSeqIndex)(  pQuery->length() * fRelativePadding );
         if(beginRef > endRef)//check for underflow
             beginRef = 0;
-        endRef += (nucSeqIndex)( (pQuery->length() - endQuery) * fRelativePadding );
+        endRef += (nucSeqIndex)( pQuery->length() * fRelativePadding );
         if(beginRef > endRef)//check for overflow
             endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
         endQuery = pQuery->length();
@@ -1091,7 +1091,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             false,
             true
         );
+        pRet->removeDangeling();
     }//else
+
 
     return pRet;
 
@@ -1136,7 +1138,7 @@ std::shared_ptr<Container> LocalToGlobal::execute(
     // check if the mapping quality is lower than the threshold
     auto pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
     auto pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[1]);
-    float fQual = pFirst->fMappingQuality =
+    float fQual =
                 ( pFirst->score() - pSecond->score() )
                     /
                 (double)( pFirst->score() )
@@ -1152,9 +1154,9 @@ std::shared_ptr<Container> LocalToGlobal::execute(
         const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
 
         nucSeqIndex beginRef =
-            pAlignment->uiBeginOnRef - (nucSeqIndex)(pAlignment->uiBeginOnQuery * fRelativePadding);
+            pAlignment->uiBeginOnRef - (nucSeqIndex)(pQuery->length() * fRelativePadding);
         //check for underflow
-        if(pAlignment->uiBeginOnQuery * fRelativePadding > pAlignment->uiBeginOnRef)
+        if(pQuery->length() * fRelativePadding > pAlignment->uiBeginOnRef)
             beginRef = 0;
         DEBUG(
             if(pAlignment->uiBeginOnRef < beginRef)
@@ -1164,8 +1166,7 @@ std::shared_ptr<Container> LocalToGlobal::execute(
             }// if
         )// DEBUG
         nucSeqIndex endRef =
-            pAlignment->uiEndOnRef +
-            (nucSeqIndex)((pQuery->length() - pAlignment->uiEndOnQuery) * fRelativePadding);
+            pAlignment->uiEndOnRef + (nucSeqIndex)(pQuery->length() * fRelativePadding);
 
         std::shared_ptr<Alignment> pAppend(new Alignment(beginRef, endRef, 0, pQuery->length()));
         pAppend->xStats = pAlignment->xStats;
@@ -1239,6 +1240,98 @@ std::shared_ptr<Container> LocalToGlobal::execute(
 }//function
 
 
+
+ContainerVector CombatRepetitively::getInputType() const
+{
+    return ContainerVector{
+        //the local alignment
+        std::make_shared<ContainerVector>( std::make_shared<Alignment>() ),
+        //the query sequence
+        std::shared_ptr<Container>(new NucSeq()),
+        //the reference sequence
+        std::shared_ptr<Container>(new Pack())
+    };
+}//function
+
+std::shared_ptr<Container> CombatRepetitively::getOutputType() const
+{
+    return std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
+}//function
+
+std::shared_ptr<Container> CombatRepetitively::execute(
+        std::shared_ptr<ContainerVector> vpInput
+    )
+{
+    const auto& pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
+    const std::shared_ptr<NucSeq>& pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
+    const std::shared_ptr<Pack>& pRefPack = std::static_pointer_cast<Pack>((*vpInput)[2]);
+
+    if(pAlignments->size() < 2)
+        return pAlignments;
+
+    // check if the mapping quality is lower than the threshold
+    auto pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
+    auto pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[1]);
+    float fQual =
+                ( pFirst->score() - pSecond->score() )
+                    /
+                (double)( pFirst->score() )
+            ;
+
+    if(fQual > fMappingQualMax)
+        return std::make_shared<ContainerVector>( pAlignments );
+
+    // if we reach this point we have to go through all alignments and check the are that they cover
+    nucSeqIndex refStart = pFirst->uiBeginOnRef;
+    nucSeqIndex refEnd = pFirst->uiEndOnRef;
+    for( const auto& pElement : *pAlignments )
+    {
+        const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
+        if(refStart > pFirst->uiBeginOnRef)
+            refStart = pFirst->uiBeginOnRef;
+        if(refEnd < pFirst->uiEndOnRef)
+            refEnd = pFirst->uiEndOnRef;
+    }// for
+
+    if(refEnd - refStart > uiRegionLength)
+        return std::make_shared<ContainerVector>( pAlignments );
+
+    // if we reach this point we have to recompute the entire alignment using SW
+    auto pRet = std::make_shared<ContainerVector>(std::make_shared<Alignment>());
+
+    //add padding to the reference and make sure we do not extract something bridging
+    if(refStart >= pQuery->length() * fRelativePadding)
+        refStart -=  pQuery->length() * fRelativePadding;
+    else
+        refStart = 0;
+    refEnd += pQuery->length()  * fRelativePadding;
+
+    assert(refEnd > refStart);
+    nucSeqIndex refWidth = refEnd - refStart;
+    if(refStart + refWidth >= pRefPack->uiUnpackedSizeForwardPlusReverse())
+        refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
+    assert(refWidth > 0);
+    if(pRefPack->bridgingSubsection(refStart, refWidth))
+    {
+        DEBUG_2(std::cout << "Un-bridging from " << refStart << ", " << refWidth;)
+        pRefPack->unBridgeSubsection(refStart, refWidth);
+        DEBUG_2(std::cout << " to: " << refStart << ", " << refWidth << std::endl;)
+    }
+    //extract the reference
+    std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
+        refStart,
+        refStart + refWidth
+    );
+
+    auto pAlign = smithWaterman(pQuery, pRef, refStart);
+    //copy the stats
+    pAlign->xStats = pFirst->xStats;
+    pAlign->xStats.sName = pFirst->sName;
+    pRet.append(pAlign);
+
+    return pRet;
+}// function
+
 void exportNeedlemanWunsch()
 {
     DEBUG(
@@ -1246,7 +1339,7 @@ void exportNeedlemanWunsch()
     )//DEBUG
      //export the segmentation class
     boost::python::class_<
-        NeedlemanWunsch, 
+        NeedlemanWunsch,
         boost::python::bases<Module>,
         std::shared_ptr<NeedlemanWunsch>
     >(
@@ -1263,24 +1356,39 @@ void exportNeedlemanWunsch()
         .def_readwrite("max_gap_Area", &uiMaxGapArea)
         // actual parameters of NW
         .def_readwrite("local", &NeedlemanWunsch::bLocal)
+        .def_readwrite("min_coverage", &NeedlemanWunsch::fMinimalQueryCoverage)
     ;
-    boost::python::implicitly_convertible< 
+    boost::python::implicitly_convertible<
         std::shared_ptr<NeedlemanWunsch>,
-        std::shared_ptr<Module> 
+        std::shared_ptr<Module>
     >();
 
      //export the LocalToGlobal class
     boost::python::class_<
-        LocalToGlobal, 
+        LocalToGlobal,
         boost::python::bases<Module>,
         std::shared_ptr<LocalToGlobal>
     >(
         "LocalToGlobal",
         boost::python::init<double>()
     );
-    boost::python::implicitly_convertible< 
+    boost::python::implicitly_convertible<
         std::shared_ptr<LocalToGlobal>,
-        std::shared_ptr<Module> 
+        std::shared_ptr<Module>
+    >();
+
+     //export the CombatRepetitively class
+    boost::python::class_<
+        CombatRepetitively,
+        boost::python::bases<Module>,
+        std::shared_ptr<CombatRepetitively>
+    >(
+        "CombatRepetitively",
+        boost::python::init<double, nucSeqIndex>()
+    );
+    boost::python::implicitly_convertible<
+        std::shared_ptr<CombatRepetitively>,
+        std::shared_ptr<Module>
     >();
 
 }//function

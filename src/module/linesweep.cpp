@@ -164,7 +164,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         assert(pSeed->start() <= pSeed->end());
         assert(pSeed->size() <= 10000);
         //adjust the score correctly
-        uiScore += iMatch * pSeed->getValue();
+        uiScore += iMatch * pSeed->size();
         /*
         * we need to extract the gap between the seeds in order to do that.
         * we will assume that any gap can be spanned by a single indel

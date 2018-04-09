@@ -26,6 +26,7 @@ namespace libMA
     public:
         bool bLrExtension;
         const unsigned int uiMinAmbiguity;
+        const unsigned int uiMaxAmbiguity;
 
         /**
          * @brief The simplified extension scheme presented in our Paper.
@@ -80,7 +81,9 @@ namespace libMA
                 /*
                 * In fact, if ok.getSize is zero, then there are no matches any more.
                 */
-                if (ok.size() <= uiMinAmbiguity)
+                if (ok.size() <= 0)
+                    break; // the SA-index interval size is too small to be extended further
+                if (ok.size() <= uiMinAmbiguity && ik.size() <= uiMaxAmbiguity)
                     break; // the SA-index interval size is too small to be extended further
                 end = i;
                 ik = ok;
@@ -112,7 +115,9 @@ namespace libMA
                     /*
                     * In fact, if ok.getSize is zero, then there are no matches any more.
                     */
-                    if (ok.size() <= uiMinAmbiguity)
+                    if (ok.size() <= 0)
+                        break; // the SA-index interval size is too small to be extended further
+                    if (ok.size() <= uiMinAmbiguity && ik.size() <= uiMaxAmbiguity)
                         break; // the SA-index interval size is too small to be extended further
                     start = i;
                     ik = ok;
@@ -163,7 +168,9 @@ namespace libMA
                     /*
                     * In fact, if ok.getSize is zero, then there are no matches any more.
                     */
-                    if (ok.size() <= uiMinAmbiguity)
+                    if (ok.size() <= 0)
+                        break; // the SA-index interval size is too small to be extended further
+                    if (ok.size() <= uiMinAmbiguity && ik.size() <= uiMaxAmbiguity)
                         break; // the SA-index interval size is too small to be extended further
                     start = i;
                     ik = ok;
@@ -198,7 +205,9 @@ namespace libMA
                 /*
                 * In fact, if ok.getSize is zero, then there are no matches any more.
                 */
-                if (ok.size() <= uiMinAmbiguity)
+                if (ok.size() <= 0)
+                    break; // the SA-index interval size is too small to be extended further
+                if (ok.size() <= uiMinAmbiguity && ik.size() <= uiMaxAmbiguity)
                     break; // the SA-index interval size is too small to be extended further
                 end = i;
                 ik = ok;
@@ -298,7 +307,9 @@ namespace libMA
                     * In fact, if ok.getSize is zero, then there are no matches any more.
                     * thus we can stop extending forwards
                     */
-                    if (ok.size() <= uiMinAmbiguity)
+                    if (ok.size() == 0)
+                        break; // the SA-index interval size is too small to be extended further
+                    if (ok.size() <= uiMinAmbiguity && ik.size() <= uiMaxAmbiguity)
                         break; // the SA-index interval size is too small to be extended further
                     // if we get here we can forget the old interval and save the current interval.
                     ik = ok;
@@ -376,7 +387,8 @@ namespace libMA
                                 bHaveOne = true;
                             }// if
                             // check if we can extend this interval further
-                            else if(ok.size() > uiMinAmbiguity)
+                            else if(ok.size() > uiMinAmbiguity || 
+                                (ok.size() > 0 && ik.size() >= uiMaxAmbiguity) )
                             {
                                 // if so add the intervals to the list
                                 Segment xSeg = Segment(i, ik.size()+1, ok);
@@ -448,10 +460,11 @@ namespace libMA
          * Our approach is faster and computes seeds of higher quality.
          * However Li et Al.s approach will increase the overall accuracy of the alignment.
          */
-        BinarySeeding(bool bLrExtension, unsigned int uiMinAmbiguity)
+        BinarySeeding(bool bLrExtension, unsigned int uiMinAmbiguity, unsigned int uiMaxAmbiguity)
                 :
             bLrExtension(bLrExtension),
-            uiMinAmbiguity(uiMinAmbiguity)
+            uiMinAmbiguity(uiMinAmbiguity),
+            uiMaxAmbiguity(uiMaxAmbiguity)
         {}//constructor
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -482,7 +495,8 @@ namespace libMA
         {
             return std::string("BinarySeeding(") + 
                 std::to_string(bLrExtension) + "," +
-                std::to_string(uiMinAmbiguity) + ")";
+                std::to_string(uiMinAmbiguity) + "," +
+                std::to_string(uiMaxAmbiguity) + ")";
         }//function
     };//class
 

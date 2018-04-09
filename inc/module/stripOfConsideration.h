@@ -41,6 +41,11 @@ namespace libMA
         const float fGiveUp = 0;
 
         /**
+         * @todo
+         */
+        const float fIncludeAmbiguity = 0;
+
+        /**
         * @brief skip seeds with too much ambiguity
         * @details
         * True: skip all seeds with to much ambiguity
@@ -79,13 +84,15 @@ namespace libMA
                 unsigned int uiMaxAmbiguity,
                 unsigned int numStrips,
                 float fScoreMinimum,
-                float fGiveUp
+                float fGiveUp,
+                float fIncludeAmbiguity
             )
                 :
             uiMaxAmbiguity(uiMaxAmbiguity),
             numStrips(numStrips),
             fScoreMinimum(fScoreMinimum),
-            fGiveUp(fGiveUp)
+            fGiveUp(fGiveUp),
+            fIncludeAmbiguity(fIncludeAmbiguity)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -121,6 +128,7 @@ namespace libMA
                 std::to_string(uiMaxAmbiguity) + "," +
                 std::to_string(fScoreMinimum) + "," +
                 std::to_string(fGiveUp) + "," +
+                std::to_string(fIncludeAmbiguity) + "," +
                 std::to_string(numStrips) + ")";
         }//function
     };//class

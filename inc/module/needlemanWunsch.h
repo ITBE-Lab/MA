@@ -129,7 +129,7 @@ namespace libMA
          * @brief Used to check the input of execute.
          * @details
          * Returns:
-         * - Seeds
+         * - ContainerVector(Alignment)
          * - NucSeq
          * - Pack
          */
@@ -149,6 +149,57 @@ namespace libMA
         }
 
         std::string getFullDesc() const;
+    };//class
+
+    /**
+     * @brief @todo
+     * @ingroup module
+     */
+    class CombatRepetitively : public Module
+    {
+    public:
+        const double fMappingQualMax;
+        const nucSeqIndex uiRegionLength;
+
+        CombatRepetitively(double fMappingQualMax, nucSeqIndex uiRegionLength)
+                :
+            fMappingQualMax(fMappingQualMax),
+            uiRegionLength(uiRegionLength)
+        {}//constructor
+
+        //overload
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - ContainerVector(Alignment)
+         * - NucSeq
+         * - Pack
+         */
+        ContainerVector EXPORTED getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - ContainerVector(Alignment)
+         */
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
+
+        std::string getName() const
+        {
+            return "CombatRepetitively";
+        }
+
+        std::string getFullDesc() const
+        {
+            return std::string("CombatRepetitively(") + 
+                std::to_string(fMappingQualMax) + "," +
+                std::to_string(uiRegionLength) + ")"
+                ;
+        }//function
     };//class
 }//namespace libMA
 

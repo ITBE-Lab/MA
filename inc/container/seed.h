@@ -100,9 +100,7 @@ namespace libMA
          */
         inline nucSeqIndex getValue() const
         {
-            if(uiAmbiguity == 0)
-                return size();
-            return size();///uiAmbiguity;
+            return size();
         }//function
 
         /**

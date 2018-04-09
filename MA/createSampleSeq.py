@@ -184,10 +184,12 @@ def getQuery(db_name, sample_id):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     return c.execute("""
-                        SELECT sequence
+                        SELECT samples.sample_id, sequence, origin, optima, approach, start, end
                         FROM samples
-                        WHERE sample_id = ?
-                        """, (sample_id,)).fetchall()[0][0]
+                        JOIN samples_optima ON samples_optima.sample_id = samples.sample_id
+                        JOIN results ON results.sample_id = samples.sample_id
+                        WHERE samples.sample_id = ?
+                        """, (sample_id,)).fetchall()
 
 
 def getIndelsAndMuts(db_name):
@@ -266,6 +268,9 @@ def submitOptima(db_name, results_list):
     conn.commit()
 
 def submitResults(db_name, results_list):
+    for result in results_list:
+        if result[0] == 421:
+            print("FOUND IT 2", result)
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("""
@@ -374,6 +379,7 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, 
         else: # prepend the primary alignment so that we always use that one first
             aligner_results[sample_id] = [ (start, end, mapping_quality) ] + aligner_results[sample_id]
 
+
     # store the optimal positions in a dict of sample id
     optimal_pos = {}
     runtime = {}
@@ -411,6 +417,8 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, 
         if not hit:
             if sample_id in aligner_results:
                 for start, end, mapping_quality in aligner_results[sample_id][:max_tries+1]:
+                    if sample_id == 421:
+                        print(start, end, mapping_quality)
                     if near(start, origin_start, end, origin_end):
                         hit = True
                         break
@@ -422,7 +430,7 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, 
                         break
         if hit:
             hits[num_indels][num_mutation] += 1
-        elif print_fails:
+        elif print_fails and num_indels==6:
             print(approach, sample_id, num_indels, num_mutation)
 
     # compute the accuracy

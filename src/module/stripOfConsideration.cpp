@@ -77,33 +77,36 @@ class SoCOrder
 {
 public:
     nucSeqIndex uiAccumulativeLength = 0;
+    unsigned int uiSeedAmbiguity = 0;
     unsigned int uiSeedAmount = 0;
 
     inline void operator+=(const Seed& rS)
     {
+        uiSeedAmbiguity += rS.uiAmbiguity;
         uiSeedAmount++;
         uiAccumulativeLength += rS.getValue();
     }//operator
 
     inline void operator-=(const Seed& rS)
     {
-        assert(uiSeedAmount > 0);
-        uiSeedAmount--;
+        assert(uiSeedAmbiguity >= rS.uiAmbiguity);
+        uiSeedAmbiguity -= rS.uiAmbiguity;
         assert(uiAccumulativeLength >= rS.getValue());
         uiAccumulativeLength -= rS.getValue();
+        uiSeedAmount--;
     }//operator
 
     inline bool operator<(const SoCOrder& rOther) const
     {
         if(uiAccumulativeLength == rOther.uiAccumulativeLength)
-            return uiSeedAmount > rOther.uiSeedAmount;
+            return uiSeedAmbiguity > rOther.uiSeedAmbiguity;
         return uiAccumulativeLength < rOther.uiAccumulativeLength;
     }//operator
 
     inline void operator=(const SoCOrder& rOther)
     {
         uiAccumulativeLength = rOther.uiAccumulativeLength;
-        uiSeedAmount = rOther.uiSeedAmount;
+        uiSeedAmbiguity = rOther.uiSeedAmbiguity;
     }//operator
 }; //class
 
@@ -482,7 +485,7 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<unsigned int, unsigned int, float, float>())
+        .def(boost::python::init<unsigned int, unsigned int, float, float, float>())
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
         .def_readwrite("num_strips", &StripOfConsideration::numStrips)
         .def_readonly("min_score", &StripOfConsideration::fScoreMinimum)

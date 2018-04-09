@@ -303,8 +303,8 @@ namespace libMA
             const std::shared_ptr<Alignment>& pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
-            auto uiS1 = localscore();
-            auto uiS2 = pAlign->localscore();
+            auto uiS1 = score();
+            auto uiS2 = pAlign->score();
             if(uiS1 == uiS2)
                 // if both alignments have the same score output the one with 
                 // the higher SoC score first (this is determined by the lower SoC index)

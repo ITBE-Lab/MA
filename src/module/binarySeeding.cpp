@@ -146,7 +146,7 @@ void exportBinarySeeding()
             std::shared_ptr<BinarySeeding>
         >(
             "BinarySeeding",
-            boost::python::init<bool, unsigned int>()
+            boost::python::init<bool, unsigned int, unsigned int>()
         )
         ;
     boost::python::implicitly_convertible< 
