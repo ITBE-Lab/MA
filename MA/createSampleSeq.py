@@ -180,6 +180,15 @@ def getQueries(db_name):
                         FROM samples
                         """).fetchall()
 
+def getQuery(db_name, sample_id):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT sequence
+                        FROM samples
+                        WHERE sample_id = ?
+                        """, (sample_id,)).fetchall()[0][0]
+
 
 def getIndelsAndMuts(db_name):
     conn = sqlite3.connect(db_name)
@@ -349,7 +358,7 @@ def getRuntimes(db_name, approach):
 def near(start_align, start_orig, end_align, end_orig):
     return end_align >= start_orig and start_align <= end_orig
 
-def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
+def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, print_fails):
     # get the indel and mut amounts so that we know the size of the resulting matrix
     indel_amounts, mut_amounts = getIndelsAndMuts(db_name)
     hits = {}
@@ -413,6 +422,8 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
                         break
         if hit:
             hits[num_indels][num_mutation] += 1
+        elif print_fails:
+            print(approach, sample_id, num_indels, num_mutation)
 
     # compute the accuracy
     accuracy = {}

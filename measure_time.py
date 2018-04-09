@@ -8,19 +8,8 @@ class CommandLine(Module):
 
     def __init__(self):
         self.elapsed_time = 0
-        self.check_existence = []
         self.skip_count = 0
         self.warn_once = True
-
-    def check(self):
-        okay = True
-        for index, existence in enumerate(self.check_existence):
-            if existence > 1:
-                print("Error: index", index, "had", existence, "alignments associated")
-                okay = False
-            if existence == 0:
-                self.skip_count += 1
-        return okay
 
     def final_checks(self):
         if not self.do_checks():
@@ -90,11 +79,6 @@ class CommandLine(Module):
 
         #transform sam file into list data structure
         alignments = []
-        #check how often each query was aligned
-        del self.check_existence[:]
-
-        for _ in range(len(queries)):
-            self.check_existence.append(0)
 
         for line in lines:
             if len(line) == 0:
@@ -131,8 +115,6 @@ class CommandLine(Module):
                 alignment.stats.name = columns[0]
                 # set the secondary flag for secondary alignments
                 alignment.secondary = True if self.secondary(columns[1]) else False
-                if not alignment.secondary:
-                    self.check_existence[int(columns[0])] += 1
                 alignments.append(alignment)
             except Exception as e:
                 print("Error:", e)
@@ -146,10 +128,6 @@ class CommandLine(Module):
 
         for alignment in alignments:
             ret.append(alignment)
-
-        if self.do_checks():
-            if not self.check():
-                return None
 
         return ret
 

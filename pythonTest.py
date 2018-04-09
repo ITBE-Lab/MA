@@ -974,7 +974,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True):
+def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True, print_fails=False):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
     plots = [ [], [] ]
@@ -983,7 +983,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
     for approach_ in approaches:
         approach = approach_[0]
-        accuracy, runtime = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits)
+        accuracy, runtime = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits, print_fails)
 
         def makePicFromDict(d, title, log = False, set_max = None, set_min=None, print_out=False):
             pic = []
@@ -1505,8 +1505,8 @@ exit()
 #try_out_parameters("/MAdata/db/parameters.db")
 
 
-test("sw_zebrafish_temp.db", human_genome)
-analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=1)
+#test("sw_zebrafish_temp.db", human_genome)
+#analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=1)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 
