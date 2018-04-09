@@ -17,6 +17,20 @@ int iExtend = 1;
 nucSeqIndex uiMaxGapArea = 1000000;
 /// @brief the padding on the left and right end of each alignment
 float fRelativePadding = 1.1f;
+
+/*
+ * @todo: fix this problem
+ * 
+ * arghh this is really ugly...
+ * At the moment there is only one sequence that sets all NW and SW parameters correctly:
+ * 1) set the parameters.
+ * 2) create a new NW module.
+ * 3) Then create all other modules that you want to use.....
+ */
+//the match missmatch matrix
+parasail_matrix_t matrix;
+std::vector<int> vMatrixContent;
+
 /**
  * @brief wrapper for parsail results.
  * @details
@@ -579,7 +593,7 @@ nucSeqIndex naiveNeedlemanWunsch(
 }//function
 
 
-std::shared_ptr<Alignment> NeedlemanWunsch::smithWaterman(
+std::shared_ptr<Alignment> smithWaterman(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
         nucSeqIndex uiOffsetRef
@@ -1279,7 +1293,7 @@ std::shared_ptr<Container> CombatRepetitively::execute(
             ;
 
     if(fQual > fMappingQualMax)
-        return std::make_shared<ContainerVector>( pAlignments );
+        return pAlignments;
 
     // if we reach this point we have to go through all alignments and check the are that they cover
     nucSeqIndex refStart = pFirst->uiBeginOnRef;
@@ -1287,17 +1301,14 @@ std::shared_ptr<Container> CombatRepetitively::execute(
     for( const auto& pElement : *pAlignments )
     {
         const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
-        if(refStart > pFirst->uiBeginOnRef)
-            refStart = pFirst->uiBeginOnRef;
-        if(refEnd < pFirst->uiEndOnRef)
-            refEnd = pFirst->uiEndOnRef;
+        if(refStart > pAlignment->uiBeginOnRef)
+            refStart = pAlignment->uiBeginOnRef;
+        if(refEnd < pAlignment->uiEndOnRef)
+            refEnd = pAlignment->uiEndOnRef;
     }// for
 
     if(refEnd - refStart > uiRegionLength)
-        return std::make_shared<ContainerVector>( pAlignments );
-
-    // if we reach this point we have to recompute the entire alignment using SW
-    auto pRet = std::make_shared<ContainerVector>(std::make_shared<Alignment>());
+        return pAlignments;
 
     //add padding to the reference and make sure we do not extract something bridging
     if(refStart >= pQuery->length() * fRelativePadding)
@@ -1326,10 +1337,19 @@ std::shared_ptr<Container> CombatRepetitively::execute(
     auto pAlign = smithWaterman(pQuery, pRef, refStart);
     //copy the stats
     pAlign->xStats = pFirst->xStats;
-    pAlign->xStats.sName = pFirst->sName;
-    pRet.append(pAlign);
+    pAlignments->push_back(pAlign);
 
-    return pRet;
+    //sort alignments
+    std::sort(
+        pAlignments->begin(), pAlignments->end(),
+        []
+        (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
+        {
+            return a->larger(b);
+        }//lambda
+    );//sort function call
+
+    return pAlignments;
 }// function
 
 void exportNeedlemanWunsch()

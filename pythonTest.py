@@ -195,6 +195,7 @@ def test_my_approach(
         optimal = ExecOnVec(nmw, sort_after_score)
         localToGlobal = LocalToGlobal(0.05)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
+        combatRepetitively = CombatRepetitively(0.1, 100000)
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -241,6 +242,9 @@ def test_my_approach(
                 pledges[4][-1] = localToGlobal.promise_me(
                     pledges[4][-1], pledges[0][-1], ref_pledge
                 )
+            pledges[4][-1] = combatRepetitively.promise_me(
+                pledges[4][-1], pledges[0][-1], ref_pledge
+            )
             pledges[5].append(mappingQual.promise_me(
                 pledges[0][-1], pledges[4][-1]
             ))
@@ -459,8 +463,6 @@ def test_my_approach(
                         optimal_alignment.begin_on_ref += alignment.begin_on_ref
                         optimal_alignment.end_on_ref += alignment.begin_on_ref
             sample_id = int(alignment.stats.name)
-            if sample_id == 421:
-                print("FOUND IT")
             collect_ids.append(sample_id)
 
             total_time = 0
@@ -791,7 +793,7 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None):
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=200, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=200, min_ambiguity=3, give_up=0.05, reportN=200)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05, reportN=5)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1508,12 +1510,14 @@ test_my_approaches("sw_zebrafish_temp.db", human_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
-
-#print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 421))
+for tup in getQuery("/MAdata/db/sw_zebrafish_temp.db", 659):
+    print(tup)
+for tup in getOptima("/MAdata/db/sw_zebrafish_temp.db", 659):
+    print(tup)
 #print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
 #test("sw_zebrafish_temp.db", human_genome)
-analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=200, print_fails=True)
+#analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=1)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 

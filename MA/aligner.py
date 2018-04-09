@@ -307,13 +307,22 @@ class NeedlemanWunsch(libMA.NeedlemanWunsch):
         return super(NeedlemanWunsch, self).promise_me(ContainerVector(*args))
 
 ##
-# @brief python wrapper for LinearLineSweep
+# @brief python wrapper for LocalToGlobal
 class LocalToGlobal(libMA.LocalToGlobal):
     def execute(self, *args):
         return super(LocalToGlobal, self).execute(ContainerVector(*args))
 
     def promise_me(self, *args):
         return super(LocalToGlobal, self).promise_me(ContainerVector(*args))
+
+##
+# @brief python wrapper for CombatRepetitively
+class CombatRepetitively(libMA.CombatRepetitively):
+    def execute(self, *args):
+        return super(CombatRepetitively, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(CombatRepetitively, self).promise_me(ContainerVector(*args))
 
 ##
 # @brief python wrapper for ExecOnVec

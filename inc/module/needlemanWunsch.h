@@ -29,10 +29,6 @@ namespace libMA
         /// otherwise we fill in the gaps.
         double fMinimalQueryCoverage = .25;
 
-        //the match missmatch matrix
-        parasail_matrix_t matrix;
-        std::vector<int> vMatrixContent;
-
         NeedlemanWunsch(bool bLocal);
 
         //overload
@@ -58,22 +54,6 @@ namespace libMA
             bool bNoGapAtBeginning,
             bool bNoGapAtEnd
             DEBUG_PARAM(bool bPrintMatrix = false)
-        );
-
-        /**
-         * @brief the SW dynamic programming algorithm
-         * @details 
-         * Uses parasail to have an efficient vectorized implementation.
-         * We use SW if the query coverage of the seeds is so little
-         * that there is no point in filling gaps.
-         * 
-         * 
-         * find a way to replace that?
-         */
-        std::shared_ptr<Alignment> smithWaterman(
-            std::shared_ptr<NucSeq> pQuery, 
-            std::shared_ptr<NucSeq> pRef,
-            nucSeqIndex uiOffsetRef
         );
 
         /**
