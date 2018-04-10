@@ -291,6 +291,7 @@ def test_my_approach(
             print("extracting results (", name, ") ...")
         result = []
         for i, alignments in enumerate(pledges[-1]):
+
             #if len(alignments.get()) == 0 or len(alignments.get()[0]) == 0:
             #    print(queries[i])
             #    sequence, sample_id, origin_pos, orig_size, num_mutation, num_indels, indel_size = queries[i]
@@ -331,6 +332,13 @@ def test_my_approach(
                 #print("Should never print this")
                 #assert(False)
                 continue
+
+            if alignment.stats.name == "659":
+                print("sw alignments:")
+                for alignment in alignments.get():
+                    AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
+
+
             alignment2 = None
             optimal_alignment = None
             if full_analysis:
@@ -1485,6 +1493,19 @@ smw.execute(
 exit()
 """
 
+#query = ContainerVector(NucSeq("ATGGGgAGACcTTTCCTTTTTCACCGTAGGCGTCAtGGCGATCGgcATGTCCACTTCCACAAcCTACAAAtAGAGTGTTTCAAtCCTaCTCTATGAAAGtCCATGgTCgTCTCTATGAGTCtAATGGtAATtTCCGAAAGAAATTTCTGGGcATGCTGCcaTCTAGTTaTTATACGAATTCCCGCTTCCAACGAAATtCTCAAAGCAATCCAAATtTCgACcTGCAGAATCtACAAAAAGAGTGTTTCAAcACTGCTCTATCAATAGAAAGGTTCAACTCTTgTAGTTGAGaACACACATCACAAACAAGTaTCTGAGAATGCTTtTGTCTGGCTTcTATTGGAAcACGTTTCCcTgTCACCAAcGGCATCAAAGCcCTCCAAATGTCCACTTCCAGATTCTTCTAAAAGAGTGTTTGAAACcTGCTCAtAGTAAGGGAATGTTCAACTCTGTGACTTGAAaGCAGATATCAaCAAGTAGTTTCTAATAGTGCTTCTGTCTAGAATaTAGATGAaGATgTTCCCGTTgCCcACGAAATCGTTAGAGCTATCCAAATATgCACTTACAGTTaCTACAAAAACAGTGTcTCtAAACTGCTGCAaCgAAAGAAAGGTTCAACTtTGTTAGTTGAGGAgACACGTCACAAAGAAGTgTGTGAGAATGCTTCTGTCCGTTTTTGTATGACGATAcTCCCTTTTCCAACtATATCGTgcAAGaAATCTAAATATCCATTTGCAGAATCCACAAAAATAGAGTTTCAAAGCTGCTCTGTAAAAAGAAAGGTTCCACTCTGTcAGCTGAGcACACACAaCACAAACTgGTCTCTCAGAATCCTTaTtTCTCGTTTTTATGGGAAGAgATTTgCTcTTTCACCGTAGGCcTCAAAGCGCTCCAAATGTCCAtATCCAGATACTCCtcAAAGAGTGTTTCAAACgTGCTCTATGAAAGGGAATCcTCAACTCTAgGAtTaGtATtCAGACATaAGAAAGAAATTTCgGAG"))
+#ref_pack = Pack()
+#ref_pack.load(zebrafish_genome)
+#print(ref_pack.unpacked_size_single_strand)
+#
+#ref = ref_pack.extract_complete()
+#
+#alignment = libMA.testGPUSW(query, ref)[0]
+#print(alignment.iMaxScore)
+#for maxpos in alignment.vMaxPos:
+#    print(maxpos)
+#exit()
+
 #create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)
 #test_my_approaches("/MAdata/db/illumina.db")
 #analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
@@ -1506,18 +1527,19 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-test_my_approaches("sw_zebrafish_temp.db", human_genome)
+#test_my_approaches("sw_human.db", human_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
-for tup in getQuery("/MAdata/db/sw_zebrafish_temp.db", 659):
-    print(tup)
-for tup in getOptima("/MAdata/db/sw_zebrafish_temp.db", 659):
-    print(tup)
+
+#for tup in getQuery("sw_human.db", 659):
+#    print(tup)
+#for tup in getOptima("sw_human.db", 659):
+#    print(tup)
 #print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
-#test("sw_zebrafish_temp.db", human_genome)
-#analyse_all_approaches_depre("human_temp.html","sw_zebrafish_temp.db", num_tries=1)
+#test("sw_human.db", human_genome)
+analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 

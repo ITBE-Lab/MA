@@ -43,7 +43,8 @@ class AlignmentPrinter(Module):
         ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
 
         lines = [
-            "score: " + str(align.get_score()) + " cigar length: " + str(len(align)),
+            "score: " + str(align.get_score()) + " cigar length: " + str(len(align)) + 
+            " soc index:" + str(align.stats.index_of_strip),
             "reference: " + str(align.begin_on_ref) + " - " + str(align.end_on_ref),
             "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query)
         ]

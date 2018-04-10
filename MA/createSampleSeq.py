@@ -181,7 +181,7 @@ def getQueries(db_name):
                         """).fetchall()
 
 def getQuery(db_name, sample_id):
-    conn = sqlite3.connect(db_name)
+    conn = sqlite3.connect("/MAdata/db/"+db_name)
     c = conn.cursor()
     return c.execute("""
                         SELECT samples.sample_id, approach, start, end, secondary
@@ -191,7 +191,7 @@ def getQuery(db_name, sample_id):
                         """, (sample_id,)).fetchall()
 
 def getOptima(db_name, sample_id):
-    conn = sqlite3.connect(db_name)
+    conn = sqlite3.connect("/MAdata/db/"+db_name)
     c = conn.cursor()
     return c.execute("""
                         SELECT optima
@@ -274,6 +274,27 @@ def submitOptima(db_name, results_list):
                     VALUES (?,?)
                     """, results_list)
     conn.commit()
+
+def adjustOptima(db_name, forward_strand_length):
+    conn = sqlite3.connect("/MAdata/db/"+db_name)
+    c = conn.cursor()
+    optima = c.execute("""
+                    SELECT samples.sample_id, optima, original_size 
+                    FROM samples_optima
+                    JOIN samples on samples.sample_id = samples_optima.sample_id
+                    """).fetchall()
+    adjusted_optima = []
+    count = 0
+    for sample_id, optimum, original_size in optima:
+        if optimum >= forward_strand_length:
+            new_pos = forward_strand_length*2 - (optimum - original_size)
+            adjusted_optima.append( (sample_id, new_pos) )
+            count += 1
+        else:
+            adjusted_optima.append( (sample_id, optimum) )
+    submitOptima("/MAdata/db/"+db_name, adjusted_optima)
+    print("adjusted", count, "samples")
+
 
 def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
@@ -740,6 +761,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         if not quiet:
             print("computing optimal positions using SW...")
         ref_nuc_seq = ref_seq.extract_complete()
+        forward_strand_length = ref_pack.unpacked_size_single_strand
         queries = ContainerVector(NucSeq())
         del queries[:]
         sample_ids = []
@@ -750,6 +772,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         optima_list = []
         for results, sample_id in zip(libMA.testGPUSW(queries, ref_nuc_seq), sample_ids):
             for result in results.vMaxPos:
+                #convert hits on the reverse complement to their forward strand positions
+                if result >= forward_strand_length:
+                    result = forward_strand_length*2 - (result - original_size)
                 optima_list.append( (sample_id, result) )
         submitOptima("/MAdata/db/" + db_name, optima_list)
         if not quiet:
