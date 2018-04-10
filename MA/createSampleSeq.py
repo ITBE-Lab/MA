@@ -180,8 +180,20 @@ def getQueries(db_name):
                         FROM samples
                         """).fetchall()
 
+def getQueriesForOptimal(db_name):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT sequence, sample_id
+                        FROM samples
+                        WHERE sample_id NOT IN (
+                            SELECT sample_id
+                            FROM samples_optima
+                        )
+                        """).fetchall()
+
 def getQuery(db_name, sample_id):
-    conn = sqlite3.connect("/MAdata/db/"+db_name)
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
     c = conn.cursor()
     return c.execute("""
                         SELECT samples.sample_id, approach, start, end, secondary
@@ -191,7 +203,7 @@ def getQuery(db_name, sample_id):
                         """, (sample_id,)).fetchall()
 
 def getOptima(db_name, sample_id):
-    conn = sqlite3.connect("/MAdata/db/"+db_name)
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
     c = conn.cursor()
     return c.execute("""
                         SELECT optima
@@ -442,7 +454,7 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, 
         hit = False
         if not hit:
             if sample_id in aligner_results:
-                for start, end, mapping_quality in aligner_results[sample_id][:max_tries+1]:
+                for start, end, mapping_quality in aligner_results[sample_id][:max_tries]:
                     if near(start, origin_start, end, origin_end):
                         hit = True
                         break
@@ -454,7 +466,7 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, 
                         break
         if hit:
             hits[num_indels][num_mutation] += 1
-        elif print_fails:
+        elif print_fails and num_mutation == 40 and num_indels == 6:
             print(approach, sample_id, num_indels, num_mutation)
 
     # compute the accuracy
@@ -761,11 +773,11 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         if not quiet:
             print("computing optimal positions using SW...")
         ref_nuc_seq = ref_seq.extract_complete()
-        forward_strand_length = ref_pack.unpacked_size_single_strand
+        forward_strand_length = ref_seq.unpacked_size_single_strand
         queries = ContainerVector(NucSeq())
         del queries[:]
         sample_ids = []
-        for sequence, sample_id in getQueries("/MAdata/db/" + db_name):
+        for sequence, sample_id in getQueriesForOptimal("/MAdata/db/" + db_name):
             queries.append(NucSeq(sequence))
             sample_ids.append(sample_id)
 
@@ -782,10 +794,3 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
 
 #function
 
-
-
-
-
-db_name = "/MAdata/alignmentSamples.db"
-
-#createSampleQueries("/MAdata/chrom/human/all", db_name, 1000, 100, 50, 64)

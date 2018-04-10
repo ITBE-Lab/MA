@@ -195,7 +195,7 @@ def test_my_approach(
         optimal = ExecOnVec(nmw, sort_after_score)
         localToGlobal = LocalToGlobal(0.05)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
-        combatRepetitively = CombatRepetitively(0.1, 100000)
+        combatRepetitively = CombatRepetitively(0.1, 10000000)
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -333,7 +333,7 @@ def test_my_approach(
                 #assert(False)
                 continue
 
-            if alignment.stats.name == "659":
+            if alignment.stats.name == "393":
                 print("sw alignments:")
                 for alignment in alignments.get():
                     AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
@@ -1493,6 +1493,11 @@ smw.execute(
 exit()
 """
 
+
+#createSampleQueries(human_genome, "sw_human_extend.db", 1000, 100, 32, reset=False, validate_using_sw=True)
+#exit()
+
+
 #query = ContainerVector(NucSeq("ATGGGgAGACcTTTCCTTTTTCACCGTAGGCGTCAtGGCGATCGgcATGTCCACTTCCACAAcCTACAAAtAGAGTGTTTCAAtCCTaCTCTATGAAAGtCCATGgTCgTCTCTATGAGTCtAATGGtAATtTCCGAAAGAAATTTCTGGGcATGCTGCcaTCTAGTTaTTATACGAATTCCCGCTTCCAACGAAATtCTCAAAGCAATCCAAATtTCgACcTGCAGAATCtACAAAAAGAGTGTTTCAAcACTGCTCTATCAATAGAAAGGTTCAACTCTTgTAGTTGAGaACACACATCACAAACAAGTaTCTGAGAATGCTTtTGTCTGGCTTcTATTGGAAcACGTTTCCcTgTCACCAAcGGCATCAAAGCcCTCCAAATGTCCACTTCCAGATTCTTCTAAAAGAGTGTTTGAAACcTGCTCAtAGTAAGGGAATGTTCAACTCTGTGACTTGAAaGCAGATATCAaCAAGTAGTTTCTAATAGTGCTTCTGTCTAGAATaTAGATGAaGATgTTCCCGTTgCCcACGAAATCGTTAGAGCTATCCAAATATgCACTTACAGTTaCTACAAAAACAGTGTcTCtAAACTGCTGCAaCgAAAGAAAGGTTCAACTtTGTTAGTTGAGGAgACACGTCACAAAGAAGTgTGTGAGAATGCTTCTGTCCGTTTTTGTATGACGATAcTCCCTTTTCCAACtATATCGTgcAAGaAATCTAAATATCCATTTGCAGAATCCACAAAAATAGAGTTTCAAAGCTGCTCTGTAAAAAGAAAGGTTCCACTCTGTcAGCTGAGcACACACAaCACAAACTgGTCTCTCAGAATCCTTaTtTCTCGTTTTTATGGGAAGAgATTTgCTcTTTCACCGTAGGCcTCAAAGCGCTCCAAATGTCCAtATCCAGATACTCCtcAAAGAGTGTTTCAAACgTGCTCTATGAAAGGGAATCcTCAACTCTAgGAtTaGtATtCAGACATaAGAAAGAAATTTCgGAG"))
 #ref_pack = Pack()
 #ref_pack.load(zebrafish_genome)
@@ -1527,19 +1532,19 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-#test_my_approaches("sw_human.db", human_genome)
+test_my_approaches("sw_zebrafish.db", zebrafish_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
 
-#for tup in getQuery("sw_human.db", 659):
+#for tup in getQuery("sw_human.db", 247):
 #    print(tup)
-#for tup in getOptima("sw_human.db", 659):
+#for tup in getOptima("sw_human.db", 247):
 #    print(tup)
 #print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
-#test("sw_human.db", human_genome)
-analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
+test("sw_zebrafish.db", zebrafish_genome)
+analyse_all_approaches_depre("zebrafish.html","sw_zebrafish.db", num_tries=1)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 
