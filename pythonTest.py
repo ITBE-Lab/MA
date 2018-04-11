@@ -200,8 +200,8 @@ def test_my_approach(
         combatRepetitively = CombatRepetitively(0.1, 10000000)
         tempBackend = TempBackend()
         tempBackend.min_coverage = min_coverage
-        tempBackend.tolerance 0.5
-        tolerance.local = local
+        tempBackend.tolerance = 0.5
+        tempBackend.local = local
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []
@@ -822,7 +822,7 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None):
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=1000, min_ambiguity=3, give_up=0.00, reportN=1000)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=10, min_ambiguity=3, give_up=0.00, reportN=10)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1583,7 +1583,7 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-#test_my_approaches("sw_human.db", human_genome)
+test_my_approaches("sw_human.db", human_genome)
 #exit()
 
 #data = []

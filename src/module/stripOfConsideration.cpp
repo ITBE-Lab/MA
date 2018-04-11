@@ -143,9 +143,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//while
 
 
-        DEBUG(
-            std::cout << "(" << xCurrScore.uiAccumulativeLength << ", " << getPositionForBucketing(uiQLen, *xStripStart) << ")," << std::endl;
-        ) // DEBUG
+        //DEBUG(
+        //    std::cout << "(" << xCurrScore.uiAccumulativeLength << ", " 
+        //        << getPositionForBucketing(uiQLen, *xStripStart) << ")," << std::endl;
+        //) // DEBUG
 
 
         //here xStripEnd points one past the last element within the strip

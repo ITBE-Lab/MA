@@ -316,6 +316,15 @@ class LocalToGlobal(libMA.LocalToGlobal):
         return super(LocalToGlobal, self).promise_me(ContainerVector(*args))
 
 ##
+# @brief python wrapper for TempBackend @todo: remove me...
+class TempBackend(libMA.TempBackend):
+    def execute(self, *args):
+        return super(TempBackend, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(TempBackend, self).promise_me(ContainerVector(*args))
+
+##
 # @brief python wrapper for CombatRepetitively
 class CombatRepetitively(libMA.CombatRepetitively):
     def execute(self, *args):
