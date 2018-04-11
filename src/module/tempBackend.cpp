@@ -672,6 +672,10 @@ std::shared_ptr<Container> TempBackend::execute(
         if( pBestAlignment->score() < pAlignment->score() )
             pBestAlignment = pAlignment;
         pAlignmentsOut->push_back(pAlignment);
+
+        if(pAlignmentsOut->size() >= uiMaxTries)
+            break;
+
         if( pBestAlignment->score() * fScoreTolerace > pAlignment->score() )
             //we found an alignment where we a reasonably certain that it is the best one
             break;
@@ -691,6 +695,7 @@ void exportTempBackend()
             .def_readwrite("min_coverage", &TempBackend::fMinimalQueryCoverage)
             .def_readwrite("tolerance", &TempBackend::fScoreTolerace)
             .def_readwrite("local", &TempBackend::bLocal)
+            .def_readwrite("max_tries", &TempBackend::uiMaxTries)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<TempBackend>,

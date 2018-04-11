@@ -202,59 +202,80 @@ def test_my_approach(
         tempBackend.min_coverage = min_coverage
         tempBackend.tolerance = 0.5
         tempBackend.local = local
+        tempBackend.max_tries = 50
 
-        pledges = [[], [], [], [], [], []]
-        optimal_alignment_in = []
+        #pledges = [[], [], [], [], [], []]
+        # OLD GRAPH SETUP
+        #for sequence, sample_id in queries:
+        #    pledges[0].append(Pledge(NucSeq()))
+        #    pledges[0][-1].set(NucSeq(sequence))
+        #    pledges[0][-1].get().name = str(sample_id)
+        #    if do_minimizers:
+        #        pledges[1].append(minimizersExtract.promise_me(
+        #            fm_pledge, minimizers.promise_me(pledges[0][-1]), ref_pledge
+        #        ))
+        #        pledges[2].append(soc2.promise_me(
+        #            pledges[1][-1], pledges[0][-1], ref_pledge
+        #        ))
+        #        pledges[3].append(couple.promise_me(
+        #            pledges[2][-1]
+        #        ))
+        #    else:
+        #        pledges[1].append(seeding.promise_me(
+        #            fm_pledge, pledges[0][-1]
+        #        ))
+        #        if reseed:
+        #            pledges[1][-1] = reseeding.promise_me(
+        #                fm_pledge, pledges[1][-1], pledges[0][-1]
+        #            )
+        #        if use_chaining:
+        #            pledges[2].append(ex.promise_me(
+        #                pledges[1][-1], fm_pledge
+        #            ))
+        #            pledges[3].append(chain.promise_me(
+        #                pledges[2][-1]
+        #            ))
+        #        else:
+        #            pledges[2].append(soc.promise_me(
+        #                pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
+        #            ))
+        #            pledges[3].append(couple.promise_me(
+        #                pledges[2][-1]
+        #            ))
+        #    pledges[4].append(optimal.promise_me(
+        #        pledges[3][-1], pledges[0][-1], ref_pledge
+        #    ))
+        #    if local and toGlobal:
+        #        pledges[4][-1] = localToGlobal.promise_me(
+        #            pledges[4][-1], pledges[0][-1], ref_pledge
+        #        )
+        #    pledges[4][-1] = combatRepetitively.promise_me(
+        #        pledges[4][-1], pledges[0][-1], ref_pledge
+        #    )
+        #    pledges[5].append(mappingQual.promise_me(
+        #        pledges[0][-1], pledges[4][-1]
+        #    ))
+
+        pledges = [[], [], [], [], []]
+
         for sequence, sample_id in queries:
             pledges[0].append(Pledge(NucSeq()))
             pledges[0][-1].set(NucSeq(sequence))
             pledges[0][-1].get().name = str(sample_id)
-            if do_minimizers:
-                pledges[1].append(minimizersExtract.promise_me(
-                    fm_pledge, minimizers.promise_me(pledges[0][-1]), ref_pledge
-                ))
-                pledges[2].append(soc2.promise_me(
-                    pledges[1][-1], pledges[0][-1], ref_pledge
-                ))
-                pledges[3].append(couple.promise_me(
-                    pledges[2][-1]
-                ))
-            else:
-                pledges[1].append(seeding.promise_me(
+            pledges[1].append(seeding.promise_me(
                     fm_pledge, pledges[0][-1]
                 ))
-                if reseed:
-                    pledges[1][-1] = reseeding.promise_me(
-                        fm_pledge, pledges[1][-1], pledges[0][-1]
-                    )
-                if use_chaining:
-                    pledges[2].append(ex.promise_me(
-                        pledges[1][-1], fm_pledge
-                    ))
-                    pledges[3].append(chain.promise_me(
-                        pledges[2][-1]
-                    ))
-                else:
-                    pledges[2].append(soc.promise_me(
-                        pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
-                    ))
-                    pledges[3].append(couple.promise_me(
-                        pledges[2][-1]
-                    ))
-            pledges[4].append(optimal.promise_me(
-                pledges[3][-1], pledges[0][-1], ref_pledge
-            ))
-            if local and toGlobal:
-                pledges[4][-1] = localToGlobal.promise_me(
-                    pledges[4][-1], pledges[0][-1], ref_pledge
-                )
-            pledges[4][-1] = combatRepetitively.promise_me(
-                pledges[4][-1], pledges[0][-1], ref_pledge
-            )
-            pledges[5].append(mappingQual.promise_me(
-                pledges[0][-1], pledges[4][-1]
+            pledges[2].append(soc.promise_me(
+                    pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
+                ))
+            pledges[3].append(tempBackend.promise_me(
+                    pledges[2][-1], pledges[0][-1], ref_pledge
+                ))
+            pledges[4].append(mappingQual.promise_me(
+                pledges[0][-1], pledges[3][-1]
             ))
 
+            optimal_alignment_in = []
             optimal_alignment_in.append((Pledge(NucSeq()), Pledge(NucSeq())))
 
         smw = SMW(full_analysis)
@@ -1661,7 +1682,7 @@ test_my_approaches("sw_human.db", human_genome)
 #print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
 #test("sw_human.db", zebrafish_genome)
-analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1, print_fails=True)
+analyse_all_approaches_depre("human.html","sw_human.db", num_tries=5)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 

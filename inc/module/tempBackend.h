@@ -121,6 +121,8 @@ namespace libMA
 
         double fScoreTolerace = 0.5;
 
+        unsigned int uiMaxTries = 100;
+
         TempBackend() {}//default constructor
 
 
