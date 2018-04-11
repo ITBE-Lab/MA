@@ -106,7 +106,8 @@ def test_my_approach(
         toGlobal=True,
         give_up=0.05,
         quitet=False,
-        missed_alignments_db=None
+        missed_alignments_db=None,
+        min_coverage=1.1 # force SW alignment @todo remove me
         #,optimistic_gap_estimation=False
     ):
     if not quitet:
@@ -192,11 +193,15 @@ def test_my_approach(
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
-        nmw.min_coverage = 1.1 # force SW alignment @todo remove me
+        nmw.min_coverage = min_coverage
         optimal = ExecOnVec(nmw, sort_after_score)
         localToGlobal = LocalToGlobal(0.05)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
         combatRepetitively = CombatRepetitively(0.1, 10000000)
+        tempBackend = TempBackend()
+        tempBackend.min_coverage = min_coverage
+        tempBackend.tolerance 0.5
+        tolerance.local = local
 
         pledges = [[], [], [], [], [], []]
         optimal_alignment_in = []

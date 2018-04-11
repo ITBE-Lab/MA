@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "container/soc.h"
+using namespace libMA;
 
 void exportSoC()
 {

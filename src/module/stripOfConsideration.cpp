@@ -88,25 +88,25 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     const nucSeqIndex uiStripSize = this->getStripSize(uiQLen, iMatch, iExtend, iGap);
 
     //extract the seeds
-    std::vector<Seed> vSeeds;
-    vSeeds.reserve(pSegments->numSeeds(uiMaxAmbiguity));
+    auto pSeeds = std::make_shared<std::vector<Seed>>();
+    pSeeds->reserve(pSegments->numSeeds(uiMaxAmbiguity));
     forEachNonBridgingSeed(
         pSegments, pFM_index, pRefSeq, pQuerySeq,
         [&](const Seed& xSeed)
         {
-            vSeeds.push_back(xSeed);
+            pSeeds->push_back(xSeed);
         }//lambda
     );//for each
 
     //make sure that we return at least an empty seed set if nothing else
-    if(vSeeds.empty())
+    if(pSeeds->empty())
         return std::shared_ptr<ContainerVector>(
             new ContainerVector {std::shared_ptr<Seeds>(new Seeds())}
         );
 
     //sort the seeds according to their initial positions
     std::sort(
-        vSeeds.begin(), vSeeds.end(),
+        pSeeds->begin(), pSeeds->end(),
         [&]
         (const Seed &a, const Seed &b)
         {
@@ -116,18 +116,18 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     );//sort function call
 
     //positions to remember the maxima
-    auto pSoCs = std::make_shared<SoCPriorityQueue>();
+    auto pSoCs = std::make_shared<SoCPriorityQueue>(uiStripSize, pSeeds);
 
     //find the SOC maxima
     SoCOrder xCurrScore;
-    std::vector<Seed>::iterator xStripStart = vSeeds.begin();
-    std::vector<Seed>::iterator xStripEnd = vSeeds.begin();
-    while(xStripEnd != vSeeds.end())
+    std::vector<Seed>::iterator xStripStart = pSeeds->begin();
+    std::vector<Seed>::iterator xStripEnd = pSeeds->begin();
+    while(xStripEnd != pSeeds->end())
     {
         //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
         nucSeqIndex uiCurrSize = 0;
         while(
-            xStripEnd != vSeeds.end() &&
+            xStripEnd != pSeeds->end() &&
             getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
             >= getPositionForBucketing(uiQLen, *xStripEnd))
         {
@@ -153,7 +153,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
         //FILTER
         /*
-         * if the best SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at all
+         * if the SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at all
          * fGiveUp = 0 disables this.
          */
         if(
@@ -161,10 +161,11 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
             )
             pSoCs->push_back_no_overlap(
-                xCurrScore, 
-                xStripStart, 
-                getPositionForBucketing(uiQLen, *xStripStart), 
-                getPositionForBucketing(uiQLen, *xStripEnd)
+                xCurrScore,
+                xStripStart,
+                xStripEnd,
+                getPositionForBucketing(uiQLen, *xStripStart),
+                getPositionForBucketing( uiQLen, *(xStripEnd-1) )
             );
         // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         xCurrScore -= *(xStripStart++);

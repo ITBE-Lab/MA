@@ -31,95 +31,11 @@ float fRelativePadding = 1.1f;
 parasail_matrix_t matrix;
 std::vector<int> vMatrixContent;
 
-/**
- * @brief wrapper for parsail results.
- * @details
- * This will automatically call free the result in the deconstructor and therefore make everything
- * exception save.
- */
-class ParsailResultWrapper
-{
-    parasail_result_t* pContent;
-public:
-
-    ParsailResultWrapper(parasail_result_t* pContent)
-            :
-        pContent(pContent)
-    {}//constructor
-
-    ~ParsailResultWrapper()
-    {
-        parasail_result_free(pContent);
-    }//deconstructor
-
-    const parasail_result_t& operator*() const
-    {
-        return *pContent;
-    }//operator
-
-    const parasail_result_t* get() const
-    {
-        return pContent;
-    }//operator
-
-    parasail_result_t* get()
-    {
-        return pContent;
-    }//operator
-
-    const parasail_result_t* operator->() const
-    {
-        return pContent;
-    }//operator
-};//class
-
-/**
- * @brief wrapper for parsail cigars.
- * @details
- * This will automatically call free the result in the deconstructor and therefore make everything
- * exception save.
- */
-class ParsailCigarWrapper
-{
-    parasail_cigar_t* pContent;
-public:
-
-    ParsailCigarWrapper(parasail_cigar_t* pContent)
-            :
-        pContent(pContent)
-    {}//constructor
-
-    ~ParsailCigarWrapper()
-    {
-        parasail_cigar_free(pContent);
-    }//deconstructor
-
-    const parasail_cigar_t& operator*() const
-    {
-        return *pContent;
-    }//operator
-
-    const parasail_cigar_t* get() const
-    {
-        return pContent;
-    }//operator
-
-    parasail_cigar_t* get()
-    {
-        return pContent;
-    }//operator
-
-    const parasail_cigar_t* operator->() const
-    {
-        return pContent;
-    }//operator
-};//class
-
 /*
  * We want to avoid translating the numeric representation into characters
  * so we will trick parasail...
  */
-static const int parasail_custom_map[256] = {
+const int parasail_custom_map[] = {
      0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -138,74 +54,7 @@ static const int parasail_custom_map[256] = {
      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 };
 
-NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
-        :
-    bLocal(bLocal)
-{
-    //configure the parasail matrix
-    matrix.name = "";
-    matrix.size = 4;
-    for(int i=0; i < 4; i++)
-    {
-        for(int j=0; j < 4; j++)
-        {
-            if(i == 4 || j == 4)
-                vMatrixContent.push_back(0);
-            if(i == j)
-                vMatrixContent.push_back(iMatch);
-            else
-                vMatrixContent.push_back(-iMissMatch);
-        }//for
-    }//for
-    matrix.matrix = &vMatrixContent[0];
-    matrix.mapper = parasail_custom_map;
-    matrix.max = iMatch;
-    matrix.min = -iMissMatch;
-    matrix.user_matrix = &vMatrixContent[0];
-}//constructor
-
-std::string NeedlemanWunsch::getFullDesc() const
-{
-    return std::string("NeedlemanWunsch(") + 
-        std::to_string(iMatch) + "," + 
-        std::to_string(iMissMatch) + "," + 
-        std::to_string(iGap) + "," + 
-        std::to_string(iExtend) + "," + 
-        std::to_string(uiMaxGapArea) + "," + 
-        std::to_string(bLocal) + "," + 
-        std::to_string(fRelativePadding) + ")"
-        ;
-}//function
-
-ContainerVector NeedlemanWunsch::getInputType() const
-{
-    return ContainerVector{
-        //the sound strip of consideration
-        std::shared_ptr<Container>(new Seeds()),
-        //the query sequence
-        std::shared_ptr<Container>(new NucSeq()),
-        //the reference sequence
-        std::shared_ptr<Container>(new Pack())
-    };
-}//function
-
-std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
-{
-    return std::shared_ptr<Container>(new Alignment());
-}//function
-
-
-/**
- * @brief the NW dynamic programming algorithm
- * @details
- * This is a naive very slow version,
- * but it computes the correct score and it is capable of doing semi-global alignments.
- *
- * if bNoGapAtBeginning || bNoGapAtEnd :
- *      returns the gap at the beginning or end
- * otherwise : returns 0 
- */
-nucSeqIndex naiveNeedlemanWunsch(
+nucSeqIndex libMA::naiveNeedlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
         nucSeqIndex fromQuery,
@@ -213,15 +62,15 @@ nucSeqIndex naiveNeedlemanWunsch(
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
         std::shared_ptr<Alignment> pAlignment,
-        bool bNoGapAtBeginning = false,
-        bool bNoGapAtEnd = false
-        DEBUG_PARAM(bool bPrintMatrix = false)
+        bool bNoGapAtBeginning,
+        bool bNoGapAtEnd
+        DEBUG_PARAM(bool bPrintMatrix)
     )
 {
     assert(!(bNoGapAtBeginning && bNoGapAtEnd));
     /*
-     * break conditions for actually empty areas
-     */
+    * break conditions for actually empty areas
+    */
     DEBUG(
         if(toQuery > pQuery->length())
         {
@@ -275,8 +124,8 @@ nucSeqIndex naiveNeedlemanWunsch(
     }//if
 
     /*
-     * beginning of the actual NW
-     */
+    * beginning of the actual NW
+    */
     std::vector<std::vector<std::vector<int>>> s(
         3,
         std::vector<std::vector<int>>(
@@ -293,15 +142,15 @@ nucSeqIndex naiveNeedlemanWunsch(
     );
 
     /*
-     * initialization:
-     *      this part sets the scores for the last row and column (reverse order)
-     * 
-     * Note:
-     *      if we do not want a gap at the end since the alignment ends there we need to 
-     *      set the initial values along the reference to 0.
-     *      we do not want a complete global alignment,
-     *      merely a global alignment with respect to the query
-     */
+    * initialization:
+    *      this part sets the scores for the last row and column (reverse order)
+    * 
+    * Note:
+    *      if we do not want a gap at the end since the alignment ends there we need to 
+    *      set the initial values along the reference to 0.
+    *      we do not want a complete global alignment,
+    *      merely a global alignment with respect to the query
+    */
     //                  BINARY       DECIMAL
     #define DIA         /*000001*/   1
     #define INS         /*000010*/   2
@@ -354,18 +203,18 @@ nucSeqIndex naiveNeedlemanWunsch(
         }//for
     }//for
     /*
-     * dynamic programming loop
-     * Note:
-     *      we iterate in the reverse order on reference and query
-     *      so that the backtracking can be done in forward order
-     *      this saves us the work to reverse the result
-     *
-     * This works as follows:
-     *      for each cell compute the scores if resuling from an insertion deletion match/missmatch
-     *      in this order. Store the score from the insertion and overwrite the score with the del
-     *      match of missmatch score if any of them is higher. Also keep track of which direction
-     *      we came from in the dir matrix.
-     */
+    * dynamic programming loop
+    * Note:
+    *      we iterate in the reverse order on reference and query
+    *      so that the backtracking can be done in forward order
+    *      this saves us the work to reverse the result
+    *
+    * This works as follows:
+    *      for each cell compute the scores if resuling from an insertion deletion match/missmatch
+    *      in this order. Store the score from the insertion and overwrite the score with the del
+    *      match of missmatch score if any of them is higher. Also keep track of which direction
+    *      we came from in the dir matrix.
+    */
     int a, b;
     char c;
     for(nucSeqIndex uiI = 1; uiI < (toQuery-fromQuery)+1; uiI++)
@@ -459,8 +308,8 @@ nucSeqIndex naiveNeedlemanWunsch(
     nucSeqIndex uiRet = 0;
 
     /*
-     * backtracking
-     */
+    * backtracking
+    */
     nucSeqIndex iX = toQuery-fromQuery;
     nucSeqIndex iY = toRef-fromRef;
     
@@ -546,9 +395,9 @@ nucSeqIndex naiveNeedlemanWunsch(
         }//else
 
         /*
-         * if there is no gap cost for the end 
-         * we should stop backtracking once we reached the end of the query
-         */
+        * if there is no gap cost for the end 
+        * we should stop backtracking once we reached the end of the query
+        */
         if(bNoGapAtEnd && iX <= 0)
             return iY;
     }//while
@@ -593,7 +442,8 @@ nucSeqIndex naiveNeedlemanWunsch(
 }//function
 
 
-std::shared_ptr<Alignment> smithWaterman(
+//@todo: this should not be in a .h file
+std::shared_ptr<Alignment> libMA::smithWaterman(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
         nucSeqIndex uiOffsetRef
@@ -623,8 +473,8 @@ std::shared_ptr<Alignment> smithWaterman(
     )
 
     /*
-     * do the SW alignment
-     */
+    * do the SW alignment
+    */
 
     // Note: parasail does not follow the usual theme where for opening a gap 
     //       extend and open penalty are applied
@@ -649,11 +499,11 @@ std::shared_ptr<Alignment> smithWaterman(
     )
 
     /*
-     * Decode the cigar:
-     *  this involves two steps
-     *  1) find the beginning and end of the cigar and set the alignment ends accordingly
-     *  2) translate the cigar symbols into insertions deletions matches and missmatches
-     */
+    * Decode the cigar:
+    *  this involves two steps
+    *  1) find the beginning and end of the cigar and set the alignment ends accordingly
+    *  2) translate the cigar symbols into insertions deletions matches and missmatches
+    */
     pAlignment->uiBeginOnQuery = pCigar->beg_query;
     pAlignment->uiBeginOnRef = pCigar->beg_ref + uiOffsetRef;
 
@@ -704,6 +554,64 @@ std::shared_ptr<Alignment> smithWaterman(
 
     return pAlignment;
 }//function
+
+NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
+        :
+    bLocal(bLocal)
+{
+    //configure the parasail matrix
+    matrix.name = "";
+    matrix.size = 4;
+    for(int i=0; i < 4; i++)
+    {
+        for(int j=0; j < 4; j++)
+        {
+            if(i == 4 || j == 4)
+                vMatrixContent.push_back(0);
+            if(i == j)
+                vMatrixContent.push_back(iMatch);
+            else
+                vMatrixContent.push_back(-iMissMatch);
+        }//for
+    }//for
+    matrix.matrix = &vMatrixContent[0];
+    matrix.mapper = parasail_custom_map;
+    matrix.max = iMatch;
+    matrix.min = -iMissMatch;
+    matrix.user_matrix = &vMatrixContent[0];
+}//constructor
+
+std::string NeedlemanWunsch::getFullDesc() const
+{
+    return std::string("NeedlemanWunsch(") + 
+        std::to_string(iMatch) + "," + 
+        std::to_string(iMissMatch) + "," + 
+        std::to_string(iGap) + "," + 
+        std::to_string(iExtend) + "," + 
+        std::to_string(uiMaxGapArea) + "," + 
+        std::to_string(bLocal) + "," + 
+        std::to_string(fRelativePadding) + ")"
+        ;
+}//function
+
+ContainerVector NeedlemanWunsch::getInputType() const
+{
+    return ContainerVector{
+        //the sound strip of consideration
+        std::shared_ptr<Container>(new Seeds()),
+        //the query sequence
+        std::shared_ptr<Container>(new NucSeq()),
+        //the reference sequence
+        std::shared_ptr<Container>(new Pack())
+    };
+}//function
+
+std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
+{
+    return std::shared_ptr<Container>(new Alignment());
+}//function
+
+
 
 nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 

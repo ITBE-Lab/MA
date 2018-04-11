@@ -7,6 +7,7 @@
 #define TEMPBACKEND_H
 
 #include "container/segment.h"
+#include "container/alignment.h"
 #include "module/module.h"
 
 namespace libMA
@@ -74,6 +75,28 @@ namespace libMA
             >> pShadows
         );
 
+        /**
+         * @brief the NW dynamic programming algorithm
+         * @details 
+         * Uses parasail to have an efficient vectorized implementation.
+         * For the moment: is either bNoGapAtBeginning or bNoGapAtEnd it jumps to 
+         * the naive implementation.
+         * 
+         * find a way to replace that?
+         */
+        nucSeqIndex needlemanWunsch(
+            std::shared_ptr<NucSeq> pQuery, 
+            std::shared_ptr<NucSeq> pRef,
+            nucSeqIndex fromQuery,
+            nucSeqIndex toQuery,
+            nucSeqIndex fromRef,
+            nucSeqIndex toRef,
+            std::shared_ptr<Alignment> pAlignment,
+            bool bNoGapAtBeginning,
+            bool bNoGapAtEnd
+            DEBUG_PARAM(bool bPrintMatrix = false)
+        );
+
     public:
         /**
          * @brief true: estimate all possible position as matches in the gap cost filter
@@ -91,7 +114,15 @@ namespace libMA
          */
         bool optimisticGapEstimation = false;
 
+        bool bLocal = false;
+        /// @brief If the seeds cover less that x percent of the query we use SW, 
+        /// otherwise we fill in the gaps.
+        double fMinimalQueryCoverage = .25;
+
+        double fScoreTolerace = 0.5;
+
         TempBackend() {}//default constructor
+
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
