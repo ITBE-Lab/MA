@@ -200,9 +200,9 @@ def test_my_approach(
         combatRepetitively = CombatRepetitively(0.1, 10000000)
         tempBackend = TempBackend()
         tempBackend.min_coverage = min_coverage
-        tempBackend.tolerance = 0.5
+        tempBackend.tolerance = 0.50
         tempBackend.local = local
-        tempBackend.max_tries = 50
+        tempBackend.max_tries = 1000
 
         #pledges = [[], [], [], [], [], []]
         # OLD GRAPH SETUP
@@ -1033,13 +1033,13 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
 def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True, print_fails=False):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
-    plots = [ [], [] ]
+    plots = [ [], [], [] ]
 
     approaches = getApproachesWithData(db_name)
 
     for approach_ in approaches:
         approach = approach_[0]
-        accuracy, runtime = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits, print_fails)
+        accuracy, runtime, alignments = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits, print_fails)
 
         def makePicFromDict(d, title, set_max = 1, set_min=0, print_out=False):
             pic = []
@@ -1072,7 +1072,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                             y_hover.append(y + height/2)
                             desc1_hover.append(str(x))
                             desc3_hover.append(str(y))
-                            desc2_hover.append(str(d[x][y]*100) + "%")
+                            desc2_hover.append(str(d[x][y]))
                             if d[x][y] == None:
                                 c_hover.append("#AAAAAA")
                             else:
@@ -1117,7 +1117,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
             hover = HoverTool(tooltips=[
                 ("#indel", "@desc1"),
                 ("#mut", "@desc3"),
-                ("acc", "@desc2"),
+                ("val", "@desc2"),
             ])
 
             plot = figure(title=title,
@@ -1127,8 +1127,6 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
             plot.xaxis.formatter = tick_formater
             plot.rect('x', 'y', width, height, color='c', line_alpha=0, source=source)
-            #plot.image(image=[pic], color_mapper=color_mapper,
-            #        dh=[w], dw=[h], x=[0], y=[0])
 
             color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
@@ -1139,9 +1137,11 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
         acc_pic = makePicFromDict(accuracy,  "accuracy " + approach)
         run_pic = makePicFromDict(runtime, "runtime " + approach)
+        num_pic = makePicFromDict(alignments, "tries " + approach, set_max=3200)
 
         plots[0].append(acc_pic)
         plots[1].append(run_pic)
+        plots[2].append(num_pic)
 
     save(layout(plots))
 
@@ -1682,7 +1682,8 @@ test_my_approaches("sw_human.db", human_genome)
 #print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
 #test("sw_human.db", zebrafish_genome)
-analyse_all_approaches_depre("human.html","sw_human.db", num_tries=5)
+analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
+analyse_all_approaches_depre("human_5_tries.html","sw_human.db", num_tries=5)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 

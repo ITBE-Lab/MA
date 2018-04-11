@@ -680,6 +680,17 @@ std::shared_ptr<Container> TempBackend::execute(
             //we found an alignment where we a reasonably certain that it is the best one
             break;
     }//while
+    
+    //sort alignments ascending
+    std::sort(
+        pAlignmentsOut->begin(), pAlignmentsOut->end(),
+        []
+        (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
+        {
+            return a->larger(b);
+        }//lambda
+    );//sort function call
+    assert(pAlignmentsOut->size() <= 1 || !pAlignmentsOut->back()->larger(pAlignmentsOut->front()));
 
     return pAlignmentsOut;
 }//function

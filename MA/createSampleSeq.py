@@ -489,11 +489,21 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, 
                 accuracy[key1][key2] = float('nan')
             else: # compute the accuracy for that cell
                 accuracy[key1][key2] = hit[1]/sample
+                
+    # compute the alignment amount
+    alignments = {}
+    for sample_id, value in optimal_pos.items():
+        positions, num_mutation, num_indels, origin_start, origin_end = value
+        if num_indels not in alignments:
+            alignments[num_indels] = {}
+        if num_mutation not in alignments[num_indels]:
+            alignments[num_indels][num_mutation] = 0
+        alignments[num_indels][num_mutation] += len(aligner_results[sample_id])
 
     for num_mutation, num_indels, run_time in getRuntimes(db_name, approach):
         runtime[num_indels][num_mutation] = run_time
 
-    return accuracy, runtime
+    return accuracy, runtime, alignments
 
 def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_del_ratio=0.5):
     q = ""
