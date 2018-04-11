@@ -1578,7 +1578,7 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-test_my_approaches("sw_human.db", human_genome)
+#test_my_approaches("sw_human.db", human_genome)
 #exit()
 
 #data = []

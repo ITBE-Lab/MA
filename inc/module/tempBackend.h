@@ -3,8 +3,8 @@
  * @brief Implements the linesweep @ref Module "module"
  * @author Markus Schmidt
  */
-#ifndef LINESWEEP_H
-#define LINESWEEP_H
+#ifndef TEMPBACKEND_H
+#define TEMPBACKEND_H
 
 #include "container/segment.h"
 #include "module/module.h"
@@ -18,9 +18,8 @@ namespace libMA
      * Removes all contradicting seeds.
      * This should only be used in combination with the StripOfConsideration module.
      */
-    class LinearLineSweep: public Module
+    class TempBackend: public Module
     {
-    private:
         /**
          * @brief The shadow of a Seed.
          * @details
@@ -62,7 +61,6 @@ namespace libMA
             }//function
         };//class
 
-
         /**
         * @brief Implements the linesweep algorithm.
         * @details
@@ -93,7 +91,7 @@ namespace libMA
          */
         bool optimisticGapEstimation = false;
 
-        LinearLineSweep() {}//default constructor
+        TempBackend() {}//default constructor
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
@@ -116,13 +114,12 @@ namespace libMA
 
         std::string getName() const
         {
-            return "LineSweep2";
+            return "TempBackend";
         }
 
         std::string getFullDesc() const
         {
-            return std::string("LineSweep2(") + 
-                std::to_string(optimisticGapEstimation) + ")"
+            return std::string("TempBackend(desc not accurately provided)")
                 ;
         }//function
     };//class
@@ -132,6 +129,6 @@ namespace libMA
  * @brief Exposes the LineSweep @ref Module "module" to boost python.
  * @ingroup export
  */
-void exportLinesweep();
+void exportTempBackend();
 
 #endif

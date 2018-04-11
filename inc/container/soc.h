@@ -1,3 +1,6 @@
+#ifndef SOC_H
+#define SOC_H
+
 #include "container/seed.h"
 #include <algorithm>
 
@@ -136,7 +139,7 @@ namespace libMA
                 uiLastEnd < uiCurrStart ||
                 vMaxima.back().first < rCurrScore)
             {
-                //if we reach this point we want to save the current SoC
+                // if we reach this point we want to save the current SoC
                 if( !vMaxima.empty() && uiLastEnd >= uiCurrStart)
                     // the new and the last SoC overlap and the new one has a higher score
                     // so we want to replace the last SoC
