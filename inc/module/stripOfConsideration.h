@@ -7,6 +7,7 @@
 #define STRIP_OF_CONSIDERATION_H
 
 #include "container/segment.h"
+#include "container/soc.h"
 #include "module/module.h"
 #include <cmath>
 

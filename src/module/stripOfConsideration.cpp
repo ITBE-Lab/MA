@@ -31,9 +31,7 @@ ContainerVector StripOfConsideration::getInputType() const
 
 std::shared_ptr<Container> StripOfConsideration::getOutputType() const
 {
-    return std::shared_ptr<Container>(new ContainerVector(
-            std::shared_ptr<Container>(new Seeds())
-        ));
+    return std::shared_ptr<Container>(new SoCPriorityQueue());
 }//function
 
 
@@ -69,46 +67,6 @@ void StripOfConsideration::forEachNonBridgingSeed(
         }//lambda
     );
 }//function
-
-/**
- * @brief used to determine more complex orders of SoCs 
- */
-class SoCOrder
-{
-public:
-    nucSeqIndex uiAccumulativeLength = 0;
-    unsigned int uiSeedAmbiguity = 0;
-    unsigned int uiSeedAmount = 0;
-
-    inline void operator+=(const Seed& rS)
-    {
-        uiSeedAmbiguity += rS.uiAmbiguity;
-        uiSeedAmount++;
-        uiAccumulativeLength += rS.getValue();
-    }//operator
-
-    inline void operator-=(const Seed& rS)
-    {
-        assert(uiSeedAmbiguity >= rS.uiAmbiguity);
-        uiSeedAmbiguity -= rS.uiAmbiguity;
-        assert(uiAccumulativeLength >= rS.getValue());
-        uiAccumulativeLength -= rS.getValue();
-        uiSeedAmount--;
-    }//operator
-
-    inline bool operator<(const SoCOrder& rOther) const
-    {
-        if(uiAccumulativeLength == rOther.uiAccumulativeLength)
-            return uiSeedAmbiguity > rOther.uiSeedAmbiguity;
-        return uiAccumulativeLength < rOther.uiAccumulativeLength;
-    }//operator
-
-    inline void operator=(const SoCOrder& rOther)
-    {
-        uiAccumulativeLength = rOther.uiAccumulativeLength;
-        uiSeedAmbiguity = rOther.uiSeedAmbiguity;
-    }//operator
-}; //class
 
 std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
@@ -158,7 +116,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     );//sort function call
 
     //positions to remember the maxima
-    std::vector<std::pair<SoCOrder, std::vector<Seed>::iterator>> vMaxima;
+    auto pSoCs = std::make_shared<SoCPriorityQueue>();
 
     //find the SOC maxima
     SoCOrder xCurrScore;
@@ -202,97 +160,22 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fGiveUp * uiQLen ) && 
                 !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
             )
-        {
-            //check if we improved upon the last maxima while dealing with the same area
-            if(
-                !vMaxima.empty() && 
-                getPositionForBucketing(uiQLen, *vMaxima.back().second) + uiStripSize
-                >= getPositionForBucketing(uiQLen, *xStripStart))
-            {
-                if(vMaxima.back().first < xCurrScore)
-                {
-                    //if so we want to replace the old maxima
-                    vMaxima.pop_back();
-                    vMaxima.push_back(std::make_pair(xCurrScore, xStripStart));
-                }//if
-                //else we ignore the SoC
-            }//if
-            else
-                //save the SOC
-                vMaxima.push_back(std::make_pair(xCurrScore, xStripStart));
-        }//if
-        //move xStripStart one to the right (this will cause xStripEnd to be adjusted)
+            pSoCs->push_back_no_overlap(
+                xCurrScore, 
+                xStripStart, 
+                getPositionForBucketing(uiQLen, *xStripStart), 
+                getPositionForBucketing(uiQLen, *xStripEnd)
+            );
+        // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         xCurrScore -= *(xStripStart++);
     }// while
 
-
     // make a max heap from the SOC starting points according to the scores, 
     // so that we can extract the best SOC first
-    auto vHeapOrder = 
-        []
-        (
-            const std::pair<SoCOrder, std::vector<Seed>::iterator>& rA,
-            const std::pair<SoCOrder, std::vector<Seed>::iterator>& rB
-        )
-        {
-            return rA.first < rB.first;
-        }//lambda
-    ;
-    std::make_heap(vMaxima.begin(), vMaxima.end(), vHeapOrder);
-
-    //the collection of strips of consideration
-    std::shared_ptr<ContainerVector> pRet(new ContainerVector(std::shared_ptr<Seeds>(new Seeds())));
-
-    unsigned int uiSoCIndex = 0;
-    //extract the required amount of SOCs
-    while(pRet->size() < numStrips && !vMaxima.empty())
-    {
-        //the strip that shall be collected
-        std::shared_ptr<Seeds> pSeeds(new Seeds());
-        // get the expected amount of seeds in the SoC from the order class and reserve memory
-        pSeeds->reserve(vMaxima.front().first.uiSeedAmount);
-        //iterator walking till the end of the strip that shall be collected
-        auto xCollect2 = vMaxima.front().second;
-        //save SoC index
-        pSeeds->xStats.index_of_strip = uiSoCIndex++;
-        // all these things are not used at the moment...
-        pSeeds->xStats.uiInitialQueryBegin = xCollect2->start();
-        pSeeds->xStats.uiInitialRefBegin = xCollect2->start_ref();
-        pSeeds->xStats.uiInitialQueryEnd = xCollect2->end();
-        pSeeds->xStats.uiInitialRefEnd = xCollect2->end_ref();
-        nucSeqIndex end = getPositionForBucketing(uiQLen, *xCollect2) + uiStripSize;
-        while(
-            xCollect2 != vSeeds.end() &&
-            end >= getPositionForBucketing(uiQLen, *xCollect2))
-        {
-            // save the beginning and end of the SoC
-            // all these things are not used at the moment...
-            if(xCollect2->start() < pSeeds->xStats.uiInitialQueryBegin)
-                pSeeds->xStats.uiInitialQueryBegin = xCollect2->start();
-            if(xCollect2->start_ref() < pSeeds->xStats.uiInitialRefBegin)
-                pSeeds->xStats.uiInitialRefBegin = xCollect2->start_ref();
-            if(xCollect2->end() > pSeeds->xStats.uiInitialQueryEnd)
-                pSeeds->xStats.uiInitialQueryEnd = xCollect2->end();
-            if(xCollect2->end_ref() > pSeeds->xStats.uiInitialRefEnd)
-                pSeeds->xStats.uiInitialRefEnd = xCollect2->end_ref();
-            pSeeds->xStats.num_seeds_in_strip++;
-            assert(xCollect2->start() <= xCollect2->end());
-            assert(xCollect2->end() <= pQuerySeq->length());
-            //if the iterator is still within the strip add the seed and increment the iterator
-            pSeeds->push_back(*(xCollect2++));
-        }//while
-        //save the seed
-        pRet->push_back(pSeeds);
-        //move to the next strip
-        std::pop_heap (vMaxima.begin(), vMaxima.end(), vHeapOrder); vMaxima.pop_back();
-    }//while
-
-    //make sure that we return at least an empty seed set if nothing else
-    if(pRet->size() == 0)
-        pRet->push_back(std::shared_ptr<Seeds>(new Seeds()));
+    pSoCs->make_heap();
 
     //return the strip collection
-    return pRet;
+    return pSoCs;
 }//function
 
 nucSeqIndex StripOfConsideration2::getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS)

@@ -53,6 +53,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportMinimizersHash();
         exportOtherSeeding();
         exportSW_GPU();
+        exportSoC();
 }//function
 
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
