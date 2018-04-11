@@ -91,7 +91,8 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             flag |= SECONDARY_ALIGNMENT;
 
         std::string sRefName = pPack->nameOfSequenceForPosition(pAlignment->uiBeginOnRef);
-        auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef, pAlignment->uiEndOnRef);
+        // sam file format has 1-based indices...
+        auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef, pAlignment->uiEndOnRef) + 1;
 
         DEBUG(// check if the position that is saved to the file is correct
             bool bWrong = false;
@@ -101,7 +102,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             }//if
             else
             {
-                if( pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName(sRefName) + uiRefPos)
+                if(pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName(sRefName)+uiRefPos-1)
                     bWrong = true;
             }//else
 

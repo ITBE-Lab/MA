@@ -200,7 +200,16 @@ def getQuery(db_name, sample_id):
                         FROM samples
                         JOIN results ON results.sample_id = samples.sample_id
                         WHERE samples.sample_id = ?
+                        ORDER BY approach, secondary
                         """, (sample_id,)).fetchall()
+def getOrigin(db_name, sample_id):
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT origin, sequence
+                        FROM samples
+                        WHERE samples.sample_id = ?
+                        """, (sample_id,)).fetchall()[0]
 
 def getOptima(db_name, sample_id):
     conn = sqlite3.connect("/MAdata/db/" + db_name)
@@ -399,7 +408,7 @@ def getRuntimes(db_name, approach):
                     """, (approach,) ).fetchall()
 
 def near(start_align, start_orig, end_align, end_orig):
-    return end_align >= start_orig and start_align <= end_orig
+    return end_align >= start_orig - 50000000 and start_align <= end_orig + 50000000
 
 def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, print_fails):
     # get the indel and mut amounts so that we know the size of the resulting matrix
@@ -466,7 +475,7 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits, 
                         break
         if hit:
             hits[num_indels][num_mutation] += 1
-        elif print_fails and num_mutation == 40 and num_indels == 6:
+        elif print_fails and num_mutation == 120 and num_indels == 2:
             print(approach, sample_id, num_indels, num_mutation)
 
     # compute the accuracy

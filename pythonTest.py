@@ -3,7 +3,8 @@ import random
 import gc
 import os
 import math
-from bokeh.plotting import figure, output_file, show
+from bokeh.plotting import figure, output_file, show, ColumnDataSource
+from bokeh.models import HoverTool
 from bokeh.layouts import row, column, layout
 from bokeh.palettes import d3
 from bokeh.models import LinearAxis, Range1d, LogColorMapper, FixedTicker, BasicTicker, Grid
@@ -265,6 +266,21 @@ def test_my_approach(
         if not quitet:
             print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)
+
+        # @note temporary debug code
+
+        #output_file("seedpos.html")
+        #plot = figure()
+        
+        #print("a")
+        #for seed in pledges[1][0].get().extract_seeds(fm_pledge.get(), 5, True):
+        #    plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size])
+        
+        #save(plot)
+
+
+
+        # @note temporary debug code end
 
         if full_analysis:
             if not quitet:
@@ -801,7 +817,7 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None):
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=5, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=5, min_ambiguity=3, give_up=0.05, reportN=5)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=1000, min_ambiguity=3, give_up=0.00, reportN=1000)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -999,15 +1015,24 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         approach = approach_[0]
         accuracy, runtime = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits, print_fails)
 
-        def makePicFromDict(d, title, log = False, set_max = None, set_min=None, print_out=False):
+        def makePicFromDict(d, title, set_max = 1, set_min=0, print_out=False):
             pic = []
+            x_hover = []
+            y_hover = []
+            desc1_hover = []
+            desc2_hover = []
+            desc3_hover = []
+            c_hover = []
             min_ = 10000.0
             max_ = 0.0
             w = 0
             h = 0
             w_keys = sorted(d.keys())
-            if len(w_keys) > 0:
+            colors = heatmap_palette(light_spec_approximation, 127)
+            if len(w_keys) > 1:
+                width = w_keys[1] - w_keys[0]
                 h_keys = sorted(d[w_keys[0]].keys())
+                height = h_keys[1] - h_keys[0]
 
                 for y in h_keys:
                     pic.append( [] )
@@ -1017,6 +1042,16 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                         if x not in d or y not in d[x]:
                             pic[-1].append( float("nan") )
                         else:
+                            x_hover.append(x + width/2)
+                            y_hover.append(y + height/2)
+                            desc1_hover.append(str(x))
+                            desc3_hover.append(str(y))
+                            desc2_hover.append(str(d[x][y]*100) + "%")
+                            if d[x][y] == None:
+                                c_hover.append("#AAAAAA")
+                            else:
+                                c_hover.append( colors[int(126*(d[x][y]-set_min) /set_max)] )
+
                             pic[-1].append( d[x][y] )
                             if pic[-1][-1] < min_:
                                 min_ = pic[-1][-1]
@@ -1038,30 +1073,41 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                     low=min_,
                     high=max_
                 )
-            if log:
-                color_mapper = LogColorMapper(
-                        palette=heatmap_palette(light_spec_approximation, 127),
-                        low=min_,
-                        high=max_
-                    )
 
             tick_formater = FuncTickFormatter(code="""
                 return Math.max(Math.floor( (tick+1)/2),0) + '; ' +
                         Math.max(Math.floor( (tick)/2),0)"""
                 )
             #tick_formater = FuncTickFormatter(code="return 'a')
+            source = ColumnDataSource(data=dict(
+                x=x_hover,
+                y=y_hover,
+                c=c_hover,
+                desc1=desc1_hover,
+                desc2=desc2_hover,
+                desc3=desc3_hover,
+            ))
+
+            hover = HoverTool(tooltips=[
+                ("#indel", "@desc1"),
+                ("#mut", "@desc3"),
+                ("acc", "@desc2"),
+            ])
 
             plot = figure(title=title,
-                    x_range=(0,h), y_range=(0,w),
-                    x_axis_label='num insertions; num deletions', y_axis_label='num mutations', tools="save"
+                    x_axis_label='num insertions; num deletions', y_axis_label='num mutations', tools=[hover]
                 )
+
+
             plot.xaxis.formatter = tick_formater
-            plot.image(image=[pic], color_mapper=color_mapper,
-                    dh=[w], dw=[h], x=[0], y=[0])
+            plot.rect('x', 'y', width, height, color='c', line_alpha=0, source=source)
+            #plot.image(image=[pic], color_mapper=color_mapper,
+            #        dh=[w], dw=[h], x=[0], y=[0])
 
             color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
             plot.add_layout(color_bar, 'left')
+
 
             return plot
 
@@ -1532,19 +1578,85 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 
-test_my_approaches("sw_zebrafish.db", zebrafish_genome)
+test_my_approaches("sw_human.db", human_genome)
+#exit()
+
+#data = []
+#
+#
+#
+#output_file("seeds.html")
+#plot = figure(plot_width=1200)
+#
+#x_list = []
+#y_list = []
+#
+#for y,x in data:
+#    x_list.append(x)
+#    y_list.append(y)
+#
+#plot.line(x_list, y_list)
+#plot.x(x_list, y_list, color="red")
+#
+#save(plot)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
 
-#for tup in getQuery("sw_human.db", 247):
+#ref_pack = Pack()
+#ref_pack.load(human_genome)
+#
+#print(ref_pack.unpacked_size_single_strand*2 - 2000151048)
+##exit()
+##
+#for tup in getQuery("sw_human.db", 994):
 #    print(tup)
-#for tup in getOptima("sw_human.db", 247):
-#    print(tup)
+##res = []
+##res2 = []
+#for tup in getOptima("sw_human.db", 994):
+#    print("sw:", tup[0])
+#tup = getOrigin("sw_human.db", 994)
+#print("origin:", tup)
+#
+#ref1 = ref_pack.extract_from_to(3875127376-1000, 3875127376+1000)
+#ref2 = ref_pack.extract_from_to(3875127376-10000, 3875127376+10000)
+#query = ContainerVector(NucSeq(tup[1]))
+#
+#print("small")
+#for alignment in libMA.testGPUSW(query, ref1):
+#    print(alignment.iMaxScore)
+#    for maxpos in alignment.vMaxPos:
+#        print(maxpos)
+#
+#print("large")
+#for alignment in libMA.testGPUSW(query, ref2):
+#    print(alignment.iMaxScore)
+#    for maxpos in alignment.vMaxPos:
+#        print(maxpos)
+
+#print("full")
+#for alignment in libMA.testGPUSW(query, ref_pack.extract_complete()):
+#    print(alignment.iMaxScore)
+#    for maxpos in alignment.vMaxPos:
+#        print(maxpos)
+
+#    res.append(str(ref_pack.extract_from_to(tup[0]-500, tup[0])))
+#    res2.append(str(ref_pack.extract_from_to(tup[0]-100, tup[0])))
+##print(res)
+#print("500nt")
+#for r1 in res:
+#    for r2 in res:
+#        print(r1 == r2, end="\t")
+#    print()
+#print("100nt")
+#for r1 in res2:
+#    for r2 in res2:
+#        print(r1 == r2, end="\t")
+#    print()
 #print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
-test("sw_zebrafish.db", zebrafish_genome)
-analyse_all_approaches_depre("zebrafish.html","sw_zebrafish.db", num_tries=1)
+#test("sw_human.db", zebrafish_genome)
+analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1, print_fails=True)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
 exit()
 
