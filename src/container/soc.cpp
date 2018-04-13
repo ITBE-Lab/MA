@@ -32,6 +32,7 @@ void exportSoC()
             .def_readwrite("first", &SoCPriorityQueue::blub::first)
             .def_readwrite("second", &SoCPriorityQueue::blub::second)
             .def_readwrite("third", &SoCPriorityQueue::blub::third)
+            .def_readwrite("qCoverage", &SoCPriorityQueue::blub::qCoverage)
         ;
         boost::python::class_<std::vector<SoCPriorityQueue::blub>
         >("nucSeqnucSeqIntVector")
@@ -66,6 +67,7 @@ void exportSoC()
             )
     DEBUG(
         .def_readwrite("scores", &SoCPriorityQueue::vScores)
+        .def_readwrite("extract", &SoCPriorityQueue::vExtractOrder)
     )// DEBUG
     ;
 }//function

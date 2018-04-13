@@ -201,9 +201,9 @@ def test_my_approach(
         combatRepetitively = CombatRepetitively(0.1, 10000000)
         tempBackend = TempBackend()
         tempBackend.min_coverage = min_coverage
-        tempBackend.tolerance = 0.75 # 0.75
+        tempBackend.tolerance = 1 #0.75 # 0.75
         tempBackend.local = local
-        tempBackend.max_tries = 100
+        tempBackend.max_tries = 500
 
         #pledges = [[], [], [], [], [], []]
         # OLD GRAPH SETUP
@@ -293,6 +293,58 @@ def test_my_approach(
         if not quitet:
             print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)
+
+
+        if specific_id != None:
+            plot1 = figure(plot_width=1200)
+            x_list = []
+            y_list = []
+            for s in pledges[2][0].get().scores:
+                y_list.append(s.first)
+                x_list.append(s.second)
+            x_list2 = []
+            y_list2 = []
+            w_list2 = []
+            h_list2 = []
+            optima = []
+            for tup in getOptima(db_name, specific_id):
+                optima.append(tup[0])
+                optima.append(ref_pack.unpacked_size_single_strand*2 - tup[0])
+            tup = getOrigin(db_name, specific_id)
+            optima.append(tup[0])
+            optima.append(ref_pack.unpacked_size_single_strand*2 - tup[0])
+            for x in optima:
+                x_list2.append(x)
+                w_list2.append(2000)
+                y_list2.append(100)
+                h_list2.append(200)
+            plot1.rect(x_list2, y_list2, w_list2, h_list2, color="green")
+            plot1.line(x_list, y_list, line_width=2)
+            plot1.x(x_list, y_list, color="red")
+            """
+            SoC scores in order
+            """
+            plot2 = figure(plot_width=1200)
+            x_list = []
+            y_list1 = []
+            y_list2 = []
+            y_list3 = []
+            y_list4 = []
+            for x, s in enumerate(pledges[2][0].get().extract):
+                x_list.append(x)
+                y_list1.append(s.first)
+                y_list2.append(s.second)
+                y_list3.append(s.third)
+                y_list4.append(s.qCoverage)
+            plot2.line(x_list, y_list4, color="purple", legend="coverage", line_width=5)
+            plot2.x(x_list, y_list4, color="black")
+            plot2.line(x_list, y_list1, color="red", legend="SoC score", line_width=5)
+            plot2.x(x_list, y_list1, color="black")
+            plot2.line(x_list, y_list2, color="green", legend="Harm score", line_width=2)
+            plot2.x(x_list, y_list2, color="black")
+            plot2.line(x_list, y_list3, color="blue", legend="SW score", line_width=1)
+            plot2.x(x_list, y_list3, color="black")
+            show(layout([[plot1],[plot2]]))
 
         total_time = 0
         for pledge in pledges[3]:
@@ -1039,7 +1091,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
     approaches = getApproachesWithData(db_name)
 
-    def makePicFromDict(d, title, print_out=False,desc2=None):
+    def makePicFromDict(d, title, print_out=False,desc2=None, set_max=None):
         x_hover = []
         y_hover = []
         desc1_hover = []
@@ -1049,6 +1101,8 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         c_hover = []
         min_ = 0.0
         max_ = 0.0
+        if set_max != None:
+            max_ = set_max
         for x, value in d.items():
             for y, value in value.items():
                 max_ = max(max_, value)
@@ -1140,7 +1194,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
         plots[0].append(makePicFromDict(accuracy, "accuracy " + approach, desc2=fails))
         plots[1].append(makePicFromDict(runtime, "runtime " + approach))
-        plots[2].append(makePicFromDict(alignments, "max tries " + approach))
+        plots[2].append(makePicFromDict(alignments, "max tries " + approach, set_max=500))
 
     sw_accuracy = getAccuracyAndRuntimeOfSW(db_name)
     plots.append([makePicFromDict(sw_accuracy, "sw accuracy " + approach)])
@@ -1593,8 +1647,7 @@ exit()
 #high quality picture
 
 #print("zebrafish genome:")
-#createSampleQueries(zebrafish_genome, "sw_zebrafish.db", 1000, 100, 32, validate_using_sw=Tru
-# e)
+createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_using_sw=False)
 #print("human genome:")
 #createSampleQueries(human_genome, "human_short.db", 200, 20, 32, validate_using_sw=False)
 
@@ -1606,11 +1659,10 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-
-test_my_approaches("human_short.db", human_genome)
-test("human_short.db", human_genome)
-analyse_all_approaches_depre("human.html","human_short.db", num_tries=1)
-analyse_all_approaches_depre("human_5_tries.html","human_short.db", num_tries=5)
+#test_my_approaches("sw_zebrafish.db", zebrafish_genome)
+test("zebrafish.db", zebrafish_genome)
+analyse_all_approaches_depre("zeb.html","zebrafish.db", num_tries=1)
+analyse_all_approaches_depre("zeb_5_tries.html","zebrafish.db", num_tries=5)
 exit()
 
 

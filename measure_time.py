@@ -49,7 +49,7 @@ class CommandLine(Module):
         if result.returncode != 0:
             print("subprocess returned with ERROR:")
             print("Error:")
-            print(result.stderr.decode('utf-8')[:-1])
+            print(result.stderr.decode('utf-8'))
             exit()
 
         os.remove(self.in_filename)

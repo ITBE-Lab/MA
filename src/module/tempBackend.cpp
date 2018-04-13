@@ -234,11 +234,16 @@ std::shared_ptr<Container> TempBackend::execute(
     auto pAlignmentsOut = std::make_shared<ContainerVector>(std::make_shared<Alignment>());
     auto pBestAlignment = std::make_shared<Alignment>();
 
-#define FILTER_1 ( 1 )
+#define FILTER_1 ( 0 )
 #if FILTER_1
     nucSeqIndex uiAccumulativeSeedLength = 0;
     unsigned int uiNumTries = 0;
 #endif
+
+    DEBUG(
+        nucSeqIndex uiLastSoCScore = 0;
+        unsigned int uiSoCRepeatCounter = 0;
+    )// DEBUG
 
     while(!pSoCIn->empty())
     {
@@ -247,7 +252,10 @@ std::shared_ptr<Container> TempBackend::execute(
         assert(!pSeedsIn->empty());
         DEBUG(
             pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
-            pSoCIn->vExtractOrder.back().first = pSeedsIn->getScore();
+            nucSeqIndex uiCurrSoCScore = 0;
+            for(const auto& rSeed : *pSeedsIn)
+                uiCurrSoCScore += rSeed.size();
+            pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
         )// DEBUG
 
         auto pShadows = std::make_shared<
@@ -425,7 +433,28 @@ std::shared_ptr<Container> TempBackend::execute(
          * end of FILTER
          */
         DEBUG(
-            pSoCIn->vExtractOrder.back().second = pSeeds->getScore();
+            std::vector<bool> vQCoverage(pQuery->length(), false);
+            pSoCIn->vExtractOrder.back().qCoverage = 0;
+            nucSeqIndex uiCurrHarmScore = 0;
+            for(const auto& rSeed : *pSeeds)
+            {
+                uiCurrHarmScore += rSeed.size();
+                for(auto uiX = rSeed.start(); uiX < rSeed.end(); uiX++)
+                    vQCoverage[uiX] = true;
+            }//for
+            pSoCIn->vExtractOrder.back().second = uiCurrHarmScore;
+
+            if(uiCurrHarmScore != uiLastSoCScore)
+            {
+                uiSoCRepeatCounter = 0;
+                uiLastSoCScore = uiCurrHarmScore;
+            }// if
+            else if(++uiSoCRepeatCounter > 3)
+                break;
+
+            for(bool b : vQCoverage)
+                if(b)
+                    pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
 
         //FILTER
@@ -434,9 +463,9 @@ std::shared_ptr<Container> TempBackend::execute(
             break;
 
         nucSeqIndex uiAccLen = pSeeds->getScore();
-        if (uiAccumulativeSeedLength > uiAccLen)
+        if (uiAccumulativeSeedLength > uiAccLen + (nucSeqIndex)(0.1 * pQuery->length()) )
             continue;
-        uiAccumulativeSeedLength = uiAccLen;
+        uiAccumulativeSeedLength = std::max(uiAccLen, uiAccumulativeSeedLength);
 #endif
         //FILTER END
 

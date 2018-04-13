@@ -209,7 +209,7 @@ def getQuery(db_name, sample_id):
                         ORDER BY approach, secondary
                         """, (sample_id,)).fetchall()
 def getOrigin(db_name, sample_id):
-    conn = sqlite3.connect("/MAdata/db/" + db_name)
+    conn = sqlite3.connect(db_name)
     c = conn.cursor()
     return c.execute("""
                         SELECT origin, sequence
@@ -218,7 +218,7 @@ def getOrigin(db_name, sample_id):
                         """, (sample_id,)).fetchall()[0]
 
 def getOptima(db_name, sample_id):
-    conn = sqlite3.connect("/MAdata/db/" + db_name)
+    conn = sqlite3.connect(db_name)
     c = conn.cursor()
     return c.execute("""
                         SELECT optima
@@ -413,8 +413,8 @@ def getRuntimes(db_name, approach):
                     """, (approach,) ).fetchall()
 
 def near(start_align, start_orig, end_align, end_orig):
-    #return end_align >= start_orig and start_align <= end_orig
-    return end_align >= start_orig - 50000000 and start_align <= end_orig + 50000000
+    return end_align >= start_orig and start_align <= end_orig
+    #return end_align >= start_orig - 50000000 and start_align <= end_orig + 50000000
 
 def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
     hits = {}
@@ -509,7 +509,8 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
         if num_mutation not in alignments[num_indels]:
             alignments[num_indels][num_mutation] = 0
         if sample_id in aligner_results:
-            alignments[num_indels][num_mutation] = max(alignments[num_indels][num_mutation],len(aligner_results[sample_id]))
+            #alignments[num_indels][num_mutation] = max(alignments[num_indels][num_mutation],len(aligner_results[sample_id]))
+            alignments[num_indels][num_mutation] += len(aligner_results[sample_id])
 
     for num_mutation, num_indels, run_time in getRuntimes(db_name, approach):
         runtime[num_indels][num_mutation] = run_time

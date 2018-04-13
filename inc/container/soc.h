@@ -56,19 +56,21 @@ namespace libMA
             std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vScores;
             class blub{
             public:
-                nucSeqIndex first = 0, second = 0;
+                nucSeqIndex first = 0, second = 0, qCoverage = 0;
                 int third = 0;
                 inline void operator=(const blub& rOther)
                 {
                     first = rOther.first;
                     second = rOther.second;
                     third = rOther.third;
+                    qCoverage = rOther.qCoverage;
                 }//operator
                 inline bool operator==(const blub& rOther) const
                 {
                     return
                         first == rOther.first &&
                         second == rOther.second &&
+                        qCoverage == rOther.qCoverage &&
                         third == rOther.third;
                 }//operator
             };
