@@ -162,7 +162,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
     {
         assert(pSeed->start() <= pSeed->end());
-        assert(pSeed->size() <= 10000);
         //adjust the score correctly
         uiScore += iMatch * pSeed->size();
         /*

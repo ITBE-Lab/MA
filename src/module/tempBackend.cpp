@@ -234,10 +234,21 @@ std::shared_ptr<Container> TempBackend::execute(
     auto pAlignmentsOut = std::make_shared<ContainerVector>(std::make_shared<Alignment>());
     auto pBestAlignment = std::make_shared<Alignment>();
 
+#define FILTER_1 ( 1 )
+#if FILTER_1
+    nucSeqIndex uiAccumulativeSeedLength = 0;
+    unsigned int uiNumTries = 0;
+#endif
+
     while(!pSoCIn->empty())
     {
         //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
+        assert(!pSeedsIn->empty());
+        DEBUG(
+            pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
+            pSoCIn->vExtractOrder.back().first = pSeedsIn->getScore();
+        )// DEBUG
 
         auto pShadows = std::make_shared<
                 std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
@@ -245,11 +256,14 @@ std::shared_ptr<Container> TempBackend::execute(
 
         // get the left shadows
         for(Seeds::iterator pSeed = pSeedsIn->begin(); pSeed != pSeedsIn->end(); pSeed++)
+        {
             pShadows->push_back(std::make_tuple(
                     pSeed,
                     pSeed->start(),
                     pSeed->end_ref()
                 ));
+            //std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," << pSeed->size() << ")," << std::endl;
+        }//for
 
         // perform the line sweep algorithm on the left shadows
         auto pShadows2 = linesweep(pShadows);
@@ -285,14 +299,31 @@ std::shared_ptr<Container> TempBackend::execute(
         );//sort function call
 
         /*
-        * FILTER:
-        * do a gap cost estimation [O(n)]
-        * this does not improve quality but performance
-        * since we might remove some seeds that are too far from another
-        * 
-        * this is much like the backtracking in SW/NW
-        * we make sure that we can only have a positive score
-        */
+         * sometimes we have one or less seeds remaining after the cupling:
+         * in these cases we simply return the center seed (judging by the delta from SoCs)
+         * This increases accuracy since the aligner is guided towards the correct
+         * position rather than giving it the sound seed or no seed...
+         * 
+         * Note: returning the longest or leas ambiguous seed does not make sense here;
+         * In most cases where this condition triggeres we have seeds that are roughly the same  length
+         * and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
+         */
+        if(pSeeds->size() <= 1)
+        {
+            pSeeds->clear();
+            pSeeds->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
+        }// if
+        assert(!pSeeds->empty());
+
+        /*
+         * FILTER:
+         * do a gap cost estimation [ O(n) ]
+         * this does not improve quality but performance
+         * since we might remove some seeds that are too far from another
+         * 
+         * this is much like the backtracking in SW/NW
+         * we make sure that we can only have a positive score
+         */
         //query position of last encountered seed
         nucSeqIndex uiLastQ = pSeeds->front().start();
         //reference position of last encountered seed
@@ -309,22 +340,21 @@ std::shared_ptr<Container> TempBackend::execute(
         Seeds::iterator pOptimalEnd = pSeeds->end();
 
         /*
-        * the goal of this loop is to set pOptimalStart & end correctly
-        */
+         * the goal of this loop is to set pOptimalStart & end correctly
+         */
         for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
         {
             assert(pSeed->start() <= pSeed->end());
-            assert(pSeed->size() <= 10000);
             //adjust the score correctly
             uiScore += iMatch * pSeed->size();
             /*
-            * we need to extract the gap between the seeds in order to do that.
-            * we will assume that any gap can be spanned by a single indel
-            * while all nucleotides give matches.
-            * Therefore we need to get the width x and height y of the rectangular gap
-            * number of matches equals min(x, y)
-            * gap size equals |x-y|
-            */
+             * we need to extract the gap between the seeds in order to do that.
+             * we will assume that any gap can be spanned by a single indel
+             * while all nucleotides give matches.
+             * Therefore we need to get the width x and height y of the rectangular gap
+             * number of matches equals min(x, y)
+             * gap size equals |x-y|
+             */
             nucSeqIndex uiGap = 0;
             if(pSeed->start() > uiLastQ)
                 uiGap = pSeed->start() - uiLastQ;
@@ -369,22 +399,22 @@ std::shared_ptr<Container> TempBackend::execute(
         }//for
 
         /*
-        * we need to increment both iterator but check if they extend past the end of pSeeds
-        * (check twice because incrementing an iterator pointing to end will
-        * result in undefined behaviour)
-        *
-        * We then simply remove all known suboptimal seeds
-        * this is an optimistic estimation so some suboptimal regions might remain
-        * 
-        * NOTE: order is significant!
-        * """
-        * --- Iterator validity ---
-        * Iterators, pointers and references pointing to position (or first) and beyond are
-        * invalidated, with all iterators, pointers and references to elements before position
-        * (or first) are guaranteed to keep referring to the same elements they were referring to
-        * before the call.
-        * """
-        */
+         * we need to increment both iterator but check if they extend past the end of pSeeds
+         * (check twice because incrementing an iterator pointing to end will
+         * result in undefined behaviour)
+         *
+         * We then simply remove all known suboptimal seeds
+         * this is an optimistic estimation so some suboptimal regions might remain
+         * 
+         * NOTE: order is significant!
+         * """
+         * --- Iterator validity ---
+         * Iterators, pointers and references pointing to position (or first) and beyond are
+         * invalidated, with all iterators, pointers and references to elements before position
+         * (or first) are guaranteed to keep referring to the same elements they were referring to
+         * before the call.
+         * """
+         */
         if(pOptimalEnd != pSeeds->end())
             if(++pOptimalEnd != pSeeds->end())
                 pSeeds->erase(pOptimalEnd, pSeeds->end());
@@ -392,25 +422,24 @@ std::shared_ptr<Container> TempBackend::execute(
             if(++pOptimalStart != pSeeds->end())
                 pSeeds->erase(pSeeds->begin(), pOptimalStart);
         /*
-        * end of FILTER
-        */
+         * end of FILTER
+         */
+        DEBUG(
+            pSoCIn->vExtractOrder.back().second = pSeeds->getScore();
+        )// DEBUG
 
-        /*
-        * One more thing: 
-        * sometimes we have one or less seeds remaining after the cupling:
-        * in these cases we simply return the center seed (judging by the delta from SoCs)
-        * This increases accuracy since the aligner is guided towards the correct
-        * position rather than giving it the sound seed or no seed...
-        * 
-        * Note: returning the longest or leas ambiguous seed does not make sense here;
-        * In most cases where this condition triggeres we have seeds that are roughly the same length
-        * and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
-        */
-        if(pSeeds->size() <= 1)
-            if(!pSeedsIn->empty())
-                pSeeds->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
+        //FILTER
+#if FILTER_1
+        if(++uiNumTries > uiMaxTries)
+            break;
 
-        assert(!pSeeds->empty());
+        nucSeqIndex uiAccLen = pSeeds->getScore();
+        if (uiAccumulativeSeedLength > uiAccLen)
+            continue;
+        uiAccumulativeSeedLength = uiAccLen;
+#endif
+        //FILTER END
+
 
         //@note from here on it is the original NW module
 
@@ -477,10 +506,10 @@ std::shared_ptr<Container> TempBackend::execute(
                     refStart = 0;
                 nucSeqIndex refEnd = endRef;
                 assert(endQuery <= pQuery->length());
-                refEnd += pQuery->length()  * fRelativePadding;
+                refEnd += pQuery->length() * fRelativePadding;
 
-                assert(refEnd > refStart);
-                nucSeqIndex refWidth = refEnd - refStart;
+                assert(refEnd >= refStart);
+                nucSeqIndex refWidth = refEnd - refStart + 1;
                 if(refStart + refWidth >= pRefPack->uiUnpackedSizeForwardPlusReverse())
                     refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
                 assert(refWidth > 0);
@@ -490,6 +519,9 @@ std::shared_ptr<Container> TempBackend::execute(
                     pRefPack->unBridgeSubsection(refStart, refWidth);
                     DEBUG_2(std::cout << " to: " << refStart << ", " << refWidth << std::endl;)
                 }
+
+                //std::cout << refStart << " to " << refStart + refWidth << std::endl;
+
                 //extract the reference
                 std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
                     refStart,
@@ -662,7 +694,9 @@ std::shared_ptr<Container> TempBackend::execute(
 
         };// lambda function
 
-        //get the NW alignment
+
+
+        //this is the NW module
         std::shared_ptr<Alignment> pAlignment = fNWModule();
 
 
@@ -673,14 +707,27 @@ std::shared_ptr<Container> TempBackend::execute(
             pBestAlignment = pAlignment;
         pAlignmentsOut->push_back(pAlignment);
 
+        DEBUG(
+            pSoCIn->vExtractOrder.back().third = pAlignment->score();
+        )// DEBUG
+
         if(pAlignmentsOut->size() >= uiMaxTries)
             break;
 
-        if( pBestAlignment->score() * fScoreTolerace > pAlignment->score() )
+        //std::cout << pAlignment->score() << ",";
+
+
+        if(
+                pBestAlignment->score() > 0
+            &&
+                (pBestAlignment->score() - pAlignment->score()) / (double)pBestAlignment->score() >=
+                fScoreTolerace
+            )
             //we found an alignment where we a reasonably certain that it is the best one
             break;
     }//while
-    
+    //std::cout << std::endl;
+
     //sort alignments ascending
     std::sort(
         pAlignmentsOut->begin(), pAlignmentsOut->end(),

@@ -64,8 +64,8 @@ std::shared_ptr<Container> MappingQuality::execute(
     // factors
     // penalty for too little seeds
     // (this improves the mapping quality estimation quite significantly)
-    double dA = std::max(std::min(5* pFirst->numBySeeds() / (double)pQuery->length(), 1.0), 0.01);
-    pFirst->fMappingQuality *= dA;
+    //double dA = std::max(std::min(5* pFirst->numBySeeds() / (double)pQuery->length(), 1.0), 0.01);
+    //pFirst->fMappingQuality *= dA;
 
     /// maybe this should be moved into it's own module but whatever...
     auto pRet = std::shared_ptr<ContainerVector>(new ContainerVector(pAlignments));

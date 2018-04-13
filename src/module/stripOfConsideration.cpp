@@ -98,11 +98,9 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//lambda
     );//for each
 
-    //make sure that we return at least an empty seed set if nothing else
+    //make sure that we return at least an SoC set
     if(pSeeds->empty())
-        return std::shared_ptr<ContainerVector>(
-            new ContainerVector {std::shared_ptr<Seeds>(new Seeds())}
-        );
+        return std::make_shared<SoCPriorityQueue>(uiStripSize, pSeeds);
 
     //sort the seeds according to their initial positions
     std::sort(
@@ -122,7 +120,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     SoCOrder xCurrScore;
     std::vector<Seed>::iterator xStripStart = pSeeds->begin();
     std::vector<Seed>::iterator xStripEnd = pSeeds->begin();
-    while(xStripEnd != pSeeds->end())
+    while(xStripEnd != pSeeds->end() && xStripStart != pSeeds->end())
     {
         //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
         nucSeqIndex uiCurrSize = 0;
@@ -143,10 +141,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         }//while
 
 
-        //DEBUG(
-        //    std::cout << "(" << xCurrScore.uiAccumulativeLength << ", " 
-        //        << getPositionForBucketing(uiQLen, *xStripStart) << ")," << std::endl;
-        //) // DEBUG
+        DEBUG(
+            pSoCs->vScores.push_back(std::make_pair(
+                xCurrScore.uiAccumulativeLength, 
+                xStripStart->start_ref())
+            );
+        ) // DEBUG
 
 
         //here xStripEnd points one past the last element within the strip
@@ -171,6 +171,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         xCurrScore -= *(xStripStart++);
     }// while
+
 
     // make a max heap from the SOC starting points according to the scores, 
     // so that we can extract the best SOC first
@@ -373,6 +374,17 @@ void exportStripOfConsideration()
 {
     //export the Bucketing class
     boost::python::class_<
+            StripOfConsideration2, 
+            boost::python::bases<Module>, 
+            std::shared_ptr<StripOfConsideration2>
+        >("StripOfConsideration2")
+        .def(boost::python::init<unsigned int, unsigned int>())
+        .def_readwrite("max_ambiguity", &StripOfConsideration2::uiMaxAmbiguity)
+        .def_readwrite("num_strips", &StripOfConsideration2::numStrips)
+    ;
+
+    //export the Bucketing class
+    boost::python::class_<
             StripOfConsideration, 
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
@@ -387,16 +399,6 @@ void exportStripOfConsideration()
         std::shared_ptr<StripOfConsideration>,
         std::shared_ptr<Module> 
     >();
-    //export the Bucketing class
-    boost::python::class_<
-            StripOfConsideration2, 
-            boost::python::bases<Module>, 
-            std::shared_ptr<StripOfConsideration2>
-        >("StripOfConsideration2")
-        .def(boost::python::init<unsigned int, unsigned int>())
-        .def_readwrite("max_ambiguity", &StripOfConsideration2::uiMaxAmbiguity)
-        .def_readwrite("num_strips", &StripOfConsideration2::numStrips)
-    ;
 
     boost::python::implicitly_convertible< 
         std::shared_ptr<StripOfConsideration2>,

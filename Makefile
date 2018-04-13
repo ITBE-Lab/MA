@@ -12,8 +12,8 @@ CTARGET_OBJ = $(addprefix obj/,$(addsuffix .co,$(CTARGET)))
 
 #flags
 CC=gcc
-CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -std=c++11 -O3
-CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -O3
+CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -O3 -fPIC -std=c++11 -mavx2
+CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -O3 -fPIC -mavx2
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
 LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -L$(CUDA_PATH) -lm -lpthread -lstdc++ -lparasail -lcudart

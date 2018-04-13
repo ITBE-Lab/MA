@@ -50,36 +50,59 @@ namespace libMA
     class SoCPriorityQueue: public Container
     {
     public:
-        DEBUG(
+#if DEBUG_LEVEL >= 1
             // confirms the respective functions are always called in the correct mode
             bool bInPriorityMode = false;
-        )// DEBUG
+            std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vScores;
+            class blub{
+            public:
+                nucSeqIndex first = 0, second = 0;
+                int third = 0;
+                inline void operator=(const blub& rOther)
+                {
+                    first = rOther.first;
+                    second = rOther.second;
+                    third = rOther.third;
+                }//operator
+                inline bool operator==(const blub& rOther) const
+                {
+                    return
+                        first == rOther.first &&
+                        second == rOther.second &&
+                        third == rOther.third;
+                }//operator
+            };
+            std::vector<blub> vExtractOrder;
+#endif
         unsigned int uiSoCIndex = 0;
         const nucSeqIndex uiStripSize;
         std::shared_ptr<std::vector<Seed>> pSeeds;
+        // positions to remember the maxima
+        std::vector<std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>> vMaxima;
+        // last SoC end
+        nucSeqIndex uiLastEnd = 0;
         static bool heapOrder(
            const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>& rA,
            const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>& rB
         )
         {
             return std::get<0>(rA) < std::get<0>(rB);
-        }
+        }// function
 
         SoCPriorityQueue(nucSeqIndex uiStripSize, std::shared_ptr<std::vector<Seed>> pSeeds)
                 :
             uiStripSize(uiStripSize),
-            pSeeds(pSeeds)
+            pSeeds(pSeeds),
+            vMaxima()
         {}//constructor
 
         SoCPriorityQueue()
                 :
-            uiStripSize(0)
+            uiStripSize(0),
+            pSeeds(nullptr),
+            vMaxima()
         {}//constructor
 
-        // positions to remember the maxima
-        std::vector<std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>> vMaxima;
-        // last SoC end
-        nucSeqIndex uiLastEnd = 0;
 
         //overload
         inline bool canCast(const std::shared_ptr<Container>& c) const
@@ -99,20 +122,24 @@ namespace libMA
             return std::shared_ptr<Container>(new SoCPriorityQueue());
         }//function
 
-        inline bool empty()
+        inline bool empty() const
         {
             return vMaxima.empty();
         }// function
 
         inline std::shared_ptr<Seeds> pop()
         {
-            DEBUG(assert(bInPriorityMode);)
+            DEBUG(
+                assert(!empty());
+                assert(bInPriorityMode);
+            )//DEBUG
             //the strip that shall be collected
             std::shared_ptr<Seeds> pRet(new Seeds());
             // get the expected amount of seeds in the SoC from the order class and reserve memory
             pRet->reserve(std::get<0>(vMaxima.front()).uiSeedAmount);
             //iterator walking till the end of the strip that shall be collected
             auto xCollect2 = std::get<1>(vMaxima.front());
+            assert(xCollect2 != pSeeds->end());
             //save SoC index
             pRet->xStats.index_of_strip = uiSoCIndex++;
             // all these things are not used at the moment...
