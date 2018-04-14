@@ -237,24 +237,28 @@ std::shared_ptr<Container> TempBackend::execute(
 #define FILTER_1 ( 0 )
 #if FILTER_1
     nucSeqIndex uiAccumulativeSeedLength = 0;
-    unsigned int uiNumTries = 0;
 #endif
 
-    DEBUG(
-        nucSeqIndex uiLastSoCScore = 0;
-        unsigned int uiSoCRepeatCounter = 0;
-    )// DEBUG
+    unsigned int uiNumTries = 0;
+    nucSeqIndex uiLastHarmScore = 0;
+    nucSeqIndex uiBestSoCScore = 0;
+    unsigned int uiSoCRepeatCounter = 0;
+
+    std::vector<std::shared_ptr<Seeds>> vSoCs;
 
     while(!pSoCIn->empty())
     {
+        if(++uiNumTries > uiMaxTries)
+            break;
         //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
         assert(!pSeedsIn->empty());
+        nucSeqIndex uiCurrSoCScore = 0;
+        for(const auto& rSeed : *pSeedsIn)
+            uiCurrSoCScore += rSeed.size();
+
         DEBUG(
             pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
-            nucSeqIndex uiCurrSoCScore = 0;
-            for(const auto& rSeed : *pSeedsIn)
-                uiCurrSoCScore += rSeed.size();
             pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
         )// DEBUG
 
@@ -432,48 +436,74 @@ std::shared_ptr<Container> TempBackend::execute(
         /*
          * end of FILTER
          */
+        nucSeqIndex uiCurrHarmScore = 0;
+        for(const auto& rSeed : *pSeeds)
+            uiCurrHarmScore += rSeed.size();
+
+        // Prof. Kutzners filter:
+        //if (pQuery->length() > 500 && uiLastHarmScore > uiCurrHarmScore)
+        //    continue;
+
         DEBUG(
             std::vector<bool> vQCoverage(pQuery->length(), false);
             pSoCIn->vExtractOrder.back().qCoverage = 0;
-            nucSeqIndex uiCurrHarmScore = 0;
             for(const auto& rSeed : *pSeeds)
             {
-                uiCurrHarmScore += rSeed.size();
                 for(auto uiX = rSeed.start(); uiX < rSeed.end(); uiX++)
                     vQCoverage[uiX] = true;
             }//for
             pSoCIn->vExtractOrder.back().second = uiCurrHarmScore;
-
-            if(uiCurrHarmScore != uiLastSoCScore)
-            {
-                uiSoCRepeatCounter = 0;
-                uiLastSoCScore = uiCurrHarmScore;
-            }// if
-            else if(++uiSoCRepeatCounter > 3)
-                break;
 
             for(bool b : vQCoverage)
                 if(b)
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
 
-        //FILTER
-#if FILTER_1
-        if(++uiNumTries > uiMaxTries)
+        if(
+            !(uiCurrHarmScore + (pQuery->length()*fScoreDiffTolerance) >= uiLastHarmScore &&
+              uiCurrHarmScore - (pQuery->length()*fScoreDiffTolerance) <= uiLastHarmScore)
+            )
+            uiSoCRepeatCounter = 0;
+        else if(++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead)
+        {
+            uiSoCRepeatCounter -= 1; // cause we havent actually pushed the current soc yet...
+            break;
+        }//else
+
+        uiLastHarmScore = uiCurrHarmScore;
+
+        if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
             break;
 
+        uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
+
+        vSoCs.push_back(pSeeds);
+
+        //FILTER
+#if FILTER_1
+
         nucSeqIndex uiAccLen = pSeeds->getScore();
-        if (uiAccumulativeSeedLength > uiAccLen + (nucSeqIndex)(0.1 * pQuery->length()) )
+        if (uiAccumulativeSeedLength > uiAccLen )
             continue;
         uiAccumulativeSeedLength = std::max(uiAccLen, uiAccumulativeSeedLength);
 #endif
         //FILTER END
 
+    }//while
+
+    for(unsigned int ui = 0; ui < uiSoCRepeatCounter; ui++)
+        vSoCs.pop_back();
+
+    DEBUG(
+        unsigned int uiDCounter = 0;
+    )//DEBUG
+
+    for (auto pSeeds : vSoCs){
 
         //@note from here on it is the original NW module
 
         //making a lambda function so that i do not have to edit the original code
-        auto fNWModule = [&]()
+        const auto fNWModule = [&]()
         {
             if(pSeeds == nullptr)
                 return std::shared_ptr<Alignment>(new Alignment());
@@ -723,8 +753,6 @@ std::shared_ptr<Container> TempBackend::execute(
 
         };// lambda function
 
-
-
         //this is the NW module
         std::shared_ptr<Alignment> pAlignment = fNWModule();
 
@@ -737,25 +765,13 @@ std::shared_ptr<Container> TempBackend::execute(
         pAlignmentsOut->push_back(pAlignment);
 
         DEBUG(
-            pSoCIn->vExtractOrder.back().third = pAlignment->score();
+            pSoCIn->vExtractOrder[uiDCounter++].third = pAlignment->score();
         )// DEBUG
 
         if(pAlignmentsOut->size() >= uiMaxTries)
             break;
 
-        //std::cout << pAlignment->score() << ",";
-
-
-        if(
-                pBestAlignment->score() > 0
-            &&
-                (pBestAlignment->score() - pAlignment->score()) / (double)pBestAlignment->score() >=
-                fScoreTolerace
-            )
-            //we found an alignment where we a reasonably certain that it is the best one
-            break;
-    }//while
-    //std::cout << std::endl;
+    }// for
 
     //sort alignments ascending
     std::sort(
@@ -783,6 +799,8 @@ void exportTempBackend()
             .def_readwrite("tolerance", &TempBackend::fScoreTolerace)
             .def_readwrite("local", &TempBackend::bLocal)
             .def_readwrite("max_tries", &TempBackend::uiMaxTries)
+            .def_readwrite("equal_score_lookahead", &TempBackend::uiMaxEqualScoreLookahead)
+            .def_readwrite("diff_tolerance", &TempBackend::fScoreDiffTolerance)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<TempBackend>,

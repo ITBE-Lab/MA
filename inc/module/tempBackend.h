@@ -123,6 +123,10 @@ namespace libMA
 
         unsigned int uiMaxTries = 100;
 
+        unsigned int uiMaxEqualScoreLookahead = 5;
+
+        float fScoreDiffTolerance = 0.01;
+
         TempBackend() {}//default constructor
 
 

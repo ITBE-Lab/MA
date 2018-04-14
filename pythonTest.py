@@ -84,7 +84,7 @@ def test_my_approach(
         db_name,
         reference,
         name,
-        max_hits=1000,
+        max_hits=100,
         num_strips=10,
         complete_seeds=False,
         use_chaining=False,
@@ -107,7 +107,7 @@ def test_my_approach(
         give_up=0.05,
         quitet=False,
         missed_alignments_db=None,
-        min_coverage=0.8, # force SW alignment @todo remove me
+        min_coverage=0.5, # force SW alignment @todo remove me
         #optimistic_gap_estimation=False,
         specific_id=None
     ):
@@ -201,9 +201,11 @@ def test_my_approach(
         combatRepetitively = CombatRepetitively(0.1, 10000000)
         tempBackend = TempBackend()
         tempBackend.min_coverage = min_coverage
-        tempBackend.tolerance = 1 #0.75 # 0.75
+        tempBackend.tolerance = 0.1
         tempBackend.local = local
-        tempBackend.max_tries = 500
+        tempBackend.max_tries = 25
+        tempBackend.equal_score_lookahead = 3 # 5
+        tempBackend.diff_tolerance = 0.001
 
         #pledges = [[], [], [], [], [], []]
         # OLD GRAPH SETUP
@@ -1647,9 +1649,9 @@ exit()
 #high quality picture
 
 #print("zebrafish genome:")
-createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_using_sw=False)
+#createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_using_sw=False)
 #print("human genome:")
-#createSampleQueries(human_genome, "human_short.db", 200, 20, 32, validate_using_sw=False)
+createSampleQueries(human_genome, "human_short.db", 30000, 100, 32, validate_using_sw=False)
 
 #l = 200
 #il = 10
@@ -1659,10 +1661,10 @@ createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_us
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-#test_my_approaches("sw_zebrafish.db", zebrafish_genome)
-test("zebrafish.db", zebrafish_genome)
-analyse_all_approaches_depre("zeb.html","zebrafish.db", num_tries=1)
-analyse_all_approaches_depre("zeb_5_tries.html","zebrafish.db", num_tries=5)
+test_my_approaches("human_short.db", human_genome)
+test("human_short.db", human_genome)
+analyse_all_approaches_depre("human.html","human_short.db", num_tries=1)
+analyse_all_approaches_depre("human_5_tries.html","human_short.db", num_tries=5)
 exit()
 
 
