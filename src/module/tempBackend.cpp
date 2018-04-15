@@ -491,7 +491,7 @@ std::shared_ptr<Container> TempBackend::execute(
 
     }//while
 
-    for(unsigned int ui = 0; ui < uiSoCRepeatCounter; ui++)
+    for(unsigned int ui = 0; ui < uiSoCRepeatCounter && !vSoCs.empty(); ui++)
         vSoCs.pop_back();
 
     DEBUG(
@@ -559,13 +559,13 @@ std::shared_ptr<Container> TempBackend::execute(
                 DEBUG_2(std::cout << "computing SW for entire area" << std::endl;)
                 //figure out the correct reference location
                 nucSeqIndex refStart = beginRef;
-                if(refStart >= pQuery->length() * fRelativePadding)
-                    refStart -=  pQuery->length() * fRelativePadding;
+                if(refStart >= pQuery->length() * fRelativePadding + beginQuery)
+                    refStart -=  pQuery->length() * fRelativePadding + beginQuery;
                 else
                     refStart = 0;
                 nucSeqIndex refEnd = endRef;
                 assert(endQuery <= pQuery->length());
-                refEnd += pQuery->length() * fRelativePadding;
+                refEnd += pQuery->length() * fRelativePadding + (pQuery->length() - endQuery);
 
                 assert(refEnd >= refStart);
                 nucSeqIndex refWidth = refEnd - refStart + 1;
@@ -602,10 +602,11 @@ std::shared_ptr<Container> TempBackend::execute(
 
             if(!bLocal)
             {
-                beginRef -= (nucSeqIndex)(  pQuery->length() * fRelativePadding );
+                beginRef -= (nucSeqIndex)(  pQuery->length() * fRelativePadding + beginQuery );
                 if(beginRef > endRef)//check for underflow
                     beginRef = 0;
-                endRef += (nucSeqIndex)( pQuery->length() * fRelativePadding );
+                endRef += (nucSeqIndex)( pQuery->length() * fRelativePadding + 
+                    (pQuery->length() - endQuery) );
                 if(beginRef > endRef)//check for overflow
                     endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
                 endQuery = pQuery->length();

@@ -1651,7 +1651,7 @@ exit()
 #print("zebrafish genome:")
 #createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_using_sw=False)
 #print("human genome:")
-createSampleQueries(human_genome, "human_short.db", 30000, 100, 32, validate_using_sw=False)
+#createSampleQueries(human_genome, "human_short.db", 30000, 100, 32, validate_using_sw=False)
 
 #l = 200
 #il = 10
@@ -1661,10 +1661,10 @@ createSampleQueries(human_genome, "human_short.db", 30000, 100, 32, validate_usi
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("human_short.db", human_genome)
-test("human_short.db", human_genome)
-analyse_all_approaches_depre("human.html","human_short.db", num_tries=1)
-analyse_all_approaches_depre("human_5_tries.html","human_short.db", num_tries=5)
+test_my_approaches("sw_human.db", human_genome)
+#test("sw_human.db", human_genome)
+analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
+analyse_all_approaches_depre("human_5_tries.html","sw_human.db", num_tries=5)
 exit()
 
 

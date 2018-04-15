@@ -16,7 +16,7 @@ int iExtend = 1;
 //accuracy drops if parameter is set smaller than 10^6
 nucSeqIndex uiMaxGapArea = 1000000;
 /// @brief the padding on the left and right end of each alignment
-float fRelativePadding = 1.5f;
+float fRelativePadding = 0.5f;
 
 /*
  * @todo: fix this problem
