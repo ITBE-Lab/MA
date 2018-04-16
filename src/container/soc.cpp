@@ -46,6 +46,18 @@ void exportSoC()
                 */
                 true
             >());
+        boost::python::class_<std::vector<std::shared_ptr<Seeds>>
+        >("seedVector")
+        .def(boost::python::vector_indexing_suite<
+                std::vector<std::shared_ptr<Seeds>>,
+                /*
+                *    true = noproxy this means that the content of the vector is already exposed by
+                *    boost python. 
+                *    if this is kept as false, Container would be exposed a second time.
+                *    the two Containers would be different and not inter castable.
+                */
+                true
+            >());
 #endif
     //export the SoCPriorityQueue class
     boost::python::class_<
@@ -68,6 +80,7 @@ void exportSoC()
     DEBUG(
         .def_readwrite("scores", &SoCPriorityQueue::vScores)
         .def_readwrite("extract", &SoCPriorityQueue::vExtractOrder)
+        .def_readwrite("vSoCs", &SoCPriorityQueue::vSoCs)
     )// DEBUG
     ;
 }//function

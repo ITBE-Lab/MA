@@ -53,7 +53,7 @@ int main(int argc, char*argv[])
     std::vector<std::string> aAlignIn;
     float fGiveUp;
     float fMappingQualMin;
-    float fRelativePadding;
+    nucSeqIndex uiPadding;
     unsigned int iMatch;
     unsigned int iExtend;
     unsigned int iMissMatch;
@@ -106,7 +106,7 @@ int main(int argc, char*argv[])
             ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
             ("giveUp,v", value<float>(&fGiveUp)->default_value(bAccurate ? 0.03 : 0.01), "Give up if the best SoC score is lower")
             ("toGlobal,T", value<float>(&fMappingQualMin)->default_value(bAccurate ? 0 : 0.05), "Transform lower mapping qual local alignments to global")
-            ("padding,P", value<float>(&fRelativePadding)->default_value(1.1), "Relative padding for global alignments.")
+            ("padding,P", value<nucSeqIndex>(&uiPadding)->default_value(1.1), "Relative padding for global alignments.")
             ("Match", value<unsigned int>(&iMatch)->default_value(2), "NW match score.")
             ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "NW missmatch penalty.")
             ("Gap", value<unsigned int>(&iGap)->default_value(6), "NW gap open penalty.")
@@ -182,7 +182,7 @@ int main(int argc, char*argv[])
                 std::cerr << "--alignIn and --genome are compulsory if --align is set" << std::endl;
             else
             {
-                if(fRelativePadding <= 1)//input is for local
+                if(uiPadding <= 1)//input is for local
                     std::cerr 
                         << "WARNING: Relative padding should be larger or equal to one"
                         << std::endl;
@@ -241,7 +241,7 @@ int main(int argc, char*argv[])
                     uiNumNW,
                     fGiveUp,
                     fMappingQualMin,
-                    fRelativePadding
+                    uiPadding
                 );
                 if(vm.count("info") > 0)
                 {

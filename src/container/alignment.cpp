@@ -191,6 +191,8 @@ void EXPORTED Alignment::makeLocal()
 
 void EXPORTED Alignment::removeDangeling()
 {
+    if(data.empty())
+        return;
     while(std::get<0>(data.front()) == MatchType::deletion)
     {
         uiBeginOnRef += std::get<1>(data.front());

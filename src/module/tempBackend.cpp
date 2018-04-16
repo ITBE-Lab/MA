@@ -26,7 +26,7 @@ extern nucSeqIndex uiMaxGapArea;
 extern parasail_matrix_t matrix;
 extern std::vector<int> vMatrixContent;
 extern const int parasail_custom_map[];
-extern float fRelativePadding;
+extern nucSeqIndex uiPadding;
 
 
 ContainerVector TempBackend::getInputType() const
@@ -67,6 +67,11 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
             }//lambda
         );//sort function call
 
+    //for(std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>& xTup : *pShadows)
+    //{
+    //    std::cout << std::get<0>(xTup)->start() << ", " << std::get<0>(xTup)->start_ref() << ", " << std::get<0>(xTup)->size() << std::endl;
+    //}
+
     auto pItervalEnds = std::make_shared<
             std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
         >();
@@ -95,9 +100,16 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
                 ! pItervalEnds->empty() 
                 && ! (*std::get<0>(xTup) == *std::get<0>(pItervalEnds->back())) 
             )
+        {
+            //std::cout << "D-";
             while(!pItervalEnds->empty() && std::get<2>(pItervalEnds->back()) >= std::get<2>(xTup))
+            {
+                //std::cout << "d-";
                 pItervalEnds->pop_back();
+            }/// while
+        }//else if
     }//for
+    //std::cout << std::endl;
     return pItervalEnds;
 }//function
 
@@ -147,8 +159,9 @@ nucSeqIndex TempBackend::needlemanWunsch(
      * do the NW alignment
      */
 
+    // @todo compute bit width for parasail
     // Note: parasail does not follow the usual theme where for opening a gap 
-   ParsailResultWrapper pResult(parasail_nw_trace_scan_16(
+   ParsailResultWrapper pResult(parasail_nw_trace_scan_32(
         (const char*)pQuery->pGetSequenceRef() + fromQuery, toQuery - fromQuery,
         (const char*)pRef->pGetSequenceRef() + fromRef, toRef - fromRef,
         iGap + iExtend, iExtend, &matrix
@@ -440,9 +453,9 @@ std::shared_ptr<Container> TempBackend::execute(
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
 
-        // Prof. Kutzners filter:
-        //if (pQuery->length() > 500 && uiLastHarmScore > uiCurrHarmScore)
-        //    continue;
+        // Prof. Kutzners killer filter:
+        if (pQuery->length() > 500 && uiLastHarmScore > uiCurrHarmScore)
+            continue;
 
         DEBUG(
             std::vector<bool> vQCoverage(pQuery->length(), false);
@@ -498,8 +511,8 @@ std::shared_ptr<Container> TempBackend::execute(
         unsigned int uiDCounter = 0;
     )//DEBUG
 
-    for (auto pSeeds : vSoCs){
-
+    for (auto pSeeds : vSoCs)
+    {
         //@note from here on it is the original NW module
 
         //making a lambda function so that i do not have to edit the original code
@@ -559,13 +572,13 @@ std::shared_ptr<Container> TempBackend::execute(
                 DEBUG_2(std::cout << "computing SW for entire area" << std::endl;)
                 //figure out the correct reference location
                 nucSeqIndex refStart = beginRef;
-                if(refStart >= pQuery->length() * fRelativePadding + beginQuery)
-                    refStart -=  pQuery->length() * fRelativePadding + beginQuery;
+                if(refStart >= uiPadding + beginQuery)
+                    refStart -= uiPadding + beginQuery;
                 else
                     refStart = 0;
                 nucSeqIndex refEnd = endRef;
                 assert(endQuery <= pQuery->length());
-                refEnd += pQuery->length() * fRelativePadding + (pQuery->length() - endQuery);
+                refEnd += uiPadding + (pQuery->length() - endQuery);
 
                 assert(refEnd >= refStart);
                 nucSeqIndex refWidth = refEnd - refStart + 1;
@@ -602,11 +615,10 @@ std::shared_ptr<Container> TempBackend::execute(
 
             if(!bLocal)
             {
-                beginRef -= (nucSeqIndex)(  pQuery->length() * fRelativePadding + beginQuery );
+                beginRef -= uiPadding + beginQuery;
                 if(beginRef > endRef)//check for underflow
                     beginRef = 0;
-                endRef += (nucSeqIndex)( pQuery->length() * fRelativePadding + 
-                    (pQuery->length() - endQuery) );
+                endRef += uiPadding + (pQuery->length() - endQuery);
                 if(beginRef > endRef)//check for overflow
                     endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
                 endQuery = pQuery->length();

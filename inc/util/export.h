@@ -188,7 +188,7 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int uiNumNW,
     float fGiveUp,
     float fMappingQualMin,
-    float fRelativePadding_
+    nucSeqIndex uiPadding_
 );
 
 #endif

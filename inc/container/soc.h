@@ -75,6 +75,7 @@ namespace libMA
                 }//operator
             };
             std::vector<blub> vExtractOrder;
+            std::vector<std::shared_ptr<Seeds>> vSoCs;
 #endif
         unsigned int uiSoCIndex = 0;
         const nucSeqIndex uiStripSize;
@@ -170,6 +171,9 @@ namespace libMA
                 //if the iterator is still within the strip add the seed and increment the iterator
                 pRet->push_back(*(xCollect2++));
             }//while
+
+            DEBUG(vSoCs.push_back(pRet);)
+
             //move to the next strip
             std::pop_heap (vMaxima.begin(), vMaxima.end(), heapOrder); vMaxima.pop_back();
 

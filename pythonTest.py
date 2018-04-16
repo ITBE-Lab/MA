@@ -107,7 +107,7 @@ def test_my_approach(
         give_up=0.05,
         quitet=False,
         missed_alignments_db=None,
-        min_coverage=0.5, # force SW alignment @todo remove me
+        min_coverage=0.5, # 1.1 = force SW alignment @todo remove me
         #optimistic_gap_estimation=False,
         specific_id=None
     ):
@@ -131,8 +131,8 @@ def test_my_approach(
     runtimes = {
         'Seeding': 0,
         'SoC': 0,
-        'Harmonization': 0,
-        'NW': 0
+        'Harm + DP': 0,
+        'Map Qual': 0
     }
     collect_ids = []
 
@@ -294,7 +294,7 @@ def test_my_approach(
 
         if not quitet:
             print("computing (", name, ") ...")
-        Pledge.simultaneous_get(pledges[-1], 32)
+        Pledge.simultaneous_get(pledges[-1], 16)
 
 
         if specific_id != None:
@@ -346,7 +346,33 @@ def test_my_approach(
             plot2.x(x_list, y_list2, color="black")
             plot2.line(x_list, y_list3, color="blue", legend="SW score", line_width=1)
             plot2.x(x_list, y_list3, color="black")
-            show(layout([[plot1],[plot2]]))
+            plots = [[plot1], [plot2]]
+            max_socs = 0
+            for num, soc in enumerate(pledges[2][0].get().vSoCs):
+                plot3 = figure(plot_width=1200, name="SoC #" + str(num))
+                if max_socs <= 0:
+                    break
+                max_socs -= 1
+                p_counter = 0
+                for seed in soc:
+                    plot3.line(
+                            [seed.start_ref, seed.start_ref+seed.size],
+                            [seed.start, seed.start+seed.size],
+                            color="blue",
+                            line_width=3
+                        )
+                    plot3.x(
+                            [seed.start_ref, seed.start_ref+seed.size],
+                            [seed.start, seed.start+seed.size],
+                            color="black"
+                        )
+                    p_counter += 1
+                    if p_counter % 100 == 0:
+                        print(p_counter)
+
+                plots.append([plot3])
+
+            show(layout(plots))
 
         total_time = 0
         for pledge in pledges[3]:
@@ -578,10 +604,10 @@ def test_my_approach(
             runtimes["SoC"] += pledges[2][i].exec_time
             total_time += pledges[2][i].exec_time
             pledges[2][i].exec_time = 0
-            runtimes["Harmonization"] += pledges[3][i].exec_time
+            runtimes["Harm + DP"] += pledges[3][i].exec_time
             total_time += pledges[3][i].exec_time
             pledges[3][i].exec_time = 0
-            runtimes["NW"] += pledges[4][i].exec_time
+            runtimes["Map Qual"] += pledges[4][i].exec_time
             total_time += pledges[4][i].exec_time
             pledges[4][i].exec_time = 0
 
@@ -1114,6 +1140,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         w = 0
         h = 0
         w_keys = sorted(d.keys())
+        width = 0
         if len(w_keys) > 1:
             width = w_keys[1] - w_keys[0]
             h_keys = sorted(d[w_keys[0]].keys())
@@ -1199,7 +1226,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         plots[2].append(makePicFromDict(alignments, "max tries " + approach, set_max=500))
 
     sw_accuracy = getAccuracyAndRuntimeOfSW(db_name)
-    plots.append([makePicFromDict(sw_accuracy, "sw accuracy " + approach)])
+    plots.append([makePicFromDict(sw_accuracy, "sw accuracy")])
 
     save(layout(plots))
     print("wrote plot")
@@ -1651,7 +1678,7 @@ exit()
 #print("zebrafish genome:")
 #createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_using_sw=False)
 #print("human genome:")
-#createSampleQueries(human_genome, "human_short.db", 30000, 100, 32, validate_using_sw=False)
+#createSampleQueries(human_genome, "human_10000.db", 10000, 100, 32, validate_using_sw=False)
 
 #l = 200
 #il = 10
@@ -1661,10 +1688,10 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("sw_human.db", human_genome)
+test_my_approaches("human_10000.db", human_genome)
 #test("sw_human.db", human_genome)
-analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
-analyse_all_approaches_depre("human_5_tries.html","sw_human.db", num_tries=5)
+analyse_all_approaches_depre("human.html","human_10000.db", num_tries=1)
+analyse_all_approaches_depre("human_5_tries.html","human_10000.db", num_tries=5)
 exit()
 
 

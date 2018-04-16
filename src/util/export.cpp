@@ -12,7 +12,7 @@ extern int iExtend;
 extern int iMatch;
 extern int iMissMatch;
 extern nucSeqIndex uiMaxGapArea;
-extern float fRelativePadding;
+extern nucSeqIndex uiPadding;
 
 /**
  * @brief The boost-python main method.
@@ -83,7 +83,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     unsigned int uiNumNW,
     float fGiveUp,
     float fMappingQualMin,
-    float fRelativePadding_
+    nucSeqIndex uiPadding_
 )
 {
     iMatch = iMatch_;
@@ -91,7 +91,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     iGap = iGap_;
     iMissMatch = iMisMatch_;
     uiMaxGapArea = bLocal ? uiMaxGapArea_ : 0;
-    fRelativePadding = fRelativePadding_;
+    uiPadding = uiPadding_;
 
     bool bToGlobal = bLocal && fMappingQualMin > 0;
 
