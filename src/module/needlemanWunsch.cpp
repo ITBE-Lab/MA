@@ -57,20 +57,28 @@ const int parasail_custom_map[] = {
 std::shared_ptr<Gaba_tWrapper> pGabaScoring;
 
 
-nucSeqIndex libMA::naiveNeedlemanWunsch(
+/**
+ * @todo: this should not be in a .h file
+ * @brief the NW dynamic programming algorithm
+ * @details
+ * This is a naive very slow version,
+ * but it computes the correct score and it is capable of doing semi-global alignments.
+ *
+ * if bNoGapAtBeginning || bNoGapAtEnd :
+ *      returns the gap at the beginning or end
+ * otherwise : returns 0 
+ */
+void naiveNeedlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
         nucSeqIndex fromQuery,
         nucSeqIndex toQuery,
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
-        std::shared_ptr<Alignment> pAlignment,
-        bool bNoGapAtBeginning,
-        bool bNoGapAtEnd
+        std::shared_ptr<Alignment> pAlignment
         DEBUG_PARAM(bool bPrintMatrix)
     )
 {
-    assert(!(bNoGapAtBeginning && bNoGapAtEnd));
     /*
     * break conditions for actually empty areas
     */
@@ -88,7 +96,7 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
     )// DEBUG
     if(toRef <= fromRef)
         if(toQuery <= fromQuery)
-            return 0;
+            return;
     DEBUG_2(
         std::cout << toQuery-fromQuery << std::endl;
         for(nucSeqIndex i = fromQuery; i < toQuery; i++)
@@ -110,7 +118,7 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
             )//DEBUG
             iY--;
         }//while
-        return 0;
+        return;
     }//if
     if(toRef <= fromRef)
     {
@@ -123,7 +131,7 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
             )//DEBUG
             iX--;
         }//while
-        return 0;
+        return;
     }//if
 
     /*
@@ -184,10 +192,7 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
     dir[0][0][1] = 0;// this position will throw an error is the backtracker tries to use it
     s[1][0][1] = LOWER;
     dir[1][0][1] = 0;// this position will throw an error is the backtracker tries to use it
-    if(bNoGapAtEnd)//see note above
-        s[2][0][1] = 0;
-    else
-        s[2][0][1] = - (iGap + iExtend);
+    s[2][0][1] = - (iGap + iExtend);
     dir[2][0][1] = DEL | DIR_0_NEXT;
     for(unsigned int x=0; x < 3; x++)
     {
@@ -198,10 +203,7 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
         }//for
         for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
         {
-            if(bNoGapAtEnd)//see note above
-                s[x][0][uiI] = 0;
-            else
-                s[x][0][uiI] = s[x][0][uiI - 1] - iExtend;
+            s[x][0][uiI] = s[x][0][uiI - 1] - iExtend;
             dir[2][0][uiI] = DEL | DIR_2_NEXT;
         }//for
     }//for
@@ -317,35 +319,16 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
     nucSeqIndex iY = toRef-fromRef;
     
     char cLastDir = DIR_0_NEXT;
-    /*
-    * if there is no gap cost for the beginning 
-    * we should start backtracking where the score is maximal
-    * along the reference
-    * also: in this case the last direction must be a match
-    */
-    if(bNoGapAtBeginning)
+    int a = s[0][iX][iY];
+    int b = s[1][iX][iY];
+    if(b > a)
     {
-        for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef; uiJ++)
-            if(s[0][iX][uiJ] > s[0][iX][iY])
-                iY = uiJ;
-        uiRet = (toRef-fromRef) - iY;
-        DEBUG_2(
-            std::cout << (toRef-fromRef) - iY << "D";
-        )//DEBUG
+        a = b;
+        cLastDir = DIR_1_NEXT;
     }//if
-    else // in this case the first direction might be an insertion or deletion
-    {
-        int a = s[0][iX][iY];
-        int b = s[1][iX][iY];
-        if(b > a)
-        {
-            a = b;
-            cLastDir = DIR_1_NEXT;
-        }//if
-        b = s[2][iX][iY];
-        if(b > a)
-            cLastDir = DIR_2_NEXT;
-    }//else
+    b = s[2][iX][iY];
+    if(b > a)
+        cLastDir = DIR_2_NEXT;
     while(iX > 0 || iY > 0)
     {
         //load the direction value from the correct matrix
@@ -396,13 +379,6 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
         else{
             std::cerr << "WARNING: no direction set in dynamic programming" << std::endl;
         }//else
-
-        /*
-        * if there is no gap cost for the end 
-        * we should stop backtracking once we reached the end of the query
-        */
-        if(bNoGapAtEnd && iX <= 0)
-            return iY;
     }//while
 
     DEBUG_2(
@@ -469,6 +445,7 @@ public:
 int printer(void* pVoid, uint64_t uiLen, char c)
 {
     MyPrinterMemory* pM = (MyPrinterMemory*) pVoid;
+    std::cout << c << uiLen << " ";
     switch (c)
     {
         case 'M':
@@ -503,15 +480,34 @@ int printer(void* pVoid, uint64_t uiLen, char c)
 
 // @todo: this should not be in a .h file
 // @todo: we should make two calls: start in the center and work our way towards both ends
-std::shared_ptr<Alignment> libMA::smithWaterman(
-        std::shared_ptr<NucSeq> pQuery, 
-        std::shared_ptr<NucSeq> pRef,
-        nucSeqIndex uiOffsetRef
+void libMA::dp(
+        const std::shared_ptr<NucSeq> pQuery, 
+        const std::shared_ptr<NucSeq> pRef,
+        const nucSeqIndex fromQuery, const nucSeqIndex toQuery,
+        const nucSeqIndex fromRef, const nucSeqIndex toRef,
+        std::shared_ptr<Alignment> pAlignment, // in & output
+        const bool bLocalBeginning,
+        const bool bLocalEnd
     )
 {
+    if(!bLocalBeginning && !bLocalEnd)
+    {
+       naiveNeedlemanWunsch(
+           pQuery, pRef,
+           fromQuery, toQuery,
+           fromRef, toRef,
+           pAlignment
+       );
+       return;
+    }// if
+
+    assert(! (bLocalBeginning && bLocalEnd) );
+    assert( bLocalBeginning || bLocalEnd );
+
+    const bool bReverse = bLocalBeginning;
+
     const unsigned int uiBandWidth = 64;
 
-    auto pAlignment = std::make_shared<Alignment>();
     // in all other cases we use parasail
     // do some checking for empty sequences though since parasail does not offer that
     if(pRef->length() == 0)
@@ -537,8 +533,8 @@ std::shared_ptr<Alignment> libMA::smithWaterman(
     /*
     * do the SW alignment
     */
-    std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit();
-    std::vector<uint8_t> vRef4Bit   =   pRef->as4Bit();
+    std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit(fromQuery, toQuery, bReverse);
+    std::vector<uint8_t>   vRef4Bit =   pRef->as4Bit(  fromRef,   toRef, bReverse);
 
     uint8_t const t[ uiBandWidth ] = { 0 }; // tail array ?
 
@@ -594,98 +590,35 @@ std::shared_ptr<Alignment> libMA::smithWaterman(
 		NULL	/* custom allocator: see struct gaba_alloc_s in gaba.h */
 	);//struct
 
+    if(bReverse)
+        pAlignment->shiftOnRef( (toRef - fromRef) - xDb.pR->agcnt + xDb.pR->dcnt);
+
     // used int the lambda function
     MyPrinterMemory xPrinter(pQuery, pRef, pAlignment);
 
 	//printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
-	gaba_print_cigar_forward(
-		printer,                        /* printer function */
-        (void*) &xPrinter,              /* printer function input */
-		xDb.pR->path,		            /* bit-encoded path array */
-		0,					            /* offset is always zero */
-		xDb.pR->plen		            /* path length */
-	);
-
-    pAlignment->uiBeginOnQuery = 0;
-    pAlignment->uiBeginOnRef = uiOffsetRef;
-    pAlignment->uiEndOnQuery = xDb.pR->bgcnt + xDb.pR->dcnt;
-    pAlignment->uiEndOnRef = uiOffsetRef + xDb.pR->agcnt + xDb.pR->dcnt;
-#if 0
-    // Note: parasail does not follow the usual theme where for opening a gap 
-    //       extend and open penalty are applied
-    ParsailResultWrapper pResult(parasail_sw_trace_scan_32(
-        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
-        (const char*)pRef->pGetSequenceRef(), pRef->length(),
-        iGap + iExtend, iExtend,
-        &matrix
-    ));
-
-    //get the cigar
-    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
-        pResult.get(),
-        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
-        (const char*)pRef->pGetSequenceRef(), pRef->length(),
-        &matrix
-    ));
-
-    DEBUG_2(
-        std::cout << "cigar length: " << pCigar->len << std::endl;
-        std::cout << pCigar->beg_query << ", " << pCigar->beg_ref << std::endl;
-    )
-
     /*
-    * Decode the cigar:
-    *  this involves two steps
-    *  1) find the beginning and end of the cigar and set the alignment ends accordingly
-    *  2) translate the cigar symbols into insertions deletions matches and missmatches
-    */
-    pAlignment->uiBeginOnQuery = pCigar->beg_query;
-    pAlignment->uiBeginOnRef = pCigar->beg_ref + uiOffsetRef;
+     * Having duplicate code here, but need the different functions
+     * Maybe template all that?
+     */
+    if(bReverse)
+        gaba_print_cigar_reverse(
+            printer,                        /* printer function */
+            (void*) &xPrinter,              /* printer function input */
+            xDb.pR->path,		            /* bit-encoded path array */
+            0,					            /* offset is always zero */
+            xDb.pR->plen		            /* path length */
+        );
+    else
+        gaba_print_cigar_forward(
+            printer,                        /* printer function */
+            (void*) &xPrinter,              /* printer function input */
+            xDb.pR->path,		            /* bit-encoded path array */
+            0,					            /* offset is always zero */
+            xDb.pR->plen		            /* path length */
+        );
 
-    nucSeqIndex uiQPos = pCigar->beg_query;
-    nucSeqIndex uiRPos = pCigar->beg_ref;
-    //decode the cigar
-    for(int i = 0; i < pCigar->len; i++)
-    {
-        char c = parasail_cigar_decode_op(pCigar->seq[i]);
-        uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
-        DEBUG_2(std::cout << c << " x" << uiLen << std::endl;)
-        switch (c)
-        {
-            case '=':
-                pAlignment->append(MatchType::match, uiLen);
-                uiQPos += uiLen;
-                uiRPos += uiLen;
-                break;
-            case 'I':
-                pAlignment->append(MatchType::insertion, uiLen);
-                uiQPos += uiLen;
-                break;
-            case 'D':
-                pAlignment->append(MatchType::deletion, uiLen);
-                uiRPos += uiLen;
-                break;
-            case 'X':
-                pAlignment->append(MatchType::missmatch, uiLen);
-                uiQPos += uiLen;
-                uiRPos += uiLen;
-                break;
-            default:
-                // there are different CIGAR symbols allowed in the SAM format
-                // but parasail should never generate any of them
-                assert(false);
-                break;
-        }//switch
-    }//for
-    
-    DEBUG_2(
-        std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
-    )
-
-    pAlignment->uiEndOnQuery = uiQPos;
-    pAlignment->uiEndOnRef = uiRPos + uiOffsetRef;
-#endif
-
+    // dangeling deletions are not allowed
     pAlignment->removeDangeling();
 
     return pAlignment;
@@ -775,7 +708,8 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
 }//function
 
 
-
+//@todo currently disabled
+#if 0
 nucSeqIndex NeedlemanWunsch::needlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
@@ -897,6 +831,7 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
     //since we use the naive implementation for semi-global alignments we can always return 0 here
     return 0;
 }//function
+#endif
 
 DEBUG(
     /*
@@ -927,6 +862,8 @@ DEBUG(
     }//function
 )//DEBUG
 
+//@todo currently disabled
+#if 0
 std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
@@ -1184,6 +1121,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
 }//function
 
+#endif
+
 std::string LocalToGlobal::getFullDesc() const
 {
     return std::string("LocalToGlobal(") + 
@@ -1208,7 +1147,8 @@ std::shared_ptr<Container> LocalToGlobal::getOutputType() const
     return std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
 }//function
 
-
+//@todo currently disabled
+#if 0
 std::shared_ptr<Container> LocalToGlobal::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
@@ -1323,6 +1263,7 @@ std::shared_ptr<Container> LocalToGlobal::execute(
 
     return pRet;
 }//function
+#endif
 
 
 

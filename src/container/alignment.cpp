@@ -18,17 +18,29 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
         return;
     //adjust the score of the alignment
     if(type == MatchType::seed || type == MatchType::match)
+    {
         iScore += iMatch * size;
+        uiEndOnRef += size;
+        uiEndOnQuery += size;
+    }// if
     else if(type == MatchType::missmatch)
+    {
         //iMissMatch is a penalty not a score
         iScore -= iMissMatch * size;
+        uiEndOnRef += size;
+        uiEndOnQuery += size;
+    }// else if
     else if(type == MatchType::insertion || type == MatchType::deletion)
     {
         //iGap & iExtend is a penalty not a score
         if(length() == 0 || (at(length()-1) != type) )
             iScore -= iGap;
         iScore -= iExtend * size;
-    }//if
+        if(type == MatchType::insertion)
+            uiEndOnQuery += size;
+        else
+            uiEndOnRef += size;
+    }// else if
     /*
      * we are storing in a compressed format 
      * since it actually makes quite a lot of things easier

@@ -77,26 +77,6 @@ namespace libMA
             xStats(),
             bSecondary(false)
         {}//constructor
-        /**
-         * @brief Creates an empty alignment, 
-         * where the interval of the reference that is used is already known.
-         */
-        Alignment(
-                nucSeqIndex uiBeginOnRef, 
-                nucSeqIndex uiEndOnRef,
-                nucSeqIndex uiBeginOnQuery,
-                nucSeqIndex uiEndOnQuery
-            )
-                :
-            data(),
-            uiLength(0),
-            uiBeginOnRef(uiBeginOnRef),
-            uiEndOnRef(uiEndOnRef),
-            uiBeginOnQuery(uiBeginOnQuery),
-            uiEndOnQuery(uiEndOnQuery),
-            xStats(),
-            bSecondary(false)
-        {}//constructor
 
         /**
          * @brief Creates an empty alignment, 
@@ -109,7 +89,7 @@ namespace libMA
             data(),
             uiLength(0),
             uiBeginOnRef(uiBeginOnRef),
-            uiEndOnRef(0),
+            uiEndOnRef(uiBeginOnRef),
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
             xStats(),
@@ -340,6 +320,18 @@ namespace libMA
             bSecondary = pOther->bSecondary;
             xStats = pOther->xStats;
         }//function
+
+        inline void shiftOnRef(nucSecIndex uiBy)
+        {
+            uiBeginOnRef += uiBy;
+            uiEndOnRef += uiBy;
+        }// method
+
+        inline void shiftOnQuery(nucSecIndex uiBy)
+        {
+            uiBeginOnQuery += uiBy;
+            uiEndOnQuery += uiBy;
+        }// method
     };//class
 }//namespace libMA
 

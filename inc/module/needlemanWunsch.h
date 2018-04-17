@@ -153,35 +153,15 @@ namespace libMA
         }//deconstructor
     };//class
 
-    /**
-     * @todo: this should not be in a .h file
-     * @brief the NW dynamic programming algorithm
-     * @details
-     * This is a naive very slow version,
-     * but it computes the correct score and it is capable of doing semi-global alignments.
-     *
-     * if bNoGapAtBeginning || bNoGapAtEnd :
-     *      returns the gap at the beginning or end
-     * otherwise : returns 0 
-     */
-    nucSeqIndex EXPORTED naiveNeedlemanWunsch(
-            std::shared_ptr<NucSeq> pQuery, 
-            std::shared_ptr<NucSeq> pRef,
-            nucSeqIndex fromQuery,
-            nucSeqIndex toQuery,
-            nucSeqIndex fromRef,
-            nucSeqIndex toRef,
-            std::shared_ptr<Alignment> pAlignment,
-            bool bNoGapAtBeginning,
-            bool bNoGapAtEnd
-            DEBUG_PARAM(bool bPrintMatrix = false)
-        );
-
     //@todo: this should not be in a .h file
-    std::shared_ptr<Alignment> EXPORTED smithWaterman(
-            std::shared_ptr<NucSeq> pQuery, 
-            std::shared_ptr<NucSeq> pRef,
-            nucSeqIndex uiOffsetRef
+    std::shared_ptr<Alignment> EXPORTED dp(
+        const std::shared_ptr<NucSeq> pQuery, 
+        const std::shared_ptr<NucSeq> pRef,
+        const nucSeqIndex fromQuery, const nucSeqIndex toQuery,
+        const nucSeqIndex fromRef, const nucSeqIndex toRef,
+        std::shared_ptr<Alignment> pAlignment, // in & output
+        const bool bLocalBeginning,
+        const bool bLocalEnd
         );
 
 
@@ -204,6 +184,7 @@ namespace libMA
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
+#if 0
         /**
          * @brief the NW dynamic programming algorithm
          * @details 
@@ -225,6 +206,7 @@ namespace libMA
             bool bNoGapAtEnd
             DEBUG_PARAM(bool bPrintMatrix = false)
         );
+#endif
 
         /**
          * @brief Used to check the input of execute.

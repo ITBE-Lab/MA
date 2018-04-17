@@ -790,10 +790,16 @@ namespace libMA
             }//for
         }//method
 
-        inline std::vector<uint8_t> as4Bit()
+        inline std::vector<uint8_t> as4Bit(
+                nucSeqIndex uiFrom,
+                nucSeqIndex uiTo,
+                bool bReversed
+            ) const
         {
+            assert(uiTo <= length());
+            assert(uiFrom <= uiTo);
             DEBUG_3(
-                for(size_t i = 0; i < length(); i++)
+                for(size_t i = uiFrom; i < uiTo; i++)
                 {
                     assert(pxSequenceRef[i] < 4);//@todo: N
                     std::cout << (int)pxSequenceRef[i] << " ";
@@ -801,10 +807,11 @@ namespace libMA
                 std::cout << std::endl;
             )// DEBUG
             static const uint8_t aTranslate[4] = {1, 2, 4, 8};//@todo: N
-            std::vector<uint8_t> vRet( length() );
+            std::vector<uint8_t> vRet( uiTo - uiFrom );
 
-            for(size_t i = 0; i < length(); i++)
-                vRet[i] = aTranslate[pxSequenceRef[i]];
+            for(size_t i = 0; i < vRet.size(); i++)
+                vRet[ bReversed ? vRet.size() - (i + 1) : i ] =
+                    aTranslate[ pxSequenceRef[i + uiFrom] ];
 
             DEBUG_3(
                 for(size_t i = 0; i < vRet.size(); i++)
