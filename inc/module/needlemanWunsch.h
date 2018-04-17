@@ -12,6 +12,7 @@
 #include "parasail.h"
 #include "parasail/matrices/blosum62.h"
 #include "parasail/matrix_lookup.h"
+#include "gaba.h"
 
 namespace libMA
 {
@@ -99,6 +100,57 @@ namespace libMA
         {
             return pContent;
         }//operator
+    };//class
+
+    /**
+     * @todo this class should not be in the .h
+     */
+    class Gaba_tWrapper
+    {
+    public:
+        gaba_params_s xParams;
+        gaba_t* pContext;
+
+        Gaba_tWrapper(const gaba_params_s &rxParams)
+                :
+            xParams(rxParams)
+        {
+            pContext = gaba_init(&this->xParams);
+        }//constructor
+
+        Gaba_tWrapper()
+                :
+            pContext(nullptr)
+        {}//constructor
+
+        ~Gaba_tWrapper()
+        {
+            if(pContext != nullptr)
+                gaba_clean(pContext);
+        }//deconstructor
+
+        void operator=(const Gaba_tWrapper &rOther) = delete;
+        Gaba_tWrapper(const Gaba_tWrapper& rOther) = delete;
+    };//class
+
+    class Gaba_dp_tWrapper
+    {
+    public:
+        gaba_dp_t* pDp;
+        struct gaba_alignment_s * pR;
+
+        Gaba_dp_tWrapper(gaba_dp_t* pDp)
+                :
+            pDp(pDp),
+            pR(nullptr)
+        {}//constructor
+
+        ~Gaba_dp_tWrapper()
+        {
+            if(pR != nullptr)
+                gaba_dp_res_free(pDp, pR);
+            gaba_dp_clean(pDp);
+        }//deconstructor
     };//class
 
     /**

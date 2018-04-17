@@ -54,6 +54,9 @@ const int parasail_custom_map[] = {
      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 };
 
+std::shared_ptr<Gaba_tWrapper> pGabaScoring;
+
+
 nucSeqIndex libMA::naiveNeedlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
@@ -441,14 +444,73 @@ nucSeqIndex libMA::naiveNeedlemanWunsch(
     return uiRet;
 }//function
 
+class MyPrinterMemory
+{
+public:
+    const std::shared_ptr<NucSeq> pQuery;
+    const std::shared_ptr<NucSeq> pRef;
+    std::shared_ptr<Alignment> pAlignment;
+    nucSeqIndex uiQPos, uiRPos;
 
-//@todo: this should not be in a .h file
+    MyPrinterMemory(
+            std::shared_ptr<NucSeq> pQuery, 
+            std::shared_ptr<NucSeq> pRef, 
+            std::shared_ptr<Alignment> pAlignment
+        )
+            :
+        pQuery(pQuery),
+        pRef(pRef),
+        pAlignment(pAlignment),
+        uiQPos(0),
+        uiRPos(0)
+    {}//constructor
+};// class
+
+int printer(void* pVoid, uint64_t uiLen, char c)
+{
+    MyPrinterMemory* pM = (MyPrinterMemory*) pVoid;
+    switch (c)
+    {
+        case 'M':
+            for(size_t i = 0; i < uiLen; i++)
+            {
+                if(
+                        pM->pQuery->pGetSequenceRef()[pM->uiQPos + i] 
+                            ==
+                        pM->pRef->pGetSequenceRef()[pM->uiRPos + i]
+                    )
+                    pM->pAlignment->append(MatchType::match);
+                else
+                    pM->pAlignment->append(MatchType::missmatch);
+            }// for
+            pM->uiQPos += uiLen;
+            pM->uiRPos += uiLen;
+            break;
+        case 'I':
+            pM->pAlignment->append(MatchType::insertion, uiLen);
+            pM->uiQPos += uiLen;
+            break;
+        case 'D':
+            pM->pAlignment->append(MatchType::deletion, uiLen);
+            pM->uiRPos += uiLen;
+            break;
+        default:
+            std::cout << "GABA cigar contains unknown symbol: " << c << std::endl;
+            assert(false);
+    }// switch
+    return 0;
+}// function
+
+// @todo: this should not be in a .h file
+// @todo: we should make two calls: start in the center and work our way towards both ends
 std::shared_ptr<Alignment> libMA::smithWaterman(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
         nucSeqIndex uiOffsetRef
     )
 {
+    const unsigned int uiBandWidth = 64;
+
     auto pAlignment = std::make_shared<Alignment>();
     // in all other cases we use parasail
     // do some checking for empty sequences though since parasail does not offer that
@@ -475,7 +537,80 @@ std::shared_ptr<Alignment> libMA::smithWaterman(
     /*
     * do the SW alignment
     */
+    std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit();
+    std::vector<uint8_t> vRef4Bit   =   pRef->as4Bit();
 
+    uint8_t const t[ uiBandWidth ] = { 0 }; // tail array ?
+
+	struct gaba_section_s asec = { // gaba_build_section(0,  &vQuery4Bit[0], vQuery4Bit.size());
+        id: 0,
+        len: (uint32_t) vRef4Bit.size(),
+        base: &vRef4Bit[0]
+    };//struct 
+	struct gaba_section_s bsec = { // gaba_build_section(2, &vRef4Bit[0], vRef4Bit.size());
+        id: 2,
+        len: (uint32_t) vQuery4Bit.size(),
+        base: &vQuery4Bit[0]
+    };//struct 
+	struct gaba_section_s tail = { // gaba_build_section(4, t, 64);
+        id: 4,
+        len: uiBandWidth,
+        base: t
+    };//struct 
+
+    assert(pGabaScoring->pContext != nullptr);
+    
+    Gaba_dp_tWrapper xDb( gaba_dp_init(pGabaScoring->pContext) );
+    assert(xDb.pDp != nullptr);
+
+    //Note f does not need to be freed apparently
+	struct gaba_section_s const *ap = &asec, *bp = &bsec;
+    
+    struct gaba_fill_s const *f = gaba_dp_fill_root(
+        xDb.pDp,	    /* dp -> &dp[_dp_ctx_index(band_width)] makes the band width selectable */
+		ap, 0,		/* a-side (reference side) sequence and start position */
+		bp, 0,		/* b-side (query) */
+		UINT32_MAX		/* max extension length */
+	);
+
+	/* until X-drop condition is detected */
+	struct gaba_fill_s const *m = f;
+    /* track max */
+	while((f->status & GABA_TERM) == 0)
+    {
+        /* substitute the pointer by the tail section's if it reached the end */
+		if(f->status & GABA_UPDATE_A) { ap = &tail; }
+		if(f->status & GABA_UPDATE_B) { bp = &tail; }
+
+        /* extend the banded matrix */
+		f = gaba_dp_fill(xDb.pDp, f, ap, bp, UINT32_MAX);
+        /* swap if maximum score was updated */
+		m = f->max > m->max ? f : m;
+	}// while
+
+	xDb.pR = gaba_dp_trace(
+        xDb.pDp,
+		m,		/* section with the max */
+		NULL	/* custom allocator: see struct gaba_alloc_s in gaba.h */
+	);//struct
+
+    // used int the lambda function
+    MyPrinterMemory xPrinter(pQuery, pRef, pAlignment);
+
+	//printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
+	gaba_print_cigar_forward(
+		printer,                        /* printer function */
+        (void*) &xPrinter,              /* printer function input */
+		xDb.pR->path,		            /* bit-encoded path array */
+		0,					            /* offset is always zero */
+		xDb.pR->plen		            /* path length */
+	);
+
+    pAlignment->uiBeginOnQuery = 0;
+    pAlignment->uiBeginOnRef = uiOffsetRef;
+    pAlignment->uiEndOnQuery = xDb.pR->bgcnt + xDb.pR->dcnt;
+    pAlignment->uiEndOnRef = uiOffsetRef + xDb.pR->agcnt + xDb.pR->dcnt;
+#if 0
     // Note: parasail does not follow the usual theme where for opening a gap 
     //       extend and open penalty are applied
     ParsailResultWrapper pResult(parasail_sw_trace_scan_32(
@@ -549,6 +684,7 @@ std::shared_ptr<Alignment> libMA::smithWaterman(
 
     pAlignment->uiEndOnQuery = uiQPos;
     pAlignment->uiEndOnRef = uiRPos + uiOffsetRef;
+#endif
 
     pAlignment->removeDangeling();
 
@@ -579,7 +715,34 @@ NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
     matrix.max = iMatch;
     matrix.min = -iMissMatch;
     matrix.user_matrix = &vMatrixContent[0];
-}//constructor
+
+    //Gaba context initialization
+    /*
+     *    GABA_PARAMS(
+     *            .xdrop = 100,  // @todo: ?
+     *            //match award, 
+     *            //mismatch penalty, 
+     *            //gap open penalty (G_i), and 
+     *            //gap extension penalty (G_e) 
+     *            GABA_SCORE_SIMPLE(iMatch, iMissMatch, iGap, iExtend)
+     *    )
+     */
+    gaba_params_s xParams = {
+        score_matrix: {
+                 (int8_t) iMatch, (int8_t) -iMissMatch, (int8_t) -iMissMatch, (int8_t) -iMissMatch,
+            (int8_t) -iMissMatch,      (int8_t) iMatch, (int8_t) -iMissMatch, (int8_t) -iMissMatch,
+            (int8_t) -iMissMatch, (int8_t) -iMissMatch,      (int8_t) iMatch, (int8_t) -iMissMatch,
+            (int8_t) -iMissMatch, (int8_t) -iMissMatch, (int8_t) -iMissMatch,      (int8_t) iMatch
+        },
+        gi: (int8_t) iGap,
+        ge: (int8_t) iExtend,
+        gfa: 0,
+        gfb: 0,
+        xdrop: 100 // @todo: ?
+    };// struct
+    
+    pGabaScoring = std::make_shared<Gaba_tWrapper>(xParams);
+}// constructor
 
 std::string NeedlemanWunsch::getFullDesc() const
 {

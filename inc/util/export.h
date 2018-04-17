@@ -161,6 +161,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/sw_gpu.h"
 #include "module/tempBackend.h"
 #include "container/soc.h"
+#include "container/seed.h"
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
@@ -188,7 +189,7 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int uiNumNW,
     float fGiveUp,
     float fMappingQualMin,
-    nucSeqIndex uiPadding_
+    uint64_t uiPadding_//@todo
 );
 
 #endif

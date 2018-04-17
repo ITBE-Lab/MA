@@ -769,7 +769,7 @@ namespace libMA
             for (unsigned int i = 0; i < length(); i++)
                 sRet += (char)quality(i);
             return sRet;
-        }//function
+        }//method
 
         /**
          * checks for untranslated characters in the sequence..
@@ -788,7 +788,31 @@ namespace libMA
                     throw AlignerException("Found invalid character in nucSeq.");
                 }//if
             }//for
-        }//function
+        }//method
+
+        inline std::vector<uint8_t> as4Bit()
+        {
+            DEBUG_3(
+                for(size_t i = 0; i < length(); i++)
+                {
+                    assert(pxSequenceRef[i] < 4);//@todo: N
+                    std::cout << (int)pxSequenceRef[i] << " ";
+                }// for
+                std::cout << std::endl;
+            )// DEBUG
+            static const uint8_t aTranslate[4] = {1, 2, 4, 8};//@todo: N
+            std::vector<uint8_t> vRet( length() );
+
+            for(size_t i = 0; i < length(); i++)
+                vRet[i] = aTranslate[pxSequenceRef[i]];
+
+            DEBUG_3(
+                for(size_t i = 0; i < vRet.size(); i++)
+                    std::cout << (int)vRet[i] << " ";
+                std::cout << std::endl;
+            )// DEBUG
+            return vRet;
+        }// method
     }; // class NucSeq
 }//namespace libMA
 

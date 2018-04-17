@@ -107,7 +107,7 @@ def test_my_approach(
         give_up=0.05,
         quitet=False,
         missed_alignments_db=None,
-        min_coverage=0.5, # 1.1 = force SW alignment @todo remove me
+        min_coverage= 1.1, #0.5, # 1.1 = force SW alignment @todo remove me
         #optimistic_gap_estimation=False,
         specific_id=None
     ):
@@ -294,7 +294,7 @@ def test_my_approach(
 
         if not quitet:
             print("computing (", name, ") ...")
-        Pledge.simultaneous_get(pledges[-1], 16)
+        Pledge.simultaneous_get(pledges[-1], 32)
 
 
         if specific_id != None:
