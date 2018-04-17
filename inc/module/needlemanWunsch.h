@@ -18,92 +18,6 @@ namespace libMA
 {
     /**
      * @todo this class should not be in the .h
-     * @brief wrapper for parsail results.
-     * @details
-     * This will automatically call free the result in the deconstructor and therefore make everything
-     * exception save.
-     */
-    class ParsailResultWrapper
-    {
-        parasail_result_t* pContent;
-    public:
-
-        ParsailResultWrapper(parasail_result_t* pContent)
-                :
-            pContent(pContent)
-        {}//constructor
-
-        ~ParsailResultWrapper()
-        {
-            parasail_result_free(pContent);
-        }//deconstructor
-
-        const parasail_result_t& operator*() const
-        {
-            return *pContent;
-        }//operator
-
-        const parasail_result_t* get() const
-        {
-            return pContent;
-        }//operator
-
-        parasail_result_t* get()
-        {
-            return pContent;
-        }//operator
-
-        const parasail_result_t* operator->() const
-        {
-            return pContent;
-        }//operator
-    };//class
-
-    /**
-     * @todo this class should not be in the .h
-     * @brief wrapper for parsail cigars.
-     * @details
-     * This will automatically call free the result in the deconstructor and therefore make everything
-     * exception save.
-     */
-    class ParsailCigarWrapper
-    {
-        parasail_cigar_t* pContent;
-    public:
-
-        ParsailCigarWrapper(parasail_cigar_t* pContent)
-                :
-            pContent(pContent)
-        {}//constructor
-
-        ~ParsailCigarWrapper()
-        {
-            parasail_cigar_free(pContent);
-        }//deconstructor
-
-        const parasail_cigar_t& operator*() const
-        {
-            return *pContent;
-        }//operator
-
-        const parasail_cigar_t* get() const
-        {
-            return pContent;
-        }//operator
-
-        parasail_cigar_t* get()
-        {
-            return pContent;
-        }//operator
-
-        const parasail_cigar_t* operator->() const
-        {
-            return pContent;
-        }//operator
-    };//class
-
-    /**
-     * @todo this class should not be in the .h
      */
     class Gaba_tWrapper
     {
@@ -184,29 +98,6 @@ namespace libMA
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
-#if 0
-        /**
-         * @brief the NW dynamic programming algorithm
-         * @details 
-         * Uses parasail to have an efficient vectorized implementation.
-         * For the moment: is either bNoGapAtBeginning or bNoGapAtEnd it jumps to 
-         * the naive implementation.
-         * 
-         * find a way to replace that?
-         */
-        nucSeqIndex needlemanWunsch(
-            std::shared_ptr<NucSeq> pQuery, 
-            std::shared_ptr<NucSeq> pRef,
-            nucSeqIndex fromQuery,
-            nucSeqIndex toQuery,
-            nucSeqIndex fromRef,
-            nucSeqIndex toRef,
-            std::shared_ptr<Alignment> pAlignment,
-            bool bNoGapAtBeginning,
-            bool bNoGapAtEnd
-            DEBUG_PARAM(bool bPrintMatrix = false)
-        );
-#endif
 
         /**
          * @brief Used to check the input of execute.

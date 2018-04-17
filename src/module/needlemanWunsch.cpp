@@ -28,32 +28,6 @@ nucSeqIndex uiPadding = 100;
  * 3) Then create all other modules that you want to use.....
  */
 //the match missmatch matrix
-parasail_matrix_t matrix;
-std::vector<int> vMatrixContent;
-
-/*
- * We want to avoid translating the numeric representation into characters
- * so we will trick parasail...
- */
-const int parasail_custom_map[] = {
-     0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-};
-
 std::shared_ptr<Gaba_tWrapper> pGabaScoring;
 
 
@@ -532,8 +506,8 @@ void libMA::dynPrg(
 
     const unsigned int uiBandWidth = 64;
 
-    // in all other cases we use parasail
-    // do some checking for empty sequences though since parasail does not offer that
+    // in all other cases we use libGaba
+    // do some checking for empty sequences though since libGaba does not offer that
     if( toRef <= fromRef )
         if( toQuery <= fromQuery )
         {
@@ -563,19 +537,14 @@ void libMA::dynPrg(
     /*
     * do the SW alignment
     */
-    std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit(fromQuery, toQuery, bReverse);
+    std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit(fromQuery, toQuery+1, bReverse);
+    std::vector<uint8_t>   vRef4Bit =   pRef->as4Bit(  fromRef,   toRef+1, bReverse);
     DEBUG_3(
         if(bLocalBeginning)
         {
             for(auto i : vQuery4Bit)
                 std::cout << (int)i; 
             std::cout << std::endl;
-        }// if
-    )// DEBUG_3
-    std::vector<uint8_t>   vRef4Bit =   pRef->as4Bit(  fromRef,   toRef, bReverse);
-    DEBUG_3(
-        if(bLocalBeginning)
-        {
             for(auto i : vRef4Bit)
                 std::cout << (int)i; 
             std::cout << std::endl;
@@ -689,9 +658,6 @@ void libMA::dynPrg(
         pAlignment->shiftOnQuery( vQuery4Bit.size() - (xDb.pR->bgcnt + xDb.pR->dcnt) );
     }// if
 
-    // dangeling deletions are not allowed
-    pAlignment->removeDangeling();
-
     DEBUG_3(std::cout << "dynProg end" << std::endl;)
     return;
 }//function
@@ -700,27 +666,6 @@ NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
         :
     bLocal(bLocal)
 {
-    //configure the parasail matrix
-    matrix.name = "";
-    matrix.size = 4;
-    for(int i=0; i < 4; i++)
-    {
-        for(int j=0; j < 4; j++)
-        {
-            if(i == 4 || j == 4)
-                vMatrixContent.push_back(0);
-            if(i == j)
-                vMatrixContent.push_back(iMatch);
-            else
-                vMatrixContent.push_back(-iMissMatch);
-        }//for
-    }//for
-    matrix.matrix = &vMatrixContent[0];
-    matrix.mapper = parasail_custom_map;
-    matrix.max = iMatch;
-    matrix.min = -iMissMatch;
-    matrix.user_matrix = &vMatrixContent[0];
-
     //Gaba context initialization
     /*
      *    GABA_PARAMS(
@@ -745,7 +690,7 @@ NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
         gfb: 0,
         xdrop: 100 // @todo: ?
     };// struct
-    
+
     pGabaScoring = std::make_shared<Gaba_tWrapper>(xParams);
 }// constructor
 

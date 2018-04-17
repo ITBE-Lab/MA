@@ -41,7 +41,7 @@ class AlignmentPrinter(Module):
     def execute(self, *input):
         align = input[0]
         query = input[1][align.begin_on_query:align.end_on_query]
-        ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
+        ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref+1)
 
         lines = [
             "score: " + str(align.get_score()) + " cigar length: " + str(len(align)) + 
@@ -80,6 +80,7 @@ class AlignmentPrinter(Module):
                 for index in range(counter, len(align)):
                     s.append(align[counter])
                 print("remaining cigar:", s)
+                atLeastOneMistake = True
                 break
             if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
                 print("This should not happen... (query)")
@@ -90,6 +91,7 @@ class AlignmentPrinter(Module):
                 for index in range(counter, len(align)):
                     s.append(align[counter])
                 print("remaining cigar:", s)
+                atLeastOneMistake = True
                 break
 
             #check for match or missmatch
@@ -143,18 +145,13 @@ class AlignmentPrinter(Module):
         lines[-3] += "\treference"
         lines[-1] += "\tquery"
 
-        if not self.check_for_errors_only:
+        if not self.check_for_errors_only and not atLeastOneMistake:
             for line in lines:
                 print(line)
         if atLeastOneMistake:
             print("WARNING: the alignment contains errors!")
-            l = []
-            for counter in range(len(align)):
-                l.append(align[counter])
-            print(l)
-            if self.check_for_errors_only:
-                for line in lines:
-                    print(line)
-                exit()
+            for line in lines:
+                print(line)
+            exit()
 
         return None

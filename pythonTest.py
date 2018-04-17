@@ -1693,7 +1693,7 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("human_10000.db", human_genome, specific_id=34)
+test_my_approaches("human_10000.db", human_genome)
 #test("sw_human.db", human_genome)
 analyse_all_approaches_depre("human.html","human_10000.db", num_tries=1)
 analyse_all_approaches_depre("human_5_tries.html","human_10000.db", num_tries=5)

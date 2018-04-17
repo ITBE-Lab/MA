@@ -546,6 +546,25 @@ std::shared_ptr<Container> TempBackend::execute(
             nucSeqIndex endOfLastSeedQuery = pSeeds->front().end();
             nucSeqIndex endOfLastSeedReference = pSeeds->front().end_ref() - beginRef;
 
+            DEBUG(
+                if(pRet->uiEndOnQuery != pSeeds->front().start())
+                {
+                    std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front().start() 
+                        << std::endl;
+                    std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front().start_ref() 
+                        << std::endl;
+                    assert(false);
+                }// if
+                if(pRet->uiEndOnRef != pSeeds->front().start_ref())
+                {
+                    std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front().start() 
+                        << std::endl;
+                    std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front().start_ref() 
+                        << std::endl;
+                    assert(false);
+                }// if
+            )//DEBUG
+
             pRet->append(MatchType::seed, pSeeds->front().size());
             bool bSkip = true;
             for(Seed& rSeed : *pSeeds)
@@ -634,13 +653,14 @@ std::shared_ptr<Container> TempBackend::execute(
                     pQuery,
                     pRef,
                     endOfLastSeedQuery,
-                    endQuery,
+                    endQuery-1,
                     endOfLastSeedReference,
-                    endRef-beginRef,
+                    endRef-beginRef-1,
                     pRet,
                     false,
                     true
                 );
+                //there should never be dangeling deletions with libGaba
                 pRet->removeDangeling();
             }//else
             return pRet;

@@ -808,7 +808,7 @@ namespace libMA
                 std::cout << std::endl;
             )// DEBUG
             static const uint8_t aTranslate[4] = {1, 2, 4, 8};//@todo: N
-            std::vector<uint8_t> vRet( uiTo - uiFrom );
+            std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
             for(size_t i = 0; i < vRet.size(); i++)
                 vRet[ bReversed ? vRet.size() - (i + 1) : i ] =
