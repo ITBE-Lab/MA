@@ -390,6 +390,8 @@ def test_my_approach(
         
         #save(plot)
 
+        if specific_id != None:
+            AlignmentPrinter().execute(pledges[-1][0].get()[0], pledges[0][0].get(), ref_pack)
 
 
         # @note temporary debug code end
@@ -423,6 +425,9 @@ def test_my_approach(
                 continue
 
             alignment = alignments.get()[0]
+
+            #check cigar for errors and complain if there are any
+            AlignmentPrinter(check_for_errors_only=True).execute(alignment, pledges[0][i].get(), ref_pack)
 
             if len(alignment) == 0:
                 continue
@@ -1688,7 +1693,7 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("human_10000.db", human_genome)
+test_my_approaches("human_10000.db", human_genome, specific_id=34)
 #test("sw_human.db", human_genome)
 analyse_all_approaches_depre("human.html","human_10000.db", num_tries=1)
 analyse_all_approaches_depre("human_5_tries.html","human_10000.db", num_tries=5)

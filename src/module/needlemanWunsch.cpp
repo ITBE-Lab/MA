@@ -76,9 +76,9 @@ void naiveNeedlemanWunsch(
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
         std::shared_ptr<Alignment> pAlignment
-        DEBUG_PARAM(bool bPrintMatrix)
     )
 {
+    DEBUG_3(std::cout << "naive" << std::endl;)
     /*
     * break conditions for actually empty areas
     */
@@ -310,8 +310,6 @@ void naiveNeedlemanWunsch(
         }//for
     )//DEBUG
 
-    nucSeqIndex uiRet = 0;
-
     /*
     * backtracking
     */
@@ -319,16 +317,18 @@ void naiveNeedlemanWunsch(
     nucSeqIndex iY = toRef-fromRef;
     
     char cLastDir = DIR_0_NEXT;
-    int a = s[0][iX][iY];
-    int b = s[1][iX][iY];
-    if(b > a)
     {
-        a = b;
-        cLastDir = DIR_1_NEXT;
-    }//if
-    b = s[2][iX][iY];
-    if(b > a)
-        cLastDir = DIR_2_NEXT;
+        int a = s[0][iX][iY];
+        int b = s[1][iX][iY];
+        if(b > a)
+        {
+            a = b;
+            cLastDir = DIR_1_NEXT;
+        }//if
+        b = s[2][iX][iY];
+        if(b > a)
+            cLastDir = DIR_2_NEXT;
+    }// score for int a and b
     while(iX > 0 || iY > 0)
     {
         //load the direction value from the correct matrix
@@ -386,75 +386,85 @@ void naiveNeedlemanWunsch(
     )//DEBUG
 
     //print the entire matrix if necessary
-    DEBUG(
-        if(bPrintMatrix)
+    DEBUG_3(
+        std::cout << "\t";
+        for(auto i = toRef; i > fromRef; i--)
+            std::cout << "\t" << NucSeq::translateACGTCodeToCharacter((*pRef)[i - 1]);
+        for(auto j = fromQuery; j <= toQuery; j++)
         {
-            std::cout << "\t";
-            for(auto i = toRef; i > fromRef; i--)
-                std::cout << "\t" << NucSeq::translateACGTCodeToCharacter((*pRef)[i - 1]);
-            for(auto j = fromQuery; j <= toQuery; j++)
-            {
-                std::cout << "\n";
-                if(j > fromQuery)
-                    std::cout << NucSeq::translateACGTCodeToCharacter((*pQuery)[toQuery - j]);
-                for(auto i = fromRef; i <= toRef; i++)
-                    std::cout
-                        << "\t"
-                        << s[0][j - fromQuery][i - fromRef]
-                        << ","
-                        << s[1][j - fromQuery][i - fromRef]
-                        << ","
-                        << s[2][j - fromQuery][i - fromRef]
-                        << " ("
-                        << std::bitset<6>(dir[0][j - fromQuery][i - fromRef])
-                        << ","
-                        << std::bitset<6>(dir[1][j - fromQuery][i - fromRef])
-                        << ","
-                        << std::bitset<6>(dir[2][j - fromQuery][i - fromRef])
-                        << ")"
-                        ;
-            }//for
-            std::cout << std::endl;
-        }//if
+            std::cout << "\n";
+            if(j > fromQuery)
+                std::cout << NucSeq::translateACGTCodeToCharacter((*pQuery)[toQuery - j]);
+            for(auto i = fromRef; i <= toRef; i++)
+                std::cout
+                    << "\t"
+                    << s[0][j - fromQuery][i - fromRef]
+                    << ","
+                    << s[1][j - fromQuery][i - fromRef]
+                    << ","
+                    << s[2][j - fromQuery][i - fromRef]
+                    << " ("
+                    << std::bitset<6>(dir[0][j - fromQuery][i - fromRef])
+                    << ","
+                    << std::bitset<6>(dir[1][j - fromQuery][i - fromRef])
+                    << ","
+                    << std::bitset<6>(dir[2][j - fromQuery][i - fromRef])
+                    << ")"
+                    ;
+        }//for
+        std::cout << std::endl;
     )//DEBUG
-    return uiRet;
+    return;
 }//function
 
 class MyPrinterMemory
 {
 public:
-    const std::shared_ptr<NucSeq> pQuery;
-    const std::shared_ptr<NucSeq> pRef;
+    std::shared_ptr<NucSeq> pQuery;
+    std::shared_ptr<NucSeq> pRef;
     std::shared_ptr<Alignment> pAlignment;
     nucSeqIndex uiQPos, uiRPos;
+    DEBUG(
+        nucSeqIndex uiQueryExtensionSize = 0;
+        nucSeqIndex uiRefExtensionSize = 0;
+    )
 
     MyPrinterMemory(
-            std::shared_ptr<NucSeq> pQuery, 
-            std::shared_ptr<NucSeq> pRef, 
-            std::shared_ptr<Alignment> pAlignment
+            std::shared_ptr<NucSeq> pQuery,
+            std::shared_ptr<NucSeq> pRef,
+            std::shared_ptr<Alignment> pAlignment,
+            nucSeqIndex uiQueryStart,
+            nucSeqIndex uiRefStart
         )
             :
         pQuery(pQuery),
         pRef(pRef),
         pAlignment(pAlignment),
-        uiQPos(0),
-        uiRPos(0)
+        uiQPos(uiQueryStart),
+        uiRPos(uiRefStart)
     {}//constructor
 };// class
+
+
+char vTrans[9] = {'?', 'A', 'C', '?', 'G', '?', '?', '?', 'T'};
 
 int printer(void* pVoid, uint64_t uiLen, char c)
 {
     MyPrinterMemory* pM = (MyPrinterMemory*) pVoid;
-    std::cout << c << uiLen << " ";
+    assert(pM != nullptr);
+    assert(pM->pAlignment != nullptr);
+    //std::cout << pM->pAlignment->length() << std::endl;
+    //std::cout << pM->pAlignment->data.size() << std::endl;
+    DEBUG_3(std::cout << c << uiLen << " ";)
     switch (c)
     {
         case 'M':
             for(size_t i = 0; i < uiLen; i++)
             {
                 if(
-                        pM->pQuery->pGetSequenceRef()[pM->uiQPos + i] 
+                        (*pM->pQuery)[pM->uiQPos + i] 
                             ==
-                        pM->pRef->pGetSequenceRef()[pM->uiRPos + i]
+                        (*pM->pRef)[pM->uiRPos + i]
                     )
                     pM->pAlignment->append(MatchType::match);
                 else
@@ -462,14 +472,24 @@ int printer(void* pVoid, uint64_t uiLen, char c)
             }// for
             pM->uiQPos += uiLen;
             pM->uiRPos += uiLen;
+            DEBUG(
+                pM->uiQueryExtensionSize += uiLen;
+                pM->uiRefExtensionSize += uiLen;
+            )
             break;
         case 'I':
             pM->pAlignment->append(MatchType::insertion, uiLen);
             pM->uiQPos += uiLen;
+            DEBUG(
+                pM->uiQueryExtensionSize += uiLen;
+            )
             break;
         case 'D':
             pM->pAlignment->append(MatchType::deletion, uiLen);
             pM->uiRPos += uiLen;
+            DEBUG(
+                pM->uiRefExtensionSize += uiLen;
+            )
             break;
         default:
             std::cout << "GABA cigar contains unknown symbol: " << c << std::endl;
@@ -480,7 +500,7 @@ int printer(void* pVoid, uint64_t uiLen, char c)
 
 // @todo: this should not be in a .h file
 // @todo: we should make two calls: start in the center and work our way towards both ends
-void libMA::dp(
+void libMA::dynPrg(
         const std::shared_ptr<NucSeq> pQuery, 
         const std::shared_ptr<NucSeq> pRef,
         const nucSeqIndex fromQuery, const nucSeqIndex toQuery,
@@ -490,16 +510,20 @@ void libMA::dp(
         const bool bLocalEnd
     )
 {
+    DEBUG_3(std::cout << "dynProg begin" << std::endl;)
     if(!bLocalBeginning && !bLocalEnd)
     {
-       naiveNeedlemanWunsch(
-           pQuery, pRef,
-           fromQuery, toQuery,
-           fromRef, toRef,
-           pAlignment
-       );
-       return;
+        naiveNeedlemanWunsch(
+            pQuery, pRef,
+            fromQuery, toQuery,
+            fromRef, toRef,
+            pAlignment
+        );
+        DEBUG_3(std::cout << "dynProg end" << std::endl;)
+        return;
     }// if
+
+    DEBUG_3(std::cout << "sw1" << std::endl;)
 
     assert(! (bLocalBeginning && bLocalEnd) );
     assert( bLocalBeginning || bLocalEnd );
@@ -510,18 +534,23 @@ void libMA::dp(
 
     // in all other cases we use parasail
     // do some checking for empty sequences though since parasail does not offer that
-    if(pRef->length() == 0)
-        if(pQuery->length() == 0)
-            return pAlignment;
-    if(pQuery->length() == 0)
+    if( toRef <= fromRef )
+        if( toQuery <= fromQuery )
+        {
+            DEBUG_3(std::cout << "dynProg end" << std::endl;)
+            return;
+        }// if
+    if( toQuery <= fromQuery )
     {
-        pAlignment->append(MatchType::deletion, pRef->length());
-        return pAlignment;
+        pAlignment->append(MatchType::deletion, toRef - fromRef );
+        DEBUG_3(std::cout << "dynProg end" << std::endl;)
+        return;
     }//if
-    if(pRef->length() == 0)
+    if( toRef <= fromRef )
     {
-        pAlignment->append(MatchType::insertion, pQuery->length());
-        return pAlignment;
+        pAlignment->append(MatchType::insertion, toQuery - fromQuery );
+        DEBUG_3(std::cout << "dynProg end" << std::endl;)
+        return;
     }//if
 
     // if we reached this point we actually have to align something
@@ -530,13 +559,31 @@ void libMA::dp(
         std::cout << pRef->toString() << std::endl;
     )
 
+    DEBUG_3(std::cout << "sw2" << std::endl;)
     /*
     * do the SW alignment
     */
     std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit(fromQuery, toQuery, bReverse);
+    DEBUG_3(
+        if(bLocalBeginning)
+        {
+            for(auto i : vQuery4Bit)
+                std::cout << (int)i; 
+            std::cout << std::endl;
+        }// if
+    )// DEBUG_3
     std::vector<uint8_t>   vRef4Bit =   pRef->as4Bit(  fromRef,   toRef, bReverse);
+    DEBUG_3(
+        if(bLocalBeginning)
+        {
+            for(auto i : vRef4Bit)
+                std::cout << (int)i; 
+            std::cout << std::endl;
+        }// if
+        std::cout << "sw3" << std::endl;
+    )// DEBUG_3
 
-    uint8_t const t[ uiBandWidth ] = { 0 }; // tail array ?
+    uint8_t const t[ uiBandWidth ] = { 0 }; // tail array
 
 	struct gaba_section_s asec = { // gaba_build_section(0,  &vQuery4Bit[0], vQuery4Bit.size());
         id: 0,
@@ -553,11 +600,13 @@ void libMA::dp(
         len: uiBandWidth,
         base: t
     };//struct 
+    DEBUG_3(std::cout << "sw4" << std::endl;)
 
     assert(pGabaScoring->pContext != nullptr);
     
     Gaba_dp_tWrapper xDb( gaba_dp_init(pGabaScoring->pContext) );
     assert(xDb.pDp != nullptr);
+    DEBUG_3(std::cout << "sw4.1" << std::endl;)
 
     //Note f does not need to be freed apparently
 	struct gaba_section_s const *ap = &asec, *bp = &bsec;
@@ -568,6 +617,7 @@ void libMA::dp(
 		bp, 0,		/* b-side (query) */
 		UINT32_MAX		/* max extension length */
 	);
+    DEBUG_3(std::cout << "sw5" << std::endl;)
 
 	/* until X-drop condition is detected */
 	struct gaba_fill_s const *m = f;
@@ -590,13 +640,20 @@ void libMA::dp(
 		NULL	/* custom allocator: see struct gaba_alloc_s in gaba.h */
 	);//struct
 
-    if(bReverse)
-        pAlignment->shiftOnRef( (toRef - fromRef) - xDb.pR->agcnt + xDb.pR->dcnt);
+    DEBUG_3(std::cout << "sw6" << std::endl;)
 
     // used int the lambda function
-    MyPrinterMemory xPrinter(pQuery, pRef, pAlignment);
+    MyPrinterMemory xPrinter(
+        pQuery,
+        pRef,
+        pAlignment,
+        // if we have a reverse alignment libGaba might not have fully aligned till the end
+        // so we need to figure out where it ended
+        bReverse ? toQuery - (xDb.pR->bgcnt + xDb.pR->dcnt) : fromQuery,
+        bReverse ? toRef - (xDb.pR->agcnt + xDb.pR->dcnt) : fromRef
+    );
 
-	//printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
+	////printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
     /*
      * Having duplicate code here, but need the different functions
      * Maybe template all that?
@@ -617,11 +674,26 @@ void libMA::dp(
             0,					            /* offset is always zero */
             xDb.pR->plen		            /* path length */
         );
+    DEBUG_3(std::cout << std::endl;)
+
+    assert(xPrinter.uiQueryExtensionSize == xDb.pR->bgcnt + xDb.pR->dcnt);
+    assert(xPrinter.uiRefExtensionSize == xDb.pR->agcnt + xDb.pR->dcnt);
+
+    /*
+     * Warning:
+     * Order is important: the shifting needs to be done after the cigar extraction
+     */
+    if(bReverse)
+    {
+        pAlignment->shiftOnRef( vRef4Bit.size() - (xDb.pR->agcnt + xDb.pR->dcnt) );
+        pAlignment->shiftOnQuery( vQuery4Bit.size() - (xDb.pR->bgcnt + xDb.pR->dcnt) );
+    }// if
 
     // dangeling deletions are not allowed
     pAlignment->removeDangeling();
 
-    return pAlignment;
+    DEBUG_3(std::cout << "dynProg end" << std::endl;)
+    return;
 }//function
 
 NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
@@ -833,6 +905,8 @@ nucSeqIndex NeedlemanWunsch::needlemanWunsch(
 }//function
 #endif
 
+// Broken debug code for NW
+#if 0 
 DEBUG(
     /*
      * small debug function so that we can call a raw NW if we want to.
@@ -861,13 +935,16 @@ DEBUG(
         return pAlignment;
     }//function
 )//DEBUG
+#endif
 
 //@todo currently disabled
-#if 0
 std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
+    assert(false);
+    return nullptr;
+#if 0
     std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
     std::shared_ptr<NucSeq> pQuery 
         = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
@@ -1119,9 +1196,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     return pRet;
 
+#endif
 }//function
 
-#endif
 
 std::string LocalToGlobal::getFullDesc() const
 {
@@ -1148,11 +1225,13 @@ std::shared_ptr<Container> LocalToGlobal::getOutputType() const
 }//function
 
 //@todo currently disabled
-#if 0
 std::shared_ptr<Container> LocalToGlobal::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
+    assert(false);
+    return nullptr;
+#if 0
     const auto& pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
     const std::shared_ptr<NucSeq>& pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
     const std::shared_ptr<Pack>& pRefPack = std::static_pointer_cast<Pack>((*vpInput)[2]);
@@ -1262,8 +1341,8 @@ std::shared_ptr<Container> LocalToGlobal::execute(
     assert(pRet->size() <= 1 || !pRet->back()->larger(pRet->front()));
 
     return pRet;
-}//function
 #endif
+}//function
 
 
 
@@ -1284,10 +1363,15 @@ std::shared_ptr<Container> CombatRepetitively::getOutputType() const
     return std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
 }//function
 
+
+//DEPRECATED
 std::shared_ptr<Container> CombatRepetitively::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
+    assert(false);
+    return nullptr;
+#if 0
     const auto& pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
     const std::shared_ptr<NucSeq>& pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
     const std::shared_ptr<Pack>& pRefPack = std::static_pointer_cast<Pack>((*vpInput)[2]);
@@ -1362,12 +1446,14 @@ std::shared_ptr<Container> CombatRepetitively::execute(
     );//sort function call
 
     return pAlignments;
+#endif
 }// function
 
 void exportNeedlemanWunsch()
 {
     DEBUG(
-        boost::python::def("debugNW", &debugNW);
+        //broken debug function
+        //boost::python::def("debugNW", &debugNW);
     )//DEBUG
      //export the segmentation class
     boost::python::class_<

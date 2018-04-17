@@ -160,7 +160,7 @@ std::shared_ptr<Container> SMW::execute(
             endPositionRef
         );
         std::shared_ptr<Alignment> pAlignment = std::shared_ptr<Alignment>(
-            new Alignment(startPositionRef, endPositionRef+1, startPositionQuery, endPositionQuery+1));
+            new Alignment(startPositionRef, startPositionQuery));
         for(auto pos : vTemp)
             switch (pos.eElementKind){
                 case EQUAL_PAIR:

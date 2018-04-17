@@ -16,8 +16,9 @@ from .aligner import *
 #
 class AlignmentPrinter(Module):
 
-    def __init__(self, nuc_per_line = 80):
+    def __init__(self, nuc_per_line = 80, check_for_errors_only=False):
         self.nuc_per_line = nuc_per_line
+        self.check_for_errors_only = check_for_errors_only
 
     ##
     # @brief returns the @ref ContainerType "container types" alignment, nucSeq, packedNucSeq.
@@ -45,7 +46,8 @@ class AlignmentPrinter(Module):
         lines = [
             "score: " + str(align.get_score()) + " cigar length: " + str(len(align)) + 
             " soc index:" + str(align.stats.index_of_strip) + 
-            " map qual:" + str(align.mapping_quality),
+            " map qual:" + str(align.mapping_quality) + 
+            " query name:" + str(align.stats.name),
             "reference: " + str(align.begin_on_ref) + " - " + str(align.end_on_ref),
             "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query)
         ]
@@ -141,9 +143,18 @@ class AlignmentPrinter(Module):
         lines[-3] += "\treference"
         lines[-1] += "\tquery"
 
-        for line in lines:
-            print(line)
+        if not self.check_for_errors_only:
+            for line in lines:
+                print(line)
         if atLeastOneMistake:
             print("WARNING: the alignment contains errors!")
+            l = []
+            for counter in range(len(align)):
+                l.append(align[counter])
+            print(l)
+            if self.check_for_errors_only:
+                for line in lines:
+                    print(line)
+                exit()
 
         return None

@@ -16,6 +16,7 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/log/trivial.hpp>
 #include "container/container.h"
+#include "container/seed.h"
 
 namespace libMA
 {

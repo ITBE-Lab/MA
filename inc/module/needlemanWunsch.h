@@ -154,7 +154,7 @@ namespace libMA
     };//class
 
     //@todo: this should not be in a .h file
-    std::shared_ptr<Alignment> EXPORTED dp(
+    void EXPORTED dynPrg(
         const std::shared_ptr<NucSeq> pQuery, 
         const std::shared_ptr<NucSeq> pRef,
         const nucSeqIndex fromQuery, const nucSeqIndex toQuery,

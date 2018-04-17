@@ -102,18 +102,28 @@ namespace libMA
          */
         Alignment(
                 nucSeqIndex uiBeginOnRef,
-                nucSeqIndex uiEndOnRef
+                nucSeqIndex uiBeginOnQuery
             )
                 :
             data(),
             uiLength(0),
             uiBeginOnRef(uiBeginOnRef),
-            uiEndOnRef(uiEndOnRef),
-            uiBeginOnQuery(0),
-            uiEndOnQuery(0),
+            uiEndOnRef(uiBeginOnRef),
+            uiBeginOnQuery(uiBeginOnQuery),
+            uiEndOnQuery(uiBeginOnQuery),
             xStats(),
             bSecondary(false)
         {}//constructor
+
+        inline std::string toString() const
+        {
+            std::string sRet = "Alignment Dump: ";
+            const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
+            for(auto& tuple : data)
+                sRet += vTranslate[ (unsigned int)std::get<0>(tuple)] + std::to_string(std::get<1>(tuple)) + " ";
+            sRet += std::to_string(iScore);
+            return sRet; 
+        }
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const
@@ -148,9 +158,15 @@ namespace libMA
             //the MatchType match type is stored in a compressed format -> extract it
             nucSeqIndex j = 0;
             unsigned int k = 0;
-            while(k < data.size() && (j += std::get<1>(data[k++])) <= i);
+            while(k < data.size())
+            {
+                j += std::get<1>(data[k]);
+                if(j > i)
+                    break;
+                k++;
+            }// while
 
-            return std::get<0>(data[k-1]);
+            return std::get<0>(data[k]);
         }//function
 
         /**
@@ -321,13 +337,13 @@ namespace libMA
             xStats = pOther->xStats;
         }//function
 
-        inline void shiftOnRef(nucSecIndex uiBy)
+        inline void shiftOnRef(nucSeqIndex uiBy)
         {
             uiBeginOnRef += uiBy;
             uiEndOnRef += uiBy;
         }// method
 
-        inline void shiftOnQuery(nucSecIndex uiBy)
+        inline void shiftOnQuery(nucSeqIndex uiBy)
         {
             uiBeginOnQuery += uiBy;
             uiEndOnQuery += uiBy;

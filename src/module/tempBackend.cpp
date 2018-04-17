@@ -113,129 +113,6 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
     return pItervalEnds;
 }//function
 
-nucSeqIndex TempBackend::needlemanWunsch(
-        std::shared_ptr<NucSeq> pQuery, 
-        std::shared_ptr<NucSeq> pRef,
-        nucSeqIndex fromQuery,
-        nucSeqIndex toQuery,
-        nucSeqIndex fromRef,
-        nucSeqIndex toRef,
-        std::shared_ptr<Alignment> pAlignment,
-        bool bNoGapAtBeginning,
-        bool bNoGapAtEnd
-        DEBUG_PARAM(bool bPrintMatrix)
-    )
-{
-    // in these cases parasail does not offer the wanted alignment approach
-    // so we use our own slow implementation
-    if(bNoGapAtBeginning || bNoGapAtEnd)
-        return naiveNeedlemanWunsch(
-            pQuery, pRef,
-            fromQuery, toQuery,
-            fromRef, toRef,
-            pAlignment,
-            bNoGapAtBeginning, bNoGapAtEnd
-            DEBUG_PARAM(bPrintMatrix)
-        );
-    // in all other cases we use parasail
-    // do some checking for empty sequences though since parasail does not offer that
-    if(toRef <= fromRef)
-        if(toQuery <= fromQuery)
-            return 0;
-    if(toQuery <= fromQuery)
-    {
-        pAlignment->append(MatchType::deletion, toRef-fromRef);
-        return 0;
-    }//if
-    if(toRef <= fromRef)
-    {
-        pAlignment->append(MatchType::insertion, toQuery-fromQuery);
-        return 0;
-    }//if
-
-    // okay if we reached here we actually have to align something
-
-    /*
-     * do the NW alignment
-     */
-
-    // @todo compute bit width for parasail
-    // Note: parasail does not follow the usual theme where for opening a gap 
-   ParsailResultWrapper pResult(parasail_nw_trace_scan_32(
-        (const char*)pQuery->pGetSequenceRef() + fromQuery, toQuery - fromQuery,
-        (const char*)pRef->pGetSequenceRef() + fromRef, toRef - fromRef,
-        iGap + iExtend, iExtend, &matrix
-    ));
-
-    //get the cigar
-    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
-        pResult.get(),
-        (const char*)pQuery->pGetSequenceRef() + fromQuery, toQuery - fromQuery,
-        (const char*)pRef->pGetSequenceRef() + fromRef, toRef - fromRef,
-        &matrix
-    ));
-
-    DEBUG_2(
-        std::cout << "cigar length: " << pCigar->len << std::endl;
-        std::cout << pCigar->beg_query << ", " << pCigar->beg_ref << std::endl;
-    )
-
-    //Due to using NW this should hold:
-    assert(pCigar->beg_query == 0);
-    assert(pCigar->beg_ref == 0);
-
-    /*
-     * Decode the cigar
-     */
-
-    nucSeqIndex uiQPos = 0;
-    nucSeqIndex uiRPos = 0;
-    //decode the cigar
-    for(int i = 0; i < pCigar->len; i++)
-    {
-        char c = parasail_cigar_decode_op(pCigar->seq[i]);
-        uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
-        DEBUG_2(std::cout << c << " x" << uiLen << std::endl;)
-        switch (c)
-        {
-            case '=':
-                pAlignment->append(MatchType::match, uiLen);
-                uiQPos += uiLen;
-                uiRPos += uiLen;
-                break;
-            case 'I':
-                pAlignment->append(MatchType::insertion, uiLen);
-                uiQPos += uiLen;
-                break;
-            case 'D':
-                pAlignment->append(MatchType::deletion, uiLen);
-                uiRPos += uiLen;
-                break;
-            case 'X':
-                pAlignment->append(MatchType::missmatch, uiLen);
-                uiQPos += uiLen;
-                uiRPos += uiLen;
-                break;
-            default:
-                // there are different CIGAR symbols allowed in the SAM format
-                // but parasail should never generate any of them
-                assert(false);
-                break;
-        }//switch
-    }//for
-    
-    //Due to using NW this should hold:
-    assert(uiQPos == toQuery - fromQuery);
-    assert(uiRPos == toRef - fromRef);
-    
-    DEBUG_2(
-        std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
-    )
-
-    //since we use the naive implementation for semi-global alignments we can always return 0 here
-    return 0;
-}//function
-
 std::shared_ptr<Container> TempBackend::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
@@ -562,7 +439,7 @@ std::shared_ptr<Container> TempBackend::execute(
             DEBUG_2(
                 std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl;
             )// DEEBUG
-
+#if 0
             /*
             * Here we decide weather to actually perform NW in the gaps between seeds or 
             * if we use SW to align the entire thing.
@@ -607,6 +484,7 @@ std::shared_ptr<Container> TempBackend::execute(
                 // return the SW alignment
                 return pRet;
             }//if
+#endif
 
             // here we have enough query coverage to attemt to fill in the gaps merely
             DEBUG_2(std::cout << "filling in gaps" << std::endl;)
@@ -620,13 +498,13 @@ std::shared_ptr<Container> TempBackend::execute(
                     beginRef = 0;
                 endRef += uiPadding + (pQuery->length() - endQuery);
                 if(beginRef > endRef)//check for overflow
-                    endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
+                    endRef = pRefPack->uiUnpackedSizeForwardPlusReverse();
                 endQuery = pQuery->length();
                 beginQuery = 0;
             }//if
             assert(endQuery <= pQuery->length());
             pRet = std::shared_ptr<Alignment>(
-                new Alignment(beginRef, endRef, beginQuery, endQuery)
+                new Alignment(beginRef, beginQuery)
             );
 
             //save the strip of consideration stats in the alignment
@@ -646,13 +524,13 @@ std::shared_ptr<Container> TempBackend::execute(
                 pRet->xStats = pSeeds->xStats;
                 pRet->xStats.sName = pQuery->sName;
                 return pRet;
-            }
+            }// catch
 
             //create the actual alignment
 
             if(!bLocal)
             {
-                pRet->uiBeginOnRef += needlemanWunsch(
+                dynPrg(
                     pQuery,
                     pRef,
                     0,
@@ -672,7 +550,10 @@ std::shared_ptr<Container> TempBackend::execute(
             bool bSkip = true;
             for(Seed& rSeed : *pSeeds)
             {
-                //skip the first seed
+                // skip the first seed
+                // we do this since the seed has already been appended before the loop
+                // this makes the loop structure easier since this way 
+                // we can always first compute the NW and then append a seed
                 if(bSkip)
                 {
                     bSkip = false;
@@ -691,7 +572,7 @@ std::shared_ptr<Container> TempBackend::execute(
                 )//DEBUG
                 if(len > overlap)
                 {
-                    needlemanWunsch(
+                    dynPrg(
                             pQuery,
                             pRef,
                             endOfLastSeedQuery,
@@ -749,13 +630,13 @@ std::shared_ptr<Container> TempBackend::execute(
                 pRet->makeLocal();
             else
             {
-                pRet->uiEndOnRef -= needlemanWunsch(
+                dynPrg(
                     pQuery,
                     pRef,
                     endOfLastSeedQuery,
-                    endQuery-1,
+                    endQuery,
                     endOfLastSeedReference,
-                    endRef-beginRef-1,
+                    endRef-beginRef,
                     pRet,
                     false,
                     true

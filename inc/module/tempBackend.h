@@ -75,28 +75,6 @@ namespace libMA
             >> pShadows
         );
 
-        /**
-         * @brief the NW dynamic programming algorithm
-         * @details 
-         * Uses parasail to have an efficient vectorized implementation.
-         * For the moment: is either bNoGapAtBeginning or bNoGapAtEnd it jumps to 
-         * the naive implementation.
-         * 
-         * find a way to replace that?
-         */
-        nucSeqIndex needlemanWunsch(
-            std::shared_ptr<NucSeq> pQuery, 
-            std::shared_ptr<NucSeq> pRef,
-            nucSeqIndex fromQuery,
-            nucSeqIndex toQuery,
-            nucSeqIndex fromRef,
-            nucSeqIndex toRef,
-            std::shared_ptr<Alignment> pAlignment,
-            bool bNoGapAtBeginning,
-            bool bNoGapAtEnd
-            DEBUG_PARAM(bool bPrintMatrix = false)
-        );
-
     public:
         /**
          * @brief true: estimate all possible position as matches in the gap cost filter

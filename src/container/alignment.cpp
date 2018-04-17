@@ -12,8 +12,16 @@ extern int iExtend;
 extern int iMatch;
 extern int iMissMatch;
 
+//Note query 236 failed
+
 void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
 {
+#if DEBUG_LEVEL >= 2
+    // get a copy of the alignment for later comparison in case something goes wrong
+    std::vector<std::tuple<MatchType, nucSeqIndex>> vCopyOfData(data.begin(), data.end());
+    const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
+    std::cout << vTranslate[type] << size << std::endl;
+#endif
     if(size == 0)
         return;
     //adjust the score of the alignment
@@ -33,7 +41,7 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     else if(type == MatchType::insertion || type == MatchType::deletion)
     {
         //iGap & iExtend is a penalty not a score
-        if(length() == 0 || (at(length()-1) != type) )
+        if(length() == 0 || (std::get<0>(data.back()) != type) )
             iScore -= iGap;
         iScore -= iExtend * size;
         if(type == MatchType::insertion)
@@ -53,6 +61,25 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     else
         data.push_back(std::make_tuple(type, size));
     uiLength += size;
+
+    DEBUG_2(
+        if(reCalcScore() != iScore)
+        {
+            std::cerr << "WARNING set wrong score in append name: " 
+                << xStats.sName << " actual score: " << reCalcScore() << " score: " << iScore << std::endl;
+            for(auto tup : vCopyOfData)
+            {
+                if(std::get<0>(tup) == MatchType::seed)
+                    std::cout << "=============";
+                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
+            }
+            std::cout << std::endl;
+            for(auto tup : data)
+                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
+            std::cout << std::endl;
+            assert(false);
+        }// if
+    )// DEBUG
 }//function
 
 unsigned int EXPORTED Alignment::localscore() const
@@ -86,6 +113,7 @@ unsigned int EXPORTED Alignment::localscore() const
 
 void EXPORTED Alignment::makeLocal()
 {
+    assert(false);
     if(uiLength == 0)
         return;
     std::vector<int> vScores;
@@ -203,6 +231,12 @@ void EXPORTED Alignment::makeLocal()
 
 void EXPORTED Alignment::removeDangeling()
 {
+
+#if DEBUG_LEVEL >= 1
+    // get a copy of the alignment for later comparison in case something goes wrong
+    std::vector<std::tuple<MatchType, nucSeqIndex>> vCopyOfData(data.begin(), data.end());
+#endif
+
     if(data.empty())
         return;
     while(std::get<0>(data.front()) == MatchType::deletion)
@@ -221,9 +255,17 @@ void EXPORTED Alignment::removeDangeling()
     }//if
     DEBUG(
         if(reCalcScore() != iScore)
-            std::cerr << "WARNING set wrong score or removed wrong elements in makeLocal" 
+        {
+            std::cerr << "WARNING set wrong score or removed wrong elements in remove dangeling" 
                 << std::endl;
-    )
+            for(auto tup : vCopyOfData)
+                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
+            std::cout << std::endl;
+            for(auto tup : data)
+                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
+            std::cout << std::endl;
+        }// if
+    )// DEBUG
 }//function
 
 int Alignment::reCalcScore() const
