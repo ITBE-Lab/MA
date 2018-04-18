@@ -282,15 +282,15 @@ def test(
     reference_pledge = Pledge(Pack())
     reference_pledge.set(ref_pack)
 
-    num_threads = 1
+    num_threads = 32
     num_results = "5"
 
     l = [
-        #("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),
+        ("MINIMAP 2", Minimap2(reference, num_threads, num_results, db_name)),
         #("BLASR", Blasr(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
         #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
-        ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
+        #("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
         #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
         #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),

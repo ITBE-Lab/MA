@@ -16,7 +16,7 @@ int iExtend = 1;
 //accuracy drops if parameter is set smaller than 10^6
 nucSeqIndex uiMaxGapArea = 1000000;
 /// @brief the padding on the left and right end of each alignment
-nucSeqIndex uiPadding = 100;
+nucSeqIndex uiPadding = 500;
 
 /*
  * @todo: fix this problem
@@ -504,7 +504,7 @@ void libMA::dynPrg(
 
     const bool bReverse = bLocalBeginning;
 
-    const unsigned int uiBandWidth = 64;
+    const unsigned int uiBandWidth = 512;
 
     // in all other cases we use libGaba
     // do some checking for empty sequences though since libGaba does not offer that

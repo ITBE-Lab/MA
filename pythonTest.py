@@ -85,7 +85,7 @@ def test_my_approach(
         reference,
         name,
         max_hits=100,
-        num_strips=10,
+        num_strips=0,
         complete_seeds=False,
         use_chaining=False,
         local=True,
@@ -93,7 +93,7 @@ def test_my_approach(
         full_analysis=False,
         do_minimizers=False,
         sort_after_score=True,
-        max_nmw = 10,
+        max_nmw = 0,
         cheat=False,
         min_ambiguity=0,
         match=3,
@@ -101,13 +101,13 @@ def test_my_approach(
         gap=6,
         extend=1,
         kMerExtension=False,
-        reportN=1,
+        reportN=0,
         clean_up_db=False,
         toGlobal=True,
-        give_up=0.05,
+        give_up=0.00,
         quitet=False,
         missed_alignments_db=None,
-        min_coverage= 1.1, #0.5, # 1.1 = force SW alignment @todo remove me
+        min_coverage= 1.1, #0.5, # 1.1 = force SW alignment @todo remove me SETTING DISABLED
         #optimistic_gap_estimation=False,
         specific_id=None
     ):
@@ -178,7 +178,7 @@ def test_my_approach(
         NeedlemanWunsch(False).penalty_gap_extend = extend
         NeedlemanWunsch(False).penalty_gap_open = gap
         NeedlemanWunsch(False).penalty_missmatch = missmatch
-        NeedlemanWunsch(False).max_gap_area = 1000000 if local else 0
+        NeedlemanWunsch(False).max_gap_area = 1000000 if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds, min_ambiguity, max_hits)
         if kMerExtension:
@@ -391,7 +391,15 @@ def test_my_approach(
         #save(plot)
 
         if specific_id != None:
-            AlignmentPrinter().execute(pledges[-1][0].get()[0], pledges[0][0].get(), ref_pack)
+            if len(pledges[-1][0].get()) == 0:
+                print("No alignment Done")
+            else:
+                for alignment in pledges[-1][0].get():
+                    AlignmentPrinter().execute(alignment, pledges[0][0].get(), ref_pack)
+                    plot = figure(width=800)
+                    for seed in pledges[2][0].get().vSoCs[alignment.stats.index_of_strip]:
+                        plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size])
+                    show(plot)
 
 
         # @note temporary debug code end
@@ -427,7 +435,7 @@ def test_my_approach(
             alignment = alignments.get()[0]
 
             #check cigar for errors and complain if there are any
-            AlignmentPrinter(check_for_errors_only=True).execute(alignment, pledges[0][i].get(), ref_pack)
+            #AlignmentPrinter(check_for_errors_only=True).execute(alignment, pledges[0][i].get(), ref_pack)
 
             if len(alignment) == 0:
                 continue
@@ -930,13 +938,13 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", num_strips=10, complete_seeds=True, full_analysis=full_analysis, local=False, max_nmw=0, min_ambiguity=3, give_up=0.00, reportN=0, specific_id=specific_id)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    #test_my_approach(db_name, genome, "MA Fast PY", max_hits=10, num_strips=2, complete_seeds=False, full_analysis=full_analysis)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1693,8 +1701,8 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("human_10000.db", human_genome)
-#test("sw_human.db", human_genome)
+test_my_approaches("human_10000.db", human_genome, specific_id=34)
+#test("human_10000.db", human_genome)
 analyse_all_approaches_depre("human.html","human_10000.db", num_tries=1)
 analyse_all_approaches_depre("human_5_tries.html","human_10000.db", num_tries=5)
 exit()

@@ -113,7 +113,6 @@ unsigned int EXPORTED Alignment::localscore() const
 
 void EXPORTED Alignment::makeLocal()
 {
-    assert(false);
     if(uiLength == 0)
         return;
     std::vector<int> vScores;

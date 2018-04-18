@@ -330,9 +330,6 @@ std::shared_ptr<Container> TempBackend::execute(
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
 
-        // Prof. Kutzners killer filter:
-        if (pQuery->length() > 500 && uiLastHarmScore > uiCurrHarmScore)
-            continue;
 
         DEBUG(
             std::vector<bool> vQCoverage(pQuery->length(), false);
@@ -349,21 +346,32 @@ std::shared_ptr<Container> TempBackend::execute(
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
 
-        if(
-            !(uiCurrHarmScore + (pQuery->length()*fScoreDiffTolerance) >= uiLastHarmScore &&
-              uiCurrHarmScore - (pQuery->length()*fScoreDiffTolerance) <= uiLastHarmScore)
-            )
-            uiSoCRepeatCounter = 0;
-        else if(++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead)
+        const nucSeqIndex uiSwitchQLen = 800;
+        // Prof. Kutzners killer filter:
+        if (pQuery->length() > uiSwitchQLen)
         {
-            uiSoCRepeatCounter -= 1; // cause we havent actually pushed the current soc yet...
-            break;
-        }//else
+            if(uiLastHarmScore > uiCurrHarmScore)
+                continue;
+        }// if
+        else
+        {
+            if(
+                !(uiCurrHarmScore + (pQuery->length()*fScoreDiffTolerance) >= uiLastHarmScore &&
+                uiCurrHarmScore - (pQuery->length()*fScoreDiffTolerance) <= uiLastHarmScore)
+                )
+                uiSoCRepeatCounter = 0;
+            else if(++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead)
+            {
+                uiSoCRepeatCounter -= 1; // cause we haven't actually pushed the current soc yet...
+                break;
+            }// else
+        }// else
 
         uiLastHarmScore = uiCurrHarmScore;
 
         if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
             break;
+            
 
         uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
@@ -381,7 +389,7 @@ std::shared_ptr<Container> TempBackend::execute(
 
     }//while
 
-    for(unsigned int ui = 0; ui < uiSoCRepeatCounter && !vSoCs.empty(); ui++)
+    for(unsigned int ui = 0; ui < uiSoCRepeatCounter && vSoCs.size() > 1; ui++)
         vSoCs.pop_back();
 
     DEBUG(
@@ -681,9 +689,6 @@ std::shared_ptr<Container> TempBackend::execute(
         DEBUG(
             pSoCIn->vExtractOrder[uiDCounter++].third = pAlignment->score();
         )// DEBUG
-
-        if(pAlignmentsOut->size() >= uiMaxTries)
-            break;
 
     }// for
 
