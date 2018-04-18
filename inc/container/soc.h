@@ -172,7 +172,7 @@ namespace libMA
                 pRet->push_back(*(xCollect2++));
             }//while
 
-        
+#if 0
             std::shared_ptr<Seeds> pRetFiltered(new Seeds());
             pRetFiltered->reserve(pRet->size());
 
@@ -216,13 +216,15 @@ namespace libMA
             }// if
             else
                 pRetFiltered = pRet;
+#endif
 
             DEBUG(vSoCs.push_back(pRetFiltered);)
+
 
             //move to the next strip
             std::pop_heap (vMaxima.begin(), vMaxima.end(), heapOrder); vMaxima.pop_back();
 
-            return pRetFiltered;
+            return pRet;
         }// function
 
         inline void push_back_no_overlap(

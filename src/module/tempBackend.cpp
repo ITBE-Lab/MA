@@ -178,10 +178,6 @@ std::shared_ptr<Container> TempBackend::execute(
         //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
 
-        //@todo move to better place
-        if(pSeedsIn->empty())
-            continue;
-
         assert(!pSeedsIn->empty());
         nucSeqIndex uiCurrSoCScore = 0;
         for(const auto& rSeed : *pSeedsIn)
