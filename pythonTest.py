@@ -944,7 +944,7 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=3, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1701,7 +1701,7 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("human_10000.db", human_genome, specific_id=34)
+test_my_approaches("human_10000.db", human_genome)
 #test("human_10000.db", human_genome)
 analyse_all_approaches_depre("human.html","human_10000.db", num_tries=1)
 analyse_all_approaches_depre("human_5_tries.html","human_10000.db", num_tries=5)

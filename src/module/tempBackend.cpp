@@ -43,6 +43,10 @@ std::shared_ptr<Container> TempBackend::getOutputType() const
     return std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
 }//function
 
+unsigned int uiMaxContradictions = 6;
+
+#define HARM_FILTER ( 0 )
+
 std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
     TempBackend::linesweep(
         std::shared_ptr<std::vector<
@@ -50,7 +54,7 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
         >> pShadows
     )
 {
-    //sort shadows (increasingly) by start coordinate of the match
+    //sort shadows (decreasingly) by start coordinate of the match
     std::sort(
             pShadows->begin(),
             pShadows->end(),
@@ -62,8 +66,8 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
                 * if two intervals start at the same point the larger one shall be treated first
                 */
                 if(std::get<1>(xA) == std::get<1>(xB))
-                    return std::get<2>(xA) > std::get<2>(xB);
-                return std::get<1>(xA) < std::get<1>(xB);
+                    return ( std::get<2>(xA) < std::get<2>(xB) );
+                return ( std::get<1>(xA) > std::get<1>(xB) );
             }//lambda
         );//sort function call
 
@@ -75,14 +79,18 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
     auto pItervalEnds = std::make_shared<
             std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
         >();
+    std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>> vItervalEndsDisc;
 
     nucSeqIndex x = 0;
     //this is the line sweeping part
-    for(std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>& xTup : *pShadows)
+    while(!pShadows->empty())
     {
+        auto xTup = pShadows->back();
+        pShadows->pop_back();
         if(x < std::get<2>(xTup))
         {
             pItervalEnds->push_back(xTup);
+            vItervalEndsDisc.clear();
             x = std::get<2>(xTup);
         }//if
         /*
@@ -101,14 +109,41 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
                 && ! (*std::get<0>(xTup) == *std::get<0>(pItervalEnds->back())) 
             )
         {
+#if HARM_FILTER
+            nucSeqIndex uiNumContradictions = 1;// 1 based insted of zero based...
+            while(
+                uiNumContradictions <= pItervalEnds->size() &&
+                uiNumContradictions <= uiMaxContradictions &&
+                std::get<2>((*pItervalEnds)[pItervalEnds->size() - uiNumContradictions]) 
+                    >= std::get<2>(xTup)
+                )
+                uiNumContradictions++;
+            if(uiNumContradictions > uiMaxContradictions)
+                continue;
+
+            vItervalEndsDisc.push_back(xTup);
+            if(vItervalEndsDisc.size() >= uiMaxContradictions)
+            {
+                x = std::get<2>(pItervalEnds->back());
+                for(auto& xDiscTup : vItervalEndsDisc)
+                    pShadows->push_back(xDiscTup);
+                vItervalEndsDisc.clear();
+                continue;
+            }// if
+#endif
+
             //std::cout << "D-";
-            while(!pItervalEnds->empty() && std::get<2>(pItervalEnds->back()) >= std::get<2>(xTup))
+            while(
+                ! pItervalEnds->empty() && 
+                std::get<2>(pItervalEnds->back()) >= std::get<2>(xTup)
+                )
             {
                 //std::cout << "d-";
                 pItervalEnds->pop_back();
             }/// while
-        }//else if
+        }// else if
     }//for
+    assert(pShadows->empty());
     //std::cout << std::endl;
     return pItervalEnds;
 }//function
@@ -169,7 +204,6 @@ std::shared_ptr<Container> TempBackend::execute(
 
         // perform the line sweep algorithm on the left shadows
         auto pShadows2 = linesweep(pShadows);
-        pShadows->clear();
 
         // get the right shadows
         for(auto &xT : *pShadows2)
