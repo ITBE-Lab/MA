@@ -72,7 +72,9 @@ namespace libMA
         EXPORTED linesweep(
             std::shared_ptr<std::vector<
                 std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
-            >> pShadows
+            >> pShadows,
+            const nucSeqIndex uiMedianDelta,
+            const nucSeqIndex uiQueryLength
         );
 
     public:

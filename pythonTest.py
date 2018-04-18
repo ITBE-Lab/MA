@@ -178,7 +178,7 @@ def test_my_approach(
         NeedlemanWunsch(False).penalty_gap_extend = extend
         NeedlemanWunsch(False).penalty_gap_open = gap
         NeedlemanWunsch(False).penalty_missmatch = missmatch
-        NeedlemanWunsch(False).max_gap_area = 1000000 if local else 0 #1000000
+        NeedlemanWunsch(False).max_gap_area = 100000 # if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds, min_ambiguity, max_hits)
         if kMerExtension:
@@ -399,7 +399,10 @@ def test_my_approach(
                     plot = figure(width=800)
                     for seed in pledges[2][0].get().vSoCs[alignment.stats.index_of_strip]:
                         plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size])
-                    show(plot)
+                    plot2 = figure(width=800)
+                    for seed in pledges[2][0].get().vHarmSoCs[alignment.stats.index_of_strip]:
+                        plot2.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size])
+                    show(column([plot, plot2]))
 
 
         # @note temporary debug code end
@@ -468,14 +471,6 @@ def test_my_approach(
                             alignment.end_on_ref = end_on_ref
                 ##
                 # pretend backend is perfect end
-
-
-            if alignment.stats.name == "393":
-                print("sw alignments:")
-                for alignment in alignments.get():
-                    AlignmentPrinter().execute(alignment, pledges[0][i].get(), ref_pack)
-
-
             alignment2 = None
             optimal_alignment = None
             if full_analysis:
@@ -938,7 +933,7 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
@@ -1702,9 +1697,9 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("human_10000.db", human_genome)
-analyse_all_approaches_depre("human.html","human_10000.db", num_tries=1)
-analyse_all_approaches_depre("human_5_tries.html","human_10000.db", num_tries=5)
+test_my_approaches("plasmodium_30000.db", plasmodium_genome)
+analyse_all_approaches_depre("plasmodium.html","plasmodium_30000.db", num_tries=1)
+analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_30000.db", num_tries=5)
 exit()
 test("human_20000.db", plasmodium_genome)
 

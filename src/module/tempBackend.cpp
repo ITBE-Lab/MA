@@ -4,6 +4,7 @@
  */
 #include "module/tempBackend.h"
 #include "module/needlemanWunsch.h"
+#include "module/stripOfConsideration.h"
 #include "container/soc.h"
 #include "container/pack.h"
 using namespace libMA;
@@ -45,13 +46,14 @@ std::shared_ptr<Container> TempBackend::getOutputType() const
 
 unsigned int uiMaxContradictions = 6;
 
-#define HARM_FILTER ( 0 )
 
 std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
     TempBackend::linesweep(
         std::shared_ptr<std::vector<
             std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
-        >> pShadows
+        >> pShadows,
+        const nucSeqIndex uiMedianDelta,
+        const nucSeqIndex uiQueryLength
     )
 {
     //sort shadows (decreasingly) by start coordinate of the match
@@ -66,8 +68,8 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
                 * if two intervals start at the same point the larger one shall be treated first
                 */
                 if(std::get<1>(xA) == std::get<1>(xB))
-                    return ( std::get<2>(xA) < std::get<2>(xB) );
-                return ( std::get<1>(xA) > std::get<1>(xB) );
+                    return ( std::get<2>(xA) > std::get<2>(xB) );
+                return ( std::get<1>(xA) < std::get<1>(xB) );
             }//lambda
         );//sort function call
 
@@ -79,71 +81,61 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
     auto pItervalEnds = std::make_shared<
             std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
         >();
-    std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>> vItervalEndsDisc;
+    pItervalEnds->reserve(pShadows->size());
 
     nucSeqIndex x = 0;
     //this is the line sweeping part
-    while(!pShadows->empty())
+    for(auto& xTup : *pShadows)
     {
-        auto xTup = pShadows->back();
-        pShadows->pop_back();
         if(x < std::get<2>(xTup))
         {
             pItervalEnds->push_back(xTup);
-            vItervalEndsDisc.clear();
             x = std::get<2>(xTup);
         }//if
-        /*
-         * sometimes a seeding algorithm may deliver equal seeds
-         * in that case these seeds are obviously not contradicting
-         *
-         * This is not mentioned in the paper since we talk of seed SETS there.
-         * A set cannot have the same element twice,
-         * however the vector we use in practice can...
-         *
-         * Anyways we just need to add one simple check for equality here
-         * operator!= is not implemented so we rely on ! of ==.
-         */
-        else if(
-                ! pItervalEnds->empty() 
-                && ! (*std::get<0>(xTup) == *std::get<0>(pItervalEnds->back())) 
-            )
+        else
         {
-#if HARM_FILTER
-            nucSeqIndex uiNumContradictions = 1;// 1 based insted of zero based...
-            while(
-                uiNumContradictions <= pItervalEnds->size() &&
-                uiNumContradictions <= uiMaxContradictions &&
-                std::get<2>((*pItervalEnds)[pItervalEnds->size() - uiNumContradictions]) 
-                    >= std::get<2>(xTup)
-                )
-                uiNumContradictions++;
-            if(uiNumContradictions > uiMaxContradictions)
-                continue;
-
-            vItervalEndsDisc.push_back(xTup);
-            if(vItervalEndsDisc.size() >= uiMaxContradictions)
-            {
-                x = std::get<2>(pItervalEnds->back());
-                for(auto& xDiscTup : vItervalEndsDisc)
-                    pShadows->push_back(xDiscTup);
-                vItervalEndsDisc.clear();
-                continue;
-            }// if
-#endif
-
+            assert(! pItervalEnds->empty() );
+            nucSeqIndex uiDiagonalDistance = 
+                StripOfConsideration::getPositionForBucketing(uiQueryLength, *std::get<0>(xTup));
+            if(uiMedianDelta > uiDiagonalDistance)
+                uiDiagonalDistance = uiMedianDelta - uiDiagonalDistance;
+            else
+                uiDiagonalDistance -= uiMedianDelta;
             //std::cout << "D-";
+            nucSeqIndex uiPos = pItervalEnds->size();//uiPos is unsigned!!!
+            bool bThisIsCloserToDiagonal = true;
             while(
-                ! pItervalEnds->empty() && 
-                std::get<2>(pItervalEnds->back()) >= std::get<2>(xTup)
+                    uiPos > 0 && 
+                    std::get<2>((*pItervalEnds)[uiPos - 1]) >= std::get<2>(xTup)
                 )
             {
-                //std::cout << "d-";
-                pItervalEnds->pop_back();
-            }/// while
-        }// else if
+                nucSeqIndex uiDiagonalOther = StripOfConsideration::getPositionForBucketing(
+                    uiQueryLength, 
+                    *std::get<0>((*pItervalEnds)[uiPos - 1])
+                );
+                if(uiMedianDelta > uiDiagonalOther)
+                    uiDiagonalOther = uiMedianDelta - uiDiagonalOther;
+                else
+                    uiDiagonalOther -= uiMedianDelta;
+                if(uiDiagonalOther <= uiDiagonalDistance)
+                {
+                    bThisIsCloserToDiagonal = false;
+                    break;
+                }// if
+                --uiPos;
+            }// while
+            if(bThisIsCloserToDiagonal)
+            {
+                while(
+                        ! pItervalEnds->empty() && 
+                        std::get<2>(pItervalEnds->back()) >= std::get<2>(xTup)
+                    )
+                    pItervalEnds->pop_back();
+                pItervalEnds->push_back(xTup);
+            }// if
+            // else do nothing
+        }// else
     }//for
-    assert(pShadows->empty());
     //std::cout << std::endl;
     return pItervalEnds;
 }//function
@@ -178,10 +170,17 @@ std::shared_ptr<Container> TempBackend::execute(
         //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
 
+        nucSeqIndex uiMedianDelta = 
+            StripOfConsideration::getPositionForBucketing(pQuery->length(), (*pSeedsIn)[pSeedsIn->size()/2]);
+
         assert(!pSeedsIn->empty());
         nucSeqIndex uiCurrSoCScore = 0;
         for(const auto& rSeed : *pSeedsIn)
             uiCurrSoCScore += rSeed.size();
+
+        if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
+            break;
+        uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
         DEBUG(
             pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
@@ -191,6 +190,7 @@ std::shared_ptr<Container> TempBackend::execute(
         auto pShadows = std::make_shared<
                 std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
             >();
+        pShadows->reserve(pSeedsIn->size());
 
         // get the left shadows
         for(Seeds::iterator pSeed = pSeedsIn->begin(); pSeed != pSeedsIn->end(); pSeed++)
@@ -204,7 +204,9 @@ std::shared_ptr<Container> TempBackend::execute(
         }//for
 
         // perform the line sweep algorithm on the left shadows
-        auto pShadows2 = linesweep(pShadows);
+        auto pShadows2 = linesweep(pShadows, uiMedianDelta, pQuery->length());
+        pShadows->clear();
+        pShadows->reserve(pShadows2->size());
 
         // get the right shadows
         for(auto &xT : *pShadows2)
@@ -215,14 +217,18 @@ std::shared_ptr<Container> TempBackend::execute(
                 ));
 
         // perform the line sweep algorithm on the right shadows
-        pShadows = linesweep(pShadows);
+        pShadows = linesweep(pShadows, uiMedianDelta, pQuery->length());
 
         auto pSeeds = std::make_shared<Seeds>();
+        pSeeds->reserve(pShadows->size());
+
         pSeeds->xStats = pSeedsIn->xStats;
         for(auto &xT : *pShadows)
             pSeeds->push_back(*std::get<0>(xT));
 
         pSeeds->bConsistent = true;
+
+        DEBUG(pSoCIn->vHarmSoCs.push_back(pSeeds);)
 
         // seeds need to be sorted for the following steps
         std::sort(
@@ -266,20 +272,20 @@ std::shared_ptr<Container> TempBackend::execute(
         //reference position of last encountered seed
         nucSeqIndex uiLastR = pSeeds->front().start_ref();
         //running score
-        unsigned long uiScore = 0;
+        unsigned long uiScore = iMatch * pSeeds->front().size();
         //maximal score
-        nucSeqIndex uiMaxScore = 0;
+        nucSeqIndex uiMaxScore = uiScore;
         //points to the last seed that had a score of 0
         Seeds::iterator pLastStart = pSeeds->begin();
         //outcome
         Seeds::iterator pOptimalStart = pSeeds->begin();
         //outcome
-        Seeds::iterator pOptimalEnd = pSeeds->end();
+        Seeds::iterator pOptimalEnd = pSeeds->begin();
 
         /*
          * the goal of this loop is to set pOptimalStart & end correctly
          */
-        for(Seeds::iterator pSeed = pSeeds->begin(); pSeed != pSeeds->end(); pSeed++)
+        for(Seeds::iterator pSeed = pSeeds->begin() + 1; pSeed != pSeeds->end(); pSeed++)
         {
             assert(pSeed->start() <= pSeed->end());
             //adjust the score correctly
@@ -403,12 +409,6 @@ std::shared_ptr<Container> TempBackend::execute(
         }// else
 
         uiLastHarmScore = uiCurrHarmScore;
-
-        if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
-            break;
-            
-
-        uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
         vSoCs.push_back(pSeeds);
 

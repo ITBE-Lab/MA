@@ -81,6 +81,7 @@ void exportSoC()
         .def_readwrite("scores", &SoCPriorityQueue::vScores)
         .def_readwrite("extract", &SoCPriorityQueue::vExtractOrder)
         .def_readwrite("vSoCs", &SoCPriorityQueue::vSoCs)
+        .def_readwrite("vHarmSoCs", &SoCPriorityQueue::vHarmSoCs)
     )// DEBUG
     ;
 }//function
