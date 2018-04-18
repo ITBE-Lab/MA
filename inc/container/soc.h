@@ -172,12 +172,57 @@ namespace libMA
                 pRet->push_back(*(xCollect2++));
             }//while
 
-            DEBUG(vSoCs.push_back(pRet);)
+        
+            std::shared_ptr<Seeds> pRetFiltered(new Seeds());
+            pRetFiltered->reserve(pRet->size());
+
+            if(pRet->size() > 1)
+            {
+                //Pre filter: removing all ambiguous seeds within SoC
+                std::sort(
+                    pRet->begin(), pRet->end(),
+                    []
+                    (const Seed& rA, const Seed& rB)
+                    {
+                        if(rA.start() == rB.start())
+                            return rA.size() < rB.size();
+                        return rA.start() < rB.start();
+                    }//lambda
+                );// sort function call
+
+                Seed& rLastSeed = pRet->front();
+                bool bDup = false;
+                for(auto itrSeed = pRet->begin() + 1; itrSeed != pRet->end(); itrSeed++)
+                {
+                    if( 
+                        rLastSeed.start() == itrSeed->start() && 
+                        rLastSeed.size() == itrSeed->size() &&
+                        rLastSeed.start_ref() != itrSeed->start_ref()
+                    )
+                        bDup = true;
+                    else
+                    {
+                        if( bDup == false )
+                        {
+                            pRetFiltered->push_back(rLastSeed);
+                        } // if
+                        
+                        rLastSeed = *itrSeed;
+                        bDup = false;
+                    }//else
+                }//for
+
+                //Pre filter End
+            }// if
+            else
+                pRetFiltered = pRet;
+
+            DEBUG(vSoCs.push_back(pRetFiltered);)
 
             //move to the next strip
             std::pop_heap (vMaxima.begin(), vMaxima.end(), heapOrder); vMaxima.pop_back();
 
-            return pRet;
+            return pRetFiltered;
         }// function
 
         inline void push_back_no_overlap(

@@ -294,7 +294,7 @@ def test_my_approach(
 
         if not quitet:
             print("computing (", name, ") ...")
-        Pledge.simultaneous_get(pledges[-1], 16)
+        Pledge.simultaneous_get(pledges[-1], 32)
 
 
         if specific_id != None:
@@ -938,13 +938,13 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=3, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1154,6 +1154,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         h = 0
         w_keys = sorted(d.keys())
         width = 0
+        height = 0
         if len(w_keys) > 1:
             width = w_keys[1] - w_keys[0]
             h_keys = sorted(d[w_keys[0]].keys())
@@ -1691,7 +1692,7 @@ exit()
 #print("zebrafish genome:")
 #createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_using_sw=False)
 #print("human genome:")
-#createSampleQueries(human_genome, "human_10000.db", 10000, 100, 32, validate_using_sw=False)
+#createSampleQueries(plasmodium_genome, "plasmodium_30000.db", 30000, 100, 32, validate_using_sw=False)
 
 #l = 200
 #il = 10
@@ -1702,10 +1703,10 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 test_my_approaches("human_10000.db", human_genome)
-#test("human_10000.db", human_genome)
 analyse_all_approaches_depre("human.html","human_10000.db", num_tries=1)
 analyse_all_approaches_depre("human_5_tries.html","human_10000.db", num_tries=5)
 exit()
+test("human_20000.db", plasmodium_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")

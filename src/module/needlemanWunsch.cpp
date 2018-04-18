@@ -515,6 +515,8 @@ void libMA::dynPrg(
         const bool bLocalEnd
     )
 {
+// use NW naive backend for all cases
+#if 0
     //temp
     naiveNeedlemanWunsch(
         pQuery, pRef,
@@ -525,8 +527,7 @@ void libMA::dynPrg(
     );
     return;
     //temp
-
-
+#endif
 
     DEBUG_3(std::cout << "dynProg begin" << std::endl;)
     if(!bLocalBeginning && !bLocalEnd)
@@ -653,6 +654,18 @@ void libMA::dynPrg(
 		m,		/* section with the max */
 		NULL	/* custom allocator: see struct gaba_alloc_s in gaba.h */
 	);//struct
+    if(xDb.pR == nullptr)
+    {
+        DEBUG(
+            std::cerr << "WARNING libGaba delivered nullptr on alignment "
+                << pAlignment->xStats.sName << std::endl
+                << "Maybe the area was too large?" << std::endl
+                << "Query: " << fromQuery << " - " << toQuery << std::endl
+                << "Ref: " << fromRef << " - " << toRef << std::endl;
+        )// DEBUG
+        //great what to do other than give up here...?
+        return;
+    }// if
 
     DEBUG_3(std::cout << "sw6" << std::endl;)
 

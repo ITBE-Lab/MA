@@ -39,19 +39,19 @@ bwa_home = "/usr/home/markus/workspace/bwa/bwa index "
 minimap_home = "/usr/home/markus/workspace/minimap2/minimap2 -d "
 def make(filename, out_name):
     # my pack + fmd Index
-    ref_seq = Pack()
-    ref_seq.append_fasta_file( filename )
-    ref_seq.store(out_name)
-    fm_index = FMIndex(ref_seq)
-    fm_index.store(out_name)
+    #ref_seq = Pack()
+    #ref_seq.append_fasta_file( filename )
+    #ref_seq.store(out_name)
+    #fm_index = FMIndex(ref_seq)
+    #fm_index.store(out_name)
     # BWA fmd index
-    os.system(bwa_home + "-p " + out_name + "bwa " + filename)
+    #os.system(bwa_home + "-p " + out_name + "bwa " + filename)
     # bowtie index
     #os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
     # blasr index
     #os.system(blasr_home + out_name + "blasr " + filename)
     # minimap2 index
-    #os.system(minimap_home + out_name + ".mmi " + filename)
+    os.system(minimap_home + out_name + ".mmi " + filename)
 
 def make_hash(name):
     print("loading pack...")
@@ -104,8 +104,8 @@ def chrNames(prefix, num, suffix):
     return ret
 
 
-replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
-make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
+#replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
+#make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
 
 #replace_n(chrNames("/MAdata/chrom/human/chr", 22, ".fna"), "/MAdata/chrom/human/n_free.fasta")
 #make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
@@ -117,6 +117,6 @@ make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
 #make("/MAdata/chrom/plasmodium/n_free.fasta", "/MAdata/genome/plasmodium")
 
 #makeRandom("/MAdata/chrom/random.fasta", 3 * 10**9)
-make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
+#make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
 #make_hash("/MAdata/genome/human")
 #makeRandom("/MAdata/genome/random_3_10_7", 3 * 10**7)

@@ -290,7 +290,7 @@ def test(
         #("BLASR", Blasr(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
         #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
-        #("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
+        ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
         #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
         #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
