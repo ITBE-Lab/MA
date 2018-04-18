@@ -294,7 +294,7 @@ def test_my_approach(
 
         if not quitet:
             print("computing (", name, ") ...")
-        Pledge.simultaneous_get(pledges[-1], 32)
+        Pledge.simultaneous_get(pledges[-1], 16)
 
 
         if specific_id != None:

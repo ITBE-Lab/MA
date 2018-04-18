@@ -49,6 +49,8 @@ void naiveNeedlemanWunsch(
         nucSeqIndex toQuery,
         nucSeqIndex fromRef,
         nucSeqIndex toRef,
+        bool bNoGapAtBeginning,
+        bool bNoGapAtEnd,
         std::shared_ptr<Alignment> pAlignment
     )
 {
@@ -166,13 +168,19 @@ void naiveNeedlemanWunsch(
     dir[0][0][1] = 0;// this position will throw an error is the backtracker tries to use it
     s[1][0][1] = LOWER;
     dir[1][0][1] = 0;// this position will throw an error is the backtracker tries to use it
-    s[2][0][1] = - (iGap + iExtend);
+    if(bNoGapAtEnd)//see note above
+        s[2][0][1] = 0;
+    else
+        s[2][0][1] = - (iGap + iExtend);
     dir[2][0][1] = DEL | DIR_0_NEXT;
     for(unsigned int x=0; x < 3; x++)
     {
         for(nucSeqIndex uiI = 2; uiI < toQuery-fromQuery+1; uiI++)
         {
-            s[x][uiI][0] = s[x][uiI - 1][0] - iExtend;
+            if(bNoGapAtEnd)//see note above
+                s[x][0][uiI] = 0;
+            else
+                s[x][uiI][0] = s[x][uiI - 1][0] - iExtend;
             dir[1][uiI][0] = INS | DIR_1_NEXT;
         }//for
         for(nucSeqIndex uiI = 2; uiI < toRef-fromRef+1; uiI++)
@@ -291,6 +299,23 @@ void naiveNeedlemanWunsch(
     nucSeqIndex iY = toRef-fromRef;
     
     char cLastDir = DIR_0_NEXT;
+    /*
+    * if there is no gap cost for the beginning 
+    * we should start backtracking where the score is maximal
+    * along the reference
+    * also: in this case the last direction must be a match
+    */
+    if(bNoGapAtBeginning)
+    {
+        for(nucSeqIndex uiJ = 1; uiJ < toRef-fromRef; uiJ++)
+            if(s[0][iX][uiJ] > s[0][iX][iY])
+                iY = uiJ;
+        DEBUG_2(
+            std::cout << (toRef-fromRef) - iY << "D";
+        )//DEBUG
+        pAlignment->shiftOnRef((toRef-fromRef) - iY);
+    }//if
+    else // in this case the first direction might be an insertion or deletion
     {
         int a = s[0][iX][iY];
         int b = s[1][iX][iY];
@@ -302,7 +327,7 @@ void naiveNeedlemanWunsch(
         b = s[2][iX][iY];
         if(b > a)
             cLastDir = DIR_2_NEXT;
-    }// score for int a and b
+    }// else
     while(iX > 0 || iY > 0)
     {
         //load the direction value from the correct matrix
@@ -353,6 +378,12 @@ void naiveNeedlemanWunsch(
         else{
             std::cerr << "WARNING: no direction set in dynamic programming" << std::endl;
         }//else
+        /*
+        * if there is no gap cost for the end 
+        * we should stop backtracking once we reached the end of the query
+        */
+        if(bNoGapAtEnd && iX <= 0)
+            return;
     }//while
 
     DEBUG_2(
@@ -484,6 +515,19 @@ void libMA::dynPrg(
         const bool bLocalEnd
     )
 {
+    //temp
+    naiveNeedlemanWunsch(
+        pQuery, pRef,
+        fromQuery, toQuery,
+        fromRef, toRef,
+        bLocalBeginning, bLocalEnd,
+        pAlignment
+    );
+    return;
+    //temp
+
+
+
     DEBUG_3(std::cout << "dynProg begin" << std::endl;)
     if(!bLocalBeginning && !bLocalEnd)
     {
@@ -491,6 +535,7 @@ void libMA::dynPrg(
             pQuery, pRef,
             fromQuery, toQuery,
             fromRef, toRef,
+            false, false,
             pAlignment
         );
         DEBUG_3(std::cout << "dynProg end" << std::endl;)
