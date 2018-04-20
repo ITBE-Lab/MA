@@ -12,6 +12,7 @@ TP mean( const std::vector<TP> &vVector )
 } // function
 
 /* Corrected sum of squares
+ * FUNCTION HAS SIDE EFFECT
  */
 template<typename TP>
 TP corrSumOfSquares( const std::vector<TP> &vaVector,
@@ -42,16 +43,16 @@ std::pair<TP, TP> lin_regres( const std::vector<TP> &vxVec,
 	
 	/* mean value x: x-bar */
 	auto mean_x = mean( vxVec );
-	//// std::cout << "mean X: " << mean_x << std::endl;
+	// std::cout << "mean X: " << mean_x << std::endl;
 	/* mean value x: y-bar */
 	auto mean_y = mean( vyVec );
-	//// std::cout << "mean Y: " << mean_y << std::endl;
+	// std::cout << "mean Y: " << mean_y << std::endl;
 
 	/* Corrected sum of squares S_{xx} */
 	auto sx = corrSumOfSquares( vxVec, vdxVector, mean_x );
 	//// std::cout << "corrSumOfSquares X: " << sx << std::endl;
 	/* Corrected sum of squares S_{yy} */
-	//// auto sy = corrSumOfSquares( vyVec, vdyVector, mean_y );
+	/* auto sy =*/ corrSumOfSquares( vyVec, vdyVector, mean_y );
 	//// std::cout << "corrSumOfSquaresn Y: " << sy << std::endl;
 
 	/* Corrected sum of cross products S_{xy}.
@@ -70,11 +71,11 @@ std::pair<TP, TP> lin_regres( const std::vector<TP> &vxVec,
 	
 	/* slope (b): b = S_{ xy } / S_{xx} */
 	TP slope = sum_xy / sx;
-	//// std::cout << "slope: " << slope << std::endl;
+	//std::cout << "slope: " << slope << std::endl;
 
 	/* intercept (a): a = mean(Y) - b * mean(X) */
 	TP intercept = mean_y - slope * mean_x;
-	//// std::cout << "intercept: " << intercept << std::endl;
+	//std::cout << "intercept: " << intercept << std::endl;
 	
 	return std::pair<TP, TP>(slope, intercept);
 } // function

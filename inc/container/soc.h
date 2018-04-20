@@ -77,6 +77,8 @@ namespace libMA
             std::vector<blub> vExtractOrder;
             std::vector<std::shared_ptr<Seeds>> vSoCs;
             std::vector<std::shared_ptr<Seeds>> vHarmSoCs;
+            std::vector<double> vSlopes;
+            std::vector<double> vIntercepts;
 #endif
         unsigned int uiSoCIndex = 0;
         const nucSeqIndex uiStripSize;

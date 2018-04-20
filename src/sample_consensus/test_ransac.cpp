@@ -25,7 +25,7 @@ std::pair<double, double> run_ransac(
 
 	/* The Mean Absolute Deviation (MAD) is later required for the threshold t */
 	double dMAD = meanAbsoluteDeviation<double>( &rvxValues[0], rvxValues.size() );
-	//std::cout << "MAD is: " << dMAD << std::endl;
+	// std::cout << "MAD is: " << dMAD << std::endl;
     
 	/* dMAD argument is the threshold used for identifying inliers. 
 	 * t – threshold value to determine when a data point fits a model
@@ -57,9 +57,11 @@ std::pair<double, double> run_ransac(
     //  for(auto fX : xModel.getModelCoefficients())
     //      std::cout << fX << std::endl;
     //  
-	//  /* Print the set of all dots that remain as good points (altogether 900) */
+	//  /* Print the set of all dots that remain as good points */
 	//  for(auto fX : xModel.getBestInliers())
-	//  	std::cout << fX << " ";
+    //  {
+	//  	std::cout << "(" << rvxValues[fX] << "," << rvyValues[fX] << ")";
+    //  }// for
 	//  std::cout << std::endl;
 
 	/*
@@ -81,7 +83,7 @@ std::pair<double, double> run_ransac(
 		vY.push_back(rvyValues[iIndex]);
 	}// for
 
-	auto xSlopeIntercept = lin_regres_double(vX, vY);
+	auto xSlopeIntercept = lin_regres_double(vY, vX);
 
 	//std::cout << "slope: " << xSlopeIntercept.first << std::endl;
 	//std::cout << "intercept: " << xSlopeIntercept.second << std::endl;

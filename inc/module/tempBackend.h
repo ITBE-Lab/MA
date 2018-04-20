@@ -91,9 +91,9 @@ namespace libMA
          * False -> we assume that the score for matches/missmatches is roughly equal within the gap
          * 
          * @note not beeing optimistic here has no negative affect on the accuracy
-         * but improves runtime significantly
+         * but improves runtime significantly (hmmm?)
          */
-        bool optimisticGapEstimation = false;
+        bool optimisticGapEstimation = true;
 
         bool bLocal = false;
         /// @brief If the seeds cover less that x percent of the query we use SW, 

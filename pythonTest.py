@@ -415,23 +415,10 @@ def test_my_approach(
                         x2.append( seed.start + seed.size/2 )
                         y2.append( seed.start_ref + seed.size/2 )
 
-                    slope, intercept, _, _, std_err = stats.linregress(x, y)
-                    slope2, intercept2, _, _, std_err2 = stats.linregress(x2, y2)
-
-                    print("regression: ", intercept, slope, std_err)
-                    print("regression on harm: ", intercept2, slope2, std_err2)
+                    slope = pledges[2][0].get().vSlopes[alignment.stats.index_of_strip]
+                    intercept = pledges[2][0].get().vIntercepts[alignment.stats.index_of_strip]
 
                     plot.line([intercept, intercept+max_y], [0, max_y*slope], color="green", line_width=4, line_alpha=0.5)
-                    plot.line([intercept2, intercept2+max_y], [0, max_y*slope2], color="yellow", line_width=3, line_alpha=0.5)
-
-                    X = np.array(y)[:, np.newaxis]
-                    y = np.array(x)
-                    ransac = linear_model.RANSACRegressor()
-                    ransac.fit(X, y)
-                    line_x = np.arange(X.min(), X.max())
-                    line_X = line_x[:, np.newaxis]
-                    line_y = ransac.predict(line_X)
-                    plot.line(line_x, line_y, color="purple", line_width=4, line_alpha=0.5)
 
 
                     show(plot)
@@ -1693,8 +1680,8 @@ exit()
 """
 
 
-libMA.test_ransac()
-exit()
+#libMA.test_ransac()
+#exit()
 
 #createSampleQueries(human_genome, "sw_human_extend.db", 1000, 100, 32, reset=False, validate_using_sw=True)
 #exit()
@@ -1732,7 +1719,7 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("plasmodium_30000.db", plasmodium_genome)
+test_my_approaches("plasmodium_30000.db", plasmodium_genome, specific_id=50)
 analyse_all_approaches_depre("human.html","plasmodium_30000.db", num_tries=1)
 analyse_all_approaches_depre("human_5_tries.html","plasmodium_30000.db", num_tries=5)
 exit()

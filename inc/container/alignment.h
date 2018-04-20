@@ -231,6 +231,17 @@ namespace libMA
         ///@brief Length of the alignment
         nucSeqIndex length() const
         {
+            DEBUG(
+                nucSeqIndex uiCheck = 0;
+                for(auto xTup : data)
+                    uiCheck += std::get<1>(xTup);
+                if(uiCheck != uiLength)
+                {
+                    std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 
+                        << std::endl;
+                    assert(false);
+                }// if
+            )//DEBUG
             return uiLength;
         }//function
 

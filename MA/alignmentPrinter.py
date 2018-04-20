@@ -41,7 +41,7 @@ class AlignmentPrinter(Module):
     def execute(self, *input):
         align = input[0]
         query = input[1][align.begin_on_query:align.end_on_query]
-        ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref+2)
+        ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
 
         lines = [
             "score: " + str(align.get_score()) + " cigar length: " + str(len(align)) + 

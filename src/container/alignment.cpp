@@ -79,6 +79,17 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
             std::cout << std::endl;
             assert(false);
         }// if
+    )// DEBUG_2
+    DEBUG(
+        nucSeqIndex uiCheck = 0;
+        for(auto xTup : data)
+            uiCheck += std::get<1>(xTup);
+        if(uiCheck != uiLength)
+        {
+            std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 
+                << std::endl;
+            assert(false);
+        }// if
     )// DEBUG
 }//function
 
@@ -248,7 +259,7 @@ void EXPORTED Alignment::removeDangeling()
     while(std::get<0>(data.back()) == MatchType::deletion)
     {
         uiEndOnRef -= std::get<1>(data.back());
-        uiLength -= std::get<1>(data.front());
+        uiLength -= std::get<1>(data.back());
         iScore += iGap + iExtend * std::get<1>(data.back());
         data.pop_back();
     }//if
@@ -263,6 +274,16 @@ void EXPORTED Alignment::removeDangeling()
             for(auto tup : data)
                 std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
             std::cout << std::endl;
+        }// if
+
+        nucSeqIndex uiCheck = 0;
+        for(auto xTup : data)
+            uiCheck += std::get<1>(xTup);
+        if(uiCheck != uiLength)
+        {
+            std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 
+                << std::endl;
+            assert(false);
         }// if
     )// DEBUG
 }//function

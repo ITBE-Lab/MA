@@ -7,6 +7,7 @@
 #include "module/stripOfConsideration.h"
 #include "container/soc.h"
 #include "container/pack.h"
+#include "sample_consensus/test_ransac.h"
 using namespace libMA;
 
 extern int iGap;
@@ -162,13 +163,26 @@ std::shared_ptr<Container> TempBackend::execute(
         //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
 
-        auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
-        int64_t uiMedianDelta = (int64_t)rMedianSeed.start_ref() - (int64_t)rMedianSeed.start();
+        std::vector<double> vX, vY;
+        vX.reserve(pSeedsIn->size());
+        vY.reserve(pSeedsIn->size());
+
+        //DEPRECATED
+        //auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
+        //int64_t uiMedianDelta = (int64_t)rMedianSeed.start_ref() - (int64_t)rMedianSeed.start();
 
         assert(!pSeedsIn->empty());
         nucSeqIndex uiCurrSoCScore = 0;
         for(const auto& rSeed : *pSeedsIn)
+        {
             uiCurrSoCScore += rSeed.size();
+            vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
+            vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
+        }// for
+
+        auto xSlopeIntercept = run_ransac(vX, vY);
+	    // std::cout << "slope: " << xSlopeIntercept.first << std::endl;
+	    // std::cout << "intercept: " << xSlopeIntercept.second << std::endl;
 
         if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
             break;
@@ -177,6 +191,8 @@ std::shared_ptr<Container> TempBackend::execute(
         DEBUG(
             pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
             pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
+            pSoCIn->vSlopes.push_back(xSlopeIntercept.first);
+            pSoCIn->vIntercepts.push_back(xSlopeIntercept.second);
         )// DEBUG
 
         auto pShadows = std::make_shared<
@@ -197,7 +213,7 @@ std::shared_ptr<Container> TempBackend::execute(
         #define fortyFiveDegree ( 3.0 / 4.0 ) * 3.14159265 / 2.0
 
         // perform the line sweep algorithm on the left shadows
-        auto pShadows2 = linesweep(pShadows, uiMedianDelta, fortyFiveDegree);
+        auto pShadows2 = linesweep(pShadows, xSlopeIntercept.second, xSlopeIntercept.first);
         pShadows->clear();
         pShadows->reserve(pShadows2->size());
 
@@ -210,7 +226,7 @@ std::shared_ptr<Container> TempBackend::execute(
                 ));
 
         // perform the line sweep algorithm on the right shadows
-        pShadows = linesweep(pShadows, uiMedianDelta, fortyFiveDegree);
+        pShadows = linesweep(pShadows, xSlopeIntercept.second, xSlopeIntercept.first);
 
         auto pSeeds = std::make_shared<Seeds>();
         pSeeds->reserve(pShadows->size());
@@ -308,17 +324,19 @@ std::shared_ptr<Container> TempBackend::execute(
             uiGap *= iExtend;
             if(uiGap > 0)
                 uiGap += iGap;
+            nucSeqIndex uiGapY = pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
+            if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )
+                uiGapY = 0;
+            nucSeqIndex uiGapX = pSeed->start_ref() - ((pSeed-1)->start_ref() + (pSeed-1)->size());
+            if( pSeed->start_ref() < ( (pSeed-1)->start_ref() + (pSeed-1)->size() ) )
+                uiGapX = 0;
             if( //check for the maximal allowed gap area
-                (uiMaxGapArea > 0 && //0 == disabled
-                    (pSeed->start() >= 
-                        (pSeed-1)->start() ? pSeed->start() - (pSeed-1)->start() : 1) 
-                    *
-                    (pSeed->start_ref() >= 
-                        (pSeed-1)->start_ref() ? pSeed->start_ref() - (pSeed-1)->start_ref() : 1)
-                        > uiMaxGapArea) 
-                    || 
-                //check for negative score
-                uiScore < uiGap)
+                    //uiMaxGapArea == 0 -> disabled
+                    ( uiMaxGapArea > 0 && uiGapX*uiGapY > uiMaxGapArea )
+                        ||
+                    //check for negative score
+                    uiScore < uiGap
+                )
             {
                 uiScore = 0;
                 pLastStart = pSeed;
