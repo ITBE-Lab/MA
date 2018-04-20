@@ -1,9 +1,11 @@
 #include "sample_consensus/ransac.h"
 #include "sample_consensus/sac_model_line.h"
 #include "module/module.h"
+#include "sample_consensus/lin_regres.h"
+#include "sample_consensus/test_ransac.h"
 
-std::pair<double> run_ransac(
-        const std::vector<double>& rvyValues,
+std::pair<double, double> run_ransac(
+        const std::vector<double>& rvxValues,
         const std::vector<double>& rvyValues
     )
 {

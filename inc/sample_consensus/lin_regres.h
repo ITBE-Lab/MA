@@ -51,7 +51,7 @@ std::pair<TP, TP> lin_regres( const std::vector<TP> &vxVec,
 	auto sx = corrSumOfSquares( vxVec, vdxVector, mean_x );
 	//// std::cout << "corrSumOfSquares X: " << sx << std::endl;
 	/* Corrected sum of squares S_{yy} */
-	auto sy = corrSumOfSquares( vyVec, vdyVector, mean_y );
+	//// auto sy = corrSumOfSquares( vyVec, vdyVector, mean_y );
 	//// std::cout << "corrSumOfSquaresn Y: " << sy << std::endl;
 
 	/* Corrected sum of cross products S_{xy}.
