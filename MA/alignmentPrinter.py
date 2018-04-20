@@ -41,7 +41,7 @@ class AlignmentPrinter(Module):
     def execute(self, *input):
         align = input[0]
         query = input[1][align.begin_on_query:align.end_on_query]
-        ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref+1)
+        ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref+2)
 
         lines = [
             "score: " + str(align.get_score()) + " cigar length: " + str(len(align)) + 
@@ -149,9 +149,8 @@ class AlignmentPrinter(Module):
             for line in lines:
                 print(line)
         if atLeastOneMistake:
-            print("WARNING: the alignment contains errors!")
             for line in lines:
                 print(line)
-            exit()
+            print("WARNING: the alignment contains errors!")
 
         return None

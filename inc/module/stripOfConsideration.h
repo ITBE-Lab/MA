@@ -66,7 +66,6 @@ namespace libMA
                 int iGap
             ) const
         {
-            return 200;
             return (iMatch * uiQueryLength - iGap) / iExtend - (int64_t)(fScoreMinimum * uiQueryLength);
         }//function
 

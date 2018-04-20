@@ -9,6 +9,7 @@
 #include "container/segment.h"
 #include "container/alignment.h"
 #include "module/module.h"
+#include <cmath>
 
 namespace libMA
 {
@@ -73,8 +74,8 @@ namespace libMA
             std::shared_ptr<std::vector<
                 std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
             >> pShadows,
-            const nucSeqIndex uiMedianDelta,
-            const nucSeqIndex uiQueryLength
+            const int64_t uiRStart,
+            const double fAngle
         );
 
     public:
@@ -109,6 +110,20 @@ namespace libMA
 
         TempBackend() {}//default constructor
 
+        inline double deltaDistance(
+                const Seed& rSeed,
+                const double fAngle,
+                const int64_t uiRStart
+            )
+        {
+            #define PI 3.14159265
+
+            double y = rSeed.start_ref() + rSeed.start() / std::tan( PI/2 - fAngle );
+            double x = ( y - uiRStart ) * std::sin(fAngle);
+            double x_1 = rSeed.start() / std::sin( PI/2 - fAngle);
+
+            return std::abs(x - x_1);
+        }// method
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);

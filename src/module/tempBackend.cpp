@@ -52,11 +52,11 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
         std::shared_ptr<std::vector<
             std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
         >> pShadows,
-        const nucSeqIndex uiMedianDelta,
-        const nucSeqIndex uiQueryLength
+        const int64_t uiRStart,
+        const double fAngle
     )
 {
-    //sort shadows (decreasingly) by start coordinate of the match
+    //sort shadows (increasingly) by start coordinate of the match
     std::sort(
             pShadows->begin(),
             pShadows->end(),
@@ -95,12 +95,7 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
         else
         {
             assert(! pItervalEnds->empty() );
-            nucSeqIndex uiDiagonalDistance = 
-                StripOfConsideration::getPositionForBucketing(uiQueryLength, *std::get<0>(xTup));
-            if(uiMedianDelta > uiDiagonalDistance)
-                uiDiagonalDistance = uiMedianDelta - uiDiagonalDistance;
-            else
-                uiDiagonalDistance -= uiMedianDelta;
+            double fDistance = deltaDistance(*std::get<0>(xTup), fAngle, uiRStart);;
             //std::cout << "D-";
             nucSeqIndex uiPos = pItervalEnds->size();//uiPos is unsigned!!!
             bool bThisIsCloserToDiagonal = true;
@@ -109,15 +104,12 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
                     std::get<2>((*pItervalEnds)[uiPos - 1]) >= std::get<2>(xTup)
                 )
             {
-                nucSeqIndex uiDiagonalOther = StripOfConsideration::getPositionForBucketing(
-                    uiQueryLength, 
-                    *std::get<0>((*pItervalEnds)[uiPos - 1])
+                double fDistanceOther = deltaDistance(
+                    *std::get<0>((*pItervalEnds)[uiPos - 1]),
+                    fAngle,
+                    uiRStart
                 );
-                if(uiMedianDelta > uiDiagonalOther)
-                    uiDiagonalOther = uiMedianDelta - uiDiagonalOther;
-                else
-                    uiDiagonalOther -= uiMedianDelta;
-                if(uiDiagonalOther <= uiDiagonalDistance)
+                if(fDistanceOther <= fDistance)
                 {
                     bThisIsCloserToDiagonal = false;
                     break;
@@ -136,7 +128,7 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
             // else do nothing
         }// else
     }//for
-    //std::cout << std::endl;
+    //std::cout << pItervalEnds->size() << std::endl;
     return pItervalEnds;
 }//function
 
@@ -170,8 +162,8 @@ std::shared_ptr<Container> TempBackend::execute(
         //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
 
-        nucSeqIndex uiMedianDelta = 
-            StripOfConsideration::getPositionForBucketing(pQuery->length(), (*pSeedsIn)[pSeedsIn->size()/2]);
+        auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
+        int64_t uiMedianDelta = (int64_t)rMedianSeed.start_ref() - (int64_t)rMedianSeed.start();
 
         assert(!pSeedsIn->empty());
         nucSeqIndex uiCurrSoCScore = 0;
@@ -202,9 +194,10 @@ std::shared_ptr<Container> TempBackend::execute(
                 ));
             //std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," << pSeed->size() << ")," << std::endl;
         }//for
+        #define fortyFiveDegree ( 3.0 / 4.0 ) * 3.14159265 / 2.0
 
         // perform the line sweep algorithm on the left shadows
-        auto pShadows2 = linesweep(pShadows, uiMedianDelta, pQuery->length());
+        auto pShadows2 = linesweep(pShadows, uiMedianDelta, fortyFiveDegree);
         pShadows->clear();
         pShadows->reserve(pShadows2->size());
 
@@ -217,7 +210,7 @@ std::shared_ptr<Container> TempBackend::execute(
                 ));
 
         // perform the line sweep algorithm on the right shadows
-        pShadows = linesweep(pShadows, uiMedianDelta, pQuery->length());
+        pShadows = linesweep(pShadows, uiMedianDelta, fortyFiveDegree);
 
         auto pSeeds = std::make_shared<Seeds>();
         pSeeds->reserve(pShadows->size());
@@ -267,10 +260,6 @@ std::shared_ptr<Container> TempBackend::execute(
          * this is much like the backtracking in SW/NW
          * we make sure that we can only have a positive score
          */
-        //query position of last encountered seed
-        nucSeqIndex uiLastQ = pSeeds->front().start();
-        //reference position of last encountered seed
-        nucSeqIndex uiLastR = pSeeds->front().start_ref();
         //running score
         unsigned long uiScore = iMatch * pSeeds->front().size();
         //maximal score
@@ -299,21 +288,21 @@ std::shared_ptr<Container> TempBackend::execute(
              * gap size equals |x-y|
              */
             nucSeqIndex uiGap = 0;
-            if(pSeed->start() > uiLastQ)
-                uiGap = pSeed->start() - uiLastQ;
-            if(pSeed->start_ref() > uiLastR)
+            if(pSeed->start() > (pSeed-1)->start())
+                uiGap = pSeed->start() - (pSeed-1)->start();
+            if(pSeed->start_ref() > (pSeed-1)->start_ref())
             {
-                if(pSeed->start_ref() - uiLastR < uiGap)
+                if(pSeed->start_ref() - (pSeed-1)->start_ref() < uiGap)
                 {
-                    uiGap -= pSeed->start_ref() - uiLastR;
+                    uiGap -= pSeed->start_ref() - (pSeed-1)->start_ref();
                     if(optimisticGapEstimation)
-                        uiScore += iMatch * (pSeed->start_ref() - uiLastR);
+                        uiScore += iMatch * (pSeed->start_ref() - (pSeed-1)->start_ref());
                 }//if
                 else
                 {
                     if(optimisticGapEstimation)
                         uiScore += iMatch * uiGap;
-                    uiGap = (pSeed->start_ref() - uiLastR) - uiGap;
+                    uiGap = (pSeed->start_ref() - (pSeed-1)->start_ref()) - uiGap;
                 }//else
             }//if
             uiGap *= iExtend;
@@ -321,8 +310,11 @@ std::shared_ptr<Container> TempBackend::execute(
                 uiGap += iGap;
             if( //check for the maximal allowed gap area
                 (uiMaxGapArea > 0 && //0 == disabled
-                    (pSeed->start() >= uiLastQ ? pSeed->start() - uiLastQ : 1) *
-                    (pSeed->start_ref() >= uiLastR ? pSeed->start_ref() - uiLastR : 1)
+                    (pSeed->start() >= 
+                        (pSeed-1)->start() ? pSeed->start() - (pSeed-1)->start() : 1) 
+                    *
+                    (pSeed->start_ref() >= 
+                        (pSeed-1)->start_ref() ? pSeed->start_ref() - (pSeed-1)->start_ref() : 1)
                         > uiMaxGapArea) 
                     || 
                 //check for negative score
@@ -362,8 +354,7 @@ std::shared_ptr<Container> TempBackend::execute(
             if(++pOptimalEnd != pSeeds->end())
                 pSeeds->erase(pOptimalEnd, pSeeds->end());
         if(pOptimalStart != pSeeds->end())
-            if(++pOptimalStart != pSeeds->end())
-                pSeeds->erase(pSeeds->begin(), pOptimalStart);
+            pSeeds->erase(pSeeds->begin(), pOptimalStart);
         /*
          * end of FILTER
          */

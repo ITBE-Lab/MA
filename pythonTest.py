@@ -16,6 +16,8 @@ import colorsys
 from statistics import mean, median, stdev
 from sys import stderr
 from measure_time import *
+from scipy import stats
+from sklearn import linear_model
 
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
@@ -397,12 +399,42 @@ def test_my_approach(
                 for alignment in pledges[-1][0].get():
                     AlignmentPrinter().execute(alignment, pledges[0][0].get(), ref_pack)
                     plot = figure(width=800)
+                    x = []
+                    y = []
+                    x2 = []
+                    y2 = []
+                    max_y = 0
                     for seed in pledges[2][0].get().vSoCs[alignment.stats.index_of_strip]:
-                        plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size])
-                    plot2 = figure(width=800)
+                        plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size], line_width=6)
+                        x.append( seed.start + seed.size/2 )
+                        y.append( seed.start_ref + seed.size/2 )
+                        if seed.start > max_y:
+                            max_y = seed.start
                     for seed in pledges[2][0].get().vHarmSoCs[alignment.stats.index_of_strip]:
-                        plot2.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size])
-                    show(column([plot, plot2]))
+                        plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size], color="red", line_width=5)
+                        x2.append( seed.start + seed.size/2 )
+                        y2.append( seed.start_ref + seed.size/2 )
+
+                    slope, intercept, _, _, std_err = stats.linregress(x, y)
+                    slope2, intercept2, _, _, std_err2 = stats.linregress(x2, y2)
+
+                    print("regression: ", intercept, slope, std_err)
+                    print("regression on harm: ", intercept2, slope2, std_err2)
+
+                    plot.line([intercept, intercept+max_y], [0, max_y*slope], color="green", line_width=4, line_alpha=0.5)
+                    plot.line([intercept2, intercept2+max_y], [0, max_y*slope2], color="yellow", line_width=3, line_alpha=0.5)
+
+                    X = np.array(y)[:, np.newaxis]
+                    y = np.array(x)
+                    ransac = linear_model.RANSACRegressor()
+                    ransac.fit(X, y)
+                    line_x = np.arange(X.min(), X.max())
+                    line_X = line_x[:, np.newaxis]
+                    line_y = ransac.predict(line_X)
+                    plot.line(line_x, line_y, color="purple", line_width=4, line_alpha=0.5)
+
+
+                    show(plot)
 
 
         # @note temporary debug code end
@@ -1661,6 +1693,9 @@ exit()
 """
 
 
+libMA.test_ransac()
+exit()
+
 #createSampleQueries(human_genome, "sw_human_extend.db", 1000, 100, 32, reset=False, validate_using_sw=True)
 #exit()
 
@@ -1698,10 +1733,10 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 test_my_approaches("plasmodium_30000.db", plasmodium_genome)
-analyse_all_approaches_depre("plasmodium.html","plasmodium_30000.db", num_tries=1)
-analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_30000.db", num_tries=5)
+analyse_all_approaches_depre("human.html","plasmodium_30000.db", num_tries=1)
+analyse_all_approaches_depre("human_5_tries.html","plasmodium_30000.db", num_tries=5)
 exit()
-test("human_20000.db", plasmodium_genome)
+test("human_20000.db", human_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")

@@ -55,6 +55,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportSW_GPU();
         exportSoC();
         exportTempBackend();
+        export_ransac();
 }//function
 
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph(

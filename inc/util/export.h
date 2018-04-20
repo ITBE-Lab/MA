@@ -162,6 +162,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/tempBackend.h"
 #include "container/soc.h"
 #include "container/seed.h"
+#include "sample_consensus/test_ransac.h"
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
