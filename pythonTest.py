@@ -397,26 +397,21 @@ def test_my_approach(
                 print("No alignment Done")
             else:
                 for alignment in pledges[-1][0].get():
-                    AlignmentPrinter().execute(alignment, pledges[0][0].get(), ref_pack)
+                    #AlignmentPrinter().execute(alignment, pledges[0][0].get(), ref_pack)
                     plot = figure(width=800)
-                    x = []
-                    y = []
-                    x2 = []
-                    y2 = []
                     max_y = 0
                     for seed in pledges[2][0].get().vSoCs[alignment.stats.index_of_strip]:
                         plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size], line_width=6)
-                        x.append( seed.start + seed.size/2 )
-                        y.append( seed.start_ref + seed.size/2 )
                         if seed.start > max_y:
                             max_y = seed.start
+                    for seed in pledges[2][0].get().vIngroup[alignment.stats.index_of_strip]:
+                        plot.x(seed.start_ref, seed.start, color="purple", size=10)
                     for seed in pledges[2][0].get().vHarmSoCs[alignment.stats.index_of_strip]:
                         plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size], color="red", line_width=5)
-                        x2.append( seed.start + seed.size/2 )
-                        y2.append( seed.start_ref + seed.size/2 )
 
                     slope = pledges[2][0].get().vSlopes[alignment.stats.index_of_strip]
                     intercept = pledges[2][0].get().vIntercepts[alignment.stats.index_of_strip]
+                    print(slope, intercept)
 
                     plot.line([intercept, intercept+max_y], [0, max_y*slope], color="green", line_width=4, line_alpha=0.5)
 
@@ -1719,9 +1714,9 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("plasmodium_30000.db", plasmodium_genome, specific_id=50)
-analyse_all_approaches_depre("human.html","plasmodium_30000.db", num_tries=1)
-analyse_all_approaches_depre("human_5_tries.html","plasmodium_30000.db", num_tries=5)
+test_my_approaches("plasmodium_30000.db", plasmodium_genome, specific_id=1538)
+analyse_all_approaches_depre("plasmodium.html","plasmodium_30000.db", num_tries=1)
+analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_30000.db", num_tries=5)
 exit()
 test("human_20000.db", human_genome)
 

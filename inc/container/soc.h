@@ -79,6 +79,7 @@ namespace libMA
             std::vector<std::shared_ptr<Seeds>> vHarmSoCs;
             std::vector<double> vSlopes;
             std::vector<double> vIntercepts;
+            std::vector<std::shared_ptr<Seeds>> vIngroup;
 #endif
         unsigned int uiSoCIndex = 0;
         const nucSeqIndex uiStripSize;

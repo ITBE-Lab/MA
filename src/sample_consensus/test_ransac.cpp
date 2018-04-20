@@ -4,9 +4,12 @@
 #include "sample_consensus/lin_regres.h"
 #include "sample_consensus/test_ransac.h"
 
+using namespace libMA;
+
 std::pair<double, double> run_ransac(
         const std::vector<double>& rvxValues,
-        const std::vector<double>& rvyValues
+        const std::vector<double>& rvyValues,
+        std::shared_ptr<Seeds> pvIngroup
     )
 {
     /* Fill the PointCloud with the vector data 
@@ -40,7 +43,7 @@ std::pair<double, double> run_ransac(
 	 * This line is equal to: ransac.fit(X, y) in the Pyhton code.
 	 * Argument is the debug level. 
 	 */
-    bool bSuccessfulModel = xRansac.computeModel( 0 ); // debug level 0
+    bool bSuccessfulModel = xRansac.computeModel( 2 ); // debug level 0
 
     if(!bSuccessfulModel)
     {
@@ -79,8 +82,9 @@ std::pair<double, double> run_ransac(
 
 	for (int iIndex : xModel.getBestInliers())
 	{
-		vX.push_back(rvxValues[iIndex]);
-		vY.push_back(rvyValues[iIndex]);
+		vX.push_back(xCloud.points[iIndex].x);
+		vY.push_back(xCloud.points[iIndex].y);
+        pvIngroup->push_back(Seed(xCloud.points[iIndex].y, 1, xCloud.points[iIndex].x));
 	}// for
 
 	auto xSlopeIntercept = lin_regres_double(vY, vX);
@@ -96,7 +100,7 @@ void test_ransac()
 	std::vector<double> vX = { 1, 2, 3, 4, 5 };
 	std::vector<double> vY = { 5, 7, 9, 6, 8 };
 
-    auto xSlopeIntercept = run_ransac(vX, vY);
+    auto xSlopeIntercept = run_ransac(vX, vY, std::make_shared<Seeds>());
 
 	std::cout << "slope: " << xSlopeIntercept.first << std::endl;
 	std::cout << "intercept: " << xSlopeIntercept.second << std::endl;

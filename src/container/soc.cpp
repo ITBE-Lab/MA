@@ -96,6 +96,7 @@ void exportSoC()
         .def_readwrite("vHarmSoCs", &SoCPriorityQueue::vHarmSoCs)
         .def_readwrite("vSlopes", &SoCPriorityQueue::vSlopes)
         .def_readwrite("vIntercepts", &SoCPriorityQueue::vIntercepts)
+        .def_readwrite("vIngroup", &SoCPriorityQueue::vIngroup)
     )// DEBUG
     ;
 }//function

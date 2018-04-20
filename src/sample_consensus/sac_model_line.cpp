@@ -67,7 +67,7 @@ namespace sample_consensus
 
       if (iter > MAX_ITERATIONS_UNIQUE)
       {
-        std::cout << "[SACModelLine::getSamples] WARNING: Could not select 2 unique points in %d iterations!" << MAX_ITERATIONS_UNIQUE << std::endl;
+        std::cout << "[SACModelLine::getSamples] WARNING: Could not select 2 unique points in " << MAX_ITERATIONS_UNIQUE << " iterations!" << std::endl;
         break;
       }
       iterations++;

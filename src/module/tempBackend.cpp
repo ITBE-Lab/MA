@@ -163,216 +163,237 @@ std::shared_ptr<Container> TempBackend::execute(
         //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
 
-        std::vector<double> vX, vY;
-        vX.reserve(pSeedsIn->size());
-        vY.reserve(pSeedsIn->size());
-
-        //DEPRECATED
-        //auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
-        //int64_t uiMedianDelta = (int64_t)rMedianSeed.start_ref() - (int64_t)rMedianSeed.start();
-
-        assert(!pSeedsIn->empty());
-        nucSeqIndex uiCurrSoCScore = 0;
-        for(const auto& rSeed : *pSeedsIn)
-        {
-            uiCurrSoCScore += rSeed.size();
-            vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
-            vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
-        }// for
-
-        auto xSlopeIntercept = run_ransac(vX, vY);
-	    // std::cout << "slope: " << xSlopeIntercept.first << std::endl;
-	    // std::cout << "intercept: " << xSlopeIntercept.second << std::endl;
-
-        if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
-            break;
-        uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
-
-        DEBUG(
-            pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
-            pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
-            pSoCIn->vSlopes.push_back(xSlopeIntercept.first);
-            pSoCIn->vIntercepts.push_back(xSlopeIntercept.second);
-        )// DEBUG
-
-        auto pShadows = std::make_shared<
-                std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
-            >();
-        pShadows->reserve(pSeedsIn->size());
-
-        // get the left shadows
-        for(Seeds::iterator pSeed = pSeedsIn->begin(); pSeed != pSeedsIn->end(); pSeed++)
-        {
-            pShadows->push_back(std::make_tuple(
-                    pSeed,
-                    pSeed->start(),
-                    pSeed->end_ref()
-                ));
-            //std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," << pSeed->size() << ")," << std::endl;
-        }//for
-        #define fortyFiveDegree ( 3.0 / 4.0 ) * 3.14159265 / 2.0
-
-        // perform the line sweep algorithm on the left shadows
-        auto pShadows2 = linesweep(pShadows, xSlopeIntercept.second, xSlopeIntercept.first);
-        pShadows->clear();
-        pShadows->reserve(pShadows2->size());
-
-        // get the right shadows
-        for(auto &xT : *pShadows2)
-            pShadows->push_back(std::make_tuple(
-                    std::get<0>(xT),
-                    std::get<0>(xT)->start_ref(),
-                    std::get<0>(xT)->end()
-                ));
-
-        // perform the line sweep algorithm on the right shadows
-        pShadows = linesweep(pShadows, xSlopeIntercept.second, xSlopeIntercept.first);
-
         auto pSeeds = std::make_shared<Seeds>();
-        pSeeds->reserve(pShadows->size());
-
-        pSeeds->xStats = pSeedsIn->xStats;
-        for(auto &xT : *pShadows)
-            pSeeds->push_back(*std::get<0>(xT));
-
-        pSeeds->bConsistent = true;
-
-        DEBUG(pSoCIn->vHarmSoCs.push_back(pSeeds);)
-
-        // seeds need to be sorted for the following steps
-        std::sort(
-            pSeeds->begin(), pSeeds->end(),
-            [](const Seed& xA, const Seed& xB)
-            {
-                if(xA.start_ref() == xB.start_ref())
-                    return xA.start() < xB.start();
-                return xA.start_ref() < xB.start_ref();
-            }//lambda
-        );//sort function call
-
-        /*
-         * sometimes we have one or less seeds remaining after the cupling:
-         * in these cases we simply return the center seed (judging by the delta from SoCs)
-         * This increases accuracy since the aligner is guided towards the correct
-         * position rather than giving it the sound seed or no seed...
-         * 
-         * Note: returning the longest or leas ambiguous seed does not make sense here;
-         * In most cases where this condition triggeres we have seeds that are roughly the same  length
-         * and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
-         */
-        if(pSeeds->size() <= 1)
+        if(pSeedsIn->size() > 1)
         {
-            pSeeds->clear();
-            pSeeds->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
-        }// if
-        assert(!pSeeds->empty());
+            std::vector<double> vX, vY;
+            vX.reserve(pSeedsIn->size());
+            vY.reserve(pSeedsIn->size());
 
-        /*
-         * FILTER:
-         * do a gap cost estimation [ O(n) ]
-         * this does not improve quality but performance
-         * since we might remove some seeds that are too far from another
-         * 
-         * this is much like the backtracking in SW/NW
-         * we make sure that we can only have a positive score
-         */
-        //running score
-        unsigned long uiScore = iMatch * pSeeds->front().size();
-        //maximal score
-        nucSeqIndex uiMaxScore = uiScore;
-        //points to the last seed that had a score of 0
-        Seeds::iterator pLastStart = pSeeds->begin();
-        //outcome
-        Seeds::iterator pOptimalStart = pSeeds->begin();
-        //outcome
-        Seeds::iterator pOptimalEnd = pSeeds->begin();
+            //DEPRECATED
+            //auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
+            //int64_t uiMedianDelta = (int64_t)rMedianSeed.start_ref() - (int64_t)rMedianSeed.start();
 
-        /*
-         * the goal of this loop is to set pOptimalStart & end correctly
-         */
-        for(Seeds::iterator pSeed = pSeeds->begin() + 1; pSeed != pSeeds->end(); pSeed++)
-        {
-            assert(pSeed->start() <= pSeed->end());
-            //adjust the score correctly
-            uiScore += iMatch * pSeed->size();
-            /*
-             * we need to extract the gap between the seeds in order to do that.
-             * we will assume that any gap can be spanned by a single indel
-             * while all nucleotides give matches.
-             * Therefore we need to get the width x and height y of the rectangular gap
-             * number of matches equals min(x, y)
-             * gap size equals |x-y|
-             */
-            nucSeqIndex uiGap = 0;
-            if(pSeed->start() > (pSeed-1)->start())
-                uiGap = pSeed->start() - (pSeed-1)->start();
-            if(pSeed->start_ref() > (pSeed-1)->start_ref())
+            assert(!pSeedsIn->empty());
+            nucSeqIndex uiCurrSoCScore = 0;
+            for(const auto& rSeed : *pSeedsIn)
             {
-                if(pSeed->start_ref() - (pSeed-1)->start_ref() < uiGap)
+                uiCurrSoCScore += rSeed.size();
+                vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
+                vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
+            }// for
+
+            DEBUG(
+                pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
+                pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
+                pSoCIn->vIngroup.push_back(std::make_shared<Seeds>());
+            )
+            
+            auto xSlopeIntercept = run_ransac(vX, vY, pSoCIn->vIngroup.back());
+            double fAlpha = std::atan(xSlopeIntercept.first);
+            std::cout << "ransac done:  slope: " << xSlopeIntercept.first << std::endl;
+            std::cout << "              intercept: " << xSlopeIntercept.second << std::endl;
+            // #define fortyFiveDegree ( 3.0 / 4.0 ) * 3.14159265 / 2.0
+
+            if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
+                break;
+            uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
+
+            DEBUG(
+                pSoCIn->vSlopes.push_back(xSlopeIntercept.first);
+                pSoCIn->vIntercepts.push_back(xSlopeIntercept.second);
+            )// DEBUG
+
+            auto pShadows = std::make_shared<
+                    std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>
+                >();
+            pShadows->reserve(pSeedsIn->size());
+
+            // get the left shadows
+            for(Seeds::iterator pSeed = pSeedsIn->begin(); pSeed != pSeedsIn->end(); pSeed++)
+            {
+                pShadows->push_back(std::make_tuple(
+                        pSeed,
+                        pSeed->start(),
+                        pSeed->end_ref()
+                    ));
+                //std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," << pSeed->size() << ")," << std::endl;
+            }//for
+
+            // perform the line sweep algorithm on the left shadows
+            auto pShadows2 = linesweep(pShadows, xSlopeIntercept.second, fAlpha);
+            pShadows->clear();
+            pShadows->reserve(pShadows2->size());
+
+            // get the right shadows
+            for(auto &xT : *pShadows2)
+                pShadows->push_back(std::make_tuple(
+                        std::get<0>(xT),
+                        std::get<0>(xT)->start_ref(),
+                        std::get<0>(xT)->end()
+                    ));
+
+            // perform the line sweep algorithm on the right shadows
+            pShadows = linesweep(pShadows, xSlopeIntercept.second, fAlpha);
+
+            pSeeds->reserve(pShadows->size());
+
+            pSeeds->xStats = pSeedsIn->xStats;
+            for(auto &xT : *pShadows)
+                pSeeds->push_back(*std::get<0>(xT));
+
+            pSeeds->bConsistent = true;
+
+            DEBUG(pSoCIn->vHarmSoCs.push_back(pSeeds);)
+
+            // seeds need to be sorted for the following steps
+            std::sort(
+                pSeeds->begin(), pSeeds->end(),
+                [](const Seed& xA, const Seed& xB)
                 {
-                    uiGap -= pSeed->start_ref() - (pSeed-1)->start_ref();
-                    if(optimisticGapEstimation)
-                        uiScore += iMatch * (pSeed->start_ref() - (pSeed-1)->start_ref());
+                    if(xA.start_ref() == xB.start_ref())
+                        return xA.start() < xB.start();
+                    return xA.start_ref() < xB.start_ref();
+                }//lambda
+            );//sort function call
+
+            /*
+            * sometimes we have one or less seeds remaining after the cupling:
+            * in these cases we simply return the center seed (judging by the delta from SoCs)
+            * This increases accuracy since the aligner is guided towards the correct
+            * position rather than giving it the sound seed or no seed...
+            * 
+            * Note: returning the longest or leas ambiguous seed does not make sense here;
+            * In most cases where this condition triggeres we have seeds that are roughly the same  length
+            * and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
+            */
+            if(pSeeds->size() <= 1)
+            {
+                pSeeds->clear();
+                pSeeds->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
+            }// if
+            assert(!pSeeds->empty());
+
+            /*
+            * FILTER:
+            * do a gap cost estimation [ O(n) ]
+            * this does not improve quality but performance
+            * since we might remove some seeds that are too far from another
+            * 
+            * this is much like the backtracking in SW/NW
+            * we make sure that we can only have a positive score
+            */
+            //running score
+            unsigned long uiScore = iMatch * pSeeds->front().size();
+            //maximal score
+            nucSeqIndex uiMaxScore = uiScore;
+            //points to the last seed that had a score of 0
+            Seeds::iterator pLastStart = pSeeds->begin();
+            //outcome
+            Seeds::iterator pOptimalStart = pSeeds->begin();
+            //outcome
+            Seeds::iterator pOptimalEnd = pSeeds->begin();
+
+            /*
+            * the goal of this loop is to set pOptimalStart & end correctly
+            */
+            for(Seeds::iterator pSeed = pSeeds->begin() + 1; pSeed != pSeeds->end(); pSeed++)
+            {
+                assert(pSeed->start() <= pSeed->end());
+                //adjust the score correctly
+                uiScore += iMatch * pSeed->size();
+                /*
+                * we need to extract the gap between the seeds in order to do that.
+                * we will assume that any gap can be spanned by a single indel
+                * while all nucleotides give matches.
+                * Therefore we need to get the width x and height y of the rectangular gap
+                * number of matches equals min(x, y)
+                * gap size equals |x-y|
+                */
+                nucSeqIndex uiGap = 0;
+                if(pSeed->start() > (pSeed-1)->start())
+                    uiGap = pSeed->start() - (pSeed-1)->start();
+                if(pSeed->start_ref() > (pSeed-1)->start_ref())
+                {
+                    if(pSeed->start_ref() - (pSeed-1)->start_ref() < uiGap)
+                    {
+                        uiGap -= pSeed->start_ref() - (pSeed-1)->start_ref();
+                        if(optimisticGapEstimation)
+                            uiScore += iMatch * (pSeed->start_ref() - (pSeed-1)->start_ref());
+                    }//if
+                    else
+                    {
+                        if(optimisticGapEstimation)
+                            uiScore += iMatch * uiGap;
+                        uiGap = (pSeed->start_ref() - (pSeed-1)->start_ref()) - uiGap;
+                    }//else
+                }//if
+                uiGap *= iExtend;
+                if(uiGap > 0)
+                    uiGap += iGap;
+                nucSeqIndex uiGapY = pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
+                if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )
+                    uiGapY = 0;
+                nucSeqIndex uiGapX = pSeed->start_ref() - ((pSeed-1)->start_ref() + (pSeed-1)->size());
+                if( pSeed->start_ref() < ( (pSeed-1)->start_ref() + (pSeed-1)->size() ) )
+                    uiGapX = 0;
+                if( //check for the maximal allowed gap area
+                        //uiMaxGapArea == 0 -> disabled
+                        ( uiMaxGapArea > 0 && uiGapX*uiGapY > uiMaxGapArea )
+                            ||
+                        //check for negative score
+                        uiScore < uiGap
+                    )
+                {
+                    uiScore = 0;
+                    pLastStart = pSeed;
                 }//if
                 else
+                    uiScore -= uiGap;
+                if(uiScore > uiMaxScore)
                 {
-                    if(optimisticGapEstimation)
-                        uiScore += iMatch * uiGap;
-                    uiGap = (pSeed->start_ref() - (pSeed-1)->start_ref()) - uiGap;
-                }//else
-            }//if
-            uiGap *= iExtend;
-            if(uiGap > 0)
-                uiGap += iGap;
-            nucSeqIndex uiGapY = pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
-            if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )
-                uiGapY = 0;
-            nucSeqIndex uiGapX = pSeed->start_ref() - ((pSeed-1)->start_ref() + (pSeed-1)->size());
-            if( pSeed->start_ref() < ( (pSeed-1)->start_ref() + (pSeed-1)->size() ) )
-                uiGapX = 0;
-            if( //check for the maximal allowed gap area
-                    //uiMaxGapArea == 0 -> disabled
-                    ( uiMaxGapArea > 0 && uiGapX*uiGapY > uiMaxGapArea )
-                        ||
-                    //check for negative score
-                    uiScore < uiGap
-                )
-            {
-                uiScore = 0;
-                pLastStart = pSeed;
-            }//if
-            else
-                uiScore -= uiGap;
-            if(uiScore > uiMaxScore)
-            {
-                uiMaxScore = uiScore;
-                pOptimalStart = pLastStart;
-                pOptimalEnd = pSeed;
-            }//if
-        }//for
+                    uiMaxScore = uiScore;
+                    pOptimalStart = pLastStart;
+                    pOptimalEnd = pSeed;
+                }//if
+            }//for
 
-        /*
-         * we need to increment both iterator but check if they extend past the end of pSeeds
-         * (check twice because incrementing an iterator pointing to end will
-         * result in undefined behaviour)
-         *
-         * We then simply remove all known suboptimal seeds
-         * this is an optimistic estimation so some suboptimal regions might remain
-         * 
-         * NOTE: order is significant!
-         * """
-         * --- Iterator validity ---
-         * Iterators, pointers and references pointing to position (or first) and beyond are
-         * invalidated, with all iterators, pointers and references to elements before position
-         * (or first) are guaranteed to keep referring to the same elements they were referring to
-         * before the call.
-         * """
-         */
-        if(pOptimalEnd != pSeeds->end())
-            if(++pOptimalEnd != pSeeds->end())
-                pSeeds->erase(pOptimalEnd, pSeeds->end());
-        if(pOptimalStart != pSeeds->end())
-            pSeeds->erase(pSeeds->begin(), pOptimalStart);
+            /*
+            * we need to increment both iterator but check if they extend past the end of pSeeds
+            * (check twice because incrementing an iterator pointing to end will
+            * result in undefined behaviour)
+            *
+            * We then simply remove all known suboptimal seeds
+            * this is an optimistic estimation so some suboptimal regions might remain
+            * 
+            * NOTE: order is significant!
+            * """
+            * --- Iterator validity ---
+            * Iterators, pointers and references pointing to position (or first) and beyond are
+            * invalidated, with all iterators, pointers and references to elements before position
+            * (or first) are guaranteed to keep referring to the same elements they were referring to
+            * before the call.
+            * """
+            */
+            if(pOptimalEnd != pSeeds->end())
+                if(++pOptimalEnd != pSeeds->end())
+                    pSeeds->erase(pOptimalEnd, pSeeds->end());
+            if(pOptimalStart != pSeeds->end())
+                pSeeds->erase(pSeeds->begin(), pOptimalStart);
+
+        }// if
+        else // pSeedsIn contains merely one seed
+        {
+            pSeeds->push_back(pSeedsIn->front());
+            DEBUG(
+                pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
+                pSoCIn->vExtractOrder.back().first = pSeedsIn->front().size();
+                pSoCIn->vSlopes.push_back(0);
+                pSoCIn->vIntercepts.push_back(0);
+                pSoCIn->vHarmSoCs.push_back(pSeeds);
+            )// DEBUG
+        }
+
         /*
          * end of FILTER
          */

@@ -2,6 +2,8 @@
 #ifndef TEST_RANSAC_H
 #define TEST_RANSAC_H
 
+#include "container/seed.h"
+
 /* Function to find mean of the array elements.
  */
 template<typename TP>
@@ -31,7 +33,8 @@ TP meanAbsoluteDeviation(const TP arr[], int n)
 
 std::pair<double, double> run_ransac(
         const std::vector<double>& rvxValues,
-        const std::vector<double>& rvyValues
+        const std::vector<double>& rvyValues,
+        std::shared_ptr<libMA::Seeds> pvIngroup
     );
 
 void export_ransac();
