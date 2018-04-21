@@ -7,6 +7,7 @@
 #define LINESWEEP_H
 
 #include "container/segment.h"
+#include "container/soc.h"
 #include "module/module.h"
 
 namespace libMA
@@ -73,8 +74,25 @@ namespace libMA
         EXPORTED linesweep(
             std::shared_ptr<std::vector<
                 std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
-            >> pShadows
+            >> pShadows,
+            const int64_t uiRStart,
+            const double fAngle
         );
+        
+        inline double deltaDistance(
+                const Seed& rSeed,
+                const double fAngle,
+                const int64_t uiRStart
+            )
+        {
+            #define PI 3.14159265
+
+            double y = rSeed.start_ref() + rSeed.start() / std::tan( PI/2 - fAngle );
+            double x = ( y - uiRStart ) * std::sin(fAngle);
+            double x_1 = rSeed.start() / std::sin( PI/2 - fAngle);
+
+            return std::abs(x - x_1);
+        }// method
 
     public:
         /**
@@ -92,6 +110,19 @@ namespace libMA
          * but improves runtime significantly
          */
         bool optimisticGapEstimation = false;
+
+        bool bLocal = false;
+        /// @brief If the seeds cover less that x percent of the query we use SW, 
+        /// otherwise we fill in the gaps.
+        double fMinimalQueryCoverage = .25;
+
+        double fScoreTolerace = 0.5;
+
+        unsigned int uiMaxTries = 100;
+
+        unsigned int uiMaxEqualScoreLookahead = 5;
+
+        float fScoreDiffTolerance = 0.01;
 
         LinearLineSweep() {}//default constructor
 

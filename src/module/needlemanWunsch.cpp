@@ -94,8 +94,8 @@ void naiveNeedlemanWunsch(
         return;
     }//if
 
-    assert(toQuery-fromQuery < uiMaxGapArea);
-    assert(toRef-fromRef < uiMaxGapArea);
+    assert(toQuery-fromQuery <= uiMaxGapArea || uiMaxGapArea == 0);
+    assert(toRef-fromRef <= uiMaxGapArea || uiMaxGapArea == 0);
 
     /*
     * beginning of the actual NW
@@ -651,6 +651,11 @@ void libMA::dynPrg(
                 << "Ref: " << fromRef << " - " << toRef << std::endl;
         )// DEBUG
         //great what to do other than give up here...?
+        if(bReverse)
+        {
+            pAlignment->shiftOnQuery( toQuery - fromQuery );
+            pAlignment->shiftOnRef( toRef - fromRef );
+        }// if
         return;
     }// if
 
@@ -932,14 +937,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    assert(false);
-    return nullptr;
-#if 0
-    std::shared_ptr<Seeds> pSeeds = std::static_pointer_cast<Seeds>((*vpInput)[0]);
-    std::shared_ptr<NucSeq> pQuery 
-        = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-    std::shared_ptr<Pack> pRefPack = 
-        std::static_pointer_cast<Pack>((*vpInput)[2]);
+    const auto& pSeeds   = std::static_pointer_cast<Seeds >((*vpInput)[0]);
+    const auto& pQuery   = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
+    const auto& pRefPack = std::static_pointer_cast<Pack  >((*vpInput)[2]);
 
     if(pSeeds == nullptr)
         return std::shared_ptr<Alignment>(new Alignment());
@@ -986,48 +986,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl;
     )// DEEBUG
 
-    /*
-     * Here we decide weather to actually perform NW in the gaps between seeds or 
-     * if we use SW to align the entire thing.
-     */
-    if(endQuery - beginQuery < pQuery->length() * fMinimalQueryCoverage)
-    {
-        DEBUG_2(std::cout << "computing SW for entire area" << std::endl;)
-        //figure out the correct reference location
-        nucSeqIndex refStart = beginRef;
-        if(refStart >= uiPadding)
-            refStart -=  uiPadding;
-        else
-            refStart = 0;
-        nucSeqIndex refEnd = endRef;
-        assert(endQuery <= pQuery->length());
-        refEnd += uiPadding;
-
-        assert(refEnd > refStart);
-        nucSeqIndex refWidth = refEnd - refStart;
-        if(refStart + refWidth >= pRefPack->uiUnpackedSizeForwardPlusReverse())
-            refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
-        assert(refWidth > 0);
-        if(pRefPack->bridgingSubsection(refStart, refWidth))
-        {
-            DEBUG_2(std::cout << "Un-bridging from " << refStart << ", " << refWidth;)
-            pRefPack->unBridgeSubsection(refStart, refWidth);
-            DEBUG_2(std::cout << " to: " << refStart << ", " << refWidth << std::endl;)
-        }
-        //extract the reference
-        std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
-            refStart,
-            refStart + refWidth
-        );
-        //compute the SW alignment
-        auto pRet = smithWaterman(pQuery, pRef, refStart);
-        //copy the stats
-        pRet->xStats = pSeeds->xStats;
-        pRet->xStats.sName = pQuery->sName;
-        // return the SW alignment
-        return pRet;
-    }//if
-
     // here we have enough query coverage to attemt to fill in the gaps merely
     DEBUG_2(std::cout << "filling in gaps" << std::endl;)
 
@@ -1035,18 +993,18 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     if(!bLocal)
     {
-        beginRef -= uiPadding;
+        beginRef -= uiPadding + beginQuery;
         if(beginRef > endRef)//check for underflow
             beginRef = 0;
-        endRef += uiPadding;
+        endRef += uiPadding + (pQuery->length() - endQuery);
         if(beginRef > endRef)//check for overflow
-            endRef = pRefPack->uiUnpackedSizeForwardPlusReverse()-1;
+            endRef = pRefPack->uiUnpackedSizeForwardPlusReverse();
         endQuery = pQuery->length();
         beginQuery = 0;
     }//if
     assert(endQuery <= pQuery->length());
     pRet = std::shared_ptr<Alignment>(
-        new Alignment(beginRef, endRef, beginQuery, endQuery)
+        new Alignment(beginRef, beginQuery)
     );
 
     //save the strip of consideration stats in the alignment
@@ -1066,13 +1024,13 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         pRet->xStats = pSeeds->xStats;
         pRet->xStats.sName = pQuery->sName;
         return pRet;
-    }
+    }// catch
 
     //create the actual alignment
 
     if(!bLocal)
     {
-        pRet->uiBeginOnRef += needlemanWunsch(
+        dynPrg(
             pQuery,
             pRef,
             0,
@@ -1088,11 +1046,33 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     nucSeqIndex endOfLastSeedQuery = pSeeds->front().end();
     nucSeqIndex endOfLastSeedReference = pSeeds->front().end_ref() - beginRef;
 
+    DEBUG(
+        if(pRet->uiEndOnQuery != pSeeds->front().start())
+        {
+            std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front().start() 
+                << std::endl;
+            std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front().start_ref() 
+                << std::endl;
+            assert(false);
+        }// if
+        if(pRet->uiEndOnRef != pSeeds->front().start_ref())
+        {
+            std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front().start() 
+                << std::endl;
+            std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front().start_ref() 
+                << std::endl;
+            assert(false);
+        }// if
+    )//DEBUG
+
     pRet->append(MatchType::seed, pSeeds->front().size());
     bool bSkip = true;
     for(Seed& rSeed : *pSeeds)
     {
-        //skip the first seed
+        // skip the first seed
+        // we do this since the seed has already been appended before the loop
+        // this makes the loop structure easier since this way 
+        // we can always first compute the NW and then append a seed
         if(bSkip)
         {
             bSkip = false;
@@ -1111,7 +1091,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         )//DEBUG
         if(len > overlap)
         {
-            needlemanWunsch(
+            dynPrg(
                     pQuery,
                     pRef,
                     endOfLastSeedQuery,
@@ -1169,7 +1149,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         pRet->makeLocal();
     else
     {
-        pRet->uiEndOnRef -= needlemanWunsch(
+        dynPrg(
             pQuery,
             pRef,
             endOfLastSeedQuery,
@@ -1180,13 +1160,10 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             false,
             true
         );
+        //there should never be dangeling deletions with libGaba
         pRet->removeDangeling();
     }//else
-
-
     return pRet;
-
-#endif
 }//function
 
 

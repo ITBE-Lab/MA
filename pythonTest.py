@@ -133,9 +133,10 @@ def test_my_approach(
     runtimes = {
         'Seeding': 0,
         'SoC': 0,
-        'Harm + DP': 0,
+        'Harm': 0,
+        'DP': 0,
         'Map Qual': 0
-    }
+    }# dict
     collect_ids = []
 
     num_covered_irelevant_seeds = 0
@@ -192,22 +193,17 @@ def test_my_approach(
         soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
-        #ls.optimistic_gap_estimation = optimistic_gap_estimation
+        ls.min_coverage = min_coverage
+        ls.tolerance = 0.1
+        ls.local = local
+        ls.max_tries = 25
+        ls.equal_score_lookahead = 3 # 5
+        ls.diff_tolerance = 0.001
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
-        nmw.min_coverage = min_coverage
         optimal = ExecOnVec(nmw, sort_after_score)
-        localToGlobal = LocalToGlobal(0.05)
         mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
-        combatRepetitively = CombatRepetitively(0.1, 10000000)
-        tempBackend = TempBackend()
-        tempBackend.min_coverage = min_coverage
-        tempBackend.tolerance = 0.1
-        tempBackend.local = local
-        tempBackend.max_tries = 25
-        tempBackend.equal_score_lookahead = 3 # 5
-        tempBackend.diff_tolerance = 0.001
 
         #pledges = [[], [], [], [], [], []]
         # OLD GRAPH SETUP
@@ -261,7 +257,7 @@ def test_my_approach(
         #        pledges[0][-1], pledges[4][-1]
         #    ))
 
-        pledges = [[], [], [], [], []]
+        pledges = [[], [], [], [], [], []]
 
         for sequence, sample_id in queries:
             pledges[0].append(Pledge(NucSeq()))
@@ -273,11 +269,14 @@ def test_my_approach(
             pledges[2].append(soc.promise_me(
                     pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
                 ))
-            pledges[3].append(tempBackend.promise_me(
-                    pledges[2][-1], pledges[0][-1], ref_pledge
+            pledges[3].append(ls.promise_me(
+                    pledges[2][-1], pledges[0][-1]
                 ))
-            pledges[4].append(mappingQual.promise_me(
-                pledges[0][-1], pledges[3][-1]
+            pledges[4].append(optimal.promise_me(
+                    pledges[3][-1], pledges[0][-1], ref_pledge
+                ))
+            pledges[5].append(mappingQual.promise_me(
+                pledges[0][-1], pledges[4][-1]
             ))
 
             optimal_alignment_in = []
@@ -640,12 +639,15 @@ def test_my_approach(
             runtimes["SoC"] += pledges[2][i].exec_time
             total_time += pledges[2][i].exec_time
             pledges[2][i].exec_time = 0
-            runtimes["Harm + DP"] += pledges[3][i].exec_time
+            runtimes["Harm"] += pledges[3][i].exec_time
             total_time += pledges[3][i].exec_time
             pledges[3][i].exec_time = 0
-            runtimes["Map Qual"] += pledges[4][i].exec_time
+            runtimes["DP"] += pledges[4][i].exec_time
             total_time += pledges[4][i].exec_time
             pledges[4][i].exec_time = 0
+            runtimes["Map Qual"] += pledges[5][i].exec_time
+            total_time += pledges[5][i].exec_time
+            pledges[5][i].exec_time = 0
 
             max_nmw_area = 0
             nmw_area = 0
