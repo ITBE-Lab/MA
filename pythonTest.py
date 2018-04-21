@@ -180,7 +180,7 @@ def test_my_approach(
         NeedlemanWunsch(False).penalty_gap_extend = extend
         NeedlemanWunsch(False).penalty_gap_open = gap
         NeedlemanWunsch(False).penalty_missmatch = missmatch
-        NeedlemanWunsch(False).max_gap_area = 100000 # if local else 0 #1000000
+        NeedlemanWunsch(False).max_gap_area = 10000 # if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds, min_ambiguity, max_hits)
         if kMerExtension:
@@ -399,13 +399,17 @@ def test_my_approach(
                 for alignment in pledges[-1][0].get():
                     #AlignmentPrinter().execute(alignment, pledges[0][0].get(), ref_pack)
                     plot = figure(width=800)
+                    x = []
+                    y = []
                     max_y = 0
                     for seed in pledges[2][0].get().vSoCs[alignment.stats.index_of_strip]:
                         plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size], line_width=6)
+                        x.append( seed.start_ref + seed.size/2 )
+                        y.append( seed.start + seed.size/2 )
                         if seed.start > max_y:
                             max_y = seed.start
                     for seed in pledges[2][0].get().vIngroup[alignment.stats.index_of_strip]:
-                        plot.x(seed.start_ref, seed.start, color="purple", size=10)
+                        plot.x(seed.start_ref, seed.start, color="green", size=10)
                     for seed in pledges[2][0].get().vHarmSoCs[alignment.stats.index_of_strip]:
                         plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size], color="red", line_width=5)
 
@@ -415,6 +419,16 @@ def test_my_approach(
 
                     plot.line([intercept, intercept+max_y], [0, max_y*slope], color="green", line_width=4, line_alpha=0.5)
 
+                    X = np.array(x)[:, np.newaxis]
+                    y = np.array(y)
+                    ransac = linear_model.RANSACRegressor()
+                    ransac.fit(X, y)
+                    print(alignment.stats.index_of_strip, "py residual_threshold:", np.median(np.abs(y - np.median(y))))
+                    plot.cross(X[ransac.inlier_mask_].flatten(), y[ransac.inlier_mask_], color="magenta", size=10)
+                    line_x = np.arange(X.min(), X.max())
+                    line_X = line_x[:, np.newaxis]
+                    line_y = ransac.predict(line_X)
+                    plot.line(line_x, line_y, color="magenta", line_width=4, line_alpha=0.5)
 
                     show(plot)
 
@@ -1714,9 +1728,9 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("plasmodium_30000.db", plasmodium_genome, specific_id=1538)
+test_my_approaches("plasmodium_30000.db", plasmodium_genome)#, specific_id=1538
 analyse_all_approaches_depre("plasmodium.html","plasmodium_30000.db", num_tries=1)
-analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_30000.db", num_tries=5)
+analyse_all_approaches_depre("plasmodium.html","plasmodium_30000.db", num_tries=5)
 exit()
 test("human_20000.db", human_genome)
 

@@ -7,28 +7,66 @@
 /* Function to find mean of the array elements.
  */
 template<typename TP>
-TP Mean(const TP arr[], int n )
+TP Mean(const std::vector<TP> arr)
 {
 	// Calculate sum of all elements.
 	TP sum = 0;
-	for( int i = 0; i < n; i++ )
-		sum = sum + arr[i];
-	return sum / n;
+	for(size_t i = 0; i < arr.size(); i++ )
+		sum += arr[i];
+	return sum / arr.size();
+} // function
+
+/* Function to find mean of the array elements.
+ */
+template<typename TP>
+TP Median(std::vector<TP> arr)
+{
+    std::sort(arr.begin(), arr.end());
+	// Calculate sum of all elements.
+    if (arr.size() == 0)
+        return 0;  // Undefined, really.
+
+    else if (arr.size() == 1)
+        return arr[0];
+
+    if(arr.size() % 2 == 0)
+        return (arr[arr.size() / 2 - 1] + arr[arr.size() / 2]) / 2;
+	return arr[arr.size()/2];
 } // function
 
 // Function to find mean absolute
 // deviation of given elements.
 template<typename TP>
-TP meanAbsoluteDeviation(const TP arr[], int n)
+TP meanAbsoluteDeviation(const std::vector<TP> arr)
 {   
 	// Calculate the sum of absolute
 	// deviation about mean.
 	TP absSum = 0;
-	for (int i = 0; i < n; i++)
-		absSum = absSum + abs(arr[i] - Mean(arr, n));
+    TP mean = Mean(arr);
+	for (size_t i = 0; i < arr.size(); i++)
+		absSum += abs(arr[i] - mean);
 
 	// Return mean absolute deviation about mean.
-	return absSum / n;
+	return absSum / arr.size();
+} // function
+
+// Function to find mean absolute
+// deviation of given elements.
+template<typename TP>
+TP medianAbsoluteDeviation(std::vector<TP> arr)
+{   
+	// Calculate the sum of absolute
+	// deviation about mean.
+    // Python: np.median(np.abs(y - np.median(y)))
+
+
+    TP median = Median(arr);
+    std::vector<TP> vDevArr;
+	for (size_t i = 0; i < arr.size(); i++)
+		vDevArr.push_back( abs(arr[i] - median) );
+
+	// Return mean absolute deviation about mean.
+	return Median(vDevArr);
 } // function
 
 std::pair<double, double> run_ransac(

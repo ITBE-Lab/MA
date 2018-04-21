@@ -27,8 +27,8 @@ std::pair<double, double> run_ransac(
     xModel.setDataSet(&xCloud);
 
 	/* The Mean Absolute Deviation (MAD) is later required for the threshold t */
-	double dMAD = meanAbsoluteDeviation<double>( &rvxValues[0], rvxValues.size() );
-	// std::cout << "MAD is: " << dMAD << std::endl;
+	double dMAD = medianAbsoluteDeviation<double>( rvyValues );
+	//std::cout << "cpp residual_threshold is: " << dMAD << std::endl;
     
 	/* dMAD argument is the threshold used for identifying inliers. 
 	 * t – threshold value to determine when a data point fits a model
@@ -43,7 +43,7 @@ std::pair<double, double> run_ransac(
 	 * This line is equal to: ransac.fit(X, y) in the Pyhton code.
 	 * Argument is the debug level. 
 	 */
-    bool bSuccessfulModel = xRansac.computeModel( 2 ); // debug level 0
+    bool bSuccessfulModel = xRansac.computeModel( 0 ); // debug level 0
 
     if(!bSuccessfulModel)
     {
@@ -84,10 +84,12 @@ std::pair<double, double> run_ransac(
 	{
 		vX.push_back(xCloud.points[iIndex].x);
 		vY.push_back(xCloud.points[iIndex].y);
-        pvIngroup->push_back(Seed(xCloud.points[iIndex].y, 1, xCloud.points[iIndex].x));
+        DEBUG(
+            pvIngroup->push_back(Seed(xCloud.points[iIndex].y, 1, xCloud.points[iIndex].x));
+        )
 	}// for
 
-	auto xSlopeIntercept = lin_regres_double(vY, vX);
+	auto xSlopeIntercept = lin_regres_double(vX, vY);
 
 	//std::cout << "slope: " << xSlopeIntercept.first << std::endl;
 	//std::cout << "intercept: " << xSlopeIntercept.second << std::endl;

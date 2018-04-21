@@ -14,7 +14,7 @@ int iGap = 6;
 int iExtend = 1;
 /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
 //accuracy drops if parameter is set smaller than 10^6
-nucSeqIndex uiMaxGapArea = 1000000;
+nucSeqIndex uiMaxGapArea = 100;
 /// @brief the padding on the left and right end of each alignment
 nucSeqIndex uiPadding = 500;
 
@@ -85,30 +85,17 @@ void naiveNeedlemanWunsch(
     )//DEBUG
     if(toQuery <= fromQuery)
     {
-        int iY = toRef-fromRef;
-        while(iY > 0)
-        {
-            pAlignment->append(MatchType::deletion);
-            DEBUG_2(
-                std::cout << "D";
-            )//DEBUG
-            iY--;
-        }//while
+        pAlignment->append(MatchType::deletion, toRef-fromRef);
         return;
     }//if
     if(toRef <= fromRef)
     {
-        int iX = toQuery-fromQuery;
-        while(iX > 0)
-        {
-            pAlignment->append(MatchType::insertion);
-            DEBUG_2(  
-                std::cout << "I";
-            )//DEBUG
-            iX--;
-        }//while
+        pAlignment->append(MatchType::insertion, toQuery-fromQuery);
         return;
     }//if
+
+    assert(toQuery-fromQuery < uiMaxGapArea);
+    assert(toRef-fromRef < uiMaxGapArea);
 
     /*
     * beginning of the actual NW

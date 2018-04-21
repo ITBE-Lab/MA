@@ -77,7 +77,7 @@ std::pair<TP, TP> lin_regres( const std::vector<TP> &vxVec,
 	TP intercept = mean_y - slope * mean_x;
 	//std::cout << "intercept: " << intercept << std::endl;
 	
-	return std::pair<TP, TP>(slope, intercept);
+	return std::pair<TP, TP>( std::atan(slope), -intercept/slope);
 } // function
 
 std::pair<double, double> lin_regres_double( const std::vector<double> &vA,

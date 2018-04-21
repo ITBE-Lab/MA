@@ -170,9 +170,6 @@ std::shared_ptr<Container> TempBackend::execute(
             vX.reserve(pSeedsIn->size());
             vY.reserve(pSeedsIn->size());
 
-            //DEPRECATED
-            //auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
-            //int64_t uiMedianDelta = (int64_t)rMedianSeed.start_ref() - (int64_t)rMedianSeed.start();
 
             assert(!pSeedsIn->empty());
             nucSeqIndex uiCurrSoCScore = 0;
@@ -188,19 +185,22 @@ std::shared_ptr<Container> TempBackend::execute(
                 pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
                 pSoCIn->vIngroup.push_back(std::make_shared<Seeds>());
             )
-            
+#if 0 // switch between ransac line angle + intercept estimation & 45deg median line
             auto xSlopeIntercept = run_ransac(vX, vY, pSoCIn->vIngroup.back());
-            double fAlpha = std::atan(xSlopeIntercept.first);
-            std::cout << "ransac done:  slope: " << xSlopeIntercept.first << std::endl;
-            std::cout << "              intercept: " << xSlopeIntercept.second << std::endl;
-            // #define fortyFiveDegree ( 3.0 / 4.0 ) * 3.14159265 / 2.0
+#else
+            auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
+            auto xSlopeIntercept = std::make_pair(
+                    ( 3.0 / 4.0 ) * 3.14159265 / 2.0,//forty five degrees
+                    (double)rMedianSeed.start_ref() - (double)rMedianSeed.start()
+                );
+#endif
 
             if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
                 break;
             uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
             DEBUG(
-                pSoCIn->vSlopes.push_back(xSlopeIntercept.first);
+                pSoCIn->vSlopes.push_back(std::tan(xSlopeIntercept.first));
                 pSoCIn->vIntercepts.push_back(xSlopeIntercept.second);
             )// DEBUG
 
@@ -221,7 +221,7 @@ std::shared_ptr<Container> TempBackend::execute(
             }//for
 
             // perform the line sweep algorithm on the left shadows
-            auto pShadows2 = linesweep(pShadows, xSlopeIntercept.second, fAlpha);
+            auto pShadows2 = linesweep(pShadows, xSlopeIntercept.second, xSlopeIntercept.first);
             pShadows->clear();
             pShadows->reserve(pShadows2->size());
 
@@ -234,7 +234,7 @@ std::shared_ptr<Container> TempBackend::execute(
                     ));
 
             // perform the line sweep algorithm on the right shadows
-            pShadows = linesweep(pShadows, xSlopeIntercept.second, fAlpha);
+            pShadows = linesweep(pShadows, xSlopeIntercept.second, xSlopeIntercept.first);
 
             pSeeds->reserve(pShadows->size());
 
@@ -339,7 +339,9 @@ std::shared_ptr<Container> TempBackend::execute(
                     uiGapX = 0;
                 if( //check for the maximal allowed gap area
                         //uiMaxGapArea == 0 -> disabled
-                        ( uiMaxGapArea > 0 && uiGapX*uiGapY > uiMaxGapArea )
+                        ( uiMaxGapArea > 0 && uiGapX > uiMaxGapArea && uiGapY != 0 )
+                            ||
+                        ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
                             ||
                         //check for negative score
                         uiScore < uiGap
