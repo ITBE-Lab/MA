@@ -17,69 +17,6 @@
 namespace libMA
 {
     /**
-     * @todo this class should not be in the .h
-     */
-    class Gaba_tWrapper
-    {
-    public:
-        gaba_params_s xParams;
-        gaba_t* pContext;
-
-        Gaba_tWrapper(const gaba_params_s &rxParams)
-                :
-            xParams(rxParams)
-        {
-            pContext = gaba_init(&this->xParams);
-        }//constructor
-
-        Gaba_tWrapper()
-                :
-            pContext(nullptr)
-        {}//constructor
-
-        ~Gaba_tWrapper()
-        {
-            if(pContext != nullptr)
-                gaba_clean(pContext);
-        }//deconstructor
-
-        void operator=(const Gaba_tWrapper &rOther) = delete;
-        Gaba_tWrapper(const Gaba_tWrapper& rOther) = delete;
-    };//class
-
-    class Gaba_dp_tWrapper
-    {
-    public:
-        gaba_dp_t* pDp;
-        struct gaba_alignment_s * pR;
-
-        Gaba_dp_tWrapper(gaba_dp_t* pDp)
-                :
-            pDp(pDp),
-            pR(nullptr)
-        {}//constructor
-
-        ~Gaba_dp_tWrapper()
-        {
-            if(pR != nullptr)
-                gaba_dp_res_free(pDp, pR);
-            gaba_dp_clean(pDp);
-        }//deconstructor
-    };//class
-
-    //@todo: this should not be in a .h file
-    void EXPORTED dynPrg(
-        const std::shared_ptr<NucSeq> pQuery, 
-        const std::shared_ptr<NucSeq> pRef,
-        const nucSeqIndex fromQuery, const nucSeqIndex toQuery,
-        const nucSeqIndex fromRef, const nucSeqIndex toRef,
-        std::shared_ptr<Alignment> pAlignment, // in & output
-        const bool bLocalBeginning,
-        const bool bLocalEnd
-        );
-
-
-    /**
      * @brief implements NMW
      * @details
      * Returns a finished alignment if given a sound selection of seeds.
@@ -87,11 +24,95 @@ namespace libMA
      */
     class NeedlemanWunsch : public Module
     {
+        /**
+         * @todo this class should not be in the .h
+         */
+        class Gaba_tWrapper
+        {
+        public:
+            gaba_params_s xParams;
+            gaba_t* pContext;
+
+            Gaba_tWrapper(const gaba_params_s &rxParams)
+                    :
+                xParams(rxParams)
+            {
+                pContext = gaba_init(&this->xParams);
+            }//constructor
+
+            Gaba_tWrapper()
+                    :
+                pContext(nullptr)
+            {}//constructor
+
+            ~Gaba_tWrapper()
+            {
+                if(pContext != nullptr)
+                    gaba_clean(pContext);
+            }//deconstructor
+
+            void operator=(const Gaba_tWrapper &rOther) = delete;
+            Gaba_tWrapper(const Gaba_tWrapper& rOther) = delete;
+        };//class
+
+        class Gaba_dp_tWrapper
+        {
+        public:
+            gaba_dp_t* pDp;
+            struct gaba_alignment_s * pR;
+
+            Gaba_dp_tWrapper(gaba_dp_t* pDp)
+                    :
+                pDp(pDp),
+                pR(nullptr)
+            {}//constructor
+
+            ~Gaba_dp_tWrapper()
+            {
+                if(pR != nullptr)
+                    gaba_dp_res_free(pDp, pR);
+                gaba_dp_clean(pDp);
+            }//deconstructor
+        };//class
+
+        std::vector<std::vector<std::vector<int>>> s;
+        std::vector<std::vector<std::vector<char>>> dir;
+
+        void naiveNeedlemanWunsch(
+                std::shared_ptr<NucSeq> pQuery, 
+                std::shared_ptr<NucSeq> pRef,
+                nucSeqIndex fromQuery,
+                nucSeqIndex toQuery,
+                nucSeqIndex fromRef,
+                nucSeqIndex toRef,
+                bool bNoGapAtBeginning,
+                bool bNoGapAtEnd,
+                std::shared_ptr<Alignment> pAlignment
+            );
+
+        void EXPORTED dynPrg(
+            const std::shared_ptr<NucSeq> pQuery, 
+            const std::shared_ptr<NucSeq> pRef,
+            const nucSeqIndex fromQuery, const nucSeqIndex toQuery,
+            const nucSeqIndex fromRef, const nucSeqIndex toRef,
+            std::shared_ptr<Alignment> pAlignment, // in & output
+            const bool bLocalBeginning,
+            const bool bLocalEnd
+            );
+
+        /*
+        * @todo: fix this problem
+        * 
+        * arghh this is really ugly...
+        * At the moment there is only one sequence that sets all NW and SW parameters correctly:
+        * 1) set the parameters.
+        * 2) create a new NW module.
+        * 3) Then create all other modules that you want to use.....
+        */
+        //the match missmatch matrix
+        std::shared_ptr<Gaba_tWrapper> pGabaScoring;
     public:
         bool bLocal;
-        /// @brief If the seeds cover less that x percent of the query we use SW, 
-        /// otherwise we fill in the gaps.
-        double fMinimalQueryCoverage = .25;
 
         NeedlemanWunsch(bool bLocal);
 

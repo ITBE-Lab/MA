@@ -311,9 +311,9 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     uiGapX = 0;
                 if( //check for the maximal allowed gap area
                         //uiMaxGapArea == 0 -> disabled
-                        ( uiMaxGapArea > 0 && uiGapX > uiMaxGapArea && uiGapY != 0 )
+                        ( uiGapX > uiMaxGapArea && uiGapY != 0 )
                             ||
-                        ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
+                        ( uiGapY > uiMaxGapArea && uiGapX != 0  )
                             ||
                         //check for negative score
                         uiScore < uiGap

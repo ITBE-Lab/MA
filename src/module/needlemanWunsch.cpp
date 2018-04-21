@@ -18,21 +18,7 @@ nucSeqIndex uiMaxGapArea = 100;
 /// @brief the padding on the left and right end of each alignment
 nucSeqIndex uiPadding = 500;
 
-/*
- * @todo: fix this problem
- * 
- * arghh this is really ugly...
- * At the moment there is only one sequence that sets all NW and SW parameters correctly:
- * 1) set the parameters.
- * 2) create a new NW module.
- * 3) Then create all other modules that you want to use.....
- */
-//the match missmatch matrix
-std::shared_ptr<Gaba_tWrapper> pGabaScoring;
-
-
 /**
- * @todo: this should not be in a .h file
  * @brief the NW dynamic programming algorithm
  * @details
  * This is a naive very slow version,
@@ -42,7 +28,7 @@ std::shared_ptr<Gaba_tWrapper> pGabaScoring;
  *      returns the gap at the beginning or end
  * otherwise : returns 0 
  */
-void naiveNeedlemanWunsch(
+void NeedlemanWunsch::naiveNeedlemanWunsch(
         std::shared_ptr<NucSeq> pQuery, 
         std::shared_ptr<NucSeq> pRef,
         nucSeqIndex fromQuery,
@@ -94,26 +80,12 @@ void naiveNeedlemanWunsch(
         return;
     }//if
 
-    assert(toQuery-fromQuery <= uiMaxGapArea || uiMaxGapArea == 0);
-    assert(toRef-fromRef <= uiMaxGapArea || uiMaxGapArea == 0);
+    assert(toQuery-fromQuery <= uiMaxGapArea);
+    assert(toRef-fromRef <= uiMaxGapArea);
 
     /*
     * beginning of the actual NW
     */
-    std::vector<std::vector<std::vector<int>>> s(
-        3,
-        std::vector<std::vector<int>>(
-            toQuery-fromQuery+1,
-            std::vector<int>(toRef-fromRef+1)
-        )
-    );
-    std::vector<std::vector<std::vector<char>>> dir(
-        3,
-        std::vector<std::vector<char>>(
-            toQuery-fromQuery+1,
-            std::vector<char>(toRef-fromRef+1)
-        )
-    );
 
     /*
     * initialization:
@@ -490,9 +462,7 @@ int printer(void* pVoid, uint64_t uiLen, char c)
     return 0;
 }// function
 
-// @todo: this should not be in a .h file
-// @todo: we should make two calls: start in the center and work our way towards both ends
-void libMA::dynPrg(
+void NeedlemanWunsch::dynPrg(
         const std::shared_ptr<NucSeq> pQuery, 
         const std::shared_ptr<NucSeq> pRef,
         const nucSeqIndex fromQuery, const nucSeqIndex toQuery,
@@ -714,6 +684,21 @@ void libMA::dynPrg(
 
 NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
         :
+    //allocate memory for the naive approach
+    s(
+        3,
+        std::vector<std::vector<int>>(
+            uiMaxGapArea+1,
+            std::vector<int>(uiMaxGapArea+1)
+        )
+    ),
+    dir(
+        3,
+        std::vector<std::vector<char>>(
+            uiMaxGapArea+1,
+            std::vector<char>(uiMaxGapArea+1)
+        )
+    ),
     bLocal(bLocal)
 {
     //Gaba context initialization
@@ -1441,7 +1426,6 @@ void exportNeedlemanWunsch()
         .def_readwrite("max_gap_Area", &uiMaxGapArea)
         // actual parameters of NW
         .def_readwrite("local", &NeedlemanWunsch::bLocal)
-        .def_readwrite("min_coverage", &NeedlemanWunsch::fMinimalQueryCoverage)
     ;
     boost::python::implicitly_convertible<
         std::shared_ptr<NeedlemanWunsch>,

@@ -181,7 +181,7 @@ def test_my_approach(
         NeedlemanWunsch(False).penalty_gap_extend = extend
         NeedlemanWunsch(False).penalty_gap_open = gap
         NeedlemanWunsch(False).penalty_missmatch = missmatch
-        NeedlemanWunsch(False).max_gap_area = 10000 # if local else 0 #1000000
+        NeedlemanWunsch(False).max_gap_area = 100000 # if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds, min_ambiguity, max_hits)
         if kMerExtension:
