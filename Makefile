@@ -16,21 +16,21 @@ CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -std=c++11 -mavx2
 CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -mavx2
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
-LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build -L$(LIBGABA_HOME) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -L$(CUDA_PATH) -lm -lpthread -lstdc++ -lcudart -lgaba
+LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(LIBGABA_HOME) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -L$(CUDA_PATH) -lm -lpthread -lstdc++ -lcudart -lgaba
 
 all: ma
 
 ma: libMA.so src/cmdMa.cpp
-	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc $(LDLIBS) libMA.so -o ma
+	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc $(LDLIBS) libMA.so -o ma
 
 libMA.so: $(TARGET_OBJ) $(CTARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(CTARGET_OBJ) $(LDLIBS) sw_gpu.o -o $@
 
 obj/%.o: src/%.cpp inc/%.h
-	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
+	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
 
 obj/%.co: src/%.c inc/%.h
-	$(CC) $(CFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
+	$(CC) $(CFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
 
 html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildcard src/*/*) $(wildcard MA/*.py) doxygen.config
 	doxygen doxygen.config
