@@ -54,7 +54,6 @@ BOOST_PYTHON_MODULE(libMA)
         exportOtherSeeding();
         exportSW_GPU();
         exportSoC();
-        exportTempBackend();
         export_ransac();
 }//function
 

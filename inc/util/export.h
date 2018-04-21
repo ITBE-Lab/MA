@@ -159,7 +159,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "container/container.h"
 #include "container/minimizersHash.h"
 #include "module/sw_gpu.h"
-#include "module/tempBackend.h"
 #include "container/soc.h"
 #include "container/seed.h"
 #include "sample_consensus/test_ransac.h"
