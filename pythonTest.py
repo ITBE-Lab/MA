@@ -190,7 +190,7 @@ def test_my_approach(
         minimizers = Minimizers()
         minimizersExtract = MinimizersToSeeds()
         soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2, give_up, 0)
-        soc2 = StripOfConsideration2(max_hits, num_strips)
+        #soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
         ls.min_coverage = min_coverage

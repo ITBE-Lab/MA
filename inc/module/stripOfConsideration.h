@@ -134,6 +134,7 @@ namespace libMA
         }//function
     };//class
 
+#if 0
     /**
      * @brief Used to quickly find areas with high density of @ref Seed "seeds".
      * @ingroup module
@@ -190,8 +191,9 @@ namespace libMA
             return "StripOfConsideration2";
         }
     };//class
-}//namspace libMA
+#endif
 
+}//namspace libMA
 /**
  * @brief export the bucketing @ref Module "module" to python.
  * @ingroup export

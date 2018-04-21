@@ -181,6 +181,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     return pSoCs;
 }//function
 
+#if 0
 nucSeqIndex StripOfConsideration2::getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS)
 { 
     return xS.start_ref() + (uiQueryLength - xS.start()); 
@@ -368,10 +369,11 @@ std::shared_ptr<Container> StripOfConsideration2::execute(
     //return the strip collection
     return pRet;
 }//function
-
+#endif
 
 void exportStripOfConsideration()
 {
+#if 0
     //export the Bucketing class
     boost::python::class_<
             StripOfConsideration2, 
@@ -382,6 +384,11 @@ void exportStripOfConsideration()
         .def_readwrite("max_ambiguity", &StripOfConsideration2::uiMaxAmbiguity)
         .def_readwrite("num_strips", &StripOfConsideration2::numStrips)
     ;
+    boost::python::implicitly_convertible< 
+        std::shared_ptr<StripOfConsideration2>,
+        std::shared_ptr<Module> 
+    >();
+#endif
 
     //export the Bucketing class
     boost::python::class_<
@@ -400,8 +407,4 @@ void exportStripOfConsideration()
         std::shared_ptr<Module> 
     >();
 
-    boost::python::implicitly_convertible< 
-        std::shared_ptr<StripOfConsideration2>,
-        std::shared_ptr<Module> 
-    >();
 }//function

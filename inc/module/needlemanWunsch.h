@@ -9,9 +9,6 @@
 #include "container/alignment.h"
 #include "module/module.h"
 // The NW library:
-#include "parasail.h"
-#include "parasail/matrices/blosum62.h"
-#include "parasail/matrix_lookup.h"
 #include "gaba.h"
 
 namespace libMA

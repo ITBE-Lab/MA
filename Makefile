@@ -16,7 +16,7 @@ CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -std=c++11 -mavx2
 CFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -g -fPIC -mavx2
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS=-g -std=c++11
-LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build -L$(LIBGABA_HOME) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -L$(CUDA_PATH) -lm -lpthread -lstdc++ -lparasail -lcudart -lgaba
+LDLIBS=$(PYTHON_LIB) -L$(BOOST_LIB_PATH) -L$(PARSAIL_HOME)/build -L$(LIBGABA_HOME) $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) -L$(CUDA_PATH) -lm -lpthread -lstdc++ -lcudart -lgaba
 
 all: ma
 

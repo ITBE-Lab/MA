@@ -261,6 +261,7 @@ class StripOfConsideration(libMA.StripOfConsideration):
     def promise_me(self, *args):
         return super(StripOfConsideration, self).promise_me(ContainerVector(*args))
 
+"""
 ##
 # @brief python wrapper for StripOfConsideration2
 class StripOfConsideration2(libMA.StripOfConsideration2):
@@ -269,6 +270,7 @@ class StripOfConsideration2(libMA.StripOfConsideration2):
 
     def promise_me(self, *args):
         return super(StripOfConsideration2, self).promise_me(ContainerVector(*args))
+"""
 
 ##
 # @brief python wrapper for LinearLineSweep
