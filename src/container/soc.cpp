@@ -31,8 +31,11 @@ void exportSoC()
             >("nucSeqnucSeqInt")
             .def_readwrite("first", &SoCPriorityQueue::blub::first)
             .def_readwrite("second", &SoCPriorityQueue::blub::second)
-            .def_readwrite("third", &SoCPriorityQueue::blub::third)
             .def_readwrite("qCoverage", &SoCPriorityQueue::blub::qCoverage)
+            .def_readwrite("rStart", &SoCPriorityQueue::blub::rStart)
+            .def_readwrite("rEnd", &SoCPriorityQueue::blub::rEnd)
+            .def_readwrite("rStartSoC", &SoCPriorityQueue::blub::rStartSoC)
+            .def_readwrite("rEndSoC", &SoCPriorityQueue::blub::rEndSoC)
         ;
         boost::python::class_<std::vector<SoCPriorityQueue::blub>
         >("nucSeqnucSeqIntVector")

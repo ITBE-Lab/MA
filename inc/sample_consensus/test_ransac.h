@@ -72,7 +72,8 @@ TP medianAbsoluteDeviation(std::vector<TP> arr)
 std::pair<double, double> run_ransac(
         const std::vector<double>& rvxValues,
         const std::vector<double>& rvyValues,
-        std::shared_ptr<libMA::Seeds> pvIngroup
+        /*std::shared_ptr<libMA::Seeds> pvIngroup,*/
+        double fDMA
     );
 
 void export_ransac();

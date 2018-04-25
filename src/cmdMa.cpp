@@ -95,24 +95,24 @@ int main(int argc, char*argv[])
         align_desc.add_options()
             ("alignIn,i", value<std::vector<std::string>>(&aAlignIn)->composing(), "Input file paths [*.fasta/*.fastaq/*]")
             ("alignOut,o", value<std::string>(&sAlignOut)->default_value("stdout"), "Output file path [*.sam/*.bam/*]")
-            ("reportN,n", value<unsigned int>(&uiReportNBest)->default_value(1), "Report the N best Alignments")
+            ("reportN,n", value<unsigned int>(&uiReportNBest)->default_value(0), "Report the N best Alignments")
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
-            ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 1000 : 10), "Maximal ambiguity")
+            ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(1000), "Maximal ambiguity")
             ("minAmbiguity,B", value<unsigned int>(&uiMinAmbiguity)->default_value(bAccurate ? 3 : 0), "Minimal ambiguity")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
-            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 10 : 3), "Strip of consideration amount")
-            ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(bAccurate ? 10 : 3), "apply NW to x SoC")
-            ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(1000000), "Maximal DP matrix size")
-            ("giveUp,v", value<float>(&fGiveUp)->default_value(bAccurate ? 0.03 : 0.01), "Give up if the best SoC score is lower")
+            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(0), "Strip of consideration amount")
+            ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(0), "apply NW to x SoC")
+            ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(200), "Maximal DP matrix size")
+            ("giveUp,v", value<float>(&fGiveUp)->default_value(0), "Give up if the best SoC score is lower")
             ("toGlobal,T", value<float>(&fMappingQualMin)->default_value(bAccurate ? 0 : 0.05), "Transform lower mapping qual local alignments to global")
             ("padding,P", value<nucSeqIndex>(&uiPadding)->default_value(1.1), "Relative padding for global alignments.")
-            ("Match", value<unsigned int>(&iMatch)->default_value(2), "NW match score.")
+            ("Match", value<unsigned int>(&iMatch)->default_value(3), "NW match score.")
             ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "NW missmatch penalty.")
             ("Gap", value<unsigned int>(&iGap)->default_value(6), "NW gap open penalty.")
             ("Extend", value<unsigned int>(&iExtend)->default_value(1), "NW gap extend penalty.")
             ("socMinScore", value<float>(&fMinGlob)->default_value(-2.0), "Minimum score for SoC width.")
-            ("global,G", value<bool>(&bGlobal)->default_value(bAccurate ? true : false), "Perform global alignment")
+            ("global,G", value<bool>(&bGlobal)->default_value(true), "Perform global alignment")
         ;
 
         options_description p_desc{"Paired Reads Options"};
@@ -267,9 +267,9 @@ int main(int argc, char*argv[])
     {
         std::cerr << ex.what() << std::endl;
     }//catch
-    catch (...)
-    {
-        std::cerr << "unknown exception encountered" << std::endl;
-    }//catch
+    //catch (...)
+    //{
+    //    std::cerr << "unknown exception encountered" << std::endl;
+    //}//catch
     return 0;
 }//main function

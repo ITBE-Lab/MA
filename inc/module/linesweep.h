@@ -21,6 +21,7 @@ namespace libMA
      */
     class LinearLineSweep: public Module
     {
+
     private:
         /**
          * @brief The shadow of a Seed.
@@ -109,7 +110,7 @@ namespace libMA
          * @note not beeing optimistic here has no negative affect on the accuracy
          * but improves runtime significantly
          */
-        bool optimisticGapEstimation = false;
+        bool optimisticGapEstimation = true;
 
         bool bLocal = false;
         /// @brief If the seeds cover less that x percent of the query we use SW, 

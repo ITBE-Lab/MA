@@ -43,13 +43,28 @@
     #endif
 
     /* Shifting for AVX2 256 bit vectors:
-    * See: https://stackoverflow.com/questions/20775005/8-bit-shift-operation-in-avx2-with-shifting-in-zeros
+    * https://github.com/blegal/AVX2_shift_and_rotate_si256/blob/master/src/avx2_func.hpp
     */
-    template <unsigned int N> inline __m256i _mm256_shift_left(__m256i a)
-    {
-        __m256i mask = _mm256_permute2x128_si256(a, a, _MM_SHUFFLE(0, 0, 3, 0));
-        return _mm256_alignr_epi8(a, mask, 16 - N);
-    }
+    template <int N> inline __m256i _mm256_shift_left(__m256i A)
+	{
+		if ( N ==  0 ) return A;
+		else if( N <  16 ) return _mm256_alignr_epi8(A, _mm256_permute2x128_si256(A, A, _MM_SHUFFLE(0, 0, 2, 0)), (uint8_t)(16 - N));
+		else if( N == 16 ) return _mm256_permute2x128_si256(A, A, _MM_SHUFFLE(0, 0, 2, 0));
+		else return _mm256_slli_si256 (   _mm256_permute2x128_si256(A, A, _MM_SHUFFLE(0, 0, 2, 0)), (uint8_t)(N - 16));
+	}
+    
+    template <int N> inline __m256i _mm256_shift_right(__m256i A)
+	{
+		if ( N ==  0 ) return A;
+		else if( N <  16 ) return _mm256_alignr_epi8(_mm256_permute2x128_si256(A, A, _MM_SHUFFLE(2, 0, 0, 1)), A, (uint8_t)(N));
+		else if( N == 16 ) return _mm256_permute2x128_si256(A, A, _MM_SHUFFLE(2, 0, 0, 1));
+		else return _mm256_srli_si256 (_mm256_permute2x128_si256(A, A, _MM_SHUFFLE(2, 0, 0, 1)), (uint8_t)(N - 16));
+	}
+    //// template <unsigned int N> inline __m256i _mm256_shift_left(__m256i a)
+    //// {
+    ////     __m256i mask = _mm256_permute2x128_si256(a, a, _MM_SHUFFLE(0, 0, 3, 0));
+    ////     return _mm256_alignr_epi8(a, mask, 16 - N);
+    //// }
 
     #define T__mXXXi __m256i
     #define _mmXXX_set1_epi32(x) _mm256_set1_epi32((x))

@@ -330,6 +330,7 @@ void exportAlignment()
             )
         .def(boost::python::init<nucSeqIndex>())
         .def(boost::python::init<nucSeqIndex, nucSeqIndex>())
+        .def(boost::python::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex>())
         .def(
                 "__getitem__", 
                 &Alignment::at,
@@ -412,6 +413,9 @@ void exportAlignment()
         .def_readwrite("end_on_ref", &Alignment::uiEndOnRef)
         .def_readwrite("mapping_quality", &Alignment::fMappingQuality)
         .def_readwrite("secondary", &Alignment::bSecondary)
+    DEBUG(
+        .def_readwrite("vGapsScatter", &Alignment::vGapsScatter)
+    )
     ;
 
     

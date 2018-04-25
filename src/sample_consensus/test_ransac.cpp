@@ -9,7 +9,8 @@ using namespace libMA;
 std::pair<double, double> run_ransac(
         const std::vector<double>& rvxValues,
         const std::vector<double>& rvyValues,
-        std::shared_ptr<Seeds> pvIngroup
+        /*std::shared_ptr<Seeds> pvIngroup,*/
+        double fDMA
     )
 {
     /* Fill the PointCloud with the vector data 
@@ -26,8 +27,6 @@ std::pair<double, double> run_ransac(
 	sample_consensus::SACModelLine xModel;
     xModel.setDataSet(&xCloud);
 
-	/* The Mean Absolute Deviation (MAD) is later required for the threshold t */
-	double dMAD = medianAbsoluteDeviation<double>( rvyValues );
 	//std::cout << "cpp residual_threshold is: " << dMAD << std::endl;
     
 	/* dMAD argument is the threshold used for identifying inliers. 
@@ -37,7 +36,7 @@ std::pair<double, double> run_ransac(
 	 *    Maximum residual for a data sample to be classified as an inlier. 
 	 *    By default the threshold is chosen as the MAD (median absolute deviation) of the target values y.
 	 */
-	sample_consensus::RANSAC xRansac( &xModel, dMAD );
+	sample_consensus::RANSAC xRansac( &xModel, fDMA );
 
 	/* Do the inliers extraction by performing an iterative process.
 	 * This line is equal to: ransac.fit(X, y) in the Pyhton code.
@@ -84,9 +83,9 @@ std::pair<double, double> run_ransac(
 	{
 		vX.push_back(xCloud.points[iIndex].x);
 		vY.push_back(xCloud.points[iIndex].y);
-        DEBUG(
-            pvIngroup->push_back(Seed(xCloud.points[iIndex].y, 1, xCloud.points[iIndex].x));
-        )
+        //DEBUG(
+        //    pvIngroup->push_back(Seed(xCloud.points[iIndex].y, 1, xCloud.points[iIndex].x));
+        //)
 	}// for
 
 	auto xSlopeIntercept = lin_regres_double(vX, vY);
@@ -101,8 +100,9 @@ void test_ransac()
 {
 	std::vector<double> vX = { 1, 2, 3, 4, 5 };
 	std::vector<double> vY = { 5, 7, 9, 6, 8 };
+    double fMAD = medianAbsoluteDeviation<double>( vY );
 
-    auto xSlopeIntercept = run_ransac(vX, vY, std::make_shared<Seeds>());
+    auto xSlopeIntercept = run_ransac(vX, vY, /*std::make_shared<Seeds>(),*/ fMAD);
 
 	std::cout << "slope: " << xSlopeIntercept.first << std::endl;
 	std::cout << "intercept: " << xSlopeIntercept.second << std::endl;

@@ -43,7 +43,7 @@ class CommandLine(Module):
         #exit()
 
         start_time = time.time()
-        result = subprocess.run(cmd_str, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
+        result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
         self.elapsed_time = time.time() - start_time
 
         if result.returncode != 0:
@@ -84,6 +84,7 @@ class CommandLine(Module):
             if len(line) == 0:
                 continue
             columns = line.split("\t")
+            #print(line)
             #print(columns[0], columns[2], columns[3], columns[4])
             try:
                 #print(str(int(columns[3])) + " " + str(pack.start_of_sequence(columns[2])))
@@ -103,14 +104,24 @@ class CommandLine(Module):
                         number_start = symbol_start + 1
 
                 assert(len(columns) >= 5)
+                qLen = 0
+                rLen = 0
                 for amount, char in read_cigar(columns[5]):
-                    if char in ['M', 'X', '=', 'D', 'N']:
+                    if char in ['M', 'I', '=', 'X']:
+                        qLen += amount
+                    if char in ['M', 'D', '=', 'X']:
+                        rLen += amount
+
+                    if char in ['M', 'X', '=', 'D']:
                         align_length += amount
+                    elif char == 'N':
+                        print(line)
                     elif not char in ['I', 'S', 'H', 'P']:#sanity check...
                         print("Error: got wierd cigar symbol", char, "in cigar", columns[5])
                         exit()
                 start = pack.start_of_sequence(columns[2]) + int(columns[3])
-                alignment = Alignment(start, start + align_length)
+                # 0 is not correct actually but we do not save the query pos anyway...
+                alignment = Alignment(start, 0, start + rLen, qLen)
                 alignment.mapping_quality = int(columns[4])/255
                 alignment.stats.name = columns[0]
                 # set the secondary flag for secondary alignments
@@ -172,7 +183,7 @@ class Minimap2(CommandLine):
         self.in_filename = ".tempMinimap2" + db_name + ".fasta"
 
     def create_command(self, in_filename):
-        cmd_str = self.minimap2_home + "minimap2 -t " + str(self.threads) + " -a "
+        cmd_str = self.minimap2_home + "minimap2 -c -t " + str(self.threads) + " -a "
         return cmd_str + " " + self.index_str + " " + in_filename + " --secondary=yes -N " + self.num_results
 
     def do_checks(self):
@@ -282,7 +293,7 @@ def test(
     reference_pledge = Pledge(Pack())
     reference_pledge.set(ref_pack)
 
-    num_threads = 32
+    num_threads = 1
     num_results = "5"
 
     l = [
@@ -290,7 +301,7 @@ def test(
         #("BLASR", Blasr(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
         #("MA Fast", MA(reference, num_threads, num_results, True, db_name)),
         #("MA Accurate", MA(reference, num_threads, num_results, False, db_name)),
-        ("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
+        #("BWA MEM", BWA_MEM(reference, num_threads, num_results, db_name)),
         #("BWA SW", BWA_SW(reference, num_threads, num_results, db_name)),
         #("BOWTIE 2", Bowtie2(reference, num_threads, num_results, db_name)),
         #("GRAPH MAP", G_MAP(reference, num_threads, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
@@ -346,6 +357,9 @@ def test(
                 times = []
                 for alignment in result_pledge.get():
                     #print(alignment.begin_on_ref, queries[int(alignment.stats.name)][-1])
+
+                    #NOTE: the query position in the alignment is not set correctly
+
                     result.append(
                         (
                             int(alignment.stats.name),

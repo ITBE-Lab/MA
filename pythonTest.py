@@ -106,12 +106,13 @@ def test_my_approach(
         reportN=0,
         clean_up_db=False,
         toGlobal=True,
-        give_up=0.00,
+        give_up=0.01, # 0.03 good value with the setup from 25.04.18
         quitet=False,
         missed_alignments_db=None,
         min_coverage= 1.1, #0.5, # 1.1 = force SW alignment @todo remove me SETTING DISABLED
         #optimistic_gap_estimation=False,
-        specific_id=None
+        specific_id=None,
+        scatter_plot = False
     ):
     if not quitet:
         print("collecting samples (" + name + ") ...")
@@ -181,7 +182,7 @@ def test_my_approach(
         NeedlemanWunsch(False).penalty_gap_extend = extend
         NeedlemanWunsch(False).penalty_gap_open = gap
         NeedlemanWunsch(False).penalty_missmatch = missmatch
-        NeedlemanWunsch(False).max_gap_area = 100000 # if local else 0 #1000000
+        NeedlemanWunsch(False).max_gap_area = 10000 # if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds, min_ambiguity, max_hits)
         if kMerExtension:
@@ -296,7 +297,17 @@ def test_my_approach(
         if not quitet:
             print("computing (", name, ") ...")
         Pledge.simultaneous_get(pledges[-1], 32)
+        print("")
 
+        if scatter_plot:
+            print("generating scatterplot...")
+            plot1 = figure()
+            for alignments in pledges[-1]:
+                for alignment in alignments.get():
+                    for scatter in alignment.vGapsScatter:
+                        plot1.x(scatter.first, scatter.second, color="black", size=4)
+            print("done")
+            show(plot1)
 
         if specific_id != None:
             plot1 = figure(plot_width=1200)
@@ -320,7 +331,7 @@ def test_my_approach(
                 x_list2.append(x)
                 w_list2.append(2000)
                 y_list2.append(100)
-                h_list2.append(200)
+                h_list2.append(400)
             plot1.rect(x_list2, y_list2, w_list2, h_list2, color="green")
             plot1.line(x_list, y_list, line_width=2)
             plot1.x(x_list, y_list, color="red")
@@ -333,20 +344,33 @@ def test_my_approach(
             y_list2 = []
             y_list3 = []
             y_list4 = []
-            for x, s in enumerate(pledges[2][0].get().extract):
+            x_list_harm_areas_start = []
+            x_list_harm_areas_end = []
+            x_list_soc_areas_start = []
+            x_list_soc_areas_end = []
+            ex = pledges[2][0].get().extract
+            for alignment in pledges[-1][0].get():
+                x = alignment.stats.index_of_strip
+                s = ex[x]
                 x_list.append(x)
                 y_list1.append(s.first)
                 y_list2.append(s.second)
-                y_list3.append(s.third)
+                y_list3.append(alignment.get_score())
                 y_list4.append(s.qCoverage)
+                x_list_harm_areas_start.append( (s.rStart + s.rEnd) / 2 )
+                x_list_harm_areas_end.append(s.rEnd - s.rStart)
+                x_list_soc_areas_start.append( (s.rStartSoC + s.rEndSoC) / 2 )
+                x_list_soc_areas_end.append(s.rEndSoC - s.rStartSoC)
+            plot1.rect(x_list_harm_areas_start, 0, x_list_harm_areas_end, 400, color="magenta")
+            plot1.rect(x_list_soc_areas_start, 0, x_list_soc_areas_end, 200, color="pink")
             plot2.line(x_list, y_list4, color="purple", legend="coverage", line_width=5)
-            plot2.x(x_list, y_list4, color="black")
+            plot2.x(x_list, y_list4, color="purple", size=5)
             plot2.line(x_list, y_list1, color="red", legend="SoC score", line_width=5)
-            plot2.x(x_list, y_list1, color="black")
+            plot2.x(x_list, y_list1, color="red", size=5)
             plot2.line(x_list, y_list2, color="green", legend="Harm score", line_width=2)
-            plot2.x(x_list, y_list2, color="black")
+            plot2.x(x_list, y_list2, color="green", size=5)
             plot2.line(x_list, y_list3, color="blue", legend="SW score", line_width=1)
-            plot2.x(x_list, y_list3, color="black")
+            plot2.x(x_list, y_list3, color="blue", size=5)
             plots = [[plot1], [plot2]]
             max_socs = 0
             for num, soc in enumerate(pledges[2][0].get().vSoCs):
@@ -396,7 +420,7 @@ def test_my_approach(
                 print("No alignment Done")
             else:
                 for alignment in pledges[-1][0].get():
-                    #AlignmentPrinter().execute(alignment, pledges[0][0].get(), ref_pack)
+                    AlignmentPrinter().execute(alignment, pledges[0][0].get(), ref_pack)
                     plot = figure(width=800)
                     x = []
                     y = []
@@ -427,6 +451,8 @@ def test_my_approach(
                     line_x = np.arange(X.min(), X.max())
                     line_X = line_x[:, np.newaxis]
                     line_y = ransac.predict(line_X)
+                    slope2, intercept2, r_value2, p_value2, error2 = stats.linregress(X[ransac.inlier_mask_].flatten(), y[ransac.inlier_mask_])
+                    print("python regression ERROR:", error2)
                     plot.line(line_x, line_y, color="magenta", line_width=4, line_alpha=0.5)
 
                     show(plot)
@@ -458,6 +484,7 @@ def test_my_approach(
         if not quitet:
             print("extracting results (", name, ") ...")
         result = []
+        runtimes_result = []
         for i, alignments in enumerate(pledges[-1]):
             if len(alignments.get()) == 0:
                 continue
@@ -801,10 +828,19 @@ def test_my_approach(
                         1 if alignment.secondary else 0
                     )
                 )
+                runtimes_result.append(
+                    (
+                        sample_id,
+                        total_time,
+                        name
+                    )
+                )
         if not quitet:
             print("submitting results (", name, ") ...")
         if len(result) > 0:
             submitResults(db_name, result)
+        if len(runtimes_result) > 0:
+            submitRuntimesAsList(db_name, runtimes_result)
 
         # this should not be necessary but for some reason it is...
         # @todo: fix memory managemet in python code
@@ -1157,9 +1193,10 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
     approaches = getApproachesWithData(db_name)
 
-    def makePicFromDict(d, title, print_out=False,desc2=None, set_max=None):
+    def makePicFromDict(d, title, print_out=False,desc2=None, set_max=None, inner=None):
         x_hover = []
         y_hover = []
+        c_inner = []
         desc1_hover = []
         desc2_hover = []
         desc3_hover = []
@@ -1190,7 +1227,15 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                     y_hover.append(y + height/2)
                     desc1_hover.append(str(x))
                     desc3_hover.append(str(y))
-                    desc2_hover.append(str(d[x][y]))
+                    if inner != None:
+                        if inner[x][y] == None or max_ == 0:
+                            c_inner.append("#AAAAAA")
+                            desc2_hover.append("")
+                        else:
+                            c_inner.append( colors[int(126*(inner[x][y]-min_) /max_)] )
+                            desc2_hover.append(str(inner[x][y]))
+                    else:
+                        desc2_hover.append(str(d[x][y]))
                     if desc2 != None:
                         desc4_hover.append(desc2[x][y])
                     if d[x][y] == None or max_ == 0:
@@ -1227,7 +1272,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
             source = ColumnDataSource(data=dict(
                 x=x_hover,
                 y=y_hover,
-                c=c_hover,
+                c=c_inner,
                 desc1=desc1_hover,
                 desc2=desc2_hover,
                 desc3=desc3_hover,
@@ -1247,7 +1292,8 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
         plot.xaxis.formatter = tick_formater
         plot.xaxis.ticker = FixedTicker(ticks=[0, 4, 8, 12, 16, 20])
-        plot.rect('x', 'y', width, height, color='c', line_alpha=0, source=source)
+        plot.rect(x_hover, y_hover, width, height, color=c_hover, line_alpha=0)
+        plot.rect('x', 'y', width*4/5, height*4/5, color='c', line_alpha=0, source=source)
 
         color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
@@ -1258,14 +1304,14 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
     for approach_ in approaches:
         approach = approach_[0]
-        accuracy, runtime, alignments, fails = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits)
+        accuracy, coverage, runtime, alignments, fails = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits)
 
-        plots[0].append(makePicFromDict(accuracy, "accuracy " + approach, desc2=fails))
+        plots[0].append(makePicFromDict(accuracy, "accuracy " + approach, desc2=fails, inner=coverage))
         plots[1].append(makePicFromDict(runtime, "runtime " + approach))
         plots[2].append(makePicFromDict(alignments, "max tries " + approach, set_max=500))
 
-    sw_accuracy = getAccuracyAndRuntimeOfSW(db_name)
-    plots.append([makePicFromDict(sw_accuracy, "sw accuracy")])
+    sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
+    plots.append([makePicFromDict(sw_accuracy, "sw accuracy", inner=sw_coverage)])
 
     save(layout(plots))
     print("wrote plot")
@@ -1690,6 +1736,8 @@ smw.execute(
 exit()
 """
 
+#libMA.testKsw()
+#exit()
 
 #libMA.test_ransac()
 #exit()
@@ -1730,17 +1778,26 @@ exit()
 #createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("plasmodium_30000.db", plasmodium_genome)#, specific_id=1538
-analyse_all_approaches_depre("plasmodium.html","plasmodium_30000.db", num_tries=1)
-analyse_all_approaches_depre("plasmodium.html","plasmodium_30000.db", num_tries=5)
+test_my_approaches("plasmodium_200.db", plasmodium_genome)
+#test("sw_human.db", human_genome)
+analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
+
+test_my_approaches("plasmodium_30000.db", plasmodium_genome)
+#test("sw_human.db", human_genome)
+analyse_all_approaches_depre("plasmodium_30000.html","plasmodium_30000.db", num_tries=1)
+
+test_my_approaches("plasmodium_1000.db", plasmodium_genome)
+#test("sw_human.db", human_genome)
+analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
+#analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
 exit()
-test("human_20000.db", human_genome)
+#test("human_20000.db", human_genome)
 
 
 #try_out_parameters("/MAdata/db/parameters.db")
 
-ref_pack = Pack()
-ref_pack.load(human_genome)
+#ref_pack = Pack()
+#ref_pack.load(human_genome)
 #
 #print(ref_pack.unpacked_size_single_strand*2 - 2000151048)
 ##exit()
@@ -1749,13 +1806,13 @@ ref_pack.load(human_genome)
 #    print(tup)
 ##res = []
 ##res2 = []
-for tup in getOptima("sw_human.db", 994):
-    print(tup[0])
-    print(ref_pack.unpacked_size_single_strand*2 - tup[0])
-tup = getOrigin("sw_human.db", 994)
-print(tup[0])
-print(ref_pack.unpacked_size_single_strand*2 - tup[0])
-exit()
+#for tup in getOptima("sw_human.db", 994):
+#    print(tup[0])
+#    print(ref_pack.unpacked_size_single_strand*2 - tup[0])
+#tup = getOrigin("sw_human.db", 994)
+#print(tup[0])
+#print(ref_pack.unpacked_size_single_strand*2 - tup[0])
+#exit()
 #
 #ref1 = ref_pack.extract_from_to(3875127376-1000, 3875127376+1000)
 #ref2 = ref_pack.extract_from_to(3875127376-10000, 3875127376+10000)
@@ -1795,55 +1852,64 @@ exit()
 #print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
 
 #test("sw_human.db", zebrafish_genome)
-analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
-analyse_all_approaches_depre("human_no_sw.html","sw_human.db", num_tries=5, allow_sw_hits=False)
-analyse_all_approaches_depre("human_5_tries.html","sw_human.db", num_tries=5)
+#analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
+#analyse_all_approaches_depre("human_no_sw.html","sw_human.db", num_tries=5, allow_sw_hits=False)
+#analyse_all_approaches_depre("human_5_tries.html","sw_human.db", num_tries=5)
 #analyse_detailed("stats/", "/MAdata/db/test.db")
-exit()
+#exit()
 
 #createSampleQueries(working_genome, "/MAdata/db/relevancetest.db", 1000, 50, 32)
-amount = 2**11
 #createSampleQueries(working_genome, "/MAdata/db/relevance.db", 1000, 50, amount)
 #createSampleQueries(working_genome, "/MAdata/db/test_sw.db", 1000, 100, 32, only_first_row=True)
 
 #createSampleQueries(working_genome, "/MAdata/db/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
 #exit()
 
-#createSampleQueries(working_genome, "/MAdata/db/short.db", 250, 25, amount)
-#measure_time.test("short.db", working_genome)
-#analyse_all_approaches_depre("short.html","/MAdata/db/short.db", 250, 25)
+#import createIndices
+
+#createIndices.make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
+
+amount = 2**11
+
+#createSampleQueries(human_genome, "short.db", 200, 20, amount)
+test("short.db", human_genome)
+analyse_all_approaches_depre("short.html","short.db", 200, 20)
 
 
-createSampleQueries(working_genome, "/MAdata/db/default.db", 1000, 100, amount)
-measure_time.test("default.db", working_genome)
-analyse_all_approaches_depre("default.html","/MAdata/db/default.db", 1000, 100)
+createSampleQueries(human_genome, "default.db", 1000, 100, amount)
+test("default.db", human_genome)
+analyse_all_approaches_depre("default.html","default.db", 1000, 100)
 
 
-#createSampleQueries(working_genome, "/MAdata/db/long.db", 30000, 100, amount)
-createSampleQueries(working_genome, "/MAdata/db/shortIndels.db", 1000, 50, amount)
-measure_time.test("shortIndels.db", working_genome)
-analyse_all_approaches_depre("shortIndels.html","/MAdata/db/shortIndels.db", 1000, 50)
+createSampleQueries(human_genome, "shortIndels.db", 1000, 50, amount)
+test("shortIndels.db", human_genome)
+analyse_all_approaches_depre("shortIndels.html","shortIndels.db", 1000, 50)
 
-createSampleQueries(working_genome, "/MAdata/db/longIndels.db", 1000, 200, amount)
-measure_time.test("longIndels.db", working_genome)
-analyse_all_approaches_depre("longIndels.html","/MAdata/db/longIndels.db", 1000, 200)
+createSampleQueries(human_genome, "longIndels.db", 1000, 200, amount)
+test("longIndels.db", human_genome)
+analyse_all_approaches_depre("longIndels.html","longIndels.db", 1000, 200)
 
 
-createSampleQueries(working_genome, "/MAdata/db/insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
-measure_time.test("insertionOnly.db", working_genome)
-analyse_all_approaches_depre("insertionOnly.html","/MAdata/db/insertionOnly.db", 1000, 100)
+createSampleQueries(human_genome, "insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
+test("insertionOnly.db", human_genome)
+analyse_all_approaches_depre("insertionOnly.html","insertionOnly.db", 1000, 100)
 
-createSampleQueries(working_genome, "/MAdata/db/deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
-measure_time.test("deletionOnly.db", working_genome)
-analyse_all_approaches_depre("deletionOnly.html","/MAdata/db/deletionOnly.db", 1000, 200)
+createSampleQueries(human_genome, "deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
+test("deletionOnly.db", human_genome)
+analyse_all_approaches_depre("deletionOnly.html","deletionOnly.db", 1000, 200)
 
-createSampleQueries(working_genome, "/MAdata/db/zoomLine.db", 1000, 100, amount, only_first_row=True)
-measure_time.test("zoomLine.db", working_genome)
-analyse_all_approaches_depre("zoomLine.html","/MAdata/db/zoomLine.db", 1000, 200)
+createSampleQueries(human_genome, "zoomLine.db", 1000, 100, amount, only_first_row=True)
+test("zoomLine.db",human_genome)
+analyse_all_approaches_depre("zoomLine.html","zoomLine.db", 1000, 200)
 
-createSampleQueries(working_genome, "/MAdata/db/zoomSquare.db", 1000, 100, amount, high_qual=True, smaller_box=True)
-measure_time.test("zoomSquare.db", working_genome)
-analyse_all_approaches_depre("zoomSquare.html","/MAdata/db/zoomSquare.db", 1000, 200)
+createSampleQueries(human_genome, "zoomSquare.db", 1000, 100, amount, smaller_box=True)
+test("zoomSquare.db", human_genome)
+analyse_all_approaches_depre("zoomSquare.html","zoomSquare.db", 1000, 200)
+
+
+createSampleQueries(human_genome, "long.db", 30000, 100, amount)
+test("long.db", human_genome)
+analyse_all_approaches_depre("long.html","long.db", 1000, 200)
 
 #analyse_all_approaches("default.html","/MAdata/db/test.db", 1000, 100)
 #exit()

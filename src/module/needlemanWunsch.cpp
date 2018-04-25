@@ -3,7 +3,16 @@
  * @author Markus Schmidt
  */
 #include "module/needlemanWunsch.h"
+#include "parasail.h"
+#include "parasail/matrices/blosum62.h"
+#include "parasail/matrix_lookup.h"
 #include <bitset>
+#include "ksw/ksw2.h"
+#include <string>
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <cassert>
 
 
 using namespace libMA;
@@ -14,9 +23,372 @@ int iGap = 6;
 int iExtend = 1;
 /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
 //accuracy drops if parameter is set smaller than 10^6
-nucSeqIndex uiMaxGapArea = 100;
+nucSeqIndex uiMaxGapArea = 1;
 /// @brief the padding on the left and right end of each alignment
 nucSeqIndex uiPadding = 500;
+
+//the match missmatch matrix
+parasail_matrix_t matrix;
+std::vector<int> vMatrixContent;
+
+//match missmatch matrix for ksw
+int8_t mat[25];
+
+static void ksw_gen_simple_mat(int m, int8_t *mat, int8_t a, int8_t b)
+{
+	int i, j;
+	a = a < 0? -a : a;
+	b = b > 0? -b : b;
+	for (i = 0; i < m - 1; ++i) {
+		for (j = 0; j < m - 1; ++j)
+			mat[i * m + j] = i == j? a : b;
+		mat[i * m + m - 1] = 0;
+	}
+	for (j = 0; j < m; ++j)
+		mat[(m - 1) * m + j] = 0;
+}// function
+
+void ksw_simplified(
+        int qlen, const uint8_t *query,
+        int tlen, const uint8_t *target,
+        int8_t q, int8_t e, int& w,
+        ksw_extz_t *ez
+    )
+{
+    int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
+    if( std::abs(tlen - qlen) + minAddBandwidth > w)
+        w = std::abs(tlen - qlen) + minAddBandwidth;
+    ksw_extz2_sse(nullptr, qlen, query, tlen, target, 5, mat, q, e, w, -1, -1, 0, ez);
+}// function
+
+/*
+ * We want to avoid translating the numeric representation into characters
+ * so we will trick parasail...
+ */
+const int parasail_custom_map[] = {
+     0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+};
+
+/**
+ * @brief wrapper for parsail results.
+ * @details
+ * This will automatically call free the result in the deconstructor 
+ * and therefore make everything
+ * exception save.
+ */
+class ParsailResultWrapper
+{
+    parasail_result_t* pContent;
+public:
+
+    ParsailResultWrapper(parasail_result_t* pContent)
+            :
+        pContent(pContent)
+    {}//constructor
+
+    ~ParsailResultWrapper()
+    {
+        parasail_result_free(pContent);
+    }//deconstructor
+
+    const parasail_result_t& operator*() const
+    {
+        return *pContent;
+    }//operator
+
+    const parasail_result_t* get() const
+    {
+        return pContent;
+    }//operator
+
+    parasail_result_t* get()
+    {
+        return pContent;
+    }//operator
+
+    const parasail_result_t* operator->() const
+    {
+        return pContent;
+    }//operator
+};//class
+
+/**
+ * @brief wrapper for parsail cigars.
+ * @details
+ * This will automatically call free the result in the deconstructor 
+ * and therefore make everything
+ * exception save.
+ */
+class ParsailCigarWrapper
+{
+    parasail_cigar_t* pContent;
+public:
+
+    ParsailCigarWrapper(parasail_cigar_t* pContent)
+            :
+        pContent(pContent)
+    {}//constructor
+
+    ~ParsailCigarWrapper()
+    {
+        parasail_cigar_free(pContent);
+    }//deconstructor
+
+    const parasail_cigar_t& operator*() const
+    {
+        return *pContent;
+    }//operator
+
+    const parasail_cigar_t* get() const
+    {
+        return pContent;
+    }//operator
+
+    parasail_cigar_t* get()
+    {
+        return pContent;
+    }//operator
+
+    const parasail_cigar_t* operator->() const
+    {
+        return pContent;
+    }//operator
+};//class
+
+// faster NW thant my naive version...
+void parasail(
+        std::shared_ptr<NucSeq> pQuery,
+        std::shared_ptr<NucSeq> pRef,
+        nucSeqIndex fromQuery,
+        nucSeqIndex toQuery,
+        nucSeqIndex fromRef,
+        nucSeqIndex toRef,
+        std::shared_ptr<Alignment> pAlignment
+    )
+{
+    //std::cout << (toRef - fromRef) * (toQuery - fromQuery) << std::endl;
+
+    // if we reached this point we actually have to align something
+    DEBUG_2(
+        std::cout << pQuery->toString() << std::endl;
+        std::cout << pRef->toString() << std::endl;
+    )
+
+    /*
+    * do the SW alignment
+    */
+
+    // Note: parasail does not follow the usual theme where for opening a gap
+    //       extend and open penalty are applied
+    ParsailResultWrapper pResult(parasail_nw_trace_scan_32(
+        ((const char*)pQuery->pGetSequenceRef()) + fromQuery, toQuery-fromQuery,
+        ((const char*)pRef->pGetSequenceRef()) + fromRef, toRef-fromRef,
+        iGap + iExtend, iExtend,
+        &matrix
+    ));
+
+    //get the cigar
+    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
+        pResult.get(),
+        ((const char*)pQuery->pGetSequenceRef()) + fromQuery, toQuery-fromQuery,
+        ((const char*)pRef->pGetSequenceRef()) + fromRef, toRef-fromRef,
+        &matrix
+    ));
+
+    DEBUG_2(
+        std::cout << "cigar length: " << pCigar->len << std::endl;
+        std::cout << pCigar->beg_query << ", " << pCigar->beg_ref << std::endl;
+    )
+
+    /*
+    * Decode the cigar:
+    *  this involves two steps
+    *  1) find the beginning and end of the cigar and set the alignment ends accordingly
+    *  2) translate the cigar symbols into insertions deletions matches and missmatches
+    */
+
+    nucSeqIndex uiQPos = pCigar->beg_query;
+    nucSeqIndex uiRPos = pCigar->beg_ref;
+    //decode the cigar
+    for(int i = 0; i < pCigar->len; i++)
+    {
+        char c = parasail_cigar_decode_op(pCigar->seq[i]);
+        uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
+              DEBUG_2(std::cout << c << " x" << uiLen << std::endl;)
+        switch (c)
+        {
+            case '=':
+                pAlignment->append(MatchType::match, uiLen);
+                uiQPos += uiLen;
+                uiRPos += uiLen;
+                break;
+            case 'I':
+                pAlignment->append(MatchType::insertion, uiLen);
+                uiQPos += uiLen;
+                break;
+            case 'D':
+                pAlignment->append(MatchType::deletion, uiLen);
+                uiRPos += uiLen;
+                break;
+            case 'X':
+                pAlignment->append(MatchType::missmatch, uiLen);
+                uiQPos += uiLen;
+                uiRPos += uiLen;
+                break;
+            default:
+                // there are different CIGAR symbols allowed in the SAM format
+                // but parasail should never generate any of them
+                assert(false);
+                break;
+        }//switch
+    }//for
+
+    DEBUG_2(
+        std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
+    )
+}//function
+
+
+
+//small wrapper that takes care of deallocation
+class Wrapper_ksw_extz_t
+{
+public:
+    ksw_extz_t* ez;
+
+    Wrapper_ksw_extz_t()
+    {
+        ez = new ksw_extz_t {};// {} forces zero initialization
+
+    }//default constructor
+
+    ~Wrapper_ksw_extz_t()
+    {
+        delete ez->cigar;
+        delete ez;
+    }//default constructor
+};//class
+
+// banded global NW
+void ksw(
+        std::shared_ptr<NucSeq> pQuery,
+        std::shared_ptr<NucSeq> pRef,
+        nucSeqIndex fromQuery,
+        nucSeqIndex toQuery,
+        nucSeqIndex fromRef,
+        nucSeqIndex toRef,
+        std::shared_ptr<Alignment> pAlignment
+    )
+{
+    //sanity checks
+    if(toRef <= fromRef)
+        if(toQuery <= fromQuery)
+            return;
+    if(toQuery <= fromQuery)
+    {
+        pAlignment->append(MatchType::deletion, toRef-fromRef);
+        return;
+    }//if
+    if(toRef <= fromRef)
+    {
+        pAlignment->append(MatchType::insertion, toQuery-fromQuery);
+        return;
+    }//if
+
+    Wrapper_ksw_extz_t ez;
+
+    int uiBandwidth = 100;
+
+    assert(toQuery < pQuery->length());
+    assert(toRef < pRef->length());
+    ksw_simplified(
+        toQuery - fromQuery, 
+        pQuery->pGetSequenceRef() + fromQuery,
+        toRef - fromRef, 
+        pRef->pGetSequenceRef() + fromRef, 
+        iGap,
+        iExtend,
+        uiBandwidth,
+        ez.ez // return value
+    );
+
+    uint32_t qPos = fromQuery;
+    uint32_t rPos = fromRef;
+    for (int i = 0; i < ez.ez->n_cigar; ++i)
+    {
+        uint32_t uiSymbol = ez.ez->cigar[i]&0xf;
+        uint32_t uiAmount = ez.ez->cigar[i]>>4;
+        switch (uiSymbol)
+        {
+            case 0:
+                for(uint32_t uiPos = 0; uiPos < uiAmount; uiPos++)
+                {
+                    if( (*pQuery)[uiPos + qPos] == (*pRef)[uiPos + rPos] )
+                        pAlignment->append(MatchType::match);
+                    else
+                        pAlignment->append(MatchType::missmatch);
+                }// for
+                qPos+=uiAmount;
+                rPos+=uiAmount;
+                break;
+            case 1:
+                pAlignment->append(MatchType::insertion, uiAmount);
+                qPos+=uiAmount;
+                break;
+            case 2:
+                pAlignment->append(MatchType::deletion, uiAmount);
+                rPos+=uiAmount;
+                break;
+            default:
+                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                assert(false);
+                break;
+        }//switch
+    }//for
+#if DEBUG_LEVEL >= 1
+        const char vMIDN[] = {'M', 'I', 'D', 'N'};
+        if(qPos != (uint32_t)toQuery && rPos != (uint32_t)toRef)
+        {
+            std::cerr << "ksw did neither extend till end of query nor ref " 
+                << (int)toQuery - qPos << "; " << (int)toRef -  rPos
+                << " bandwidth: " << uiBandwidth << std::endl;
+            std::cout << pQuery->fromTo(fromQuery, toQuery) << std::endl;
+            std::cout << pRef->fromTo(fromRef, toRef) << std::endl;
+            std::cout << "CIGAR:";
+            for (int i = 0; i < ez.ez->n_cigar; ++i)
+            {
+                uint32_t uiSymb = ez.ez->cigar[i]&0xf;
+                uint32_t uiAmount = ez.ez->cigar[i]>>4;
+                std::cout << uiAmount <<  vMIDN[uiSymb] << " ";
+            }//for
+            std::cout << std::endl;
+            assert(false);
+        }// if
+#endif
+    //ensure we do not append something negative.. (underflow)
+    assert(toQuery >= qPos);
+    assert(toRef >= rPos);
+    //Append the remaining insertion or deletion. 
+    //Remaining lengths of zero are taken care of in append
+    pAlignment->append(MatchType::deletion, toQuery - qPos);
+    pAlignment->append(MatchType::insertion, toRef - rPos);
+}//function
+
 
 /**
  * @brief the NW dynamic programming algorithm
@@ -40,7 +412,6 @@ void NeedlemanWunsch::naiveNeedlemanWunsch(
         std::shared_ptr<Alignment> pAlignment
     )
 {
-    DEBUG_3(std::cout << "naive" << std::endl;)
     /*
     * break conditions for actually empty areas
     */
@@ -80,12 +451,35 @@ void NeedlemanWunsch::naiveNeedlemanWunsch(
         return;
     }//if
 
-    assert(toQuery-fromQuery <= uiMaxGapArea);
-    assert(toRef-fromRef <= uiMaxGapArea);
+#if 0 //use parasail for longer gaps
+    //std::cout << (toRef - fromRef) << " " << (toQuery - fromQuery) << std::endl;
+    if(toQuery-fromQuery > uiMaxGapArea || toRef-fromRef > uiMaxGapArea)
+    {
+        parasail(pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment);
+        return;
+    }// if
+#endif
 
     /*
     * beginning of the actual NW
     */
+#if ALLOCATE_ONCE == 0
+    //allocate memory for the naive approach
+    std::vector<std::vector<std::vector<int>>> s(
+        3,
+        std::vector<std::vector<int>>(
+            toQuery-fromQuery+1,
+            std::vector<int>(toRef-fromRef+1)
+        )
+    );
+    std::vector<std::vector<std::vector<char>>> dir(
+        3,
+        std::vector<std::vector<char>>(
+            toQuery-fromQuery+1,
+            std::vector<char>(toRef-fromRef+1)
+        )
+    );
+#endif
 
     /*
     * initialization:
@@ -489,6 +883,14 @@ void NeedlemanWunsch::dynPrg(
     DEBUG_3(std::cout << "dynProg begin" << std::endl;)
     if(!bLocalBeginning && !bLocalEnd)
     {
+#if 1
+        ksw(
+            pQuery, pRef,
+            fromQuery, toQuery,
+            fromRef, toRef,
+            pAlignment
+        );
+#else
         naiveNeedlemanWunsch(
             pQuery, pRef,
             fromQuery, toQuery,
@@ -496,6 +898,7 @@ void NeedlemanWunsch::dynPrg(
             false, false,
             pAlignment
         );
+#endif
         DEBUG_3(std::cout << "dynProg end" << std::endl;)
         return;
     }// if
@@ -684,6 +1087,7 @@ void NeedlemanWunsch::dynPrg(
 
 NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
         :
+#if ALLOCATE_ONCE == 1
     //allocate memory for the naive approach
     s(
         3,
@@ -699,8 +1103,29 @@ NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
             std::vector<char>(uiMaxGapArea+1)
         )
     ),
+#endif
     bLocal(bLocal)
 {
+    //configure the parasail matrix
+    matrix.name = "";
+    matrix.size = 4;
+    for(int i=0; i < 4; i++)
+    {
+        for(int j=0; j < 4; j++)
+        {
+            if(i == 4 || j == 4)
+                vMatrixContent.push_back(0);
+            if(i == j)
+                vMatrixContent.push_back(iMatch);
+            else
+                vMatrixContent.push_back(-iMissMatch);
+        }//for
+    }//for
+    matrix.matrix = &vMatrixContent[0];
+    matrix.mapper = parasail_custom_map;
+    matrix.max = iMatch;
+    matrix.min = -iMissMatch;
+    matrix.user_matrix = &vMatrixContent[0];
     //Gaba context initialization
     /*
      *    GABA_PARAMS(
@@ -727,6 +1152,9 @@ NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
     };// struct
 
     pGabaScoring = std::make_shared<Gaba_tWrapper>(xParams);
+
+    //create match/missmatch matrix for ksw
+    ksw_gen_simple_mat(5, mat, iMatch, iMissMatch);
 }// constructor
 
 std::string NeedlemanWunsch::getFullDesc() const
@@ -930,6 +1358,13 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                     false,
                     false
                 );
+            DEBUG(
+                //std::cout << pRet->vGapsScatter.size() << std::endl;
+                pRet->vGapsScatter.push_back(std::make_pair(
+                    rSeed.start() - endOfLastSeedQuery, 
+                    rSeed.start_ref() - beginRef - endOfLastSeedReference
+                ));
+            )//DEBUG
             if(ovQ > ovR)
                 pRet->append(MatchType::deletion, ovQ - ovR);
             DEBUG_2(
@@ -1244,11 +1679,121 @@ std::shared_ptr<Container> CombatRepetitively::execute(
 #endif
 }// function
 
+/* Random nucleotide sequence of length uiLen, represented as codes.
+ */
+std::vector<char> randomNucSeq( const size_t uiLen )
+{
+	static const char nucleotides[] = { 0, 1, 2, 3 };
+
+	std::vector<char> vNucSeq( uiLen );
+	for (size_t i = 0; i < uiLen; ++i)
+	{
+		vNucSeq[i] = nucleotides[rand() % (sizeof( nucleotides ) - 1)];
+	} // for
+
+	return vNucSeq;
+} // function
+
+
+
+void testKsw()
+{
+	/* Seed the random number generator */
+	auto uiSeed = (unsigned)time( NULL ); 
+	//// std::cout << "SEED:" << uiSeed << std::endl;
+	srand(uiSeed);
+
+    size_t uiRefSize = 1;
+    size_t uiQuerySize = 10000;
+
+    int8_t iMatch = 1;
+    int8_t iMissMatch = 4;
+    int8_t iGap = 10;
+    int8_t iExtend = 1;
+    int iBandwidth = 100;
+
+#if 0 // adaptive bandwidth
+    int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
+    if( std::abs(uiRefSize - uiQuerySize) > iBandwidth + minAddBandwidth)
+        iBandwidth = std::abs(uiRefSize - uiQuerySize) + minAddBandwidth;
+#endif
+
+    //@todo wrap
+    Wrapper_ksw_extz_t ez;
+
+	for (int uiCounter = 0; uiCounter < 100; ++uiCounter)
+	{
+        std::cout << "score=" << ez.ez->score << " ciglen= " << ez.ez->n_cigar << " cigar=" << std::endl;
+        //create match/missmatch matrix
+	    int8_t mat[25];
+        ksw_gen_simple_mat(5, mat, iMatch, iMissMatch);
+
+	    auto vRefSeq = randomNucSeq( uiRefSize ); // nucleotide sequence (codes)
+	    auto vQuerySeq = randomNucSeq( uiQuerySize ); // nucleotide sequence (codes)
+
+        const char vMIDN[] = {'M', 'I', 'D', 'N'};
+
+        std::cout << "dp" << std::endl;
+#if 0
+		ksw_extz2_sse(
+            nullptr, // used in kmalloc so we do not need this
+            vQuerySeq.size(), 
+            (const uint8_t*)&vQuerySeq[0],
+            vRefSeq.size(), 
+            (const uint8_t*)&vRefSeq[0], 
+            5, //number of input symbols
+            mat, // 5x5 matrix match missmatch
+            iGap,
+            iExtend,
+            iBandwidth,
+            -1, // break alignment if score drops to fast (-1 == disabled)
+            -1, // bonus(?) for reaching the end of the query (-1 == disabled)
+            0, // flags (0 == no flags set)
+            ez.ez // return value
+        );
+#else
+		ksw_simplified(
+            vQuerySeq.size(), 
+            (const uint8_t*)&vQuerySeq[0],
+            vRefSeq.size(), 
+            (const uint8_t*)&vRefSeq[0], 
+            iGap,
+            iExtend,
+            iBandwidth,
+            ez.ez // return value
+        );
+#endif
+
+        std::cout << "score=" << ez.ez->score << " ciglen= " << ez.ez->n_cigar << " cigar=" << std::endl;
+        uint32_t qPos = 0;
+        uint32_t rPos = 0;
+		for (int i = 0; i < ez.ez->n_cigar; ++i)
+        {
+            uint32_t uiSymb = ez.ez->cigar[i]&0xf;
+            uint32_t uiAmount = ez.ez->cigar[i]>>4;
+			std::cout << uiAmount <<  vMIDN[uiSymb] << " ";
+            if(uiSymb == 0 || uiSymb == 1)
+                qPos+=uiAmount;
+            if(uiSymb == 0 || uiSymb == 2)
+                rPos+=uiAmount;
+        }//for
+        std::cout << std::endl;
+        std::cout << "qPos=" << qPos << " rPos= " << rPos << std::endl;
+        assert(qPos == (uint32_t)uiQuerySize);
+        assert(rPos == (uint32_t)uiRefSize);
+	} // for
+}//function
+
+
+
+
 void exportNeedlemanWunsch()
 {
     DEBUG(
         //broken debug function
         //boost::python::def("debugNW", &debugNW);
+        //test ksw function
+        boost::python::def("testKsw", &testKsw);
     )//DEBUG
      //export the segmentation class
     boost::python::class_<
@@ -1266,7 +1811,7 @@ void exportNeedlemanWunsch()
         .def_readwrite("penalty_gap_extend", &iExtend)
         .def_readwrite("score_match", &iMatch)
         .def_readwrite("penalty_missmatch", &iMissMatch)
-        .def_readwrite("max_gap_Area", &uiMaxGapArea)
+        .def_readwrite("max_gap_area", &uiMaxGapArea)
         // actual parameters of NW
         .def_readwrite("local", &NeedlemanWunsch::bLocal)
     ;

@@ -47,11 +47,11 @@ def make(filename, out_name):
     # BWA fmd index
     #os.system(bwa_home + "-p " + out_name + "bwa " + filename)
     # bowtie index
-    #os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
+    os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
     # blasr index
-    #os.system(blasr_home + out_name + "blasr " + filename)
+    os.system(blasr_home + out_name + "blasr " + filename)
     # minimap2 index
-    os.system(minimap_home + out_name + ".mmi " + filename)
+    #os.system(minimap_home + out_name + ".mmi " + filename)
 
 def make_hash(name):
     print("loading pack...")

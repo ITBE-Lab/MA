@@ -641,6 +641,7 @@ namespace libMA
                                 {
                                     pPledge->get();
                                     callback();
+                                    DEBUG(std::cout << "*" << std::flush;)
                                 }//do
                                 while(bLoop);
                             } catch(ModuleDryException e) {}

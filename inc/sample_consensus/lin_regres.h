@@ -2,6 +2,8 @@
 #include <vector>
 #include <cassert>
 
+#define DO_ERROR ( 0 )
+
 template<typename TP>
 TP mean( const std::vector<TP> &vVector )
 {
@@ -29,6 +31,30 @@ TP corrSumOfSquares( const std::vector<TP> &vaVector,
 	return sum;
 } // function
 
+// CAREFULL HAS SIDEFFECTS
+template<typename TP>
+TP variance(const std::vector<TP> &vaVector,
+                std::vector<TP> &vdVector,
+                const TP mean)
+{
+    return corrSumOfSquares(vaVector, vdVector, mean) / vaVector.size();
+}
+
+// CAREFULL HAS SIDEFFECTS
+template<typename TP>
+TP covariance(
+            const std::vector<TP> &vaVector,
+            const std::vector<TP> &vdVector,
+            const TP mean_x,
+            const TP mean_y)
+{
+    double sum = 0;
+    for(size_t i = 0; i < vaVector.size(); i++) 
+    {
+        sum += (vaVector[i] - mean_x) * (vdVector[i] - mean_y);
+    }//for
+    return sum / vaVector.size();
+}// function 
 
 template<typename TP>
 std::pair<TP, TP> lin_regres( const std::vector<TP> &vxVec, 
@@ -52,8 +78,18 @@ std::pair<TP, TP> lin_regres( const std::vector<TP> &vxVec,
 	auto sx = corrSumOfSquares( vxVec, vdxVector, mean_x );
 	//// std::cout << "corrSumOfSquares X: " << sx << std::endl;
 	/* Corrected sum of squares S_{yy} */
-	/* auto sy =*/ corrSumOfSquares( vyVec, vdyVector, mean_y );
+#if DO_ERROR
+	  auto sy = 
+#endif
+    /*auto sy =*/ corrSumOfSquares( vyVec, vdyVector, mean_y );
 	//// std::cout << "corrSumOfSquaresn Y: " << sy << std::endl;
+
+#if DO_ERROR
+    auto varX = sx / vdxVector.size();
+    auto varY = sy / vdyVector.size();
+
+    auto cov = covariance(vxVec, vyVec, mean_x, mean_y);
+#endif
 
 	/* Corrected sum of cross products S_{xy}.
 	 * Can be computed without auxiliary vectors.
@@ -76,7 +112,34 @@ std::pair<TP, TP> lin_regres( const std::vector<TP> &vxVec,
 	/* intercept (a): a = mean(Y) - b * mean(X) */
 	TP intercept = mean_y - slope * mean_x;
 	//std::cout << "intercept: " << intercept << std::endl;
-	
+
+	/// TP reg_ss = (sum_xy*sum_xy) / sx;
+
+	TP total_ss = 0;
+	for (auto y : vyVec)
+		total_ss += (y - mean_y) * (y - mean_y);
+    
+    //old error
+	//// TP error = ( total_ss - reg_ss ) / (vyVec.size() - 2);
+#if DO_ERROR
+    double r_den = std::sqrt(varX*varY);
+    double r = 0;
+    if (r_den == 0.0)
+        r = 0.0;
+    else
+    {
+        r = cov / r_den;
+        // test for numerical error propagation
+        if (r > 1.0)
+            r = 1.0;
+        else if (r < -1.0)
+            r = -1.0;
+    }// else
+	TP error = std::sqrt( (1-r*r)*varY / varX / (vxVec.size()-2) );
+    if(vyVec.size() > 2)
+        std::cout << "lin reg ERROR: " << error << std::endl;
+#endif
+
 	return std::pair<TP, TP>( std::atan(slope), -intercept/slope);
 } // function
 

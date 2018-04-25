@@ -11,6 +11,8 @@
 // The NW library:
 #include "gaba.h"
 
+#define ALLOCATE_ONCE ( 0 )
+
 namespace libMA
 {
     /**

@@ -90,13 +90,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     iExtend = iExtend_;
     iGap = iGap_;
     iMissMatch = iMisMatch_;
-    uiMaxGapArea = bLocal ? uiMaxGapArea_ : 0;
-    uiPadding = uiPadding_;
-
-    bool bToGlobal = bLocal && fMappingQualMin > 0;
-
-    if(uiNumSOC < uiReportNBest)
-        throw AlignerException("cannot report more alignments than computed (increase strip of consideration amount)");
+    uiMaxGapArea = uiMaxGapArea_;
+    //uiPadding = uiPadding_;
 
     //setup all modules
 
@@ -105,14 +100,17 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs, uiMinAmbiguity, uiMaxAmbiguity));
     std::shared_ptr<Module> pSOC(new StripOfConsideration(
         uiMaxAmbiguity, uiNumSOC, bLocal ? 0 : fMinAllowedScore, fGiveUp, 0));
-    std::shared_ptr<Module> pCouple(
-            new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep()), true, uiNumNW)
-        );
+    std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
+    pCouple->fScoreTolerace = 0.1;
+    pCouple->bLocal = bLocal;
+    pCouple->uiMaxTries = 25;
+    pCouple->uiMaxEqualScoreLookahead = 3;
+    pCouple->fScoreDiffTolerance = 0.001;
+
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
         std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), true, 0));
     std::shared_ptr<Module> pMapping(new MappingQuality(uiReportNBest));
-    std::shared_ptr<Module> pToGlobal(new LocalToGlobal(fMappingQualMin));
 
     //modules for the paired alignment
     bool bPaired = bPariedNormal || bPariedUniform;
@@ -165,7 +163,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                 pCouple, 
                 std::vector<std::shared_ptr<Pledge>>
                 {
-                    pSOCs
+                    pSOCs, pQuery
                 }
             );
         //the optimal matching stage
@@ -174,17 +172,6 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     std::vector<std::shared_ptr<Pledge>>
                     {
                         pCoupled,
-                        pQuery,
-                        pPack
-                    }
-                );
-        //convert local to global alignment if map qual is to low
-        if(bToGlobal)
-            pOptimal = Module::promiseMe(
-                    pToGlobal, 
-                    std::vector<std::shared_ptr<Pledge>>
-                    {
-                        pOptimal,
                         pQuery,
                         pPack
                     }
@@ -238,7 +225,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     pCouple, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
-                        pSOCs2
+                        pSOCs2, pQuery2
                     }
                 );
             //the optimal matching stage
@@ -251,16 +238,6 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                         pPack
                     }
                 );
-            if(bToGlobal)
-                pOptimal2 = Module::promiseMe(
-                        pToGlobal, 
-                        std::vector<std::shared_ptr<Pledge>>
-                        {
-                            pOptimal2,
-                            pQuery2,
-                            pPack
-                        }
-                    );
             //assign a mapping quality
             std::shared_ptr<Pledge> pAlignments2 = Module::promiseMe(
                     pMapping, 

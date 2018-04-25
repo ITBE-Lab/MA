@@ -43,6 +43,9 @@ namespace libMA
     class Alignment : public Container
     {
     public:
+#if DEBUG_LEVEL >= 1
+            std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vGapsScatter;
+#endif
         /// The sparse list of MatchTypes that describe the alignment.
         std::vector<std::tuple<MatchType, nucSeqIndex>> data;
         /// The length of the alignment.
@@ -111,6 +114,27 @@ namespace libMA
             uiEndOnRef(uiBeginOnRef),
             uiBeginOnQuery(uiBeginOnQuery),
             uiEndOnQuery(uiBeginOnQuery),
+            xStats(),
+            bSecondary(false)
+        {}//constructor
+
+        /**
+         * @brief Creates an empty alignment, 
+         * where the interval of the reference that is used is already known.
+         */
+        Alignment(
+                nucSeqIndex uiBeginOnRef,
+                nucSeqIndex uiBeginOnQuery,
+                nucSeqIndex uiEndOnRef,
+                nucSeqIndex uiEndOnQuery
+            )
+                :
+            data(),
+            uiLength(0),
+            uiBeginOnRef(uiBeginOnRef),
+            uiEndOnRef(uiEndOnRef),
+            uiBeginOnQuery(uiBeginOnQuery),
+            uiEndOnQuery(uiEndOnQuery),
             xStats(),
             bSecondary(false)
         {}//constructor

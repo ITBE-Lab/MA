@@ -46,7 +46,7 @@ namespace sample_consensus
     // Desired probability of choosing at least one sample free from outliers
     this->probability_    = 0.99;
     // Maximum number of trials before we give up.
-    this->max_iterations_ = 10000;
+    this->max_iterations_ = 100;
 
     this->iterations_ = 0;
   }

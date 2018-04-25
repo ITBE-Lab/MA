@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/linesweep.h"
+#include "sample_consensus/test_ransac.h"
 using namespace libMA;
 
 extern int iGap;
@@ -138,34 +139,72 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         auto pSeeds = std::make_shared<Seeds>();
         if(pSeedsIn->size() > 1)
         {
-            std::vector<double> vX, vY;
-            vX.reserve(pSeedsIn->size());
-            vY.reserve(pSeedsIn->size());
 
+            DEBUG(
+                pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
+                pSoCIn->vExtractOrder.back().rStartSoC = pSeedsIn->front().start_ref();
+                pSoCIn->vExtractOrder.back().rEndSoC = pSeedsIn->front().end_ref();
+            )// DEBUG
 
             assert(!pSeedsIn->empty());
             nucSeqIndex uiCurrSoCScore = 0;
             for(const auto& rSeed : *pSeedsIn)
             {
                 uiCurrSoCScore += rSeed.size();
-                vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
-                vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
+                DEBUG(
+                    pSoCIn->vExtractOrder.back().rStartSoC = std::min(
+                        pSoCIn->vExtractOrder.back().rStartSoC,
+                        rSeed.start_ref()
+                    );
+                    pSoCIn->vExtractOrder.back().rEndSoC = std::max(
+                        pSoCIn->vExtractOrder.back().rEndSoC,
+                        rSeed.end_ref()
+                    );
+                )// DEBUG
             }// for
 
             DEBUG(
-                pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
                 pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
                 pSoCIn->vIngroup.push_back(std::make_shared<Seeds>());
             )
-#if 0 // switch between ransac line angle + intercept estimation & 45deg median line
-            auto xSlopeIntercept = run_ransac(vX, vY, pSoCIn->vIngroup.back());
+#if 1 // switch between ransac line angle + intercept estimation & 45deg median line
+            std::vector<double> vX, vY;
+            vX.reserve(pSeedsIn->size());
+            vY.reserve(pSeedsIn->size());
+            for(const auto& rSeed : *pSeedsIn)
+            {
+                vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
+                vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
+            }// for
+            /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
+            double fMAD = medianAbsoluteDeviation<double>( vY );
+            auto xSlopeIntercept = run_ransac(vX, vY, /*pSoCIn->vIngroup.back(),*/ fMAD);
+
 #else
+            double fMAD = 300;
             auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
             auto xSlopeIntercept = std::make_pair(
                     ( 3.0 / 4.0 ) * 3.14159265 / 2.0,//forty five degrees
                     (double)rMedianSeed.start_ref() - (double)rMedianSeed.start()
                 );
 #endif
+            /*
+             * remove outliers
+             */
+            std::remove_if (
+                pSeedsIn->begin(), 
+                pSeedsIn->end(), 
+                [&]
+                (const Seed& rS)
+                {
+                    return 
+                        deltaDistance(
+                                rS, 
+                                xSlopeIntercept.first, 
+                                xSlopeIntercept.second
+                            ) > fMAD;
+                }
+            );
 
             if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
                 break;
@@ -216,7 +255,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
             pSeeds->bConsistent = true;
 
-            DEBUG(pSoCIn->vHarmSoCs.push_back(pSeeds);)
+            DEBUG(pSoCIn->vHarmSoCs.push_back(pSeeds);)// DEBUG
 
             // seeds need to be sorted for the following steps
             std::sort(
@@ -228,6 +267,11 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     return xA.start_ref() < xB.start_ref();
                 }//lambda
             );//sort function call
+
+            DEBUG(
+                pSoCIn->vExtractOrder.back().rStart = pSeeds->front().start_ref();
+                pSoCIn->vExtractOrder.back().rEnd = pSeeds->back().end_ref();
+            )// DEBUG
 
             /*
             * sometimes we have one or less seeds remaining after the cupling:
@@ -246,19 +290,26 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             }// if
             assert(!pSeeds->empty());
 
+
             /*
-            * FILTER:
-            * do a gap cost estimation [ O(n) ]
-            * this does not improve quality but performance
-            * since we might remove some seeds that are too far from another
-            * 
-            * this is much like the backtracking in SW/NW
-            * we make sure that we can only have a positive score
-            */
+             * FILTER:
+             * do a gap cost estimation [ O(n) ]
+             * this does not improve quality but performance
+             * since we might remove some seeds that are too far from another
+             *
+             * this is much like the backtracking in SW/NW
+             * we make sure that we can only have a positive score
+             * 
+             * Also enforces that no gap is larger than max_gap either on query or reference
+             * 
+             * Can simply be dis- and en-abled, since it's only effect is to delete some seeds.
+             */
+#if 1
+            
             //running score
-            unsigned long uiScore = iMatch * pSeeds->front().size();
+            int64_t iScore = iMatch * pSeeds->front().size();
             //maximal score
-            nucSeqIndex uiMaxScore = uiScore;
+            nucSeqIndex uiMaxScore = iScore;
             //points to the last seed that had a score of 0
             Seeds::iterator pLastStart = pSeeds->begin();
             //outcome
@@ -273,7 +324,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             {
                 assert(pSeed->start() <= pSeed->end());
                 //adjust the score correctly
-                uiScore += iMatch * pSeed->size();
+                iScore += iMatch * pSeed->size();
                 /*
                 * we need to extract the gap between the seeds in order to do that.
                 * we will assume that any gap can be spanned by a single indel
@@ -291,12 +342,12 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     {
                         uiGap -= pSeed->start_ref() - (pSeed-1)->start_ref();
                         if(optimisticGapEstimation)
-                            uiScore += iMatch * (pSeed->start_ref() - (pSeed-1)->start_ref());
+                            iScore += iMatch * (pSeed->start_ref() - (pSeed-1)->start_ref());
                     }//if
                     else
                     {
                         if(optimisticGapEstimation)
-                            uiScore += iMatch * uiGap;
+                            iScore += iMatch * uiGap;
                         uiGap = (pSeed->start_ref() - (pSeed-1)->start_ref()) - uiGap;
                     }//else
                 }//if
@@ -311,22 +362,22 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     uiGapX = 0;
                 if( //check for the maximal allowed gap area
                         //uiMaxGapArea == 0 -> disabled
-                        ( uiGapX > uiMaxGapArea && uiGapY != 0 )
+                        ( uiMaxGapArea > 0 && uiGapX > uiMaxGapArea && uiGapY != 0 )
                             ||
-                        ( uiGapY > uiMaxGapArea && uiGapX != 0  )
+                        ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
                             ||
                         //check for negative score
-                        uiScore < uiGap
+                        iScore < (int64_t)uiGap
                     )
                 {
-                    uiScore = 0;
+                    iScore = 0;
                     pLastStart = pSeed;
                 }//if
                 else
-                    uiScore -= uiGap;
-                if(uiScore > uiMaxScore)
+                    iScore -= uiGap;
+                if(iScore > (int64_t)uiMaxScore)
                 {
-                    uiMaxScore = uiScore;
+                    uiMaxScore = iScore;
                     pOptimalStart = pLastStart;
                     pOptimalEnd = pSeed;
                 }//if
@@ -339,12 +390,12 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             *
             * We then simply remove all known suboptimal seeds
             * this is an optimistic estimation so some suboptimal regions might remain
-            * 
+            *
             * NOTE: order is significant!
             * """
             * --- Iterator validity ---
             * Iterators, pointers and references pointing to position (or first) and beyond are
-            * invalidated, with all iterators, pointers and references to elements before position
+            *             * invalidated, with all iterators, pointers and references to elements before position
             * (or first) are guaranteed to keep referring to the same elements they were referring to
             * before the call.
             * """
@@ -354,6 +405,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     pSeeds->erase(pOptimalEnd, pSeeds->end());
             if(pOptimalStart != pSeeds->end())
                 pSeeds->erase(pSeeds->begin(), pOptimalStart);
+#endif
 
         }// if
         else // pSeedsIn contains merely one seed
@@ -375,6 +427,9 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
 
+        if(uiCurrHarmScore < pQuery->length() * 0.01 )
+            continue;
+
 
         DEBUG(
             std::vector<bool> vQCoverage(pQuery->length(), false);
@@ -390,11 +445,12 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 if(b)
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
-
+#if 1
         const nucSeqIndex uiSwitchQLen = 800;
-        // Prof. Kutzners killer filter:
+        // Prof. Kutzners filter:
         if (pQuery->length() > uiSwitchQLen)
         {
+
             if(uiLastHarmScore > uiCurrHarmScore)
                 continue;
         }// if
@@ -411,7 +467,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 break;
             }// else
         }// else
-
+#endif
         uiLastHarmScore = uiCurrHarmScore;
 
         pSoCs->push_back(pSeeds);
