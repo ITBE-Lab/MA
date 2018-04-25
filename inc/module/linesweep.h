@@ -107,7 +107,7 @@ namespace libMA
          * True -> the gapcost is estimated optimistically (as small as possible)
          * False -> we assume that the score for matches/missmatches is roughly equal within the gap
          * 
-         * @note not beeing optimistic here has no negative affect on the accuracy
+         * @note not beeing optimistic here has negative affect on the accuracy
          * but improves runtime significantly
          */
         bool optimisticGapEstimation = true;
