@@ -1005,13 +1005,14 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=0, specific_id=specific_id)
+    # min_ambiguity=3
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1192,7 +1193,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
             return
     print("Having equal db entries")
 
-def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True):
+def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True, show_coverage=True):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
     plots = [ [], [] ]
@@ -1299,7 +1300,10 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         plot.xaxis.formatter = tick_formater
         plot.xaxis.ticker = FixedTicker(ticks=[0, 4, 8, 12, 16, 20])
         plot.rect(x_hover, y_hover, width, height, color=c_hover, line_alpha=0)
-        plot.rect('x', 'y', width*4/5, height*4/5, color='c', line_alpha=0, source=source)
+        if show_coverage:
+            plot.rect('x', 'y', width*4/5, height*4/5, color='c', line_alpha=0, source=source)
+        else:
+            plot.rect('x', 'y', width*4/5, height*4/5, color='c', fill_alpha =0, line_alpha=0, source=source)
 
         color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
@@ -1809,11 +1813,11 @@ exit()
 
 #createSampleQueries(plasmodium_genome, "plas_deletion.db", 1000, 100, 32, validate_using_sw=True, in_to_del_ratio=0)
 #run_sw_for_sample("plas_deletion.db", plasmodium_genome, 1205)
-test_my_approaches("plas_deletion.db", plasmodium_genome)
+#test_my_approaches("plas_deletion.db", plasmodium_genome, specific_id=1277)
 #exit()
-test("plas_deletion.db", plasmodium_genome)
-analyse_all_approaches_depre("plas_deletion.html","plas_deletion.db", num_tries=1)
-exit()
+#test("plas_deletion.db", plasmodium_genome)
+#analyse_all_approaches_depre("plas_deletion.html","plas_deletion.db", num_tries=1)
+#exit()
 
 #l = 200
 #il = 10

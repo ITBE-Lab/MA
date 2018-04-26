@@ -173,8 +173,23 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             vY.reserve(pSeedsIn->size());
             for(const auto& rSeed : *pSeedsIn)
             {
+#if 0
+                //failed experiment
+                for(unsigned int uiLen = 0; uiLen <= rSeed.size(); uiLen+= 1 )
+                {
+                    vX.push_back( (double)rSeed.start_ref() + uiLen);
+                    vY.push_back( (double)rSeed.start() + uiLen);
+                }//for
+#else
                 vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
                 vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
+
+                vX.push_back( (double)rSeed.start_ref());
+                vY.push_back( (double)rSeed.start());
+
+                vX.push_back( (double)rSeed.start_ref() + rSeed.size());
+                vY.push_back( (double)rSeed.start() + rSeed.size());
+#endif
             }// for
             /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
             double fMAD = medianAbsoluteDeviation<double>( vY );
@@ -427,13 +442,10 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
 
-        // @todo this value is only good for 30000 nt...
-        if(uiCurrHarmScore < pQuery->length() * 0.0015 )
+        if(uiCurrHarmScore < 18 )
             continue;
-
-        //if(uiCurrHarmScore < pQuery->length() * 0.007 )
-        //    continue;
-
+        if(uiCurrHarmScore < pQuery->length() * 0.05 )
+            continue;
 
         DEBUG(
             std::vector<bool> vQCoverage(pQuery->length(), false);
