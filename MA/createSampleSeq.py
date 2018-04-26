@@ -54,6 +54,7 @@ def setUpDbTables(conn, reset = False):
         c.execute("DROP TABLE IF EXISTS samples_optima")
         c.execute("DROP TABLE IF EXISTS results")
         c.execute("DROP TABLE IF EXISTS runtimes")
+        c.execute("DROP TABLE IF EXISTS total_runtime")
 
     c.execute("""
                 CREATE TABLE IF NOT EXISTS samples
@@ -93,6 +94,14 @@ def setUpDbTables(conn, reset = False):
                 (
                     num_mutation INTEGER,
                     num_indels INTEGER,
+                    run_time REAL,
+                    approach TINYTEXT
+                )
+                """)
+
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS total_runtime
+                (
                     run_time REAL,
                     approach TINYTEXT
                 )
@@ -398,6 +407,42 @@ def getApproachesWithData(db_name):
                         SELECT DISTINCT approach
                         FROM results
                     """).fetchall()
+
+def getTotalRuntime(db_name, approach):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT run_time
+                        FROM total_runtime
+                        WHERE approach = ?
+                    """, (approach,) ).fetchall()
+
+def putTotalRuntime(db_name, approach, runtime):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+
+    #@todo eventually this should be deleted
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS total_runtime
+                (
+                    run_time REAL,
+                    approach TINYTEXT
+                )
+                """)
+
+    c.execute("""
+                DELETE FROM total_runtime 
+                WHERE approach = ?
+                """, (approach,))
+    c.executemany("""
+                    INSERT INTO total_runtime 
+                    (
+                        approach,
+                        run_time
+                    )
+                    VALUES (?,?)
+                    """, [(approach, runtime)] )
+    conn.commit()
 
 def getOptimalPositions(db_name):
     conn = sqlite3.connect(db_name)
@@ -930,7 +975,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
             for result in results.vMaxPos:
                 #convert hits on the reverse complement to their forward strand positions
                 if result >= forward_strand_length:
-                    result = forward_strand_length*2 - (result - original_size)
+                    result = forward_strand_length*2 - (result - size)
                 optima_list.append( (sample_id, result) )
         submitOptima("/MAdata/db/" + db_name, optima_list)
         if not quiet:

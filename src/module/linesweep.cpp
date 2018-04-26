@@ -416,7 +416,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 pSoCIn->vExtractOrder.back().first = pSeedsIn->front().size();
                 pSoCIn->vSlopes.push_back(0);
                 pSoCIn->vIntercepts.push_back(0);
-                pSoCIn->vHarmSoCs.push_back(pSeeds);
+                pSoCIn->vHarmSoCs.push_back(std::make_shared<Seeds>(pSeeds));
             )// DEBUG
         }
 
@@ -427,7 +427,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
 
-        if(uiCurrHarmScore < pQuery->length() * 0.05 )
+        // @todo this value is only good for 30000 nt...
+        if(uiCurrHarmScore < pQuery->length() * 0.0015 )
             continue;
 
         //if(uiCurrHarmScore < pQuery->length() * 0.007 )
@@ -450,10 +451,9 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         )// DEBUG
 #if 1
         const nucSeqIndex uiSwitchQLen = 800;
-        // Prof. Kutzners filter:
+        // Prof. Kutzners filter: (is this equivalent to just always looking at the best SoC..?)
         if (pQuery->length() > uiSwitchQLen)
         {
-
             if(uiLastHarmScore > uiCurrHarmScore)
                 continue;
         }// if

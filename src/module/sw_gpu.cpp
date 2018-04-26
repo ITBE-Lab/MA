@@ -3,32 +3,10 @@
  * @author Markus Schmidt
  */
 #include "module/sw_gpu.h"
+#include "module/module.h"
+#include "container/nucSeq.h"
 using namespace libMA;
 
-// @fixme this is not supposed to be here...
-class GPUReturn
-{
-public:
-    int iMaxScore;
-    std::vector<size_t> vMaxPos;
-    GPUReturn(int iMaxScore, std::vector<size_t> vMaxPos)
-            :
-        iMaxScore(iMaxScore),
-        vMaxPos(vMaxPos)
-    {}// default constructor
-    GPUReturn(){}
-
-    bool operator==(const GPUReturn& rOther)
-    {
-        return iMaxScore == rOther.iMaxScore;
-    }// operator
-};// class
-
-extern std::vector<GPUReturn> cudaAlign
-(
-    std::vector<char> &rvRefSeq, // reference sequence
-	std::vector<std::vector<char>> &rvQuerySeqs // vector of query sequences
-);
 
 std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std::shared_ptr<NucSeq> b)
 {

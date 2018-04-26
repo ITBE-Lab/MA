@@ -197,9 +197,9 @@ def test_my_approach(
         ls.min_coverage = min_coverage
         ls.tolerance = 0.1
         ls.local = local
-        ls.max_tries = 25
+        ls.max_tries = 50
         ls.equal_score_lookahead = 3 # 5
-        ls.diff_tolerance = 0.001
+        ls.diff_tolerance = 0.0001  # 0.001 26.04.18
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
@@ -404,6 +404,8 @@ def test_my_approach(
             total_time += pledge.exec_time
         print("total Time: ", total_time)
 
+        putTotalRuntime(db_name, name, total_time)
+
         # @note temporary debug code
 
         #output_file("seedpos.html")
@@ -442,18 +444,22 @@ def test_my_approach(
 
                     plot.line([intercept, intercept+max_y], [0, max_y*slope], color="green", line_width=4, line_alpha=0.5)
 
-                    X = np.array(x)[:, np.newaxis]
-                    y = np.array(y)
-                    ransac = linear_model.RANSACRegressor()
-                    ransac.fit(X, y)
-                    print(alignment.stats.index_of_strip, "py residual_threshold:", np.median(np.abs(y - np.median(y))))
-                    plot.cross(X[ransac.inlier_mask_].flatten(), y[ransac.inlier_mask_], color="magenta", size=10)
-                    line_x = np.arange(X.min(), X.max())
-                    line_X = line_x[:, np.newaxis]
-                    line_y = ransac.predict(line_X)
-                    slope2, intercept2, r_value2, p_value2, error2 = stats.linregress(X[ransac.inlier_mask_].flatten(), y[ransac.inlier_mask_])
-                    print("python regression ERROR:", error2)
-                    plot.line(line_x, line_y, color="magenta", line_width=4, line_alpha=0.5)
+                    try:
+                        X = np.array(x)[:, np.newaxis]
+                        y = np.array(y)
+                        ransac = linear_model.RANSACRegressor()
+                        ransac.fit(X, y)
+                        print(alignment.stats.index_of_strip, "py residual_threshold:", np.median(np.abs(y - np.median(y))))
+                        plot.cross(X[ransac.inlier_mask_].flatten(), y[ransac.inlier_mask_], color="magenta", size=10)
+                        line_x = np.arange(X.min(), X.max())
+                        line_X = line_x[:, np.newaxis]
+                        line_y = ransac.predict(line_X)
+                        slope2, intercept2, r_value2, p_value2, error2 = stats.linregress(X[ransac.inlier_mask_].flatten(), y[ransac.inlier_mask_])
+                        print("python regression ERROR:", error2)
+                        plot.line(line_x, line_y, color="magenta", line_width=4, line_alpha=0.5)
+                    except:
+                        print("Python ransac failed")
+                        pass
 
                     show(plot)
 
@@ -999,13 +1005,13 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=0, specific_id=specific_id)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1189,7 +1195,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
 def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
-    plots = [ [], [], [] ]
+    plots = [ [], [] ]
 
     approaches = getApproachesWithData(db_name)
 
@@ -1306,9 +1312,14 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         approach = approach_[0]
         accuracy, coverage, runtime, alignments, fails = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits)
 
-        plots[0].append(makePicFromDict(accuracy, "accuracy " + approach, desc2=fails, inner=coverage))
-        plots[1].append(makePicFromDict(runtime, "runtime " + approach))
-        plots[2].append(makePicFromDict(alignments, "max tries " + approach, set_max=500))
+        tot_runtime = ""
+        runtime_tup = getTotalRuntime(db_name, approach)
+        if len(runtime_tup) > 0:
+            tot_runtime = " [" + str(runtime_tup[0][0])[:5] + " ms]"
+
+        plots[0].append(makePicFromDict(accuracy, "accuracy " + approach + tot_runtime, desc2=fails, inner=coverage))
+        plots[1].append(makePicFromDict(alignments, "max tries " + approach, set_max=500))
+        #plots[2].append(makePicFromDict(runtime, "runtime " + approach))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
     plots.append([makePicFromDict(sw_accuracy, "sw accuracy", inner=sw_coverage)])
@@ -1697,6 +1708,30 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
+###
+### RUN SW for one sample
+###
+def run_sw_for_sample(db_name, genome, sample_id):
+    sequence, _ = getQueries("/MAdata/db/" + db_name, sample_id)[0]
+    
+    print("loading pack...")
+    ref_pack = Pack()
+    ref_pack.load(genome)    
+    ref = ref_pack.extract_complete()
+    print("done")
+
+    print("gpu computation...")
+    alignment = libMA.testGPUSW(ContainerVector(NucSeq(sequence)), ref)[0]
+    print("done")
+
+    print("SW-score:", alignment.iMaxScore)
+    for maxpos in alignment.vMaxPos:
+        print("SW-pos:", maxpos)
+
+    origin, _ = getOrigin("/MAdata/db/" + db_name, sample_id)
+    print("Orig-Pos:", origin)
+
+
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
 #get_ambiguity_distribution("/MAdata/genome/human_bugged", 1, 100)
 #get_ambiguity_distribution(plasmodium_genome)
@@ -1770,6 +1805,16 @@ exit()
 #print("human genome:")
 #createSampleQueries(plasmodium_genome, "plasmodium_30000.db", 30000, 100, 32, validate_using_sw=False)
 
+
+
+#createSampleQueries(plasmodium_genome, "plas_deletion.db", 1000, 100, 32, validate_using_sw=True, in_to_del_ratio=0)
+#run_sw_for_sample("plas_deletion.db", plasmodium_genome, 1205)
+test_my_approaches("plas_deletion.db", plasmodium_genome)
+#exit()
+test("plas_deletion.db", plasmodium_genome)
+analyse_all_approaches_depre("plas_deletion.html","plas_deletion.db", num_tries=1)
+exit()
+
 #l = 200
 #il = 10
 #test("human_short.db", human_genome)
@@ -1779,15 +1824,15 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 test_my_approaches("plasmodium_200.db", plasmodium_genome)
-#test("sw_human.db", human_genome)
+test("plasmodium_200.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
 
 test_my_approaches("plasmodium_30000.db", plasmodium_genome)
-#test("sw_human.db", human_genome)
+test("plasmodium_30000.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_30000.html","plasmodium_30000.db", num_tries=1)
 
 test_my_approaches("plasmodium_1000.db", plasmodium_genome)
-#test("sw_human.db", human_genome)
+test("plasmodium_1000.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 #analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
 exit()

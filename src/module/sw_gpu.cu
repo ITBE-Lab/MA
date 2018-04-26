@@ -25,12 +25,17 @@
 	#include "cuda_runtime_api.h"
 #endif
 
+#include "module/sw_gpu.h"
 #include "module/sw_gpu_config.h"
 #include "module/sw_gpu_defines.h"
 #include "module/sw_gpu_kernel.h"
 
+#if ( USE_THREADPOOL == 1)
+	#include "util/threadPool.h"
+#endif
+
 #if ( DO_TESTS == 1 ) // define in config.h
-	#include "SW_naive.h"
+	#include "../SW_naive.h"
 #endif
 
 /* Random nucleotide sequence of length uiLen, represented as codes.
@@ -48,11 +53,46 @@ std::vector<char> randomNucleoitdeCodesSeq( const size_t uiLen )
 	return vNucSeq;
 } // function
 
-int xScoreMatrix[NUM_OF_SYMBOLS][NUM_OF_SYMBOLS] = { {3, -4, -4, -4},
-													 {-4, 3, -4, -4},
-													 {-4, -4, 3, -4},
-													 {-4, -4, -4, 3} };
+int xScoreMatrix[NUM_OF_SYMBOLS][NUM_OF_SYMBOLS] = { {10, -3, -3, -3},
+													 {-3, 10, -3, -3},
+													 {-3, -3, 10, -3},
+													 {-3, -3, -3, 10} };
 
+/* See http://en.cppreference.com/w/cpp/types/aligned_storage
+ */
+template<class T, std::size_t N>
+class static_vector
+{
+	// properly aligned uninitialized storage for N T's
+	typename std::aligned_storage<sizeof(T), alignof(T)>::type data[N];
+	std::size_t m_size = 0;
+
+public:
+	// Create an object in aligned storage
+	template<typename ...Args> void emplace_back(Args&&... args) 
+	{
+		if( m_size >= N ) // possible error handling
+			throw std::bad_alloc{};
+		new(data+m_size) T(std::forward<Args>(args)...);
+		++m_size;
+	}
+
+	// Access an object in aligned storage
+	const T& operator[](std::size_t pos) const 
+	{
+		// note: needs std::launder as of C++17
+		return *reinterpret_cast<const T*>(data+pos);
+	}
+
+	// Delete objects from aligned storage
+	~static_vector() 
+	{
+		for(std::size_t pos = 0; pos < m_size; ++pos) {
+			// note: needs std::launder as of C++17
+			reinterpret_cast<T*>(data+pos)->~T();
+		}
+	}
+}; // class
 
 
 //// // Texture reference for the query profile.
@@ -212,6 +252,44 @@ public:
 }; // GPU_CardInformer
 
 
+template<typename ELEMENT_TYPE>
+class AlignedHostVector {
+public:
+	ELEMENT_TYPE *pHost; // The anchor of the host vector
+	size_t uiSize; // size of host array in elements
+	size_t uiSizeInBytes; // size of host array in bytes
+
+	/* Constructor */
+	AlignedHostVector( size_t uiSize ) :
+		uiSize( uiSize ),
+		uiSizeInBytes( uiSize * sizeof(ELEMENT_TYPE) )
+	{
+		cudaMallocHost( (void**)&this->pHost, uiSizeInBytes );
+		CUERR
+	} // constructor
+
+	/* Delete copy constructor */
+	AlignedHostVector(const AlignedHostVector& that) = delete;
+
+	/* Move constructor */
+	AlignedHostVector( AlignedHostVector&& rOther ) noexcept 
+		: pHost ( rOther.pHost ),
+		uiSize( rOther.uiSize )
+	{
+		std::cout << "AlignedHostVector move constructor" << std::endl;
+		pHost = NULL;
+		uiSize = 0;
+	} // Move Constructor
+
+	  /* Destructor */
+	~AlignedHostVector()
+	{
+		if( pHost != NULL )
+			cudaFreeHost( this->pHost );
+	} // destructor
+}; // class
+
+
 /* Wrapper for device vector.
  * Introduction to unified memory: 
  * http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd
@@ -221,10 +299,14 @@ class DeviceVector {
 public:
 	const size_t uiCapacity; // size of vector on device in elements
 
+	/* Cache for the device vector */
+	std::shared_ptr<std::vector<T_ELEMENT_TYPE>> pvSharedBackup = nullptr;
+
 private:
 	const size_t uiCapacityInBytes; // capacity of the vector in bytes
 	bool bInUnifiedMemory; // flag that tells about unified memory
 	size_t uiBytesUsed; // number of bytes filled by the last update of the vector
+	std::unique_ptr<std::vector<T_ELEMENT_TYPE>> pHostCopy; // buffer for an host copy of device vector
 
 	void copyDeviceToHost( void *pDestAddr )
 	{
@@ -234,7 +316,13 @@ private:
 		} // if
 		else
 		{	/* We have to copy via cudaMemcpyHostToDevice */
-			cudaMemcpy( pDestAddr, this->pvAnchor, this->uiCapacityInBytes, cudaMemcpyDeviceToHost );
+			metaMeasureAndLogDuration<false>
+				(	"cudaMemcpy get device requires",	// text message
+					[&] () // lambda by reference
+				{
+					cudaMemcpy( pDestAddr, this->pvAnchor, this->uiCapacityInBytes, cudaMemcpyDeviceToHost );
+				} // lambda
+			); // function call
 			CUERR
 		} // else
 	} // method
@@ -261,8 +349,8 @@ public:
 		bInUnifiedMemory( false ), // set unified memory flag (later use bAskForUnifiedMemory and check the card properties)
 		uiBytesUsed( 0 )
 	{
-		size_t uiFreeMemBefore, uiFreeMemAfter, uiTotalMem;
-		cudaMemGetInfo( &uiFreeMemBefore, &uiTotalMem );
+		//// size_t uiFreeMemBefore, uiFreeMemAfter, uiTotalMem;
+		//// cudaMemGetInfo( &uiFreeMemBefore, &uiTotalMem );
 		
 		if( bInUnifiedMemory )
 		{	/* Allocate unified memory */
@@ -274,11 +362,13 @@ public:
 		} // else
 		CUERR //  TO DO: Raise exception
 
-		cudaMemGetInfo( &uiFreeMemAfter, &uiTotalMem );
+		/* Continue here be creating this vector if required */
+		//// pHostCopy = std::make_unique<std::vector<T_ELEMENT_TYPE>>( this->uiCapacity );
+
+		//// cudaMemGetInfo( &uiFreeMemAfter, &uiTotalMem );
 		//// std::cout << "RAW: " << uiCapacityInBytes << " Real: " << uiFreeMemBefore - uiFreeMemAfter 
 		//// 		  << " DIFF: " << (long)(uiFreeMemBefore - uiFreeMemAfter) - (long)uiCapacityInBytes << std::endl;
 	} // constructor
-
 
 	/* Constructor
 	 * Vector is initialized by host-vector.
@@ -304,7 +394,14 @@ public:
 		} // if
 		else
 		{	/* We have to copy via cudaMemcpyHostToDevice */
-			cudaMemcpy( this->pvAnchor, &rvSequenceNoConst[0], this->uiBytesUsed, cudaMemcpyHostToDevice );
+			metaMeasureAndLogDuration<false>
+			(	"cudaMemcpy update device requires",	// text message
+					[&] () // lambda by reference
+				{
+					cudaMemcpy( this->pvAnchor, &rvSequenceNoConst[0], this->uiBytesUsed, cudaMemcpyHostToDevice );
+				} // lambda
+			); // function call
+			
 		} // else
 		CUERR
 	} // constructor
@@ -317,20 +414,50 @@ public:
 		CUERR
 	} // method
 
+	/* Get a shared pointer to the backup vector */
+	inline std::shared_ptr<std::vector<T_ELEMENT_TYPE>> getSharedBackup()
+	{
+		assert( this->pvSharedBackup != nullptr );
+		return this->pvSharedBackup;
+	} // method
 
+
+	/* Update the backup vector */
+	void updateSharedBackup()
+	{
+		if( this->pvSharedBackup == nullptr )
+			this->pvSharedBackup = std::make_shared<std::vector<T_ELEMENT_TYPE>>( this->uiCapacity );
+
+		this->copyDeviceToHost( &(*(this->pvSharedBackup))[0] );
+	} // method
+
+
+	/* The Host-vector should be aligned for maximum performance */
 	void getCopyIntoVector( std::vector<T_ELEMENT_TYPE> &rvHostVector )
 	{
 		rvHostVector.resize( this->uiCapacity );
 		this->copyDeviceToHost( &rvHostVector[0] );
 	} // method
 
+
 	/* Get a copy of the device-vector on host-side as STL-vector.
 	 * This is quite expensive, because the vector must not be pinned.
 	 */
 	std::vector<T_ELEMENT_TYPE> getCopyAsVector() 
-	{
-		std::vector<T_ELEMENT_TYPE> vReturnedVector( this->uiCapacity );
+	{	
+		std::vector<T_ELEMENT_TYPE> vReturnedVector( this->uiCapacity ); // time expensive
 		this->copyDeviceToHost( &vReturnedVector[0] );
+		return vReturnedVector;
+	} // method
+
+
+	/* Get a copy of the device-vector on host-side as aligned Host Vector.
+	 * Copy for these vectors is a bit faster than for STL-vectors, but allocation takes more time.
+	 */
+	AlignedHostVector<T_ELEMENT_TYPE> getCopyAsAlignedHostVector()
+	{
+		AlignedHostVector<T_ELEMENT_TYPE> vReturnedVector( this->uiCapacity ); // time expensive
+		this->copyDeviceToHost( vReturnedVector.pHost );
 		return vReturnedVector;
 	} // method
 
@@ -401,7 +528,7 @@ public:
 
 
 	/* Delivers device anchor for row with index uiIndex */
-	T_ELEMENT_TYPE* operator[] (unsigned int uiIndex )
+	T_ELEMENT_TYPE* operator[] (size_t uiIndex )
 	{	
 		assert( uiIndex < this->uiHeight );
 		return reinterpret_cast<T_ELEMENT_TYPE *>(this->pCudaAnchor + (uiIndex * this->uiPitch));
@@ -485,14 +612,14 @@ public:
 	/* Delivers device anchor for row with index uiIndex.
 	 * Delivers a pair consisting of a device-vector and stripe-size.
 	 */
-	std::pair<SCORE_TP4*, size_t> operator[] ( unsigned int uiStripeIndex )
+	std::pair<SCORE_TP4*, size_t> operator[] ( size_t uiStripeIndex )
 	{	
 		assert( uiStripeIndex < this->uiNumberOfStripes );
 		/* Size of requested stripe (of stripe uiIndex) */
 		size_t uiRemainder = this->uiSize % STRIPE_WIDTH;
-		size_t uiStripeSize = uiStripeIndex >= this->uiNumberOfStripes - 1 
-								? (uiRemainder == 0 ? STRIPE_WIDTH : uiRemainder) // is last stripe 
-								: STRIPE_WIDTH; // is some inner stripe
+		size_t uiStripeSize = uiStripeIndex >= this->uiNumberOfStripes - 1
+									? (uiRemainder == 0 ? STRIPE_WIDTH : uiRemainder) // is last stripe 
+									: STRIPE_WIDTH; // is some inner stripe
 		assert( uiStripeSize > 0 );
 		return std::make_pair( xDeviceVector[uiStripeIndex], uiStripeSize );
 	} //method
@@ -555,7 +682,6 @@ public:
 //// 		rxDeviceVector.copyToArray( &vHostBackup[0] );
 //// 	} // method
 //// }; // class
-
 
 /* - Can transpose sequence (reference) for efficient GPU-processing
  * - Can pack/unpack sequences
@@ -631,67 +757,6 @@ public:
 
 		return vReturnedSeq;
 	} // method
-#if ( USE_PACKED == 1 )
-	/* Packs a vector vertically in-place. (works for integer types only)
-	 * For byte: (two 4-bit symbols are placed in one 8-bit char) 
-	 */
-	void pack2Vertically( std::vector<ELEMENT_TYPE> &rvSeq )
-	{	/* TO DO: Check rvSeq.size() % 2 == 0 */
-		auto uiMiddle = rvSeq.size() / 2;
-		/* Shifting is expressed in bits! */
-		uint8_t uiLeftShifting = (sizeof( ELEMENT_TYPE ) * 8) / 2;
-		ELEMENT_TYPE uiRightSideMask = ~((~(static_cast<ELEMENT_TYPE>(0))) << uiLeftShifting);
-
-		for (size_t uiRow = 0; uiRow < uiMiddle; uiRow++)
-		{
-			rvSeq[uiRow] =	  (rvSeq[uiRow] << uiLeftShifting) 
-							| (rvSeq[uiMiddle + uiRow] & uiRightSideMask);
-		} // for
-
-		/* Shrink the vector to half it's size */
-		rvSeq.resize( uiMiddle );
-	} // method
-
-	/* Inverts the effect of pack2Vertically. (works for integer types only)
-	 */
-	static void unpack2Vertically( std::vector<ELEMENT_TYPE> &rvSeq )
-	{	/* TO DO: Check rvSeq.size() % 2 == 0 */
-		size_t uiSeqSize = rvSeq.size();
-		/* Double size of the vector */
-		rvSeq.resize( rvSeq.size() * 2 );
-		/* Shifting is expressed in bits! */
-		uint8_t uiRightShifting = (sizeof( ELEMENT_TYPE ) * 8) / 2;
-		ELEMENT_TYPE uiRightSideMask = ~((~(static_cast<ELEMENT_TYPE>(0))) << uiRightShifting);
- 
-		for (size_t uiRow = 0; uiRow < uiSeqSize; uiRow++)
-		{
-			rvSeq[uiSeqSize + uiRow] = rvSeq[uiRow] & uiRightSideMask;
-			rvSeq[uiRow] = rvSeq[uiRow] >> uiRightShifting;
-		} // for
-	} // method
-
-	/* Unpacking of uint2 vectors is required for debugging purposes merely.
-	 * int2 on argument position should be uint2.
-	 */
-	static std::vector<int2> unpackint2_2Vertically( std::vector<int2> &rvSeq )
-	{
-		const size_t uiSeqSize = rvSeq.size();
-		std::vector<int2> vReturnedSeq( uiSeqSize * 2 );
-		/* Shifting is expressed in bits! */
-		uint8_t uiRightShifting = sizeof( short ) * 8;
-		int uiRightSideMask = ~((~(static_cast<int>(0))) << uiRightShifting);
-
-		for (size_t uiRow = 0; uiRow < uiSeqSize; uiRow++)
-		{
-			vReturnedSeq[uiRow].x = static_cast<int>(rvSeq[uiRow].x) >> uiRightShifting;
-			vReturnedSeq[uiRow].y = static_cast<int>(rvSeq[uiRow].y) >> uiRightShifting;
-			vReturnedSeq[uiSeqSize + uiRow].x = static_cast<int>(rvSeq[uiRow].x) & uiRightSideMask;
-			vReturnedSeq[uiSeqSize + uiRow].y = static_cast<int>(rvSeq[uiRow].y) & uiRightSideMask;
-		} // for
-
-		return vReturnedSeq;
-	} // method
-#endif
 }; // class
 
 
@@ -926,7 +991,7 @@ template<typename SCORE_TP4, // (int4 for 32 bit, int4 for 2x16 bit
 		 typename SCORE_TP2, // (int2 for 32 bit, uint2 for 2x16 bit)
 		 typename SCORE_TP, // (int for 32 bit, unsigned int for 2x16 bit)
 		 typename CHECKSUM_TP, // 
-		 size_t STRIP_WIDTH> // width of the strips used for GPU kernel calls
+		 unsigned int STRIP_WIDTH> // width of the strips used for GPU kernel calls
 class SW_GPU_Processor : SW_GPU_MemoryCalculator<SCORE_TP4, SCORE_TP2, SCORE_TP, CHECKSUM_TP>
 {
 public:
@@ -965,6 +1030,11 @@ public:
 	// Host-copy of the LazyFixedVector
 	std::unique_ptr<char[]> pContinuationFlags; // size: uiNumberOfSegments
 
+#if ( USE_THREADPOOL == 1)
+	ThreadPool xThreadPool;
+	std::future<bool> xMaxExtractSuccess;
+#endif
+
 #if ( DO_TESTS == 1 )
 	std::vector<char> vRefSeqDebug; // Pointer to reference sequence for debugging
 #endif
@@ -997,27 +1067,14 @@ public:
 		uiRefCapicity( uiRequestedSize > 0 ? uiRequestedSize // 0 indicates user wishes specific size.
 									   : this->maximalNumberOfRows( STRIP_WIDTH, uiNumberOfSegments ) ),
 		
-#if ( USE_PACKED == 1 )
-		/* The below code is obsolete */
-		uiPackedRefSeqSize( uiRefSeqSize / 2 ),
-		uiSegementSize( uiPackedRefSeqSize / uiNumberOfSegments ),
-#else
 		/* Segments size is initially 0. This indicates that no reference has been loaded so far */
 		uiSegmentSize( 0 ),
-#endif
-		
+
 		/* Initialize the vectors and scoring profile */
-#if ( USE_PACKED == 1 )
-		xHF_VectorOne( uiPackedRefSeqSize ),
-		xHF_VectorTwo( uiPackedRefSeqSize ),
-		xM_Vector( uiPackedRefSeqSize ),
-		xC_Vector( uiPackedRefSeqSize ),
-#else
 		xHF_VectorOne( uiRefCapicity, true ),
 		xHF_VectorTwo( uiRefCapicity, true ),
 		xM_Vector( uiRefCapicity, true ),
 		xC_Vector( uiRefCapicity, false ),
-#endif
 
 		xHE_CarryOverVector( STRIP_WIDTH, false ),
 		xHE_CacheOne( uiNumberOfSegments * STRIP_WIDTH, true ),
@@ -1031,6 +1088,10 @@ public:
 #if ( DO_TESTS == 1 )
 		//// , vRefSeqDebug( NULL )
 #endif
+#if ( USE_THREADPOOL == 1)
+		, xThreadPool( 1 )
+#endif
+
 	{	/* Reference size must be a multiple of number of segments */
 		assert( uiRefCapicity % uiNumberOfSegments == 0 );
 
@@ -1083,9 +1144,7 @@ public:
 	 */
 	void storeHE_Backup( const size_t uiStripeId, // id of the stripe which receives a backup
 						 std::vector<SCORE_TP2> &rvBackupVector, // vector that receives the backup; has size of query
-						 //// SCORE_TP &rH_UpLeftValueBackup, // second component of backup, the H value-backup
 						 DeviceVector<SCORE_TP2>* rxHE_Cache ) // current active HE-cache
-						 //// DeviceVector<SCORE_TP2>* rxHF_Vector ) // current active HF-vector
 	{
 		assert( (uiStripeId + 1) * STRIP_WIDTH <= rvBackupVector.size() );
 		assert( rxHE_Cache->uiCapacity == STRIP_WIDTH * this->uiNumberOfSegments ); 
@@ -1198,7 +1257,7 @@ public:
 				  this->xRefSeqTransposed.pvAnchor, // Address of reference on device
 				  pQueryProfileOfStripe, // Query-profile for stripe
 				  this->pLazyFixedVector.pvAnchor, // Communicates the need of a continuation
-				  this->uiSegmentSize, // Size of each segment (TILE_HEIGHT)
+				  (unsigned int)this->uiSegmentSize, // Size of each segment (TILE_HEIGHT)
 				  STRIP_WIDTH ); // The argument is only active in the case of FULL_STRIPE_WIDTH is false
 		} // if
 		else
@@ -1217,7 +1276,7 @@ public:
 				  this->xRefSeqTransposed.pvAnchor, // Address of reference on device
 				  pQueryProfileOfStripe, // Query-profile for stripe
 				  this->pLazyFixedVector.pvAnchor, // Communicates the need of a continuation
-				  this->uiSegmentSize, // Size of each segment (TILE_HEIGHT)
+				  (unsigned int)this->uiSegmentSize, // Size of each segment (TILE_HEIGHT)
 				  uiWidth ); // The argument is only active in the case of FULL_STRIPE_WIDTH is false
 		} // else
 		CUERR
@@ -1291,7 +1350,7 @@ public:
 	 * Changes: Instead of the query deliver the complete query profile.
 	 *		    Deliver a reference id, that indicates what reference shall be processed.
 	 */
-	void doQueryForRefSegment( QueryProfile<SCORE_TP4, SCORE_TP, STRIP_WIDTH> &rxQueryProfile,
+	void doQueryForChunk( QueryProfile<SCORE_TP4, SCORE_TP, STRIP_WIDTH> &rxQueryProfile,
 #if ( DO_TESTS == 1 )
 							   std::vector<char> &rvQuerySeq, 
 #endif
@@ -1323,14 +1382,15 @@ public:
 			 * HINT: This is quite expensive.
 			 * The profile could be fully prepared by the CPU before calling the GPU.
 			 */
-			auto xStripeData = rxQueryProfile[uiStripeId];
+			std::pair<SCORE_TP4*, size_t> xStripeData = rxQueryProfile[uiStripeId];
+			unsigned int uiStripWidth = static_cast<unsigned int>(xStripeData.second);
 			/* Compute matrix for the stripe*/
 			this->doStrip( bHF_VectorsReversed,
 							uiStripeId, // id of current stripe
 							rvHE_BackupVector, // HE-backup vector
 							iLeftUpH_Value, // set by reference in method
 							xStripeData.first, //// rxQueryProfile.xDeviceVector[uiStripeId],
-							xStripeData.second ); //// TILE_WIDTH ); // number of elements in stripe
+						    uiStripWidth ); //// TILE_WIDTH ); // number of elements in stripe
 			
 			/* The HF-vectors must be swap after each call of updateTile */
 			bHF_VectorsReversed = !bHF_VectorsReversed;
@@ -1344,13 +1404,13 @@ public:
 	} // method
 
 
-	void doQueryForSegmentedReference( std::vector<char> &rvQuerySeq, // query
-									   const ChunkedTransposedReference &rxSegmentedReference, // reference in segmented form
-									   std::vector<size_t> &rvMaxScorePositions, // vector receives maximum positions
-									   SCORE_TP &iOverallMaxScore)  // vector that logs the maximum-score positions
+	void doQueryForChunkedReference( std::vector<char> &rvQuerySeq, // query
+									 const ChunkedTransposedReference &rxChunkedRef, // reference in segmented form
+									 std::vector<size_t> &rvMaxScorePositions, // vector receives maximum positions
+									 SCORE_TP &iOverallMaxScore )  // vector that logs the maximum-score positions
 	{	
-		assert( rxSegmentedReference.uiChunkSize == this->uiRefCapicity );
-		assert( rxSegmentedReference.uiSegmentSize == this->uiSegmentSize );
+		assert( rxChunkedRef.uiChunkSize == this->uiRefCapicity );
+		assert( rxChunkedRef.uiSegmentSize == this->uiSegmentSize );
 		
 		/* Create the query profile */
 		QueryProfile<SCORE_TP4, SCORE_TP, STRIP_WIDTH> xQueryProfile( rvQuerySeq.size() );
@@ -1367,7 +1427,7 @@ public:
 		//// std::vector<SCORE_TP> vM_Buffer_Vector;
 
 		/* Iterate over all reference chunks. */
-		for( size_t uiChunkId = 0; uiChunkId < rxSegmentedReference.uiNumberOfChunks; uiChunkId++ )
+		for( size_t uiChunkId = 0; uiChunkId < rxChunkedRef.uiNumberOfChunks; uiChunkId++ )
 		{	/* Load the required reference segment into device */
 			/* TO DO: We clear to many vectors over here. */
 			this->clearDeviceVectors();
@@ -1377,8 +1437,8 @@ public:
 			(	"Time for loading reference",	// text message
 				[&] () // lambda by reference
 				{
-					//// this->loadReference( *(rxSegmentedReference.vChunks[uiChunkId]) );
-					this->loadReference( *(rxSegmentedReference.getChunk( uiChunkId ) ) );
+					//// this->loadReference( *(rxChunkedRef.vChunks[uiChunkId]) );
+					this->loadReference( *(rxChunkedRef.getChunk( uiChunkId ) ) );
 				} // lambda
 			); // function call
 
@@ -1387,7 +1447,7 @@ public:
 			(	"Time for kernel execution", // text message
 				[&] () // lambda by reference
 				{
-					this->doQueryForRefSegment( xQueryProfile,
+					this->doQueryForChunk( xQueryProfile,
 #if ( DO_TESTS == 1 )
 												rvQuerySeq, // for test we require the original query sequence
 #endif
@@ -1395,26 +1455,56 @@ public:
 				} // lambda
 			); // function call
 
-			//// metaMeasureAndLogDuration<true>
-			//// (	"Time for copying maximum scores",	// text message
-			//// 	[&] () // lambda by reference
-			//// 	{
-			//// 		this->xM_Vector.getCopyIntoVector( vM_Buffer_Vector ); 
-			//// 	} // lambda
-			//// ); // function call
-			
 			/* Extract the maximum score and positions of the maximum score */
+			this->xM_Vector.updateSharedBackup();
+			
+#if (USE_THREADPOOL == 1)
+			if( this->xMaxExtractSuccess.valid() )
+			{	/* The future is active and we have to block until 
+				 * work of the previous maximum extraction is done 
+				 */
+				bool wait = this->xMaxExtractSuccess.get();
+			} // if
+			
+			/* Set the future by queuing in the Threadpool */
+			this->xMaxExtractSuccess
+				= this->xThreadPool.enqueue( [&] ( size_t uiThreadId, size_t uiChunkIdLoc )
+				{
+					//// std::cout << "Thread " << uiThreadId << " starts max extraction" << std::endl;
+					this->extractMaxima( rvMaxScorePositions,
+										 iOverallMaxScore,
+										 rxChunkedRef.numOfSymUsedInChunk( uiChunkIdLoc ),
+										 uiChunkIdLoc * rxChunkedRef.uiChunkSize );
+					//// std::cout << "Thread " << uiThreadId << " ends max extraction" << std::endl;
+					return true;
+				}, // lambda
+				
+				uiChunkId
+			); // enqueue
+#else			
 			metaMeasureAndLogDuration<true>
 			(	"Time for extracting maximum scores",	// text message
 				[&] () // lambda by reference
 				{
 					this->extractMaxima( rvMaxScorePositions,
 										 iOverallMaxScore,
-										 rxSegmentedReference.numOfSymUsedInChunk( uiChunkId ),
-										 uiChunkId * rxSegmentedReference.uiChunkSize );
+										 rxChunkedRef.numOfSymUsedInChunk( uiChunkId ),
+										 uiChunkId * rxChunkedRef.uiChunkSize );
 				} // lambda
 			); // function call
+		
+#endif
 		} // for
+
+#if (USE_THREADPOOL == 1)
+		/* We have to wait until the final maximum extraction finished */
+		if( this->xMaxExtractSuccess.valid() )
+		{	/* The future is active and we have to block until work is done */
+			//// std::cout << "WAIT FOR FINISHING MAX EXTRACTION" << std::endl;
+			bool wait = this->xMaxExtractSuccess.get();
+		} // if
+		//// std::cout << "MAX EXTRACTION DONE" << std::endl;
+#endif
 
 		/* Sort the vector that comprises all maximum positions */
 		std::sort( rvMaxScorePositions.begin(), rvMaxScorePositions.end() );
@@ -1430,27 +1520,17 @@ public:
 						const size_t offset ) // reference offset for calculating the original position
 	{
 		assert( uiNumOfSymUsedInChunk > 0 && uiNumOfSymUsedInChunk <= this->uiRefCapicity );
-		
-		/* Fetch the ME-vector from the device */
-		auto pME_Vector_Hostcopy = this->xM_Vector.getCopyAsVector( ); 
-		//// std::vector<SCORE_TP> pME_Vector_Hostcopy;
-		//// metaMeasureAndLogDuration<false>
-		//// (	"Get maximum vector",	// logging text
-		//// 	 [&] () { pME_Vector_Hostcopy = xM_Vector.getCopyAsVector(); }
-		//// ); // function call
 
-		/* This is quite expensive */
-		//// pME_Vector_Hostcopy = SequenceTransformer<SCORE_TP>::inverseTransposedSeq( pME_Vector_Hostcopy, this->uiSegmentSize );
-#if ( USE_PACKED == 1 )
-		SequenceTransformer<SCORE_TP>::unpack2Vertically( pME_Vector_Hostcopy );
-#endif // USE_PACKED
+		/* Fetch the ME-vector from the device */
+		auto pME_VectorBackup = this->xM_Vector.getSharedBackup();
+		auto &rvME_VectorBackup = *pME_VectorBackup;
 
 		/* Find all maximum positions (done on CPU side).
 		* (The maximum search could be done efficiently by a reduce kernel on GPU side)
 		*/
 		for( size_t uiItr = 0; uiItr < this->uiRefCapicity; uiItr++ )
 		{
-			if( pME_Vector_Hostcopy[uiItr] >= iOverallMaxScore )
+			if( rvME_VectorBackup[uiItr] >= iOverallMaxScore )
 			{
 				size_t uiSymPosInChunk = rowIdOptimizedToStandard( uiItr );
 				if( uiSymPosInChunk >= uiNumOfSymUsedInChunk )
@@ -1458,10 +1538,10 @@ public:
 					continue;
 				} // if
 				
-				if( pME_Vector_Hostcopy[uiItr] > iOverallMaxScore )
+				if( rvME_VectorBackup[uiItr] > iOverallMaxScore )
 				{	// fresh overall maximum detected 
 					rvMaxScorePositions.clear();
-					iOverallMaxScore = pME_Vector_Hostcopy[uiItr];
+					iOverallMaxScore = rvME_VectorBackup[uiItr];
 				} // if
 #if	( OPTIMIZED_INDEXING == 0 )
 				rvMaxScorePositions.push_back( this->rowIdOptimizedToStandard( uiRow ) );
@@ -1562,26 +1642,6 @@ public:
 }; // class
 
 
-
-class GPUReturn
-{
-public:
-    int iMaxScore;
-    std::vector<size_t> vMaxPos;
-    GPUReturn(int iMaxScore, std::vector<size_t> vMaxPos)
-            :
-        iMaxScore(iMaxScore),
-        vMaxPos(vMaxPos)
-    {}// default constructor
-    GPUReturn(){}
-
-    bool operator==(const GPUReturn& rOther)
-    {
-        return iMaxScore == rOther.iMaxScore;
-    }// operator
-};// class
-
-
 /* Main function for ongoing CUDA work.
  * Returned value: Maximum score.
  * 32 bit scoring: <int4, int2, int, int>
@@ -1594,13 +1654,13 @@ std::vector<GPUReturn> cudaAlignTmpl
 ) 
 {	/* Do checks and reset device */
 	assert( sizeof( SCORE_TP4 ) == 4 * sizeof( SCORE_TP ) && sizeof( SCORE_TP2 ) == 2 * sizeof( SCORE_TP ) );
+	
+	/* Reset all GPU devices */
 	cudaDeviceReset();
 	
-	/* The raw size of the reference.
-	 */
+	/* The raw size of the reference.*/
 	size_t uiRefSize = rvRefSeq.size();
 
-	//// assert( uiRefSize == REFERENCE_SIZE );
 	size_t uiRefChunkCapicity = CHUNK_SIZE; // depends on the memory available
 	SW_GPU_Processor<SCORE_TP4, SCORE_TP2, SCORE_TP, CHECKSUM_TP, TILE_WIDTH> xSW_GPU_Processor
 	(	0, // device id 
@@ -1616,7 +1676,7 @@ std::vector<GPUReturn> cudaAlignTmpl
 	 * For queries against the same reference this has to be done only once!
 	 */
 	ChunkedTransposedReference xChunkedReference( rvRefSeq, // reference sequence
-												  uiRefChunkCapicity, // primary segment size (should be equal to stripe capacity)
+												  uiRefChunkCapicity, // primary segment size (should be equal to strip capacity)
 												  xSW_GPU_Processor.uiNumberOfSegments ); // secondary segment size
 	
     std::vector<GPUReturn> vRet; 
@@ -1628,11 +1688,11 @@ std::vector<GPUReturn> cudaAlignTmpl
         std::vector<size_t> vMaxScorePositions;
 
 	    /* Do the core alignment */
-	    metaMeasureAndLogDuration<false>
+	    metaMeasureAndLogDuration<true>
 	    (	"GPU time",	// logging text
 	    	[&] () // lambda by reference
 	    	{
-	    		xSW_GPU_Processor.doQueryForSegmentedReference
+	    		xSW_GPU_Processor.doQueryForChunkedReference
 	    		( rvQuerySeq, // query
 	    		  xChunkedReference, // reference in segmented form
 	    		  vMaxScorePositions, // vector that receives maximum positions
@@ -1640,12 +1700,23 @@ std::vector<GPUReturn> cudaAlignTmpl
 	    	} // lambda
 	    ); // function call
 
-        std::cout << "iOverallMaxScore: " << iOverallMaxScore << std::endl;
+        //// std::cout << "iOverallMaxScore: " << iOverallMaxScore << std::endl;
         vRet.emplace_back( iOverallMaxScore, vMaxScorePositions );
     } // for (iterating queries)
 
 	return vRet;
 } // function
+
+size_t getNumberOfCards()
+{
+	int iDeviceCount; 
+
+	cudaGetDeviceCount( &iDeviceCount );
+	CUERR
+
+	return iDeviceCount;
+} // function
+
 
 std::vector<GPUReturn> cudaAlign
 (
@@ -1655,3 +1726,57 @@ std::vector<GPUReturn> cudaAlign
 {
     return cudaAlignTmpl<int4, int2, int, int>(rvRefSeq, rvQuerySeqs);
 };
+
+#if 0
+std::vector<GPUReturn> cudaAlignPool
+(
+	std::vector<char> &rvRefSeq, // reference sequence
+	std::vector<std::vector<char>> &rvQuerySeqs // vector of query sequences
+)
+{
+	auto uiNumberOfCards = getNumberOfCards();
+	std::cout << "Number of cards: " << uiNumberOfCards << std::endl;
+
+	ThreadPool xThreadPool(uiNumberOfCards);
+
+	std::vector< std::future<GPUReturn> > results;
+
+	for ( size_t i = 0; i < rvQuerySeqs.size(); i++ )
+	{	/* i must be passed by value into the lambda */
+		results.push_back( xThreadPool.enqueue(
+			[i] ( size_t uiThreadId )
+			{
+				cudaAlign()
+			//// std::cout << "Thread " << uiThreadId << " starts max extraction" << std::endl;
+				this->extractMaxima( rvMaxScorePositions,
+									 iOverallMaxScore,
+									 rxChunkedRef.numOfSymUsedInChunk( uiChunkIdLoc ),
+									 uiChunkIdLoc * rxChunkedRef.uiChunkSize );
+				//// std::cout << "Thread " << uiThreadId << " ends max extraction" << std::endl;
+				return true;
+			} // lambda
+		)); 
+		
+			for ( size_t i = 0; i < results.size(); ++i )
+				BOOST_LOG_TRIVIAL( trace ) << "*** See result for " << i << " as " << results[i].get();
+		// std::cout << results[i].get() << ' ';
+
+
+
+		xThreadPool.enqueue( [i] ( size_t id, int j ) { itemWorker( i, id, j ); }, 6 );
+	} // for
+
+	this->xMaxExtractSuccess
+		
+
+									 uiChunkId
+		); // enqueue
+
+	std::future<GPUReturn> xMaxExtractSuccess;
+
+
+	
+	// return cudaAlignTmpl<int4, int2, int, int>(rvRefSeq, rvQuerySeqs);
+	return std::vector<GPUReturn>();
+};
+#endif
