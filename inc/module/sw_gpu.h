@@ -31,7 +31,8 @@ public:
 std::vector<GPUReturn> cudaAlign
 (
     std::vector<char> &rvRefSeq, // reference sequence
-	std::vector<std::vector<char>> &rvQuerySeqs // vector of query sequences
+	std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
+    unsigned int uiDeviceId
 );
 
 /**

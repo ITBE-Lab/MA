@@ -1715,7 +1715,7 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 ###
 ### RUN SW for one sample
 ###
-def run_sw_for_sample(db_name, genome, sample_id):
+def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
     sequence, _ = getQueries("/MAdata/db/" + db_name, sample_id)[0]
     
     print("loading pack...")
@@ -1725,7 +1725,7 @@ def run_sw_for_sample(db_name, genome, sample_id):
     print("done")
 
     print("gpu computation...")
-    alignment = libMA.testGPUSW(ContainerVector(NucSeq(sequence)), ref)[0]
+    alignment = libMA.testGPUSW(ContainerVector(NucSeq(sequence)), ref, gpu_id)[0]
     print("done")
 
     print("SW-score:", alignment.iMaxScore)
@@ -1828,15 +1828,15 @@ exit()
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 test_my_approaches("plasmodium_200.db", plasmodium_genome)
-test("plasmodium_200.db", plasmodium_genome)
+#test("plasmodium_200.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
 
 test_my_approaches("plasmodium_30000.db", plasmodium_genome)
-test("plasmodium_30000.db", plasmodium_genome)
+#test("plasmodium_30000.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_30000.html","plasmodium_30000.db", num_tries=1)
 
 test_my_approaches("plasmodium_1000.db", plasmodium_genome)
-test("plasmodium_1000.db", plasmodium_genome)
+#test("plasmodium_1000.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 #analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
 exit()

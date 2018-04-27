@@ -1650,7 +1650,8 @@ public:
 template<typename SCORE_TP4, typename SCORE_TP2, typename SCORE_TP, typename CHECKSUM_TP>
 std::vector<GPUReturn> cudaAlignTmpl
 (   std::vector<char> &rvRefSeq, // reference sequence
-	std::vector<std::vector<char>> &rvQuerySeqs // vector of query sequences
+	std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
+    unsigned int uiDeviceId
 ) 
 {	/* Do checks and reset device */
 	assert( sizeof( SCORE_TP4 ) == 4 * sizeof( SCORE_TP ) && sizeof( SCORE_TP2 ) == 2 * sizeof( SCORE_TP ) );
@@ -1663,7 +1664,7 @@ std::vector<GPUReturn> cudaAlignTmpl
 
 	size_t uiRefChunkCapicity = CHUNK_SIZE; // depends on the memory available
 	SW_GPU_Processor<SCORE_TP4, SCORE_TP2, SCORE_TP, CHECKSUM_TP, TILE_WIDTH> xSW_GPU_Processor
-	(	0, // device id 
+	(	uiDeviceId, // device id 
 		uiRefChunkCapicity ); // capacity for single reference chunk
 	
 	/* Set the segment size according to the freshly loaded reference.
@@ -1721,10 +1722,11 @@ size_t getNumberOfCards()
 std::vector<GPUReturn> cudaAlign
 (
     std::vector<char> &rvRefSeq, // reference sequence
-	std::vector<std::vector<char>> &rvQuerySeqs // vector of query sequences
+	std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
+    unsigned int uiDeviceId
 )
 {
-    return cudaAlignTmpl<int4, int2, int, int>(rvRefSeq, rvQuerySeqs);
+    return cudaAlignTmpl<int4, int2, int, int>(rvRefSeq, rvQuerySeqs, uiDeviceId);
 };
 
 #if 0

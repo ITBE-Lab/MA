@@ -163,11 +163,15 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 )// DEBUG
             }// for
 
+            if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
+                break;
+            uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
+
             DEBUG(
                 pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
                 pSoCIn->vIngroup.push_back(std::make_shared<Seeds>());
             )
-#if 1 // switch between ransac line angle + intercept estimation & 45deg median line
+#if 0 // switch between ransac line angle + intercept estimation & 45deg median line
             std::vector<double> vX, vY;
             vX.reserve(pSeedsIn->size());
             vY.reserve(pSeedsIn->size());
@@ -195,14 +199,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             double fMAD = medianAbsoluteDeviation<double>( vY );
             auto xSlopeIntercept = run_ransac(vX, vY, /*pSoCIn->vIngroup.back(),*/ fMAD);
 
-#else
-            double fMAD = 300;
-            auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
-            auto xSlopeIntercept = std::make_pair(
-                    ( 3.0 / 4.0 ) * 3.14159265 / 2.0,//forty five degrees
-                    (double)rMedianSeed.start_ref() - (double)rMedianSeed.start()
-                );
-#endif
             /*
              * remove outliers
              */
@@ -220,10 +216,14 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                             ) > fMAD;
                 }
             );
+#else
+            auto rMedianSeed = (*pSeedsIn)[pSeedsIn->size()/2];
+            auto xSlopeIntercept = std::make_pair(
+                    0.785398,//forty five degrees
+                    (double)rMedianSeed.start_ref() - (double)rMedianSeed.start()
+                );
+#endif
 
-            if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
-                break;
-            uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
             DEBUG(
                 pSoCIn->vSlopes.push_back(std::tan(xSlopeIntercept.first));
@@ -444,7 +444,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
         if(uiCurrHarmScore < 18 )
             continue;
-        if(uiCurrHarmScore < pQuery->length() * 0.05 )
+        if(uiCurrHarmScore < pQuery->length() * 0.002 )
             continue;
 
         DEBUG(

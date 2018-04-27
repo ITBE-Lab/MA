@@ -161,9 +161,9 @@ namespace libMA
             pRet->xStats.uiInitialRefEnd = xCollect2->end_ref();
             auto xCollectEnd = std::get<2>(vMaxima.front());
             while(
-                xCollect2 != pSeeds->end() &&
-                xCollect2 != xCollectEnd
-            )
+                    xCollect2 != pSeeds->end() &&
+                    xCollect2 != xCollectEnd
+                )
             {
                 // save the beginning and end of the SoC
                 // all these things are not used at the moment...

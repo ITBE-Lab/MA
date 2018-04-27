@@ -864,7 +864,7 @@ def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
     print("done")
 
 
-def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, validate_using_sw=False, quiet=False):
+def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, gpu_id=None, quiet=False):
     conn = sqlite3.connect("/MAdata/db/" + db_name)
 
     setUpDbTables(conn, reset)
@@ -958,7 +958,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         print("total amount: ", sum(nuc_distrib_count_orig))
     conn.commit()
     conn.close()
-    if validate_using_sw:
+    if gpu_id not None:
         if not quiet:
             print("computing optimal positions using SW...")
         ref_nuc_seq = ref_seq.extract_complete()
@@ -971,7 +971,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
             sample_ids.append(sample_id)
 
         optima_list = []
-        for results, sample_id in zip(libMA.testGPUSW(queries, ref_nuc_seq), sample_ids):
+        for results, sample_id in zip(libMA.testGPUSW(queries, ref_nuc_seq, gpu_id), sample_ids):
             for result in results.vMaxPos:
                 #convert hits on the reverse complement to their forward strand positions
                 if result >= forward_strand_length:
