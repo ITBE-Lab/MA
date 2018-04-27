@@ -72,7 +72,8 @@ def setUpDbTables(conn, reset = False):
                 CREATE TABLE IF NOT EXISTS samples_optima
                 (
                     sample_id INTEGER,
-                    optima INTEGER
+                    optima_start INTEGER,
+                    optima_end INTEGER
                 )
                 """)
 
@@ -230,7 +231,7 @@ def getOptima(db_name, sample_id):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     return c.execute("""
-                        SELECT optima
+                        SELECT optima_start, optima_end
                         FROM samples_optima
                         WHERE sample_id = ?
                         """, (sample_id,)).fetchall()
@@ -305,31 +306,36 @@ def submitOptima(db_name, results_list):
                     INSERT INTO samples_optima 
                     (
                         sample_id,
-                        optima
+                        optima_start,
+                        optima_end
                     )
-                    VALUES (?,?)
+                    VALUES (?,?,?)
                     """, results_list)
     conn.commit()
 
-def adjustOptima(db_name, forward_strand_length):
-    conn = sqlite3.connect("/MAdata/db/"+db_name)
-    c = conn.cursor()
-    optima = c.execute("""
-                    SELECT samples.sample_id, optima, original_size 
-                    FROM samples_optima
-                    JOIN samples on samples.sample_id = samples_optima.sample_id
-                    """).fetchall()
-    adjusted_optima = []
-    count = 0
-    for sample_id, optimum, original_size in optima:
-        if optimum >= forward_strand_length:
-            new_pos = forward_strand_length*2 - (optimum - original_size)
-            adjusted_optima.append( (sample_id, new_pos) )
-            count += 1
-        else:
-            adjusted_optima.append( (sample_id, optimum) )
-    submitOptima("/MAdata/db/"+db_name, adjusted_optima)
-    print("adjusted", count, "samples")
+
+
+#       DEPRECATED
+
+## def adjustOptima(db_name, forward_strand_length):
+##     conn = sqlite3.connect("/MAdata/db/"+db_name)
+##     c = conn.cursor()
+##     optima = c.execute("""
+##                     SELECT samples.sample_id, optima, original_size 
+##                     FROM samples_optima
+##                     JOIN samples on samples.sample_id = samples_optima.sample_id
+##                     """).fetchall()
+##     adjusted_optima = []
+##     count = 0
+##     for sample_id, optimum, original_size in optima:
+##         if optimum >= forward_strand_length:
+##             new_pos = forward_strand_length*2 - (optimum - original_size)
+##             adjusted_optima.append( (sample_id, new_pos) )
+##             count += 1
+##         else:
+##             adjusted_optima.append( (sample_id, optimum) )
+##     submitOptima("/MAdata/db/"+db_name, adjusted_optima)
+##     print("adjusted", count, "samples")
 
 def submitResults(db_name, results_list):
     conn = sqlite3.connect(db_name)
@@ -450,7 +456,8 @@ def getOptimalPositions(db_name):
     return c.execute("""
                         SELECT 
                             samples.sample_id,
-                            samples_optima.optima,
+                            samples_optima.optima_start,
+                            samples_optima.optima_end,
                             samples.original_size,
                             samples.num_mutation,
                             samples.num_indels,
@@ -515,11 +522,11 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
     # store the optimal positions in a dict of sample id
     optimal_pos = {}
     runtime = {}
-    for sample_id, optima_end, original_size, num_mutation, num_indels, origin in getOptimalPositions(db_name):
+    for sample_id, optima_start, optima_end, original_size, num_mutation, num_indels, origin in getOptimalPositions(db_name):
         if not sample_id in optimal_pos:
             optimal_pos[sample_id] = ([], num_mutation, num_indels, origin, origin+original_size)
         if allow_sw_hits and not optima_end is None:
-            optimal_pos[sample_id][0].append( (optima_end-original_size, optima_end) )
+            optimal_pos[sample_id][0].append( (optima_start, optima_end) )
 
 
     # iterate over all samples
@@ -617,11 +624,11 @@ def getAccuracyAndRuntimeOfSW(db_name):
 
     # store the optimal positions in a dict of sample id
     optimal_pos = {}
-    for sample_id, optima_end, original_size, num_mutation, num_indels, origin in getOptimalPositions(db_name):
+    for sample_id, optima_start, optima_end, original_size, num_mutation, num_indels, origin in getOptimalPositions(db_name):
         if not sample_id in optimal_pos:
             optimal_pos[sample_id] = ([], num_mutation, num_indels, origin, origin+original_size)
         if not optima_end is None:
-            optimal_pos[sample_id][0].append( (optima_end-original_size, optima_end) )
+            optimal_pos[sample_id][0].append( (optima_start, optima_end) )
 
 
     # iterate over all samples
@@ -958,7 +965,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         print("total amount: ", sum(nuc_distrib_count_orig))
     conn.commit()
     conn.close()
-    if gpu_id not None:
+    if gpu_id is not None:
         if not quiet:
             print("computing optimal positions using SW...")
         ref_nuc_seq = ref_seq.extract_complete()
@@ -966,17 +973,29 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         queries = ContainerVector(NucSeq())
         del queries[:]
         sample_ids = []
+        sorted_samples = {}
         for sequence, sample_id in getQueriesForOptimal("/MAdata/db/" + db_name):
             queries.append(NucSeq(sequence))
             sample_ids.append(sample_id)
+            sorted_samples[sample_id] = NucSeq(sequence)
 
         optima_list = []
         for results, sample_id in zip(libMA.testGPUSW(queries, ref_nuc_seq, gpu_id), sample_ids):
             for result in results.vMaxPos:
+                end = result
+                start = libMA.getBeginOnRef(
+                        sorted_samples[sample_id], 
+                        ref_seq.extract_from_to(end-5*size,end)
+                    ) + end-5*size
+
                 #convert hits on the reverse complement to their forward strand positions
-                if result >= forward_strand_length:
-                    result = forward_strand_length*2 - (result - size)
-                optima_list.append( (sample_id, result) )
+                if end >= forward_strand_length:
+                    start_ = forward_strand_length*2 - end
+                    end = forward_strand_length*2 - start
+                    start = start_
+                
+                #save the results
+                optima_list.append( (sample_id, start, end) )
         submitOptima("/MAdata/db/" + db_name, optima_list)
         if not quiet:
             print("done")

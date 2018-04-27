@@ -1749,31 +1749,6 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #get_ambiguity_distribution(human_genome)
 #exit()
 
-"""
-int iGap = 20;
-int iExtend = 1;
-int iMatch = 10;
-int iMissMatch = 4;
-
-MA:
-AATC--AGAT--ATTCTT        reference
-IIII  || |     III
-AATCCCAG-TGG---CTT        query
-
-libMA.debugNW(
-    NucSeq("AGATATT"),
-    NucSeq("CCAGTGG")
-)
-exit()
-smw = SMW(True)
-smw.print = True
-
-smw.execute(
-    NucSeq("AGATATT"),
-    NucSeq("CCAGTGG")
-)
-exit()
-"""
 
 #libMA.testKsw()
 #exit()
@@ -1781,34 +1756,15 @@ exit()
 #libMA.test_ransac()
 #exit()
 
-#createSampleQueries(human_genome, "sw_human_extend.db", 1000, 100, 32, reset=False, validate_using_sw=True)
+#createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db", 200, 20, 2048, reset=True, gpu_id=1)
+#test_my_approaches("sw_plasmodium_1000.db", plasmodium_genome)
+#analyse_all_approaches_depre("sw_plasmodium_1000.html","sw_plasmodium_1000.db", num_tries=1)
 #exit()
 
-
-#query = ContainerVector(NucSeq("ATGGGgAGACcTTTCCTTTTTCACCGTAGGCGTCAtGGCGATCGgcATGTCCACTTCCACAAcCTACAAAtAGAGTGTTTCAAtCCTaCTCTATGAAAGtCCATGgTCgTCTCTATGAGTCtAATGGtAATtTCCGAAAGAAATTTCTGGGcATGCTGCcaTCTAGTTaTTATACGAATTCCCGCTTCCAACGAAATtCTCAAAGCAATCCAAATtTCgACcTGCAGAATCtACAAAAAGAGTGTTTCAAcACTGCTCTATCAATAGAAAGGTTCAACTCTTgTAGTTGAGaACACACATCACAAACAAGTaTCTGAGAATGCTTtTGTCTGGCTTcTATTGGAAcACGTTTCCcTgTCACCAAcGGCATCAAAGCcCTCCAAATGTCCACTTCCAGATTCTTCTAAAAGAGTGTTTGAAACcTGCTCAtAGTAAGGGAATGTTCAACTCTGTGACTTGAAaGCAGATATCAaCAAGTAGTTTCTAATAGTGCTTCTGTCTAGAATaTAGATGAaGATgTTCCCGTTgCCcACGAAATCGTTAGAGCTATCCAAATATgCACTTACAGTTaCTACAAAAACAGTGTcTCtAAACTGCTGCAaCgAAAGAAAGGTTCAACTtTGTTAGTTGAGGAgACACGTCACAAAGAAGTgTGTGAGAATGCTTCTGTCCGTTTTTGTATGACGATAcTCCCTTTTCCAACtATATCGTgcAAGaAATCTAAATATCCATTTGCAGAATCCACAAAAATAGAGTTTCAAAGCTGCTCTGTAAAAAGAAAGGTTCCACTCTGTcAGCTGAGcACACACAaCACAAACTgGTCTCTCAGAATCCTTaTtTCTCGTTTTTATGGGAAGAgATTTgCTcTTTCACCGTAGGCcTCAAAGCGCTCCAAATGTCCAtATCCAGATACTCCtcAAAGAGTGTTTCAAACgTGCTCTATGAAAGGGAATCcTCAACTCTAgGAtTaGtATtCAGACATaAGAAAGAAATTTCgGAG"))
-#ref_pack = Pack()
-#ref_pack.load(zebrafish_genome)
-#print(ref_pack.unpacked_size_single_strand)
-#
-#ref = ref_pack.extract_complete()
-#
-#alignment = libMA.testGPUSW(query, ref)[0]
-#print(alignment.iMaxScore)
-#for maxpos in alignment.vMaxPos:
-#    print(maxpos)
-#exit()
 
 #create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)
 #test_my_approaches("/MAdata/db/illumina.db")
 #analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
-
-#high quality picture
-
-#print("zebrafish genome:")
-#createSampleQueries(zebrafish_genome, "zebrafish.db", 1000, 100, 32, validate_using_sw=False)
-#print("human genome:")
-#createSampleQueries(plasmodium_genome, "plasmodium_30000.db", 30000, 100, 32, validate_using_sw=False)
-
 
 
 #createSampleQueries(plasmodium_genome, "plas_deletion.db", 1000, 100, 32, validate_using_sw=True, in_to_del_ratio=0)
@@ -1819,12 +1775,6 @@ exit()
 #analyse_all_approaches_depre("plas_deletion.html","plas_deletion.db", num_tries=1)
 #exit()
 
-#l = 200
-#il = 10
-#test("human_short.db", human_genome)
-#createSampleQueries(working_genome, "bwaValidated.db", 1000, 100, 128, validate_using_bwa=True)
-#createSampleQueries(working_genome, "bwaValidatedShort.db", 200, 20, 128, validate_using_bwa=True)
-#createSampleQueries(working_genome, "bwaValidatedLong.db", 30000, 100, 128, validate_using_bwa=True)
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
 test_my_approaches("plasmodium_200.db", plasmodium_genome)
@@ -1843,80 +1793,6 @@ exit()
 #test("human_20000.db", human_genome)
 
 
-#try_out_parameters("/MAdata/db/parameters.db")
-
-#ref_pack = Pack()
-#ref_pack.load(human_genome)
-#
-#print(ref_pack.unpacked_size_single_strand*2 - 2000151048)
-##exit()
-##
-#for tup in getQuery("sw_human.db", 994):
-#    print(tup)
-##res = []
-##res2 = []
-#for tup in getOptima("sw_human.db", 994):
-#    print(tup[0])
-#    print(ref_pack.unpacked_size_single_strand*2 - tup[0])
-#tup = getOrigin("sw_human.db", 994)
-#print(tup[0])
-#print(ref_pack.unpacked_size_single_strand*2 - tup[0])
-#exit()
-#
-#ref1 = ref_pack.extract_from_to(3875127376-1000, 3875127376+1000)
-#ref2 = ref_pack.extract_from_to(3875127376-10000, 3875127376+10000)
-#query = ContainerVector(NucSeq(tup[1]))
-#
-#print("small")
-#for alignment in libMA.testGPUSW(query, ref1):
-#    print(alignment.iMaxScore)
-#    for maxpos in alignment.vMaxPos:
-#        print(maxpos)
-#
-#print("large")
-#for alignment in libMA.testGPUSW(query, ref2):
-#    print(alignment.iMaxScore)
-#    for maxpos in alignment.vMaxPos:
-#        print(maxpos)
-
-#print("full")
-#for alignment in libMA.testGPUSW(query, ref_pack.extract_complete()):
-#    print(alignment.iMaxScore)
-#    for maxpos in alignment.vMaxPos:
-#        print(maxpos)
-
-#    res.append(str(ref_pack.extract_from_to(tup[0]-500, tup[0])))
-#    res2.append(str(ref_pack.extract_from_to(tup[0]-100, tup[0])))
-##print(res)
-#print("500nt")
-#for r1 in res:
-#    for r2 in res:
-#        print(r1 == r2, end="\t")
-#    print()
-#print("100nt")
-#for r1 in res2:
-#    for r2 in res2:
-#        print(r1 == r2, end="\t")
-#    print()
-#print(getQuery("/MAdata/db/sw_zebrafish_temp.db", 427))
-
-#test("sw_human.db", zebrafish_genome)
-#analyse_all_approaches_depre("human.html","sw_human.db", num_tries=1)
-#analyse_all_approaches_depre("human_no_sw.html","sw_human.db", num_tries=5, allow_sw_hits=False)
-#analyse_all_approaches_depre("human_5_tries.html","sw_human.db", num_tries=5)
-#analyse_detailed("stats/", "/MAdata/db/test.db")
-#exit()
-
-#createSampleQueries(working_genome, "/MAdata/db/relevancetest.db", 1000, 50, 32)
-#createSampleQueries(working_genome, "/MAdata/db/relevance.db", 1000, 50, amount)
-#createSampleQueries(working_genome, "/MAdata/db/test_sw.db", 1000, 100, 32, only_first_row=True)
-
-#createSampleQueries(working_genome, "/MAdata/db/test.db", 1000, 100, 32, validate_using_sw=False, only_first_row=True)
-#exit()
-
-#import createIndices
-
-#createIndices.make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
 
 amount = 2**11
 
@@ -1960,46 +1836,3 @@ createSampleQueries(human_genome, "long.db", 30000, 100, amount)
 test("long.db", human_genome)
 analyse_all_approaches_depre("long.html","long.db", 1000, 200)
 
-#analyse_all_approaches("default.html","/MAdata/db/test.db", 1000, 100)
-#exit()
-
-#relevance("/MAdata/db/relevance.db")
-#analyse_all_approaches_depre("relevance.html","/MAdata/db/relevancetest.db", 1000, 50, 32, print_relevance=True)
-#exit()
-
-#test_my_approaches("/MAdata/db/shortIndels.db")
-#measure_time.test_all()
-#test_my_approaches("/MAdata/db/test_corner.db")
-
-
-#analyse_all_approaches_depre("test_depre_py.html","/MAdata/db/test.db", 1000, 100)
-#analyse_all_approaches_depre("test_depre_py.html","/MAdata/db/zoomLine.db", 1000, 100, 255)
-#analyse_all_approaches_depre("default_depre.html","/MAdata/db/short.db", 250, 25)
-#expecting_same_results("MA Fast PY 2", "MA Fast PY", "/MAdata/db/test.db", 1000, 100)
-#exit()
-
-
-
-#test_my_approaches("/MAdata/db/default.db")
-#test_my_approaches("/MAdata/db/short.db")
-#test_my_approaches("/MAdata/db/shortIndels.db")
-#test_my_approaches("/MAdata/db/longIndels.db")
-#test_my_approaches("/MAdata/db/insertionOnly.db")
-#test_my_approaches("/MAdata/db/deletionOnly.db")
-
-#analyse_all_approaches("test.html","/MAdata/db/test.db", 1000, 100)
-#analyse_all_approaches_depre("test_depre.html","/MAdata/db/test.db", 1000, 100)
-
-#analyse_all_approaches_depre("default.html","/MAdata/db/default.db", 1000, 100)
-#analyse_all_approaches_depre("default_depre.html","/MAdata/db/default.db", 1000, 100)
-
-#analyse_all_approaches("long.html","/MAdata/db/long.db", 30000, 100)
-#analyse_all_approaches_depre("short.html","/MAdata/db/short.db", 250, 25)
-#analyse_all_approaches("shortIndels.html","/MAdata/db/shortIndels.db", 1000, 50)
-#analyse_all_approaches("longIndels.html","/MAdata/db/longIndels.db", 1000, 100)
-#analyse_all_approaches("insertionOnly.html","/MAdata/db/insertionOnly.db", 1000, 100)
-#analyse_all_approaches("deletionOnly.html","/MAdata/db/deletionOnly.db", 1000, 100)
-#analyse_all_approaches("zoomLine.html","/MAdata/db/zoomLine.db", 1000, 100)
-#analyse_all_approaches("zoomSquare.html","/MAdata/db/zoomSquare.db", 1000, 100)
-
-#createSampleQueries(working_genome, "/MAdata/db/long.db", 30000, 100, amount)

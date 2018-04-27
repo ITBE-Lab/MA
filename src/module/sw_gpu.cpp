@@ -8,7 +8,7 @@
 using namespace libMA;
 
 
-std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std::shared_ptr<NucSeq> b)
+std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std::shared_ptr<NucSeq> b, unsigned int uiGpuId)
 {
 
     std::vector<std::vector<char>> vQueries;
@@ -23,7 +23,8 @@ std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std:
     auto vResults = cudaAlign
     (
         vRef,
-        vQueries
+        vQueries,
+        uiGpuId
     );
 
     return vResults;

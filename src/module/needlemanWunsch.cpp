@@ -170,6 +170,59 @@ public:
     }//operator
 };//class
 
+nucSeqIndex getBeginOnRef(
+        std::shared_ptr<NucSeq> pQuery,
+        std::shared_ptr<NucSeq> pRef
+    )
+{
+    //has to be exactly the same as for the gpu SW
+    int iMatch = 10;
+    int iMissMatch = 3;
+    int iGap = 6;
+    int iExtend = 1;
+    //make a local scope parasail matrix
+    parasail_matrix_t matrix;
+    std::vector<int> vMatrixContent;
+    matrix.name = "";
+    matrix.size = 4;
+    for(int i=0; i < 4; i++)
+    {
+        for(int j=0; j < 4; j++)
+        {
+            if(i == 4 || j == 4)
+                vMatrixContent.push_back(0);
+            if(i == j)
+                vMatrixContent.push_back(iMatch);
+            else
+                vMatrixContent.push_back(-iMissMatch);
+        }//for
+    }//for
+    matrix.matrix = &vMatrixContent[0];
+    matrix.mapper = parasail_custom_map;
+    matrix.max = iMatch;
+    matrix.min = -iMissMatch;
+    matrix.user_matrix = &vMatrixContent[0];
+
+    ParsailResultWrapper pResult(parasail_sw_trace_scan_32(
+        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
+        (const char*)pRef->pGetSequenceRef(), pRef->length(),
+        // Note: parasail does not follow the usual theme where for opening a gap
+        //       extend and open penalty are applied
+        iGap + iExtend, iExtend,
+        &matrix
+    ));
+
+    //get the cigar
+    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
+        pResult.get(),
+        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
+        (const char*)pRef->pGetSequenceRef(), pRef->length(),
+        &matrix
+    ));
+
+    return pCigar->beg_ref;
+}//function
+
 // faster NW thant my naive version...
 void parasail(
         std::shared_ptr<NucSeq> pQuery,
@@ -1694,8 +1747,6 @@ std::vector<char> randomNucSeq( const size_t uiLen )
 	return vNucSeq;
 } // function
 
-
-
 void testKsw()
 {
 	/* Seed the random number generator */
@@ -1795,6 +1846,10 @@ void exportNeedlemanWunsch()
         //test ksw function
         boost::python::def("testKsw", &testKsw);
     )//DEBUG
+    
+    //used for sample generation only...
+    boost::python::def("getBeginOnRef", &getBeginOnRef);
+
      //export the segmentation class
     boost::python::class_<
         NeedlemanWunsch,
