@@ -969,6 +969,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         if not quiet:
             print("computing optimal positions using SW...")
         ref_nuc_seq = ref_seq.extract_complete()
+        ref_nuc_seq_str = str(ref_nuc_seq)
         forward_strand_length = ref_seq.unpacked_size_single_strand
         queries = ContainerVector(NucSeq())
         del queries[:]
@@ -985,7 +986,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
                 end = result
                 start = libMA.getBeginOnRef(
                         sorted_samples[sample_id], 
-                        ref_seq.extract_from_to(end-5*size,end)
+                        NucSeq(ref_nuc_seq_str[end-5*size:end])
                     ) + end-5*size
 
                 #convert hits on the reverse complement to their forward strand positions

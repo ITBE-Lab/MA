@@ -1756,10 +1756,20 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #libMA.test_ransac()
 #exit()
 
-#createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db", 200, 20, 2048, reset=True, gpu_id=1)
+
+#
+# making the sw verified samples
+#
+
+## task 1:
+#createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db", 200, 20, 2048, reset=True, gpu_id=0)
+## task 2:
+#createSampleQueries(plasmodium_genome, "sw_plasmodium_1000.db", 1000, 100, 2048, reset=True, gpu_id=1)
+#exit()
+
+
 #test_my_approaches("sw_plasmodium_1000.db", plasmodium_genome)
 #analyse_all_approaches_depre("sw_plasmodium_1000.html","sw_plasmodium_1000.db", num_tries=1)
-#exit()
 
 
 #create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)

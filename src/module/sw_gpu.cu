@@ -1656,6 +1656,7 @@ std::vector<GPUReturn> cudaAlignTmpl
 {	/* Do checks and reset device */
 	assert( sizeof( SCORE_TP4 ) == 4 * sizeof( SCORE_TP ) && sizeof( SCORE_TP2 ) == 2 * sizeof( SCORE_TP ) );
 	
+	cudaSetDevice( uiDeviceId );
 	/* Reset all GPU devices */
 	cudaDeviceReset();
 	

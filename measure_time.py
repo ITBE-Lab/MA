@@ -83,55 +83,66 @@ class CommandLine(Module):
         for line in lines:
             if len(line) == 0:
                 continue
-            columns = line.split("\t")
-            #print(line)
-            #print(columns[0], columns[2], columns[3], columns[4])
-            try:
-                #print(str(int(columns[3])) + " " + str(pack.start_of_sequence(columns[2])))
-                align_length = 0
-                ##
-                # brief helper function to read cigars...
-                def read_cigar(cigar):
-                    if cigar[0] == '*':
-                        return
-                    number_start = 0
-                    while number_start < len(cigar):
-                        symbol_start = number_start
-                        #increase symbol_start while cigar[symbol_start] is a number...
-                        while cigar[symbol_start] in [str(x) for x in range(10)]:
-                            symbol_start += 1
-                        yield int(cigar[number_start:symbol_start]), cigar[symbol_start]
-                        number_start = symbol_start + 1
+            if self.gives_sam_output():
+                columns = line.split("\t")
+                #print(line)
+                #print(columns[0], columns[2], columns[3], columns[4])
+                try:
+                    #print(str(int(columns[3])) + " " + str(pack.start_of_sequence(columns[2])))
+                    align_length = 0
+                    ##
+                    # brief helper function to read cigars...
+                    def read_cigar(cigar):
+                        if cigar[0] == '*':
+                            return
+                        number_start = 0
+                        while number_start < len(cigar):
+                            symbol_start = number_start
+                            #increase symbol_start while cigar[symbol_start] is a number...
+                            while cigar[symbol_start] in [str(x) for x in range(10)]:
+                                symbol_start += 1
+                            yield int(cigar[number_start:symbol_start]), cigar[symbol_start]
+                            number_start = symbol_start + 1
 
-                assert(len(columns) >= 5)
-                qLen = 0
-                rLen = 0
-                for amount, char in read_cigar(columns[5]):
-                    if char in ['M', 'I', '=', 'X']:
-                        qLen += amount
-                    if char in ['M', 'D', '=', 'X']:
-                        rLen += amount
+                    assert(len(columns) >= 5)
+                    qLen = 0
+                    rLen = 0
+                    for amount, char in read_cigar(columns[5]):
+                        if char in ['M', 'I', '=', 'X']:
+                            qLen += amount
+                        if char in ['M', 'D', '=', 'X']:
+                            rLen += amount
 
-                    if char in ['M', 'X', '=', 'D']:
-                        align_length += amount
-                    elif char == 'N':
-                        print(line)
-                    elif not char in ['I', 'S', 'H', 'P']:#sanity check...
-                        print("Error: got wierd cigar symbol", char, "in cigar", columns[5])
-                        exit()
-                start = pack.start_of_sequence(columns[2]) + int(columns[3])
+                        if char in ['M', 'X', '=', 'D']:
+                            align_length += amount
+                        elif char == 'N':
+                            print(line)
+                        elif not char in ['I', 'S', 'H', 'P']:#sanity check...
+                            print("Error: got wierd cigar symbol", char, "in cigar", columns[5])
+                            exit()
+                    start = pack.start_of_sequence(columns[2]) + int(columns[3])
+                    # 0 is not correct actually but we do not save the query pos anyway...
+                    alignment = Alignment(start, 0, start + rLen, qLen)
+                    alignment.mapping_quality = int(columns[4])/255
+                    alignment.stats.name = columns[0]
+                    # set the secondary flag for secondary alignments
+                    alignment.secondary = True if self.secondary(columns[1]) else False
+                    alignments.append(alignment)
+                except Exception as e:
+                    print("Error:", e)
+                    print(line)
+                    traceback.print_exc()
+                    pass
+            else: # no sam output
+                columns = line.split(" ")
+                start = pack.start_of_sequence(columns[1]) + int(columns[6])
                 # 0 is not correct actually but we do not save the query pos anyway...
-                alignment = Alignment(start, 0, start + rLen, qLen)
-                alignment.mapping_quality = int(columns[4])/255
+                alignment = Alignment(start, 0, start + int(columns[8]), int(columns[11]))
+                alignment.mapping_quality = int(columns[4]) # score instead of map. qual
                 alignment.stats.name = columns[0]
-                # set the secondary flag for secondary alignments
-                alignment.secondary = True if self.secondary(columns[1]) else False
+                alignment.secondary = False # does not give primary secondary information
                 alignments.append(alignment)
-            except Exception as e:
-                print("Error:", e)
-                print(line)
-                traceback.print_exc()
-                pass
+
 
         #transform list into alignment data structure
         ret = ContainerVector(Alignment())
@@ -147,6 +158,9 @@ class CommandLine(Module):
 
     def get_output_type(self):
         return ContainerVector(Alignment())
+
+    def gives_sam_output(self):
+        return True
 
     def execute(self, *input):
         #print(input)
@@ -198,9 +212,12 @@ class Blasr(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.blasr_home + "blasr " + in_filename
-        return cmd_str + " " + self.genome_str + " --sam --bestn " + self.num_results + " --hitPolicy leftmost --sa " + self.index_str
+        return cmd_str + " " + self.genome_str + " -m 1 --bestn " + self.num_results + " --hitPolicy leftmost --sa " + self.index_str
 
     def do_checks(self):
+        return False
+
+    def gives_sam_output(self):
         return False
 
 class BWA_MEM(CommandLine):
@@ -290,7 +307,7 @@ def test(
 
     l = [
         ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-        #("BLASR", Blasr(reference, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
+        ("BLASR", Blasr(reference, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
         #("MA Fast", MA(reference, num_results, True, db_name)),
         #("MA Accurate", MA(reference, num_results, False, db_name)),
         #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
