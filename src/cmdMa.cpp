@@ -103,15 +103,15 @@ int main(int argc, char*argv[])
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
             ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(0), "Strip of consideration amount")
             ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(0), "apply NW to x SoC")
-            ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(200), "Maximal DP matrix size")
-            ("giveUp,v", value<float>(&fGiveUp)->default_value(0), "Give up if the best SoC score is lower")
+            ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(10000), "Maximal DP matrix size")
+            ("giveUp,v", value<float>(&fGiveUp)->default_value(0.01), "Give up if the best SoC score is lower")
             ("toGlobal,T", value<float>(&fMappingQualMin)->default_value(bAccurate ? 0 : 0.05), "Transform lower mapping qual local alignments to global")
             ("padding,P", value<nucSeqIndex>(&uiPadding)->default_value(1.1), "Relative padding for global alignments.")
             ("Match", value<unsigned int>(&iMatch)->default_value(3), "NW match score.")
             ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "NW missmatch penalty.")
             ("Gap", value<unsigned int>(&iGap)->default_value(6), "NW gap open penalty.")
             ("Extend", value<unsigned int>(&iExtend)->default_value(1), "NW gap extend penalty.")
-            ("socMinScore", value<float>(&fMinGlob)->default_value(-2.0), "Minimum score for SoC width.")
+            ("socMinScore", value<float>(&fMinGlob)->default_value(0), "Minimum score for SoC width.")
             ("global,G", value<bool>(&bGlobal)->default_value(true), "Perform global alignment")
         ;
 
@@ -245,6 +245,7 @@ int main(int argc, char*argv[])
                 );
                 if(vm.count("info") > 0)
                 {
+                    std::cout << "threads: " << uiT << std::endl;
                     std::cout << "computational Graph:" << std::endl;
                     for(auto pledge : aGraphSinks)
                         std::cout << pledge->getGraphDesc() << std::endl;

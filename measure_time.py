@@ -74,8 +74,9 @@ class CommandLine(Module):
         #print(sam)
 
         lines = sam.split("\n")
-        while len(lines) > 0 and ( len(lines[0]) == 0 or lines[0][0] is '@' ):
-            lines = lines[1:]
+        if self.gives_sam_output():
+            while len(lines) > 0 and ( len(lines[0]) == 0 or lines[0][0] is '@' ):
+                lines = lines[1:]
 
         #transform sam file into list data structure
         alignments = []
@@ -135,9 +136,11 @@ class CommandLine(Module):
                     pass
             else: # no sam output
                 columns = line.split(" ")
-                start = pack.start_of_sequence(columns[1]) + int(columns[6])
+                print(columns)
+                start= pack.start_of_sequence(columns[1]) + int(columns[6])
+                length = int(columns[7]) - int(columns[6])
                 # 0 is not correct actually but we do not save the query pos anyway...
-                alignment = Alignment(start, 0, start + int(columns[8]), int(columns[11]))
+                alignment = Alignment(start, 0, start + length, int(columns[11]))
                 alignment.mapping_quality = int(columns[4]) # score instead of map. qual
                 alignment.stats.name = columns[0]
                 alignment.secondary = False # does not give primary secondary information
@@ -212,7 +215,7 @@ class Blasr(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.blasr_home + "blasr " + in_filename
-        return cmd_str + " " + self.genome_str + " -m 1 --bestn " + self.num_results + " --hitPolicy leftmost --sa " + self.index_str
+        return cmd_str + " " + self.genome_str + " -m 1 --bestn " + self.num_results + " --sa " + self.index_str
 
     def do_checks(self):
         return False
@@ -295,7 +298,9 @@ human_genome = "/MAdata/genome/human"
 def test(
             db_name,
             reference,
-            only_overall_time=True
+            only_overall_time=True,
+            long_read_aligners=True,
+            short_read_aligners=True
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -306,15 +311,25 @@ def test(
     num_results = "5"
 
     l = [
-        ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-        ("BLASR", Blasr(reference, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
-        #("MA Fast", MA(reference, num_results, True, db_name)),
-        #("MA Accurate", MA(reference, num_results, False, db_name)),
-        #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        #("BWA SW", BWA_SW(reference, num_results, db_name)),
-        #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
-        #("GRAPH MAP", G_MAP(reference, num_results, "/MAdata/chrom/human/n_free.fasta", db_name)),
+        ("MA Fast", MA(reference, num_results, True, db_name)),
     ]
+
+    g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
+
+    if long_read_aligners:
+        l.extend([
+                ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+                ("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
+            ])
+
+    if short_read_aligners:
+        l.extend([
+                ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
+                ("MA Accurate", MA(reference, num_results, False, db_name)),
+                ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+                ("BWA SW", BWA_SW(reference, num_results, db_name)),
+                ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
+            ])
 
     for name, aligner in l:
         print("evaluating " + name)

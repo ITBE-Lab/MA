@@ -103,9 +103,9 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
     pCouple->fScoreTolerace = 0.1;
     pCouple->bLocal = bLocal;
-    pCouple->uiMaxTries = 25;
+    pCouple->uiMaxTries = 50;
     pCouple->uiMaxEqualScoreLookahead = 3;
-    pCouple->fScoreDiffTolerance = 0.001;
+    pCouple->fScoreDiffTolerance = 0.0001;
 
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(

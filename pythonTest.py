@@ -1777,6 +1777,8 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
 
 
+#createSampleQueries(plasmodium_genome, "plasmodium_30000.db", 30000, 100, 32)
+
 #createSampleQueries(plasmodium_genome, "plas_deletion.db", 1000, 100, 32, validate_using_sw=True, in_to_del_ratio=0)
 #run_sw_for_sample("plas_deletion.db", plasmodium_genome, 1205)
 #test_my_approaches("plas_deletion.db", plasmodium_genome, specific_id=1277)
@@ -1787,13 +1789,14 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 
 
 #test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-test_my_approaches("plasmodium_200.db", plasmodium_genome)
+#test_my_approaches("plasmodium_200.db", plasmodium_genome)
 #test("plasmodium_200.db", plasmodium_genome)
-analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
+#analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
 
-test_my_approaches("plasmodium_30000.db", plasmodium_genome)
-#test("plasmodium_30000.db", plasmodium_genome)
+#test_my_approaches("plasmodium_30000.db", plasmodium_genome)
+test("plasmodium_30000.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_30000.html","plasmodium_30000.db", num_tries=1)
+exit()
 
 test_my_approaches("plasmodium_1000.db", plasmodium_genome)
 #test("plasmodium_1000.db", plasmodium_genome)
