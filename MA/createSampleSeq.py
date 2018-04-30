@@ -983,18 +983,27 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         optima_list = []
         for results, sample_id in zip(libMA.testGPUSW(queries, ref_nuc_seq, gpu_id), sample_ids):
             for result in results.vMaxPos:
-                end = result
-                start = libMA.getBeginOnRef(
-                        sorted_samples[sample_id], 
-                        NucSeq(ref_nuc_seq_str[end-5*size:end])
-                    ) + end-5*size
+                end = result+1
+                start = 0
+                if end > 5*size+1:
+                    if len(ref_nuc_seq_str[end-5*size:end]) > 0:
+                        ## print(str(sorted_samples[sample_id]))
+                        ## print(ref_nuc_seq_str[end-5*size:end])
+                        start = libMA.getBeginOnRef(
+                                sorted_samples[sample_id], 
+                                NucSeq(ref_nuc_seq_str[end-5*size:end])
+                            )
+                        ## print(start)
+                        start += end-5*size
+                    else:
+                        print("WARNING: should never get here...", end, size, sample_id)
 
                 #convert hits on the reverse complement to their forward strand positions
                 if end >= forward_strand_length:
                     start_ = forward_strand_length*2 - end
                     end = forward_strand_length*2 - start
                     start = start_
-                
+
                 #save the results
                 optima_list.append( (sample_id, start, end) )
         submitOptima("/MAdata/db/" + db_name, optima_list)

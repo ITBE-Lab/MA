@@ -220,7 +220,22 @@ nucSeqIndex getBeginOnRef(
         &matrix
     ));
 
-    return pCigar->beg_ref;
+    //// std::cout << pQuery->length() << " " << pRef->length() << std::endl;
+    //// for(int i = 0; i < pCigar->len; i++)
+    //// {
+    ////     char c = parasail_cigar_decode_op(pCigar->seq[i]);
+    ////     uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
+    ////     std::cout << c << " x" << uiLen << std::endl;
+    //// }//for
+
+    nucSeqIndex uiOffset = 0;
+    
+    char c = parasail_cigar_decode_op(pCigar->seq[0]);
+    uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[0]);
+    if(c == 'D')
+        uiOffset += uiLen;
+
+    return pCigar->beg_ref + uiOffset;
 }//function
 
 // faster NW thant my naive version...

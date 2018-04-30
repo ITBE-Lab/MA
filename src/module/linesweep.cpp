@@ -18,12 +18,12 @@ ContainerVector LinearLineSweep::getInputType() const
             std::make_shared<SoCPriorityQueue>(),
             std::make_shared<NucSeq>()
         };
-}//function
+}// function
 
 std::shared_ptr<Container> LinearLineSweep::getOutputType() const
 {
     return std::make_shared<ContainerVector>(std::make_shared<Seeds>());
-}//function
+}// function
 
 std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
     LinearLineSweep::linesweep(
@@ -34,7 +34,7 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
         const double fAngle
     )
 {
-    //sort shadows (increasingly) by start coordinate of the match
+    // sort shadows (increasingly) by start coordinate of the match
     std::sort(
             pShadows->begin(),
             pShadows->end(),
@@ -48,8 +48,8 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
                 if(std::get<1>(xA) == std::get<1>(xB))
                     return ( std::get<2>(xA) > std::get<2>(xB) );
                 return ( std::get<1>(xA) < std::get<1>(xB) );
-            }//lambda
-        );//sort function call
+            }// lambda
+        );// sort function call
 
     //for(std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>& xTup : *pShadows)
     //{
@@ -69,7 +69,7 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
         {
             pItervalEnds->push_back(xTup);
             x = std::get<2>(xTup);
-        }//if
+        }// if
         else
         {
             assert(! pItervalEnds->empty() );
@@ -105,10 +105,10 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
             }// if
             // else do nothing
         }// else
-    }//for
+    }// for
     //std::cout << pItervalEnds->size() << std::endl;
     return pItervalEnds;
-}//function
+}// function
 
 std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput

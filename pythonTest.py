@@ -1735,6 +1735,10 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
     origin, _ = getOrigin("/MAdata/db/" + db_name, sample_id)
     print("Orig-Pos:", origin)
 
+    print("Recorded Optima:")
+    for optima_start, optima_end in getOptima("/MAdata/db/" + db_name, sample_id):
+        print(optima_start, "-", optima_end)
+
 
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
 #get_ambiguity_distribution("/MAdata/genome/human_bugged", 1, 100)
