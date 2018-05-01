@@ -24,6 +24,11 @@ namespace libMA
             std::cout << s;
             return *this;
         }//function
+
+        ~StdOutStream()
+        {
+            std::cout << std::flush;//do not forget to flush the outputstream
+        }//deconstructor
     };//class
 
     class FileOutStream : public OutStream
@@ -44,6 +49,7 @@ namespace libMA
 
         ~FileOutStream()
         {
+            file << std::flush;//do not forget to flush the outputstream
             file.close();
         }//deconstructor
 
@@ -54,6 +60,10 @@ namespace libMA
         }//function
     };//class
 
+    /**
+     * @note flushing of the outstream; this must be done in the deconstructor of OutStream
+     * 
+     */
     class FileWriter: public Module
     {
     public:

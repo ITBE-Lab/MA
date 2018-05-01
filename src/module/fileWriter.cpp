@@ -155,7 +155,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             //segment sequence
             *pOut << sSegment << "\t";
             //ASCII of Phred-scaled base Quality+33
-            *pOut << sQual << "\n";
+            *pOut << sQual << "\n"; // flushing will be done in the deconstructor
         }//score xGuard
     }//for
 

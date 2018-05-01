@@ -825,6 +825,17 @@ namespace libMA
         {
             return startOfSequenceWithId( iSequenceId ) + xVectorOfSequenceDescriptors[iSequenceId].uiLengthUnpacked;
         } // method
+        
+
+        /* Start of in sequence with id on forward strand.
+        */
+        uint64_t lengthOfSequenceWithName( std::string name ) const
+        {
+            for(const SequenceInPack& seq : xVectorOfSequenceDescriptors)
+                if(seq.sName.compare(name) == 0)
+                    return seq.uiLengthUnpacked;
+            return 0;
+        } // method
 
         /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver "*".)
         * FIX ME: This is design flaw from the original BWA code.

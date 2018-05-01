@@ -190,7 +190,8 @@ def test_my_approach(
         reseeding = ReSeed(max_hits)
         minimizers = Minimizers()
         minimizersExtract = MinimizersToSeeds()
-        soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2, give_up, 0)
+        #soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2, give_up, 0)
+        soc = StripOfConsideration(max_hits, num_strips, 0, give_up, 0) # check if 0 is okay
         #soc2 = StripOfConsideration2(max_hits, num_strips)
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
@@ -292,7 +293,7 @@ def test_my_approach(
             ## print the computational graph description
             print("computational graphs: ")
             print(pledges[-1][0].get_graph_desc())
-            #    exit()
+            #exit()
 
         if not quitet:
             print("computing (", name, ") ...")
@@ -1006,13 +1007,13 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
     #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
 
     # min_ambiguity=3
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
 
     #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1292,10 +1293,10 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                 ("fails", "@desc4"),
             ])
 
-        plot = figure(title=title,
-                x_axis_label='num insertions; num deletions', y_axis_label='num mutations', tools=[hover]
-            )
-
+        plot = figure(title=title, plot_width=200, plot_height=200, tools=[hover])
+        plot.axis.visible = False
+        plot.toolbar.logo = None
+        plot.toolbar_location = None
 
         plot.xaxis.formatter = tick_formater
         plot.xaxis.ticker = FixedTicker(ticks=[0, 4, 8, 12, 16, 20])
@@ -1305,9 +1306,9 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         else:
             plot.rect('x', 'y', width*4/5, height*4/5, color='c', fill_alpha =0, line_alpha=0, source=source)
 
-        color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
+        #color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
-        plot.add_layout(color_bar, 'left')
+        #plot.add_layout(color_bar, 'left')
 
 
         return plot
@@ -1321,8 +1322,8 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         if len(runtime_tup) > 0:
             tot_runtime = " [" + str(runtime_tup[0][0])[:5] + " ms]"
 
-        plots[0].append(makePicFromDict(accuracy, "accuracy " + approach + tot_runtime, desc2=fails, inner=coverage))
-        plots[1].append(makePicFromDict(alignments, "max tries " + approach, set_max=500))
+        plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage))
+        plots[1].append(makePicFromDict(alignments, approach, set_max=500))
         #plots[2].append(makePicFromDict(runtime, "runtime " + approach))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
@@ -1769,6 +1770,8 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db", 200, 20, 2048, reset=True, gpu_id=0)
 ## task 2:
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_1000.db", 1000, 100, 2048, reset=True, gpu_id=1)
+## task 3:
+#createSampleQueries(plasmodium_genome, "sw_plasmodium_30000.db", 30000, 100, 2048, reset=True, gpu_id=0)
 #exit()
 
 
@@ -1781,7 +1784,7 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
 
 
-#createSampleQueries(plasmodium_genome, "plasmodium_30000.db", 30000, 100, 32)
+#createSampleQueries(plasmodium_genome, "plasmodium_1000.db", 1000, 100, 32)
 
 #createSampleQueries(plasmodium_genome, "plas_deletion.db", 1000, 100, 32, validate_using_sw=True, in_to_del_ratio=0)
 #run_sw_for_sample("plas_deletion.db", plasmodium_genome, 1205)
@@ -1798,12 +1801,12 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
 
 #test_my_approaches("plasmodium_30000.db", plasmodium_genome)
-test("plasmodium_30000.db", plasmodium_genome)
-analyse_all_approaches_depre("plasmodium_30000.html","plasmodium_30000.db", num_tries=1)
-exit()
+#test("plasmodium_30000.db", plasmodium_genome)
+#analyse_all_approaches_depre("plasmodium_30000.html","plasmodium_30000.db", num_tries=1)
+#exit()
 
-test_my_approaches("plasmodium_1000.db", plasmodium_genome)
-#test("plasmodium_1000.db", plasmodium_genome)
+#test_my_approaches("plasmodium_1000.db", plasmodium_genome)
+test("plasmodium_1000.db", plasmodium_genome)
 analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 #analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
 exit()

@@ -702,6 +702,10 @@ void exportPack()
                 &Pack::startOfSequenceWithName
             )
         .def(
+                "length_of_sequence", 
+                &Pack::lengthOfSequenceWithName
+            )
+        .def(
                 "start_of_sequence_id", 
                 &Pack::startOfSequenceWithId
             )

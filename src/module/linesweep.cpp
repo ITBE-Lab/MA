@@ -317,7 +317,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
              * 
              * Also enforces that no gap is larger than max_gap either on query or reference
              * 
-             * Can simply be dis- and en-abled, since it's only effect is to delete some seeds.
+             * Can simply be dis- and enabled, since it's only effect is to delete some seeds.
              */
 #if 1
             

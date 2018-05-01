@@ -136,9 +136,20 @@ class CommandLine(Module):
                     pass
             else: # no sam output
                 columns = line.split(" ")
-                print(columns)
-                start= pack.start_of_sequence(columns[1]) + int(columns[6])
+                #print(columns)
+                start = int(columns[6])
                 length = int(columns[7]) - int(columns[6])
+                #
+                # for blasr it seems like we have to invert to the correct position 
+                # in case of output on the reverse complement
+                # also the inversion is chromosome specific i.e. in my world:
+                # s1 - s2 - s3 - ~s3 - ~s2 - ~s1
+                # whereas in blasrs world:
+                # s1 - ~s1 - s2 - ~s2 - s3 - ~s3
+                #
+                if columns[3] == '1':
+                    start = pack.length_of_sequence(columns[1]) - (start + length)
+                start += pack.start_of_sequence(columns[1])
                 # 0 is not correct actually but we do not save the query pos anyway...
                 alignment = Alignment(start, 0, start + length, int(columns[11]))
                 alignment.mapping_quality = int(columns[4]) # score instead of map. qual
@@ -405,7 +416,7 @@ def test(
                                 name
                             )
                         )
-                    
+
                 #print("submitting results (" + name + ") ...")
                 if len(result) > 0:
                     submitResults("/MAdata/db/"+db_name, result)

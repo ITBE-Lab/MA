@@ -1256,7 +1256,6 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType() const
 }//function
 
 
-//@todo currently disabled
 std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
     )

@@ -115,7 +115,7 @@ namespace libMA
         bool bLocal = false;
         /// @brief If the seeds cover less that x percent of the query we use SW, 
         /// otherwise we fill in the gaps.
-        double fMinimalQueryCoverage = .25;
+        double fMinimalQueryCoverage = 1.1;// 0.25 before 1.05.18 however python disables this
 
         double fScoreTolerace = 0.5;
 
@@ -154,7 +154,13 @@ namespace libMA
         std::string getFullDesc() const
         {
             return std::string("LineSweep2(") + 
-                std::to_string(optimisticGapEstimation) + ")"
+                std::to_string(optimisticGapEstimation) + "," +
+                std::to_string(bLocal) + "," +
+                std::to_string(fMinimalQueryCoverage) + "," +
+                std::to_string(fScoreTolerace) + "," +
+                std::to_string(uiMaxEqualScoreLookahead) + "," +
+                std::to_string(fScoreDiffTolerance) + "," +
+                std::to_string(uiMaxTries) + ")"
                 ;
         }//function
     };//class
