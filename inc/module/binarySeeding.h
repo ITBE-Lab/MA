@@ -22,7 +22,8 @@ namespace libMA
      * Can use either the extension scheme by Li et Al. or ours.
      * @ingroup module
      */
-    class BinarySeeding : public Module{
+    class BinarySeeding : public Module
+    {
     public:
         bool bLrExtension;
         const unsigned int uiMinAmbiguity;
@@ -48,6 +49,10 @@ namespace libMA
             // query sequence itself 
             const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
             
+            //make sure we do not have any Ns
+            if(q[center] >= 4)
+                // return that we covered the interval with the N
+                return Interval<nucSeqIndex>(center,1);
             /* Initialize ik on the foundation of the single base q[x].
             * In order to understand this initialization you should have a look 
             * to the corresponding PowerPoint slide.
@@ -254,7 +259,12 @@ namespace libMA
                 const uint8_t *q = pQuerySeq->pGetSequenceRef(); 
 
                 assert(center < pQuerySeq->length());
-                
+
+                // make sure we do not have any Ns
+                if(q[center] >= 4)
+                    // return that we covered the interval with the N
+                    return Interval<nucSeqIndex>(center,1);
+
                 /* Initialize ik on the foundation of the single base q[x].
                 * In order to understand this initialization you should have a look 
                 *to the corresponding PowerPoint slide.
@@ -286,6 +296,8 @@ namespace libMA
                     assert(ik.size() > 0);
                     //this is the extension
                     SAInterval ok = pFM_index->extend_backward(ik, complement(q[i]));
+
+                    assert(ok.size() == 0 || ok.revComp().start() > 0);
 
                     // checking weather we lost some intervals
                     // if so -> remember the interval just before we lost the hits

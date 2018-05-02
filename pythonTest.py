@@ -115,18 +115,31 @@ def test_my_approach(
         #optimistic_gap_estimation=False,
         specific_id=None,
         scatter_plot = False,
-        specific_query = None
+        specific_query = None,
+        be_mean = False # replace 10% of all symbols with N's
     ):
     if not quitet:
         print("collecting samples (" + name + ") ...")
+    
+    if not specific_query is None:
+        db_name = None
 
     assert(db_name == None or specific_query == None)
     assert(not (db_name == None and specific_query == None))
     all_queries = None
     if specific_query is None: 
         all_queries = getQueries(db_name, specific_id)
+        if be_mean:
+            print("WARNING: i was told to be mean and replace 10% of all nucs with 'N'")
+            for index in range(0, len(all_queries)):
+                sequence, sample_id = all_queries[index]
+                for _ in range(int(len(sequence)/10)):
+                    x = random.randint(0, len(sequence))
+                    sequence = sequence[:x] + "N" + sequence[x+1:]
+                all_queries[index] = (sequence, sample_id)
+
     else:
-        all_queries = (specific_query, 0) # sequence, sample_id (which is a dummy...)
+        all_queries = [ (specific_query, 0) ] # sequence, sample_id (which is a dummy...)
 
     if not missed_alignments_db is None:
         conn = sqlite3.connect(missed_alignments_db)
@@ -159,8 +172,9 @@ def test_my_approach(
     # break samples into chunks of 2^15
     for index, queries, in enumerate(chunks(all_queries, extract_size)):
         if not quitet:
-            print("extracting", len(queries), "samples", index, "/",
-                len(all_queries)/extract_size, "(", name, ") ...")
+            if extract_size != 0:
+                print("extracting", len(queries), "samples", index, "/",
+                    len(all_queries)/extract_size, "(", name, ") ...")
 
             print("setting up (", name, ") ...")
 
@@ -946,19 +960,12 @@ def try_out_parameters(db_name, working_genome):
         for hits, approach, runtime, hits_first_c in sorted(final_result, key=lambda x: x[0]):
             print(approach, hits, hits_first_c, runtime, sep="\t")
 
-def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None):
+def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None, specific_query=None, be_mean=False):
     full_analysis = False
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", num_strips=3, complete_seeds=False, full_analysis=full_analysis, local=True, max_nmw=3, min_ambiguity=3, give_up=0.02)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
 
-    # min_ambiguity=3
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id)
-
-    #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=30, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=0, cheat=True)
-
-    #test_my_approach(db_name, genome, "MA Accurate PY (cheat)", max_hits=1000, num_strips=1000, complete_seeds=True, full_analysis=full_analysis, local=True, max_nmw=10, cheat=True)
-
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1734,6 +1741,10 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # end making the sw verified samples                                                               #
 # ================================================================================================ #
 
+#createSampleQueries(plasmodium_genome, "plasmodium_200.db", 200, 20, 32)
+test_my_approaches("plasmodium_200.db", plasmodium_genome, be_mean=True)
+analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
+
 
 #test_my_approaches("sw_plasmodium_1000.db", plasmodium_genome)
 #analyse_all_approaches_depre("sw_plasmodium_1000.html","sw_plasmodium_1000.db", num_tries=1)
@@ -1767,7 +1778,7 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 
 #test_my_approaches("plasmodium_1000.db", plasmodium_genome)
 #test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
-analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
+#analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 #analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
-exit()
+#exit()
 #test("human_20000.db", human_genome)

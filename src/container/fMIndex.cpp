@@ -15,6 +15,9 @@ SAInterval FMIndex::extend_backward(
         const uint8_t c
     )
 {
+    if(c >= 4 /* A,C,T,G */)
+        return SAInterval(0,0,0); // return an empty interval
+
     bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
     bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
