@@ -182,10 +182,11 @@ int main(int argc, char*argv[])
                 std::cerr << "--alignIn and --genome are compulsory if --align is set" << std::endl;
             else
             {
-                if(uiPadding <= 1)//input is for local
-                    std::cerr 
-                        << "WARNING: Relative padding should be larger or equal to one"
-                        << std::endl;
+                // padding parameter is disabled at the moment
+                //if(uiPadding <= 1)//input is for local
+                //    std::cerr 
+                //        << "WARNING: Relative padding should be larger or equal to one"
+                //        << std::endl;
                 if(sSeedSet != "SMEMs" && sSeedSet != "maxSpanning")
                     std::cerr << "WARNING: selected invalid seed set; using maxSpanning" << std::endl;
                 /*

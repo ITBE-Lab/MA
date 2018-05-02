@@ -337,13 +337,22 @@ def submitOptima(db_name, results_list):
 ##     submitOptima("/MAdata/db/"+db_name, adjusted_optima)
 ##     print("adjusted", count, "samples")
 
-def submitResults(db_name, results_list):
+def clearApproach(db_name, approach):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("""
+                DELETE FROM runtimes 
+                WHERE approach = ?
+                """, (approach,))
+    c.execute("""
                 DELETE FROM results 
                 WHERE approach == ?
-                """, (results_list[0][-2],))
+                """, (approach,))
+    conn.commit()
+
+def submitResults(db_name, results_list):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
     c.executemany("""
                     INSERT INTO results 
                     (
@@ -361,10 +370,6 @@ def submitResults(db_name, results_list):
 def submitRuntimes(db_name, results_list):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("""
-                DELETE FROM runtimes 
-                WHERE approach = ?
-                """, (approach,))
     c.executemany("""
                     INSERT INTO runtimes 
                     (
@@ -549,11 +554,6 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
         if num_mutation not in coverage[num_indels]:
             coverage[num_indels][num_mutation] = 0
 
-        if num_indels not in runtime:
-            runtime[num_indels] = {}
-        if num_mutation not in runtime[num_indels]:
-            runtime[num_indels][num_mutation] = 0
-
         if num_indels not in fails:
             fails[num_indels] = {}
         if num_mutation not in fails[num_indels]:
@@ -612,7 +612,11 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
             alignments[num_indels][num_mutation] += len(aligner_results[sample_id])
 
     for num_mutation, num_indels, run_time in getRuntimes(db_name, approach):
-        runtime[num_indels][num_mutation] = run_time
+        if num_mutation not in runtime:
+            runtime[num_mutation] = {}
+        if num_indels not in runtime[num_mutation]:
+            runtime[num_mutation][num_indels] = 0
+        runtime[num_mutation][num_indels] = runtime[num_mutation][num_indels] + run_time
 
     return accuracy, coverage_, runtime, alignments, fails
 

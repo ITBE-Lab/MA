@@ -1197,7 +1197,7 @@ def expecting_same_results(a, b, db_name, query_size = 100, indel_size = 10):
 def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=False, allow_sw_hits=True, show_coverage=True):
     db_name = "/MAdata/db/" + db_name
     output_file(out)
-    plots = [ [], [] ]
+    plots = [ [], [], [] ]
 
     approaches = getApproachesWithData(db_name)
 
@@ -1320,11 +1320,11 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         tot_runtime = ""
         runtime_tup = getTotalRuntime(db_name, approach)
         if len(runtime_tup) > 0:
-            tot_runtime = " [" + str(runtime_tup[0][0])[:5] + " ms]"
+            tot_runtime = " [" + str(runtime_tup[0][0])[:5] + "ms]"
 
         plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage))
-        plots[1].append(makePicFromDict(alignments, approach, set_max=500))
-        #plots[2].append(makePicFromDict(runtime, "runtime " + approach))
+        plots[1].append(makePicFromDict(runtime, None, set_max=50))
+        plots[2].append(makePicFromDict(alignments, None, set_max=500))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
     plots.append([makePicFromDict(sw_accuracy, "sw accuracy", inner=sw_coverage)])
@@ -1762,17 +1762,32 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #exit()
 
 
-#
-# making the sw verified samples
-#
+# ================================================================================================ #
+# making the sw verified samples                                                                   #
+# ================================================================================================ #
+
+# plasmodium
 
 ## task 1:
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db", 200, 20, 2048, reset=True, gpu_id=0)
+
 ## task 2:
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_1000.db", 1000, 100, 2048, reset=True, gpu_id=1)
+
 ## task 3:
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_30000.db", 30000, 100, 2048, reset=True, gpu_id=0)
+
+# human
+
+## task 4:
+#createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 2048, reset=True, gpu_id=1)
+
+
 #exit()
+
+# ================================================================================================ #
+# end making the sw verified samples                                                               #
+# ================================================================================================ #
 
 
 #test_my_approaches("sw_plasmodium_1000.db", plasmodium_genome)
@@ -1806,14 +1821,14 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #exit()
 
 #test_my_approaches("plasmodium_1000.db", plasmodium_genome)
-test("plasmodium_1000.db", plasmodium_genome)
+#test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
 analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 #analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
 exit()
 #test("human_20000.db", human_genome)
 
 
-
+""" DEPRECATED
 amount = 2**11
 
 #createSampleQueries(human_genome, "short.db", 200, 20, amount)
@@ -1855,4 +1870,4 @@ analyse_all_approaches_depre("zoomSquare.html","zoomSquare.db", 1000, 200)
 createSampleQueries(human_genome, "long.db", 30000, 100, amount)
 test("long.db", human_genome)
 analyse_all_approaches_depre("long.html","long.db", 1000, 200)
-
+"""

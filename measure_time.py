@@ -81,8 +81,16 @@ class CommandLine(Module):
         #transform sam file into list data structure
         alignments = []
 
+        # @todo add me as a separate item in the database
+        determine_secondary_by_order = True
+        secondary_ordered = {}
+
         for line in lines:
+            # ignore empty lines
             if len(line) == 0:
+                continue
+            # ignore dummy samples
+            if line[:6] == "dummy_":
                 continue
             if self.gives_sam_output():
                 columns = line.split("\t")
@@ -125,9 +133,15 @@ class CommandLine(Module):
                     # 0 is not correct actually but we do not save the query pos anyway...
                     alignment = Alignment(start, 0, start + rLen, qLen)
                     alignment.mapping_quality = int(columns[4])/255
-                    alignment.stats.name = columns[0]
+                    alignment.stats.name = str(int(columns[0]))
                     # set the secondary flag for secondary alignments
                     alignment.secondary = True if self.secondary(columns[1]) else False
+
+                    #overwrite secondary by order of the output
+                    if determine_secondary_by_order:
+                        alignment.secondary = alignment.stats.name in secondary_ordered
+                        secondary_ordered[alignment.stats.name] = True
+
                     alignments.append(alignment)
                 except Exception as e:
                     print("Error:", e)
@@ -144,7 +158,7 @@ class CommandLine(Module):
                 # in case of output on the reverse complement
                 # also the inversion is chromosome specific i.e. in my world:
                 # s1 - s2 - s3 - ~s3 - ~s2 - ~s1
-                # whereas in blasrs world:
+                # whereas in blasr's world:
                 # s1 - ~s1 - s2 - ~s2 - s3 - ~s3
                 #
                 if columns[3] == '1':
@@ -155,6 +169,12 @@ class CommandLine(Module):
                 alignment.mapping_quality = int(columns[4]) # score instead of map. qual
                 alignment.stats.name = columns[0]
                 alignment.secondary = False # does not give primary secondary information
+                
+                #overwrite secondary by order of the output
+                if determine_secondary_by_order:
+                    alignment.secondary = alignment.stats.name in secondary_ordered
+                    secondary_ordered[alignment.stats.name] = True
+
                 alignments.append(alignment)
 
 
@@ -296,7 +316,7 @@ class MA(CommandLine):
         self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
 
     def create_command(self, in_filename):
-        cmd_str = self.ma_home + "ma -a -p " + self.fast
+        cmd_str = self.ma_home + "ma -t 1 -a -p " + self.fast
         if not self.num_soc is None:
             cmd_str += " -G -S " + str(self.num_soc)
         return cmd_str + " -g " + self.index_str + " -i " + in_filename + " -n " + self.num_results
@@ -311,7 +331,8 @@ def test(
             reference,
             only_overall_time=True,
             long_read_aligners=True,
-            short_read_aligners=True
+            short_read_aligners=True,
+            runtime_sample_multiplier=100
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -319,7 +340,7 @@ def test(
     reference_pledge = Pledge(Pack())
     reference_pledge.set(ref_pack)
 
-    num_results = "5"
+    num_results = "1"
 
     l = [
         ("MA Fast", MA(reference, num_results, True, db_name)),
@@ -352,7 +373,10 @@ def test(
                 return [ j for i in mat for j in i ]
             matrix = [[ red(red(matrix)) ]]
 
+        clearApproach("/MAdata/db/"+db_name, name)
+
         #c = 1
+        total_time = 0
         for mut_amount, row in enumerate(matrix):
             #if c <= 0:
             #    print("break")
@@ -372,6 +396,10 @@ def test(
                 del query_list[:]
                 assert(len(query_list) == 0)
                 for sequence, sample_id in queries:
+                    if not only_overall_time:
+                        for _ in range(0, runtime_sample_multiplier):
+                            query_list.append(NucSeq(sequence))
+                            query_list[-1].name = "dummy_" + str(sample_id)
                     query_list.append(NucSeq(sequence))
                     query_list[-1].name = str(sample_id)
 
@@ -390,10 +418,9 @@ def test(
 
                 result = []
                 times = []
-                total_time = 0
                 for alignment in result_pledge.get():
                     #print(alignment.begin_on_ref, queries[int(alignment.stats.name)][-1])
-                    #NOTE: the query position in the alignment is not set correctly
+                    # @note the query position in the alignment is not set correctly
 
                     result.append(
                         (
@@ -405,9 +432,7 @@ def test(
                             1 if alignment.secondary else 0
                         )
                     )
-                    if only_overall_time:
-                        total_time = aligner.elapsed_time
-                    else:
+                    if not only_overall_time:
                         times.append(
                             (
                                 mut_amount,
@@ -422,8 +447,10 @@ def test(
                     submitResults("/MAdata/db/"+db_name, result)
                 if len(times) > 0 and not only_overall_time:
                     submitRuntimes("/MAdata/db/"+db_name, times)
-                if only_overall_time:
-                    putTotalRuntime("/MAdata/db/" + db_name, name, total_time)
+                #update the overall total runtime
+                total_time += aligner.elapsed_time
+                #just overwrite the value multiple times
+                putTotalRuntime("/MAdata/db/" + db_name, name, total_time)
 
         print("")#print a newline
         aligner.final_checks()#do a final consistency check

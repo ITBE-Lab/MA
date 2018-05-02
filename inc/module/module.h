@@ -413,6 +413,8 @@ namespace libMA
          * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
          * Does not lock otherwise.
          * In either case fDo is called.
+         * @todo @fixme sometimes this does not seem to work as intended 
+         * (no crashes but output alignments get lost)
          */
         inline void lockIfNecessary(std::function<void()> fDo)
         {
@@ -420,7 +422,7 @@ namespace libMA
             {
                 // multithreading is possible thus a guard is required here.
                 // deadlock prevention is trivial, 
-                // since the computational graphs are essentially trees.
+                // since computational graphs are essentially trees.
                 std::lock_guard<std::mutex> xGuard(*pMutex);
                 fDo();
             }//if
@@ -635,6 +637,8 @@ namespace libMA
                             /// @todo here should be a check on weather 
                             // there is any volatile module in the graph or not
                             // having potential endless loop...
+
+                            // also exceptions should never be used for normal runtime behaviour...
                             try
                             {
                                 do
