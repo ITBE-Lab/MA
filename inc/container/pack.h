@@ -1102,21 +1102,45 @@ namespace libMA
             rxSequence.resize( bAppend ? rxSequence.length() + (iEnd - iBegin) : iEnd - iBegin );
             
             if ( !bExtractAsOnReverseStrand )
-            {    /* Extract as forward strand.
-                */
+            {   /* Extract as forward strand.
+                 */
+                const auto itEnd = xVectorOfHoleDescriptors.end();
+                auto itHolesDesc = xVectorOfHoleDescriptors.begin();
                 for ( auto iPosition = iBegin; iPosition < iEnd; ++iPosition )
                 {
-                    rxSequence[uiSequenceIterator++] = getNucleotideOnPos( iPosition );
+                    // move the hole iterator forwards
+                    while(
+                            itHolesDesc != itEnd && 
+                            itHolesDesc->offset + itHolesDesc->length <= iPosition
+                        )
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if(itHolesDesc != itEnd && itHolesDesc->offset <= iPosition)
+                        rxSequence[uiSequenceIterator++] = 4 // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[uiSequenceIterator++] = getNucleotideOnPos( iPosition );
                 } // for
             } // if
             else
             {    /* Extract as reverse strand. (begin is now bigger than end)
                 */
+                const auto itEnd = xVectorOfHoleDescriptors.rend();
+                auto itHolesDesc = xVectorOfHoleDescriptors.rbegin();
                 int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
                 int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
                 for ( int64_t uiPosition = iAbsoluteBegin; uiPosition > iAbsoluteEnd; --uiPosition )
                 {
-                    rxSequence[uiSequenceIterator++] = 3 - getNucleotideOnPos( uiPosition );
+                    // move the (reversed) hole iterator forwards
+                    while(itHolesDesc != itEnd && itHolesDesc->offset > iPosition)
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if(
+                            itHolesDesc != itEnd &&
+                            itHolesDesc->offset + itHolesDesc->length > iPosition
+                        )
+                        rxSequence[uiSequenceIterator++] = 4 // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[uiSequenceIterator++] = 3 - getNucleotideOnPos( uiPosition );
                 } // for
             } // else
         } // method
