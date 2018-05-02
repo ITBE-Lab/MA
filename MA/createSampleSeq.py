@@ -973,7 +973,6 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         if not quiet:
             print("computing optimal positions using SW...")
         ref_nuc_seq = ref_seq.extract_complete()
-        ref_nuc_seq_str = str(ref_nuc_seq)
         forward_strand_length = ref_seq.unpacked_size_single_strand
         queries = ContainerVector(NucSeq())
         del queries[:]
@@ -990,6 +989,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
                 end = result+1
                 start = 0
                 if end > 5*size+1:
+                    ref_nuc_seq_str = str(ref_nuc_seq)
                     if len(ref_nuc_seq_str[end-5*size:end]) > 0:
                         ## print(str(sorted_samples[sample_id]))
                         ## print(ref_nuc_seq_str[end-5*size:end])

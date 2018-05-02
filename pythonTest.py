@@ -72,7 +72,9 @@ plasmodium_genome = "/MAdata/genome/plasmodium"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
-    if n >= len(l):
+    if n == 0:
+        yield l
+    elif n >= len(l):
         yield l
     else:
         for i in range(0, len(l), n):
@@ -112,15 +114,20 @@ def test_my_approach(
         min_coverage= 1.1, #0.5, # 1.1 = force SW alignment @todo remove me SETTING DISABLED
         #optimistic_gap_estimation=False,
         specific_id=None,
-        scatter_plot = False
+        scatter_plot = False,
+        specific_query = None
     ):
     if not quitet:
         print("collecting samples (" + name + ") ...")
 
-    all_queries = getQueries(db_name, specific_id)
-    #queries = getQueriesFor(db_name, reference, 40, 0, size)
+    assert(db_name == None or specific_query == None)
+    assert(not (db_name == None and specific_query == None))
+    all_queries = None
+    if specific_query is None: 
+        all_queries = getQueries(db_name, specific_id)
+    else:
+        all_queries = (specific_query, 0) # sequence, sample_id (which is a dummy...)
 
-    
     if not missed_alignments_db is None:
         conn = sqlite3.connect(missed_alignments_db)
         setUpDbTables(conn)
@@ -148,7 +155,7 @@ def test_my_approach(
     warn_once = True
     picked_wrong_count = 0
 
-    extract_size = 2**15
+    extract_size = 0 # 2**15        # cannot do chunks anymore due to the overwriting in the db
     # break samples into chunks of 2^15
     for index, queries, in enumerate(chunks(all_queries, extract_size)):
         if not quitet:
@@ -205,59 +212,7 @@ def test_my_approach(
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
         optimal = ExecOnVec(nmw, sort_after_score)
-        mappingQual = MappingQuality(max_nmw)#give me max_nmw alignments
-
-        #pledges = [[], [], [], [], [], []]
-        # OLD GRAPH SETUP
-        #for sequence, sample_id in queries:
-        #    pledges[0].append(Pledge(NucSeq()))
-        #    pledges[0][-1].set(NucSeq(sequence))
-        #    pledges[0][-1].get().name = str(sample_id)
-        #    if do_minimizers:
-        #        pledges[1].append(minimizersExtract.promise_me(
-        #            fm_pledge, minimizers.promise_me(pledges[0][-1]), ref_pledge
-        #        ))
-        #        pledges[2].append(soc2.promise_me(
-        #            pledges[1][-1], pledges[0][-1], ref_pledge
-        #        ))
-        #        pledges[3].append(couple.promise_me(
-        #            pledges[2][-1]
-        #        ))
-        #    else:
-        #        pledges[1].append(seeding.promise_me(
-        #            fm_pledge, pledges[0][-1]
-        #        ))
-        #        if reseed:
-        #            pledges[1][-1] = reseeding.promise_me(
-        #                fm_pledge, pledges[1][-1], pledges[0][-1]
-        #            )
-        #        if use_chaining:
-        #            pledges[2].append(ex.promise_me(
-        #                pledges[1][-1], fm_pledge
-        #            ))
-        #            pledges[3].append(chain.promise_me(
-        #                pledges[2][-1]
-        #            ))
-        #        else:
-        #            pledges[2].append(soc.promise_me(
-        #                pledges[1][-1], pledges[0][-1], ref_pledge, fm_pledge
-        #            ))
-        #            pledges[3].append(couple.promise_me(
-        #                pledges[2][-1]
-        #            ))
-        #    pledges[4].append(optimal.promise_me(
-        #        pledges[3][-1], pledges[0][-1], ref_pledge
-        #    ))
-        #    if local and toGlobal:
-        #        pledges[4][-1] = localToGlobal.promise_me(
-        #            pledges[4][-1], pledges[0][-1], ref_pledge
-        #        )
-        #    pledges[4][-1] = combatRepetitively.promise_me(
-        #        pledges[4][-1], pledges[0][-1], ref_pledge
-        #    )
-        #    pledges[5].append(mappingQual.promise_me(
-        #        pledges[0][-1], pledges[4][-1]
-        #    ))
+        mappingQual = MappingQuality(max_nmw) # give me max_nmw alignments
 
         pledges = [[], [], [], [], [], []]
 
@@ -310,7 +265,7 @@ def test_my_approach(
             print("done")
             show(plot1)
 
-        if specific_id != None:
+        if specific_id != None and db_name != None:
             plot1 = figure(plot_width=1200)
             x_list = []
             y_list = []
@@ -405,18 +360,8 @@ def test_my_approach(
             total_time += pledge.exec_time
         print("total Time: ", total_time)
 
-        putTotalRuntime(db_name, name, total_time)
-
-        # @note temporary debug code
-
-        #output_file("seedpos.html")
-        #plot = figure()
-        
-        #print("a")
-        #for seed in pledges[1][0].get().extract_seeds(fm_pledge.get(), 5, True):
-        #    plot.line([seed.start_ref, seed.start_ref + seed.size], [seed.start, seed.start + seed.size])
-        
-        #save(plot)
+        if db_name != None:
+            putTotalRuntime(db_name, name, total_time)
 
         if specific_id != None:
             if len(pledges[-1][0].get()) == 0:
@@ -844,9 +789,9 @@ def test_my_approach(
                 )
         if not quitet:
             print("submitting results (", name, ") ...")
-        if len(result) > 0:
+        if len(result) > 0 and db_name != None:
             submitResults(db_name, result)
-        if len(runtimes_result) > 0:
+        if len(runtimes_result) > 0 and db_name != None:
             submitRuntimesAsList(db_name, runtimes_result)
 
         # this should not be necessary but for some reason it is...
@@ -1713,9 +1658,9 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
 
     show(gridplot( [[plot, plot2]] ))
 
-###
-### RUN SW for one sample
-###
+##
+# RUN SW for one sample
+#
 def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
     sequence, _ = getQueries("/MAdata/db/" + db_name, sample_id)[0]
     
@@ -1826,48 +1771,3 @@ analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tr
 #analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
 exit()
 #test("human_20000.db", human_genome)
-
-
-""" DEPRECATED
-amount = 2**11
-
-#createSampleQueries(human_genome, "short.db", 200, 20, amount)
-test("short.db", human_genome)
-analyse_all_approaches_depre("short.html","short.db", 200, 20)
-
-
-createSampleQueries(human_genome, "default.db", 1000, 100, amount)
-test("default.db", human_genome)
-analyse_all_approaches_depre("default.html","default.db", 1000, 100)
-
-
-createSampleQueries(human_genome, "shortIndels.db", 1000, 50, amount)
-test("shortIndels.db", human_genome)
-analyse_all_approaches_depre("shortIndels.html","shortIndels.db", 1000, 50)
-
-createSampleQueries(human_genome, "longIndels.db", 1000, 200, amount)
-test("longIndels.db", human_genome)
-analyse_all_approaches_depre("longIndels.html","longIndels.db", 1000, 200)
-
-
-createSampleQueries(human_genome, "insertionOnly.db", 1000, 100, amount, in_to_del_ratio=1)
-test("insertionOnly.db", human_genome)
-analyse_all_approaches_depre("insertionOnly.html","insertionOnly.db", 1000, 100)
-
-createSampleQueries(human_genome, "deletionOnly.db", 1000, 100, amount, in_to_del_ratio=0)
-test("deletionOnly.db", human_genome)
-analyse_all_approaches_depre("deletionOnly.html","deletionOnly.db", 1000, 200)
-
-createSampleQueries(human_genome, "zoomLine.db", 1000, 100, amount, only_first_row=True)
-test("zoomLine.db",human_genome)
-analyse_all_approaches_depre("zoomLine.html","zoomLine.db", 1000, 200)
-
-createSampleQueries(human_genome, "zoomSquare.db", 1000, 100, amount, smaller_box=True)
-test("zoomSquare.db", human_genome)
-analyse_all_approaches_depre("zoomSquare.html","zoomSquare.db", 1000, 200)
-
-
-createSampleQueries(human_genome, "long.db", 30000, 100, amount)
-test("long.db", human_genome)
-analyse_all_approaches_depre("long.html","long.db", 1000, 200)
-"""

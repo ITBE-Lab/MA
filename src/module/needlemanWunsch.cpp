@@ -297,7 +297,7 @@ void parasail(
     {
         char c = parasail_cigar_decode_op(pCigar->seq[i]);
         uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
-              DEBUG_2(std::cout << c << " x" << uiLen << std::endl;)
+        DEBUG_2(std::cout << c << " x" << uiLen << std::endl;)
         switch (c)
         {
             case '=':

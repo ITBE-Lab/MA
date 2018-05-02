@@ -125,6 +125,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     nucSeqIndex uiLastHarmScore = 0;
     nucSeqIndex uiBestSoCScore = 0;
     unsigned int uiSoCRepeatCounter = 0;
+    // @todo: make this a parameter of the linesweep class
+    const nucSeqIndex uiSwitchQLen = 800;
 
 
     auto pSoCs = std::make_shared<ContainerVector>(std::make_shared<Seeds>());
@@ -133,7 +135,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     {
         if(++uiNumTries > uiMaxTries)
             break;
-        //@note from here on it is the original linesweep module
         auto pSeedsIn = pSoCIn->pop();
 
         auto pSeeds = std::make_shared<Seeds>();
@@ -163,6 +164,14 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 )// DEBUG
             }// for
 
+            // Prof. Kutzners filter:
+            // this merely checks weather we actually do have to do the harmonization at all
+            if (pQuery->length() > uiSwitchQLen)
+            {
+                if(uiLastHarmScore > uiCurrSoCScore)
+                    continue;
+            }// if
+
             if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
                 break;
             uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
@@ -177,14 +186,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             vY.reserve(pSeedsIn->size());
             for(const auto& rSeed : *pSeedsIn)
             {
-#if 0
-                //failed experiment
-                for(unsigned int uiLen = 0; uiLen <= rSeed.size(); uiLen+= 1 )
-                {
-                    vX.push_back( (double)rSeed.start_ref() + uiLen);
-                    vY.push_back( (double)rSeed.start() + uiLen);
-                }//for
-#else
                 vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
                 vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
 
@@ -193,7 +194,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
                 vX.push_back( (double)rSeed.start_ref() + rSeed.size());
                 vY.push_back( (double)rSeed.start() + rSeed.size());
-#endif
             }// for
             /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
             double fMAD = medianAbsoluteDeviation<double>( vY );
@@ -462,7 +462,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
 #if 1
-        const nucSeqIndex uiSwitchQLen = 800;
         // Prof. Kutzners filter: (is this equivalent to just always looking at the best SoC..?)
         if (pQuery->length() > uiSwitchQLen)
         {
