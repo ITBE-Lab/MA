@@ -69,6 +69,7 @@ zebrafish_genome = "/MAdata/genome/zebrafish"
 random_genome = "/MAdata/genome/random"
 mouse_genome = "/MAdata/genome/mouse"
 plasmodium_genome = "/MAdata/genome/plasmodium"
+zebrafish_genome_n = "/MAdata/genome/zebrafish_n"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -145,6 +146,9 @@ def test_my_approach(
         conn = sqlite3.connect(missed_alignments_db)
         setUpDbTables(conn)
 
+    if not db_name is None:
+        clearApproach(db_name, name)
+
     if not quitet:
         print("having ", len(all_queries), " samples total (", name, ") ...")
         if len(all_queries) == 0:
@@ -168,7 +172,7 @@ def test_my_approach(
     warn_once = True
     picked_wrong_count = 0
 
-    extract_size = 0 # 2**15        # cannot do chunks anymore due to the overwriting in the db
+    extract_size = 2**15
     # break samples into chunks of 2^15
     for index, queries, in enumerate(chunks(all_queries, extract_size)):
         if not quitet:
@@ -963,9 +967,9 @@ def try_out_parameters(db_name, working_genome):
 def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None, specific_query=None, be_mean=False):
     full_analysis = False
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, give_up=0.08)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1218,6 +1222,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         source = ColumnDataSource(data=dict(
             x=x_hover,
             y=y_hover,
+            c_outer=c_hover,
             c=c_hover,
             desc1=desc1_hover,
             desc2=desc2_hover,
@@ -1232,6 +1237,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
             source = ColumnDataSource(data=dict(
                 x=x_hover,
                 y=y_hover,
+                c_outer=c_hover,
                 c=c_inner,
                 desc1=desc1_hover,
                 desc2=desc2_hover,
@@ -1252,7 +1258,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
         plot.xaxis.formatter = tick_formater
         plot.xaxis.ticker = FixedTicker(ticks=[0, 4, 8, 12, 16, 20])
-        plot.rect(x_hover, y_hover, width, height, color=c_hover, line_alpha=0)
+        plot.rect('x', 'y', width, height, color='c_outer', line_alpha=0, source=source)
         if show_coverage:
             plot.rect('x', 'y', width*4/5, height*4/5, color='c', line_alpha=0, source=source)
         else:
@@ -1261,7 +1267,6 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         #color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
         #plot.add_layout(color_bar, 'left')
-
 
         return plot
 
@@ -1741,18 +1746,15 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # end making the sw verified samples                                                               #
 # ================================================================================================ #
 
-#createSampleQueries(plasmodium_genome, "plasmodium_200.db", 200, 20, 32)
-test_my_approaches("plasmodium_200.db", plasmodium_genome, be_mean=True)
-analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
+#createSampleQueries(zebrafish_genome_n, "zebrafish_n_200.db", 200, 20, 32)
+#test_my_approaches("zebrafish_n_200.db", zebrafish_genome_n)
+#analyse_all_approaches_depre("zebrafish_n_200.html","zebrafish_n_200.db", num_tries=1)
 
 
-#test_my_approaches("sw_plasmodium_1000.db", plasmodium_genome)
-#analyse_all_approaches_depre("sw_plasmodium_1000.html","sw_plasmodium_1000.db", num_tries=1)
+#test_my_approaches("plasmodium_1000.db", plasmodium_genome)
+test("plasmodium_1000.db", plasmodium_genome)
+analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 
-
-#create_as_sequencer_reads("/MAdata/db/illumina.db", 1000)
-#test_my_approaches("/MAdata/db/illumina.db")
-#analyse_all_approaches("illumina.html","/MAdata/db/illumina.db", 150, 0)
 
 
 #createSampleQueries(plasmodium_genome, "plasmodium_1000.db", 1000, 100, 32)

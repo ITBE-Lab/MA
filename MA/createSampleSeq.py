@@ -573,7 +573,13 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
             coverage[num_indels][num_mutation] += hit
             hits[num_indels][num_mutation] += 1
         else:
-            fails[num_indels][num_mutation] += str(sample_id) + ', '
+            if fails[num_indels][num_mutation][-5:] != ", ...":
+                if len(fails[num_indels][num_mutation]) > 0:
+                    fails[num_indels][num_mutation] += ', '
+                if len(fails[num_indels][num_mutation].split(",")) <= 3:
+                    fails[num_indels][num_mutation] += str(sample_id)
+                else:
+                    fails[num_indels][num_mutation] += '...'
 
     # compute the accuracy
     accuracy = {}

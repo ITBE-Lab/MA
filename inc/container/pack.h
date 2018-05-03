@@ -1111,12 +1111,12 @@ namespace libMA
                     // move the hole iterator forwards
                     while(
                             itHolesDesc != itEnd && 
-                            itHolesDesc->offset + itHolesDesc->length <= iPosition
+                            itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition
                         )
                         itHolesDesc++;
                     // append an N if we are currently within a hole
-                    if(itHolesDesc != itEnd && itHolesDesc->offset <= iPosition)
-                        rxSequence[uiSequenceIterator++] = 4 // 4 == N
+                    if(itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition)
+                        rxSequence[uiSequenceIterator++] = 4; // 4 == N
                     else // otherwise get the correct nucleotide
                         rxSequence[uiSequenceIterator++] = getNucleotideOnPos( iPosition );
                 } // for
@@ -1128,19 +1128,19 @@ namespace libMA
                 auto itHolesDesc = xVectorOfHoleDescriptors.rbegin();
                 int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
                 int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
-                for ( int64_t uiPosition = iAbsoluteBegin; uiPosition > iAbsoluteEnd; --uiPosition )
+                for ( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
                 {
                     // move the (reversed) hole iterator forwards
-                    while(itHolesDesc != itEnd && itHolesDesc->offset > iPosition)
+                    while(itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition)
                         itHolesDesc++;
                     // append an N if we are currently within a hole
                     if(
                             itHolesDesc != itEnd &&
-                            itHolesDesc->offset + itHolesDesc->length > iPosition
+                            itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition
                         )
-                        rxSequence[uiSequenceIterator++] = 4 // 4 == N
+                        rxSequence[uiSequenceIterator++] = 4; // 4 == N
                     else // otherwise get the correct nucleotide
-                        rxSequence[uiSequenceIterator++] = 3 - getNucleotideOnPos( uiPosition );
+                        rxSequence[uiSequenceIterator++] = 3 - getNucleotideOnPos( iPosition );
                 } // for
             } // else
         } // method

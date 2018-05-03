@@ -343,24 +343,24 @@ def test(
     num_results = "1"
 
     l = [
-        ("MA Fast", MA(reference, num_results, True, db_name)),
+        #("MA Fast", MA(reference, num_results, True, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
 
     if long_read_aligners:
         l.extend([
-                ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-                ("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
+                #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+                #("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
             ])
 
     if short_read_aligners:
         l.extend([
-                ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
+                #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
                 ("MA Accurate", MA(reference, num_results, False, db_name)),
-                ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-                ("BWA SW", BWA_SW(reference, num_results, db_name)),
-                ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
+                #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+                #("BWA SW", BWA_SW(reference, num_results, db_name)),
+                #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
             ])
 
     for name, aligner in l:
