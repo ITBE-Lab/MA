@@ -33,15 +33,9 @@ using namespace boost::program_options;
 int main(int argc, char*argv[])
 {
     unsigned int uiT;
-    unsigned int uiMaxAmbiguity;
-    unsigned int uiNumSOC;
-    unsigned int uiNumNW;
-    unsigned int uiReportNBest;
-    nucSeqIndex uiMaxGapArea;
     bool bPariedNormal;
     bool bPariedUniform;
     unsigned int uiPairedMean;
-    unsigned int uiMinAmbiguity;
     double fPairedStd;
     double dPairedU;
     std::string sIndexOut;
@@ -51,15 +45,11 @@ int main(int argc, char*argv[])
     std::vector<std::string> aIndexIn;
     std::string sAlignOut;
     std::vector<std::string> aAlignIn;
-    float fGiveUp;
-    float fMappingQualMin;
-    nucSeqIndex uiPadding;
+    double fGiveUp;
     unsigned int iMatch;
     unsigned int iExtend;
     unsigned int iMissMatch;
     unsigned int iGap;
-    float fMinGlob;
-    bool bGlobal;
 
     options_description gen_desc{"General Options"};
     gen_desc.add_options()
@@ -95,24 +85,14 @@ int main(int argc, char*argv[])
         align_desc.add_options()
             ("alignIn,i", value<std::vector<std::string>>(&aAlignIn)->composing(), "Input file paths [*.fasta/*.fastaq/*]")
             ("alignOut,o", value<std::string>(&sAlignOut)->default_value("stdout"), "Output file path [*.sam/*.bam/*]")
-            ("reportN,n", value<unsigned int>(&uiReportNBest)->default_value(0), "Report the N best Alignments")
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
-            ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 1000 : 1000), "Maximal ambiguity")
-            ("minAmbiguity,B", value<unsigned int>(&uiMinAmbiguity)->default_value(bAccurate ? 0 : 0), "Minimal ambiguity")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
-            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(0), "Strip of consideration amount")
-            ("numNw,w", value<unsigned int>(&uiNumNW)->default_value(0), "apply NW to x SoC")
-            ("nwLimit,l", value<nucSeqIndex>(&uiMaxGapArea)->default_value(10000), "Maximal DP matrix size")
-            ("giveUp,v", value<float>(&fGiveUp)->default_value(bAccurate ? 0.025 : 0.01), "Give up if the best SoC score is lower")
-            ("toGlobal,T", value<float>(&fMappingQualMin)->default_value(0), "Transform lower mapping qual local alignments to global")
-            ("padding,P", value<nucSeqIndex>(&uiPadding)->default_value(1.1), "Relative padding for global alignments.")
-            ("Match", value<unsigned int>(&iMatch)->default_value(3), "NW match score.")
-            ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "NW missmatch penalty.")
-            ("Gap", value<unsigned int>(&iGap)->default_value(6), "NW gap open penalty.")
-            ("Extend", value<unsigned int>(&iExtend)->default_value(1), "NW gap extend penalty.")
-            ("socMinScore", value<float>(&fMinGlob)->default_value(0), "Minimum score for SoC width.")
-            ("global,G", value<bool>(&bGlobal)->default_value(true), "Perform global alignment")
+            ("giveUp,v", value<double>(&fGiveUp)->default_value(bAccurate ? 0.025 : 0.01), "Give up if the best SoC score is lower")
+            ("Match", value<unsigned int>(&iMatch)->default_value(3), "DP match score.")
+            ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "DP missmatch penalty.")
+            ("Gap", value<unsigned int>(&iGap)->default_value(6), "DP gap open penalty.")
+            ("Extend", value<unsigned int>(&iExtend)->default_value(1), "DP gap extend penalty.")
         ;
 
         options_description p_desc{"Paired Reads Options"};
@@ -160,7 +140,7 @@ int main(int argc, char*argv[])
         if(vm.count("fmdIndex"))
         {
             if(vm.count("indexIn") == 0 || vm.count("indexOut") == 0 )
-                std::cerr << "--indexIn and --indexOut are compulsory if --fmdIndex is set" << std::endl;
+                std::cerr << "error: --indexIn and --indexOut are compulsory if --fmdIndex is set" << std::endl;
             else
             {
                 std::shared_ptr<Pack> pPack(new Pack());
@@ -179,7 +159,7 @@ int main(int argc, char*argv[])
         if(vm.count("align"))
         {
             if(vm.count("alignIn") == 0 || vm.count("genome") == 0 )
-                std::cerr << "--alignIn and --genome are compulsory if --align is set" << std::endl;
+                std::cerr << "error: --alignIn and --genome are compulsory if --align is set" << std::endl;
             else
             {
                 // padding parameter is disabled at the moment
@@ -222,27 +202,17 @@ int main(int argc, char*argv[])
                     aQueries,
                     pOut,
                     uiT,//num threads
-                    uiMaxAmbiguity,
-                    uiNumSOC,
                     bPariedNormal,
                     bPariedUniform,
                     uiPairedMean,
                     fPairedStd,
                     dPairedU,
                     sSeedSet != "SMEMs",
-                    uiReportNBest,
-                    !bGlobal,//input is for local
-                    uiMaxGapArea,
+                    fGiveUp,
                     iMatch,
                     iMissMatch,
                     iGap,
-                    iExtend,
-                    uiMinAmbiguity,
-                    fMinGlob, // socMinimal score
-                    uiNumNW,
-                    fGiveUp,
-                    fMappingQualMin,
-                    uiPadding
+                    iExtend
                 );
                 if(vm.count("info") > 0)
                 {

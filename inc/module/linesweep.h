@@ -112,18 +112,17 @@ namespace libMA
          */
         bool optimisticGapEstimation = true;
 
-        bool bLocal = false;
         /// @brief If the seeds cover less that x percent of the query we use SW, 
         /// otherwise we fill in the gaps.
         double fMinimalQueryCoverage = 1.1;// 0.25 before 1.05.18 however python disables this
 
-        double fScoreTolerace = 0.5;
+        double fScoreTolerace = 0.1;
 
-        unsigned int uiMaxTries = 100;
+        unsigned int uiMaxTries = 50;
 
-        unsigned int uiMaxEqualScoreLookahead = 5;
+        unsigned int uiMaxEqualScoreLookahead = 3;
 
-        float fScoreDiffTolerance = 0.01;
+        float fScoreDiffTolerance = 0.0001;
 
         LinearLineSweep() {}//default constructor
 
@@ -155,7 +154,6 @@ namespace libMA
         {
             return std::string("LineSweep2(") + 
                 std::to_string(optimisticGapEstimation) + "," +
-                std::to_string(bLocal) + "," +
                 std::to_string(fMinimalQueryCoverage) + "," +
                 std::to_string(fScoreTolerace) + "," +
                 std::to_string(uiMaxEqualScoreLookahead) + "," +

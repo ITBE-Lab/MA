@@ -11,7 +11,7 @@
 // The NW library:
 #include "gaba.h"
 
-#define ALLOCATE_ONCE ( 1 )
+#define ALLOCATE_ONCE ( 0 ) // naive approach is disabled
 #define NAIVE_MAX_SIZE 5
 
 namespace libMA
@@ -112,9 +112,9 @@ namespace libMA
         //the match missmatch matrix
         std::shared_ptr<Gaba_tWrapper> pGabaScoring;
     public:
-        bool bLocal;
+        bool bLocal = false;
 
-        NeedlemanWunsch(bool bLocal);
+        NeedlemanWunsch();
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -141,110 +141,11 @@ namespace libMA
         std::string getName() const
         {
             return "NeedlemanWunsch";
-        }
+        }// method
 
         std::string getFullDesc() const;
     };//class
 
-    
-    /**
-     * @brief Converts a local to an global alignment
-     * @details
-     * Checks the mapping quality of the best alignment.
-     * If the mapping quality is low we convert into a global alignment 
-     * hopefully improving our decision.
-     * @ingroup module
-     */
-    class LocalToGlobal : public Module
-    {
-    public:
-        /// @brief The realtive padding before the first and after the last seed.
-        const double fMappingQualMin;
-
-        LocalToGlobal(double fMappingQualMin)
-                :
-            fMappingQualMin(fMappingQualMin)
-        {}//constructor
-
-        //overload
-        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
-
-        /**
-         * @brief Used to check the input of execute.
-         * @details
-         * Returns:
-         * - ContainerVector(Alignment)
-         * - NucSeq
-         * - Pack
-         */
-        ContainerVector EXPORTED getInputType() const;
-
-        /**
-         * @brief Used to check the output of execute.
-         * @details
-         * Returns:
-         * - Alignment
-         */
-        std::shared_ptr<Container> EXPORTED getOutputType() const;
-
-        std::string getName() const
-        {
-            return "LocalToGlobal";
-        }
-
-        std::string getFullDesc() const;
-    };//class
-
-    /**
-     * @brief @todo
-     * @ingroup module
-     */
-    class CombatRepetitively : public Module
-    {
-    public:
-        const double fMappingQualMax;
-        const nucSeqIndex uiRegionLength;
-
-        CombatRepetitively(double fMappingQualMax, nucSeqIndex uiRegionLength)
-                :
-            fMappingQualMax(fMappingQualMax),
-            uiRegionLength(uiRegionLength)
-        {}//constructor
-
-        //overload
-        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
-
-        /**
-         * @brief Used to check the input of execute.
-         * @details
-         * Returns:
-         * - ContainerVector(Alignment)
-         * - NucSeq
-         * - Pack
-         */
-        ContainerVector EXPORTED getInputType() const;
-
-        /**
-         * @brief Used to check the output of execute.
-         * @details
-         * Returns:
-         * - ContainerVector(Alignment)
-         */
-        std::shared_ptr<Container> EXPORTED getOutputType() const;
-
-        std::string getName() const
-        {
-            return "CombatRepetitively";
-        }
-
-        std::string getFullDesc() const
-        {
-            return std::string("CombatRepetitively(") + 
-                std::to_string(fMappingQualMax) + "," +
-                std::to_string(uiRegionLength) + ")"
-                ;
-        }//function
-    };//class
 }//namespace libMA
 
 /**

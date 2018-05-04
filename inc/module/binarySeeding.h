@@ -25,9 +25,10 @@ namespace libMA
     class BinarySeeding : public Module
     {
     public:
-        bool bLrExtension;
-        const unsigned int uiMinAmbiguity;
-        const unsigned int uiMaxAmbiguity;
+        const bool bLrExtension;
+        // 18.05.04: increasing uiMinAmbiguity merely has negative runtime effects
+        unsigned int uiMinAmbiguity = 0;
+        unsigned int uiMaxAmbiguity = 1000;
 
         /**
          * @brief The simplified extension scheme presented in our Paper.
@@ -470,13 +471,12 @@ namespace libMA
          * if bLrExtension is True our extension scheme is used,
          * otherwise the extension scheme by Li et Al. is used.
          * Our approach is faster and computes seeds of higher quality.
-         * However Li et Al.s approach will increase the overall accuracy of the alignment.
+         * However Li et Al.s approach will increase the overall accuracy of the alignment 
+         * for short queries.
          */
-        BinarySeeding(bool bLrExtension, unsigned int uiMinAmbiguity, unsigned int uiMaxAmbiguity)
+        BinarySeeding(bool bLrExtension)
                 :
-            bLrExtension(bLrExtension),
-            uiMinAmbiguity(uiMinAmbiguity),
-            uiMaxAmbiguity(uiMaxAmbiguity)
+            bLrExtension(bLrExtension)
         {}//constructor
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

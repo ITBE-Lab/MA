@@ -23,7 +23,7 @@ int iGap = 6;
 int iExtend = 1;
 /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
 //accuracy drops if parameter is set smaller than 10^6
-nucSeqIndex uiMaxGapArea = 1;
+nucSeqIndex uiMaxGapArea = 10000;
 /// @brief the padding on the left and right end of each alignment
 nucSeqIndex uiPadding = 500;
 
@@ -1156,9 +1156,9 @@ void NeedlemanWunsch::dynPrg(
     return;
 }//function
 
-NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
-        :
+NeedlemanWunsch::NeedlemanWunsch()
 #if ALLOCATE_ONCE == 1
+        :
     //allocate memory for the naive approach
     s(
         3,
@@ -1173,9 +1173,8 @@ NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
             NAIVE_MAX_SIZE+1,
             std::vector<char>(NAIVE_MAX_SIZE+1)
         )
-    ),
+    )
 #endif
-    bLocal(bLocal)
 {
     //configure the parasail matrix
     matrix.name = "";
@@ -1330,8 +1329,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     }//if
     assert(endQuery <= pQuery->length());
     pRet = std::shared_ptr<Alignment>(
-        new Alignment(beginRef, beginQuery)
-    );
+            new Alignment(beginRef, beginQuery)
+        );
 
     //save the strip of consideration stats in the alignment
     pRet->xStats = pSeeds->xStats;
@@ -1357,17 +1356,17 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     if(!bLocal)
     {
         dynPrg(
-            pQuery,
-            pRef,
-            0,
-            pSeeds->front().start(),
-            0,
-            pSeeds->front().start_ref() - beginRef,
-            pRet,
-            true,
-            false
-        );
-    }//else
+                pQuery,
+                pRef,
+                0,
+                pSeeds->front().start(),
+                0,
+                pSeeds->front().start_ref() - beginRef,
+                pRet,
+                true,
+                false
+            );
+    }// if
 
     nucSeqIndex endOfLastSeedQuery = pSeeds->front().end();
     nucSeqIndex endOfLastSeedReference = pSeeds->front().end_ref() - beginRef;
@@ -1483,271 +1482,22 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     else
     {
         dynPrg(
-            pQuery,
-            pRef,
-            endOfLastSeedQuery,
-            endQuery-1,
-            endOfLastSeedReference,
-            endRef-beginRef-1,
-            pRet,
-            false,
-            true
-        );
+                pQuery,
+                pRef,
+                endOfLastSeedQuery,
+                endQuery-1,
+                endOfLastSeedReference,
+                endRef-beginRef-1,
+                pRet,
+                false,
+                true
+            );
         //there should never be dangeling deletions with libGaba
         pRet->removeDangeling();
     }//else
     return pRet;
 }//function
 
-
-std::string LocalToGlobal::getFullDesc() const
-{
-    return std::string("LocalToGlobal(") + 
-        std::to_string(fMappingQualMin) + ")"
-        ;
-}//function
-
-ContainerVector LocalToGlobal::getInputType() const
-{
-    return ContainerVector{
-        //the local alignment
-        std::make_shared<ContainerVector>( std::make_shared<Alignment>() ),
-        //the query sequence
-        std::shared_ptr<Container>(new NucSeq()),
-        //the reference sequence
-        std::shared_ptr<Container>(new Pack())
-    };
-}//function
-
-std::shared_ptr<Container> LocalToGlobal::getOutputType() const
-{
-    return std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
-}//function
-
-//@todo currently disabled
-std::shared_ptr<Container> LocalToGlobal::execute(
-        std::shared_ptr<ContainerVector> vpInput
-    )
-{
-    assert(false);
-    return nullptr;
-#if 0
-    const auto& pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
-    const std::shared_ptr<NucSeq>& pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-    const std::shared_ptr<Pack>& pRefPack = std::static_pointer_cast<Pack>((*vpInput)[2]);
-
-    if(pAlignments->size() < 2)
-        return pAlignments;
-
-    // check if the mapping quality is lower than the threshold
-    auto pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
-    auto pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[1]);
-    float fQual =
-                ( pFirst->score() - pSecond->score() )
-                    /
-                (double)( pFirst->score() )
-            ;
-
-    if(fQual > fMappingQualMin)
-        return std::make_shared<ContainerVector>( pAlignments );
-
-    auto pRet = std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
-
-    for( const auto& pElement : *pAlignments )
-    {
-        const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
-
-        nucSeqIndex beginRef =
-            pAlignment->uiBeginOnRef - uiPadding;
-        //check for underflow
-        if(uiPadding > pAlignment->uiBeginOnRef)
-            beginRef = 0;
-        DEBUG(
-            if(pAlignment->uiBeginOnRef < beginRef)
-            {
-                std::cerr << pAlignment->uiBeginOnRef << " " << beginRef << " " << pAlignment->uiBeginOnQuery << " " << uiPadding << std::endl;
-                assert(false);
-            }// if
-        )// DEBUG
-        nucSeqIndex endRef =
-            pAlignment->uiEndOnRef + uiPadding;
-
-        std::shared_ptr<Alignment> pAppend(new Alignment(beginRef, endRef, 0, pQuery->length()));
-        pAppend->xStats = pAlignment->xStats;
-
-        std::shared_ptr<NucSeq> pRef;
-        try
-        {
-            pRef = pRefPack->vExtract(beginRef, endRef);
-        } catch(std::runtime_error e)
-        {
-            pRet->push_back(pAlignment);
-            continue;
-        }// catch
-
-        // limit the maximal area that NW computes; 0 means unlimited
-        if(uiMaxGapArea != 0 && pAlignment->uiBeginOnQuery * (pAlignment->uiBeginOnRef - beginRef) > uiMaxGapArea )
-        {
-            pAppend->uiBeginOnRef = pAlignment->uiBeginOnRef;
-            pAppend->uiBeginOnQuery = pAlignment->uiBeginOnQuery;
-        }//if
-        else
-            pAppend->uiBeginOnRef += naiveNeedlemanWunsch(
-                pQuery,
-                pRef,
-                0,
-                pAlignment->uiBeginOnQuery,
-                0,
-                pAlignment->uiBeginOnRef - beginRef,
-                pAppend,
-                true,
-                false
-            );
-
-        pAppend->append(*pAlignment);
-
-        // limit the maximal area that NW computes; 0 means unlimited
-        if(uiMaxGapArea != 0 && (pQuery->length() - pAlignment->uiEndOnQuery) * 
-            (pRef->length() - pAlignment->uiEndOnRef - beginRef) > uiMaxGapArea )
-        {
-            pAppend->uiEndOnQuery = pAlignment->uiEndOnQuery;
-            pAppend->uiEndOnRef = pAlignment->uiEndOnRef;
-        }//if
-        else
-            pAppend->uiEndOnRef -= naiveNeedlemanWunsch(
-                pQuery,
-                pRef,
-                pAlignment->uiEndOnQuery,
-                pQuery->length(),
-                pAlignment->uiEndOnRef - beginRef,
-                pRef->length(),
-                pAppend,
-                false,
-                true
-            );
-
-        pRet->push_back(pAppend);
-    }//for
-
-    //sort ascending
-    std::sort(
-        pRet->begin(), pRet->end(),
-        []
-        (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
-        {
-            return a->larger(b);
-        }//lambda
-    );//sort function call
-    assert(pRet->size() <= 1 || !pRet->back()->larger(pRet->front()));
-
-    return pRet;
-#endif
-}//function
-
-
-
-ContainerVector CombatRepetitively::getInputType() const
-{
-    return ContainerVector{
-        //the local alignment
-        std::make_shared<ContainerVector>( std::make_shared<Alignment>() ),
-        //the query sequence
-        std::shared_ptr<Container>(new NucSeq()),
-        //the reference sequence
-        std::shared_ptr<Container>(new Pack())
-    };
-}//function
-
-std::shared_ptr<Container> CombatRepetitively::getOutputType() const
-{
-    return std::make_shared<ContainerVector>( std::make_shared<Alignment>() );
-}//function
-
-
-//DEPRECATED
-std::shared_ptr<Container> CombatRepetitively::execute(
-        std::shared_ptr<ContainerVector> vpInput
-    )
-{
-    assert(false);
-    return nullptr;
-#if 0
-    const auto& pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
-    const std::shared_ptr<NucSeq>& pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-    const std::shared_ptr<Pack>& pRefPack = std::static_pointer_cast<Pack>((*vpInput)[2]);
-
-    if(pAlignments->size() < 2)
-        return pAlignments;
-
-    // check if the mapping quality is lower than the threshold
-    auto pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
-    auto pSecond = std::static_pointer_cast<Alignment>((*pAlignments)[1]);
-    float fQual =
-                ( pFirst->score() - pSecond->score() )
-                    /
-                (double)( pFirst->score() )
-            ;
-
-    if(fQual > fMappingQualMax)
-        return pAlignments;
-
-    // if we reach this point we have to go through all alignments and check the are that they cover
-    nucSeqIndex refStart = pFirst->uiBeginOnRef;
-    nucSeqIndex refEnd = pFirst->uiEndOnRef;
-    for( const auto& pElement : *pAlignments )
-    {
-        const auto& pAlignment = std::static_pointer_cast<Alignment>(pElement);
-        if(refStart > pAlignment->uiBeginOnRef)
-            refStart = pAlignment->uiBeginOnRef;
-        if(refEnd < pAlignment->uiEndOnRef)
-            refEnd = pAlignment->uiEndOnRef;
-    }// for
-
-    if(refEnd - refStart > uiRegionLength)
-        return pAlignments;
-
-    //add padding to the reference and make sure we do not extract something bridging
-    if(refStart >= uiPadding)
-        refStart -= uiPadding;
-    else
-        refStart = 0;
-    refEnd += uiPadding;
-
-    assert(refEnd > refStart);
-    nucSeqIndex refWidth = refEnd - refStart;
-    if(refStart + refWidth >= pRefPack->uiUnpackedSizeForwardPlusReverse())
-        refWidth = pRefPack->uiUnpackedSizeForwardPlusReverse() - refStart - 1;
-    assert(refWidth > 0);
-    if(pRefPack->bridgingSubsection(refStart, refWidth))
-    {
-        DEBUG_2(std::cout << "Un-bridging from " << refStart << ", " << refWidth;)
-        pRefPack->unBridgeSubsection(refStart, refWidth);
-        DEBUG_2(std::cout << " to: " << refStart << ", " << refWidth << std::endl;)
-    }
-    //extract the reference
-    std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(
-        refStart,
-        refStart + refWidth
-    );
-
-    auto pAlign = smithWaterman(pQuery, pRef, refStart);
-    //copy the stats
-    pAlign->xStats = pFirst->xStats;
-    pAlignments->push_back(pAlign);
-
-    //sort alignments
-    std::sort(
-        pAlignments->begin(), pAlignments->end(),
-        []
-        (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
-        {
-            return a->larger(b);
-        }//lambda
-    );//sort function call
-
-    return pAlignments;
-#endif
-}// function
 
 /* Random nucleotide sequence of length uiLen, represented as codes.
  */
@@ -1860,6 +1610,7 @@ void exportNeedlemanWunsch()
     DEBUG(
         //broken debug function
         //boost::python::def("debugNW", &debugNW);
+
         //test ksw function
         boost::python::def("testKsw", &testKsw);
     )//DEBUG
@@ -1873,8 +1624,7 @@ void exportNeedlemanWunsch()
         boost::python::bases<Module>,
         std::shared_ptr<NeedlemanWunsch>
     >(
-        "NeedlemanWunsch",
-        boost::python::init<bool>()
+        "NeedlemanWunsch"
     )
         // These are constants among the entire code...
         // We set them using the NW class for simplicity
@@ -1889,34 +1639,6 @@ void exportNeedlemanWunsch()
     ;
     boost::python::implicitly_convertible<
         std::shared_ptr<NeedlemanWunsch>,
-        std::shared_ptr<Module>
-    >();
-
-     //export the LocalToGlobal class
-    boost::python::class_<
-        LocalToGlobal,
-        boost::python::bases<Module>,
-        std::shared_ptr<LocalToGlobal>
-    >(
-        "LocalToGlobal",
-        boost::python::init<double>()
-    );
-    boost::python::implicitly_convertible<
-        std::shared_ptr<LocalToGlobal>,
-        std::shared_ptr<Module>
-    >();
-
-     //export the CombatRepetitively class
-    boost::python::class_<
-        CombatRepetitively,
-        boost::python::bases<Module>,
-        std::shared_ptr<CombatRepetitively>
-    >(
-        "CombatRepetitively",
-        boost::python::init<double, nucSeqIndex>()
-    );
-    boost::python::implicitly_convertible<
-        std::shared_ptr<CombatRepetitively>,
         std::shared_ptr<Module>
     >();
 

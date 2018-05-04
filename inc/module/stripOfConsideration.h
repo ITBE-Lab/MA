@@ -22,9 +22,7 @@ namespace libMA
     {
     public:
         /// @brief Maximum ambiguity for a seed to be considered.
-        unsigned int uiMaxAmbiguity = 500;
-        /// @brief the amount of SOCs to create
-        unsigned int numStrips = 10;
+        unsigned int uiMaxAmbiguity = 1000;
         /**
          * @brief Minimal SoC score.
          * @details
@@ -32,7 +30,7 @@ namespace libMA
          * The minimal score that should be allowed during SoC collection.
          * Is interpreted relative to the query length.
          */
-        const float fScoreMinimum = 0;
+        float fScoreMinimum = 0;
         /**
          * @brief If the best SoC has seeds of accumulative length smaller than this, abort.
          * @details
@@ -40,11 +38,6 @@ namespace libMA
          * 0 = never abort.
          */
         const float fGiveUp = 0;
-
-        /**
-         * @todo
-         */
-        const float fIncludeAmbiguity = 0;
 
         /**
         * @brief skip seeds with too much ambiguity
@@ -154,19 +147,11 @@ namespace libMA
 
         StripOfConsideration(){}//default constructor
 
-        StripOfConsideration( 
-                unsigned int uiMaxAmbiguity,
-                unsigned int numStrips,
-                float fScoreMinimum,
-                float fGiveUp,
-                float fIncludeAmbiguity
+        StripOfConsideration(
+                float fGiveUp
             )
                 :
-            uiMaxAmbiguity(uiMaxAmbiguity),
-            numStrips(numStrips),
-            fScoreMinimum(fScoreMinimum),
-            fGiveUp(fGiveUp),
-            fIncludeAmbiguity(fIncludeAmbiguity)
+            fGiveUp(fGiveUp)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -201,70 +186,10 @@ namespace libMA
             return "StripOfConsideration(" + 
                 std::to_string(uiMaxAmbiguity) + "," +
                 std::to_string(fScoreMinimum) + "," +
-                std::to_string(fGiveUp) + "," +
-                std::to_string(fIncludeAmbiguity) + "," +
-                std::to_string(numStrips) + ")";
+                std::to_string(fGiveUp) + "," + ")";
         }//function
     };//class
 
-#if 0
-    /**
-     * @brief Used to quickly find areas with high density of @ref Seed "seeds".
-     * @ingroup module
-     */
-    class StripOfConsideration2: public Module
-    {
-    public:
-        /// @brief Maximum ambiguity for a seed to be considered.
-        unsigned int uiMaxAmbiguity = 500;
-        /// @brief the amount of SOCs to create
-        unsigned int numStrips = 10;
-
-        static nucSeqIndex EXPORTED getStripSize(nucSeqIndex uiQueryLength);
-
-        static nucSeqIndex EXPORTED getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed xS);
-
-    public:
-
-        StripOfConsideration2(){}//default constructor
-
-        StripOfConsideration2( 
-                unsigned int uiMaxAmbiguity,
-                unsigned int numStrips
-            )
-                :
-            uiMaxAmbiguity(uiMaxAmbiguity),
-            numStrips(numStrips)
-        {}//constructor
-
-        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
-
-        /**
-         * @brief Used to check the input of execute.
-         * @details
-         * Returns:
-         * - SegmentVector
-         * - Seeds
-         * - NucSeq
-         * - Pack
-         * - FMIndex
-         */
-        ContainerVector EXPORTED getInputType() const;
-
-        /**
-         * @brief Used to check the output of execute.
-         * @details
-         * Returns:
-         * - ContainerVector(Seeds)
-         */
-        std::shared_ptr<Container> EXPORTED getOutputType() const;
-
-        std::string getName() const
-        {
-            return "StripOfConsideration2";
-        }
-    };//class
-#endif
 
 }//namspace libMA
 /**

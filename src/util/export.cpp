@@ -63,54 +63,36 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::vector<std::shared_ptr<Pledge>> aQueries,
     std::shared_ptr<Module> pOut,
     unsigned int uiThreads,
-    unsigned int uiMaxAmbiguity,
-    unsigned int uiNumSOC,
     bool bPariedNormal,
     bool bPariedUniform,
     unsigned int uiPairedMean,
     double fPairedStd,
     double dPairedU,
     bool bSeedSetPairs,
-    unsigned int uiReportNBest,
-    bool bLocal,
-    unsigned int uiMaxGapArea_,
+    float fGiveUp,
     unsigned int iMatch_,
     unsigned int iMisMatch_,
     unsigned int iGap_,
-    unsigned int iExtend_,
-    unsigned int uiMinAmbiguity,
-    float fMinAllowedScore,
-    unsigned int uiNumNW,
-    float fGiveUp,
-    float fMappingQualMin,
-    nucSeqIndex uiPadding_
+    unsigned int iExtend_
 )
 {
     iMatch = iMatch_;
     iExtend = iExtend_;
     iGap = iGap_;
     iMissMatch = iMisMatch_;
-    uiMaxGapArea = uiMaxGapArea_;
-    //uiPadding = uiPadding_;
 
     //setup all modules
 
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
-    std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs, uiMinAmbiguity, uiMaxAmbiguity));
-    std::shared_ptr<Module> pSOC(new StripOfConsideration(
-        uiMaxAmbiguity, uiNumSOC, bLocal ? 0 : fMinAllowedScore, fGiveUp, 0));
+    std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs));
+    std::shared_ptr<Module> pSOC(new StripOfConsideration(fGiveUp));
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
-    pCouple->fScoreTolerace = 0.1;
-    pCouple->bLocal = bLocal;
-    pCouple->uiMaxTries = 50;
-    pCouple->uiMaxEqualScoreLookahead = 3;
-    pCouple->fScoreDiffTolerance = 0.0001;
 
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
-        std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), true, 0));
-    std::shared_ptr<Module> pMapping(new MappingQuality(uiReportNBest));
+        std::shared_ptr<Module>(new NeedlemanWunsch()), true, 0));
+    std::shared_ptr<Module> pMapping(new MappingQuality(0));
 
     //modules for the paired alignment
     bool bPaired = bPariedNormal || bPariedUniform;

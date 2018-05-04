@@ -146,8 +146,10 @@ void exportBinarySeeding()
             std::shared_ptr<BinarySeeding>
         >(
             "BinarySeeding",
-            boost::python::init<bool, unsigned int, unsigned int>()
+            boost::python::init<bool>()
         )
+        .def_readwrite("min_ambiguity", &BinarySeeding::uiMinAmbiguity)
+        .def_readwrite("max_ambiguity", &BinarySeeding::uiMaxAmbiguity)
         ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<BinarySeeding>,

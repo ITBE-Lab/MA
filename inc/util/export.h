@@ -169,27 +169,17 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::vector<std::shared_ptr<libMA::Pledge>> aQueries,
     std::shared_ptr<libMA::Module> pOut,
     unsigned int uiThreads,
-    unsigned int uiMaxAmbiguity,
-    unsigned int uiNumSOC,
     bool bPariedNormal,
     bool bPariedUniform,
     unsigned int uiPairedMean,
     double fPairedStd,
     double dPairedU,
     bool bSeedSetPairs,
-    unsigned int uiReportNBest,
-    bool bLocal,
-    unsigned int uiMaxGapArea,
-    unsigned int iMatch, 
-    unsigned int iMisMatch,
-    unsigned int iGap,
-    unsigned int iExtend,
-    unsigned int uiMinAmbiguity,
-    float fMinAllowedScore,
-    unsigned int uiNumNW,
     float fGiveUp,
-    float fMappingQualMin,
-    uint64_t uiPadding_//@todo
+    unsigned int iMatch_,
+    unsigned int iMisMatch_,
+    unsigned int iGap_,
+    unsigned int iExtend_
 );
 
 #endif

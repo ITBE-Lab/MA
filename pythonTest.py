@@ -90,7 +90,6 @@ def test_my_approach(
         reference,
         name,
         max_hits=100,
-        num_strips=0,
         complete_seeds=False,
         use_chaining=False,
         local=True,
@@ -100,7 +99,6 @@ def test_my_approach(
         sort_after_score=True,
         max_nmw = 0,
         cheat=False,
-        min_ambiguity=0,
         match=3,
         missmatch=4,
         gap=6,
@@ -212,23 +210,15 @@ def test_my_approach(
         NeedlemanWunsch(False).penalty_missmatch = missmatch
         NeedlemanWunsch(False).max_gap_area = 10000 # if local else 0 #1000000
         #modules
-        seeding = BinarySeeding(not complete_seeds, min_ambiguity, max_hits)
+        seeding = BinarySeeding(not complete_seeds)
         if kMerExtension:
             seeding = OtherSeeding(True)
         reseeding = ReSeed(max_hits)
         minimizers = Minimizers()
         minimizersExtract = MinimizersToSeeds()
-        #soc = StripOfConsideration(max_hits, num_strips, 0 if local else -2, give_up, 0)
-        soc = StripOfConsideration(max_hits, num_strips, 0, give_up, 0) # check if 0 is okay
-        #soc2 = StripOfConsideration2(max_hits, num_strips)
+        soc = StripOfConsideration(give_up) # check if 0 is okay
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
-        ls.min_coverage = min_coverage
-        ls.tolerance = 0.1
-        ls.local = local
-        ls.max_tries = 50
-        ls.equal_score_lookahead = 3 # 5
-        ls.diff_tolerance = 0.0001  # 0.001 26.04.18
         couple = ExecOnVec(ls, True, max_nmw)
         chain = Chaining()
         nmw = NeedlemanWunsch(local)
