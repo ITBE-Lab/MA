@@ -6,6 +6,7 @@
 
 #include "module/stripOfConsideration.h"
 #include "container/minimizersHash.h"
+#include "util/system.h"
 using namespace libMA;
 
 extern int iGap;
@@ -34,40 +35,6 @@ std::shared_ptr<Container> StripOfConsideration::getOutputType() const
     return std::shared_ptr<Container>(new SoCPriorityQueue());
 }//function
 
-
-void StripOfConsideration::forEachNonBridgingSeed(
-        std::shared_ptr<SegmentVector> pVector,
-        std::shared_ptr<FMIndex> pxFM_index,std::shared_ptr<Pack> pxRefSequence,
-        std::shared_ptr<NucSeq> pxQuerySeq,
-        std::function<void(Seed rxS)> fDo,
-        nucSeqIndex addSize = 0
-    )
-{
-    pVector->forEachSeed(
-        pxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals,
-        [&](const Seed& xS)
-        {
-            // check if the match is bridging the forward/reverse strand 
-            // or bridging between two chromosomes
-            if ( !pxRefSequence->bridgingSubsection(
-                    //prevent negative index
-                    xS.start_ref() > addSize ? xS.start_ref() - addSize : 0,//from
-                    //prevent index larger than reference
-                    xS.end_ref() + addSize <= pxFM_index->getRefSeqLength() ?
-                        xS.size() - 1 + addSize :
-                        pxFM_index->getRefSeqLength() - xS.start_ref() - 1//to
-                    ) 
-                )
-            {
-                //if bridging ignore the hit
-                fDo(xS);
-            }//if
-            //returning true since we want to continue extracting seeds
-            return true;
-        }//lambda
-    );
-}//function
-
 std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
@@ -90,95 +57,138 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     //extract the seeds
     auto pSeeds = std::make_shared<std::vector<Seed>>();
     pSeeds->reserve(pSegments->numSeeds(uiMaxAmbiguity));
-    forEachNonBridgingSeed(
-        pSegments, pFM_index, pRefSeq, pQuerySeq,
-        [&](const Seed& xSeed)
-        {
-            pSeeds->push_back(xSeed);
-        }//lambda
-    );//for each
+    
+#if MEASURE_DURATIONS == ( 1 ) 
+    pSegments->fExtraction += metaMeasureDuration ( [&] () 
+    {
+#endif
+            emplaceAllNonBridgingSeed(
+                    *pSegments, // Segment vector (outcome of seeding) // existance has to be guaranteed!
+                    *pFM_index, // existance has to be guaranteed!
+                    *pRefSeq, // existance has to be guaranteed!
+                    *pSeeds, // existance has to be guaranteed!
+                    uiQLen
+                );//emplace all function call
+#if MEASURE_DURATIONS == ( 1 )
+        }// lambda
+    ).count() * 1000 ;// metaMeasureDuration function call
+#endif
+    
 
     //make sure that we return at least an SoC set
     if(pSeeds->empty())
         return std::make_shared<SoCPriorityQueue>(uiStripSize, pSeeds);
 
-    //sort the seeds according to their initial positions
-    std::sort(
-        pSeeds->begin(), pSeeds->end(),
+#if MEASURE_DURATIONS == ( 1 )
+    pSegments->fSorting += metaMeasureDuration(
         [&]
-        (const Seed &a, const Seed &b)
+        ()
         {
-            return getPositionForBucketing(uiQLen, a) 
-                    < getPositionForBucketing(uiQLen,b);
-        }//lambda
-    );//sort function call
+#endif
+
+
+            //sort the seeds according to their initial positions
+            std::sort(
+                pSeeds->begin(), pSeeds->end(),
+                [&]
+                (const Seed &a, const Seed &b)
+                {
+        #if DELTA_CACHE == ( 1 )
+                    return a.uiDelta < b.uiDelta;
+        #else
+                    return    getPositionForBucketing( uiQLen, a ) 
+                            < getPositionForBucketing( uiQLen, b );
+        #endif
+                }//lambda
+            );//sort function call
+
+
+#if MEASURE_DURATIONS == ( 1 )
+        }// lambda
+    ).count() * 1000 ;// metaMeasureDuration function call
+#endif
 
     //positions to remember the maxima
     auto pSoCs = std::make_shared<SoCPriorityQueue>(uiStripSize, pSeeds);
 
-    //find the SOC maxima
-    SoCOrder xCurrScore;
-    std::vector<Seed>::iterator xStripStart = pSeeds->begin();
-    std::vector<Seed>::iterator xStripEnd = pSeeds->begin();
-    while(xStripEnd != pSeeds->end() && xStripStart != pSeeds->end())
-    {
-        //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
-        nucSeqIndex uiCurrSize = 0;
-        while(
-            xStripEnd != pSeeds->end() &&
-            getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
-            >= getPositionForBucketing(uiQLen, *xStripEnd))
+#if MEASURE_DURATIONS == ( 1 )
+    pSegments->fLinesweep += metaMeasureDuration(
+        [&]
+        ()
         {
-            //remember the additional score
-            xCurrScore += *xStripEnd;
-            // compute the current SOC size
-            uiCurrSize = xStripStart->start_ref() - xStripEnd->start_ref();
-            // carefull here we might have seeds in the wrong order since we sorted by r - q not r.
-            if(xStripEnd->start_ref() > xStripStart->start_ref())
-                uiCurrSize = xStripEnd->start_ref() - xStripStart->start_ref();
-            //move the iterator forward
-            xStripEnd++;
-        }//while
+#endif
 
 
-        DEBUG(
-            pSoCs->vScores.push_back(std::make_pair(
-                xCurrScore.uiAccumulativeLength, 
-                xStripStart->start_ref())
-            );
-        ) // DEBUG
+            //find the SOC maxima
+            SoCOrder xCurrScore;
+            std::vector<Seed>::iterator xStripStart = pSeeds->begin();
+            std::vector<Seed>::iterator xStripEnd = pSeeds->begin();
+            while(xStripEnd != pSeeds->end() && xStripStart != pSeeds->end())
+            {
+                //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
+                nucSeqIndex uiCurrSize = 0;
+                while(
+                    xStripEnd != pSeeds->end() &&
+                    getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
+                    >= getPositionForBucketing(uiQLen, *xStripEnd))
+                {
+                    //remember the additional score
+                    xCurrScore += *xStripEnd;
+                    // compute the current SOC size
+                    uiCurrSize = xStripStart->start_ref() - xStripEnd->start_ref();
+                    // carefull here we might have seeds in the wrong order since we sorted by r - q not r.
+                    if(xStripEnd->start_ref() > xStripStart->start_ref())
+                        uiCurrSize = xStripEnd->start_ref() - xStripStart->start_ref();
+                    //move the iterator forward
+                    xStripEnd++;
+                }//while
 
 
-        //here xStripEnd points one past the last element within the strip
-        int64_t iDummy;
-
-        //FILTER
-        /*
-         * if the SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at all
-         * fGiveUp = 0 disables this.
-         */
-        if(
-                ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fGiveUp * uiQLen ) && 
-                !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
-            )
-            pSoCs->push_back_no_overlap(
-                xCurrScore,
-                xStripStart,
-                xStripEnd,
-                getPositionForBucketing(uiQLen, *xStripStart),
-                getPositionForBucketing( uiQLen, *(xStripEnd-1) )
-            );
-        // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
-        xCurrScore -= *(xStripStart++);
-    }// while
+                DEBUG(
+                    pSoCs->vScores.push_back(std::make_pair(
+                        xCurrScore.uiAccumulativeLength, 
+                        xStripStart->start_ref())
+                    );
+                ) // DEBUG
 
 
-    // make a max heap from the SOC starting points according to the scores, 
-    // so that we can extract the best SOC first
-    pSoCs->make_heap();
+                //here xStripEnd points one past the last element within the strip
+                int64_t iDummy;
+
+                //FILTER
+                /*
+                * if the SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at all
+                * fGiveUp = 0 disables this.
+                */
+                if(
+                        ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fGiveUp * uiQLen ) && 
+                        !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
+                    )
+                    pSoCs->push_back_no_overlap(
+                        xCurrScore,
+                        xStripStart,
+                        xStripEnd,
+                        getPositionForBucketing(uiQLen, *xStripStart),
+                        getPositionForBucketing( uiQLen, *(xStripEnd-1) )
+                    );
+                // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
+                xCurrScore -= *(xStripStart++);
+            }// while
+
+
+            // make a max heap from the SOC starting points according to the scores, 
+            // so that we can extract the best SOC first
+            pSoCs->make_heap();
+
+
+#if MEASURE_DURATIONS == ( 1 )
+        }// lambda
+    ).count() * 1000 ;// metaMeasureDuration function call
+#endif
 
     //return the strip collection
     return pSoCs;
+
 }//function
 
 #if 0

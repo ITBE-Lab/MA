@@ -10,6 +10,8 @@
 #include "container/interval.h"
 #include <list>
 
+#define DELTA_CACHE ( 1 )
+
 namespace libMA
 {
     ///@brief any index on the query or reference nucleotide sequence is given in this datatype
@@ -29,6 +31,9 @@ namespace libMA
         ///@brief the beginning of the match on the reference
         nucSeqIndex uiPosOnReference;
         unsigned int uiAmbiguity;
+#if DELTA_CACHE == ( 1 )
+        nucSeqIndex uiDelta;
+#endif
 
         /**
          * @brief Creates a new Seed.
@@ -67,6 +72,9 @@ namespace libMA
             Interval(rOther),
             uiPosOnReference(rOther.uiPosOnReference),
             uiAmbiguity(rOther.uiAmbiguity)
+#if DELTA_CACHE == ( 1 )
+            , uiDelta(rOther.uiDelta)
+#endif
         {}//copy constructor
 
         /**
@@ -111,6 +119,9 @@ namespace libMA
             Interval::operator=(rxOther);
             uiPosOnReference = rxOther.uiPosOnReference;
             uiAmbiguity = rxOther.uiAmbiguity;
+#if DELTA_CACHE == ( 1 )
+            uiDelta = rxOther.uiDelta;
+#endif
             return *this;
         }// operator
         
@@ -209,7 +220,6 @@ namespace libMA
         nucSeqIndex mem_score = 0;
         //some statistics
         AlignmentStatistics xStats;
-
 
         bool bConsistent;
 

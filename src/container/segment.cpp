@@ -35,17 +35,25 @@ void exportIntervalTree()
                     "num_seeds", 
                     &SegmentVector::numSeeds
                 )
-            .def(boost::python::vector_indexing_suite<
-                    SegmentVector,
-                    /*
-                    *    true = noproxy: This means that the content of
-                    *    the vector is already exposed by boost python.
-                    *    If this is kept as false, Segment would be exposed a second time.
-                    *    the two Segments would be different and not inter castable.
-                    */
-                    true
-                >());
+            .def(boost::python::vector_indexing_suite
+                    <
+                        SegmentVector,
+                        /*
+                        *    true = noproxy: This means that the content of
+                        *    the vector is already exposed by boost python.
+                        *    If this is kept as false, Segment would be exposed a second time.
+                        *    the two Segments would be different and not inter castable.
+                        */
+                        true
+                    >()
+                )
+#if MEASURE_DURATIONS == ( 1 )
+            .def_readwrite("fExtraction", &SegmentVector::fExtraction)
+            .def_readwrite("fSorting", &SegmentVector::fSorting)
+            .def_readwrite("fLinesweep", &SegmentVector::fLinesweep)
+#endif
     ;
+
     IterableConverter()
         .from_python<SegmentVector>();
 

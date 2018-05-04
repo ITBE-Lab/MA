@@ -158,6 +158,9 @@ def test_my_approach(
     runtimes = {
         'Seeding': 0,
         'SoC': 0,
+        'SoC-Extraction': 0,
+        'SoC-Sorting': 0,
+        'SoC-Linesweep': 0,
         'Harm': 0,
         'DP': 0,
         'Map Qual': 0
@@ -636,6 +639,11 @@ def test_my_approach(
             runtimes["SoC"] += pledges[2][i].exec_time
             total_time += pledges[2][i].exec_time
             pledges[2][i].exec_time = 0
+            
+            runtimes["SoC-Extraction"] += pledges[1][i].get().fExtraction / 1000.0
+            runtimes["SoC-Sorting"] += pledges[1][i].get().fSorting / 1000.0
+            runtimes["SoC-Linesweep"] += pledges[1][i].get().fLinesweep / 1000.0
+
             runtimes["Harm"] += pledges[3][i].exec_time
             total_time += pledges[3][i].exec_time
             pledges[3][i].exec_time = 0
@@ -843,8 +851,8 @@ def test_my_approach(
         print("Missed", num_missed, "samples")
         print("Picked wrong SoC", picked_wrong_count, "times")
         print("total runtimes:")
-        for key, value in runtimes.items():
-            print(value, "(", key, ")")
+        for key, value in sorted(runtimes.items()):
+            print(value, "\t(", key, ")")
         print("done")
 
 
@@ -967,9 +975,9 @@ def try_out_parameters(db_name, working_genome):
 def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None, specific_query=None, be_mean=False):
     full_analysis = False
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, min_ambiguity=3, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, give_up=0.08)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, give_up=0.025) # give_up=0.08
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1747,13 +1755,14 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # ================================================================================================ #
 
 #createSampleQueries(zebrafish_genome_n, "zebrafish_n_200.db", 200, 20, 32)
-#test_my_approaches("zebrafish_n_200.db", zebrafish_genome_n)
+#test_my_approaches("zebrafish_n_200.db", zebrafish_genome_n, be_mean=True)
 #analyse_all_approaches_depre("zebrafish_n_200.html","zebrafish_n_200.db", num_tries=1)
 
 
-#test_my_approaches("plasmodium_1000.db", plasmodium_genome)
-test("plasmodium_1000.db", plasmodium_genome)
-analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
+#createSampleQueries(plasmodium_genome, "plasmodium_1000_column_0.db", 1000, 100, 32, only_first_row=True)
+#test_my_approaches("plasmodium_1000_column_0.db", plasmodium_genome)
+test("plasmodium_200.db", plasmodium_genome, only_overall_time=False, runtime_sample_multiplier=0)
+analyse_all_approaches_depre("plasmodium_1000_column_0.html","plasmodium_1000_column_0.db", num_tries=1)
 
 
 

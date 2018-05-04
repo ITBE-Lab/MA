@@ -12,6 +12,8 @@
 
 #define confMETA_MEASURE_DURATION ( 1 )
 
+#define MEASURE_DURATIONS ( 1 )
+
 namespace libMA
 {
 
@@ -104,6 +106,11 @@ namespace libMA
     class SegmentVector : public std::vector<std::shared_ptr<Segment>>, public Container{
 
     public:
+    
+#if MEASURE_DURATIONS == ( 1 )
+        // is default constructed
+       double fExtraction = 0, fSorting = 0, fLinesweep = 0;
+#endif
 
         template< class InputIt >
         SegmentVector(InputIt xBegin, InputIt xEnd
@@ -140,11 +147,13 @@ namespace libMA
          * fDo shall return false to terminate the iteration.
          * @Note pushBackBwtInterval records an interval of hits
          */
+        template <class FUNCTOR>
         void forEachSeed(
-                std::shared_ptr<FMIndex> pxFMIndex,
+                FMIndex &rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
                 unsigned int uiMAxAmbiguity,
                 bool bSkip,
-                std::function<bool(const Seed& s)> fDo
+                FUNCTOR&& fDo
+                // std::function<bool(const Seed& s)> fDo
             )
         {
             //iterate over all the intervals that have been recorded using pushBackBwtInterval()
@@ -177,7 +186,7 @@ namespace libMA
                     )
                 {
                     //calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
-                    nucSeqIndex ulIndexOnRefSeq = pxFMIndex->bwt_sa(ulCurrPos);
+                    nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa(ulCurrPos);
                     //call the given function
                     if(!fDo(Seed(
                             pSegment->start(),
@@ -185,6 +194,67 @@ namespace libMA
                             ulIndexOnRefSeq,
                             pSegment->saInterval().size()
                         )))
+                        return;
+                }//for
+            }//for
+        }//function
+
+        
+        /**
+         * @brief Extracts all seeds from the tree.
+         * @details
+         * Calls fDo for all recorded hits.
+         * fDo shall return false to terminate the iteration.
+         * @Note pushBackBwtInterval records an interval of hits
+         */
+        template <class FUNCTOR>
+        void emplaceAllEachSeeds(
+                FMIndex &rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
+                unsigned int uiMAxAmbiguity,
+                bool bSkip,
+                std::vector<Seed> &rvSeedVector,
+                FUNCTOR&& fDo // this function is called after each seed is emplaced
+            )
+        {
+            //iterate over all the intervals that have been recorded using pushBackBwtInterval()
+            for (std::shared_ptr<Segment> pSegment : *this)
+            {
+                if(pSegment == nullptr)
+                {
+                    DEBUG(
+                        std::cout << "WARNING: found nullptr in SegmentVector!" << std::endl;
+                    )
+                    continue;
+                }// if
+                //if the interval contains more than uiMAxAmbiguity hits it's of no importance and will produce nothing but noise
+
+                //if bSkip is not set uiJump by is used to not return more than uiMAxAmbiguity
+                
+                t_bwtIndex uiJumpBy = 1;
+                if (pSegment->saInterval().size() > uiMAxAmbiguity && uiMAxAmbiguity != 0)
+                {
+                    if (bSkip)
+                        continue;
+                    uiJumpBy = pSegment->saInterval().size() / uiMAxAmbiguity; 
+                }//if
+
+                //iterate over the interval in the BWT
+                for (
+                        auto ulCurrPos = pSegment->saInterval().start(); 
+                        ulCurrPos < pSegment->saInterval().end(); 
+                        ulCurrPos += uiJumpBy
+                    )
+                {
+                    //calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match individually
+                    nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa(ulCurrPos);
+                    //call the given function
+                    rvSeedVector.emplace_back(
+                        pSegment->start(),
+                        pSegment->size() + 1,
+                        ulIndexOnRefSeq,
+                        pSegment->saInterval().size()
+                    );
+                    if(!fDo())
                         return;
                 }//for
             }//for
@@ -201,7 +271,7 @@ namespace libMA
         {
             std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>(new Seeds());
             forEachSeed(
-                pxFMIndex,
+                *pxFMIndex,
                 uiMAxAmbiguity,
                 bSkip,
                 [&pRet]

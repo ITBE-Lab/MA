@@ -951,22 +951,25 @@ void NeedlemanWunsch::dynPrg(
     DEBUG_3(std::cout << "dynProg begin" << std::endl;)
     if(!bLocalBeginning && !bLocalEnd)
     {
-#if 1
-        ksw(
-            pQuery, pRef,
-            fromQuery, toQuery,
-            fromRef, toRef,
-            pAlignment
-        );
-#else
-        naiveNeedlemanWunsch(
-            pQuery, pRef,
-            fromQuery, toQuery,
-            fromRef, toRef,
-            false, false,
-            pAlignment
-        );
-#endif
+        if(
+                toQuery - fromQuery > NAIVE_MAX_SIZE ||
+                toRef - fromRef > NAIVE_MAX_SIZE ||
+                true
+            )
+            ksw(
+                pQuery, pRef,
+                fromQuery, toQuery,
+                fromRef, toRef,
+                pAlignment
+            );
+        else
+            naiveNeedlemanWunsch(
+                pQuery, pRef,
+                fromQuery, toQuery,
+                fromRef, toRef,
+                false, false,
+                pAlignment
+            );
         DEBUG_3(std::cout << "dynProg end" << std::endl;)
         return;
     }// if
@@ -1160,15 +1163,15 @@ NeedlemanWunsch::NeedlemanWunsch(bool bLocal)
     s(
         3,
         std::vector<std::vector<int>>(
-            uiMaxGapArea+1,
-            std::vector<int>(uiMaxGapArea+1)
+            NAIVE_MAX_SIZE+1,
+            std::vector<int>(NAIVE_MAX_SIZE+1)
         )
     ),
     dir(
         3,
         std::vector<std::vector<char>>(
-            uiMaxGapArea+1,
-            std::vector<char>(uiMaxGapArea+1)
+            NAIVE_MAX_SIZE+1,
+            std::vector<char>(NAIVE_MAX_SIZE+1)
         )
     ),
 #endif

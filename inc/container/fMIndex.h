@@ -701,7 +701,7 @@ namespace libMA
         /** We keep the reference length private in order to avoid unexpected trouble.
          * Delivers the length of the reference (pack) that belongs to the current FM-index.
          */
-        uint64_t getRefSeqLength( void )
+        uint64_t getRefSeqLength( void ) const
         {
             return uiRefSeqLength;
         } // method

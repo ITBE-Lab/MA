@@ -11,7 +11,8 @@
 // The NW library:
 #include "gaba.h"
 
-#define ALLOCATE_ONCE ( 0 )
+#define ALLOCATE_ONCE ( 1 )
+#define NAIVE_MAX_SIZE 5
 
 namespace libMA
 {

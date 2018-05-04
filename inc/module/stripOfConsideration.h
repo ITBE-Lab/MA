@@ -53,8 +53,9 @@ namespace libMA
         * False: use max_hits instances of the seeds with more ambiguity
         */
         bool bSkipLongBWTIntervals = true;
-        
-        inline static nucSeqIndex getPositionForBucketing(nucSeqIndex uiQueryLength, const Seed& xS)
+
+        inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, 
+                                                           const Seed& xS )
         { 
             return xS.start_ref() + (uiQueryLength - xS.start()); 
         }//function
@@ -69,13 +70,85 @@ namespace libMA
             return (iMatch * uiQueryLength - iGap) / iExtend - (int64_t)(fScoreMinimum * uiQueryLength);
         }//function
 
-        void EXPORTED forEachNonBridgingSeed(
-                std::shared_ptr<SegmentVector> pVector,
-                std::shared_ptr<FMIndex> pxFM_index,std::shared_ptr<Pack> pxRefSequence,
-                std::shared_ptr<NucSeq> pxQuerySeq,
-                std::function<void(Seed)> fDo,
-                nucSeqIndex addSize// = 0 (default)
+        template <class FUNCTOR>
+        inline void forEachNonBridgingSeed(
+                SegmentVector &rSegmentVector,
+                FMIndex &rxFM_index,
+                Pack &rxRefSequence,
+                FUNCTOR&& fDo, //std::function<void(const Seed &rxS)> fDo,
+                nucSeqIndex addSize = 0
+            )
+        {
+            rSegmentVector.forEachSeed(
+                rxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals,
+                [&rxRefSequence, &rxFM_index, &fDo, &addSize]
+                (Seed &&xS)
+                {
+                    // check if the match is bridging the forward/reverse strand 
+                    // or bridging between two chromosomes
+                    if ( !rxRefSequence.bridgingSubsection(
+                            //prevent negative index
+                            xS.start_ref() > addSize ? xS.start_ref() - addSize : 0,//from
+                            //prevent index larger than reference
+                            xS.end_ref() + addSize <= rxFM_index.getRefSeqLength() ?
+                                xS.size() - 1 + addSize :
+                                rxFM_index.getRefSeqLength() - xS.start_ref() - 1//to
+                            ) 
+                        )
+                    {
+                        //if non-bridging use this seed
+                        fDo( xS );
+                    }//if
+                    //returning true since we want to continue extracting seeds
+                    return true;
+                }//lambda
             );
+        }//method
+        
+
+        inline void emplaceAllNonBridgingSeed(
+                SegmentVector &rSegmentVector,
+                FMIndex &rxFM_index,
+                Pack &rxRefSequence,
+                std::vector<Seed> &rvSeedVector,
+                const nucSeqIndex uiQLen
+            )
+        {
+            rSegmentVector.emplaceAllEachSeeds(
+                rxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals, rvSeedVector,
+                [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]
+                ()
+                {
+                    //@todo
+                    constexpr const nucSeqIndex addSize = 0;
+                    auto& rS = rvSeedVector.back();
+                    // check if the match is bridging the forward/reverse strand 
+                    // or bridging between two chromosomes
+                    if ( rxRefSequence.bridgingSubsection(
+                            //prevent negative index
+                            rS.start_ref() > addSize ? rS.start_ref() - addSize : 0,//from
+                            //prevent index larger than reference
+                            rS.end_ref() + addSize <= rxFM_index.getRefSeqLength() ?
+                                rS.size() - 1 + addSize :
+                                rxFM_index.getRefSeqLength() - rS.start_ref() - 1//to
+                            ) 
+                        )
+                    {
+                        //if bridging remove this seed
+                        rvSeedVector.pop_back();
+                    }//if
+#if DELTA_CACHE == ( 1 )
+                    else
+                    {
+                        // set the delta cache
+                        rS.uiDelta = getPositionForBucketing( uiQLen, rS );
+                    }// else
+#endif
+                    //returning true since we want to continue extracting seeds
+                    return true;
+                }//lambda
+            );
+        }//method
 
     public:
 
