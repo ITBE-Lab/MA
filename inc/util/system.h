@@ -7,7 +7,6 @@
 #include <string>
 #include <iostream>
 #include <chrono> // required for getting the high resulotion clock
-//#include <boost/log/trivial.hpp> 
 
 #if _MSC_VER
 

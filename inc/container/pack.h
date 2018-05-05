@@ -14,8 +14,6 @@
 #define FASTA_READER
 
 #include <algorithm>
-#include <boost/log/trivial.hpp>
-#include <boost/filesystem.hpp>
 #include "container/nucSeq.h"
 #include "util/debug.h"
 #include "util/support.h"

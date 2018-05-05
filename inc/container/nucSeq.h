@@ -13,8 +13,9 @@
 #include <cmath>
 #include <cstring>
 #include "container/interval.h"
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <boost/log/trivial.hpp>
+#ifdef WITH_PYTHON
+    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#endif
 #include "container/container.h"
 #include "container/seed.h"
 

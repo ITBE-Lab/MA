@@ -7,7 +7,6 @@
 #include <chrono>
 
 #include "util/threadPool.h"
-#include <boost/log/trivial.hpp>
 
 void itemWorker( int i, size_t tid, int j )
 {

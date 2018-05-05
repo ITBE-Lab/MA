@@ -11,7 +11,9 @@
 #include <vector>
 #include "util/exception.h"
 #include "util/iterableConverter.h"
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#ifdef WITH_PYTHON
+    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#endif
 
 namespace libMA
 {

@@ -12,7 +12,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <boost/log/trivial.hpp>
 #include "container/qSufSort.h"
 
 /* C++ includes
