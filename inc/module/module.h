@@ -678,10 +678,12 @@ namespace libMA
 }//namespace libMA
 
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the Module class to boost python.
  * @ingroup export
  */
 void exportModule();
+#endif
 
 #endif

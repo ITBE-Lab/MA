@@ -191,10 +191,13 @@ namespace libMA
 
 
 }//namspace libMA
+
+#ifdef WITH_PYTHON
 /**
  * @brief export the bucketing @ref Module "module" to python.
  * @ingroup export
  */
 void exportStripOfConsideration();
+#endif
 
 #endif

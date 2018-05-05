@@ -287,10 +287,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief exports the Seed and Seedlist classes to python.
  * @ingroup export
  */
 void exportSeed();
+#endif
 
 #endif

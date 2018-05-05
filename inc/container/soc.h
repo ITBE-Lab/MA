@@ -228,7 +228,8 @@ namespace libMA
     }; //class
 }// namspace libMA
 
-
+#ifdef WITH_PYTHON
 void exportSoC();
+#endif
 
 #endif

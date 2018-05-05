@@ -196,6 +196,7 @@ public:
 };//class
 
 
+#ifdef WITH_PYTHON
 template<typename T>
 void exportInterval()
 {
@@ -210,3 +211,4 @@ void exportInterval()
         .def_readwrite("size", &Interval<T>::iSize)
     ;
 }//function
+#endif

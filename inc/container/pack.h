@@ -1249,8 +1249,10 @@ namespace libMA
     }; // class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief exports the Pack class to python.
  * @ingroup export
  */
 void exportPack();
+#endif

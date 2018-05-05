@@ -166,10 +166,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the LineSweep @ref Module "module" to boost python.
  * @ingroup export
  */
 void exportLinesweep();
+#endif
 
 #endif

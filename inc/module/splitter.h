@@ -182,6 +182,8 @@ namespace libMA
 
 }//namespace
 
+#ifdef WITH_PYTHON
 void exportSplitter();
+#endif
 
 #endif

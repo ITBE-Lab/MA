@@ -403,11 +403,14 @@ namespace libMA
     };//class
 
 }//namespace libMA
+
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the Chaining @ref Module "module" to boost python.
  * @ingroup export
  */
 void exportChaining();
+#endif
 
 
 #endif

@@ -910,10 +910,12 @@ namespace libMA
 
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief function called in order to export this @ref Module "module"
  * @ingroup export
  */
 void exportFM_index();
+#endif
 
 #endif

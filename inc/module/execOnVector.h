@@ -115,10 +115,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the SweepAllReturnBest @ref Module "module" to boost python.
  * @ingroup export
  */
 void exportExecOnVector();
+#endif
 
 #endif

@@ -68,10 +68,12 @@ namespace libMA
 }//namespace libMA
 
 
+#ifdef WITH_PYTHON
 /**
  * @brief exports the Segmentation @ref Module "module" to python.
  * @ingroup export
  */
 void exportReSeed();
+#endif
 
 #endif

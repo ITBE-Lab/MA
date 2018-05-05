@@ -174,6 +174,8 @@ namespace libMA
 
 }//namespace
 
+#ifdef WITH_PYTHON
 void exportFileWriter();
+#endif
 
 #endif

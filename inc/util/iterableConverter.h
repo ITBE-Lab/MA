@@ -4,6 +4,7 @@
  * @note: Taken from : https://stackoverflow.com/questions/15842126/feeding-a-python-list-into-a-function-taking-in-a-vector-with-boost-python
  */
 
+#ifdef WITH_PYTHON
 
 #ifndef ITERABLE_CONVERTER_H
 #define ITERABLE_CONVERTER_H
@@ -72,4 +73,5 @@ public:
     }//function
 };//class
 
+#endif
 #endif

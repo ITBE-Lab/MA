@@ -186,9 +186,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /** 
  * @brief Function to export Container to boost python.
  * @ingroup export
  */
 void exportContainer();
+#endif
+
 #endif

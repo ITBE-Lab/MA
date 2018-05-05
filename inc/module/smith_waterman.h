@@ -52,6 +52,8 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 void exportSMW();
+#endif
 
 #endif

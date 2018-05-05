@@ -148,10 +148,12 @@ namespace libMA
 
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the Alignment container to boost python.
  * @ingroup export
  */
 void exportNeedlemanWunsch();
+#endif
 
 #endif

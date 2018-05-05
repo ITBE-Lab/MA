@@ -755,10 +755,12 @@ namespace libMA
 
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the MinimizersHash container to boost python.
  * @ingroup export
  */
 void exportMinimizersHash();
+#endif
 
 #endif

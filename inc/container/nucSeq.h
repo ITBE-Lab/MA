@@ -828,8 +828,10 @@ namespace libMA
     }; // class NucSeq
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief export this @ref Module "modules" to boost python 
  * @ingroup export
  */
 void exportSequence();
+#endif

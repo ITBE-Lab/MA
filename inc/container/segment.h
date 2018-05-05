@@ -299,11 +299,13 @@ namespace libMA
     };// class
 }// namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the SegmentVector to boost python.
  * @ingroup export
  */
 void exportIntervalTree();
+#endif
 
 
 #endif

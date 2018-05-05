@@ -58,11 +58,13 @@ namespace libMA
     };//class
 }//namspace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief export the MappingQuality @ref Module "module" to python.
  * @ingroup export
  */
 void exportMappingQuality();
+#endif
 
 
 #endif

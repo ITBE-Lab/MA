@@ -386,10 +386,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the Alignment container to boost python.
  * @ingroup export
  */
 void exportAlignment();
+#endif
 
 #endif

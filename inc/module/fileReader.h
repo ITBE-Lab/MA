@@ -66,6 +66,8 @@ namespace libMA
 
 }//namespace
 
+#ifdef WITH_PYTHON
 void exportFileReader();
+#endif
 
 #endif
