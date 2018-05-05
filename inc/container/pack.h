@@ -14,6 +14,7 @@
 #define FASTA_READER
 
 #include <algorithm>
+#include <boost/filesystem.hpp>
 #include "container/nucSeq.h"
 #include "util/debug.h"
 #include "util/support.h"
@@ -243,7 +244,7 @@ namespace libMA
         {
             auto rsFileName( rsFileNamePrefix + ".pac" ); // final filename for writing the packed sequence
             DEBUG_2(
-                BOOST_LOG_TRIVIAL(trace) << "Storing pack with filename " << rsFileName;
+                std::cout << "Storing pack with filename " << rsFileName << std::endl;
             )
             std::ofstream xFileOutputStream( rsFileName, std::ios::out | std::ios::binary );
 
@@ -505,7 +506,7 @@ namespace libMA
         */
         bool checkForDefect()
         {
-            BOOST_LOG_TRIVIAL( info ) << "Check description vector for consistency.";
+            std::cout << "Check description vector for consistency." << std::endl;
 
             decltype( SequenceInPack::uiStartOffsetUnpacked ) uiRunningStartOffsetUnpacked = 0;
 
@@ -581,7 +582,7 @@ namespace libMA
             */
             if ( rxSequence.empty() )
             {
-                BOOST_LOG_TRIVIAL( warning ) << "Skip Sequence " << rsName << " because it is empty.";
+                std::cerr << "Skip Sequence " << rsName << " because it is empty." << std::endl;
                 return;
             } // if
             

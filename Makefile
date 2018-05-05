@@ -1,6 +1,6 @@
 # location of the Boost Python include files and library
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
-BOOST_LIB = boost_python3 boost_iostreams boost_log boost_filesystem boost_system boost_program_options
+BOOST_LIB = boost_python3 boost_iostreams boost_filesystem boost_system boost_program_options
 CUDA_PATH = /usr/local/cuda-9.1/lib64/
  
 # target files
@@ -16,7 +16,8 @@ DEBUG_OBJ=$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
 
 #flags
 CC=gcc
-CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -O3 -DWITH_PYTHON
+CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -O3 \
+	-DWITH_PYTHON # this flag enables the python library
 CFLAGS=-Wall -Werror -fPIC -O3
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS= -std=c++11

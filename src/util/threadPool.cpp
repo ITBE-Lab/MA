@@ -10,10 +10,10 @@
 
 void itemWorker( int i, size_t tid, int j )
 {
-    BOOST_LOG_TRIVIAL( trace ) << "Start data element" << i << " tid: " << tid << " j " << j;
+    //BOOST_LOG_TRIVIAL( trace ) << "Start data element" << i << " tid: " << tid << " j " << j;
     // std::cout << "hello " << i << std::endl;
     std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-    BOOST_LOG_TRIVIAL( trace ) << "End data element"<< i << " tid: " << tid << " j " << j;
+    //BOOST_LOG_TRIVIAL( trace ) << "End data element"<< i << " tid: " << tid << " j " << j;
     // std::cout << "world " << i << std::endl;
     // return i*i;
 }
@@ -52,13 +52,13 @@ int main_threadpool()
         }
     } // Destruction of ThreadPool after all task terminated
     
-    BOOST_LOG_TRIVIAL( trace ) << "*** CONTINUE ***";
+    //BOOST_LOG_TRIVIAL( trace ) << "*** CONTINUE ***";
 
 
     /* Because we work with futures we get the result here in this loop as soon as the corresponding task delivers it.
      */
-    for ( size_t i = 0; i < results.size(); ++i )
-        BOOST_LOG_TRIVIAL( trace ) << "*** See result for " << i << " as " << results[i].get();
+    // for ( size_t i = 0; i < results.size(); ++i )
+    //    BOOST_LOG_TRIVIAL( trace ) << "*** See result for " << i << " as " << results[i].get();
         // std::cout << results[i].get() << ' ';
     
     //for ( auto &value : results )

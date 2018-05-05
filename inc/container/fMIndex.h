@@ -828,7 +828,7 @@ namespace libMA
                                                     : "";
             if ( sErrorText != "" )
             {
-                BOOST_LOG_TRIVIAL( info ) << "BWT different: " << sErrorText;
+                std::cerr << "BWT different: " << sErrorText << std::endl;
             } // if
             
             return sErrorText == "";

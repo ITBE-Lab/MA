@@ -64,8 +64,6 @@ setup(
                 'z',
                 'boost_system-mt',
                 'boost_thread-mt',
-                'boost_log-mt',
-                'boost_log_setup-mt' ,
                 'boost_filesystem-mt' ,
                 'boost_program_options-mt' ,
                 'boost_regex-mt',
