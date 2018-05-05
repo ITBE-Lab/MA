@@ -95,6 +95,12 @@ std::shared_ptr<Container> PairedReads::execute(
     std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bFirst = true;
     std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bFirst = false;
 
+    std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.pOther = 
+        std::weak_ptr(std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2]));
+
+    std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.pOther = 
+        std::weak_ptr(std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1]));
+
     // return the best pair
     return std::shared_ptr<ContainerVector>(new ContainerVector
             {

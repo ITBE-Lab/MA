@@ -1751,8 +1751,8 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 
 #createSampleQueries(plasmodium_genome, "plasmodium_1000_column_0.db", 1000, 100, 32, only_first_row=True)
 #test_my_approaches("plasmodium_1000_column_0.db", plasmodium_genome)
-test("plasmodium_200.db", plasmodium_genome, only_overall_time=False, runtime_sample_multiplier=0)
-analyse_all_approaches_depre("plasmodium_1000_column_0.html","plasmodium_1000_column_0.db", num_tries=1)
+test("plasmodium_1000.db", plasmodium_genome, only_overall_time=True, runtime_sample_multiplier=0)
+analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 
 
 

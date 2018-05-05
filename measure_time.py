@@ -63,11 +63,17 @@ class CommandLine(Module):
     def bitfield(self, num):
         return list(reversed([True if digit=='1' else False for digit in bin(num)[2:]]))
 
-    def secondary(self, string):
+    def check_flag(self, string, flag_bit):
         bits = self.bitfield(int(string))
-        if len(bits) <= 8:
+        if len(bits) <= flag_bit:
             return False
-        return bits[8]
+        return bits[flag_bit]
+
+    def secondary(self, string):
+        return self.check_flag(string, 8)
+
+    def supplementary(self, string):
+        return self.check_flag(string, 11)
 
     def __align(self, index_str, queries, pack):
         sam = self.__get_sam(index_str, queries)
@@ -84,6 +90,7 @@ class CommandLine(Module):
         # @todo add me as a separate item in the database
         determine_secondary_by_order = True
         secondary_ordered = {}
+        secondary_list = []
 
         for line in lines:
             # ignore empty lines
@@ -137,6 +144,10 @@ class CommandLine(Module):
                     # set the secondary flag for secondary alignments
                     alignment.secondary = True if self.secondary(columns[1]) else False
 
+                    if self.supplementary(columns[1]):
+                        alignment.secondary = True
+                        secondary_list.append(alignment.stats.name)
+
                     #overwrite secondary by order of the output
                     if determine_secondary_by_order:
                         alignment.secondary = alignment.stats.name in secondary_ordered
@@ -181,6 +192,9 @@ class CommandLine(Module):
         #transform list into alignment data structure
         ret = ContainerVector(Alignment())
         del ret[:]
+
+        if len(secondary_list) > 0:
+            print("WARNING: Aligner outputted chimeric alignment for:", secondary_list)
 
         for alignment in alignments:
             ret.append(alignment)
@@ -343,7 +357,7 @@ def test(
     num_results = "1"
 
     l = [
-        ("MA Fast", MA(reference, num_results, True, db_name)),
+        #("MA Fast", MA(reference, num_results, True, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
@@ -357,7 +371,7 @@ def test(
     if short_read_aligners:
         l.extend([
                 #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
-                ("MA Accurate", MA(reference, num_results, False, db_name)),
+                #("MA Accurate", MA(reference, num_results, False, db_name)),
                 ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
                 #("BWA SW", BWA_SW(reference, num_results, db_name)),
                 #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),

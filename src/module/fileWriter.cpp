@@ -72,20 +72,28 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
                 case MatchType::deletion:
                     sCigar.append("D");
                     break;
-            }//switch
-        }//for
+            }// switch
+        }// for
 
         char flag = 0;
 
         if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
             flag |= REVERSE_COMPLEMENTED;
 
-        //paired
+        std::string sNextName = "*";
+        unsigned int uiNextPos = 0;
+        // paired
         if(!pAlignment->xStats.pOther.expired())
         {
             flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
-        }//if
+
+            sNextName = pAlignment->xStats.pOther.lock()->xStats.sName;
+            uiNextPos = pPack->posInSequence(
+                    pAlignment->xStats.pOther.lock()->uiBeginOnRef,
+                    pAlignment->xStats.pOther.lock()->uiEndOnRef
+                ) + 1;
+        }// if
 
         if(pAlignment->bSecondary)
             flag |= SECONDARY_ALIGNMENT;
@@ -99,12 +107,12 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
             {
                 //@todo frill in this self check...
-            }//if
+            }// if
             else
             {
                 if(pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName(sRefName)+uiRefPos-1)
                     bWrong = true;
-            }//else
+            }// else
 
             if(bWrong)
             {
@@ -118,8 +126,8 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
                 else
                     std::cout << "Is reverse: False" << std::endl;
                 exit(0);
-            }//if
-        )//DEBUG
+            }// if
+        )// DEBUG
 
         std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
@@ -147,9 +155,9 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             //cigar
             *pOut << sCigar  << "\t";
             //Ref. name of the mate/next read ? not given at the moment... @todo
-            *pOut << "*" << "\t";
+            *pOut << sNextName << "\t";
             //Position of the mate/next read ? not given at the moment... @todo
-            *pOut << "0" << "\t";
+            *pOut << std::to_string(uiNextPos) << "\t";
             //observed Template length
             *pOut << std::to_string(pAlignment->length()) << "\t";
             //segment sequence
