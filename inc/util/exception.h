@@ -19,7 +19,9 @@
 
 #include <string>
 #include <cmath>
-#include <boost/python.hpp>
+#ifdef WITH_PYTHON
+    #include <boost/python.hpp>
+#endif
 
 /** 
  * @brief An annotated exception class on the foundation of std::exception.

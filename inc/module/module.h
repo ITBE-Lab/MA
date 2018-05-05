@@ -11,7 +11,9 @@
 #include <memory>
 #include <Python.h>
 #include <iostream>
-#include <boost/python/list.hpp>
+#ifdef WITH_PYTHON
+    #include <boost/python/list.hpp>
+#endif
 #include "util/threadPool.h"
 #include <ctime>
 #include <chrono>

@@ -121,6 +121,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * 
  * @todo different output formats
  * @todo code cleanup
+ * @todo remove boost::program_options
+ * @todo remove boost::filesystem
+ * @todo remove boost::iostreams
+ * 
  * 
  * @section about_us_sec About Us
  * 
