@@ -119,10 +119,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * 
  * @section todos TODOs
  * 
- * @todo make banded SW
  * @todo different output formats
  * @todo code cleanup
- * @todo sam format has 1-based index instead of 0-based...
  * 
  * @section about_us_sec About Us
  * 

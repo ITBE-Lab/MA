@@ -110,7 +110,7 @@ def test_my_approach(
         give_up=0.01, # 0.03 good value with the setup from 25.04.18
         quitet=False,
         missed_alignments_db=None,
-        min_coverage= 1.1, #0.5, # 1.1 = force SW alignment @todo remove me SETTING DISABLED
+        min_coverage= 1.1, #0.5, # 1.1 = force SW alignment SETTING DISABLED
         #optimistic_gap_estimation=False,
         specific_id=None,
         scatter_plot = False,

@@ -791,6 +791,10 @@ namespace libMA
             }//for
         }//method
 
+        /**
+         * DEPRECATED
+         * can not deal with 'N's
+         */
         inline std::vector<uint8_t> as4Bit(
                 nucSeqIndex uiFrom,
                 nucSeqIndex uiTo,
@@ -802,12 +806,12 @@ namespace libMA
             DEBUG_3(
                 for(size_t i = uiFrom; i < uiTo; i++)
                 {
-                    assert(pxSequenceRef[i] < 4);//@todo: N
+                    assert(pxSequenceRef[i] < 4);
                     std::cout << (int)pxSequenceRef[i] << " ";
                 }// for
                 std::cout << std::endl;
             )// DEBUG
-            static const uint8_t aTranslate[4] = {1, 2, 4, 8};//@todo: N
+            static const uint8_t aTranslate[4] = {1, 2, 4, 8};
             std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
             for(size_t i = 0; i < vRet.size(); i++)

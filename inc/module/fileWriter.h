@@ -6,6 +6,7 @@
 #include "container/alignment.h"
 #include "container/pack.h"
 #include <fstream>
+#include "util/exception.h"
 
 namespace libMA
 {
@@ -42,8 +43,7 @@ namespace libMA
         {
             if (!file.good())
             {
-                std::cout << "Unable to open file\n";
-                ///@todo exception
+                throw AlignerException("Unable to open file" + sFileName);
             }//if
         }//constructor
 

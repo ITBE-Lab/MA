@@ -1199,7 +1199,7 @@ NeedlemanWunsch::NeedlemanWunsch()
     //Gaba context initialization
     /*
      *    GABA_PARAMS(
-     *            .xdrop = 100,  // @todo: ?
+     *            .xdrop = 100,  
      *            //match award, 
      *            //mismatch penalty, 
      *            //gap open penalty (G_i), and 
@@ -1218,7 +1218,7 @@ NeedlemanWunsch::NeedlemanWunsch()
         ge: (int8_t) iExtend,
         gfa: 0,
         gfb: 0,
-        xdrop: 100 // @todo: ?
+        xdrop: 100
     };// struct
 
     pGabaScoring = std::make_shared<Gaba_tWrapper>(xParams);
@@ -1536,7 +1536,6 @@ void testKsw()
         iBandwidth = std::abs(uiRefSize - uiQuerySize) + minAddBandwidth;
 #endif
 
-    //@todo wrap
     Wrapper_ksw_extz_t ez;
 
 	for (int uiCounter = 0; uiCounter < 100; ++uiCounter)

@@ -81,7 +81,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             flag |= REVERSE_COMPLEMENTED;
 
         //paired
-        if(pAlignment->xStats.bPaired)
+        if(!pAlignment->xStats.pOther.expired())
         {
             flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
@@ -129,7 +129,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         else
             sMapQual = std::to_string( (int)(pAlignment->fMappingQuality * 254));
 
-        {
+        {// scope xGuard
             //synchronize file output
             std::lock_guard<std::mutex> xGuard(*pLock);
 
@@ -156,7 +156,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             *pOut << sSegment << "\t";
             //ASCII of Phred-scaled base Quality+33
             *pOut << sQual << "\n"; // flushing will be done in the deconstructor
-        }//score xGuard
+        }// scope xGuard
     }//for
 
     return std::shared_ptr<Container>(new Nil());

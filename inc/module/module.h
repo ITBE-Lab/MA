@@ -635,8 +635,8 @@ namespace libMA
                             // otherwise one iteration is performed only
 
                             /// @todo here should be a check on weather 
-                            // there is any volatile module in the graph or not
-                            // having potential endless loop...
+                            /// there is any volatile module in the graph or not
+                            /// having potential endless loop...
 
                             // also exceptions should never be used for normal runtime behaviour...
                             try

@@ -166,7 +166,7 @@ namespace libMA
         unsigned int num_seeds_in_strip;
         unsigned int anchor_size;
         unsigned int anchor_ambiguity;
-        bool bPaired;
+        std::weak_ptr<Alignment> pOther;
         bool bFirst;
         std::string sName;
         nucSeqIndex uiInitialQueryBegin;
@@ -180,7 +180,7 @@ namespace libMA
             num_seeds_in_strip(0),
             anchor_size(0),
             anchor_ambiguity(0),
-            bPaired(false),
+            pOther(),
             bFirst(false),
             sName("unknown"),
             uiInitialQueryBegin(0),
@@ -195,7 +195,7 @@ namespace libMA
             num_seeds_in_strip = rOther.num_seeds_in_strip;
             anchor_size = rOther.anchor_size;
             anchor_ambiguity = rOther.anchor_ambiguity;
-            bPaired = rOther.bPaired;
+            pOther = rOther.pOther;
             bFirst = rOther.bFirst;
             sName = rOther.sName;
             uiInitialQueryBegin = rOther.uiInitialQueryBegin;

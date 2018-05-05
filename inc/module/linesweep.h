@@ -124,6 +124,8 @@ namespace libMA
 
         float fScoreDiffTolerance = 0.0001;
 
+        nucSeqIndex uiSwitchQLen = 800;
+
         LinearLineSweep() {}//default constructor
 
         //overload

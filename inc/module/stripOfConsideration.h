@@ -112,7 +112,6 @@ namespace libMA
                 [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]
                 ()
                 {
-                    //@todo
                     constexpr const nucSeqIndex addSize = 0;
                     auto& rS = rvSeedVector.back();
                     // check if the match is bridging the forward/reverse strand 

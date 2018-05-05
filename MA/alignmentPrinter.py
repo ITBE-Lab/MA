@@ -75,7 +75,7 @@ class AlignmentPrinter(Module):
                 print(align[counter])
                 print(ind_ref)
                 print(len(ref))
-                #@todo it would be nice if the cpp code would simply support slicing the alignment
+                # @todo it would be nice if the cpp code would simply support slicing the alignment
                 s = []
                 for index in range(counter, len(align)):
                     s.append(align[counter])

@@ -4,6 +4,7 @@
 #include "module/module.h"
 #include "container/nucSeq.h"
 #include <fstream>
+#include "util/exception.h"
 
 namespace libMA
 {
@@ -19,8 +20,7 @@ namespace libMA
         {
             if (!pFile->is_open())
             {
-                std::cout << "Unable to open file" << std::endl;
-                ///@todo exception
+                throw AlignerException("Unable to open file" + sFileName);
             }//if
         }//constructor
 

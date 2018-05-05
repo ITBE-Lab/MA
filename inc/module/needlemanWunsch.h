@@ -25,7 +25,7 @@ namespace libMA
     class NeedlemanWunsch : public Module
     {
         /**
-         * @todo this class should not be in the .h
+         * @brief wrapper that take care of deallocation for the Gaba library
          */
         class Gaba_tWrapper
         {
@@ -101,7 +101,7 @@ namespace libMA
             );
 
         /*
-        * @todo: fix this problem
+        * @todo: fix this
         * 
         * arghh this is really ugly...
         * At the moment there is only one sequence that sets all NW and SW parameters correctly:

@@ -88,8 +88,6 @@ std::shared_ptr<Container> PairedReads::execute(
         }//for
     }//for
 
-    ///@todo set pairs
-
     // set the paired property in the respective alignment stats
     std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bPaired = bPaired;
     std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bPaired = bPaired;

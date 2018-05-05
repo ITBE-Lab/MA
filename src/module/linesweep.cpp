@@ -125,8 +125,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     nucSeqIndex uiLastHarmScore = 0;
     nucSeqIndex uiBestSoCScore = 0;
     unsigned int uiSoCRepeatCounter = 0;
-    // @todo: make this a parameter of the linesweep class
-    const nucSeqIndex uiSwitchQLen = 800;
 
 
     auto pSoCs = std::make_shared<ContainerVector>(std::make_shared<Seeds>());
@@ -518,6 +516,7 @@ void exportLinesweep()
         .def_readwrite("max_tries", &LinearLineSweep::uiMaxTries)
         .def_readwrite("equal_score_lookahead", &LinearLineSweep::uiMaxEqualScoreLookahead)
         .def_readwrite("diff_tolerance", &LinearLineSweep::fScoreDiffTolerance)
+        .def_readwrite("switch_q_len", &LinearLineSweep::uiSwitchQLen)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<LinearLineSweep>,
