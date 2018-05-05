@@ -14,6 +14,7 @@ extern int iMissMatch;
 extern nucSeqIndex uiMaxGapArea;
 extern nucSeqIndex uiPadding;
 
+#ifdef WITH_PYTHON
 /**
  * @brief The boost-python main method.
  *
@@ -56,6 +57,8 @@ BOOST_PYTHON_MODULE(libMA)
         exportSoC();
         export_ransac();
 }//function
+
+#endif
 
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::shared_ptr<Pledge> pPack,

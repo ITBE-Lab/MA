@@ -7,6 +7,7 @@
 using namespace libMA;
 
 
+#ifdef WITH_PYTHON
 void exportMinimizersHash()
 {
     
@@ -47,4 +48,5 @@ void exportMinimizersHash()
         std::shared_ptr<Container> 
     >();
 
-}
+}// function
+#endif

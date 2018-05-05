@@ -137,6 +137,7 @@ std::shared_ptr<Container> BinarySeeding::execute(
     return pSegmentVector;
 }//function
 
+#ifdef WITH_PYTHON
 void exportBinarySeeding()
 {
     //export the BinarySeeding class
@@ -157,3 +158,4 @@ void exportBinarySeeding()
     >();
 
 }//function
+#endif

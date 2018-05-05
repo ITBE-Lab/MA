@@ -50,6 +50,7 @@ nucSeqIndex Seeds::getScore() const
     }//else
 }//function
 
+#ifdef WITH_PYTHON
 void exportSeed()
 {
 
@@ -109,3 +110,4 @@ void exportSeed()
             std::shared_ptr<Container>
         >(); 
 }//function
+#endif

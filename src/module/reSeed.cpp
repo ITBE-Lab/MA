@@ -129,6 +129,7 @@ std::shared_ptr<Container> ReSeed::execute(
     return pSegmentVector;
 }//function
 
+#ifdef WITH_PYTHON
 void exportReSeed()
 {
     //export the ReSeed class
@@ -145,3 +146,4 @@ void exportReSeed()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

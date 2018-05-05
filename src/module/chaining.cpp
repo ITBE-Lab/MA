@@ -240,6 +240,7 @@ std::shared_ptr<Container> Chaining::execute(
     return std::shared_ptr<Container>(new ContainerVector{pRet});
 }//function
 
+#ifdef WITH_PYTHON
 void exportChaining()
 {
     //export the LineSweepContainer class
@@ -253,3 +254,4 @@ void exportChaining()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

@@ -384,6 +384,7 @@ void FMIndex::build_FMIndex(
     vPostProcessBWTAndCreateSA();
 } // method
 
+#ifdef WITH_PYTHON
 void exportFM_index()
 {
     
@@ -474,3 +475,4 @@ void exportFM_index()
                                             std::shared_ptr<Container> 
                                         >();
 }//function
+#endif

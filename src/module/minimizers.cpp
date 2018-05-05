@@ -225,6 +225,7 @@ std::shared_ptr<Container> MinimizersToSeeds::execute(
         );
 }//function
 
+#ifdef WITH_PYTHON
 void exportMinimizers()
 {
     //export the BinarySeeding class
@@ -256,3 +257,4 @@ void exportMinimizers()
     >();
 
 }//function
+#endif

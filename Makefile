@@ -16,7 +16,7 @@ DEBUG_OBJ=$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
 
 #flags
 CC=gcc
-CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -O3
+CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -O3 -DWITH_PYTHON
 CFLAGS=-Wall -Werror -fPIC -O3
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS= -std=c++11

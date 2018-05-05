@@ -5,6 +5,7 @@
 #include "container/segment.h"
 using namespace libMA;
 
+#ifdef WITH_PYTHON
 void exportIntervalTree()
 {
     //export the SegmentVector class
@@ -64,3 +65,4 @@ void exportIntervalTree()
         >();
 
 }//function
+#endif

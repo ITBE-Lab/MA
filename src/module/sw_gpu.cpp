@@ -30,6 +30,7 @@ std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std:
     return vResults;
 }
 
+#ifdef WITH_PYTHON
 void exportSW_GPU()
 {
     boost::python::def("testGPUSW", &testGPUSW);
@@ -64,3 +65,4 @@ void exportSW_GPU()
             true
         >());
 }//function
+#endif

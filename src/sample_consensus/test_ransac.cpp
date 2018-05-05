@@ -108,7 +108,9 @@ void test_ransac()
 	std::cout << "intercept: " << xSlopeIntercept.second << std::endl;
 }// function
 
+#ifdef WITH_PYTHON
 void export_ransac()
 {
     boost::python::def("test_ransac", &test_ransac);
 }// function
+#endif

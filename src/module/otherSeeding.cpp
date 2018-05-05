@@ -134,6 +134,8 @@ std::shared_ptr<Container> OtherSeeding::execute(
     return pSegmentVector;
 }//function
 
+
+#ifdef WITH_PYTHON
 void exportOtherSeeding()
 {
     //export the OtherSeeding class
@@ -152,3 +154,4 @@ void exportOtherSeeding()
     >();
 
 }//function
+#endif

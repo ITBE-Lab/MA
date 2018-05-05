@@ -143,6 +143,7 @@ std::shared_ptr<Container> Tail::execute(std::shared_ptr<ContainerVector> vpInpu
     return pRet;
 }//function
 
+#ifdef WITH_PYTHON
 void exportExecOnVector()
 {
     //export the ExecOnVec class
@@ -187,3 +188,4 @@ void exportExecOnVector()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

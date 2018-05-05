@@ -502,6 +502,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     return pSoCs;
 }//function
 
+#ifdef WITH_PYTHON
 void exportLinesweep()
 {
     //export the LineSweepContainer class
@@ -523,3 +524,4 @@ void exportLinesweep()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

@@ -5,6 +5,7 @@
 #include "container/soc.h"
 using namespace libMA;
 
+#ifdef WITH_PYTHON
 void exportSoC()
 {
 #if DEBUG_LEVEL >= 1
@@ -103,3 +104,4 @@ void exportSoC()
     )// DEBUG
     ;
 }//function
+#endif

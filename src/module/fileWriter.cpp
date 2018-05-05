@@ -279,6 +279,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
     return std::shared_ptr<Container>(new Nil());
 }//function
 
+#ifdef WITH_PYTHON
 void exportFileWriter()
 {
     //export the FileWriter class
@@ -295,3 +296,4 @@ void exportFileWriter()
     >();
 
 }//function
+#endif

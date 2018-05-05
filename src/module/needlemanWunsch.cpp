@@ -1604,6 +1604,7 @@ void testKsw()
 
 
 
+#ifdef WITH_PYTHON
 void exportNeedlemanWunsch()
 {
     DEBUG(
@@ -1642,3 +1643,4 @@ void exportNeedlemanWunsch()
     >();
 
 }//function
+#endif

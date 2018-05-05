@@ -111,6 +111,7 @@ std::shared_ptr<Container> PairedReads::execute(
         );
 }//function
 
+#ifdef WITH_PYTHON
 void exportPairedReads()
 {
     //export the PairedReads class
@@ -126,3 +127,4 @@ void exportPairedReads()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

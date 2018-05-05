@@ -125,6 +125,7 @@ void simGetBoost3(
     Pledge::simultaneousGet(vPledges, false, [](){}, uiThreads);
 }//function
 
+#ifdef WITH_PYTHON
 void exportModule()
 {
     //module is an abstract class and should never be initialized
@@ -223,4 +224,5 @@ void exportModule()
 
     IterableConverter()
         .from_python<std::vector<std::shared_ptr<Pledge>>>();
-}
+}// function
+#endif

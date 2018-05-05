@@ -112,6 +112,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
     throw ModuleDryException();
 }//function
 
+#ifdef WITH_PYTHON
 void exportFileReader()
 {
     //export the FileReader class
@@ -128,3 +129,4 @@ void exportFileReader()
     >();
 
 }//function
+#endif

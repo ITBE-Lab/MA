@@ -311,6 +311,7 @@ int Alignment::reCalcScore() const
 }//function
 
 
+#ifdef WITH_PYTHON
 void exportAlignment()
 {
     boost::python::class_<
@@ -446,4 +447,5 @@ void exportAlignment()
         std::shared_ptr<Container> 
     >();
 
-}
+}// function
+#endif

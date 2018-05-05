@@ -5,6 +5,7 @@
 #include "container/container.h"
 using namespace libMA;
 
+#ifdef WITH_PYTHON
 void exportContainer()
 {
     // container is an abstract class and should never be initialized
@@ -55,3 +56,4 @@ void exportContainer()
         std::shared_ptr<Container> 
     >();
 }//function
+#endif

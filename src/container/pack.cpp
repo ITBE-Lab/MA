@@ -590,6 +590,7 @@ using namespace libMA;
 
 //#endif
 
+#ifdef WITH_PYTHON
 void exportPack()
 {
     boost::python::class_<
@@ -721,3 +722,4 @@ void exportPack()
             std::shared_ptr<Container>
         >();
 }//function
+#endif

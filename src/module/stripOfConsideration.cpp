@@ -191,6 +191,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
 }//function
 
+#ifdef WITH_PYTHON
 void exportStripOfConsideration()
 {
     //export the Bucketing class
@@ -211,3 +212,4 @@ void exportStripOfConsideration()
     >();
 
 }//function
+#endif

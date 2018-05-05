@@ -35,6 +35,7 @@ std::shared_ptr<Container> ExtractAllSeeds::execute(
     return pSegments->extractSeeds(pFM_index, maxAmbiguity);
 }//function
 
+#ifdef WITH_PYTHON
 void exportExtractAllSeeds()
 {
     //export the ExtractAllSeeds class
@@ -52,3 +53,4 @@ void exportExtractAllSeeds()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

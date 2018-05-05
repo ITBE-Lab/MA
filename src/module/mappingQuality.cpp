@@ -78,6 +78,7 @@ std::shared_ptr<Container> MappingQuality::execute(
     return pRet;
 }//function
 
+#ifdef WITH_PYTHON
 void exportMappingQuality()
 {
     //export the MappingQuality class
@@ -93,3 +94,4 @@ void exportMappingQuality()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

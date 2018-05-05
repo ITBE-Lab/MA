@@ -100,6 +100,7 @@ std::shared_ptr<Container> UnLock::execute(std::shared_ptr<ContainerVector> vpIn
     return std::shared_ptr<Container>(new Nil());
 }//function
 
+#ifdef WITH_PYTHON
 void exportSplitter()
 {
     //export the Splitter class
@@ -161,3 +162,4 @@ void exportSplitter()
     >();
 
 }//function
+#endif
