@@ -236,15 +236,6 @@ class LinearLineSweep(libMA.LinearLineSweep):
         return super(LinearLineSweep, self).promise_me(ContainerVector(*args))
 
 ##
-# @brief python wrapper for LinearLineSweep
-class Chaining(libMA.Chaining):
-    def execute(self, *args):
-        return super(Chaining, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(Chaining, self).promise_me(ContainerVector(*args))
-
-##
 # @brief python wrapper for FileReader
 class FileReader(libMA.FileReader):
     def execute(self):
@@ -305,17 +296,6 @@ class ExtractAllSeeds(libMA.ExtractAllSeeds):
 
     def promise_me(self, *args):
         return super(ExtractAllSeeds, self).promise_me(ContainerVector(*args))
-
-##
-# @brief The SMW Module.
-# @ingroup module
-#
-class SMW(libMA.SMW):
-    def execute(self, *args):
-        return super(SMW, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(SMW, self).promise_me(ContainerVector(*args))
 
 ##
 # @brief The Splitter Module.

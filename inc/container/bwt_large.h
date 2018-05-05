@@ -5,10 +5,8 @@
  */
 #pragma once
 
-#include "util/debug.h"
 #include "util/support.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -17,7 +15,6 @@
 /* C++ includes
  */
 #include <algorithm>
-#include <vector>
 #include <memory> 
 #include <array>
 

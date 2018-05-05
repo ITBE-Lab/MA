@@ -8,7 +8,6 @@
 #define CONTAINER_H
 
 #include "util/support.h"
-#include <vector>
 #include "util/exception.h"
 #include "util/iterableConverter.h"
 #ifdef WITH_PYTHON

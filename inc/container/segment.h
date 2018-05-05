@@ -8,7 +8,6 @@
 
 #include "container/fMIndex.h"
 #include <thread>
-#include "container/seed.h"
 
 #define confMETA_MEASURE_DURATION ( 1 )
 

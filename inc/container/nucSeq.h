@@ -5,18 +5,11 @@
  */
 #pragma once
 
-#include "util/debug.h"
 #include <memory>
 #include <algorithm>
 #include <array>
 #include <numeric>
-#include <cmath>
 #include <cstring>
-#include "container/interval.h"
-#ifdef WITH_PYTHON
-    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#endif
-#include "container/container.h"
 #include "container/seed.h"
 
 namespace libMA

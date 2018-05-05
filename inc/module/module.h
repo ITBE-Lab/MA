@@ -7,8 +7,6 @@
 #define MODULE_H
 
 #include "container/container.h"
-#include "util/debug.h"
-#include <memory>
 #include <Python.h>
 #include <iostream>
 #ifdef WITH_PYTHON

@@ -16,8 +16,6 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include "container/nucSeq.h"
-#include "util/debug.h"
-#include "util/support.h"
 
 #ifdef FASTA_READER
         class FastaDescriptor;
