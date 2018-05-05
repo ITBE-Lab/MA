@@ -32,6 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * - Seeding
  * - Seed set assembling
  *   -# Filtering
+ *   -# Strip of Consideration
  *   -# Harmonization
  * - Dynamic programming
  * 
@@ -45,9 +46,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
  * <tr><td>Seeding <td> libMA::FMIndex, libMA::NucSeq <td> libMA::SegmentVector
- * <tr><td>Seed Processing <td> libMA::SegmentVector <td> libMA::SegmentVector
- * <tr><td>Optimal Matching <td> libMA::SegmentVector,
- * libMA::NucSeq, libMA::Pack <td> libMA::Alignment
+ * <tr><td>Seed set assembling <td> libMA::SegmentVector <td> libMA::Seeds
+ * <tr><td>Dynamic programming <td> libMA::Seeds, libMA::NucSeq, libMA::Pack <td> libMA::Alignment
  * </table>
  *
  * @note The python classes can be easily identified by the prefix "MA." 
