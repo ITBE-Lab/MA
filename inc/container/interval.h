@@ -54,7 +54,7 @@ public:
     /**
      * @returns the end of the interval.
      * @brief Interval end.
-     * @note end = start = size
+     * @note end = start + size
      */
     inline const T end() const
     {
@@ -196,6 +196,7 @@ public:
 };//class
 
 
+#ifdef WITH_PYTHON
 template<typename T>
 void exportInterval()
 {
@@ -210,3 +211,4 @@ void exportInterval()
         .def_readwrite("size", &Interval<T>::iSize)
     ;
 }//function
+#endif

@@ -32,6 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * - Seeding
  * - Seed set assembling
  *   -# Filtering
+ *   -# Strip of Consideration
  *   -# Harmonization
  * - Dynamic programming
  * 
@@ -45,9 +46,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
  * <tr><td>Seeding <td> libMA::FMIndex, libMA::NucSeq <td> libMA::SegmentVector
- * <tr><td>Seed Processing <td> libMA::SegmentVector <td> libMA::SegmentVector
- * <tr><td>Optimal Matching <td> libMA::SegmentVector,
- * libMA::NucSeq, libMA::Pack <td> libMA::Alignment
+ * <tr><td>Seed set assembling <td> libMA::SegmentVector <td> libMA::Seeds
+ * <tr><td>Dynamic programming <td> libMA::Seeds, libMA::NucSeq, libMA::Pack <td> libMA::Alignment
  * </table>
  *
  * @note The python classes can be easily identified by the prefix "MA." 
@@ -119,10 +119,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * 
  * @section todos TODOs
  * 
- * @todo make efficient NMW (for global alignments)
  * @todo different output formats
  * @todo code cleanup
- * @todo test with queries from the reverse complement...
+ * @todo remove boost::program_options
+ * @todo remove boost::filesystem
+ * @todo remove boost::iostreams
+ * 
  * 
  * @section about_us_sec About Us
  * 
@@ -159,22 +161,19 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pFMDIndex,
     std::vector<std::shared_ptr<libMA::Pledge>> aQueries,
     std::shared_ptr<libMA::Module> pOut,
+    unsigned int uiReportN,
     unsigned int uiThreads,
-    unsigned int uiMaxAmbiguity,
-    unsigned int uiNumSOC,
     bool bPariedNormal,
     bool bPariedUniform,
     unsigned int uiPairedMean,
     double fPairedStd,
     double dPairedU,
     bool bSeedSetPairs,
-    unsigned int uiReportNBest,
-    bool bLocal,
-    int iMatch = 10,
-    int iMisMatch = 4,
-    int iGap = 6,
-    int iExtend = 1,
-    unsigned int uiMaxGapArea = 10000
+    float fGiveUp,
+    unsigned int iMatch_,
+    unsigned int iMisMatch_,
+    unsigned int iGap_,
+    unsigned int iExtend_
 );
 
 #endif

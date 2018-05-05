@@ -151,8 +151,9 @@ namespace libMA
         
         unsigned int EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
         
-        bool EXPORTED testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack);
+        bool EXPORTED testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack);
 
+        bool EXPORTED test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest);
 
     protected :
         typedef int64_t bwtint_t;
@@ -597,7 +598,7 @@ namespace libMA
          * IMPORTANT: The indices are inclusive, i. e. we count 
          * IMPORTANT: Requires k <= l
          */
-        void bwt_2occ4( t_bwtIndex k,                                        // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
+        inline void bwt_2occ4( t_bwtIndex k,                                        // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
                         t_bwtIndex l,                                        // second end index in BWT (l can be negative: (t_bwtIndex)(-1) )
                         bwt64bitCounter cntk[4], bwt64bitCounter cntl[4]    // (outputs) counter for k and l
                     )
@@ -700,7 +701,7 @@ namespace libMA
         /** We keep the reference length private in order to avoid unexpected trouble.
          * Delivers the length of the reference (pack) that belongs to the current FM-index.
          */
-        uint64_t getRefSeqLength( void )
+        uint64_t getRefSeqLength( void ) const
         {
             return uiRefSeqLength;
         } // method
@@ -827,7 +828,7 @@ namespace libMA
                                                     : "";
             if ( sErrorText != "" )
             {
-                BOOST_LOG_TRIVIAL( info ) << "BWT different: " << sErrorText;
+                std::cerr << "BWT different: " << sErrorText << std::endl;
             } // if
             
             return sErrorText == "";
@@ -896,16 +897,25 @@ namespace libMA
             )
             : FMIndex() // call the default constructor
         {
-            build_FMIndex( *pxSequenceCollection, 2 );//@fixme here might be the problem try 0 and 1
+            build_FMIndex( *pxSequenceCollection, 2 );
+            DEBUG(
+                if(!test(pxSequenceCollection, 10000))// test 10000 sequences
+                {
+                    std::cerr << "WARNING: suffix array test failed" << std::endl;
+                    exit(0);
+                }//if
+            )
         } // constructor
     }; // class FMIndex
 
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief function called in order to export this @ref Module "module"
  * @ingroup export
  */
 void exportFM_index();
+#endif
 
 #endif

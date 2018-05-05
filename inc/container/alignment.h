@@ -43,6 +43,9 @@ namespace libMA
     class Alignment : public Container
     {
     public:
+#if DEBUG_LEVEL >= 1
+            std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vGapsScatter;
+#endif
         /// The sparse list of MatchTypes that describe the alignment.
         std::vector<std::tuple<MatchType, nucSeqIndex>> data;
         /// The length of the alignment.
@@ -61,6 +64,7 @@ namespace libMA
 
         //some statistics
         AlignmentStatistics xStats;
+        bool bSecondary;
 
         /**
          * @brief Creates an empty alignment.
@@ -73,26 +77,8 @@ namespace libMA
             uiEndOnRef(0),
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
-            xStats()
-        {}//constructor
-        /**
-         * @brief Creates an empty alignment, 
-         * where the interval of the reference that is used is already known.
-         */
-        Alignment(
-                nucSeqIndex uiBeginOnRef, 
-                nucSeqIndex uiEndOnRef,
-                nucSeqIndex uiBeginOnQuery,
-                nucSeqIndex uiEndOnQuery
-            )
-                :
-            data(),
-            uiLength(0),
-            uiBeginOnRef(uiBeginOnRef),
-            uiEndOnRef(uiEndOnRef),
-            uiBeginOnQuery(uiBeginOnQuery),
-            uiEndOnQuery(uiEndOnQuery),
-            xStats()
+            xStats(),
+            bSecondary(false)
         {}//constructor
 
         /**
@@ -106,11 +92,62 @@ namespace libMA
             data(),
             uiLength(0),
             uiBeginOnRef(uiBeginOnRef),
-            uiEndOnRef(0),
+            uiEndOnRef(uiBeginOnRef),
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
-            xStats()
+            xStats(),
+            bSecondary(false)
         {}//constructor
+
+        /**
+         * @brief Creates an empty alignment, 
+         * where the interval of the reference that is used is already known.
+         */
+        Alignment(
+                nucSeqIndex uiBeginOnRef,
+                nucSeqIndex uiBeginOnQuery
+            )
+                :
+            data(),
+            uiLength(0),
+            uiBeginOnRef(uiBeginOnRef),
+            uiEndOnRef(uiBeginOnRef),
+            uiBeginOnQuery(uiBeginOnQuery),
+            uiEndOnQuery(uiBeginOnQuery),
+            xStats(),
+            bSecondary(false)
+        {}//constructor
+
+        /**
+         * @brief Creates an empty alignment, 
+         * where the interval of the reference that is used is already known.
+         */
+        Alignment(
+                nucSeqIndex uiBeginOnRef,
+                nucSeqIndex uiBeginOnQuery,
+                nucSeqIndex uiEndOnRef,
+                nucSeqIndex uiEndOnQuery
+            )
+                :
+            data(),
+            uiLength(0),
+            uiBeginOnRef(uiBeginOnRef),
+            uiEndOnRef(uiEndOnRef),
+            uiBeginOnQuery(uiBeginOnQuery),
+            uiEndOnQuery(uiEndOnQuery),
+            xStats(),
+            bSecondary(false)
+        {}//constructor
+
+        inline std::string toString() const
+        {
+            std::string sRet = "Alignment Dump: ";
+            const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
+            for(auto& tuple : data)
+                sRet += vTranslate[ (unsigned int)std::get<0>(tuple)] + std::to_string(std::get<1>(tuple)) + " ";
+            sRet += std::to_string(iScore);
+            return sRet; 
+        }
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const
@@ -145,9 +182,15 @@ namespace libMA
             //the MatchType match type is stored in a compressed format -> extract it
             nucSeqIndex j = 0;
             unsigned int k = 0;
-            while(k < data.size() && (j += std::get<1>(data[k++])) <= i);
+            while(k < data.size())
+            {
+                j += std::get<1>(data[k]);
+                if(j > i)
+                    break;
+                k++;
+            }// while
 
-            return std::get<0>(data[k-1]);
+            return std::get<0>(data[k]);
         }//function
 
         /**
@@ -187,6 +230,15 @@ namespace libMA
             append(type, 1);
         }//function
 
+        /**
+         * @brief appends another alignment
+         */
+        void append(const Alignment& rOther)
+        {
+            for(auto xTuple : rOther.data)
+                append(std::get<0>(xTuple), std::get<1>(xTuple));
+        }//function
+
         ///@brief wrapper for boost-python
         void append_boost1(MatchType type, nucSeqIndex size)
         {
@@ -203,6 +255,17 @@ namespace libMA
         ///@brief Length of the alignment
         nucSeqIndex length() const
         {
+            DEBUG(
+                nucSeqIndex uiCheck = 0;
+                for(auto xTup : data)
+                    uiCheck += std::get<1>(xTup);
+                if(uiCheck != uiLength)
+                {
+                    std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 
+                        << std::endl;
+                    assert(false);
+                }// if
+            )//DEBUG
             return uiLength;
         }//function
 
@@ -229,6 +292,11 @@ namespace libMA
             assert(data.size() == 0 || reCalcScore() == iScore);
             return iScore;
         }
+
+        /**
+         * @brief the NMW score for this alignment
+         */
+        unsigned int EXPORTED localscore() const;
 
         /**
          * @brief returns how many nucleotides within this alignment are determined by seeds 
@@ -258,15 +326,21 @@ namespace libMA
         /**
          * @brief for sorting alignment by their score
          * @details
-         * When multiple alignments are created we use this function to sort them 
-         * overload from Module
+         * When multiple alignments are created we use this function to sort them.
+         * Overload from Module.
          */
-        bool smaller(const std::shared_ptr<Container> pOther) const
+        bool larger(const std::shared_ptr<Container> pOther) const
         {
-            const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
+            const std::shared_ptr<Alignment>& pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
-            return score() < pAlign->score();
+            auto uiS1 = score();
+            auto uiS2 = pAlign->score();
+            if(uiS1 == uiS2)
+                // if both alignments have the same score output the one with 
+                // the higher SoC score first (this is determined by the lower SoC index)
+                return xStats.index_of_strip < pAlign->xStats.index_of_strip;
+            return uiS1 > uiS2;
         }//function
 
         /**
@@ -277,6 +351,14 @@ namespace libMA
          */
         void EXPORTED makeLocal();
 
+        /**
+         * @brief removes dangeling Deletions
+         * @details
+         * When the alignment is created there might be some dangeling deletions at 
+         * the beginning or end. This function removes them
+         */
+        void EXPORTED removeDangeling();
+
         void operator=(const std::shared_ptr<Alignment> pOther)
         {
             data = pOther->data;
@@ -286,15 +368,30 @@ namespace libMA
             uiBeginOnQuery = pOther->uiBeginOnQuery;
             iScore = pOther->iScore;
             fMappingQuality = pOther->fMappingQuality;
+            bSecondary = pOther->bSecondary;
             xStats = pOther->xStats;
         }//function
+
+        inline void shiftOnRef(nucSeqIndex uiBy)
+        {
+            uiBeginOnRef += uiBy;
+            uiEndOnRef += uiBy;
+        }// method
+
+        inline void shiftOnQuery(nucSeqIndex uiBy)
+        {
+            uiBeginOnQuery += uiBy;
+            uiEndOnQuery += uiBy;
+        }// method
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the Alignment container to boost python.
  * @ingroup export
  */
 void exportAlignment();
+#endif
 
 #endif

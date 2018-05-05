@@ -16,8 +16,9 @@ from .aligner import *
 #
 class AlignmentPrinter(Module):
 
-    def __init__(self, nuc_per_line = 80):
+    def __init__(self, nuc_per_line = 80, check_for_errors_only=False):
         self.nuc_per_line = nuc_per_line
+        self.check_for_errors_only = check_for_errors_only
 
     ##
     # @brief returns the @ref ContainerType "container types" alignment, nucSeq, packedNucSeq.
@@ -43,7 +44,10 @@ class AlignmentPrinter(Module):
         ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
 
         lines = [
-            "score: " + str(align.get_score()),
+            "score: " + str(align.get_score()) + " cigar length: " + str(len(align)) + 
+            " soc index:" + str(align.stats.index_of_strip) + 
+            " map qual:" + str(align.mapping_quality) + 
+            " query name:" + str(align.stats.name),
             "reference: " + str(align.begin_on_ref) + " - " + str(align.end_on_ref),
             "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query)
         ]
@@ -68,13 +72,26 @@ class AlignmentPrinter(Module):
             #perform double check for messup:
             if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.deletion or align[counter] == MatchType.missmatch):
                 print("This should not happen... (ref)")
+                print(align[counter])
                 print(ind_ref)
                 print(len(ref))
+                # @todo it would be nice if the cpp code would simply support slicing the alignment
+                s = []
+                for index in range(counter, len(align)):
+                    s.append(align[counter])
+                print("remaining cigar:", s)
+                atLeastOneMistake = True
                 break
             if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
                 print("This should not happen... (query)")
+                print(align[counter])
                 print(ind_query)
                 print(len(query))
+                s = []
+                for index in range(counter, len(align)):
+                    s.append(align[counter])
+                print("remaining cigar:", s)
+                atLeastOneMistake = True
                 break
 
             #check for match or missmatch
@@ -128,9 +145,12 @@ class AlignmentPrinter(Module):
         lines[-3] += "\treference"
         lines[-1] += "\tquery"
 
-        for line in lines:
-            print(line)
+        if not self.check_for_errors_only and not atLeastOneMistake:
+            for line in lines:
+                print(line)
         if atLeastOneMistake:
+            for line in lines:
+                print(line)
             print("WARNING: the alignment contains errors!")
 
         return None

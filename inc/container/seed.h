@@ -10,6 +10,8 @@
 #include "container/interval.h"
 #include <list>
 
+#define DELTA_CACHE ( 1 )
+
 namespace libMA
 {
     ///@brief any index on the query or reference nucleotide sequence is given in this datatype
@@ -29,6 +31,9 @@ namespace libMA
         ///@brief the beginning of the match on the reference
         nucSeqIndex uiPosOnReference;
         unsigned int uiAmbiguity;
+#if DELTA_CACHE == ( 1 )
+        nucSeqIndex uiDelta;
+#endif
 
         /**
          * @brief Creates a new Seed.
@@ -51,7 +56,7 @@ namespace libMA
                 const nucSeqIndex uiPosOnQuery, 
                 const nucSeqIndex uiLength, 
                 const nucSeqIndex uiPosOnReference,
-                unsigned int uiAmbiguity
+                const unsigned int uiAmbiguity
             )
                 :
             Interval(uiPosOnQuery, uiLength),
@@ -67,6 +72,9 @@ namespace libMA
             Interval(rOther),
             uiPosOnReference(rOther.uiPosOnReference),
             uiAmbiguity(rOther.uiAmbiguity)
+#if DELTA_CACHE == ( 1 )
+            , uiDelta(rOther.uiDelta)
+#endif
         {}//copy constructor
 
         /**
@@ -80,7 +88,7 @@ namespace libMA
         /**
          * @brief Returns the beginning of the seed on the reference.
          */
-        nucSeqIndex start_ref() const
+        inline nucSeqIndex start_ref() const
         {
             return uiPosOnReference;
         }//function
@@ -88,7 +96,7 @@ namespace libMA
         /**
          * @brief Returns the end of the seed on the reference.
          */
-        nucSeqIndex end_ref() const
+        inline nucSeqIndex end_ref() const
         {
             return uiPosOnReference + size();
         }//function
@@ -97,13 +105,10 @@ namespace libMA
          * @brief Returns the value of the seed.
          * @details
          * A seeds value corresponds to its size.
-         * @todo check if the size()/uiAmbiguity is actually helpful
          */
-        nucSeqIndex getValue() const
+        inline nucSeqIndex getValue() const
         {
-            if(uiAmbiguity == 0)
-                return size();
-            return size()/uiAmbiguity;
+            return size();
         }//function
 
         /**
@@ -114,6 +119,9 @@ namespace libMA
             Interval::operator=(rxOther);
             uiPosOnReference = rxOther.uiPosOnReference;
             uiAmbiguity = rxOther.uiAmbiguity;
+#if DELTA_CACHE == ( 1 )
+            uiDelta = rxOther.uiDelta;
+#endif
             return *this;
         }// operator
         
@@ -127,25 +135,26 @@ namespace libMA
         }// operator
 
         //overload
-        bool canCast(std::shared_ptr<Container> c) const
+        inline bool canCast(const std::shared_ptr<Container>& c) const
         {
             return std::dynamic_pointer_cast<Seed>(c) != nullptr;
         }//function
 
         //overload
-        std::string getTypeName() const
+        inline std::string getTypeName() const
         {
             return "Seed";
         }//function
 
         //overload
-        std::shared_ptr<Container> getType() const
+        inline std::shared_ptr<Container> getType() const
         {
             return std::shared_ptr<Container>(new Seed());
         }//function
 
     }; //class
 
+    class Alignment;
     /**
      * @brief Used to store some statistics to each alignment
      * @details
@@ -158,9 +167,13 @@ namespace libMA
         unsigned int num_seeds_in_strip;
         unsigned int anchor_size;
         unsigned int anchor_ambiguity;
-        bool bPaired;
+        std::weak_ptr<Alignment> pOther;
         bool bFirst;
         std::string sName;
+        nucSeqIndex uiInitialQueryBegin;
+        nucSeqIndex uiInitialRefBegin;
+        nucSeqIndex uiInitialQueryEnd;
+        nucSeqIndex uiInitialRefEnd;
 
         AlignmentStatistics()
                 :
@@ -168,9 +181,13 @@ namespace libMA
             num_seeds_in_strip(0),
             anchor_size(0),
             anchor_ambiguity(0),
-            bPaired(false),
+            pOther(),
             bFirst(false),
-            sName("unknown")
+            sName("unknown"),
+            uiInitialQueryBegin(0),
+            uiInitialRefBegin(0),
+            uiInitialQueryEnd(0),
+            uiInitialRefEnd(0)
         {}
 
         void operator=(AlignmentStatistics &rOther)
@@ -179,9 +196,13 @@ namespace libMA
             num_seeds_in_strip = rOther.num_seeds_in_strip;
             anchor_size = rOther.anchor_size;
             anchor_ambiguity = rOther.anchor_ambiguity;
-            bPaired = rOther.bPaired;
+            pOther = rOther.pOther;
             bFirst = rOther.bFirst;
             sName = rOther.sName;
+            uiInitialQueryBegin = rOther.uiInitialQueryBegin;
+            uiInitialRefBegin = rOther.uiInitialRefBegin;
+            uiInitialQueryEnd = rOther.uiInitialQueryEnd;
+            uiInitialRefEnd = rOther.uiInitialRefEnd;
         }//function
     };//class
 
@@ -255,21 +276,23 @@ namespace libMA
                 push_back(rS);
         }//function
 
-        bool smaller(const std::shared_ptr<Container> pOther) const
+        bool larger(const std::shared_ptr<Container> pOther) const
         {
             const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>(pOther);
             if(pSeeds == nullptr)
                 return false;
-            return getScore() < pSeeds->getScore();
+            return getScore() > pSeeds->getScore();
         }// operator
 
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief exports the Seed and Seedlist classes to python.
  * @ingroup export
  */
 void exportSeed();
+#endif
 
 #endif

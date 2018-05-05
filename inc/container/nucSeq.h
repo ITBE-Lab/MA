@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "util/debug.h"
 #include <memory>
 #include <algorithm>
 #include <array>
@@ -12,9 +13,11 @@
 #include <cmath>
 #include <cstring>
 #include "container/interval.h"
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <boost/log/trivial.hpp>
+#ifdef WITH_PYTHON
+    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#endif
 #include "container/container.h"
+#include "container/seed.h"
 
 namespace libMA
 {
@@ -633,9 +636,10 @@ namespace libMA
 
         /** transforms the character representation into a representation on the foundation of digits.
          */
-        void vTranslateToNumericFormUsingTable( const unsigned char *alphabetTranslationTable,
-                                                size_t uxStartIndex
-                                            )
+        inline void vTranslateToNumericFormUsingTable( 
+                const unsigned char *alphabetTranslationTable,
+                size_t uxStartIndex
+            )
         {
             for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
             {
@@ -659,6 +663,38 @@ namespace libMA
             } // else
         } // static method
 
+        /** transforms the numeric representation into a character representation.
+         */
+        inline void vTranslateToCharacterForm( size_t uxStartIndex )
+        {
+            for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
+            {
+                pxSequenceRef[uxIterator] = (uint8_t)translateACGTCodeToCharacter(
+                    pxSequenceRef[uxIterator]);
+            } // for
+        } // method
+
+        /** transforms the character representation into a representation on the foundation of digits.
+         */
+        inline void vTranslateToNumericForm( size_t uxStartIndex )
+        {
+            vTranslateToNumericFormUsingTable(xNucleotideTranslationTable, uxStartIndex);
+        } // method
+
+        /** transforms the character representation into a representation on the foundation of digits.
+         */
+        inline void vTranslateToNumericForm()
+        {
+            vTranslateToNumericForm(0);
+        } // method
+
+        /** transforms the numeric representation into a character representation.
+         */
+        inline void vTranslateToCharacterForm()
+        {
+            vTranslateToCharacterForm(0);
+        } // method
+
         /** The symbol on some position in textual form.
          * We count starting from 0.
          */
@@ -671,11 +707,11 @@ namespace libMA
 
             return translateACGTCodeToCharacter( pxSequenceRef[uxPosition] );
         } // method
-
         /** Appends a string containing nucleotides as text and automatically translates the symbols.
          */
         void vAppend( const char* pcString )
         {
+
             size_t uxSizeBeforeAppendOperation = this->uiSize;
             std::vector<uint8_t> xQuality(strlen( pcString ), 126);//strlen( pcString ) uint8_t's with value 1
             
@@ -692,7 +728,6 @@ namespace libMA
         {
             vAppend(pcString);
         } // method
-        
         
         std::string toString()
         {
@@ -736,12 +771,68 @@ namespace libMA
             for (unsigned int i = 0; i < length(); i++)
                 sRet += (char)quality(i);
             return sRet;
-        }//function
+        }//method
+
+        /**
+         * checks for untranslated characters in the sequence..
+         */
+        inline void check()
+        {
+            for(unsigned int i=0; i < length(); i++)
+            {
+                if(pxSequenceRef[i] > 4)
+                {
+                    //if was not allow print error and throw exception
+                    std::cerr << "Having invalid character in string: '" 
+                                << pxSequenceRef[i] 
+                                << "' at position: " << i 
+                                << " full fastaq: " << fastaq() << std::endl;
+                    throw AlignerException("Found invalid character in nucSeq.");
+                }//if
+            }//for
+        }//method
+
+        /**
+         * DEPRECATED
+         * can not deal with 'N's
+         */
+        inline std::vector<uint8_t> as4Bit(
+                nucSeqIndex uiFrom,
+                nucSeqIndex uiTo,
+                bool bReversed
+            ) const
+        {
+            assert(uiTo <= length());
+            assert(uiFrom <= uiTo);
+            DEBUG_3(
+                for(size_t i = uiFrom; i < uiTo; i++)
+                {
+                    assert(pxSequenceRef[i] < 4);
+                    std::cout << (int)pxSequenceRef[i] << " ";
+                }// for
+                std::cout << std::endl;
+            )// DEBUG
+            static const uint8_t aTranslate[4] = {1, 2, 4, 8};
+            std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
+
+            for(size_t i = 0; i < vRet.size(); i++)
+                vRet[ bReversed ? vRet.size() - (i + 1) : i ] =
+                    aTranslate[ pxSequenceRef[i + uiFrom] ];
+
+            DEBUG_3(
+                for(size_t i = 0; i < vRet.size(); i++)
+                    std::cout << (int)vRet[i] << " ";
+                std::cout << std::endl;
+            )// DEBUG
+            return vRet;
+        }// method
     }; // class NucSeq
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief export this @ref Module "modules" to boost python 
  * @ingroup export
  */
 void exportSequence();
+#endif

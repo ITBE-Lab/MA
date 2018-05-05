@@ -5,8 +5,8 @@
  */
 #pragma once
 #include <string>
+#include <iostream>
 #include <chrono> // required for getting the high resulotion clock
-#include <boost/log/trivial.hpp> 
 
 #if _MSC_VER
 
@@ -61,7 +61,7 @@ template <class FUNCTOR>
      {    /* Measure duration and log.
          */
         auto xDuration = metaMeasureDuration( std::forward<FUNCTOR>( f ) );
-        BOOST_LOG_TRIVIAL( info ) << sLogText << " required " << xDuration.count( ) * 1000 << " milliseconds.";
+        std::cout << sLogText << " required " << xDuration.count( ) * 1000 << " milliseconds." << std::endl;
      } // if
      else
      {    /* Simply call the functor.

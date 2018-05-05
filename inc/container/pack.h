@@ -14,7 +14,6 @@
 #define FASTA_READER
 
 #include <algorithm>
-#include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
 #include "container/nucSeq.h"
 #include "util/debug.h"
@@ -245,7 +244,7 @@ namespace libMA
         {
             auto rsFileName( rsFileNamePrefix + ".pac" ); // final filename for writing the packed sequence
             DEBUG_2(
-                BOOST_LOG_TRIVIAL(trace) << "Storing pack with filename " << rsFileName;
+                std::cout << "Storing pack with filename " << rsFileName << std::endl;
             )
             std::ofstream xFileOutputStream( rsFileName, std::ios::out | std::ios::binary );
 
@@ -403,7 +402,6 @@ namespace libMA
         * The descriptors must be stored in ascending with respect to uiStartOffsetUnpacked.
         * Throws an exception, if something goes wrong.
         * Deserialization of the vector for sequence descriptors.
-        * TO DO: Insert code for throwing some exception.
         */
         void vLoadSequenceDescriptorVector( const char *pcFileNamePrefix )
         {
@@ -456,7 +454,6 @@ namespace libMA
         
         * Throws an exception, if something goes wrong.
         * Deserialization of the vector for hole descriptors.
-        * TO DO: Insert code for throwing some exception.
         */
         void vLoadHoleDescriptorVector( const char *pcFileNamePrefix )
         {
@@ -509,7 +506,7 @@ namespace libMA
         */
         bool checkForDefect()
         {
-            BOOST_LOG_TRIVIAL( info ) << "Check description vector for consistency.";
+            std::cout << "Check description vector for consistency." << std::endl;
 
             decltype( SequenceInPack::uiStartOffsetUnpacked ) uiRunningStartOffsetUnpacked = 0;
 
@@ -585,7 +582,7 @@ namespace libMA
             */
             if ( rxSequence.empty() )
             {
-                BOOST_LOG_TRIVIAL( warning ) << "Skip Sequence " << rsName << " because it is empty.";
+                std::cerr << "Skip Sequence " << rsName << " because it is empty." << std::endl;
                 return;
             } // if
             
@@ -596,7 +593,9 @@ namespace libMA
                                             : xVectorOfSequenceDescriptors.back().uiStartOffsetUnpacked + xVectorOfSequenceDescriptors.back().uiLengthUnpacked;
             
             assert( uiOffsetDistance == uiUnpackedSizeForwardStrand );
-            auto uiInitialUnpackedSize = uiUnpackedSizeForwardStrand;
+            DEBUG(
+                auto uiInitialUnpackedSize = uiUnpackedSizeForwardStrand;
+            )//DEBUG
 
             /* TO DO: Put this into the vector of sequence descriptions.
             */
@@ -825,6 +824,17 @@ namespace libMA
         {
             return startOfSequenceWithId( iSequenceId ) + xVectorOfSequenceDescriptors[iSequenceId].uiLengthUnpacked;
         } // method
+        
+
+        /* Start of in sequence with id on forward strand.
+        */
+        uint64_t lengthOfSequenceWithName( std::string name ) const
+        {
+            for(const SequenceInPack& seq : xVectorOfSequenceDescriptors)
+                if(seq.sName.compare(name) == 0)
+                    return seq.uiLengthUnpacked;
+            return 0;
+        } // method
 
         /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver "*".)
         * FIX ME: This is design flaw from the original BWA code.
@@ -847,6 +857,13 @@ namespace libMA
         inline int64_t iAbsolutePosition( uint64_t uiPosition ) const
         {
             return bPositionIsOnReversStrand( uiPosition ) ? uiUnpackedSizeForwardPlusReverse() - (uiPosition + 1) : uiPosition;
+        } // method
+
+        /* Gives the absolute start position of a sequence
+        */
+        inline int64_t iAbsolutePosition( uint64_t uiBegin, uint64_t uiEnd ) const
+        {
+            return bPositionIsOnReversStrand( uiEnd ) ? uiUnpackedSizeForwardPlusReverse() - (uiEnd + 1) : uiBegin;
         } // method
 
         /* Maps a forward strand position to the reverse strand.
@@ -969,13 +986,12 @@ namespace libMA
             return endOfSequenceWithId(iSequenceId / 2);
         }//function
 
-        /* Maps a forward strand position to the reverse strand.
+        /* Gives the relative position
         */
-        inline uint64_t posInSequence( uint64_t uiPosition ) const
+        inline uint64_t posInSequence( uint64_t uiBegin, uint64_t uiEnd ) const
         {
-            return uiPosition - startOfSequenceWithId(
-                uiSequenceIdForPosition(iAbsolutePosition(uiPosition))
-            );
+            auto uiPosition = iAbsolutePosition(uiBegin, uiEnd);
+            return uiPosition - startOfSequenceWithId(uiSequenceIdForPosition(uiPosition));
         } // method
         
         /** Returns true if the section defined by both arguments has bridging properties.
@@ -993,7 +1009,7 @@ namespace libMA
             } // if
             else
             {
-                return true;
+                return false;
             } // else
         } // method
 
@@ -1015,6 +1031,10 @@ namespace libMA
          */
         void unBridgeSubsection( uint64_t& uiBegin, uint64_t& uiSize) const
         {
+            DEBUG(
+                assert( bridgingSubsection(uiBegin, uiSize) );
+                uint64_t uiSizeOriginal = uiSize;
+            )
             assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse() );
             int64_t startId = uiSequenceIdForPositionOrRev( uiBegin );
 
@@ -1029,6 +1049,9 @@ namespace libMA
             {
                 uiSize = uiSplit - uiBegin;
             }//else
+            DEBUG(
+                assert(uiSize <= uiSizeOriginal);
+            )
         } // method
 
         /* Extracts some subsequence from the packed sequence. (original name bns_get_seq)
@@ -1078,21 +1101,45 @@ namespace libMA
             rxSequence.resize( bAppend ? rxSequence.length() + (iEnd - iBegin) : iEnd - iBegin );
             
             if ( !bExtractAsOnReverseStrand )
-            {    /* Extract as forward strand.
-                */
+            {   /* Extract as forward strand.
+                 */
+                const auto itEnd = xVectorOfHoleDescriptors.end();
+                auto itHolesDesc = xVectorOfHoleDescriptors.begin();
                 for ( auto iPosition = iBegin; iPosition < iEnd; ++iPosition )
                 {
-                    rxSequence[uiSequenceIterator++] = getNucleotideOnPos( iPosition );
+                    // move the hole iterator forwards
+                    while(
+                            itHolesDesc != itEnd && 
+                            itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition
+                        )
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if(itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition)
+                        rxSequence[uiSequenceIterator++] = 4; // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[uiSequenceIterator++] = getNucleotideOnPos( iPosition );
                 } // for
             } // if
             else
             {    /* Extract as reverse strand. (begin is now bigger than end)
                 */
+                const auto itEnd = xVectorOfHoleDescriptors.rend();
+                auto itHolesDesc = xVectorOfHoleDescriptors.rbegin();
                 int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
                 int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
-                for ( int64_t uiPosition = iAbsoluteBegin; uiPosition > iAbsoluteEnd; --uiPosition )
+                for ( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
                 {
-                    rxSequence[uiSequenceIterator++] = 3 - getNucleotideOnPos( uiPosition );
+                    // move the (reversed) hole iterator forwards
+                    while(itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition)
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if(
+                            itHolesDesc != itEnd &&
+                            itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition
+                        )
+                        rxSequence[uiSequenceIterator++] = 4; // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[uiSequenceIterator++] = 3 - getNucleotideOnPos( iPosition );
                 } // for
             } // else
         } // method
@@ -1201,8 +1248,10 @@ namespace libMA
     }; // class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief exports the Pack class to python.
  * @ingroup export
  */
 void exportPack();
+#endif

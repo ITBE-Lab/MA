@@ -125,6 +125,7 @@ void simGetBoost3(
     Pledge::simultaneousGet(vPledges, false, [](){}, uiThreads);
 }//function
 
+#ifdef WITH_PYTHON
 void exportModule()
 {
     //module is an abstract class and should never be initialized
@@ -150,10 +151,10 @@ void exportModule()
             )
         .def(
                 "promise_me",
-                &Module::promiseMe,
-                boost::python::with_custodian_and_ward_postcall<0,1,
-                    boost::python::with_custodian_and_ward_postcall<0,2>
-                >()
+                &Module::promiseMe
+                //,boost::python::with_custodian_and_ward_postcall<0,1,
+                //    boost::python::with_custodian_and_ward_postcall<0,2>
+                //>()
             )
     ;
     boost::python::class_<
@@ -167,10 +168,10 @@ void exportModule()
         )
             .def(
                     "make_pledge",
-                    &Pledge::makePyPledge,
-                    boost::python::with_custodian_and_ward_postcall<0,1,
-                        boost::python::with_custodian_and_ward_postcall<0,3>
-                    >()
+                    &Pledge::makePyPledge
+                    //,boost::python::with_custodian_and_ward_postcall<0,1,
+                    //    boost::python::with_custodian_and_ward_postcall<0,3>
+                    //>()
                 )
             .staticmethod("make_pledge")
             .def(
@@ -179,8 +180,13 @@ void exportModule()
                 )
             .def(
                     "get",
-                    &Pledge::get,
-                    boost::python::with_custodian_and_ward_postcall<1,0>()
+                    &Pledge::get
+                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
+                )
+            .def(
+                    "clear_graph",
+                    &Pledge::clear_graph
+                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
                     "simultaneous_get",
@@ -203,6 +209,10 @@ void exportModule()
                     "get_pledger",
                     &Pledge::getPledger
                 )
+            .def(
+                    "get_graph_desc",
+                    &Pledge::getGraphDesc
+                )
             .def_readwrite("exec_time", &Pledge::execTime)
         ;
 
@@ -214,4 +224,5 @@ void exportModule()
 
     IterableConverter()
         .from_python<std::vector<std::shared_ptr<Pledge>>>();
-}
+}// function
+#endif

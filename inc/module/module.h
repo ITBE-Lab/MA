@@ -11,7 +11,9 @@
 #include <memory>
 #include <Python.h>
 #include <iostream>
-#include <boost/python/list.hpp>
+#ifdef WITH_PYTHON
+    #include <boost/python/list.hpp>
+#endif
 #include "util/threadPool.h"
 #include <ctime>
 #include <chrono>
@@ -103,7 +105,18 @@ namespace libMA
          */
         virtual std::string EXPORTED getName() const
         {
-            return "Module";
+            throw AlignerException("No Name available");
+        }//function
+
+        /**
+         * @brief Return a description of the Module.
+         * @details
+         * Can be used to print a representation of the computational graph.
+         * Is also used when creating error messages.
+         */
+        virtual std::string EXPORTED getFullDesc() const
+        {
+            throw AlignerException("No full desc available");
         }//function
 
         /**
@@ -347,17 +360,8 @@ namespace libMA
             execTime(0)
         {}//constructor
 
-        void execForGet()
+        inline void execForGet()
         {
-            bool bVolatile = false;
-            ///@todo same for py_pledger here
-            if(pledger != nullptr)
-                bVolatile = pledger->outputsVolatile();
-
-            //in this case there is no need to execute again
-            if(!bVolatile && content != nullptr)
-                return;
-
             if(pledger == nullptr && py_pledger.is_none())
                 throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
             if(pledger != nullptr)
@@ -392,8 +396,40 @@ namespace libMA
                     ); 
                 std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
                 execTime = duration.count();
-                assert(typeCheck(content, type));
+                DEBUG(
+                    if(!typeCheck(content, type))
+                    {
+                        if(pledger != nullptr)
+                            std::cerr << pledger->getFullDesc() << std::endl;
+                        else
+                            std::cerr << "pledger is nullpointer" << std::endl;
+                        assert(false);
+                    }//if
+                );
             }//else
+        }//function
+
+        /**
+         * @brief Used to synchronize the execution of pledges in the comp. graph.
+         * @details
+         * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
+         * Does not lock otherwise.
+         * In either case fDo is called.
+         * @todo @fixme sometimes this does not seem to work as intended 
+         * (no crashes but output alignments get lost)
+         */
+        inline void lockIfNecessary(std::function<void()> fDo)
+        {
+            if(vSuccessors.size() > 1)
+            {
+                // multithreading is possible thus a guard is required here.
+                // deadlock prevention is trivial, 
+                // since computational graphs are essentially trees.
+                std::lock_guard<std::mutex> xGuard(*pMutex);
+                fDo();
+            }//if
+            else
+                fDo();
         }//function
 
     public:
@@ -431,6 +467,19 @@ namespace libMA
         std::string getTypeName() const
         {
             return "Pledge";
+        }//function
+
+        std::string getGraphDesc() const
+        {
+            std::string sDesc = "";
+            if(pledger != nullptr)
+            {
+                sDesc += pledger->getFullDesc();
+            }//if
+            sDesc += "{";
+            for(std::shared_ptr<Pledge> pPre : vPredecessors)
+                sDesc += pPre->getGraphDesc() + "; ";
+            return sDesc + "}";
         }//function
 
         //overload
@@ -503,15 +552,31 @@ namespace libMA
          */
         std::shared_ptr<Container> get()
         {
-            //multithreading is possible thus a guard is required here.
-            //deadlock prevention is trivial, since the computational graphs are essentially trees.
-            std::lock_guard<std::mutex> xGuard(*pMutex);
+            bool bVolatile = false;
+            ///@todo same for py_pledger here
+            if(pledger != nullptr)
+                bVolatile = pledger->outputsVolatile();
 
-            //execute
-            execForGet();
-            //also execute all the synchronized locks
-            for(std::shared_ptr<Pledge> pSync : aSync)
-                pSync->execForGet();
+            //in this case there is no need to execute again
+            if(!bVolatile && content != nullptr)
+                return content;
+
+            // locks a mutex if this pledge can be reached from multiple leaves in the graph
+            // does not lock otherwise...
+            lockIfNecessary(
+                [&]
+                ()
+                {
+                    //execute
+                    execForGet();
+
+                    //@note the mutex gets synchronized between synchronized pledges, 
+                    //so no special sync needed :)
+                    //also execute all the synchronized locks
+                    for(std::shared_ptr<Pledge> pSync : aSync)
+                        pSync->execForGet();
+                }//lambda
+            );//function call
 
             return content;
         }//function
@@ -572,14 +637,17 @@ namespace libMA
                             // otherwise one iteration is performed only
 
                             /// @todo here should be a check on weather 
-                            // there is any volatile module in the graph or not
-                            // having potential endless loop...
+                            /// there is any volatile module in the graph or not
+                            /// having potential endless loop...
+
+                            // also exceptions should never be used for normal runtime behaviour...
                             try
                             {
                                 do
                                 {
                                     pPledge->get();
                                     callback();
+                                    DEBUG(std::cout << "*" << std::flush;)
                                 }//do
                                 while(bLoop);
                             } catch(ModuleDryException e) {}
@@ -589,14 +657,35 @@ namespace libMA
                 }//for
             }//scope xPool
         }//function
+
+        /*
+         * clears the comp graph in font of this pledge
+         */
+        void clear_graph()
+        {
+            pledger.reset();
+            content.reset();
+            type.reset();
+            for(auto pOther : vPredecessors)
+                if(pOther != nullptr)
+                {
+                    pOther->clear_graph();
+                    pOther.reset();
+                }//if
+            vPredecessors.clear();
+            vSuccessors.clear();
+            aSync.clear();
+        }//function
     };//class
 }//namespace libMA
 
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the Module class to boost python.
  * @ingroup export
  */
 void exportModule();
+#endif
 
 #endif

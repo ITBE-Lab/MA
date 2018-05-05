@@ -5,6 +5,7 @@
 #include "container/segment.h"
 using namespace libMA;
 
+#ifdef WITH_PYTHON
 void exportIntervalTree()
 {
     //export the SegmentVector class
@@ -28,24 +29,32 @@ void exportIntervalTree()
         >("SegmentVector")
             .def(
                     "extract_seeds", 
-                    &SegmentVector::extractSeeds,
-                    boost::python::with_custodian_and_ward_postcall<1,0>()
+                    &SegmentVector::extractSeeds
+                    //,boost::python::with_custodian_and_ward_postcall<1,0>()
                 )
             .def(
                     "num_seeds", 
                     &SegmentVector::numSeeds
                 )
-            .def(boost::python::vector_indexing_suite<
-                    SegmentVector,
-                    /*
-                    *    true = noproxy: This means that the content of
-                    *    the vector is already exposed by boost python.
-                    *    If this is kept as false, Segment would be exposed a second time.
-                    *    the two Segments would be different and not inter castable.
-                    */
-                    true
-                >());
+            .def(boost::python::vector_indexing_suite
+                    <
+                        SegmentVector,
+                        /*
+                        *    true = noproxy: This means that the content of
+                        *    the vector is already exposed by boost python.
+                        *    If this is kept as false, Segment would be exposed a second time.
+                        *    the two Segments would be different and not inter castable.
+                        */
+                        true
+                    >()
+                )
+#if MEASURE_DURATIONS == ( 1 )
+            .def_readwrite("fExtraction", &SegmentVector::fExtraction)
+            .def_readwrite("fSorting", &SegmentVector::fSorting)
+            .def_readwrite("fLinesweep", &SegmentVector::fLinesweep)
+#endif
     ;
+
     IterableConverter()
         .from_python<SegmentVector>();
 
@@ -56,3 +65,4 @@ void exportIntervalTree()
         >();
 
 }//function
+#endif

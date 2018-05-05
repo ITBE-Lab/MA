@@ -19,7 +19,6 @@ using namespace libMA;
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
 
-/// @todo  i should be my own module
 void OtherSeeding::bowtieExtension(
         std::shared_ptr<FMIndex> pFM_index,
         std::shared_ptr<NucSeq> pQuerySeq,
@@ -53,7 +52,6 @@ void OtherSeeding::bowtieExtension(
     }//for
 }//function
 
-/// @todo  i should be my own module
 /**
  * This is what blasr does:
  * 
@@ -77,8 +75,8 @@ void OtherSeeding::doBlasrExtension(
                             pFM_index->L2[complement(q[i])] + 1, 
                             pFM_index->L2[(int)q[i] + 1] - pFM_index->L2[(int)q[i]]
                         );
-        SAInterval lk;// will hold the maximal extension
-        SAInterval llk;// will hold the interval one shorter than the maximal extension
+        SAInterval lk(0,0,0);// will hold the maximal extension
+        SAInterval llk(0,0,0);// will hold the interval one shorter than the maximal extension
         nucSeqIndex i2 = 0;
         while(i2 <= i)
         {
@@ -136,6 +134,8 @@ std::shared_ptr<Container> OtherSeeding::execute(
     return pSegmentVector;
 }//function
 
+
+#ifdef WITH_PYTHON
 void exportOtherSeeding()
 {
     //export the OtherSeeding class
@@ -154,3 +154,4 @@ void exportOtherSeeding()
     >();
 
 }//function
+#endif

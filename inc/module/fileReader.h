@@ -9,6 +9,7 @@
 #include "module/module.h"
 #include "container/nucSeq.h"
 #include <fstream>
+#include "util/exception.h"
 
 namespace libMA
 {
@@ -32,8 +33,7 @@ namespace libMA
         {
             if (!pFile->is_open())
             {
-                std::cout << "Unable to open file" << std::endl;
-                ///@todo exception
+                throw AlignerException("Unable to open file" + sFileName);
             }//if
         }//constructor
 
@@ -67,6 +67,11 @@ namespace libMA
         }//function
 
         // @override
+        std::string getFullDesc() const
+        {
+            return std::string("FileReader");
+        }//function
+
         bool outputsVolatile() const
         {
             return true;
@@ -76,6 +81,8 @@ namespace libMA
 
 }//namespace
 
+#ifdef WITH_PYTHON
 void exportFileReader();
+#endif
 
 #endif

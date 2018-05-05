@@ -11,6 +11,7 @@
 #include "container/alignment.h"
 #include "container/pack.h"
 #include <fstream>
+#include "util/exception.h"
 
 namespace libMA
 {
@@ -36,6 +37,11 @@ namespace libMA
             std::cout << s;
             return *this;
         }//function
+
+        ~StdOutStream()
+        {
+            std::cout << std::flush;//do not forget to flush the outputstream
+        }//deconstructor
     };//class
 
     /**
@@ -54,13 +60,13 @@ namespace libMA
         {
             if (!file.good())
             {
-                std::cout << "Unable to open file\n";
-                ///@todo exception
+                throw AlignerException("Unable to open file" + sFileName);
             }//if
         }//constructor
 
         ~FileOutStream()
         {
+            file << std::flush;//do not forget to flush the outputstream
             file.close();
         }//deconstructor
 
@@ -73,6 +79,8 @@ namespace libMA
 
     /**
      * @brief Writes SAM output.
+     * @note flushing of the outstream; this must be done in the deconstructor of OutStream
+     * 
      */
     class FileWriter: public Module
     {
@@ -148,6 +156,11 @@ namespace libMA
             return "FileWriter";
         }//function
 
+        std::string getFullDesc() const
+        {
+            return "FileWriter";
+        }//function
+
     };//class
 
     /**
@@ -198,6 +211,8 @@ namespace libMA
 
 }//namespace
 
+#ifdef WITH_PYTHON
 void exportFileWriter();
+#endif
 
 #endif

@@ -55,13 +55,21 @@ namespace libMA
         {
             return "ExtractAllSeeds";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("ExtractAllSeeds(") + 
+                std::to_string(maxAmbiguity) + ")";
+        }//function
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief export the ExtractAllSeeds @ref Module "module" to python.
  * @ingroup export
  */
 void exportExtractAllSeeds();
+#endif
 
 #endif

@@ -33,15 +33,12 @@ using namespace boost::program_options;
 int main(int argc, char*argv[])
 {
     unsigned int uiT;
-    unsigned int uiMaxAmbiguity;
-    unsigned int uiNumSOC;
-    unsigned int uiReportNBest;
-    unsigned int uiMaxGapArea;
     bool bPariedNormal;
     bool bPariedUniform;
     unsigned int uiPairedMean;
     double fPairedStd;
     double dPairedU;
+    unsigned int uiReportN;
     std::string sIndexOut;
     std::string sParameterSet;
     std::string sSeedSet;
@@ -49,7 +46,11 @@ int main(int argc, char*argv[])
     std::vector<std::string> aIndexIn;
     std::string sAlignOut;
     std::vector<std::string> aAlignIn;
-    
+    double fGiveUp;
+    unsigned int iMatch;
+    unsigned int iExtend;
+    unsigned int iMissMatch;
+    unsigned int iGap;
 
     options_description gen_desc{"General Options"};
     gen_desc.add_options()
@@ -85,14 +86,15 @@ int main(int argc, char*argv[])
         align_desc.add_options()
             ("alignIn,i", value<std::vector<std::string>>(&aAlignIn)->composing(), "Input file paths [*.fasta/*.fastaq/*]")
             ("alignOut,o", value<std::string>(&sAlignOut)->default_value("stdout"), "Output file path [*.sam/*.bam/*]")
-            ("reportN,n", value<unsigned int>(&uiReportNBest)->default_value(1), "Report the N best Alignments")
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
-            ("maxAmbiguity,A", value<unsigned int>(&uiMaxAmbiguity)->default_value(bAccurate ? 100 : 10), "Maximal ambiguity")
-            ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "complete" : "pairs"), "Used seed set [complete/pairs]")
-            ("soc,S", value<unsigned int>(&uiNumSOC)->default_value(bAccurate ? 10 : 2), "Strip of consideration amount")
-            ("nwLimit,l", value<unsigned int>(&uiMaxGapArea)->default_value(10000), "Maximal DP matrix size")
-            ("global,G", "Perform global alignment")
+            ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
+            ("reportN,n", value<unsigned int>(&uiReportN)->default_value(0), "Report up to N alignments; 0: report everything")
+            ("giveUp,v", value<double>(&fGiveUp)->default_value(bAccurate ? 0.025 : 0.01), "Give up if the best SoC score is lower")
+            ("Match", value<unsigned int>(&iMatch)->default_value(3), "DP match score.")
+            ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "DP missmatch penalty.")
+            ("Gap", value<unsigned int>(&iGap)->default_value(6), "DP gap open penalty.")
+            ("Extend", value<unsigned int>(&iExtend)->default_value(1), "DP gap extend penalty.")
         ;
 
         options_description p_desc{"Paired Reads Options"};
@@ -109,13 +111,22 @@ int main(int argc, char*argv[])
             ("indexIn,I", value<std::vector<std::string>>(&aIndexIn)->composing(), "FASTA input file paths")
             ("indexOut,O", value<std::string>(&sIndexOut), "FMD-index output file prefix")
         ;
+
+        options_description hidden_desc{"Hidden Options"};
+        hidden_desc.add_options()
+            ("info", "Print comp. graph info & abort")
+        ;
         
         options_description all_desc{"All Options"};
         all_desc.add(gen_desc).add(align_desc).add(p_desc).add(index_desc);
 
+        options_description comp_desc{"Complete Options"};
+        comp_desc.add(gen_desc).add(align_desc).add(p_desc).add(index_desc).add(hidden_desc);
+
         variables_map vm;
-        store(parse_command_line(argc, argv, all_desc), vm);
+        store(parse_command_line(argc, argv, comp_desc), vm);
         notify(vm);
+
 
         bPariedNormal = vm.count("normal") != 0;
         bPariedUniform = vm.count("uniform") != 0;
@@ -131,7 +142,7 @@ int main(int argc, char*argv[])
         if(vm.count("fmdIndex"))
         {
             if(vm.count("indexIn") == 0 || vm.count("indexOut") == 0 )
-                std::cerr << "--indexIn and --indexOut are compulsory if --fmdIndex is set" << std::endl;
+                std::cerr << "error: --indexIn and --indexOut are compulsory if --fmdIndex is set" << std::endl;
             else
             {
                 std::shared_ptr<Pack> pPack(new Pack());
@@ -150,13 +161,16 @@ int main(int argc, char*argv[])
         if(vm.count("align"))
         {
             if(vm.count("alignIn") == 0 || vm.count("genome") == 0 )
-                std::cerr << "--alignIn and --genome are compulsory if --align is set" << std::endl;
+                std::cerr << "error: --alignIn and --genome are compulsory if --align is set" << std::endl;
             else
             {
-                if(vm.count("global") == 1)//input is for local
-                    std::cerr 
-                        << "WARNING: Currently global alignments will drastically decrease speed"
-                        << std::endl;
+                // padding parameter is disabled at the moment
+                //if(uiPadding <= 1)//input is for local
+                //    std::cerr 
+                //        << "WARNING: Relative padding should be larger or equal to one"
+                //        << std::endl;
+                if(sSeedSet != "SMEMs" && sSeedSet != "maxSpanning")
+                    std::cerr << "WARNING: selected invalid seed set; using maxSpanning" << std::endl;
                 /*
                  *
                  * Alignment starts here
@@ -189,19 +203,28 @@ int main(int argc, char*argv[])
                     pFMDIndex,
                     aQueries,
                     pOut,
+                    uiReportN,
                     uiT,//num threads
-                    uiMaxAmbiguity,
-                    uiNumSOC,
                     bPariedNormal,
                     bPariedUniform,
                     uiPairedMean,
                     fPairedStd,
                     dPairedU,
-                    sSeedSet != "complete",
-                    uiReportNBest,
-                    vm.count("global") == 0,//input is for local
-                    uiMaxGapArea
+                    sSeedSet != "SMEMs",
+                    fGiveUp,
+                    iMatch,
+                    iMissMatch,
+                    iGap,
+                    iExtend
                 );
+                if(vm.count("info") > 0)
+                {
+                    std::cout << "threads: " << uiT << std::endl;
+                    std::cout << "computational Graph:" << std::endl;
+                    for(auto pledge : aGraphSinks)
+                        std::cout << pledge->getGraphDesc() << std::endl;
+                    return 0;
+                }//if
                 //run the alignment
                 Pledge::simultaneousGet(aGraphSinks, true);
                 bDoneSth = true;
@@ -219,9 +242,9 @@ int main(int argc, char*argv[])
     {
         std::cerr << ex.what() << std::endl;
     }//catch
-    catch (...)
-    {
-        std::cerr << "unknown exception encountered" << std::endl;
-    }//catch
+    //catch (...)
+    //{
+    //    std::cerr << "unknown exception encountered" << std::endl;
+    //}//catch
     return 0;
 }//main function

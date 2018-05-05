@@ -23,8 +23,14 @@ namespace libMA
     class MappingQuality: public Module
     {
     public:
+        unsigned int uiReportNBest;
 
         MappingQuality()
+        {}//constructor
+
+        MappingQuality(unsigned int uiReportNBest)
+                :
+            uiReportNBest(uiReportNBest)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -50,14 +56,21 @@ namespace libMA
         {
             return "MappingQuality";
         }
+
+        std::string getFullDesc() const
+        {
+            return "MappingQuality(" + std::to_string(uiReportNBest) + ")";
+        }//function
     };//class
 }//namspace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief export the MappingQuality @ref Module "module" to python.
  * @ingroup export
  */
 void exportMappingQuality();
+#endif
 
 
 #endif

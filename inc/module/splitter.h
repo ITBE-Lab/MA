@@ -69,6 +69,11 @@ namespace libMA
             return true;
         }//function
 
+        std::string getFullDesc() const
+        {
+            return std::string("Splitter");
+        }//function
+
     };//class
 
     /**
@@ -118,6 +123,11 @@ namespace libMA
         std::string getName() const
         {
             return "Collector";
+        }//function
+
+        std::string getFullDesc() const
+        {
+            return std::string("Collector");
         }//function
 
     };//class
@@ -173,6 +183,11 @@ namespace libMA
             return "Lock";
         }//function
 
+        std::string getFullDesc() const
+        {
+            return std::string("Lock");
+        }//function
+
     };//class
 
     /**
@@ -218,6 +233,11 @@ namespace libMA
             return "UnLock";
         }//function
 
+        std::string getFullDesc() const
+        {
+            return "UnLock";
+        }//function
+
         bool outputsVolatile() const
         {
             return true;
@@ -226,6 +246,8 @@ namespace libMA
 
 }//namespace
 
+#ifdef WITH_PYTHON
 void exportSplitter();
+#endif
 
 #endif

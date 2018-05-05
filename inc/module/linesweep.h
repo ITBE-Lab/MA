@@ -3,10 +3,11 @@
  * @brief Implements the linesweep @ref Module "module"
  * @author Markus Schmidt
  */
-#ifndef LINESWEEP
-#define LINESWEEP
+#ifndef LINESWEEP_H
+#define LINESWEEP_H
 
 #include "container/segment.h"
+#include "container/soc.h"
 #include "module/module.h"
 
 namespace libMA
@@ -20,6 +21,7 @@ namespace libMA
      */
     class LinearLineSweep: public Module
     {
+
     private:
         /**
          * @brief The shadow of a Seed.
@@ -73,8 +75,25 @@ namespace libMA
         EXPORTED linesweep(
             std::shared_ptr<std::vector<
                 std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
-            >> pShadows
+            >> pShadows,
+            const int64_t uiRStart,
+            const double fAngle
         );
+        
+        inline double deltaDistance(
+                const Seed& rSeed,
+                const double fAngle,
+                const int64_t uiRStart
+            )
+        {
+            #define PI 3.14159265
+
+            double y = rSeed.start_ref() + rSeed.start() / std::tan( PI/2 - fAngle );
+            double x = ( y - uiRStart ) * std::sin(fAngle);
+            double x_1 = rSeed.start() / std::sin( PI/2 - fAngle);
+
+            return std::abs(x - x_1);
+        }// method
 
     public:
         /**
@@ -88,19 +107,26 @@ namespace libMA
          * True -> the gapcost is estimated optimistically (as small as possible)
          * False -> we assume that the score for matches/missmatches is roughly equal within the gap
          * 
-         * @note not beeing optimistic here has no negative affect on the accuracy
+         * @note not beeing optimistic here has negative affect on the accuracy
          * but improves runtime significantly
          */
-        bool optimisticGapEstimation = false;
-        /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
-        unsigned int uiMaxGapArea = 10000;
+        bool optimisticGapEstimation = true;
+
+        /// @brief If the seeds cover less that x percent of the query we use SW, 
+        /// otherwise we fill in the gaps.
+        double fMinimalQueryCoverage = 1.1;// 0.25 before 1.05.18 however python disables this
+
+        double fScoreTolerace = 0.1;
+
+        unsigned int uiMaxTries = 50;
+
+        unsigned int uiMaxEqualScoreLookahead = 3;
+
+        float fScoreDiffTolerance = 0.0001;
+
+        nucSeqIndex uiSwitchQLen = 800;
 
         LinearLineSweep() {}//default constructor
-
-        LinearLineSweep(unsigned int uiMaxGapArea)
-                :
-            uiMaxGapArea(uiMaxGapArea)
-        {}//constructor
 
         //overload
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> pInput);
@@ -125,13 +151,27 @@ namespace libMA
         {
             return "LineSweep2";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("LineSweep2(") + 
+                std::to_string(optimisticGapEstimation) + "," +
+                std::to_string(fMinimalQueryCoverage) + "," +
+                std::to_string(fScoreTolerace) + "," +
+                std::to_string(uiMaxEqualScoreLookahead) + "," +
+                std::to_string(fScoreDiffTolerance) + "," +
+                std::to_string(uiMaxTries) + ")"
+                ;
+        }//function
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the LineSweep @ref Module "module" to boost python.
  * @ingroup export
  */
 void exportLinesweep();
+#endif
 
 #endif

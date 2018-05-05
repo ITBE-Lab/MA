@@ -63,8 +63,16 @@ namespace libMA
         
         std::string getName() const
         {
-            return "ExecOnVec( " + pModule->getName() + ")";
+            return "ExecOnVec(" + pModule->getName() + ")";
         }
+
+        std::string getFullDesc() const
+        {
+            return std::string("ExecOnVec(") + 
+                pModule->getFullDesc() + "," +
+                std::to_string(sort) + "," + 
+                std::to_string(nMany) + ")";
+        }//function
     };//class
 
     /**
@@ -107,10 +115,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief Exposes the SweepAllReturnBest @ref Module "module" to boost python.
  * @ingroup export
  */
 void exportExecOnVector();
+#endif
 
 #endif

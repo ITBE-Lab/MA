@@ -28,6 +28,7 @@ const unsigned char NucSeq::xNucleotideTranslationTable[256] =
     4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
 }; // predefined array
 
+#ifdef WITH_PYTHON
 void exportSequence()
 {
      //export the nucleotidesequence class
@@ -134,3 +135,4 @@ void exportSequence()
         >());
 
 }//function
+#endif

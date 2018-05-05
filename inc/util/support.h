@@ -11,7 +11,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <iostream>
-#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp> //@todo get rid of boost
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/copy.hpp>

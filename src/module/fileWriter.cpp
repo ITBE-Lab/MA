@@ -56,8 +56,8 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         std::string sCigar = "";
         for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
         {
-            sCigar.append(std::to_string(std::get<0>(section)));
-            switch (std::get<1>(section))
+            sCigar.append(std::to_string(std::get<1>(section)));
+            switch (std::get<0>(section))
             {
                 case MatchType::seed:
                 case MatchType::match:
@@ -72,35 +72,47 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
                 case MatchType::deletion:
                     sCigar.append("D");
                     break;
-            }//switch
-        }//for
+            }// switch
+        }// for
 
         char flag = 0;
 
         if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
             flag |= REVERSE_COMPLEMENTED;
 
-        //paired
-        if(pAlignment->xStats.bPaired)
+        std::string sNextName = "*";
+        unsigned int uiNextPos = 0;
+        // paired
+        if(!pAlignment->xStats.pOther.expired())
         {
             flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
-        }//if
+
+            sNextName = pAlignment->xStats.pOther.lock()->xStats.sName;
+            uiNextPos = pPack->posInSequence(
+                    pAlignment->xStats.pOther.lock()->uiBeginOnRef,
+                    pAlignment->xStats.pOther.lock()->uiEndOnRef
+                ) + 1;
+        }// if
+
+        if(pAlignment->bSecondary)
+            flag |= SECONDARY_ALIGNMENT;
 
         std::string sRefName = pPack->nameOfSequenceForPosition(pAlignment->uiBeginOnRef);
-        auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef);
+        // sam file format has 1-based indices...
+        auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef, pAlignment->uiEndOnRef) + 1;
 
         DEBUG(// check if the position that is saved to the file is correct
             bool bWrong = false;
             if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
             {
-
-            }//if
+                //@todo frill in this self check...
+            }// if
             else
             {
-                if( pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName(sRefName) + uiRefPos)
+                if(pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName(sRefName)+uiRefPos-1)
                     bWrong = true;
-            }//else
+            }// else
 
             if(bWrong)
             {
@@ -114,8 +126,8 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
                 else
                     std::cout << "Is reverse: False" << std::endl;
                 exit(0);
-            }//if
-        )//DEBUG
+            }// if
+        )// DEBUG
 
         std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
@@ -125,7 +137,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         else
             sMapQual = std::to_string( (int)(pAlignment->fMappingQuality * 254));
 
-        {
+        {// scope xGuard
             //synchronize file output
             std::lock_guard<std::mutex> xGuard(*pLock);
 
@@ -142,17 +154,17 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             *pOut << sMapQual << "\t";
             //cigar
             *pOut << sCigar  << "\t";
-            //Ref. name of the mate/next read ? wut? @todo
-            *pOut << "*" << "\t";
-            //Position of the mate/next read ? wut? @todo
-            *pOut << "0" << "\t";
+            //Ref. name of the mate/next read ? not given at the moment... @todo
+            *pOut << sNextName << "\t";
+            //Position of the mate/next read ? not given at the moment... @todo
+            *pOut << std::to_string(uiNextPos) << "\t";
             //observed Template length
             *pOut << std::to_string(pAlignment->length()) << "\t";
             //segment sequence
             *pOut << sSegment << "\t";
             //ASCII of Phred-scaled base Quality+33
-            *pOut << sQual << "\n";
-        }//score xGuard
+            *pOut << sQual << "\n"; // flushing will be done in the deconstructor
+        }// scope xGuard
     }//for
 
     return std::shared_ptr<Container>(new Nil());
@@ -176,7 +188,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
         
         std::string sPaired = "";
         //paired
-        if(pAlignment->xStats.bPaired)
+        if(!pAlignment->xStats.pOther.expired())
             sPaired = pAlignment->xStats.bFirst ? 
                 "first mate of read pair" : "second mate of read pair";
 
@@ -203,7 +215,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
         {
             //synchronize output
             std::lock_guard<std::mutex> xGuard(*pLock);
-            *pOut << "Score: " << std::to_string(pAlignment->score()) << "\nBegin on reference sequence: " << sRefName << " at position: " << sRefPos << "\nBegin on Query: " << sQueryPos << "\n";
+            *pOut << "Score: " << std::to_string(pAlignment->score()) << "\nBegin on reference sequence: " << sRefName << " at position: " << sRefPos << "\nBegin on Query: " << sQueryPos << (pAlignment->bSecondary ? " Secondary\n" : "\n");
             for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
             {
                 for(unsigned int i=0; i< std::get<1>(section);i++)
@@ -267,6 +279,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
     return std::shared_ptr<Container>(new Nil());
 }//function
 
+#ifdef WITH_PYTHON
 void exportFileWriter()
 {
     //export the FileWriter class
@@ -283,3 +296,4 @@ void exportFileWriter()
     >();
 
 }//function
+#endif

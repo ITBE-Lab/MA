@@ -510,13 +510,13 @@ using namespace libMA;
                                             bool bMakeReverseStand 
                                         )
     {
-        BOOST_LOG_TRIVIAL( trace ) << "Processing Pack Prefix " << pcPackPrefix;
+        std::cout << "Processing Pack Prefix " << pcPackPrefix << std::endl;
         
         /* Load all FASTA-Files in the given vector and add their content to te pack
         */
         for ( const std::string &rsFileName : rxvFileNameOfFastaFiles )
         {
-            BOOST_LOG_TRIVIAL( trace ) << "Add content of Fasta-File" << rsFileName;
+            std::cout << "Add content of Fasta-File" << rsFileName << std::endl;
             
             /* Open a stream for FASTA File reading.
             */
@@ -541,7 +541,7 @@ using namespace libMA;
                 {    /* Add the current FASTA sequence to the pack.
                     */
                     vAppendFastaSequence( xFastaRecord );
-                    BOOST_LOG_TRIVIAL( trace ) << "Add sequence " << xFastaRecord.sName;
+                    std::cout << "Add sequence " << xFastaRecord.sName << std::endl;
                 } // lambda
             ); // function call
         } // for
@@ -590,6 +590,7 @@ using namespace libMA;
 
 //#endif
 
+#ifdef WITH_PYTHON
 void exportPack()
 {
     boost::python::class_<
@@ -702,6 +703,10 @@ void exportPack()
                 &Pack::startOfSequenceWithName
             )
         .def(
+                "length_of_sequence", 
+                &Pack::lengthOfSequenceWithName
+            )
+        .def(
                 "start_of_sequence_id", 
                 &Pack::startOfSequenceWithId
             )
@@ -717,3 +722,4 @@ void exportPack()
             std::shared_ptr<Container>
         >();
 }//function
+#endif

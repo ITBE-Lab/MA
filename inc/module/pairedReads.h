@@ -92,11 +92,13 @@ namespace libMA
     };//class
 }//namspace libMA
 
+#ifdef WITH_PYTHON
 /**
  * @brief export the PairedReads and PairedAlignment @ref Module "module" to python.
  * @ingroup export
  */
 void exportPairedReads();
+#endif
 
 
 

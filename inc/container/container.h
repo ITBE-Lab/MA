@@ -11,7 +11,9 @@
 #include <vector>
 #include "util/exception.h"
 #include "util/iterableConverter.h"
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#ifdef WITH_PYTHON
+    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#endif
 
 namespace libMA
 {
@@ -57,9 +59,9 @@ namespace libMA
          * @details
          * used by ExecOnVec to sort containers in order
          */
-        virtual bool smaller(const std::shared_ptr<Container> other) const
+        virtual bool larger(const std::shared_ptr<Container> other) const
         {
-            return true;
+            return false;
         }// operator
     };//class
 
@@ -166,7 +168,7 @@ namespace libMA
         //overload
         std::string getTypeName() const
         {
-            return "ContainerVector";
+            return "ContainerVector(" + contentType->getTypeName() + ")";
         }//function
 
         //overload
@@ -186,9 +188,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
 /** 
  * @brief Function to export Container to boost python.
  * @ingroup export
  */
 void exportContainer();
+#endif
+
 #endif

@@ -88,14 +88,19 @@ std::shared_ptr<Container> PairedReads::execute(
         }//for
     }//for
 
-    ///@todo set pairs
-
-    // set the paired property in the respective alignment stats
-    std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bPaired = bPaired;
-    std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bPaired = bPaired;
     //set which read was first...
     std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bFirst = true;
     std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bFirst = false;
+
+    // set the paired property in the respective alignment stats
+    if(bPaired)
+    {
+        std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.pOther = 
+            std::weak_ptr<Alignment>(std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2]));
+
+        std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.pOther = 
+            std::weak_ptr<Alignment>(std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1]));
+    }// if
 
     // return the best pair
     return std::shared_ptr<ContainerVector>(new ContainerVector
@@ -106,6 +111,7 @@ std::shared_ptr<Container> PairedReads::execute(
         );
 }//function
 
+#ifdef WITH_PYTHON
 void exportPairedReads()
 {
     //export the PairedReads class
@@ -121,3 +127,4 @@ void exportPairedReads()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

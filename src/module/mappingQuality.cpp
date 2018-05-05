@@ -34,14 +34,17 @@ std::shared_ptr<Container> MappingQuality::execute(
             new ContainerVector(std::shared_ptr<Alignment>(new Alignment())));
 
     //set the mapping quality for all alignments to zero
+    //mapping qual of best one will be overridden
     for(auto pAlign : *pAlignments)
     {
         std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pAlign);
         pCasted->fMappingQuality = 0.0;
+        pCasted->bSecondary = true;
     }//for
 
     //compute the mapping quality for the best alignment
     std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
+    pFirst->bSecondary = false;
 
     // mapping quality based on scores
     if(pAlignments->size() >= 2)
@@ -61,13 +64,21 @@ std::shared_ptr<Container> MappingQuality::execute(
     // factors
     // penalty for too little seeds
     // (this improves the mapping quality estimation quite significantly)
-    double dA = std::max(std::min(5* pFirst->numBySeeds() / (double)pQuery->length(), 1.0), 0.01);
-    pFirst->fMappingQuality *= dA;
+    //double dA = std::max(std::min(5* pFirst->numBySeeds() / (double)pQuery->length(), 1.0), 0.01);
+    //pFirst->fMappingQuality *= dA;
 
-
-    return std::shared_ptr<ContainerVector>(new ContainerVector(pAlignments));
+    /// maybe this should be moved into it's own module but whatever...
+    auto pRet = std::shared_ptr<ContainerVector>(new ContainerVector(pAlignments));
+    if(uiReportNBest != 0 && pRet->size() > uiReportNBest)
+    {
+        //remove the smallest elements
+        pRet->erase(pRet->begin()+uiReportNBest, pRet->end());
+        assert(pRet->size() == uiReportNBest);
+    }//if
+    return pRet;
 }//function
 
+#ifdef WITH_PYTHON
 void exportMappingQuality()
 {
     //export the MappingQuality class
@@ -75,7 +86,7 @@ void exportMappingQuality()
             MappingQuality, 
             boost::python::bases<Module>, 
             std::shared_ptr<MappingQuality>
-        >("MappingQuality")
+        >("MappingQuality", boost::python::init<unsigned int>())
     ;
 
     boost::python::implicitly_convertible< 
@@ -83,3 +94,4 @@ void exportMappingQuality()
         std::shared_ptr<Module> 
     >();
 }//function
+#endif

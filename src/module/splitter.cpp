@@ -100,6 +100,7 @@ std::shared_ptr<Container> UnLock::execute(std::shared_ptr<ContainerVector> vpIn
     return std::shared_ptr<Container>(new Nil());
 }//function
 
+#ifdef WITH_PYTHON
 void exportSplitter()
 {
     //export the Splitter class
@@ -112,7 +113,7 @@ void exportSplitter()
             boost::python::init<std::shared_ptr<Pledge>>()
             // make sure that the given pledge is not deallocated 
             // before the splitter module
-            [boost::python::with_custodian_and_ward<1,2>()]
+            //[boost::python::with_custodian_and_ward<1,2>()]
         )
     ;
 
@@ -161,3 +162,4 @@ void exportSplitter()
     >();
 
 }//function
+#endif

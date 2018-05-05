@@ -47,3 +47,7 @@ MA is unpublished so far.
 
 The homepage of the **Information Technology – Bio Engineering** Lab 
 at Hanyang University can be found here http://itbe.hanyang.ac.kr/.
+
+## Frequently asked questions (FAQs)
+
+@todo

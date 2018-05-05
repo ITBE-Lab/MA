@@ -3,6 +3,7 @@
  * @author Arne Kutzner
  */
 #include "container/fMIndex.h"
+#include <cstdlib>
 using namespace libMA;
 
 #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
@@ -14,6 +15,9 @@ SAInterval FMIndex::extend_backward(
         const uint8_t c
     )
 {
+    if(c >= 4 /* A,C,T,G */)
+        return SAInterval(0,0,0); // return an empty interval
+
     bwt64bitCounter cntk[4]; // Number of A, C, G, T in BWT until start of interval ik
     bwt64bitCounter cntl[4]; // Number of A, C, G, T in BWT until end of interval ik
 
@@ -30,15 +34,17 @@ SAInterval FMIndex::extend_backward(
         cntl                        // output: Number of A, C, G, T until end of interval
     );
 
-    for(unsigned int i = 0; i < 4; i++)
-        assert(cntk[i] <= cntl[i]);
+    DEBUG(
+        for(unsigned int i = 0; i < 4; i++)
+            assert(cntk[i] <= cntl[i]);
+    )// DEBUG
 
     bwt64bitCounter cnts[4]; // Number of A, C, G, T in BWT interval ik
     //the cnts calculated here might be off by one
     for(unsigned int i = 0; i < 4; i++)
         cnts[i] = cntl[i] - cntk[i];
 
-    DEBUG_2(
+    DEBUG_3(
         std::cout << cnts[0] << " + " << cnts[1] << " + " << cnts[2] << " + " << cnts[3] << " = " 
                   << (t_bwtIndex)(cnts[0] + cnts[1] + cnts[2] + cnts[3]) << " ?= " 
                   << ik.size() << "(-1)" << std::endl;
@@ -116,7 +122,7 @@ unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
     return getInterval(pQuerySeq).size();
 }//function
 
-bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack)
+bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack)
 {
     SAInterval ik = getInterval(pQuerySeq);
     for (
@@ -134,6 +140,17 @@ bool FMIndex::testSaInterval(std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<
     return true;
 }//fuction
 
+
+bool FMIndex::test(const std::shared_ptr<Pack> pPack, unsigned int uiNumTest)
+{
+    while(uiNumTest-- > 0)
+    {
+        auto uiPos = std::rand() % pPack->uiUnpackedSizeForwardPlusReverse();
+        if(!testSaInterval(pPack->vExtract(uiPos, uiPos+10), pPack))
+            return false;
+    }//while
+    return true;
+}//function
 
 void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
 {
@@ -302,7 +319,6 @@ void FMIndex::build_FMIndex(
     {
         uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse() < 50000000 ? 0 : 1; // automatic selection depending on size of pack
     } // if
-    uiAlgorithmSelection = 1;
 
     /*
     * Step 1: Create the basic BWT.
@@ -318,7 +334,6 @@ void FMIndex::build_FMIndex(
     } // if
     else
     {
-        assert(false);
         /*
         * In this case we build the BWT using the BWA C-code for large inputs. 
         * For delivering the pack to the BWA code we have to rely on an 
@@ -369,6 +384,7 @@ void FMIndex::build_FMIndex(
     vPostProcessBWTAndCreateSA();
 } // method
 
+#ifdef WITH_PYTHON
 void exportFM_index()
 {
     
@@ -459,3 +475,4 @@ void exportFM_index()
                                             std::shared_ptr<Container> 
                                         >();
 }//function
+#endif

@@ -11,7 +11,10 @@ extern int iGap;
 extern int iExtend;
 extern int iMatch;
 extern int iMissMatch;
+extern nucSeqIndex uiMaxGapArea;
+extern nucSeqIndex uiPadding;
 
+#ifdef WITH_PYTHON
 /**
  * @brief The boost-python main method.
  *
@@ -47,27 +50,26 @@ BOOST_PYTHON_MODULE(libMA)
         exportSplitter();
 }//function
 
+#endif
+
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     std::shared_ptr<Pledge> pPack,
     std::shared_ptr<Pledge> pFMDIndex,
     std::vector<std::shared_ptr<Pledge>> aQueries,
     std::shared_ptr<Module> pOut,
+    unsigned int uiReportN,
     unsigned int uiThreads,
-    unsigned int uiMaxAmbiguity,
-    unsigned int uiNumSOC,
     bool bPariedNormal,
     bool bPariedUniform,
     unsigned int uiPairedMean,
     double fPairedStd,
     double dPairedU,
     bool bSeedSetPairs,
-    unsigned int uiReportNBest,
-    bool bLocal,
-    int iMatch_,
-    int iMisMatch_,
-    int iGap_,
-    int iExtend_,
-    unsigned int uiMaxGapArea
+    float fGiveUp,
+    unsigned int iMatch_,
+    unsigned int iMisMatch_,
+    unsigned int iGap_,
+    unsigned int iExtend_
 )
 {
     iMatch = iMatch_;
@@ -75,22 +77,18 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     iGap = iGap_;
     iMissMatch = iMisMatch_;
 
-    if(uiNumSOC < uiReportNBest)
-        throw AlignerException("cannot report more alignments than computed (increase strip of consideration amount)");
-
     //setup all modules
 
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
     std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs));
-    std::shared_ptr<Module> pSOC(new StripOfConsideration(uiMaxAmbiguity, uiNumSOC));
-    std::shared_ptr<Module> pCouple(
-            new ExecOnVec(std::shared_ptr<Module>(new LinearLineSweep(uiMaxGapArea)))
-        );
+    std::shared_ptr<Module> pSOC(new StripOfConsideration(fGiveUp));
+    std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
+
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
-        std::shared_ptr<Module>(new NeedlemanWunsch(bLocal)), true, uiReportNBest));
-    std::shared_ptr<Module> pMapping(new MappingQuality());
+        std::shared_ptr<Module>(new NeedlemanWunsch()), true, 0));
+    std::shared_ptr<Module> pMapping(new MappingQuality(uiReportN));
 
     //modules for the paired alignment
     bool bPaired = bPariedNormal || bPariedUniform;
@@ -143,7 +141,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                 pCouple, 
                 std::vector<std::shared_ptr<Pledge>>
                 {
-                    pSOCs
+                    pSOCs, pQuery
                 }
             );
         //the optimal matching stage
@@ -205,11 +203,11 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     pCouple, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
-                        pSOCs2
+                        pSOCs2, pQuery2
                     }
                 );
             //the optimal matching stage
-            std::shared_ptr<Pledge> pOptimal = Module::promiseMe(
+            std::shared_ptr<Pledge> pOptimal2 = Module::promiseMe(
                     pDoOptimal, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
@@ -218,13 +216,13 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                         pPack
                     }
                 );
-            //the optimal matching stage
+            //assign a mapping quality
             std::shared_ptr<Pledge> pAlignments2 = Module::promiseMe(
                     pMapping, 
                     std::vector<std::shared_ptr<Pledge>>
                     {
                         pQuery2,
-                        pOptimal
+                        pOptimal2
                     }
                 );
             //pick the best alignments

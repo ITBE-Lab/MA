@@ -74,9 +74,9 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
                         std::cerr << "unknown exception when executing" << std::endl;
                     }
                     if((*pResults)[i] == nullptr)
-                        std::cerr << "linesweep deleviered nullpointer as result" << std::endl;
+                        std::cerr << pModule->getName() << " deleviered nullpointer as result" << std::endl;
                     if((*pResults)[i] == nullptr)
-                        throw NullPointerException("linesweep deleviered nullpointer as result");
+                        throw NullPointerException("module deleviered nullpointer as result");
                 },//lambda
                 pInVec, pModule, i
             );
@@ -85,23 +85,22 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
 
     if(sort)
     {
+        //sort ascending
         std::sort(
             pResults->begin(), pResults->end(),
             []
             (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
             {
-                return a->smaller(b);
+                return a->larger(b);
             }//lambda
         );//sort function call
-        assert(pResults->size() <= 1 || !pResults->back()->smaller(pResults->front()));
+        assert(pResults->size() <= 1 || !pResults->back()->larger(pResults->front()));
     }//if
 
     if(nMany != 0 && pResults->size() > nMany)
     {
-        auto end = pResults->end();
-        for(unsigned int i = 0; i < nMany; i++)
-            end--;
-        pResults->erase(pResults->begin(), end);
+        //remove the smallest elements
+        pResults->erase(pResults->begin()+nMany, pResults->end());
         assert(pResults->size() == nMany);
     }//if
 
@@ -144,6 +143,7 @@ std::shared_ptr<Container> Tail::execute(std::shared_ptr<ContainerVector> vpInpu
     return pRet;
 }//function
 
+#ifdef WITH_PYTHON
 void exportExecOnVector()
 {
     //export the ExecOnVec class
@@ -154,13 +154,17 @@ void exportExecOnVector()
         >(
         "ExecOnVec",
         boost::python::init<std::shared_ptr<Module>, bool, unsigned int>()
-            [boost::python::with_custodian_and_ward_postcall<0,1>()]
+            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
     )
-        .def(boost::python::init<
+        .def(
+            boost::python::init<
             std::shared_ptr<Module>, bool>()
-            [boost::python::with_custodian_and_ward_postcall<0,1>()])
-        .def(boost::python::init<std::shared_ptr<Module>>()
-            [boost::python::with_custodian_and_ward_postcall<0,1>()])
+            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
+            )
+        .def(
+            boost::python::init<std::shared_ptr<Module>>()
+            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
+            )
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<ExecOnVec>,
@@ -174,12 +178,14 @@ void exportExecOnVector()
             std::shared_ptr<Tail>
         >(
         "Tail",
-        boost::python::init<std::shared_ptr<Container>>()[
-            boost::python::with_custodian_and_ward_postcall<0,1>()
-        ]
+        boost::python::init<std::shared_ptr<Container>>()
+        //[
+        //    boost::python::with_custodian_and_ward_postcall<0,1>()
+        //]
     );
     boost::python::implicitly_convertible< 
         std::shared_ptr<Tail>,
         std::shared_ptr<Module> 
     >();
 }//function
+#endif
