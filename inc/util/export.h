@@ -55,9 +55,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  *
  * @section install_sec Installation
  * 
- * The easiest way to install the MA library is using pip:
+ * The easiest way to install the MA library is using git hub:
  * @code{.sh}
- * pip install MA
+ * git clone https://github.com/ItBeLab/ma
  * @endcode
  * There is a git repo with the full source code here: .... <br>
  * 
