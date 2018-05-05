@@ -3,9 +3,6 @@
  * @author Markus Schmidt
  */
 #include "module/needlemanWunsch.h"
-#include "parasail.h"
-#include "parasail/matrices/blosum62.h"
-#include "parasail/matrix_lookup.h"
 #include <bitset>
 #include "ksw/ksw2.h"
 #include <string>
@@ -26,10 +23,6 @@ int iExtend = 1;
 nucSeqIndex uiMaxGapArea = 10000;
 /// @brief the padding on the left and right end of each alignment
 nucSeqIndex uiPadding = 500;
-
-//the match missmatch matrix
-parasail_matrix_t matrix;
-std::vector<int> vMatrixContent;
 
 //match missmatch matrix for ksw
 int8_t mat[25];
@@ -60,277 +53,6 @@ void ksw_simplified(
         w = std::abs(tlen - qlen) + minAddBandwidth;
     ksw_extz2_sse(nullptr, qlen, query, tlen, target, 5, mat, q, e, w, -1, -1, 0, ez);
 }// function
-
-/*
- * We want to avoid translating the numeric representation into characters
- * so we will trick parasail...
- */
-const int parasail_custom_map[] = {
-     0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-};
-
-/**
- * @brief wrapper for parsail results.
- * @details
- * This will automatically call free the result in the deconstructor 
- * and therefore make everything
- * exception save.
- */
-class ParsailResultWrapper
-{
-    parasail_result_t* pContent;
-public:
-
-    ParsailResultWrapper(parasail_result_t* pContent)
-            :
-        pContent(pContent)
-    {}//constructor
-
-    ~ParsailResultWrapper()
-    {
-        parasail_result_free(pContent);
-    }//deconstructor
-
-    const parasail_result_t& operator*() const
-    {
-        return *pContent;
-    }//operator
-
-    const parasail_result_t* get() const
-    {
-        return pContent;
-    }//operator
-
-    parasail_result_t* get()
-    {
-        return pContent;
-    }//operator
-
-    const parasail_result_t* operator->() const
-    {
-        return pContent;
-    }//operator
-};//class
-
-/**
- * @brief wrapper for parsail cigars.
- * @details
- * This will automatically call free the result in the deconstructor 
- * and therefore make everything
- * exception save.
- */
-class ParsailCigarWrapper
-{
-    parasail_cigar_t* pContent;
-public:
-
-    ParsailCigarWrapper(parasail_cigar_t* pContent)
-            :
-        pContent(pContent)
-    {}//constructor
-
-    ~ParsailCigarWrapper()
-    {
-        parasail_cigar_free(pContent);
-    }//deconstructor
-
-    const parasail_cigar_t& operator*() const
-    {
-        return *pContent;
-    }//operator
-
-    const parasail_cigar_t* get() const
-    {
-        return pContent;
-    }//operator
-
-    parasail_cigar_t* get()
-    {
-        return pContent;
-    }//operator
-
-    const parasail_cigar_t* operator->() const
-    {
-        return pContent;
-    }//operator
-};//class
-
-nucSeqIndex getBeginOnRef(
-        std::shared_ptr<NucSeq> pQuery,
-        std::shared_ptr<NucSeq> pRef
-    )
-{
-    //has to be exactly the same as for the gpu SW
-    int iMatch = 10;
-    int iMissMatch = 3;
-    int iGap = 6;
-    int iExtend = 1;
-    //make a local scope parasail matrix
-    parasail_matrix_t matrix;
-    std::vector<int> vMatrixContent;
-    matrix.name = "";
-    matrix.size = 4;
-    for(int i=0; i < 4; i++)
-    {
-        for(int j=0; j < 4; j++)
-        {
-            if(i == 4 || j == 4)
-                vMatrixContent.push_back(0);
-            if(i == j)
-                vMatrixContent.push_back(iMatch);
-            else
-                vMatrixContent.push_back(-iMissMatch);
-        }//for
-    }//for
-    matrix.matrix = &vMatrixContent[0];
-    matrix.mapper = parasail_custom_map;
-    matrix.max = iMatch;
-    matrix.min = -iMissMatch;
-    matrix.user_matrix = &vMatrixContent[0];
-
-    ParsailResultWrapper pResult(parasail_sw_trace_scan_32(
-        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
-        (const char*)pRef->pGetSequenceRef(), pRef->length(),
-        // Note: parasail does not follow the usual theme where for opening a gap
-        //       extend and open penalty are applied
-        iGap + iExtend, iExtend,
-        &matrix
-    ));
-
-    //get the cigar
-    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
-        pResult.get(),
-        (const char*)pQuery->pGetSequenceRef(), pQuery->length(),
-        (const char*)pRef->pGetSequenceRef(), pRef->length(),
-        &matrix
-    ));
-
-    //// std::cout << pQuery->length() << " " << pRef->length() << std::endl;
-    //// for(int i = 0; i < pCigar->len; i++)
-    //// {
-    ////     char c = parasail_cigar_decode_op(pCigar->seq[i]);
-    ////     uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
-    ////     std::cout << c << " x" << uiLen << std::endl;
-    //// }//for
-
-    nucSeqIndex uiOffset = 0;
-    
-    char c = parasail_cigar_decode_op(pCigar->seq[0]);
-    uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[0]);
-    if(c == 'D')
-        uiOffset += uiLen;
-
-    return pCigar->beg_ref + uiOffset;
-}//function
-
-// faster NW thant my naive version...
-void parasail(
-        std::shared_ptr<NucSeq> pQuery,
-        std::shared_ptr<NucSeq> pRef,
-        nucSeqIndex fromQuery,
-        nucSeqIndex toQuery,
-        nucSeqIndex fromRef,
-        nucSeqIndex toRef,
-        std::shared_ptr<Alignment> pAlignment
-    )
-{
-    //std::cout << (toRef - fromRef) * (toQuery - fromQuery) << std::endl;
-
-    // if we reached this point we actually have to align something
-    DEBUG_2(
-        std::cout << pQuery->toString() << std::endl;
-        std::cout << pRef->toString() << std::endl;
-    )
-
-    /*
-    * do the SW alignment
-    */
-
-    // Note: parasail does not follow the usual theme where for opening a gap
-    //       extend and open penalty are applied
-    ParsailResultWrapper pResult(parasail_nw_trace_scan_32(
-        ((const char*)pQuery->pGetSequenceRef()) + fromQuery, toQuery-fromQuery,
-        ((const char*)pRef->pGetSequenceRef()) + fromRef, toRef-fromRef,
-        iGap + iExtend, iExtend,
-        &matrix
-    ));
-
-    //get the cigar
-    ParsailCigarWrapper pCigar(parasail_result_get_cigar(
-        pResult.get(),
-        ((const char*)pQuery->pGetSequenceRef()) + fromQuery, toQuery-fromQuery,
-        ((const char*)pRef->pGetSequenceRef()) + fromRef, toRef-fromRef,
-        &matrix
-    ));
-
-    DEBUG_2(
-        std::cout << "cigar length: " << pCigar->len << std::endl;
-        std::cout << pCigar->beg_query << ", " << pCigar->beg_ref << std::endl;
-    )
-
-    /*
-    * Decode the cigar:
-    *  this involves two steps
-    *  1) find the beginning and end of the cigar and set the alignment ends accordingly
-    *  2) translate the cigar symbols into insertions deletions matches and missmatches
-    */
-
-    nucSeqIndex uiQPos = pCigar->beg_query;
-    nucSeqIndex uiRPos = pCigar->beg_ref;
-    //decode the cigar
-    for(int i = 0; i < pCigar->len; i++)
-    {
-        char c = parasail_cigar_decode_op(pCigar->seq[i]);
-        uint32_t uiLen = parasail_cigar_decode_len(pCigar->seq[i]);
-        DEBUG_2(std::cout << c << " x" << uiLen << std::endl;)
-        switch (c)
-        {
-            case '=':
-                pAlignment->append(MatchType::match, uiLen);
-                uiQPos += uiLen;
-                uiRPos += uiLen;
-                break;
-            case 'I':
-                pAlignment->append(MatchType::insertion, uiLen);
-                uiQPos += uiLen;
-                break;
-            case 'D':
-                pAlignment->append(MatchType::deletion, uiLen);
-                uiRPos += uiLen;
-                break;
-            case 'X':
-                pAlignment->append(MatchType::missmatch, uiLen);
-                uiQPos += uiLen;
-                uiRPos += uiLen;
-                break;
-            default:
-                // there are different CIGAR symbols allowed in the SAM format
-                // but parasail should never generate any of them
-                assert(false);
-                break;
-        }//switch
-    }//for
-
-    DEBUG_2(
-        std::cout << pQuery->length() - uiQPos << ", " << pRef->length() - uiRPos << std::endl;
-    )
-}//function
-
 
 
 //small wrapper that takes care of deallocation
@@ -518,15 +240,6 @@ void NeedlemanWunsch::naiveNeedlemanWunsch(
         pAlignment->append(MatchType::insertion, toQuery-fromQuery);
         return;
     }//if
-
-#if 0 //use parasail for longer gaps
-    //std::cout << (toRef - fromRef) << " " << (toQuery - fromQuery) << std::endl;
-    if(toQuery-fromQuery > uiMaxGapArea || toRef-fromRef > uiMaxGapArea)
-    {
-        parasail(pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment);
-        return;
-    }// if
-#endif
 
     /*
     * beginning of the actual NW
@@ -1176,26 +889,6 @@ NeedlemanWunsch::NeedlemanWunsch()
     )
 #endif
 {
-    //configure the parasail matrix
-    matrix.name = "";
-    matrix.size = 4;
-    for(int i=0; i < 4; i++)
-    {
-        for(int j=0; j < 4; j++)
-        {
-            if(i == 4 || j == 4)
-                vMatrixContent.push_back(0);
-            if(i == j)
-                vMatrixContent.push_back(iMatch);
-            else
-                vMatrixContent.push_back(-iMissMatch);
-        }//for
-    }//for
-    matrix.matrix = &vMatrixContent[0];
-    matrix.mapper = parasail_custom_map;
-    matrix.max = iMatch;
-    matrix.min = -iMissMatch;
-    matrix.user_matrix = &vMatrixContent[0];
     //Gaba context initialization
     /*
      *    GABA_PARAMS(
@@ -1614,9 +1307,6 @@ void exportNeedlemanWunsch()
         //test ksw function
         boost::python::def("testKsw", &testKsw);
     )//DEBUG
-    
-    //used for sample generation only...
-    boost::python::def("getBeginOnRef", &getBeginOnRef);
 
      //export the segmentation class
     boost::python::class_<

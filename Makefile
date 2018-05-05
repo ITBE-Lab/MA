@@ -24,15 +24,11 @@ LDFLAGS= -std=c++11
 LDLIBS= \
 	$(PYTHON_LIB) \
 	-L$(BOOST_LIB_PATH) \
-	-L$(PARSAIL_HOME)/build \
 	-L$(LIBGABA_HOME) \
 	$(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) \
-	-L$(CUDA_PATH) \
 	-lm \
 	-lpthread \
 	-lstdc++ \
-	-lparasail \
-	-lcudart \
 	-lgaba
 
 all: ma
@@ -43,13 +39,13 @@ debug: TARGET_OBJ=$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
 
 debug: CFLAGS = -Wall -Werror -fPIC -g -DDEBUG_LEVEL=1
 debug: $(DEBUG_OBJ)
-	$(CC) $(LDFLAGS) $(LDSFLAGS) -g $(DEBUG_OBJ) $(LDLIBS) sw_gpu.o -o libMA.so
+	$(CC) $(LDFLAGS) $(LDSFLAGS) -g $(DEBUG_OBJ) $(LDLIBS) -o libMA.so
 
 ma: libMA src/cmdMa.cpp
 	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc $(LDLIBS) libMA.so -o $@
 
 libMA: $(TARGET_OBJ)
-	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(LDLIBS) sw_gpu.o -o libMA.so
+	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(LDLIBS) -o libMA.so
 
 #special targets for the ksw2 library
 obj/ksw/ksw2_dispatch.co:src/ksw/ksw2_dispatch.c inc/ksw/ksw2.h

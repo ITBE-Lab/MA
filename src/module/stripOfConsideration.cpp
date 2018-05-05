@@ -5,6 +5,7 @@
  */
 
 #include "module/stripOfConsideration.h"
+#include "util/system.h"
 using namespace libMA;
 
 extern int iGap;
