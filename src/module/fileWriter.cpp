@@ -188,7 +188,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
         
         std::string sPaired = "";
         //paired
-        if(pAlignment->xStats.bPaired)
+        if(!pAlignment->xStats.pOther.expired())
             sPaired = pAlignment->xStats.bFirst ? 
                 "first mate of read pair" : "second mate of read pair";
 

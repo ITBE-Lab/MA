@@ -166,6 +166,7 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pFMDIndex,
     std::vector<std::shared_ptr<libMA::Pledge>> aQueries,
     std::shared_ptr<libMA::Module> pOut,
+    unsigned int uiReportN,
     unsigned int uiThreads,
     bool bPariedNormal,
     bool bPariedUniform,

@@ -87,6 +87,8 @@ class AlignerException : public Annotated_exception<1>
 public :
     AlignerException(const char* info) : Annotated_exception( info )
     {}
+    AlignerException(const std::string info) : Annotated_exception( info.c_str() )
+    {}
 };
 
 /**

@@ -38,6 +38,7 @@ int main(int argc, char*argv[])
     unsigned int uiPairedMean;
     double fPairedStd;
     double dPairedU;
+    unsigned int uiReportN;
     std::string sIndexOut;
     std::string sParameterSet;
     std::string sSeedSet;
@@ -88,6 +89,7 @@ int main(int argc, char*argv[])
             ("genome,g", value<std::string>(&sGenome), "FMD-index input file prefix")
             ("parameterset,p", value<std::string>(&sParameterSet)->default_value("fast"), "Predefined parameters [fast/accurate]")
             ("seedSet,s", value<std::string>(&sSeedSet)->default_value(bAccurate ? "SMEMs" : "maxSpanning"), "Used seed set [SMEMs/maxSpanning]")
+            ("reportN,n", value<unsigned int>(&uiReportN)->default_value(0), "Report up to N alignments; 0: report everything")
             ("giveUp,v", value<double>(&fGiveUp)->default_value(bAccurate ? 0.025 : 0.01), "Give up if the best SoC score is lower")
             ("Match", value<unsigned int>(&iMatch)->default_value(3), "DP match score.")
             ("MissMatch", value<unsigned int>(&iMissMatch)->default_value(4), "DP missmatch penalty.")
@@ -201,6 +203,7 @@ int main(int argc, char*argv[])
                     pFMDIndex,
                     aQueries,
                     pOut,
+                    uiReportN,
                     uiT,//num threads
                     bPariedNormal,
                     bPariedUniform,

@@ -154,6 +154,7 @@ namespace libMA
 
     }; //class
 
+    class Alignment;
     /**
      * @brief Used to store some statistics to each alignment
      * @details
