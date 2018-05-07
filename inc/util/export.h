@@ -19,6 +19,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * @tableofcontents
  * @section intro_sec Introduction
  *
+ * @note This documentation is outdated!
+ *
+ *
  * MA is a @ref libMA::Module "Modular" alignment tool build using C++11 and Boost Python.
  * The alignment process has been seperated into several @ref libMA::Module "modules".
  * The execution order of the @ref libMA::Module "modules" is set up using Python.

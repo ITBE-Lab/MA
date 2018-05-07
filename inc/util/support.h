@@ -3,8 +3,11 @@
  * @brief Implements GzipInputStream, vRangeCheckAndThrowInclusive and vRangeCheckAndThrowExclusive
  * @author Arne Kutzner
  */
+
 #ifndef SUPPORT_H
 #define SUPPORT_H
+
+#define USE_BOOST_GZIP ( 0 )
 
 #include "util/debug.h"
 
@@ -14,10 +17,13 @@
 #include <sstream>
 #include <stdlib.h>
 #include <iostream>
-#include <boost/iostreams/filtering_streambuf.hpp> //@todo get rid of boost
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/copy.hpp>
+#include <sys/stat.h>
+#if USE_BOOST_GZIP == ( 1 )
+    #include <boost/iostreams/filtering_streambuf.hpp>
+    #include <boost/iostreams/filtering_stream.hpp>
+    #include <boost/iostreams/filter/gzip.hpp>
+    #include <boost/iostreams/copy.hpp>
+#endif
 #include <fstream>
 /// @endcond
 
@@ -51,13 +57,15 @@
     #endif
 #endif
 
+bool fileExists(const std::string& rsFile);
 
-
+void makeDir(const std::string& rsFile);
 
 /* Constructs the full filename for a prefix, suffix combination.
  */
 std::string EXPORTED fullFileName( const char *pcFileNamePrefix, const char *pcSuffix );
 
+#if USE_BOOST_GZIP == ( 1 )
 /**
  * @brief reads gzip files from disk
  * @details
@@ -72,7 +80,8 @@ std::string EXPORTED fullFileName( const char *pcFileNamePrefix, const char *pcS
  * data flows from the chain's end to its beginning.
  * So, here the data flow towards the current (objects) istream.
  */
-class GzipInputStream : protected boost::iostreams::filtering_streambuf<boost::iostreams::input>,
+class GzipInputStream : 
+                        protected boost::iostreams::filtering_streambuf<boost::iostreams::input>,
                         public std::istream
 {
 protected :
@@ -112,6 +121,7 @@ public :
 
     virtual EXPORTED ~GzipInputFileStream();
 }; // class
+#endif
 
 /**
  * @brief Function for range checking.
@@ -145,12 +155,5 @@ void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType
                throw std::runtime_error(   (((((((std::string( sText ) += "Out of range for value : ") += std::to_string( xVal )) += " range : [ ") += std::to_string( xRangeMin )) += "..") += std::to_string( xRangeMax )) += ")") ); // runtime error
        } // if
 } // template function
-
-static bool fileExists(const std::string& rsFile)
-{
-    struct stat buffer;
-    return (stat (rsFile.c_str(), &buffer) == 0);
-}// fucntion
-
 
 #endif

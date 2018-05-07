@@ -2,9 +2,13 @@
  * @file support.cpp
  * @author Arne Kutzner
  */
+#include <string>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <vector>
-#include "util/support.h"
 
+#include "util/support.h"
+#include "util/exception.h"
 /* Constructs the full file name for some prefix, suffix combination.
  * Returns by value for convenience purposes.
  */
@@ -16,6 +20,7 @@ std::string fullFileName( const char *pcFileNamePrefix, const char *pcSuffix )
 } // method
 
 
+#if USE_BOOST_GZIP == ( 1 )
 /* ******************************************
  * GZIP streams on the foundation of boost
  * ******************************************
@@ -35,13 +40,22 @@ void GzipInputStream::vInitialize( std::istream &xInputStream )
      */
     xInputStream.seekg( 0, xInputStream.beg );
     
+#if USE_BOOST_GZIP == ( 1 )
     /* If we see the magic at the beginning we insert the appropriate filter into the chain.
      */
     if ( bDataInGzipFormat )
     {
         push( boost::iostreams::gzip_decompressor() );
-    }
+    }// if
     push( xInputStream );
+#else
+    if ( bDataInGzipFormat )
+    {
+        throw fasta_reader_exception(
+                "Trying to read Gzipped file; but did not compile with boost gzip enabled"
+            );
+    }// if
+#endif
 } // private method
 
 GzipInputStream::GzipInputStream( std::istream &xInputStream )
@@ -75,3 +89,24 @@ GzipInputFileStream::~GzipInputFileStream()
 {
     xFileInputStream.close();
 } // virtual destructor
+#endif
+
+bool fileExists(const std::string& rsFile)
+{
+    struct stat buffer;
+    return (stat (rsFile.c_str(), &buffer) == 0);
+}// function
+
+void makeDir(const std::string& rsFile)
+{
+    mode_t nMode = 0733; // UNIX style permissions
+    int nError = 0;
+    #if defined(_WIN32)
+        nError = _mkdir(rsFile.c_str()); // can be used on Windows
+    #else 
+        nError = mkdir(rsFile.c_str(), nMode); // can be used on non-Windows
+    #endif
+    if (nError != 0) {
+        throw NullPointerException(std::string("Could not create Dir: ").append(rsFile).c_str());
+    }// if
+}// function

@@ -17,6 +17,7 @@ using namespace libMA;
         typedef std::string TextSequence;
     #endif
 
+#if 0
     /**
      * @brief Structure that describes single FASTA Record.
      */
@@ -468,7 +469,12 @@ using namespace libMA;
         */
         void vLoadFastaFile( const char *pcFileName )
         {
-            std::ifstream xFileInputStream( pcFileName, std::ios::in | std::ios::binary );
+            std::ifstream xFileInputStream(  );
+            /* If the FASTA reader experiences some problem, it will throw an exception.
+            */
+            FastaStreamReader<std::ifstream> fastaReader( 
+                pcFileName, std::ios::in | std::ios::binary 
+            );
             
             /* We check, whether file opening worked well.
             */
@@ -477,9 +483,6 @@ using namespace libMA;
                 throw fasta_reader_exception( "File open error." );
             } // if
             
-            /* If the FASTA reader experiences some problem, it will throw an exception.
-            */
-            FastaStreamReader<GzipInputStream> fastaReader( xFileInputStream, *this );
         } // method Anonymous
 
         /* The destruction will free the memory of the FASTA-Record
@@ -588,7 +591,7 @@ using namespace libMA;
         vAppendFASTA(pcFileName);
     } // method
 
-//#endif
+#endif
 
 #ifdef WITH_PYTHON
 void exportPack()
@@ -620,7 +623,7 @@ void exportPack()
                 "\n"
                 "Appends seq at the end of the pack.\n"
             )
-#if 1 //DEPRECATED
+#if 0 //DEPRECATED
         .def(
                 "append_fasta_file", 
                 &Pack::vAppendFastaFile,

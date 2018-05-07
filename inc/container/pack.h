@@ -405,11 +405,14 @@ namespace libMA
             
             /* TO DO insert a file open check over here!! 
             */
-            GzipInputFileStream xGzipInputStream( fullFileName( pcFileNamePrefix, "ann" ).c_str() );
+           std::ifstream xFileInputStream( 
+                fullFileName( pcFileNamePrefix, "ann" ).c_str(),
+                std::ios::in | std::ios::binary
+               );
             
             /* Read the headline
             */
-            xGzipInputStream >> uiUnpackedSizeForwardStrand  // Size of the forward stand.  
+            xFileInputStream >> uiUnpackedSizeForwardStrand  // Size of the forward stand.  
                             >> uiExpectedVectorSize // number of sequences
                             >> seed;
 
@@ -422,11 +425,11 @@ namespace libMA
                 /* We read two lines containing sequence descriptor data.
                 * The comment(annotation) might contain white-spaces, so we read it using getline.
                 */
-                xGzipInputStream >> rxEntry.gi >> rxEntry.sName; // read the serialized GI and sequence name
-                std::getline( xGzipInputStream, rxEntry.sComment); // read the comment
-                xGzipInputStream >>    rxEntry.uiStartOffsetUnpacked >> rxEntry.uiLengthUnpacked >> rxEntry.uiNumberOfHoles; // read start in pack, length and number of holes
+                xFileInputStream >> rxEntry.gi >> rxEntry.sName; // read the serialized GI and sequence name
+                std::getline( xFileInputStream, rxEntry.sComment); // read the comment
+                xFileInputStream >>    rxEntry.uiStartOffsetUnpacked >> rxEntry.uiLengthUnpacked >> rxEntry.uiNumberOfHoles; // read start in pack, length and number of holes
                 
-                if ( !xGzipInputStream.fail() )
+                if ( !xFileInputStream.fail() )
                 {
                     /* Looks good, we add our Sequence descriptor to the vector 
                     */
@@ -440,7 +443,7 @@ namespace libMA
             
             /* Some very basic test, whether something went wrong. 
             */
-            if ( !xGzipInputStream.eof() || uiExpectedVectorSize != xVectorOfSequenceDescriptors.size() )
+            if ( !xFileInputStream.eof() || uiExpectedVectorSize != xVectorOfSequenceDescriptors.size() )
             {
                 throw std::runtime_error( "Loading pack failed. Inconsistent or incomplete sequence descriptor data." );
             } // if
@@ -458,12 +461,15 @@ namespace libMA
             
             /* TO DO insert a file open check over here!! 
             */
-            GzipInputFileStream xGzipInputStream( fullFileName( pcFileNamePrefix, "amb" ).c_str() );
+            std::ifstream xFileInputStream( 
+                    fullFileName( pcFileNamePrefix, "amb" ).c_str(),
+                    std::ios::in | std::ios::binary
+                );
             
             /* Read the headline 
             */
             uint64_t uiSizeOfSingleStrand; // we got this value already in the context of the descriptor loading.
-            xGzipInputStream >> uiSizeOfSingleStrand >> uiExpectedSequenceDescriptorVectorSize >> uiExpectedHoleDescriptorVectorSize;
+            xFileInputStream >> uiSizeOfSingleStrand >> uiExpectedSequenceDescriptorVectorSize >> uiExpectedHoleDescriptorVectorSize;
 
             while( true )
             {
@@ -472,9 +478,9 @@ namespace libMA
                 /* We read two lines containing sequence descriptor data.
                 * The comment(annotation) might contain white-spaces, so we read it using getline.
                 */
-                xGzipInputStream >> rxEntry.offset >> rxEntry.length >> rxEntry.xHoleCharacter;
+                xFileInputStream >> rxEntry.offset >> rxEntry.length >> rxEntry.xHoleCharacter;
                 
-                if ( !xGzipInputStream.fail() )
+                if ( !xFileInputStream.fail() )
                 {
                     /* Looks good, we add our Sequence descriptor to the vector
                     */
@@ -488,7 +494,7 @@ namespace libMA
             
             /* Some very basic test, whether something went wrong.
             */
-            if ( !xGzipInputStream.eof()  || uiExpectedHoleDescriptorVectorSize != xVectorOfHoleDescriptors.size() )
+            if ( !xFileInputStream.eof()  || uiExpectedHoleDescriptorVectorSize != xVectorOfHoleDescriptors.size() )
             {
                 throw std::runtime_error( "Loading pack failed. Inconsistent or incomplete hole descriptor data." );
             } // if
@@ -745,7 +751,7 @@ namespace libMA
 
             /* Store the pack filesystem.
             */
-            vStorePack( rxFilePath.string(), xPackedSequence, uiUnpackedSizeForwardPlusReverse() );
+            vStorePack( rxFilePath, xPackedSequence, uiUnpackedSizeForwardPlusReverse() );
         } // method
         /* Checks whether the files required for loading a pack does exist on the file system.
         */
@@ -770,7 +776,7 @@ namespace libMA
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
         */
-        void EXPORTED vAppendFASTA( const std::string &sFastaFilePath );
+        //void EXPORTED vAppendFASTA( const std::string &sFastaFilePath );
 #endif
         
         /* Restores a nucleotide sequence collection from the file system using the prefix given as argument.
