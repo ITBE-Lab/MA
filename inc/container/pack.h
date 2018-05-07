@@ -776,7 +776,7 @@ namespace libMA
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
         */
-        //void EXPORTED vAppendFASTA( const std::string &sFastaFilePath );
+        void EXPORTED vAppendFASTA( const std::string &sFastaFilePath );
 #endif
         
         /* Restores a nucleotide sequence collection from the file system using the prefix given as argument.

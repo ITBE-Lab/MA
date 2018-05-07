@@ -146,9 +146,9 @@ int main(int argc, char*argv[])
             else
             {
                 std::shared_ptr<Pack> pPack(new Pack());
-                //create the pack @todo @fixme reenable fasta reader
-                //for(std::string sFileName : aIndexIn)
-                //    pPack->vAppendFASTA(sFileName.c_str());
+                //create the pack
+                for(std::string sFileName : aIndexIn)
+                    pPack->vAppendFASTA(sFileName.c_str());
                 //store the pack
                 pPack->vStoreCollection(sIndexOut);
                 //create the fmd index
