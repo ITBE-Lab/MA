@@ -176,7 +176,9 @@ namespace libMA
                 std::cerr << e << std::endl;
             } catch (...) {
                 std::cerr << "unknown exception" << std::endl;
+#ifdef WITH_PYTHON
                 boost::python::handle_exception();
+#endif
             }//catch
             return nullptr;
 #else
@@ -305,7 +307,9 @@ namespace libMA
     {
     private:
         std::shared_ptr<Module> pledger;
+#ifdef WITH_PYTHON
         boost::python::object py_pledger;
+#endif
         std::shared_ptr<Container> content;
         std::shared_ptr<Container> type;
         std::vector<std::shared_ptr<Pledge>> vPredecessors;
@@ -329,7 +333,9 @@ namespace libMA
             )
                 :
             pledger(pledger),
+#ifdef WITH_PYTHON
             py_pledger(),
+#endif
             content(),
             type(type),
             vPredecessors(vPredecessors),
@@ -344,6 +350,7 @@ namespace libMA
          * @details
          * This means that this Pledge can be automatically fullfilled by the given module.
          */
+#ifdef WITH_PYTHON
         Pledge(
                 boost::python::object py_pledger,
                 std::shared_ptr<Container> type,
@@ -360,10 +367,16 @@ namespace libMA
             pMutex(new std::mutex),
             execTime(0)
         {}//constructor
+#endif
 
         inline void execForGet()
         {
-            if(pledger == nullptr && py_pledger.is_none())
+            if(
+                    pledger == nullptr 
+#ifdef WITH_PYTHON
+                    && py_pledger.is_none()
+#endif
+                )
                 throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
             if(pledger != nullptr)
             {
@@ -380,6 +393,8 @@ namespace libMA
                 execTime += duration.count();
                 assert(typeCheck(content, type));
             }//if
+            
+#ifdef WITH_PYTHON
             else
             {
                 boost::python::list vInput;
@@ -408,6 +423,7 @@ namespace libMA
                     }//if
                 );
             }//else
+#endif
         }//function
 
         /**
@@ -444,7 +460,9 @@ namespace libMA
             )
                 :
             pledger(nullptr),
+#ifdef WITH_PYTHON
             py_pledger(),
+#endif
             content(),
             type(type),
             vPredecessors(),
@@ -499,6 +517,7 @@ namespace libMA
                 std::vector<std::shared_ptr<Pledge>> vPredecessors
             );
 
+#ifdef WITH_PYTHON
         static inline std::shared_ptr<Pledge> makePyPledge(
                 boost::python::object py_pledger,
                 std::shared_ptr<Container> type,
@@ -514,6 +533,7 @@ namespace libMA
 
             return pRet;
         }//contructor function
+#endif
 
         /**
          * @brief Manually fullfill this pledge.

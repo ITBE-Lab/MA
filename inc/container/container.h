@@ -12,6 +12,7 @@
 #include "util/iterableConverter.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
+#include <memory>
 #ifdef WITH_PYTHON
     #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #endif

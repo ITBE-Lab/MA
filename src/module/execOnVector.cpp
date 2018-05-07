@@ -3,6 +3,9 @@
  * @author Markus Schmidt
  */
 #include "module/execOnVector.h"
+
+#include <algorithm>
+
 using namespace libMA;
 
 ContainerVector ExecOnVec::getInputType() const

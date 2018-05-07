@@ -1,7 +1,7 @@
 # location of the Boost Python include files and library
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
 BOOST_SUFFIX=-mt
-BOOST_LIB = boost_python3 boost_program_options
+BOOST_LIB = boost_python3
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))

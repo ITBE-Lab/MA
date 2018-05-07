@@ -7,8 +7,6 @@
 #ifndef SUPPORT_H
 #define SUPPORT_H
 
-#define USE_BOOST_GZIP ( 0 )
-
 #include "util/debug.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -18,12 +16,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <sys/stat.h>
-#if USE_BOOST_GZIP == ( 1 )
-    #include <boost/iostreams/filtering_streambuf.hpp>
-    #include <boost/iostreams/filtering_stream.hpp>
-    #include <boost/iostreams/filter/gzip.hpp>
-    #include <boost/iostreams/copy.hpp>
-#endif
 #include <fstream>
 /// @endcond
 
@@ -64,64 +56,6 @@ void makeDir(const std::string& rsFile);
 /* Constructs the full filename for a prefix, suffix combination.
  */
 std::string EXPORTED fullFileName( const char *pcFileNamePrefix, const char *pcSuffix );
-
-#if USE_BOOST_GZIP == ( 1 )
-/**
- * @brief reads gzip files from disk
- * @details
- * The order of the base classes is significant here,
- * because we must initialize filtering_streambuf prior to std::istream
- * According to ISO/IEC 14882:2003(E) section 12.6.2:
- * Then, direct base classes shall be initialized in 
- * declaration order as they appear in the base-specifier-list 
- * (regardless of the order of the mem-initializers).
- *
- * If a filtering_streambuf or filtering_stream has mode input,
- * data flows from the chain's end to its beginning.
- * So, here the data flow towards the current (objects) istream.
- */
-class GzipInputStream : 
-                        protected boost::iostreams::filtering_streambuf<boost::iostreams::input>,
-                        public std::istream
-{
-protected :
-    /* Initializes the gzip filter. Look for the gzip-magic if this absent we work in some uncompressed mode.
-     * In derived classes this method together with the default constructor can be used for delayed stream connecting.
-     */
-    void EXPORTED vInitialize( std::istream &xInputStream );
-
-public :
-    /* The argument of the constructor could be an std::ifstream.
-     * WARNING: The stream must have been opened using the mode std::ios::binary.
-     *          xInputStream has to exist along with the lifetime of the current object.
-     */
-    EXPORTED GzipInputStream( std::istream &xInputStream );
-
-protected :
-    /* This constructor is only for derived classes so that these classes can call vInitialize after creating some input stream.
-     */
-    EXPORTED GzipInputStream( );
-
-public :
-    virtual EXPORTED ~GzipInputStream();
-}; // class
-
-/**
- * @brief An extend form of GzipInputStream for file reading.
- */
-class GzipInputFileStream : public GzipInputStream
-{
-private :
-    std::ifstream xFileInputStream;
-
-public :
-    EXPORTED GzipInputFileStream( const std::string &pcFileName );
-
-    bool EXPORTED is_open();
-
-    virtual EXPORTED ~GzipInputFileStream();
-}; // class
-#endif
 
 /**
  * @brief Function for range checking.
