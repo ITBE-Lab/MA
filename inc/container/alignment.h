@@ -8,9 +8,6 @@
 #define ALIGNMENT_H
 
 #include "container/segment.h"
-#include "container/seed.h"
-#include "util/support.h"
-#include <cmath>
 
 
 namespace libMA

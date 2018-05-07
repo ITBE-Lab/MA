@@ -17,11 +17,14 @@
 
 #pragma once
 
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <string>
 #include <cmath>
 #ifdef WITH_PYTHON
     #include <boost/python.hpp>
 #endif
+/// @endcond
 
 /** 
  * @brief An annotated exception class on the foundation of std::exception.

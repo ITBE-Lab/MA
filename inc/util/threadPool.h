@@ -159,6 +159,7 @@
 #define SYNC(x)
 #endif //DEBUG_LEVEL
 
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <vector>
 #include <queue>
 #include <memory>
@@ -168,6 +169,7 @@
 #include <future>
 #include <functional>
 #include <stdexcept>
+/// @endcond
 
 /**
  * @brief A Threadpool.

@@ -8,8 +8,10 @@
 
 #include "module/module.h"
 #include "container/nucSeq.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <fstream>
-#include "util/exception.h"
+/// @endcond
 
 namespace libMA
 {

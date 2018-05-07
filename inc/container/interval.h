@@ -5,9 +5,12 @@
  */
 #pragma once
 
+#include "util/exception.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <functional>
 #include <iostream>
-#include "util/exception.h"
+#endcond
 
 /**
  * @brief A generic multipurpose Interval.

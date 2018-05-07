@@ -153,7 +153,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/mappingQuality.h"
 #include "module/pairedReads.h"
 #include "module/splitter.h"
-#include "container/container.h"
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,

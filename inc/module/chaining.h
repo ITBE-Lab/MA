@@ -13,12 +13,15 @@
 #include "container/pack.h"
 #include "module/module.h"
 #include "container/seed.h"
+#include "util/exception.h"
+#include "util/debug.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include "util/exception.h"
-#include "util/debug.h"
+/// @endcond
 
 
 #define COST_INS_DEL 2//lambda in the paper

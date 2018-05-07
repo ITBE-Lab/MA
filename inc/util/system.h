@@ -4,6 +4,8 @@
  * @author Markus Schmidt
  */
 #pragma once
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <string>
 #include <iostream>
 #include <chrono> // required for getting the high resulotion clock
@@ -32,6 +34,7 @@
 #if __GNUC__
     #include <time.h>
 #endif
+/// @endcond
 
 #define defDO_LOG true
 #define defSUPRESS_LOG false

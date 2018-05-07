@@ -7,14 +7,17 @@
 #define MODULE_H
 
 #include "container/container.h"
+#include "util/threadPool.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <Python.h>
 #include <iostream>
 #ifdef WITH_PYTHON
     #include <boost/python/list.hpp>
 #endif
-#include "util/threadPool.h"
 #include <ctime>
 #include <chrono>
+/// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
 

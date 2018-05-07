@@ -2,7 +2,10 @@
 #define SOC_H
 
 #include "container/seed.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
+/// @endcond
 
 namespace libMA
 {

@@ -13,8 +13,6 @@
 
 #define FASTA_READER
 
-#include <algorithm>
-#include <boost/filesystem.hpp>
 #include "container/nucSeq.h"
 
 #ifdef FASTA_READER
@@ -717,7 +715,7 @@ namespace libMA
         /* This method is only required in the context of BWT-large, an old code part from the original BWA code.
         * Here we simply store the pure pack together with its reverse strand.
         */
-        void vCreateAndStorePackForBWTProcessing( const boost::filesystem::path &rxFilePath ) const
+        void vCreateAndStorePackForBWTProcessing( const std::string &rxFilePath ) const
         {
             /* Make a copy of the packed nucleotide sequence.
             */
@@ -749,14 +747,13 @@ namespace libMA
             */
             vStorePack( rxFilePath.string(), xPackedSequence, uiUnpackedSizeForwardPlusReverse() );
         } // method
-
         /* Checks whether the files required for loading a pack does exist on the file system.
         */
         static bool packExistsOnFileSystem( const std::string &rsPrefix )
-        {
-            return       boost::filesystem::exists( rsPrefix + ".pac" )
-                    && boost::filesystem::exists( rsPrefix + ".ann" )
-                    && boost::filesystem::exists( rsPrefix + ".amb" );
+        { 
+            return     fileExists( rsPrefix + ".pac" )
+                    && fileExists( rsPrefix + ".ann" )
+                    && fileExists( rsPrefix + ".amb" );
         } // method
 
 #ifdef FASTA_READER
@@ -773,7 +770,7 @@ namespace libMA
         * pcPackPrefix is some prefix for the pack-files.
         * Reads all sequences on the file system and creates a sequence collection out of them.
         */
-        void EXPORTED vAppendFASTA( const boost::filesystem::path &sFastaFilePath );
+        void EXPORTED vAppendFASTA( const std::string &sFastaFilePath );
 #endif
         
         /* Restores a nucleotide sequence collection from the file system using the prefix given as argument.

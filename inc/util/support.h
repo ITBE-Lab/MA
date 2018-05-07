@@ -6,6 +6,9 @@
 #ifndef SUPPORT_H
 #define SUPPORT_H
 
+#include "util/debug.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <vector>
 #include <string>
 #include <sstream>
@@ -16,7 +19,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <fstream>
-#include "util/debug.h"
+/// @endcond
 
 #ifdef __GNUC__
     #include <stdint.h>
@@ -142,5 +145,12 @@ void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType
                throw std::runtime_error(   (((((((std::string( sText ) += "Out of range for value : ") += std::to_string( xVal )) += " range : [ ") += std::to_string( xRangeMin )) += "..") += std::to_string( xRangeMax )) += ")") ); // runtime error
        } // if
 } // template function
+
+static bool fileExists(const std::string& rsFile)
+{
+    struct stat buffer;
+    return (stat (rsFile.c_str(), &buffer) == 0);
+}// fucntion
+
 
 #endif

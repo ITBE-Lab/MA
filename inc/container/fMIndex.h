@@ -6,14 +6,17 @@
 #ifndef FM_INDEX_H
 #define FM_INDEX_H
 
+#include "container/pack.h"
+#include "container/is.h"
+#include "container/bwt_large.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <cstdint>
 #include <set>
 #include <utility>
 #include <mutex>
 #include <chrono> // time required for temporary filename construction
-#include "container/pack.h"
-#include "container/is.h"
-#include "container/bwt_large.h"
+/// @endcond
 
 namespace libMA
 {

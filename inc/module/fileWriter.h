@@ -7,11 +7,7 @@
 #define FILE_WRITER_H
 
 #include "module/module.h"
-#include "container/nucSeq.h"
 #include "container/alignment.h"
-#include "container/pack.h"
-#include <fstream>
-#include "util/exception.h"
 
 namespace libMA
 {

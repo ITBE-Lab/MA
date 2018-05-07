@@ -8,7 +8,10 @@
 
 #include "container/container.h"
 #include "container/interval.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <list>
+/// @endcond
 
 #define DELTA_CACHE ( 1 )
 

@@ -553,10 +553,10 @@ using namespace libMA;
     * pcPackPrefix is some prefix for the pack-files.
     * Reads all sequences on the file system and creates a sequence collection out of them.
     */
-    void Pack::vAppendFASTA( const boost::filesystem::path &sFastaFilePath )
+    void Pack::vAppendFASTA( const std::string &sFastaFilePath )
     {    /* Open a stream for FASTA File reading.
         */
-        std::ifstream xFileInputStream( sFastaFilePath.string(), std::ios::in | std::ios::binary );
+        std::ifstream xFileInputStream( sFastaFilePath, std::ios::in | std::ios::binary );
 
         /* We check, whether file opening worked well.
         */

@@ -5,12 +5,15 @@
  */
 #pragma once
 
+#include "container/seed.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
 #include <algorithm>
 #include <array>
 #include <numeric>
 #include <cstring>
-#include "container/seed.h"
+/// @endcond
 
 namespace libMA
 {
