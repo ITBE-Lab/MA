@@ -138,6 +138,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         auto pSeedsIn = pSoCIn->pop();
 
         auto pSeeds = std::make_shared<Seeds>();
+        pSeeds->xStats.sName = pSeedsIn->xStats.sName;
         if(pSeedsIn->size() > 1)
         {
 
@@ -264,7 +265,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
             pSeeds->reserve(pShadows->size());
 
-            pSeeds->xStats = pSeedsIn->xStats;
             for(auto &xT : *pShadows)
                 pSeeds->push_back(*std::get<0>(xT));
 

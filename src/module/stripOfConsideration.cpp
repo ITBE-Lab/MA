@@ -54,7 +54,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     const nucSeqIndex uiStripSize = this->getStripSize(uiQLen, iMatch, iExtend, iGap);
 
     //extract the seeds
-    auto pSeeds = std::make_shared<std::vector<Seed>>();
+    auto pSeeds = std::make_shared<Seeds>();
+    pSeeds->xStats.sName = pQuerySeq->sName;
     pSeeds->reserve(pSegments->numSeeds(uiMaxAmbiguity));
     
 #if MEASURE_DURATIONS == ( 1 ) 

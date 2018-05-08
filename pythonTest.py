@@ -204,24 +204,20 @@ def test_my_approach(
         missed_list = []
 
         #DP scoring scheme
-        NeedlemanWunsch(False).score_match = match
-        NeedlemanWunsch(False).penalty_gap_extend = extend
-        NeedlemanWunsch(False).penalty_gap_open = gap
-        NeedlemanWunsch(False).penalty_missmatch = missmatch
-        NeedlemanWunsch(False).max_gap_area = 10000 # if local else 0 #1000000
+        NeedlemanWunsch().score_match = match
+        NeedlemanWunsch().penalty_gap_extend = extend
+        NeedlemanWunsch().penalty_gap_open = gap
+        NeedlemanWunsch().penalty_missmatch = missmatch
+        NeedlemanWunsch().max_gap_area = 10000 # if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds)
         if kMerExtension:
             seeding = OtherSeeding(True)
-        reseeding = ReSeed(max_hits)
-        minimizers = Minimizers()
-        minimizersExtract = MinimizersToSeeds()
         soc = StripOfConsideration(give_up) # check if 0 is okay
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
         couple = ExecOnVec(ls, True, max_nmw)
-        chain = Chaining()
-        nmw = NeedlemanWunsch(local)
+        nmw = NeedlemanWunsch()
         optimal = ExecOnVec(nmw, sort_after_score)
         mappingQual = MappingQuality(max_nmw) # give me max_nmw alignments
 
@@ -1750,8 +1746,8 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 
 
 #createSampleQueries(plasmodium_genome, "plasmodium_1000_column_0.db", 1000, 100, 32, only_first_row=True)
-#test_my_approaches("plasmodium_1000_column_0.db", plasmodium_genome)
-test("plasmodium_1000.db", plasmodium_genome, only_overall_time=True, runtime_sample_multiplier=0)
+test_my_approaches("plasmodium_1000.db", plasmodium_genome, specific_id=321)
+#test("plasmodium_1000.db", plasmodium_genome, only_overall_time=True)
 analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 
 

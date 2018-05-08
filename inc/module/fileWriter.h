@@ -205,6 +205,62 @@ namespace libMA
 
     };//class
 
+    /**
+     * @brief Writes the coverage of a seed set to a file.
+     * @details format (tab delimited):
+     * query_name query_pos query_len
+     * ref_name ref_pos ref_len
+     * primary on_rev_comp acc_seed_length num_seeds
+     */
+    class SeedSetFileWriter: public Module
+    {
+    public:
+        //holds a file ourstream if necessary
+        std::shared_ptr<OutStream> pOut;
+        std::shared_ptr<std::mutex> pLock;
+
+        /**
+         * @brief creates a new SeedSetFileWriter.
+         * @details 
+         * if sFileName is "stdout" the writer will output to stdout instead of the file.
+         * Otherwise sFileName is used as the filename to write to.
+         * The file will be truncated is it already exists.
+         */
+        SeedSetFileWriter(std::string sFileName)
+            :
+            pLock(new std::mutex)
+        {
+            if (sFileName != "stdout")
+                pOut = std::shared_ptr<OutStream>(new FileOutStream(sFileName));
+            else
+                pOut = std::shared_ptr<OutStream>(new StdOutStream());
+        }//constructor
+
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - Nil
+         */
+        ContainerVector EXPORTED getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - ContainerVector(NucSeq)
+         */
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
+
+        std::string getName() const
+        {
+            return "SeedSetFileWriter";
+        }//function
+
+    };//class
+
 }//namespace
 
 #ifdef WITH_PYTHON

@@ -273,11 +273,123 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
             *pOut << sQueryLine << "\tQuery\n";
             *pOut << sMatchLine << "\n";
             *pOut << sRefLine << "\tReference\n\n";
-        }//score xGuard
-    }//for
+        }// score xGuard
+    }// for
 
     return std::shared_ptr<Container>(new Nil());
-}//function
+}// function
+
+ContainerVector SeedSetFileWriter::getInputType() const
+{
+    return ContainerVector{
+        // the harmonized strip of consideration
+        std::make_shared<ContainerVector>( std::make_shared<Seeds>() ),
+        std::make_shared<Pack>(),
+    };
+}// function
+
+std::shared_ptr<Container> SeedSetFileWriter::getOutputType() const
+{
+    return std::shared_ptr<Container>(new Nil());
+}// function
+
+std::shared_ptr<Container> SeedSetFileWriter::execute(std::shared_ptr<ContainerVector> vpInput)
+{
+    auto pSoCs = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
+    const auto& pPack = std::static_pointer_cast<Pack>((*vpInput)[1]);
+    std::string sPrimary = "true";
+
+    //sort the harmonized SoCs
+    //sort ascending
+    std::sort(
+        pSoCs->begin(), pSoCs->end(),
+        []
+        (std::shared_ptr<Container>& a, std::shared_ptr<Container>& b)
+        {
+            return a->larger(b);
+        }//lambda
+    );//sort function call
+
+    for(std::shared_ptr<Container> pS : *pSoCs)
+    {
+        const auto& pSeeds = std::static_pointer_cast<Seeds>(pS);
+        
+        // sanity checks
+        if(pSeeds == nullptr)
+            continue;
+        if(pSeeds->empty())
+            continue;
+
+        DEBUG_2(
+            std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
+            for(Seed& rSeed : *pSeeds)
+            {
+                std::cout << rSeed.start_ref() << ", " << rSeed.end_ref() << "; "
+                    << rSeed.start() << ", " << rSeed.end() << std::endl;
+            }// for
+        )// DEBUG
+
+        // Determine the query and reverence coverage of the seeds
+        nucSeqIndex beginRef = pSeeds->front().start_ref();
+        nucSeqIndex endRef = pSeeds->back().end_ref();
+        // seeds are sorted by ther startpos so we 
+        // actually need to check all seeds to get the proper end
+        nucSeqIndex endQuery = pSeeds->back().end();
+        nucSeqIndex beginQuery = pSeeds->front().start();
+        nucSeqIndex uiAccSeedLength = 0;
+        nucSeqIndex uiNumSeeds = 0;
+        for (auto xSeed : *pSeeds)
+        {
+            if(endRef < xSeed.end_ref())
+                endRef = xSeed.end_ref();
+            if(beginRef > xSeed.start_ref())
+                beginRef = xSeed.start_ref();
+            if(endQuery < xSeed.end())
+                endQuery = xSeed.end();
+            if(beginQuery > xSeed.end())
+                beginQuery = xSeed.start();
+            uiAccSeedLength += xSeed.size();
+            uiNumSeeds++;
+            assert(xSeed.start() <= xSeed.end());
+        }// for
+        DEBUG_2(
+            std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl;
+        )// DEEBUG
+        
+        std::string sRefName =pPack->nameOfSequenceWithId(pPack->uiSequenceIdForPosition(beginRef));
+        // 0 based index... 
+        std::string sRefPos = std::to_string(
+                beginRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(beginRef))
+            );
+
+        std::string sRefLen = std::to_string(endRef - beginRef);
+        std::string sQueryPos = std::to_string(beginQuery);
+        std::string sQueryLen = std::to_string(endQuery - beginQuery);
+        std::string sAccSeedLength = std::to_string(uiAccSeedLength);
+        std::string sNumSeeds = std::to_string(uiNumSeeds);
+        std::string sOnRevComp = (pPack->bPositionIsOnReversStrand(beginRef) ? "true" : "false");
+
+        {// synchronize output
+            std::lock_guard<std::mutex> xGuard(*pLock);
+            *pOut << pSeeds->xStats.sName << "\t";
+            *pOut << sQueryPos << "\t";
+            *pOut << sQueryLen << "\t";
+
+            *pOut << sRefName << "\t";
+            *pOut << sRefPos << "\t";
+            *pOut << sRefLen << "\t";
+
+            *pOut << sPrimary << "\t";
+            *pOut << sOnRevComp << "\t";
+            *pOut << sAccSeedLength << "\t";
+            *pOut << sNumSeeds << "\n";
+        }// score xGuard
+
+        sPrimary = "false";
+    }// for
+
+    return std::shared_ptr<Container>(new Nil());
+}// function
 
 #ifdef WITH_PYTHON
 void exportFileWriter()

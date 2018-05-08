@@ -91,7 +91,7 @@ namespace libMA
 #endif
         unsigned int uiSoCIndex = 0;
         const nucSeqIndex uiStripSize;
-        std::shared_ptr<std::vector<Seed>> pSeeds;
+        std::shared_ptr<Seeds> pSeeds;
         // positions to remember the maxima
         std::vector<std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>> vMaxima;
         // last SoC end
@@ -104,7 +104,7 @@ namespace libMA
             return std::get<0>(rA) < std::get<0>(rB);
         }// function
 
-        SoCPriorityQueue(nucSeqIndex uiStripSize, std::shared_ptr<std::vector<Seed>> pSeeds)
+        SoCPriorityQueue(nucSeqIndex uiStripSize, std::shared_ptr<Seeds> pSeeds)
                 :
             uiStripSize(uiStripSize),
             pSeeds(pSeeds),
@@ -156,6 +156,7 @@ namespace libMA
             auto xCollect2 = std::get<1>(vMaxima.front());
             assert(xCollect2 != pSeeds->end());
             //save SoC index
+            pRet->xStats = pSeeds->xStats;
             pRet->xStats.index_of_strip = uiSoCIndex++;
             // all these things are not used at the moment...
             pRet->xStats.uiInitialQueryBegin = xCollect2->start();

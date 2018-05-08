@@ -174,7 +174,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int iMatch_,
     unsigned int iMisMatch_,
     unsigned int iGap_,
-    unsigned int iExtend_
+    unsigned int iExtend_,
+    bool bFinderMode
 );
 
 #endif

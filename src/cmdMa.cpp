@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
         ("t,threads", "Used concurency", 
            value<unsigned int>()->default_value(std::to_string(std::thread::hardware_concurrency()))
         )
-        ("f,fmdIndex", "FMD-index generation")
+        ("F,fmdIndex", "FMD-index generation")
     ;
 
     if (argc <= 1)
@@ -79,6 +79,7 @@ int main(int argc, char* argv[])
             ("v,giveUp", "Min relative SoC score", 
                 value<double>()->default_value(bAccurate ? "0.025" : "0.01")
             )
+            ("f,findMode", "Disable DP", value<bool>()->default_value("false"))
             ("Match", "DP match score.", value<unsigned int>()->default_value("3"))
             ("MissMatch", "DP missmatch penalty.", value<unsigned int>()->default_value("4"))
             ("Gap", "DP gap open penalty.", value<unsigned int>()->default_value("6"))
@@ -143,6 +144,7 @@ int main(int argc, char* argv[])
             std::cerr << "error: --alignIn is compulsory if --align is set" << std::endl;
             return 1;
         }// else if
+        auto bFindMode =        result.count("findMode") > 0;
         auto fGiveUp =          result["giveUp"].       as<double>();
         auto iMatch =           result["Match"].        as<unsigned int>();
         auto iExtend =          result["Extend"].       as<unsigned int>();
@@ -213,7 +215,11 @@ int main(int argc, char* argv[])
                     std::vector<std::shared_ptr<Pledge>>{pNil}
                 ));
             }//for
-            std::shared_ptr<Module> pOut(new FileWriter(sAlignOut));
+            std::shared_ptr<Module> pOut;
+            if(bFindMode)
+                pOut.reset( new SeedSetFileWriter(sAlignOut) );
+            else
+                pOut.reset( new FileWriter(sAlignOut) );
             //setup the graph
             std::vector<std::shared_ptr<Pledge>> aGraphSinks = setUpCompGraph(
                 pPack,
@@ -232,7 +238,8 @@ int main(int argc, char* argv[])
                 iMatch,
                 iMissMatch,
                 iGap,
-                iExtend
+                iExtend,
+                bFindMode
             );
             if(result.count("info") > 0)
             {
