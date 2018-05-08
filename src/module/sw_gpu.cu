@@ -1657,9 +1657,9 @@ std::vector<GPUReturn> cudaAlignTmpl
 	assert( sizeof( SCORE_TP4 ) == 4 * sizeof( SCORE_TP ) && sizeof( SCORE_TP2 ) == 2 * sizeof( SCORE_TP ) );
 
     //// for(auto& rQ : rvQuerySeqs)
-        for(char c :rvRefSeq)
-            if(c >= 4)
-                std::cout << "WARNING " << c << std::endl;
+    ////    for(char c :rvRefSeq)
+    ////        if(c >= 4)
+    ////            std::cout << "WARNING " << c << std::endl;
 	
 	cudaSetDevice( uiDeviceId );
 	/* Reset all GPU devices */
@@ -1695,7 +1695,7 @@ std::vector<GPUReturn> cudaAlignTmpl
         std::vector<size_t> vMaxScorePositions;
 
 	    /* Do the core alignment */
-	    metaMeasureAndLogDuration<false>
+	    metaMeasureAndLogDuration<true>
 	    (	"GPU time",	// logging text
 	    	[&] () // lambda by reference
 	    	{

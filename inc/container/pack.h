@@ -502,6 +502,13 @@ namespace libMA
 
     public:
 
+        inline void printHoles()
+        {
+            for(auto& rHole : xVectorOfHoleDescriptors)
+                std::cout << rHole.offset << " " << rHole.length << " " 
+                    << rHole.xHoleCharacter << std::endl;
+        }// method
+
         friend void vTextSequenceCollectionClass();
 
         /* Check method, in oder to see whether everything is fine
@@ -632,6 +639,10 @@ namespace libMA
                     {    /* First N seen. We append a fresh record to vector of holes and initialize the record.
                         * We have to double the capacity if there is no space anymore.
                         */
+                        assert(
+                                uiSymbolCode == (unsigned int)'N' ||
+                                uiSymbolCode == (unsigned int)'n'
+                            );
                         xVectorOfHoleDescriptors.emplace_back(
                             HoleDescriptor(  uiOffsetDistance, // offset
                                             'N'               // character

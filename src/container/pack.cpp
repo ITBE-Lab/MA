@@ -663,6 +663,10 @@ void exportPack()
                 &Pack::bridgingSubsection_boost
             )
         .def(
+                "printHoles", 
+                &Pack::printHoles
+            )
+        .def(
                 "start_of_sequence", 
                 &Pack::startOfSequenceWithName
             )

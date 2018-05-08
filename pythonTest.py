@@ -188,6 +188,9 @@ def test_my_approach(
         ref_pledge = Pledge(Pack())
         ref_pledge.set(ref_pack)
 
+        ref_pledge.get().printHoles()
+        exit()
+
         fm_pledge = None
 
         if do_minimizers:
@@ -1719,19 +1722,22 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 
 # plasmodium
 
-## task 1:
+## task 1: (done)
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db", 200, 20, 2048, reset=True, gpu_id=0)
 
-## task 2:
+## task 2: (done)
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_1000.db", 1000, 100, 2048, reset=True, gpu_id=1)
 
-## task 3:
+## task 3: (aborted)
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_30000.db", 30000, 100, 2048, reset=True, gpu_id=0)
 
 # human
 
-## task 4:
-createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 32, reset=True, gpu_id=0)
+## task 1:
+#createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 100, reset=True, gpu_id=0)
+
+## task 2:
+#createSampleQueries(human_genome, "sw_human_1000.db", 1000, 100, 50, reset=True, gpu_id=1)
 
 
 #exit()
@@ -1745,8 +1751,10 @@ createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 32, reset=True, gp
 #analyse_all_approaches_depre("zebrafish_n_200.html","zebrafish_n_200.db", num_tries=1)
 
 
+
+
 #createSampleQueries(plasmodium_genome, "plasmodium_1000.db", 1000, 100, 32)
-#test_my_approaches("plasmodium_1000.db", plasmodium_genome)
+test_my_approaches("plasmodium_1000.db", human_genome)
 #test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
 #analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 

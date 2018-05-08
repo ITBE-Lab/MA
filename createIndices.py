@@ -10,7 +10,7 @@ def replace_n(filenames, out_file):
             if line[0] != '>':
                 i = 0
                 while i < len(line):
-                    if line[i] == 'N' or line[i] == 'n':
+                    if not line[i] in ["a", "c", "g", "t", "A", "C", "G", "T"]:
                         line = line[:i] + line[i+1:] #remove the N
                     else:
                         i += 1
@@ -108,8 +108,8 @@ def chrNames(prefix, num, suffix):
 #replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
 #make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
 
-#replace_n(chrNames("/MAdata/chrom/human/chr", 22, ".fna"), "/MAdata/chrom/human/n_free.fasta")
-#make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
+replace_n(chrNames("/MAdata/chrom/human/chr", 22, ".fna"), "/MAdata/chrom/human/n_free.fasta")
+make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
 
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
 #make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
