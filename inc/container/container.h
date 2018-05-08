@@ -8,12 +8,15 @@
 #define CONTAINER_H
 
 #include "util/support.h"
-#include <vector>
 #include "util/exception.h"
 #include "util/iterableConverter.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
+#include <memory>
 #ifdef WITH_PYTHON
     #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #endif
+/// @endcond
 
 namespace libMA
 {

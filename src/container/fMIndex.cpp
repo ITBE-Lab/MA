@@ -3,6 +3,7 @@
  * @author Arne Kutzner
  */
 #include "container/fMIndex.h"
+
 #include <cstdlib>
 using namespace libMA;
 
@@ -346,7 +347,7 @@ void FMIndex::build_FMIndex(
 
         std::string tempDir = "~/.tempdir";
         // Check existence / create directory for storage of temporary data.
-        boost::filesystem::create_directories( tempDir ); 
+        makeDir( tempDir ); 
 
         // Create temporary filename for pack export.
         const auto xTempFileName =    tempDir.append(  
@@ -376,7 +377,7 @@ void FMIndex::build_FMIndex(
 
         /* Remove the temporary file, because it is not needed any longer.
         */
-        boost::filesystem::remove( sTempFileNameWithSuffix ); 
+        std::remove( sTempFileNameWithSuffix.c_str() ); 
     } // else
 
     /* Step 2 and step 3 of FM-index creation

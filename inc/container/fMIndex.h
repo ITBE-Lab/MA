@@ -6,14 +6,17 @@
 #ifndef FM_INDEX_H
 #define FM_INDEX_H
 
+#include "container/pack.h"
+#include "container/is.h"
+#include "container/bwt_large.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <cstdint>
 #include <set>
 #include <utility>
 #include <mutex>
 #include <chrono> // time required for temporary filename construction
-#include "container/pack.h"
-#include "container/is.h"
-#include "container/bwt_large.h"
+/// @endcond
 
 namespace libMA
 {
@@ -739,25 +742,25 @@ namespace libMA
         static bool packExistsOnFileSystem( const std::string &rsPrefix )
         {
             //1 == use std o check for file existance
-            return       boost::filesystem::exists( std::string(rsPrefix).append(".bwt") )
-                    && boost::filesystem::exists( std::string(rsPrefix).append(".sa") );
+            return     fileExists( std::string(rsPrefix).append(".bwt") )
+                    && fileExists( std::string(rsPrefix).append(".sa") );
         } // method
         
 
         /** Dump the current FM-Index to two separated files for BWT and SA.
          */
-        void vStoreFMIndex_boost( const boost::filesystem::path &rxFileNamePrefix )
+        void vStoreFMIndex_boost( const std::string &rxFileNamePrefix )
         {
             {    /* Save burrow wheeler transform
                 */
-                std::ofstream xOutputStream( rxFileNamePrefix.string() + ".bwt", std::ios::binary | std::ios::trunc | std::ios::out );
+                std::ofstream xOutputStream( rxFileNamePrefix + ".bwt", std::ios::binary | std::ios::trunc | std::ios::out );
                 vSaveBWT( xOutputStream );
                 xOutputStream.close();
             } // scope
             
             {    /* Save suffix array
                 */
-                std::ofstream xOutputStream( rxFileNamePrefix.string() + ".sa", std::ios::binary | std::ios::trunc | std::ios::out );    
+                std::ofstream xOutputStream( rxFileNamePrefix + ".sa", std::ios::binary | std::ios::trunc | std::ios::out );    
                 vSaveSuffixArray( xOutputStream );
                 xOutputStream.close();
             } // scope
@@ -773,17 +776,17 @@ namespace libMA
 
         /** Load an FM-Index previously stored by vStoreFMIndex.
          */
-        void vLoadFMIndex_boost( const boost::filesystem::path &rxFileNamePrefix )
+        void vLoadFMIndex_boost( const std::string &rxFileNamePrefix )
         {
-            {    if ( !boost::filesystem::exists( rxFileNamePrefix.string() + ".bwt" ) )
+            {    if ( !fileExists( rxFileNamePrefix + ".bwt" ) )
                 {
-                    throw std::runtime_error( "File opening error: " + rxFileNamePrefix.string() + ".bwt" );
+                    throw std::runtime_error( "File opening error: " + rxFileNamePrefix + ".bwt" );
                 } // if
 
-                std::ifstream xInputFiletream( rxFileNamePrefix.string() + ".bwt", std::ios::binary | std::ios::in );
+                std::ifstream xInputFiletream( rxFileNamePrefix + ".bwt", std::ios::binary | std::ios::in );
                 if ( xInputFiletream.fail() ) // check whether we could successfully open the stream
                 {    
-                    throw std::runtime_error( "Opening of BWT of FM index failed: " + rxFileNamePrefix.string() + ".bwt" );
+                    throw std::runtime_error( "Opening of BWT of FM index failed: " + rxFileNamePrefix + ".bwt" );
                 } // if
 
                 vRestoreBWT( xInputFiletream );
@@ -792,10 +795,10 @@ namespace libMA
             
             /* The order is important over here, because during loading the suffix array we check with compatibility with the BWT.
             */
-            {    std::ifstream xInputFileStream( rxFileNamePrefix.string() + ".sa", std::ios::binary | std::ios::in );
+            {    std::ifstream xInputFileStream( rxFileNamePrefix + ".sa", std::ios::binary | std::ios::in );
                 if ( xInputFileStream.fail() ) // check whether we could successfully open the stream
                 {
-                    throw std::runtime_error( "Opening of suffix array of FM index failed: " + rxFileNamePrefix.string() + ".sa" );
+                    throw std::runtime_error( "Opening of suffix array of FM index failed: " + rxFileNamePrefix + ".sa" );
                 } // if
                 vRestoreSuffixArray( xInputFileStream );
                 xInputFileStream.close();

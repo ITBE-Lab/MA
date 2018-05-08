@@ -3,7 +3,9 @@
  * @author Markus Schmidt
  */
 #include "module/linesweep.h"
-#include "sample_consensus/test_ransac.h"
+#if USE_RANSAC == 1
+    #include "sample_consensus/test_ransac.h"
+#endif
 using namespace libMA;
 
 extern int iGap;
@@ -136,6 +138,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         auto pSeedsIn = pSoCIn->pop();
 
         auto pSeeds = std::make_shared<Seeds>();
+        pSeeds->xStats.sName = pSeedsIn->xStats.sName;
         if(pSeedsIn->size() > 1)
         {
 
@@ -178,7 +181,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 pSoCIn->vExtractOrder.back().first = uiCurrSoCScore;
                 pSoCIn->vIngroup.push_back(std::make_shared<Seeds>());
             )
-#if 0 // switch between ransac line angle + intercept estimation & 45deg median line
+#if USE_RANSAC == 1 // switch between ransac line angle + intercept estimation & 45deg median line
             std::vector<double> vX, vY;
             vX.reserve(pSeedsIn->size());
             vY.reserve(pSeedsIn->size());
@@ -262,7 +265,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
             pSeeds->reserve(pShadows->size());
 
-            pSeeds->xStats = pSeedsIn->xStats;
             for(auto &xT : *pShadows)
                 pSeeds->push_back(*std::get<0>(xT));
 

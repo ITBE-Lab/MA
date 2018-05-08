@@ -35,7 +35,9 @@
 #ifndef __QSUFSORT_H__
 #define __QSUFSORT_H__
 
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <stdint.h>
+// @endcond
 
 #define KEY(V, I, p, h)                    ( V[ I[p] + h ] )
 #define INSERT_SORT_NUM_ITEM    16

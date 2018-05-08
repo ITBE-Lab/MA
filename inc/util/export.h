@@ -19,6 +19,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * @tableofcontents
  * @section intro_sec Introduction
  *
+ * @note This documentation is outdated!
+ *
+ *
  * MA is a @ref libMA::Module "Modular" alignment tool build using C++11 and Boost Python.
  * The alignment process has been seperated into several @ref libMA::Module "modules".
  * The execution order of the @ref libMA::Module "modules" is set up using Python.
@@ -55,9 +58,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  *
  * @section install_sec Installation
  * 
- * The easiest way to install the MA library is using pip:
+ * The easiest way to install the MA library is using git hub:
  * @code{.sh}
- * pip install MA
+ * git clone https://github.com/ItBeLab/ma
  * @endcode
  * There is a git repo with the full source code here: .... <br>
  * 
@@ -146,24 +149,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/linesweep.h"
 #include "module/binarySeeding.h"
 #include "module/stripOfConsideration.h"
-#include "module/chaining.h"
-#include "module/smith_waterman.h"
 #include "module/extractAllSeeds.h"
 #include "module/execOnVector.h"
-#include "module/reSeed.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
 #include "module/mappingQuality.h"
 #include "module/pairedReads.h"
-#include "module/minimizers.h"
-#include "module/otherSeeding.h"
 #include "module/splitter.h"
-#include "container/container.h"
-#include "container/minimizersHash.h"
-#include "module/sw_gpu.h"
-#include "container/soc.h"
-#include "container/seed.h"
-#include "sample_consensus/test_ransac.h"
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
@@ -182,7 +174,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int iMatch_,
     unsigned int iMisMatch_,
     unsigned int iGap_,
-    unsigned int iExtend_
+    unsigned int iExtend_,
+    bool bFinderMode
 );
 
 #endif

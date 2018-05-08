@@ -1,3 +1,8 @@
+/** 
+ * @file mappingQuality.h
+ * @brief Computes the mapping quality of Alignments.
+ * @author Markus Schmidt
+ */
 #ifndef MAPPING_QUALITY_H
 #define MAPPING_QUALITY_H
 
@@ -13,6 +18,7 @@ namespace libMA
      * @details
      * Given a vector of alignments this module computes the mapping quality for the
      * first alignment on the basis of the second
+     * @note the name quality is missleading it rather is a mapping confidence
      */
     class MappingQuality: public Module
     {

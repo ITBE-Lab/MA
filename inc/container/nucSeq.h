@@ -5,19 +5,15 @@
  */
 #pragma once
 
-#include "util/debug.h"
+#include "container/seed.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
 #include <algorithm>
 #include <array>
 #include <numeric>
-#include <cmath>
 #include <cstring>
-#include "container/interval.h"
-#ifdef WITH_PYTHON
-    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#endif
-#include "container/container.h"
-#include "container/seed.h"
+/// @endcond
 
 namespace libMA
 {

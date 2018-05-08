@@ -1,28 +1,52 @@
 
-## Getting started
+## Getting Started
+
+There are three options to get MA running:
+
+#### 1. The Installer
+
+An installer is available on the It-Be homepage: 
+
+http://itbe.hanyang.ac.kr/research-articles/alignment/
+
+Note: The installer is currently the only way to obtain the GUI version of MA.
+
+#### 2. Cloning & Compiling
+This software uses boost 1.65. And python 3.
+
+@todo make the Makefile nicer...
+After installing boost and python, set $(BOOST_ROOT) and $(PYTHON_ROOT) 
+then execute following commands:
 
     git clone https://github.com/ItBeLab/ma
     cd ma
     make
-    ./bwa index ref.fa
-    ./bwa mem ref.fa read-se.fq.gz | gzip -3 > aln-se.sam.gz
-    ./bwa mem ref.fa read1.fq read2.fq | gzip -3 > aln-pe.sam.gz
+    ./ma -h
+
+#### 3. Pip
+
+coming soon!
+
+### Aligning
+
+@todo
+
+### Generating Reference Indices
+
+@todo
 
 ## Introduction
 
 @todo
 
-## Availability
+## Citing MA
 
-@todo
+MA is unpublished so far.
 
-## Seeking help
+## The It-Be Lab
 
-@todo
-
-## Citing BWA
-
-@todo
+The homepage of the **Information Technology – Bio Engineering** Lab 
+at Hanyang University can be found here http://itbe.hanyang.ac.kr/.
 
 ## Frequently asked questions (FAQs)
 

@@ -101,10 +101,23 @@ using namespace libMA;
             bIsEOF( false )
         {} // constructor
 
+        template<typename TP1, typename TP2>
+        BufferedStreamer<BUFFER_SIZE, StreamType>( TP1 &a, TP2 &b /* const char* pcFileNameRef */ ) :
+        xBufferedStream( a, b /* pcFileNameRef */ ),
+            uiBegin( 0 ), 
+            uiEnd( 0 ), 
+            bIsEOF( false )
+        {} // constructor
+
         /* Virtual destructor. (interesting in the context of polymorphism.)
         */
         virtual ~BufferedStreamer()
         {} // destructor
+
+        bool fail()
+        {
+            return xBufferedStream.fail();
+        }
 
         /* keep me here, so that I stay automatically inlined ...
         */
@@ -422,6 +435,11 @@ using namespace libMA;
             BufferedStreamer<8192, StreamType>( rxBufferedStreamConstructorArg )
         {} // constructor
 
+        template<typename TP1, typename TP2> 
+        FastaStreamReader( TP1 &a, TP2 &b ) : 
+            BufferedStreamer<8192, StreamType>( a, b )
+        {} // constructor
+
         virtual ~FastaStreamReader()
         {
             /* Automatic call of the superclass destructor
@@ -443,14 +461,7 @@ using namespace libMA;
         */
         FastaFileStreamReader( const std::string &rsFileName ) :
             FastaStreamReader<StreamType>( rsFileName )
-        {
-            /* We check, whether file opening worked well.
-            */
-            if ( !this->xBufferedStream.is_open() )
-            {
-                throw fasta_reader_exception( "File open error." );
-            } // if
-        } // constructor
+        {} // constructor
     }; // class FastaFileStreamReader
 
     /**
@@ -468,18 +479,13 @@ using namespace libMA;
         */
         void vLoadFastaFile( const char *pcFileName )
         {
-            std::ifstream xFileInputStream( pcFileName, std::ios::in | std::ios::binary );
-            
-            /* We check, whether file opening worked well.
-            */
-            if ( !xFileInputStream.is_open() )
-            {
-                throw fasta_reader_exception( "File open error." );
-            } // if
-            
             /* If the FASTA reader experiences some problem, it will throw an exception.
             */
-            FastaStreamReader<GzipInputStream> fastaReader( xFileInputStream, *this );
+           auto xMode = std::ios::in | std::ios::binary;
+            FastaStreamReader<std::ifstream> fastaReader( 
+                pcFileName, xMode
+            );
+            
         } // method Anonymous
 
         /* The destruction will free the memory of the FASTA-Record
@@ -505,70 +511,29 @@ using namespace libMA;
             );
     } // method    
 
-    void Pack::vPackFastaFilesDeprecated( const std::vector<std::string> &rxvFileNameOfFastaFiles, 
-                                            const char* pcPackPrefix, 
-                                            bool bMakeReverseStand 
-                                        )
-    {
-        std::cout << "Processing Pack Prefix " << pcPackPrefix << std::endl;
-        
-        /* Load all FASTA-Files in the given vector and add their content to te pack
-        */
-        for ( const std::string &rsFileName : rxvFileNameOfFastaFiles )
-        {
-            std::cout << "Add content of Fasta-File" << rsFileName << std::endl;
-            
-            /* Open a stream for FASTA File reading.
-            */
-            std::ifstream xFileInputStream( rsFileName, std::ios::in | std::ios::binary );
-        
-            /* We check, whether file opening worked well.
-            */
-            if ( !xFileInputStream.is_open() )
-            {
-                throw fasta_reader_exception( "File open error." );
-            } // if
-
-            /* Open a FASTA Stream reader using the input stream. The FASTA reader automatically recognizes whether the pack is compressed or not.
-            */
-            FastaStreamReader<GzipInputStream> xFastaReader( xFileInputStream );
-            
-            /* Apply the lambda expression to all records in the file
-            */
-            xFastaReader.forAllSequencesDo
-            (
-                [&] ( const FastaDescriptor &xFastaRecord ) 
-                {    /* Add the current FASTA sequence to the pack.
-                    */
-                    vAppendFastaSequence( xFastaRecord );
-                    std::cout << "Add sequence " << xFastaRecord.sName << std::endl;
-                } // lambda
-            ); // function call
-        } // for
-        
-        vStoreCollection( pcPackPrefix );
-    } // method
-
     /* Entry point, for the construction of packs.
     * pcPackPrefix is some prefix for the pack-files.
     * Reads all sequences on the file system and creates a sequence collection out of them.
     */
-    void Pack::vAppendFASTA( const boost::filesystem::path &sFastaFilePath )
-    {    /* Open a stream for FASTA File reading.
-        */
-        std::ifstream xFileInputStream( sFastaFilePath.string(), std::ios::in | std::ios::binary );
+    void Pack::vAppendFASTA( const std::string &sFastaFilePath )
+    {   
+        /* Open a stream for FASTA File reading.
+         * Open a FASTA Stream reader using the input stream. 
+         */
+        auto xMode = std::ios::in | std::ios::binary;
+        FastaStreamReader<std::ifstream> xFastaReader( 
+                sFastaFilePath, 
+                xMode
+            );
 
         /* We check, whether file opening worked well.
         */
-        if ( xFileInputStream.fail() )
+        if ( xFastaReader.fail() )
         {    /* Something is wrong with respect to the input-file
             */
             throw fasta_reader_exception( "File open error." );
         } // if
 
-        /* Open a FASTA Stream reader using the input stream. The FASTA reader automatically recognizes whether the pack is compressed or not.
-        */
-        FastaStreamReader<GzipInputStream> xFastaReader( xFileInputStream );
         
         /* Apply the lambda expression to all records in the file
         */
@@ -588,7 +553,6 @@ using namespace libMA;
         vAppendFASTA(pcFileName);
     } // method
 
-//#endif
 
 #ifdef WITH_PYTHON
 void exportPack()
@@ -620,7 +584,7 @@ void exportPack()
                 "\n"
                 "Appends seq at the end of the pack.\n"
             )
-#if 1 //DEPRECATED
+#if 0 //DEPRECATED
         .def(
                 "append_fasta_file", 
                 &Pack::vAppendFastaFile,

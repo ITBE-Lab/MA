@@ -5,21 +5,21 @@
  */
 #pragma once
 
-#include "util/debug.h"
 #include "util/support.h"
+#include "container/qSufSort.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-#include "container/qSufSort.h"
 
 /* C++ includes
  */
 #include <algorithm>
-#include <vector>
 #include <memory> 
 #include <array>
+/// @endcond
 
 #ifdef USE_MALLOC_WRAPPERS
 #  include "malloc_wrap.h"

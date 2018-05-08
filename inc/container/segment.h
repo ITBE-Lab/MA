@@ -7,8 +7,10 @@
 #define INTERVALTREE_H
 
 #include "container/fMIndex.h"
+
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <thread>
-#include "container/seed.h"
+/// @endcond
 
 #define confMETA_MEASURE_DURATION ( 1 )
 

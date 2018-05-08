@@ -167,15 +167,6 @@ class Pack(libMA.Pack):
     pass
 
 ##
-# @brief the minimizer hash index.
-# @details
-#
-# @ingroup container
-#
-class MinimizersHash(libMA.MinimizersHash):
-    pass
-
-##
 # @brief A single seed.
 # @details
 #
@@ -237,33 +228,6 @@ class BinarySeeding(libMA.BinarySeeding):
         return super(BinarySeeding, self).promise_me(ContainerVector(*args))
 
 ##
-# @brief python wrapper for OtherSeeding
-class OtherSeeding(libMA.OtherSeeding):
-    def execute(self, *args):
-        return super(OtherSeeding, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(OtherSeeding, self).promise_me(ContainerVector(*args))
-
-##
-# @brief python wrapper for Minimizers
-class Minimizers(libMA.Minimizers):
-    def execute(self, *args):
-        return super(Minimizers, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(Minimizers, self).promise_me(ContainerVector(*args))
-
-##
-# @brief python wrapper for MinimizersToSeeds
-class MinimizersToSeeds(libMA.MinimizersToSeeds):
-    def execute(self, *args):
-        return super(MinimizersToSeeds, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(MinimizersToSeeds, self).promise_me(ContainerVector(*args))
-
-##
 # @brief python wrapper for StripOfConsideration
 class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
@@ -272,16 +236,6 @@ class StripOfConsideration(libMA.StripOfConsideration):
     def promise_me(self, *args):
         return super(StripOfConsideration, self).promise_me(ContainerVector(*args))
 
-"""
-##
-# @brief python wrapper for StripOfConsideration2
-class StripOfConsideration2(libMA.StripOfConsideration2):
-    def execute(self, *args):
-        return super(StripOfConsideration2, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(StripOfConsideration2, self).promise_me(ContainerVector(*args))
-"""
 
 ##
 # @brief python wrapper for LinearLineSweep
@@ -291,15 +245,6 @@ class LinearLineSweep(libMA.LinearLineSweep):
 
     def promise_me(self, *args):
         return super(LinearLineSweep, self).promise_me(ContainerVector(*args))
-
-##
-# @brief python wrapper for LinearLineSweep
-class Chaining(libMA.Chaining):
-    def execute(self, *args):
-        return super(Chaining, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(Chaining, self).promise_me(ContainerVector(*args))
 
 ##
 # @brief python wrapper for FileReader
@@ -362,30 +307,6 @@ class ExtractAllSeeds(libMA.ExtractAllSeeds):
 
     def promise_me(self, *args):
         return super(ExtractAllSeeds, self).promise_me(ContainerVector(*args))
-
-##
-# @brief The ReSeed Module.
-# @details
-# extracts all seeds from a segment list.
-# @ingroup module
-#
-class ReSeed(libMA.ReSeed):
-    def execute(self, *args):
-        return super(ReSeed, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(ReSeed, self).promise_me(ContainerVector(*args))
-
-##
-# @brief The SMW Module.
-# @ingroup module
-#
-class SMW(libMA.SMW):
-    def execute(self, *args):
-        return super(SMW, self).execute(ContainerVector(*args))
-
-    def promise_me(self, *args):
-        return super(SMW, self).promise_me(ContainerVector(*args))
 
 ##
 # @brief The Splitter Module.

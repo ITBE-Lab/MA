@@ -1,7 +1,7 @@
 # location of the Boost Python include files and library
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
-BOOST_LIB = boost_python3 boost_iostreams boost_filesystem boost_system boost_program_options
-CUDA_PATH = /usr/local/cuda-9.1/lib64/
+BOOST_SUFFIX=-mt
+BOOST_LIB = boost_python3
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
@@ -24,15 +24,11 @@ LDFLAGS= -std=c++11
 LDLIBS= \
 	$(PYTHON_LIB) \
 	-L$(BOOST_LIB_PATH) \
-	-L$(PARSAIL_HOME)/build \
 	-L$(LIBGABA_HOME) \
 	$(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) \
-	-L$(CUDA_PATH) \
 	-lm \
 	-lpthread \
 	-lstdc++ \
-	-lparasail \
-	-lcudart \
 	-lgaba
 
 all: ma
@@ -43,13 +39,13 @@ debug: TARGET_OBJ=$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
 
 debug: CFLAGS = -Wall -Werror -fPIC -g -DDEBUG_LEVEL=1 -DWITH_PYTHON
 debug: $(DEBUG_OBJ)
-	$(CC) $(LDFLAGS) $(LDSFLAGS) -g $(DEBUG_OBJ) $(LDLIBS) sw_gpu.o -o libMA.so
+	$(CC) $(LDFLAGS) $(LDSFLAGS) -g $(DEBUG_OBJ) $(LDLIBS) -o libMA.so
 
 ma: libMA src/cmdMa.cpp
-	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc $(LDLIBS) libMA.so -o $@
+	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc $(LDLIBS) libMA.so -o $@
 
 libMA: $(TARGET_OBJ)
-	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(LDLIBS) sw_gpu.o -o libMA.so
+	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(LDLIBS) -o libMA.so
 
 #special targets for the ksw2 library
 obj/ksw/ksw2_dispatch.co:src/ksw/ksw2_dispatch.c inc/ksw/ksw2.h
@@ -65,10 +61,10 @@ obj/container/qSufSort.co:src/container/qSufSort.c inc/container/qSufSort.h
 		$(CC) -c $(CFLAGS) -Iinc $< -o $@
 
 dbg/%.o: src/%.cpp inc/%.h
-	$(CC) -Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -g -DDEBUG_LEVEL=1 -DWITH_PYTHON -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
+	$(CC) -Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -g -DDEBUG_LEVEL=1 -DWITH_PYTHON -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
 
 obj/%.o: src/%.cpp inc/%.h
-	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
+	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
 
 html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildcard src/*/*) $(wildcard MA/*.py) doxygen.config
 	doxygen doxygen.config

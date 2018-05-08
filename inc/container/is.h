@@ -28,11 +28,13 @@
  */
 #pragma once
 
-#include <stdlib.h>
 
+/// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
+#include <stdlib.h>
 #ifdef USE_MALLOC_WRAPPERS
 #  include "malloc_wrap.h"
 #endif
+/// @endcond
 
 typedef unsigned char ubyte_t;
 
