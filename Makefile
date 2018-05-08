@@ -18,7 +18,7 @@ DEBUG_OBJ=$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
 CC=gcc
 CCFLAGS=-Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -O3 \
 	-DWITH_PYTHON # this flag enables the python library
-CFLAGS=-Wall -Werror -fPIC -O3
+CFLAGS=-Wall -Werror -fPIC -O3 -DWITH_PYTHON
 LDSFLAGS=-shared -Wl,--export-dynamic
 LDFLAGS= -std=c++11
 LDLIBS= \
@@ -37,7 +37,7 @@ debug: TARGET_OBJ=$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
 	obj/ksw/ksw2_dispatch.co obj/ksw/ksw2_extz2_sse2.co obj/ksw/ksw2_extz2_sse41.co \
 	obj/container/qSufSort.co
 
-debug: CFLAGS = -Wall -Werror -fPIC -g -DDEBUG_LEVEL=1
+debug: CFLAGS = -Wall -Werror -fPIC -g -DDEBUG_LEVEL=1 -DWITH_PYTHON
 debug: $(DEBUG_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) -g $(DEBUG_OBJ) $(LDLIBS) -o libMA.so
 
