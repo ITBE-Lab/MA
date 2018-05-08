@@ -47,6 +47,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportMappingQuality();
         exportPairedReads();
         exportSplitter();
+        exportSMW();
 }//function
 
 #endif
