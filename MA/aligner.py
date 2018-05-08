@@ -66,6 +66,17 @@ class Module(libMA.Module):
 
 
 ##
+# @brief The SMW Module.
+# @ingroup module
+#
+class SMW(libMA.SMW):
+    def execute(self, *args):
+        return super(SMW, self).execute(ContainerVector(*args))
+
+    def promise_me(self, *args):
+        return super(SMW, self).promise_me(ContainerVector(*args))
+
+##
 # @brief contains the final output of the aligner.
 # @details
 # Holds a sparse vector like representation of one alignment.
