@@ -1,6 +1,7 @@
 import os
 import subprocess
 from MA import *
+from MA.createSampleSeq import *
 import sys
 import time
 
@@ -80,7 +81,7 @@ class CommandLine(Module):
         #print(sam)
 
         lines = sam.split("\n")
-        if self.gives_sam_output():
+        if self.output_type() == "SAM":
             while len(lines) > 0 and ( len(lines[0]) == 0 or lines[0][0] is '@' ):
                 lines = lines[1:]
 
@@ -88,7 +89,7 @@ class CommandLine(Module):
         alignments = []
 
         # @todo add me as a separate item in the database
-        determine_secondary_by_order = True
+        determine_secondary_by_order = False
         secondary_ordered = {}
         secondary_list = []
 
@@ -99,7 +100,7 @@ class CommandLine(Module):
             # ignore dummy samples
             if line[:6] == "dummy_":
                 continue
-            if self.gives_sam_output():
+            if self.output_type() == "SAM":
                 columns = line.split("\t")
                 #print(line)
                 #print(columns[0], columns[2], columns[3], columns[4])
@@ -159,7 +160,7 @@ class CommandLine(Module):
                     print(line)
                     traceback.print_exc()
                     pass
-            else: # no sam output
+            elif self.output_type() == "BLASR":
                 columns = line.split(" ")
                 #print(columns)
                 start = int(columns[6])
@@ -188,6 +189,28 @@ class CommandLine(Module):
 
                 alignments.append(alignment)
 
+            elif self.output_type() == "FINDER":
+                columns = line.split("\t")
+                #print(columns)
+                r_start = int(columns[4])
+                r_length = int(columns[5])
+                r_start += pack.start_of_sequence(columns[3])
+                q_start = int(columns[1])
+                q_length = int(columns[2])
+
+                alignment = Alignment(r_start, q_start, r_start + r_length, q_start + q_length)
+                alignment.mapping_quality = int(columns[8]) # acc seed length instead of map. qual
+                alignment.stats.name = columns[0]
+                alignment.secondary = not columns[6] == "true"
+                #print(columns[6], "?=", columns[6] == "true")
+                
+                #overwrite secondary by order of the output
+                if determine_secondary_by_order:
+                    alignment.secondary = alignment.stats.name in secondary_ordered
+                    secondary_ordered[alignment.stats.name] = True
+
+                alignments.append(alignment)
+
 
         #transform list into alignment data structure
         ret = ContainerVector(Alignment())
@@ -207,8 +230,8 @@ class CommandLine(Module):
     def get_output_type(self):
         return ContainerVector(Alignment())
 
-    def gives_sam_output(self):
-        return True
+    def output_type(self):
+        return "SAM"
 
     def execute(self, *input):
         #print(input)
@@ -265,8 +288,8 @@ class Blasr(CommandLine):
     def do_checks(self):
         return False
 
-    def gives_sam_output(self):
-        return False
+    def output_type(self):
+        return "BLASR"
 
 class BWA_MEM(CommandLine):
     def __init__(self, index_str, num_results, db_name):
@@ -318,7 +341,7 @@ class G_MAP(CommandLine):
         return False
 
 class MA(CommandLine):
-    def __init__(self, index_str, num_results, fast, db_name, num_soc=None):
+    def __init__(self, index_str, num_results, fast, db_name, finder_mode=False, num_soc=None):
         super().__init__()
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
@@ -328,15 +351,24 @@ class MA(CommandLine):
         if fast:
             self.fast = "fast"
         self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
+        self.finder_mode = finder_mode
 
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -t 1 -a -p " + self.fast
         if not self.num_soc is None:
             cmd_str += " -G -S " + str(self.num_soc)
+        if self.finder_mode:
+            cmd_str += " -f"
         return cmd_str + " -g " + self.index_str + " -i " + in_filename + " -n " + self.num_results
 
     def do_checks(self):
         return True
+
+    def output_type(self):
+        if self.finder_mode:
+            return "FINDER"
+        else:
+            return "SAM"
 
 human_genome = "/MAdata/genome/human"
 
@@ -346,7 +378,7 @@ def test(
             only_overall_time=True,
             long_read_aligners=True,
             short_read_aligners=True,
-            runtime_sample_multiplier=100
+            runtime_sample_multiplier=10
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -357,14 +389,15 @@ def test(
     num_results = "1"
 
     l = [
-        #("MA Fast", MA(reference, num_results, True, db_name)),
+        ("MA Fast", MA(reference, num_results, True, db_name)),
+        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
 
     if long_read_aligners:
         l.extend([
-                #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+                ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
                 #("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
             ])
 
@@ -372,7 +405,7 @@ def test(
         l.extend([
                 #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
                 #("MA Accurate", MA(reference, num_results, False, db_name)),
-                ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+                #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
                 #("BWA SW", BWA_SW(reference, num_results, db_name)),
                 #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
             ])

@@ -965,7 +965,7 @@ def try_out_parameters(db_name, working_genome):
 def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None, specific_query=None, be_mean=False):
     full_analysis = False
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, give_up=0.025) # give_up=0.08
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, give_up=0.025) # give_up=0.08
 
     test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
 
@@ -1750,8 +1750,8 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 
 
 #createSampleQueries(plasmodium_genome, "plasmodium_1000_column_0.db", 1000, 100, 32, only_first_row=True)
-test_my_approaches("plasmodium_1000.db", plasmodium_genome, specific_id=321)
-#test("plasmodium_1000.db", plasmodium_genome, only_overall_time=True, runtime_sample_multiplier=0)
+test_my_approaches("plasmodium_1000.db", plasmodium_genome)
+test("plasmodium_1000.db", plasmodium_genome, only_overall_time=True, runtime_sample_multiplier=0)
 analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 
 
