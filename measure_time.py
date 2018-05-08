@@ -378,7 +378,7 @@ def test(
             only_overall_time=True,
             long_read_aligners=True,
             short_read_aligners=True,
-            runtime_sample_multiplier=100
+            runtime_sample_multiplier=10
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -389,14 +389,15 @@ def test(
     num_results = "1"
 
     l = [
-        ("MA Fast", MA(reference, num_results, True, db_name, finder_mode=True)),
+        ("MA Fast", MA(reference, num_results, True, db_name)),
+        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
 
     if long_read_aligners:
         l.extend([
-                #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+                ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
                 #("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
             ])
 

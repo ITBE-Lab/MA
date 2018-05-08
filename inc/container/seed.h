@@ -283,7 +283,7 @@ namespace libMA
         {
             const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>(pOther);
             if(pSeeds == nullptr)
-                return false;
+                return true;
             return getScore() > pSeeds->getScore();
         }// operator
 

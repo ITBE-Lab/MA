@@ -42,7 +42,7 @@ debug: $(DEBUG_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) -g $(DEBUG_OBJ) $(LDLIBS) -o libMA.so
 
 ma: libMA src/cmdMa.cpp
-	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc $(LDLIBS) libMA.so -o $@
+	$(CC) $(CCFLAGS) src/cmdMa.cpp -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc $(LDLIBS) libMA.so -o $@
 
 libMA: $(TARGET_OBJ)
 	$(CC) $(LDFLAGS) $(LDSFLAGS) $(TARGET_OBJ) $(LDLIBS) -o libMA.so
@@ -61,10 +61,10 @@ obj/container/qSufSort.co:src/container/qSufSort.c inc/container/qSufSort.h
 		$(CC) -c $(CFLAGS) -Iinc $< -o $@
 
 dbg/%.o: src/%.cpp inc/%.h
-	$(CC) -Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -g -DDEBUG_LEVEL=1 -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
+	$(CC) -Wall -DBOOST_ALL_DYN_LINK -Werror -fPIC -std=c++11 -mavx2 -g -DDEBUG_LEVEL=1 -DWITH_PYTHON -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
 
 obj/%.o: src/%.cpp inc/%.h
-	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(PARSAIL_HOME)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
+	$(CC) $(CCFLAGS) -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/ -isystem$(LIBGABA_HOME)/ -Iinc -c $< -o $@
 
 html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildcard src/*/*) $(wildcard MA/*.py) doxygen.config
 	doxygen doxygen.config

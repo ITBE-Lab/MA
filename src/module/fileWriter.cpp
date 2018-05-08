@@ -299,16 +299,27 @@ std::shared_ptr<Container> SeedSetFileWriter::execute(std::shared_ptr<ContainerV
     const auto& pPack = std::static_pointer_cast<Pack>((*vpInput)[1]);
     std::string sPrimary = "true";
 
+    for(std::shared_ptr<Container> pS : *pSoCs)
+    {
+        const auto& pSeeds = std::static_pointer_cast<Seeds>(pS);
+        pSeeds->mem_score = 0;
+        for(const auto& rSeed : *pSeeds)
+            pSeeds->mem_score += rSeed.getValue();
+    }// for
+
     //sort the harmonized SoCs
-    //sort ascending
+    //sort descending
     std::sort(
         pSoCs->begin(), pSoCs->end(),
         []
-        (std::shared_ptr<Container>& a, std::shared_ptr<Container>& b)
+        (std::shared_ptr<Container>& a_, std::shared_ptr<Container>& b_)
         {
-            return a->larger(b);
+            const auto& a = std::static_pointer_cast<Seeds>(a_);
+            const auto& b = std::static_pointer_cast<Seeds>(b_);
+            return a->mem_score > b->mem_score;
         }//lambda
     );//sort function call
+    assert( pSoCs->size() <= 1 ||  !  pSoCs->back()->larger(pSoCs->front()) );
 
     for(std::shared_ptr<Container> pS : *pSoCs)
     {
@@ -356,12 +367,9 @@ std::shared_ptr<Container> SeedSetFileWriter::execute(std::shared_ptr<ContainerV
             std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl;
         )// DEEBUG
         
-        std::string sRefName =pPack->nameOfSequenceWithId(pPack->uiSequenceIdForPosition(beginRef));
+        std::string sRefName = pPack->nameOfSequenceForPosition(beginRef);
         // 0 based index... 
-        std::string sRefPos = std::to_string(
-                beginRef - pPack->startOfSequenceWithId(pPack->uiSequenceIdForPosition(beginRef))
-            );
-
+        std::string sRefPos = std::to_string(pPack->posInSequence(beginRef, endRef) + 1);
         std::string sRefLen = std::to_string(endRef - beginRef);
         std::string sQueryPos = std::to_string(beginQuery);
         std::string sQueryLen = std::to_string(endQuery - beginQuery);

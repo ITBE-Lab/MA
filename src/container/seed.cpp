@@ -18,6 +18,7 @@ extern int iMissMatch;
 /*returns the sum off all scores within the list*/
 nucSeqIndex Seeds::getScore() const
 {
+#if 0
     if(bConsistent)
     {
         nucSeqIndex iRet = 0;
@@ -43,11 +44,12 @@ nucSeqIndex Seeds::getScore() const
     }//if
     else
     {
+#endif
         nucSeqIndex iRet = 0;
         for(const Seed& rS : *this)
             iRet += rS.getValue();
         return iRet;
-    }//else
+//    }//else
 }//function
 
 #ifdef WITH_PYTHON

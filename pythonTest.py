@@ -1745,9 +1745,9 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #analyse_all_approaches_depre("zebrafish_n_200.html","zebrafish_n_200.db", num_tries=1)
 
 
-#createSampleQueries(plasmodium_genome, "plasmodium_1000_column_0.db", 1000, 100, 32, only_first_row=True)
-test_my_approaches("plasmodium_1000.db", plasmodium_genome, specific_id=321)
-#test("plasmodium_1000.db", plasmodium_genome, only_overall_time=True)
+#createSampleQueries(plasmodium_genome, "plasmodium_1000.db", 1000, 100, 32)
+test_my_approaches("plasmodium_1000.db", plasmodium_genome)
+test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
 analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 
 
