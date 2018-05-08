@@ -48,6 +48,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportPairedReads();
         exportSplitter();
         exportSMW();
+        exportSW_GPU();
 }//function
 
 #endif

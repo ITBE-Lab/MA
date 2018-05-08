@@ -1731,7 +1731,7 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # human
 
 ## task 4:
-#createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 2048, reset=True, gpu_id=1)
+createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 32, reset=True, gpu_id=0)
 
 
 #exit()
@@ -1746,9 +1746,9 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 
 
 #createSampleQueries(plasmodium_genome, "plasmodium_1000.db", 1000, 100, 32)
-test_my_approaches("plasmodium_1000.db", plasmodium_genome)
-test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
-analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
+#test_my_approaches("plasmodium_1000.db", plasmodium_genome)
+#test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
+#analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
 
 
 

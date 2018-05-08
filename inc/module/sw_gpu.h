@@ -35,12 +35,10 @@ std::vector<GPUReturn> cudaAlign
     unsigned int uiDeviceId
 );
 
-#ifdef WITH_PYTHON
 /**
  * @brief Exposes the SweepAllReturnBest @ref Module "module" to boost python.
  * @ingroup export
  */
 void exportSW_GPU();
-#endif
 
 #endif

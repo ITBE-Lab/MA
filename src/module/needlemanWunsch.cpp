@@ -1294,9 +1294,6 @@ void testKsw()
 	} // for
 }//function
 
-
-
-
 #ifdef WITH_PYTHON
 void exportNeedlemanWunsch()
 {

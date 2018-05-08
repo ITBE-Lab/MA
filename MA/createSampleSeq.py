@@ -993,20 +993,20 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
         for results, sample_id in zip(libMA.testGPUSW(queries, ref_nuc_seq, gpu_id), sample_ids):
             for result in results.vMaxPos:
                 end = result+1
-                start = 0
-                if end > 5*size+1:
-                    ref_nuc_seq_str = str(ref_nuc_seq)
-                    if len(ref_nuc_seq_str[end-5*size:end]) > 0:
-                        ## print(str(sorted_samples[sample_id]))
-                        ## print(ref_nuc_seq_str[end-5*size:end])
-                        start = libMA.getBeginOnRef(
-                                sorted_samples[sample_id], 
-                                NucSeq(ref_nuc_seq_str[end-5*size:end])
-                            )
-                        ## print(start)
-                        start += end-5*size
-                    else:
-                        print("WARNING: should never get here...", end, size, sample_id)
+                start = end - size
+                #if end > 5*size+1:
+                #    ref_nuc_seq_str = str(ref_nuc_seq)
+                #    if len(ref_nuc_seq_str[end-5*size:end]) > 0:
+                #        ## print(str(sorted_samples[sample_id]))
+                #        ## print(ref_nuc_seq_str[end-5*size:end])
+                #        start = libMA.getBeginOnRef(
+                #                sorted_samples[sample_id], 
+                #                NucSeq(ref_nuc_seq_str[end-5*size:end])
+                #            )
+                #        ## print(start)
+                #        start += end-5*size
+                #    else:
+                #        print("WARNING: should never get here...", end, size, sample_id)
 
                 #convert hits on the reverse complement to their forward strand positions
                 if end >= forward_strand_length:
