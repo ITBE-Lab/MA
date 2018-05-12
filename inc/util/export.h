@@ -124,9 +124,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * 
  * @todo different output formats
  * @todo code cleanup
- * @todo remove boost::program_options
- * @todo remove boost::filesystem
- * @todo remove boost::iostreams
  * 
  * 
  * @section about_us_sec About Us
@@ -158,6 +155,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/splitter.h"
 #include "module/smith_waterman.h"
 #include "module/sw_gpu.h"
+#include "util/default_parameters.h"
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
@@ -177,7 +175,22 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int iMisMatch_,
     unsigned int iGap_,
     unsigned int iExtend_,
-    bool bFinderMode
+    bool bFinderMode,
+    unsigned int uiMaxGapArea_,
+    unsigned int uiPadding_,
+    unsigned int uiMaxTries,
+    unsigned int uiMinSeedSizeDrop,
+    unsigned int uiMinAmbiguity,
+    unsigned int uiMaxAmbiguity,
+    unsigned int uiMaxEqualScoreLookahead,
+    float fRelMinSeedSizeAmount,
+    float fScoreDiffTolerance,
+    float fMinimalQueryCoverage,
+    float fScoreTolerace,
+    unsigned int uiSwitchQLen,
+    bool optimisticGapEstimation,
+    float fSoCScoreMinimum,
+    bool bSkipLongBWTIntervals
 );
 
 #endif

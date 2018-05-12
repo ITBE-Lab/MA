@@ -53,6 +53,7 @@ void exportIntervalTree()
             .def_readwrite("fSorting", &SegmentVector::fSorting)
             .def_readwrite("fLinesweep", &SegmentVector::fLinesweep)
 #endif
+            .def("num_seeds_larger", &SegmentVector::numSeedsLarger)
     ;
 
     IterableConverter()

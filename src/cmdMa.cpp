@@ -55,43 +55,59 @@ int main(int argc, char* argv[])
 
     try
     {
-        bool bAccurate = false;
         for(int i = 0; i < argc-1; i++)
             if(
                     strcmp(argv[i], "-p") == 0 ||
                     strcmp(argv[i], "--parameterset") == 0
                 )
-                bAccurate = strcmp(argv[i+1], "accurate") == 0;
+            {
+                if(strcmp(argv[i+1], "accurate") == 0)
+                    defaults::configureAccurate();
+                if(strcmp(argv[i+1], "fast") == 0)
+                    defaults::configureFast();
+            }// if
 
         options.add_options("Alignment")
             ("i,alignIn", "Input file paths [*.fasta/*.fastaq/*]",value<std::vector<std::string>>())
             ("o,alignOut", "Output file path [*.sam]",value<std::string>()->default_value("stdout"))
             ("g,genome", "FMD-index input file prefix", value<std::string>())
             ("p,parameterset", "Pre-setting [fast/accurate]", 
-                value<std::string>()->default_value(bAccurate ? "accurate" : "fast")
+                value<std::string>()->default_value(defaults::sParameterSet)
             )
             ("s,seedSet", "Seed set [SMEMs/maxSpanning]", 
-                value<std::string>()->default_value(bAccurate ? "SMEMs" : "maxSpanning")
+                value<std::string>()->default_value(defaults::sSeedSet)
             )
             ("n,reportN", "Report <= N alignments; 0: unlimited", 
-                value<unsigned int>()->default_value("0")
+                value<unsigned int>()->default_value(defaults::uiReportN)
             )
             ("v,giveUp", "Min relative SoC score", 
-                value<double>()->default_value(bAccurate ? "0.025" : "0.01")
+                value<double>()->default_value(defaults::fGiveUp)
             )
-            ("f,findMode", "Disable DP", value<bool>()->default_value("false"))
-            ("Match", "DP match score.", value<unsigned int>()->default_value("3"))
-            ("MissMatch", "DP missmatch penalty.", value<unsigned int>()->default_value("4"))
-            ("Gap", "DP gap open penalty.", value<unsigned int>()->default_value("6"))
-            ("Extend", "DP gap extend penalty.", value<unsigned int>()->default_value("1"))
+            ("f,findMode", "Disable DP", value<bool>()->default_value(defaults::bFindMode))
+            ("Match", "DP match score.", value<unsigned int>()->default_value(defaults::uiMatch))
+            ("MissMatch", "DP missmatch penalty.", 
+                value<unsigned int>()->default_value(defaults::uiMissMatch)
+            )
+            ("Gap", "DP gap open penalty.", 
+                value<unsigned int>()->default_value(defaults::uiOpen)
+            )
+            ("Extend", "DP gap extend penalty.", 
+                value<unsigned int>()->default_value(defaults::uiExtend)
+            )
         ;
 
         options.add_options("Paired Reads")
             ("U,uniform", "Paired alignment; Gaps modeled as uniform distribution")
             ("N,normal", "Paired alignment; Gaps modeled as normal distribution")
-            ("u,unpaired", "Penalty for unpaired alignments", value<double>()->default_value("17"))
-            ("m,mean", "Gap distance mean", value<unsigned int>()->default_value("0"))
-            ("d,std", "Gap distance standard deviation", value<double>()->default_value("1.0"))
+            ("u,unpaired", "Penalty for unpaired alignments", 
+                value<double>()->default_value(defaults::uiUnpaired)
+            )
+            ("m,mean", "Gap distance mean", 
+                value<unsigned int>()->default_value(defaults::uiMean)
+            )
+            ("d,std", "Gap distance standard deviation", 
+                value<double>()->default_value(defaults::uiStd)
+            )
         ;
 
         options.add_options("FMD-Index Generation")
@@ -239,7 +255,22 @@ int main(int argc, char* argv[])
                 iMissMatch,
                 iGap,
                 iExtend,
-                bFindMode
+                bFindMode,
+                std::stoi(defaults::uiMaxGapArea),
+                std::stoi(defaults::uiPadding),
+                std::stoi(defaults::uiMaxTries),
+                std::stoi(defaults::uiMinSeedSizeDrop),
+                std::stoi(defaults::uiMinAmbiguity),
+                std::stoi(defaults::uiMaxAmbiguity),
+                std::stoi(defaults::uiMaxEqualScoreLookahead),
+                std::stof(defaults::fRelMinSeedSizeAmount),
+                std::stof(defaults::fScoreDiffTolerance),
+                std::stof(defaults::fMinimalQueryCoverage),
+                std::stof(defaults::fScoreTolerace),
+                std::stoi(defaults::uiSwitchQLen),
+                defaults::bOptimisticGapEstimation == "true",
+                std::stof(defaults::fSoCScoreMinimum),
+                defaults::bSkipLongBWTIntervals == "true"
             );
             if(result.count("info") > 0)
             {

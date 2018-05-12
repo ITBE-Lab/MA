@@ -56,17 +56,19 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     //extract the seeds
     auto pSeeds = std::make_shared<Seeds>();
     pSeeds->xStats.sName = pQuerySeq->sName;
-    pSeeds->reserve(pSegments->numSeeds(uiMaxAmbiguity));
+    // rough estimate of how many seeds we will have 
+    // (trying to avoid multiple allocations)
+    pSeeds->reserve(pSegments->size() * 3);
     
 #if MEASURE_DURATIONS == ( 1 ) 
     pSegments->fExtraction += metaMeasureDuration ( [&] () 
     {
 #endif
             emplaceAllNonBridgingSeed(
-                    *pSegments, // Segment vector (outcome of seeding) // existance has to be guaranteed!
-                    *pFM_index, // existance has to be guaranteed!
-                    *pRefSeq, // existance has to be guaranteed!
-                    *pSeeds, // existance has to be guaranteed!
+                    *pSegments, // Segment vector (outcome of seeding)
+                    *pFM_index,
+                    *pRefSeq,
+                    *pSeeds,
                     uiQLen
                 );//emplace all function call
 #if MEASURE_DURATIONS == ( 1 )

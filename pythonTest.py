@@ -89,7 +89,7 @@ def test_my_approach(
         db_name,
         reference,
         name,
-        max_hits=100,
+        max_hits=1000,
         complete_seeds=False,
         use_chaining=False,
         local=True,
@@ -107,7 +107,7 @@ def test_my_approach(
         reportN=0,
         clean_up_db=False,
         toGlobal=True,
-        give_up=0.01, # 0.03 good value with the setup from 25.04.18
+        give_up=0.002,
         quitet=False,
         missed_alignments_db=None,
         min_coverage= 1.1, #0.5, # 1.1 = force SW alignment SETTING DISABLED
@@ -188,8 +188,8 @@ def test_my_approach(
         ref_pledge = Pledge(Pack())
         ref_pledge.set(ref_pack)
 
-        ref_pledge.get().printHoles()
-        exit()
+        #ref_pledge.get().printHoles()
+        #exit()
 
         fm_pledge = None
 
@@ -453,6 +453,7 @@ def test_my_approach(
 
             alignment = alignments.get()[0]
 
+
             #check cigar for errors and complain if there are any
             #AlignmentPrinter(check_for_errors_only=True).execute(alignment, pledges[0][i].get(), ref_pack)
 
@@ -619,6 +620,19 @@ def test_my_approach(
                         optimal_alignment.begin_on_ref += alignment.begin_on_ref
                         optimal_alignment.end_on_ref += alignment.begin_on_ref
             sample_id = int(alignment.stats.name)
+
+
+            
+            # save the mean amount of seeds
+            #runtimes_result.append(
+            #    (
+            #        sample_id,
+            #        pledges[1][i].get().computeAccSize() , 
+            #        # / len(pledges[0][i].get()) = did not work well
+            #        name
+            #    )
+            #)
+
             collect_ids.append(sample_id)
 
             total_time = 0
@@ -779,6 +793,7 @@ def test_my_approach(
             else:
                 num_seeds = pledges[1][i].get().num_seeds(max_hits)
 
+
             for alignment in alignments.get():
                 forw = ref_pack.unpacked_size_single_strand
                 if alignment.begin_on_ref > forw:
@@ -792,7 +807,8 @@ def test_my_approach(
                         alignment.end_on_ref,
                         alignment.mapping_quality,
                         name,
-                        1 if alignment.secondary else 0
+                        1 if alignment.secondary else 0,
+                        pledges[1][i].get().num_seeds_larger(15)
                     )
                 )
                 runtimes_result.append(
@@ -807,7 +823,7 @@ def test_my_approach(
         if len(result) > 0 and db_name != None:
             submitResults(db_name, result)
         if len(runtimes_result) > 0 and db_name != None:
-            submitRuntimesAsList(db_name, runtimes_result)
+            submitRuntimesAsList(db_name, runtimes_result, name)
 
         # this should not be necessary but for some reason it is...
         # @todo: fix memory managemet in python code
@@ -964,9 +980,9 @@ def try_out_parameters(db_name, working_genome):
 def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None, specific_query=None, be_mean=False):
     full_analysis = False
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, give_up=0.025) # give_up=0.08
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, max_hits=100)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", max_hits=1000, complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1255,11 +1271,11 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
         plot.xaxis.formatter = tick_formater
         plot.xaxis.ticker = FixedTicker(ticks=[0, 4, 8, 12, 16, 20])
-        plot.rect('x', 'y', width, height, color='c_outer', line_alpha=0, source=source)
         if show_coverage:
-            plot.rect('x', 'y', width*4/5, height*4/5, color='c', line_alpha=0, source=source)
+            plot.rect('x', 'y', width, height, color='c', line_alpha=0, source=source)
         else:
-            plot.rect('x', 'y', width*4/5, height*4/5, color='c', fill_alpha =0, line_alpha=0, source=source)
+            plot.rect('x', 'y', width, height, color='c', fill_alpha =0, line_alpha=0, source=source)
+        plot.circle('x', 'y', radius=width*2/7, color='c_outer', line_alpha=0, source=source)
 
         #color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
@@ -1277,7 +1293,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
             tot_runtime = " [" + str(runtime_tup[0][0])[:5] + "ms]"
 
         plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage))
-        plots[1].append(makePicFromDict(runtime, None, set_max=50))
+        plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
         plots[2].append(makePicFromDict(alignments, None, set_max=500))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
@@ -1750,13 +1766,19 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #test_my_approaches("zebrafish_n_200.db", zebrafish_genome_n, be_mean=True)
 #analyse_all_approaches_depre("zebrafish_n_200.html","zebrafish_n_200.db", num_tries=1)
 
+# ================================================================================================ #
+#   DATABASE NAME                                                                                  #
+# ================================================================================================ #
+db_name = "human_200.db"
 
+#createSampleQueries(human_genome, db_name, 1000, 100, 32)
 
+#resetResults("human_200.db")
 
-#createSampleQueries(plasmodium_genome, "plasmodium_1000.db", 1000, 100, 32)
-test_my_approaches("plasmodium_1000.db", human_genome)
-#test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
-#analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
+#test_my_approaches(db_name, human_genome)
+test(db_name, human_genome, only_overall_time=True)
+
+analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
 
 
 

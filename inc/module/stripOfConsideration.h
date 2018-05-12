@@ -108,10 +108,11 @@ namespace libMA
             )
         {
             rSegmentVector.emplaceAllEachSeeds(
-                rxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals, rvSeedVector,
+                rxFM_index, uiMaxAmbiguity, rvSeedVector,
                 [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]
                 ()
                 {
+# if 0 // enable / disable the bridging check for all seeds
                     constexpr const nucSeqIndex addSize = 0;
                     auto& rS = rvSeedVector.back();
                     // check if the match is bridging the forward/reverse strand 
@@ -135,6 +136,10 @@ namespace libMA
                         // set the delta cache
                         rS.uiDelta = getPositionForBucketing( uiQLen, rS );
                     }// else
+#endif
+#elif DELTA_CACHE == ( 1 )
+                    rvSeedVector.back().uiDelta = 
+                        getPositionForBucketing( uiQLen, rvSeedVector.back() );
 #endif
                     //returning true since we want to continue extracting seeds
                     return true;

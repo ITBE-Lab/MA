@@ -210,10 +210,10 @@ def save(plot, name, grid=False):
                 p.output_backend = "svg"
         export_svgs(gridplot(plot), filename="paperGraphics/" + name + ".svg")
     else:
+        show(plot)
         export_png(plot, filename="paperGraphics/" + name + ".png")
         plot.output_backend = "svg"
         export_svgs(plot, filename="paperGraphics/" + name + ".svg")
-    #show(plot)
 
 resolution = 300
 min_x = 0
@@ -430,20 +430,21 @@ reference = ["T", "T", "C", "A", "G",           "C", "A", "T", "A", "C", "T", "C
 l_alignment = [D,D,I,I,M,M,D,D,D,M,MM,M,M,D]
 
 def seed_shadows():
+    query = ["G", "C", "A", "C", "A", "G", "T" ]
+    reference = ["G", "C", "G", "A", "T", "A", "G", "A", "C", "G", "T" ]
     min_x = -1.0
     min_y = -1.0
     max_x = 13
     max_y = 8
     plot = figure(
-                title="Figure X: Shadows",
-                plot_width=resolution, plot_height=resolution,
-                x_range=[-1,13], y_range=[-1,8]
+                plot_width=resolution, plot_height=resolution*len(query)/len(reference),
+                x_range=[-1,11], y_range=[-1,7]
             )
     # x y size draw_shadow?
     seeds = [
-        (1.5,1.5,2, orange),
-        (5.5,2.5,2, green),
-        (-.5,3.5,3, blue)
+        #(1.5,1.5,2, orange),
+        #(5.5,2.5,2, green),
+        #(-.5,3.5,3, blue)
     ]
 
     for x, y, size, color in seeds:
@@ -513,13 +514,13 @@ def seed_shadows():
         )
     """
 
-    plot.line(
-            [min_x, seeds[0][0], seeds[0][0]+1, seeds[1][0], seeds[1][0]+5.5],
-            [min_y, seeds[0][1], seeds[0][1]+1, seeds[1][1], max_y],
-            color="black",
-            line_dash=[2,2],
-            line_width=2
-        )
+    #plot.line(
+    #        [min_x, seeds[0][0], seeds[0][0]+1, seeds[1][0], seeds[1][0]+5.5],
+    #        [min_y, seeds[0][1], seeds[0][1]+1, seeds[1][1], max_y],
+    #        color="black",
+    #        line_dash=[2,2],
+    #        line_width=2
+    #    )
 
 
     plot.xaxis.major_tick_line_color = None
@@ -554,16 +555,14 @@ def seed_shadows():
 
     plot.title.text_font=font
     plot.legend.label_text_font=font
-    plot.legend.label_text_baseline="hanging"
+    #plot.legend.label_text_baseline="hanging"
     plot.axis.axis_label_text_font=font
     plot.axis.major_label_text_font=font
     save(plot, "shadows")
 
 def alignment():
     plot = figure(
-                title="Figure 1",
-                plot_width=resolution, plot_height=resolution,
-                x_axis_label = "reference", y_axis_label = "query"
+                plot_width=resolution*13/8, plot_height=resolution
             )
 
     plot.xaxis.major_tick_line_color = None
@@ -610,7 +609,7 @@ def alignment():
     plot.multi_line(
             m_x,
             m_y,
-            legend="ma",
+            legend="match",
             color=green,
             line_width=5
         )
@@ -618,7 +617,7 @@ def alignment():
     plot.multi_line(
             mm_x,
             mm_y,
-            legend="mm",
+            legend="missmatch",
             color=orange,
             line_width=5
         )
@@ -626,7 +625,7 @@ def alignment():
     plot.multi_line(
             i_x,
             i_y,
-            legend="ins_____",
+            legend="insertion",
             color=blue,
             line_width=5
         )
@@ -634,13 +633,13 @@ def alignment():
     plot.multi_line(
             d_x,
             d_y,
-            legend="del",
+            legend="deletion",
             color=purple,
             line_width=5
         )
 
     plot.xaxis.ticker = FixedTicker(ticks=range(len(reference)))
-    plot.legend.location = None
+    plot.legend.location = "bottom_right"
     plot.toolbar.logo = None
     plot.toolbar_location = None
     grid = []
@@ -670,20 +669,23 @@ def alignment():
 
     plot.title.text_font=font
     plot.legend.label_text_font=font
-    plot.legend.label_text_baseline="bottom"
-    plot.axis.axis_label_text_font=font
+    plot.legend.label_text_font_size="11pt"
+    #plot.legend.label_text_baseline="bottom"
     plot.axis.major_label_text_font=font
+    plot.axis.major_label_text_font_size="11pt"
+    print("saving")
     save(plot, "alignment")
 
 def stripOfConsideration():
+    query =     [                         "A", "C", "A", "T", "T", "C" ]
+    reference = ["T", "T", "C", "A", "G",      "C", "A", "T", "C", "A", "T", "C"]
     plot = figure(
-                title="Figure X: Strip of consideration",
-                plot_width=resolution, plot_height=resolution,
-                x_range=[-1,13], y_range=[-1,8]
+                plot_width=resolution, plot_height=resolution*6/12,
+                x_range=[-1,12], y_range=[-1,6]
             )
     plot.patch(
-            [-.5,7.5,12.5,12.5,5.5],
-            [-.5,7.5,7.5,6.5,-.5],
+            [-.5,5.5,11.5,5.5],
+            [-.5,5.5,5.5,-.5],
             fill_color=green,
             fill_alpha=.3,
             line_color=None,
@@ -693,16 +695,16 @@ def stripOfConsideration():
 
 
     plot.line(
-        [-.5,7.5],
-        [-.5,7.5],
+        [-.5,5.5],
+        [-.5,5.5],
         color=green,
         line_width=1,
         line_dash=[2,2]
     )
 
     plot.line(
-        [5.5,12.5],
-        [-.5,6.5],
+        [5.5,11.5],
+        [-.5,5.5],
         color=green,
         line_width=1,
         line_dash=[2,2]
@@ -710,13 +712,13 @@ def stripOfConsideration():
 
     plot.line(
         [4.5,7.5],
-        [1.5,4.5],
+        [0.5,3.5],
         color=blue,
         line_width=3
     )
     plot.line(
-        [2.5,4.5],
-        [-.5,1.5],
+        [3.5,4.5],
+        [-.5,0.5],
         color=blue,
         line_alpha=.3,
         line_width=1,
@@ -725,14 +727,14 @@ def stripOfConsideration():
 
 
     plot.line(
-        [10.5,11.5],
-        [1.5,2.5],
+        [7.5,9.5],
+        [0.5,2.5],
         color=orange,
         line_width=3
     )
     plot.line(
-        [8.5,10.5],
-        [-.5,1.5],
+        [6.5,7.5],
+        [-0.5,0.5],
         color=orange,
         line_alpha=.3,
         line_width=1,
@@ -740,14 +742,14 @@ def stripOfConsideration():
     )
 
     plot.line(
-        [1.5,2.5],
-        [1.5,2.5],
+        [1.5,3.5],
+        [0.5,2.5],
         color=blue,
         line_width=3
     )
     plot.line(
-        [-.5,1.5],
-        [-.5,1.5],
+        [0.5,1.5],
+        [-.5,0.5],
         color=blue,
         line_alpha=.3,
         line_width=1,
@@ -756,35 +758,37 @@ def stripOfConsideration():
 
     plot.line(
         [-.5,2.5],
-        [3.5,6.5],
+        [2.5,5.5],
         color=orange,
         line_width=3
     )
     plot.line(
         [-1.0,-.5],
-        [3.0,3.5],
+        [2.0,2.5],
         color=orange,
         line_alpha=.3,
         line_width=1,
         line_dash=[8,2]
     )
 
+    """
     plot.line(
         [0.5,1.5],
         [-.5,0.5],
         color=blue,
         line_width=3
     )
+    """
 
     plot.line(
         [9.5,11.5],
-        [4.5,6.5],
+        [3.5,5.5],
         color=blue,
         line_width=3
     )
     plot.line(
-        [4.5,9.5],
-        [-.5,4.5],
+        [5.5,9.5],
+        [-.5,3.5],
         color=blue,
         line_alpha=.3,
         line_width=1,
@@ -823,9 +827,10 @@ def stripOfConsideration():
 
     plot.title.text_font=font
     plot.legend.label_text_font=font
-    plot.legend.label_text_baseline="hanging"
+    #plot.legend.label_text_baseline="hanging"
     plot.axis.axis_label_text_font=font
     plot.axis.major_label_text_font=font
+    plot.axis.major_label_text_font_size="11pt"
     save(plot, "stripOfConsideration")
 
 
@@ -1527,9 +1532,9 @@ def seed_relevance_pics():
 #forced_gap()
 #ambiguity_per_length()
 #theoretical_max_acc()
-#seed_shadows()
+seed_shadows()
 #alignment()
 #stripOfConsideration()
 #optimal_matching()
-contradicting_seeds()
+#contradicting_seeds()
 #required_nmw_band_size()

@@ -709,7 +709,7 @@ namespace libMA
             return uiRefSeqLength;
         } // method
 
-        /** Delivers the Position in the reference sequence T that belongs to the position k in the BWT.
+        /** Delivers the Position in the reference .uiDeltasequence T that belongs to the position k in the BWT.
          * Uses the suffix array cache ...
          */
         bwtint_t bwt_sa( bwtint_t uiBWTposition )

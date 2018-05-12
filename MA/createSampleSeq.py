@@ -13,7 +13,7 @@ import sqlite3
 import numpy
 import random
 from random import shuffle
-from math import floor
+from math import floor, log
 import operator
 import os
 import csv 
@@ -45,6 +45,26 @@ def mutate(char):
     else:
         print("error while mutating")
         return 'n'
+
+
+def resetResults(db_name):
+    conn = sqlite3.connect("/MAdata/db/"+db_name)
+    c = conn.cursor()
+    c.execute("DROP TABLE IF EXISTS results")
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS results
+                (
+                    sample_id INTEGER,
+                    start INTEGER,
+                    end INTEGER,
+                    run_time REAL,
+                    mapping_quality REAL,
+                    approach TINYTEXT,
+                    secondary TINYINT,
+                    min_seed_length INTEGER
+                )
+                """)
+    conn.commit()
 
 def setUpDbTables(conn, reset = False):
     c = conn.cursor()
@@ -86,7 +106,8 @@ def setUpDbTables(conn, reset = False):
                     run_time REAL,
                     mapping_quality REAL,
                     approach TINYTEXT,
-                    secondary TINYINT
+                    secondary TINYINT,
+                    min_seed_length INTEGER
                 )
                 """)
 
@@ -361,9 +382,10 @@ def submitResults(db_name, results_list):
                         end,
                         mapping_quality,
                         approach,
-                        secondary
+                        secondary,
+                        min_seed_length
                     )
-                    VALUES (?,?,?,?,?,?)
+                    VALUES (?,?,?,?,?,?,?)
                     """, results_list)
     conn.commit()
 
@@ -382,34 +404,54 @@ def submitRuntimes(db_name, results_list):
                     """, results_list)
     conn.commit()
 
-def submitRuntimesAsList(db_name, results_list):
-    return
-    #conn = sqlite3.connect(db_name)
-    #c = conn.cursor()
-    #lookup = c.execute("""
-    #    SELECT DISTINCT sample_id, num_mutation, num_indels
-    #    FROM samples
-    #    """).fetchall()
-    #c.execute("""
-    #            DELETE FROM runtimes 
-    #            WHERE approach = ?
-    #            """, (approach,))
-    #runtimes_list = []
-    #for sample_id, total_time, name in results_list:
-    #    for s2, nm2, ni2 in lookup:
-    #        if s2 == sample_id:
-    #
-    #c.executemany("""
-    #                INSERT INTO runtimes 
-    #                (
-    #                    num_mutation,
-    #                    num_indels,
-    #                    run_time,
-    #                    approach
-    #                )
-    #                VALUES (?,?,?,?)
-    #                """, runtimes_list)
-    #conn.commit()
+def submitRuntimesAsList(db_name, results_list, approach):
+    #return
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    lookup = c.execute("""
+        SELECT DISTINCT sample_id, num_mutation, num_indels
+        FROM samples
+        """).fetchall()
+    c.execute("""
+                DELETE FROM runtimes 
+                WHERE approach = ?
+                """, (approach,))
+    runtime_dict = {}
+    runtime_amounts = {}
+    runtimes_list = []
+    for sample_id, total_time, name in results_list:
+        for s2, nm2, ni2 in lookup:
+            if s2 == sample_id:
+                if nm2 not in runtime_dict:
+                    runtime_dict[nm2] = {}
+                    runtime_amounts[nm2] = {}
+                if ni2 not in runtime_dict[nm2]:
+                    runtime_dict[nm2][ni2] = 0
+                    runtime_amounts[nm2][ni2] = 0
+                runtime_dict[nm2][ni2] += total_time
+                runtime_amounts[nm2][ni2] += 1
+    for key, value in runtime_dict.items():
+        for key2, value2 in value.items():
+            #runtime_dict[key][key2] = value2
+            runtimes_list.append(
+                (
+                    key2,
+                    key,
+                    min( 50, value2 / runtime_amounts[key][key2] ),
+                    approach
+                )
+            )
+    c.executemany("""
+                    INSERT INTO runtimes 
+                    (
+                        num_mutation,
+                        num_indels,
+                        run_time,
+                        approach
+                    )
+                    VALUES (?,?,?,?)
+                    """, runtimes_list)
+    conn.commit()
 
 def getApproachesWithData(db_name):
     conn = sqlite3.connect(db_name)
@@ -480,7 +522,8 @@ def getResults(db_name, approach):
                             results.secondary,
                             results.start,
                             results.end,
-                            results.mapping_quality
+                            results.mapping_quality,
+                            results.min_seed_length
                         FROM samples
                         JOIN results ON samples.sample_id = results.sample_id
                         WHERE results.approach = ?
@@ -515,13 +558,13 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
 
     # store the aligner results in a dict of sample id
     aligner_results = {}
-    for sample_id, secondary, start, end, mapping_quality in getResults(db_name, approach):
+    for sample_id, secondary, start, end, mapping_quality, min_seed_length in getResults(db_name, approach):
         if not sample_id in aligner_results:
             aligner_results[sample_id] = []
         if secondary == 1: # append secondary ones
-            aligner_results[sample_id].append( (start, end, mapping_quality) )
+            aligner_results[sample_id].append( (start, end, mapping_quality, min_seed_length) )
         else: # prepend the primary alignment so that we always use that one first
-            aligner_results[sample_id] = [ (start, end, mapping_quality) ] + aligner_results[sample_id]
+            aligner_results[sample_id] = [ (start, end, mapping_quality, min_seed_length) ] + aligner_results[sample_id]
 
 
     # store the optimal positions in a dict of sample id
@@ -564,10 +607,24 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
         # or the original position
         hit = 0
         if sample_id in aligner_results:
-            for start, end, mapping_quality in aligner_results[sample_id][:max_tries]:
-                hit = max(hit, near(start, origin_start, end, origin_end, True))
-                for start_orig, end_orig, in positions:
-                    hit = max(hit, near(start, start_orig, end, end_orig, True))
+            # Here we visit the first max-tries outputs for sample_id
+            for start, end, mapping_quality, num_seeds_longer in aligner_results[sample_id][:max_tries]:
+                if True or num_seeds_longer <= 0.005 * end-start:
+                    hit = max(hit, near(start, origin_start, end, origin_end, True))
+                    for start_sw, end_sw, in positions:
+                        hit = max(hit, near(start, start_sw, end, end_sw, True))
+
+                #show merely errors with the min_seed_length threshold
+                #!1 has_hit = hit > 0
+                #!1 if not( min_seed_length < 50 and has_hit ):
+                #!1    hit = 0
+
+                #!2 if min_seed_length < 16:
+                #!2     hit = 1
+                #!2 else:
+                #!2     hit = 0
+                # if min_seed_length > 20: # only show hits that do not fullfill the threshold
+                    
         assert(hit <= 1)
         if hit > 0:
             coverage[num_indels][num_mutation] += hit

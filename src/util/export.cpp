@@ -71,7 +71,22 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         unsigned int iMisMatch_,
         unsigned int iGap_,
         unsigned int iExtend_,
-        bool bFinderMode
+        bool bFinderMode,
+        unsigned int uiMaxGapArea_,
+        unsigned int uiPadding_,
+        unsigned int uiMaxTries,
+        unsigned int uiMinSeedSizeDrop,
+        unsigned int uiMinAmbiguity,
+        unsigned int uiMaxAmbiguity,
+        unsigned int uiMaxEqualScoreLookahead,
+        float fRelMinSeedSizeAmount,
+        float fScoreDiffTolerance,
+        float fMinimalQueryCoverage,
+        float fScoreTolerace,
+        unsigned int uiSwitchQLen,
+        bool optimisticGapEstimation,
+        float fSoCScoreMinimum,
+        bool bSkipLongBWTIntervals
     )
 {
     iMatch = iMatch_;
@@ -79,13 +94,37 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     iGap = iGap_;
     iMissMatch = iMisMatch_;
 
+    uiPadding = uiPadding_;
+    uiMaxGapArea = uiMaxGapArea_;
+
     //setup all modules
 
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
-    std::shared_ptr<Module> pSeeding(new BinarySeeding(bSeedSetPairs));
-    std::shared_ptr<Module> pSOC(new StripOfConsideration(fGiveUp));
+    auto pSeeding = std::make_shared<BinarySeeding>(bSeedSetPairs);
+
+    //advanced parameters
+    pSeeding->uiMaxAmbiguity = uiMaxAmbiguity;
+    pSeeding->uiMinSeedSizeDrop = uiMinSeedSizeDrop;
+    pSeeding->uiMinAmbiguity = uiMinAmbiguity;
+    pSeeding->fRelMinSeedSizeAmount = fRelMinSeedSizeAmount;
+
+    auto pSOC = std::make_shared<StripOfConsideration>(fGiveUp);
+
+    //advanced parameters
+    pSOC->uiMaxAmbiguity = uiMaxAmbiguity;
+    pSOC->fScoreMinimum = fSoCScoreMinimum;
+    pSOC->bSkipLongBWTIntervals = bSkipLongBWTIntervals;
+
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
+
+    //advanced parameters
+    pCouple->optimisticGapEstimation = optimisticGapEstimation;
+    pCouple->uiMaxTries = uiMaxTries;
+    pCouple->uiMaxEqualScoreLookahead = uiMaxEqualScoreLookahead;
+    pCouple->fScoreDiffTolerance = fScoreDiffTolerance;
+    pCouple->uiSwitchQLen = uiSwitchQLen;
+    pCouple->fMinimalQueryCoverage = fMinimalQueryCoverage;
 
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(

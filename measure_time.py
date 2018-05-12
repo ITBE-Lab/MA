@@ -390,23 +390,23 @@ def test(
 
     l = [
         ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
 
     if long_read_aligners:
         l.extend([
-                ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+                #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
                 #("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
             ])
 
     if short_read_aligners:
         l.extend([
                 #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
-                #("MA Accurate", MA(reference, num_results, False, db_name)),
-                #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-                #("BWA SW", BWA_SW(reference, num_results, db_name)),
+                ("MA Accurate", MA(reference, num_results, False, db_name)),
+                ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+                ("BWA SW", BWA_SW(reference, num_results, db_name)),
                 #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
             ])
 
@@ -476,7 +476,8 @@ def test(
                             alignment.end_on_ref,
                             alignment.mapping_quality,
                             name,
-                            1 if alignment.secondary else 0
+                            1 if alignment.secondary else 0,
+                            0 # dummy value
                         )
                     )
                     if not only_overall_time:

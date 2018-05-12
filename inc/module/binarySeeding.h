@@ -29,6 +29,9 @@ namespace libMA
         // 18.05.04: increasing uiMinAmbiguity merely has negative runtime effects
         unsigned int uiMinAmbiguity = 0;
         unsigned int uiMaxAmbiguity = 1000;
+        /// 
+        size_t uiMinSeedSizeDrop = 15;
+        double fRelMinSeedSizeAmount = 0.005;
 
         /**
          * @brief The simplified extension scheme presented in our Paper.
@@ -132,11 +135,10 @@ namespace libMA
                         break;
                 }//for
             }//if
-            std::shared_ptr<Segment> pRightLeft(new Segment(start,end-start,ik));
             assert(start >= 0);
             assert(end < pQuerySeq->length());
+            pSegmentVector->emplace_back(start,end-start,ik);
             assert(pRightLeft->end() < pQuerySeq->length());
-            pSegmentVector->push_back(pRightLeft);
             DEBUG_3(
                 std::cout << "--other way--" << std::endl;
             )
@@ -218,23 +220,24 @@ namespace libMA
                 end = i;
                 ik = ok;
             }//for
-            std::shared_ptr<Segment> pLeftRight(new Segment(start,end-start,ik.revComp()));
+            //std::shared_ptr<Segment> pLeftRight(new Segment(start,end-start,ik.revComp()));
             assert(start >= 0);
             assert(end < pQuerySeq->length());
-            assert(pLeftRight->end() < pQuerySeq->length());
-            pSegmentVector->push_back(pLeftRight);
+            pSegmentVector->emplace_back(start,end-start,ik.revComp());
+            assert(pSegmentVector->back().end() < pQuerySeq->length());
 
+            const auto& rPrevBack = (*pSegmentVector)[pSegmentVector->size() - 2];
             //to return the covered area
             Interval<nucSeqIndex> ret(center,0);
-            if(pLeftRight->start() < pRightLeft->start())
-                ret.start(pLeftRight->start());
+            if(pSegmentVector->back().start() < rPrevBack.start())
+                ret.start(pSegmentVector->back().start());
             else
-                ret.start(pRightLeft->start());
+                ret.start(rPrevBack.start());
 
-            if(pLeftRight->end() > pRightLeft->end())
-                ret.end(pLeftRight->end());
+            if(pSegmentVector->back().end() > rPrevBack.end())
+                ret.end(pSegmentVector->back().end());
             else
-                ret.end(pRightLeft->end());
+                ret.end(rPrevBack.end());
 
             return ret;
         }//function
@@ -393,7 +396,7 @@ namespace libMA
                             if(ok.size() <= uiMinAmbiguity && !bHaveOne)
                             {
                                 // save the interval
-                                pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(ik)));
+                                pSegmentVector->emplace_back(ik);
                                 assert(ik.start() <= ik.end());
                                 assert(ik.end() <= pQuerySeq->length());
                                 // we need to remember that we already found a interval this iteration
@@ -439,7 +442,7 @@ namespace libMA
                 {
                     assert(pPrev->front().size() >= pPrev->back().size());
 
-                    pSegmentVector->push_back(std::shared_ptr<Segment>(new Segment(pPrev->front())));
+                    pSegmentVector->emplace_back(pPrev->front());
                     assert(pPrev->front().start() <= pPrev->front().end());
                     assert(pPrev->front().end() <= pQuerySeq->length());
                     

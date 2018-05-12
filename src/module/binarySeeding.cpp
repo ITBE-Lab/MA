@@ -134,6 +134,18 @@ std::shared_ptr<Container> BinarySeeding::execute(
         pQuerySeq
     );
 
+    /*
+     * Observation:
+     * If the minimum seed size is below uiMinSeedSizeDrop we can abort here already,
+     * without loosing accuracy
+     */
+    if(
+            pSegmentVector->numSeedsLarger(uiMinSeedSizeDrop)
+                <
+            fRelMinSeedSizeAmount * pQuerySeq->length()
+        )
+        pSegmentVector->clear();
+
     return pSegmentVector;
 }//function
 
@@ -151,6 +163,7 @@ void exportBinarySeeding()
         )
         .def_readwrite("min_ambiguity", &BinarySeeding::uiMinAmbiguity)
         .def_readwrite("max_ambiguity", &BinarySeeding::uiMaxAmbiguity)
+        .def_readwrite("min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop)
         ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<BinarySeeding>,
