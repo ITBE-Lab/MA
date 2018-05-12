@@ -1769,11 +1769,11 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # ================================================================================================ #
 #   DATABASE NAME                                                                                  #
 # ================================================================================================ #
-db_name = "human_200.db"
+db_name = "human_1000.db"
 
 #createSampleQueries(human_genome, db_name, 1000, 100, 32)
 
-#resetResults("human_200.db")
+resetResults(db_name)
 
 #test_my_approaches(db_name, human_genome)
 test(db_name, human_genome, only_overall_time=True)

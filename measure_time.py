@@ -39,7 +39,7 @@ class CommandLine(Module):
         f.close()
 
         #assemble the shell command
-        cmd_str = "taskset 1 " +  self.create_command(self.in_filename)
+        cmd_str = "taskset 2 " +  self.create_command(self.in_filename)
         #print(cmd_str)
         #exit()
 
@@ -397,7 +397,7 @@ def test(
 
     if long_read_aligners:
         l.extend([
-                #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+                ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
                 #("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
             ])
 
@@ -406,7 +406,7 @@ def test(
                 #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
                 ("MA Accurate", MA(reference, num_results, False, db_name)),
                 ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-                ("BWA SW", BWA_SW(reference, num_results, db_name)),
+                #("BWA SW", BWA_SW(reference, num_results, db_name)),
                 #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
             ])
 
