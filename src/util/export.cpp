@@ -86,7 +86,9 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         unsigned int uiSwitchQLen,
         bool optimisticGapEstimation,
         float fSoCScoreMinimum,
-        bool bSkipLongBWTIntervals
+        bool bSkipLongBWTIntervals,
+        nucSeqIndex uiCurrHarmScoreMin,
+        float fCurrHarmScoreMinRel
     )
 {
     iMatch = iMatch_;
@@ -125,6 +127,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pCouple->fScoreDiffTolerance = fScoreDiffTolerance;
     pCouple->uiSwitchQLen = uiSwitchQLen;
     pCouple->fMinimalQueryCoverage = fMinimalQueryCoverage;
+    pCouple->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
+    pCouple->fCurrHarmScoreMinRel = fCurrHarmScoreMinRel;
 
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(

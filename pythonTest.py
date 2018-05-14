@@ -982,7 +982,7 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, max_hits=100)
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1769,14 +1769,14 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # ================================================================================================ #
 #   DATABASE NAME                                                                                  #
 # ================================================================================================ #
-db_name = "human_1000.db"
+db_name = "sw_human_1000.db"
 
 #createSampleQueries(human_genome, db_name, 1000, 100, 32)
 
-resetResults(db_name)
+#resetResults(db_name)
 
-#test_my_approaches(db_name, human_genome)
-test(db_name, human_genome, only_overall_time=True)
+test_my_approaches(db_name, human_genome)
+test(db_name, human_genome, only_overall_time=False)
 
 analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
 

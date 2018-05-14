@@ -128,6 +128,9 @@ namespace libMA
 
         nucSeqIndex uiSwitchQLen = 800;
 
+        nucSeqIndex uiCurrHarmScoreMin = 18;
+        float fCurrHarmScoreMinRel = 0.002;
+
         LinearLineSweep() {}//default constructor
 
         //overload

@@ -238,7 +238,14 @@ class CommandLine(Module):
         queries = input[0]
         pack = input[1]
 
-        return self.__align(self.index_str, queries, pack)
+        try:
+            return self.__align(self.index_str, queries, pack)
+        except:
+            print("aligner crashed...")
+            # return an empty alignment vector...
+            ret = ContainerVector(Alignment())
+            del ret[:]
+            return ret
 
 class Bowtie2(CommandLine):
     def __init__(self, index_str, num_results, db_name):
@@ -390,7 +397,7 @@ def test(
 
     l = [
         ("MA Fast", MA(reference, num_results, True, db_name)),
-        #("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
+        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
@@ -403,9 +410,10 @@ def test(
 
     if short_read_aligners:
         l.extend([
+                #@todo blasr has problems
                 #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
                 ("MA Accurate", MA(reference, num_results, False, db_name)),
-                ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+                #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
                 #("BWA SW", BWA_SW(reference, num_results, db_name)),
                 #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
             ])
@@ -461,7 +469,6 @@ def test(
                 result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
 
                 #print("computing (" + name + ") ...")
-                result_pledge.get()
 
                 result = []
                 times = []

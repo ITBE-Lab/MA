@@ -190,7 +190,9 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int uiSwitchQLen,
     bool optimisticGapEstimation,
     float fSoCScoreMinimum,
-    bool bSkipLongBWTIntervals
+    bool bSkipLongBWTIntervals,
+    nucSeqIndex uiCurrHarmScoreMin,
+    float fCurrHarmScoreMinRel
 );
 
 #endif
