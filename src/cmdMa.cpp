@@ -272,7 +272,6 @@ int main(int argc, char* argv[])
                 std::stof(defaults::fSoCScoreMinimum),
                 defaults::bSkipLongBWTIntervals == "true",
                 std::stoi(defaults::uiCurrHarmScoreMin)
-                std::stof(defaults::fCurrHarmScoreMinRel),
             );
             if(result.count("info") > 0)
             {

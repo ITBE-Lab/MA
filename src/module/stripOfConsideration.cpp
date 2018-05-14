@@ -46,6 +46,8 @@ std::shared_ptr<Container> StripOfConsideration::execute(
     const std::shared_ptr<FMIndex>& pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[3]);
 
     const nucSeqIndex uiQLen = pQuerySeq->length();
+
+    const double fMinLen = std::max(fGiveUp * uiQLen, uiCurrHarmScoreMin);
     
     /*
     * This is the formula from the paper
@@ -163,7 +165,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 * fGiveUp = 0 disables this.
                 */
                 if(
-                        ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fGiveUp * uiQLen ) && 
+                        ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen ) && 
                         !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
                     )
                     pSoCs->push_back_no_overlap(

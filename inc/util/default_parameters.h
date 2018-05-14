@@ -34,7 +34,6 @@ namespace libMA
             fMinimalQueryCoverage = "1.1",
             fScoreTolerace = "0.1",
             uiCurrHarmScoreMin = "18",
-            fCurrHarmScoreMinRel = "0.002",
             sParameterSet,
             sSeedSet
         ;
