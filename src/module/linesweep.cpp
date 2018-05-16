@@ -138,7 +138,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         auto pSeedsIn = pSoCIn->pop();
 
         auto pSeeds = std::make_shared<Seeds>();
-        pSeeds->xStats.sName = pSeedsIn->xStats.sName;
+        pSeeds->xStats = pSeedsIn->xStats;
         if(pSeedsIn->size() > 1)
         {
 
@@ -429,11 +429,14 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             DEBUG(
                 pSoCIn->vExtractOrder.push_back(SoCPriorityQueue::blub());
                 pSoCIn->vExtractOrder.back().first = pSeedsIn->front().size();
+                pSoCIn->vExtractOrder.back().rStartSoC = pSeedsIn->front().start_ref();
+                pSoCIn->vExtractOrder.back().rEndSoC = pSeedsIn->front().end_ref();
+                pSoCIn->vIngroup.push_back(std::make_shared<Seeds>());
                 pSoCIn->vSlopes.push_back(0);
                 pSoCIn->vIntercepts.push_back(0);
                 pSoCIn->vHarmSoCs.push_back(std::make_shared<Seeds>(pSeeds));
             )// DEBUG
-        }
+        }// else
 
         /*
          * end of FILTER
@@ -463,9 +466,9 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
 #if 1
-        // Prof. Kutzners filter: (is this equivalent to just always looking at the best SoC..?)
         if (pQuery->length() > uiSwitchQLen)
         {
+            // Prof. Kutzner's filter:
             if(uiLastHarmScore > uiCurrHarmScore)
                 continue;
         }// if

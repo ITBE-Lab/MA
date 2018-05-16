@@ -49,6 +49,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportSplitter();
         exportSMW();
         exportSW_GPU();
+        exportSoC();
 }//function
 
 #endif
@@ -87,7 +88,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         bool optimisticGapEstimation,
         float fSoCScoreMinimum,
         bool bSkipLongBWTIntervals,
-        nucSeqIndex uiCurrHarmScoreMin
+        unsigned int uiCurrHarmScoreMin
     )
 {
     iMatch = iMatch_;
@@ -116,6 +117,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pSOC->uiMaxAmbiguity = uiMaxAmbiguity;
     pSOC->fScoreMinimum = fSoCScoreMinimum;
     pSOC->bSkipLongBWTIntervals = bSkipLongBWTIntervals;
+    pSOC->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
 
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
 

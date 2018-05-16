@@ -93,6 +93,7 @@ void exportSoC()
                 "make_heap",
                 &SoCPriorityQueue::make_heap
             )
+        .def("__len__", &SoCPriorityQueue::size)
     DEBUG(
         .def_readwrite("scores", &SoCPriorityQueue::vScores)
         .def_readwrite("extract", &SoCPriorityQueue::vExtractOrder)
@@ -103,5 +104,10 @@ void exportSoC()
         .def_readwrite("vIngroup", &SoCPriorityQueue::vIngroup)
     )// DEBUG
     ;
+    //tell boost python that pointers of these classes can be converted implicitly
+    boost::python::implicitly_convertible<
+            std::shared_ptr<SoCPriorityQueue>,
+            std::shared_ptr<Container> 
+        >();
 }//function
 #endif

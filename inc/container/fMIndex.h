@@ -21,6 +21,8 @@
 namespace libMA
 {
 
+    //@todo should have a version check built in
+
     //extern Configuration xGlobalConfiguration;
 
     typedef uint64_t bwt64bitCounter;

@@ -1,5 +1,6 @@
 from MA import *
 import random
+import os
 
 def replace_n(filenames, out_file):
     file_out = open(out_file, "w")
@@ -53,6 +54,7 @@ def make(filename, out_name):
     # minimap2 index
     os.system(minimap_home + out_name + ".mmi " + filename)
 
+""" # DEPRECATED #
 def make_hash(name):
     print("loading pack...")
     ref_seq = Pack()
@@ -72,7 +74,7 @@ def make_hash(name):
     print("saving...")
     hash_index.to_file(name + ".maRef")
     print("done saving")
-
+"""
 
 def makeRandom(out_name, size):
     file_all = open(out_name, "w")
@@ -103,13 +105,13 @@ def chrNames(prefix, num, suffix):
     ret.append(prefix + "Y" + suffix)
     return ret
 
-#make("/MAdata/chrom/zebrafish/genome.fasta", "/MAdata/genome/zebrafish_n")
+make("/MAdata/chrom/zebrafish/GCF_000002035.6_GRCz11_genomic.fna", "/MAdata/genome/zebrafish")
 
 #replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
 #make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
 
-replace_n(chrNames("/MAdata/chrom/human/chr", 22, ".fna"), "/MAdata/chrom/human/n_free.fasta")
-make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
+#replace_n(chrNames("/MAdata/chrom/human/chr", 22, ".fna"), "/MAdata/chrom/human/n_free.fasta")
+#make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
 
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
 #make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")

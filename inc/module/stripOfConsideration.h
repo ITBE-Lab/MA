@@ -38,6 +38,7 @@ namespace libMA
          * 0 = never abort.
          */
         const float fGiveUp = 0;
+        unsigned int uiCurrHarmScoreMin = 18;
 
         /**
         * @brief skip seeds with too much ambiguity

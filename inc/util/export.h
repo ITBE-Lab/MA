@@ -191,7 +191,7 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     bool optimisticGapEstimation,
     float fSoCScoreMinimum,
     bool bSkipLongBWTIntervals,
-    nucSeqIndex uiCurrHarmScoreMin
+    unsigned int uiCurrHarmScoreMin
 );
 
 #endif

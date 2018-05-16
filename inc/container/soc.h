@@ -119,6 +119,11 @@ namespace libMA
         {}//constructor
 
 
+        inline unsigned int size() const
+        {
+            return vMaxima.size();
+        }
+
         //overload
         inline bool canCast(const std::shared_ptr<Container>& c) const
         {

@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <vector>
+#include <cerrno>
 
 #include "util/support.h"
 #include "util/exception.h"
@@ -35,6 +36,7 @@ void makeDir(const std::string& rsFile)
         nError = mkdir(rsFile.c_str(), nMode); // can be used on non-Windows
     #endif
     if (nError != 0) {
-        throw NullPointerException(std::string("Could not create Dir: ").append(rsFile).c_str());
+        throw NullPointerException(std::string("Could not create Dir: ").append(rsFile)
+            .append(" errno: ").append(std::strerror(errno)).c_str());
     }// if
 }// function

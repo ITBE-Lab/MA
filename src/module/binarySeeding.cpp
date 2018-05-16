@@ -11,7 +11,11 @@ using namespace libMA;
 #include <memory>
 #include <atomic>
 #include <chrono>
- 
+
+
+DEBUG(
+    extern bool bAnalyzeHeuristics;
+)// DEBUG
 
 /* this function implements the segmentation of the query
  *
@@ -140,9 +144,13 @@ std::shared_ptr<Container> BinarySeeding::execute(
      * without loosing accuracy
      */
     if(
+            uiMinSeedSizeDrop != 0 &&
             pSegmentVector->numSeedsLarger(uiMinSeedSizeDrop)
                 <
             fRelMinSeedSizeAmount * pQuerySeq->length()
+#if DEBUG_LEVEL >= 1
+            && !bAnalyzeHeuristics
+#endif //DEBUG_LEVEL
         )
         pSegmentVector->clear();
 

@@ -24,6 +24,10 @@ nucSeqIndex uiMaxGapArea = 10000;
 /// @brief the padding on the left and right end of each alignment
 nucSeqIndex uiPadding = 500;
 
+DEBUG(
+    bool bAnalyzeHeuristics = false;
+)// DEBUG
+
 //match missmatch matrix for ksw
 int8_t mat[25];
 
@@ -1323,6 +1327,9 @@ void exportNeedlemanWunsch()
         .def_readwrite("max_gap_area", &uiMaxGapArea)
         // actual parameters of NW
         .def_readwrite("local", &NeedlemanWunsch::bLocal)
+#if DEBUG_LEVEL >= 1
+        .def_readwrite("analyze_heuristics", &bAnalyzeHeuristics)
+#endif //DEBUG_LEVEL
     ;
     boost::python::implicitly_convertible<
         std::shared_ptr<NeedlemanWunsch>,

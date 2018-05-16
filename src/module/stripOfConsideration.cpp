@@ -47,7 +47,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
     const nucSeqIndex uiQLen = pQuerySeq->length();
 
-    const double fMinLen = std::max(fGiveUp * uiQLen, uiCurrHarmScoreMin);
+    const double fMinLen = std::max( (double)fGiveUp * uiQLen, (double)this->uiCurrHarmScoreMin);
     
     /*
     * This is the formula from the paper

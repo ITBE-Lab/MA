@@ -39,7 +39,8 @@ class CommandLine(Module):
         f.close()
 
         #assemble the shell command
-        cmd_str = "taskset 2 " +  self.create_command(self.in_filename)
+        cmd_str = "taskset 1 " +  self.create_command(self.in_filename)
+        #cmd_str = self.create_command(self.in_filename)
         #print(cmd_str)
         #exit()
 
@@ -290,6 +291,7 @@ class Blasr(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.blasr_home + "blasr " + in_filename
+        # --nproc 32
         return cmd_str + " " + self.genome_str + " -m 1 --bestn " + self.num_results + " --sa " + self.index_str
 
     def do_checks(self):
@@ -395,25 +397,27 @@ def test(
 
     num_results = "1"
 
+    warned_for_n = False
+
     l = [
-        ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #("MA Fast", MA(reference, num_results, True, db_name)),
+        #("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        # ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
 
     if long_read_aligners:
         l.extend([
-                ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-                #("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
+                ("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
             ])
 
     if short_read_aligners:
         l.extend([
                 #@todo blasr has problems
                 #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
-                ("MA Accurate", MA(reference, num_results, False, db_name)),
-                #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+                #("MA Accurate", MA(reference, num_results, False, db_name)),
                 #("BWA SW", BWA_SW(reference, num_results, db_name)),
                 #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
             ])
@@ -451,6 +455,13 @@ def test(
                 del query_list[:]
                 assert(len(query_list) == 0)
                 for sequence, sample_id in queries:
+                    # check for N's
+                    if not warned_for_n:
+                        for nuc in sequence:
+                            if nuc not in ['A', 'a', 'C', 'c', 'G', 'g', 'T', 't']:
+                                warned_for_n = True
+                                print("Queries contains", nuc)
+
                     if not only_overall_time:
                         for _ in range(0, runtime_sample_multiplier):
                             query_list.append(NucSeq(sequence))

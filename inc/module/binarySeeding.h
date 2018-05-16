@@ -138,7 +138,7 @@ namespace libMA
             assert(start >= 0);
             assert(end < pQuerySeq->length());
             pSegmentVector->emplace_back(start,end-start,ik);
-            assert(pRightLeft->end() < pQuerySeq->length());
+            assert(pSegmentVector->back().end() < pQuerySeq->length());
             DEBUG_3(
                 std::cout << "--other way--" << std::endl;
             )

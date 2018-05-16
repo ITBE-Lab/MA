@@ -18,7 +18,7 @@ namespace libMA
             uiReportN = "0",
             uiMaxAmbiguity,
             uiMinAmbiguity = "0",
-            uiMinSeedSizeDrop = "15", // 
+            uiMinSeedSizeDrop = "15",
             uiMaxTries = "50",
             uiMaxEqualScoreLookahead = "3",
             uiSwitchQLen = "800",
@@ -28,7 +28,7 @@ namespace libMA
             bOptimisticGapEstimation = "true",
             bSkipLongBWTIntervals = "true",
             fGiveUp = "0.002",
-            fRelMinSeedSizeAmount = "0.005", // @todo make this 1/x
+            fRelMinSeedSizeAmount = "0.005",
             fScoreDiffTolerance = "0.0001",
             fSoCScoreMinimum = "0",
             fMinimalQueryCoverage = "1.1",

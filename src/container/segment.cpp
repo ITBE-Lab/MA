@@ -11,14 +11,13 @@ void exportIntervalTree()
     //export the SegmentVector class
     boost::python::class_<
             Segment, 
-            boost::python::bases<Container>,
-            std::shared_ptr<Segment>
+            boost::python::bases<Container>
         >("Segment");
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<
-            std::shared_ptr<Segment>,
-            std::shared_ptr<Container> 
+            Segment,
+            Container 
         >();
 
     //export the SegmentVector class

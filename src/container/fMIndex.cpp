@@ -345,7 +345,7 @@ void FMIndex::build_FMIndex(
         // set seq_len, so that it represents the size of forward plus reverse strand
         uiRefSeqLength = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse();
 
-        std::string tempDir = "~/.tempdir";
+        std::string tempDir = ".tempdir";
         // Check existence / create directory for storage of temporary data.
         makeDir( tempDir ); 
 

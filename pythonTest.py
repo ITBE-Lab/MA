@@ -18,6 +18,7 @@ from sys import stderr
 from measure_time import *
 from scipy import stats
 from sklearn import linear_model
+import json
 
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
@@ -107,15 +108,16 @@ def test_my_approach(
         reportN=0,
         clean_up_db=False,
         toGlobal=True,
-        give_up=0.002,
+        give_up= 0, #0.002, 16.05.18
         quitet=False,
         missed_alignments_db=None,
-        min_coverage= 1.1, #0.5, # 1.1 = force SW alignment SETTING DISABLED
+        min_coverage=1.1, #0.5, # 1.1 = force SW alignment SETTING DISABLED
         #optimistic_gap_estimation=False,
         specific_id=None,
-        scatter_plot = False,
-        specific_query = None,
-        be_mean = False # replace 10% of all symbols with N's
+        scatter_plot=False,
+        specific_query=None,
+        be_mean=False, # replace 10% of all symbols with N's
+        analyze_heuristics=False
     ):
     if not quitet:
         print("collecting samples (" + name + ") ...")
@@ -206,7 +208,7 @@ def test_my_approach(
 
         missed_list = []
 
-        #DP scoring scheme
+        # DP scoring scheme
         NeedlemanWunsch().score_match = match
         NeedlemanWunsch().penalty_gap_extend = extend
         NeedlemanWunsch().penalty_gap_open = gap
@@ -214,11 +216,18 @@ def test_my_approach(
         NeedlemanWunsch().max_gap_area = 10000 # if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds)
+
+        seeding.min_seed_size_drop = 0
+
         if kMerExtension:
             seeding = OtherSeeding(True)
         soc = StripOfConsideration(give_up) # check if 0 is okay
         ex = ExtractAllSeeds(max_hits)
         ls = LinearLineSweep()
+
+        ls.equal_score_lookahead = 5
+        ls.tolerance = 0
+
         couple = ExecOnVec(ls, True, max_nmw)
         nmw = NeedlemanWunsch()
         optimal = ExecOnVec(nmw, sort_after_score)
@@ -279,6 +288,8 @@ def test_my_approach(
             plot1 = figure(plot_width=1200)
             x_list = []
             y_list = []
+            print("Num seeds: ", pledges[1][0].get().num_seeds(0))
+            print("Num SoC: ", len(pledges[2][0].get()))
             for s in pledges[2][0].get().scores:
                 y_list.append(s.first)
                 x_list.append(s.second)
@@ -977,12 +988,12 @@ def try_out_parameters(db_name, working_genome):
         for hits, approach, runtime, hits_first_c in sorted(final_result, key=lambda x: x[0]):
             print(approach, hits, hits_first_c, runtime, sep="\t")
 
-def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None, specific_query=None, be_mean=False):
+def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=None, specific_query=None, be_mean=False, analyze_heuristics=False):
     full_analysis = False
 
-    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, max_hits=100)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, max_hits=100, analyze_heuristics=analyze_heuristics)
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean)
+    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, analyze_heuristics=analyze_heuristics)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1167,6 +1178,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
     db_name = "/MAdata/db/" + db_name
     output_file(out)
     plots = [ [], [], [] ]
+    json_save = [ ]
 
     approaches = getApproachesWithData(db_name)
 
@@ -1292,12 +1304,17 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         if len(runtime_tup) > 0:
             tot_runtime = " [" + str(runtime_tup[0][0])[:5] + "ms]"
 
+        json_save.append( (approach, accuracy, coverage, runtime, alignments, fails, runtime_tup) )
+
         plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage))
         plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
         plots[2].append(makePicFromDict(alignments, None, set_max=500))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
     plots.append([makePicFromDict(sw_accuracy, "sw accuracy", inner=sw_coverage)])
+
+    with open(out + ".json", "w") as f:
+        json.dump(json_save, f)
 
     save(layout(plots))
     print("wrote plot")
@@ -1769,16 +1786,18 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # ================================================================================================ #
 #   DATABASE NAME                                                                                  #
 # ================================================================================================ #
-db_name = "sw_human_1000.db"
 
-#createSampleQueries(human_genome, db_name, 1000, 100, 32)
+#db_name = "plasmodium_30000.db"
+db_name = "sw_zebrafish_1000.db"
+
+createSampleQueries(zebrafish_genome, db_name, 1000, 100, 32, gpu_id=1)
 
 #resetResults(db_name)
 
-test_my_approaches(db_name, human_genome)
-test(db_name, human_genome, only_overall_time=False)
+#test_my_approaches(db_name, human_genome)
+#test(db_name, plasmodium_genome, only_overall_time=True)
 
-analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
+#analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
 
 
 
