@@ -463,6 +463,7 @@ def test_my_approach(
                 continue
 
             alignment = alignments.get()[0]
+            #print(alignment.begin_on_ref)
 
 
             #check cigar for errors and complain if there are any
@@ -993,7 +994,7 @@ def test_my_approaches(db_name, genome, missed_alignments_db=None, specific_id=N
 
     test_my_approach("/MAdata/db/"+db_name, genome, "MA Accurate PY", complete_seeds=True, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, max_hits=100, analyze_heuristics=analyze_heuristics)
 
-    #test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, analyze_heuristics=analyze_heuristics)
+    test_my_approach("/MAdata/db/"+db_name, genome, "MA Fast PY", complete_seeds=False, full_analysis=full_analysis, local=False, specific_id=specific_id, specific_query=specific_query, be_mean=be_mean, analyze_heuristics=analyze_heuristics)
 
 def analyse_detailed(out_prefix, db_name):
     approaches = getApproachesWithData(db_name)
@@ -1299,6 +1300,8 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         approach = approach_[0]
         accuracy, coverage, runtime, alignments, fails = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits)
 
+        print(approach, accuracy, coverage)
+
         tot_runtime = ""
         runtime_tup = getTotalRuntime(db_name, approach)
         if len(runtime_tup) > 0:
@@ -1306,9 +1309,9 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
 
         json_save.append( (approach, accuracy, coverage, runtime, alignments, fails, runtime_tup) )
 
-        plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage))
-        plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
-        plots[2].append(makePicFromDict(alignments, None, set_max=500))
+        plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1))
+        #plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
+        #plots[2].append(makePicFromDict(alignments, None, set_max=500))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
     plots.append([makePicFromDict(sw_accuracy, "sw accuracy", inner=sw_coverage)])
@@ -1773,13 +1776,20 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #createSampleQueries(human_genome, "sw_human_1000.db", 1000, 100, 50, reset=True, gpu_id=1)
 
 
+# zebrafish
+
+## task 1:
+#createSampleQueries(zebrafish_genome, "sw_zebrafish_200.db", 200, 20, 32, gpu_id=0)
+
+## task 2:
+#createSampleQueries(zebrafish_genome, "sw_zebrafish_1000.db", 1000, 100, 32, gpu_id=1)
+
 #exit()
 
 # ================================================================================================ #
 # end making the sw verified samples                                                               #
 # ================================================================================================ #
 
-#createSampleQueries(zebrafish_genome_n, "zebrafish_n_200.db", 200, 20, 32)
 #test_my_approaches("zebrafish_n_200.db", zebrafish_genome_n, be_mean=True)
 #analyse_all_approaches_depre("zebrafish_n_200.html","zebrafish_n_200.db", num_tries=1)
 
@@ -1787,17 +1797,21 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 #   DATABASE NAME                                                                                  #
 # ================================================================================================ #
 
-#db_name = "plasmodium_30000.db"
-db_name = "sw_zebrafish_1000.db"
 
-createSampleQueries(zebrafish_genome, db_name, 1000, 100, 32, gpu_id=1)
+## task 3:
+
+#db_name = "plasmodium_30000.db"
+db_name = "plasmodium_30000.db"
+
+#createSampleQueries(zebrafish_genome, db_name, 200, 20, 32, gpu_id=0, smaller_box=True)
 
 #resetResults(db_name)
+#run_sw_for_sample(db_name, zebrafish_genome, 1, gpu_id=0)
 
-#test_my_approaches(db_name, human_genome)
-#test(db_name, plasmodium_genome, only_overall_time=True)
+#test_my_approaches(db_name, zebrafish_genome)
+test(db_name, plasmodium_genome, only_overall_time=False, short_read_aligners=False)
 
-#analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
+analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
 
 
 

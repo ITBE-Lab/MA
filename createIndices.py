@@ -8,6 +8,7 @@ def replace_n(filenames, out_file):
         file = open(name , "r")
         line = file.readline()
         while line:
+            line = line[:-1]
             if line[0] != '>':
                 i = 0
                 while i < len(line):
@@ -15,10 +16,12 @@ def replace_n(filenames, out_file):
                         line = line[:i] + line[i+1:] #remove the N
                     else:
                         i += 1
+                assert(not 'N' in line)
+                assert(not 'n' in line)
             else:
                 print(line[0:-1])
             if len(line) > 1:
-                file_out.write(line)
+                file_out.write(line + "\n")
             line = file.readline()
         file.close()
     file_out.close()
@@ -27,9 +30,9 @@ def replace_n(filenames, out_file):
     line = file.readline()
     while line:
         if line[0] != '>':
-            assert(not 'N' in line)
-            assert(not 'n' in line)
-            assert(len(line) > 1)
+            if "N" in line or 'n' in line:
+                print(line)
+            #assert(len(line) > 1)
         line = file.readline()
     file.close()
     print("[OK]")
@@ -105,7 +108,8 @@ def chrNames(prefix, num, suffix):
     ret.append(prefix + "Y" + suffix)
     return ret
 
-make("/MAdata/chrom/zebrafish/GCF_000002035.6_GRCz11_genomic.fna", "/MAdata/genome/zebrafish")
+#replace_n(["/MAdata/chrom/zebrafish/GCF_000002035.6_GRCz11_genomic.fna"], "/MAdata/chrom/zebrafish/n_free.fasta")
+make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
 
 #replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
 #make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")

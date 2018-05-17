@@ -1051,6 +1051,7 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
             for result in results.vMaxPos:
                 end = result+1
                 start = end - size
+                print(start, end)
                 #if end > 5*size+1:
                 #    ref_nuc_seq_str = str(ref_nuc_seq)
                 #    if len(ref_nuc_seq_str[end-5*size:end]) > 0:
@@ -1070,6 +1071,9 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
                     start_ = forward_strand_length*2 - end
                     end = forward_strand_length*2 - start
                     start = start_
+                    print("is reverse; adjusted to:", start, end)
+                else:
+                    print("is forward")
 
                 #save the results
                 optima_list.append( (sample_id, start, end) )

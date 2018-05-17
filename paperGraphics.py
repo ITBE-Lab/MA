@@ -1329,7 +1329,7 @@ def accuracy_pics():
             if len(runtime_tup) > 0:
                 tot_runtime = " [" + str(runtime_tup[0][0])[:5] + "ms]"
             plots[0].append(
-                    makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage)
+                    makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1)
                 )
             #plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
             #plots[2].append(makePicFromDict(alignments, None, set_max=500))
@@ -1579,8 +1579,8 @@ def seed_relevance_pics():
 
 # actually call the functions that create the pictures
 
-#seed_relevance_pics()
-accuracy_pics()
+seed_relevance_pics()
+#accuracy_pics()
 #unrelated_non_enclosed_seeds()
 #forced_gap()
 #ambiguity_per_length()

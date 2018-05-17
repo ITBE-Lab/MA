@@ -35,8 +35,11 @@ void makeDir(const std::string& rsFile)
     #else 
         nError = mkdir(rsFile.c_str(), nMode); // can be used on non-Windows
     #endif
-    if (nError != 0) {
-        throw NullPointerException(std::string("Could not create Dir: ").append(rsFile)
-            .append(" errno: ").append(std::strerror(errno)).c_str());
+    if (nError != 0) 
+    {
+        // 17 == file exists we want to ignore this error
+        if(errno != 17) 
+            throw NullPointerException(std::string("Could not create Dir: ").append(rsFile)
+                .append(" errno: ").append(std::strerror(errno)).c_str());
     }// if
 }// function
