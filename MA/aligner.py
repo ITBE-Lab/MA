@@ -28,14 +28,14 @@ class Module(libMA.Module):
     # @details
     # Reimplemented from @ref Module::getInputType.
     def get_input_type(self):
-        return [ContainerType.nothing]
+        return [Nil()]
 
     ##
     # @brief The expected output type.
     # @details
     # Reimplemented from @ref Module::getOutputType.
     def get_output_type(self):
-        return ContainerType.nothing
+        return Nil()
 
     ##
     # @brief Execute the implemented algorithm.
@@ -71,10 +71,10 @@ class Module(libMA.Module):
 #
 class SMW(libMA.SMW):
     def execute(self, *args):
-        return super(SMW, self).execute(ContainerVector(*args))
+        return super(SMW, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(SMW, self).promise_me(ContainerVector(*args))
+        return super(SMW, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief contains the final output of the aligner.
@@ -210,41 +210,42 @@ class NucSeq(libMA.NucSeq):
 # @ingroup container
 #
 class ContainerVector(libMA.ContainerVector):
-    def __init__(self, *args):
-        if len(args) == 0:
-            libMA.ContainerVector.__init__(self)
-            return
-        libMA.ContainerVector.__init__(self, args[0])
-        for arg in args:
-            self.append(arg)
+    def __init__(self, args):
+        if isinstance(args, list):
+            # @todo replace Parent.__init__ with super()
+            libMA.ContainerVector.__init__(self, args[0])
+            for arg in args:
+                self.append(arg)
+        else:
+            libMA.ContainerVector.__init__(self, args)
 
 ##
 # @brief python wrapper for BinarySeeding
 class BinarySeeding(libMA.BinarySeeding):
     def execute(self, *args):
-        return super(BinarySeeding, self).execute(ContainerVector(*args))
+        return super(BinarySeeding, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(BinarySeeding, self).promise_me(ContainerVector(*args))
+        return super(BinarySeeding, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief python wrapper for StripOfConsideration
 class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
-        return super(StripOfConsideration, self).execute(ContainerVector(*args))
+        return super(StripOfConsideration, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(StripOfConsideration, self).promise_me(ContainerVector(*args))
+        return super(StripOfConsideration, self).promise_me(ContainerVector(list(args)))
 
 
 ##
 # @brief python wrapper for LinearLineSweep
 class LinearLineSweep(libMA.LinearLineSweep):
     def execute(self, *args):
-        return super(LinearLineSweep, self).execute(ContainerVector(*args))
+        return super(LinearLineSweep, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(LinearLineSweep, self).promise_me(ContainerVector(*args))
+        return super(LinearLineSweep, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief python wrapper for FileReader
@@ -253,34 +254,34 @@ class FileReader(libMA.FileReader):
         return super(FileReader, self).execute(ContainerVector(Nil()))
 
     def promise_me(self, *args):
-        return super(FileReader, self).promise_me(ContainerVector(*args))
+        return super(FileReader, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief python wrapper for LinearLineSweep
 class NeedlemanWunsch(libMA.NeedlemanWunsch):
     def execute(self, *args):
-        return super(NeedlemanWunsch, self).execute(ContainerVector(*args))
+        return super(NeedlemanWunsch, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(NeedlemanWunsch, self).promise_me(ContainerVector(*args))
+        return super(NeedlemanWunsch, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief python wrapper for ExecOnVec
 class ExecOnVec(libMA.ExecOnVec):
     def execute(self, *args):
-        return super(ExecOnVec, self).execute(ContainerVector(*args))
+        return super(ExecOnVec, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(ExecOnVec, self).promise_me(ContainerVector(*args))
+        return super(ExecOnVec, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief python wrapper for MappingQuality
 class MappingQuality(libMA.MappingQuality):
     def execute(self, *args):
-        return super(MappingQuality, self).execute(ContainerVector(*args))
+        return super(MappingQuality, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(MappingQuality, self).promise_me(ContainerVector(*args))
+        return super(MappingQuality, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief The Tail Module.
@@ -290,10 +291,10 @@ class MappingQuality(libMA.MappingQuality):
 #
 class Tail(libMA.Tail):
     def execute(self, *args):
-        return super(Tail, self).execute(ContainerVector(*args))
+        return super(Tail, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(Tail, self).promise_me(ContainerVector(*args))
+        return super(Tail, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief The ExtractAllSeeds Module.
@@ -303,10 +304,10 @@ class Tail(libMA.Tail):
 #
 class ExtractAllSeeds(libMA.ExtractAllSeeds):
     def execute(self, *args):
-        return super(ExtractAllSeeds, self).execute(ContainerVector(*args))
+        return super(ExtractAllSeeds, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(ExtractAllSeeds, self).promise_me(ContainerVector(*args))
+        return super(ExtractAllSeeds, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief The Splitter Module.
@@ -314,10 +315,10 @@ class ExtractAllSeeds(libMA.ExtractAllSeeds):
 #
 class Splitter(libMA.Splitter):
     def execute(self, *args):
-        return super(Splitter, self).execute(ContainerVector(*args))
+        return super(Splitter, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(Splitter, self).promise_me(ContainerVector(*args))
+        return super(Splitter, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief The Collector Module.
@@ -325,10 +326,10 @@ class Splitter(libMA.Splitter):
 #
 class Collector(libMA.Collector):
     def execute(self, *args):
-        return super(Collector, self).execute(ContainerVector(*args))
+        return super(Collector, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(Collector, self).promise_me(ContainerVector(*args))
+        return super(Collector, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief The Lock Module.
@@ -336,10 +337,10 @@ class Collector(libMA.Collector):
 #
 class Lock(libMA.Lock):
     def execute(self, *args):
-        return super(Lock, self).execute(ContainerVector(*args))
+        return super(Lock, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(Lock, self).promise_me(ContainerVector(*args))
+        return super(Lock, self).promise_me(ContainerVector(list(args)))
 
 ##
 # @brief The UnLock Module.
@@ -347,7 +348,7 @@ class Lock(libMA.Lock):
 #
 class UnLock(libMA.UnLock):
     def execute(self, *args):
-        return super(UnLock, self).execute(ContainerVector(*args))
+        return super(UnLock, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(UnLock, self).promise_me(ContainerVector(*args))
+        return super(UnLock, self).promise_me(ContainerVector(list(args)))

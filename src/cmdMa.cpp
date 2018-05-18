@@ -178,6 +178,7 @@ int main(int argc, char* argv[])
                     "Paired Reads",
                     "FMD-Index Generation"
                 }) << std::endl;
+            //@todo cmake version number: https://stackoverflow.com/questions/27395120/correct-way-to-encode-embed-version-number-in-program-code
             std::cout << "Version 0.1.0 (beta)" << std::endl;
             std::cout << "By Markus Schmidt & Arne Kutzner" << std::endl;
             std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;

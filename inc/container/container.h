@@ -107,6 +107,7 @@ namespace libMA
      * @note:
      * @todo this requires type checking! While the class holds a dummy container as type 
      * it does not yet guarantee that all added containers are of the defined type.
+     * Could be solved using a template but then how should python deal with this class
      * @ingroup container
      */
     class ContainerVector:

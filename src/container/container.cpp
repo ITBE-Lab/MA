@@ -34,7 +34,6 @@ void exportContainer()
         std::shared_ptr<Nil>,
         std::shared_ptr<Container>
     >();
-    /// @todo @fixme python initialized the vector with one element instead of an empty vector
     boost::python::class_<ContainerVector, 
             boost::python::bases<Container>,
             std::shared_ptr<ContainerVector>

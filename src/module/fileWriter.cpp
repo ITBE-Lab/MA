@@ -154,9 +154,9 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             *pOut << sMapQual << "\t";
             //cigar
             *pOut << sCigar  << "\t";
-            //Ref. name of the mate/next read ? not given at the moment... @todo
+            //Ref. name of the mate/next read
             *pOut << sNextName << "\t";
-            //Position of the mate/next read ? not given at the moment... @todo
+            //Position of the mate/next read
             *pOut << std::to_string(uiNextPos) << "\t";
             //observed Template length
             *pOut << std::to_string(pAlignment->length()) << "\t";

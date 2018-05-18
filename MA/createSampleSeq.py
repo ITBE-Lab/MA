@@ -474,15 +474,6 @@ def putTotalRuntime(db_name, approach, runtime):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
 
-    #@todo eventually this should be deleted
-    c.execute("""
-                CREATE TABLE IF NOT EXISTS total_runtime
-                (
-                    run_time REAL,
-                    approach TINYTEXT
-                )
-                """)
-
     c.execute("""
                 DELETE FROM total_runtime 
                 WHERE approach = ?

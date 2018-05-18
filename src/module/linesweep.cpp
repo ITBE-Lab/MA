@@ -445,7 +445,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
 
-        //@todo this belongs into the default parameters
         if(uiCurrHarmScore < uiCurrHarmScoreMin )
             continue;
         if(uiCurrHarmScore < pQuery->length() * fCurrHarmScoreMinRel )

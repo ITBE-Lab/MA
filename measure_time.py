@@ -432,7 +432,6 @@ def test(
 
     if short_read_aligners:
         l.extend([
-                #@todo blasr has problems
                 ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
                 ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
             ])
