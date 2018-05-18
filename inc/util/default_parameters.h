@@ -1,3 +1,8 @@
+/** 
+ * @file default_parameters.h
+ * @brief Contains the default parameters for MA.
+ * @author Markus Schmidt
+ */
 #ifndef DEFAULT_PARAMETERS_H
 #define DEFAULT_PARAMETERS_H
 

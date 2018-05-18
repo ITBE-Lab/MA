@@ -1,3 +1,8 @@
+/** 
+ * @file soc.h
+ * @brief Some Helper classes for the SoC computation
+ * @author Markus Schmidt
+ */
 #ifndef SOC_H
 #define SOC_H
 
@@ -10,15 +15,29 @@
 namespace libMA
 {
     /**
-     * @brief used to determine more complex orders of SoCs 
+     * @brief Used to determine more complex score-orders of SoCs
+     * @details
+     * In this case we determine the SoC scores as follows:
+     * We count the accumulative seed length and the accumulative ambiguity.
+     * SoCs are sorted according to their accumulative seed length.
+     * If two SoCs have the same accumulative seed length we break the tie by sorting the SoC with
+     * less accumulative ambiguity first.
      */
     class SoCOrder
     {
     public:
+        /// @brief Stores the accumulative seed length.
         nucSeqIndex uiAccumulativeLength = 0;
+        /// @brief Stores the accumulative seed ambiguity.
         unsigned int uiSeedAmbiguity = 0;
+        /// @brief Stores the amount of seeds in the SoC. (Currently not used for the Score.)
         unsigned int uiSeedAmount = 0;
 
+        /**
+         * @brief Add another seed to the SoC score.
+         * @details
+         * Adjusts all three stored values accordingly.
+         */
         inline void operator+=(const Seed& rS)
         {
             uiSeedAmbiguity += rS.uiAmbiguity;
@@ -26,6 +45,14 @@ namespace libMA
             uiAccumulativeLength += rS.getValue();
         }//operator
 
+        /**
+         * @brief Remove a seed from the SoC score.
+         * @details
+         * Adjusts all three stored values accordingly.
+         * The user needs to ensure that the seed that is removed 
+         * was added to this SoC score before.
+         * Otherwise this may result in undefined behaviour while sorting SoCs.
+         */
         inline void operator-=(const Seed& rS)
         {
             assert(uiSeedAmbiguity >= rS.uiAmbiguity);
@@ -35,6 +62,12 @@ namespace libMA
             uiSeedAmount--;
         }//operator
 
+        /**
+         * @brief Compare two scores for smaller.
+         * @details
+         * Compares the accumulative seed length and
+         * uses the accumulative ambiguity as a tie breaker.
+         */
         inline bool operator<(const SoCOrder& rOther) const
         {
             if(uiAccumulativeLength == rOther.uiAccumulativeLength)
@@ -42,6 +75,12 @@ namespace libMA
             return uiAccumulativeLength < rOther.uiAccumulativeLength;
         }//operator
 
+        /**
+         * @brief Compare two scores for equality.
+         * @details
+         * Compares the accumulative seed length and
+         * uses the accumulative ambiguity as a tie breaker.
+         */
         inline void operator=(const SoCOrder& rOther)
         {
             uiAccumulativeLength = rOther.uiAccumulativeLength;
@@ -50,14 +89,18 @@ namespace libMA
     }; //class
 
 
+    /**
+     * @brief Acts as stack during collection of SoCs then turns into a max-heap for SoC extraction.
+     */
     class SoCPriorityQueue: public Container
     {
     public:
 #if DEBUG_LEVEL >= 1
-            // confirms the respective functions are always called in the correct mode
+            ///Confirms the respective functions are always called in the correct mode
             bool bInPriorityMode = false;
             std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vScores;
-            class blub{
+            class blub
+            {
             public:
                 nucSeqIndex first = 0, second = 0, qCoverage = 0, rStart = 0, rEnd = 0, rStartSoC = 0, rEndSoC = 0;
                 inline void operator=(const blub& rOther)
@@ -89,13 +132,15 @@ namespace libMA
             std::vector<double> vIntercepts;
             std::vector<std::shared_ptr<Seeds>> vIngroup;
 #endif
+        /// @brief The index of the next SoC during the extraction process.
         unsigned int uiSoCIndex = 0;
-        const nucSeqIndex uiStripSize;
+        /// @brief The complete seed set.
         std::shared_ptr<Seeds> pSeeds;
-        // positions to remember the maxima
+        /// @brief Contains the SoCs in for of tuples (score, start, end).
         std::vector<std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>> vMaxima;
-        // last SoC end
+        /// @brief End position of the last SoC during collection; required to determine overlaps.
         nucSeqIndex uiLastEnd = 0;
+        /// @brief Function used to for the make_max_heap call.
         static bool heapOrder(
            const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>& rA,
            const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>& rB
@@ -104,21 +149,32 @@ namespace libMA
             return std::get<0>(rA) < std::get<0>(rB);
         }// function
 
-        SoCPriorityQueue(nucSeqIndex uiStripSize, std::shared_ptr<Seeds> pSeeds)
+        /**
+         * @brief Create a new SoC priority queue with pSeeds as the seed set.
+         * @details
+         * The queue has two states and push_back_no_overlap can only be called in the first state,
+         * while pop can only be called in the second state.
+         * Initially the queue is in the first state.
+         * Call make_heap to switch to the second state.
+         * If compiled in debug mode this class checks for correct usage.
+         * In release mode incorrect usage results in undefined behaviour.
+         */
+        SoCPriorityQueue(std::shared_ptr<Seeds> pSeeds)
                 :
-            uiStripSize(uiStripSize),
             pSeeds(pSeeds),
             vMaxima()
         {}//constructor
 
+        /**
+         * @brief Create a new SoC priority queue without a seed set.
+         */
         SoCPriorityQueue()
                 :
-            uiStripSize(0),
             pSeeds(nullptr),
             vMaxima()
         {}//constructor
 
-
+        /// @brief Returns the size (usable in either state).
         inline unsigned int size() const
         {
             return vMaxima.size();
@@ -142,11 +198,19 @@ namespace libMA
             return std::shared_ptr<Container>(new SoCPriorityQueue());
         }//function
 
+        /// @brief Returns weather the queue is empty (usable in either state).
         inline bool empty() const
         {
             return vMaxima.empty();
         }// function
 
+        /**
+         * @brief Returns the first SoC (usable in second state only).
+         * @details
+         * After the queue has been turned into a max heap you may extract the SoCs
+         * in order of their scores.
+         * Pop removes and returns the best SoC.
+         */
         inline std::shared_ptr<Seeds> pop()
         {
             DEBUG(
@@ -199,10 +263,20 @@ namespace libMA
             return pRet;
         }// function
 
+        /**
+         * @brief Add a new SoC (usable in first state only).
+         * @details
+         * While collecting SoCs this queue functions as a Stack.
+         * If the new and the last SoC are overlapping we only want to keep the higher scored one.
+         * This functions either replaces the last SoC if the new one has a higher score or
+         * discards the new SoC in case of overlaps.
+         * Otherwise the new SoC is merely pushed onto the stack.
+         * @note itStripEnd points to one element past end of the SoC.
+         */
         inline void push_back_no_overlap(
                 const SoCOrder& rCurrScore, 
                 const std::vector<Seed>::iterator itStrip,
-                const std::vector<Seed>::iterator itStripEnd, // points to one element past end
+                const std::vector<Seed>::iterator itStripEnd,
                 const nucSeqIndex uiCurrStart,
                 const nucSeqIndex uiCurrEnd
             )
@@ -227,6 +301,13 @@ namespace libMA
             // else new and last SoC overlap and the new one has a lower score => ignore the new one
         }// function
 
+        /**
+         * @brief switch to second state (usable in first state only).
+         * @details
+         * Use make max heap to turn this stack into a priority queue.
+         * Once this function is called push_back_no_overlap results in undefined behaviour 
+         * however pop can now be used safely.
+         */
         inline void make_heap()
         {
             DEBUG(assert(!bInPriorityMode);bInPriorityMode = true;)

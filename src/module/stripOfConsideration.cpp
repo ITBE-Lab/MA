@@ -81,7 +81,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
     //make sure that we return at least an SoC set
     if(pSeeds->empty())
-        return std::make_shared<SoCPriorityQueue>(uiStripSize, pSeeds);
+        return std::make_shared<SoCPriorityQueue>(pSeeds);
 
 #if MEASURE_DURATIONS == ( 1 )
     pSegments->fSorting += metaMeasureDuration(
@@ -113,7 +113,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 #endif
 
     //positions to remember the maxima
-    auto pSoCs = std::make_shared<SoCPriorityQueue>(uiStripSize, pSeeds);
+    auto pSoCs = std::make_shared<SoCPriorityQueue>(pSeeds);
 
 #if MEASURE_DURATIONS == ( 1 )
     pSegments->fLinesweep += metaMeasureDuration(
