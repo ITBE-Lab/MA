@@ -11,6 +11,7 @@ class CommandLine(Module):
         self.elapsed_time = 0
         self.skip_count = 0
         self.warn_once = True
+        self.processor = 0
 
     def final_checks(self):
         if not self.do_checks():
@@ -38,8 +39,21 @@ class CommandLine(Module):
                 assert(False)
         f.close()
 
+        bitmask = [1]
+        for i in range(0, self.processor):
+            bitmask.append( 0 )
+        hex_num = ""
+        while len(bitmask) > 0:
+            num = 0
+            for index, val in enumerate(reversed(bitmask[-4:])):
+                num += val*2**index
+            hex_num = str(num) + hex_num
+            bitmask = bitmask[:-4]
+
+        taskset = "taskset " + hex_num + " "
+
         #assemble the shell command
-        cmd_str = "taskset 1 " +  self.create_command(self.in_filename)
+        cmd_str = taskset + self.create_command(self.in_filename)
         #cmd_str = self.create_command(self.in_filename)
         #print(cmd_str)
         #exit()
@@ -387,7 +401,8 @@ def test(
             only_overall_time=True,
             long_read_aligners=True,
             short_read_aligners=True,
-            runtime_sample_multiplier=10
+            runtime_sample_multiplier=10,
+            processor=None
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -425,6 +440,9 @@ def test(
     for name, aligner in l:
         print("evaluating " + name)
 
+        if not processor is None:
+            aligner.processor = processor
+
         matrix = getQueriesAsASDMatrix("/MAdata/db/"+db_name)
 
         if only_overall_time:
@@ -436,6 +454,7 @@ def test(
 
         #c = 1
         total_time = 0
+        total_queries = 0
         for mut_amount, row in enumerate(matrix):
             #if c <= 0:
             #    print("break")
@@ -453,7 +472,14 @@ def test(
                 query_list = ContainerVector(NucSeq())
                 # @todo temp bugfix
                 del query_list[:]
+
+                query_list_remove_load_time = ContainerVector(NucSeq())
+                # @todo temp bugfix
+                del query_list_remove_load_time[:]
+
                 assert(len(query_list) == 0)
+                assert(len(query_list_remove_load_time) == 0)
+
                 for sequence, sample_id in queries:
                     # check for N's
                     if not warned_for_n:
@@ -468,6 +494,10 @@ def test(
                             query_list[-1].name = "dummy_" + str(sample_id)
                     query_list.append(NucSeq(sequence))
                     query_list[-1].name = str(sample_id)
+
+                    if len(query_list_remove_load_time) == 0:
+                        query_list_remove_load_time.append(NucSeq(sequence))
+                        query_list_remove_load_time[-1].name = str(sample_id)
 
 
                 #print("setting up (" + name + ") ...")
@@ -503,7 +533,7 @@ def test(
                             (
                                 mut_amount,
                                 indel_amount,
-                                aligner.elapsed_time,
+                                aligner.elapsed_time / len(query_list),
                                 name
                             )
                         )
@@ -513,8 +543,20 @@ def test(
                     submitResults("/MAdata/db/"+db_name, result)
                 if len(times) > 0 and not only_overall_time:
                     submitRuntimes("/MAdata/db/"+db_name, times)
+
                 #update the overall total runtime
-                total_time += aligner.elapsed_time
+                if only_overall_time:
+                    total_queries += len(query_list)
+                    total_time += aligner.elapsed_time / total_queries
+                else:
+                    total_queries += len(query_list) - 1
+                    total_time_this = aligner.elapsed_time
+                    # let the aligner run on one single query in order to remove the index load time
+                    query_vec_pledge.set(query_list_remove_load_time)
+                    result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
+                    result_pledge.get()
+                    total_time += (total_time_this - aligner.elapsed_time) / total_queries 
+
                 #just overwrite the value multiple times
                 putTotalRuntime("/MAdata/db/" + db_name, name, total_time)
 

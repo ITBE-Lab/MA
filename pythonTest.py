@@ -1277,7 +1277,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                 ("fails", "@desc4"),
             ])
 
-        plot = figure(title=title, plot_width=200, plot_height=200, tools=[hover])
+        plot = figure(title=title, plot_width=200, plot_height=250, tools=[hover])
         plot.axis.visible = False
         plot.toolbar.logo = None
         plot.toolbar_location = None
@@ -1293,6 +1293,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         #color_bar = ColorBar(color_mapper=color_mapper, border_line_color=None, location=(0,0))
 
         #plot.add_layout(color_bar, 'left')
+        plot.min_border_bottom = 50
 
         return plot
 
@@ -1300,18 +1301,20 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         approach = approach_[0]
         accuracy, coverage, runtime, alignments, fails = getAccuracyAndRuntimeOfAligner(db_name, approach, num_tries, allow_sw_hits)
 
-        print(approach, accuracy, coverage)
 
         tot_runtime = ""
+        # fix for old databases
+        ## runtime_tup = [[getTotalRuntime(db_name, approach)[0][0]/ (32*11*86)]] 
         runtime_tup = getTotalRuntime(db_name, approach)
         if len(runtime_tup) > 0:
-            tot_runtime = " [" + str(runtime_tup[0][0])[:5] + "ms]"
+            tot_runtime = " [" + str(runtime_tup[0][0] * 1000 )[:5] + "ms]"
 
+        print("plotting", approach)
         json_save.append( (approach, accuracy, coverage, runtime, alignments, fails, runtime_tup) )
 
         plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1))
-        #plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
-        #plots[2].append(makePicFromDict(alignments, None, set_max=500))
+        plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
+        plots[2].append(makePicFromDict(alignments, None, set_max=500))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
     plots.append([makePicFromDict(sw_accuracy, "sw accuracy", inner=sw_coverage)])
@@ -1798,10 +1801,8 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # ================================================================================================ #
 
 
-## task 3:
-
 #db_name = "plasmodium_30000.db"
-db_name = "plasmodium_30000.db"
+#db_name = "sw_plasmodium_200.db"
 
 #createSampleQueries(zebrafish_genome, db_name, 200, 20, 32, gpu_id=0, smaller_box=True)
 
@@ -1809,36 +1810,34 @@ db_name = "plasmodium_30000.db"
 #run_sw_for_sample(db_name, zebrafish_genome, 1, gpu_id=0)
 
 #test_my_approaches(db_name, zebrafish_genome)
-test(db_name, plasmodium_genome, only_overall_time=False, short_read_aligners=False)
+#test(db_name, plasmodium_genome, only_overall_time=False, long_read_aligners=False, processor=31)
+
+#analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
+
+
+# ================================================================================================ #
+# running through all sample sets                                                                  #
+# ================================================================================================ #
+
+task_id = 8
+
+data_set = [
+    ("sw_plasmodium_200.db",  plasmodium_genome, False),
+    ("sw_plasmodium_1000.db", plasmodium_genome, False),
+    ("plasmodium_30000.db",   plasmodium_genome, True),
+
+    ("sw_human_200.db",  human_genome, False),
+    ("sw_human_1000.db", human_genome, False),
+    ("human_30000.db",   human_genome, True),
+
+    ("sw_zebrafish_200.db",  zebrafish_genome, False),
+    ("sw_zebrafish_1000.db", zebrafish_genome, False),
+    ("zebrafish_30000.db",   zebrafish_genome, True),
+]
+
+db_name, working_genome, long_read_aligners = data_set[task_id]
+
+resetResults(db_name)
+test(db_name, working_genome, only_overall_time=False, long_read_aligners=long_read_aligners, short_read_aligners=True, processor=task_id*2)
 
 analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
-
-
-
-#createSampleQueries(plasmodium_genome, "plasmodium_1000.db", 1000, 100, 32)
-
-#createSampleQueries(plasmodium_genome, "plas_deletion.db", 1000, 100, 32, validate_using_sw=True, in_to_del_ratio=0)
-#run_sw_for_sample("plas_deletion.db", plasmodium_genome, 1205)
-#test_my_approaches("plas_deletion.db", plasmodium_genome, specific_id=1277)
-#exit()
-#test("plas_deletion.db", plasmodium_genome)
-#analyse_all_approaches_depre("plas_deletion.html","plas_deletion.db", num_tries=1)
-#exit()
-
-
-#test_my_approaches("/MAdata/db/test2.db", missed_alignments_db="/MAdata/db/missedQueries.db")
-#test_my_approaches("plasmodium_200.db", plasmodium_genome)
-#test("plasmodium_200.db", plasmodium_genome)
-#analyse_all_approaches_depre("plasmodium_200.html","plasmodium_200.db", num_tries=1)
-
-#test_my_approaches("plasmodium_30000.db", plasmodium_genome)
-#test("plasmodium_30000.db", plasmodium_genome)
-#analyse_all_approaches_depre("plasmodium_30000.html","plasmodium_30000.db", num_tries=1)
-#exit()
-
-#test_my_approaches("plasmodium_1000.db", plasmodium_genome)
-#test("plasmodium_1000.db", plasmodium_genome, only_overall_time=False)
-#analyse_all_approaches_depre("plasmodium_1000.html","plasmodium_1000.db", num_tries=1)
-#analyse_all_approaches_depre("plasmodium_5_tries.html","plasmodium_1000.db", num_tries=5)
-#exit()
-#test("human_20000.db", human_genome)

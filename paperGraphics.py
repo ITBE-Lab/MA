@@ -1321,13 +1321,23 @@ def accuracy_pics():
 
         return plot
 
-    with open("paperGraphics/sw_human_1000.db.html.json", "r") as f:
+    ## with open("paperGraphics/sw_zebrafish_200.db.html.json", "r") as f:
+    ## with open("paperGraphics/sw_human_1000.db.html.json", "r") as f:
+    ## with open("paperGraphics/plasmodium_30000.db.html.json", "r") as f:
+    with open("paperGraphics/sw_human_200.db.html.json", "r") as f:
         json_file = json.loads(f.read(), object_hook=_decode)
         for approach, accuracy, coverage, runtime, alignments, fails, runtime_tup in json_file:
-            print(approach)
             tot_runtime = ""
             if len(runtime_tup) > 0:
-                tot_runtime = " [" + str(runtime_tup[0][0])[:5] + "ms]"
+                tot_runtime = str( runtime_tup[0][0] * 1000 )[:7] + "ms"
+            avg_acc = 0
+            count = 0
+            for key, value in accuracy.items():
+                for key, value in value.items():
+                    avg_acc += value
+                    count += 1
+            avg_acc = str(avg_acc * 100 / count)[:7] + "%"
+            print approach, "\t", tot_runtime, "\t", avg_acc
             plots[0].append(
                     makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1)
                 )
@@ -1579,8 +1589,8 @@ def seed_relevance_pics():
 
 # actually call the functions that create the pictures
 
-seed_relevance_pics()
-#accuracy_pics()
+#seed_relevance_pics()
+accuracy_pics()
 #unrelated_non_enclosed_seeds()
 #forced_gap()
 #ambiguity_per_length()
