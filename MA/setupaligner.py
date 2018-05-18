@@ -1,5 +1,6 @@
 ##
-# @package MA
+# @package MA.setupaligner
+# @brief Implements @ref MA.set_up_aligner "set_up_aligner".
 # @file setupaligner.py
 # @brief Implements @ref MA.set_up_aligner "set_up_aligner".
 # @author Markus Schmidt

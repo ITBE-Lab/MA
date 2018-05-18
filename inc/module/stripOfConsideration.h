@@ -113,6 +113,12 @@ namespace libMA
                 [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]
                 ()
                 {
+                    /*
+                     * @note this bridging check is not required since we check weather a SoC
+                     * is brigding in general.
+                     * If any of the seeds within a SoC are bridging then the SoC is bridging.
+                     * Could turn this into a debug assertion...
+                     */
 # if 0 // enable / disable the bridging check for all seeds
                     constexpr const nucSeqIndex addSize = 0;
                     auto& rS = rvSeedVector.back();

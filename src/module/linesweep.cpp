@@ -406,7 +406,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             * We then simply remove all known suboptimal seeds
             * this is an optimistic estimation so some suboptimal regions might remain
             *
-            * NOTE: order is significant!
+            * @note: order is significant!
             * """
             * --- Iterator validity ---
             * Iterators, pointers and references pointing to position (or first) and beyond are

@@ -118,17 +118,24 @@ namespace libMA
         /// otherwise we fill in the gaps.
         double fMinimalQueryCoverage = 1.1;// 0.25 before 1.05.18 however python disables this
 
+        /// @brief Stop the SoC extraction if the harmonized score drops more than x.
         double fScoreTolerace = 0.1;
 
+        /// @brief Extract at most x SoCs.
         unsigned int uiMaxTries = 50;
 
+        /// @brief Lookahead for the equality break criteria.
         unsigned int uiMaxEqualScoreLookahead = 3;
 
+        /// @brief Consider two scores equal if they do not differ by more than x (relative to the total score).
         float fScoreDiffTolerance = 0.0001;
 
+        /// @brief switch between the two break criteria based on weather the query len is larger than x.
         nucSeqIndex uiSwitchQLen = 800;
 
+        /// @brief minimum accumulated seed length after the harmonization as absolute value.
         nucSeqIndex uiCurrHarmScoreMin = 18;
+        /// @brief minimum accumulated seed length after the harmonization relative to query length.
         float fCurrHarmScoreMinRel = 0.002;
 
         LinearLineSweep() {}//default constructor
