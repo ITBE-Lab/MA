@@ -1321,10 +1321,21 @@ def accuracy_pics():
 
         return plot
 
-    ## with open("paperGraphics/sw_zebrafish_200.db.html.json", "r") as f:
-    ## with open("paperGraphics/sw_human_1000.db.html.json", "r") as f:
-    ## with open("paperGraphics/plasmodium_30000.db.html.json", "r") as f:
-    with open("paperGraphics/sw_human_200.db.html.json", "r") as f:
+    files = [
+        "paperGraphics/sw_human_200.db.html.json", #[done]
+        "paperGraphics/sw_human_1000.db.html.json", #[done]
+        "paperGraphics/human_30000.db.html.json",
+
+        "paperGraphics/sw_zebrafish_200.db.html.json", #[not up to date?]
+        "paperGraphics/sw_zebrafish_1000.db.html.json", #[done]
+        "paperGraphics/zebrafish_30000.db.html.json",
+
+        "paperGraphics/sw_plasmodium_200.db.html.json", #[done]
+        "paperGraphics/sw_plasmodium_1000.db.html.json", #[done]
+        "paperGraphics/plasmodium_30000.db.html.json", #[not up to date?]
+    ]
+
+    with open(files[8], "r") as f:
         json_file = json.loads(f.read(), object_hook=_decode)
         for approach, accuracy, coverage, runtime, alignments, fails, runtime_tup in json_file:
             tot_runtime = ""
@@ -1337,7 +1348,8 @@ def accuracy_pics():
                     avg_acc += value
                     count += 1
             avg_acc = str(avg_acc * 100 / count)[:7] + "%"
-            print approach, "\t", tot_runtime, "\t", avg_acc
+            name = approach + "                  "
+            print name[:15], tot_runtime, "\t", avg_acc
             plots[0].append(
                     makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1)
                 )
