@@ -1326,16 +1326,18 @@ def accuracy_pics():
         "paperGraphics/sw_human_1000.db.html.json", #[done]
         "paperGraphics/human_30000.db.html.json",
 
-        "paperGraphics/sw_zebrafish_200.db.html.json", #[not up to date?]
+        "paperGraphics/sw_zebrafish_200.db.html.json", #[done]
         "paperGraphics/sw_zebrafish_1000.db.html.json", #[done]
         "paperGraphics/zebrafish_30000.db.html.json",
 
         "paperGraphics/sw_plasmodium_200.db.html.json", #[done]
         "paperGraphics/sw_plasmodium_1000.db.html.json", #[done]
-        "paperGraphics/plasmodium_30000.db.html.json", #[not up to date?]
+        "paperGraphics/plasmodium_30000.db.html.json", 
+
+        "paperGraphics/sw_human_1000_10.db.html.json", #[present]   # 9
     ]
 
-    with open(files[8], "r") as f:
+    with open(files[9], "r") as f:
         json_file = json.loads(f.read(), object_hook=_decode)
         for approach, accuracy, coverage, runtime, alignments, fails, runtime_tup in json_file:
             tot_runtime = ""

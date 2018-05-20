@@ -280,16 +280,20 @@ class Bowtie2(CommandLine):
         return False
 
 class Minimap2(CommandLine):
-    def __init__(self, index_str, num_results, db_name):
+    def __init__(self, index_str, num_results, db_name, z_drop=None):
         super().__init__()
         self.minimap2_home = "/usr/home/markus/workspace/minimap2/"
         self.index_str = index_str + ".mmi"
         self.num_results = num_results
         self.in_filename = ".tempMinimap2" + db_name + ".fasta"
+        if not z_drop is None:
+            self.z_drop = " -z " + str(z_drop)
+        else:
+            self.z_drop = ""
 
     def create_command(self, in_filename):
         cmd_str = self.minimap2_home + "minimap2 -c -a "
-        return cmd_str + " " + self.index_str + " " + in_filename + " --secondary=yes -N " + self.num_results
+        return cmd_str + " " + self.index_str + " " + in_filename + " --secondary=yes -N " + self.num_results + self.z_drop
 
     def do_checks(self):
         return False
@@ -315,18 +319,22 @@ class Blasr(CommandLine):
         return "BLASR"
 
 class BWA_MEM(CommandLine):
-    def __init__(self, index_str, num_results, db_name):
+    def __init__(self, index_str, num_results, db_name, z_drop=None):
         super().__init__()
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.num_results = num_results
         self.in_filename = ".tempBwaMem" + db_name + ".fasta"
+        if not z_drop is None:
+            self.z_drop = " -d " + str(z_drop)
+        else:
+            self.z_drop = ""
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa mem "
         if int(self.num_results) > 1:
             cmd_str += " -a"
-        return cmd_str + " " + self.index_str + " " + in_filename
+        return cmd_str + " " + self.index_str + " " + in_filename + self.z_drop
 
     def do_checks(self):
         return False
@@ -419,6 +427,8 @@ def test(
         ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
         ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
         ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+        ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
+        ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
         ("MA Accurate", MA(reference, num_results, False, db_name)),
         ("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]

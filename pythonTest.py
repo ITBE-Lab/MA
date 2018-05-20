@@ -1819,26 +1819,30 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # running through all sample sets                                                                  #
 # ================================================================================================ #
 
-task_id = 6
+task_id = 4
 
 data_set = [
-    ("sw_plasmodium_200.db",  plasmodium_genome, False), # [done]
-    ("sw_plasmodium_1000.db", plasmodium_genome, False), # [done]
-    ("plasmodium_30000.db",   plasmodium_genome, True),
+    ("sw_plasmodium_200.db",  plasmodium_genome, False, True), # [done]
+    ("sw_plasmodium_1000.db", plasmodium_genome, False, True), # [done]
+    ("plasmodium_30000.db",   plasmodium_genome, True, True),
 
-    ("sw_human_200.db",  human_genome, False), # [done]
-    ("sw_human_1000.db", human_genome, False), # [done]
-    ("human_30000.db",   human_genome, True),
+    ("sw_human_200.db",  human_genome, False, True), # [done] # 3
+    ("sw_human_1000.db", human_genome, False, True), # [done]
+    ("human_30000.db",   human_genome, True, True),
 
-    ("sw_zebrafish_200.db",  zebrafish_genome, False),
-    ("sw_zebrafish_1000.db", zebrafish_genome, False), # [done]
-    ("zebrafish_30000.db",   zebrafish_genome, True),
+    ("sw_zebrafish_200.db",  zebrafish_genome, False, True), # [done] # 6
+    ("sw_zebrafish_1000.db", zebrafish_genome, False, True), # [done]
+    ("zebrafish_30000.db",   zebrafish_genome, True, True),
     
-    ("sw_human_1000_10.db", human_genome, False),
+    ("sw_human_1000_10.db", human_genome, False, True), # [done]
+
+    ("plasmodium_30000_no_s.db",   plasmodium_genome, True, False), # 10
+    ("human_30000_no_s.db",   human_genome, True, False),
+    ("zebrafish_30000_no_s.db",   zebrafish_genome, True, False),
 ]
 
-db_name, working_genome, long_read_aligners = data_set[task_id]
+db_name, working_genome, long_read_aligners, short_read_aligners = data_set[task_id]
 
-test(db_name, working_genome, only_overall_time=False, long_read_aligners=long_read_aligners, short_read_aligners=True, processor=task_id*2)
+test(db_name, working_genome, only_overall_time=False, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2)
 
 analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
