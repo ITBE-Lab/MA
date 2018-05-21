@@ -409,7 +409,7 @@ def test(
             only_overall_time=True,
             long_read_aligners=True,
             short_read_aligners=True,
-            runtime_sample_multiplier=10,
+            runtime_sample_multiplier=100,
             processor=None
         ):
     print("working on " + db_name)
@@ -423,14 +423,14 @@ def test(
     warned_for_n = False
 
     l = [
-        # ("MA Fast", MA(reference, num_results, True, db_name)),
-        # ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
-        # ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        # ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-        # ### ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
-        # ### ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
-        # ("MA Accurate", MA(reference, num_results, False, db_name)),
-        # ("BWA SW", BWA_SW(reference, num_results, db_name)),
+        ("MA Fast", MA(reference, num_results, True, db_name)),
+        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
+        ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+        ### ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
+        ### ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
+        ("MA Accurate", MA(reference, num_results, False, db_name)),
+        ("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
@@ -443,7 +443,7 @@ def test(
     if short_read_aligners:
         l.extend([
                 ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
-                ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
+                # ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
             ])
 
     for name, aligner in l:
@@ -463,7 +463,6 @@ def test(
 
         #c = 1
         total_time = 0
-        total_queries = 0
         for mut_amount, row in enumerate(matrix):
             #if c <= 0:
             #    print("break")
@@ -557,14 +556,16 @@ def test(
                 if only_overall_time:
                     #total_queries += len(query_list)
                     total_time = 0 #aligner.elapsed_time / total_queries
-                else:
-                    total_queries += len(query_list) - 1
+                elif True: # substrace the index load time
+                    total_queries = len(query_list) - 1
                     total_time_this = aligner.elapsed_time
                     # let the aligner run on one single query in order to remove the index load time
                     query_vec_pledge.set(query_list_remove_load_time)
                     result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
                     result_pledge.get()
                     total_time += (total_time_this - aligner.elapsed_time) / total_queries 
+                else: # do not subtract index load times.
+                    total_time += aligner.elapsed_time / len(query_list) 
 
                 #just overwrite the value multiple times
                 putTotalRuntime("/MAdata/db/" + db_name, name, total_time)

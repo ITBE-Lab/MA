@@ -1194,12 +1194,12 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         c_hover = []
         min_ = 0.0
         max_ = 0.0
-        if set_max != None:
-            max_ = set_max
         for x, value in d.items():
             for y, value in value.items():
                 max_ = max(max_, value)
                 min_ = min(min_, value)
+        if set_max != None:
+            max_ = set_max
 
         colors = heatmap_palette(light_spec_approximation, 127)
         w = 0
@@ -1222,7 +1222,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                             c_inner.append("#AAAAAA")
                             desc2_hover.append("")
                         else:
-                            c_inner.append( colors[int(126*(inner[x][y]-min_) /max_)] )
+                            c_inner.append( colors[min(int(126*(inner[x][y]-min_) /max_), 126)] )
                             desc2_hover.append(str(inner[x][y]))
                     else:
                         desc2_hover.append(str(d[x][y]))
@@ -1231,7 +1231,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
                     if d[x][y] == None or max_ == 0:
                         c_hover.append("#AAAAAA")
                     else:
-                        c_hover.append( colors[int(126*(d[x][y]-min_) /max_)] )
+                        c_hover.append( colors[min(int(126*(d[x][y]-min_) /max_), 126)] )
 
         color_mapper = LinearColorMapper(
                 palette=heatmap_palette(light_spec_approximation, 127),
@@ -1313,7 +1313,7 @@ def analyse_all_approaches_depre(out, db_name, num_tries=1, print_relevance=Fals
         json_save.append( (approach, accuracy, coverage, runtime, alignments, fails, runtime_tup) )
 
         plots[0].append(makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1))
-        plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
+        plots[1].append(makePicFromDict(runtime, None, set_max=4)) #, set_max=50
         plots[2].append(makePicFromDict(alignments, None, set_max=500))
 
     sw_accuracy, sw_coverage = getAccuracyAndRuntimeOfSW(db_name)
@@ -1819,22 +1819,22 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # running through all sample sets                                                                  #
 # ================================================================================================ #
 
-task_id = 5
+task_id = 9
 
 data_set = [
-    ("sw_plasmodium_200.db",  plasmodium_genome, False, True), # [done]
-    ("sw_plasmodium_1000.db", plasmodium_genome, False, True), # [done]
+    ("sw_plasmodium_200.db",  plasmodium_genome, False, True), # [re-running]
+    ("sw_plasmodium_1000.db", plasmodium_genome, False, True), # [re-running]
     ("plasmodium_30000.db",   plasmodium_genome, True, False), # [running bowtie & blasr]
 
-    ("sw_human_200.db",  human_genome, False, True), # [done] # 3
-    ("sw_human_1000.db", human_genome, False, True), # [done]
+    ("sw_human_200.db",  human_genome, False, True), # [re-running]# 3
+    ("sw_human_1000.db", human_genome, False, True), # [re-running]
     ("human_30000.db",   human_genome, True, False), # [running bowtie & blasr]
 
-    ("sw_zebrafish_200.db",  zebrafish_genome, False, True), # [done] # 6
-    ("sw_zebrafish_1000.db", zebrafish_genome, False, True), # [done]
+    ("sw_zebrafish_200.db",  zebrafish_genome, False, True), # [re-running] # 6
+    ("sw_zebrafish_1000.db", zebrafish_genome, False, True), # [re-running]
     ("zebrafish_30000.db",   zebrafish_genome, True, False), # [running]
     
-    ("sw_human_1000_10.db", human_genome, False, True), # [done] # 9
+    ("sw_human_1000_10.db", human_genome, False, True), # [re-running] # 9
     ("human_30000_10.db",   human_genome, True, False), # [running]
 ]
 
@@ -1842,6 +1842,6 @@ db_name, working_genome, long_read_aligners, short_read_aligners = data_set[task
 
 #createSampleQueries(working_genome, db_name, 30000, 100, 32)
 
-test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=True, processor=task_id*2)
+test(db_name, working_genome, only_overall_time=False, long_read_aligners=False, short_read_aligners=True, processor=task_id*2)
 
 analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
