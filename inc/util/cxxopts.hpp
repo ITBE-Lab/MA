@@ -1,4 +1,7 @@
-/*
+/**
+ * @file cxxopts.hpp
+ * @brief taken from: https://github.com/jarro2783/cxxopts
+ * @details
  *  
  *  Copyright (c) 2014, 2015, 2016, 2017 Jarryd Beck
  *  
@@ -19,9 +22,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
- *
- *  github link : https://github.com/jarro2783/cxxopts
  *
  */
 

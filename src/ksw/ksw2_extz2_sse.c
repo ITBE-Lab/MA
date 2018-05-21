@@ -2,7 +2,6 @@
 #include <assert.h>
 #include "ksw/ksw2.h"
 
-//@note markus the banded dp is implemented here
 #ifdef __SSE2__
 #include <emmintrin.h>
 
