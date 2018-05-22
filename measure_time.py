@@ -8,7 +8,7 @@ import time
 class CommandLine(Module):
 
     def __init__(self):
-        self.elapsed_time = 0
+        self.elapsed_time = 0.0
         self.skip_count = 0
         self.warn_once = True
         self.processor = 0
@@ -213,7 +213,10 @@ class CommandLine(Module):
                 q_start = int(columns[1])
                 q_length = int(columns[2])
 
-                alignment = Alignment(r_start, q_start, r_start + r_length, q_start + q_length)
+                r_pos = r_start + int(r_length / 2)
+                q_pos = q_start + int(q_length / 2)
+
+                alignment = Alignment(r_pos, q_pos, r_pos, q_pos)
                 alignment.mapping_quality = int(columns[8]) # acc seed length instead of map. qual
                 alignment.stats.name = columns[0]
                 alignment.secondary = not columns[6] == "true"
@@ -293,7 +296,9 @@ class Minimap2(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.minimap2_home + "minimap2 -c -a "
-        return cmd_str + " " + self.index_str + " " + in_filename + " --secondary=yes -N " + self.num_results + self.z_drop
+        if int(self.num_results) > 1:
+            in_filename += " --secondary=yes -N " + self.num_results
+        return cmd_str + " " + self.index_str + " " + in_filename + self.z_drop
 
     def do_checks(self):
         return False
@@ -366,7 +371,10 @@ class G_MAP(CommandLine):
 
     def create_command(self, in_filename):
         cmd_str = self.g_home + "graphmap align -r " + self.genome_str
-        return cmd_str + " -d " + in_filename + " -Z"
+        minZ = ""
+        if int(self.num_results) > 1:
+            minZ = " -Z"
+        return cmd_str + " -d " + in_filename + minZ
 
     def do_checks(self):
         return False
@@ -409,7 +417,7 @@ def test(
             only_overall_time=True,
             long_read_aligners=True,
             short_read_aligners=True,
-            runtime_sample_multiplier=100,
+            runtime_sample_multiplier=0,
             processor=None
         ):
     print("working on " + db_name)
@@ -431,6 +439,7 @@ def test(
         ### ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
         ("MA Accurate", MA(reference, num_results, False, db_name)),
         ("BWA SW", BWA_SW(reference, num_results, db_name)),
+        ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
@@ -442,8 +451,7 @@ def test(
 
     if short_read_aligners:
         l.extend([
-                ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
-                # ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
+                ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
             ])
 
     for name, aligner in l:
@@ -462,7 +470,8 @@ def test(
         clearApproach("/MAdata/db/"+db_name, name)
 
         #c = 1
-        total_time = 0
+        total_time = 0.0
+        total_queries = 0
         for mut_amount, row in enumerate(matrix):
             #if c <= 0:
             #    print("break")
@@ -496,10 +505,9 @@ def test(
                                 warned_for_n = True
                                 print("Queries contains", nuc)
 
-                    if not only_overall_time:
-                        for _ in range(0, runtime_sample_multiplier):
-                            query_list.append(NucSeq(sequence))
-                            query_list[-1].name = "dummy_" + str(sample_id)
+                    for _ in range(0, runtime_sample_multiplier):
+                        query_list.append(NucSeq(sequence))
+                        query_list[-1].name = "dummy_" + str(sample_id)
                     query_list.append(NucSeq(sequence))
                     query_list[-1].name = str(sample_id)
 
@@ -536,15 +544,15 @@ def test(
                             0 # dummy value
                         )
                     )
-                    if not only_overall_time:
-                        times.append(
-                            (
-                                mut_amount,
-                                indel_amount,
-                                aligner.elapsed_time / len(query_list),
-                                name
-                            )
+                if not only_overall_time:
+                    times.append(
+                        (
+                            mut_amount,
+                            indel_amount,
+                            aligner.elapsed_time / len(query_list),
+                            name
                         )
+                    )
 
                 #print("submitting results (" + name + ") ...")
                 if len(result) > 0:
@@ -553,22 +561,22 @@ def test(
                     submitRuntimes("/MAdata/db/"+db_name, times)
 
                 #update the overall total runtime
-                if only_overall_time:
-                    #total_queries += len(query_list)
-                    total_time = 0 #aligner.elapsed_time / total_queries
-                elif True: # substrace the index load time
-                    total_queries = len(query_list) - 1
+                if True: # substract the index load time
+                    total_queries += len(query_list) - 1
                     total_time_this = aligner.elapsed_time
                     # let the aligner run on one single query in order to remove the index load time
                     query_vec_pledge.set(query_list_remove_load_time)
                     result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
                     result_pledge.get()
-                    total_time += (total_time_this - aligner.elapsed_time) / total_queries 
+                    assert(total_time_this > aligner.elapsed_time)
+                    total_time += (total_time_this - aligner.elapsed_time) 
                 else: # do not subtract index load times.
-                    total_time += aligner.elapsed_time / len(query_list) 
+                    total_queries += len(query_list)
+                    total_time += aligner.elapsed_time
 
                 #just overwrite the value multiple times
-                putTotalRuntime("/MAdata/db/" + db_name, name, total_time)
+                if total_queries > 0:
+                    putTotalRuntime("/MAdata/db/" + db_name, name, total_time / total_queries)
 
         print("")#print a newline
         aligner.final_checks()#do a final consistency check

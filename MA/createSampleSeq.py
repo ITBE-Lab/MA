@@ -369,6 +369,10 @@ def clearApproach(db_name, approach):
                 DELETE FROM results 
                 WHERE approach == ?
                 """, (approach,))
+    c.execute("""
+                DELETE FROM total_runtime 
+                WHERE approach == ?
+                """, (approach,))
     conn.commit()
 
 def submitResults(db_name, results_list):
@@ -597,13 +601,16 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
         # there was a hit to one optimal position
         # or the original position
         hit = 0
+        cov = 0
         if sample_id in aligner_results:
             # Here we visit the first max-tries outputs for sample_id
             for start, end, mapping_quality, num_seeds_longer in aligner_results[sample_id][:max_tries]:
                 if True or num_seeds_longer <= 0.005 * end-start:
-                    hit = max(hit, near(start, origin_start, end, origin_end, True))
+                    cov = max(cov, near(start, origin_start, end, origin_end, True))
+                    hit = max(hit, near(start, origin_start, end, origin_end, False))
                     for start_sw, end_sw, in positions:
-                        hit = max(hit, near(start, start_sw, end, end_sw, True))
+                        cov = max(cov, near(start, start_sw, end, end_sw, True))
+                        hit = max(hit, near(start, start_sw, end, end_sw, False))
 
                 #show merely errors with the min_seed_length threshold
                 #!1 has_hit = hit > 0
@@ -617,10 +624,10 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
                 # if min_seed_length > 20: # only show hits that do not fullfill the threshold
                     
         assert(hit <= 1)
-        if hit > 0:
-            coverage[num_indels][num_mutation] += hit
-            hits[num_indels][num_mutation] += 1
-        else:
+        assert(cov <= 1)
+        coverage[num_indels][num_mutation] += cov
+        hits[num_indels][num_mutation] += hit
+        if hit == 0:
             if fails[num_indels][num_mutation][-5:] != ", ...":
                 if len(fails[num_indels][num_mutation]) > 0:
                     fails[num_indels][num_mutation] += ', '
@@ -669,8 +676,9 @@ def getAccuracyAndRuntimeOfAligner(db_name, approach, max_tries, allow_sw_hits):
         if num_mutation not in runtime:
             runtime[num_mutation] = {}
         if num_indels not in runtime[num_mutation]:
-            runtime[num_mutation][num_indels] = 0
-        runtime[num_mutation][num_indels] = runtime[num_mutation][num_indels] + run_time
+            runtime[num_mutation][num_indels] = run_time
+        else:
+            print("WARNING: fund two runtimes for one cell")
 
     return accuracy, coverage_, runtime, alignments, fails
 

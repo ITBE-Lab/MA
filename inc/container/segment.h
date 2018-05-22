@@ -234,6 +234,8 @@ namespace libMA
                 //if the interval contains more than uiMAxAmbiguity hits it's of no importance and will produce nothing but noise
                if (rSegment.saInterval().size() > uiMAxAmbiguity && uiMAxAmbiguity != 0)
                     continue;
+               if (rSegment.size() < 16)// @todo temp code...
+                    continue;
 
                 //iterate over the interval in the BWT
                 for (
