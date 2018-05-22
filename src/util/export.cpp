@@ -124,6 +124,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     //advanced parameters
     pCouple->optimisticGapEstimation = optimisticGapEstimation;
     pCouple->uiMaxTries = uiMaxTries;
+    if(bFinderMode && uiMaxTries > uiReportN)
+        pCouple->uiMaxTries = uiReportN;
     pCouple->uiMaxEqualScoreLookahead = uiMaxEqualScoreLookahead;
     pCouple->fScoreDiffTolerance = fScoreDiffTolerance;
     pCouple->uiSwitchQLen = uiSwitchQLen;

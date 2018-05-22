@@ -1819,29 +1819,38 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # running through all sample sets                                                                  #
 # ================================================================================================ #
 
-task_id = 9
+# [7, 8, 6]:
+# [0, 1, 2]:
+# [5, 4, 3]:
+# [9, 10]:
 
-data_set = [
-    ("sw_plasmodium_200.db",  plasmodium_genome, False, True), # [re-running]
-    ("sw_plasmodium_1000.db", plasmodium_genome, False, True), # [re-running]
-    ("plasmodium_30000.db",   plasmodium_genome, True, False), # [running bowtie & blasr]
+for task_id in [9, 10]:
 
-    ("sw_human_200.db",  human_genome, False, True), # [re-running]# 3
-    ("sw_human_1000.db", human_genome, False, True), # [re-running]
-    ("human_30000.db",   human_genome, True, False), # [running bowtie & blasr]
+    processor=task_id*2
 
-    ("sw_zebrafish_200.db",  zebrafish_genome, False, True), # [re-running] # 6
-    ("sw_zebrafish_1000.db", zebrafish_genome, False, True), # [re-running]
-    ("zebrafish_30000.db",   zebrafish_genome, True, False), # [running]
-    
-    ("sw_human_1000_10.db", human_genome, False, True), # [re-running] # 9
-    ("human_30000_10.db",   human_genome, True, False), # [running]
-]
+    data_set = [
+        ("sw_plasmodium_200.db",  plasmodium_genome, False, True, 100), #
+        ("sw_plasmodium_1000.db", plasmodium_genome, False, True, 10), #
+        ("plasmodium_30000.db",   plasmodium_genome, True, False, 1), #
 
-db_name, working_genome, long_read_aligners, short_read_aligners = data_set[task_id]
+        ("sw_human_200.db",  human_genome, False, True, 100), # # 3
+        ("sw_human_1000.db", human_genome, False, True, 10), #
+        ("human_30000.db",   human_genome, True, False, 1), #
 
-#createSampleQueries(working_genome, db_name, 30000, 100, 32)
+        ("sw_zebrafish_200.db",  zebrafish_genome, False, True, 100), # # 6
+        ("sw_zebrafish_1000.db", zebrafish_genome, False, True, 10), #
+        ("zebrafish_30000.db",   zebrafish_genome, True, False, 1), #
+        
+        ("sw_human_1000_10.db", human_genome, False, True, 10), # # 9
+        ("human_30000_10.db",   human_genome, True, False, 1), #
+    ]
 
-test(db_name, working_genome, only_overall_time=False, long_read_aligners=False, short_read_aligners=True, processor=task_id*2)
+    db_name, working_genome, long_read_aligners, short_read_aligners, runtime_sample_multiplier = data_set[task_id]
 
-analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
+    #createSampleQueries(working_genome, db_name, 30000, 100, 32)
+    #resetResults(db_name)
+
+    #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+
+    analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
