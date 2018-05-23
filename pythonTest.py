@@ -1824,7 +1824,7 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # [5, 4, 3]:
 # [9, 10]:
 
-for task_id in [9, 10]:
+for task_id in [2]:
 
     processor=task_id*2
 
@@ -1833,7 +1833,7 @@ for task_id in [9, 10]:
         ("sw_plasmodium_1000.db", plasmodium_genome, False, True, 10), #
         ("plasmodium_30000.db",   plasmodium_genome, True, False, 1), #
 
-        ("sw_human_200.db",  human_genome, False, True, 100), # # 3
+        ("sw_human_200.db",  human_genome, False, True, 0), # # 3
         ("sw_human_1000.db", human_genome, False, True, 10), #
         ("human_30000.db",   human_genome, True, False, 1), #
 
@@ -1843,14 +1843,62 @@ for task_id in [9, 10]:
         
         ("sw_human_1000_10.db", human_genome, False, True, 10), # # 9
         ("human_30000_10.db",   human_genome, True, False, 1), #
+
+        ("zebrafish_30000_10.db",   zebrafish_genome, False, False, 0), # 11
     ]
 
     db_name, working_genome, long_read_aligners, short_read_aligners, runtime_sample_multiplier = data_set[task_id]
 
-    #createSampleQueries(working_genome, db_name, 30000, 100, 32)
+    #createSampleQueries(working_genome, db_name, 30000, 10, 32)
     #resetResults(db_name)
 
     #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
-    test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+
+    analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
+
+
+exit()
+
+
+# ================================================================================================ #
+# running blasr and graphmap                                                                       #
+# ================================================================================================ #
+
+# [7, 8, 6]:
+# [0, 1, 2]:
+# [5, 4, 3]:
+# [9, 10]:
+
+for task_id in range(0, 12):
+
+    processor= 0 # task_id*2
+
+    data_set = [
+        ("sw_plasmodium_200.db",  plasmodium_genome, False, True, 10), #
+        ("sw_plasmodium_1000.db", plasmodium_genome, False, True, 1), #
+        ("plasmodium_30000.db",   plasmodium_genome, True, False, 0), #
+
+        ("sw_human_200.db",  human_genome, False, True, 10), # # 3
+        ("sw_human_1000.db", human_genome, False, True, 1), #
+        ("human_30000.db",   human_genome, True, False, 0), #
+
+        ("sw_zebrafish_200.db",  zebrafish_genome, False, True, 10), # # 6
+        ("sw_zebrafish_1000.db", zebrafish_genome, False, True, 1), #
+        ("zebrafish_30000.db",   zebrafish_genome, True, False, 0), #
+        
+        ("sw_human_1000_10.db", human_genome, False, True, 1), # # 9
+        ("human_30000_10.db",   human_genome, True, False, 0), #
+
+        ("zebrafish_30000_10.db",   zebrafish_genome, False, False, 0), # 11
+    ]
+
+    db_name, working_genome, long_read_aligners, short_read_aligners, runtime_sample_multiplier = data_set[task_id]
+
+    #createSampleQueries(working_genome, db_name, 30000, 10, 32)
+    #resetResults(db_name)
+
+    #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=True, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
 
     analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)

@@ -1338,7 +1338,7 @@ def accuracy_pics():
         "paperGraphics/human_30000_10.db.html.json", # [missing bowtie & blasr pic]
     ]
 
-    with open(files[9], "r") as f:
+    with open(files[10], "r") as f:
         json_file = json.loads(f.read(), object_hook=_decode)
         for approach, accuracy, coverage, runtime, alignments, fails, runtime_tup in json_file:
             tot_runtime = ""

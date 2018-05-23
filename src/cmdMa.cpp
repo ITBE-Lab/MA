@@ -55,6 +55,7 @@ int main(int argc, char* argv[])
 
     try
     {
+        defaults::configureFast();
         for(int i = 0; i < argc-1; i++)
             if(
                     strcmp(argv[i], "-p") == 0 ||
@@ -179,6 +180,8 @@ int main(int argc, char* argv[])
                     "FMD-Index Generation"
                 }) << std::endl;
             //@todo cmake version number: https://stackoverflow.com/questions/27395120/correct-way-to-encode-embed-version-number-in-program-code
+            std::cout << "Displayed are the defaults for " << sParameterSet
+                << ". See other defaults by selecting a parameterset with -p." << std::endl;
             std::cout << "Version 0.1.0 (beta)" << std::endl;
             std::cout << "By Markus Schmidt & Arne Kutzner" << std::endl;
             std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;
@@ -208,10 +211,10 @@ int main(int argc, char* argv[])
             if(sSeedSet != "SMEMs" && sSeedSet != "maxSpanning")
                 std::cerr << "WARNING: selected invalid seed set; using maxSpanning" << std::endl;
             /*
-                *
-                * Alignment starts here
-                *
-                */
+            *
+            * Alignment starts here
+            *
+            */
             //setup the alignment input
             std::shared_ptr<Pledge> pPack(new Pledge(std::shared_ptr<Container>(new Pack())));
             std::shared_ptr<Pack> pPack_(new Pack());

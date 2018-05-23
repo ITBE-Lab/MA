@@ -1,6 +1,9 @@
 /** 
  * @file fileReader.cpp
  * @author Markus Schmidt
+ * 
+ * @todo !!! make bulk reading !!!
+ * 
  */
 #include "module/fileReader.h"
 

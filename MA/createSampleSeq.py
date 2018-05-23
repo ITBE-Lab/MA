@@ -482,14 +482,14 @@ def putTotalRuntime(db_name, approach, runtime):
                 DELETE FROM total_runtime 
                 WHERE approach = ?
                 """, (approach,))
-    c.executemany("""
+    c.execute("""
                     INSERT INTO total_runtime 
                     (
                         approach,
                         run_time
                     )
                     VALUES (?,?)
-                    """, [(approach, runtime)] )
+                    """, (approach, runtime) )
     conn.commit()
 
 def getOptimalPositions(db_name):

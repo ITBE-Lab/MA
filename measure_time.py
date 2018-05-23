@@ -276,7 +276,7 @@ class Bowtie2(CommandLine):
     def create_command(self, in_filename):
         cmd_str = self.bowtie2_home + "bowtie2 "
         index_str = "-x " + self.index_str
-        input_str = "-f -U " + in_filename
+        input_str = "-f --very-fast -U " + in_filename
         return cmd_str + " " + index_str + " " + input_str + " -k " + self.num_results
 
     def do_checks(self):
@@ -435,11 +435,10 @@ def test(
         ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
         ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
         ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-        ### ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
-        ### ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
+        ## ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
+        ## ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
         ("MA Accurate", MA(reference, num_results, False, db_name)),
         ("BWA SW", BWA_SW(reference, num_results, db_name)),
-        ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
@@ -451,6 +450,7 @@ def test(
 
     if short_read_aligners:
         l.extend([
+                ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
                 ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
             ])
 
@@ -514,7 +514,7 @@ def test(
                     if len(query_list_remove_load_time) == 0:
                         query_list_remove_load_time.append(NucSeq(sequence))
                         query_list_remove_load_time[-1].name = str(sample_id)
-
+                assert(len(query_list_remove_load_time) <= 1)
 
                 #print("setting up (" + name + ") ...")
 
@@ -522,6 +522,8 @@ def test(
 
                 #fullfill the made promises
                 query_vec_pledge.set(query_list)
+
+                #print("num queries:", len(query_list))
 
                 result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
 
@@ -564,6 +566,7 @@ def test(
                 if True: # substract the index load time
                     total_queries += len(query_list) - 1
                     total_time_this = aligner.elapsed_time
+                    aligner.elapsed_time = 0
                     # let the aligner run on one single query in order to remove the index load time
                     query_vec_pledge.set(query_list_remove_load_time)
                     result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
