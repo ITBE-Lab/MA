@@ -394,7 +394,7 @@ public:
 		} // if
 		else
 		{	/* We have to copy via cudaMemcpyHostToDevice */
-			metaMeasureAndLogDuration<false>
+			metaMeasureAndLogDuration<true>
 			(	"cudaMemcpy update device requires",	// text message
 					[&] () // lambda by reference
 				{
@@ -1433,7 +1433,7 @@ public:
 			this->clearDeviceVectors();
 
 			/* Get the appropriate section of the reference in the device memory */
-			metaMeasureAndLogDuration<false>
+			metaMeasureAndLogDuration<true>
 			(	"Time for loading reference",	// text message
 				[&] () // lambda by reference
 				{
@@ -1443,7 +1443,7 @@ public:
 			); // function call
 
 			/* Process the chunk via the kernel */
-			metaMeasureAndLogDuration<false>
+			metaMeasureAndLogDuration<true>
 			(	"Time for kernel execution", // text message
 				[&] () // lambda by reference
 				{
@@ -1482,7 +1482,7 @@ public:
 				uiChunkId
 			); // enqueue
 #else			
-			metaMeasureAndLogDuration<false>
+			metaMeasureAndLogDuration<true>
 			(	"Time for extracting maximum scores",	// text message
 				[&] () // lambda by reference
 				{

@@ -154,6 +154,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/pairedReads.h"
 #include "module/splitter.h"
 #include "module/smith_waterman.h"
+#include "module/otherSeeding.h"
 #include "module/sw_gpu.h"
 #include "util/default_parameters.h"
 

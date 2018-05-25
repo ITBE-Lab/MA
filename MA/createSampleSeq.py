@@ -247,6 +247,15 @@ def getOrigin(db_name, sample_id):
                         FROM samples
                         WHERE samples.sample_id = ?
                         """, (sample_id,)).fetchall()[0]
+def getRefPos(db_name, sample_id, approach):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    return c.execute("""
+                        SELECT start
+                        FROM results
+                        WHERE results.sample_id = ?
+                        AND results.approach = ?
+                        """, (sample_id,approach)).fetchall()
 
 def getOptima(db_name, sample_id):
     conn = sqlite3.connect(db_name)
