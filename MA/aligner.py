@@ -352,3 +352,14 @@ class UnLock(libMA.UnLock):
 
     def promise_me(self, *args):
         return super(UnLock, self).promise_me(ContainerVector(list(args)))
+
+##
+# @brief The OtherSeeding Module.
+# @ingroup module
+#
+class OtherSeeding(libMA.OtherSeeding):
+    def execute(self, *args):
+        return super(OtherSeeding, self).execute(ContainerVector(list(args)))
+
+    def promise_me(self, *args):
+        return super(OtherSeeding, self).promise_me(ContainerVector(list(args)))

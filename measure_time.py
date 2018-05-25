@@ -370,7 +370,7 @@ class G_MAP(CommandLine):
         self.in_filename = ".tempBlasr" + db_name + ".fasta"
 
     def create_command(self, in_filename):
-        cmd_str = self.g_home + "graphmap align -r " + self.genome_str
+        cmd_str = self.g_home + "graphmap align -v 0 -r " + self.genome_str
         minZ = ""
         if int(self.num_results) > 1:
             minZ = " -Z"
@@ -431,14 +431,14 @@ def test(
     warned_for_n = False
 
     l = [
-        ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
-        ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+        #("MA Fast", MA(reference, num_results, True, db_name)),
+        #("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
         ## ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
         ## ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
-        ("MA Accurate", MA(reference, num_results, False, db_name)),
-        ("BWA SW", BWA_SW(reference, num_results, db_name)),
+        #("MA Accurate", MA(reference, num_results, False, db_name)),
+        #("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
@@ -451,7 +451,7 @@ def test(
     if short_read_aligners:
         l.extend([
                 ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
-                ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
+                #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
             ])
 
     for name, aligner in l:

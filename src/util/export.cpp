@@ -50,6 +50,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportSMW();
         exportSW_GPU();
         exportSoC();
+        exportOtherSeeding();
 }//function
 
 #endif

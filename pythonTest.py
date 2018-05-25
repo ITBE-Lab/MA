@@ -874,7 +874,7 @@ def test_my_approach(
 
 
 def relevance(db_name, working_genome):
-    all_queries = getQueriesAsASDMatrix(db_name, "blank", working_genome, True)
+    all_queries = getQueriesAsASDMatrix("/MAdata/db/" + db_name)
 
     fm_index = FMIndex()
     fm_index.load(working_genome)
@@ -904,6 +904,9 @@ def relevance(db_name, working_genome):
     print(analyse(BinarySeeding(False, 0)))
     print("16-mer")
     print(analyse(OtherSeeding(True)))
+
+relevance("sw_human_1000.db")
+exit()
 """
 class MA_Parameter(CommandLine):
     def __init__(self, index_str, fast, db_name, num_soc, max_hits, min_ambiguity, match, give_up):
@@ -1719,7 +1722,7 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
     print("done")
 
     print("gpu computation...")
-    alignment = libMA.testGPUSW(ContainerVector(NucSeq(sequence)), ref, gpu_id)[0]
+    alignment = libMA.testGPUSW(ContainerVector([NucSeq(sequence)]), ref, gpu_id)[0]
     print("done")
 
     print("SW-score:", alignment.iMaxScore)
@@ -1733,6 +1736,33 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
     for optima_start, optima_end in getOptima("/MAdata/db/" + db_name, sample_id):
         print(optima_start, "-", optima_end)
 
+
+def check_sw_score(db_name, genome, sample_id, ref_start, gpu_id=0):
+    sequence, _ = getQueries("/MAdata/db/" + db_name, sample_id)[0]
+    
+    print("loading pack...")
+    ref_pack = Pack()
+    ref_pack.load(genome)
+    ref = ref_pack.extract_from_to(ref_start - len(sequence), ref_start + len(sequence)*2)
+    print("done")
+
+    print("gpu computation...")
+    print(len(ref), "x", len(sequence))
+    alignment = libMA.testGPUSW(ContainerVector([NucSeq(sequence)]), ref, gpu_id)[0]
+    print("done")
+
+    print("SW-score:", alignment.iMaxScore)
+    for maxpos in alignment.vMaxPos:
+        print("SW-pos:", maxpos + ref_start - len(sequence))
+
+### origin, _ = getOrigin("/MAdata/db/human_30000_10.db", 648)
+### print("original score:")
+### check_sw_score("human_30000_10.db", human_genome, 648, origin)
+### ref_pos = getRefPos("/MAdata/db/human_30000_10.db", 648, "MA Fast")
+### for pos in ref_pos:
+###     print("aligner score for position:", pos)
+###     check_sw_score("human_30000_10.db", human_genome, 648, pos[0])
+### exit()
 
 #get_ambiguity_distribution(plasmodium_genome, 1, 100)
 #get_ambiguity_distribution("/MAdata/genome/human_bugged", 1, 100)
@@ -1824,9 +1854,9 @@ def run_sw_for_sample(db_name, genome, sample_id, gpu_id=0):
 # [5, 4, 3]:
 # [9, 10]:
 
-for task_id in [2]:
+for task_id in [0]:
 
-    processor=task_id*2
+    processor=2 #task_id*2
 
     data_set = [
         ("sw_plasmodium_200.db",  plasmodium_genome, False, True, 100), #
@@ -1835,7 +1865,7 @@ for task_id in [2]:
 
         ("sw_human_200.db",  human_genome, False, True, 0), # # 3
         ("sw_human_1000.db", human_genome, False, True, 10), #
-        ("human_30000.db",   human_genome, True, False, 1), #
+        ("human_30000.db",   human_genome, True, False, 0), #
 
         ("sw_zebrafish_200.db",  zebrafish_genome, False, True, 100), # # 6
         ("sw_zebrafish_1000.db", zebrafish_genome, False, True, 10), #
@@ -1853,7 +1883,7 @@ for task_id in [2]:
     #resetResults(db_name)
 
     #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
-    test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=True, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
 
     analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
 
