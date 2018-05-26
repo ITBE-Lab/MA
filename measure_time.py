@@ -450,8 +450,8 @@ def test(
 
     if short_read_aligners:
         l.extend([
-                ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
-                #("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
+                #("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
+                ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
             ])
 
     for name, aligner in l:

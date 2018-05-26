@@ -882,31 +882,36 @@ def relevance(db_name, working_genome):
     def analyse(seeding):
         result = []
         for row in all_queries:
-            result.append( [] )
             for cell in row:
                 relevant = 0
                 total = 0
-                for sequence, _, origin, original_size in cell:
+                for sequence, sample_id in cell:
                     segments = seeding.execute(fm_index, NucSeq(sequence))
-                    seeds = segments.extract_seeds(fm_index, 1000, True)
+                    seeds = segments.extract_seeds(fm_index, 0, 0, True)
                     total += len(seeds)
+                    optimas = []
+                    optimas_ = getOptima("/MAdata/db/" + db_name, sample_id)
+                    for start, end in optimas_:
+                        optimas.append( (start, end - start) )
+                    s, seq = getOrigin("/MAdata/db/" + db_name, sample_id)
+                    optimas.append( (s, len(seq)) )
                     for seed in seeds:
-                        if seed.start_ref + seed.size >= origin and seed.start_ref <= origin + original_size:
-                            relevant += 1
-                result[-1].append(relevant / total)
-            while len(result) > 1 and len(result[-2]) > len(result[-1]):
-                result[-1].append(float('nan'))
-        return result
+                        for origin, original_size in optimas:
+                            if seed.start_ref + seed.size >= origin and seed.start_ref <= origin + original_size:
+                                relevant += 1
+                                break
+                result.append(relevant / total)
+        return mean(result), median(result), np.std(result)
 
     print("max. spanning")
-    print(analyse(BinarySeeding(True, 0)))
+    print(analyse(BinarySeeding(True)))
     print("SMEMs")
-    print(analyse(BinarySeeding(False, 0)))
+    print(analyse(BinarySeeding(False)))
     print("16-mer")
     print(analyse(OtherSeeding(True)))
 
-relevance("sw_human_1000.db")
-exit()
+#relevance("human_30000.db", human_genome)
+#exit()
 """
 class MA_Parameter(CommandLine):
     def __init__(self, index_str, fast, db_name, num_soc, max_hits, min_ambiguity, match, give_up):
@@ -1853,7 +1858,7 @@ def check_sw_score(db_name, genome, sample_id, ref_start, gpu_id=0):
 # [0, 1, 2]:
 # [5, 4, 3]:
 # [9, 10]:
-
+"""
 for task_id in [0]:
 
     processor=2 #task_id*2
@@ -1889,7 +1894,7 @@ for task_id in [0]:
 
 
 exit()
-
+"""
 
 # ================================================================================================ #
 # running blasr and graphmap                                                                       #
@@ -1900,9 +1905,9 @@ exit()
 # [5, 4, 3]:
 # [9, 10]:
 
-for task_id in range(0, 12):
+for task_id in [1, 6, 7]:
 
-    processor= 0 # task_id*2
+    processor= task_id*2
 
     data_set = [
         ("sw_plasmodium_200.db",  plasmodium_genome, False, True, 10), #
@@ -1929,6 +1934,6 @@ for task_id in range(0, 12):
     #resetResults(db_name)
 
     #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
-    test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=True, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=True, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
 
     analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)

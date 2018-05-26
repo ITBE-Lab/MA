@@ -22,6 +22,7 @@ namespace libMA
             uiStd = "150",
             uiReportN = "0",
             uiMaxAmbiguity,
+            uiMinLen = "16",
             uiMinAmbiguity = "0",
             uiMinSeedSizeDrop = "15",
             uiMaxTries = "50",

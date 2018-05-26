@@ -80,6 +80,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         unsigned int uiMinSeedSizeDrop,
         unsigned int uiMinAmbiguity,
         unsigned int uiMaxAmbiguity,
+        unsigned int uiMinLen,
         unsigned int uiMaxEqualScoreLookahead,
         float fRelMinSeedSizeAmount,
         float fScoreDiffTolerance,
@@ -119,6 +120,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pSOC->fScoreMinimum = fSoCScoreMinimum;
     pSOC->bSkipLongBWTIntervals = bSkipLongBWTIntervals;
     pSOC->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
+    pSOC->uiMinLen = uiMinLen;
 
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
 

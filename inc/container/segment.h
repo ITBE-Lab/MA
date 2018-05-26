@@ -171,6 +171,7 @@ namespace libMA
         void forEachSeed(
                 FMIndex &rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
                 unsigned int uiMAxAmbiguity,
+                unsigned int uiMinLen,
                 bool bSkip,
                 FUNCTOR&& fDo
                 // std::function<bool(const Seed& s)> fDo
@@ -179,6 +180,8 @@ namespace libMA
             //iterate over all the intervals that have been recorded using pushBackBwtInterval()
             for (const Segment& rSegment : *this)
             {
+                if (rSegment.size() < uiMinLen)
+                    continue;
                 //if the interval contains more than uiMAxAmbiguity hits it's of no importance and will produce nothing but noise
 
                 //if bSkip is not set uiJump by is used to not return more than uiMAxAmbiguity
@@ -224,6 +227,7 @@ namespace libMA
         void emplaceAllEachSeeds(
                 FMIndex &rxFMIndex,
                 unsigned int uiMAxAmbiguity,
+                unsigned int uiMinLen,
                 std::vector<Seed> &rvSeedVector,
                 FUNCTOR&& fDo // this function is called after each seed is emplaced
             )
@@ -234,8 +238,7 @@ namespace libMA
                 //if the interval contains more than uiMAxAmbiguity hits it's of no importance and will produce nothing but noise
                 if (rSegment.saInterval().size() > uiMAxAmbiguity && uiMAxAmbiguity != 0)
                     continue;
-                // @todo create a parameter for that
-                if (rSegment.size() < 16)
+                if (rSegment.size() < uiMinLen)
                     continue;
 
                 //iterate over the interval in the BWT
@@ -266,6 +269,7 @@ namespace libMA
         std::shared_ptr<Seeds> extractSeeds(
                 std::shared_ptr<FMIndex> pxFMIndex, 
                 unsigned int uiMAxAmbiguity,
+                unsigned int uiMinLen,
                 bool bSkip = true
             )
         {
@@ -273,6 +277,7 @@ namespace libMA
             forEachSeed(
                 *pxFMIndex,
                 uiMAxAmbiguity,
+                uiMinLen,
                 bSkip,
                 [&pRet]
                 (const Seed& s)

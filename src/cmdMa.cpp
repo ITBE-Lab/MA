@@ -75,13 +75,16 @@ int main(int argc, char* argv[])
             ("p,parameterset", "Pre-setting [fast/accurate]", 
                 value<std::string>()->default_value(defaults::sParameterSet)
             )
-            ("s,seedSet", "Seed set [SMEMs/maxSpanning]", 
+            ("s,seedSet", "Seed set [SMEMs/maxSpanning]",
                 value<std::string>()->default_value(defaults::sSeedSet)
             )
-            ("n,reportN", "Report <= N alignments; 0: unlimited", 
+            ("n,reportN", "Report <= N alignments; 0: unlimited",
                 value<unsigned int>()->default_value(defaults::uiReportN)
             )
-            ("v,giveUp", "Min relative SoC score", 
+            ("l,minLen", "Minimum seed length",
+                value<unsigned int>()->default_value(defaults::uiMinLen)
+            )
+            ("v,giveUp", "Min relative SoC score",
                 value<double>()->default_value(defaults::fGiveUp)
             )
             ("f,findMode", "Disable DP", value<bool>()->default_value(defaults::bFindMode))
@@ -128,6 +131,7 @@ int main(int argc, char* argv[])
         auto uiReportN =        result["reportN"].      as<unsigned int>();
         auto sParameterSet =    result["parameterset"]. as<std::string>();
         auto sSeedSet =         result["seedSet"].      as<std::string>();
+        auto uiMinLen =         result["minLen"].       as<unsigned int>();
         std::string sGenome;
         if( result.count("genome") > 0 )
             sGenome =           result["genome"].       as<std::string>();
@@ -266,6 +270,7 @@ int main(int argc, char* argv[])
                 std::stoi(defaults::uiMinSeedSizeDrop),
                 std::stoi(defaults::uiMinAmbiguity),
                 std::stoi(defaults::uiMaxAmbiguity),
+                uiMinLen,
                 std::stoi(defaults::uiMaxEqualScoreLookahead),
                 std::stof(defaults::fRelMinSeedSizeAmount),
                 std::stof(defaults::fScoreDiffTolerance),
