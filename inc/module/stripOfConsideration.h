@@ -23,6 +23,8 @@ namespace libMA
     public:
         /// @brief Maximum ambiguity for a seed to be considered.
         unsigned int uiMaxAmbiguity = 1000;
+        /// @brief Minimum seed length.
+        unsigned int uiMinLen = 16;
         /**
          * @brief Minimal SoC score.
          * @details
@@ -109,7 +111,7 @@ namespace libMA
             )
         {
             rSegmentVector.emplaceAllEachSeeds(
-                rxFM_index, uiMaxAmbiguity, rvSeedVector,
+                rxFM_index, uiMaxAmbiguity, uiMinLen, rvSeedVector,
                 [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]
                 ()
                 {

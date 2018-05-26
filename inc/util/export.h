@@ -183,6 +183,7 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int uiMinSeedSizeDrop,
     unsigned int uiMinAmbiguity,
     unsigned int uiMaxAmbiguity,
+    unsigned int uiMinLen,
     unsigned int uiMaxEqualScoreLookahead,
     float fRelMinSeedSizeAmount,
     float fScoreDiffTolerance,

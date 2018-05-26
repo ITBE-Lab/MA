@@ -1,7 +1,6 @@
 # location of the Boost Python include files and library
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
-BOOST_LIB = boost_python3 boost_iostreams boost_filesystem boost_system boost_program_options
-CUDA_PATH = /usr/local/cuda-9.1/lib64/
+BOOST_LIB = boost_python3
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
@@ -24,15 +23,11 @@ LDFLAGS= -std=c++11
 LDLIBS= \
 	$(PYTHON_LIB) \
 	-L$(BOOST_LIB_PATH) \
-	-L$(PARSAIL_HOME)/build \
 	-L$(LIBGABA_HOME) \
 	$(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB))) \
-	-L$(CUDA_PATH) \
 	-lm \
 	-lpthread \
 	-lstdc++ \
-	-lparasail \
-	-lcudart \
 	-lgaba
 
 all: ma
