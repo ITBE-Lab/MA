@@ -1905,7 +1905,7 @@ exit()
 # [5, 4, 3]:
 # [9, 10]:
 
-for task_id in [1, 6, 7]:
+for task_id in [8]:
 
     processor= task_id*2
 
