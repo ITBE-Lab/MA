@@ -1,3 +1,10 @@
+##
+# switches:
+# DEBUG: enables sanity checks within the code
+# WITH_PYTHON: compiles libMA in so that it can be imported in python; requires boost & python
+# WITH_GPU_SW: compiles a gpu implementation of the SW algorithm; requires libCuda
+#
+
 # location of the Boost Python include files and library
 # $(BOOST_ROOT) must be set in the system environment!
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
@@ -8,8 +15,11 @@ LIBGABA_HOME = ./libGaba
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
 
-TARGET_OBJ=$(addprefix obj/,$(addsuffix .o,$(TARGET))) \
-	obj/ksw/ksw2_dispatch.co obj/ksw/ksw2_extz2_sse2.co obj/ksw/ksw2_extz2_sse41.co \
+TARGET_OBJ= \
+	$(addprefix obj/,$(addsuffix .o,$(TARGET))) \
+	obj/ksw/ksw2_dispatch.co \
+	obj/ksw/ksw2_extz2_sse2.co \
+	obj/ksw/ksw2_extz2_sse41.co \
 	obj/container/qSufSort.co
 
 # flags
@@ -23,8 +33,13 @@ INCLUDES= -isystem$(LIBGABA_HOME)/ -Iinc
 
 # this adds debug switches
 ifeq ($(DEBUG), 1)
-	TARGET_OBJ=$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
-		obj/ksw/ksw2_dispatch.co obj/ksw/ksw2_extz2_sse2.co obj/ksw/ksw2_extz2_sse41.co \
+	# we store release and debug objects in different folders
+	# no debug version for the ksw library
+	TARGET_OBJ= \
+		$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
+		obj/ksw/ksw2_dispatch.co \
+		obj/ksw/ksw2_extz2_sse2.co \
+		obj/ksw/ksw2_extz2_sse41.co \
 		obj/container/qSufSort.co
 endif
 
@@ -38,6 +53,7 @@ ifeq ($(WITH_PYTHON), 1)
 	INCLUDES += -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/
 endif
 
+# compile the gpu smith waterman as well
 ifeq ($(WITH_GPU_SW), 1)
 	TARGET_OBJ += sw_gpu.o
 	CCFLAGS += -DWITH_GPU_SW
@@ -46,7 +62,6 @@ endif
 
 # primary target
 all: ma
-
 
 # executable target
 ma: libMA src/cmdMa.cpp
@@ -100,7 +115,6 @@ html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildc
 # @todo remove me
 vid:
 	gource -f --seconds-per-day 0.1
-
 
 clean:
 	rm -f -r obj/*.o dbg/*.o obj/*/*.o dbg/*/*.o obj/*.co dbg/*.co obj/*/*.co dbg/*/*.co libMA.so
