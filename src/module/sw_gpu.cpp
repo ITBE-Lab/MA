@@ -41,7 +41,6 @@ void exportSW_GPU()
         .def_readwrite("vMaxPos", &GPUReturn::vMaxPos)
         .def_readwrite("iMaxScore", &GPUReturn::iMaxScore);
 
-        
     boost::python::class_<std::vector<GPUReturn>>("GPUReturnList")
         .def(boost::python::vector_indexing_suite<
             std::vector<GPUReturn>,
@@ -53,7 +52,7 @@ void exportSW_GPU()
             */
             true
         >());
-        
+
     boost::python::class_<std::vector<size_t>>("GPUReturnMaxPosList")
         .def(boost::python::vector_indexing_suite<
             std::vector<size_t>,
