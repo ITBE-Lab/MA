@@ -8,6 +8,7 @@ execute following commands:
     make
 
 Test your installation with:
+
     ./ma -h
 
 ## Citing MA
