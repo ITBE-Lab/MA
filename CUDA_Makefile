@@ -268,7 +268,7 @@ else
 endif
 
 sw_gpu.o:src/module/sw_gpu.cu
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -DWITH_GPU_SW -o $@ -c $<
 
 clean:
 	rm -f sw_gpu.o

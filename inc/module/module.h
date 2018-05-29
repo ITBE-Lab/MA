@@ -10,9 +10,9 @@
 #include "util/threadPool.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
-#include <Python.h>
 #include <iostream>
 #ifdef WITH_PYTHON
+    #include <Python.h>
     #include <boost/python/list.hpp>
 #endif
 #include <ctime>
