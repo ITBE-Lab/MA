@@ -1,9 +1,19 @@
-# We'll use defaults from the LLVM style, but with 4 columns indentation.
 BasedOnStyle: LLVM
 IndentWidth: 4
 ---
 Language: Cpp
-# Force pointers to the type for C++.
 DerivePointerAlignment: false
 PointerAlignment: Left
+BreakBeforeBraces: BS_Allman
+ColumnLimit: 100
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+AllowAllParametersOfDeclarationOnNextLine: true
+AlignTrailingComments: true
+AlignAfterOpenBracket: AlwaysBreak
+BinPackParameters: false
+BinPackArguments: false
+BreakBeforeInheritanceComma: true
+FixNamespaceComments: true
+DisableFormat: true
 ---

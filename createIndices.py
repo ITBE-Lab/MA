@@ -109,7 +109,7 @@ def chrNames(prefix, num, suffix):
     return ret
 
 #replace_n(["/MAdata/chrom/zebrafish/GCF_000002035.6_GRCz11_genomic.fna"], "/MAdata/chrom/zebrafish/n_free.fasta")
-make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
+#make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
 
 #replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
 #make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
@@ -127,3 +127,6 @@ make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
 #make("/MAdata/chrom/zebrafish/n_free.fasta", "/MAdata/genome/zebrafish")
 #make_hash("/MAdata/genome/human")
 #makeRandom("/MAdata/genome/random_3_10_7", 3 * 10**7)
+
+replace_n(["/MAdata/chrom/eColi/GCA_000005845.2_ASM584v2_genomic.fna"], "/MAdata/chrom/eColi/n_free.fasta")
+make("/MAdata/chrom/eColi/n_free.fasta", "/MAdata/genome/eColi")

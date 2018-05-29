@@ -15,8 +15,4 @@ Test your installation with:
 
 MA is unpublished so far.
 
-## The It-Be Lab
-
-The homepage of the **Information Technology – Bio Engineering** Lab 
-at Hanyang University can be found here http://itbe.hanyang.ac.kr/.
 

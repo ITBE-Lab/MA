@@ -71,6 +71,7 @@ random_genome = "/MAdata/genome/random"
 mouse_genome = "/MAdata/genome/mouse"
 plasmodium_genome = "/MAdata/genome/plasmodium"
 zebrafish_genome_n = "/MAdata/genome/zebrafish_n"
+e_coli_genome = "/MAdata/genome/eColi"
 
 ## @brief Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -1905,7 +1906,12 @@ exit()
 # [5, 4, 3]:
 # [9, 10]:
 
-for task_id in [8]:
+
+#createSampleQueries(e_coli_genome, "sw_eColi_200.db",     200, 20, 32, gpu_id=0)
+#createSampleQueries(e_coli_genome, "sw_eColi_1000.db",   1000, 100, 32, gpu_id=0)
+createSampleQueries(e_coli_genome, "sw_eColi_30000_10.db",  30000, 10, 32, gpu_id=1)
+
+for task_id in [12]:
 
     processor= task_id*2
 
@@ -1926,6 +1932,11 @@ for task_id in [8]:
         ("human_30000_10.db",   human_genome, True, False, 0), #
 
         ("zebrafish_30000_10.db",   zebrafish_genome, False, False, 0), # 11
+        
+        ("sw_eColi_200.db",   e_coli_genome, True, False, 0), # 12
+        ("eColi_1000.db",  e_coli_genome, True, False, 0), #
+        ("eColi_30000.db", e_coli_genome, True, False, 0), #
+        ("eColi_30000_10.db", e_coli_genome, True, False, 0), #
     ]
 
     db_name, working_genome, long_read_aligners, short_read_aligners, runtime_sample_multiplier = data_set[task_id]
