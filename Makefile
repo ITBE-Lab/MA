@@ -69,12 +69,11 @@ ifeq ($(WITH_SHARED), 1)
 
 endif
 
-
 # primary target
 ifeq ($(WITH_SHARED), 1)
-	all: dirs ma
+all: dirs ma
 else
-	all: dirs ma-standalone
+all: dirs ma-standalone
 endif
 
 # create build directories
