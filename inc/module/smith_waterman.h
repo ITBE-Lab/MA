@@ -52,6 +52,12 @@ namespace libMA
     };//class
 }//namespace libMA
 
+#ifdef WITH_PYTHON
+/**
+ * @brief export the smith waterman @ref Module "modules" to python.
+ * @ingroup export
+ */
 void exportSMW();
+#endif
 
 #endif
