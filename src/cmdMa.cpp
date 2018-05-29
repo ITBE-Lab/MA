@@ -31,6 +31,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace libMA;
 using namespace cxxopts;
 
+const std::string sVersion = "Version 0.0.2 (alpha)";
+
 /**
  * main function
  */
@@ -186,7 +188,7 @@ int main(int argc, char* argv[])
             //@todo cmake version number: https://stackoverflow.com/questions/27395120/correct-way-to-encode-embed-version-number-in-program-code
             std::cout << "Displayed are the defaults for " << sParameterSet
                 << ". See other defaults by selecting a parameterset with -p." << std::endl;
-            std::cout << "Version 0.1.0 (beta)" << std::endl;
+            std::cout << sVersion << std::endl;
             std::cout << "By Markus Schmidt & Arne Kutzner" << std::endl;
             std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;
             bDoneSth = true;
