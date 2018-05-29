@@ -12,6 +12,7 @@ namespace libMA
 {
     namespace defaults
     {
+        //@todo comment this file
         std::string
             uiMatch = "3",
             uiMissMatch = "4",
@@ -33,8 +34,8 @@ namespace libMA
             bFindMode = "false",
             bOptimisticGapEstimation = "true",
             bSkipLongBWTIntervals = "true",
-            fGiveUp = "0.002",
-            fRelMinSeedSizeAmount = "0.005",
+            fGiveUp = "0",//"0.002",
+            fRelMinSeedSizeAmount = "0",//"0.005",
             fScoreDiffTolerance = "0.0001",
             fSoCScoreMinimum = "0",
             fMinimalQueryCoverage = "1.1",
