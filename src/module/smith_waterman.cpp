@@ -277,6 +277,7 @@ std::shared_ptr<Container> SMW::execute(
     }//else
 }//function
 
+#ifdef WITH_PYTHON
 void exportSMW()
 {
     boost::python::class_<
@@ -292,4 +293,5 @@ void exportSMW()
         std::shared_ptr<SMW>,
         std::shared_ptr<Module> 
     >();
-}
+}// function
+#endif
