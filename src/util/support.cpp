@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <vector>
 #include <cerrno>
+#include <cstring>
 
 #include "util/support.h"
 #include "util/exception.h"
