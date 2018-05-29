@@ -61,7 +61,12 @@ ifeq ($(WITH_GPU_SW), 1)
 endif
 
 # primary target
-all: ma
+all: dirs ma
+
+# create build directories
+dirs:
+	mkdir obj obj/module obj/container obj/util obj/ksw \
+		  dbg dbg/module dbg/container dbg/util dbg/ksw
 
 # executable target
 ma: libMA src/cmdMa.cpp
@@ -117,7 +122,7 @@ vid:
 	gource -f --seconds-per-day 0.1
 
 clean:
-	rm -f -r obj/*.o dbg/*.o obj/*/*.o dbg/*/*.o obj/*.co dbg/*.co obj/*/*.co dbg/*/*.co libMA.so
+	rm -f -r obj dbg libMA.so
 	rm -r -f html
 	$(MAKE) -C $(LIBGABA_HOME) clean
 	$(MAKE) -f CUDA_Makefile clean
