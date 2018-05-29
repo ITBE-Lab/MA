@@ -71,22 +71,24 @@ endif
 
 
 # primary target
-all: dirs ma
+ifeq ($(WITH_SHARED), 1)
+	all: dirs ma
+else
+	all: dirs ma-standalone
+endif
 
 # create build directories
 dirs:
 	mkdir -p obj obj/module obj/container obj/util obj/ksw \
 			 dbg dbg/module dbg/container dbg/util dbg/ksw
 
-ifeq ($(WITH_SHARED), 1)
-	# executable target
-	ma: libMA src/cmdMa.cpp
-		$(CC) $(CCFLAGS) src/cmdMa.cpp $(INCLUDES) $(LDLIBS) libMA.so -o $@
-else
-	ma: $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a src/cmdMa.cpp
-		$(CC) $(CCFLAGS) $(INCLUDES) -c src/cmdMa.cpp -o src/cmdMa.o
-		$(CC) $(LDFLAGS) $(TARGET_OBJ) src/cmdMa.o $(LDLIBS) -o $@
-endif
+# executable target
+ma: libMA src/cmdMa.cpp
+	$(CC) $(CCFLAGS) src/cmdMa.cpp $(INCLUDES) $(LDLIBS) libMA.so -o $@
+
+ma-standalone: $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a src/cmdMa.cpp
+	$(CC) $(CCFLAGS) $(INCLUDES) -c src/cmdMa.cpp -o src/cmdMa.o
+	$(CC) $(LDFLAGS) $(TARGET_OBJ) src/cmdMa.o $(LDLIBS) -o ma
 
 # library target
 libMA: $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a
@@ -114,7 +116,7 @@ obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) $(INCLUDES) -c $< -o $@
 
 # the gaba library
-libGaba/libgaba.a: 
+$(LIBGABA_HOME)/libgaba.a: 
 	$(MAKE) -C $(LIBGABA_HOME)
 
 # the gpu smith waterman
@@ -146,4 +148,4 @@ clean:
 
 docs: html/index.html
 
-.Phony: all clean docs vid libMA # install distrib
+.Phony: all clean docs vid libMA dirs # install distrib
