@@ -7,31 +7,33 @@
 #include "container/nucSeq.h"
 using namespace libMA;
 
-
-std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std::shared_ptr<NucSeq> b, unsigned int uiGpuId)
-{
-
-    std::vector<std::vector<char>> vQueries;
-    for( const auto& pQuery : *pQueries )
+#ifdef WITH_GPU_SW
+    std::vector<GPUReturn> testGPUSW(std::shared_ptr<ContainerVector> pQueries, std::shared_ptr<NucSeq> b, unsigned int uiGpuId)
     {
-        const auto& a = std::static_pointer_cast<NucSeq>(pQuery);
-        std::vector<char> vQuery( a->pGetSequenceRef(), a->pGetSequenceRef() + a->length() );
-        vQueries.push_back(vQuery);
-    }// for
-    std::vector<char> vRef( b->pGetSequenceRef(), b->pGetSequenceRef() + b->length() );
 
-    auto vResults = cudaAlign
-    (
-        vRef,
-        vQueries,
-        uiGpuId
-    );
+        std::vector<std::vector<char>> vQueries;
+        for( const auto& pQuery : *pQueries )
+        {
+            const auto& a = std::static_pointer_cast<NucSeq>(pQuery);
+            std::vector<char> vQuery( a->pGetSequenceRef(), a->pGetSequenceRef() + a->length() );
+            vQueries.push_back(vQuery);
+        }// for
+        std::vector<char> vRef( b->pGetSequenceRef(), b->pGetSequenceRef() + b->length() );
 
-    return vResults;
-}
+        auto vResults = cudaAlign
+        (
+            vRef,
+            vQueries,
+            uiGpuId
+        );
+
+        return vResults;
+    }// function
+#endif
 
 void exportSW_GPU()
 {
+#ifdef WITH_GPU_SW
     boost::python::def("testGPUSW", &testGPUSW);
 
     //export the Tail class
@@ -63,4 +65,5 @@ void exportSW_GPU()
             */
             true
         >());
+#endif
 }//function

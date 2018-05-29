@@ -10,30 +10,32 @@
 #include <vector>
 #include <cstddef>
 
-class GPUReturn
-{
-public:
-    int iMaxScore;
-    std::vector<size_t> vMaxPos;
-    GPUReturn(int iMaxScore, std::vector<size_t> vMaxPos)
-            :
-        iMaxScore(iMaxScore),
-        vMaxPos(vMaxPos)
-    {}// default constructor
-    GPUReturn(){}
-
-    bool operator==(const GPUReturn& rOther)
+#ifdef WITH_GPU_SW
+    class GPUReturn
     {
-        return iMaxScore == rOther.iMaxScore;
-    }// operator
-};// class
+    public:
+        int iMaxScore;
+        std::vector<size_t> vMaxPos;
+        GPUReturn(int iMaxScore, std::vector<size_t> vMaxPos)
+                :
+            iMaxScore(iMaxScore),
+            vMaxPos(vMaxPos)
+        {}// default constructor
+        GPUReturn(){}
 
-std::vector<GPUReturn> cudaAlign
-(
-    std::vector<char> &rvRefSeq, // reference sequence
-	std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
-    unsigned int uiDeviceId
-);
+        bool operator==(const GPUReturn& rOther)
+        {
+            return iMaxScore == rOther.iMaxScore;
+        }// operator
+    };// class
+
+    std::vector<GPUReturn> cudaAlign
+    (
+        std::vector<char> &rvRefSeq, // reference sequence
+        std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
+        unsigned int uiDeviceId
+    );
+#endif
 
 /**
  * @brief Exposes the SweepAllReturnBest @ref Module "module" to boost python.
