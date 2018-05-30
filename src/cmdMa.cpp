@@ -21,6 +21,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/fileWriter.h"
 #include "util/export.h"
 #include "util/cxxopts.hpp"
+#include "util/default_parameters.h"
+#include "util/debug.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <thread>
@@ -189,6 +191,9 @@ int main(int argc, char* argv[])
             std::cout << "Displayed are the defaults for " << sParameterSet
                 << ". See other defaults by selecting a parameterset with -p." << std::endl;
             std::cout << sVersion << std::endl;
+            DEBUG(
+                std::cout << "DEBUG LEVEL: " << DEBUG_LEVEL << std::endl;
+            )
             std::cout << "By Markus Schmidt & Arne Kutzner" << std::endl;
             std::cout << "For more information visit: http://itbe.hanyang.ac.kr" << std::endl;
             bDoneSth = true;
