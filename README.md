@@ -4,12 +4,16 @@
 execute following commands:
 
     git clone https://github.com/ItBeLab/ma
+    git checkout v0.1.0-alpha # (*)
     cd ma
     make
 
+(*) Execute this command in order to go to the last stable release
 Test your installation with:
 
     ./ma -h
+
+You should see the help menu of ma.
 
 Tested using a vanilla Debian 4.9.88 with following additional packages installed:
 git, make and build-essential.
@@ -40,4 +44,16 @@ WITH_PYTHON
 DEBUG
     Compiles the code un-optimized with assertions enabled and multiple runtime self-checks.
 
+## Thanks to
+
+We integrated several other projects (some only in parts).
+Here are their github pages:
+
+- https://github.com/ocxtal/libgaba (dynamic programming with adaptive band)
+- https://github.com/lh3/ksw2 (dynamic programming with static band)
+- https://github.com/jarro2783/cxxopts (cmd line option parser)
+- https://github.com/lh3/bwa (initially we started on the basis of bwa-mem; 
+    however by now we replaced almost everything with our own code. 
+    Still, the FMD-index, Pack and the SMEM-extension remain highly similar to those found here.)
+- ransac implementation ?
 
