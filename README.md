@@ -1,3 +1,4 @@
+![logo]
 
 ## Getting Started
 
@@ -45,11 +46,10 @@ MA is unpublished so far.
 
 ## Compilation switches
 
-[\
-    WITH_AVX:
-        Enables avx instructions for unused part of code (the sw implementation)
-        MAy cause invalid instruction errors if the hardware does not support AVX2\
-]
+
+- WITH_AVX:
+    Enables avx instructions for unused part of code (the sw implementation)
+    May cause invalid instruction errors if the hardware does not support AVX2
 
 - WITH_PYTHON:
     Compiles MA as a shared library which can be imported by python.
@@ -58,12 +58,7 @@ MA is unpublished so far.
     This options requires that $(BOOST_ROOT), $(PYTHON_INCLUDE) and $(PYTHON_LIB) are correctly set.
     *Tested using boost 1.65.1 (with the boost python library) and python 3.*
 
-- WITH_GPU_SW:
-    Compiles the gpu sw implementation.
-    In combination with WITH_PYTHON the gpu_sw is also accessible via python.
-    *Requires a cuda compiler.* 
-
-- DEBUG:\
+- DEBUG:
     Compiles the code un-optimized with assertions enabled and multiple self-checks during runtime. 
     Mostly intended for debugging purposes.
 
@@ -82,3 +77,5 @@ Here are their github pages:
 
 Many thanks to the creators of above projects. 
 And special thanks to Li Heng, whose aligner served as our starting point.
+
+[logo]: https://github.com/itbe-lab/ma/MA.png "MA logo"
