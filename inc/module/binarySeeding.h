@@ -34,6 +34,11 @@ namespace libMA
         double fRelMinSeedSizeAmount = 0.005;
 
         /**
+         * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
+         */
+        const nucSeqIndex uiMinGenomeSize = 0;
+
+        /**
          * @brief The simplified extension scheme presented in our Paper.
          * @details
          * Computes Two segments for each index as follows:

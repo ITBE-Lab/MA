@@ -147,7 +147,8 @@ std::shared_ptr<Container> BinarySeeding::execute(
             uiMinSeedSizeDrop != 0 &&
             pSegmentVector->numSeedsLarger(uiMinSeedSizeDrop)
                 <
-            fRelMinSeedSizeAmount * pQuerySeq->length()
+            fRelMinSeedSizeAmount * pQuerySeq->length() &&
+            uiMinGenomeSize < pFM_index->getRefSeqLength()
 #if DEBUG_LEVEL >= 1
             && !bAnalyzeHeuristics
 #endif //DEBUG_LEVEL
