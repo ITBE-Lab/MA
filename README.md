@@ -35,16 +35,16 @@ tailored data structures required. Highly efficient. Easy to implement (roughly 
 
 The Python integration of MA is done via [Boost.Python](https://www.boost.org/ "Boost.Python"). 
 So, it is necessary to have a boost deployment with Python3 support. If there is a Boost.Python 
-library, then the Makefile can be used with `WITH_PYTHON=1`. The folder `MA` of the repository 
+library, then the Makefile can be used with `WITH_PYTHON=1`. The folder *MA* of the repository 
 contains a Python3 module that incorporates MA as Python3 module. Please note that the Python3 module relies on
-the shared library `libMA.so` that is built by the Makefile. Alignments using the Python integration 
+the shared library *libMA.so* that is built by the Makefile. Alignments using the Python integration 
 can be done without a computational penalty. Python is only responsible for an initial C++-module 
 coupling, while all actual computations are done within the C++-modules. The idea is similar 
 to the one used in the context of [TensorFlow](https://www.tensorflow.org "TensorFlow").
 
 ## Getting Started
 MA is currently still in an evaluation and testing process. Feedback about bugs is highly welcomed. 
-The below procedure was checked on a fresh `Debian 4.9.88` with the following additional 
+The below procedure was checked on a fresh *Debian 4.9.88* with the following additional 
 packages installed: `git`, `make` and `build-essential`.
 
  
@@ -100,6 +100,43 @@ You can switch between **MA accurate** and **MA fast** by using the `--parameter
     Compiles the code un-optimized with assertions enabled and multiple self-checks during runtime. 
     Mostly intended for debugging purposes.
 
+## MA options
+
+```
+General options:
+    -h, --help              Display the complete help screen
+    -a, --align             Do sequence alignment
+    -t, --threads arg       Used concurrency
+    -f, --fmdIndex          Do FMD-index generation
+
+Alignment options (requires -a):
+    -i, --alignIn args      Input file(s) as (multi-)fasta(-q)
+    -o, --alignOut arg      Output file as SAM
+    -g, --genome arg        FMD-index input file prefix
+    -p, --parameterSet arg  Pre-setting [fast/accurate]
+    -s, --seedSet arg       Seeding strategy [SMEMs/maxSpanning]
+    -n, --reportN arg       Report <= N alignments; 0: unlimited
+    -l, --minLen arg        Minimum seed length
+    -v, --giveUp arg        Minimum SoC score (relative to query length)
+    -b, --basicMode         Disable DP
+        --Match arg         DP match score.
+        --MissMatch arg     DP mismatch penalty.
+        --Gap arg           DP gap open penalty.
+        --Extend arg        DP gap extend penalty.
+
+Paired Reads options (requires either -U or -N):
+    -U, --uniform           Enable paired alignment; Distance as uniform distribution
+    -N, --normal            Enable paired alignment; Distance as normal distribution
+    -u, --unpaired arg      Penalty for unpaired alignments
+    -m, --mean arg          Gap distance mean
+    -d, --std arg           Gap distance standard deviation
+
+FMD-Index Generation options (requires -f):
+    -I, --indexIn args      (Multi-)Fasta input file(s)
+    -O, --indexOut arg      FMD-index output file prefix
+```
+
+
 ## Thanks ...
 
 MA relies on the hard work of other projects. These are:
@@ -112,3 +149,6 @@ MA relies on the hard work of other projects. These are:
 
 Many thanks to the creators and contributors of the above projects ...
 
+## Authors
+
+MA is created and maintained by Markus Schmidt and Arne Kutzner.
