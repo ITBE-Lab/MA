@@ -47,7 +47,9 @@ std::shared_ptr<Container> StripOfConsideration::execute(
 
     const nucSeqIndex uiQLen = pQuerySeq->length();
 
-    const double fMinLen = std::max( (double)fGiveUp * uiQLen, (double)this->uiCurrHarmScoreMin);
+    double fMinLen = std::max( (double)fGiveUp * uiQLen, (double)this->uiCurrHarmScoreMin);
+    if(uiMinGenomeSize >= pRefSeq->uiUnpackedSizeForwardPlusReverse())
+        fMinLen = 0;
     
     /*
     * This is the formula from the paper

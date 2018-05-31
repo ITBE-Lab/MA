@@ -41,6 +41,11 @@ namespace libMA
          */
         const float fGiveUp = 0;
         unsigned int uiCurrHarmScoreMin = 18;
+        
+        /**
+         * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
+         */
+        nucSeqIndex uiMinGenomeSize = 0;
 
         /**
         * @brief skip seeds with too much ambiguity

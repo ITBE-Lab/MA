@@ -24,70 +24,68 @@ TARGET_OBJ= \
 
 # flags
 CC=gcc
-CCFLAGS=-Wall -Werror -fPIC -std=c++11 -O3
-DEBUG_CCFLAGS=-Wall -Werror -fPIC -std=c++11 -g -DDEBUG_LEVEL=1
-CFLAGS=-Wall -Werror -fPIC -O3
+CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3
+CFLAGS= -Wall -Werror -fPIC -O3
 LDFLAGS= -std=c++11
 LDLIBS= -L$(LIBGABA_HOME) -lm -lpthread -lstdc++ -lgaba
 INCLUDES= -isystem$(LIBGABA_HOME)/ -Iinc
 
-ifeq ($(WITH_SHARED), 1)
-
-	# this adds debug switches
-	ifeq ($(DEBUG), 1)
-		# we store release and debug objects in different folders
-		# no debug version for the ksw library
-		TARGET_OBJ= \
-			$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
-			obj/ksw/ksw2_dispatch.co \
-			obj/ksw/ksw2_extz2_sse2.co \
-			obj/ksw/ksw2_extz2_sse41.co \
-			obj/container/qSufSort.co
-	endif
-
-	ifeq ($(WITH_AVX), 1)
-		CCFLAGS += -mavx2
-		DEBUG_CCFLAGS += -mavx2
-	endif
-
-	LDFLAGS += -shared -Wl,--export-dynamic
-	# add configuration for python
-	ifeq ($(WITH_PYTHON), 1)
-		CCFLAGS += -DWITH_PYTHON -DBOOST_ALL_DYN_LINK
-		DEBUG_CCFLAGS += -DWITH_PYTHON -DBOOST_ALL_DYN_LINK 
-		CFLAGS += -DWITH_PYTHON
-		LDLIBS += $(PYTHON_LIB) -L$(BOOST_LIB_PATH)
-		LDLIBS += $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB)))
-		INCLUDES += -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/
-	endif
-	# compile the gpu smith waterman as well
-	ifeq ($(WITH_GPU_SW), 1)
-		TARGET_OBJ += sw_gpu.o
-		CCFLAGS += -DWITH_GPU_SW
-		LDLIBS += -L/usr/local/cuda-9.1/lib64/ -lcudart
-	endif
-
+# this adds debug switches
+ifeq ($(DEBUG), 1)
+	CCFLAGS= -Wall -Werror -fPIC -std=c++11 -g -DDEBUG_LEVEL=1
+	# we store release and debug objects in different folders
+	# no debug version for the ksw library
+	TARGET_OBJ= \
+		$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
+		obj/ksw/ksw2_dispatch.co \
+		obj/ksw/ksw2_extz2_sse2.co \
+		obj/ksw/ksw2_extz2_sse41.co \
+		obj/container/qSufSort.co
 endif
+
+MA_REQUIREMENT= src/cmdMa.cpp
+# add configuration for python
+ifeq ($(WITH_PYTHON), 1)
+	MA_REQUIREMENT += libMA
+	LDFLAGS += -shared -Wl,--export-dynamic
+	CCFLAGS += -DWITH_PYTHON -DBOOST_ALL_DYN_LINK
+	CFLAGS += -DWITH_PYTHON
+	LDLIBS += $(PYTHON_LIB) -L$(BOOST_LIB_PATH)
+	LDLIBS += $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB)))
+	INCLUDES += -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/
+else
+	MA_REQUIREMENT += $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a
+endif
+
+# use avx instead of sse
+ifeq ($(WITH_AVX), 1)
+	CCFLAGS += -mavx2
+endif
+
+# compile the gpu smith waterman as well
+ifeq ($(WITH_GPU_SW), 1)
+	TARGET_OBJ += sw_gpu.o
+	CCFLAGS += -DWITH_GPU_SW
+	LDLIBS += -L/usr/local/cuda-9.1/lib64/ -lcudart
+endif
+
 
 # primary target
-ifeq ($(WITH_SHARED), 1)
-all: dirs ma
-else
-all: dirs ma-standalone
-endif
+all: dirs build_ma
 
-# create build directories
+# create build directories if not present
 dirs:
 	mkdir -p obj obj/module obj/container obj/util obj/ksw \
 			 dbg dbg/module dbg/container dbg/util dbg/ksw
 
 # executable target
-ma: libMA src/cmdMa.cpp
-	$(CC) $(CCFLAGS) src/cmdMa.cpp $(INCLUDES) $(LDLIBS) libMA.so -o $@
-
-ma-standalone: $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a src/cmdMa.cpp
-	$(CC) $(CCFLAGS) $(INCLUDES) -c src/cmdMa.cpp -o src/cmdMa.o
-	$(CC) $(LDFLAGS) $(TARGET_OBJ) src/cmdMa.o $(LDLIBS) -o ma
+build_ma: $(MA_REQUIREMENT)
+ifeq ($(WITH_PYTHON), 1)
+	$(CC) $(CCFLAGS) src/cmdMa.cpp $(INCLUDES) $(LDLIBS) libMA.so -o ma
+else
+	$(CC) $(CCFLAGS) $(INCLUDES) -c src/cmdMa.cpp -o obj/cmdMa.o
+	$(CC) $(LDFLAGS) $(TARGET_OBJ) obj/cmdMa.o $(LDLIBS) -o ma
+endif
 
 # library target
 libMA: $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a
@@ -108,7 +106,7 @@ obj/container/qSufSort.co:src/container/qSufSort.c inc/container/qSufSort.h
 
 # target for debug object files
 dbg/%.o: src/%.cpp inc/%.h
-	$(CC) $(DEBUG_CCFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CCFLAGS) $(INCLUDES) -c $< -o $@
 
 # target for object files
 obj/%.o: src/%.cpp inc/%.h
@@ -147,4 +145,4 @@ clean:
 
 docs: html/index.html
 
-.Phony: all clean docs vid libMA dirs # install distrib
+.Phony: all clean docs vid libMA dirs build_ma # install distrib

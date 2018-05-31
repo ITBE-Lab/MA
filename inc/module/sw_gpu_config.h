@@ -28,7 +28,7 @@
 		#define BLOCK_SIZE ( 128 ) // 32 Number of threads in a block. should be multiple of wrap-size (16)
 		#define GRID_SIZE ( 64 ) // 64 should be similar to number of cores
 		#define TILE_WIDTH ( 48 ) // 16 or 32 (depends on the architecture)
-        #define CHUNK_SIZE ( ((size_t)BLOCK_SIZE) * GRID_SIZE * 16) /* 2048 * 16 ) */
+        #define CHUNK_SIZE ( ((size_t)BLOCK_SIZE) * GRID_SIZE * 16 * 128) /* 2048 * 16 ) */
 		// #define CHUNK_SIZE ( ((size_t)BLOCK_SIZE) * GRID_SIZE * 2048 * 16 ) // must be a multiple of BLOCK_SIZE * GRID_SIZE
 		
 		//// #define QUERY_SIZE ( 1008 ) // ( 1024 + 512 ) // size query 21 * 48 = 1008 / 768
