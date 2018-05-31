@@ -58,7 +58,7 @@ else
 endif
 
 # use avx instead of sse
-ifeq ($(WITH_AVX), 1)
+ifeq ($(WITH_AVX2), 1)
 	CCFLAGS += -mavx2
 endif
 

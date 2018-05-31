@@ -1911,7 +1911,7 @@ exit()
 #createSampleQueries(e_coli_genome, "sw_eColi_1000.db",   1000, 100, 32, gpu_id=0)
 #createSampleQueries(e_coli_genome, "sw_eColi_30000_10.db",  30000, 10, 32, gpu_id=1)
 
-for task_id in [12, 13]:
+for task_id in [12, 13, 14]:
 
     processor= task_id*2
 
@@ -1933,9 +1933,9 @@ for task_id in [12, 13]:
 
         ("zebrafish_30000_10.db",   zebrafish_genome, False, False, 0), # 11
         
-        ("sw_eColi_200.db",   e_coli_genome, True, True, 0), # 12
-        ("sw_eColi_1000.db",  e_coli_genome, True, True, 0), #
-        ("sw_eColi_30000.db", e_coli_genome, True, True, 0), #
+        ("sw_eColi_200.db",   e_coli_genome, True, True, 100), # 12
+        ("sw_eColi_1000.db",  e_coli_genome, True, True, 10), #
+        ("eColi_30000.db", e_coli_genome, True, True, 0), #
         ("sw_eColi_30000_10.db", e_coli_genome, True, True, 0), #
     ]
 
@@ -1945,6 +1945,6 @@ for task_id in [12, 13]:
     #resetResults(db_name)
 
     #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
-    test(db_name, working_genome, only_overall_time=True, long_read_aligners=True, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
 
     analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)

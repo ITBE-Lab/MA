@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     options.add_options("General options")
         ("h,help", "Display the complete help screen")
         ("a,align", "Do sequence alignment")
-        ("t,threads", "Used concurrency", 
+        ("t,threads", "Number of threads", 
            value<unsigned int>()->default_value(std::to_string(std::thread::hardware_concurrency()))
            , "arg     "
         )
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
             ("s,seedSet", "Seeding strategy [SMEMs/maxSpanning]",
                 value<std::string>()->default_value(defaults::sSeedSet)
             )
-            ("n,reportN", "Report <= N alignments; 0: unlimited",
+            ("n,reportN", "Report up to N alignments; 0: unlimited",
                 value<unsigned int>()->default_value(defaults::uiReportN)
             )
             ("l,minLen", "Minimum seed length",
