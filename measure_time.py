@@ -283,12 +283,13 @@ class Bowtie2(CommandLine):
         return False
 
 class Minimap2(CommandLine):
-    def __init__(self, index_str, num_results, db_name, z_drop=None):
+    def __init__(self, index_str, num_results, db_name, z_drop=None, presetting=None):
         super().__init__()
         self.minimap2_home = "/usr/home/markus/workspace/minimap2/"
         self.index_str = index_str + ".mmi"
         self.num_results = num_results
         self.in_filename = ".tempMinimap2" + db_name + ".fasta"
+        self.presetting = presetting
         if not z_drop is None:
             self.z_drop = " -z " + str(z_drop)
         else:
@@ -298,6 +299,8 @@ class Minimap2(CommandLine):
         cmd_str = self.minimap2_home + "minimap2 -c -a "
         if int(self.num_results) > 1:
             in_filename += " --secondary=yes -N " + self.num_results
+        if not self.presetting is None:
+            cmd_str += " -x " + self.presetting
         return cmd_str + " " + self.index_str + " " + in_filename + self.z_drop
 
     def do_checks(self):
@@ -324,12 +327,13 @@ class Blasr(CommandLine):
         return "BLASR"
 
 class BWA_MEM(CommandLine):
-    def __init__(self, index_str, num_results, db_name, z_drop=None):
+    def __init__(self, index_str, num_results, db_name, z_drop=None, presetting=None):
         super().__init__()
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.num_results = num_results
         self.in_filename = ".tempBwaMem" + db_name + ".fasta"
+        self.presetting = presetting
         if not z_drop is None:
             self.z_drop = " -d " + str(z_drop)
         else:
@@ -339,6 +343,8 @@ class BWA_MEM(CommandLine):
         cmd_str = self.bwa_home + "bwa mem "
         if int(self.num_results) > 1:
             cmd_str += " -a"
+        if not self.presetting is None:
+            cmd_str += " -x " + self.presetting
         return cmd_str + " " + self.index_str + " " + in_filename + self.z_drop
 
     def do_checks(self):
@@ -431,14 +437,23 @@ def test(
     warned_for_n = False
 
     l = [
-        ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
-        ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-        # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
-        # ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
-        ("MA Accurate", MA(reference, num_results, False, db_name)),
-        ("BWA SW", BWA_SW(reference, num_results, db_name)),
+        #("MA Fast", MA(reference, num_results, True, db_name)),
+        #("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+
+        ("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
+        ("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
+        ("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
+        ("MINIMAP 2 map-bp", Minimap2(reference, num_results, db_name, presetting="map-bp")),
+        ("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
+        ("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
+
+        ## ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
+        ## ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
+
+        #("MA Accurate", MA(reference, num_results, False, db_name)),
+        #("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"

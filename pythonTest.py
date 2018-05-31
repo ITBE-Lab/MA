@@ -1911,30 +1911,30 @@ exit()
 #createSampleQueries(e_coli_genome, "sw_eColi_1000.db",   1000, 100, 32, gpu_id=0)
 #createSampleQueries(e_coli_genome, "sw_eColi_30000_10.db",  30000, 10, 32, gpu_id=1)
 
-for task_id in [12, 13, 14]:
+for task_id in range(0, 15):
 
     processor= task_id*2
 
     data_set = [
-        ("sw_plasmodium_200.db",  plasmodium_genome, False, True, 10), #
-        ("sw_plasmodium_1000.db", plasmodium_genome, False, True, 1), #
+        ("sw_plasmodium_200.db",  plasmodium_genome, False, True, 0), #
+        ("sw_plasmodium_1000.db", plasmodium_genome, False, True, 0), #
         ("plasmodium_30000.db",   plasmodium_genome, True, False, 0), #
 
-        ("sw_human_200.db",  human_genome, False, True, 10), # # 3
-        ("sw_human_1000.db", human_genome, False, True, 1), #
+        ("sw_human_200.db",  human_genome, False, True, 0), # # 3
+        ("sw_human_1000.db", human_genome, False, True, 0), #
         ("human_30000.db",   human_genome, True, False, 0), #
 
-        ("sw_zebrafish_200.db",  zebrafish_genome, False, True, 10), # # 6
-        ("sw_zebrafish_1000.db", zebrafish_genome, False, True, 1), #
+        ("sw_zebrafish_200.db",  zebrafish_genome, False, True, 0), # # 6
+        ("sw_zebrafish_1000.db", zebrafish_genome, False, True, 0), #
         ("zebrafish_30000.db",   zebrafish_genome, True, False, 0), #
         
-        ("sw_human_1000_10.db", human_genome, False, True, 1), # # 9
+        ("sw_human_1000_10.db", human_genome, False, True, 0), # # 9
         ("human_30000_10.db",   human_genome, True, False, 0), #
 
         ("zebrafish_30000_10.db",   zebrafish_genome, False, False, 0), # 11
         
-        ("sw_eColi_200.db",   e_coli_genome, True, True, 100), # 12
-        ("sw_eColi_1000.db",  e_coli_genome, True, True, 10), #
+        ("sw_eColi_200.db",   e_coli_genome, True, True, 0), # 12
+        ("sw_eColi_1000.db",  e_coli_genome, True, True, 0), #
         ("eColi_30000.db", e_coli_genome, True, True, 0), #
         ("sw_eColi_30000_10.db", e_coli_genome, True, True, 0), #
     ]
@@ -1945,6 +1945,6 @@ for task_id in [12, 13, 14]:
     #resetResults(db_name)
 
     #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
-    test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
 
     analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)
