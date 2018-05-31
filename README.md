@@ -1,10 +1,56 @@
-![logo]
+
+# <img src="https://raw.githubusercontent.com/ITBE-Lab/ma/release/MA.png" align="center" width="90"> The Modular Aligner
+MA is a novel open source tool for the efficient and accurate alignment of short and long reads of various sequencers. The approach has a highly modular architecture and everyone is invited to propose/integrate 
+new modules for getting better results overall or for specific sequencers. The
+design aims at a smooth Python integration, while keeping the performance delivered by C++. So, the
+general idea is the coupling of several C++-modules via Python, where each module performs a different 
+part of the alignment  process. Well performing module combinations are finally coupled
+under the roof of a single C++ application that embodies a single aligner 
+for high throughput computing.
+## Algorithmic Approaches
+Many long and short read aligners conceptually follow a 3 stage approach:
+1. **Seeding**. Using some form of indexing mechanism a set of perfect matches (or with few mismatches) is computed for the given query.
+2. **Coupling**. Identification of promising seed subsets that could lead to an optimal alignment. A 
+popular technique for this task is *chaining*.
+3. **Dynamic Programming**. Filling of remaining gaps between seeds and extension of the outer 
+end points given by the seeds.
+
+MA stays with this basic pattern but delivers novel algorithmic solutions for the stages 1 and 2. 
+MA introduces a divide and conquer approach for seeding on the Foundation of the FMD-Index. The 
+advantage of this seeding variant is the reduction of the overall number of seeds compared to a
+classical FMD-index based extension process (e.g. in BWA-MEM). One could expect 
+that a reduction of the number seeds hurts an aligner's accuracy, but this 
+is only true, if we loose significant and insignificant seeds at equal rates. And, as this latter 
+statement already suggests, the divide and conquer variant goes after the significant seeds.\
+In stage 2 we come up with two new ideas. First, the *strip of consideration* (SoC) and, 
+second, *seed harmonization*. Both techniques represent simple line-sweeps that iterate over all seeds 
+(or some already heuristically filtered set of seeds). The SoC is used to quickly identify 
+promising regions on the reference, while the seed harmonization purges contradicting 
+seeds by relying on a virtual guide line. The highlights of these approaches are: No specially
+tailored data structures required. Highly efficient. Easy to implement (roughly 50 lines Pseudocode).
+
+## Python Integration
+
+> **Python Integration is an optional feature of MA.** By default MA is built without Python support.
+
+The Python integration of MA is done via [Boost.Python](https://www.boost.org/ "Boost.Python"). 
+So, it is necessary to have a boost deployment with Python3 support. If there is a Boost.Python 
+library, then the Makefile can be used with `WITH_PYTHON=1`. The folder `MA` of the repository 
+contains a Python3 module that incorporates MA as Python3 module. Please note that the Python3 module relies on
+the shared library `libMA.so` that is built by the Makefile. Alignments using the Python integration 
+can be done without a computational penalty. Python is only responsible for an initial C++-module 
+coupling, while all actual computations are done within the C++-modules. The idea is similar 
+to the one used in the context of [TensorFlow](https://www.tensorflow.org "TensorFlow").
 
 ## Getting Started
+MA is currently still in an evaluation and testing process. Feedback about bugs is highly welcomed. 
+The below procedure was checked on a fresh `Debian 4.9.88` with the following additional 
+packages installed: `git`, `make` and `build-essential`.
 
-execute following commands in order to **install MA**:
+ 
+ Get the github clone and call make. (Available make switches are documented below):
 
-    git clone https://github.com/ItBeLab/ma
+    git clone https://github.com/ITBE-Lab/ma
     git checkout v0.1.0-alpha # (*)
     cd ma
     make
@@ -36,15 +82,7 @@ Where `<fasta_in>` is a (multi-)fasta(-q) file containing the queries.
 You can switch between **MA accurate** and **MA fast** by using the `--parameterset accurate` or 
 `--parameterset fast` switch, respectively.
 
----
-Tested using a vanilla Debian 4.9.88 with following additional packages installed:
-`git`, `make` and `build-essential`.
-
-## Citing MA
-
-MA is unpublished so far.
-
-## Compilation switches
+## Makefile switches
 
 
 - WITH_AVX:
@@ -62,20 +100,15 @@ MA is unpublished so far.
     Compiles the code un-optimized with assertions enabled and multiple self-checks during runtime. 
     Mostly intended for debugging purposes.
 
-## Thanks to
+## Thanks ...
 
-We integrated several other projects (some only in parts).
-Here are their github pages:
+MA relies on the hard work of other projects. These are:
 
 - Dynamic programming with adaptive band: https://github.com/ocxtal/libgaba
 - Dynamic programming with static band: https://github.com/lh3/ksw2
 - Cmd line option parser: https://github.com/jarro2783/cxxopts
-- Initially we started on the basis of bwa-mem; 
-    However, by now, we replaced almost everything with our own code. 
-    Still, the FMD-index, Pack and SMEM-extension remain highly similar to those found here: https://github.com/lh3/bwa
-- Ransac implementation ?
+- Parts of the code for FMD-index creation and extension were picked from https://github.com/lh3/bwa
 
-Many thanks to the creators of above projects. 
-And special thanks to Li Heng, whose aligner served as our starting point.
 
-[logo]: https://github.com/itbe-lab/ma/MA.png "MA logo"
+Many thanks to the creators and contributors of the above projects ...
+

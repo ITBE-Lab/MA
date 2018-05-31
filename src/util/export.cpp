@@ -90,7 +90,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         bool optimisticGapEstimation,
         float fSoCScoreMinimum,
         bool bSkipLongBWTIntervals,
-        unsigned int uiCurrHarmScoreMin
+        unsigned int uiCurrHarmScoreMin,
+        unsigned int uiGenomeSizeDisable
     )
 {
     iMatch = iMatch_;
@@ -112,6 +113,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pSeeding->uiMinSeedSizeDrop = uiMinSeedSizeDrop;
     pSeeding->uiMinAmbiguity = uiMinAmbiguity;
     pSeeding->fRelMinSeedSizeAmount = fRelMinSeedSizeAmount;
+    pSeeding->uiMinGenomeSize = uiGenomeSizeDisable;
 
     auto pSOC = std::make_shared<StripOfConsideration>(fGiveUp);
 
@@ -121,6 +123,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pSOC->bSkipLongBWTIntervals = bSkipLongBWTIntervals;
     pSOC->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
     pSOC->uiMinLen = uiMinLen;
+    pSOC->uiMinGenomeSize = uiGenomeSizeDisable;
 
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
 

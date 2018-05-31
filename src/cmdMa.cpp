@@ -288,6 +288,7 @@ int main(int argc, char* argv[])
                 std::stof(defaults::fSoCScoreMinimum),
                 defaults::bSkipLongBWTIntervals == "true",
                 std::stoi(defaults::uiCurrHarmScoreMin)
+                std::stoi(defaults::uiGenomeSizeDisable)
             );
             if(result.count("info") > 0)
             {
