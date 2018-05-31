@@ -51,8 +51,8 @@ packages installed: `git`, `make` and `build-essential`.
  Get the github clone and call make. (Available make switches are documented below):
 
     git clone https://github.com/ITBE-Lab/ma
-    git checkout v0.1.0-alpha # (*)
     cd ma
+    git checkout v0.1.0-alpha # (*)
     make
 
 (*) This command is used in order to switch to the last stable release. 
@@ -64,7 +64,7 @@ Then test your installation with:
 
 This should display the help screen of MA.
 
-\
+
 In order to create alignments you need to **compute an index** for your reference genome first.
 This is done using following command:
 
@@ -115,7 +115,7 @@ Alignment options (requires -a):
     -g, --genome arg        FMD-index input file prefix
     -p, --parameterSet arg  Pre-setting [fast/accurate]
     -s, --seedSet arg       Seeding strategy [SMEMs/maxSpanning]
-    -n, --reportN arg       Report <= N alignments; 0: unlimited
+    -n, --reportN arg       Report up to N alignments; 0: unlimited
     -l, --minLen arg        Minimum seed length
     -v, --giveUp arg        Minimum SoC score (relative to query length)
     -b, --basicMode         Disable DP

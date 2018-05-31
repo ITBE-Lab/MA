@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
             ("s,seedSet", "Seeding strategy [SMEMs/maxSpanning]",
                 value<std::string>()->default_value(defaults::sSeedSet)
             )
-            ("n,reportN", "Report <= N alignments; 0: unlimited",
+            ("n,reportN", "Report up to N alignments; 0: unlimited",
                 value<unsigned int>()->default_value(defaults::uiReportN)
             )
             ("l,minLen", "Minimum seed length",
