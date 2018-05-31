@@ -36,7 +36,7 @@ namespace libMA
         /**
          * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
          */
-        const nucSeqIndex uiMinGenomeSize = 0;
+        nucSeqIndex uiMinGenomeSize = 0;
 
         /**
          * @brief The simplified extension scheme presented in our Paper.
