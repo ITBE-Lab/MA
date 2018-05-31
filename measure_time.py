@@ -397,7 +397,7 @@ class MA(CommandLine):
         if not self.num_soc is None:
             cmd_str += " -G -S " + str(self.num_soc)
         if self.finder_mode:
-            cmd_str += " -f"
+            cmd_str += " -b"
         return cmd_str + " -g " + self.index_str + " -i " + in_filename + " -n " + self.num_results
 
     def do_checks(self):
@@ -432,7 +432,7 @@ def test(
 
     l = [
         ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Finder", MA(reference, num_results, True, db_name, finder_mode=True)),
+        ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
         ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
         ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
         # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),

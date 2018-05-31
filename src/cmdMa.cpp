@@ -42,13 +42,14 @@ int main(int argc, char* argv[])
 {
 
     Options options("MA", "\t\t===== The Modular Aligner =====");
-    options.add_options("General")
-        ("h,help", "Complete help screen")
-        ("a,align", "Sequence alignment")
-        ("t,threads", "Used concurency", 
+    options.add_options("General options")
+        ("h,help", "Display the complete help screen")
+        ("a,align", "Do sequence alignment")
+        ("t,threads", "Used concurrency", 
            value<unsigned int>()->default_value(std::to_string(std::thread::hardware_concurrency()))
+           , "arg     "
         )
-        ("F,fmdIndex", "FMD-index generation")
+        ("f,fmdIndex", "Do FMD-index generation")
     ;
 
     if (argc <= 1)
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
         for(int i = 0; i < argc-1; i++)
             if(
                     strcmp(argv[i], "-p") == 0 ||
-                    strcmp(argv[i], "--parameterset") == 0
+                    strcmp(argv[i], "--parameterSet") == 0
                 )
             {
                 if(strcmp(argv[i+1], "accurate") == 0)
@@ -72,14 +73,16 @@ int main(int argc, char* argv[])
                     defaults::configureFast();
             }// if
 
-        options.add_options("Alignment")
-            ("i,alignIn", "Input file paths [*.fasta/*.fastaq/*]",value<std::vector<std::string>>())
-            ("o,alignOut", "Output file path [*.sam]",value<std::string>()->default_value("stdout"))
+        options.add_options("Alignment options (requires -a)")
+            ("i,alignIn", "Input file(s) as (multi-)fasta(-q)", 
+                value<std::vector<std::string>>(), "args"
+            )
+            ("o,alignOut", "Output file as SAM",value<std::string>()->default_value("stdout"))
             ("g,genome", "FMD-index input file prefix", value<std::string>())
-            ("p,parameterset", "Pre-setting [fast/accurate]", 
+            ("p,parameterSet", "Pre-setting [fast/accurate]", 
                 value<std::string>()->default_value(defaults::sParameterSet)
             )
-            ("s,seedSet", "Seed set [SMEMs/maxSpanning]",
+            ("s,seedSet", "Seeding strategy [SMEMs/maxSpanning]",
                 value<std::string>()->default_value(defaults::sSeedSet)
             )
             ("n,reportN", "Report <= N alignments; 0: unlimited",
@@ -88,12 +91,12 @@ int main(int argc, char* argv[])
             ("l,minLen", "Minimum seed length",
                 value<unsigned int>()->default_value(defaults::uiMinLen)
             )
-            ("v,giveUp", "Min relative SoC score",
+            ("v,giveUp", "Minimum SoC score (relative to query length)",
                 value<double>()->default_value(defaults::fGiveUp)
             )
-            ("f,findMode", "Disable DP", value<bool>()->default_value(defaults::bFindMode))
+            ("b,basicMode", "Disable DP", value<bool>()->default_value(defaults::bFindMode))
             ("Match", "DP match score.", value<unsigned int>()->default_value(defaults::uiMatch))
-            ("MissMatch", "DP missmatch penalty.", 
+            ("MisMatch", "DP mismatch penalty.", 
                 value<unsigned int>()->default_value(defaults::uiMissMatch)
             )
             ("Gap", "DP gap open penalty.", 
@@ -104,11 +107,11 @@ int main(int argc, char* argv[])
             )
         ;
 
-        options.add_options("Paired Reads")
-            ("U,uniform", "Paired alignment; Gaps modeled as uniform distribution")
-            ("N,normal", "Paired alignment; Gaps modeled as normal distribution")
+        options.add_options("Paired Reads options (requires either -U or -N)")
+            ("U,uniform", "Enable paired alignment; Distance as uniform distribution")
+            ("N,normal", "Enable paired alignment; Distance as normal distribution")
             ("u,unpaired", "Penalty for unpaired alignments", 
-                value<double>()->default_value(defaults::uiUnpaired)
+                value<double>()->default_value(defaults::uiUnpaired), "arg    "
             )
             ("m,mean", "Gap distance mean", 
                 value<unsigned int>()->default_value(defaults::uiMean)
@@ -118,9 +121,9 @@ int main(int argc, char* argv[])
             )
         ;
 
-        options.add_options("FMD-Index Generation")
-            ("I,indexIn", "FASTA input file paths", value<std::vector<std::string>>())
-            ("O,indexOut", "FMD-index output file prefix", value<std::string>())
+        options.add_options("FMD-Index Generation options (requires -f)")
+            ("I,indexIn", "(Multi-)Fasta input file(s)", value<std::vector<std::string>>(), "args")
+            ("O,indexOut", "FMD-index output file prefix", value<std::string>(), "arg    ")
         ;
 
         auto result = options.parse(argc, argv);
@@ -133,9 +136,14 @@ int main(int argc, char* argv[])
         auto fPairedStd =       result["std"].          as<double>();
         auto dPairedU =         result["unpaired"].     as<double>();
         auto uiReportN =        result["reportN"].      as<unsigned int>();
-        auto sParameterSet =    result["parameterset"]. as<std::string>();
+        auto sParameterSet =    result["parameterSet"]. as<std::string>();
         auto sSeedSet =         result["seedSet"].      as<std::string>();
         auto uiMinLen =         result["minLen"].       as<unsigned int>();
+        if(bPariedNormal && bPariedUniform)
+        {
+            std::cerr << "--normal and --uniform are exclusive." << std::endl;
+            return 1;
+        }// else if
         std::string sGenome;
         if( result.count("genome") > 0 )
             sGenome =           result["genome"].       as<std::string>();
@@ -169,11 +177,11 @@ int main(int argc, char* argv[])
             std::cerr << "error: --alignIn is compulsory if --align is set" << std::endl;
             return 1;
         }// else if
-        auto bFindMode =        result.count("findMode") > 0;
+        auto bFindMode =        result.count("basicMode") > 0;
         auto fGiveUp =          result["giveUp"].       as<double>();
         auto iMatch =           result["Match"].        as<unsigned int>();
         auto iExtend =          result["Extend"].       as<unsigned int>();
-        auto iMissMatch =       result["MissMatch"].    as<unsigned int>();
+        auto iMissMatch =       result["MisMatch"].    as<unsigned int>();
         auto iGap =             result["Gap"].          as<unsigned int>();
 
         bool bDoneSth = false;
@@ -182,14 +190,17 @@ int main(int argc, char* argv[])
         {
             std::cout << options.help({
                     "", 
-                    "General",
-                    "Alignment",
-                    "Paired Reads",
-                    "FMD-Index Generation"
+                    "General options",
+                    "Alignment options (requires -a)",
+                    "Paired Reads options (requires either -U or -N)",
+                    "FMD-Index Generation options (requires -f)"
                 }) << std::endl;
             //@todo cmake version number: https://stackoverflow.com/questions/27395120/correct-way-to-encode-embed-version-number-in-program-code
-            std::cout << "Displayed are the defaults for " << sParameterSet
-                << ". See other defaults by selecting a parameterset with -p." << std::endl;
+            std::cout 
+                << "Displayed are the defaults for \"" 
+                << sParameterSet
+                << "\". See other defaults by selecting another parameter set with -p."
+                << std::endl;
             std::cout << sVersion << std::endl;
             DEBUG(
                 std::cout << "DEBUG LEVEL: " << DEBUG_LEVEL << std::endl;
