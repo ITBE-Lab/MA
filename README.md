@@ -95,6 +95,7 @@ You can switch between **MA accurate** and **MA fast** by using the `--parameter
 ## MA options
 
 ```
+
 General options:
     -h, --help                     Display the complete help screen
         --genIndex                 Do FMD-index Generation. The -i and -x options specify the FASTA
@@ -112,7 +113,7 @@ Alignments options:
                                    this value accordingly.
     -m, --mode [fast/acc]           Set operation modus for MA. 
                                    Default is 'fast'.
-    -?, --noDP                     Switch that disables the final Dynamic Programming.
+    -d, --noDP                     Switch that disables the final Dynamic Programming.
     -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited.
                                    Default is 1.
     -s, --seedSet [SMEMs/maxSpan]  Selects between the two seeding strategies super maximal extend matches
