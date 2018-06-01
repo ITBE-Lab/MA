@@ -94,7 +94,6 @@ You can switch between **MA accurate** and **MA fast** by using the `--parameter
 
 ## MA options
 
-
 ```
 General options:
     -h, --help                     Display the complete help screen
@@ -104,17 +103,17 @@ General options:
 
 Necessary arguments for alignments:
     -x, --idx <prefix>             FMD-index used for alignments
-    -i, --in <fname>{,<fname>}     FASTA or FASTQ input files.
+    -i, --in <fname>               FASTA or FASTAQ input files.
 
 Alignments options:
     -o, --out <fname>              Filename used for SAM file output. Default output stream is
                                    standard output.
     -t, --threads <num>            Use <num> threads. On startup MA checks the hardware and chooses 
                                    this value accordingly.
-    -m, --mode [fast/accurate]     Set operation modus for MA. 
+    -m, --mode [fast/acc]           Set operation modus for MA. 
                                    Default is 'fast'.
     -?, --noDP                     Switch that disables the final Dynamic Programming.
-    -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited. 
+    -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited.
                                    Default is 1.
     -s, --seedSet [SMEMs/maxSpan]  Selects between the two seeding strategies super maximal extend matches
                                    'SMEMs' and maximally spanning seeds 'maxSpan'. 
@@ -122,31 +121,42 @@ Alignments options:
     -l, --minLen <num>             Seeds must have a minimum length of <num> nucleotides.
                                    Default is 16.
         --Match <num>              Sets the match score to <num>; <num> > 0.
-                                   Default is ??. 
+                                   Default is 3. 
         --MissMatch <num>          Sets the mismatch penalty to <num>; <num> > 0.
-                                   Default is ??.
+                                   Default is 4.
         --Gap <num>                Sets the costs for opening a gap to <num>; <num> >= 0.
-                                   Default is ??.
+                                   Default is 6.
         --Extend <num>             Sets the costs for extending a gap to <num>; <num> > 0.
-                                   Default is ??.
+                                   Default is 1
 
 Paired Reads options:
     -p, --paUni                    Enable paired alignments and model the distance as uniform distribution.
-                                   Default is ??.
+                                   If enabled --in shall be used as follows: --in '<fname1>, <fname2>'.
     -P, --paNorm                   Enable paired alignment and Model the distance as normal distribution.
-                                   Default is ??.
+                                   If enabled --in shall be used as follows: '--in <fname1>, <fname2>'.
         --paIsolate <num>          Penalty for an unpaired read pair.
-                                   Default is ??.
-        --paMean <val>             Mean gap distance between read pairs.
-                                   Default is ??.
-        --paStd <val>              Standard deviation of gap distance between read pairs.
-                                   Default is ??.
+                                   Default is 17.
+        --paMean <num>             Mean gap distance between read pairs.
+                                   Default is 400.
+        --paStd <num>              Standard deviation of gap distance between read pairs.
+                                   Default is 150.
 
 Advanced options:
-       --giveUp <val>              Threshold with 0 <= <val> <= 1 used as give-up criteria. Default is ??.
-                                   Normally everything should be fine with default value. For a detailed
-                                   description please check the aligner documentation.
-                                   Default is ??.
+        --giveUp <val>             Threshold with 0 <= <val> <= 1 used as give-up criteria.
+                                   SoC's with accumulative seed length smaller than 
+                                   'query_len * <val>' will be ignored.
+                                   Reducing this parameter will decrease runtime, but allow
+                                   the aligner to discover more dissimilar matches.
+                                   Increasing this parameter will increase runtime, but might cause
+                                   the aligner to miss the correct reference location.
+                                   Default is 0.002.
+        --maxTries <num>           At most the best <num> SoC's will be inspected.
+                                   Generally the best alignment is found in the best scored SoC.
+                                   However, if the best alignment is from a very repetitive region,
+                                   we might have to inspect several SoC's to find the optimal one.
+                                   Default is 50.
+        --minRefSize <num>         If the reference is smaller than <num> nt we disable all heuristics.
+                                   Default is 10000000.
 ```
 
 ## Thanks ...

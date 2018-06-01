@@ -55,8 +55,6 @@ class CommandLine(Module):
         #assemble the shell command
         cmd_str = taskset + self.create_command(self.in_filename)
         #cmd_str = self.create_command(self.in_filename)
-        #print(cmd_str)
-        #exit()
 
         start_time = time.time()
         result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
@@ -386,7 +384,7 @@ class G_MAP(CommandLine):
         return False
 
 class MA(CommandLine):
-    def __init__(self, index_str, num_results, fast, db_name, finder_mode=False, num_soc=None):
+    def __init__(self, index_str, num_results, fast, db_name, finder_mode=False, num_soc=None, other_dp_scores=False):
         super().__init__()
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
@@ -397,6 +395,7 @@ class MA(CommandLine):
             self.fast = "fast"
         self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
         self.finder_mode = finder_mode
+        self.other_dp_scores = other_dp_scores
 
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -t 1 -a -p " + self.fast
@@ -404,6 +403,8 @@ class MA(CommandLine):
             cmd_str += " -G -S " + str(self.num_soc)
         if self.finder_mode:
             cmd_str += " -b"
+        if self.other_dp_scores:
+            cmd_str += " --Match 1 --MisMatch 1 --Gap 1 --Extend 1"
         return cmd_str + " -g " + self.index_str + " -i " + in_filename + " -n " + self.num_results
 
     def do_checks(self):
@@ -442,13 +443,15 @@ def test(
         #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
         #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
 
-        ("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
-        ("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
-        ("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
-        ("MINIMAP 2 map-bp", Minimap2(reference, num_results, db_name, presetting="map-bp")),
-        ("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
-        ("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
+        ("MA Accurate", MA(reference, num_results, False, db_name)),
 
+        #("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
+        #("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
+        #("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
+        #("MINIMAP 2 map-bp", Minimap2(reference, num_results, db_name, presetting="map-bp")),
+        #("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
+        #("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
+#
         ## ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
         ## ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
 

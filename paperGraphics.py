@@ -1217,7 +1217,7 @@ def accuracy_pics():
         desc4_hover = []
         c_hover = []
         min_ = 0.0
-        max_ = 0.0
+        max_ = 1.0
         if set_max != None:
             max_ = set_max
         for x, value in d.items():
