@@ -384,13 +384,12 @@ class G_MAP(CommandLine):
         return False
 
 class MA(CommandLine):
-    def __init__(self, index_str, num_results, fast, db_name, finder_mode=False, num_soc=None, other_dp_scores=False):
+    def __init__(self, index_str, num_results, fast, db_name, finder_mode=False, other_dp_scores=False):
         super().__init__()
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
         self.num_results = num_results
         self.fast = "accurate"
-        self.num_soc = num_soc
         if fast:
             self.fast = "fast"
         self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
@@ -398,14 +397,12 @@ class MA(CommandLine):
         self.other_dp_scores = other_dp_scores
 
     def create_command(self, in_filename):
-        cmd_str = self.ma_home + "ma -t 1 -a -p " + self.fast
-        if not self.num_soc is None:
-            cmd_str += " -G -S " + str(self.num_soc)
+        cmd_str = self.ma_home + "ma -t 1 -m " + self.fast
         if self.finder_mode:
-            cmd_str += " -b"
+            cmd_str += " -d"
         if self.other_dp_scores:
             cmd_str += " --Match 1 --MisMatch 1 --Gap 1 --Extend 1"
-        return cmd_str + " -g " + self.index_str + " -i " + in_filename + " -n " + self.num_results
+        return cmd_str + " -x " + self.index_str + " -i " + in_filename + " -n " + self.num_results
 
     def do_checks(self):
         return True

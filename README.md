@@ -111,7 +111,7 @@ Alignments options:
                                    standard output.
     -t, --threads <num>            Use <num> threads. On startup MA checks the hardware and chooses 
                                    this value accordingly.
-    -m, --mode [fast/acc]           Set operation modus for MA. 
+    -m, --mode [fast/acc]          Set operation modus for MA. 
                                    Default is 'fast'.
     -d, --noDP                     Switch that disables the final Dynamic Programming.
     -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited.
@@ -123,7 +123,7 @@ Alignments options:
                                    Default is 16.
         --Match <num>              Sets the match score to <num>; <num> > 0.
                                    Default is 3. 
-        --MissMatch <num>          Sets the mismatch penalty to <num>; <num> > 0.
+        --MisMatch <num>           Sets the mismatch penalty to <num>; <num> > 0.
                                    Default is 4.
         --Gap <num>                Sets the costs for opening a gap to <num>; <num> >= 0.
                                    Default is 6.
@@ -132,9 +132,9 @@ Alignments options:
 
 Paired Reads options:
     -p, --paUni                    Enable paired alignments and model the distance as uniform distribution.
-                                   If enabled --in shall be used as follows: --in '<fname1>, <fname2>'.
+                                   If set --in shall be used as follows: --in '<fname1>, <fname2>'.
     -P, --paNorm                   Enable paired alignment and Model the distance as normal distribution.
-                                   If enabled --in shall be used as follows: '--in <fname1>, <fname2>'.
+                                   If set --in shall be used as follows: '--in <fname1>, <fname2>'.
         --paIsolate <num>          Penalty for an unpaired read pair.
                                    Default is 17.
         --paMean <num>             Mean gap distance between read pairs.
