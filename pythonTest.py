@@ -1906,18 +1906,20 @@ exit()
 # [5, 4, 3]:
 # [9, 10]:
 
+#createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db",     200, 20, 32, gpu_id=0)
+#createSampleQueries(plasmodium_genome, "sw_plasmodium_1000.db",   1000, 100, 32, gpu_id=1)
 
 #createSampleQueries(e_coli_genome, "sw_eColi_200.db",     200, 20, 32, gpu_id=0)
 #createSampleQueries(e_coli_genome, "sw_eColi_1000.db",   1000, 100, 32, gpu_id=0)
 #createSampleQueries(e_coli_genome, "sw_eColi_30000_10.db",  30000, 10, 32, gpu_id=1)
 
-for task_id in range(3,5):
+for task_id in [1]:
 
     processor= task_id*2
 
     data_set = [
-        ("sw_plasmodium_200.db",  plasmodium_genome, False, True, 0), #
-        ("sw_plasmodium_1000.db", plasmodium_genome, False, True, 0), #
+        ("sw_plasmodium_200.db",  plasmodium_genome, True, True, 100), # 0
+        ("sw_plasmodium_1000.db", plasmodium_genome, True, True, 10), #
         ("plasmodium_30000.db",   plasmodium_genome, True, False, 0), #
 
         ("sw_human_200.db",  human_genome, False, True, 0), # # 3
@@ -1945,6 +1947,6 @@ for task_id in range(3,5):
     #resetResults(db_name)
 
     #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
-    test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
 
     analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)

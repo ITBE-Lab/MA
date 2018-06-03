@@ -124,7 +124,6 @@ int main(int argc, char* argv[])
            value<unsigned int>()->default_value(std::to_string(std::thread::hardware_concurrency()))
            , "arg     "
         )
-        ("x,idx", "Do FMD-index generation")
     ;
 
     if (argc <= 1)
@@ -153,7 +152,7 @@ int main(int argc, char* argv[])
                 value<std::vector<std::string>>(), "args"
             )
             ("o,out", "Output file as SAM",value<std::string>()->default_value("stdout"))
-            ("m,mode", "Pre-setting [fast/accurate]", 
+            ("m,mode", "Pre-setting [fast/acc]", 
                 value<std::string>()->default_value(defaults::sParameterSet)
             )
             ("s,seedSet", "Seeding strategy [SMEMs/maxSpanning]",
@@ -174,7 +173,7 @@ int main(int argc, char* argv[])
             ("minRefSize", "ref size switch",
                 value<unsigned long long>()->default_value(defaults::uiGenomeSizeDisable)
             )
-            ("d,noDP", "Disable DP", value<bool>()->default_value(defaults::bFindMode))
+            ("d,noDP", "Disable DP")
             ("Match", "DP match score.", value<unsigned int>()->default_value(defaults::uiMatch))
             ("MisMatch", "DP mismatch penalty.", 
                 value<unsigned int>()->default_value(defaults::uiMissMatch)
@@ -185,6 +184,7 @@ int main(int argc, char* argv[])
             ("Extend", "DP gap extend penalty.", 
                 value<unsigned int>()->default_value(defaults::uiExtend)
             )
+            ("x,idx", "Do FMD-index generation", value<std::string>())
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
             return 1;
         }// else if
         auto sOut =        result["out"].     as<std::string>();
-        auto bFindMode =        result.count("basicMode") > 0;
+        auto bFindMode =        result.count("noDP") > 0;
         auto fGiveUp =          result["giveUp"].       as<double>();
         auto iMatch =           result["Match"].        as<unsigned int>();
         auto iExtend =          result["Extend"].       as<unsigned int>();

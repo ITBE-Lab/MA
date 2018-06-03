@@ -1339,9 +1339,10 @@ def accuracy_pics():
 
         "paperGraphics/sw_eColi_200.db.html.json", #[done] # 11
         "paperGraphics/sw_eColi_1000.db.html.json", # #[done] 
+        "paperGraphics/eColi_30000.db.html.json", # #[done] 
     ]
 
-    with open(files[12], "r") as f:
+    with open(files[7], "r") as f:
         json_file = json.loads(f.read(), object_hook=_decode)
         for approach, accuracy, coverage, runtime, alignments, fails, runtime_tup in json_file:
             tot_runtime = ""

@@ -137,8 +137,7 @@ vid:
 	gource -f --seconds-per-day 0.1
 
 clean:
-	rm -f -r obj dbg libMA.so
-	rm -r -f html
+	rm -f -r obj dbg libMA.so html ma
 	$(MAKE) -C $(LIBGABA_HOME) clean
 	$(MAKE) -f CUDA_Makefile clean
 #	rm -r -f dist *.egg-info build
