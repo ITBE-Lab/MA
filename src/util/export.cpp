@@ -91,7 +91,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         float fSoCScoreMinimum,
         bool bSkipLongBWTIntervals,
         unsigned int uiCurrHarmScoreMin,
-        unsigned int uiGenomeSizeDisable
+        unsigned long long uiGenomeSizeDisable
     )
 {
     iMatch = iMatch_;
