@@ -70,7 +70,7 @@ Possible Makefile switches:
 ### First Steps ...
 Test your installation with:
 
-    ./ma --help
+    ./ma -h
 
 You should see the help screen of MA.
 
@@ -78,19 +78,19 @@ You should see the help screen of MA.
 In order to perform alignments you need to **precompute an index** of your reference genome first.
 This is done using following command:
 
-    ./ma --fmdIndex --indexIn <filename_of_genome> --indexOut <filename_of_index>
+    ./ma --genIndex -i <filename_of_genome> -x <filename_of_index>
 
 `<filename_of_genome>` is the path to a FASTA file containing the reference genome and 
 `<filename_of_index>` is the prefix that shall be used to store the index.
 
 Now you can **align** using the following command:
 
-    ./ma --align --genome <filename_of_index> --alignIn <fasta_in> --alignOut <sam_out>
+    ./ma -x <filename_of_index> -i <fasta_in> -o <sam_out>
 
 `<fasta_in>` is a FASTA or FASTQ file containing the queries.
 `<sam_out>` is the filename of the output file that shall be created.
-You can switch between **MA accurate** and **MA fast** by using the `--parameterset accurate` or 
-`--parameterset fast` switch, respectively.
+You can switch between **MA accurate** and **MA fast** by using the `-m acc` or 
+`-m fast` switch, respectively.
 
 ## MA options
 
