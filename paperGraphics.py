@@ -12,6 +12,7 @@ import math
 import random
 import numpy as np
 import json
+import os.path
 
 font = "Helvetica"
 
@@ -1342,26 +1343,32 @@ def accuracy_pics():
         "paperGraphics/eColi_30000.db.html.json", # #[done] 
     ]
 
-    with open(files[7], "r") as f:
-        json_file = json.loads(f.read(), object_hook=_decode)
-        for approach, accuracy, coverage, runtime, alignments, fails, runtime_tup in json_file:
-            tot_runtime = ""
-            if len(runtime_tup) > 0:
-                tot_runtime = str( runtime_tup[0][0] * 1000 )[:7] + "ms"
-            avg_acc = 0
-            count = 0
-            for key, value in accuracy.items():
-                for key, value in value.items():
-                    avg_acc += value
-                    count += 1
-            avg_acc = str(avg_acc * 100 / count)[:7] + "%"
-            name = approach + "                  "
-            print name[:15], tot_runtime, "\t", avg_acc
-            plots[0].append(
-                    makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1)
-                )
-            #plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
-            #plots[2].append(makePicFromDict(alignments, None, set_max=500))
+    for file in files[9:]:
+        if not os.path.isfile(file):
+            continue
+        print file
+        with open(file, "r") as f:
+            json_file = json.loads(f.read(), object_hook=_decode)
+            for approach, accuracy, coverage, runtime, alignments, fails, runtime_tup in json_file:
+                if approach != "BWA MEM ont2d":
+                    continue
+                tot_runtime = ""
+                if len(runtime_tup) > 0:
+                    tot_runtime = str( runtime_tup[0][0] * 1000 )[:7] + "ms"
+                avg_acc = 0
+                count = 0
+                for key, value in accuracy.items():
+                    for key, value in value.items():
+                        avg_acc += value
+                        count += 1
+                avg_acc = str(avg_acc * 100 / count)[:7] + "%"
+                name = approach + "                  "
+                print name[:15], tot_runtime, "\t", avg_acc
+                plots[0].append(
+                        makePicFromDict(accuracy, approach + tot_runtime, desc2=fails, inner=coverage, set_max=1)
+                    )
+                #plots[1].append(makePicFromDict(runtime, None)) #, set_max=50
+                #plots[2].append(makePicFromDict(alignments, None, set_max=500))
 
     save(plots, "accuracyPics", True)
     #code from python test:

@@ -257,9 +257,29 @@ int main(int argc, char* argv[])
         auto sOut =        result["out"].     as<std::string>();
         auto bFindMode =        result.count("noDP") > 0;
         auto fGiveUp =          result["giveUp"].       as<double>();
+        if( fGiveUp < 0 || fGiveUp > 1 )
+        {
+            std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
+            return 1;
+        }// else if
         auto iMatch =           result["Match"].        as<unsigned int>();
+        if( iMatch == 0 )
+        {
+            std::cerr << "error: --Match must be larger than 0" << std::endl;
+            return 1;
+        }// else if
         auto iExtend =          result["Extend"].       as<unsigned int>();
+        if( iExtend == 0 )
+        {
+            std::cerr << "error: --Extend must be larger than 0" << std::endl;
+            return 1;
+        }// else if
         auto iMissMatch =       result["MisMatch"].     as<unsigned int>();
+        if( iMissMatch == 0 )
+        {
+            std::cerr << "error: --MisMatch must be larger than 0" << std::endl;
+            return 1;
+        }// else if
         auto iGap =             result["Gap"].          as<unsigned int>();
         auto maxTries =         result["maxTries"].     as<unsigned int>();
         auto uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
@@ -355,7 +375,7 @@ int main(int argc, char* argv[])
                 std::stoi(defaults::uiCurrHarmScoreMin),
                 uiGenomeSizeDisable
             );
-            // this is a hidden debug option
+            // this is a hidden option
             if(result.count("info") > 0)
             {
                 std::cout << "threads: " << uiT << std::endl;

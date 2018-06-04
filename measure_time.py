@@ -436,23 +436,23 @@ def test(
     warned_for_n = False
 
     l = [
-        ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
-        ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+        #("MA Fast", MA(reference, num_results, True, db_name)),
+        #("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
 
-        ("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
+        #("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
         ("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
-        ("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
-        ("MINIMAP 2 map-pb", Minimap2(reference, num_results, db_name, presetting="map-pb")),
-        ("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
-        ("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
+        #("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
+        #("MINIMAP 2 map-pb", Minimap2(reference, num_results, db_name, presetting="map-pb")),
+        #("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
+        #("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
 
-        # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
-        # ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
+        ## ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
+        ## ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
 
-        ("MA Accurate", MA(reference, num_results, False, db_name)),
-        ("BWA SW", BWA_SW(reference, num_results, db_name)),
+        #("MA Accurate", MA(reference, num_results, False, db_name)),
+        #("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
