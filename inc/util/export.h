@@ -193,7 +193,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     float fSoCScoreMinimum,
     bool bSkipLongBWTIntervals,
     unsigned int uiCurrHarmScoreMin,
-    unsigned long long uiGenomeSizeDisable
+    unsigned long long uiGenomeSizeDisable,
+    unsigned int uiSoCWidth
 );
 
 #endif

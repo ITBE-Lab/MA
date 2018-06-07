@@ -91,7 +91,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         float fSoCScoreMinimum,
         bool bSkipLongBWTIntervals,
         unsigned int uiCurrHarmScoreMin,
-        unsigned long long uiGenomeSizeDisable
+        unsigned long long uiGenomeSizeDisable,
+        unsigned int uiSoCWidth
     )
 {
     iMatch = iMatch_;
@@ -124,6 +125,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pSOC->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
     pSOC->uiMinLen = uiMinLen;
     pSOC->uiMinGenomeSize = uiGenomeSizeDisable;
+    pSoC->uiSoCWidth = uiSoCWidth;
 
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
 
