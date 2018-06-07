@@ -1343,7 +1343,7 @@ def accuracy_pics():
         "paperGraphics/eColi_30000.db.html.json", # #[done] 
     ]
 
-    for file in files[9:]:
+    for file in files[3:6]:
         if not os.path.isfile(file):
             continue
         print file

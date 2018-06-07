@@ -116,6 +116,15 @@ class CommandLine(Module):
                 continue
             if self.output_type() == "SAM":
                 columns = line.split("\t")
+
+                ## Verbose output
+                # for column in columns:
+                #     if len(column) <= 20:
+                #         print(column, end=" ")
+                #     else:
+                #         print(column[:20], "...", sep="", end=" ")
+                # print()
+
                 #print(line)
                 #print(columns[0], columns[2], columns[3], columns[4])
                 try:
@@ -139,16 +148,14 @@ class CommandLine(Module):
                     qLen = 0
                     rLen = 0
                     for amount, char in read_cigar(columns[5]):
-                        if char in ['M', 'I', '=', 'X']:
+                        if char in ['M', 'I', '=', 'X', 'S']:
                             qLen += amount
-                        if char in ['M', 'D', '=', 'X']:
+                        if char in ['M', 'D', '=', 'X', 'N']:
                             rLen += amount
-
                         if char in ['M', 'X', '=', 'D']:
                             align_length += amount
-                        elif char == 'N':
-                            print(line)
-                        elif not char in ['I', 'S', 'H', 'P']:#sanity check...
+                        # sanity check...
+                        elif not char in ['M', 'I', 'D', '=', 'X', 'S', 'N', 'H', 'P']:
                             print("Error: got wierd cigar symbol", char, "in cigar", columns[5])
                             exit()
                     start = pack.start_of_sequence(columns[2]) + int(columns[3])
@@ -233,8 +240,10 @@ class CommandLine(Module):
         ret = ContainerVector(Alignment())
         del ret[:]
 
-        if len(secondary_list) > 0:
+        if len(secondary_list) > 0 and len(secondary_list) < 5:
             print("WARNING: Aligner outputted chimeric alignment for:", secondary_list)
+        elif len(secondary_list) > 0:
+            print("WARNING: Aligner outputted chimeric alignment for:", secondary_list[:5], "...")
 
         for alignment in alignments:
             ret.append(alignment)
@@ -423,7 +432,8 @@ def test(
             long_read_aligners=True,
             short_read_aligners=True,
             runtime_sample_multiplier=0,
-            processor=None
+            processor=None,
+            specific_sample=None
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -436,23 +446,23 @@ def test(
     warned_for_n = False
 
     l = [
-        #("MA Fast", MA(reference, num_results, True, db_name)),
-        #("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
-        #("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        #("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+        ("MA Fast", MA(reference, num_results, True, db_name)),
+        ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
+        ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
 
-        #("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
+        ("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
         ("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
-        #("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
-        #("MINIMAP 2 map-pb", Minimap2(reference, num_results, db_name, presetting="map-pb")),
-        #("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
-        #("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
+        ("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
+        ("MINIMAP 2 map-pb", Minimap2(reference, num_results, db_name, presetting="map-pb")),
+        ("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
+        ("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
 
-        ## ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
-        ## ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
+        # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
+        # ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
 
-        #("MA Accurate", MA(reference, num_results, False, db_name)),
-        #("BWA SW", BWA_SW(reference, num_results, db_name)),
+        ("MA Accurate", MA(reference, num_results, False, db_name)),
+        ("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
@@ -474,14 +484,18 @@ def test(
         if not processor is None:
             aligner.processor = processor
 
-        matrix = getQueriesAsASDMatrix("/MAdata/db/"+db_name)
+        matrix = None
 
-        if only_overall_time:
-            def red(mat):
-                return [ j for i in mat for j in i ]
-            matrix = [[ red(red(matrix)) ]]
+        if specific_sample is None:
+            matrix = getQueriesAsASDMatrix("/MAdata/db/"+db_name)
 
-        clearApproach("/MAdata/db/"+db_name, name)
+            if only_overall_time:
+                def red(mat):
+                    return [ j for i in mat for j in i ]
+                matrix = [[ red(red(matrix)) ]]
+            clearApproach("/MAdata/db/"+db_name, name)
+        else:
+            matrix = [[ getSpecificQuery("/MAdata/db/"+db_name, specific_sample) ]]
 
         #c = 1
         total_time = 0.0
