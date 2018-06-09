@@ -554,7 +554,7 @@ def getRuntimes(db_name, approach):
                         WHERE approach = ?
                     """, (approach,) ).fetchall()
 
-def near(start_align, start_orig, end_align, end_orig, score_by_coverage):
+def near(start_align, start_orig, end_align, end_orig, score_by_coverage=False):
     if end_align >= start_orig and start_align <= end_orig:
         if score_by_coverage:
             return (min(end_align, end_orig) - max(start_align, start_orig)) / ( end_orig - start_orig )

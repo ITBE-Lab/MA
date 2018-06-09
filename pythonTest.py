@@ -84,6 +84,82 @@ def chunks(l, n):
             yield l[i:i + n]
 
 
+def first_accurate_SoC(db_name, reference, output_file, max_span_seed_set=True):
+    seeding = BinarySeeding(max_span_seed_set)
+    soc = StripOfConsideration(0)
+
+    ref_pack = Pack()
+    ref_pack.load(reference)
+    fm_index = FMIndex()
+    fm_index.load(reference)
+    
+    queries = getQueriesAsASDMatrix("/MAdata/db/"+db_name)
+    asd = []
+    for i, row in enumerate(queries):
+        asd.append( [] )
+        print(i/len(queries))
+        for cell in row:
+            asd[-1].append( [] )
+            for sequence, sample_id in cell:
+                optima = getOptima("/MAdata/db/"+db_name, sample_id)
+                origin = getOrigin("/MAdata/db/"+db_name, sample_id)
+
+                pos = [ (origin[0], origin[0]+len(sequence)) ]
+                pos.extend(optima)
+
+                index = 0
+
+                query = NucSeq(sequence)
+
+                seed_set = seeding.execute(fm_index, query)
+
+                soc_queue = soc.execute(seed_set, query, ref_pack, fm_index)
+
+
+                found_it = False
+                while not found_it:
+                    if soc_queue.empty():
+                        index = float("inf")
+                        break
+                    soc_instance = soc_queue.pop()
+                    for seed in soc_instance:
+                        s_start = seed.start_ref
+                        s_end = seed.start_ref + seed.size
+
+                        if s_start >= ref_pack.unpacked_size_single_strand:
+                            s_start = ref_pack.unpacked_size() - s_end
+                            s_end = seed.start_ref + seed.size
+
+                        for start, end in pos:
+                            if near(s_start, start, s_end, end) > 0:
+                                found_it = True
+                                break
+                        if found_it:
+                            break
+                    index += 1
+
+                asd[-1][-1].append(index)
+
+    print("median:")
+    for row in asd:
+        for cell in row:
+            print(median(cell), end="\t")
+        print()
+    print("max (of non inf values):")
+    for row in asd:
+        for cell in row:
+            print(max([x for x in cell if x != float('inf')]), end="\t")
+        print()
+    print("min:")
+    for row in asd:
+        for cell in row:
+            print(min(cell), end="\t")
+        print()
+
+    with open(output_file + ".json", "w") as f:
+        json.dump([db_name, reference, max_span_seed_set, asd], f)
+    print("wrote file")
+
 #creating samples int the database
 #createSampleQueries(working_genome, db_name, 1000, 100, 256)
 
@@ -1910,6 +1986,9 @@ exit()
 # [5, 4, 3]:
 # [9, 10]:
 
+first_accurate_SoC("sw_human_200.db",  human_genome, "soc_test")
+exit()
+
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db",     200, 20, 32, gpu_id=0)
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_1000.db",   1000, 100, 32, gpu_id=1)
 
@@ -1928,7 +2007,7 @@ for task_id in [4]:
 
         ("sw_human_200.db",  human_genome, False, True, 0), # # 3
         ("sw_human_1000.db", human_genome, False, True, 0), #
-        ("human_30000.db",   human_genome, True, False, 0), #
+        ("human_30000.db",   human_genome, True, False, 1), #
 
         ("sw_zebrafish_200.db",  zebrafish_genome, False, True, 0), # # 6
         ("sw_zebrafish_1000.db", zebrafish_genome, False, True, 0), #
@@ -1951,6 +2030,6 @@ for task_id in [4]:
     #resetResults(db_name)
 
     #test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=task_id*2, runtime_sample_multiplier=10)
-    test(db_name, working_genome, only_overall_time=True, long_read_aligners=long_read_aligners, short_read_aligners=short_read_aligners, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
+    test(db_name, working_genome, only_overall_time=True, long_read_aligners=False, short_read_aligners=False, processor=processor, runtime_sample_multiplier=runtime_sample_multiplier)
 
     analyse_all_approaches_depre(db_name + ".html", db_name, num_tries=1)

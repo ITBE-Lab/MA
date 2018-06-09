@@ -146,9 +146,9 @@ Advanced options:
         --giveUp <val>             Threshold with 0 <= <val> <= 1 used as give-up criteria.
                                    SoC's with accumulative seed length smaller than 
                                    'query_len * <val>' will be ignored.
-                                   Reducing this parameter will decrease runtime, but allow
+                                   Reducing this parameter will decrease runtime but allows
                                    the aligner to discover more dissimilar matches.
-                                   Increasing this parameter will increase runtime, but might cause
+                                   Increasing this parameter will increase runtime but might cause
                                    the aligner to miss the correct reference location.
                                    Default is 0.002.
         --maxTries <num>           At most the best <num> SoC's will be inspected.

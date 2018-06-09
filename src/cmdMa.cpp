@@ -91,9 +91,9 @@ const std::string sHelp =
 "\n        --giveUp <val>             Threshold with 0 <= <val> <= 1 used as give-up criteria."
 "\n                                   SoC's with accumulative seed length smaller than "
 "\n                                   'query_len * <val>' will be ignored."
-"\n                                   Reducing this parameter will decrease runtime, but allow"
+"\n                                   Reducing this parameter will decrease runtime but allows"
 "\n                                   the aligner to discover more dissimilar matches."
-"\n                                   Increasing this parameter will increase runtime, but might"
+"\n                                   Increasing this parameter will increase runtime but might"
 "\n                                   cause the aligner to miss the correct reference location."
 "\n                                   Default is 0.002."
 "\n        --maxTries <num>           At most the best <num> SoC's will be inspected."
@@ -128,8 +128,9 @@ int main(int argc, char* argv[])
 
     if (argc <= 1)
     {
-        std::cout << "Use '-h' to display the complete help screen." << std::endl;
-        return 1;
+        std::cout << "Invalid usage; you need to supply -x and -i at least!" << std::endl;
+        std::cout << sHelp << std::endl;
+        return 0;
     }//if
 
     try
@@ -185,7 +186,7 @@ int main(int argc, char* argv[])
                 value<unsigned int>()->default_value(defaults::uiExtend)
             )
             ("x,idx", "Do FMD-index generation", value<std::string>())
-            ("w,width", "SoC width", value<unsigned int>()->default_value("0"))
+            ("SoCWidth", "SoC width", value<unsigned int>()->default_value("0"))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
@@ -224,7 +225,7 @@ int main(int argc, char* argv[])
         auto sParameterSet =    result["mode"]. as<std::string>();
         auto sSeedSet =         result["seedSet"].      as<std::string>();
         auto uiMinLen =         result["minLen"].       as<unsigned int>();
-        auto uiSoCWidth =       result["width"].        as<unsigned int>();
+        auto uiSoCWidth =       result["SoCWidth"].     as<unsigned int>();
         if(bPariedNormal && bPariedUniform)
         {
             std::cerr << "--normal and --uniform are exclusive." << std::endl;

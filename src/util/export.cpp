@@ -125,7 +125,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pSOC->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
     pSOC->uiMinLen = uiMinLen;
     pSOC->uiMinGenomeSize = uiGenomeSizeDisable;
-    pSoC->uiSoCWidth = uiSoCWidth;
+    pSOC->uiSoCWidth = uiSoCWidth;
 
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
 
@@ -140,6 +140,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pCouple->fMinimalQueryCoverage = fMinimalQueryCoverage;
     pCouple->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
     pCouple->fCurrHarmScoreMinRel = fGiveUp;
+    pCouple->fScoreTolerace = fScoreTolerace;
 
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(

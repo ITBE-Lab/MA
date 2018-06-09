@@ -52,26 +52,54 @@ class CommandLine(Module):
 
         taskset = "taskset " + hex_num + " "
 
-        #assemble the shell command
-        cmd_str = taskset + self.create_command(self.in_filename)
-        #cmd_str = self.create_command(self.in_filename)
+        # default command
+        if False:
+            #assemble the shell command
+            cmd_str = taskset + self.create_command(self.in_filename)
 
-        start_time = time.time()
-        result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
-        self.elapsed_time = time.time() - start_time
+            start_time = time.time()
+            result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
+            self.elapsed_time = time.time() - start_time
 
-        if result.returncode != 0:
-            print("call command:", cmd_str)
-            print("subprocess returned with ERROR:")
-            print("Error:")
-            print(result.stderr.decode('utf-8'))
-            exit()
+            if result.returncode != 0:
+                print("call command:", cmd_str)
+                print("subprocess returned with ERROR:")
+                print("Error:")
+                print(result.stderr.decode('utf-8'))
+                exit()
 
-        os.remove(self.in_filename)
+            os.remove(self.in_filename)
 
-        sam_file = result.stdout.decode('utf-8')
+            sam_file = result.stdout.decode('utf-8')
 
-        return sam_file
+            return sam_file
+
+        else:
+            #assemble the shell command
+            #cmd_str = taskset + self.create_command(self.in_filename)
+            cmd_str = taskset + self.create_command(self.in_filename) + " -o .tempSamOut"
+            #cmd_str = self.create_command(self.in_filename)
+
+            start_time = time.time()
+            #result = subprocess.run(cmd_str, stdout=subprocess.PIPE, shell=True)
+            result = subprocess.run(cmd_str, shell=True)
+            self.elapsed_time = time.time() - start_time
+
+            if result.returncode != 0:
+                print("call command:", cmd_str)
+                print("subprocess returned with ERROR:")
+                print("Error:")
+                print(result.stderr.decode('utf-8'))
+                exit()
+
+            os.remove(self.in_filename)
+
+            #sam_file = result.stdout.decode('utf-8')
+            sam_file = ""
+            with open('.tempSamOut', 'r') as f:
+                sam_file=f.read()
+
+            return sam_file
 
     ##
     # @origin https://stackoverflow.com/questions/10321978/integer-to-bitfield-as-a-list
@@ -394,7 +422,7 @@ class G_MAP(CommandLine):
         return False
 
 class MA(CommandLine):
-    def __init__(self, index_str, num_results, fast, db_name, finder_mode=False, other_dp_scores=False):
+    def __init__(self, index_str, num_results, fast, db_name, finder_mode=False, other_dp_scores=False, soc_width=None):
         super().__init__()
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
@@ -405,6 +433,7 @@ class MA(CommandLine):
         self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
         self.finder_mode = finder_mode
         self.other_dp_scores = other_dp_scores
+        self.soc_width = soc_width
 
     def create_command(self, in_filename):
         cmd_str = self.ma_home + "ma -t 1 -m " + self.fast
@@ -412,6 +441,8 @@ class MA(CommandLine):
             cmd_str += " -d"
         if self.other_dp_scores:
             cmd_str += " --Match 1 --MisMatch 1 --Gap 1 --Extend 1"
+        if not self.soc_width is None:
+            cmd_str += " --SoCWidth " + self.soc_width
         return cmd_str + " -x " + self.index_str + " -i " + in_filename + " -n " + self.num_results
 
     def do_checks(self):
@@ -446,23 +477,28 @@ def test(
     warned_for_n = False
 
     l = [
+        ##("MA Accurate -w 10", MA(reference, num_results, False, db_name, soc_width="10")),
+        ##("MA Accurate -w 100", MA(reference, num_results, False, db_name, soc_width="100")),
+        ##("MA Accurate -w 300", MA(reference, num_results, False, db_name, soc_width="300")),
+
+
         ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
-        ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
-
-        ("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
-        ("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
-        ("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
-        ("MINIMAP 2 map-pb", Minimap2(reference, num_results, db_name, presetting="map-pb")),
-        ("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
-        ("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
-
-        # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
-        # ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
-
-        ("MA Accurate", MA(reference, num_results, False, db_name)),
-        ("BWA SW", BWA_SW(reference, num_results, db_name)),
+        #  ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #  ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        #  ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+        #  #
+        #  ("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
+        #  ("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
+        #  ("BWA MEM intractg", BWA_MEM(reference, num_results, db_name, presetting="intractg")),
+        #  ("MINIMAP 2 map-pb", Minimap2(reference, num_results, db_name, presetting="map-pb")),
+        #  ("MINIMAP 2 map-ont", Minimap2(reference, num_results, db_name, presetting="map-ont")),
+        #  ("MINIMAP 2 asm10", Minimap2(reference, num_results, db_name, presetting="asm10")),
+        #  #
+        #  # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
+        #  # ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
+        #  #
+        #  ("MA Accurate", MA(reference, num_results, False, db_name)),
+        #  ("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]
 
     g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
