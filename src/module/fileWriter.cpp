@@ -130,7 +130,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         )// DEBUG
 
         std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
-        std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
+        //std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
         if(std::isnan(pAlignment->fMappingQuality))
             sMapQual = "255";
@@ -163,7 +163,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             //segment sequence
             *pOut << sSegment << "\t";
             //ASCII of Phred-scaled base Quality+33
-            *pOut << sQual << "\n"; // flushing will be done in the deconstructor
+            *pOut << "*" << "\n"; // flushing will be done in the deconstructor
         }// scope xGuard
     }//for
 

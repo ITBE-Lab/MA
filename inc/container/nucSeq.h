@@ -324,6 +324,8 @@ namespace libMA
     }; // class
 #endif
 
+#define WITH_QUALITY ( 0 )
+
     /** 
      * @brief Contains a genetic sequence made out of nucleotides (A, C, G, T).
      * @details
@@ -336,7 +338,9 @@ namespace libMA
         /** The encapsulated sequence
          */
         uint8_t *pxSequenceRef;
+#if WITH_QUALITY
         uint8_t *pxQualityRef;
+#endif
 
         /** Current size of the content of the encapsulated sequence
          */
@@ -355,14 +359,18 @@ namespace libMA
              */
             if ( pxSequenceRef != NULL ) 
                 free( pxSequenceRef );
+#if WITH_QUALITY
             if ( pxQualityRef != NULL ) 
                 free( pxQualityRef );
+#endif
         } // protected method
 
         void vResetProtectedAttributes()
         {
             pxSequenceRef = NULL;
+#if WITH_QUALITY
             pxQualityRef = NULL;
+#endif
             uiSize = 0;
             uxCapacity = 0;
         } // protected method
@@ -380,16 +388,25 @@ namespace libMA
             * See: http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
             */
             auto pxReallocRef = (uint8_t*)realloc( pxSequenceRef, uxRequestedSize * sizeof(uint8_t) );
+#if WITH_QUALITY
             auto pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxRequestedSize * sizeof(uint8_t) );
+#endif
 
 
-            if ( pxReallocRef == NULL || pxReallocRef2 == NULL )
+            if ( 
+                   pxReallocRef == NULL
+#if WITH_QUALITY
+                || pxReallocRef2 == NULL
+#endif 
+               )
             {
                 throw fasta_reader_exception( (std::string( "Memory Reallocation Failed for requested size ") + std::to_string( uxRequestedSize )).c_str() );
             } // if
 
             pxSequenceRef = pxReallocRef;
+#if WITH_QUALITY
             pxQualityRef = pxReallocRef2;
+#endif
             uxCapacity = uxRequestedSize;
         } // method
 
@@ -448,7 +465,9 @@ namespace libMA
             /* We transport the three protected attributes to the receiver ...
             */
             rReceivingSequence.pxSequenceRef = this->pxSequenceRef;
+#if WITH_QUALITY
             rReceivingSequence.pxQualityRef = this->pxQualityRef;
+#endif
             rReceivingSequence.uiSize = this->uiSize;
             rReceivingSequence.uxCapacity = this->uxCapacity;
 
@@ -490,6 +509,7 @@ namespace libMA
             return pxSequenceRef[uiSubscript];
         } // method (set)
 
+#if WITH_QUALITY
         inline uint8_t & quality( size_t uiSubscript )
         {
             assert( uiSubscript < uiSize );
@@ -501,6 +521,7 @@ namespace libMA
             assert( uiSubscript < uiSize );
             return pxQualityRef[uiSubscript];
         } // method (set)
+#endif
 
         /** Resizes the internal buffer of the sequence to the requested value.
          */
@@ -544,7 +565,12 @@ namespace libMA
         
         /** WARNING: the inner string might not null-terminated after this operation.
          */
-        inline NucSeq& vAppend( const uint8_t* pSequence, const uint8_t* pQuality, size_t uxNumberOfElements )
+        inline NucSeq& vAppend( 
+            const uint8_t* pSequence,
+#if WITH_QUALITY
+            const uint8_t* pQuality, 
+#endif 
+            size_t uxNumberOfElements )
         {
             size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
 
@@ -556,7 +582,9 @@ namespace libMA
             /** WARNING: If we work later with non 8-bit data we have to be careful here
              */
             memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof(uint8_t) );
+#if WITH_QUALITY
             memcpy( this->pxQualityRef + uiSize, pQuality, uxNumberOfElements * sizeof(uint8_t) );
+#endif
 
             uiSize = uxRequestedSize;
 
@@ -565,7 +593,12 @@ namespace libMA
 
         /** Push back of a single symbol.
          */
-        inline void push_back( const uint8_t xElement, const uint8_t xQuality )
+        inline void push_back(
+            const uint8_t xElement
+#if WITH_QUALITY
+            ,const uint8_t xQuality
+#endif
+            )
         {
             if ( this->uiSize >= this->uxCapacity )
             {
@@ -573,7 +606,9 @@ namespace libMA
             } // if
 
             pxSequenceRef[uiSize + 1] = xElement;
+#if WITH_QUALITY
             pxQualityRef[uiSize + 1] = xQuality;
+#endif
             uiSize++;
         } // method
 
@@ -584,7 +619,6 @@ namespace libMA
             if ( this->uiSize == rOtherSequence.uiSize )
             {
                 return memcmp(this->pxSequenceRef, rOtherSequence.pxSequenceRef, sizeof(uint8_t) * uiSize ) == 0;
-                return memcmp(this->pxQualityRef, rOtherSequence.pxQualityRef, sizeof(uint8_t) * uiSize ) == 0;
             } // if
             return false;
         } // method
@@ -709,11 +743,18 @@ namespace libMA
         {
 
             size_t uxSizeBeforeAppendOperation = this->uiSize;
+#if WITH_QUALITY
             std::vector<uint8_t> xQuality(strlen( pcString ), 126);//strlen( pcString ) uint8_t's with value 1
+#endif
             
             /* WARNING! char and uint8_t must have the same size or we get a serious problem here!
             */
-            vAppend( (const uint8_t*)pcString, xQuality.data(), strlen( pcString ) );
+            vAppend( 
+                (const uint8_t*)pcString, 
+#if WITH_QUALITY
+                xQuality.data(), 
+#endif
+                strlen( pcString ) );
 
             vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
         } // method
@@ -740,7 +781,8 @@ namespace libMA
                     ret += charAt(i);
             return ret;
         }//function
-        
+
+#if WITH_QUALITY
         std::string fromToQual(unsigned int uiStart, unsigned int uiEnd)
         {
             std::string ret = "";
@@ -748,6 +790,7 @@ namespace libMA
                     ret += (char)quality(i);
             return ret;
         }//function
+#endif
 
         /* TO DO: Make the 5 a class constant!
         */
@@ -763,9 +806,12 @@ namespace libMA
             std::string sRet = sName + "\n";
             for (unsigned int i = 0; i < length(); i++)
                 sRet += charAt(i);
-            sRet += "\n+\n";
+            sRet += "\n";
+#if WITH_QUALITY
+            sRet += "+\n";
             for (unsigned int i = 0; i < length(); i++)
                 sRet += (char)quality(i);
+#endif
             return sRet;
         }//method
 

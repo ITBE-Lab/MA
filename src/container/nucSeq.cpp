@@ -103,10 +103,12 @@ void exportSequence()
                     "\n"
                     "Reverses the sequence.\n"
                 )
+#if WITH_QUALITY
             .def(
                     "quality", 
                     &NucSeq::getQuality
                 )
+#endif
             .def(
                     "fastaq", 
                     &NucSeq::fastaq
