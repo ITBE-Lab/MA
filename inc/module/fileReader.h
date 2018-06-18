@@ -23,6 +23,16 @@ namespace libMA
      */
     class FileReader: public Module
     {
+    private:
+        class BufferedReader
+        {
+            private:
+                const size_t uiBufferSize = 1048576; // == 2^20 ~= 0.1 GB buffer size
+                std::vector<char> vBuffer;
+                std::vector<>
+            public:
+
+        }; // class
     public:
         std::shared_ptr<std::ifstream> pFile;
 
