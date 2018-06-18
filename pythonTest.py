@@ -1986,8 +1986,8 @@ exit()
 # [5, 4, 3]:
 # [9, 10]:
 
-first_accurate_SoC("sw_human_200.db",  human_genome, "soc_test")
-exit()
+#first_accurate_SoC("sw_human_200.db",  human_genome, "soc_test")
+#exit()
 
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_200.db",     200, 20, 32, gpu_id=0)
 #createSampleQueries(plasmodium_genome, "sw_plasmodium_1000.db",   1000, 100, 32, gpu_id=1)
@@ -1996,7 +1996,7 @@ exit()
 #createSampleQueries(e_coli_genome, "sw_eColi_1000.db",   1000, 100, 32, gpu_id=0)
 #createSampleQueries(e_coli_genome, "sw_eColi_30000_10.db",  30000, 10, 32, gpu_id=1)
 
-for task_id in [4]:
+for task_id in [3]:
 
     processor= task_id*2
 

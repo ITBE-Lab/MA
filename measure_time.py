@@ -53,7 +53,7 @@ class CommandLine(Module):
         taskset = "taskset " + hex_num + " "
 
         # default command
-        if False:
+        if True:
             #assemble the shell command
             cmd_str = taskset + self.create_command(self.in_filename)
 
@@ -387,16 +387,36 @@ class BWA_MEM(CommandLine):
         return False
 
 class BWA_SW(CommandLine):
-    def __init__(self, index_str, num_results, db_name):
+    def __init__(self, index_str, num_results, db_name, s=None):
         super().__init__()
         self.bwa_home = "/usr/home/markus/workspace/bwa/"
         self.index_str = index_str + "bwa"
         self.num_results = num_results
         self.in_filename = ".tempBwaSw" + db_name + ".fasta"
+        self.s = s
 
     def create_command(self, in_filename):
         cmd_str = self.bwa_home + "bwa bwasw "
+        if not self.s is None:
+            return cmd_str + " " + self.index_str + " " + in_filename + " -s " + self.s + " -T 15 -c 10"
         return cmd_str + " " + self.index_str + " " + in_filename
+
+    def do_checks(self):
+        return False
+        
+
+class GEM(CommandLine):
+    def __init__(self, index_str, num_results, genome_str, db_name):
+        super().__init__()
+        self.gem_home = "/usr/home/markus/workspace/gemtools/GEMTools/bin/"
+        self.index_str = index_str + ".gem"
+        self.num_results = num_results
+        self.genome_str = genome_str
+        self.in_filename = ".tempGEM" + db_name + ".fasta"
+
+    def create_command(self, in_filename):
+        cmd_str = self.gem_home + "gt.map2sam"
+        return cmd_str + " -I " + self.index_str + " -r " + self.genome_str + " -i " + in_filename
 
     def do_checks(self):
         return False
@@ -480,9 +500,10 @@ def test(
         ##("MA Accurate -w 10", MA(reference, num_results, False, db_name, soc_width="10")),
         ##("MA Accurate -w 100", MA(reference, num_results, False, db_name, soc_width="100")),
         ##("MA Accurate -w 300", MA(reference, num_results, False, db_name, soc_width="300")),
+        ("BWA SW s=30", BWA_SW(reference, num_results, db_name, s="300")),
 
 
-        ("MA Fast", MA(reference, num_results, True, db_name)),
+        #  ("MA Fast", MA(reference, num_results, True, db_name)),
         #  ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
         #  ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
         #  ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
