@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
         ("t,threads", "Number of threads", 
            value<unsigned int>()->default_value(std::to_string(std::thread::hardware_concurrency()))
            , "arg     "
-        )
+        ) 
     ;
 
     if (argc <= 1)

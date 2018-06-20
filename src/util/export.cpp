@@ -93,7 +93,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         unsigned int uiCurrHarmScoreMin,
         unsigned long long uiGenomeSizeDisable
     )
-{
+{ 
     iMatch = iMatch_;
     iExtend = iExtend_;
     iGap = iGap_;

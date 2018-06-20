@@ -415,41 +415,20 @@ void exportFM_index()
         ))
         .def(
                 "load", 
-                &FMIndex::vLoadFMIndex,
-                "arg1: self\n"
-                "arg2: the path an filename of the FM Index that shall be loaded\n"
-                "returns: nil\n"
-                "\n"
-                "load the FMIndex from the given file\n"
+                &FMIndex::vLoadFMIndex
             )
         .def(
                 "exists", 
-                &FMIndex::packExistsOnFileSystem,
-                "arg1: self\n"
-                "arg2: the path an filename of the FM Index that shall be checked\n"
-                "returns: nil\n"
-                "\n"
-                "check weather a FM index file exists on disk.\n"
+                &FMIndex::packExistsOnFileSystem
             )
         .staticmethod("exists")
         .def(
                 "store", 
-                &FMIndex::vStoreFMIndex,
-                "arg1: self\n"
-                "arg2: the path an filename the FM Index shall be stored at\n"
-                "returns: nil\n"
-                "\n"
-                "save this FM Index on disc.\n"
+                &FMIndex::vStoreFMIndex
             )
         .def(
                 "bwt_sa", 
-                &FMIndex::bwt_sa,
-                "arg1: self\n"
-                "arg2: the BWT position to extract\n"
-                "returns: nil\n"
-                "\n"
-                "Delivers the Position in the reference sequence T "
-                "that belongs to the position k in the BWT.\n"
+                &FMIndex::bwt_sa
             )
         .def(
                 "get_ambiguity", 
@@ -461,13 +440,7 @@ void exportFM_index()
             )
         .def(
                 "bwt_2occ4", 
-                &FMIndex::bwt_2occ4,
-                "arg1: self\n"
-                "arg2: the BWT position to extract\n"
-                "returns: nil\n"
-                "\n"
-                "Delivers the Position in the reference sequence T "
-                "that belongs to the position k in the BWT.\n"
+                &FMIndex::bwt_2occ4
             );
 
     //tell boost python that pointers of these classes can be converted implicitly

@@ -132,9 +132,6 @@ html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildc
 #distrib:
 #	python setup.py sdist bdist_egg bdist_wheel
 
-# @todo remove me
-vid:
-	gource -f --seconds-per-day 0.1
 
 clean:
 	rm -f -r obj dbg libMA.so html ma

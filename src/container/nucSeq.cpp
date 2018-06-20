@@ -54,54 +54,31 @@ void exportSequence()
             ))
             .def(
                     "at", 
-                    &NucSeq::charAt,
-                    "arg1: self\n"
-                    "arg2: index at which to look\n"
-                    "returns: the char at the given index\n"
+                    &NucSeq::charAt
                 )
             .def(
                     "__getitem__", 
-                    &NucSeq::charAt,
-                    "arg1: self\n"
-                    "arg2: index at which to look\n"
-                    "returns: the char at the given index\n"
+                    &NucSeq::charAt
                 )
             .def(
                     "append", 
-                    &NucSeq::vAppend_boost,
-                    "arg1: self\n"
-                    "arg2: sequence to append\n"
-                    "returns: nil\n"
-                    "\n"
-                    "Appends the given string to the end of the sequence.\n"
-                    "Any character other than A,C,T,G,a,c,t and g "
-                    "will result in an N beeing appended.\n"
+                    &NucSeq::vAppend_boost
                 )
             .def(
                     "length", 
-                    &NucSeq::length,
-                    "arg1: self\n"
-                    "returns: the length of the sequence\n"
+                    &NucSeq::length
                 )
             .def(
                     "__len__", 
-                    &NucSeq::length,
-                    "arg1: self\n"
-                    "returns: the length of the sequence\n"
+                    &NucSeq::length
                 )
             .def(
                     "__str__", 
-                    &NucSeq::toString,
-                    "arg1: self\n"
-                    "returns: the sequence as string\n"
+                    &NucSeq::toString
                 )
             .def(
                     "reverse", 
-                    &NucSeq::vReverse,
-                    "arg1: self\n"
-                    "returns: nil\n"
-                    "\n"
-                    "Reverses the sequence.\n"
+                    &NucSeq::vReverse
                 )
             .def(
                     "quality", 

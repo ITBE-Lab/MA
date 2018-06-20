@@ -15,5 +15,5 @@ BinPackParameters: false
 BinPackArguments: false
 BreakBeforeInheritanceComma: true
 FixNamespaceComments: true
-DisableFormat: true
+ReflowComments: true
 ---
