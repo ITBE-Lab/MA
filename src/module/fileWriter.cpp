@@ -198,7 +198,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
         std::string sSegmentQuery = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sQueryPos = std::to_string(pAlignment->uiBeginOnQuery);
         std::string sSegmentRef = pPack->vExtract(pAlignment->uiBeginOnRef, pAlignment->uiEndOnRef)->toString();
-        std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
+        //std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
         if(std::isnan(pAlignment->fMappingQuality))
             sMapQual = "255";

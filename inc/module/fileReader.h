@@ -27,7 +27,7 @@ namespace libMA
         class BufferedReader
         {
             private:
-                const size_t uiFileBufferSize = 1048576; // == 2^20 ~= 0.1 GB buffer size
+                size_t uiFileBufferSize = 1048576; // == 2^20 ~= 0.1 GB buffer size
                 const size_t uiQueryBufferSize = 100;
                 unsigned int uiNucSeqBufPosRead = 0;
                 unsigned int uiNucSeqBufPosWrite = 0;
@@ -40,7 +40,18 @@ namespace libMA
                 std::thread xThread;
                 inline void reFillBuffer()
                 {
+                    if(xFile.eof())
+                    {
+                        throw AlignerException("Unexpected end of file");
+                    }// if
+                    DEBUG(
+                        std::cout << "refilling buffer" << std::endl;
+                    )
                     xFile.read(vBuffer.data(), uiFileBufferSize);
+                    if(xFile.eof())
+                    {
+                        uiFileBufferSize = xFile.gcount();
+                    }// if
                     uiCharBufPosRead = 0;
                 }// function
 
@@ -58,28 +69,47 @@ namespace libMA
 
                 BufferedReader(std::string sFileName)
                         :
-                    vpNucSeqBuffer(),
+                    vBuffer(uiFileBufferSize),
+                    vpNucSeqBuffer(uiQueryBufferSize),
                     xFile(sFileName)
                 {
                     if (!xFile.is_open())
                     {
                         throw AlignerException("Unable to open file" + sFileName);
                     }//if
-                    vpNucSeqBuffer.reserve(uiQueryBufferSize);
-                    vBuffer.reserve(uiFileBufferSize);
                     // the async file reader
+                    DEBUG(
+                        std::cout << "Dispatching async reader" << std::endl;
+                    )
+                    std::mutex xTemp;
+                    std::unique_lock<std::mutex> xDispatchLock(xTemp);
+                    std::condition_variable xDispatchCv;
                     xThread = std::thread(
                         [&]
                         ()
                         {
                             std::unique_lock<std::mutex> xLock(xMutex);
-                            while(pFile->good() && !pFile->eof())
+                            DEBUG(
+                                std::cout << "Dispatched async reader" << std::endl;
+                            )
+                            xDispatchCv.notify_one();
+                            while( !xFile.eof() || uiCharBufPosRead < uiFileBufferSize )
                             {
-                                std::shared_ptr<NucSeq> pCurr;
+                                while(
+                                        ( (uiNucSeqBufPosWrite + 1) % uiQueryBufferSize) 
+                                            ==
+                                        uiNucSeqBufPosRead
+                                    )
+                                    cv.wait(xLock);
+                                auto pCurr = std::make_shared<NucSeq>();
+                                pCurr->sName = "";
                                 if(uiCharBufPosRead >= uiFileBufferSize)
                                     reFillBuffer();
                                 // find end of name
-                                assert(vBuffer[uiCharBufPosRead] == '>');
+                                if (!vBuffer[uiCharBufPosRead] == '>')
+                                {
+                                    throw AlignerException("Invalid file format: expecting '>' at query begin");
+                                }//if
                                 do
                                 {
                                     unsigned int uiCharBufPosReadLen = searchEndline();
@@ -89,7 +119,7 @@ namespace libMA
                                             uiI++
                                         )
                                         pCurr->sName += vBuffer[uiI];
-                                    uiCharBufPosRead += uiCharBufPosReadLen;
+                                    uiCharBufPosRead += uiCharBufPosReadLen + 1;
                                     if(uiCharBufPosRead >= uiFileBufferSize)
                                         reFillBuffer();
                                 }// do
@@ -97,6 +127,10 @@ namespace libMA
 
                                 // remove the description from the query name
                                 pCurr->sName = pCurr->sName.substr(1, pCurr->sName.find(' '));
+                                DEBUG(
+                                    std::cout << "Reading sequence with name: " 
+                                              << pCurr->sName << std::endl;
+                                )
 
                                 // find end of nuc section
                                 do
@@ -104,39 +138,45 @@ namespace libMA
                                     unsigned int uiCharBufPosReadLen = searchEndline();
                                     //memcpy the data over
                                     pCurr->vAppend(
-                                            &vBuffer[uiCharBufPosRead],
+                                            (const uint8_t*) &vBuffer[uiCharBufPosRead],
                                             uiCharBufPosReadLen
                                         );
-                                    uiCharBufPosRead += uiCharBufPosReadLen;
+                                    uiCharBufPosRead += uiCharBufPosReadLen + 1;
                                     if(uiCharBufPosRead >= uiFileBufferSize)
                                         reFillBuffer();
                                 }// do
                                 while(
-                                        uiCharBufPosRead >= uiFileBufferSize ||
+                                        (!xFile.eof() && uiCharBufPosRead >= uiFileBufferSize) ||
                                         vBuffer[uiCharBufPosRead] != '>'
                                     );
-                                // @todo write into buffer and wait on mutex
+                                
+                                DEBUG(
+                                    std::cout << "Read sequence with name: " 
+                                              << pCurr->sName << std::endl;
+                                )
 
                                 pCurr->vTranslateToNumericFormUsingTable(
                                         pCurr->xNucleotideTranslationTable,
                                         0
                                     );
                                 vpNucSeqBuffer[uiNucSeqBufPosWrite] = pCurr;
-                                while(
-                                        ( (uiNucSeqBufPosWrite + 1) % uiQueryBufferSize) 
-                                            !=
-                                        uiNucSeqBufPosRead
-                                    )
-                                    cv.wait(xLock);
                                 uiNucSeqBufPosWrite = (uiNucSeqBufPosWrite + 1) % uiQueryBufferSize;
                             }// while
+                            xLock.unlock();
                         }// lambda
                     );// std::thread
+                    xDispatchCv.wait(xDispatchLock);
+                    xDispatchLock.unlock();
+                    DEBUG(
+                        std::cout << "Main thread free to continue" << std::endl;
+                    )
                 }// constructor
 
                 ~BufferedReader()
                 {
+                    //@todo if file is not completely read into the buffer this will not terminate
                     xThread.join();
+                    xFile.close();
                 }// deconstructor
 
                 bool hasNext()
@@ -159,25 +199,16 @@ namespace libMA
                 }// function
         };// class
     public:
-        std::shared_ptr<std::ifstream> pFile;
+        std::shared_ptr<BufferedReader> pFile;
 
         /**
          * @brief creates a new FileReader.
          */
         FileReader(std::string sFileName)
                 :
-            pFile(new std::ifstream(sFileName))
+            pFile(new BufferedReader(sFileName))
         {
-            if (!pFile->is_open())
-            {
-                throw AlignerException("Unable to open file" + sFileName);
-            }//if
         }//constructor
-
-        ~FileReader()
-        {
-            pFile->close();
-        }//deconstructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
@@ -214,9 +245,72 @@ namespace libMA
             return true;
         }//function
 
-        void testBufReader()
+        static void testBufReader()
         {
+            std::srand(123);
+            const unsigned int uiNumTests = 10000;
+            for(unsigned int i = 0; i < uiNumTests; i++)
+            {
+                const int uiLineLength = std::rand()%25 + 25;
+                // generate queries
+                std::cout << "generating queries" << std::endl;
+                std::vector<std::shared_ptr<NucSeq>> vOriginal;
+                for(int j = 0; j < std::rand()%20 + 10; j++)
+                {
+                    vOriginal.push_back(std::make_shared<NucSeq>());
+                    vOriginal.back()->sName = std::to_string(j).append(" some description");
+                    for(int j = 0; j < std::rand()%500 + 10; j++)
+                    {
+                        vOriginal.back()->push_back(std::rand()%5);
+                    }// for
+                }// for
 
+                // write file
+                std::cout << "writing file" << std::endl;
+                std::ofstream xOut(".tempTest");
+                for(auto pSeq : vOriginal)
+                {
+                    xOut << pSeq->fastaq_l(uiLineLength);
+                }//for
+                xOut.flush();
+                xOut.close();
+
+                // read file
+                std::cout << "reading file" << std::endl;
+                BufferedReader xIn(".tempTest");
+                std::vector<std::shared_ptr<NucSeq>> vRead;
+                do
+                {
+                    std::cout << "checking has next" << std::endl;
+                    if(!xIn.hasNext())
+                        break;
+                    std::cout << "dequeing query" << std::endl;
+                    vRead.push_back(xIn.next());
+                }
+                while(true);
+
+                // check
+                std::cout << "checking" << std::endl;
+                if(vOriginal.size() != vRead.size())
+                {
+                    std::cout << "[error] got different sizes " << vOriginal.size() 
+                            << " != " << vRead.size() << std::endl;
+                    return;
+                }//if
+                for(unsigned int i=0; i < vOriginal.size(); i++)
+                {
+                    if(!vOriginal[i]->equal(*vRead[i]))
+                    {
+                        std::cout << "[error] got different sequences \n"
+                                << vOriginal[i]->fastaq_l(50)
+                                << " != \n"
+                                << vRead[i]->fastaq_l(50)
+                                << std::endl;
+                        return;
+                    }// if
+                }//for
+                std::cout << "[OK] " << i << "/" << uiNumTests << std::endl;
+            }// for
         }// function
 
     };//class

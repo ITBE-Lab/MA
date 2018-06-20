@@ -39,6 +39,7 @@ size_t len(std::string& sLine)
 
 std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
 {
+#if 0
     std::shared_ptr<NucSeq> pRet(new NucSeq());
     //FASTA format
     if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
@@ -66,9 +67,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
                     }//if
                 }//for
             )//DEBUG
-            //// size_t uiLineSize = len(sLine);
-            //// std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
-            //// pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
+            size_t uiLineSize = len(sLine);
+            std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
+            pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
         pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
 
@@ -92,11 +93,11 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         pRet->sName = sLine.substr(1, sLine.find(' '));
         while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
         {
-            //// sLine = "";
-            //// std::getline (*pFile, sLine);
-            //// size_t uiLineSize = len(sLine);
-            //// std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
-            //// pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
+            sLine = "";
+            std::getline (*pFile, sLine);
+            size_t uiLineSize = len(sLine);
+            std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
+            pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
         }//while
         pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
         //quality
@@ -111,6 +112,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         }//while
         return pRet;
     }//if
+#endif
+    if(pFile->hasNext())
+        return pFile->next();
     //if we reach this point we have read all content of the file
     throw ModuleDryException();
 }//function
@@ -124,6 +128,10 @@ void exportFileReader()
             boost::python::bases<Module>, 
             std::shared_ptr<FileReader>
         >("FileReader", boost::python::init<std::string>())
+    DEBUG(
+        .def("testBufReader", &FileReader::testBufReader)
+        .staticmethod("testBufReader")
+    )
     ;
 
     boost::python::implicitly_convertible< 

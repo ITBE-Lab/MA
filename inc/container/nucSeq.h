@@ -565,12 +565,14 @@ namespace libMA
         
         /** WARNING: the inner string might not null-terminated after this operation.
          */
-        inline NucSeq& vAppend( 
-            const uint8_t* pSequence,
+        inline NucSeq& vAppend
+            ( 
+                const uint8_t* pSequence,
 #if WITH_QUALITY
-            const uint8_t* pQuality, 
+                const uint8_t* pQuality,
 #endif 
-            size_t uxNumberOfElements )
+                size_t uxNumberOfElements
+            )
         {
             size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
 
@@ -803,7 +805,7 @@ namespace libMA
 
         std::string fastaq()
         {
-            std::string sRet = sName + "\n";
+            std::string sRet = ">" + sName + "\n";
             for (unsigned int i = 0; i < length(); i++)
                 sRet += charAt(i);
             sRet += "\n";
@@ -811,6 +813,30 @@ namespace libMA
             sRet += "+\n";
             for (unsigned int i = 0; i < length(); i++)
                 sRet += (char)quality(i);
+            sRet += "\n";
+#endif
+            return sRet;
+        }//method
+
+        std::string fastaq_l(unsigned int uiLineLength)
+        {
+            std::string sRet = ">" + sName;
+            for (unsigned int i = 0; i < length(); i++)
+            {
+                if(i % uiLineLength == 0)
+                    sRet += "\n";
+                sRet += charAt(i);
+            }// for
+            sRet += "\n";
+#if WITH_QUALITY
+            sRet += "+";
+            for (unsigned int i = 0; i < length(); i++)
+            {
+                if(i % uiLineLength == 0)
+                    sRet += "\n";
+                sRet += (char)quality(i);
+            }// for
+            sRet += "\n";
 #endif
             return sRet;
         }//method

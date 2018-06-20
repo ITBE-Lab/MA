@@ -1860,6 +1860,9 @@ def check_sw_score(db_name, genome, sample_id, ref_start, gpu_id=0):
 #exit()
 
 
+FileReader.testBufReader()
+exit()
+
 #libMA.testKsw()
 #exit()
 
