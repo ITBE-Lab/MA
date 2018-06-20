@@ -106,7 +106,7 @@ namespace libMA
                                 if(uiCharBufPosRead >= uiFileBufferSize)
                                     reFillBuffer();
                                 // find end of name
-                                if (!vBuffer[uiCharBufPosRead] == '>')
+                                if (! (vBuffer[uiCharBufPosRead] == '>') )
                                 {
                                     throw AlignerException("Invalid file format: expecting '>' at query begin");
                                 }//if
@@ -127,10 +127,6 @@ namespace libMA
 
                                 // remove the description from the query name
                                 pCurr->sName = pCurr->sName.substr(1, pCurr->sName.find(' '));
-                                DEBUG(
-                                    std::cout << "Reading sequence with name: " 
-                                              << pCurr->sName << std::endl;
-                                )
 
                                 // find end of nuc section
                                 do
@@ -142,23 +138,15 @@ namespace libMA
                                             uiCharBufPosReadLen
                                         );
                                     uiCharBufPosRead += uiCharBufPosReadLen + 1;
-                                    if(uiCharBufPosRead >= uiFileBufferSize)
+                                    if(!xFile.eof() && uiCharBufPosRead >= uiFileBufferSize)
                                         reFillBuffer();
                                 }// do
                                 while(
                                         (!xFile.eof() && uiCharBufPosRead >= uiFileBufferSize) ||
-                                        vBuffer[uiCharBufPosRead] != '>'
+                                        (uiCharBufPosRead < uiFileBufferSize && vBuffer[uiCharBufPosRead] != '>')
                                     );
-                                
-                                DEBUG(
-                                    std::cout << "Read sequence with name: " 
-                                              << pCurr->sName << std::endl;
-                                )
 
-                                pCurr->vTranslateToNumericFormUsingTable(
-                                        pCurr->xNucleotideTranslationTable,
-                                        0
-                                    );
+                                pCurr->vTranslateToNumericForm(0);
                                 vpNucSeqBuffer[uiNucSeqBufPosWrite] = pCurr;
                                 uiNucSeqBufPosWrite = (uiNucSeqBufPosWrite + 1) % uiQueryBufferSize;
                             }// while
@@ -263,6 +251,9 @@ namespace libMA
                     {
                         vOriginal.back()->push_back(std::rand()%5);
                     }// for
+                    //make sure N's are encoded correctly
+                    vOriginal.back()->vTranslateToCharacterForm(0);
+                    vOriginal.back()->vTranslateToNumericForm(0);
                 }// for
 
                 // write file
@@ -281,10 +272,8 @@ namespace libMA
                 std::vector<std::shared_ptr<NucSeq>> vRead;
                 do
                 {
-                    std::cout << "checking has next" << std::endl;
                     if(!xIn.hasNext())
                         break;
-                    std::cout << "dequeing query" << std::endl;
                     vRead.push_back(xIn.next());
                 }
                 while(true);
