@@ -51,7 +51,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * <tr><td>Seeding <td> libMA::FMIndex, libMA::NucSeq <td> libMA::SegmentVector
  * <tr><td>Seed set assembling <td> libMA::SegmentVector <td> libMA::Seeds
  * <tr><td>Dynamic programming <td> libMA::Seeds, libMA::NucSeq, libMA::Pack <td> libMA::Alignment
- * </table>
+ * </table> 
  *
  * @note The python classes can be easily identified by the prefix "MA." 
  * while C++ classes have "libMA::" as prefix.
@@ -194,6 +194,6 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     bool bSkipLongBWTIntervals,
     unsigned int uiCurrHarmScoreMin,
     unsigned long long uiGenomeSizeDisable
-);
+); 
 
 #endif

@@ -60,6 +60,6 @@ namespace libMA
             sSeedSet = "maxSpan";
         }// function
     }// namespace
-}// namespace
+}// namespace 
 
 #endif
