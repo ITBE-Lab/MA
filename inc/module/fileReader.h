@@ -177,12 +177,16 @@ namespace libMA
                     return uiNucSeqBufPosRead != uiNucSeqBufPosWrite;
                 }// function
 
+                /**
+                 * @note expects accessing threads to be synchronized
+                 */
                 std::shared_ptr<NucSeq> next()
                 {
                     auto pQuery = vpNucSeqBuffer[uiNucSeqBufPosRead];
                     vpNucSeqBuffer[uiNucSeqBufPosRead] = nullptr;
                     uiNucSeqBufPosRead = (uiNucSeqBufPosRead + 1) % uiQueryBufferSize;
                     cv.notify_one();
+                    assert(pQuery != nullptr);
                     return pQuery;
                 }// function
         };// class
@@ -235,15 +239,15 @@ namespace libMA
 
         static void testBufReader()
         {
-            std::srand(123);
+            //std::srand(123);
             const unsigned int uiNumTests = 10000;
-            for(unsigned int i = 0; i < uiNumTests; i++)
+            for(unsigned int i = 0; i <= uiNumTests; i++)
             {
                 const int uiLineLength = std::rand()%25 + 25;
                 // generate queries
                 std::cout << "generating queries" << std::endl;
                 std::vector<std::shared_ptr<NucSeq>> vOriginal;
-                for(int j = 0; j < std::rand()%20 + 10; j++)
+                for(int j = 0; j < std::rand()%20 + 100; j++)
                 {
                     vOriginal.push_back(std::make_shared<NucSeq>());
                     vOriginal.back()->sName = std::to_string(j).append(" some description");
@@ -268,15 +272,44 @@ namespace libMA
 
                 // read file
                 std::cout << "reading file" << std::endl;
+                const unsigned int uiThreads = 8;
+                std::vector<std::vector<std::shared_ptr<NucSeq>>> vReads(uiThreads);
                 BufferedReader xIn(".tempTest");
-                std::vector<std::shared_ptr<NucSeq>> vRead;
-                do
+                std::mutex xMutex;
+
                 {
-                    if(!xIn.hasNext())
-                        break;
-                    vRead.push_back(xIn.next());
-                }
-                while(true);
+                    ThreadPool xTp(uiThreads);
+                    for(unsigned int uiT = 0; uiT < uiThreads; uiT++)
+                        xTp.enqueue(
+                            [&]
+                            (size_t uiTid, unsigned int uiX)
+                            {
+                                do
+                                {
+                                    std::lock_guard<std::mutex> xGuard(xMutex);
+                                    if(!xIn.hasNext())
+                                        break;
+                                    vReads[uiX].push_back(xIn.next());
+                                } while(true);
+                            },//lambda
+                            uiT
+                        );//enqueue
+                }//scope for threadpool
+
+                //merge sequences
+                std::vector<std::shared_ptr<NucSeq>> vRead;
+                for(auto vMerge : vReads )
+                    for(auto pEle : vMerge)
+                        vRead.push_back(pEle);
+                std::sort(
+                    vRead.begin(), vRead.end(),
+                    []
+                    (std::shared_ptr<NucSeq> pA, std::shared_ptr<NucSeq> pB)
+                    {
+                        return std::stoi(pA->sName) < std::stoi(pB->sName);
+                    }//lambda
+                );//sort
+
 
                 // check
                 std::cout << "checking" << std::endl;
