@@ -1860,8 +1860,8 @@ def check_sw_score(db_name, genome, sample_id, ref_start, gpu_id=0):
 #exit()
 
 
-FileReader.testBufReader()
-exit()
+#FileReader.testBufReader()
+#exit()
 
 #libMA.testKsw()
 #exit()
@@ -1999,7 +1999,7 @@ exit()
 #createSampleQueries(e_coli_genome, "sw_eColi_1000.db",   1000, 100, 32, gpu_id=0)
 #createSampleQueries(e_coli_genome, "sw_eColi_30000_10.db",  30000, 10, 32, gpu_id=1)
 
-for task_id in [3]:
+for task_id in [0]:
 
     processor= task_id*2
 

@@ -35,7 +35,8 @@ namespace libMA
         {
             private:
                 size_t uiFileBufferSize = 1048576; // == 2^20 ~= 0.1 GB buffer size
-                const size_t uiQueryBufferSize = 100;
+                // @note this buffer must be of sufficient size to avoid errors due to overflows
+                const size_t uiQueryBufferSize = 250;
                 unsigned int uiNucSeqBufPosRead = 0;
                 unsigned int uiNucSeqBufPosWrite = 0;
                 unsigned int uiCharBufPosRead = uiFileBufferSize;
@@ -117,28 +118,35 @@ namespace libMA
                                 {
                                     throw AlignerException("Invalid file format: expecting '>' at query begin");
                                 }//if
-                                do
+                                while(true)
                                 {
                                     unsigned int uiCharBufPosReadLen = searchEndline();
+                                    /// std::cout << "\\n pos " << uiCharBufPosReadLen << std::endl;
                                     for(
                                             unsigned int uiI = uiCharBufPosRead;
                                             uiI < uiCharBufPosRead + uiCharBufPosReadLen;
                                             uiI++
                                         )
                                         pCurr->sName += vBuffer[uiI];
-                                    uiCharBufPosRead += uiCharBufPosReadLen + 1;
+                                    uiCharBufPosRead += uiCharBufPosReadLen;
                                     if(uiCharBufPosRead >= uiFileBufferSize)
                                         reFillBuffer();
-                                }// do
-                                while(uiCharBufPosRead >= uiFileBufferSize);
+                                    else
+                                        break;
+                                }// while
 
+                                /// std::cout << "<> " << pCurr->sName << std::endl;
                                 // remove the description from the query name
-                                pCurr->sName = pCurr->sName.substr(1, pCurr->sName.find(' '));
+                                pCurr->sName = pCurr->sName.substr(1, pCurr->sName.find(' ') - 1);
 
                                 // find end of nuc section
-                                do
+                                while(
+                                        (!xFile.eof() && uiCharBufPosRead >= uiFileBufferSize) ||
+                                        (uiCharBufPosRead < uiFileBufferSize && vBuffer[uiCharBufPosRead] != '>')
+                                    )
                                 {
                                     unsigned int uiCharBufPosReadLen = searchEndline();
+                                    /// std::cout << "\\n pos " << uiCharBufPosReadLen << std::endl;
                                     //memcpy the data over
                                     pCurr->vAppend(
                                             (const uint8_t*) &vBuffer[uiCharBufPosRead],
@@ -147,11 +155,7 @@ namespace libMA
                                     uiCharBufPosRead += uiCharBufPosReadLen + 1;
                                     if(!xFile.eof() && uiCharBufPosRead >= uiFileBufferSize)
                                         reFillBuffer();
-                                }// do
-                                while(
-                                        (!xFile.eof() && uiCharBufPosRead >= uiFileBufferSize) ||
-                                        (uiCharBufPosRead < uiFileBufferSize && vBuffer[uiCharBufPosRead] != '>')
-                                    );
+                                }// while
 
                                 pCurr->vTranslateToNumericForm(0);
                                 vpNucSeqBuffer[uiNucSeqBufPosWrite] = pCurr;
@@ -322,7 +326,15 @@ namespace libMA
                     []
                     (std::shared_ptr<NucSeq> pA, std::shared_ptr<NucSeq> pB)
                     {
-                        return std::stoi(pA->sName) < std::stoi(pB->sName);
+                        try{
+                            return std::stoi(pA->sName) < std::stoi(pB->sName);
+                        }
+                        catch(...)
+                        {
+                            std::cout << "error on stoi: "
+                                << pA->sName << " ?< " << pB->sName << std::endl;
+                            return false;
+                        }
                     }//lambda
                 );//sort
 

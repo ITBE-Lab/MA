@@ -500,11 +500,11 @@ def test(
         ##("MA Accurate -w 10", MA(reference, num_results, False, db_name, soc_width="10")),
         ##("MA Accurate -w 100", MA(reference, num_results, False, db_name, soc_width="100")),
         ##("MA Accurate -w 300", MA(reference, num_results, False, db_name, soc_width="300")),
-        ("BWA SW s=30", BWA_SW(reference, num_results, db_name, s="300")),
+        ##("BWA SW s=30", BWA_SW(reference, num_results, db_name, s="300")),
 
 
-        #  ("MA Fast", MA(reference, num_results, True, db_name)),
-        #  ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
+        ("MA Fast", MA(reference, num_results, True, db_name)),
+        ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
         #  ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
         #  ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
         #  #
@@ -518,7 +518,7 @@ def test(
         #  # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
         #  # ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
         #  #
-        #  ("MA Accurate", MA(reference, num_results, False, db_name)),
+        ("MA Accurate", MA(reference, num_results, False, db_name)),
         #  ("BWA SW", BWA_SW(reference, num_results, db_name)),
     ]
 
