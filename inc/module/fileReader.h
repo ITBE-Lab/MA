@@ -24,6 +24,13 @@ namespace libMA
     class FileReader: public Module
     {
     private:
+        /**
+         * @brief Helper class.
+         * @details
+         * This class reads the queries asynchronously and buffers them.
+         * This way no thread should need to wait for the filesystem.
+         * @note hasNext and next should be accessed by no more than one thread at a time.
+         */
         class BufferedReader
         {
             private:
@@ -167,6 +174,9 @@ namespace libMA
                     xFile.close();
                 }// deconstructor
 
+                /**
+                 * @note expects accessing threads to be synchronized
+                 */
                 bool hasNext()
                 {
                     if(uiNucSeqBufPosRead != uiNucSeqBufPosWrite)
@@ -237,6 +247,12 @@ namespace libMA
             return true;
         }//function
 
+        /**
+         * @brief Test the BufferedReader class.
+         * @details
+         * Writes several sequences to a file; then reads them again and checks for equality.
+         * Uses multiple (synchronized) threads for reading.
+         */
         static void testBufReader()
         {
             //std::srand(123);

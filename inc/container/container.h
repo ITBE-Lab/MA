@@ -78,12 +78,11 @@ namespace libMA
     class Nil : public Container
     {
     public:
+        static const std::shared_ptr<Nil> pEoFContainer;
+
         Nil()
-        {}//default constrctor
-        /** 
-        * @returns the type of the container as int.
-        * @brief Used by @ref Module "module" for type checking its Inputs.
-        */
+        {}//default constructor
+
         bool canCast(std::shared_ptr<Container> c) const
         {
             return false;

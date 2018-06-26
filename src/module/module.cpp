@@ -103,26 +103,18 @@ std::shared_ptr<Pledge> Pledge::makePledge(
 }//contructor function
 
 void simGetBoost1(
-    std::vector<std::shared_ptr<Pledge>> vPledges,
-    bool bLoop
-)
-{
-    Pledge::simultaneousGet(vPledges, bLoop);
-}//function
-
-void simGetBoost2(
     std::vector<std::shared_ptr<Pledge>> vPledges
 )
 {
     Pledge::simultaneousGet(vPledges);
 }//function
 
-void simGetBoost3(
+void simGetBoost2(
     std::vector<std::shared_ptr<Pledge>> vPledges,
     unsigned int uiThreads
 )
 {
-    Pledge::simultaneousGet(vPledges, false, [](){}, uiThreads);
+    Pledge::simultaneousGet(vPledges, [](){}, uiThreads);
 }//function
 
 #ifdef WITH_PYTHON
@@ -199,10 +191,6 @@ void exportModule()
             .def(
                     "simultaneous_get",
                     &simGetBoost2
-                )
-            .def(
-                    "simultaneous_get",
-                    &simGetBoost3
                 )
             .staticmethod("simultaneous_get")
             .def(

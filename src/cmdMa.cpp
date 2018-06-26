@@ -389,7 +389,7 @@ int main(int argc, char* argv[])
                 return 0;
             }//if
             //run the alignment
-            Pledge::simultaneousGet(aGraphSinks, true);
+            Pledge::simultaneousGet(aGraphSinks);
         }//if
     }//try
     catch (const OptionException &ex)

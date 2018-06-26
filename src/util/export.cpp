@@ -203,7 +203,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
             );
         if(bFinderMode)
         {
-            //write the output to a file
+            // write the output to a file
             std::shared_ptr<Pledge> pNil = Module::promiseMe(
                     pOut, 
                     std::vector<std::shared_ptr<Pledge>>
@@ -212,7 +212,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                         pPack
                     }
                 );
-            //unlock the query so that this subgraph can be executed multiple times
+            // unlock the query so that this subgraph can be executed multiple times
             std::shared_ptr<Pledge> pRet = Module::promiseMe(
                     pUnLock, 
                     std::vector<std::shared_ptr<Pledge>>
@@ -220,12 +220,12 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                         pNil
                     }
                 );
-            //save the 
+            // save the 
             aRet.push_back(pRet);
         }// if
         else
         {
-            //the optimal matching stage
+            // the optimal matching stage
             std::shared_ptr<Pledge> pOptimal = Module::promiseMe(
                         pDoOptimal, 
                         std::vector<std::shared_ptr<Pledge>>
@@ -235,7 +235,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                             pPack
                         }
                     );
-            //assign a mapping quality
+            // assign a mapping quality
             std::shared_ptr<Pledge> pAlignments = Module::promiseMe(
                         pMapping, 
                         std::vector<std::shared_ptr<Pledge>>
@@ -248,7 +248,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
             {
                 if(aQueries.size() != 2)
                     throw AlignerException("two input files are required for paired alignments");
-                //lock the query in for this subgraph
+                // lock the query in for this subgraph
                 std::shared_ptr<Pledge> pQuery2 = Module::promiseMe(
                         pLockQuery, 
                         std::vector<std::shared_ptr<Pledge>>
@@ -256,10 +256,10 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                             aQueries[1]
                         }
                     );
-                //synchronize both locks
-                //this automatically makes it so that unlock unlocks both
+                // synchronize both locks
+                // this automatically makes it so that unlock unlocks both
                 Pledge::synchronize(pQuery, pQuery2);
-                //the seeding stage
+                // the seeding stage
                 std::shared_ptr<Pledge> pSeeds2 = Module::promiseMe(
                         pSeeding, 
                         std::vector<std::shared_ptr<Pledge>>

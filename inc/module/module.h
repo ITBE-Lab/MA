@@ -158,6 +158,7 @@ namespace libMA
          * @details
          * Internally calls execute after checking the input types.
          * Also checks the result returned by Execute.
+         * @todo
          */
         std::shared_ptr<Container> pyExecute(std::shared_ptr<ContainerVector> vInput)
         {
@@ -369,7 +370,7 @@ namespace libMA
         {}//constructor
 #endif
 
-        inline void execForGet()
+        inline bool execForGet()
         {
             if(
                     pledger == nullptr 
@@ -382,14 +383,19 @@ namespace libMA
             {
                 std::shared_ptr<ContainerVector> vInput(new ContainerVector());
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    //here we execute all previous modules in the comp graph
-                    vInput->push_back(pFuture->get());
+                {
+                    // here we execute all previous modules in the comp graph
+                    auto pX = pFuture->get();
+                    if(pX == Nil::pEoFContainer)
+                        return false;
+                    vInput->push_back(pX);
+                }// for
 
                 auto timeStamp = std::chrono::system_clock::now();
-                //actually execute the module
+                // actually execute the module
                 content = pledger->execute(vInput);
                 std::chrono::duration<double> duration = std::chrono::system_clock::now() - timeStamp;
-                //increase the total executing time for this pledge
+                // increase the total executing time for this pledge
                 execTime += duration.count();
                 assert(typeCheck(content, type));
             }//if
@@ -399,7 +405,12 @@ namespace libMA
             {
                 boost::python::list vInput;
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
-                    vInput.append(pFuture->get());
+                {
+                    auto pX = pFuture->get();
+                    if(pX == Nil::pEoFContainer)
+                        return false;
+                    vInput.append(pX);
+                }// for
                 /*
                 * here we jump to python code to call a function and resume the cpp code 
                 * once python is done...
@@ -424,6 +435,7 @@ namespace libMA
                 );
             }//else
 #endif
+            return true;
         }//function
 
         /**
@@ -543,6 +555,9 @@ namespace libMA
          */
         void set(std::shared_ptr<Container> c)
         {
+            // improves runtime (mostly when resetting module).
+            if(content == c)
+                return;
             content = c;
             for(std::weak_ptr<Pledge> pSuccessor : vSuccessors)
             {
@@ -550,7 +565,34 @@ namespace libMA
                 if(lock != nullptr)
                     lock->set(nullptr);
             }//for
-        }//function
+        }// function
+
+        /**
+         * @brief checks weather there is a python module upstream in the comp. graph.
+         */
+        bool hasPythonPledger()
+        {
+            if(!py_pledger.is_none())
+                return true;
+            for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                if(pFuture->hasPythonPledger())
+                    return true;
+            return false;
+        }// function
+
+        /**
+         * @brief checks weather there is a volatile module upstream in the comp. graph.
+         */
+        bool hasVolatile()
+        {
+            // @todo same for py_pledger here
+            if(pledger != nullptr && pledger->outputsVolatile())
+                return true;
+            for(std::shared_ptr<Pledge> pFuture : vPredecessors)
+                if(pFuture->hasVolatile())
+                    return true;
+            return false;
+        }// function
 
         /**
          * @brief Warpper for boost python
@@ -574,12 +616,12 @@ namespace libMA
         std::shared_ptr<Container> get()
         {
             bool bVolatile = false;
-            ///@todo same for py_pledger here
+            // @todo same for py_pledger here
             if(pledger != nullptr)
                 bVolatile = pledger->outputsVolatile();
 
-            //in this case there is no need to execute again
-            if(!bVolatile && content != nullptr)
+            // in this case there is no need to execute again
+            if(bVolatile == false && content != nullptr)
                 return content;
 
             // locks a mutex if this pledge can be reached from multiple leaves in the graph
@@ -588,19 +630,37 @@ namespace libMA
                 [&]
                 ()
                 {
-                    //execute
-                    execForGet();
+                    // execute
+                    if(execForGet() == false)
+                    {
+                        /*
+                         * If execForGet returns false we have a volatile module that's dry.
+                         * In such cases we cannot compute the next element and therefore set
+                         * the content of this module to EoF as well.
+                         */
+                        content = Nil::pEoFContainer;
+                        return;
+                    }// if
 
-                    //@note the mutex gets synchronized between synchronized pledges, 
-                    //so no special sync needed :)
-                    //also execute all the synchronized locks
+                    // @note the mutex is shared between synchronized pledges, 
+                    // so no special sync needed.
+                    // also execute all the synchronized locks
                     for(std::shared_ptr<Pledge> pSync : aSync)
-                        pSync->execForGet();
-                }//lambda
-            );//function call
+                        if(pSync->execForGet() == false)
+                        {
+                            /*
+                            * If execForGet returns false we have a volatile module that's dry.
+                            * In such cases we cannot compute the next element and therefore set
+                            * the content of this module to EoF as well.
+                            */
+                            content = Nil::pEoFContainer;
+                            return;
+                        }// if
+                }// lambda
+            );// function call
 
             return content;
-        }//function
+        }// function
 
         /**
          * @brief Synchronize two pledges.
@@ -633,54 +693,64 @@ namespace libMA
          */
         static inline void simultaneousGet(
                 std::vector<std::shared_ptr<Pledge>> vPledges,
-                bool bLoop = false,
                 std::function<void()> callback = [](){},
                 unsigned int numThreads = 0
             )
         {
             if(numThreads == 0)
                 numThreads = vPledges.size();
-            DEBUG_2(
-                std::cout <<"will cause crashes if used on python modules (@todo fix that)"<< std::endl;
-            )
+
+            if(numThreads > 1)
+                for(std::shared_ptr<Pledge> pPledge : vPledges)
+                    if(pPledge->hasPythonPledger())
+                    {
+                        numThreads = 1;
+                        DEBUG(
+                            std::cout
+                                << "Detected python module. Cannot use more than one thread."
+                                << std::endl;
+                        )
+                        break;
+                    }// if
+
             {
+                // set up a threadpool
                 ThreadPool xPool(numThreads);
+                // enqueue a task that executes the comp. graph for each thread in the pool.
                 for(std::shared_ptr<Pledge> pPledge : vPledges)
                 {
                     xPool.enqueue(
-                        [&bLoop, &callback]
+                        [&callback]
                         (size_t, std::shared_ptr<Pledge> pPledge)
                         {
                             assert(pPledge != nullptr);
 
-                            // if bLoop is true this loop will keep going until all 
-                            // volatile modules are dry.
-                            // otherwise one iteration is performed only
+                            // set bLoop = true if there is a volatile module in the graph.
+                            bool bLoop = pPledge->hasVolatile();
 
-                            /// @todo here should be a check on weather 
-                            /// there is any volatile module in the graph or not
-                            /// having potential endless loop...
-
-                            // also exceptions should never be used for normal runtime behaviour...
-                            try
+                            // execute the loop if bLoop or just one iteration otherwise.
+                            do
                             {
-                                do
-                                {
-                                    pPledge->get();
-                                    callback();
-                                    DEBUG(std::cout << "*" << std::flush;)
-                                }//do
-                                while(bLoop);
-                            } catch(ModuleDryException e) {}
+                                /*
+                                 * Execute one iteration of the comp. graph.
+                                 * Then set bLoop to false if the execution returned pEoFContainer.
+                                 * If bLoop is false already (due to there beeing no 
+                                 * volatile module) then leave it as false.
+                                 */
+                                bLoop &= pPledge->get() != Nil::pEoFContainer;
+                                callback();
+                                DEBUG(std::cout << "*" << std::flush;)
+                            } while(bLoop);
                         },//lambda
                         pPledge
                     );
                 }//for
+                // wait for the pool to finish it's work
             }//scope xPool
         }//function
 
-        /*
-         * clears the comp graph in font of this pledge
+        /**
+         * @brief clears the comp graph in font of this pledge
          */
         void clear_graph()
         {
