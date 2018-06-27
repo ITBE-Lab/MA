@@ -1,4 +1,4 @@
-/** 
+/**
  * @file fileReader.cpp
  * @author Markus Schmidt
  */
@@ -38,9 +38,9 @@ size_t len(std::string& sLine)
     std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
         /*
-        * Has next and next require synchronized access.
-        * This is done by the module synchronization.
-        */
+         * Has next and next require synchronized access.
+         * This is done by the module synchronization.
+         */
         if(pFile->hasNext())
             return pFile->next();
 
@@ -51,17 +51,17 @@ size_t len(std::string& sLine)
     std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
         std::shared_ptr<NucSeq> pRet(new NucSeq());
-        //FASTA format
+        // FASTA format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
         {
             std::string sLine;
             std::getline (*pFile, sLine);
-            //make sure that the name contains no spaces
-            //in fact everythin past the first space is considered description rather than name
+            // make sure that the name contains no spaces
+            // in fact everythin past the first space is considered description rather than name
             pRet->sName = sLine.substr(1, sLine.find(' '));
             while(pFile->good() && !pFile->eof() && pFile->peek() != '>' && pFile->peek() != ' ')
             {
-                sLine = "";//in the case that we hit an empty line getline does nothing...
+                sLine = "";// in the case that we hit an empty line getline does nothing...
                 std::getline (*pFile, sLine);
                 DEBUG(
                     for(auto character : sLine)
@@ -74,11 +74,12 @@ size_t len(std::string& sLine)
                         {
                             std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
                             throw AlignerException("Invalid symbol in fasta");
-                        }//if
-                    }//for
-                )//DEBUG
+                        }// if
+                    }// for
+                )// DEBUG
                 size_t uiLineSize = len(sLine);
-                std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
+                // uiLineSize uint8_t's with value 127
+                std::vector<uint8_t> xQuality(uiLineSize, 126);
                 pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
             }//while
             pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
@@ -86,10 +87,10 @@ size_t len(std::string& sLine)
             //run self tests for the nucSeq
             DEBUG_2(
                 std::cout << pRet->fastaq() << std::endl;
-            )//DEBUG_@
+            )// DEBUG_2
             DEBUG(
                 pRet->check();
-            )//DEBUG
+            )// DEBUG
 
             return pRet;
         }//if
