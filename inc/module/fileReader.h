@@ -9,6 +9,19 @@
 #include "module/module.h"
 #include "container/nucSeq.h"
 
+/*
+ * switches between two modes:
+ * ( 1 ): 
+ *      There is a seperate thread that uses a buffer in order to read the file.
+ *      Worker threads merely collect queries.
+ * ( 0 ):
+ *      Each worker thread reads the it's own query from the file system (synchronized).
+ *      This variant does not use a buffer, but individual stream operations.
+ *
+ * Testing does not show noticeble differences between the two modes. 
+ */
+#define USE_BUFFERED_ASYNC_READER ( 0 )
+
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <fstream>
 /// @endcond
@@ -23,6 +36,7 @@ namespace libMA
      */
     class FileReader: public Module
     {
+#if USE_BUFFERED_ASYNC_READER
     private:
         /**
          * @brief Helper class.
@@ -215,6 +229,28 @@ namespace libMA
             pFile(new BufferedReader(sFileName))
         {
         }//constructor
+#else
+    public:
+        std::shared_ptr<std::ifstream> pFile;
+
+        /**
+         * @brief creates a new FileReader.
+         */
+        FileReader(std::string sFileName)
+                :
+            pFile(new std::ifstream(sFileName))
+        {
+            if (!pFile->is_open())
+            {
+                throw AlignerException("Unable to open file" + sFileName);
+            }//if
+        }//constructor
+
+        ~FileReader()
+        {
+            pFile->close();
+        }//deconstructor
+#endif
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 
@@ -251,6 +287,7 @@ namespace libMA
             return true;
         }//function
 
+#if USE_BUFFERED_ASYNC_READER
         /**
          * @brief Test the BufferedReader class.
          * @details
@@ -362,6 +399,7 @@ namespace libMA
                 std::cout << "[OK] " << i << "/" << uiNumTests << std::endl;
             }// for
         }// function
+#endif
 
     };//class
 

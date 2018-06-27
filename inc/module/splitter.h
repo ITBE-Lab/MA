@@ -47,7 +47,6 @@ namespace libMA
          * Returns:
          * - Nil
          * The input is given in the contructor...
-         * @todo this could be done nicer...
          */
         ContainerVector EXPORTED getInputType() const;
 
@@ -108,7 +107,6 @@ namespace libMA
          * Returns:
          * - Nil
          * The output is in pVec.
-         * @todo this could be done nicer...
          */
         ContainerVector EXPORTED getInputType() const;
 

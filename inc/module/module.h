@@ -689,7 +689,7 @@ namespace libMA
          * @brief Gets the given pledges simultaneously.
          * @details
          * If bLoop is true the threads will keep going until all volatile modules are dry
-         * if numThreads is not specified numThreads will be equal to the amount of pledges given
+         * if numThreads is not specified numThreads will be set to the amount of pledges given.
          */
         static inline void simultaneousGet(
                 std::vector<std::shared_ptr<Pledge>> vPledges,
@@ -700,6 +700,13 @@ namespace libMA
             if(numThreads == 0)
                 numThreads = vPledges.size();
 
+            /*
+             * If there is a python module in the comp. graph we can only use one single thread.
+             * This is due to a limitation in the Python interpreter. There can only ever be one
+             * active Python thread.
+             * So, here we check if there is such a module and set the number of threads to one if
+             * necessary.
+             */
             if(numThreads > 1)
                 for(std::shared_ptr<Pledge> pPledge : vPledges)
                     if(pPledge->hasPythonPledger())
@@ -725,10 +732,15 @@ namespace libMA
                         {
                             assert(pPledge != nullptr);
 
-                            // set bLoop = true if there is a volatile module in the graph.
+                            /*
+                             * Set bLoop = true if there is a volatile module in the graph.
+                             * This enables looping.
+                             * If bLoop is not set to true here we only compute the result once,
+                             * as all further computations would yield the same result.
+                             */
                             bool bLoop = pPledge->hasVolatile();
 
-                            // execute the loop if bLoop or just one iteration otherwise.
+                            // execute the loop if bLoop == true or do just one iteration otherwise.
                             do
                             {
                                 /*
@@ -738,8 +750,13 @@ namespace libMA
                                  * volatile module) then leave it as false.
                                  */
                                 bLoop &= pPledge->get() != Nil::pEoFContainer;
+                                // this callback function can be used to set a progress bar 
+                                // for example.
                                 callback();
-                                DEBUG(std::cout << "*" << std::flush;)
+                                DEBUG(
+                                    // print a progress bar on cmdline
+                                    std::cout << "*" << std::flush;
+                                )
                             } while(bLoop);
                         },//lambda
                         pPledge

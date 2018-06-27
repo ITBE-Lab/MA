@@ -572,12 +572,8 @@ def test(
                 #print("extracting " + str(len(queries)) + " samples (" + name + ")...")
                 #setup the query pledges
                 query_list = ContainerVector(NucSeq())
-                # @todo temp bugfix
-                del query_list[:]
 
                 query_list_remove_load_time = ContainerVector(NucSeq())
-                # @todo temp bugfix
-                del query_list_remove_load_time[:]
 
                 assert(len(query_list) == 0)
                 assert(len(query_list_remove_load_time) == 0)
