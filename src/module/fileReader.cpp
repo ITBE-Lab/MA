@@ -78,9 +78,16 @@ size_t len(std::string& sLine)
                     }// for
                 )// DEBUG
                 size_t uiLineSize = len(sLine);
+#if WITH_QUALITY
                 // uiLineSize uint8_t's with value 127
                 std::vector<uint8_t> xQuality(uiLineSize, 126);
-                pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
+#endif
+                pRet->vAppend(
+                    (const uint8_t*)sLine.c_str(),
+#if WITH_QUALITY
+                    xQuality.data(),
+#endif
+                    uiLineSize);
             }//while
             pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
 
@@ -94,6 +101,7 @@ size_t len(std::string& sLine)
 
             return pRet;
         }//if
+#if WITH_QUALITY
         //FASTAQ format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
         {
@@ -123,6 +131,7 @@ size_t len(std::string& sLine)
             }//while
             return pRet;
         }//if
+#endif
         //if we reach this point we have read all content of the file
         return Nil::pEoFContainer;
     }//function
