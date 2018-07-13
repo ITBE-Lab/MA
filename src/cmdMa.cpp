@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        defaults::configureAccurate();
+        defaults::configureFast();
         for(int i = 0; i < argc-1; i++)
             if(
                     strcmp(argv[i], "-m") == 0 ||

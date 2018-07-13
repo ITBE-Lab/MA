@@ -129,7 +129,14 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             }// if
         )// DEBUG
 
-        std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
+        std::string sSegment;
+        if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+            sSegment = pQuery->fromToComplement(
+                    pAlignment->uiBeginOnQuery,
+                    pAlignment->uiEndOnQuery
+                );
+        else
+            sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         //std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
         if(std::isnan(pAlignment->fMappingQuality))

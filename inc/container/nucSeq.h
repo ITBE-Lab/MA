@@ -739,6 +739,19 @@ namespace libMA
 
             return translateACGTCodeToCharacter( pxSequenceRef[uxPosition] );
         } // method
+
+        /** The symbol on some position in textual form.
+         * We count starting from 0.
+         */
+        inline char compCharAt( size_t uxPosition )
+        {
+            if ( uxPosition >= uiSize)
+            {
+                throw fasta_reader_exception("Index out of range");
+            } // if
+
+            return translateACGTCodeToCharacter( nucleotideComplement(pxSequenceRef[uxPosition]) );
+        } // method
         /** Appends a string containing nucleotides as text and automatically translates the symbols.
          */
         void vAppend( const char* pcString )
@@ -773,6 +786,14 @@ namespace libMA
             std::string ret = "";
             for (unsigned int i = 0; i < length(); i++)
                     ret += charAt(i);
+            return ret;
+        }//function
+
+        std::string fromToComplement(unsigned int uiStart, unsigned int uiEnd)
+        {
+            std::string ret = "";
+            for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
+                ret += compCharAt(i);
             return ret;
         }//function
         
