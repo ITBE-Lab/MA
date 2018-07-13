@@ -792,7 +792,8 @@ namespace libMA
         std::string fromToComplement(unsigned int uiStart, unsigned int uiEnd)
         {
             std::string ret = "";
-            for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
+            //for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
+            for (long long i = ((long long) uiEnd)-1; i >= (long long)uiStart; i--)
                 ret += compCharAt(i);
             return ret;
         }//function

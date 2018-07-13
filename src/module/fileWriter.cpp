@@ -54,6 +54,13 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         if(pAlignment->length() == 0)
             continue;
         std::string sCigar = "";
+
+        std::vector<std::tuple<MatchType, nucSeqIndex>>::iterator itBegin, itEnd;
+
+        
+        if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+            std::reverse(pAlignment->data.begin(), pAlignment->data.end());
+
         for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
         {
             sCigar.append(std::to_string(std::get<1>(section)));
@@ -131,10 +138,13 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 
         std::string sSegment;
         if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+        {
             sSegment = pQuery->fromToComplement(
                     pAlignment->uiBeginOnQuery,
                     pAlignment->uiEndOnQuery
                 );
+            uiRefPos += 1;
+        }// if
         else
             sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         //std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
