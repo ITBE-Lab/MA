@@ -444,8 +444,7 @@ namespace libMA
          * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
          * Does not lock otherwise.
          * In either case fDo is called.
-         * @todo @fixme sometimes this does not seem to work as intended 
-         * (no crashes but output alignments get lost)
+         * @todo @fixme HERE IS STILL A PROBLEM
          */
         inline void lockIfNecessary(std::function<void()> fDo)
         {
@@ -728,7 +727,7 @@ namespace libMA
                 {
                     xPool.enqueue(
                         [&callback]
-                        (size_t, std::shared_ptr<Pledge> pPledge)
+                        (size_t uiTid, std::shared_ptr<Pledge> pPledge)
                         {
                             assert(pPledge != nullptr);
 
@@ -749,7 +748,10 @@ namespace libMA
                                  * If bLoop is false already (due to there beeing no 
                                  * volatile module) then leave it as false.
                                  */
+                                //std::cout << "A) In thread:" << uiTid << " bLoop is: " << bLoop << std::endl;
                                 bLoop &= pPledge->get() != Nil::pEoFContainer;
+                                ////! if(!bLoop)
+                                ////!     std::cout << "B) In thread:" << uiTid << " bLoop is: " << bLoop << std::endl;
                                 // this callback function can be used to set a progress bar 
                                 // for example.
                                 callback();

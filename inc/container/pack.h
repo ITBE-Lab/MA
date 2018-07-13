@@ -113,6 +113,7 @@ namespace libMA
         * We call such sequences embedded sequences and keep the information for each embedded sequence
         * in a sequence descriptor.
         */
+    public:
         struct SequenceInPack
         {
             std::string sName; // Name of the sequence (FASTA name or NCBI accession)
@@ -144,10 +145,10 @@ namespace libMA
             SequenceInPack()
             {} // non initializing default constructor
         }; // inner struct
-
         /* Vector with descriptions for all sequences in the pack.
         */
         std::vector<SequenceInPack> xVectorOfSequenceDescriptors; 
+    private:
 
         /* Debug method that checks the vector of sequence descriptors with respect to consistency.
         * Special case: If the final sequence has size 0 this check fails as well. 

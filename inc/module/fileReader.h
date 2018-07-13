@@ -232,18 +232,23 @@ namespace libMA
 #else
     public:
         std::shared_ptr<std::ifstream> pFile;
+        size_t uiFileSize = 0;
+        std::shared_ptr<std::mutex> pSynchronizeReading;
 
         /**
          * @brief creates a new FileReader.
          */
         FileReader(std::string sFileName)
                 :
-            pFile(new std::ifstream(sFileName))
+            pFile(new std::ifstream(sFileName)),
+            pSynchronizeReading(new std::mutex)
         {
             if (!pFile->is_open())
             {
                 throw AlignerException("Unable to open file" + sFileName);
             }//if
+            std::ifstream xFileEnd(sFileName, std::ifstream::ate | std::ifstream::binary);
+            uiFileSize = xFileEnd.tellg();
         }//constructor
 
         ~FileReader()
@@ -400,7 +405,16 @@ namespace libMA
             }// for
         }// function
 #endif
+ 
+        size_t getCurrPosInFile() const
+        {
+            return pFile->tellg();
+        }// function
 
+        size_t getFileSize() const
+        {
+            return uiFileSize;
+        }// function
     };//class
 
 }//namespace

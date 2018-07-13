@@ -50,6 +50,7 @@ size_t len(std::string& sLine)
 #else
     std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
+        std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
         std::shared_ptr<NucSeq> pRet(new NucSeq());
         // FASTA format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
@@ -129,6 +130,28 @@ size_t len(std::string& sLine)
                     pRet->quality(i + uiPos) = (uint8_t)sLine[i];
                 uiPos += uiLineSize;
             }//while
+            return pRet;
+        }//if
+#else
+        //FASTAQ format
+        if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
+        {
+            std::string sLine;
+            std::getline (*pFile, sLine);
+            //make sure that the name contains no spaces
+            //in fact everythin past the first space is considered description rather than name
+            pRet->sName = sLine.substr(1, sLine.find(' '));
+            while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
+            {
+                sLine = "";
+                std::getline (*pFile, sLine);
+                size_t uiLineSize = len(sLine);
+                pRet->vAppend((const uint8_t*)sLine.c_str(), uiLineSize);
+            }//while
+            pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+            //quality
+            while(pFile->good() && !pFile->eof() && pFile->peek() != '@')
+                std::getline (*pFile, sLine);
             return pRet;
         }//if
 #endif

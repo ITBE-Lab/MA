@@ -75,8 +75,8 @@ all: dirs build_ma
 
 # create build directories if not present
 dirs:
-	mkdir -p obj obj/module obj/container obj/util obj/ksw \
-			 dbg dbg/module dbg/container dbg/util dbg/ksw
+	mkdir -p obj obj/module obj/container obj/util obj/ksw obj/sample_consensus \
+			 dbg dbg/module dbg/container dbg/util dbg/ksw dbg/sample_consensus
 
 # executable target
 build_ma: $(MA_REQUIREMENT)

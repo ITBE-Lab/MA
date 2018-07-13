@@ -64,7 +64,7 @@ const std::string sHelp =
 "\n                                   Default is 16."
 "\n        --Match <num>              Sets the match score to <num>; <num> > 0."
 "\n                                   Default is 3. "
-"\n        --MissMatch <num>          Sets the mismatch penalty to <num>; <num> > 0."
+"\n        --MisMatch <num>           Sets the mismatch penalty to <num>; <num> > 0."
 "\n                                   Default is 4."
 "\n        --Gap <num>                Sets the costs for opening a gap to <num>; <num> >= 0."
 "\n                                   Default is 6."
@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        defaults::configureFast();
+        defaults::configureAccurate();
         for(int i = 0; i < argc-1; i++)
             if(
                     strcmp(argv[i], "-m") == 0 ||
@@ -186,12 +186,13 @@ int main(int argc, char* argv[])
                 value<unsigned int>()->default_value(defaults::uiExtend)
             )
             ("x,idx", "Do FMD-index generation", value<std::string>())
+            ("genIndex", "Do FMD-index generation")
             ("SoCWidth", "SoC width", value<unsigned int>()->default_value("0"))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
             ("p,paUni", "Enable paired alignment; Distance as uniform distribution")
-            ("P,paNormal", "Enable paired alignment; Distance as normal distribution")
+            ("P,paNorm", "Enable paired alignment; Distance as normal distribution")
             ("paIsolate", "Penalty for unpaired alignments", 
                 value<double>()->default_value(defaults::uiUnpaired), "arg    "
             )
@@ -326,9 +327,10 @@ int main(int argc, char* argv[])
             std::vector<std::shared_ptr<Pledge>> aQueries;
             std::shared_ptr<Pledge> pNil(new Pledge(std::shared_ptr<Container>(new Nil())));
             pNil->set(std::shared_ptr<Container>(new Nil()));
+            std::shared_ptr<FileReader> pReader;
             for(std::string sFileName : aIn)
             {
-                std::shared_ptr<FileReader> pReader(new FileReader(sFileName));
+                pReader = std::shared_ptr<FileReader>(new FileReader(sFileName));
                 aQueries.push_back(Module::promiseMe(
                     pReader, 
                     std::vector<std::shared_ptr<Pledge>>{pNil}
@@ -338,7 +340,7 @@ int main(int argc, char* argv[])
             if(bFindMode)
                 pOut.reset( new SeedSetFileWriter(sOut) );
             else
-                pOut.reset( new FileWriter(sOut) );
+                pOut.reset( new FileWriter(sOut, pPack_) );
             //setup the graph
             std::vector<std::shared_ptr<Pledge>> aGraphSinks = setUpCompGraph(
                 pPack,
@@ -389,7 +391,26 @@ int main(int argc, char* argv[])
                 return 0;
             }//if
             //run the alignment
-            Pledge::simultaneousGet(aGraphSinks);
+            size_t uiLastProg = 0;
+            std::mutex xPrintMutex;
+            Pledge::simultaneousGet(
+                aGraphSinks,
+                [&]
+                ()
+                {
+                    std::lock_guard<std::mutex> xGuard(xPrintMutex);
+                    size_t uiCurrProg = (1000 * pReader->getCurrPosInFile()) / pReader->getFileSize();
+                    if(uiCurrProg > uiLastProg)
+                    {
+                        std::cerr 
+                            << static_cast<double>(uiCurrProg) / 10 
+                            << "% aligned.     " 
+                            << '\r' 
+                            << std::flush;
+                        uiLastProg = uiCurrProg;
+                    }// if
+                }// lambda
+                );
         }//if
     }//try
     catch (const OptionException &ex)

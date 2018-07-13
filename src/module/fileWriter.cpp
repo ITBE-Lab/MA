@@ -407,7 +407,7 @@ void exportFileWriter()
             FileWriter, 
             boost::python::bases<Module>, 
             std::shared_ptr<FileWriter>
-        >("FileWriter", boost::python::init<std::string>())
+        >("FileWriter", boost::python::init<std::string, std::shared_ptr<Pack>>())
     ;
 
     boost::python::implicitly_convertible< 
