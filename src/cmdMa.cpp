@@ -64,7 +64,7 @@ const std::string sHelp =
 "\n                                   Default is 16."
 "\n        --Match <num>              Sets the match score to <num>; <num> > 0."
 "\n                                   Default is 3. "
-"\n        --MissMatch <num>          Sets the mismatch penalty to <num>; <num> > 0."
+"\n        --MisMatch <num>           Sets the mismatch penalty to <num>; <num> > 0."
 "\n                                   Default is 4."
 "\n        --Gap <num>                Sets the costs for opening a gap to <num>; <num> >= 0."
 "\n                                   Default is 6."
@@ -91,9 +91,9 @@ const std::string sHelp =
 "\n        --giveUp <val>             Threshold with 0 <= <val> <= 1 used as give-up criteria."
 "\n                                   SoC's with accumulative seed length smaller than "
 "\n                                   'query_len * <val>' will be ignored."
-"\n                                   Reducing this parameter will decrease runtime, but allow"
+"\n                                   Reducing this parameter will decrease runtime but allows"
 "\n                                   the aligner to discover more dissimilar matches."
-"\n                                   Increasing this parameter will increase runtime, but might"
+"\n                                   Increasing this parameter will increase runtime but might"
 "\n                                   cause the aligner to miss the correct reference location."
 "\n                                   Default is 0.002."
 "\n        --maxTries <num>           At most the best <num> SoC's will be inspected."
@@ -128,8 +128,9 @@ int main(int argc, char* argv[])
 
     if (argc <= 1)
     {
-        std::cout << "Use '-h' to display the complete help screen." << std::endl;
-        return 1;
+        std::cout << "Invalid usage; you need to supply -x and -i at least!" << std::endl;
+        std::cout << sHelp << std::endl;
+        return 0;
     }//if
 
     try
@@ -185,11 +186,13 @@ int main(int argc, char* argv[])
                 value<unsigned int>()->default_value(defaults::uiExtend)
             )
             ("x,idx", "Do FMD-index generation", value<std::string>())
+            ("genIndex", "Do FMD-index generation")
+            ("SoCWidth", "SoC width", value<unsigned int>()->default_value("0"))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
             ("p,paUni", "Enable paired alignment; Distance as uniform distribution")
-            ("P,paNormal", "Enable paired alignment; Distance as normal distribution")
+            ("P,paNorm", "Enable paired alignment; Distance as normal distribution")
             ("paIsolate", "Penalty for unpaired alignments", 
                 value<double>()->default_value(defaults::uiUnpaired), "arg    "
             )
@@ -223,6 +226,7 @@ int main(int argc, char* argv[])
         auto sParameterSet =    result["mode"]. as<std::string>();
         auto sSeedSet =         result["seedSet"].      as<std::string>();
         auto uiMinLen =         result["minLen"].       as<unsigned int>();
+        auto uiSoCWidth =       result["SoCWidth"].     as<unsigned int>();
         if(bPariedNormal && bPariedUniform)
         {
             std::cerr << "--normal and --uniform are exclusive." << std::endl;
@@ -257,9 +261,29 @@ int main(int argc, char* argv[])
         auto sOut =        result["out"].     as<std::string>();
         auto bFindMode =        result.count("noDP") > 0;
         auto fGiveUp =          result["giveUp"].       as<double>();
+        if( fGiveUp < 0 || fGiveUp > 1 )
+        {
+            std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
+            return 1;
+        }// else if
         auto iMatch =           result["Match"].        as<unsigned int>();
+        if( iMatch == 0 )
+        {
+            std::cerr << "error: --Match must be larger than 0" << std::endl;
+            return 1;
+        }// else if
         auto iExtend =          result["Extend"].       as<unsigned int>();
+        if( iExtend == 0 )
+        {
+            std::cerr << "error: --Extend must be larger than 0" << std::endl;
+            return 1;
+        }// else if
         auto iMissMatch =       result["MisMatch"].     as<unsigned int>();
+        if( iMissMatch == 0 )
+        {
+            std::cerr << "error: --MisMatch must be larger than 0" << std::endl;
+            return 1;
+        }// else if
         auto iGap =             result["Gap"].          as<unsigned int>();
         auto maxTries =         result["maxTries"].     as<unsigned int>();
         auto uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
@@ -303,9 +327,10 @@ int main(int argc, char* argv[])
             std::vector<std::shared_ptr<Pledge>> aQueries;
             std::shared_ptr<Pledge> pNil(new Pledge(std::shared_ptr<Container>(new Nil())));
             pNil->set(std::shared_ptr<Container>(new Nil()));
+            std::shared_ptr<FileReader> pReader;
             for(std::string sFileName : aIn)
             {
-                std::shared_ptr<FileReader> pReader(new FileReader(sFileName));
+                pReader = std::shared_ptr<FileReader>(new FileReader(sFileName));
                 aQueries.push_back(Module::promiseMe(
                     pReader, 
                     std::vector<std::shared_ptr<Pledge>>{pNil}
@@ -315,7 +340,7 @@ int main(int argc, char* argv[])
             if(bFindMode)
                 pOut.reset( new SeedSetFileWriter(sOut) );
             else
-                pOut.reset( new FileWriter(sOut) );
+                pOut.reset( new FileWriter(sOut, pPack_) );
             //setup the graph
             std::vector<std::shared_ptr<Pledge>> aGraphSinks = setUpCompGraph(
                 pPack,
@@ -353,9 +378,10 @@ int main(int argc, char* argv[])
                 std::stof(defaults::fSoCScoreMinimum),
                 defaults::bSkipLongBWTIntervals == "true",
                 std::stoi(defaults::uiCurrHarmScoreMin),
-                uiGenomeSizeDisable
+                uiGenomeSizeDisable,
+                uiSoCWidth
             );
-            // this is a hidden debug option
+            // this is a hidden option
             if(result.count("info") > 0)
             {
                 std::cout << "threads: " << uiT << std::endl;
@@ -365,7 +391,26 @@ int main(int argc, char* argv[])
                 return 0;
             }//if
             //run the alignment
-            Pledge::simultaneousGet(aGraphSinks, true);
+            size_t uiLastProg = 0;
+            std::mutex xPrintMutex;
+            Pledge::simultaneousGet(
+                aGraphSinks,
+                [&]
+                ()
+                {
+                    std::lock_guard<std::mutex> xGuard(xPrintMutex);
+                    size_t uiCurrProg = (1000 * pReader->getCurrPosInFile()) / pReader->getFileSize();
+                    if(uiCurrProg > uiLastProg)
+                    {
+                        std::cerr 
+                            << static_cast<double>(uiCurrProg) / 10 
+                            << "% aligned.     " 
+                            << '\r' 
+                            << std::flush;
+                        uiLastProg = uiCurrProg;
+                    }// if
+                }// lambda
+                );
         }//if
     }//try
     catch (const OptionException &ex)

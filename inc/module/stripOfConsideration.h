@@ -47,6 +47,8 @@ namespace libMA
          */
         nucSeqIndex uiMinGenomeSize = 0;
 
+        unsigned int uiSoCWidth = 0;
+
         /**
         * @brief skip seeds with too much ambiguity
         * @details
@@ -68,6 +70,9 @@ namespace libMA
                 int iGap
             ) const
         {
+            if(uiSoCWidth != 0)
+                return uiSoCWidth;
+
             return (iMatch * uiQueryLength - iGap) / iExtend - (int64_t)(fScoreMinimum * uiQueryLength);
         }//function
 

@@ -1,5 +1,5 @@
 
-# <img src="https://raw.githubusercontent.com/ITBE-Lab/ma/release/MA.png" align="center" width="90"> The Modular Aligner
+# <img src="https://raw.githubusercontent.com/ITBE-Lab/MA/release/MA.png" align="center" width="90"> The Modular Aligner
 MA is a novel open source application for the efficient and accurate alignment of short and long reads of various sequencers. The approach has a highly modular architecture and everyone is invited to propose/integrate new modules. 
 The design aims at a smooth Python integration, while keeping the performance delivered by C++. So, the
 general idea is the coupling of several C++-modules via Python, where each module does a different 
@@ -48,8 +48,8 @@ packages installed: `git`, `make` and `build-essential`.
  
  Get the github clone and call make. (Available make switches are documented below):
 
-    git clone https://github.com/ITBE-Lab/ma
-    cd ma
+    git clone https://github.com/ITBE-Lab/MA
+    cd MA
     git checkout v0.1.0-alpha # (*)
     make
 
@@ -106,7 +106,7 @@ Necessary arguments for alignments:
     -x, --idx <prefix>             FMD-index used for alignments
     -i, --in <fname>               FASTA or FASTAQ input files.
 
-Alignments options:
+Alignment options:
     -o, --out <fname>              Filename used for SAM file output. Default output stream is
                                    standard output.
     -t, --threads <num>            Use <num> threads. On startup MA checks the hardware and chooses 
@@ -130,7 +130,7 @@ Alignments options:
         --Extend <num>             Sets the costs for extending a gap to <num>; <num> > 0.
                                    Default is 1
 
-Paired Reads options:
+Paired Read options:
     -p, --paUni                    Enable paired alignments and model the distance as uniform distribution.
                                    If set --in shall be used as follows: --in '<fname1>, <fname2>'.
     -P, --paNorm                   Enable paired alignment and Model the distance as normal distribution.
@@ -146,9 +146,9 @@ Advanced options:
         --giveUp <val>             Threshold with 0 <= <val> <= 1 used as give-up criteria.
                                    SoC's with accumulative seed length smaller than 
                                    'query_len * <val>' will be ignored.
-                                   Reducing this parameter will decrease runtime, but allow
+                                   Reducing this parameter will decrease runtime but allows
                                    the aligner to discover more dissimilar matches.
-                                   Increasing this parameter will increase runtime, but might cause
+                                   Increasing this parameter will increase runtime but might cause
                                    the aligner to miss the correct reference location.
                                    Default is 0.002.
         --maxTries <num>           At most the best <num> SoC's will be inspected.

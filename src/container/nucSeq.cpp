@@ -80,10 +80,12 @@ void exportSequence()
                     "reverse", 
                     &NucSeq::vReverse
                 )
+#if WITH_QUALITY
             .def(
                     "quality", 
                     &NucSeq::getQuality
                 )
+#endif
             .def(
                     "fastaq", 
                     &NucSeq::fastaq

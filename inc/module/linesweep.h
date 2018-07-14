@@ -10,7 +10,7 @@
 #include "container/soc.h"
 #include "module/module.h"
 
-#define USE_RANSAC ( 0 )
+#define USE_RANSAC ( 1 )
 
 namespace libMA
 {

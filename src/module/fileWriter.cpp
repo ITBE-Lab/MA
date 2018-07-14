@@ -54,6 +54,13 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         if(pAlignment->length() == 0)
             continue;
         std::string sCigar = "";
+
+        std::vector<std::tuple<MatchType, nucSeqIndex>>::iterator itBegin, itEnd;
+
+        
+        if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+            std::reverse(pAlignment->data.begin(), pAlignment->data.end());
+
         for(std::tuple<MatchType, nucSeqIndex> section : pAlignment->data)
         {
             sCigar.append(std::to_string(std::get<1>(section)));
@@ -129,8 +136,18 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             }// if
         )// DEBUG
 
-        std::string sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
-        std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
+        std::string sSegment;
+        if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
+        {
+            sSegment = pQuery->fromToComplement(
+                    pAlignment->uiBeginOnQuery,
+                    pAlignment->uiEndOnQuery
+                );
+            uiRefPos += 1;
+        }// if
+        else
+            sSegment = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
+        //std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
         if(std::isnan(pAlignment->fMappingQuality))
             sMapQual = "255";
@@ -163,7 +180,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             //segment sequence
             *pOut << sSegment << "\t";
             //ASCII of Phred-scaled base Quality+33
-            *pOut << sQual << "\n"; // flushing will be done in the deconstructor
+            *pOut << "*" << "\n"; // flushing will be done in the deconstructor
         }// scope xGuard
     }//for
 
@@ -198,7 +215,7 @@ std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerV
         std::string sSegmentQuery = pQuery->fromTo(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sQueryPos = std::to_string(pAlignment->uiBeginOnQuery);
         std::string sSegmentRef = pPack->vExtract(pAlignment->uiBeginOnRef, pAlignment->uiEndOnRef)->toString();
-        std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
+        //std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
         if(std::isnan(pAlignment->fMappingQuality))
             sMapQual = "255";
@@ -407,7 +424,7 @@ void exportFileWriter()
             FileWriter, 
             boost::python::bases<Module>, 
             std::shared_ptr<FileWriter>
-        >("FileWriter", boost::python::init<std::string>())
+        >("FileWriter", boost::python::init<std::string, std::shared_ptr<Pack>>())
     ;
 
     boost::python::implicitly_convertible< 

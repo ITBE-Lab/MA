@@ -1,9 +1,6 @@
-/** 
+/**
  * @file fileReader.cpp
  * @author Markus Schmidt
- * 
- * @todo !!! make bulk reading !!!
- * 
  */
 #include "module/fileReader.h"
 
@@ -37,83 +34,131 @@ size_t len(std::string& sLine)
     return uiLineSize;
 }
 
-std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
-{
-    std::shared_ptr<NucSeq> pRet(new NucSeq());
-    //FASTA format
-    if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
+#if USE_BUFFERED_ASYNC_READER
+    std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
-        std::string sLine;
-        std::getline (*pFile, sLine);
-        //make sure that the name contains no spaces
-        //in fact everythin past the first space is considered description rather than name
-        pRet->sName = sLine.substr(1, sLine.find(' '));
-        while(pFile->good() && !pFile->eof() && pFile->peek() != '>' && pFile->peek() != ' ')
+        /*
+         * Has next and next require synchronized access.
+         * This is done by the module synchronization.
+         */
+        if(pFile->hasNext())
+            return pFile->next();
+
+        //if we reach this point we have read all content of the file
+        return Nil::pEoFContainer;
+    }//function
+#else
+    std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
+    {
+        std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
+        std::shared_ptr<NucSeq> pRet(new NucSeq());
+        // FASTA format
+        if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
         {
-            sLine = "";//in the case that we hit an empty line getline does nothing...
+            std::string sLine;
             std::getline (*pFile, sLine);
-            DEBUG(
-                for(auto character : sLine)
-                {
-                    bool bOkay = false;
-                    for(char c : std::vector<char>{ 'A', 'C', 'T', 'G', 'a', 'c', 't', 'g'})
-                        if(c == character)
-                            bOkay = true;
-                    if(!bOkay)
+            // make sure that the name contains no spaces
+            // in fact everythin past the first space is considered description rather than name
+            pRet->sName = sLine.substr(1, sLine.find(' '));
+            while(pFile->good() && !pFile->eof() && pFile->peek() != '>' && pFile->peek() != ' ')
+            {
+                sLine = "";// in the case that we hit an empty line getline does nothing...
+                std::getline (*pFile, sLine);
+                DEBUG(
+                    for(auto character : sLine)
                     {
-                        std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
-                        throw AlignerException("Invalid symbol in fasta");
-                    }//if
-                }//for
-            )//DEBUG
-            size_t uiLineSize = len(sLine);
-            std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
-            pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
-        }//while
-        pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+                        bool bOkay = false;
+                        for(char c : std::vector<char>{ 'A', 'C', 'T', 'G', 'a', 'c', 't', 'g'})
+                            if(c == character)
+                                bOkay = true;
+                        if(!bOkay)
+                        {
+                            std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
+                            throw AlignerException("Invalid symbol in fasta");
+                        }// if
+                    }// for
+                )// DEBUG
+                size_t uiLineSize = len(sLine);
+#if WITH_QUALITY
+                // uiLineSize uint8_t's with value 127
+                std::vector<uint8_t> xQuality(uiLineSize, 126);
+#endif
+                pRet->vAppend(
+                    (const uint8_t*)sLine.c_str(),
+#if WITH_QUALITY
+                    xQuality.data(),
+#endif
+                    uiLineSize);
+            }//while
+            pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
 
-        //run self tests for the nucSeq
-        DEBUG_2(
-            std::cout << pRet->fastaq() << std::endl;
-        )//DEBUG_@
-        DEBUG(
-            pRet->check();
-        )//DEBUG
+            //run self tests for the nucSeq
+            DEBUG_2(
+                std::cout << pRet->fastaq() << std::endl;
+            )// DEBUG_2
+            DEBUG(
+                pRet->check();
+            )// DEBUG
 
-        return pRet;
-    }//if
-    //FASTAQ format
-    if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
-    {
-        std::string sLine;
-        std::getline (*pFile, sLine);
-        //make sure that the name contains no spaces
-        //in fact everythin past the first space is considered description rather than name
-        pRet->sName = sLine.substr(1, sLine.find(' '));
-        while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
+            return pRet;
+        }//if
+#if WITH_QUALITY
+        //FASTAQ format
+        if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
         {
-            sLine = "";
+            std::string sLine;
             std::getline (*pFile, sLine);
-            size_t uiLineSize = len(sLine);
-            std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
-            pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
-        }//while
-        pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
-        //quality
-        unsigned int uiPos = 0;
-        while(pFile->good() && !pFile->eof() && pFile->peek() != '@')
+            //make sure that the name contains no spaces
+            //in fact everythin past the first space is considered description rather than name
+            pRet->sName = sLine.substr(1, sLine.find(' '));
+            while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
+            {
+                sLine = "";
+                std::getline (*pFile, sLine);
+                size_t uiLineSize = len(sLine);
+                std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
+                pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
+            }//while
+            pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+            //quality
+            unsigned int uiPos = 0;
+            while(pFile->good() && !pFile->eof() && pFile->peek() != '@')
+            {
+                std::getline (*pFile, sLine);
+                size_t uiLineSize = len(sLine);
+                for(size_t i=0; i < uiLineSize; i++)
+                    pRet->quality(i + uiPos) = (uint8_t)sLine[i];
+                uiPos += uiLineSize;
+            }//while
+            return pRet;
+        }//if
+#else
+        //FASTAQ format
+        if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
         {
+            std::string sLine;
             std::getline (*pFile, sLine);
-            size_t uiLineSize = len(sLine);
-            for(size_t i=0; i < uiLineSize; i++)
-                pRet->quality(i + uiPos) = (uint8_t)sLine[i];
-            uiPos += uiLineSize;
-        }//while
-        return pRet;
-    }//if
-    //if we reach this point we have read all content of the file
-    throw ModuleDryException();
-}//function
+            //make sure that the name contains no spaces
+            //in fact everythin past the first space is considered description rather than name
+            pRet->sName = sLine.substr(1, sLine.find(' '));
+            while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
+            {
+                sLine = "";
+                std::getline (*pFile, sLine);
+                size_t uiLineSize = len(sLine);
+                pRet->vAppend((const uint8_t*)sLine.c_str(), uiLineSize);
+            }//while
+            pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
+            //quality
+            while(pFile->good() && !pFile->eof() && pFile->peek() != '@')
+                std::getline (*pFile, sLine);
+            return pRet;
+        }//if
+#endif
+        //if we reach this point we have read all content of the file
+        return Nil::pEoFContainer;
+    }//function
+#endif
 
 #ifdef WITH_PYTHON
 void exportFileReader()
@@ -124,6 +169,12 @@ void exportFileReader()
             boost::python::bases<Module>, 
             std::shared_ptr<FileReader>
         >("FileReader", boost::python::init<std::string>())
+#if USE_BUFFERED_ASYNC_READER
+    DEBUG(
+        .def("testBufReader", &FileReader::testBufReader)
+        .staticmethod("testBufReader")
+    )
+#endif
     ;
 
     boost::python::implicitly_convertible< 

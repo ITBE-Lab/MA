@@ -5,6 +5,9 @@
 #include "container/container.h"
 using namespace libMA;
 
+// initialize the EoF container
+const std::shared_ptr<Nil> Nil::pEoFContainer = std::shared_ptr<Nil>(new Nil());
+
 #ifdef WITH_PYTHON
 void exportContainer()
 {

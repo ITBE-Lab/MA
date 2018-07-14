@@ -134,8 +134,18 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     while(!pSoCIn->empty())
     {
         if(++uiNumTries > uiMaxTries)
+        {
+            DEBUG(
+                std::cout << "break after " << uiNumTries << " tries." << std::endl;
+            )
             break;
+        }
         auto pSeedsIn = pSoCIn->pop();
+
+        DEBUG(
+            if(pSoCIn->empty())
+                std::cout << "exhausted all SoCs" << std::endl;
+        )
 
         auto pSeeds = std::make_shared<Seeds>();
         pSeeds->xStats = pSeedsIn->xStats;
@@ -162,19 +172,30 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                         pSoCIn->vExtractOrder.back().rEndSoC,
                         rSeed.end_ref()
                     );
-                )// DEBUG
-            }// for
+                ) // DEBUG
+            } // for
 
             // Prof. Kutzners filter:
             // this merely checks weather we actually do have to do the harmonization at all
-            if (pQuery->length() > uiSwitchQLen)
+            //@todo uiSwitchQLen != 0 should be replaced with switch
+            if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
             {
                 if(uiLastHarmScore > uiCurrSoCScore)
+                {
+                    DEBUG(
+                        std::cout << "skip because of SoC score minimum" << std::endl;
+                    )
                     continue;
-            }// if
+                }// if
+            } // if
 
-            if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore)
+            if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0)
+            {
+                DEBUG(
+                    std::cout << "Break because of fast SoC drop";
+                )
                 break;
+            } // if
             uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
             DEBUG(
@@ -446,9 +467,19 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             uiCurrHarmScore += rSeed.size();
 
         if(uiCurrHarmScore < uiCurrHarmScoreMin )
+        {
+            DEBUG(
+                std::cout << "skip because of abs. harmonization score minimum" << std::endl;
+            )
             continue;
+        }
         if(uiCurrHarmScore < pQuery->length() * fCurrHarmScoreMinRel )
+        {
+            DEBUG(
+                std::cout << "skip because of rel. harmonization score minimum" << std::endl;
+            )
             continue;
+        }// if
 
         DEBUG(
             std::vector<bool> vQCoverage(pQuery->length(), false);
@@ -465,11 +496,17 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
 #if 1
-        if (pQuery->length() > uiSwitchQLen)
+        //@todo uiSwitchQLen != 0 should be replaced with switch
+        if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
         {
             // Prof. Kutzner's filter:
             if(uiLastHarmScore > uiCurrHarmScore)
+            {
+                DEBUG(
+                    std::cout << "skip because of harmonization score dropoff" << std::endl;
+                )
                 continue;
+            }// if
         }// if
         else
         {
@@ -478,12 +515,18 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 uiCurrHarmScore - (pQuery->length()*fScoreDiffTolerance) <= uiLastHarmScore)
                 )
                 uiSoCRepeatCounter = 0;
-            else if(++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead)
+            else if(
+                    ++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead && 
+                    uiMaxEqualScoreLookahead != 0
+                )
             {
                 uiSoCRepeatCounter -= 1; // cause we haven't actually pushed the current soc yet...
+                DEBUG(
+                    std::cout << "Break because of repeated harmonization score for short queries " << uiMaxEqualScoreLookahead << std::endl;
+                )
                 break;
-            }// else
-        }// else
+            } // else
+        } // else
 #endif
         uiLastHarmScore = uiCurrHarmScore;
 
@@ -494,7 +537,12 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
         nucSeqIndex uiAccLen = pSeeds->getScore();
         if (uiAccumulativeSeedLength > uiAccLen )
+        {
+            DEBUG(
+                std::cout << "skip because of accumulative seed length" << std::endl;
+            )
             continue;
+        }// if
         uiAccumulativeSeedLength = std::max(uiAccLen, uiAccumulativeSeedLength);
 #endif
         //FILTER END
