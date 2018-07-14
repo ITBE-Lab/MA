@@ -50,11 +50,8 @@ packages installed: `git`, `make` and `build-essential`.
 
     git clone https://github.com/ITBE-Lab/MA
     cd MA
-    git checkout v0.1.0-alpha # (*)
     make
 
-(*) This command is used in order to switch to the last stable release. 
-Skip it if you want to use the newest available version.\
 Possible Makefile switches:
 
 - WITH_PYTHON=1\

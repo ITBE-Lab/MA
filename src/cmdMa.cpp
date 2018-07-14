@@ -403,6 +403,7 @@ int main(int argc, char* argv[])
                     if(uiCurrProg > uiLastProg)
                     {
                         std::cerr 
+                            << " "
                             << static_cast<double>(uiCurrProg) / 10 
                             << "% aligned.     " 
                             << '\r' 
