@@ -5,7 +5,6 @@
 #include "module/module.h"
 #include "module/splitter.h"
 using namespace libMA;
-std::mutex xPython;
 
 bool libMA::typeCheck(
         std::shared_ptr<Container> pData, 

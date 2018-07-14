@@ -23,7 +23,7 @@ std::shared_ptr<Container> Splitter::execute(std::shared_ptr<ContainerVector> vp
     std::shared_ptr<ContainerVector> pContent =
         std::static_pointer_cast<ContainerVector>(pVec->get());
     //we have to lock the container separately since it is not part of the comp graph
-    std::lock_guard<std::mutex> xGuard(*pVec->pMutex);
+    std::lock_guard<std::mutex> xGuard(*pMutex);
     if(pContent->empty())
         throw ModuleDryException();
     //swap the back of the container out, so that there is no need to copy the element

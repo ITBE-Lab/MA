@@ -26,7 +26,6 @@
  */
 namespace libMA
 {
-    extern std::mutex xPython;
     /**
      * @defgroup module
      * @brief All classes implementing some algorithm.
@@ -318,7 +317,6 @@ namespace libMA
         std::vector<std::shared_ptr<Pledge>> aSync;
 
     public:
-        std::shared_ptr<std::mutex> pMutex;
         double execTime;
     private:
 
@@ -342,7 +340,6 @@ namespace libMA
             vPredecessors(vPredecessors),
             vSuccessors(),
             aSync(),
-            pMutex(new std::mutex),
             execTime(0)
         {}//constructor
 
@@ -365,7 +362,6 @@ namespace libMA
             vPredecessors(vPredecessors),
             vSuccessors(),
             aSync(),
-            pMutex(new std::mutex),
             execTime(0)
         {}//constructor
 #endif
@@ -438,28 +434,6 @@ namespace libMA
             return true;
         }//function
 
-        /**
-         * @brief Used to synchronize the execution of pledges in the comp. graph.
-         * @details
-         * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
-         * Does not lock otherwise.
-         * In either case fDo is called.
-         * @todo @fixme HERE IS STILL A PROBLEM
-         */
-        inline void lockIfNecessary(std::function<void()> fDo)
-        {
-            if(vSuccessors.size() > 1)
-            {
-                // multithreading is possible thus a guard is required here.
-                // deadlock prevention is trivial, 
-                // since computational graphs are essentially trees.
-                std::lock_guard<std::mutex> xGuard(*pMutex);
-                fDo();
-            }//if
-            else
-                fDo();
-        }//function
-
     public:
         /**
          * @brief Create a new pledge without a module giving the pledge.
@@ -478,7 +452,6 @@ namespace libMA
             type(type),
             vPredecessors(),
             vSuccessors(),
-            pMutex(new std::mutex),
             execTime(0)
         {}//constructor
 
@@ -625,40 +598,28 @@ namespace libMA
             if(bVolatile == false && content != nullptr)
                 return content;
 
-            // locks a mutex if this pledge can be reached from multiple leaves in the graph
-            // does not lock otherwise...
-            lockIfNecessary(
-                [&]
-                ()
+            // execute
+            if(execForGet() == false)
+            {
+                /*
+                 * If execForGet returns false we have a volatile module that's dry.
+                 * In such cases we cannot compute the next element and therefore set
+                 * the content of this module to EoF as well.
+                 */
+                content = Nil::pEoFContainer;
+                return content;
+            }// if
+            for(std::shared_ptr<Pledge> pSync : aSync)
+                if(pSync->execForGet() == false)
                 {
-                    // execute
-                    if(execForGet() == false)
-                    {
-                        /*
-                         * If execForGet returns false we have a volatile module that's dry.
-                         * In such cases we cannot compute the next element and therefore set
-                         * the content of this module to EoF as well.
-                         */
-                        content = Nil::pEoFContainer;
-                        return;
-                    }// if
-
-                    // @note the mutex is shared between synchronized pledges, 
-                    // so no special sync needed.
-                    // also execute all the synchronized locks
-                    for(std::shared_ptr<Pledge> pSync : aSync)
-                        if(pSync->execForGet() == false)
-                        {
-                            /*
-                            * If execForGet returns false we have a volatile module that's dry.
-                            * In such cases we cannot compute the next element and therefore set
-                            * the content of this module to EoF as well.
-                            */
-                            content = Nil::pEoFContainer;
-                            return;
-                        }// if
-                }// lambda
-            );// function call
+                    /*
+                     * If execForGet returns false we have a volatile module that's dry.
+                     * In such cases we cannot compute the next element and therefore set
+                     * the content of this module to EoF as well.
+                     */
+                    content = Nil::pEoFContainer;
+                    return content;
+                }// if
 
             return content;
         }// function
@@ -676,8 +637,6 @@ namespace libMA
             //add each other to the caller list
             pA->aSync.push_back(pB);
             pB->aSync.push_back(pA);
-            //sync the mutex of pA and pB
-            pA->pMutex = pB->pMutex;
         }//function
 
         void forAllSyncs(std::function<void(std::shared_ptr<Pledge>)> fDo)

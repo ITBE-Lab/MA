@@ -28,6 +28,7 @@ namespace libMA
     {
     public:
         std::shared_ptr<Pledge> pVec;
+        std::shared_ptr<std::mutex> pMutex;
 
         /**
          * @brief create a new splitter.
@@ -36,7 +37,8 @@ namespace libMA
          */
         Splitter(std::shared_ptr<Pledge> pVec)
                 :
-            pVec(pVec)
+            pVec(pVec),
+            pMutex(new std::mutex)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
