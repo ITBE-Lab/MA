@@ -3,6 +3,7 @@
 #define TEST_RANSAC_H
 
 #include "container/seed.h"
+#include <algorithm>
 
 /* Function to find mean of the array elements.
  */
