@@ -148,7 +148,7 @@ Advanced options:
                                    Increasing this parameter will increase runtime but might cause
                                    the aligner to miss the correct reference location.
                                    Default is 0.002.
-        --maxTries <num>           At most the best <num> SoC's will be inspected.
+        --maxTries <num>           Maximally <num> many SoC's are evaluated for a single alignment.
                                    Generally the best alignment is found in the best scored SoC.
                                    However, if the best alignment is from a very repetitive region,
                                    we might have to inspect several SoC's to find the optimal one.
