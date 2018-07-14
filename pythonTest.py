@@ -18,6 +18,7 @@ from sys import stderr
 from measure_time import *
 from scipy import stats
 from sklearn import linear_model
+from subprocess import call
 import json
 
 def light_spec_approximation(x):
@@ -93,9 +94,6 @@ def print_non_actg_chars(file_name):
                 for pos, char in enumerate(line):
                     if not char in ["A", "a", "C", "c", "G", "g", "T", "t", "\n"]:
                         print("char", char, "at position", pos, "in line", line_num)
-
-print_non_actg_chars("/MAdata/chrom/human/genome.fasta")
-exit()
 
 def first_accurate_SoC(db_name, reference, output_file, max_span_seed_set=True):
     seeding = BinarySeeding(max_span_seed_set)
@@ -1803,6 +1801,60 @@ def get_ambiguity_distribution(reference, min_len=10, max_len=20):
     plot2.axis.major_label_text_font_size=font_size
 
     show(gridplot( [[plot, plot2]] ))
+
+def compute_bam_bai_for_reads(name):
+    genome = "/MAdata/genome/GRCh38.p12_14_07"
+    fasta_file_name = name + ".fastq"
+
+    sam_tools_pref = "~/workspace/samtools/samtools "
+    temp_prefix = "/mnt/ssd0/sra_reads/temp/" + fasta_file_name
+    res_prefix = "/mnt/ssd0/sra_reads/res/" + fasta_file_name
+
+    download_cmd = "~/workspace/sra_toolkit/bin/fastq-dump -O /mnt/ssd0/sra_reads/temp/ " + name
+    print("(1/5) executing:", download_cmd)
+    os.system(download_cmd)
+
+    ma_cmd = "~/workspace/aligner/ma -x " + genome + " -i " + temp_prefix + " -o " + temp_prefix + ".sam"
+    print("(2/5) executing:", ma_cmd)
+    os.system(ma_cmd)
+
+    to_bam_cmd = sam_tools_pref + "view -Sb " + temp_prefix + ".sam > " + temp_prefix + ".bam"
+    print("(3/5) executing:", to_bam_cmd)
+    os.system(to_bam_cmd)
+
+    sort_cmd = sam_tools_pref + "sort -m 96G " + temp_prefix + ".bam > " + res_prefix + "_sorted.bam"
+    print("(4/5) executing:", sort_cmd)
+    os.system(sort_cmd)
+
+    index_cmd = sam_tools_pref + "index " + res_prefix + "_sorted.bam > " + res_prefix + "_sorted.bam.bai"
+    print("(5/5) executing:", index_cmd)
+    os.system(index_cmd)
+
+    print("done")
+
+## minIon reads
+
+#compute_bam_bai_for_reads("ERR2407705") # done
+compute_bam_bai_for_reads("ERR2407662")
+compute_bam_bai_for_reads("ERR2407706")
+
+## pacbio reads
+
+compute_bam_bai_for_reads("SRR7515657")
+compute_bam_bai_for_reads("SRR7515658")
+compute_bam_bai_for_reads("SRR7515660")
+compute_bam_bai_for_reads("SRR7515664")
+compute_bam_bai_for_reads("SRR7515668")
+compute_bam_bai_for_reads("SRR7515669")
+
+## illumina reads
+
+compute_bam_bai_for_reads("ERR1157312")
+compute_bam_bai_for_reads("ERR1157308")
+compute_bam_bai_for_reads("ERR1157301")
+compute_bam_bai_for_reads("ERR1157297")
+
+exit()
 
 ##
 # RUN SW for one sample
