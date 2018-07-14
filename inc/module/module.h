@@ -571,11 +571,13 @@ namespace libMA
          */
         bool hasPythonPledger()
         {
+#ifdef WITH_PYTHON
             if(!py_pledger.is_none())
                 return true;
             for(std::shared_ptr<Pledge> pFuture : vPredecessors)
                 if(pFuture->hasPythonPledger())
                     return true;
+#endif
             return false;
         }// function
 
