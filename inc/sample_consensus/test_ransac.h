@@ -22,15 +22,20 @@ template<typename TP>
 TP Median(std::vector<TP> arr)
 {
     std::sort(arr.begin(), arr.end());
-	// Calculate sum of all elements.
+    // Calculate sum of all elements.
     if (arr.size() == 0)
+    {
         return 0;  // Undefined, really.
-
+    }
     else if (arr.size() == 1)
+    {
         return arr[0];
+    }
 
     if(arr.size() % 2 == 0)
+    {
         return (arr[arr.size() / 2 - 1] + arr[arr.size() / 2]) / 2;
+    }
 	return arr[arr.size()/2];
 } // function
 
@@ -63,7 +68,10 @@ TP medianAbsoluteDeviation(std::vector<TP> arr)
     TP median = Median(arr);
     std::vector<TP> vDevArr;
 	for (size_t i = 0; i < arr.size(); i++)
-		vDevArr.push_back( abs(arr[i] - median) );
+        if ( arr[i] - median < 0 )
+		    vDevArr.push_back( -(arr[i] - median) );
+        else
+		    vDevArr.push_back( arr[i] - median );
 
 	// Return mean absolute deviation about mean.
 	return Median(vDevArr);
