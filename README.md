@@ -42,7 +42,7 @@ to the one used in the context of [TensorFlow](https://www.tensorflow.org "Tenso
 
 ## Getting Started
 MA is currently still in an evaluation and testing process. Feedback about bugs is highly welcomed. 
-The below procedure was checked on a fresh *Debian 4.9.88* with the following additional 
+The below procedure was checked on a fresh *Debian 9.4 Stretch* with the following additional 
 packages installed: `git`, `make` and `build-essential`.
 ### Installation
  
