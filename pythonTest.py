@@ -84,6 +84,19 @@ def chunks(l, n):
             yield l[i:i + n]
 
 
+def print_non_actg_chars(file_name):
+    with open(file_name, 'r') as f:
+        for line_num, line in enumerate(f):
+            if line[0] == ">":
+                print("sequence", line[:-1])
+            else:
+                for pos, char in enumerate(line):
+                    if not char in ["A", "a", "C", "c", "G", "g", "T", "t", "\n"]:
+                        print("char", char, "at position", pos, "in line", line_num)
+
+print_non_actg_chars("/MAdata/chrom/human/genome.fasta")
+exit()
+
 def first_accurate_SoC(db_name, reference, output_file, max_span_seed_set=True):
     seeding = BinarySeeding(max_span_seed_set)
     soc = StripOfConsideration(0)
