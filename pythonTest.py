@@ -1,4 +1,6 @@
 from MA import *
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 import random
 import gc
 import os
@@ -20,6 +22,7 @@ from scipy import stats
 from sklearn import linear_model
 from subprocess import call
 import json
+import glob
 
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
@@ -1832,29 +1835,77 @@ def compute_bam_bai_for_reads(name):
 
     print("done")
 
+def compute_bam_bai_for_files(path_name_gen, task_name):
+    genome = "/MAdata/genome/GRCh38.p12_14_07"
+
+    sam_tools_pref = "~/workspace/samtools/samtools "
+    merged_prefix = "/mnt/ssd0/sra_reads/temp/" + task_name
+    res_prefix = "/mnt/ssd0/sra_reads/res/" + task_name
+
+    merge_list = ""
+
+    for path, file_name in path_name_gen:
+        print("working on file", file_name)
+        temp_prefix = "/mnt/ssd0/sra_reads/temp/" + file_name
+
+        ma_cmd = "~/workspace/aligner/ma -x " + genome + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
+        os.system(ma_cmd)
+
+        print("converting sam > bam                ")
+        to_bam_cmd = sam_tools_pref + "view -Sb " + temp_prefix + ".sam > " + temp_prefix + ".bam"
+        os.system(to_bam_cmd)
+
+        merge_list += temp_prefix + ".bam "
+
+    merge = sam_tools_pref + "merge " + merged_prefix + ".bam " + merge_list
+    print("merging")
+    os.system(merge)
+
+    sort_cmd = sam_tools_pref + "sort -m 96G " + merged_prefix + ".bam > " + res_prefix + "_sorted.bam"
+    print("sorting")
+    os.system(sort_cmd)
+
+    index_cmd = sam_tools_pref + "index " + res_prefix + "_sorted.bam > " + res_prefix + "_sorted.bam.bai"
+    print("indexing")
+    os.system(index_cmd)
+
+    print("done")
+
+def all_files_with_extension(path, ext):
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            if f.endswith(ext):
+                yield root, f
+
+compute_bam_bai_for_files(
+        all_files_with_extension("/mnt/ssd0/GIAB_HG002/", ".subreads.fasta"),
+        "test"
+    )
+exit()
+
 ## minIon reads
 
-#compute_bam_bai_for_reads("ERR2407705") # done
-compute_bam_bai_for_reads("ERR2407662")
-compute_bam_bai_for_reads("ERR2407706")
-
-## pacbio reads
-
-compute_bam_bai_for_reads("SRR7515657")
-compute_bam_bai_for_reads("SRR7515658")
-compute_bam_bai_for_reads("SRR7515660")
-compute_bam_bai_for_reads("SRR7515664")
-compute_bam_bai_for_reads("SRR7515668")
-compute_bam_bai_for_reads("SRR7515669")
-
-## illumina reads
-
-compute_bam_bai_for_reads("ERR1157312")
-compute_bam_bai_for_reads("ERR1157308")
-compute_bam_bai_for_reads("ERR1157301")
-compute_bam_bai_for_reads("ERR1157297")
-
-exit()
+### #compute_bam_bai_for_reads("ERR2407705") # done
+### compute_bam_bai_for_reads("ERR2407662")
+### compute_bam_bai_for_reads("ERR2407706")
+### 
+### ## pacbio reads
+### 
+### compute_bam_bai_for_reads("SRR7515657")
+### compute_bam_bai_for_reads("SRR7515658")
+### compute_bam_bai_for_reads("SRR7515660")
+### compute_bam_bai_for_reads("SRR7515664")
+### compute_bam_bai_for_reads("SRR7515668")
+### compute_bam_bai_for_reads("SRR7515669")
+### 
+### ## illumina reads
+### 
+### compute_bam_bai_for_reads("ERR1157312")
+### compute_bam_bai_for_reads("ERR1157308")
+### compute_bam_bai_for_reads("ERR1157301")
+### compute_bam_bai_for_reads("ERR1157297")
+### 
+### exit()
 
 ##
 # RUN SW for one sample
@@ -2064,7 +2115,7 @@ exit()
 #createSampleQueries(e_coli_genome, "sw_eColi_1000.db",   1000, 100, 32, gpu_id=0)
 #createSampleQueries(e_coli_genome, "sw_eColi_30000_10.db",  30000, 10, 32, gpu_id=1)
 
-for task_id in [0]:
+for task_id in range(15):
 
     processor= task_id*2
 

@@ -19,7 +19,7 @@ class CommandLine(Module):
         if self.skip_count > 0:
             print("Aligner skipped", self.skip_count, "queries")
 
-    def __get_sam(self, index_str, queries):
+    def __get_sam(self, queries):
         f = open(self.in_filename, "w")
         for query in queries:
             check = ""
@@ -118,8 +118,8 @@ class CommandLine(Module):
     def supplementary(self, string):
         return self.check_flag(string, 11)
 
-    def __align(self, index_str, queries, pack):
-        sam = self.__get_sam(index_str, queries)
+    def __align(self, queries, pack):
+        sam = self.__get_sam(queries)
         #print(sam)
 
         lines = sam.split("\n")
@@ -293,7 +293,7 @@ class CommandLine(Module):
         pack = input[1]
 
         try:
-            return self.__align(self.index_str, queries, pack)
+            return self.__align(queries, pack)
         except:
             print("aligner crashed...")
             # return an empty alignment vector...
@@ -361,6 +361,21 @@ class Blasr(CommandLine):
 
     def output_type(self):
         return "BLASR"
+
+class Ngmlr(CommandLine):
+    def __init__(self, genome_file, db_name):
+        super().__init__()
+        self.ngmlr_home = "/usr/home/markus/workspace/ngmlr/bin/ngmlr-0.2.8/"
+        self.genome_file = genome_file
+        self.in_filename = ".tempNgmlr" + db_name + ".fasta"
+
+    def create_command(self, in_filename):
+        cmd_str = self.ngmlr_home + "ngmlr -r " + self.genome_file + " -q " + in_filename
+        print(cmd_str)
+        return cmd_str
+
+    def do_checks(self):
+        return False
 
 class BWA_MEM(CommandLine):
     def __init__(self, index_str, num_results, db_name, z_drop=None, presetting=None):
@@ -496,6 +511,8 @@ def test(
 
     warned_for_n = False
 
+    g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
+
     l = [
         ##("MA Accurate -w 10", MA(reference, num_results, False, db_name, soc_width="10")),
         ##("MA Accurate -w 100", MA(reference, num_results, False, db_name, soc_width="100")),
@@ -503,8 +520,9 @@ def test(
         ##("BWA SW s=30", BWA_SW(reference, num_results, db_name, s="300")),
 
 
-        ("MA Fast", MA(reference, num_results, True, db_name)),
-        ("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
+        #("MA Fast", MA(reference, num_results, True, db_name)),
+        #("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
+
         #  ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
         #  ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
         #  #
@@ -518,22 +536,26 @@ def test(
         #  # ("BWA MEM 0 zDrop", BWA_MEM(reference, num_results, db_name, z_drop=0)),
         #  # ("MINIMAP 2 0 zDrop", Minimap2(reference, num_results, db_name, z_drop=0)),
         #  #
-        ("MA Accurate", MA(reference, num_results, False, db_name)),
+
+        #("MA Accurate", MA(reference, num_results, False, db_name)),
+
         #  ("BWA SW", BWA_SW(reference, num_results, db_name)),
+    
+        ("NGMLR", Ngmlr(g_map_genome, db_name)),
     ]
 
-    g_map_genome = "/MAdata/chrom/" + reference.split('/')[-1] + "/n_free.fasta"
 
-    if long_read_aligners:
-        l.extend([
-                ("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
-            ])
-
-    if short_read_aligners:
-        l.extend([
-                ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
-                ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
-            ])
+    ## if long_read_aligners:
+    ##     l.extend([
+    ##             ("GRAPH MAP", G_MAP(reference, num_results, g_map_genome, db_name)),
+    ##             
+    ##         ])
+    ## 
+    ## if short_read_aligners:
+    ##     l.extend([
+    ##             ("BOWTIE 2", Bowtie2(reference, num_results, db_name)),
+    ##             ("BLASR", Blasr(reference, num_results, g_map_genome, db_name)),
+    ##         ])
 
     for name, aligner in l:
         print("evaluating " + name)
@@ -605,6 +627,7 @@ def test(
                 query_vec_pledge.set(query_list)
 
                 #print("num queries:", len(query_list))
+                
 
                 result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
 
