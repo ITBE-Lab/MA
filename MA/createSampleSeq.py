@@ -778,7 +778,11 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
     q_from = 0
     #do - while loop
     while True:#do
-        q_from = random.randint(0, ref_seq.unpacked_size()/2 - q_len)
+        #q_from = random.randint(0, ref_seq.unpacked_size()/2 - q_len)
+        
+        # temporary @todo remove me...
+        q_from = random.randint(0, ref_seq.length_of_sequence("CM000663.2") - q_len) 
+        
         q_to = q_from + q_len
     #while
         if ref_seq.is_bridging(q_from, q_len):
@@ -807,7 +811,7 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
     #
 
     #reverse complement
-    if random.randint(0,1) == 1:
+    if random.randint(0,1) == 1 and False: # do not rev complement @todo remove me again
         comp = {
             'A' : 'T',
             'T' : 'A',
@@ -895,6 +899,45 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
+def createPacBioReadsSimLord():
+    class Arguments:
+        def __init__(self):
+            #exclusive
+            self.read_reference = "/MAdata/genome/human/n_free.fasta"
+            self.generate_reference = None
+            self.save_reference = None
+
+            #exclusive
+            self.num_reads = 1000
+            self.coverage = None
+
+            self.chi2_params_s = (0.01214, -5.12, 675, 48303.0732881, 1.4691051212330266)
+            self.chi2_params_n = (1.89237136e-03, 2.53944970e+00, 5500)
+            self.max_passes = 40
+            self.sqrt_params = (0.5, 0.2247)
+            self.norm_params = (0, 0.2)
+            self.prob_ins = 0.11
+            self.prob_del = 0.04
+            self.prob_sub = 0.01
+            self.min_readlength = 50
+
+            #exclusive
+            self.lognorm_readlength = [0.200110276521, -10075.4363813, 17922.611306]
+            self.fixed_readlength = None
+            self.sample_readlength_from_fastq = None
+            self.sampler_eadlength_from_text = None
+
+            self.output = "packbio.fasta"
+            self.sam_output = "packbio.sam"
+
+            self.no_sam = False
+            self.without_ns = True
+
+            self.uniform_chromosome_probability = True
+
+    args = Arguments()
+
+
 def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
     print("setting up db...")
     conn = sqlite3.connect(db_name)
@@ -954,6 +997,135 @@ def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
     insertQueries(conn, sequences)
     print("done")
 
+def make_split_read_with_del(ref, size, del_size, percent_mutation, db_name):
+    ref_seq = Pack()
+    ref_seq.load(ref)
+
+    q_from, q_, _, _ = get_query(
+            ref_seq, size*2+del_size, int( (del_size+2*size)*percent_mutation), 0, 0
+        )
+
+    q = q_[0:size] + q_[size+del_size:]
+
+    q_seq_name = ref_seq.name_of_sequence(q_from)
+
+    q_from -= ref_seq.start_of_sequence(q_seq_name)
+
+    print(" split reads originates from: " +
+            q_seq_name + " at " + str(q_from) + " - " + str(q_from + del_size+2*size))
+
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
+
+    setUpDbTables(conn, True)
+
+    
+    queries_list = [(
+            int( (del_size+2*size)*percent_mutation),
+            1,
+            del_size+2*size,
+            q_from,
+            q
+        )]
+    insertQueries(conn, queries_list)
+    conn.commit()
+    conn.close()
+
+
+def make_split_read_db_close(ref, size, percent_mutation, db_name):
+    ref_seq = Pack()
+    ref_seq.load(ref)
+
+    q_from, q_, _, _ = get_query(ref_seq, size*3, 3*int(size*percent_mutation), 0, 0)
+
+    q = q_[size*2:] + q_[0:size]
+
+    q_seq_name = ref_seq.name_of_sequence(q_from)
+
+    q_from -= ref_seq.start_of_sequence(q_seq_name)
+
+    print(" split reads originates from: " +
+            q_seq_name + " at " + str(q_from) + " - " + str(q_from + size*3))
+
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
+
+    setUpDbTables(conn, True)
+
+    
+    queries_list = [(
+            int(size*percent_mutation)*2,
+            1,
+            size*2,
+            q_from,
+            q
+        )]
+    insertQueries(conn, queries_list)
+    conn.commit()
+    conn.close()
+
+
+def make_split_read_db(ref, size, percent_mutation, db_name):
+    ref_seq = Pack()
+    ref_seq.load(ref)
+
+    q1_from, q1, _, _ = get_query(ref_seq, size, int(size*percent_mutation), 0, 0)
+    q2_from, q2, _, _ = get_query(ref_seq, size, int(size*percent_mutation), 0, 0)
+
+    q = q1 + q2
+
+    q1_seq_name = ref_seq.name_of_sequence(q1_from)
+    q2_seq_name = ref_seq.name_of_sequence(q2_from)
+
+    q1_from -= ref_seq.start_of_sequence(q1_seq_name)
+    q2_from -= ref_seq.start_of_sequence(q2_seq_name)
+
+    print(" split reads originate from: " +
+            q1_seq_name + " at " + str(q1_from) + " - " + str(q1_from + size) + " and " +
+            q2_seq_name + " at " + str(q2_from) + " - " + str(q2_from + size) + "\n"
+        )
+
+    conn = sqlite3.connect("/MAdata/db/" + db_name)
+
+    setUpDbTables(conn, True)
+
+    
+    queries_list = [(
+            int(size*percent_mutation)*2,
+            1,
+            size*2,
+            q1_from,
+            q
+        )]
+    insertQueries(conn, queries_list)
+    conn.commit()
+    conn.close()
+
+
+def create_split_reads(ref, size, amount, percent_mutation, file_name_out):
+    ref_seq = Pack()
+    ref_seq.load(ref)
+
+    with open(file_name_out, "w") as fasta_out:
+        for index in range(amount):
+            q1_from, q1, _, _ = get_query(ref_seq, size, int(size*percent_mutation), 0, 0)
+            q2_from, q2, _, _ = get_query(ref_seq, size, int(size*percent_mutation), 0, 0)
+
+            q = q1 + q2
+
+            q1_seq_name = ref_seq.name_of_sequence(q1_from)
+            q2_seq_name = ref_seq.name_of_sequence(q2_from)
+
+            q1_from -= ref_seq.start_of_sequence(q1_seq_name)
+            q2_from -= ref_seq.start_of_sequence(q2_seq_name)
+
+            fasta_out.write(
+                    ">sequence" + str(index) + " split reads originate from: " +
+                    q1_seq_name + " at " + str(q1_from) + " - " + str(q1_from + size) + " and " +
+                    q2_seq_name + " at " + str(q2_from) + " - " + str(q2_from + size) + "\n"
+                )
+
+            fasta_out.write(q)
+            fasta_out.write("\n")
+
 
 def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_to_del_ratio=0.5, smaller_box = False, only_first_row = False, gpu_id=None, quiet=False):
     conn = sqlite3.connect("/MAdata/db/" + db_name)
@@ -962,8 +1134,6 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
 
     ref_seq = Pack()
     ref_seq.load(ref)
-    reference_pledge = Pledge(Pack())
-    reference_pledge.set(ref_seq)
 
     max_indels = 1
     if indel_size != 0:

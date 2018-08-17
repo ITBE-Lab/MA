@@ -14,10 +14,15 @@
 
 using namespace libMA;
 
-int iMatch = 2;
-int iMissMatch = 4;
-int iGap = 6;
-int iExtend = 1;
+
+
+int iMatch = 2; // default 2
+int iMissMatch = 4; //default 4
+int iGap = 4; // default 4
+int iExtend = 2; // default 2
+int iGap2 = 24; // default 24
+int iExtend2 = 1; //default 1
+
 /// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
 //accuracy drops if parameter is set smaller than 10^6
 nucSeqIndex uiMaxGapArea = 10000;
@@ -48,14 +53,14 @@ static void ksw_gen_simple_mat(int m, int8_t *mat, int8_t a, int8_t b)
 void ksw_simplified(
         int qlen, const uint8_t *query,
         int tlen, const uint8_t *target,
-        int8_t q, int8_t e, int& w,
+        int8_t q, int8_t e, int8_t q2, int8_t e2, int& w,
         ksw_extz_t *ez
     )
 {
     int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
     if( std::abs(tlen - qlen) + minAddBandwidth > w)
         w = std::abs(tlen - qlen) + minAddBandwidth;
-    ksw_extz2_sse(nullptr, qlen, query, tlen, target, 5, mat, q, e, w, -1, -1, 0, ez);
+    ksw_extd2_sse(nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez);
 }// function
 
 
@@ -117,6 +122,8 @@ void ksw(
         pRef->pGetSequenceRef() + fromRef, 
         iGap,
         iExtend,
+        iGap2,
+        iExtend2,
         uiBandwidth,
         ez.ez // return value
     );
@@ -1273,6 +1280,8 @@ void testKsw()
             (const uint8_t*)&vRefSeq[0], 
             iGap,
             iExtend,
+            iGap2,
+            iExtend2,
             iBandwidth,
             ez.ez // return value
         );
@@ -1322,6 +1331,8 @@ void exportNeedlemanWunsch()
         // @todo: this should be changed ...
         .def_readwrite("penalty_gap_open", &iGap)
         .def_readwrite("penalty_gap_extend", &iExtend)
+        .def_readwrite("penalty_gap_open_2", &iGap2)
+        .def_readwrite("penalty_gap_extend_2", &iExtend2)
         .def_readwrite("score_match", &iMatch)
         .def_readwrite("penalty_missmatch", &iMissMatch)
         .def_readwrite("max_gap_area", &uiMaxGapArea)

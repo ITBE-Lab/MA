@@ -43,23 +43,23 @@ bwa_home = "/usr/home/markus/workspace/bwa/bwa index "
 minimap_home = "/usr/home/markus/workspace/minimap2/minimap2 -d "
 gem_home = "/usr/home/markus/workspace/gemtools/GEMTools/bin/"
 def make(filename, out_name):
-    # # my pack + fmd Index
-    # ref_seq = Pack()
-    # ref_seq.append_fasta_file( filename )
-    # ref_seq.store(out_name)
-    # fm_index = FMIndex(ref_seq)
-    # fm_index.store(out_name)
-    # # BWA fmd index
-    # os.system(bwa_home + "-p " + out_name + "bwa " + filename)
-    # # bowtie index
-    # os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
-    # # blasr index
-    # os.system(blasr_home + out_name + "blasr " + filename)
-    # # minimap2 index
-    # os.system(minimap_home + out_name + ".mmi " + filename)
+    # my pack + fmd Index
+    ref_seq = Pack()
+    ref_seq.append_fasta_file( filename )
+    ref_seq.store(out_name)
+    fm_index = FMIndex(ref_seq)
+    fm_index.store(out_name)
+    # BWA fmd index
+    os.system(bwa_home + "-p " + out_name + "bwa " + filename)
+    # bowtie index
+    os.system(bowtie2_home + filename + " " + out_name + "bowtie2")
+    # blasr index
+    os.system(blasr_home + out_name + "blasr " + filename)
+    # minimap2 index
+    os.system(minimap_home + out_name + ".mmi " + filename)
 
     # # GEM index
-    os.system(gem_home + "gt.construct -i " + filename + " -o " + out_name + ".gem")
+    # os.system(gem_home + "gt.construct -i " + filename + " -o " + out_name + ".gem")
 
 """ # DEPRECATED #
 def make_hash(name):
@@ -118,8 +118,11 @@ def chrNames(prefix, num, suffix):
 #replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
 #make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
 
-#replace_n(chrNames("/MAdata/chrom/human/chr", 22, ".fna"), "/MAdata/chrom/human/n_free.fasta")
-#make("/MAdata/chrom/human/n_free.fasta", "/MAdata/genome/human")
+replace_n(
+        chrNames("/MAdata/chrom/human_hg37/chr", 22, ".fa"),
+        "/MAdata/chrom/human_hg37/n_free.fasta"
+    )
+make("/MAdata/chrom/human_hg37/n_free.fasta", "/MAdata/genome/human_hg37")
 
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
 #make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
@@ -133,4 +136,4 @@ def chrNames(prefix, num, suffix):
 #makeRandom("/MAdata/genome/random_3_10_7", 3 * 10**7)
 
 #replace_n(["/MAdata/chrom/eColi/GCA_000005845.2_ASM584v2_genomic.fna"], "/MAdata/chrom/eColi/n_free.fasta")
-make("/MAdata/chrom/eColi/n_free.fasta", "/MAdata/genome/eColi")
+#make("/MAdata/chrom/eColi/n_free.fasta", "/MAdata/genome/eColi")

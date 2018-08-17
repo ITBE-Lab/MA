@@ -15,6 +15,8 @@
 #define PARAMETER_SET DEFAULT
 
 
+
+
 namespace libMA
 {
     namespace defaults
@@ -22,10 +24,12 @@ namespace libMA
 #if(PARAMETER_SET == DEFAULT)
         //@todo comment this file
         std::string
-            uiMatch = "3",      // score for a DP match (used in SoC width computation)
+            uiMatch = "2",      // score for a DP match (used in SoC width computation)
             uiMissMatch = "4",  // penalty for a DP missmatch
-            uiOpen = "6",       // penalty for a DP gap opening (used in SoC width computation)
-            uiExtend = "1",     // penalty for a DP gap extension (used in SoC width computation)
+            uiOpen = "4",       // penalty for a DP gap opening (used in SoC width computation)
+            uiExtend = "2",     // penalty for a DP gap extension (used in SoC width computation)
+            uiOpen2 = "24",       // penalty for a DP gap opening (used in SoC width computation)
+            uiExtend2 = "1",     // penalty for a DP gap extension (used in SoC width computation)
             uiUnpaired = "17",  // penalty for unpaired reads
             uiMean = "400",     // mean distance for paired reads
             uiStd = "150",      // standard deviation for distance of paired reads

@@ -70,6 +70,7 @@ def heatmap_palette(scheme, num_colors):
     return [format(scheme(x)) for x in np.linspace(0, 1, num_colors)]
 
 human_genome = "/MAdata/genome/human"
+human_hg37_genome = "/MAdata/genome/human_hg37"
 zebrafish_genome = "/MAdata/genome/zebrafish"
 random_genome = "/MAdata/genome/random"
 mouse_genome = "/MAdata/genome/mouse"
@@ -191,10 +192,6 @@ def test_my_approach(
         sort_after_score=True,
         max_nmw = 0,
         cheat=False,
-        match=3,
-        missmatch=4,
-        gap=6,
-        extend=1,
         kMerExtension=False,
         reportN=0,
         clean_up_db=False,
@@ -300,10 +297,6 @@ def test_my_approach(
         missed_list = []
 
         # DP scoring scheme
-        NeedlemanWunsch().score_match = match
-        NeedlemanWunsch().penalty_gap_extend = extend
-        NeedlemanWunsch().penalty_gap_open = gap
-        NeedlemanWunsch().penalty_missmatch = missmatch
         NeedlemanWunsch().max_gap_area = 10000 # if local else 0 #1000000
         #modules
         seeding = BinarySeeding(not complete_seeds)
@@ -313,7 +306,7 @@ def test_my_approach(
         if kMerExtension:
             seeding = OtherSeeding(True)
         soc = StripOfConsideration(give_up) # check if 0 is okay
-        ex = ExtractAllSeeds(max_hits)
+        ex = ExtractAllSeeds(max_hits, 0)
         ls = LinearLineSweep()
 
         ls.equal_score_lookahead = 5
@@ -1857,7 +1850,7 @@ def compute_bam_bai_for_files(path_name_gen, task_name):
 
         merge_list += temp_prefix + ".bam "
 
-    merge = sam_tools_pref + "merge " + merged_prefix + ".bam " + merge_list
+    merge = sam_tools_pref + "merge -f " + merged_prefix + ".bam " + merge_list
     print("merging")
     os.system(merge)
 
@@ -1877,11 +1870,31 @@ def all_files_with_extension(path, ext):
             if f.endswith(ext):
                 yield root, f
 
+
+#make_split_read_db_close(human_genome, 1000, 0.05, "split_read.db")
+#make_split_read_with_del(human_genome, 5000, 1400, 0.01, "del_read.db")
+#test_my_approaches("del_read.db", human_genome, specific_id=1 )
+#exit()
+
+#### compute_bam_bai_for_files(
+####         all_files_with_extension("/mnt/ssd0/GIAB_HG002/", ".subreads.fasta"),
+####         "test"
+####     )
+#### exit()
+
 compute_bam_bai_for_files(
-        all_files_with_extension("/mnt/ssd0/GIAB_HG002/", ".subreads.fasta"),
-        "test"
+        [(
+        "/mnt/ssd0/PacBio/ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/" + 
+            "HG002_NA24385_son/PacBio_MtSinai_NIST/Baylor_NGMLR_bam_GRCh37",
+        "HG002_PB_70x_RG_HP10XtrioRTG.fasta")
+        ],
+        "hg002"
     )
 exit()
+
+# create_split_reads(human_genome, 1000, 10, .05, "split_reads_experiment.fasta")
+# compute_bam_bai_for_files([("~/workspace/aligner","split_reads_experiment.fasta")], # "split_reads_experiment")
+# exit()
 
 ## minIon reads
 
@@ -2007,7 +2020,10 @@ def check_sw_score(db_name, genome, sample_id, ref_start, gpu_id=0):
 #createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 100, reset=True, gpu_id=0)
 
 ## task 2:
-#createSampleQueries(human_genome, "sw_human_1000.db", 1000, 100, 50, reset=True, gpu_id=1)
+#createSampleQueries(human_genome, "sw_human_1000.db", 1000, 100, 50, reset=True, gpu_id=0
+)
+#createSampleQueries(human_genome, "sw_human_3000.db", 30000, 100, 32, reset=True)
+
 
 
 # zebrafish
@@ -2049,6 +2065,9 @@ def check_sw_score(db_name, genome, sample_id, ref_start, gpu_id=0):
 # ================================================================================================ #
 # running through all sample sets                                                                  #
 # ================================================================================================ #
+
+
+
 
 # [7, 8, 6]:
 # [0, 1, 2]:

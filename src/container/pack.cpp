@@ -678,6 +678,10 @@ void exportPack()
                 "start_of_sequence_id", 
                 &Pack::startOfSequenceWithId
             )
+        .def(
+                "name_of_sequence", 
+                &Pack::nameOfSequenceForPosition
+            )
         .def_readonly(
                 "unpacked_size_single_strand", 
                 &Pack::uiUnpackedSizeForwardStrand
