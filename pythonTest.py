@@ -1828,9 +1828,20 @@ def compute_bam_bai_for_reads(name):
 
     print("done")
 
-def compute_bam_bai_for_files(path_name_gen, task_name):
-    genome = "/MAdata/genome/GRCh38.p12_14_07"
+def filter_duplicates(in_f, out_f):
+    with open(in_f, "r") as in_file:
+        with open(out_f, "w") as out_file:
+            read_names = set()
+            bWrite = True
+            for line in in_file:
+                if line[0] == ">":
+                    bWrite = not line in read_names
+                    read_names.add(line)
+                    print(line, bWrite)
+                if bWrite:
+                    out_file.write(line)
 
+def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference):
     sam_tools_pref = "~/workspace/samtools/samtools "
     merged_prefix = "/mnt/ssd0/sra_reads/temp/" + task_name
     res_prefix = "/mnt/ssd0/sra_reads/res/" + task_name
@@ -1841,8 +1852,14 @@ def compute_bam_bai_for_files(path_name_gen, task_name):
         print("working on file", file_name)
         temp_prefix = "/mnt/ssd0/sra_reads/temp/" + file_name
 
-        ma_cmd = "~/workspace/aligner/ma -x " + genome + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
-        os.system(ma_cmd)
+        ma_cmd = "~/workspace/aligner/ma -x " + pack + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
+
+        mm_cmd = "~/workspace/minimap2/minimap2 -a " + reference + " " + path + "/" + file_name + " > " + temp_prefix + ".sam"
+
+        ngmlr_cmd = "~/workspace/ngmlr/bin/ngmlr-0.2.8/ngmlr -t 32 -r " + reference + " -q " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
+        #os.system(ma_cmd)
+        #os.system(mm_cmd)
+        os.system(ngmlr_cmd)
 
         print("converting sam > bam                ")
         to_bam_cmd = sam_tools_pref + "view -Sb " + temp_prefix + ".sam > " + temp_prefix + ".bam"
@@ -1871,6 +1888,9 @@ def all_files_with_extension(path, ext):
                 yield root, f
 
 
+# extract fasta from bam:
+# samtools view <in.bam> <chr>:<from>-<to> | awk '{OFS="\t"; print ">"$1"\n"$10}' - > <out.fasta>
+
 #make_split_read_db_close(human_genome, 1000, 0.05, "split_read.db")
 #make_split_read_with_del(human_genome, 5000, 1400, 0.01, "del_read.db")
 #test_my_approaches("del_read.db", human_genome, specific_id=1 )
@@ -1882,13 +1902,22 @@ def all_files_with_extension(path, ext):
 ####     )
 #### exit()
 
+##filter_duplicates(
+##    "/mnt/ssd0/PacBio/ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/" + 
+##            "HG002_NA24385_son/PacBio_MtSinai_NIST/Baylor_NGMLR_bam_GRCh37/section.fasta",
+##    "/mnt/ssd0/PacBio/ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/" + 
+##            "HG002_NA24385_son/PacBio_MtSinai_NIST/Baylor_NGMLR_bam_GRCh37/section_filtered.fasta"
+##            )
+
 compute_bam_bai_for_files(
         [(
         "/mnt/ssd0/PacBio/ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/" + 
             "HG002_NA24385_son/PacBio_MtSinai_NIST/Baylor_NGMLR_bam_GRCh37",
-        "HG002_PB_70x_RG_HP10XtrioRTG.fasta")
+        "section_filtered.fasta")
         ],
-        "hg002"
+        "hg002_ngmlr",
+        "/MAdata/genome/GRCh38.p12",
+        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
     )
 exit()
 
@@ -2020,8 +2049,7 @@ def check_sw_score(db_name, genome, sample_id, ref_start, gpu_id=0):
 #createSampleQueries(human_genome, "sw_human_200.db", 200, 20, 100, reset=True, gpu_id=0)
 
 ## task 2:
-#createSampleQueries(human_genome, "sw_human_1000.db", 1000, 100, 50, reset=True, gpu_id=0
-)
+#createSampleQueries(human_genome, "sw_human_1000.db", 1000, 100, 50, reset=True, gpu_id=0)
 #createSampleQueries(human_genome, "sw_human_3000.db", 30000, 100, 32, reset=True)
 
 

@@ -118,11 +118,11 @@ def chrNames(prefix, num, suffix):
 #replace_n(["/MAdata/chrom/wheat/full_genome.fasta"], "/MAdata/chrom/wheat/n_free.fasta")
 #make("/MAdata/chrom/wheat/n_free.fasta", "/MAdata/genome/wheat")
 
-replace_n(
-        chrNames("/MAdata/chrom/human_hg37/chr", 22, ".fa"),
-        "/MAdata/chrom/human_hg37/n_free.fasta"
-    )
-make("/MAdata/chrom/human_hg37/n_free.fasta", "/MAdata/genome/human_hg37")
+#replace_n(
+#        chrNames("/MAdata/chrom/human_hg37/chr", 22, ".fa"),
+#        "/MAdata/chrom/human_hg37/n_free.fasta"
+#    )
+make("/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna", "/MAdata/genome/GRCh38.p12")
 
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
 #make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")
