@@ -1857,9 +1857,9 @@ def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference):
         mm_cmd = "~/workspace/minimap2/minimap2 -a " + reference + " " + path + "/" + file_name + " > " + temp_prefix + ".sam"
 
         ngmlr_cmd = "~/workspace/ngmlr/bin/ngmlr-0.2.8/ngmlr -t 32 -r " + reference + " -q " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
-        #os.system(ma_cmd)
+        os.system(ma_cmd)
         #os.system(mm_cmd)
-        os.system(ngmlr_cmd)
+        #os.system(ngmlr_cmd)
 
         print("converting sam > bam                ")
         to_bam_cmd = sam_tools_pref + "view -Sb " + temp_prefix + ".sam > " + temp_prefix + ".bam"
@@ -1915,7 +1915,7 @@ compute_bam_bai_for_files(
             "HG002_NA24385_son/PacBio_MtSinai_NIST/Baylor_NGMLR_bam_GRCh37",
         "section_filtered.fasta")
         ],
-        "hg002_ngmlr",
+        "hg002_new_filter3",
         "/MAdata/genome/GRCh38.p12",
         "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
     )

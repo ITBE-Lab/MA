@@ -14,6 +14,13 @@ extern int iMatch;
 extern int iMissMatch;
 extern nucSeqIndex uiMaxGapArea;
 
+inline nucSeqIndex difference(nucSeqIndex a, nucSeqIndex b)
+{
+    if( a > b )
+        return a - b;
+    return b - a;
+}// function
+
 ContainerVector LinearLineSweep::getInputType() const
 {
     return ContainerVector{
@@ -442,7 +449,79 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             if(pOptimalStart != pSeeds->end())
                 pSeeds->erase(pSeeds->begin(), pOptimalStart);
 #endif
+            /*
+            * Artifact filter:
+            */
+            if(pSeeds->size() > 2)
+            {
+                size_t uiNumfiltered = 0;
+                size_t uiABsum = 0;
+                size_t uiTotal = 0;
+                size_t uiPrePos = 0;
+                size_t uiCenterPos = 1;
+                while(uiCenterPos < pSeeds->size() - 1)
+                {
+                    Seed& rPre = (*pSeeds)[uiPrePos];
+                    Seed& rCenter = (*pSeeds)[uiCenterPos];
+                    Seed& rPost = (*pSeeds)[uiCenterPos + 1];
+                    double dA = difference( rPre.end_ref(), rPost.start_ref() );
+                    double dB = difference( rPre.end(), rPost.start() );
+                    double dRelation;
+                    if(dA > dB)
+                        dRelation = dB / dA;
+                    else
+                        dRelation = dA / dB;
 
+                    
+                    double dXDeltaRef = difference( rPre.end_ref(), rCenter.start_ref() );
+                    double dXDeltaQuery = difference( rPre.end(), rCenter.start() );
+
+                    double dXDeltaRelation;
+                    if(dXDeltaRef > dXDeltaQuery)
+                        dXDeltaRelation = dXDeltaQuery / dXDeltaRef;
+                    else
+                        dXDeltaRelation = dXDeltaRef / dXDeltaQuery;
+
+                    double dYDeltaRef = difference( rCenter.end_ref(), rPost.start_ref() );
+                    double dYDeltaQuery = difference( rCenter.end(), rPost.start() );
+
+                    double dYDeltaRelation;
+                    if(dYDeltaRef > dYDeltaQuery)
+                        dYDeltaRelation = dYDeltaQuery / dYDeltaRef;
+                    else
+                        dYDeltaRelation = dYDeltaRef / dYDeltaQuery;
+
+                    // @todo consider the delta-values !!!
+                    
+                    double dDeltaRelation = std::max(dXDeltaRelation, dYDeltaRelation);
+                    uiABsum += dA + dB;
+                    uiTotal++;
+                    if(
+                        // check if the shape is close enough to a square
+                        dRelation > 0.7 && // @todo make this a configuration variable
+
+                        dDeltaRelation < 0.9 && // @todo make this a configuration variable
+
+                        // check that the square has some minimum size
+                        dXDeltaRef + dXDeltaQuery + dYDeltaRef + dYDeltaQuery > 16
+                    )
+                    {
+                        // the filter triggered -> 
+                        // we flag the seed to be ignored by setting it's size to zero
+                        rCenter.size(0);
+                        uiNumfiltered++;
+                        uiCenterPos++;
+                    }// if
+                    else
+                    {
+                        // the filter did not trigger move to the next triple
+                        uiCenterPos++;
+                        uiPrePos = uiCenterPos - 1;
+                    }// else
+                }// while
+                std::cout << "FILTERED: " << uiNumfiltered << " of " << pSeeds->size() << std::endl;
+                std::cout << "dA + dB = " << uiABsum / (double)uiTotal << std::endl;
+            }// if
         }// if
         else // pSeedsIn contains merely one seed
         {

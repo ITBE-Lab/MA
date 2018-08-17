@@ -1107,6 +1107,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             bSkip = false;
             continue;
         }//if
+        if(rSeed.size() == 0)
+            continue;
         nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start();
         if(rSeed.start() > endOfLastSeedQuery)
             ovQ = 0;
