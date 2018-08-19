@@ -17,6 +17,8 @@ from math import floor, log
 import operator
 import os
 import csv 
+from simlord import simlord
+from MA import simulate_pacbio
 
 def mutate(char):
     num = 0
@@ -187,6 +189,70 @@ def setUpDbTables(conn, reset = False):
                 """)
     conn.commit()
 
+
+def setUpDbTablesSplit(conn, reset = False):
+    c = conn.cursor()
+
+    if reset:
+        c.execute("DROP TABLE IF EXISTS samples")
+        c.execute("DROP TABLE IF EXISTS results")
+        c.execute("DROP TABLE IF EXISTS total_runtime")
+
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS samples
+                (
+                    sample_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    origin_1 INTEGER,
+                    size_1 INTEGER,
+                    origin_2 INTEGER,
+                    size_2 INTEGER,
+                    sequence TEXT
+                )
+                """)
+
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS results
+                (
+                    sample_id INTEGER,
+                    start INTEGER,
+                    end INTEGER,
+                    run_time REAL,
+                    mapping_quality REAL,
+                    approach TINYTEXT,
+                    secondary TINYINT
+                )
+                """)
+
+    c.execute("""
+                CREATE TABLE IF NOT EXISTS total_runtime
+                (
+                    run_time REAL,
+                    approach TINYTEXT
+                )
+                """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS results_index_1 ON results
+                (
+                    approach
+                )
+                """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS results_index_2 ON results
+                (
+                    sample_id
+                )
+                """)
+
+    c.execute("""
+                CREATE INDEX IF NOT EXISTS samples_index_4 ON samples
+                (
+                    sample_id
+                )
+                """)
+    conn.commit()
+
 def insertQueries(conn, queries_list):
     c = conn.cursor()
     insert_str = """
@@ -196,6 +262,22 @@ def insertQueries(conn, queries_list):
             num_indels,
             original_size,
             origin,
+            sequence
+        ) 
+        VALUES (?,?,?,?,?)
+        """
+    c.executemany(insert_str, queries_list)
+    conn.commit()
+
+def insertQueriesSplit(conn, queries_list):
+    c = conn.cursor()
+    insert_str = """
+        INSERT INTO samples 
+        (
+            origin_1,
+            size_1,
+            origin_2,
+            size_2,
             sequence
         ) 
         VALUES (?,?,?,?,?)
@@ -899,43 +981,89 @@ def get_query(ref_seq, q_len, mutation_amount, indel_amount, indel_size, in_to_d
 
     return (q_from, q, original_nuc_dist, modified_nuc_dist)
 
-def createPacBioReadsSimLord():
-    class Arguments:
-        def __init__(self):
-            #exclusive
-            self.read_reference = "/MAdata/genome/human/n_free.fasta"
-            self.generate_reference = None
-            self.save_reference = None
+def createPacBioReadsSimLord(ref_seq, pack_name):
+    reads = simulate_pacbio.simulatePackBio(
+            ref_seq,
+            #"/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
+            #"/MAdata/chrom/zebrafish/GCF_000002035.6_GRCz11_genomic.fna",
+            #"/MAdata/chrom/eColi/GCA_000005845.2_ASM584v2_genomic.fna",
+            400
 
-            #exclusive
-            self.num_reads = 1000
-            self.coverage = None
+            #prob_sub=[0.001, 0.005, 0.01, 0.02, 0.03, 0.1],
+            #prob_indel=[ (0.09, 0.02), (0.11, 0.04), (0.13, 0.06), (0.15, 0.08), (0.3, 0.2) ]
+        )
 
-            self.chi2_params_s = (0.01214, -5.12, 675, 48303.0732881, 1.4691051212330266)
-            self.chi2_params_n = (1.89237136e-03, 2.53944970e+00, 5500)
-            self.max_passes = 40
-            self.sqrt_params = (0.5, 0.2247)
-            self.norm_params = (0, 0.2)
-            self.prob_ins = 0.11
-            self.prob_del = 0.04
-            self.prob_sub = 0.01
-            self.min_readlength = 50
+    # conn = sqlite3.connect(db_name)
+    # setUpDbTablesSplit(conn, True)
 
-            #exclusive
-            self.lognorm_readlength = [0.200110276521, -10075.4363813, 17922.611306]
-            self.fixed_readlength = None
-            self.sample_readlength_from_fastq = None
-            self.sampler_eadlength_from_text = None
+    pack = Pack()
+    pack.load(pack_name)
+    #pack.load("/MAdata/genome/GRCh38.p12")
+    #pack.load("/MAdata/genome/zebrafish_full")
+    #pack.load("/MAdata/genome/eColi_full")
 
-            self.output = "packbio.fasta"
-            self.sam_output = "packbio.sam"
+    sequences = []
 
-            self.no_sam = False
-            self.without_ns = True
+    reads_1 = reads[:int(len(reads)/2)]
+    reads_2 = reads[int(len(reads)/2):]
 
-            self.uniform_chromosome_probability = True
+    assert(len(reads_1) == len(reads_2))
 
-    args = Arguments()
+    for a, b in zip(reads_1, reads_2):
+        name_a, read_a, chr_name_a, start_pos_a, current_readlength_a, substitutions_a, indels_a = a
+        name_b, read_b, chr_name_b, start_pos_b, current_readlength_b, substitutions_b, indels_b = b
+
+        current_readlength_a = int(current_readlength_a/2)
+        current_readlength_b = int(current_readlength_b/2)
+
+        #print(chr_name)
+        origin_a = start_pos_a + pack.start_of_sequence(chr_name_a)
+        origin_b = start_pos_b + pack.start_of_sequence(chr_name_b)
+        # first half of a + second half of b
+        read_1 = read_a[:current_readlength_a] + read_b[current_readlength_b:]
+        # first half of b + second half of a
+        read_2 = read_b[:current_readlength_b] + read_a[current_readlength_a:]
+        sequences.append( (
+                origin_a,
+                current_readlength_a,
+                origin_b + current_readlength_a,
+                current_readlength_b,
+                read_1
+            ) )
+        sequences.append( (
+                origin_b,
+                current_readlength_b,
+                origin_a + current_readlength_b,
+                current_readlength_a,
+                read_2
+            ) )
+
+    return sequences
+
+def createPacBioReadsSimLordGenDup():
+    reads = simulate_pacbio.simulatePackBio(
+            "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
+            400,
+            lambda x: x.load_specific_regions_from_tsv("/MAdata/chrom/human/snp150Common.gz", 1, 2, 3, 6)
+        )
+    pack = Pack()
+    pack.load("/MAdata/genome/GRCh38.p12")
+
+    sequences = []
+
+    for name, read, chr_name, start_pos, curr_len, subst, indels in reads:
+
+        origin = start_pos + pack.start_of_sequence(chr_name)
+
+        sequences.append( (
+                origin,
+                curr_len,
+                read
+            ) )
+
+    return sequences
+
+    # insertQueriesSplit(conn, sequences)
 
 
 def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):
@@ -1269,4 +1397,3 @@ def createSampleQueries(ref, db_name, size, indel_size, amount, reset=True, in_t
             print("done")
 
 #function
-

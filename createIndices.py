@@ -2,6 +2,7 @@ from MA import *
 import random
 import os
 
+
 def replace_n(filenames, out_file):
     file_out = open(out_file, "w")
     for name in filenames:
@@ -20,6 +21,30 @@ def replace_n(filenames, out_file):
                 assert(not 'n' in line)
             else:
                 print(line[0:-1])
+            if len(line) > 1:
+                file_out.write(line + "\n")
+            line = file.readline()
+        file.close()
+    file_out.close()
+    print("self check...")
+    file = open(out_file , "r")
+    line = file.readline()
+    while line:
+        if line[0] != '>':
+            if "N" in line or 'n' in line:
+                print(line)
+            #assert(len(line) > 1)
+        line = file.readline()
+    file.close()
+    print("[OK]")
+
+def concat(filenames, out_file):
+    file_out = open(out_file, "w")
+    for name in filenames:
+        file = open(name , "r")
+        line = file.readline()
+        while line:
+            line = line[:-1]
             if len(line) > 1:
                 file_out.write(line + "\n")
             line = file.readline()
@@ -122,7 +147,12 @@ def chrNames(prefix, num, suffix):
 #        chrNames("/MAdata/chrom/human_hg37/chr", 22, ".fa"),
 #        "/MAdata/chrom/human_hg37/n_free.fasta"
 #    )
-make("/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna", "/MAdata/genome/GRCh38.p12")
+#concat(
+#        chrNames("/MAdata/chrom/human_hg37/chr", 22, ".fa"),
+#        "/MAdata/chrom/human_hg37/full_sequence.fasta"
+#    )
+#make("/MAdata/chrom/eColi/GCA_000005845.2_ASM584v2_genomic.fna", "/MAdata/genome/eColi_full")
+make("/MAdata/chrom/zebrafish/GCF_000002035.6_GRCz11_genomic.fna", "/MAdata/genome/zebrafish_full")
 
 #replace_n(chrNames("/MAdata/chrom/mouse/chr", 19, ".fna"), "/MAdata/chrom/mouse/n_free.fasta")
 #make("/MAdata/chrom/mouse/n_free.fasta", "/MAdata/genome/mouse")

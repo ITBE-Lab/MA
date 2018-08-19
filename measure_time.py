@@ -491,6 +491,141 @@ class MA(CommandLine):
 
 human_genome = "/MAdata/genome/human"
 
+def split_reads(reference, ref_seq):
+    ref_pack = Pack()
+    ref_pack.load(reference)
+    reference_pledge = Pledge(Pack())
+    reference_pledge.set(ref_pack)
+
+    num_results = "2"
+
+    warned_for_n = False
+
+    l = [
+        ("MA Fast", MA(reference, num_results, True, "")),
+        ("BWA MEM", BWA_MEM(reference, num_results, "")),
+        ("MINIMAP2", Minimap2(reference, num_results, "")),
+        ("NGMLR", Ngmlr(ref_seq, "")),
+    ]
+
+    result_list = []
+    query_list = ContainerVector(NucSeq())
+    reads = createPacBioReadsSimLord(ref_seq, reference)
+
+    for sample_id, sample in enumerate(reads):
+        origin_a, len_a, origin_b, len_b, sequence = sample
+        query_list.append(NucSeq(sequence))
+        query_list[-1].name = str(sample_id)
+
+    query_vec_pledge = Pledge(ContainerVector(NucSeq()))
+    query_vec_pledge.set(query_list)
+    for name, aligner in l:
+        result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
+
+        tries = 0
+        found_list = []
+        for _ in range(len(reads)):
+            found_list.append([False, False])
+
+        aligned_sample_ids = set()
+
+        for alignment in result_pledge.get():
+            sample_id = int(alignment.stats.name)
+            aligned_sample_ids.add(sample_id)
+            # alignment.begin_on_ref, alignment.end_on_ref
+
+            origin_a, len_a, origin_b, len_b, sequence = reads[sample_id]
+
+            if near(alignment.begin_on_ref, origin_a, alignment.end_on_ref, origin_a + len_a):
+                found_list[sample_id][0] = True
+            if near(alignment.begin_on_ref, origin_b, alignment.end_on_ref, origin_b + len_b):
+                found_list[sample_id][1] = True
+            tries += 1
+
+        both = 0
+        one = 0
+        none = 0
+        for sample_id, found in enumerate(found_list):
+            if found[0] and found[1]:
+                both += 1
+            elif found[0] or found[1]:
+                one += 1
+            else:
+                none += 1
+                print("WARNING: aligner", name, "found none for", sample_id, reads[sample_id])
+
+        result_list.append( (name, both, one, none, len(reads), tries, aligner.elapsed_time) )
+
+    for name, both, one, none, num, tries, aligner.elapsed_time in result_list:
+        print(name, "found \tboth:", both, "one:", one, "none:", none,
+            "of", num, "split reads using", tries, "alignments and",
+            aligner.elapsed_time, "seconds")
+
+def genome_dup_reads():
+    reference = "/MAdata/genome/GRCh38.p12"
+    ref_seq = "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+
+    ref_pack = Pack()
+    ref_pack.load(reference)
+    reference_pledge = Pledge(Pack())
+    reference_pledge.set(ref_pack)
+
+    num_results = "2"
+
+    warned_for_n = False
+
+    l = [
+        ("MA Fast", MA(reference, num_results, True, "")),
+        ("BWA MEM", BWA_MEM(reference, num_results, "")),
+        ("MINIMAP2", Minimap2(reference, num_results, "")),
+        ("NGMLR", Ngmlr(ref_seq, "")),
+    ]
+
+    result_list = []
+    query_list = ContainerVector(NucSeq())
+    reads = createPacBioReadsSimLordGenDup()
+
+    for sample_id, sample in enumerate(reads):
+        origin, length, sequence = sample
+        query_list.append(NucSeq(sequence))
+        query_list[-1].name = str(sample_id)
+
+    query_vec_pledge = Pledge(ContainerVector(NucSeq()))
+    query_vec_pledge.set(query_list)
+    for name, aligner in l:
+        result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
+
+        tries = 0
+        found_list = []
+        for _ in range(len(reads)):
+            found_list.append(False)
+
+        for alignment in result_pledge.get():
+            sample_id = int(alignment.stats.name)
+            # alignment.begin_on_ref, alignment.end_on_ref
+
+            origin, length, sequence = reads[sample_id]
+
+            if near(alignment.begin_on_ref, origin, alignment.end_on_ref, origin + length):
+                found_list[sample_id] = True
+            tries += 1
+
+        one = 0
+        none = 0
+        for sample_id, found in enumerate(found_list):
+            if found:
+                one += 1
+            else:
+                none += 1
+                #print("WARNING: aligner", name, "found none for", sample_id, reads[sample_id])
+
+        result_list.append( (name, one, none, len(reads), tries, aligner.elapsed_time) )
+
+    for name, one, none, num, tries, aligner.elapsed_time in result_list:
+        print(name, "found \t:", one, "missed:", none,
+            "of", num, "split reads using", tries, "alignments and",
+            aligner.elapsed_time, "seconds")
+
 def test(
             db_name,
             reference,
@@ -499,7 +634,7 @@ def test(
             short_read_aligners=True,
             runtime_sample_multiplier=0,
             processor=None,
-            specific_sample=None
+            specific_sample=None,
         ):
     print("working on " + db_name)
     ref_pack = Pack()
@@ -520,11 +655,11 @@ def test(
         ##("BWA SW s=30", BWA_SW(reference, num_results, db_name, s="300")),
 
 
-        #("MA Fast", MA(reference, num_results, True, db_name)),
+        ("MA Fast", MA(reference, num_results, True, db_name)),
         #("MA Basic", MA(reference, num_results, True, db_name, finder_mode=True)),
 
-        #  ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
-        #  ("MINIMAP 2", Minimap2(reference, num_results, db_name)),
+        ("BWA MEM", BWA_MEM(reference, num_results, db_name)),
+        ("MINIMAP2", Minimap2(reference, num_results, db_name)),
         #  #
         #  ("BWA MEM pacbio", BWA_MEM(reference, num_results, db_name, presetting="pacbio")),
         #  ("BWA MEM ont2d", BWA_MEM(reference, num_results, db_name, presetting="ont2d")),
@@ -543,7 +678,6 @@ def test(
     
         ("NGMLR", Ngmlr(g_map_genome, db_name)),
     ]
-
 
     ## if long_read_aligners:
     ##     l.extend([
@@ -606,7 +740,7 @@ def test(
                         for nuc in sequence:
                             if nuc not in ['A', 'a', 'C', 'c', 'G', 'g', 'T', 't']:
                                 warned_for_n = True
-                                print("Queries contains", nuc)
+                                print("Queries contain:", nuc)
 
                     for _ in range(0, runtime_sample_multiplier):
                         query_list.append(NucSeq(sequence))

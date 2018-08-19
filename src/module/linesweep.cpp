@@ -8,6 +8,8 @@
 #endif
 using namespace libMA;
 
+#define DO_HEURISTICS 0
+
 extern int iGap;
 extern int iExtend;
 extern int iMatch;
@@ -131,7 +133,9 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 #endif
 
     unsigned int uiNumTries = 0;
+#if DO_HEURISTICS
     nucSeqIndex uiLastHarmScore = 0;
+#endif
     nucSeqIndex uiBestSoCScore = 0;
     unsigned int uiSoCRepeatCounter = 0;
 
@@ -185,6 +189,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             // Prof. Kutzners filter:
             // this merely checks weather we actually do have to do the harmonization at all
             //@todo uiSwitchQLen != 0 should be replaced with switch
+#if DO_HEURISTICS
             if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
             {
                 if(uiLastHarmScore > uiCurrSoCScore)
@@ -203,6 +208,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 )
                 break;
             } // if
+#endif
             uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
             DEBUG(
@@ -519,8 +525,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                         uiPrePos = uiCenterPos - 1;
                     }// else
                 }// while
-                std::cout << "FILTERED: " << uiNumfiltered << " of " << pSeeds->size() << std::endl;
-                std::cout << "dA + dB = " << uiABsum / (double)uiTotal << std::endl;
+                // std::cout << "FILTERED: " << uiNumfiltered << " of " << pSeeds->size() << std::endl;
+                // std::cout << "dA + dB = " << uiABsum / (double)uiTotal << std::endl;
             }// if
         }// if
         else // pSeedsIn contains merely one seed
@@ -544,7 +550,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         nucSeqIndex uiCurrHarmScore = 0;
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
-
+#if DO_HEURISTICS
         if(uiCurrHarmScore < uiCurrHarmScoreMin )
         {
             DEBUG(
@@ -559,6 +565,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             )
             continue;
         }// if
+#endif
 
         DEBUG(
             std::vector<bool> vQCoverage(pQuery->length(), false);
@@ -574,7 +581,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 if(b)
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
-#if 1
+#if DO_HEURISTICS
         //@todo uiSwitchQLen != 0 should be replaced with switch
         if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
         {
@@ -606,14 +613,13 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 break;
             } // else
         } // else
-#endif
         uiLastHarmScore = uiCurrHarmScore;
+#endif
 
         pSoCs->push_back(pSeeds);
 
         //FILTER
 #if FILTER_1
-
         nucSeqIndex uiAccLen = pSeeds->getScore();
         if (uiAccumulativeSeedLength > uiAccLen )
         {
@@ -630,6 +636,11 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
     for(unsigned int ui = 0; ui < uiSoCRepeatCounter && pSoCs->size() > 1; ui++)
         pSoCs->pop_back();
+
+    
+    DEBUG(
+        std::cout << "computed " << pSoCs->size() << " SoCs." << std::endl;
+    )// DEBUG
     
     return pSoCs;
 }//function
