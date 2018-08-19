@@ -497,7 +497,7 @@ def split_reads(reference, ref_seq):
     reference_pledge = Pledge(Pack())
     reference_pledge.set(ref_pack)
 
-    num_results = "2"
+    num_results = "1"
 
     warned_for_n = False
 
@@ -525,7 +525,7 @@ def split_reads(reference, ref_seq):
         tries = 0
         found_list = []
         for _ in range(len(reads)):
-            found_list.append([False, False])
+            found_list.append([0, 0])
 
         aligned_sample_ids = set()
 
@@ -536,28 +536,33 @@ def split_reads(reference, ref_seq):
 
             origin_a, len_a, origin_b, len_b, sequence = reads[sample_id]
 
-            if near(alignment.begin_on_ref, origin_a, alignment.end_on_ref, origin_a + len_a):
-                found_list[sample_id][0] = True
-            if near(alignment.begin_on_ref, origin_b, alignment.end_on_ref, origin_b + len_b):
-                found_list[sample_id][1] = True
+            c_a = near(alignment.begin_on_ref, origin_a, alignment.end_on_ref, origin_a + len_a, True)
+            c_b = near(alignment.begin_on_ref, origin_b, alignment.end_on_ref, origin_b + len_b, True)
+            if c_a > found_list[sample_id][0]:
+                found_list[sample_id][0] = c_a
+            if c_b > found_list[sample_id][1]:
+                found_list[sample_id][1] = c_b
             tries += 1
 
         both = 0
         one = 0
         none = 0
+        cov = 0
         for sample_id, found in enumerate(found_list):
-            if found[0] and found[1]:
+            if found[0] > 0 and found[1] > 0:
                 both += 1
-            elif found[0] or found[1]:
+                cov += found[0] + found[1]
+            elif found[0] > 0 or found[1] > 0:
                 one += 1
+                cov += found[0] + found[1]
             else:
                 none += 1
-                print("WARNING: aligner", name, "found none for", sample_id, reads[sample_id])
+                #print("WARNING: aligner", name, "found none for", sample_id, reads[sample_id])
 
-        result_list.append( (name, both, one, none, len(reads), tries, aligner.elapsed_time) )
+        result_list.append( (name, cov, both, one, none, len(reads), tries, aligner.elapsed_time) )
 
-    for name, both, one, none, num, tries, aligner.elapsed_time in result_list:
-        print(name, "found \tboth:", both, "one:", one, "none:", none,
+    for name, cov, both, one, none, num, tries, aligner.elapsed_time in result_list:
+        print(name, "found \tboth:", both, "one:", one, "(cov:", cov/(one+both*2), ") none:", none,
             "of", num, "split reads using", tries, "alignments and",
             aligner.elapsed_time, "seconds")
 
@@ -597,8 +602,10 @@ def genome_dup_reads():
 
         tries = 0
         found_list = []
+        cov_list = []
         for _ in range(len(reads)):
             found_list.append(False)
+            cov_list.append(0.0)
 
         for alignment in result_pledge.get():
             sample_id = int(alignment.stats.name)
@@ -608,13 +615,18 @@ def genome_dup_reads():
 
             if near(alignment.begin_on_ref, origin, alignment.end_on_ref, origin + length):
                 found_list[sample_id] = True
+                cov = near(alignment.begin_on_ref, origin, alignment.end_on_ref, origin + length, True)
+                if cov > cov_list[sample_id]:
+                    cov_list[sample_id] = cov
             tries += 1
 
         one = 0
+        cov = 0.0
         none = 0
         for sample_id, found in enumerate(found_list):
             if found:
                 one += 1
+                cov += cov_list[sample_id]
             else:
                 none += 1
                 #print("WARNING: aligner", name, "found none for", sample_id, reads[sample_id])
@@ -622,8 +634,8 @@ def genome_dup_reads():
         result_list.append( (name, one, none, len(reads), tries, aligner.elapsed_time) )
 
     for name, one, none, num, tries, aligner.elapsed_time in result_list:
-        print(name, "found \t:", one, "missed:", none,
-            "of", num, "split reads using", tries, "alignments and",
+        print(name, "found \t:", one, "(average coverage", cov/one, ") missed:", none,
+            "of", num, "reads from genomic duplications using", tries, "alignments and",
             aligner.elapsed_time, "seconds")
 
 def test(

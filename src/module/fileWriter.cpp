@@ -105,6 +105,9 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         if(pAlignment->bSecondary)
             flag |= SECONDARY_ALIGNMENT;
 
+        if(pAlignment->bSupplementary)
+            flag |= SUPPLEMENTARY_ALIGNMENT;
+
         std::string sRefName = pPack->nameOfSequenceForPosition(pAlignment->uiBeginOnRef);
         // sam file format has 1-based indices...
         auto uiRefPos = pPack->posInSequence(pAlignment->uiBeginOnRef, pAlignment->uiEndOnRef) + 1;

@@ -62,6 +62,7 @@ namespace libMA
         //some statistics
         AlignmentStatistics xStats;
         bool bSecondary;
+        bool bSupplementary;
 
         /**
          * @brief Creates an empty alignment.
@@ -75,7 +76,8 @@ namespace libMA
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
 
         /**
@@ -93,7 +95,8 @@ namespace libMA
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
 
         /**
@@ -112,7 +115,8 @@ namespace libMA
             uiBeginOnQuery(uiBeginOnQuery),
             uiEndOnQuery(uiBeginOnQuery),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
 
         /**
@@ -133,7 +137,8 @@ namespace libMA
             uiBeginOnQuery(uiBeginOnQuery),
             uiEndOnQuery(uiEndOnQuery),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
 
         inline std::string toString() const
@@ -226,6 +231,25 @@ namespace libMA
         {
             append(type, 1);
         }//function
+
+        /**
+         * @brief returns true if there is less then 2% overlap between the alignments...
+         */
+        inline bool noOverlap(const Alignment& rOther) const
+        {
+            nucSeqIndex uiS = std::max(uiBeginOnQuery, rOther.uiBeginOnQuery);
+            nucSeqIndex uiE = std::min(uiEndOnQuery, rOther.uiEndOnQuery);
+            if(uiS >= uiE)
+                return true;
+            nucSeqIndex uiOverlap = uiE - uiS;
+            nucSeqIndex uiLen = std::min(
+                    uiEndOnQuery-uiBeginOnQuery,
+                    rOther.uiEndOnQuery-rOther.uiBeginOnQuery
+                );
+            if(uiOverlap * 50 < uiLen)
+                return true;
+            return false;
+        }// mehtod
 
         /**
          * @brief appends another alignment
@@ -331,6 +355,18 @@ namespace libMA
             const std::shared_ptr<Alignment>& pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
+            size_t uiA = 0;
+            size_t uiB = 0;
+            if(pAlign->bSecondary)
+                uiB = 2;
+            if(pAlign->bSupplementary)
+                uiB = 1;
+            if(bSecondary)
+                uiA = 2;
+            if(bSupplementary)
+                uiA = 1;
+            if(uiA != uiB)
+                return uiA < uiB;
             auto uiS1 = score();
             auto uiS2 = pAlign->score();
             if(uiS1 == uiS2)

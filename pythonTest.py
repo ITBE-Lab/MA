@@ -2151,8 +2151,13 @@ for task_id in [0]:
 exit()
 """
 
-# split_reads("/MAdata/genome/eColi_full", "/MAdata/chrom/eColi/GCA_000005845.2_ASM584v2_genomic.fna")
-genome_dup_reads()
+#split_reads("/MAdata/genome/eColi_full", "/MAdata/chrom/eColi/GCA_000005845.2_ASM584v2_genomic.fna")
+
+split_reads(
+        "/MAdata/genome/GRCh38.p12", 
+        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+    )
+#genome_dup_reads()
 exit()
 
 #test("sw_human_1000.db", human_genome, long_read_aligners=False, short_read_aligners=False, specific_sample=420)
