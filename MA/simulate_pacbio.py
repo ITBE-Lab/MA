@@ -356,7 +356,7 @@ def get_raw_read(chr_name, rev, current_ref, current_readlength, from_regions=No
             exit()
         possible_pos = from_regions[chr_name][rev]
         region_start, region_end = possible_pos[random.randint(0, len(possible_pos)-1)]
-        s = min(max(region_start - current_readlength + 1, 0), len(current_ref)-current_readlength)
+        s = min(max(region_start, 0), len(current_ref)-current_readlength)
         e = min(region_end, len(current_ref)-current_readlength)
         assert e+1 > s
         start_pos = random.randint( s, e+1 )

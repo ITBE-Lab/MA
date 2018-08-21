@@ -316,6 +316,7 @@ void exportAlignment()
 {
     boost::python::class_<
             Alignment, 
+            boost::noncopyable,
             boost::python::bases<Container>, 
             std::shared_ptr<Alignment>
         >(

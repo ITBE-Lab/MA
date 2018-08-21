@@ -138,6 +138,8 @@ namespace libMA
         /// @brief minimum accumulated seed length after the harmonization relative to query length.
         float fCurrHarmScoreMinRel = 0.002;
 
+        bool bDoHeuristics = true;
+
         LinearLineSweep() {}//default constructor
 
         //overload

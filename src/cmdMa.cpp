@@ -185,9 +185,16 @@ int main(int argc, char* argv[])
             ("Extend", "DP gap extend penalty.", 
                 value<unsigned int>()->default_value(defaults::uiExtend)
             )
+            ("Gap2", "DP gap open penalty.", 
+                value<unsigned int>()->default_value(defaults::uiOpen2)
+            )
+            ("Extend2", "DP gap extend penalty.", 
+                value<unsigned int>()->default_value(defaults::uiExtend2)
+            )
             ("x,idx", "Do FMD-index generation", value<std::string>())
             ("genIndex", "Do FMD-index generation")
             ("SoCWidth", "SoC width", value<unsigned int>()->default_value("0"))
+            ("disableHeuristics", "disable all heuristics", value<bool>()->default_value(defaults::bDisableHeuristics))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
@@ -216,17 +223,18 @@ int main(int argc, char* argv[])
             return 0;
         }//if
 
-        auto uiT =              result["threads"].      as<unsigned int>();
-        auto bPariedNormal =    result.count("paNorm")  > 0;
-        auto bPariedUniform =   result.count("paUni") > 0;
-        auto uiPairedMean =     result["paMean"].         as<unsigned int>();
-        auto fPairedStd =       result["paStd"].          as<double>();
-        auto dPairedU =         result["paIsolate"].     as<double>();
-        auto uiReportN =        result["reportN"].      as<unsigned int>();
-        auto sParameterSet =    result["mode"]. as<std::string>();
-        auto sSeedSet =         result["seedSet"].      as<std::string>();
-        auto uiMinLen =         result["minLen"].       as<unsigned int>();
-        auto uiSoCWidth =       result["SoCWidth"].     as<unsigned int>();
+        auto uiT =                result["threads"].      as<unsigned int>();
+        auto bPariedNormal =      result.count("paNorm")  > 0;
+        auto bPariedUniform =     result.count("paUni") > 0;
+        auto uiPairedMean =       result["paMean"].         as<unsigned int>();
+        auto fPairedStd =         result["paStd"].          as<double>();
+        auto dPairedU =           result["paIsolate"].     as<double>();
+        auto uiReportN =          result["reportN"].      as<unsigned int>();
+        auto sParameterSet =      result["mode"]. as<std::string>();
+        auto sSeedSet =           result["seedSet"].      as<std::string>();
+        auto uiMinLen =           result["minLen"].       as<unsigned int>();
+        auto uiSoCWidth =         result["SoCWidth"].     as<unsigned int>();
+        auto bDisableHeuristics = result["disableHeuristics"].     as<bool>();
         if(bPariedNormal && bPariedUniform)
         {
             std::cerr << "--normal and --uniform are exclusive." << std::endl;
@@ -278,6 +286,7 @@ int main(int argc, char* argv[])
             std::cerr << "error: --Extend must be larger than 0" << std::endl;
             return 1;
         }// else if
+        auto iExtend2 =         result["Extend2"].      as<unsigned int>();
         auto iMissMatch =       result["MisMatch"].     as<unsigned int>();
         if( iMissMatch == 0 )
         {
@@ -285,6 +294,7 @@ int main(int argc, char* argv[])
             return 1;
         }// else if
         auto iGap =             result["Gap"].          as<unsigned int>();
+        auto iGap2 =             result["Gap2"].          as<unsigned int>();
         auto maxTries =         result["maxTries"].     as<unsigned int>();
         auto uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
 
@@ -360,6 +370,8 @@ int main(int argc, char* argv[])
                 iMissMatch,
                 iGap,
                 iExtend,
+                iGap2,
+                iExtend2,
                 bFindMode,
                 std::stoi(defaults::uiMaxGapArea),
                 std::stoi(defaults::uiPadding),
@@ -379,7 +391,8 @@ int main(int argc, char* argv[])
                 defaults::bSkipLongBWTIntervals == "true",
                 std::stoi(defaults::uiCurrHarmScoreMin),
                 uiGenomeSizeDisable,
-                uiSoCWidth
+                uiSoCWidth,
+                bDisableHeuristics
             );
             // this is a hidden option
             if(result.count("info") > 0)

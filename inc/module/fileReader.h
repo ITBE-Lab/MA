@@ -408,6 +408,8 @@ namespace libMA
  
         size_t getCurrPosInFile() const
         {
+            if(!pFile->good() || pFile->eof())
+                return uiFileSize;
             return pFile->tellg();
         }// function
 

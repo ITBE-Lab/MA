@@ -58,7 +58,8 @@ namespace libMA
             sSeedSet,                           // name of the seed set that shall be computed
             // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
             // @todo apply this parameter
-            uiGenomeSizeDisable = "10000000"
+            uiGenomeSizeDisable = "10000000",
+            bDisableHeuristics = "false"
         ;
 #elif(PARAMETER_SET == EXPERIMENTAL)
         std::string
@@ -94,7 +95,8 @@ namespace libMA
             sSeedSet,                           // name of the seed set that shall be computed
             // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
             // @todo apply this parameter
-            uiGenomeSizeDisable = "10000000"
+            uiGenomeSizeDisable = "10000000",
+            bDisableHeuristics = "false"
         ;
 #endif
 

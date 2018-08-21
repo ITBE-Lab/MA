@@ -175,6 +175,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int iMisMatch_,
     unsigned int iGap_,
     unsigned int iExtend_,
+    unsigned int iGap2_,
+    unsigned int iExtend2_,
     bool bFinderMode,
     unsigned int uiMaxGapArea_,
     unsigned int uiPadding_,
@@ -194,7 +196,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     bool bSkipLongBWTIntervals,
     unsigned int uiCurrHarmScoreMin,
     unsigned long long uiGenomeSizeDisable,
-    unsigned int uiSoCWidth
+    unsigned int uiSoCWidth,
+    bool bDisableHeuristics
 );
 
 #endif

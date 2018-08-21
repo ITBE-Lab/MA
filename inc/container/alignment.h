@@ -141,6 +141,8 @@ namespace libMA
             bSupplementary(false)
         {}//constructor
 
+        Alignment(const Alignment& rOther) = delete;
+
         inline std::string toString() const
         {
             std::string sRet = "Alignment Dump: ";
@@ -402,6 +404,7 @@ namespace libMA
             iScore = pOther->iScore;
             fMappingQuality = pOther->fMappingQuality;
             bSecondary = pOther->bSecondary;
+            bSupplementary = pOther->bSupplementary;
             xStats = pOther->xStats;
         }//function
 

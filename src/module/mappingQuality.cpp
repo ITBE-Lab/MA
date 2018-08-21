@@ -60,7 +60,10 @@ std::shared_ptr<Container> MappingQuality::execute(
             uiSupplementaries++;
         }// if
         else
+        {
+            pCasted->bSupplementary = false;
             pCasted->bSecondary = true;
+        }// else
     }//for
 
 
@@ -78,9 +81,9 @@ std::shared_ptr<Container> MappingQuality::execute(
         }// while
         // this formula is given in the paper and is very similar to Heng li's approach in BWA-SW
         pFirst->fMappingQuality =
-                ( pFirst->score() - pSecond->score() )
+                static_cast<double>( pFirst->score() - pSecond->score() )
                     /
-                (double)( pFirst->score() )
+                static_cast<double>( pFirst->score() )
             ;
     }//if
     else

@@ -82,7 +82,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             }// switch
         }// for
 
-        char flag = 0;
+        uint32_t flag = 0;
 
         if(pPack->bPositionIsOnReversStrand(pAlignment->uiBeginOnRef))
             flag |= REVERSE_COMPLEMENTED;
@@ -155,7 +155,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         if(std::isnan(pAlignment->fMappingQuality))
             sMapQual = "255";
         else
-            sMapQual = std::to_string( (int)(pAlignment->fMappingQuality * 254));
+            sMapQual = std::to_string( static_cast<int>(std::ceil(pAlignment->fMappingQuality * 254)) );
 
         {// scope xGuard
             //synchronize file output

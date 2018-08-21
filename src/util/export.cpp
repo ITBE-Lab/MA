@@ -9,6 +9,8 @@ using namespace libMA;
 
 extern int iGap;
 extern int iExtend;
+extern int iGap2;
+extern int iExtend2;
 extern int iMatch;
 extern int iMissMatch;
 extern nucSeqIndex uiMaxGapArea;
@@ -73,6 +75,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         unsigned int iMisMatch_,
         unsigned int iGap_,
         unsigned int iExtend_,
+        unsigned int iGap2_,
+        unsigned int iExtend2_,
         bool bFinderMode,
         unsigned int uiMaxGapArea_,
         unsigned int uiPadding_,
@@ -92,13 +96,17 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         bool bSkipLongBWTIntervals,
         unsigned int uiCurrHarmScoreMin,
         unsigned long long uiGenomeSizeDisable,
-        unsigned int uiSoCWidth
+        unsigned int uiSoCWidth,
+        bool bDisableHeuristics
     )
 {
     iMatch = iMatch_;
     iExtend = iExtend_;
     iGap = iGap_;
+    iExtend2 = iExtend2_;
+    iGap2 = iGap2_;
     iMissMatch = iMisMatch_;
+    
 
     uiPadding = uiPadding_;
     uiMaxGapArea = uiMaxGapArea_;
@@ -141,6 +149,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     pCouple->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
     pCouple->fCurrHarmScoreMinRel = fGiveUp;
     pCouple->fScoreTolerace = fScoreTolerace;
+    pCouple->bDoHeuristics = !bDisableHeuristics;
 
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
