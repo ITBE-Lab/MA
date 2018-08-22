@@ -462,16 +462,22 @@ class MA(CommandLine):
         self.ma_home = "/usr/home/markus/workspace/aligner/"
         self.index_str = index_str
         self.num_results = num_results
-        self.fast = "acc"
-        if fast:
-            self.fast = "fast"
-        self.in_filename = ".tempMA" + self.fast + db_name + ".fasta"
+        self.mode = "acc"
+        if isinstance(fast, bool):
+            if fast:
+                self.mode = "fast"
+        elif isinstance(fast, str):
+            self.mode = fast
+        else:
+            print(fast, "is neither string nor bool; aborting!")
+            exit()
+        self.in_filename = ".tempMA" + self.mode + db_name + ".fasta"
         self.finder_mode = finder_mode
         self.other_dp_scores = other_dp_scores
         self.soc_width = soc_width
 
     def create_command(self, in_filename):
-        cmd_str = self.ma_home + "ma -t 1 -m " + self.fast
+        cmd_str = self.ma_home + "ma -t 1 -m " + self.mode
         if self.finder_mode:
             cmd_str += " -d"
         if self.other_dp_scores:
@@ -638,7 +644,7 @@ def genome_dup_reads():
             "of", num, "reads from genomic duplications using", tries, "alignments and",
             aligner.elapsed_time, "seconds")
 
-def suimulated_reads():
+def simulated_reads():
     reference = "/MAdata/genome/GRCh38.p12"
     ref_seq = "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
 
@@ -652,7 +658,7 @@ def suimulated_reads():
     warned_for_n = False
 
     l = [
-        ("MA Fast", MA(reference, num_results, True, "")),
+        ("MA Fast", MA(reference, num_results, "pacBio", "")),
         ("BWA MEM", BWA_MEM(reference, num_results, "")),
         ("MINIMAP2", Minimap2(reference, num_results, "")),
         ("NGMLR", Ngmlr(ref_seq, "")),
@@ -660,7 +666,7 @@ def suimulated_reads():
 
     result_list = []
     query_list = ContainerVector(NucSeq())
-    reads = createPacBioReadsSimLord()
+    reads = createPacBioReadsSimLord(1000)
 
     for sample_id, sample in enumerate(reads):
         origin, length, sequence = sample

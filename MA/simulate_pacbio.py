@@ -243,8 +243,12 @@ def sample_reads(reference, num_reads, readlength_provider,
         chrom_new = []
         for current_ref, chr_name, length, chromosome_offset in chromosomes:
             if chr_name in from_regions:
+                print(current_ref, chr_name, length, chromosome_offset)
                 chrom_new.append( (current_ref, chr_name, length, chromosome_offset) )
         chromosomes = chrom_new
+        print("generating from chromosomes:") # @todo bug HERE
+        for current_ref, chr_name, length, chromosome_offset in chromosomes:
+            print(chr_name)
 
     reads  = []
 
@@ -277,6 +281,8 @@ def sample_reads(reference, num_reads, readlength_provider,
 
         # get a random read from the chosen reference
         (start_pos, read) = get_raw_read(chr_name, reversals[i], current_ref, current_readlength, from_regions)
+
+        print("generating from:", chr_name, reversals[i], start_pos, len(read))
 
         # compute number of passes in prefix and suffix of the read
         (current_passes, cut_position, passes_left, passes_right, percentage_left) \
@@ -355,17 +361,25 @@ def get_raw_read(chr_name, rev, current_ref, current_readlength, from_regions=No
             exit()
         possible_pos = from_regions[chr_name][rev]
         region_start, region_end = possible_pos[random.randint(0, len(possible_pos)-1)]
-        s = min(max(region_start, 0), len(current_ref)-current_readlength)
+
+        print("picked region:", region_start, region_end, current_readlength, len(current_ref))
+
+        assert region_start < region_end
+        assert len(current_ref) > current_readlength
+        s = max(region_start-current_readlength, 0)
         e = min(region_end, len(current_ref)-current_readlength)
-        assert e+1 > s
+        print("e, s:", e, s)
+        assert e >= s
         start_pos = random.randint( s, e+1 )
     else:
         start_pos = random.randint(0, len(current_ref)-current_readlength)
+
+    # get the actual read
     read = current_ref[start_pos:start_pos+current_readlength]  # bytearray
 
+    # change Ns in reference to a random base in read
     Ns = frozenset([ord('N'), ord('n')])
     choice = random.choice
-    # change Ns in reference to a random base in read
     for b, base in enumerate(read):
         if base in Ns:
             read[b] = choice(bases)
@@ -966,13 +980,17 @@ def simulatePackBio(read_reference, num_reads=12566, arg_callback=None):
 
             self.probability_threshold = 0.2
 
-        def load_specific_regions_from_tsv(self, tsv_file, col_w_chr, col_w_start, col_w_end, col_w_rev_comp):
+        def load_specific_regions_from_tsv(self, tsv_file, col_w_chr, col_w_start, col_w_end, col_w_rev_comp, one_spot_only=False):
+            self.uniform_chromosome_probability = True
             self.from_regions = {}
             with open(tsv_file, "r") as tsv:
                 for line in tsv.readlines()[1:]:
                     row = line.split("\t")
                     chr_id = row[col_w_chr]
                     if chr_id in ["chrM"]:
+                        continue
+                    is_rev = (row[col_w_rev_comp] == "-")
+                    if is_rev: # ignore all rev comp positions for now
                         continue
                     name_trans_dict = {
                         "chr1"  : "CM000663.2",
@@ -1010,9 +1028,12 @@ def simulatePackBio(read_reference, num_reads=12566, arg_callback=None):
                         chr_id = chr_id[:-2] + "." + chr_id[-1]
                     if not chr_id in self.from_regions:
                         self.from_regions[chr_id] = {True: [], False: []}
-                    self.from_regions[chr_id][row[col_w_rev_comp] == "-"].append( 
+                    self.from_regions[chr_id][is_rev].append( 
                             ( int(row[col_w_start]), int(row[col_w_end]) )
                         )
+                    if one_spot_only:
+                        # break here to force the generation of all data in one spot
+                        break
 
             print("loaded specific regions for:", self.from_regions.keys())
 

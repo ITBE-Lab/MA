@@ -1040,11 +1040,11 @@ def createPacBioReadsSimLord(ref_seq, pack_name):
 
     return sequences
 
-def createPacBioReadsSimLordGenDup():
+def createPacBioReadsSimLordGenDup(num):
     reads = simulate_pacbio.simulatePackBio(
             "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
-            400,
-            lambda x: x.load_specific_regions_from_tsv("/MAdata/chrom/human/snp150Common.gz", 1, 2, 3, 6)
+            num,
+            lambda x: x.load_specific_regions_from_tsv("/MAdata/chrom/human/snp150Common.gz", 1, 2, 3, 6, one_spot_only=True)
         )
     pack = Pack()
     pack.load("/MAdata/genome/GRCh38.p12")
@@ -1065,14 +1065,15 @@ def createPacBioReadsSimLordGenDup():
 
 import dinopy as dp
 
-def createPacBioReadsSimLord():
+def createPacBioReadsSimLord(num):
     reads = simulate_pacbio.simulatePackBio(
             "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
-            400,
-            # lambda x: x.read_length_from_fastaq(
-            #         "/mnt/ssd0/arne/3_C01/m54015_171229_224813.subreads.fasta"
-            #     )
-            lambda x: x.set_fixed_read_len( 50 )
+            num,
+            lambda x: x.read_length_from_fastaq(
+                    "/mnt/ssd0/arne/3_C01/m54015_171229_224813.subreads.fasta"
+                )
+
+            #lambda x: x.set_fixed_read_len( 50 )
         )
     pack = Pack()
     pack.load("/MAdata/genome/GRCh38.p12")
@@ -1090,6 +1091,14 @@ def createPacBioReadsSimLord():
             ) )
 
     return sequences
+
+
+def write_read_list_to_fasta(reads, file_name):
+    with open(file_name, "w") as file:
+        for index, read in enumerate(reads):
+            file.write(">read" + str(index) + "_from_" + str(read[0]) + "_len_" + str(read[1]) + "\n")
+            file.write(read[2])
+            file.write("\n")
 
 
 def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):

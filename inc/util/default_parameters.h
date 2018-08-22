@@ -105,18 +105,20 @@ namespace libMA
             sParameterSet = "acc";
             sSeedSet = "SMEMs";
         }// function
+
         inline void configureFast()
         {
             sParameterSet = "fast";
             sSeedSet = "maxSpan";
         }// function
+
         inline void configurePacBio()
         {
             sParameterSet = "fast";
             sSeedSet = "maxSpan";
             bDisableHeuristics = "true";
             uiMaxTries = "5";   // @todo check if ths is too little or not...
-            fGiveUp = "0";      // @todo check if ths is too little or not...
+            fGiveUp = "0";      // @todo check if ths is really necessary
         }// function
     }// namespace
 }// namespace

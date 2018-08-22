@@ -1850,7 +1850,7 @@ def filter_duplicates(in_f, out_f):
                 if bWrite:
                     out_file.write(line)
 
-def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference):
+def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference, aligners=[0]):
     sam_tools_pref = "~/workspace/samtools/samtools "
     merged_prefix = "/mnt/ssd0/sra_reads/temp/" + task_name
     res_prefix_ = "/mnt/ssd0/sra_reads/res/" + task_name
@@ -1858,7 +1858,7 @@ def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference):
 
     aligner_suf = ["_ma", "_mm", "_ngmlr", "_ma_old"]
 
-    for aligner_idx in [1]: #[0, 1, 2]
+    for aligner_idx in aligners: #[0, 1, 2, 3]
         merge_list = ""
         res_prefix = res_prefix_ + aligner_suf[aligner_idx]
 
@@ -1960,7 +1960,7 @@ def check_read_length_fasta(file_name):
 
     show(plot)
 
-#suimulated_reads()
+#simulated_reads()
 #exit()
 
 #check_read_length_fasta("/mnt/ssd0/arne/3_C01/m54015_171229_224813.subreads.fasta")
@@ -2026,19 +2026,19 @@ sons_folder = "/mnt/ssd0/PacBio/ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/Ashkena
 #exit()
 
 
-compute_bam_bai_for_files(
-        [ ( "/mnt/ssd0/arne/3_C01/", "m54015_171229_224813.subreads.fasta") ],
-        "3_C01_100_sec_align",
-        "/MAdata/genome/GRCh38.p12",
-        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
-    )
+# compute_bam_bai_for_files(
+#         [ ( "/mnt/ssd0/arne/3_C01/", "m54015_171229_224813.subreads.fasta") ],
+#         "3_C01_100_sec_align",
+#         "/MAdata/genome/GRCh38.p12",
+#         "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+#     )
 #compute_bam_bai_for_files(
 #        [ ( "/mnt/ssd0/sra_reads/temp/", "extract.sam") ],
 #        "extract",
 #        "/MAdata/genome/GRCh38.p12",
 #        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
 #    )
-exit()
+#exit()
 
 
 #extract_section_from_bam(
@@ -2285,6 +2285,16 @@ exit()
 #        "/MAdata/genome/GRCh38.p12", 
 #        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
 #    )
+
+write_read_list_to_fasta(createPacBioReadsSimLordGenDup(1000), "simulated_gen_dup_reads.fasta")
+compute_bam_bai_for_files(
+        [ ( "./", "simulated_gen_dup_reads.fasta") ],
+        "simulated_gen_dup_reads",
+        "/MAdata/genome/GRCh38.p12",
+        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+    )
+exit()
+
 #genome_dup_reads()
 #exit()
 
