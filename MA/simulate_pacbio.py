@@ -52,6 +52,7 @@ from math import sqrt, modf, ceil, floor, log10
 
 import numpy as np
 from scipy.stats import lognorm, chi2, truncnorm
+from Bio import SeqIO
 
 import dinopy as dp
 # Note: import pysam on demand later (in main)
@@ -215,8 +216,6 @@ class ReadlengthProvider:
 
     def __getitem__(self, i):
         return self.lengths[i]
-
-
 
 def sample_reads(reference, num_reads, readlength_provider, 
         uniform_chromosome_probability, chi2_params_n, chi2_params_s, max_passes,
@@ -645,8 +644,8 @@ def read_readlenghts_from_reads(files, output):
     """
     lengths = []
     for filename in files:
-        fr = dp.FastqReader(filename)
-        for read, name in fr.reads(quality_values=False, dtype=bytes):
+        #fr = dp.FastqReader(filename)
+        for read in SeqIO.parse(filename, "fasta"):
             lengths.append(len(read))
     if output is not None:
         with open(output, "wt") as writer:
@@ -1016,6 +1015,18 @@ def simulatePackBio(read_reference, num_reads=12566, arg_callback=None):
                         )
 
             print("loaded specific regions for:", self.from_regions.keys())
+
+        def read_length_from_fastaq(self, file_name):
+            self.lognorm_readlength = None
+            self.fixed_readlength = None
+            self.sample_readlength_from_fastq = [file_name]
+            self.sample_readlength_from_text = None
+
+        def set_fixed_read_len(self, l):
+            self.lognorm_readlength = None
+            self.fixed_readlength = l
+            self.sample_readlength_from_fastq = None
+            self.sample_readlength_from_text = None
 
     args = Arguments(read_reference, num_reads)
 

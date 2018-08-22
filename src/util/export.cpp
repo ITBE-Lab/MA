@@ -27,7 +27,7 @@ extern nucSeqIndex uiPadding;
 BOOST_PYTHON_MODULE(libMA)
 {
         DEBUG_3(
-                std::cout.setf(std::ios::unitbuf);
+            std::cout.setf(std::ios::unitbuf);
         )
         exportContainer();
         exportModule();

@@ -1063,7 +1063,33 @@ def createPacBioReadsSimLordGenDup():
 
     return sequences
 
-    # insertQueriesSplit(conn, sequences)
+import dinopy as dp
+
+def createPacBioReadsSimLord():
+    reads = simulate_pacbio.simulatePackBio(
+            "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
+            400,
+            # lambda x: x.read_length_from_fastaq(
+            #         "/mnt/ssd0/arne/3_C01/m54015_171229_224813.subreads.fasta"
+            #     )
+            lambda x: x.set_fixed_read_len( 50 )
+        )
+    pack = Pack()
+    pack.load("/MAdata/genome/GRCh38.p12")
+
+    sequences = []
+
+    for name, read, chr_name, start_pos, curr_len, subst, indels in reads:
+
+        origin = start_pos + pack.start_of_sequence(chr_name)
+
+        sequences.append( (
+                origin,
+                curr_len,
+                read
+            ) )
+
+    return sequences
 
 
 def create_as_sequencer_reads(db_name, amount, technology="HS25", paired=False):

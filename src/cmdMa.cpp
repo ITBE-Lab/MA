@@ -146,6 +146,8 @@ int main(int argc, char* argv[])
                     defaults::configureAccurate();
                 if(strcmp(argv[i+1], "fast") == 0)
                     defaults::configureFast();
+                if(strcmp(argv[i+1], "pacBio") == 0)
+                    defaults::configurePacBio();
             }// if
 
         options.add_options("Alignment options (requires -a)")

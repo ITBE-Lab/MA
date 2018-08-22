@@ -638,6 +638,78 @@ def genome_dup_reads():
             "of", num, "reads from genomic duplications using", tries, "alignments and",
             aligner.elapsed_time, "seconds")
 
+def suimulated_reads():
+    reference = "/MAdata/genome/GRCh38.p12"
+    ref_seq = "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+
+    ref_pack = Pack()
+    ref_pack.load(reference)
+    reference_pledge = Pledge(Pack())
+    reference_pledge.set(ref_pack)
+
+    num_results = "2"
+
+    warned_for_n = False
+
+    l = [
+        ("MA Fast", MA(reference, num_results, True, "")),
+        ("BWA MEM", BWA_MEM(reference, num_results, "")),
+        ("MINIMAP2", Minimap2(reference, num_results, "")),
+        ("NGMLR", Ngmlr(ref_seq, "")),
+    ]
+
+    result_list = []
+    query_list = ContainerVector(NucSeq())
+    reads = createPacBioReadsSimLord()
+
+    for sample_id, sample in enumerate(reads):
+        origin, length, sequence = sample
+        query_list.append(NucSeq(sequence))
+        query_list[-1].name = str(sample_id)
+
+    query_vec_pledge = Pledge(ContainerVector(NucSeq()))
+    query_vec_pledge.set(query_list)
+    for name, aligner in l:
+        result_pledge = aligner.promise_me(query_vec_pledge, reference_pledge)
+
+        tries = 0
+        found_list = []
+        cov_list = []
+        for _ in range(len(reads)):
+            found_list.append(False)
+            cov_list.append(0.0)
+
+        for alignment in result_pledge.get():
+            sample_id = int(alignment.stats.name)
+            # alignment.begin_on_ref, alignment.end_on_ref
+
+            origin, length, sequence = reads[sample_id]
+
+            if near(alignment.begin_on_ref, origin, alignment.end_on_ref, origin + length):
+                found_list[sample_id] = True
+                cov = near(alignment.begin_on_ref, origin, alignment.end_on_ref, origin + length, True)
+                if cov > cov_list[sample_id]:
+                    cov_list[sample_id] = cov
+            tries += 1
+
+        one = 0
+        cov = 0.0
+        none = 0
+        for sample_id, found in enumerate(found_list):
+            if found:
+                one += 1
+                cov += cov_list[sample_id]
+            else:
+                none += 1
+                #print("WARNING: aligner", name, "found none for", sample_id, reads[sample_id])
+
+        result_list.append( (name, one, none, len(reads), tries, aligner.elapsed_time) )
+
+    for name, one, none, num, tries, aligner.elapsed_time in result_list:
+        print(name, "found \t:", one, "(average coverage", cov/one, ") missed:", none,
+            "of", num, " simulated pac_bio reads using", tries, "alignments and",
+            aligner.elapsed_time, "seconds")
+
 def test(
             db_name,
             reference,

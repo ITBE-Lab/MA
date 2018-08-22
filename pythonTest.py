@@ -21,8 +21,10 @@ from measure_time import *
 from scipy import stats
 from sklearn import linear_model
 from subprocess import call
+from MA.simulate_pacbio import ReadlengthProvider
 import json
 import glob
+from Bio import SeqIO
 
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
@@ -1856,7 +1858,7 @@ def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference):
 
     aligner_suf = ["_ma", "_mm", "_ngmlr", "_ma_old"]
 
-    for aligner_idx in [3]: #[0, 1, 2]
+    for aligner_idx in [1]: #[0, 1, 2]
         merge_list = ""
         res_prefix = res_prefix_ + aligner_suf[aligner_idx]
 
@@ -1868,7 +1870,7 @@ def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference):
 
             ma_old_cmd = "~/workspace/aligner/ma -x " + pack + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
 
-            mm_cmd = "~/workspace/minimap2/minimap2 -a " + reference + " " + path + "/" + file_name + " > " + temp_prefix + ".sam"
+            mm_cmd = "~/workspace/minimap2/minimap2 -N 100 -x map-pb -a " + reference + " " + path + "/" + file_name + " > " + temp_prefix + ".sam"
 
             ngmlr_cmd = "~/workspace/ngmlr/bin/ngmlr-0.2.8/ngmlr -t 32 -r " + reference + " -q " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
 
@@ -1909,6 +1911,60 @@ def extract_section_from_bam(bam_in, fasta_out, chr, start, end):
     cmd += """ | awk '{OFS="\\t"; print ">"$1"\\n"$10}' - > """ + fasta_out
     print("extracting")
     os.system(cmd)
+
+def check_read_length_distrib_of_simlord():
+    buckets = []
+    x = []
+
+    for i in range(0, 60000, 500):
+        x.append(i)
+        buckets.append(0)
+
+    num_reads = 10000
+
+    rdl = ReadlengthProvider("lognorm", (0.2001, -10075.4364, 17922.611), num_reads, 50)
+
+    for i in range(num_reads):
+        read_length = int(rdl[i] / 500)
+        if read_length > len(buckets):
+            print("read of length", read_length*500,"nt")
+        else:
+            buckets[read_length] += 1
+
+    plot = figure()
+
+    plot.vbar(x, 500, buckets)
+
+    show(plot)
+
+def check_read_length_fasta(file_name):
+    buckets = []
+    x = []
+
+    for i in range(0, 60000, 500):
+        x.append(i)
+        buckets.append(0)
+
+    num_reads = 10000
+    
+    for record in SeqIO.parse(file_name, "fasta"):
+        read_length = int(len(record) / 500)
+        if read_length >= len(buckets):
+            print("read of length", read_length*500,"nt")
+        else:
+            buckets[read_length] += 1
+
+    plot = figure()
+
+    plot.vbar(x, 500, buckets)
+
+    show(plot)
+
+#suimulated_reads()
+#exit()
+
+#check_read_length_fasta("/mnt/ssd0/arne/3_C01/m54015_171229_224813.subreads.fasta")
+#exit()
 
 #createPacBioReadsSimLord("/MAdata/db/testPacBio_human.db")
 #createPacBioReadsSimLord("/MAdata/db/testPacBio_zebrafish.db")
@@ -1970,21 +2026,41 @@ sons_folder = "/mnt/ssd0/PacBio/ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/Ashkena
 #exit()
 
 
-#compute_bam_bai_for_files(
-#        [ ( "/mnt/ssd0/arne/3_C01/", "m54015_171229_224813.subreads.fasta") ],
-#        "3_C01",
-#        "/MAdata/genome/GRCh38.p12",
-#        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
-#    )
+compute_bam_bai_for_files(
+        [ ( "/mnt/ssd0/arne/3_C01/", "m54015_171229_224813.subreads.fasta") ],
+        "3_C01_100_sec_align",
+        "/MAdata/genome/GRCh38.p12",
+        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+    )
 #compute_bam_bai_for_files(
 #        [ ( "/mnt/ssd0/sra_reads/temp/", "extract.sam") ],
 #        "extract",
 #        "/MAdata/genome/GRCh38.p12",
 #        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
 #    )
+exit()
+
+
+#extract_section_from_bam(
+#        "/mnt/ssd0/sra_reads/res/3_C01_ma_old_sorted.bam",
+#        "3_C01_cutout.fasta",
+#        "CM000679.2",
+#        46250000,
+#        46730000
+#    )
+#filter_duplicates(
+#        "3_C01_cutout.fasta",
+#        "3_C01_cutout_filterd.fasta"
+#    )
+#compute_bam_bai_for_files(
+#        [ ( "./", "3_C01_cutout_filterd.fasta") ],
+#        "3_C01_cutout",
+#        "/MAdata/genome/GRCh38.p12",
+#        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+#    )
 #exit()
 
-# create_split_reads(human_genome, 1000, 10, .05, "split_reads_experiment.fasta")
+#create_split_reads(human_genome, 1000, 10, .05, "split_reads_experiment.fasta")
 # compute_bam_bai_for_files([("~/workspace/aligner","split_reads_experiment.fasta")], # "split_reads_experiment")
 # exit()
 
@@ -2204,13 +2280,6 @@ exit()
 """
 
 #split_reads("/MAdata/genome/eColi_full", "/MAdata/chrom/eColi/GCA_000005845.2_ASM584v2_genomic.fna")
-
-reads = simulate_pacbio.simulatePackBio(
-            "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
-            2)
-for r in reads:
-    print(r)
-exit()
 
 #split_reads(
 #        "/MAdata/genome/GRCh38.p12", 
