@@ -24,6 +24,7 @@ namespace libMA
     {
     public:
         unsigned int uiReportNBest;
+        float fMinSecScoreRatio = .75f;
 
         MappingQuality()
         {}//constructor
@@ -59,7 +60,9 @@ namespace libMA
 
         std::string getFullDesc() const
         {
-            return "MappingQuality(" + std::to_string(uiReportNBest) + ")";
+            return "MappingQuality(" + 
+                std::to_string(uiReportNBest) + "," +
+                std::to_string(fMinSecScoreRatio) + ")";
         }//function
     };//class
 }//namspace libMA

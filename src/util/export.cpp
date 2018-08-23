@@ -97,7 +97,8 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         unsigned int uiCurrHarmScoreMin,
         unsigned long long uiGenomeSizeDisable,
         unsigned int uiSoCWidth,
-        bool bDisableHeuristics
+        bool bDisableHeuristics,
+        float fMinSecScoreRatio
     )
 {
     iMatch = iMatch_;
@@ -106,7 +107,6 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     iExtend2 = iExtend2_;
     iGap2 = iGap2_;
     iMissMatch = iMisMatch_;
-    
 
     uiPadding = uiPadding_;
     uiMaxGapArea = uiMaxGapArea_;
@@ -154,7 +154,9 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
         std::shared_ptr<Module>(new NeedlemanWunsch()), true, 0));
-    std::shared_ptr<Module> pMapping(new MappingQuality(uiReportN));
+    std::shared_ptr<MappingQuality> pMapping(new MappingQuality(uiReportN));
+
+    pMapping->fMinSecScoreRatio = fMinSecScoreRatio;
 
     //modules for the paired alignment
     bool bPaired = bPariedNormal || bPariedUniform;

@@ -59,7 +59,8 @@ namespace libMA
             // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
             // @todo apply this parameter
             uiGenomeSizeDisable = "10000000",
-            bDisableHeuristics = "false"
+            bDisableHeuristics = "false",
+            fMinSecScoreRatio = ".75",
         ;
 #elif(PARAMETER_SET == EXPERIMENTAL)
         std::string

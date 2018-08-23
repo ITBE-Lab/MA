@@ -197,7 +197,8 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     unsigned int uiCurrHarmScoreMin,
     unsigned long long uiGenomeSizeDisable,
     unsigned int uiSoCWidth,
-    bool bDisableHeuristics
+    bool bDisableHeuristics,
+    float fMinSecScoreRatio
 );
 
 #endif

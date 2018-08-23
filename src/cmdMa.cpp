@@ -65,7 +65,7 @@ const std::string sHelp =
 "\n                                   chooses this value accordingly."
 "\n    -d, --noDP                     Switch that disables the final Dynamic Programming."
 "\n    -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited."
-"\n                                   Default is 1."
+"\n                                   Default is 0."
 "\n    -s, --seedSet [SMEMs/maxSpan]  Selects between the two seeding strategies super maximal"
 "\n                                   extended matches 'SMEMs' and maximally spanning seeds"
 "\n                                   'maxSpan'."
@@ -115,6 +115,9 @@ const std::string sHelp =
 "\n        --minRefSize <num>         If the reference is smaller than <num> nt we disable post SoC"
 "\n                                   heuristics."
 "\n                                   Default is 10,000,000."
+"\n        --minSecToPrimRatio <num>  Only output secondary alignments if their score is larger"
+"\n                                   or equal than <num> * score of primary alignment."
+"\n                                   Default is 0.75."
 "\n"
 "\nVersion 0.1.0 (alpha)"
 "\nBy Markus Schmidt & Arne Kutzner"
@@ -180,6 +183,9 @@ int main(int argc, char* argv[])
             ("giveUp", "Minimum SoC score (relative to query length)",
                 value<double>()->default_value(defaults::fGiveUp)
             )
+            ("minSecToPrimRatio", "Minimum sec score ratio",
+                value<double>()->default_value(defaults::fMinSecScoreRatio)
+            )
             ("maxTries", "Max num SoC",
                 value<unsigned int>()->default_value(defaults::uiMaxTries)
             )
@@ -241,6 +247,7 @@ int main(int argc, char* argv[])
         auto uiPairedMean =       result["paMean"].         as<unsigned int>();
         auto fPairedStd =         result["paStd"].          as<double>();
         auto dPairedU =           result["paIsolate"].     as<double>();
+        auto fMinSecScoreRatio =  result["minSecToPrimRatio"].as<double>();
         auto uiReportN =          result["reportN"].      as<unsigned int>();
         auto sParameterSet =      result["mode"]. as<std::string>();
         auto sSeedSet =           result["seedSet"].      as<std::string>();
@@ -404,7 +411,8 @@ int main(int argc, char* argv[])
                 std::stoi(defaults::uiCurrHarmScoreMin),
                 uiGenomeSizeDisable,
                 uiSoCWidth,
-                bDisableHeuristics
+                bDisableHeuristics,
+                fMinSecScoreRatio
             );
             // this is a hidden option
             if(result.count("info") > 0)

@@ -126,6 +126,18 @@ std::shared_ptr<Container> MappingQuality::execute(
         pRet->erase(pRet->begin()+uiReportNBest+uiSupplementaries, pRet->end());
         assert(pRet->size() == uiReportNBest+uiSupplementaries);
     }//if
+
+    // remove secondary with too small scores
+    while(pRet->size() > 1)
+    {
+        std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pAlign);
+        if(!pCasted->bSecondary)
+            break;
+        if(pCasted->fMappingQuality > pFirst->fMappingQuality * fMinSecScoreRatio)
+            break;
+        pAlign.pop_back();
+    }// while
+
     return pRet;
 }//function
 
