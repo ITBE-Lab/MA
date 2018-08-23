@@ -1041,10 +1041,18 @@ def createPacBioReadsSimLord(ref_seq, pack_name):
     return sequences
 
 def createPacBioReadsSimLordGenDup(num):
+    def callback(x):
+            x.load_specific_regions_from_tsv(
+                    "/MAdata/chrom/human/snp150Common.gz", 1, 2, 3, 6,
+                    one_spot_only=True, min_identity=.9999, min_size=30000
+                ) 
+            x.read_length_from_fastaq(
+                    "/mnt/ssd0/arne/3_C01/m54015_171229_224813.subreads.fasta"
+                )
     reads = simulate_pacbio.simulatePackBio(
             "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
             num,
-            lambda x: x.load_specific_regions_from_tsv("/MAdata/chrom/human/snp150Common.gz", 1, 2, 3, 6, one_spot_only=True)
+            callback
         )
     pack = Pack()
     pack.load("/MAdata/genome/GRCh38.p12")

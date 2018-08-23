@@ -1866,11 +1866,11 @@ def compute_bam_bai_for_files(path_name_gen, task_name, pack, reference, aligner
             print("working on file", file_name)
             temp_prefix = "/mnt/ssd0/sra_reads/temp/" + file_name
 
-            ma_cmd = "~/workspace/temp/MA/ma -x " + pack + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
+            ma_cmd = "~/workspace/aligner/ma -m pacBio -n 0 -x " + pack + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
 
-            ma_old_cmd = "~/workspace/aligner/ma -x " + pack + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
+            ma_old_cmd = "~/workspace/temp/MA/ma -x " + pack + " -i " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
 
-            mm_cmd = "~/workspace/minimap2/minimap2 -N 100 -x map-pb -a " + reference + " " + path + "/" + file_name + " > " + temp_prefix + ".sam"
+            mm_cmd = "~/workspace/minimap2/minimap2 -x map-pb -a " + reference + " " + path + "/" + file_name + " > " + temp_prefix + ".sam"
 
             ngmlr_cmd = "~/workspace/ngmlr/bin/ngmlr-0.2.8/ngmlr -t 32 -r " + reference + " -q " + path + "/" + file_name + " -o " + temp_prefix + ".sam"
 
@@ -2291,7 +2291,8 @@ compute_bam_bai_for_files(
         [ ( "./", "simulated_gen_dup_reads.fasta") ],
         "simulated_gen_dup_reads",
         "/MAdata/genome/GRCh38.p12",
-        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna"
+        "/MAdata/chrom/human/GCA_000001405.27_GRCh38.p12_genomic.fna",
+        aligners=[0, 1]
     )
 exit()
 

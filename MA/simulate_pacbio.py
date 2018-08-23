@@ -79,11 +79,12 @@ def read_reference(input_path, without_ns):
     reference_names, reference_lengths = [], [] # needed for sam header
     max_chrom_length = 0
 
-    for sequence, name, length, interval in fp.entries(dtype=bytearray):
+    for sequence, name_, length, interval in fp.entries(dtype=bytearray):
         #name = name.decode("utf-8").replace(" ", "_")
-        name = name.decode("utf-8")
+        name = name_.decode("utf-8")
         if name.find(' ') != -1:
             name = name[:name.find(' ')]
+        print("loading:", name)
 
         reference_names.append(name)
         reference_lengths.append(length)
@@ -109,7 +110,6 @@ def read_reference(input_path, without_ns):
             if len(seq) > max_chrom_length:
                 max_chrom_length = len(seq)
     weights = [x/sum(weights) for x in weights]
-    print("loaded", reference_names)
     return (chromosomes, reference_names, reference_lengths, max_chrom_length, weights)
 
 
@@ -243,12 +243,8 @@ def sample_reads(reference, num_reads, readlength_provider,
         chrom_new = []
         for current_ref, chr_name, length, chromosome_offset in chromosomes:
             if chr_name in from_regions:
-                print(current_ref, chr_name, length, chromosome_offset)
                 chrom_new.append( (current_ref, chr_name, length, chromosome_offset) )
         chromosomes = chrom_new
-        print("generating from chromosomes:") # @todo bug HERE
-        for current_ref, chr_name, length, chromosome_offset in chromosomes:
-            print(chr_name)
 
     reads  = []
 
@@ -282,7 +278,7 @@ def sample_reads(reference, num_reads, readlength_provider,
         # get a random read from the chosen reference
         (start_pos, read) = get_raw_read(chr_name, reversals[i], current_ref, current_readlength, from_regions)
 
-        print("generating from:", chr_name, reversals[i], start_pos, len(read))
+        #print("generating from:", chr_name, reversals[i], start_pos, len(read))
 
         # compute number of passes in prefix and suffix of the read
         (current_passes, cut_position, passes_left, passes_right, percentage_left) \
@@ -362,13 +358,12 @@ def get_raw_read(chr_name, rev, current_ref, current_readlength, from_regions=No
         possible_pos = from_regions[chr_name][rev]
         region_start, region_end = possible_pos[random.randint(0, len(possible_pos)-1)]
 
-        print("picked region:", region_start, region_end, current_readlength, len(current_ref))
+        #print("picked region:", region_start, region_end, current_readlength, len(current_ref))
 
         assert region_start < region_end
         assert len(current_ref) > current_readlength
         s = max(region_start-current_readlength, 0)
         e = min(region_end, len(current_ref)-current_readlength)
-        print("e, s:", e, s)
         assert e >= s
         start_pos = random.randint( s, e+1 )
     else:
@@ -921,7 +916,7 @@ def simulatePackBio(read_reference, num_reads=12566, arg_callback=None):
             self.max_passes = 40
             self.sqrt_params = (0.5, 0.2247)
             self.norm_params = (0, 0.2)
-            self.prob_ins = 0.15
+            self.prob_ins = 0.30
             self.prob_del = 0.09
             self.prob_sub = 0.04
             self.min_readlength = 50
@@ -980,12 +975,17 @@ def simulatePackBio(read_reference, num_reads=12566, arg_callback=None):
 
             self.probability_threshold = 0.2
 
-        def load_specific_regions_from_tsv(self, tsv_file, col_w_chr, col_w_start, col_w_end, col_w_rev_comp, one_spot_only=False):
+        def load_specific_regions_from_tsv(self, tsv_file, col_w_chr, col_w_start, col_w_end, col_w_rev_comp, one_spot_only=False, min_identity=0, min_size=0):
             self.uniform_chromosome_probability = True
+            self.without_ns = False # otherwise the chrom is split into several parts
             self.from_regions = {}
             with open(tsv_file, "r") as tsv:
                 for line in tsv.readlines()[1:]:
                     row = line.split("\t")
+                    if float(row[26]) < min_identity:
+                        continue
+                    if int(row[col_w_end]) - int(row[col_w_start]) < min_size:
+                        continue
                     chr_id = row[col_w_chr]
                     if chr_id in ["chrM"]:
                         continue
@@ -1032,10 +1032,14 @@ def simulatePackBio(read_reference, num_reads=12566, arg_callback=None):
                             ( int(row[col_w_start]), int(row[col_w_end]) )
                         )
                     if one_spot_only:
+                        print(
+                                "generating for region:",
+                                row[col_w_chr] + ":" + row[col_w_start] + "-" + row[col_w_end],
+                                "other region is at:",
+                                row[7] + ":" + row[8] + "-" + row[9]
+                            )
                         # break here to force the generation of all data in one spot
                         break
-
-            print("loaded specific regions for:", self.from_regions.keys())
 
         def read_length_from_fastaq(self, file_name):
             self.lognorm_readlength = None
