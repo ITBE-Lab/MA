@@ -8,11 +8,13 @@
 #endif
 using namespace libMA;
 
-extern int iGap;
-extern int iExtend;
-extern int iMatch;
-extern int iMissMatch;
-extern nucSeqIndex uiMaxGapArea;
+
+using namespace libMA::defaults;
+extern int libMA::defaults::iGap;
+extern int libMA::defaults::iExtend;
+extern int libMA::defaults::iMatch;
+extern int libMA::defaults::iMissMatch;
+extern nucSeqIndex libMA::defaults::uiMaxGapArea;
 
 inline nucSeqIndex difference(nucSeqIndex a, nucSeqIndex b)
 {

@@ -16,6 +16,7 @@ namespace libMA
     
     #define complement(x) (uint8_t)NucSeq::nucleotideComplement(x)
 
+
     /**
      * @brief Computes a maximally covering set of seeds.
      * @details
@@ -27,16 +28,16 @@ namespace libMA
     public:
         const bool bLrExtension;
         // 18.05.04: increasing uiMinAmbiguity merely has negative runtime effects
-        unsigned int uiMinAmbiguity = 0;
-        unsigned int uiMaxAmbiguity = 1000;
+        unsigned int uiMinAmbiguity = defaults::uiMinAmbiguity;
+        unsigned int uiMaxAmbiguity = defaults::uiMaxAmbiguity;
         /// 
-        size_t uiMinSeedSizeDrop = 15;
-        double fRelMinSeedSizeAmount = 0.005;
+        size_t uiMinSeedSizeDrop = defaults::uiMinSeedSizeDrop;
+        double fRelMinSeedSizeAmount = defaults::fRelMinSeedSizeAmount;
 
         /**
          * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
          */
-        nucSeqIndex uiMinGenomeSize = 0;
+        nucSeqIndex uiMinGenomeSize = defaults::uiGenomeSizeDisable;
 
         /**
          * @brief The simplified extension scheme presented in our Paper.
@@ -482,9 +483,9 @@ namespace libMA
          * However Li et Al.s approach will increase the overall accuracy of the alignment 
          * for short queries.
          */
-        BinarySeeding(bool bLrExtension)
+        BinarySeeding()
                 :
-            bLrExtension(bLrExtension)
+            bLrExtension(defaults::sSeedSet == "maxSpan")
         {}//constructor
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

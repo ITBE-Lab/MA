@@ -112,33 +112,33 @@ namespace libMA
          * @note not beeing optimistic here has negative affect on the accuracy
          * but improves runtime significantly
          */
-        bool optimisticGapEstimation = true;
+        bool optimisticGapEstimation = defaults::bOptimisticGapEstimation;
 
         /// @brief If the seeds cover less that x percent of the query we use SW, 
         /// otherwise we fill in the gaps.
-        double fMinimalQueryCoverage = 1.1;// 0.25 before 1.05.18 however python disables this
+        double fMinimalQueryCoverage = defaults::fMinimalQueryCoverage;// 0.25 before 1.05.18 however python disables this
 
         /// @brief Stop the SoC extraction if the harmonized score drops more than x.
-        double fScoreTolerace = 0.1;
+        double fScoreTolerace = defaults::fScoreTolerace;
 
         /// @brief Extract at most x SoCs.
-        unsigned int uiMaxTries = 50;
+        unsigned int uiMaxTries = defaults::bFindMode ? defaults::uiReportN : defaults::uiMaxTries;
 
         /// @brief Lookahead for the equality break criteria.
-        unsigned int uiMaxEqualScoreLookahead = 3;
+        unsigned int uiMaxEqualScoreLookahead = defaults::uiMaxEqualScoreLookahead;
 
         /// @brief Consider two scores equal if they do not differ by more than x (relative to the total score).
-        float fScoreDiffTolerance = 0.0001;
+        float fScoreDiffTolerance = defaults::fScoreDiffTolerance;
 
         /// @brief switch between the two break criteria based on weather the query len is larger than x.
-        nucSeqIndex uiSwitchQLen = 800;
+        nucSeqIndex uiSwitchQLen = defaults::uiSwitchQLen;
 
         /// @brief minimum accumulated seed length after the harmonization as absolute value.
-        nucSeqIndex uiCurrHarmScoreMin = 18;
+        nucSeqIndex uiCurrHarmScoreMin = defaults::uiCurrHarmScoreMin;
         /// @brief minimum accumulated seed length after the harmonization relative to query length.
-        float fCurrHarmScoreMinRel = 0.002;
+        float fCurrHarmScoreMinRel = defaults::fGiveUp;
 
-        bool bDoHeuristics = true;
+        bool bDoHeuristics = !defaults::bDisableHeuristics;
 
         LinearLineSweep() {}//default constructor
 

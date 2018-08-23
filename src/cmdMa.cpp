@@ -175,57 +175,57 @@ int main(int argc, char* argv[])
                 value<std::string>()->default_value(defaults::sSeedSet)
             )
             ("n,reportN", "Report up to N alignments; 0: unlimited",
-                value<unsigned int>()->default_value(defaults::uiReportN)
+                value<unsigned int>()->default_value(std::to_string(defaults::uiReportN))
             )
             ("l,minLen", "Minimum seed length",
-                value<unsigned int>()->default_value(defaults::uiMinLen)
+                value<unsigned int>()->default_value(std::to_string(defaults::uiMinLen))
             )
             ("giveUp", "Minimum SoC score (relative to query length)",
-                value<double>()->default_value(defaults::fGiveUp)
+                value<double>()->default_value(std::to_string(defaults::fGiveUp))
             )
             ("minSecToPrimRatio", "Minimum sec score ratio",
-                value<double>()->default_value(defaults::fMinSecScoreRatio)
+                value<double>()->default_value(std::to_string(defaults::fMinSecScoreRatio))
             )
             ("maxTries", "Max num SoC",
-                value<unsigned int>()->default_value(defaults::uiMaxTries)
+                value<unsigned int>()->default_value(std::to_string(defaults::uiMaxTries))
             )
             ("minRefSize", "ref size switch",
-                value<unsigned long long>()->default_value(defaults::uiGenomeSizeDisable)
+                value<unsigned long long>()->default_value(std::to_string(defaults::uiGenomeSizeDisable))
             )
             ("d,noDP", "Disable DP")
-            ("Match", "DP match score.", value<unsigned int>()->default_value(defaults::uiMatch))
+            ("Match", "DP match score.", value<unsigned int>()->default_value(std::to_string(defaults::iMatch)))
             ("MisMatch", "DP mismatch penalty.", 
-                value<unsigned int>()->default_value(defaults::uiMissMatch)
+                value<unsigned int>()->default_value(std::to_string(defaults::iMissMatch))
             )
             ("Gap", "DP gap open penalty.", 
-                value<unsigned int>()->default_value(defaults::uiOpen)
+                value<unsigned int>()->default_value(std::to_string(defaults::iGap))
             )
             ("Extend", "DP gap extend penalty.", 
-                value<unsigned int>()->default_value(defaults::uiExtend)
+                value<unsigned int>()->default_value(std::to_string(defaults::iExtend))
             )
             ("Gap2", "DP gap open penalty.", 
-                value<unsigned int>()->default_value(defaults::uiOpen2)
+                value<unsigned int>()->default_value(std::to_string(defaults::iGap2))
             )
             ("Extend2", "DP gap extend penalty.", 
-                value<unsigned int>()->default_value(defaults::uiExtend2)
+                value<unsigned int>()->default_value(std::to_string(defaults::iExtend2))
             )
             ("x,idx", "Do FMD-index generation", value<std::string>())
             ("genIndex", "Do FMD-index generation")
-            ("SoCWidth", "SoC width", value<unsigned int>()->default_value("0"))
-            ("disableHeuristics", "disable all heuristics", value<bool>()->default_value(defaults::bDisableHeuristics))
+            ("SoCWidth", "SoC width", value<unsigned int>()->default_value(std::to_string(defaults::uiSoCWidth)))
+            ("disableHeuristics", "disable all heuristics", value<bool>()->default_value(std::to_string(defaults::bDisableHeuristics)))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
             ("p,paUni", "Enable paired alignment; Distance as uniform distribution")
             ("P,paNorm", "Enable paired alignment; Distance as normal distribution")
             ("paIsolate", "Penalty for unpaired alignments", 
-                value<double>()->default_value(defaults::uiUnpaired), "arg    "
+                value<unsigned int>()->default_value(std::to_string(defaults::uiUnpaired)), "arg    "
             )
             ("paMean", "Gap distance mean", 
-                value<unsigned int>()->default_value(defaults::uiMean)
+                value<unsigned int>()->default_value(std::to_string(defaults::uiMean))
             )
             ("paStd", "Gap distance standard deviation", 
-                value<double>()->default_value(defaults::uiStd)
+                value<double>()->default_value(std::to_string(defaults::fStd))
             )
         ;
 
@@ -242,19 +242,19 @@ int main(int argc, char* argv[])
         }//if
 
         auto uiT =                result["threads"].      as<unsigned int>();
-        auto bPariedNormal =      result.count("paNorm")  > 0;
-        auto bPariedUniform =     result.count("paUni") > 0;
-        auto uiPairedMean =       result["paMean"].         as<unsigned int>();
-        auto fPairedStd =         result["paStd"].          as<double>();
-        auto dPairedU =           result["paIsolate"].     as<double>();
-        auto fMinSecScoreRatio =  result["minSecToPrimRatio"].as<double>();
-        auto uiReportN =          result["reportN"].      as<unsigned int>();
-        auto sParameterSet =      result["mode"]. as<std::string>();
-        auto sSeedSet =           result["seedSet"].      as<std::string>();
-        auto uiMinLen =           result["minLen"].       as<unsigned int>();
-        auto uiSoCWidth =         result["SoCWidth"].     as<unsigned int>();
-        auto bDisableHeuristics = result["disableHeuristics"].     as<bool>();
-        if(bPariedNormal && bPariedUniform)
+        defaults::bNormalDist =   result.count("paNorm")  > 0;
+        defaults::bUniformDist =  result.count("paUni") > 0;
+        defaults::uiMean =        result["paMean"].         as<unsigned int>();
+        defaults::fStd =          result["paStd"].          as<double>();
+        defaults::uiUnpaired =    result["paIsolate"].     as<unsigned int>();
+        defaults::fMinSecScoreRatio =  result["minSecToPrimRatio"].as<double>();
+        defaults::uiReportN =          result["reportN"].      as<unsigned int>();
+        defaults::sParameterSet =      result["mode"]. as<std::string>();
+        defaults::sSeedSet =           result["seedSet"].      as<std::string>();
+        defaults::uiMinLen =           result["minLen"].       as<unsigned int>();
+        defaults::uiSoCWidth =         result["SoCWidth"].     as<unsigned int>();
+        defaults::bDisableHeuristics = result["disableHeuristics"].     as<bool>();
+        if(defaults::bNormalDist && defaults::bUniformDist)
         {
             std::cerr << "--normal and --uniform are exclusive." << std::endl;
             return 1;
@@ -275,47 +275,47 @@ int main(int argc, char* argv[])
             std::cerr << "error: --in is compulsory" << std::endl;
             return 1;
         }// else if
-        if(aIn.size() != 1 && !(bPariedNormal || bPariedUniform) && result.count("genIndex") == 0)
+        if(aIn.size() != 1 && !(defaults::bNormalDist || defaults::bUniformDist) && result.count("genIndex") == 0)
         {
             std::cerr << "error: --in takes one argument in unpaired mode" << std::endl;
             return 1;
         }// if
-        else if(aIn.size() != 2 && (bPariedNormal || bPariedUniform) && result.count("genIndex") == 0)
+        else if(aIn.size() != 2 && (defaults::bNormalDist || defaults::bUniformDist) && result.count("genIndex") == 0)
         {
             std::cerr << "error: --in takes two arguments in paired mode" << std::endl;
             return 1;
         }// else if
         auto sOut =        result["out"].     as<std::string>();
-        auto bFindMode =        result.count("noDP") > 0;
-        auto fGiveUp =          result["giveUp"].       as<double>();
-        if( fGiveUp < 0 || fGiveUp > 1 )
+        defaults::bFindMode =   result.count("noDP") > 0;
+        defaults::fGiveUp =     result["giveUp"].       as<double>();
+        if( defaults::fGiveUp < 0 || defaults::fGiveUp > 1 )
         {
             std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
             return 1;
         }// else if
-        auto iMatch =           result["Match"].        as<unsigned int>();
-        if( iMatch == 0 )
+        defaults::iMatch =           result["Match"].        as<unsigned int>();
+        if( defaults::iMatch == 0 )
         {
             std::cerr << "error: --Match must be larger than 0" << std::endl;
             return 1;
         }// else if
-        auto iExtend =          result["Extend"].       as<unsigned int>();
-        if( iExtend == 0 )
+        defaults::iExtend =          result["Extend"].       as<unsigned int>();
+        if( defaults::iExtend == 0 )
         {
             std::cerr << "error: --Extend must be larger than 0" << std::endl;
             return 1;
         }// else if
-        auto iExtend2 =         result["Extend2"].      as<unsigned int>();
-        auto iMissMatch =       result["MisMatch"].     as<unsigned int>();
-        if( iMissMatch == 0 )
+        defaults::iExtend2 =         result["Extend2"].      as<unsigned int>();
+        defaults::iMissMatch =       result["MisMatch"].     as<unsigned int>();
+        if( defaults::iMissMatch == 0 )
         {
             std::cerr << "error: --MisMatch must be larger than 0" << std::endl;
             return 1;
         }// else if
-        auto iGap =             result["Gap"].          as<unsigned int>();
-        auto iGap2 =             result["Gap2"].          as<unsigned int>();
-        auto maxTries =         result["maxTries"].     as<unsigned int>();
-        auto uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
+        defaults::iGap =             result["Gap"].          as<unsigned int>();
+        defaults::iGap2 =             result["Gap2"].          as<unsigned int>();
+        defaults::uiMaxTries =         result["maxTries"].     as<unsigned int>();
+        defaults::uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
 
         if(result.count("genIndex"))
         {
@@ -337,7 +337,7 @@ int main(int argc, char* argv[])
             //    std::cerr 
             //        << "WARNING: Relative padding should be larger or equal to one"
             //        << std::endl;
-            if(sSeedSet != "SMEMs" && sSeedSet != "maxSpan")
+            if(defaults::sSeedSet != "SMEMs" && defaults::sSeedSet != "maxSpan")
                 std::cerr << "WARNING: selected invalid seed set; using maxSpan" << std::endl;
             /*
             *
@@ -366,7 +366,7 @@ int main(int argc, char* argv[])
                 ));
             }//for
             std::shared_ptr<Module> pOut;
-            if(bFindMode)
+            if(defaults::bFindMode)
                 pOut.reset( new SeedSetFileWriter(sOut) );
             else
                 pOut.reset( new FileWriter(sOut, pPack_) );
@@ -376,43 +376,7 @@ int main(int argc, char* argv[])
                 pFMDIndex,
                 aQueries,
                 pOut,
-                uiReportN,
-                uiT,//num threads
-                bPariedNormal,
-                bPariedUniform,
-                uiPairedMean,
-                fPairedStd,
-                dPairedU,
-                sSeedSet != "SMEMs",
-                fGiveUp,
-                iMatch,
-                iMissMatch,
-                iGap,
-                iExtend,
-                iGap2,
-                iExtend2,
-                bFindMode,
-                std::stoi(defaults::uiMaxGapArea),
-                std::stoi(defaults::uiPadding),
-                maxTries,
-                std::stoi(defaults::uiMinSeedSizeDrop),
-                std::stoi(defaults::uiMinAmbiguity),
-                std::stoi(defaults::uiMaxAmbiguity),
-                uiMinLen,
-                std::stoi(defaults::uiMaxEqualScoreLookahead),
-                std::stof(defaults::fRelMinSeedSizeAmount),
-                std::stof(defaults::fScoreDiffTolerance),
-                std::stof(defaults::fMinimalQueryCoverage),
-                std::stof(defaults::fScoreTolerace),
-                std::stoi(defaults::uiSwitchQLen),
-                defaults::bOptimisticGapEstimation == "true",
-                std::stof(defaults::fSoCScoreMinimum),
-                defaults::bSkipLongBWTIntervals == "true",
-                std::stoi(defaults::uiCurrHarmScoreMin),
-                uiGenomeSizeDisable,
-                uiSoCWidth,
-                bDisableHeuristics,
-                fMinSecScoreRatio
+                uiT//num threads
             );
             // this is a hidden option
             if(result.count("info") > 0)

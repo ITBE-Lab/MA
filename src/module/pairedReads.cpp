@@ -7,7 +7,8 @@
 
 using namespace libMA;
 
-extern int iMatch;
+using namespace libMA::defaults;
+extern int libMA::defaults::iMatch;
 
 #define SQ_12 std::sqrt(12)
 

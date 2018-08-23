@@ -17,6 +17,7 @@
 #endif
 #include <ctime>
 #include <chrono>
+#include "util/default_parameters.h"
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )

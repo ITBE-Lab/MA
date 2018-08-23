@@ -6,6 +6,7 @@
 
 using namespace libMA;
 
+using namespace libMA::defaults;
 extern int iMatch;
 
 ContainerVector MappingQuality::getInputType() const
@@ -130,12 +131,12 @@ std::shared_ptr<Container> MappingQuality::execute(
     // remove secondary with too small scores
     while(pRet->size() > 1)
     {
-        std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pAlign);
+        std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pRet->back());
         if(!pCasted->bSecondary)
             break;
         if(pCasted->fMappingQuality > pFirst->fMappingQuality * fMinSecScoreRatio)
             break;
-        pAlign.pop_back();
+        pRet->pop_back();
     }// while
 
     return pRet;
@@ -149,7 +150,7 @@ void exportMappingQuality()
             MappingQuality, 
             boost::python::bases<Module>, 
             std::shared_ptr<MappingQuality>
-        >("MappingQuality", boost::python::init<unsigned int>())
+        >("MappingQuality")
     ;
 
     boost::python::implicitly_convertible< 

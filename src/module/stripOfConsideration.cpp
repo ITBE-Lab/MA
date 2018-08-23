@@ -8,10 +8,11 @@
 #include "util/system.h"
 using namespace libMA;
 
-extern int iGap;
-extern int iExtend;
-extern int iMatch;
-extern int iMissMatch;
+using namespace libMA::defaults;
+extern int libMA::defaults::iGap;
+extern int libMA::defaults::iExtend;
+extern int libMA::defaults::iMatch;
+extern int libMA::defaults::iMissMatch;
 
 
 ContainerVector StripOfConsideration::getInputType() const
@@ -206,7 +207,6 @@ void exportStripOfConsideration()
             boost::python::bases<Module>, 
             std::shared_ptr<StripOfConsideration>
         >("StripOfConsideration")
-        .def(boost::python::init<float>())
         .def_readwrite("max_ambiguity", &StripOfConsideration::uiMaxAmbiguity)
         .def_readwrite("min_score", &StripOfConsideration::fScoreMinimum)
         .def_readwrite("skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals)

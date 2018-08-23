@@ -23,15 +23,10 @@ namespace libMA
     class MappingQuality: public Module
     {
     public:
-        unsigned int uiReportNBest;
-        float fMinSecScoreRatio = .75f;
+        unsigned int uiReportNBest = defaults::uiReportN;
+        float fMinSecScoreRatio = defaults::fMinSecScoreRatio;
 
         MappingQuality()
-        {}//constructor
-
-        MappingQuality(unsigned int uiReportNBest)
-                :
-            uiReportNBest(uiReportNBest)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

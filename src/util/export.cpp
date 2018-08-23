@@ -6,16 +6,6 @@
 
 using namespace libMA;
 
-
-extern int iGap;
-extern int iExtend;
-extern int iGap2;
-extern int iExtend2;
-extern int iMatch;
-extern int iMissMatch;
-extern nucSeqIndex uiMaxGapArea;
-extern nucSeqIndex uiPadding;
-
 #ifdef WITH_PYTHON
 /**
  * @brief The boost-python main method.
@@ -62,111 +52,24 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         std::shared_ptr<Pledge> pFMDIndex,
         std::vector<std::shared_ptr<Pledge>> aQueries,
         std::shared_ptr<Module> pOut,
-        unsigned int uiReportN,
-        unsigned int uiThreads,
-        bool bPariedNormal,
-        bool bPariedUniform,
-        unsigned int uiPairedMean,
-        double fPairedStd,
-        double dPairedU,
-        bool bSeedSetPairs,
-        float fGiveUp,
-        unsigned int iMatch_,
-        unsigned int iMisMatch_,
-        unsigned int iGap_,
-        unsigned int iExtend_,
-        unsigned int iGap2_,
-        unsigned int iExtend2_,
-        bool bFinderMode,
-        unsigned int uiMaxGapArea_,
-        unsigned int uiPadding_,
-        unsigned int uiMaxTries,
-        unsigned int uiMinSeedSizeDrop,
-        unsigned int uiMinAmbiguity,
-        unsigned int uiMaxAmbiguity,
-        unsigned int uiMinLen,
-        unsigned int uiMaxEqualScoreLookahead,
-        float fRelMinSeedSizeAmount,
-        float fScoreDiffTolerance,
-        float fMinimalQueryCoverage,
-        float fScoreTolerace,
-        unsigned int uiSwitchQLen,
-        bool optimisticGapEstimation,
-        float fSoCScoreMinimum,
-        bool bSkipLongBWTIntervals,
-        unsigned int uiCurrHarmScoreMin,
-        unsigned long long uiGenomeSizeDisable,
-        unsigned int uiSoCWidth,
-        bool bDisableHeuristics,
-        float fMinSecScoreRatio
+        unsigned int uiThreads
     )
 {
-    iMatch = iMatch_;
-    iExtend = iExtend_;
-    iGap = iGap_;
-    iExtend2 = iExtend2_;
-    iGap2 = iGap2_;
-    iMissMatch = iMisMatch_;
-
-    uiPadding = uiPadding_;
-    uiMaxGapArea = uiMaxGapArea_;
-
     //setup all modules
 
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
-    auto pSeeding = std::make_shared<BinarySeeding>(bSeedSetPairs);
-
-    //advanced parameters
-    pSeeding->uiMaxAmbiguity = uiMaxAmbiguity;
-    pSeeding->uiMinSeedSizeDrop = uiMinSeedSizeDrop;
-    pSeeding->uiMinAmbiguity = uiMinAmbiguity;
-    pSeeding->fRelMinSeedSizeAmount = fRelMinSeedSizeAmount;
-    pSeeding->uiMinGenomeSize = uiGenomeSizeDisable;
-
-    auto pSOC = std::make_shared<StripOfConsideration>(fGiveUp);
-
-    //advanced parameters
-    pSOC->uiMaxAmbiguity = uiMaxAmbiguity;
-    pSOC->fScoreMinimum = fSoCScoreMinimum;
-    pSOC->bSkipLongBWTIntervals = bSkipLongBWTIntervals;
-    pSOC->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
-    pSOC->uiMinLen = uiMinLen;
-    pSOC->uiMinGenomeSize = uiGenomeSizeDisable;
-    pSOC->uiSoCWidth = uiSoCWidth;
-
+    auto pSeeding = std::make_shared<BinarySeeding>();
+    auto pSOC = std::make_shared<StripOfConsideration>();
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
-
-    //advanced parameters
-    pCouple->optimisticGapEstimation = optimisticGapEstimation;
-    pCouple->uiMaxTries = uiMaxTries;
-    if(bFinderMode && uiMaxTries > uiReportN)
-        pCouple->uiMaxTries = uiReportN;
-    pCouple->uiMaxEqualScoreLookahead = uiMaxEqualScoreLookahead;
-    pCouple->fScoreDiffTolerance = fScoreDiffTolerance;
-    pCouple->uiSwitchQLen = uiSwitchQLen;
-    pCouple->fMinimalQueryCoverage = fMinimalQueryCoverage;
-    pCouple->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
-    pCouple->fCurrHarmScoreMinRel = fGiveUp;
-    pCouple->fScoreTolerace = fScoreTolerace;
-    pCouple->bDoHeuristics = !bDisableHeuristics;
-
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
         std::shared_ptr<Module>(new NeedlemanWunsch()), true, 0));
-    std::shared_ptr<MappingQuality> pMapping(new MappingQuality(uiReportN));
-
-    pMapping->fMinSecScoreRatio = fMinSecScoreRatio;
+    std::shared_ptr<MappingQuality> pMapping(new MappingQuality());
 
     //modules for the paired alignment
-    bool bPaired = bPariedNormal || bPariedUniform;
-    std::shared_ptr<Module> pPaired(new PairedReads(
-        dPairedU, 
-        bPariedNormal, 
-        bPariedUniform, 
-        uiPairedMean, 
-        fPairedStd
-    ));
+    bool bPaired = defaults::bNormalDist || defaults::bUniformDist;
+    std::shared_ptr<Module> pPaired(new PairedReads());
 
     //setup the computational graph
     std::vector<std::shared_ptr<Pledge>> aRet;
@@ -212,7 +115,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     pSOCs, pQuery
                 }
             );
-        if(bFinderMode)
+        if(defaults::bFindMode)
         {
             // write the output to a file
             std::shared_ptr<Pledge> pNil = Module::promiseMe(

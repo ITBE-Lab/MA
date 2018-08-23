@@ -13,10 +13,11 @@ using namespace libMA;
 #include "module/SW_sequential.h"
 #include "module/needlemanWunsch.h"
 
-extern int iGap;
-extern int iExtend;
-extern int iMatch;
-extern int iMissMatch;
+using namespace libMA::defaults;
+extern int libMA::defaults::iGap;
+extern int libMA::defaults::iExtend;
+extern int libMA::defaults::iMatch;
+extern int libMA::defaults::iMissMatch;
 
 ContainerVector SMW::getInputType() const
 {
@@ -85,11 +86,6 @@ int16_t alignSW_SIMD( NucSeq &rQuerySequence, // query sequence
 
     return iMaxScore;
 } // function
-
-extern int iGap;
-extern int iExtend;
-extern int iMatch;
-extern int iMissMatch;
 
 std::shared_ptr<Container> SMW::execute(
         std::shared_ptr<ContainerVector> vpInput

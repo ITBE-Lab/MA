@@ -4,14 +4,14 @@
  */
 
 #include "container/alignment.h"
+#include "util/default_parameters.h"
 using namespace libMA;
 
-
-extern int iGap;
-extern int iExtend;
-extern int iMatch;
-extern int iMissMatch;
-
+using namespace libMA::defaults;
+extern int libMA::defaults::iGap;
+extern int libMA::defaults::iExtend;
+extern int libMA::defaults::iMatch;
+extern int libMA::defaults::iMissMatch;
 //Note query 236 failed
 
 void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)

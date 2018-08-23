@@ -14,20 +14,15 @@
 
 using namespace libMA;
 
-
-
-int iMatch = 2; // default 2
-int iMissMatch = 4; //default 4
-int iGap = 4; // default 4
-int iExtend = 2; // default 2
-int iGap2 = 24; // default 24
-int iExtend2 = 1; //default 1
-
-/// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
-//accuracy drops if parameter is set smaller than 10^6
-nucSeqIndex uiMaxGapArea = 10000;
-/// @brief the padding on the left and right end of each alignment
-nucSeqIndex uiPadding = 500;
+using namespace libMA::defaults;
+extern int libMA::defaults::iGap;
+extern int libMA::defaults::iExtend;
+extern int libMA::defaults::iGap2;
+extern int libMA::defaults::iExtend2;
+extern int libMA::defaults::iMatch;
+extern int libMA::defaults::iMissMatch;
+extern nucSeqIndex libMA::defaults::uiMaxGapArea;
+extern nucSeqIndex libMA::defaults::uiPadding;
 
 DEBUG(
     bool bAnalyzeHeuristics = false;
@@ -1328,18 +1323,6 @@ void exportNeedlemanWunsch()
     >(
         "NeedlemanWunsch"
     )
-        // These are constants among the entire code...
-        // We set them using the NW class for simplicity
-        // @todo: this should be changed ...
-        .def_readwrite("penalty_gap_open", &iGap)
-        .def_readwrite("penalty_gap_extend", &iExtend)
-        .def_readwrite("penalty_gap_open_2", &iGap2)
-        .def_readwrite("penalty_gap_extend_2", &iExtend2)
-        .def_readwrite("score_match", &iMatch)
-        .def_readwrite("penalty_missmatch", &iMissMatch)
-        .def_readwrite("max_gap_area", &uiMaxGapArea)
-        // actual parameters of NW
-        .def_readwrite("local", &NeedlemanWunsch::bLocal)
 #if DEBUG_LEVEL >= 1
         .def_readwrite("analyze_heuristics", &bAnalyzeHeuristics)
 #endif //DEBUG_LEVEL

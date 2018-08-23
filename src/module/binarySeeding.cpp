@@ -166,10 +166,7 @@ void exportBinarySeeding()
             BinarySeeding, 
             boost::python::bases<Module>,
             std::shared_ptr<BinarySeeding>
-        >(
-            "BinarySeeding",
-            boost::python::init<bool>()
-        )
+        >("BinarySeeding")
         .def_readwrite("min_ambiguity", &BinarySeeding::uiMinAmbiguity)
         .def_readwrite("max_ambiguity", &BinarySeeding::uiMaxAmbiguity)
         .def_readwrite("min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop)
