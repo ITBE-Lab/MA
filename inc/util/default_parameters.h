@@ -74,6 +74,7 @@ namespace libMA
             bDisableHeuristics = true;
             uiMaxTries = 5;   // @todo check if ths is too little or not...
             fGiveUp = 0;      // @todo check if ths is really necessary
+            uiMaxSupplementaryPerPrim = 0.25; // @todo verify this parameter
         }// function
 
         void exportDefaults();

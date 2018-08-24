@@ -122,7 +122,7 @@ const std::string sHelp =
 "\n                                   than <num> percent with the primary alignment."
 "\n                                   Default is 0.1."
 "\n"
-"\nVersion 0.1.0 (alpha)"
+"\nVersion 0.1.1 (alpha)"
 "\nBy Markus Schmidt & Arne Kutzner"
 "\nFor more information visit: https://github.com/ITBE-Lab/ma"
 ;
