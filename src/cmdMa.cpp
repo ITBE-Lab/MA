@@ -118,6 +118,9 @@ const std::string sHelp =
 "\n        --minSecToPrimRatio <num>  Only output secondary alignments if their score is larger"
 "\n                                   or equal than <num> * score of primary alignment."
 "\n                                   Default is 0.75."
+"\n        --maxOverlapSupp <num>     An alignment is considered supplementary if it overlaps less"
+"\n                                   than <num> percent with the primary alignment."
+"\n                                   Default is 0.1."
 "\n"
 "\nVersion 0.1.0 (alpha)"
 "\nBy Markus Schmidt & Arne Kutzner"
@@ -216,6 +219,7 @@ int main(int argc, char* argv[])
             ("disableHeuristics", "disable all heuristics", value<bool>()->default_value(defaults::bDisableHeuristics ? "true" : "false"))
             ("maxDeltaDist", "", value<double>()->default_value(std::to_string(defaults::dMaxDeltaDist)))
             ("minDeltaDist", "", value<uint64_t>()->default_value(std::to_string(defaults::uiMinDeltaDist)))
+            ("maxOverlapSupp", "", value<double>()->default_value(std::to_string(defaults::dMaxOverlapSupplementary)))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
@@ -259,6 +263,7 @@ int main(int argc, char* argv[])
         defaults::bDisableHeuristics = result["disableHeuristics"].     as<bool>();
         defaults::uiMinDeltaDist =     result["minDeltaDist"].     as<uint64_t>();
         defaults::dMaxDeltaDist =      result["maxDeltaDist"].     as<double>();
+        defaults::dMaxOverlapSupplementary = result["maxOverlapSupp"].as<double>();
         if(defaults::bNormalDist && defaults::bUniformDist)
         {
             std::cerr << "--normal and --uniform are exclusive." << std::endl;

@@ -52,6 +52,10 @@ namespace libMA
         double dMaxDeltaDist = 0.1;
         // AND the delta distance to it's pre- and successor is more than <num> nt.
         uint64_t uiMinDeltaDist = 16;
+        // maximal amount of nucleotides primary and supplementary alignments can overlap.
+        double dMaxOverlapSupplementary = 0.1;
+        // each primary alignment can have at most x supplementary ones.
+        size_t uiMaxSupplementaryPerPrim = 1;
         
         void exportDefaults()
         {

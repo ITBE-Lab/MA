@@ -52,6 +52,8 @@ namespace libMA
         extern float fMinSecScoreRatio;
         extern double dMaxDeltaDist;
         extern uint64_t uiMinDeltaDist;
+        extern double dMaxOverlapSupplementary;
+        extern size_t uiMaxSupplementaryPerPrim;
 
         inline void configureAccurate()
         {

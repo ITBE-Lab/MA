@@ -25,6 +25,8 @@ namespace libMA
     public:
         unsigned int uiReportNBest = defaults::uiReportN;
         float fMinSecScoreRatio = defaults::fMinSecScoreRatio;
+        double dMaxOverlapSupplementary = defaults::dMaxOverlapSupplementary;
+        size_t uiMaxSupplementaryPerPrim = defaults::uiMaxSupplementaryPerPrim;
 
         MappingQuality()
         {}//constructor
@@ -57,6 +59,7 @@ namespace libMA
         {
             return "MappingQuality(" + 
                 std::to_string(uiReportNBest) + "," +
+                std::to_string(dMaxOverlapSupplementary) + "," +
                 std::to_string(fMinSecScoreRatio) + ")";
         }//function
     };//class
