@@ -50,6 +50,8 @@ namespace libMA
         extern size_t uiGenomeSizeDisable;
         extern bool bDisableHeuristics;
         extern float fMinSecScoreRatio;
+        extern double dMaxDeltaDist;
+        extern uint64_t uiMinDeltaDist;
 
         inline void configureAccurate()
         {

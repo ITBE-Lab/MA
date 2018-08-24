@@ -44,7 +44,14 @@ namespace libMA
         size_t uiGenomeSizeDisable = 10000000;
         bool bDisableHeuristics = false; // disable all heuristics in the harmonization
         // only output secondary alignments with a score larger than this * score of prim. alignment
-        float fMinSecScoreRatio = .75; 
+        float fMinSecScoreRatio = .75;
+
+        //artifact filter:
+        // filter seeds if the difference between the delta distance to it's predecessor and
+        // successor is less then <num> percent (set to 1 to disable filter)...
+        double dMaxDeltaDist = 0.1;
+        // AND the delta distance to it's pre- and successor is more than <num> nt.
+        uint64_t uiMinDeltaDist = 16;
         
         void exportDefaults()
         {

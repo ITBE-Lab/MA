@@ -459,9 +459,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             */
             if(pSeeds->size() > 2)
             {
-                size_t uiNumfiltered = 0;
-                size_t uiABsum = 0;
-                size_t uiTotal = 0;
                 size_t uiPrePos = 0;
                 size_t uiCenterPos = 1;
                 while(uiCenterPos < pSeeds->size() - 1)
@@ -470,64 +467,24 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     Seed& rCenter = (*pSeeds)[uiCenterPos];
                     Seed& rPost = (*pSeeds)[uiCenterPos + 1];
 
-                    // int64_t iDeltaPre = rPre.start_ref() - (int64_t)rPre.start();
-                    // int64_t iDeltaCenter = rCenter.start_ref() - (int64_t)rCenter.start();
-                    // int64_t iDeltaPost = rPost.start_ref() - (int64_t)rPost.start();
-// 
-                    // int64_t iDeltaDistToPre = std::abs(iDeltaPre - iDeltaCenter);
-                    // int64_t iDeltaDistToPost = std::abs(iDeltaPost - iDeltaCenter);
-// 
-                    // double dDeltaDistDiff = std::abs(iDeltaDistToPre - iDeltaDistToPost)*2 / 
-                    //     ((double) iDeltaDistToPre + iDeltaDistToPost );
+                    int64_t iDeltaPre = rPre.start_ref() - (int64_t)rPre.start();
+                    int64_t iDeltaCenter = rCenter.start_ref() - (int64_t)rCenter.start();
+                    int64_t iDeltaPost = rPost.start_ref() - (int64_t)rPost.start();
 
-                    
+                    int64_t iDeltaDistToPre = std::abs(iDeltaPre - iDeltaCenter);
+                    int64_t iDeltaDistToPost = std::abs(iDeltaPost - iDeltaCenter);
 
-                    double dA = difference( rPre.end_ref(), rPost.start_ref() );
-                    double dB = difference( rPre.end(), rPost.start() );
-                    double dRelation;
-                    if(dA > dB)
-                        dRelation = dB / dA;
-                    else
-                        dRelation = dA / dB;
+                    double dDeltaDistDiff = std::abs(iDeltaDistToPre - iDeltaDistToPost)*2 / 
+                        ((double) iDeltaDistToPre + iDeltaDistToPost );
 
-                    
-                    double dXDeltaRef = difference( rPre.end_ref(), rCenter.start_ref() );
-                    double dXDeltaQuery = difference( rPre.end(), rCenter.start() );
-
-                    double dXDeltaRelation;
-                    if(dXDeltaRef > dXDeltaQuery)
-                        dXDeltaRelation = dXDeltaQuery / dXDeltaRef;
-                    else
-                        dXDeltaRelation = dXDeltaRef / dXDeltaQuery;
-
-                    double dYDeltaRef = difference( rCenter.end_ref(), rPost.start_ref() );
-                    double dYDeltaQuery = difference( rCenter.end(), rPost.start() );
-
-                    double dYDeltaRelation;
-                    if(dYDeltaRef > dYDeltaQuery)
-                        dYDeltaRelation = dYDeltaQuery / dYDeltaRef;
-                    else
-                        dYDeltaRelation = dYDeltaRef / dYDeltaQuery;
-
-                    // @todo consider the delta-values !!!
-                    
-                    double dDeltaRelation = std::max(dXDeltaRelation, dYDeltaRelation);
-                    uiABsum += dA + dB;
-                    uiTotal++;
                     if(
-                        // check if the shape is close enough to a square
-                        dRelation > 0.7 && // @todo make this a configuration variable
-
-                        dDeltaRelation < 0.9 && // @todo make this a configuration variable
-
-                        // check that the square has some minimum size
-                        dXDeltaRef + dXDeltaQuery + dYDeltaRef + dYDeltaQuery > 16
+                        dDeltaDistDiff < dMaxDeltaDist &&
+                        (uint64_t)iDeltaDistToPre > uiMinDeltaDist
                     )
                     {
                         // the filter triggered -> 
                         // we flag the seed to be ignored by setting it's size to zero
                         rCenter.size(0);
-                        uiNumfiltered++;
                         uiCenterPos++;
                     }// if
                     else
@@ -537,8 +494,6 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                         uiPrePos = uiCenterPos - 1;
                     }// else
                 }// while
-                // std::cout << "FILTERED: " << uiNumfiltered << " of " << pSeeds->size() << std::endl;
-                // std::cout << "dA + dB = " << uiABsum / (double)uiTotal << std::endl;
             }// if
         }// if
         else // pSeedsIn contains merely one seed

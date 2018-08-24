@@ -140,6 +140,10 @@ namespace libMA
 
         bool bDoHeuristics = !defaults::bDisableHeuristics;
 
+        double dMaxDeltaDist = defaults::dMaxDeltaDist;
+
+        nucSeqIndex uiMinDeltaDist = defaults::uiMinDeltaDist;
+
         LinearLineSweep() {}//default constructor
 
         //overload

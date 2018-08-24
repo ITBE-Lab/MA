@@ -213,6 +213,8 @@ int main(int argc, char* argv[])
             ("genIndex", "Do FMD-index generation")
             ("SoCWidth", "SoC width", value<unsigned int>()->default_value(std::to_string(defaults::uiSoCWidth)))
             ("disableHeuristics", "disable all heuristics", value<bool>()->default_value(std::to_string(defaults::bDisableHeuristics)))
+            ("maxDeltaDist", "", value<double>()->default_value(std::to_string(defaults::dMaxDeltaDist)))
+            ("minDeltaDist", "", value<unsigned int>()->default_value(std::to_string(defaults::uiMinDeltaDist)))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
@@ -254,6 +256,8 @@ int main(int argc, char* argv[])
         defaults::uiMinLen =           result["minLen"].       as<unsigned int>();
         defaults::uiSoCWidth =         result["SoCWidth"].     as<unsigned int>();
         defaults::bDisableHeuristics = result["disableHeuristics"].     as<bool>();
+        defaults::uiMinDeltaDist =     result["minDeltaDist"].     as<unsigned int>();
+        defaults::dMaxDeltaDist =      result["maxDeltaDist"].     as<double>();
         if(defaults::bNormalDist && defaults::bUniformDist)
         {
             std::cerr << "--normal and --uniform are exclusive." << std::endl;
