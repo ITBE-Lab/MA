@@ -44,7 +44,7 @@ namespace libMA
             std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vGapsScatter;
 #endif
         /// The sparse list of MatchTypes that describe the alignment.
-        std::vector<std::tuple<MatchType, nucSeqIndex>> data;
+        std::vector<std::pair<MatchType, nucSeqIndex>> data;
         /// The length of the alignment.
         nucSeqIndex uiLength;
         /// The start of the alignment on the reference sequence.
@@ -148,7 +148,7 @@ namespace libMA
             std::string sRet = "Alignment Dump: ";
             const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
             for(auto& tuple : data)
-                sRet += vTranslate[ (unsigned int)std::get<0>(tuple)] + std::to_string(std::get<1>(tuple)) + " ";
+                sRet += vTranslate[ (unsigned int)tuple.first] + std::to_string(tuple.second) + " ";
             sRet += std::to_string(iScore);
             return sRet; 
         }
@@ -188,13 +188,13 @@ namespace libMA
             unsigned int k = 0;
             while(k < data.size())
             {
-                j += std::get<1>(data[k]);
+                j += data[k].second;
                 if(j > i)
                     break;
                 k++;
             }// while
 
-            return std::get<0>(data[k]);
+            return data[k].first;
         }//function
 
         /**
@@ -212,9 +212,9 @@ namespace libMA
         std::vector<MatchType> extract() const
         {
             std::vector<MatchType> aRet;
-            for(std::tuple<MatchType, nucSeqIndex> xElement : data)
-                for(unsigned int i = 0; i < std::get<1>(xElement); i++)
-                    aRet.push_back(std::get<0>(xElement));
+            for(std::pair<MatchType, nucSeqIndex> xElement : data)
+                for(unsigned int i = 0; i < xElement.second; i++)
+                    aRet.push_back(xElement.first);
             return aRet;
         }//function
 
@@ -235,22 +235,98 @@ namespace libMA
         }//function
 
         /**
-         * @brief returns true if there is less then 2% overlap between the alignments...
+         * @brief returns the overlap of the alignments on
+         * @todo
          */
-        inline bool noOverlap(const Alignment& rOther) const
+        inline double overlap(const Alignment& rOther) const
         {
+            // get the total area where overlaps are possible
             nucSeqIndex uiS = std::max(uiBeginOnQuery, rOther.uiBeginOnQuery);
             nucSeqIndex uiE = std::min(uiEndOnQuery, rOther.uiEndOnQuery);
+            // if the total area is zero we can return 0% immediately
             if(uiS >= uiE)
-                return true;
-            nucSeqIndex uiOverlap = uiE - uiS;
-            nucSeqIndex uiLen = std::min(
-                    uiEndOnQuery-uiBeginOnQuery,
-                    rOther.uiEndOnQuery-rOther.uiBeginOnQuery
+                return 0;
+            // indices for walking through the alignments
+            nucSeqIndex uiOverlap = 0;
+            size_t uiI = 0;
+            nucSeqIndex uiQpos = uiBeginOnQuery;
+            size_t uiIOther = 0;
+            nucSeqIndex uiQposOther = rOther.uiBeginOnQuery;
+            // move the index to the start positions
+            while(uiQpos + data[uiI].second < uiS)
+            {
+                // all match types move forward on the query apart from a deletion
+                if(data[uiI].first != MatchType::deletion)
+                    uiQpos += data[uiI].second;
+                uiI++;
+            }// while
+            // move the index (of the other alignment) to the start positions
+            while(uiQposOther + rOther.data[uiIOther].second < uiS)
+            {
+                // all match types move forward on the query apart from a deletion
+                if(rOther.data[uiIOther].first != MatchType::deletion)
+                    uiQposOther += rOther.data[uiIOther].second;
+                uiIOther++;
+            }// while
+
+            // compute the overlap
+            while(
+                    // we haven't reached the end of the possible overlap area
+                    uiQpos < uiE && uiQposOther < uiE &&
+                    // we haven't reached the end of the alignment
+                    uiI < data.size() && uiIOther < rOther.data.size()
+                )
+            {
+                // get the lengths on the query
+                nucSeqIndex uiQLen = 0;
+                // all match types have a query length apart from a deletion
+                if(data[uiI].first != MatchType::deletion)
+                    uiQLen = data[uiI].second;
+                nucSeqIndex uiQLenOther = 0;
+                // all match types have a query length apart from a deletion
+                if(rOther.data[uiIOther].first != MatchType::deletion)
+                    uiQLenOther = rOther.data[uiIOther].second;
+
+                // compute the overlap
+                nucSeqIndex uiS_inner = std::max(
+                            std::max(uiQpos, uiQposOther),
+                            uiS
+                        );
+                nucSeqIndex uiE_inner = std::min(
+                            std::min(uiQpos + uiQLen, uiQposOther + uiQLenOther),
+                            uiE
+                        );
+                nucSeqIndex uiCurrOverlap = 0;
+                if(uiS_inner < uiE_inner)
+                    uiCurrOverlap = uiE_inner - uiS_inner;
+
+                // if the type of the match is not an insertion, add to the amount of overlap
+                if(
+                        data[uiI].first != MatchType::insertion &&
+                        rOther.data[uiIOther].first != MatchType::insertion
+                    )
+                    uiOverlap += uiCurrOverlap;
+                
+                // move the correct index forward
+                if(uiQpos + uiQLen < uiQposOther + uiQLenOther)
+                {
+                    uiQpos += uiQLen;
+                    uiI++;
+                }// if
+                else
+                {
+                    uiQposOther += uiQLenOther;
+                    uiIOther++;
+                }// else
+            }// while
+
+            // divide by the size of the smaller alignment so that the returned overlap is in 
+            // percent
+            nucSeqIndex uiSize = std::min(
+                    uiEndOnQuery - uiBeginOnQuery, 
+                    rOther.uiEndOnQuery - rOther.uiBeginOnQuery
                 );
-            if(uiOverlap * 50 < uiLen)
-                return true;
-            return false;
+            return uiOverlap / static_cast<double>(uiSize);
         }// mehtod
 
         /**
@@ -259,7 +335,7 @@ namespace libMA
         void append(const Alignment& rOther)
         {
             for(auto xTuple : rOther.data)
-                append(std::get<0>(xTuple), std::get<1>(xTuple));
+                append(xTuple.first, xTuple.second);
         }//function
 
         ///@brief wrapper for boost-python
@@ -281,7 +357,7 @@ namespace libMA
             DEBUG(
                 nucSeqIndex uiCheck = 0;
                 for(auto xTup : data)
-                    uiCheck += std::get<1>(xTup);
+                    uiCheck += xTup.second;
                 if(uiCheck != uiLength)
                 {
                     std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 

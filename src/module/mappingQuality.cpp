@@ -54,7 +54,7 @@ std::shared_ptr<Container> MappingQuality::execute(
         pCasted->fMappingQuality = 0.0;
         // @todo this needs to be redone properly
         // at the moment we allow merely one supplementary alignment
-        if (uiSupplementaries == 0 && pCasted->noOverlap(*pFirst))
+        if (uiSupplementaries == 0 && pCasted->overlap(*pFirst) < .1)
         {
             pCasted->bSupplementary = true;
             pCasted->bSecondary = false;

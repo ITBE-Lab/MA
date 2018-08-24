@@ -126,6 +126,7 @@ const std::string sHelp =
 
 /**
  * main function
+ * @todo order of parameters seems to matter.. fix that
  */
 int main(int argc, char* argv[])
 {
@@ -193,28 +194,28 @@ int main(int argc, char* argv[])
                 value<unsigned long long>()->default_value(std::to_string(defaults::uiGenomeSizeDisable))
             )
             ("d,noDP", "Disable DP")
-            ("Match", "DP match score.", value<unsigned int>()->default_value(std::to_string(defaults::iMatch)))
+            ("Match", "DP match score.", value<int>()->default_value(std::to_string(defaults::iMatch)))
             ("MisMatch", "DP mismatch penalty.", 
-                value<unsigned int>()->default_value(std::to_string(defaults::iMissMatch))
+                value<int>()->default_value(std::to_string(defaults::iMissMatch))
             )
             ("Gap", "DP gap open penalty.", 
-                value<unsigned int>()->default_value(std::to_string(defaults::iGap))
+                value<int>()->default_value(std::to_string(defaults::iGap))
             )
             ("Extend", "DP gap extend penalty.", 
-                value<unsigned int>()->default_value(std::to_string(defaults::iExtend))
+                value<int>()->default_value(std::to_string(defaults::iExtend))
             )
             ("Gap2", "DP gap open penalty.", 
-                value<unsigned int>()->default_value(std::to_string(defaults::iGap2))
+                value<int>()->default_value(std::to_string(defaults::iGap2))
             )
             ("Extend2", "DP gap extend penalty.", 
-                value<unsigned int>()->default_value(std::to_string(defaults::iExtend2))
+                value<int>()->default_value(std::to_string(defaults::iExtend2))
             )
             ("x,idx", "Do FMD-index generation", value<std::string>())
             ("genIndex", "Do FMD-index generation")
             ("SoCWidth", "SoC width", value<unsigned int>()->default_value(std::to_string(defaults::uiSoCWidth)))
-            ("disableHeuristics", "disable all heuristics", value<bool>()->default_value(std::to_string(defaults::bDisableHeuristics)))
+            ("disableHeuristics", "disable all heuristics", value<bool>()->default_value(defaults::bDisableHeuristics ? "true" : "false"))
             ("maxDeltaDist", "", value<double>()->default_value(std::to_string(defaults::dMaxDeltaDist)))
-            ("minDeltaDist", "", value<unsigned int>()->default_value(std::to_string(defaults::uiMinDeltaDist)))
+            ("minDeltaDist", "", value<uint64_t>()->default_value(std::to_string(defaults::uiMinDeltaDist)))
         ;
 
         options.add_options("Paired Reads options (requires either -U or -N)")
@@ -256,7 +257,7 @@ int main(int argc, char* argv[])
         defaults::uiMinLen =           result["minLen"].       as<unsigned int>();
         defaults::uiSoCWidth =         result["SoCWidth"].     as<unsigned int>();
         defaults::bDisableHeuristics = result["disableHeuristics"].     as<bool>();
-        defaults::uiMinDeltaDist =     result["minDeltaDist"].     as<unsigned int>();
+        defaults::uiMinDeltaDist =     result["minDeltaDist"].     as<uint64_t>();
         defaults::dMaxDeltaDist =      result["maxDeltaDist"].     as<double>();
         if(defaults::bNormalDist && defaults::bUniformDist)
         {
@@ -297,27 +298,27 @@ int main(int argc, char* argv[])
             std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
             return 1;
         }// else if
-        defaults::iMatch =           result["Match"].        as<unsigned int>();
+        defaults::iMatch =           result["Match"].        as<int>();
         if( defaults::iMatch == 0 )
         {
             std::cerr << "error: --Match must be larger than 0" << std::endl;
             return 1;
         }// else if
-        defaults::iExtend =          result["Extend"].       as<unsigned int>();
+        defaults::iExtend =          result["Extend"].       as<int>();
         if( defaults::iExtend == 0 )
         {
             std::cerr << "error: --Extend must be larger than 0" << std::endl;
             return 1;
         }// else if
-        defaults::iExtend2 =         result["Extend2"].      as<unsigned int>();
-        defaults::iMissMatch =       result["MisMatch"].     as<unsigned int>();
+        defaults::iExtend2 =         result["Extend2"].      as<int>();
+        defaults::iMissMatch =       result["MisMatch"].     as<int>();
         if( defaults::iMissMatch == 0 )
         {
             std::cerr << "error: --MisMatch must be larger than 0" << std::endl;
             return 1;
         }// else if
-        defaults::iGap =             result["Gap"].          as<unsigned int>();
-        defaults::iGap2 =             result["Gap2"].          as<unsigned int>();
+        defaults::iGap =             result["Gap"].          as<int>();
+        defaults::iGap2 =             result["Gap2"].          as<int>();
         defaults::uiMaxTries =         result["maxTries"].     as<unsigned int>();
         defaults::uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
 

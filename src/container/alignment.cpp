@@ -18,7 +18,7 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
 {
 #if DEBUG_LEVEL >= 2
     // get a copy of the alignment for later comparison in case something goes wrong
-    std::vector<std::tuple<MatchType, nucSeqIndex>> vCopyOfData(data.begin(), data.end());
+    std::vector<std::pair<MatchType, nucSeqIndex>> vCopyOfData(data.begin(), data.end());
     const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
     std::cout << vTranslate[type] << size << std::endl;
 #endif
@@ -41,7 +41,7 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     else if(type == MatchType::insertion || type == MatchType::deletion)
     {
         //iGap & iExtend is a penalty not a score
-        if(length() == 0 || (std::get<0>(data.back()) != type) )
+        if(length() == 0 || (data.back().first != type) )
             iScore -= iGap;
         iScore -= iExtend * size;
         if(type == MatchType::insertion)
@@ -56,10 +56,10 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
      *      if so just add the amount of new symbols
      *      else make a new entry with the correct amount of symbols
      */
-    if(data.size() != 0 && std::get<0>(data.back()) == type)
-        std::get<1>(data.back()) += size;
+    if(data.size() != 0 && data.back().first == type)
+        data.back().second += size;
     else
-        data.push_back(std::make_tuple(type, size));
+        data.push_back(std::make_pair(type, size));
     uiLength += size;
 
     DEBUG_2(
@@ -71,11 +71,11 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
             {
                 if(std::get<0>(tup) == MatchType::seed)
                     std::cout << "=============";
-                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
+                std::cout << std::get<0>(tup) << ":" << tup.second << " ";
             }
             std::cout << std::endl;
             for(auto tup : data)
-                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
+                std::cout << std::get<0>(tup) << ":" << tup.second << " ";
             std::cout << std::endl;
             assert(false);
         }// if
@@ -83,7 +83,7 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     DEBUG(
         nucSeqIndex uiCheck = 0;
         for(auto xTup : data)
-            uiCheck += std::get<1>(xTup);
+            uiCheck += xTup.second;
         if(uiCheck != uiLength)
         {
             std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 
@@ -99,19 +99,19 @@ unsigned int EXPORTED Alignment::localscore() const
     int iScoreCurr = 0;
     for(unsigned int index = 0; index < data.size(); index++)
     {
-        switch (std::get<0>(data[index]))
+        switch (data[index].first)
         {
             case MatchType::deletion :
             case MatchType::insertion :
                 iScoreCurr -= iGap;
-                iScoreCurr -= iExtend * std::get<1>(data[index]);
+                iScoreCurr -= iExtend * data[index].second;
                 break;
             case MatchType::missmatch :
-                iScoreCurr -= iMissMatch * std::get<1>(data[index]);
+                iScoreCurr -= iMissMatch * data[index].second;
                 break;
             case MatchType::match :
             case MatchType::seed :
-                iScoreCurr += iMatch * std::get<1>(data[index]);
+                iScoreCurr += iMatch * data[index].second;
                 break;
         }//switch
         if(iScoreCurr < 0)
@@ -145,19 +145,19 @@ void EXPORTED Alignment::makeLocal()
      */
     for(unsigned int index = 0; index < data.size(); index++)
     {
-        switch (std::get<0>(data[index]))
+        switch (data[index].first)
         {
             case MatchType::deletion :
             case MatchType::insertion :
                 iScoreCurr -= iGap;
-                iScoreCurr -= iExtend * std::get<1>(data[index]);
+                iScoreCurr -= iExtend * data[index].second;
                 break;
             case MatchType::missmatch :
-                iScoreCurr -= iMissMatch * std::get<1>(data[index]);
+                iScoreCurr -= iMissMatch * data[index].second;
                 break;
             case MatchType::match :
             case MatchType::seed :
-                iScoreCurr += iMatch * std::get<1>(data[index]);
+                iScoreCurr += iMatch * data[index].second;
                 break;
         }//switch
         if(iScoreCurr < 0)
@@ -166,7 +166,7 @@ void EXPORTED Alignment::makeLocal()
             iLastStart = index+1;
         }//if
         DEBUG_2(
-            std::cout << std::get<0>(data[index]) << "," << std::get<1>(data[index]) <<
+            std::cout << data[index].first << "," << data[index].second <<
             " (" << iScoreCurr << ") | ";
         )
         if(iScoreCurr >= iMaxScore)
@@ -184,31 +184,31 @@ void EXPORTED Alignment::makeLocal()
     if(iMaxStart <= iMaxEnd)
     {
         for(unsigned int index = 0; index < iMaxStart; index++)
-            switch (std::get<0>(data[index]))
+            switch (data[index].first)
             {
                 case MatchType::deletion :
-                    uiBeginOnRef += std::get<1>(data[index]);
+                    uiBeginOnRef += data[index].second;
                     break;
                 case MatchType::insertion :
-                    uiBeginOnQuery += std::get<1>(data[index]);
+                    uiBeginOnQuery += data[index].second;
                     break;
                 default :
-                    uiBeginOnRef += std::get<1>(data[index]);
-                    uiBeginOnQuery += std::get<1>(data[index]);
+                    uiBeginOnRef += data[index].second;
+                    uiBeginOnQuery += data[index].second;
                     break;
             }//switch
         for(unsigned int index = iMaxEnd; index < data.size(); index++)
-            switch (std::get<0>(data[index]))
+            switch (data[index].first)
             {
                 case MatchType::deletion :
-                    uiEndOnRef -= std::get<1>(data[index]);
+                    uiEndOnRef -= data[index].second;
                     break;
                 case MatchType::insertion :
-                    uiEndOnQuery -= std::get<1>(data[index]);
+                    uiEndOnQuery -= data[index].second;
                     break;
                 default :
-                    uiEndOnRef -= std::get<1>(data[index]);
-                    uiEndOnQuery -= std::get<1>(data[index]);
+                    uiEndOnRef -= data[index].second;
+                    uiEndOnQuery -= data[index].second;
                     break;
             }//switch
     }//if
@@ -222,13 +222,13 @@ void EXPORTED Alignment::makeLocal()
     //adjust length variable accordingly
     uiLength = 0;
     for(unsigned int index = 0; index < data.size(); index++)
-        uiLength += std::get<1>(data[index]);
+        uiLength += data[index].second;
     DEBUG_2(
         if(uiEndOnRef < uiBeginOnRef)
         {
             std::cout << "---" << std::endl;
             for(unsigned int index = 0; index < data.size(); index++)
-                std::cout << std::get<0>(data[index]) << "," << std::get<1>(data[index]) << std::endl;
+                std::cout << data[index].first << "," << data[index].second << std::endl;
                 exit(0);
         }
     )
@@ -249,18 +249,18 @@ void EXPORTED Alignment::removeDangeling()
 
     if(data.empty())
         return;
-    while(std::get<0>(data.front()) == MatchType::deletion)
+    while(data.front().first == MatchType::deletion)
     {
-        uiBeginOnRef += std::get<1>(data.front());
-        uiLength -= std::get<1>(data.front());
-        iScore += iGap + iExtend * std::get<1>(data.front());
+        uiBeginOnRef += data.front().second;
+        uiLength -= data.front().second;
+        iScore += iGap + iExtend * data.front().second;
         data.erase(data.begin(), data.begin()+1);
     }//if
-    while(std::get<0>(data.back()) == MatchType::deletion)
+    while(data.back().first == MatchType::deletion)
     {
-        uiEndOnRef -= std::get<1>(data.back());
-        uiLength -= std::get<1>(data.back());
-        iScore += iGap + iExtend * std::get<1>(data.back());
+        uiEndOnRef -= data.back().second;
+        uiLength -= data.back().second;
+        iScore += iGap + iExtend * data.back().second;
         data.pop_back();
     }//if
     DEBUG(
@@ -278,7 +278,7 @@ void EXPORTED Alignment::removeDangeling()
 
         nucSeqIndex uiCheck = 0;
         for(auto xTup : data)
-            uiCheck += std::get<1>(xTup);
+            uiCheck += xTup.second;
         if(uiCheck != uiLength)
         {
             std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 
@@ -297,14 +297,14 @@ int Alignment::reCalcScore() const
             case MatchType::deletion :
             case MatchType::insertion :
                 iScore -= iGap;
-                iScore -= iExtend * std::get<1>(data[index]);
+                iScore -= iExtend * data[index].second;
                 break;
             case MatchType::missmatch :
-                iScore -= iMissMatch * std::get<1>(data[index]);
+                iScore -= iMissMatch * data[index].second;
                 break;
             case MatchType::match :
             case MatchType::seed :
-                iScore += iMatch * std::get<1>(data[index]);
+                iScore += iMatch * data[index].second;
                 break;
         }//switch
     return iScore;
@@ -408,6 +408,10 @@ void exportAlignment()
                 "extract", 
                 &Alignment::extract
             )
+        .def(
+                "overlap", 
+                &Alignment::overlap
+            )
         .def_readonly("stats", &Alignment::xStats)
         .def_readwrite("begin_on_query", &Alignment::uiBeginOnQuery)
         .def_readwrite("end_on_query", &Alignment::uiEndOnQuery)
@@ -415,6 +419,7 @@ void exportAlignment()
         .def_readwrite("end_on_ref", &Alignment::uiEndOnRef)
         .def_readwrite("mapping_quality", &Alignment::fMappingQuality)
         .def_readwrite("secondary", &Alignment::bSecondary)
+        .def_readwrite("supplementary", &Alignment::bSupplementary)
     DEBUG(
         .def_readwrite("vGapsScatter", &Alignment::vGapsScatter)
     )
