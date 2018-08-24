@@ -44,7 +44,6 @@ void exportExtractAllSeeds()
             boost::python::bases<Module>,
             std::shared_ptr<ExtractAllSeeds>
         >("ExtractAllSeeds")
-        .def(boost::python::init<unsigned int, unsigned int>())
         .def_readwrite("max_ambiguity", &ExtractAllSeeds::maxAmbiguity)
     ;
 

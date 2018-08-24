@@ -23,21 +23,15 @@ namespace libMA
          * @details
          * Will skip any segments that would lead to more than maxAmbiguity seeds.
          */
-        unsigned int maxAmbiguity = 10;
+        unsigned int maxAmbiguity = defaults::uiMaxAmbiguity;
         /**
          * @brief the minimal seed length required
          * @details
          * Will skip any segments that are shorter than uiMinLen.
          */
-        unsigned int uiMinLen = 10;
+        unsigned int uiMinLen = defaults::uiMinLen;
 
         ExtractAllSeeds(){}//default constructor
-
-        ExtractAllSeeds(unsigned int maxAmbiguity, unsigned int uiMinLen)
-                :
-            maxAmbiguity(maxAmbiguity),
-            uiMinLen(uiMinLen)
-        {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 

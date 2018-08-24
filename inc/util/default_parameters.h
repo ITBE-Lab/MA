@@ -7,6 +7,7 @@
 #define DEFAULT_PARAMETERS_H
 
 #include <string>
+#include <boost/python.hpp>
 
 namespace libMA
 {
@@ -70,6 +71,8 @@ namespace libMA
             uiMaxTries = 5;   // @todo check if ths is too little or not...
             fGiveUp = 0;      // @todo check if ths is really necessary
         }// function
+
+        void exportDefaults();
     }// namespace
 }// namespace
 

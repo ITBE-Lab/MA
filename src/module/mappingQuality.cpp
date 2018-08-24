@@ -134,7 +134,7 @@ std::shared_ptr<Container> MappingQuality::execute(
         std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pRet->back());
         if(!pCasted->bSecondary)
             break;
-        if(pCasted->fMappingQuality > pFirst->fMappingQuality * fMinSecScoreRatio)
+        if(pCasted->score() >= pFirst->score() * fMinSecScoreRatio)
             break;
         pRet->pop_back();
     }// while
@@ -151,6 +151,8 @@ void exportMappingQuality()
             boost::python::bases<Module>, 
             std::shared_ptr<MappingQuality>
         >("MappingQuality")
+        .def_readwrite("report_n", &MappingQuality::uiReportNBest)
+        .def_readwrite("prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio)
     ;
 
     boost::python::implicitly_convertible< 

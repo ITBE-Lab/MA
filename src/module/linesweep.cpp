@@ -469,6 +469,19 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     Seed& rPre = (*pSeeds)[uiPrePos];
                     Seed& rCenter = (*pSeeds)[uiCenterPos];
                     Seed& rPost = (*pSeeds)[uiCenterPos + 1];
+
+                    // int64_t iDeltaPre = rPre.start_ref() - (int64_t)rPre.start();
+                    // int64_t iDeltaCenter = rCenter.start_ref() - (int64_t)rCenter.start();
+                    // int64_t iDeltaPost = rPost.start_ref() - (int64_t)rPost.start();
+// 
+                    // int64_t iDeltaDistToPre = std::abs(iDeltaPre - iDeltaCenter);
+                    // int64_t iDeltaDistToPost = std::abs(iDeltaPost - iDeltaCenter);
+// 
+                    // double dDeltaDistDiff = std::abs(iDeltaDistToPre - iDeltaDistToPost)*2 / 
+                    //     ((double) iDeltaDistToPre + iDeltaDistToPost );
+
+                    
+
                     double dA = difference( rPre.end_ref(), rPost.start_ref() );
                     double dB = difference( rPre.end(), rPost.start() );
                     double dRelation;

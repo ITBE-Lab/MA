@@ -40,6 +40,7 @@ class Aligner:
             threads = 32,
             local = False
         ):
+        raise Exception("code is not up to date...")
         self.query_vec_pledge = Pledge(ContainerVector(NucSeq()))
         self.reference_pledge = Pledge(Pack())
         self.fm_index_pledge = Pledge(FMIndex())
