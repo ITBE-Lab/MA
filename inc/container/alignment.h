@@ -146,7 +146,7 @@ namespace libMA
         inline std::string toString() const
         {
             std::string sRet = "Alignment Dump: ";
-            const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
+            constexpr char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
             for(auto& tuple : data)
                 sRet += vTranslate[ (unsigned int)tuple.first] + std::to_string(tuple.second) + " ";
             sRet += std::to_string(iScore);
@@ -216,6 +216,15 @@ namespace libMA
                 for(unsigned int i = 0; i < xElement.second; i++)
                     aRet.push_back(xElement.first);
             return aRet;
+        }//function
+        
+        std::string cigarString() const
+        {
+            std::string sRet;
+            constexpr char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
+            for(std::pair<MatchType, nucSeqIndex> xElement : data)
+                sRet += std::to_string(xElement.second) + vTranslate[ (unsigned int)xElement.first];
+            return sRet;
         }//function
 
         /**

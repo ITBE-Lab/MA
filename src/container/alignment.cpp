@@ -412,6 +412,10 @@ void exportAlignment()
                 "overlap", 
                 &Alignment::overlap
             )
+        .def(
+                "cigarString", 
+                &Alignment::cigarString
+            )
         .def_readonly("stats", &Alignment::xStats)
         .def_readwrite("begin_on_query", &Alignment::uiBeginOnQuery)
         .def_readwrite("end_on_query", &Alignment::uiEndOnQuery)

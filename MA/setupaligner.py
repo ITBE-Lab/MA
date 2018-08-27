@@ -6,6 +6,28 @@
 # @author Markus Schmidt
 
 from .aligner import *
+from .postgresInterface import *
+
+class ExecOnVecPy(Module):
+    def __init__(self, module):
+        self.module = module
+
+    def get_input_type(self):
+        module_input = self.module.get_input_type()
+        module_input[0] = ContainerVector(module_input[0])
+        return module_input
+
+    def get_output_type(self):
+        return ContainerVector(self.module.get_output_type())
+
+    def execute(self, *input):
+        ret = self.get_output_type()
+        element_list = input[0]
+        rem_inputs = input[1:]
+        for element in element_list:
+            # star does unpack the list into arguments (called "splat")
+            ret.append(self.module.execute(element, *rem_inputs))
+        return ret
 
 ##
 # @brief Setup the @ref comp_graph_sec "computational graph" 
@@ -32,77 +54,50 @@ class Aligner:
     ##
     # @brief sets up a new computational graph for a aligner
     #
-    def __init__(
-            self,
-            max_hits=100,
-            num_strips=5,
-            complete_seeds = False,
-            threads = 32,
-            local = False
-        ):
-        raise Exception("code is not up to date...")
+    def __init__(self):
         self.query_vec_pledge = Pledge(ContainerVector(NucSeq()))
-        self.reference_pledge = Pledge(Pack())
-        self.fm_index_pledge = Pledge(FMIndex())
-        self.__pledges = [ [], [], [], [] ]
+        self.ref_pledge = Pledge(Pack())
+        self.fm_pledge = Pledge(FMIndex())
 
         splitter = Splitter(self.query_vec_pledge)
-        lock = Lock(NucSeq())
-        seeding = BinarySeeding(complete_seeds)
-        soc = StripOfConsideration(max_hits, num_strips)
-        couple = ExecOnVec(LinearLineSweep())
-        optimal = ExecOnVec(NeedlemanWunsch(local))
+        lock = Lock(Nil())
+        seeding = BinarySeeding()
+        soc = StripOfConsideration()
+        harmonization = LinearLineSweep()
+        optimal = ExecOnVec(NeedlemanWunsch())
         mappingQual = MappingQuality()
+        self.dbWriter = DbWriter(self.ref_pledge)
+        dbWriterLoop = ExecOnVecPy(self.dbWriter)
 
-        self.collector = Collector(NucSeq())
-        self.return_pledges = []
+        non_existant_pledge = Pledge( Nil() )
+        non_existant_pledge.set(Nil())
 
+        self.query_pledge = lock.promise_me( splitter.promise_me( non_existant_pledge ) )
+        unlock = UnLock(self.query_pledge)
 
-        for _ in range(threads):
-            ret_pl_indx = 0
-
-            nil_pledge = Pledge(Nil())
-            nil_pledge.set(Nil())
-
-            query_pledge = lock.promise_me(
-                splitter.promise_me(nil_pledge)
+        self.seed_pledge = seeding.promise_me( self.fm_pledge, self.query_pledge )
+        self.soc_pledge = soc.promise_me(
+                self.seed_pledge, self.query_pledge, self.ref_pledge, self.fm_pledge
             )
-            unlock = UnLock(query_pledge)
-
-            seeding_pledge = seeding.promise_me(self.fm_index_pledge,query_pledge)
-            self.__pledges[0].append(seeding_pledge)
-
-            strips_pledge = soc.promise_me(
-                seeding_pledge,
-                query_pledge,
-                self.reference_pledge,
-                self.fm_index_pledge
+        self.harm_pledge = harmonization.promise_me(
+                self.soc_pledge, self.query_pledge
             )
-            self.__pledges[1].append(strips_pledge)
-
-            couple_pledge = couple.promise_me(strips_pledge)
-            self.__pledges[2].append(couple_pledge)
-
-            alignments_pledge = optimal.promise_me(
-                couple_pledge,
-                query_pledge,
-                self.reference_pledge
+        self.nw_pledge = optimal.promise_me(
+                self.harm_pledge, self.query_pledge, self.ref_pledge
             )
-            self.__pledges[3].append(alignments_pledge)
-
-            align_pledge = mappingQual.promise_me(query_pledge, alignments_pledge)
-
-            collector_pledge = self.collector.promise_me(align_pledge)
-
-            unlock_pledge = unlock.promise_me(collector_pledge)
-
-            self.return_pledges.append(unlock_pledge)
+        self.map_pledge = mappingQual.promise_me(
+            self.query_pledge, self.nw_pledge
+        )
+        self.writer_pledge = dbWriterLoop.promise_me(
+            self.map_pledge, self.query_pledge,
+        )
+        self.unlock_pledge = unlock.promise_me(self.writer_pledge)
 
     ##
     # @brief sets the reference
     #
     def setRef(self, pack):
-        self.reference_pledge.set(pack)
+        self.ref_pledge.set(pack)
 
     ##
     # @brief sets the queries
@@ -116,46 +111,30 @@ class Aligner:
     # @brief sets the reference index
     #
     def setInd(self, index):
-        self.fm_index_pledge.set(index)
+        self.fm_pledge.set(index)
 
     ##
     # @brief trigger the alignment optionally sets the queries
     #
-    def align(self, queries = None):
-        #reset runtimes
-        for row in self.__pledges:
-            for ele in row:
-                ele.exec_time = 0
-        if not queries is None:
-            self.setQueries(queries)
-        #the actual alignment
-        Pledge.simultaneous_get(self.return_pledges, True)
-        alignments = []
-        for alignment in self.collector.content:
-            alignments.append(alignment[0])
-        #remove the content
-        del self.collector.content[:]
-        return alignments
+    ## def align(self, queries = None):
+    ##     #reset runtimes
+    ##     for row in self.__pledges:
+    ##         for ele in row:
+    ##             ele.exec_time = 0
+    ##     if not queries is None:
+    ##         self.setQueries(queries)
+    ##     #the actual alignment
+    ##     Pledge.simultaneous_get(self.return_pledges, True)
+    ##     alignments = []
+    ##     for alignment in self.collector.content:
+    ##         alignments.append(alignment[0])
+    ##     #remove the content
+    ##     del self.collector.content[:]
+    ##     return alignments
+    def get_one(self):
+        self.unlock_pledge.get()
+        self.dbWriter.finalize()
 
-    ##
-    # @brief returns the runtimes of the important stages
-    #
-    def get_runtimes(self):
-        ret_list = {
-            'seeding': 0,
-            'seed processing: filtering': 0,
-            'seed processing: coupling': 0,
-            'optimal alignment': 0
-        }
-        for ele in self.__pledges[0]:
-            ret_list['seeding'] += ele.exec_time
-        for ele in self.__pledges[1]:
-            ret_list['seed processing: filtering'] += ele.exec_time
-        for ele in self.__pledges[2]:
-            ret_list['seed processing: coupling'] += ele.exec_time
-        for ele in self.__pledges[3]:
-            ret_list['optimal alignment'] += ele.exec_time
-        return ret_list
 
 
 
