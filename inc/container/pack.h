@@ -1167,6 +1167,92 @@ namespace libMA
             } // else
         } // method
 
+        void vExtractSubsectionN(
+                const int64_t iBegin,             // begin of extraction
+                const int64_t iEnd,                 // end of extraction
+                NucSeq &rxSequence, // receiver of the extraction process
+                bool bAppend = false             // deliver true, if you would like to append to an existing nucleotide sequence
+            ) const
+        {    
+            /* Do range-check for begin and end of extraction.
+            */
+            vRangeCheckAndThrowExclusive( "(vExtractSubsection)", static_cast<int64_t>(0), iBegin, static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse() ) );
+            vRangeCheckAndThrowInclusive( "(vExtractSubsection)", static_cast<int64_t>(0), iEnd, static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse() ) );
+
+            /* Check whether both sequence belong to the same strand.
+            */
+            if ( bPositionIsOnReversStrand( iBegin ) != bPositionIsOnReversStrand( iEnd - 1 ) )
+            {
+                throw std::runtime_error( "(vExtractSubsection) Try to extract bridging sequence. This is impossible." );
+            } // if
+
+            if ( !( iBegin <= iEnd ) )
+            {    /* In the case of begin not smaller than end, we give up and throw an exception.
+                */
+                throw std::runtime_error( "(vExtractSubsection) Try to extract with begin greater than end." );
+            } // if
+
+            /* Prepare sequence
+            */
+            if ( !bAppend )
+            {
+                rxSequence.vClear();
+            } // if
+
+            /* Compute absolute positions. (Forward strand positions)
+            */
+            const bool bExtractAsOnReverseStrand = bPositionIsOnReversStrand( iBegin );
+            
+            /* Prepare extraction process by initializing a iterator and resizing the sequence
+            */
+            uint64_t uiSequenceIterator = bAppend ? rxSequence.length() : 0;
+            rxSequence.resize( bAppend ? rxSequence.length() + (iEnd - iBegin) : iEnd - iBegin );
+
+
+            if ( !bExtractAsOnReverseStrand )
+            {   /* Extract as forward strand.
+                 */
+                const auto itEnd = xVectorOfHoleDescriptors.end();
+                auto itHolesDesc = xVectorOfHoleDescriptors.begin();
+                for ( auto iPosition = iBegin; iPosition < iEnd; ++iPosition )
+                {
+                    // move the hole iterator forwards
+                    while(
+                            itHolesDesc != itEnd && 
+                            itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition
+                        )
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if(itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition)
+                        rxSequence[uiSequenceIterator++] = itHolesDesc->xHoleCharacter; // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[uiSequenceIterator++] = getNucleotideOnPos( iPosition );
+                } // for
+            } // if
+            else
+            {    /* Extract as reverse strand. (begin is now bigger than end)
+                */
+                const auto itEnd = xVectorOfHoleDescriptors.rend();
+                auto itHolesDesc = xVectorOfHoleDescriptors.rbegin();
+                int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
+                int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
+                for ( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
+                {
+                    // move the (reversed) hole iterator forwards
+                    while(itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition)
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if(
+                            itHolesDesc != itEnd &&
+                            itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition
+                        )
+                        rxSequence[uiSequenceIterator++] = itHolesDesc->xHoleCharacter; // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[uiSequenceIterator++] = 3 - getNucleotideOnPos( iPosition );
+                } // for
+            } // else
+        } // method
+
         /* Unpacks the complete collection (forward as well as revers strand) as a single sequence into rxSequence.
         */
         std::shared_ptr<NucSeq> vColletionAsNucSeq() const
@@ -1209,6 +1295,23 @@ namespace libMA
         {
             std::shared_ptr<NucSeq> pRet(new NucSeq());
             vExtractSubsection(
+                    iBegin, 
+                    iEnd, 
+                    *pRet
+                ); // get the forward strand
+            return pRet;
+        } // method
+
+        
+        /* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
+        */
+        std::shared_ptr<NucSeq> vExtractPy(
+                const int64_t iBegin,             // begin of extraction
+                const int64_t iEnd                 // end of extraction
+            ) const
+        {
+            std::shared_ptr<NucSeq> pRet(new NucSeq());
+            vExtractSubsectionN(
                     iBegin, 
                     iEnd, 
                     *pRet

@@ -625,7 +625,7 @@ void exportPack()
             )
         .def(
                 "extract_from_to", 
-                &Pack::vExtract,
+                &Pack::vExtractPy,
                 "arg1: self\n"
                 "arg2: begin of extraction\n"
                 "arg3: end of extraction\n"

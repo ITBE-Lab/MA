@@ -394,7 +394,7 @@ public:
 		} // if
 		else
 		{	/* We have to copy via cudaMemcpyHostToDevice */
-			metaMeasureAndLogDuration<true>
+			metaMeasureAndLogDuration<false>
 			(	"cudaMemcpy update device requires",	// text message
 					[&] () // lambda by reference
 				{
@@ -1433,7 +1433,7 @@ public:
 			this->clearDeviceVectors();
 
 			/* Get the appropriate section of the reference in the device memory */
-			metaMeasureAndLogDuration<true>
+			metaMeasureAndLogDuration<false>
 			(	"Time for loading reference",	// text message
 				[&] () // lambda by reference
 				{
@@ -1443,7 +1443,7 @@ public:
 			); // function call
 
 			/* Process the chunk via the kernel */
-			metaMeasureAndLogDuration<true>
+			metaMeasureAndLogDuration<false>
 			(	"Time for kernel execution", // text message
 				[&] () // lambda by reference
 				{
@@ -1482,7 +1482,7 @@ public:
 				uiChunkId
 			); // enqueue
 #else			
-			metaMeasureAndLogDuration<true>
+			metaMeasureAndLogDuration<false>
 			(	"Time for extracting maximum scores",	// text message
 				[&] () // lambda by reference
 				{
@@ -1695,7 +1695,7 @@ std::vector<GPUReturn> cudaAlignTmpl
         std::vector<size_t> vMaxScorePositions;
 
 	    /* Do the core alignment */
-	    metaMeasureAndLogDuration<true>
+	    metaMeasureAndLogDuration<false>
 	    (	"GPU time",	// logging text
 	    	[&] () // lambda by reference
 	    	{
