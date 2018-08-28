@@ -87,6 +87,8 @@ std::shared_ptr<Container> MappingQuality::execute(
                     /
                 static_cast<double>( pFirst->score() )
             ;
+        if(pFirst->score() == 0)
+            pFirst->fMappingQuality = 0;
     }//if
     else
         // the score of the second best alignment is 0 if we do not even find one...

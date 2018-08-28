@@ -36,7 +36,7 @@ namespace libMA
      */
     class FileReader: public Module
     {
-#if USE_BUFFERED_ASYNC_READER
+#if USE_BUFFERED_ASYNC_READER == 1
     private:
         /**
          * @brief Helper class.
@@ -292,7 +292,7 @@ namespace libMA
             return true;
         }//function
 
-#if USE_BUFFERED_ASYNC_READER
+#if USE_BUFFERED_ASYNC_READER == 1
         /**
          * @brief Test the BufferedReader class.
          * @details
@@ -404,8 +404,16 @@ namespace libMA
                 std::cout << "[OK] " << i << "/" << uiNumTests << std::endl;
             }// for
         }// function
-#endif
- 
+        size_t getCurrPosInFile() const
+        {
+            return 1;
+        }// function
+
+        size_t getFileSize() const
+        {
+            return 1;
+        }// function
+#else
         size_t getCurrPosInFile() const
         {
             if(!pFile->good() || pFile->eof())
@@ -417,6 +425,8 @@ namespace libMA
         {
             return uiFileSize;
         }// function
+#endif
+ 
     };//class
 
 }//namespace

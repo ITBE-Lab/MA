@@ -34,7 +34,7 @@ size_t len(std::string& sLine)
     return uiLineSize;
 }
 
-#if USE_BUFFERED_ASYNC_READER
+#if USE_BUFFERED_ASYNC_READER == 1
     std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
         /*
@@ -99,7 +99,6 @@ size_t len(std::string& sLine)
             DEBUG(
                 pRet->check();
             )// DEBUG
-
             return pRet;
         }//if
 #if WITH_QUALITY
@@ -169,7 +168,7 @@ void exportFileReader()
             boost::python::bases<Module>, 
             std::shared_ptr<FileReader>
         >("FileReader", boost::python::init<std::string>())
-#if USE_BUFFERED_ASYNC_READER
+#if USE_BUFFERED_ASYNC_READER == 1
     DEBUG(
         .def("testBufReader", &FileReader::testBufReader)
         .staticmethod("testBufReader")

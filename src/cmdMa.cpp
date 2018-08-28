@@ -238,6 +238,9 @@ int main(int argc, char* argv[])
             ("db_conninfo", "db_conninfo", 
                 value<std::string>()->default_value("")
             )
+            ("run_id", "run_id", 
+                value<int32_t>()->default_value("-1")
+            )
         ;
 
         auto result = options.parse(argc, argv);
@@ -331,6 +334,9 @@ int main(int argc, char* argv[])
         defaults::uiMaxTries =         result["maxTries"].     as<unsigned int>();
         defaults::uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
         std::string sBbOutput = result["db_conninfo"].as<std::string>();
+#ifdef WITH_POSTGRES
+        int32_t iRunId = result["run_id"].as<int32_t>();
+#endif
 
         if(result.count("genIndex"))
         {
@@ -384,7 +390,7 @@ int main(int argc, char* argv[])
 #ifdef WITH_POSTGRES
             if(sBbOutput.size() > 0)
             {
-                int32_t iRunId = 0;
+                if(iRunId == -1)
                 {
                     DbRunConnection xConn(sBbOutput);
                     auto xRes = xConn.exec("INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING id");
