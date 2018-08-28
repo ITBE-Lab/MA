@@ -1332,6 +1332,22 @@ namespace libMA
                 ); // get the reverse strand (true triggers appending)
             return pRet;
         }//function
+
+        std::vector<std::string> contigNames() const
+        {
+            std::vector<std::string> vRet;
+            for(auto xContig : xVectorOfSequenceDescriptors)
+                vRet.push_back(xContig.sName);
+            return vRet;
+        }// function
+
+        std::vector<nucSeqIndex> contigLengths() const
+        {
+            std::vector<nucSeqIndex> vRet;
+            for(auto xContig : xVectorOfSequenceDescriptors)
+                vRet.push_back(xContig.uiLengthUnpacked);
+            return vRet;
+        }// function
     //end markus
 
         /* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.

@@ -81,18 +81,6 @@ namespace libMA
     class FileWriter: public Module
     {
     public:
-        #define MULTIPLE_SEGMENTS_IN_TEMPLATE        0x001
-        #define SEGMENT_PROPERLY_ALIGNED             0x002
-        #define SEGMENT_UNMAPPED                     0x004
-        #define NEXT_SEGMENT_UNMAPPED                0x008
-        #define REVERSE_COMPLEMENTED                 0x010
-        #define NEXT_REVERSE_COMPLEMENTED            0x020
-        #define FIRST_IN_TEMPLATE                    0x040
-        #define LAST_IN_TEMPLATE                     0x080
-        #define SECONDARY_ALIGNMENT                  0x100
-        #define NOT_PASSING_FILTERS                  0x200
-        #define PCR_OR_DUPLICATE                     0x400
-        #define SUPPLEMENTARY_ALIGNMENT              0x800
 
         //holds a file ourstream if necessary
         std::shared_ptr<OutStream> pOut;

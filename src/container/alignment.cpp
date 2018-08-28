@@ -416,6 +416,22 @@ void exportAlignment()
                 "cigarString", 
                 &Alignment::cigarString
             )
+        .def(
+                "getSamFlag", 
+                &Alignment::getSamFlag
+            )
+        .def(
+                "getContig", 
+                &Alignment::getContig
+            )
+        .def(
+                "getSamPosition", 
+                &Alignment::getSamPosition
+            )
+        .def(
+                "getQuerySequence", 
+                &Alignment::getQuerySequence
+            )
         .def_readonly("stats", &Alignment::xStats)
         .def_readwrite("begin_on_query", &Alignment::uiBeginOnQuery)
         .def_readwrite("end_on_query", &Alignment::uiEndOnQuery)

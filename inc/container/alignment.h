@@ -9,6 +9,18 @@
 
 #include "container/segment.h"
 
+#define MULTIPLE_SEGMENTS_IN_TEMPLATE        0x001
+#define SEGMENT_PROPERLY_ALIGNED             0x002
+#define SEGMENT_UNMAPPED                     0x004
+#define NEXT_SEGMENT_UNMAPPED                0x008
+#define REVERSE_COMPLEMENTED                 0x010
+#define NEXT_REVERSE_COMPLEMENTED            0x020
+#define FIRST_IN_TEMPLATE                    0x040
+#define LAST_IN_TEMPLATE                     0x080
+#define SECONDARY_ALIGNMENT                  0x100
+#define NOT_PASSING_FILTERS                  0x200
+#define PCR_OR_DUPLICATE                     0x400
+#define SUPPLEMENTARY_ALIGNMENT              0x800
 
 namespace libMA
 {
@@ -216,16 +228,75 @@ namespace libMA
                 for(unsigned int i = 0; i < xElement.second; i++)
                     aRet.push_back(xElement.first);
             return aRet;
-        }//function
+        }// method
         
-        std::string cigarString() const
+        std::string cigarString(Pack& rPack)
         {
-            std::string sRet;
-            constexpr char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
-            for(std::pair<MatchType, nucSeqIndex> xElement : data)
-                sRet += std::to_string(xElement.second) + vTranslate[ (unsigned int)xElement.first];
-            return sRet;
-        }//function
+            std::string sCigar = "";
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                std::reverse(data.begin(), data.end());
+
+            for(std::pair<MatchType, nucSeqIndex> section : data)
+            {
+                sCigar.append(std::to_string(section.second));
+                switch (section.first)
+                {
+                    case MatchType::seed:
+                    case MatchType::match:
+                        sCigar.append("=");
+                        break;
+                    case MatchType::missmatch:
+                        sCigar.append("X");
+                        break;
+                    case MatchType::insertion:
+                        sCigar.append("I");
+                        break;
+                    case MatchType::deletion:
+                        sCigar.append("D");
+                        break;
+                    default:
+                        std::cerr << "WARNING invalid cigar symbol" << std::endl;
+                        break;
+                }// switch
+            }// for
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                std::reverse(data.begin(), data.end());
+            return sCigar;
+        }// method
+
+        uint32_t getSamFlag(Pack& rPack) const
+        {
+            uint32_t uiRet = 0;
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                uiRet |= REVERSE_COMPLEMENTED;
+            if(bSecondary)
+                uiRet |= SECONDARY_ALIGNMENT;
+            if(bSupplementary)
+                uiRet |= SUPPLEMENTARY_ALIGNMENT;
+            return uiRet;
+        }// method
+
+        std::string getContig(Pack& rPack) const
+        {
+            return rPack.nameOfSequenceForPosition(uiBeginOnRef);
+        }// method
+
+        nucSeqIndex getSamPosition(Pack& rPack) const
+        {
+            std::string sRefName = getContig(rPack);
+            auto uiRet = rPack.posInSequence(uiBeginOnRef, uiEndOnRef);
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                uiRet += 1;
+            return uiRet;
+        }// method
+
+        std::string getQuerySequence(NucSeq& rQuery, Pack& rPack)
+        {
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                return rQuery.fromToComplement(uiBeginOnQuery, uiEndOnQuery);
+            else
+                return rQuery.fromTo(uiBeginOnQuery, uiEndOnQuery);
+        }// method
 
         /**
          * @brief appends multiple matchTypes to the alignment

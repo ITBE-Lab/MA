@@ -66,7 +66,7 @@ class Aligner:
         harmonization = LinearLineSweep()
         optimal = ExecOnVec(NeedlemanWunsch())
         mappingQual = MappingQuality()
-        self.dbWriter = DbWriter(self.ref_pledge)
+        self.dbWriter = DbWriter()
         dbWriterLoop = ExecOnVecPy(self.dbWriter)
 
         non_existant_pledge = Pledge( Nil() )
@@ -89,7 +89,7 @@ class Aligner:
             self.query_pledge, self.nw_pledge
         )
         self.writer_pledge = dbWriterLoop.promise_me(
-            self.map_pledge, self.query_pledge,
+            self.map_pledge, self.query_pledge,  self.ref_pledge
         )
         self.unlock_pledge = unlock.promise_me(self.writer_pledge)
 
