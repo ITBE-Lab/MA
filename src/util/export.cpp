@@ -52,7 +52,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         std::shared_ptr<Pledge> pPack,
         std::shared_ptr<Pledge> pFMDIndex,
         std::vector<std::shared_ptr<Pledge>> aQueries,
-        std::shared_ptr<Module> pOut,
+        std::vector<std::shared_ptr<Module>>& vOut,
         unsigned int uiThreads
     )
 {
@@ -119,8 +119,9 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         if(defaults::bFindMode)
         {
             // write the output to a file
+            assert(vOut.size() == 1);
             std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                    pOut, 
+                    vOut[0], 
                     std::vector<std::shared_ptr<Pledge>>
                     {
                         pCoupled,
@@ -230,7 +231,6 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                             pAlignments2
                         }
                     );
-                
             }//if
             else
             {
@@ -239,25 +239,51 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
             }//else
 
             //write the output to a file
-            std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                    pOut, 
-                    std::vector<std::shared_ptr<Pledge>>
-                    {
-                        pQuery,
-                        pAlignments,
-                        pPack
-                    }
-                );
-            //unlock the query so that this subgraph can be executed multiple times
-            std::shared_ptr<Pledge> pRet = Module::promiseMe(
-                    pUnLock, 
-                    std::vector<std::shared_ptr<Pledge>>
-                    {
-                        pNil
-                    }
-                );
-            //save the 
-            aRet.push_back(pRet);
+            if(vOut.size() == 1)
+            {
+                std::shared_ptr<Pledge> pNil = Module::promiseMe(
+                        vOut[0], 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pQuery,
+                            pAlignments,
+                            pPack
+                        }
+                    );
+                //unlock the query so that this subgraph can be executed multiple times
+                std::shared_ptr<Pledge> pRet = Module::promiseMe(
+                        pUnLock, 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pNil
+                        }
+                    );
+                //save the 
+                aRet.push_back(pRet);
+            }// if
+            else
+            {
+                assert(i < vOut.size());
+                std::shared_ptr<Pledge> pNil = Module::promiseMe(
+                        vOut[i], 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pQuery,
+                            pAlignments,
+                            pPack
+                        }
+                    );
+                //unlock the query so that this subgraph can be executed multiple times
+                std::shared_ptr<Pledge> pRet = Module::promiseMe(
+                        pUnLock, 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pNil
+                        }
+                    );
+                //save the 
+                aRet.push_back(pRet);
+            }// else
         }// else
     }//for
 

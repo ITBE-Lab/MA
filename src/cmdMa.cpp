@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "container/fMIndex.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
+#include "module/dbWriter.h"
 #include "util/export.h"
 #include "util/cxxopts.hpp"
 #include "util/default_parameters.h"
@@ -234,6 +235,9 @@ int main(int argc, char* argv[])
             ("paStd", "Gap distance standard deviation", 
                 value<double>()->default_value(std::to_string(defaults::fStd))
             )
+            ("db_conninfo", "db_conninfo", 
+                value<std::string>()->default_value("")
+            )
         ;
 
         auto result = options.parse(argc, argv);
@@ -326,6 +330,7 @@ int main(int argc, char* argv[])
         defaults::iGap2 =             result["Gap2"].          as<int>();
         defaults::uiMaxTries =         result["maxTries"].     as<unsigned int>();
         defaults::uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
+        std::string sBbOutput = result["db_conninfo"].as<std::string>();
 
         if(result.count("genIndex"))
         {
@@ -375,17 +380,33 @@ int main(int argc, char* argv[])
                     std::vector<std::shared_ptr<Pledge>>{pNil}
                 ));
             }//for
-            std::shared_ptr<Module> pOut;
-            if(defaults::bFindMode)
-                pOut.reset( new SeedSetFileWriter(sOut) );
+            std::vector<std::shared_ptr<Module>> vOut;
+#ifdef WITH_POSTGRES
+            if(sBbOutput.size() > 0)
+            {
+                int32_t iRunId = 0;
+                {
+                    DbRunConnection xConn(sBbOutput);
+                    auto xRes = xConn.exec("INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING id");
+                    iRunId = std::stoi(xRes.get(0, 0));
+                }// setupConn scope
+                for(size_t uiI=0; uiI < uiT; uiI++)
+                    vOut.emplace_back( new DbWriter(sBbOutput, iRunId) );
+            }// if
             else
-                pOut.reset( new FileWriter(sOut, pPack_) );
+#endif
+            {
+                if(defaults::bFindMode)
+                    vOut.emplace_back( new SeedSetFileWriter(sOut) );
+                else
+                    vOut.emplace_back( new FileWriter(sOut, pPack_) );
+            }// else
             //setup the graph
             std::vector<std::shared_ptr<Pledge>> aGraphSinks = setUpCompGraph(
                 pPack,
                 pFMDIndex,
                 aQueries,
-                pOut,
+                vOut,
                 uiT//num threads
             );
             // this is a hidden option

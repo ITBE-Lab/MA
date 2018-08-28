@@ -5,6 +5,8 @@
 # WITH_GPU_SW: compiles a gpu implementation of the SW algorithm; requires libCuda
 #
 
+#@todo use pkg-config to find locations...
+
 # location of the Boost Python include files and library
 # $(BOOST_ROOT) must be set in the system environment!
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
@@ -60,6 +62,15 @@ endif
 # use avx instead of sse
 ifeq ($(WITH_AVX2), 1)
 	CCFLAGS += -mavx2
+endif
+
+# compile with postgre support enabled
+ifeq ($(WITH_POSTGRES), 1)
+	POSTGRE_INC_DIR = $(shell pg_config --includedir)
+	POSTGRE_LIB_DIR = $(shell pg_config --libdir)
+	CCFLAGS += -DWITH_POSTGRES
+	INCLUDES += -isystem$(POSTGRE_INC_DIR)
+	LDLIBS += -L$(POSTGRE_LIB_DIR) -lpq
 endif
 
 # compile the gpu smith waterman as well

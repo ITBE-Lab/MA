@@ -162,7 +162,7 @@ std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
     std::shared_ptr<libMA::Pledge> pFMDIndex,
     std::vector<std::shared_ptr<libMA::Pledge>> aQueries,
-    std::shared_ptr<libMA::Module> pOut,
+    std::vector<std::shared_ptr<libMA::Module>>& vOut,
     unsigned int uiThreads
 );
 
