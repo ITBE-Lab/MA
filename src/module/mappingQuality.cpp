@@ -82,13 +82,14 @@ std::shared_ptr<Container> MappingQuality::execute(
             uiI++;
         }// while
         // this formula is given in the paper and is very similar to Heng li's approach in BWA-SW
-        pFirst->fMappingQuality =
+        if(pFirst->score() == 0)
+            pFirst->fMappingQuality = 0;
+        else
+            pFirst->fMappingQuality =
                 static_cast<double>( pFirst->score() - pSecond->score() )
                     /
                 static_cast<double>( pFirst->score() )
             ;
-        if(pFirst->score() == 0)
-            pFirst->fMappingQuality = 0;
     }//if
     else
         // the score of the second best alignment is 0 if we do not even find one...

@@ -72,7 +72,6 @@ namespace libMA
     /**
      * @brief Writes SAM output.
      * @note flushing of the outstream; this must be done in the deconstructor of OutStream
-     * 
      */
     class DbWriter: public Module
     {

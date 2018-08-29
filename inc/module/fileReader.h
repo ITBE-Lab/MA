@@ -423,6 +423,9 @@ namespace libMA
 
         size_t getFileSize() const
         {
+            // prevent floating point exception here (this is only used for progress bar...)
+            if(uiFileSize == 0)
+                return 1;
             return uiFileSize;
         }// function
 #endif

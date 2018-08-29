@@ -26,8 +26,8 @@ TARGET_OBJ= \
 
 # flags
 CC=gcc
-CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3
-CFLAGS= -Wall -Werror -fPIC -O3
+CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3 -g
+CFLAGS= -Wall -Werror -fPIC -O3 -g
 LDFLAGS= -std=c++11
 LDLIBS= -L$(LIBGABA_HOME) -lm -lpthread -lstdc++ -lgaba
 INCLUDES= -isystem$(LIBGABA_HOME)/ -Iinc

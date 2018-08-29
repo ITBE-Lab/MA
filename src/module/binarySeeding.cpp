@@ -119,11 +119,13 @@ std::shared_ptr<Container> BinarySeeding::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
+    std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
     std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[0]);
+    if(vpInput->size() < 2)
+        return pSegmentVector;
     std::shared_ptr<NucSeq> pQuerySeq = 
         std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]);
 
-    std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
     if(pQuerySeq == nullptr)
         return pSegmentVector;
 
