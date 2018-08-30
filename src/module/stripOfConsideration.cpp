@@ -17,8 +17,7 @@ extern int libMA::defaults::iMissMatch;
 
 ContainerVector StripOfConsideration::getInputType() const
 {
-    return ContainerVector
-    {
+    ContainerVector xvRet = {  
         //all segments
         std::shared_ptr<Container>(new SegmentVector()),
         //the query
@@ -26,8 +25,9 @@ ContainerVector StripOfConsideration::getInputType() const
         //the reference
         std::shared_ptr<Container>(new Pack()),
         //the forward fm_index
-        std::shared_ptr<Container>(new FMIndex()),
+        std::shared_ptr<Container>(new FMIndex())
     };
+    return xvRet;
 }//function
 
 std::shared_ptr<Container> StripOfConsideration::getOutputType() const
@@ -39,12 +39,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    const std::shared_ptr<SegmentVector>& pSegments = std::static_pointer_cast<SegmentVector>((*vpInput)[0]);
+    const std::shared_ptr<SegmentVector>& pSegments = std::dynamic_pointer_cast<SegmentVector>((*vpInput)[0]); // dc
     const std::shared_ptr<NucSeq>& pQuerySeq = 
-        std::static_pointer_cast<NucSeq>((*vpInput)[1]);
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]); // dc
     const std::shared_ptr<Pack>& pRefSeq = 
-        std::static_pointer_cast<Pack>((*vpInput)[2]);
-    const std::shared_ptr<FMIndex>& pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[3]);
+        std::dynamic_pointer_cast<Pack>((*vpInput)[2]); // dc
+    const std::shared_ptr<FMIndex>& pFM_index = std::dynamic_pointer_cast<FMIndex>((*vpInput)[3]); // dc
 
     const nucSeqIndex uiQLen = pQuerySeq->length();
 

@@ -92,9 +92,9 @@ std::shared_ptr<Container> SMW::execute(
     )
 {
     std::shared_ptr<NucSeq> pQuerySeq = 
-        std::static_pointer_cast<NucSeq>((*vpInput)[0]);
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]); // dc
     std::shared_ptr<NucSeq> pReference = 
-        std::static_pointer_cast<NucSeq>((*vpInput)[1]);
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]); // dc
     //std::shared_ptr<NucSeq> pReference = pRefPack->vColletionAsNucSeq();
 
     if(pQuerySeq->length() == 0 || pReference->length() == 0)

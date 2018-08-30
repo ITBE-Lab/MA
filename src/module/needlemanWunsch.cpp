@@ -971,9 +971,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    const auto& pSeeds   = std::static_pointer_cast<Seeds >((*vpInput)[0]);
-    const auto& pQuery   = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-    const auto& pRefPack = std::static_pointer_cast<Pack  >((*vpInput)[2]);
+    const auto& pSeeds   = std::dynamic_pointer_cast<Seeds >((*vpInput)[0]); // dc
+    const auto& pQuery   = std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]); // dc
+    const auto& pRefPack = std::dynamic_pointer_cast<Pack  >((*vpInput)[2]); // dc
 
     if(pSeeds == nullptr)
         return std::shared_ptr<Alignment>(new Alignment());

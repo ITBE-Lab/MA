@@ -14,14 +14,14 @@ ContainerVector Splitter::getInputType() const
 std::shared_ptr<Container> Splitter::getOutputType() const
 {
     std::shared_ptr<ContainerVector> pContent =
-        std::static_pointer_cast<ContainerVector>(pVec->getType());
+        std::dynamic_pointer_cast<ContainerVector>(pVec->getType()); // dc
     return pContent->contentType;
 }//function
 
 std::shared_ptr<Container> Splitter::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<ContainerVector> pContent =
-        std::static_pointer_cast<ContainerVector>(pVec->get());
+        std::dynamic_pointer_cast<ContainerVector>(pVec->get()); // dc
     //we have to lock the container separately since it is not part of the comp graph
     std::lock_guard<std::mutex> xGuard(*pMutex);
     if(pContent->empty())

@@ -21,7 +21,7 @@
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
-#define AUTO_GRAPH_LOCK ( 1 )
+#define AUTO_GRAPH_LOCK ( 0 )
 
 /**
  * @brief the C++ code is in this namespace.
@@ -86,7 +86,7 @@ namespace libMA
          */
         virtual ContainerVector EXPORTED getInputType() const
         {
-            return ContainerVector{std::shared_ptr<Container>(new Nil())};
+            return ContainerVector{ std::shared_ptr<Container>(new Nil()) };
         }//function
 
         /**
@@ -388,14 +388,14 @@ namespace libMA
                 throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
             if(pledger != nullptr)
             {
+                //@todo i should use a container tuple type here...
                 std::shared_ptr<ContainerVector> vInput(new ContainerVector());
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
                 {
                     // here we execute all previous modules in the comp graph
                     auto pX = pFuture->get();
-                    if(pX == Nil::pEoFContainer)
+                    if(pX == Nil::pEoFContainer || pX == nullptr)
                         return false;
-                    assert(pX != nullptr);
                     vInput->push_back(pX);
                 }// for
 

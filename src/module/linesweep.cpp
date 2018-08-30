@@ -125,8 +125,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    const auto& pSoCIn   = std::static_pointer_cast<SoCPriorityQueue>((*vpInput)[0]);
-    const auto& pQuery   = std::static_pointer_cast<NucSeq          >((*vpInput)[1]);
+    const auto& pSoCIn   = std::dynamic_pointer_cast<SoCPriorityQueue>((*vpInput)[0]); // dc
+    const auto& pQuery   = std::dynamic_pointer_cast<NucSeq          >((*vpInput)[1]); // dc
 #define FILTER_1 ( 0 )
 #if FILTER_1
     nucSeqIndex uiAccumulativeSeedLength = 0;

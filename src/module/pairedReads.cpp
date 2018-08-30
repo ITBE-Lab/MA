@@ -48,8 +48,8 @@ std::shared_ptr<Container> PairedReads::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<ContainerVector> pAlignments1 = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
-    std::shared_ptr<ContainerVector> pAlignments2 = std::static_pointer_cast<ContainerVector>((*vpInput)[1]);
+    std::shared_ptr<ContainerVector> pAlignments1 = std::dynamic_pointer_cast<ContainerVector>((*vpInput)[0]); // dc
+    std::shared_ptr<ContainerVector> pAlignments2 = std::dynamic_pointer_cast<ContainerVector>((*vpInput)[1]); // dc
 
     //the indices of the best alignment pair
     unsigned int uiI1 = 0, uiI2 = 0;
@@ -60,10 +60,10 @@ std::shared_ptr<Container> PairedReads::execute(
     // otherwise this here might be a serious bottleneck
     for(unsigned int i = 0; i < pAlignments1->size(); i++)
     {
-        std::shared_ptr<Alignment> pAlignment1 = std::static_pointer_cast<Alignment>((*pAlignments1)[i]);
+        std::shared_ptr<Alignment> pAlignment1 = std::dynamic_pointer_cast<Alignment>((*pAlignments1)[i]); // dc
         for(unsigned int j = 0; j < pAlignments2->size(); j++)
         {
-            std::shared_ptr<Alignment> pAlignment2 = std::static_pointer_cast<Alignment>((*pAlignments2)[j]);
+            std::shared_ptr<Alignment> pAlignment2 = std::dynamic_pointer_cast<Alignment>((*pAlignments2)[j]); // dc
 
             // get the distance of the alignments on the reference
             nucSeqIndex d = pAlignment1->beginOnRef() - pAlignment2->beginOnRef();
@@ -90,17 +90,17 @@ std::shared_ptr<Container> PairedReads::execute(
     }//for
 
     //set which read was first...
-    std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bFirst = true;
-    std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bFirst = false;
+    std::dynamic_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bFirst = true; // dc
+    std::dynamic_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bFirst = false; // dc
 
     // set the paired property in the respective alignment stats
     if(bPaired)
     {
-        std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.pOther = 
-            std::weak_ptr<Alignment>(std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2]));
+        std::dynamic_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.pOther = // dc
+            std::weak_ptr<Alignment>(std::dynamic_pointer_cast<Alignment>((*pAlignments2)[uiI2])); // dc
 
-        std::static_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.pOther = 
-            std::weak_ptr<Alignment>(std::static_pointer_cast<Alignment>((*pAlignments1)[uiI1]));
+        std::dynamic_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.pOther = // dc
+            std::weak_ptr<Alignment>(std::dynamic_pointer_cast<Alignment>((*pAlignments1)[uiI1])); // dc
     }// if
 
     // return the best pair

@@ -136,6 +136,7 @@ namespace libMA
         {}//iterator constructor
 
         ContainerVector() :
+            vContent(),
             contentType(new Container())
         {}//container vector
 
@@ -158,6 +159,9 @@ namespace libMA
             vContent(numElements),
             contentType(contentType)
         {}//container vector
+
+        // delete copy constructor @todo
+        // ContainerVector(const ContainerVector& rOther) = delete;
 
         //overload
         bool canCast(std::shared_ptr<Container> c) const

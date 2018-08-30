@@ -42,15 +42,15 @@ std::shared_ptr<Container> RadableFileWriter::getOutputType() const
 std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<NucSeq> pQuery =
-        std::static_pointer_cast<NucSeq>((*vpInput)[0]);
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]); // dc
     std::shared_ptr<ContainerVector> pAlignments =
-        std::static_pointer_cast<ContainerVector>((*vpInput)[1]);
+        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[1]); // dc
     std::shared_ptr<Pack> pPack =
-        std::static_pointer_cast<Pack>((*vpInput)[2]);
+        std::dynamic_pointer_cast<Pack>((*vpInput)[2]); // dc
 
     for(std::shared_ptr<Container> pA : *pAlignments)
     {
-        std::shared_ptr<Alignment> pAlignment = std::static_pointer_cast<Alignment>(pA);
+        std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>(pA); // dc
         if(pAlignment->length() == 0)
             continue;
         std::string sCigar = pAlignment->cigarString(*pPack);
@@ -148,15 +148,15 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 std::shared_ptr<Container> RadableFileWriter::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<NucSeq> pQuery =
-        std::static_pointer_cast<NucSeq>((*vpInput)[0]);
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]); // dc
     std::shared_ptr<ContainerVector> pAlignments =
-        std::static_pointer_cast<ContainerVector>((*vpInput)[1]);
+        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[1]); // dc
     std::shared_ptr<Pack> pPack =
-        std::static_pointer_cast<Pack>((*vpInput)[2]);
+        std::dynamic_pointer_cast<Pack>((*vpInput)[2]); // dc
 
     for(std::shared_ptr<Container> pA : *pAlignments)
     {
-        std::shared_ptr<Alignment> pAlignment = std::static_pointer_cast<Alignment>(pA);
+        std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>(pA); // dc
         if(pAlignment->length() == 0)
             continue;
         
@@ -269,13 +269,13 @@ std::shared_ptr<Container> SeedSetFileWriter::getOutputType() const
 
 std::shared_ptr<Container> SeedSetFileWriter::execute(std::shared_ptr<ContainerVector> vpInput)
 {
-    auto pSoCs = std::static_pointer_cast<ContainerVector>((*vpInput)[0]);
-    const auto& pPack = std::static_pointer_cast<Pack>((*vpInput)[1]);
+    auto pSoCs = std::dynamic_pointer_cast<ContainerVector>((*vpInput)[0]); // dc
+    const auto& pPack = std::dynamic_pointer_cast<Pack>((*vpInput)[1]); // dc
     std::string sPrimary = "true";
 
     for(std::shared_ptr<Container> pS : *pSoCs)
     {
-        const auto& pSeeds = std::static_pointer_cast<Seeds>(pS);
+        const auto& pSeeds = std::dynamic_pointer_cast<Seeds>(pS); // dc
         pSeeds->mem_score = 0;
         for(const auto& rSeed : *pSeeds)
             pSeeds->mem_score += rSeed.getValue();
@@ -288,8 +288,8 @@ std::shared_ptr<Container> SeedSetFileWriter::execute(std::shared_ptr<ContainerV
         []
         (std::shared_ptr<Container>& a_, std::shared_ptr<Container>& b_)
         {
-            const auto& a = std::static_pointer_cast<Seeds>(a_);
-            const auto& b = std::static_pointer_cast<Seeds>(b_);
+            const auto& a = std::dynamic_pointer_cast<Seeds>(a_); // dc
+            const auto& b = std::dynamic_pointer_cast<Seeds>(b_); // dc
             return a->mem_score > b->mem_score;
         }//lambda
     );//sort function call
@@ -297,7 +297,7 @@ std::shared_ptr<Container> SeedSetFileWriter::execute(std::shared_ptr<ContainerV
 
     for(std::shared_ptr<Container> pS : *pSoCs)
     {
-        const auto& pSeeds = std::static_pointer_cast<Seeds>(pS);
+        const auto& pSeeds = std::dynamic_pointer_cast<Seeds>(pS); // dc
         
         // sanity checks
         if(pSeeds == nullptr)

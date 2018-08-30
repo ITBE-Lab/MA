@@ -25,15 +25,15 @@ std::shared_ptr<Container> DbWriter::getOutputType() const
 std::shared_ptr<Container> DbWriter::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<NucSeq> pQuery =
-        std::static_pointer_cast<NucSeq>((*vpInput)[0]);
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]); // dc
     std::shared_ptr<ContainerVector> pAlignments =
-        std::static_pointer_cast<ContainerVector>((*vpInput)[1]);
+        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[1]); // dc
     std::shared_ptr<Pack> pPack =
-        std::static_pointer_cast<Pack>((*vpInput)[2]);
+        std::dynamic_pointer_cast<Pack>((*vpInput)[2]); // dc
 
     for(std::shared_ptr<Container> pA : *pAlignments)
     {
-        std::shared_ptr<Alignment> pAlignment = std::static_pointer_cast<Alignment>(pA);
+        std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>(pA); // dc
         if(pAlignment->length() == 0)
             continue;
         std::string sCigar = pAlignment->cigarString(*pPack);

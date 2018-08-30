@@ -26,8 +26,8 @@ std::shared_ptr<Container> MappingQuality::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<NucSeq> pQuery = std::static_pointer_cast<NucSeq>((*vpInput)[0]);
-    std::shared_ptr<ContainerVector> pAlignments = std::static_pointer_cast<ContainerVector>((*vpInput)[1]);
+    std::shared_ptr<NucSeq> pQuery = std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]); // dc
+    std::shared_ptr<ContainerVector> pAlignments = std::dynamic_pointer_cast<ContainerVector>((*vpInput)[1]); // dc
     auto pSupplementaries = std::make_shared<ContainerVector>(std::make_shared<Alignment>());
 
     //if no alignment was found we cannot set any quality...
@@ -36,7 +36,7 @@ std::shared_ptr<Container> MappingQuality::execute(
             new ContainerVector(std::shared_ptr<Alignment>(new Alignment())));
 
     //compute the mapping quality for the best alignment
-    std::shared_ptr<Alignment> pFirst = std::static_pointer_cast<Alignment>((*pAlignments)[0]);
+    std::shared_ptr<Alignment> pFirst = std::dynamic_pointer_cast<Alignment>((*pAlignments)[0]); // dc
     pFirst->bSecondary = false;
 
     //set the mapping quality for all alignments to zero
@@ -50,7 +50,7 @@ std::shared_ptr<Container> MappingQuality::execute(
             bFirst = false;
             continue;
         }// if
-        std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pAlign);
+        std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>(pAlign); // dc
         pCasted->fMappingQuality = 0.0;
         if (
                 uiSupplementaries < uiMaxSupplementaryPerPrim &&
@@ -76,7 +76,7 @@ std::shared_ptr<Container> MappingQuality::execute(
         std::shared_ptr<Alignment> pSecond;
         while(pSecond == nullptr || pSecond->bSupplementary)
         {
-            pSecond = std::static_pointer_cast<Alignment>(
+            pSecond = std::dynamic_pointer_cast<Alignment>( // dc
                     (*pAlignments)[uiI]
                 );
             uiI++;
@@ -100,7 +100,7 @@ std::shared_ptr<Container> MappingQuality::execute(
         // set supp mapping quality
         for(size_t uiI = 1; uiI < pAlignments->size(); uiI++)
         {
-            std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(
+            std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>( // dc
                     (*pAlignments)[uiI]
                 );
             if(pCasted->bSupplementary)
@@ -135,7 +135,7 @@ std::shared_ptr<Container> MappingQuality::execute(
     // remove secondary with too small scores
     while(pRet->size() > 1)
     {
-        std::shared_ptr<Alignment> pCasted = std::static_pointer_cast<Alignment>(pRet->back());
+        std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>(pRet->back()); // dc
         if(!pCasted->bSecondary)
             break;
         if(pCasted->score() >= pFirst->score() * fMinSecScoreRatio)
