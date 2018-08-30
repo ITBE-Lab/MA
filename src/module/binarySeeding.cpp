@@ -123,10 +123,6 @@ std::shared_ptr<Container> BinarySeeding::execute(
 {
     std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
     std::shared_ptr<FMIndex> pFM_index = std::dynamic_pointer_cast<FMIndex>((*vpInput)[0]); // dc
-
-    // maybe a eof container enters here somehow...
-    if((*vpInput)[1] == Nil::pEoFContainer)
-        return pSegmentVector;
     
     std::shared_ptr<NucSeq> pQuerySeq = 
         std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]);

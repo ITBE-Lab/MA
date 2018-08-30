@@ -107,7 +107,7 @@ def get_alignments_from_db(run_id, contig, start, end):
             (run_id, contig, start, end)
         )
 
-    ret = cur.fetchmany()
+    ret = cur.fetchall()
 
     cur.close()
     conn.close()
@@ -139,6 +139,7 @@ def read_cigar(cigar):
 
 def reads_to_bam(run_id, contig, start, end, pack, bam_file_name):
     alignment_list = get_alignments_from_db(run_id, contig, start, end)
+    print("extracted", len(alignment_list), "alignments")
     ref_name_list = []
     contig_id = None
     for index, name in enumerate(pack.contigNames()):
@@ -166,7 +167,7 @@ def reads_to_bam(run_id, contig, start, end, pack, bam_file_name):
             for amount, operation, length in read_cigar(cigar):
                 cigar_list.append( (operation, amount) )
             pys_alignment.cigar = cigar_list
-            pys_alignment.mapping_quality = int(mapping_quality*254)
+            pys_alignment.mapping_quality = max(min(int(mapping_quality*254), 254), 0)
             pys_alignment.template_length = length #len(query_sequence)
             bam_file.write(pys_alignment)
 

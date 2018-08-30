@@ -83,8 +83,8 @@ public:
 
     ~Wrapper_ksw_extz_t()
     {
-        delete ez->cigar;
-        delete ez;
+        free( ez->cigar );
+        free( ez );
     }//default constructor
 };//class
 

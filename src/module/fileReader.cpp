@@ -34,6 +34,17 @@ size_t len(std::string& sLine)
     return uiLineSize;
 }
 
+size_t findInString(std::string s, char c)
+{
+    auto uiPos = s.find(c);
+    if(uiPos == std::string::npos)
+    {
+        std::cerr << "." << std::endl;
+        return s.size();
+    }
+    return uiPos;
+}// function
+
 #if USE_BUFFERED_ASYNC_READER == 1
     std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
@@ -55,11 +66,11 @@ size_t len(std::string& sLine)
         // FASTA format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
         {
-            std::string sLine;
+            std::string sLine = "";
             std::getline (*pFile, sLine);
             // make sure that the name contains no spaces
             // in fact everythin past the first space is considered description rather than name
-            pRet->sName = sLine.substr(1, sLine.find(' '));
+            pRet->sName = sLine.substr(1, findInString(sLine, ' '));
             while(pFile->good() && !pFile->eof() && pFile->peek() != '>' && pFile->peek() != ' ')
             {
                 sLine = "";// in the case that we hit an empty line getline does nothing...
@@ -79,13 +90,13 @@ size_t len(std::string& sLine)
                     }// for
                 )// DEBUG
                 size_t uiLineSize = len(sLine);
-#if WITH_QUALITY
+#if WITH_QUALITY == 1
                 // uiLineSize uint8_t's with value 127
                 std::vector<uint8_t> xQuality(uiLineSize, 126);
 #endif
                 pRet->vAppend(
                     (const uint8_t*)sLine.c_str(),
-#if WITH_QUALITY
+#if WITH_QUALITY == 1
                     xQuality.data(),
 #endif
                     uiLineSize);
@@ -101,7 +112,7 @@ size_t len(std::string& sLine)
             )// DEBUG
             return pRet;
         }//if
-#if WITH_QUALITY
+#if WITH_QUALITY == 1
         //FASTAQ format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
         {
@@ -135,11 +146,11 @@ size_t len(std::string& sLine)
         //FASTAQ format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
         {
-            std::string sLine;
+            std::string sLine = "";
             std::getline (*pFile, sLine);
             //make sure that the name contains no spaces
             //in fact everythin past the first space is considered description rather than name
-            pRet->sName = sLine.substr(1, sLine.find(' '));
+            pRet->sName = sLine.substr(1, findInString(sLine, ' '));
             while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
             {
                 sLine = "";

@@ -510,7 +510,7 @@ namespace libMA
          */
         bool larger(const std::shared_ptr<Container> pOther) const
         {
-            const std::shared_ptr<Alignment>& pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
+            const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
             size_t uiA = 0;

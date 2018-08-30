@@ -55,12 +55,12 @@ std::shared_ptr<Container> Collector::execute(std::shared_ptr<ContainerVector> v
 
 ContainerVector Lock::getInputType() const
 {
-    return ContainerVector{pType};
+    return ContainerVector{pType->getType()};
 }//function
 
 std::shared_ptr<Container> Lock::getOutputType() const
 {
-    return pType;
+    return pType->getType();
 }//function
 
 std::shared_ptr<Container> Lock::execute(std::shared_ptr<ContainerVector> vpInput)

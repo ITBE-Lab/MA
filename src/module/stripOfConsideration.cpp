@@ -39,12 +39,12 @@ std::shared_ptr<Container> StripOfConsideration::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    const std::shared_ptr<SegmentVector>& pSegments = std::dynamic_pointer_cast<SegmentVector>((*vpInput)[0]); // dc
-    const std::shared_ptr<NucSeq>& pQuerySeq = 
+    const std::shared_ptr<SegmentVector> pSegments = std::dynamic_pointer_cast<SegmentVector>((*vpInput)[0]); // dc
+    const std::shared_ptr<NucSeq> pQuerySeq = 
         std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]); // dc
-    const std::shared_ptr<Pack>& pRefSeq = 
+    const std::shared_ptr<Pack> pRefSeq = 
         std::dynamic_pointer_cast<Pack>((*vpInput)[2]); // dc
-    const std::shared_ptr<FMIndex>& pFM_index = std::dynamic_pointer_cast<FMIndex>((*vpInput)[3]); // dc
+    const std::shared_ptr<FMIndex> pFM_index = std::dynamic_pointer_cast<FMIndex>((*vpInput)[3]); // dc
 
     const nucSeqIndex uiQLen = pQuerySeq->length();
 

@@ -125,7 +125,8 @@ namespace libMA
         std::shared_ptr<Container> contentType;
 
         ContainerVector(std::initializer_list<std::shared_ptr<Container>> init) :
-            vContent(init)
+            vContent(init),
+            contentType(new Container())
         {
             contentType = front()->getType();
         }//initializer list constructor
