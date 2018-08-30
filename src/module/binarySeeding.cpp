@@ -109,6 +109,8 @@ ContainerVector BinarySeeding::getInputType() const
             std::shared_ptr<Container>(new NucSeq()),
         };
 }
+
+
 std::shared_ptr<Container> BinarySeeding::getOutputType() const
 {
     return std::shared_ptr<Container>(new SegmentVector());
@@ -121,8 +123,6 @@ std::shared_ptr<Container> BinarySeeding::execute(
 {
     std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
     std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[0]);
-    if(vpInput->size() < 2)
-        return pSegmentVector;
     std::shared_ptr<NucSeq> pQuerySeq = 
         std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]);
 

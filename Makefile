@@ -34,7 +34,7 @@ INCLUDES= -isystem$(LIBGABA_HOME)/ -Iinc
 
 # this adds debug switches
 ifeq ($(DEBUG), 1)
-	CCFLAGS= -Wall -Werror -fPIC -std=c++11 -g -DDEBUG_LEVEL=1
+	CCFLAGS += -g -DDEBUG_LEVEL=1
 	# we store release and debug objects in different folders
 	# no debug version for the ksw library
 	TARGET_OBJ= \

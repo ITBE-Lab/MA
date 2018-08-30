@@ -383,7 +383,7 @@ int main(int argc, char* argv[])
                 pReader = std::shared_ptr<FileReader>(new FileReader(sFileName));
                 aQueries.push_back(Module::promiseMe(
                     pReader, 
-                    std::vector<std::shared_ptr<Pledge>>{pNil}
+                    std::vector<std::shared_ptr<Pledge>> {pNil}
                 ));
             }//for
             std::vector<std::shared_ptr<Module>> vOut;

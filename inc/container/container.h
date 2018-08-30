@@ -109,53 +109,53 @@ namespace libMA
      * Could be solved using a template but then how should python deal with this class
      * @ingroup container
      */
-    class ContainerVector:
-        public Container,
-        public std::vector<std::shared_ptr<Container>>
+    class ContainerVector: public Container
     {
     public:
+        typedef std::shared_ptr<Container> TP_PTR_CONT;
+        typedef std::vector<TP_PTR_CONT> TP_VEC;
+        TP_VEC vContent;
+
+        typedef typename TP_VEC::value_type value_type;
+        typedef typename TP_VEC::size_type size_type;
+        typedef typename TP_VEC::difference_type difference_type;
+        typedef typename TP_VEC::iterator iterator;
+
+
         std::shared_ptr<Container> contentType;
 
-        ContainerVector(std::initializer_list<std::shared_ptr<Container>> init)
-            :
-            vector(init)
+        ContainerVector(std::initializer_list<std::shared_ptr<Container>> init) :
+            vContent(init)
         {
             contentType = front()->getType();
         }//initializer list constructor
 
         template< class InputIt >
-        ContainerVector(InputIt xBegin, InputIt xEnd
-            )
-            :
-            vector(xBegin, xEnd)
+        ContainerVector(InputIt xBegin, InputIt xEnd) :
+            vContent(xBegin, xEnd)
         {}//iterator constructor
 
-        ContainerVector()
-            :
+        ContainerVector() :
             contentType(new Container())
         {}//container vector
 
-        ContainerVector(std::shared_ptr<Container> contentType)
-                :
-            vector(),
+        ContainerVector(std::shared_ptr<Container> contentType) :
+            vContent(),
             contentType(contentType)
         {}//container vector
 
-        ContainerVector(const std::shared_ptr<ContainerVector> pOther)
-                :
-            vector(*pOther),
+        ContainerVector(const std::shared_ptr<ContainerVector> pOther) :
+            vContent(pOther->vContent),
             contentType(pOther->contentType)
         {}//container vector
 
-        ContainerVector(std::shared_ptr<std::vector<std::shared_ptr<Container>>> pContent)
-                :
-            vector(*pContent),
+        ContainerVector(std::shared_ptr<std::vector<std::shared_ptr<Container>>> pContent) :
+            vContent(*pContent),
             contentType(pContent->front()->getType())
         {}//container vector
 
-        ContainerVector(std::shared_ptr<Container> contentType, size_t numElements)
-            :
-            vector(numElements),
+        ContainerVector(std::shared_ptr<Container> contentType, size_t numElements) :
+            vContent(numElements),
             contentType(contentType)
         {}//container vector
 
@@ -183,10 +183,110 @@ namespace libMA
 
         std::vector<std::shared_ptr<Container>> get()
         {
-            return *this;
+            return vContent;
         }//function
 
+        // setter
+        inline TP_PTR_CONT & operator[] (size_t uiI)
+        {
+            return vContent[uiI];
+        }// operator
 
+        // getter
+        inline const TP_PTR_CONT & operator[] (size_t uiI) const
+        {
+            return vContent[uiI];
+        }// operator
+
+        inline void push_back( const TP_PTR_CONT& value )
+        {
+            vContent.push_back( value );
+        }// method
+
+        inline void pop_back( void )
+        {
+            vContent.pop_back( );
+        }// method
+        
+        template< class... Args >
+        inline void emplace_back( Args&&... args )
+        {
+            vContent.emplace_back( args... );
+        }// method
+        
+        inline size_t size( void ) const
+        {
+            return vContent.size();
+        }// method
+        
+        inline bool empty( void ) const
+        {
+            return vContent.empty();
+        }// method
+        
+        inline TP_PTR_CONT & front( void )
+        {
+            return vContent.front();
+        }// method
+        
+        inline TP_PTR_CONT & back( void )
+        {
+            return vContent.back();
+        }// method
+        
+        inline const TP_PTR_CONT & front( void ) const
+        {
+            return vContent.front();
+        }// method
+        
+        inline const TP_PTR_CONT & back( void ) const
+        {
+            return vContent.back();
+        }// method
+        
+        inline TP_VEC::iterator begin( void ) noexcept
+        {
+            return vContent.begin();
+        }// method
+        
+        inline TP_VEC::iterator end( void ) noexcept
+        {
+            return vContent.end();
+        }// method
+        
+        inline TP_VEC::const_iterator begin( void ) const noexcept
+        {
+            return vContent.begin();
+        }// method
+        
+        inline TP_VEC::const_iterator end( void ) const noexcept
+        {
+            return vContent.end();
+        }// method
+
+        inline void erase( TP_VEC::iterator pos )
+        {
+            vContent.erase( pos );
+        }// method
+
+        inline void erase( 
+                TP_VEC::iterator first,
+                TP_VEC::iterator last 
+            )
+        {
+            vContent.erase( first, last );
+        }// method
+
+        inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const TP_PTR_CONT& value )
+        {
+            return vContent.insert( pos, value );
+        }// method
+    
+        template< class InputIt >
+        inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
+        {
+            return vContent.insert( pos, first, last );
+        }// method
 
     };//class
 }//namespace libMA

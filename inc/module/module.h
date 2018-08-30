@@ -21,6 +21,7 @@
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
+#define AUTO_GRAPH_LOCK ( 1 )
 
 /**
  * @brief the C++ code is in this namespace.
@@ -316,6 +317,9 @@ namespace libMA
         std::vector<std::shared_ptr<Pledge>> vPredecessors;
         std::vector<std::weak_ptr<Pledge>> vSuccessors;
         std::vector<std::shared_ptr<Pledge>> aSync;
+#if AUTO_GRAPH_LOCK == 1
+        std::shared_ptr<std::mutex> pMutex;
+#endif
 
     public:
         double execTime;
@@ -336,11 +340,14 @@ namespace libMA
 #ifdef WITH_PYTHON
             py_pledger(),
 #endif
-            content(),
+            content(nullptr),
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
             aSync(),
+#if AUTO_GRAPH_LOCK == 1
+            pMutex(new std::mutex),
+#endif
             execTime(0)
         {}//constructor
 
@@ -358,11 +365,14 @@ namespace libMA
                 :
             pledger(),
             py_pledger(py_pledger),
-            content(),
+            content(nullptr),
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
             aSync(),
+#if AUTO_GRAPH_LOCK == 1
+            pMutex(new std::mutex),
+#endif
             execTime(0)
         {}//constructor
 #endif
@@ -385,6 +395,7 @@ namespace libMA
                     auto pX = pFuture->get();
                     if(pX == Nil::pEoFContainer)
                         return false;
+                    assert(pX != nullptr);
                     vInput->push_back(pX);
                 }// for
 
@@ -431,9 +442,35 @@ namespace libMA
                     }//if
                 );
             }//else
+#else
+            throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
 #endif
             return true;
         }//function
+
+#if AUTO_GRAPH_LOCK == 1
+        /**
+         * @brief Used to synchronize the execution of pledges in the comp. graph.
+         * @details
+         * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
+         * Does not lock otherwise.
+         * In either case fDo is called.
+         * @todo @fixme HERE IS STILL A PROBLEM
+         */
+        inline void lockIfNecessary(std::function<void()> fDo)
+        {
+            if(vSuccessors.size() > 1)
+            {
+                // multithreading is possible thus a guard is required here.
+                // deadlock prevention is trivial, 
+                // since computational graphs are essentially trees.
+                std::lock_guard<std::mutex> xGuard(*pMutex);
+                fDo();
+            }//if
+            else
+                fDo();
+        }//function
+#endif
 
     public:
         /**
@@ -449,7 +486,7 @@ namespace libMA
 #ifdef WITH_PYTHON
             py_pledger(),
 #endif
-            content(),
+            content(nullptr),
             type(type),
             vPredecessors(),
             vSuccessors(),
@@ -599,6 +636,14 @@ namespace libMA
             if(bVolatile == false && content != nullptr)
                 return content;
 
+#if AUTO_GRAPH_LOCK == 1
+            // locks a mutex if this pledge can be reached from multiple leaves in the graph
+            // does not lock otherwise...
+            lockIfNecessary(
+                [&]
+                ()
+                {
+#endif
             // execute
             if(execForGet() == false)
             {
@@ -608,7 +653,11 @@ namespace libMA
                  * the content of this module to EoF as well.
                  */
                 content = Nil::pEoFContainer;
+#if AUTO_GRAPH_LOCK == 1
+                return;
+#else
                 return content;
+#endif
             }// if
             for(std::shared_ptr<Pledge> pSync : aSync)
                 if(pSync->execForGet() == false)
@@ -619,8 +668,16 @@ namespace libMA
                      * the content of this module to EoF as well.
                      */
                     content = Nil::pEoFContainer;
+#if AUTO_GRAPH_LOCK == 1
+                    return;
+#else
                     return content;
+#endif
                 }// if
+#if AUTO_GRAPH_LOCK == 1
+                }// lambda
+            );// function call
+#endif
 
             return content;
         }// function
@@ -638,6 +695,10 @@ namespace libMA
             //add each other to the caller list
             pA->aSync.push_back(pB);
             pB->aSync.push_back(pA);
+#if AUTO_GRAPH_LOCK == 1
+            //sync the mutex of pA and pB
+            pA->pMutex = pB->pMutex;
+#endif
         }//function
 
         void forAllSyncs(std::function<void(std::shared_ptr<Pledge>)> fDo)
