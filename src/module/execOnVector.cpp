@@ -60,22 +60,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
                     // add all following elements
                     for(unsigned int j = 1; j < vpInput->size(); j++)
                         vInput->push_back((*vpInput)[j]);
-                    try
-                    {
-                        (*pResults)[i] = pModule->execute(vInput);
-                    }
-                    catch(NullPointerException e) 
-                    {
-                        std::cerr << e.what() << std::endl;
-                    }
-                    catch(std::exception e) 
-                    {
-                        std::cerr << e.what() << std::endl;
-                    }
-                    catch(...) 
-                    {
-                        std::cerr << "unknown exception when executing" << std::endl;
-                    }
+                    (*pResults)[i] = pModule->execute(vInput);
                     if((*pResults)[i] == nullptr)
                         std::cerr << pModule->getName() << " deleviered nullpointer as result" << std::endl;
                     if((*pResults)[i] == nullptr)
