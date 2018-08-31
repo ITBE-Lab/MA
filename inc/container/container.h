@@ -19,6 +19,11 @@
 #endif
 /// @endcond
 
+#if DEBUG_LEVEL >= 1
+    #define TOMBSTONE_VAL_ALIVE 455234879523
+    #define TOMBSTONE_VAL_DEAD  111111111111
+#endif
+
 namespace libMA
 {
     class Pledge;
@@ -41,11 +46,11 @@ namespace libMA
     {
     public:
 #if DEBUG_LEVEL >= 1
-        bool bTombStone = false;
+        sizer_t bTombStone = TOMBSTONE_VAL_ALIVE;
 
         ~Container()
         {
-            bTombStone = true;
+            bTombStone = TOMBSTONE_VAL_DEAD;
         }// deconstructor
 #endif
         /** 

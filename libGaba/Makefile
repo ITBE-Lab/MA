@@ -1,7 +1,7 @@
 CC = gcc
 AR = ar
 GIT = git
-ARCHFLAGS = -march=native
+ARCHFLAGS = -msse4.2
 BIT = 4
 CFLAGS = -O3 -Wall -Wno-unused-function -Wno-unused-label -std=c99 -pipe -DBIT=$(BIT) -fPIC
 TARGET = libgaba.a
