@@ -80,7 +80,9 @@ namespace libMA
             dMaxOverlapSupplementary = 0.25;
         }// function
 
+#ifdef WITH_PYTHON
         void exportDefaults();
+#endif
     }// namespace
 }// namespace 
 

@@ -57,11 +57,13 @@ namespace libMA
         // each primary alignment can have at most x supplementary ones.
         size_t uiMaxSupplementaryPerPrim = 1;
         
+#ifdef WITH_PYTHON
         void exportDefaults()
         {
             boost::python::def("configurePacBio", &configurePacBio);
             boost::python::def("configureFast", &configureFast);
             boost::python::def("configureAccurate", &configureAccurate);
         }//function
+#endif
     };
 };

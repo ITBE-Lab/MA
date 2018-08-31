@@ -131,7 +131,7 @@ const std::string sHelp =
 "\n                                   at finding outlier alignments, but reads that have no "
 "\n                                   good alignment at all will cause high runtime penalties."
 "\n"
-"\nVersion 0.1.1 (alpha)"
+"\nVersion 0.1.2 (alpha)"
 "\nBy Markus Schmidt & Arne Kutzner"
 "\nFor more information visit: https://github.com/ITBE-Lab/ma"
 ;
