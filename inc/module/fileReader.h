@@ -233,15 +233,15 @@ namespace libMA
     public:
         std::shared_ptr<std::ifstream> pFile;
         size_t uiFileSize = 0;
-        std::shared_ptr<std::mutex> pSynchronizeReading;
+        //std::shared_ptr<std::mutex> pSynchronizeReading;
 
         /**
          * @brief creates a new FileReader.
          */
         FileReader(std::string sFileName)
                 :
-            pFile(new std::ifstream(sFileName)),
-            pSynchronizeReading(new std::mutex)
+            pFile(new std::ifstream(sFileName))
+            //,pSynchronizeReading(new std::mutex)
         {
             if (!pFile->is_open())
             {

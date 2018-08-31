@@ -21,7 +21,7 @@
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
-#define AUTO_GRAPH_LOCK ( 0 )
+#define AUTO_GRAPH_LOCK ( 1 )
 
 /**
  * @brief the C++ code is in this namespace.
@@ -455,9 +455,10 @@ namespace libMA
          * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
          * Does not lock otherwise.
          * In either case fDo is called.
-         * @todo @fixme HERE IS STILL A PROBLEM
          */
-        inline void lockIfNecessary(std::function<void()> fDo)
+        inline std::shared_ptr<Container> lockIfNecessary(
+                std::function<std::shared_ptr<Container>()> fDo
+            )
         {
             if(vSuccessors.size() > 1)
             {
@@ -465,10 +466,10 @@ namespace libMA
                 // deadlock prevention is trivial, 
                 // since computational graphs are essentially trees.
                 std::lock_guard<std::mutex> xGuard(*pMutex);
-                fDo();
+                return fDo();
             }//if
             else
-                fDo();
+                return fDo();
         }//function
 #endif
 
@@ -653,11 +654,7 @@ namespace libMA
                  * the content of this module to EoF as well.
                  */
                 content = Nil::pEoFContainer;
-#if AUTO_GRAPH_LOCK == 1
-                return;
-#else
                 return content;
-#endif
             }// if
             for(std::shared_ptr<Pledge> pSync : aSync)
                 if(pSync->execForGet() == false)
@@ -668,18 +665,15 @@ namespace libMA
                      * the content of this module to EoF as well.
                      */
                     content = Nil::pEoFContainer;
-#if AUTO_GRAPH_LOCK == 1
-                    return;
-#else
                     return content;
-#endif
                 }// if
+
+
+            return content;
 #if AUTO_GRAPH_LOCK == 1
                 }// lambda
             );// function call
 #endif
-
-            return content;
         }// function
 
         /**

@@ -97,7 +97,7 @@ std::shared_ptr<Container> UnLock::execute(std::shared_ptr<ContainerVector> vpIn
             pSync->set(nullptr);
         }//lambda
     );//for all function call
-    return std::shared_ptr<Container>(new Nil());
+    return std::make_shared<Nil>();
 }//function
 
 #ifdef WITH_PYTHON

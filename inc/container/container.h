@@ -11,8 +11,6 @@
 #include "util/exception.h"
 #include "util/iterableConverter.h"
 
-#define TOMBSTONES ( 1 )
-
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
 #ifdef WITH_PYTHON
@@ -41,14 +39,14 @@ namespace libMA
     class Container
     {
     public:
-#if TOMBSTONES == 1
+//#if DEBUG_LEVEL >= 1
         bool bTombStone = false;
 
         ~Container()
         {
             bTombStone = true;
         }// deconstructor
-#endif
+//#endif
         /** 
         * @returns the type of the container as int.
         * @brief Used by @ref Module "module" for type checking its Inputs.
