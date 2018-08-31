@@ -14,16 +14,16 @@ ContainerVector Splitter::getInputType() const
 std::shared_ptr<Container> Splitter::getOutputType() const
 {
     std::shared_ptr<ContainerVector> pContent =
-        std::static_pointer_cast<ContainerVector>(pVec->getType());
+        std::dynamic_pointer_cast<ContainerVector>(pVec->getType()); // dc
     return pContent->contentType;
 }//function
 
 std::shared_ptr<Container> Splitter::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<ContainerVector> pContent =
-        std::static_pointer_cast<ContainerVector>(pVec->get());
+        std::dynamic_pointer_cast<ContainerVector>(pVec->get()); // dc
     //we have to lock the container separately since it is not part of the comp graph
-    std::lock_guard<std::mutex> xGuard(*pVec->pMutex);
+    std::lock_guard<std::mutex> xGuard(*pMutex);
     if(pContent->empty())
         throw ModuleDryException();
     //swap the back of the container out, so that there is no need to copy the element
@@ -55,12 +55,12 @@ std::shared_ptr<Container> Collector::execute(std::shared_ptr<ContainerVector> v
 
 ContainerVector Lock::getInputType() const
 {
-    return ContainerVector{pType};
+    return ContainerVector{pType->getType()};
 }//function
 
 std::shared_ptr<Container> Lock::getOutputType() const
 {
-    return pType;
+    return pType->getType();
 }//function
 
 std::shared_ptr<Container> Lock::execute(std::shared_ptr<ContainerVector> vpInput)
@@ -97,7 +97,7 @@ std::shared_ptr<Container> UnLock::execute(std::shared_ptr<ContainerVector> vpIn
             pSync->set(nullptr);
         }//lambda
     );//for all function call
-    return std::shared_ptr<Container>(new Nil());
+    return std::make_shared<Nil>();
 }//function
 
 #ifdef WITH_PYTHON

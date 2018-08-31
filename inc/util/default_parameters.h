@@ -7,103 +7,77 @@
 #define DEFAULT_PARAMETERS_H
 
 #include <string>
-
-
-#define DEFAULT 0
-#define EXPERIMENTAL 1
-
-#define PARAMETER_SET DEFAULT
-
+#include <boost/python.hpp>
 
 namespace libMA
 {
     namespace defaults
     {
-#if(PARAMETER_SET == DEFAULT)
-        //@todo comment this file
-        std::string
-            uiMatch = "3",      // score for a DP match (used in SoC width computation)
-            uiMissMatch = "4",  // penalty for a DP missmatch
-            uiOpen = "6",       // penalty for a DP gap opening (used in SoC width computation)
-            uiExtend = "1",     // penalty for a DP gap extension (used in SoC width computation)
-            uiUnpaired = "17",  // penalty for unpaired reads
-            uiMean = "400",     // mean distance for paired reads
-            uiStd = "150",      // standard deviation for distance of paired reads
-            uiReportN = "0",    // report n alignments
-            uiMaxAmbiguity = "100",     // maximal ambiguity of seeds
-            uiMinLen = "16",    // minimal seed length
-            uiMinAmbiguity = "0",       // stop the extension process if seeds are less ambiguous
-            // @todo we effectively disabled this parameter
-            uiMinSeedSizeDrop = "15",   // minimum length for seeds to count towards the drop of
-            uiMaxTries = "50",          // maximal number of SoCs
-            uiMaxEqualScoreLookahead = "3",     // lookahead distance for short queries
-            uiSwitchQLen = "800",       // q len to switch between break criteria
-            uiMaxGapArea = "10000",     // break alignments in harmonization if gap is larger
-            uiPadding = "500",          // padding for DP
-            bFindMode = "false",        // true: don't do DP
-            bOptimisticGapEstimation = "true",  // how to estimate gap costs in harmonization
-            bSkipLongBWTIntervals = "true",     // pick samples from long SAintervals or skip them
-            fGiveUp = "0.002",  // do not store socs with score less than this * query len
-            fRelMinSeedSizeAmount = "0.005",    // minimum seed coverage to consider a query
-            fScoreDiffTolerance = "0.0001",     // break if the harm score falls faster than this
-            fSoCScoreMinimum = "0",             // minimum score used for the SoC width computation
-            fMinimalQueryCoverage = "1.1",      // does nothing at the moment @todo
-            fScoreTolerace = "0.1",             // break if the SoC score drops faster than this
-            uiCurrHarmScoreMin = "18",          // minimal score after the harmonization
-            sParameterSet,                      // name of the used presetting (if any)
-            sSeedSet,                           // name of the seed set that shall be computed
-            // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
-            // @todo apply this parameter
-            uiGenomeSizeDisable = "10000000"
-        ;
-#elif(PARAMETER_SET == EXPERIMENTAL)
-        std::string
-            uiMatch = "3",      // score for a DP match (used in SoC width computation)
-            uiMissMatch = "4",  // penalty for a DP missmatch
-            uiOpen = "6",       // penalty for a DP gap opening (used in SoC width computation)
-            uiExtend = "1",     // penalty for a DP gap extension (used in SoC width computation)
-            uiUnpaired = "17",  // penalty for unpaired reads
-            uiMean = "400",     // mean distance for paired reads
-            uiStd = "150",      // standard deviation for distance of paired reads
-            uiReportN = "0",    // report n alignments
-            uiMaxAmbiguity = "1000",     // maximal ambiguity of seeds
-            uiMinLen = "0",    // minimal seed length
-            uiMinAmbiguity = "0",       // stop the extension process if seeds are less ambiguous
-            // @todo we effectively disabled this parameter
-            uiMinSeedSizeDrop = "0",   // minimum length for seeds to count towards the drop of
-            uiMaxTries = "500",          // maximal number of SoCs
-            uiMaxEqualScoreLookahead = "0",     // lookahead distance for short queries
-            uiSwitchQLen = "0",       // q len to switch between break criteria
-            uiMaxGapArea = "10000",     // break alignments in harmonization if gap is larger
-            uiPadding = "500",          // padding for DP
-            bFindMode = "false",        // true: don't do DP
-            bOptimisticGapEstimation = "true",  // how to estimate gap costs in harmonization
-            bSkipLongBWTIntervals = "true",     // pick samples from long SAintervals or skip them
-            fGiveUp = "0",  // do not store socs with score less than this * query len
-            fRelMinSeedSizeAmount = "1.1",    // minimum seed coverage to consider a query
-            fScoreDiffTolerance = "0",     // break if the harm score falls faster than this
-            fSoCScoreMinimum = "0",             // minimum score used for the SoC width computation
-            fMinimalQueryCoverage = "1.1",      // does nothing at the moment @todo
-            fScoreTolerace = "0",             // break if the SoC score drops faster than this
-            uiCurrHarmScoreMin = "0",          // minimal score after the harmonization
-            sParameterSet,                      // name of the used presetting (if any)
-            sSeedSet,                           // name of the seed set that shall be computed
-            // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
-            // @todo apply this parameter
-            uiGenomeSizeDisable = "10000000"
-        ;
-#endif
+        extern int iMatch;
+        extern int iMissMatch;
+        extern int iGap;
+        extern int iExtend;
+        extern int iGap2;
+        extern int iExtend2;
+        extern size_t uiUnpaired;
+        extern size_t uiMean;
+        extern double fStd;
+        extern size_t uiReportN;
+        extern size_t uiMaxAmbiguity;
+        extern size_t uiMinLen;
+        extern size_t uiMinAmbiguity;
+        extern size_t uiMinSeedSizeDrop;
+        extern size_t uiMaxTries;
+        extern size_t uiMaxEqualScoreLookahead;
+        extern size_t uiSwitchQLen;
+        extern uint64_t uiMaxGapArea;
+        extern uint64_t uiPadding;
+        extern size_t uiSoCWidth;
+        extern bool bFindMode;
+        extern bool bOptimisticGapEstimation;
+        extern bool bSkipLongBWTIntervals;
+        extern bool bNormalDist;
+        extern bool bUniformDist;
+        extern float fGiveUp;
+        extern float fRelMinSeedSizeAmount;
+        extern float fScoreDiffTolerance;
+        extern float fSoCScoreMinimum;
+        extern float fMinimalQueryCoverage;
+        extern float fScoreTolerace;
+        extern size_t uiCurrHarmScoreMin;
+        extern std::string sParameterSet;
+        extern std::string sSeedSet;
+        extern size_t uiGenomeSizeDisable;
+        extern bool bDisableHeuristics;
+        extern float fMinSecScoreRatio;
+        extern double dMaxDeltaDist;
+        extern uint64_t uiMinDeltaDist;
+        extern double dMaxOverlapSupplementary;
+        extern size_t uiMaxSupplementaryPerPrim;
 
         inline void configureAccurate()
         {
             sParameterSet = "acc";
             sSeedSet = "SMEMs";
         }// function
+
         inline void configureFast()
         {
             sParameterSet = "fast";
             sSeedSet = "maxSpan";
         }// function
+
+        inline void configurePacBio()
+        {
+            sParameterSet = "pacBio";
+            sSeedSet = "maxSpan";
+            bDisableHeuristics = true;
+            uiMaxTries = 5;   // @todo check if ths is too little or not...
+            fGiveUp = 0;      // @todo check if ths is really necessary
+            uiMaxSupplementaryPerPrim = 0.25; // @todo verify this parameter
+        }// function
+
+        void exportDefaults();
     }// namespace
 }// namespace 
 

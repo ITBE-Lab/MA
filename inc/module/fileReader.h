@@ -36,7 +36,7 @@ namespace libMA
      */
     class FileReader: public Module
     {
-#if USE_BUFFERED_ASYNC_READER
+#if USE_BUFFERED_ASYNC_READER == 1
     private:
         /**
          * @brief Helper class.
@@ -233,15 +233,15 @@ namespace libMA
     public:
         std::shared_ptr<std::ifstream> pFile;
         size_t uiFileSize = 0;
-        std::shared_ptr<std::mutex> pSynchronizeReading;
+        //std::shared_ptr<std::mutex> pSynchronizeReading;
 
         /**
          * @brief creates a new FileReader.
          */
         FileReader(std::string sFileName)
                 :
-            pFile(new std::ifstream(sFileName)),
-            pSynchronizeReading(new std::mutex)
+            pFile(new std::ifstream(sFileName))
+            //,pSynchronizeReading(new std::mutex)
         {
             if (!pFile->is_open())
             {
@@ -287,12 +287,19 @@ namespace libMA
             return std::string("FileReader");
         }//function
 
+        // @override
         bool outputsVolatile() const
         {
             return true;
         }//function
 
-#if USE_BUFFERED_ASYNC_READER
+        // @override
+        bool requiresLock() const
+        {
+            return true;
+        }//function
+
+#if USE_BUFFERED_ASYNC_READER == 1
         /**
          * @brief Test the BufferedReader class.
          * @details
@@ -404,17 +411,32 @@ namespace libMA
                 std::cout << "[OK] " << i << "/" << uiNumTests << std::endl;
             }// for
         }// function
-#endif
- 
         size_t getCurrPosInFile() const
         {
+            return 1;
+        }// function
+
+        size_t getFileSize() const
+        {
+            return 1;
+        }// function
+#else
+        size_t getCurrPosInFile() const
+        {
+            if(!pFile->good() || pFile->eof())
+                return uiFileSize;
             return pFile->tellg();
         }// function
 
         size_t getFileSize() const
         {
+            // prevent floating point exception here (this is only used for progress bar...)
+            if(uiFileSize == 0)
+                return 1;
             return uiFileSize;
         }// function
+#endif
+ 
     };//class
 
 }//namespace

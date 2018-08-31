@@ -9,6 +9,18 @@
 
 #include "container/segment.h"
 
+#define MULTIPLE_SEGMENTS_IN_TEMPLATE        0x001
+#define SEGMENT_PROPERLY_ALIGNED             0x002
+#define SEGMENT_UNMAPPED                     0x004
+#define NEXT_SEGMENT_UNMAPPED                0x008
+#define REVERSE_COMPLEMENTED                 0x010
+#define NEXT_REVERSE_COMPLEMENTED            0x020
+#define FIRST_IN_TEMPLATE                    0x040
+#define LAST_IN_TEMPLATE                     0x080
+#define SECONDARY_ALIGNMENT                  0x100
+#define NOT_PASSING_FILTERS                  0x200
+#define PCR_OR_DUPLICATE                     0x400
+#define SUPPLEMENTARY_ALIGNMENT              0x800
 
 namespace libMA
 {
@@ -44,7 +56,7 @@ namespace libMA
             std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vGapsScatter;
 #endif
         /// The sparse list of MatchTypes that describe the alignment.
-        std::vector<std::tuple<MatchType, nucSeqIndex>> data;
+        std::vector<std::pair<MatchType, nucSeqIndex>> data;
         /// The length of the alignment.
         nucSeqIndex uiLength;
         /// The start of the alignment on the reference sequence.
@@ -62,6 +74,7 @@ namespace libMA
         //some statistics
         AlignmentStatistics xStats;
         bool bSecondary;
+        bool bSupplementary;
 
         /**
          * @brief Creates an empty alignment.
@@ -75,7 +88,8 @@ namespace libMA
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
 
         /**
@@ -93,7 +107,8 @@ namespace libMA
             uiBeginOnQuery(0),
             uiEndOnQuery(0),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
 
         /**
@@ -112,7 +127,8 @@ namespace libMA
             uiBeginOnQuery(uiBeginOnQuery),
             uiEndOnQuery(uiBeginOnQuery),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
 
         /**
@@ -133,15 +149,18 @@ namespace libMA
             uiBeginOnQuery(uiBeginOnQuery),
             uiEndOnQuery(uiEndOnQuery),
             xStats(),
-            bSecondary(false)
+            bSecondary(false),
+            bSupplementary(false)
         {}//constructor
+
+        Alignment(const Alignment& rOther) = delete;
 
         inline std::string toString() const
         {
             std::string sRet = "Alignment Dump: ";
-            const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
+            constexpr char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
             for(auto& tuple : data)
-                sRet += vTranslate[ (unsigned int)std::get<0>(tuple)] + std::to_string(std::get<1>(tuple)) + " ";
+                sRet += vTranslate[ (unsigned int)tuple.first] + std::to_string(tuple.second) + " ";
             sRet += std::to_string(iScore);
             return sRet; 
         }
@@ -181,13 +200,13 @@ namespace libMA
             unsigned int k = 0;
             while(k < data.size())
             {
-                j += std::get<1>(data[k]);
+                j += data[k].second;
                 if(j > i)
                     break;
                 k++;
             }// while
 
-            return std::get<0>(data[k]);
+            return data[k].first;
         }//function
 
         /**
@@ -205,11 +224,79 @@ namespace libMA
         std::vector<MatchType> extract() const
         {
             std::vector<MatchType> aRet;
-            for(std::tuple<MatchType, nucSeqIndex> xElement : data)
-                for(unsigned int i = 0; i < std::get<1>(xElement); i++)
-                    aRet.push_back(std::get<0>(xElement));
+            for(std::pair<MatchType, nucSeqIndex> xElement : data)
+                for(unsigned int i = 0; i < xElement.second; i++)
+                    aRet.push_back(xElement.first);
             return aRet;
-        }//function
+        }// method
+        
+        std::string cigarString(Pack& rPack)
+        {
+            std::string sCigar = "";
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                std::reverse(data.begin(), data.end());
+
+            for(std::pair<MatchType, nucSeqIndex> section : data)
+            {
+                sCigar.append(std::to_string(section.second));
+                switch (section.first)
+                {
+                    case MatchType::seed:
+                    case MatchType::match:
+                        sCigar.append("=");
+                        break;
+                    case MatchType::missmatch:
+                        sCigar.append("X");
+                        break;
+                    case MatchType::insertion:
+                        sCigar.append("I");
+                        break;
+                    case MatchType::deletion:
+                        sCigar.append("D");
+                        break;
+                    default:
+                        std::cerr << "WARNING invalid cigar symbol" << std::endl;
+                        break;
+                }// switch
+            }// for
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                std::reverse(data.begin(), data.end());
+            return sCigar;
+        }// method
+
+        uint32_t getSamFlag(Pack& rPack) const
+        {
+            uint32_t uiRet = 0;
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                uiRet |= REVERSE_COMPLEMENTED;
+            if(bSecondary)
+                uiRet |= SECONDARY_ALIGNMENT;
+            if(bSupplementary)
+                uiRet |= SUPPLEMENTARY_ALIGNMENT;
+            return uiRet;
+        }// method
+
+        std::string getContig(Pack& rPack) const
+        {
+            return rPack.nameOfSequenceForPosition(uiBeginOnRef);
+        }// method
+
+        nucSeqIndex getSamPosition(Pack& rPack) const
+        {
+            std::string sRefName = getContig(rPack);
+            auto uiRet = rPack.posInSequence(uiBeginOnRef, uiEndOnRef);
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                uiRet += 1;
+            return uiRet;
+        }// method
+
+        std::string getQuerySequence(NucSeq& rQuery, Pack& rPack)
+        {
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                return rQuery.fromToComplement(uiBeginOnQuery, uiEndOnQuery);
+            else
+                return rQuery.fromTo(uiBeginOnQuery, uiEndOnQuery);
+        }// method
 
         /**
          * @brief appends multiple matchTypes to the alignment
@@ -228,12 +315,107 @@ namespace libMA
         }//function
 
         /**
+         * @brief returns the overlap of the alignments on
+         * @todo
+         */
+        inline double overlap(const Alignment& rOther) const
+        {
+            // get the total area where overlaps are possible
+            nucSeqIndex uiS = std::max(uiBeginOnQuery, rOther.uiBeginOnQuery);
+            nucSeqIndex uiE = std::min(uiEndOnQuery, rOther.uiEndOnQuery);
+            // if the total area is zero we can return 0% immediately
+            if(uiS >= uiE)
+                return 0;
+            // indices for walking through the alignments
+            nucSeqIndex uiOverlap = 0;
+            size_t uiI = 0;
+            nucSeqIndex uiQpos = uiBeginOnQuery;
+            size_t uiIOther = 0;
+            nucSeqIndex uiQposOther = rOther.uiBeginOnQuery;
+            // move the index to the start positions
+            while(uiQpos + data[uiI].second < uiS)
+            {
+                // all match types move forward on the query apart from a deletion
+                if(data[uiI].first != MatchType::deletion)
+                    uiQpos += data[uiI].second;
+                uiI++;
+            }// while
+            // move the index (of the other alignment) to the start positions
+            while(uiQposOther + rOther.data[uiIOther].second < uiS)
+            {
+                // all match types move forward on the query apart from a deletion
+                if(rOther.data[uiIOther].first != MatchType::deletion)
+                    uiQposOther += rOther.data[uiIOther].second;
+                uiIOther++;
+            }// while
+
+            // compute the overlap
+            while(
+                    // we haven't reached the end of the possible overlap area
+                    uiQpos < uiE && uiQposOther < uiE &&
+                    // we haven't reached the end of the alignment
+                    uiI < data.size() && uiIOther < rOther.data.size()
+                )
+            {
+                // get the lengths on the query
+                nucSeqIndex uiQLen = 0;
+                // all match types have a query length apart from a deletion
+                if(data[uiI].first != MatchType::deletion)
+                    uiQLen = data[uiI].second;
+                nucSeqIndex uiQLenOther = 0;
+                // all match types have a query length apart from a deletion
+                if(rOther.data[uiIOther].first != MatchType::deletion)
+                    uiQLenOther = rOther.data[uiIOther].second;
+
+                // compute the overlap
+                nucSeqIndex uiS_inner = std::max(
+                            std::max(uiQpos, uiQposOther),
+                            uiS
+                        );
+                nucSeqIndex uiE_inner = std::min(
+                            std::min(uiQpos + uiQLen, uiQposOther + uiQLenOther),
+                            uiE
+                        );
+                nucSeqIndex uiCurrOverlap = 0;
+                if(uiS_inner < uiE_inner)
+                    uiCurrOverlap = uiE_inner - uiS_inner;
+
+                // if the type of the match is not an insertion, add to the amount of overlap
+                if(
+                        data[uiI].first != MatchType::insertion &&
+                        rOther.data[uiIOther].first != MatchType::insertion
+                    )
+                    uiOverlap += uiCurrOverlap;
+                
+                // move the correct index forward
+                if(uiQpos + uiQLen < uiQposOther + uiQLenOther)
+                {
+                    uiQpos += uiQLen;
+                    uiI++;
+                }// if
+                else
+                {
+                    uiQposOther += uiQLenOther;
+                    uiIOther++;
+                }// else
+            }// while
+
+            // divide by the size of the smaller alignment so that the returned overlap is in 
+            // percent
+            nucSeqIndex uiSize = std::min(
+                    uiEndOnQuery - uiBeginOnQuery, 
+                    rOther.uiEndOnQuery - rOther.uiBeginOnQuery
+                );
+            return uiOverlap / static_cast<double>(uiSize);
+        }// mehtod
+
+        /**
          * @brief appends another alignment
          */
         void append(const Alignment& rOther)
         {
             for(auto xTuple : rOther.data)
-                append(std::get<0>(xTuple), std::get<1>(xTuple));
+                append(xTuple.first, xTuple.second);
         }//function
 
         ///@brief wrapper for boost-python
@@ -255,7 +437,7 @@ namespace libMA
             DEBUG(
                 nucSeqIndex uiCheck = 0;
                 for(auto xTup : data)
-                    uiCheck += std::get<1>(xTup);
+                    uiCheck += xTup.second;
                 if(uiCheck != uiLength)
                 {
                     std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength 
@@ -328,9 +510,21 @@ namespace libMA
          */
         bool larger(const std::shared_ptr<Container> pOther) const
         {
-            const std::shared_ptr<Alignment>& pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
+            const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>(pOther);
             if(pAlign == nullptr)
                 return false;
+            size_t uiA = 0;
+            size_t uiB = 0;
+            if(pAlign->bSecondary)
+                uiB = 2;
+            if(pAlign->bSupplementary)
+                uiB = 1;
+            if(bSecondary)
+                uiA = 2;
+            if(bSupplementary)
+                uiA = 1;
+            if(uiA != uiB)
+                return uiA < uiB;
             auto uiS1 = score();
             auto uiS2 = pAlign->score();
             if(uiS1 == uiS2)
@@ -366,6 +560,7 @@ namespace libMA
             iScore = pOther->iScore;
             fMappingQuality = pOther->fMappingQuality;
             bSecondary = pOther->bSecondary;
+            bSupplementary = pOther->bSupplementary;
             xStats = pOther->xStats;
         }//function
 

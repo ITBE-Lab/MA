@@ -156,45 +156,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "module/smith_waterman.h"
 #include "module/otherSeeding.h"
 #include "module/sw_gpu.h"
+#include "util/default_parameters.h"
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
     std::shared_ptr<libMA::Pledge> pFMDIndex,
     std::vector<std::shared_ptr<libMA::Pledge>> aQueries,
-    std::shared_ptr<libMA::Module> pOut,
-    unsigned int uiReportN,
-    unsigned int uiThreads,
-    bool bPariedNormal,
-    bool bPariedUniform,
-    unsigned int uiPairedMean,
-    double fPairedStd,
-    double dPairedU,
-    bool bSeedSetPairs,
-    float fGiveUp,
-    unsigned int iMatch_,
-    unsigned int iMisMatch_,
-    unsigned int iGap_,
-    unsigned int iExtend_,
-    bool bFinderMode,
-    unsigned int uiMaxGapArea_,
-    unsigned int uiPadding_,
-    unsigned int uiMaxTries,
-    unsigned int uiMinSeedSizeDrop,
-    unsigned int uiMinAmbiguity,
-    unsigned int uiMaxAmbiguity,
-    unsigned int uiMinLen,
-    unsigned int uiMaxEqualScoreLookahead,
-    float fRelMinSeedSizeAmount,
-    float fScoreDiffTolerance,
-    float fMinimalQueryCoverage,
-    float fScoreTolerace,
-    unsigned int uiSwitchQLen,
-    bool optimisticGapEstimation,
-    float fSoCScoreMinimum,
-    bool bSkipLongBWTIntervals,
-    unsigned int uiCurrHarmScoreMin,
-    unsigned long long uiGenomeSizeDisable,
-    unsigned int uiSoCWidth
+    std::vector<std::shared_ptr<libMA::Module>>& vOut,
+    unsigned int uiThreads
 );
 
 #endif

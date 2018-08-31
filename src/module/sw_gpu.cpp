@@ -14,7 +14,7 @@ using namespace libMA;
         std::vector<std::vector<char>> vQueries;
         for( const auto& pQuery : *pQueries )
         {
-            const auto& a = std::static_pointer_cast<NucSeq>(pQuery);
+            const auto& a = std::dynamic_pointer_cast<NucSeq>(pQuery); // dc
             std::vector<char> vQuery( a->pGetSequenceRef(), a->pGetSequenceRef() + a->length() );
             vQueries.push_back(vQuery);
         }// for

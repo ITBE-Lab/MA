@@ -17,6 +17,7 @@
 #endif
 #include <ctime>
 #include <chrono>
+#include "util/default_parameters.h"
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
@@ -26,7 +27,6 @@
  */
 namespace libMA
 {
-    extern std::mutex xPython;
     /**
      * @defgroup module
      * @brief All classes implementing some algorithm.
@@ -85,7 +85,7 @@ namespace libMA
          */
         virtual ContainerVector EXPORTED getInputType() const
         {
-            return ContainerVector{std::shared_ptr<Container>(new Nil())};
+            return ContainerVector{ std::shared_ptr<Container>(new Nil()) };
         }//function
 
         /**
@@ -127,6 +127,12 @@ namespace libMA
          * If this is set to true the pledge will recompute the result each time get is called.
          */
         virtual bool EXPORTED outputsVolatile() const
+        {
+            return false;
+        }//function
+
+        // temporary
+        virtual bool EXPORTED requiresLock() const
         {
             return false;
         }//function
@@ -316,9 +322,9 @@ namespace libMA
         std::vector<std::shared_ptr<Pledge>> vPredecessors;
         std::vector<std::weak_ptr<Pledge>> vSuccessors;
         std::vector<std::shared_ptr<Pledge>> aSync;
+        std::shared_ptr<std::mutex> pMutex;
 
     public:
-        std::shared_ptr<std::mutex> pMutex;
         double execTime;
     private:
 
@@ -337,7 +343,7 @@ namespace libMA
 #ifdef WITH_PYTHON
             py_pledger(),
 #endif
-            content(),
+            content(nullptr),
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
@@ -360,7 +366,7 @@ namespace libMA
                 :
             pledger(),
             py_pledger(py_pledger),
-            content(),
+            content(nullptr),
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
@@ -381,12 +387,13 @@ namespace libMA
                 throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
             if(pledger != nullptr)
             {
+                //@todo i should use a container tuple type here...
                 std::shared_ptr<ContainerVector> vInput(new ContainerVector());
                 for(std::shared_ptr<Pledge> pFuture : vPredecessors)
                 {
                     // here we execute all previous modules in the comp graph
                     auto pX = pFuture->get();
-                    if(pX == Nil::pEoFContainer)
+                    if(pX == Nil::pEoFContainer || pX == nullptr)
                         return false;
                     vInput->push_back(pX);
                 }// for
@@ -434,6 +441,8 @@ namespace libMA
                     }//if
                 );
             }//else
+#else
+            throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
 #endif
             return true;
         }//function
@@ -444,20 +453,22 @@ namespace libMA
          * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
          * Does not lock otherwise.
          * In either case fDo is called.
-         * @todo @fixme HERE IS STILL A PROBLEM
          */
-        inline void lockIfNecessary(std::function<void()> fDo)
+        inline std::shared_ptr<Container> lockIfNecessary(
+                std::function<std::shared_ptr<Container>()> fDo
+            )
         {
-            if(vSuccessors.size() > 1)
+            // if(vSuccessors.size() > 1) @todo @fixme this should be here
+            if(pledger == nullptr || pledger->requiresLock())
             {
                 // multithreading is possible thus a guard is required here.
                 // deadlock prevention is trivial, 
                 // since computational graphs are essentially trees.
                 std::lock_guard<std::mutex> xGuard(*pMutex);
-                fDo();
+                return fDo();
             }//if
             else
-                fDo();
+                return fDo();
         }//function
 
     public:
@@ -474,11 +485,10 @@ namespace libMA
 #ifdef WITH_PYTHON
             py_pledger(),
 #endif
-            content(),
+            content(nullptr),
             type(type),
             vPredecessors(),
             vSuccessors(),
-            pMutex(new std::mutex),
             execTime(0)
         {}//constructor
 
@@ -627,40 +637,38 @@ namespace libMA
 
             // locks a mutex if this pledge can be reached from multiple leaves in the graph
             // does not lock otherwise...
-            lockIfNecessary(
+            return lockIfNecessary(
                 [&]
                 ()
                 {
-                    // execute
-                    if(execForGet() == false)
-                    {
-                        /*
-                         * If execForGet returns false we have a volatile module that's dry.
-                         * In such cases we cannot compute the next element and therefore set
-                         * the content of this module to EoF as well.
-                         */
-                        content = Nil::pEoFContainer;
-                        return;
-                    }// if
+            // execute
+            if(execForGet() == false)
+            {
+                /*
+                 * If execForGet returns false we have a volatile module that's dry.
+                 * In such cases we cannot compute the next element and therefore set
+                 * the content of this module to EoF as well.
+                 */
+                content = Nil::pEoFContainer;
+                return content;
+            }// if
+            for(std::shared_ptr<Pledge> pSync : aSync)
+                if(pSync->execForGet() == false)
+                {
+                    /*
+                     * If execForGet returns false we have a volatile module that's dry.
+                     * In such cases we cannot compute the next element and therefore set
+                     * the content of this module to EoF as well.
+                     */
+                    content = Nil::pEoFContainer;
+                    return content;
+                }// if
 
-                    // @note the mutex is shared between synchronized pledges, 
-                    // so no special sync needed.
-                    // also execute all the synchronized locks
-                    for(std::shared_ptr<Pledge> pSync : aSync)
-                        if(pSync->execForGet() == false)
-                        {
-                            /*
-                            * If execForGet returns false we have a volatile module that's dry.
-                            * In such cases we cannot compute the next element and therefore set
-                            * the content of this module to EoF as well.
-                            */
-                            content = Nil::pEoFContainer;
-                            return;
-                        }// if
+            // return must be here and returned throught the lambda to avoid data race...
+            return content;
+
                 }// lambda
             );// function call
-
-            return content;
         }// function
 
         /**

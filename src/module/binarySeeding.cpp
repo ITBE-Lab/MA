@@ -109,6 +109,8 @@ ContainerVector BinarySeeding::getInputType() const
             std::shared_ptr<Container>(new NucSeq()),
         };
 }
+
+
 std::shared_ptr<Container> BinarySeeding::getOutputType() const
 {
     return std::shared_ptr<Container>(new SegmentVector());
@@ -119,11 +121,12 @@ std::shared_ptr<Container> BinarySeeding::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    std::shared_ptr<FMIndex> pFM_index = std::static_pointer_cast<FMIndex>((*vpInput)[0]);
+    std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
+    std::shared_ptr<FMIndex> pFM_index = std::dynamic_pointer_cast<FMIndex>((*vpInput)[0]); // dc
+    
     std::shared_ptr<NucSeq> pQuerySeq = 
         std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]);
 
-    std::shared_ptr<SegmentVector> pSegmentVector(new SegmentVector());
     if(pQuerySeq == nullptr)
         return pSegmentVector;
 
@@ -166,10 +169,7 @@ void exportBinarySeeding()
             BinarySeeding, 
             boost::python::bases<Module>,
             std::shared_ptr<BinarySeeding>
-        >(
-            "BinarySeeding",
-            boost::python::init<bool>()
-        )
+        >("BinarySeeding")
         .def_readwrite("min_ambiguity", &BinarySeeding::uiMinAmbiguity)
         .def_readwrite("max_ambiguity", &BinarySeeding::uiMaxAmbiguity)
         .def_readwrite("min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop)

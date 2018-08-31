@@ -34,7 +34,18 @@ size_t len(std::string& sLine)
     return uiLineSize;
 }
 
-#if USE_BUFFERED_ASYNC_READER
+size_t findInString(std::string s, char c)
+{
+    auto uiPos = s.find(c);
+    if(uiPos == std::string::npos)
+    {
+        std::cerr << "." << std::endl;
+        return s.size();
+    }
+    return uiPos;
+}// function
+
+#if USE_BUFFERED_ASYNC_READER == 1
     std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
         /*
@@ -50,20 +61,24 @@ size_t len(std::string& sLine)
 #else
     std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> vpInput)
     {
-        std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
+        //std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
         std::shared_ptr<NucSeq> pRet(new NucSeq());
         // FASTA format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
         {
-            std::string sLine;
+            std::string sLine = "";
             std::getline (*pFile, sLine);
+            if(sLine.size() == 0)
+                throw AlignerException("Invalid line in fasta");;
             // make sure that the name contains no spaces
             // in fact everythin past the first space is considered description rather than name
-            pRet->sName = sLine.substr(1, sLine.find(' '));
+            pRet->sName = sLine.substr(1, findInString(sLine, ' '));
             while(pFile->good() && !pFile->eof() && pFile->peek() != '>' && pFile->peek() != ' ')
             {
                 sLine = "";// in the case that we hit an empty line getline does nothing...
                 std::getline (*pFile, sLine);
+                if(sLine.size() == 0)
+                    continue;
                 DEBUG(
                     for(auto character : sLine)
                     {
@@ -79,13 +94,13 @@ size_t len(std::string& sLine)
                     }// for
                 )// DEBUG
                 size_t uiLineSize = len(sLine);
-#if WITH_QUALITY
+#if WITH_QUALITY == 1
                 // uiLineSize uint8_t's with value 127
                 std::vector<uint8_t> xQuality(uiLineSize, 126);
 #endif
                 pRet->vAppend(
                     (const uint8_t*)sLine.c_str(),
-#if WITH_QUALITY
+#if WITH_QUALITY == 1
                     xQuality.data(),
 #endif
                     uiLineSize);
@@ -99,15 +114,16 @@ size_t len(std::string& sLine)
             DEBUG(
                 pRet->check();
             )// DEBUG
-
             return pRet;
         }//if
-#if WITH_QUALITY
+#if WITH_QUALITY == 1
         //FASTAQ format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
         {
             std::string sLine;
             std::getline (*pFile, sLine);
+            if(sLine.size() == 0)
+                throw AlignerException("Invalid line in fasta");;
             //make sure that the name contains no spaces
             //in fact everythin past the first space is considered description rather than name
             pRet->sName = sLine.substr(1, sLine.find(' '));
@@ -115,6 +131,8 @@ size_t len(std::string& sLine)
             {
                 sLine = "";
                 std::getline (*pFile, sLine);
+                if(sLine.size() == 0)
+                    continue;
                 size_t uiLineSize = len(sLine);
                 std::vector<uint8_t> xQuality(uiLineSize, 126);//uiLineSize uint8_t's with value 127
                 pRet->vAppend((const uint8_t*)sLine.c_str(), xQuality.data(), uiLineSize);
@@ -136,15 +154,19 @@ size_t len(std::string& sLine)
         //FASTAQ format
         if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
         {
-            std::string sLine;
+            std::string sLine = "";
             std::getline (*pFile, sLine);
+            if(sLine.size() == 0)
+                throw AlignerException("Invalid line in fasta");;
             //make sure that the name contains no spaces
             //in fact everythin past the first space is considered description rather than name
-            pRet->sName = sLine.substr(1, sLine.find(' '));
+            pRet->sName = sLine.substr(1, findInString(sLine, ' '));
             while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
             {
                 sLine = "";
                 std::getline (*pFile, sLine);
+                if(sLine.size() == 0)
+                    continue;
                 size_t uiLineSize = len(sLine);
                 pRet->vAppend((const uint8_t*)sLine.c_str(), uiLineSize);
             }//while
@@ -169,7 +191,7 @@ void exportFileReader()
             boost::python::bases<Module>, 
             std::shared_ptr<FileReader>
         >("FileReader", boost::python::init<std::string>())
-#if USE_BUFFERED_ASYNC_READER
+#if USE_BUFFERED_ASYNC_READER == 1
     DEBUG(
         .def("testBufReader", &FileReader::testBufReader)
         .staticmethod("testBufReader")

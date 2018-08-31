@@ -6,14 +6,6 @@
 
 using namespace libMA;
 
-
-extern int iGap;
-extern int iExtend;
-extern int iMatch;
-extern int iMissMatch;
-extern nucSeqIndex uiMaxGapArea;
-extern nucSeqIndex uiPadding;
-
 #ifdef WITH_PYTHON
 /**
  * @brief The boost-python main method.
@@ -25,7 +17,7 @@ extern nucSeqIndex uiPadding;
 BOOST_PYTHON_MODULE(libMA)
 {
         DEBUG_3(
-                std::cout.setf(std::ios::unitbuf);
+            std::cout.setf(std::ios::unitbuf);
         )
         exportContainer();
         exportModule();
@@ -51,6 +43,7 @@ BOOST_PYTHON_MODULE(libMA)
         exportSW_GPU();
         exportSoC();
         exportOtherSeeding();
+        defaults::exportDefaults();
 }//function
 
 #endif
@@ -59,103 +52,25 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
         std::shared_ptr<Pledge> pPack,
         std::shared_ptr<Pledge> pFMDIndex,
         std::vector<std::shared_ptr<Pledge>> aQueries,
-        std::shared_ptr<Module> pOut,
-        unsigned int uiReportN,
-        unsigned int uiThreads,
-        bool bPariedNormal,
-        bool bPariedUniform,
-        unsigned int uiPairedMean,
-        double fPairedStd,
-        double dPairedU,
-        bool bSeedSetPairs,
-        float fGiveUp,
-        unsigned int iMatch_,
-        unsigned int iMisMatch_,
-        unsigned int iGap_,
-        unsigned int iExtend_,
-        bool bFinderMode,
-        unsigned int uiMaxGapArea_,
-        unsigned int uiPadding_,
-        unsigned int uiMaxTries,
-        unsigned int uiMinSeedSizeDrop,
-        unsigned int uiMinAmbiguity,
-        unsigned int uiMaxAmbiguity,
-        unsigned int uiMinLen,
-        unsigned int uiMaxEqualScoreLookahead,
-        float fRelMinSeedSizeAmount,
-        float fScoreDiffTolerance,
-        float fMinimalQueryCoverage,
-        float fScoreTolerace,
-        unsigned int uiSwitchQLen,
-        bool optimisticGapEstimation,
-        float fSoCScoreMinimum,
-        bool bSkipLongBWTIntervals,
-        unsigned int uiCurrHarmScoreMin,
-        unsigned long long uiGenomeSizeDisable,
-        unsigned int uiSoCWidth
+        std::vector<std::shared_ptr<Module>>& vOut,
+        unsigned int uiThreads
     )
-{ 
-    iMatch = iMatch_;
-    iExtend = iExtend_;
-    iGap = iGap_;
-    iMissMatch = iMisMatch_;
-
-    uiPadding = uiPadding_;
-    uiMaxGapArea = uiMaxGapArea_;
-
+{
     //setup all modules
 
     //modules required for any alignment
     std::shared_ptr<Module> pLockQuery(new Lock(std::shared_ptr<Container>(new NucSeq())));
-    auto pSeeding = std::make_shared<BinarySeeding>(bSeedSetPairs);
-
-    //advanced parameters
-    pSeeding->uiMaxAmbiguity = uiMaxAmbiguity;
-    pSeeding->uiMinSeedSizeDrop = uiMinSeedSizeDrop;
-    pSeeding->uiMinAmbiguity = uiMinAmbiguity;
-    pSeeding->fRelMinSeedSizeAmount = fRelMinSeedSizeAmount;
-    pSeeding->uiMinGenomeSize = uiGenomeSizeDisable;
-
-    auto pSOC = std::make_shared<StripOfConsideration>(fGiveUp);
-
-    //advanced parameters
-    pSOC->uiMaxAmbiguity = uiMaxAmbiguity;
-    pSOC->fScoreMinimum = fSoCScoreMinimum;
-    pSOC->bSkipLongBWTIntervals = bSkipLongBWTIntervals;
-    pSOC->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
-    pSOC->uiMinLen = uiMinLen;
-    pSOC->uiMinGenomeSize = uiGenomeSizeDisable;
-    pSOC->uiSoCWidth = uiSoCWidth;
-
+    auto pSeeding = std::make_shared<BinarySeeding>();
+    auto pSOC = std::make_shared<StripOfConsideration>();
     std::shared_ptr<LinearLineSweep> pCouple(new LinearLineSweep());
-
-    //advanced parameters
-    pCouple->optimisticGapEstimation = optimisticGapEstimation;
-    pCouple->uiMaxTries = uiMaxTries;
-    if(bFinderMode && uiMaxTries > uiReportN)
-        pCouple->uiMaxTries = uiReportN;
-    pCouple->uiMaxEqualScoreLookahead = uiMaxEqualScoreLookahead;
-    pCouple->fScoreDiffTolerance = fScoreDiffTolerance;
-    pCouple->uiSwitchQLen = uiSwitchQLen;
-    pCouple->fMinimalQueryCoverage = fMinimalQueryCoverage;
-    pCouple->uiCurrHarmScoreMin = uiCurrHarmScoreMin;
-    pCouple->fCurrHarmScoreMinRel = fGiveUp;
-    pCouple->fScoreTolerace = fScoreTolerace;
-
     //we only want to report the best alignment
     std::shared_ptr<Module> pDoOptimal(new ExecOnVec(
         std::shared_ptr<Module>(new NeedlemanWunsch()), true, 0));
-    std::shared_ptr<Module> pMapping(new MappingQuality(uiReportN));
+    std::shared_ptr<MappingQuality> pMapping(new MappingQuality());
 
     //modules for the paired alignment
-    bool bPaired = bPariedNormal || bPariedUniform;
-    std::shared_ptr<Module> pPaired(new PairedReads(
-        dPairedU, 
-        bPariedNormal, 
-        bPariedUniform, 
-        uiPairedMean, 
-        fPairedStd
-    ));
+    bool bPaired = defaults::bNormalDist || defaults::bUniformDist;
+    std::shared_ptr<Module> pPaired(new PairedReads());
 
     //setup the computational graph
     std::vector<std::shared_ptr<Pledge>> aRet;
@@ -201,11 +116,12 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                     pSOCs, pQuery
                 }
             );
-        if(bFinderMode)
+        if(defaults::bFindMode)
         {
             // write the output to a file
+            assert(vOut.size() == 1);
             std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                    pOut, 
+                    vOut[0], 
                     std::vector<std::shared_ptr<Pledge>>
                     {
                         pCoupled,
@@ -315,7 +231,6 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                             pAlignments2
                         }
                     );
-                
             }//if
             else
             {
@@ -324,25 +239,51 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
             }//else
 
             //write the output to a file
-            std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                    pOut, 
-                    std::vector<std::shared_ptr<Pledge>>
-                    {
-                        pQuery,
-                        pAlignments,
-                        pPack
-                    }
-                );
-            //unlock the query so that this subgraph can be executed multiple times
-            std::shared_ptr<Pledge> pRet = Module::promiseMe(
-                    pUnLock, 
-                    std::vector<std::shared_ptr<Pledge>>
-                    {
-                        pNil
-                    }
-                );
-            //save the 
-            aRet.push_back(pRet);
+            if(vOut.size() == 1)
+            {
+                std::shared_ptr<Pledge> pNil = Module::promiseMe(
+                        vOut[0], 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pQuery,
+                            pAlignments,
+                            pPack
+                        }
+                    );
+                //unlock the query so that this subgraph can be executed multiple times
+                std::shared_ptr<Pledge> pRet = Module::promiseMe(
+                        pUnLock, 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pNil
+                        }
+                    );
+                //save the 
+                aRet.push_back(pRet);
+            }// if
+            else
+            {
+                assert(i < vOut.size());
+                std::shared_ptr<Pledge> pNil = Module::promiseMe(
+                        vOut[i], 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pQuery,
+                            pAlignments,
+                            pPack
+                        }
+                    );
+                //unlock the query so that this subgraph can be executed multiple times
+                std::shared_ptr<Pledge> pRet = Module::promiseMe(
+                        pUnLock, 
+                        std::vector<std::shared_ptr<Pledge>>
+                        {
+                            pNil
+                        }
+                    );
+                //save the 
+                aRet.push_back(pRet);
+            }// else
         }// else
     }//for
 

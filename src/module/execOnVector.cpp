@@ -28,7 +28,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
     // vp input is organized to following way: first a vector then single elements.
     // each element of the first vector shall be executed with all following elements
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
-        std::static_pointer_cast<ContainerVector>((*vpInput)[0]));
+        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[0])); // dc
 
     DEBUG_2(
         std::cout << "executing on: " << pInVec->size() << std::endl;
@@ -60,22 +60,7 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
                     // add all following elements
                     for(unsigned int j = 1; j < vpInput->size(); j++)
                         vInput->push_back((*vpInput)[j]);
-                    try
-                    {
-                        (*pResults)[i] = pModule->execute(vInput);
-                    }
-                    catch(NullPointerException e) 
-                    {
-                        std::cerr << e.what() << std::endl;
-                    }
-                    catch(std::exception e) 
-                    {
-                        std::cerr << e.what() << std::endl;
-                    }
-                    catch(...) 
-                    {
-                        std::cerr << "unknown exception when executing" << std::endl;
-                    }
+                    (*pResults)[i] = pModule->execute(vInput);
                     if((*pResults)[i] == nullptr)
                         std::cerr << pModule->getName() << " deleviered nullpointer as result" << std::endl;
                     if((*pResults)[i] == nullptr)
@@ -126,7 +111,7 @@ std::shared_ptr<Container> Tail::getOutputType() const
 std::shared_ptr<Container> Tail::execute(std::shared_ptr<ContainerVector> vpInput)
 {
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
-        std::static_pointer_cast<ContainerVector>((*vpInput)[0]));
+        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[0])); // dc
 
     std::shared_ptr<Container> pRet(nullptr);
     if(pInVec->empty())

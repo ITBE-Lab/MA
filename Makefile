@@ -5,6 +5,8 @@
 # WITH_GPU_SW: compiles a gpu implementation of the SW algorithm; requires libCuda
 #
 
+#@todo use pkg-config to find locations...
+
 # location of the Boost Python include files and library
 # $(BOOST_ROOT) must be set in the system environment!
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
@@ -18,28 +20,28 @@ TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
 TARGET_OBJ= \
 	$(addprefix obj/,$(addsuffix .o,$(TARGET))) \
 	obj/ksw/ksw2_dispatch.co \
-	obj/ksw/ksw2_extz2_sse2.co \
-	obj/ksw/ksw2_extz2_sse41.co \
+	obj/ksw/ksw2_extd2_sse2.co \
+	obj/ksw/ksw2_extd2_sse41.co \
 	obj/container/qSufSort.co
 
 # flags
 CC=gcc
-CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3
-CFLAGS= -Wall -Werror -fPIC -O3
+CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3 -g
+CFLAGS= -Wall -Werror -fPIC -O3 -g
 LDFLAGS= -std=c++11
 LDLIBS= -L$(LIBGABA_HOME) -lm -lpthread -lstdc++ -lgaba
 INCLUDES= -isystem$(LIBGABA_HOME)/ -Iinc
 
 # this adds debug switches
 ifeq ($(DEBUG), 1)
-	CCFLAGS= -Wall -Werror -fPIC -std=c++11 -g -DDEBUG_LEVEL=1
+	CCFLAGS += -g -DDEBUG_LEVEL=1
 	# we store release and debug objects in different folders
 	# no debug version for the ksw library
 	TARGET_OBJ= \
 		$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
 		obj/ksw/ksw2_dispatch.co \
-		obj/ksw/ksw2_extz2_sse2.co \
-		obj/ksw/ksw2_extz2_sse41.co \
+		obj/ksw/ksw2_extd2_sse2.co \
+		obj/ksw/ksw2_extd2_sse41.co \
 		obj/container/qSufSort.co
 endif
 
@@ -60,6 +62,15 @@ endif
 # use avx instead of sse
 ifeq ($(WITH_AVX2), 1)
 	CCFLAGS += -mavx2
+endif
+
+# compile with postgre support enabled
+ifeq ($(WITH_POSTGRES), 1)
+	POSTGRE_INC_DIR = $(shell pg_config --includedir)
+	POSTGRE_LIB_DIR = $(shell pg_config --libdir)
+	CCFLAGS += -DWITH_POSTGRES
+	INCLUDES += -isystem$(POSTGRE_INC_DIR)
+	LDLIBS += -L$(POSTGRE_LIB_DIR) -lpq
 endif
 
 # compile the gpu smith waterman as well
@@ -95,10 +106,10 @@ libMA: $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a
 obj/ksw/ksw2_dispatch.co:src/ksw/ksw2_dispatch.c inc/ksw/ksw2.h
 	$(CC) -c $(CFLAGS) -Iinc -DKSW_CPU_DISPATCH $< -o $@
 
-obj/ksw/ksw2_extz2_sse2.co:src/ksw/ksw2_extz2_sse.c inc/ksw/ksw2.h
+obj/ksw/ksw2_extd2_sse2.co:src/ksw/ksw2_extd2_sse.c inc/ksw/ksw2.h
 	$(CC) -c $(CFLAGS) -Iinc -msse2 -mno-sse4.1 -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $< -o $@
 
-obj/ksw/ksw2_extz2_sse41.co:src/ksw/ksw2_extz2_sse.c inc/ksw/ksw2.h
+obj/ksw/ksw2_extd2_sse41.co:src/ksw/ksw2_extd2_sse.c inc/ksw/ksw2.h
 	$(CC) -c $(CFLAGS) -Iinc -msse4.1 -DKSW_CPU_DISPATCH $< -o $@
 
 obj/container/qSufSort.co:src/container/qSufSort.c inc/container/qSufSort.h

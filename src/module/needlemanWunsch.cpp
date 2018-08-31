@@ -14,15 +14,15 @@
 
 using namespace libMA;
 
-int iMatch = 2;
-int iMissMatch = 4;
-int iGap = 6;
-int iExtend = 1;
-/// @brief the maximal allowed area for a gap between seeds (caps the NW runtime maximum)
-//accuracy drops if parameter is set smaller than 10^6
-nucSeqIndex uiMaxGapArea = 10000;
-/// @brief the padding on the left and right end of each alignment
-nucSeqIndex uiPadding = 500;
+using namespace libMA::defaults;
+extern int libMA::defaults::iGap;
+extern int libMA::defaults::iExtend;
+extern int libMA::defaults::iGap2;
+extern int libMA::defaults::iExtend2;
+extern int libMA::defaults::iMatch;
+extern int libMA::defaults::iMissMatch;
+extern nucSeqIndex libMA::defaults::uiMaxGapArea;
+extern nucSeqIndex libMA::defaults::uiPadding;
 
 DEBUG(
     bool bAnalyzeHeuristics = false;
@@ -45,17 +45,27 @@ static void ksw_gen_simple_mat(int m, int8_t *mat, int8_t a, int8_t b)
 		mat[(m - 1) * m + j] = 0;
 }// function
 
-void ksw_simplified(
+inline void ksw_simplified(
         int qlen, const uint8_t *query,
         int tlen, const uint8_t *target,
-        int8_t q, int8_t e, int& w,
-        ksw_extz_t *ez
+        int8_t q, int8_t e, int8_t q2, int8_t e2, int& w,
+        ksw_extz_t *ez, int8_t* mat
     )
 {
     int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
     if( std::abs(tlen - qlen) + minAddBandwidth > w)
         w = std::abs(tlen - qlen) + minAddBandwidth;
-    ksw_extz2_sse(nullptr, qlen, query, tlen, target, 5, mat, q, e, w, -1, -1, 0, ez);
+    ksw_extd2_sse(nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez);
+}// function
+
+inline void ksw_simplified(
+        int qlen, const uint8_t *query,
+        int tlen, const uint8_t *target,
+        int8_t q, int8_t e, int8_t q2, int8_t e2, int& w,
+        ksw_extz_t *ez
+    )
+{
+    ksw_simplified(qlen, query, tlen, target, q, e, q2, e2, w, ez, mat);
 }// function
 
 
@@ -73,8 +83,8 @@ public:
 
     ~Wrapper_ksw_extz_t()
     {
-        delete ez->cigar;
-        delete ez;
+        free( ez->cigar );
+        free( ez );
     }//default constructor
 };//class
 
@@ -117,6 +127,8 @@ void ksw(
         pRef->pGetSequenceRef() + fromRef, 
         iGap,
         iExtend,
+        iGap2,
+        iExtend2,
         uiBandwidth,
         ez.ez // return value
     );
@@ -959,9 +971,9 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    const auto& pSeeds   = std::static_pointer_cast<Seeds >((*vpInput)[0]);
-    const auto& pQuery   = std::static_pointer_cast<NucSeq>((*vpInput)[1]);
-    const auto& pRefPack = std::static_pointer_cast<Pack  >((*vpInput)[2]);
+    const auto& pSeeds   = std::dynamic_pointer_cast<Seeds >((*vpInput)[0]); // dc
+    const auto& pQuery   = std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]); // dc
+    const auto& pRefPack = std::dynamic_pointer_cast<Pack  >((*vpInput)[2]); // dc
 
     if(pSeeds == nullptr)
         return std::shared_ptr<Alignment>(new Alignment());
@@ -1100,6 +1112,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             bSkip = false;
             continue;
         }//if
+        if(rSeed.size() == 0)
+            continue;
         nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start();
         if(rSeed.start() > endOfLastSeedQuery)
             ovQ = 0;
@@ -1273,6 +1287,8 @@ void testKsw()
             (const uint8_t*)&vRefSeq[0], 
             iGap,
             iExtend,
+            iGap2,
+            iExtend2,
             iBandwidth,
             ez.ez // return value
         );
@@ -1298,6 +1314,52 @@ void testKsw()
 	} // for
 }//function
 
+std::string run_ksw(
+        std::string sA, std::string sB,
+        int8_t iM, int8_t iMm,
+        int8_t iO, int8_t iO2,
+        int8_t iE, int8_t iE2,
+        int iW
+    )
+{
+    // make matrix
+    int8_t mat[25];
+    ksw_gen_simple_mat(5, mat, iM, iMm);
+
+    Wrapper_ksw_extz_t ez;
+    std::vector<uint8_t> vA;
+    for(size_t i=0; i < sA.size(); i++)
+        vA.push_back(sA[i]);
+    std::vector<uint8_t> vB;
+    for(size_t i=0; i < sB.size(); i++)
+        vB.push_back(sB[i]);
+    ksw_simplified(
+        sA.size(), 
+        &vA[0],
+        sB.size(), 
+        &vB[0], 
+        iO,
+        iE,
+        iO2,
+        iE2,
+        iW,
+        ez.ez, // return value
+        mat // match mismatch matrix
+    );
+    
+    const char vMIDN[] = {'M', 'I', 'D', 'X'};
+    std::string sRet = "";
+    for (int i = 0; i < ez.ez->n_cigar; ++i)
+    {
+        uint32_t uiSymb = ez.ez->cigar[i]&0xf;
+        uint32_t uiAmount = ez.ez->cigar[i]>>4;
+        sRet += std::to_string(uiAmount);
+        sRet += vMIDN[uiSymb];
+        sRet += ",";
+    }//for
+    return sRet;
+}//function
+
 #ifdef WITH_PYTHON
 void exportNeedlemanWunsch()
 {
@@ -1308,6 +1370,8 @@ void exportNeedlemanWunsch()
         //test ksw function
         boost::python::def("testKsw", &testKsw);
     )//DEBUG
+    
+    boost::python::def("run_ksw", &run_ksw);
 
      //export the segmentation class
     boost::python::class_<
@@ -1317,16 +1381,6 @@ void exportNeedlemanWunsch()
     >(
         "NeedlemanWunsch"
     )
-        // These are constants among the entire code...
-        // We set them using the NW class for simplicity
-        // @todo: this should be changed ...
-        .def_readwrite("penalty_gap_open", &iGap)
-        .def_readwrite("penalty_gap_extend", &iExtend)
-        .def_readwrite("score_match", &iMatch)
-        .def_readwrite("penalty_missmatch", &iMissMatch)
-        .def_readwrite("max_gap_area", &uiMaxGapArea)
-        // actual parameters of NW
-        .def_readwrite("local", &NeedlemanWunsch::bLocal)
 #if DEBUG_LEVEL >= 1
         .def_readwrite("analyze_heuristics", &bAnalyzeHeuristics)
 #endif //DEBUG_LEVEL

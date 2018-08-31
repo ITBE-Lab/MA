@@ -22,9 +22,9 @@ namespace libMA
     {
     public:
         /// @brief Maximum ambiguity for a seed to be considered.
-        unsigned int uiMaxAmbiguity = 1000;
+        unsigned int uiMaxAmbiguity = defaults::uiMaxAmbiguity;
         /// @brief Minimum seed length.
-        unsigned int uiMinLen = 16;
+        unsigned int uiMinLen = defaults::uiMinLen;
         /**
          * @brief Minimal SoC score.
          * @details
@@ -32,22 +32,22 @@ namespace libMA
          * The minimal score that should be allowed during SoC collection.
          * Is interpreted relative to the query length.
          */
-        float fScoreMinimum = 0;
+        float fScoreMinimum = defaults::fSoCScoreMinimum;
         /**
          * @brief If the best SoC has seeds of accumulative length smaller than this, abort.
          * @details
          * Is multiplied by query length.
          * 0 = never abort.
          */
-        const float fGiveUp = 0;
-        unsigned int uiCurrHarmScoreMin = 18;
+        const float fGiveUp;
+        unsigned int uiCurrHarmScoreMin = defaults::uiCurrHarmScoreMin;
         
         /**
          * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
          */
-        nucSeqIndex uiMinGenomeSize = 0;
+        nucSeqIndex uiMinGenomeSize = defaults::uiGenomeSizeDisable;
 
-        unsigned int uiSoCWidth = 0;
+        unsigned int uiSoCWidth = defaults::uiSoCWidth;
 
         /**
         * @brief skip seeds with too much ambiguity
@@ -55,7 +55,7 @@ namespace libMA
         * True: skip all seeds with to much ambiguity
         * False: use max_hits instances of the seeds with more ambiguity
         */
-        bool bSkipLongBWTIntervals = true;
+        bool bSkipLongBWTIntervals = defaults::bSkipLongBWTIntervals;
 
         inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, 
                                                            const Seed& xS )
@@ -168,14 +168,10 @@ namespace libMA
 
     public:
 
-        StripOfConsideration(){}//default constructor
-
-        StripOfConsideration(
-                float fGiveUp
-            )
+        StripOfConsideration()
                 :
-            fGiveUp(fGiveUp)
-        {}//constructor
+            fGiveUp(defaults::fGiveUp)
+        {}//default constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
 

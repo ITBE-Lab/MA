@@ -23,14 +23,12 @@ namespace libMA
     class MappingQuality: public Module
     {
     public:
-        unsigned int uiReportNBest;
+        unsigned int uiReportNBest = defaults::uiReportN;
+        float fMinSecScoreRatio = defaults::fMinSecScoreRatio;
+        double dMaxOverlapSupplementary = defaults::dMaxOverlapSupplementary;
+        size_t uiMaxSupplementaryPerPrim = defaults::uiMaxSupplementaryPerPrim;
 
         MappingQuality()
-        {}//constructor
-
-        MappingQuality(unsigned int uiReportNBest)
-                :
-            uiReportNBest(uiReportNBest)
         {}//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -59,7 +57,10 @@ namespace libMA
 
         std::string getFullDesc() const
         {
-            return "MappingQuality(" + std::to_string(uiReportNBest) + ")";
+            return "MappingQuality(" + 
+                std::to_string(uiReportNBest) + "," +
+                std::to_string(dMaxOverlapSupplementary) + "," +
+                std::to_string(fMinSecScoreRatio) + ")";
         }//function
     };//class
 }//namspace libMA

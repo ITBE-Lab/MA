@@ -8,11 +8,20 @@
 #endif
 using namespace libMA;
 
-extern int iGap;
-extern int iExtend;
-extern int iMatch;
-extern int iMissMatch;
-extern nucSeqIndex uiMaxGapArea;
+
+using namespace libMA::defaults;
+extern int libMA::defaults::iGap;
+extern int libMA::defaults::iExtend;
+extern int libMA::defaults::iMatch;
+extern int libMA::defaults::iMissMatch;
+extern nucSeqIndex libMA::defaults::uiMaxGapArea;
+
+inline nucSeqIndex difference(nucSeqIndex a, nucSeqIndex b)
+{
+    if( a > b )
+        return a - b;
+    return b - a;
+}// function
 
 ContainerVector LinearLineSweep::getInputType() const
 {
@@ -116,8 +125,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         std::shared_ptr<ContainerVector> vpInput
     )
 {
-    const auto& pSoCIn   = std::static_pointer_cast<SoCPriorityQueue>((*vpInput)[0]);
-    const auto& pQuery   = std::static_pointer_cast<NucSeq          >((*vpInput)[1]);
+    const auto& pSoCIn   = std::dynamic_pointer_cast<SoCPriorityQueue>((*vpInput)[0]); // dc
+    const auto& pQuery   = std::dynamic_pointer_cast<NucSeq          >((*vpInput)[1]); // dc
 #define FILTER_1 ( 0 )
 #if FILTER_1
     nucSeqIndex uiAccumulativeSeedLength = 0;
@@ -178,24 +187,27 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             // Prof. Kutzners filter:
             // this merely checks weather we actually do have to do the harmonization at all
             //@todo uiSwitchQLen != 0 should be replaced with switch
-            if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
+            if(bDoHeuristics)
             {
-                if(uiLastHarmScore > uiCurrSoCScore)
+                if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
+                {
+                    if(uiLastHarmScore > uiCurrSoCScore)
+                    {
+                        DEBUG(
+                            std::cout << "skip because of SoC score minimum" << std::endl;
+                        )
+                        continue;
+                    }// if
+                } // if
+
+                if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0)
                 {
                     DEBUG(
-                        std::cout << "skip because of SoC score minimum" << std::endl;
+                        std::cout << "Break because of fast SoC drop";
                     )
-                    continue;
-                }// if
-            } // if
-
-            if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0)
-            {
-                DEBUG(
-                    std::cout << "Break because of fast SoC drop";
-                )
-                break;
-            } // if
+                    break;
+                } // if
+            }// if
             uiBestSoCScore = std::max(uiBestSoCScore, uiCurrSoCScore);
 
             DEBUG(
@@ -442,7 +454,47 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             if(pOptimalStart != pSeeds->end())
                 pSeeds->erase(pSeeds->begin(), pOptimalStart);
 #endif
+            /*
+            * Artifact filter:
+            */
+            if(pSeeds->size() > 2)
+            {
+                size_t uiPrePos = 0;
+                size_t uiCenterPos = 1;
+                while(uiCenterPos < pSeeds->size() - 1)
+                {
+                    Seed& rPre = (*pSeeds)[uiPrePos];
+                    Seed& rCenter = (*pSeeds)[uiCenterPos];
+                    Seed& rPost = (*pSeeds)[uiCenterPos + 1];
 
+                    int64_t iDeltaPre = rPre.start_ref() - (int64_t)rPre.start();
+                    int64_t iDeltaCenter = rCenter.start_ref() - (int64_t)rCenter.start();
+                    int64_t iDeltaPost = rPost.start_ref() - (int64_t)rPost.start();
+
+                    int64_t iDeltaDistToPre = std::abs(iDeltaPre - iDeltaCenter);
+                    int64_t iDeltaDistToPost = std::abs(iDeltaPost - iDeltaCenter);
+
+                    double dDeltaDistDiff = std::abs(iDeltaDistToPre - iDeltaDistToPost)*2 / 
+                        ((double) iDeltaDistToPre + iDeltaDistToPost );
+
+                    if(
+                        dDeltaDistDiff < dMaxDeltaDist &&
+                        (uint64_t)iDeltaDistToPre > uiMinDeltaDist
+                    )
+                    {
+                        // the filter triggered -> 
+                        // we flag the seed to be ignored by setting it's size to zero
+                        rCenter.size(0);
+                        uiCenterPos++;
+                    }// if
+                    else
+                    {
+                        // the filter did not trigger move to the next triple
+                        uiCenterPos++;
+                        uiPrePos = uiCenterPos - 1;
+                    }// else
+                }// while
+            }// if
         }// if
         else // pSeedsIn contains merely one seed
         {
@@ -465,20 +517,22 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         nucSeqIndex uiCurrHarmScore = 0;
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
-
-        if(uiCurrHarmScore < uiCurrHarmScoreMin )
+        if(bDoHeuristics)
         {
-            DEBUG(
-                std::cout << "skip because of abs. harmonization score minimum" << std::endl;
-            )
-            continue;
-        }
-        if(uiCurrHarmScore < pQuery->length() * fCurrHarmScoreMinRel )
-        {
-            DEBUG(
-                std::cout << "skip because of rel. harmonization score minimum" << std::endl;
-            )
-            continue;
+            if(uiCurrHarmScore < uiCurrHarmScoreMin )
+            {
+                DEBUG(
+                    std::cout << "skip because of abs. harmonization score minimum" << std::endl;
+                )
+                continue;
+            }
+            if(uiCurrHarmScore < pQuery->length() * fCurrHarmScoreMinRel )
+            {
+                DEBUG(
+                    std::cout << "skip because of rel. harmonization score minimum" << std::endl;
+                )
+                continue;
+            }// if
         }// if
 
         DEBUG(
@@ -495,55 +549,58 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 if(b)
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
-#if 1
-        //@todo uiSwitchQLen != 0 should be replaced with switch
-        if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
+        if(bDoHeuristics)
         {
-            // Prof. Kutzner's filter:
-            if(uiLastHarmScore > uiCurrHarmScore)
+            //@todo uiSwitchQLen != 0 should be replaced with switch
+            if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
             {
-                DEBUG(
-                    std::cout << "skip because of harmonization score dropoff" << std::endl;
-                )
-                continue;
+                // Prof. Kutzner's filter:
+                if(uiLastHarmScore > uiCurrHarmScore)
+                {
+                    DEBUG(
+                        std::cout << "skip because of harmonization score dropoff" << std::endl;
+                    )
+                    continue;
+                }// if
             }// if
-        }// if
-        else
-        {
-            if(
-                !(uiCurrHarmScore + (pQuery->length()*fScoreDiffTolerance) >= uiLastHarmScore &&
-                uiCurrHarmScore - (pQuery->length()*fScoreDiffTolerance) <= uiLastHarmScore)
-                )
-                uiSoCRepeatCounter = 0;
-            else if(
-                    ++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead && 
-                    uiMaxEqualScoreLookahead != 0
-                )
+            else
             {
-                uiSoCRepeatCounter -= 1; // cause we haven't actually pushed the current soc yet...
-                DEBUG(
-                    std::cout << "Break because of repeated harmonization score for short queries " << uiMaxEqualScoreLookahead << std::endl;
-                )
-                break;
+                if(
+                    !(uiCurrHarmScore + (pQuery->length()*fScoreDiffTolerance) >= uiLastHarmScore &&
+                    uiCurrHarmScore - (pQuery->length()*fScoreDiffTolerance) <= uiLastHarmScore)
+                    )
+                    uiSoCRepeatCounter = 0;
+                else if(
+                        ++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead && 
+                        uiMaxEqualScoreLookahead != 0
+                    )
+                {
+                    uiSoCRepeatCounter -= 1; // cause we haven't actually pushed the current soc yet...
+                    DEBUG(
+                        std::cout << "Break because of repeated harmonization score for short queries " << uiMaxEqualScoreLookahead << std::endl;
+                    )
+                    break;
+                } // else
             } // else
-        } // else
-#endif
-        uiLastHarmScore = uiCurrHarmScore;
+            uiLastHarmScore = uiCurrHarmScore;
+        }// if
 
         pSoCs->push_back(pSeeds);
 
         //FILTER
 #if FILTER_1
-
-        nucSeqIndex uiAccLen = pSeeds->getScore();
-        if (uiAccumulativeSeedLength > uiAccLen )
+        if(bDoHeuristics)
         {
-            DEBUG(
-                std::cout << "skip because of accumulative seed length" << std::endl;
-            )
-            continue;
+            nucSeqIndex uiAccLen = pSeeds->getScore();
+            if (uiAccumulativeSeedLength > uiAccLen )
+            {
+                DEBUG(
+                    std::cout << "skip because of accumulative seed length" << std::endl;
+                )
+                continue;
+            }// if
+            uiAccumulativeSeedLength = std::max(uiAccLen, uiAccumulativeSeedLength);
         }// if
-        uiAccumulativeSeedLength = std::max(uiAccLen, uiAccumulativeSeedLength);
 #endif
         //FILTER END
 
@@ -551,6 +608,11 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
     for(unsigned int ui = 0; ui < uiSoCRepeatCounter && pSoCs->size() > 1; ui++)
         pSoCs->pop_back();
+
+    
+    DEBUG(
+        std::cout << "computed " << pSoCs->size() << " SoCs." << std::endl;
+    )// DEBUG
     
     return pSoCs;
 }//function
@@ -571,6 +633,7 @@ void exportLinesweep()
         .def_readwrite("equal_score_lookahead", &LinearLineSweep::uiMaxEqualScoreLookahead)
         .def_readwrite("diff_tolerance", &LinearLineSweep::fScoreDiffTolerance)
         .def_readwrite("switch_q_len", &LinearLineSweep::uiSwitchQLen)
+        .def_readwrite("do_heuristics", &LinearLineSweep::bDoHeuristics)
     ;
     boost::python::implicitly_convertible< 
         std::shared_ptr<LinearLineSweep>,

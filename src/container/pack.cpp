@@ -625,7 +625,7 @@ void exportPack()
             )
         .def(
                 "extract_from_to", 
-                &Pack::vExtract,
+                &Pack::vExtractPy,
                 "arg1: self\n"
                 "arg2: begin of extraction\n"
                 "arg3: end of extraction\n"
@@ -678,11 +678,53 @@ void exportPack()
                 "start_of_sequence_id", 
                 &Pack::startOfSequenceWithId
             )
+        .def(
+                "name_of_sequence", 
+                &Pack::nameOfSequenceForPosition
+            )
         .def_readonly(
                 "unpacked_size_single_strand", 
                 &Pack::uiUnpackedSizeForwardStrand
             )
+        .def(
+                "contigNames", 
+                &Pack::contigNames
+            )
+        .def(
+                "contigLengths", 
+                &Pack::contigLengths
+            )
         ;
+        
+
+    // required by contigNames
+    boost::python::class_<std::vector<std::string>
+    >("StringVector")
+    .def(boost::python::vector_indexing_suite<
+            std::vector<std::string>,
+            /*
+             *    true = noproxy this means that the content of the vector is already exposed by
+             *    boost python. 
+             *    if this is kept as false, Container would be exposed a second time.
+             *    the two Containers would be different and not inter castable.
+             */
+            true
+        >());
+
+    // already exists
+    // // required by contigLengths
+    // boost::python::class_<std::vector<nucSeqIndex>
+    // >("nucSeqIndexVector")
+    // .def(boost::python::vector_indexing_suite<
+    //         std::vector<nucSeqIndex>,
+    //         /*
+    //          *    true = noproxy this means that the content of the vector is already exposed by
+    //          *    boost python. 
+    //          *    if this is kept as false, Container would be exposed a second time.
+    //          *    the two Containers would be different and not inter castable.
+    //          */
+    //         true
+    //     >());
 
     //tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<

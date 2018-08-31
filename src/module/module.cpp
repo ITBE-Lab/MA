@@ -5,7 +5,6 @@
 #include "module/module.h"
 #include "module/splitter.h"
 using namespace libMA;
-std::mutex xPython;
 
 bool libMA::typeCheck(
         std::shared_ptr<Container> pData, 
@@ -77,7 +76,7 @@ std::shared_ptr<Pledge> Module::promiseMe(
         std::vector<std::shared_ptr<Pledge>> vInput
     )
 {
-    ContainerVector vCastInput(vInput.begin(),vInput.end());
+    ContainerVector vCastInput(vInput.begin(), vInput.end());
     if(!typeCheck(vCastInput, pThis->getInputType()))
     {
         std::cerr << "promise of module " << pThis->getName() << " had the wrong type" << std::endl;
