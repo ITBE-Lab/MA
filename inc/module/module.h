@@ -406,7 +406,6 @@ namespace libMA
                 execTime += duration.count();
                 assert(typeCheck(content, type));
             }//if
-            
 #ifdef WITH_PYTHON
             else
             {
@@ -441,8 +440,6 @@ namespace libMA
                     }//if
                 );
             }//else
-#else
-            throw ModuleIO_Exception("No pledger known for unfulfilled pledge");
 #endif
             return true;
         }//function
