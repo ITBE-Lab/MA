@@ -103,13 +103,26 @@ Necessary arguments for alignments:
     -x, --idx <prefix>             FMD-index used for alignments
     -i, --in <fname>               FASTA or FASTAQ input files.
 
+Available presettings:
+     -m, --mode [str]              Set operation modus for MA.
+                                   fast:
+                                       'fast' is the default operation mode for MA.
+                                       It uses the maximal spanning seeding strategy and
+                                       heuristics that are optimized for speed.
+                                   acc:
+                                       'acc'urate is uses SMEMs as seeds and
+                                       heuristics that are optimized for speed.
+                                   pacBio:
+                                       'pacBio' uses maximal spanning seeds and no heuristics,
+                                       as outliers in SMS datasets do not cause major runtime
+                                       penalties. 'maxTries' is set to 5 and 'giveUp' to 0.
+                                   Default is 'fast'.
+
 Alignment options:
     -o, --out <fname>              Filename used for SAM file output. Default output stream is
                                    standard output.
     -t, --threads <num>            Use <num> threads. On startup MA checks the hardware and chooses 
                                    this value accordingly.
-    -m, --mode [fast/acc]          Set operation modus for MA. 
-                                   Default is 'fast'.
     -d, --noDP                     Switch that disables the final Dynamic Programming.
     -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited.
                                    Default is 1.
@@ -155,6 +168,17 @@ Advanced options:
                                    Default is 50.
         --minRefSize <num>         If the reference is smaller than <num> nt we disable all heuristics.
                                    Default is 10000000.
+        --minSecToPrimRatio <num>  Only output secondary alignments if their score is larger
+                                   or equal than <num> * score of primary alignment.
+                                   Default is 0.75.
+        --maxOverlapSupp <num>     An alignment is considered supplementary if it overlaps less
+                                   than <num> percent with the primary alignment.
+                                   Default is 0.1.
+        --disableHeuristics        Setting this switch will disable all break criteria but
+                                   maxTries. This way one can ensure that MA never gives up
+                                   searching for alignments. Hence, MA will be better
+                                   at finding outlier alignments, but reads that have no
+                                   good alignment at all will cause high runtime penalties.
 ```
 
 ## Thanks ...

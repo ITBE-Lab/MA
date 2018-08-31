@@ -7,7 +7,10 @@
 #define DEFAULT_PARAMETERS_H
 
 #include <string>
+
+#ifdef WITH_PYTHON
 #include <boost/python.hpp>
+#endif
 
 namespace libMA
 {
@@ -72,9 +75,9 @@ namespace libMA
             sParameterSet = "pacBio";
             sSeedSet = "maxSpan";
             bDisableHeuristics = true;
-            uiMaxTries = 5;   // @todo check if ths is too little or not...
-            fGiveUp = 0;      // @todo check if ths is really necessary
-            uiMaxSupplementaryPerPrim = 0.25; // @todo verify this parameter
+            uiMaxTries = 5;
+            fGiveUp = 0;
+            dMaxOverlapSupplementary = 0.25;
         }// function
 
         void exportDefaults();
