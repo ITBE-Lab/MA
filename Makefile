@@ -147,7 +147,6 @@ html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildc
 clean:
 	rm -f -r obj dbg libMA.so html ma
 	$(MAKE) -C $(LIBGABA_HOME) clean
-	$(MAKE) -f CUDA_Makefile clean
 #	rm -r -f dist *.egg-info build
 
 docs: html/index.html
