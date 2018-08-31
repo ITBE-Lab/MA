@@ -60,10 +60,13 @@ namespace libMA
                 /* Check to see that the backend connection was successfully made */
                 if (PQstatus(conn) != CONNECTION_OK)
                     throw AlignerException("Connection to database failed:" + std::string(PQerrorMessage(conn)));
+
+                exec("BEGIN");
             }// constructor
 
             ~DbRunConnection()
             {
+                exec("COMMIT");
                 /* close the connection to the database and cleanup */
                 PQfinish(conn);
             }// deconstructor
