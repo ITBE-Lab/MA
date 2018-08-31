@@ -69,7 +69,7 @@ size_t findInString(std::string s, char c)
             std::string sLine = "";
             std::getline (*pFile, sLine);
             if(sLine.size() == 0)
-                continue;
+                throw AlignerException("Invalid line in fasta");;
             // make sure that the name contains no spaces
             // in fact everythin past the first space is considered description rather than name
             pRet->sName = sLine.substr(1, findInString(sLine, ' '));
@@ -123,7 +123,7 @@ size_t findInString(std::string s, char c)
             std::string sLine;
             std::getline (*pFile, sLine);
             if(sLine.size() == 0)
-                continue;
+                throw AlignerException("Invalid line in fasta");;
             //make sure that the name contains no spaces
             //in fact everythin past the first space is considered description rather than name
             pRet->sName = sLine.substr(1, sLine.find(' '));
@@ -157,7 +157,7 @@ size_t findInString(std::string s, char c)
             std::string sLine = "";
             std::getline (*pFile, sLine);
             if(sLine.size() == 0)
-                continue;
+                throw AlignerException("Invalid line in fasta");;
             //make sure that the name contains no spaces
             //in fact everythin past the first space is considered description rather than name
             pRet->sName = sLine.substr(1, findInString(sLine, ' '));

@@ -287,7 +287,14 @@ namespace libMA
             return std::string("FileReader");
         }//function
 
+        // @override
         bool outputsVolatile() const
+        {
+            return true;
+        }//function
+
+        // @override
+        bool requiresLock() const
         {
             return true;
         }//function

@@ -21,7 +21,6 @@
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
-#define AUTO_GRAPH_LOCK ( 1 )
 
 /**
  * @brief the C++ code is in this namespace.
@@ -128,6 +127,12 @@ namespace libMA
          * If this is set to true the pledge will recompute the result each time get is called.
          */
         virtual bool EXPORTED outputsVolatile() const
+        {
+            return false;
+        }//function
+
+        // temporary
+        virtual bool EXPORTED requiresLock() const
         {
             return false;
         }//function
@@ -317,9 +322,7 @@ namespace libMA
         std::vector<std::shared_ptr<Pledge>> vPredecessors;
         std::vector<std::weak_ptr<Pledge>> vSuccessors;
         std::vector<std::shared_ptr<Pledge>> aSync;
-#if AUTO_GRAPH_LOCK == 1
         std::shared_ptr<std::mutex> pMutex;
-#endif
 
     public:
         double execTime;
@@ -345,9 +348,7 @@ namespace libMA
             vPredecessors(vPredecessors),
             vSuccessors(),
             aSync(),
-#if AUTO_GRAPH_LOCK == 1
             pMutex(new std::mutex),
-#endif
             execTime(0)
         {}//constructor
 
@@ -370,9 +371,7 @@ namespace libMA
             vPredecessors(vPredecessors),
             vSuccessors(),
             aSync(),
-#if AUTO_GRAPH_LOCK == 1
             pMutex(new std::mutex),
-#endif
             execTime(0)
         {}//constructor
 #endif
@@ -448,7 +447,6 @@ namespace libMA
             return true;
         }//function
 
-#if AUTO_GRAPH_LOCK == 1
         /**
          * @brief Used to synchronize the execution of pledges in the comp. graph.
          * @details
@@ -460,7 +458,8 @@ namespace libMA
                 std::function<std::shared_ptr<Container>()> fDo
             )
         {
-            if(vSuccessors.size() > 1)
+            // if(vSuccessors.size() > 1) @todo @fixme this should be here
+            if(pledger == nullptr || pledger->requiresLock())
             {
                 // multithreading is possible thus a guard is required here.
                 // deadlock prevention is trivial, 
@@ -471,7 +470,6 @@ namespace libMA
             else
                 return fDo();
         }//function
-#endif
 
     public:
         /**
@@ -637,14 +635,12 @@ namespace libMA
             if(bVolatile == false && content != nullptr)
                 return content;
 
-#if AUTO_GRAPH_LOCK == 1
             // locks a mutex if this pledge can be reached from multiple leaves in the graph
             // does not lock otherwise...
-            lockIfNecessary(
+            return lockIfNecessary(
                 [&]
                 ()
                 {
-#endif
             // execute
             if(execForGet() == false)
             {
@@ -668,12 +664,11 @@ namespace libMA
                     return content;
                 }// if
 
-
+            // return must be here and returned throught the lambda to avoid data race...
             return content;
-#if AUTO_GRAPH_LOCK == 1
+
                 }// lambda
             );// function call
-#endif
         }// function
 
         /**
@@ -689,10 +684,8 @@ namespace libMA
             //add each other to the caller list
             pA->aSync.push_back(pB);
             pB->aSync.push_back(pA);
-#if AUTO_GRAPH_LOCK == 1
             //sync the mutex of pA and pB
             pA->pMutex = pB->pMutex;
-#endif
         }//function
 
         void forAllSyncs(std::function<void(std::shared_ptr<Pledge>)> fDo)

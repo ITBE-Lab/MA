@@ -10,6 +10,7 @@
 #include "util/support.h"
 #include "util/exception.h"
 #include "util/iterableConverter.h"
+#include "util/debug.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
@@ -39,14 +40,14 @@ namespace libMA
     class Container
     {
     public:
-//#if DEBUG_LEVEL >= 1
+#if DEBUG_LEVEL >= 1
         bool bTombStone = false;
 
         ~Container()
         {
             bTombStone = true;
         }// deconstructor
-//#endif
+#endif
         /** 
         * @returns the type of the container as int.
         * @brief Used by @ref Module "module" for type checking its Inputs.

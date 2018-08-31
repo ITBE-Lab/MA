@@ -70,6 +70,12 @@ namespace libMA
             return true;
         }//function
 
+        // @override
+        bool requiresLock() const
+        {
+            return true;
+        }//function
+
         std::string getFullDesc() const
         {
             return std::string("Splitter");
