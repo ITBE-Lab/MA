@@ -38,10 +38,7 @@ size_t findInString(std::string s, char c)
 {
     auto uiPos = s.find(c);
     if(uiPos == std::string::npos)
-    {
-        std::cerr << "." << std::endl;
         return s.size();
-    }
     return uiPos;
 }// function
 
