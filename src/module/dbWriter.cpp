@@ -39,6 +39,18 @@ std::shared_ptr<Container> DbWriter::execute(std::shared_ptr<ContainerVector> vp
         std::string sCigar = pAlignment->cigarString(*pPack);
 
         uint32_t flag = pAlignment->getSamFlag(*pPack);
+        
+        std::string sContigOther = "*";
+        std::string sPosOther = "0";
+        // paired
+        if(!pAlignment->xStats.pOther.expired())
+        {
+            flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
+            flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
+
+            sContigOther = pAlignment->xStats.pOther.lock()->getContig(*pPack);
+            sPosOther = std::to_string(pAlignment->xStats.pOther.lock()->getSamPosition(*pPack));
+        }// if
 
         std::string sRefName = pAlignment->getContig(*pPack);
         // sam file format has 1-based indices bam 0-based...
@@ -50,7 +62,7 @@ std::shared_ptr<Container> DbWriter::execute(std::shared_ptr<ContainerVector> vp
 
         std::string sSQL = "";
 
-        sSQL += "INSERT INTO alignment (cigar, position, mapping_quality, query_id, run_id, sam_flags, contig, query_sequence, length) VALUES ( \'";
+        sSQL += "INSERT INTO alignment (cigar, position, mapping_quality, query_id, run_id, sam_flags, contig, query_sequence, contig_other, position_other, length) VALUES ( \'";
 
         sSQL += sCigar + "\', ";
         sSQL += std::to_string(uiRefPos) + ", ";
@@ -60,7 +72,11 @@ std::shared_ptr<Container> DbWriter::execute(std::shared_ptr<ContainerVector> vp
         sSQL += std::to_string(flag) + ", \'";
         sSQL += sRefName + "\', \'";
         sSQL += sSegment + "\', ";
+        sSQL += sContigOther + "\', ";
+        sSQL += sPosOther + "\', ";
         sSQL += std::to_string(pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery) + " )";
+
+        //std::cerr << sSQL << std::endl;
 
         xConnection.exec(sSQL);
     }//for

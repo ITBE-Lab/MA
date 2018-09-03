@@ -281,7 +281,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
                             pNil
                         }
                     );
-                //save the 
+                //save the pledge
                 aRet.push_back(pRet);
             }// else
         }// else

@@ -57,19 +57,16 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 
         uint32_t flag = pAlignment->getSamFlag(*pPack);
 
-        std::string sNextName = "*";
-        unsigned int uiNextPos = 0;
+        std::string sContigOther = "*";
+        std::string sPosOther = "0";
         // paired
         if(!pAlignment->xStats.pOther.expired())
         {
             flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
 
-            sNextName = pAlignment->xStats.pOther.lock()->xStats.sName;
-            uiNextPos = pPack->posInSequence(
-                    pAlignment->xStats.pOther.lock()->uiBeginOnRef,
-                    pAlignment->xStats.pOther.lock()->uiEndOnRef
-                ) + 1;
+            sContigOther = pAlignment->xStats.pOther.lock()->getContig(*pPack);
+            sPosOther = std::to_string(pAlignment->xStats.pOther.lock()->getSamPosition(*pPack));
         }// if
 
         std::string sRefName = pAlignment->getContig(*pPack);
@@ -129,9 +126,9 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             //cigar
             *pOut << sCigar  << "\t";
             //Ref. name of the mate/next read
-            *pOut << sNextName << "\t";
+            *pOut << sContigOther << "\t";
             //Position of the mate/next read
-            *pOut << std::to_string(uiNextPos) << "\t";
+            *pOut << sPosOther << "\t";
             //observed Template length
             *pOut << std::to_string(pAlignment->length()) << "\t";
             //segment sequence

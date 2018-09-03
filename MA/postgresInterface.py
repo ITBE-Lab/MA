@@ -96,7 +96,8 @@ def get_alignments_from_db(run_id, contig, start, end):
 
     cur.execute(
             """
-            SELECT cigar, position, mapping_quality, query_id, sam_flags, query_sequence, length 
+            SELECT cigar, position, mapping_quality, query_id, sam_flags, query_sequence, length,
+            contig_other, position_other
             FROM alignment
             WHERE run_id = %s
             AND contig = %s
@@ -154,13 +155,18 @@ def reads_to_bam(run_id, contig, start, end, pack, bam_file_name):
             reference_names=ref_name_list,
             reference_lengths=ref_len_list
         ) as bam_file:
-        for cigar, position, mapping_quality, query_id, sam_flags, query_sequence, length_ in alignment_list:
+        for cigar, position, mapping_quality, query_id, sam_flags, query_sequence, length_, contig_other, position_other in alignment_list:
             pys_alignment = pysam.AlignedSegment()
             pys_alignment.query_name = query_id
             pys_alignment.query_sequence = query_sequence
             pys_alignment.flag = sam_flags
             pys_alignment.reference_id = contig_id
             pys_alignment.reference_start = position
+            if contig_other != "*":
+                for index, name in enumerate(pack.contigNames()):
+                    if name == contig_other:
+                        pys_alignment.next_reference_id = index
+                pys_alignment.next_reference_start = position_other
             #pys_alignment.cigarstring = cigar
             cigar_list = []
             length = 0

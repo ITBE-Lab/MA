@@ -28,7 +28,7 @@ namespace libMA
         bool bFindMode = false;        // true: don't do DP
         bool bOptimisticGapEstimation = true;  // how to estimate gap costs in harmonization
         bool bSkipLongBWTIntervals = true;     // pick samples from long SAintervals or skip them
-        bool bNormalDist = true;     // use normal distribution to model gaps between paired reads
+        bool bNormalDist = false;     // use normal distribution to model gaps between paired reads
         bool bUniformDist = false;     // use normal distribution to model gaps between paired reads
         float fGiveUp = 0.002;  // do not store socs with score less than this * query len
         float fRelMinSeedSizeAmount = 0.005;    // minimum seed coverage to consider a query
