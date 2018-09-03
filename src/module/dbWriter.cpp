@@ -71,9 +71,9 @@ std::shared_ptr<Container> DbWriter::execute(std::shared_ptr<ContainerVector> vp
         sSQL += std::to_string(iRunId) + ", ";
         sSQL += std::to_string(flag) + ", \'";
         sSQL += sRefName + "\', \'";
-        sSQL += sSegment + "\', ";
+        sSQL += sSegment + "\', \'";
         sSQL += sContigOther + "\', ";
-        sSQL += sPosOther + "\', ";
+        sSQL += sPosOther + ", ";
         sSQL += std::to_string(pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery) + " )";
 
         //std::cerr << sSQL << std::endl;

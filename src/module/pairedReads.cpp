@@ -51,6 +51,12 @@ std::shared_ptr<Container> PairedReads::execute(
     std::shared_ptr<ContainerVector> pAlignments1 = std::dynamic_pointer_cast<ContainerVector>((*vpInput)[0]); // dc
     std::shared_ptr<ContainerVector> pAlignments2 = std::dynamic_pointer_cast<ContainerVector>((*vpInput)[1]); // dc
 
+    // assert that we have at least one alignment for each mate.
+    if(pAlignments1->size() == 0)
+        return pAlignments2;
+    if(pAlignments2->size() == 0)
+        return pAlignments1;
+
     //the indices of the best alignment pair
     unsigned int uiI1 = 0, uiI2 = 0;
     double maxScore = 0;

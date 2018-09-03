@@ -5,6 +5,43 @@
 #include "module/fileReader.h"
 
 using namespace libMA;
+/**
+ * code taken from 
+ * https://stackoverflow.com/questions/6089231/getting-std-ifstream-to-handle-lf-cr-and-crlf
+ * suports windows linux and mac line endings
+ */
+std::istream& safeGetline(std::istream& is, std::string& t)
+{
+    t.clear();
+
+    // The characters in the stream are read one-by-one using a std::streambuf.
+    // That is faster than reading them one-by-one using the std::istream.
+    // Code that uses streambuf this way must be guarded by a sentry object.
+    // The sentry object performs various tasks,
+    // such as thread synchronization and updating the stream state.
+
+    std::istream::sentry se(is, true);
+    std::streambuf* sb = is.rdbuf();
+
+    for(;;) {
+        int c = sb->sbumpc();
+        switch (c) {
+        case '\n':
+            return is;
+        case '\r':
+            if(sb->sgetc() == '\n')
+                sb->sbumpc();
+            return is;
+        case std::streambuf::traits_type::eof():
+            // Also handle the case when the last line has no line ending
+            if(t.empty())
+                is.setstate(std::ios::eofbit);
+            return is;
+        default:
+            t += (char)c;
+        }
+    }
+}
 
 ContainerVector FileReader::getInputType() const
 {
@@ -57,7 +94,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
     if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
     {
         std::string sLine = "";
-        std::getline(*pFile, sLine);
+        safeGetline(*pFile, sLine);
         if(sLine.size() == 0)
             throw AlignerException("Invalid line in fasta");;
         // make sure that the name contains no spaces
@@ -66,7 +103,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && !pFile->eof() && pFile->peek() != '>' && pFile->peek() != ' ')
         {
             sLine = "";// in the case that we hit an empty line getline does nothing...
-            std::getline(*pFile, sLine);
+            safeGetline(*pFile, sLine);
             if(sLine.size() == 0)
                 continue;
             DEBUG(
@@ -111,7 +148,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
     if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
     {
         std::string sLine;
-        std::getline(*pFile, sLine);
+        safeGetline(*pFile, sLine);
         if(sLine.size() == 0)
             throw AlignerException("Invalid line in fasta");;
         //make sure that the name contains no spaces
@@ -120,7 +157,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
         {
             sLine = "";
-            std::getline(*pFile, sLine);
+            safeGetline(*pFile, sLine);
             if(sLine.size() == 0)
                 continue;
             size_t uiLineSize = len(sLine);
@@ -132,7 +169,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         unsigned int uiPos = 0;
         while(pFile->good() && !pFile->eof() && pFile->peek() != '@')
         {
-            std::getline(*pFile, sLine);
+            safeGetline(*pFile, sLine);
             size_t uiLineSize = len(sLine);
             for(size_t i=0; i < uiLineSize; i++)
                 pRet->quality(i + uiPos) = (uint8_t)sLine[i];
@@ -145,25 +182,33 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
     if(pFile->good() && !pFile->eof() && pFile->peek() == '@')
     {
         std::string sLine = "";
-        std::getline(*pFile, sLine);
+        safeGetline(*pFile, sLine);
         if(sLine.size() == 0)
-            throw AlignerException("Invalid line in fasta");;
+            throw AlignerException("Invalid line in fastq");;
         //make sure that the name contains no spaces
         //in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr(1, sLine.find(' '));
+        size_t uiNumChars = 0;
         while(pFile->good() && !pFile->eof() && pFile->peek() != '+' && pFile->peek() != ' ')
         {
             sLine = "";
-            std::getline(*pFile, sLine);
+            safeGetline(*pFile, sLine);
             if(sLine.size() == 0)
                 continue;
             size_t uiLineSize = len(sLine);
+            uiNumChars += uiLineSize;
             pRet->vAppend((const uint8_t*)sLine.c_str(), uiLineSize);
         }//while
         pRet->vTranslateToNumericFormUsingTable(pRet->xNucleotideTranslationTable, 0);
         //quality
-        while(pFile->good() && !pFile->eof() && pFile->peek() != '@')
-            std::getline(*pFile, sLine);
+        safeGetline(*pFile, sLine);
+        if(sLine.size() != 1 || sLine[0] != '+')
+            throw AlignerException("Invalid line in fastq");
+        while(pFile->good() && !pFile->eof() && uiNumChars > 0)
+        {
+            safeGetline(*pFile, sLine);
+            uiNumChars -= sLine.size();
+        }// while
         return pRet;
     }//if
 #endif
