@@ -298,6 +298,14 @@ namespace libMA
                 return rQuery.fromTo(uiBeginOnQuery, uiEndOnQuery);
         }// method
 
+        std::string getRevCompQuerySequence(NucSeq& rQuery, Pack& rPack)
+        {
+            if(rPack.bPositionIsOnReversStrand(uiBeginOnRef))
+                return rQuery.fromTo(uiBeginOnQuery, uiEndOnQuery);
+            else
+                return rQuery.fromToComplement(uiBeginOnQuery, uiEndOnQuery);
+        }// method
+
         /**
          * @brief appends multiple matchTypes to the alignment
          * @details

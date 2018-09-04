@@ -416,6 +416,9 @@ namespace libMA
         static const EXPORTED unsigned char xNucleotideTranslationTable[256];
 
         std::string sName = "unknown";
+        DEBUG(
+            size_t uiFromLine = 0;
+        )// DEBUG
 
         /** Default constructor
          */

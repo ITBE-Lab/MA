@@ -46,11 +46,11 @@ namespace libMA
     {
     public:
 #if DEBUG_LEVEL >= 1
-        sizer_t bTombStone = TOMBSTONE_VAL_ALIVE;
+        size_t uiTombStone = TOMBSTONE_VAL_ALIVE;
 
         ~Container()
         {
-            bTombStone = TOMBSTONE_VAL_DEAD;
+            uiTombStone = TOMBSTONE_VAL_DEAD;
         }// deconstructor
 #endif
         /** 

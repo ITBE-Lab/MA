@@ -160,8 +160,11 @@ def reads_to_bam(run_id, contig, start, end, pack, bam_file_name):
             pys_alignment.query_name = query_id
             pys_alignment.query_sequence = query_sequence
             pys_alignment.flag = sam_flags
+            #if sam_flags | 0x080 == 0:
+            #    continue
             pys_alignment.reference_id = contig_id
             pys_alignment.reference_start = position
+            pys_alignment.next_reference_id = contig_id
             if contig_other != "*":
                 for index, name in enumerate(pack.contigNames()):
                     if name == contig_other:

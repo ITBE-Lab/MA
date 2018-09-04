@@ -49,7 +49,7 @@ public :
     Annotated_exception( const char* info )  
     {
         text = std::string( (N == 0) ? "NCBI data receiver/"         :
-                            (N == 1) ? "Smith Waterman Aligner"      :
+                            (N == 1) ? "Aligner Exception"           :
                             (N == 2) ? "Fasta Reader"                :
                             (N == 3) ? "Null Pointer"                :
                             (N == 4) ? "NCBI XML"                    :

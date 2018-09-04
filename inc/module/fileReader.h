@@ -29,12 +29,20 @@
 namespace libMA
 {
 
+    
+    class Reader: public Module
+    {
+    public:
+        virtual size_t getCurrPosInFile() const = 0;
+        virtual size_t getFileSize() const = 0;
+    };// class
+
     /**
      * @brief Reads Queries from a file.
      * @details
      * Reads (multi-)fasta or fastaq format.
      */
-    class FileReader: public Module
+    class FileReader: public Reader
     {
 #if USE_BUFFERED_ASYNC_READER == 1
     private:
@@ -233,6 +241,10 @@ namespace libMA
     public:
         std::shared_ptr<std::ifstream> pFile;
         size_t uiFileSize = 0;
+        DEBUG(
+            size_t uiNumLinesRead = 0;
+            size_t uiNumLinesWithNs = 0;
+        )// DEBUG
         //std::shared_ptr<std::mutex> pSynchronizeReading;
 
         /**
@@ -255,6 +267,10 @@ namespace libMA
 
         ~FileReader()
         {
+            DEBUG(
+                std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
+                std::cout << "read " << uiNumLinesWithNs << " lines with N's." << std::endl;
+            )// DEBUG
             pFile->close();
         }//deconstructor
 #endif
@@ -438,7 +454,120 @@ namespace libMA
             return uiFileSize;
         }// function
 #endif
- 
+    private:
+        /**
+         * code taken from 
+         * https://stackoverflow.com/questions/6089231/getting-std-ifstream-to-handle-lf-cr-and-crlf
+         * suports windows linux and mac line endings
+         */
+        inline void safeGetline(std::string& t)
+        {
+            t.clear();
+            DEBUG(
+                uiNumLinesRead++;
+            )// DEBUG
+
+            // The characters in the stream are read one-by-one using a std::streambuf.
+            // That is faster than reading them one-by-one using the std::istream.
+            // Code that uses streambuf this way must be guarded by a sentry object.
+            // The sentry object performs various tasks,
+            // such as thread synchronization and updating the stream state.
+
+            std::istream::sentry se(*pFile, true);
+            std::streambuf* sb = pFile->rdbuf();
+
+            for(;;) {
+                int c = sb->sbumpc();
+                switch (c) {
+                case '\n':
+                    return;
+                case '\r':
+                    if(sb->sgetc() == '\n')
+                        sb->sbumpc();
+                    return;
+                case std::streambuf::traits_type::eof():
+                    // Also handle the case when the last line has no line ending
+                    if(t.empty())
+                        pFile->setstate(std::ios::eofbit);
+                    return;
+                default:
+                    t += (char)c;
+                }
+            }
+        }// method
+    };//class
+    /**
+     * @brief Reads Queries from a file.
+     * @details
+     * Reads (multi-)fasta or fastaq format.
+     */
+    class PairedFileReader: public Reader
+    {
+    public:
+        FileReader xF1;
+        FileReader xF2;
+
+        /**
+         * @brief creates a new FileReader.
+         */
+        PairedFileReader(std::string sFileName1, std::string sFileName2)
+                :
+            xF1(sFileName1),
+            xF2(sFileName2)
+        {
+        }//constructor
+
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - Nil
+         */
+        ContainerVector EXPORTED getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - ContainerVector(NucSeq)
+         */
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
+
+        // @override
+        std::string getName() const
+        {
+            return "PairedFileReader";
+        }//function
+
+        // @override
+        std::string getFullDesc() const
+        {
+            return std::string("PairedFileReader");
+        }//function
+
+        // @override
+        bool outputsVolatile() const
+        {
+            return true;
+        }//function
+
+        // @override
+        bool requiresLock() const
+        {
+            return true;
+        }//function
+
+        size_t getCurrPosInFile() const
+        {
+            return xF1.getCurrPosInFile();
+        }// function
+
+        size_t getFileSize() const
+        {
+            return xF1.getFileSize();
+        }// function
     };//class
 
 }//namespace

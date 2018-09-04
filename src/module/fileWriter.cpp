@@ -12,6 +12,7 @@ ContainerVector FileWriter::getInputType() const
 {
     return ContainerVector{
             std::shared_ptr<NucSeq>(new NucSeq()),
+            std::shared_ptr<NucSeq>(new NucSeq()),
             std::shared_ptr<ContainerVector>(
                 new ContainerVector(std::shared_ptr<Alignment>(new Alignment()))),
             std::shared_ptr<Pack>(new Pack())
@@ -43,10 +44,12 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 {
     std::shared_ptr<NucSeq> pQuery =
         std::dynamic_pointer_cast<NucSeq>((*vpInput)[0]); // dc
+    std::shared_ptr<NucSeq> pQuery2 =
+        std::dynamic_pointer_cast<NucSeq>((*vpInput)[1]); // dc
     std::shared_ptr<ContainerVector> pAlignments =
-        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[1]); // dc
+        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[2]); // dc
     std::shared_ptr<Pack> pPack =
-        std::dynamic_pointer_cast<Pack>((*vpInput)[2]); // dc
+        std::dynamic_pointer_cast<Pack>((*vpInput)[3]); // dc
 
     for(std::shared_ptr<Container> pA : *pAlignments)
     {
@@ -59,14 +62,37 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 
         std::string sContigOther = "*";
         std::string sPosOther = "0";
+        std::string sName = pQuery->sName;
+        std::string sSegment = pAlignment->getQuerySequence(*pQuery, *pPack);
+        std::string sTlen = std::to_string(pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery);
         // paired
-        if(!pAlignment->xStats.pOther.expired())
+        if( pAlignment->xStats.pOther.lock() != nullptr )
         {
-            flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
+            assert(pQuery2 != nullptr);
+            //flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE // flag not actually required
+            //                                  : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
+            if(pPack->bPositionIsOnReversStrand(pAlignment->xStats.pOther.lock()->uiBeginOnRef))
+                flag |= NEXT_REVERSE_COMPLEMENTED;
 
             sContigOther = pAlignment->xStats.pOther.lock()->getContig(*pPack);
             sPosOther = std::to_string(pAlignment->xStats.pOther.lock()->getSamPosition(*pPack));
+
+            if( ! pAlignment->xStats.bFirst)
+            {
+                sSegment = pAlignment->getQuerySequence(*pQuery2, *pPack);
+                sName = pQuery2->sName;
+                sTlen = "-" + sTlen;
+            }// if
+            DEBUG(
+                if( pQuery->uiFromLine != pQuery2->uiFromLine )
+                {
+                    std::cerr << "outputting paired alignment for reads from different lines: "
+                        << pQuery->uiFromLine << " and " << pQuery2->uiFromLine
+                        << "; query names are: " << pQuery->sName << " and " << pQuery2->sName
+                        << std::endl;
+                }// if
+            )// DEBUG
         }// if
 
         std::string sRefName = pAlignment->getContig(*pPack);
@@ -100,7 +126,6 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             }// if
         )// DEBUG
 
-        std::string sSegment = pAlignment->getQuerySequence(*pQuery, *pPack);
         //std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery, pAlignment->uiEndOnQuery);
         std::string sMapQual;
         if(std::isnan(pAlignment->fMappingQuality))
@@ -114,7 +139,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 
             //print alignment
             //query name
-            *pOut << pQuery->sName << "\t";
+            *pOut << sName << "\t";
             //alignment flag
             *pOut << std::to_string(flag) << "\t";
             //reference name
@@ -130,7 +155,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
             //Position of the mate/next read
             *pOut << sPosOther << "\t";
             //observed Template length
-            *pOut << std::to_string(pAlignment->length()) << "\t";
+            *pOut << sTlen << "\t";
             //segment sequence
             *pOut << sSegment << "\t";
             //ASCII of Phred-scaled base Quality+33

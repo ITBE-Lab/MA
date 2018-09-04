@@ -321,7 +321,7 @@ namespace libMA
         std::shared_ptr<Container> type;
         std::vector<std::shared_ptr<Pledge>> vPredecessors;
         std::vector<std::weak_ptr<Pledge>> vSuccessors;
-        std::vector<std::shared_ptr<Pledge>> aSync;
+        //std::vector<std::shared_ptr<Pledge>> aSync;
         std::shared_ptr<std::mutex> pMutex;
 
     public:
@@ -347,7 +347,7 @@ namespace libMA
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
-            aSync(),
+            //aSync(),
             pMutex(new std::mutex),
             execTime(0)
         {}//constructor
@@ -370,7 +370,7 @@ namespace libMA
             type(type),
             vPredecessors(vPredecessors),
             vSuccessors(),
-            aSync(),
+            //aSync(),
             pMutex(new std::mutex),
             execTime(0)
         {}//constructor
@@ -456,7 +456,7 @@ namespace libMA
             )
         {
             // if(vSuccessors.size() > 1) @todo @fixme this should be here
-            if(pledger == nullptr || pledger->requiresLock())
+            if(pledger != nullptr && pledger->requiresLock())
             {
                 // multithreading is possible thus a guard is required here.
                 // deadlock prevention is trivial, 
@@ -638,32 +638,31 @@ namespace libMA
                 [&]
                 ()
                 {
-            // execute
-            if(execForGet() == false)
-            {
-                /*
-                 * If execForGet returns false we have a volatile module that's dry.
-                 * In such cases we cannot compute the next element and therefore set
-                 * the content of this module to EoF as well.
-                 */
-                content = Nil::pEoFContainer;
-                return content;
-            }// if
-            for(std::shared_ptr<Pledge> pSync : aSync)
-                if(pSync->execForGet() == false)
-                {
-                    /*
-                     * If execForGet returns false we have a volatile module that's dry.
-                     * In such cases we cannot compute the next element and therefore set
-                     * the content of this module to EoF as well.
-                     */
-                    content = Nil::pEoFContainer;
+                    // execute
+                    if(execForGet() == false)
+                    {
+                        /*
+                        * If execForGet returns false we have a volatile module that's dry.
+                        * In such cases we cannot compute the next element and therefore set
+                        * the content of this module to EoF as well.
+                        */
+                        content = Nil::pEoFContainer;
+                        return content;
+                    }// if
+                    // for(std::shared_ptr<Pledge> pSync : aSync)
+                    //     if(pSync->execForGet() == false)
+                    //     {
+                    //         /*
+                    //         * If execForGet returns false we have a volatile module that's dry.
+                    //         * In such cases we cannot compute the next element and therefore set
+                    //         * the content of this module to EoF as well.
+                    //         */
+                    //         content = Nil::pEoFContainer;
+                    //         return content;
+                    //     }// if
+
+                    // return must be here and returned throught the lambda to avoid data race...
                     return content;
-                }// if
-
-            // return must be here and returned throught the lambda to avoid data race...
-            return content;
-
                 }// lambda
             );// function call
         }// function
@@ -675,21 +674,24 @@ namespace libMA
          * This can be used to for paired reads,
          * where we want to read one read from file a and one from file b.
          * We need to make sure that we always read the pairs together.
+         * @note deprecated
          */
-        static inline void synchronize(std::shared_ptr<Pledge> pA, std::shared_ptr<Pledge> pB)
-        {
-            //add each other to the caller list
-            pA->aSync.push_back(pB);
-            pB->aSync.push_back(pA);
-            //sync the mutex of pA and pB
-            pA->pMutex = pB->pMutex;
-        }//function
+        //// static inline void synchronize(std::shared_ptr<Pledge> pA, std::shared_ptr<Pledge> pB)
+        //// {
+        ////     //add each other to the caller list
+        ////     pA->aSync.push_back(pB);
+        ////     pB->aSync.push_back(pA);
+        ////     //sync the mutex of pA and pB
+        ////     pA->pMutex.reset();
+        ////     pA->pMutex = pB->pMutex;
+        ////     assert(pA->pMutex = pB->pMutex);
+        //// }//function
 
-        void forAllSyncs(std::function<void(std::shared_ptr<Pledge>)> fDo)
-        {
-            for(std::shared_ptr<Pledge> pSync : aSync)
-                fDo(pSync);
-        }//function
+        //// void forAllSyncs(std::function<void(std::shared_ptr<Pledge>)> fDo)
+        //// {
+        ////     for(std::shared_ptr<Pledge> pSync : aSync)
+        ////         fDo(pSync);
+        //// }//function
 
         /**
          * @brief Gets the given pledges simultaneously.
@@ -749,23 +751,37 @@ namespace libMA
                             // execute the loop if bLoop == true or do just one iteration otherwise.
                             do
                             {
-                                /*
-                                 * Execute one iteration of the comp. graph.
-                                 * Then set bLoop to false if the execution returned pEoFContainer.
-                                 * If bLoop is false already (due to there beeing no 
-                                 * volatile module) then leave it as false.
-                                 */
-                                //std::cout << "A) In thread:" << uiTid << " bLoop is: " << bLoop << std::endl;
-                                bLoop &= pPledge->get() != Nil::pEoFContainer;
-                                ////! if(!bLoop)
-                                ////!     std::cout << "B) In thread:" << uiTid << " bLoop is: " << bLoop << std::endl;
-                                // this callback function can be used to set a progress bar 
-                                // for example.
-                                callback();
-                                DEBUG(
-                                    // print a progress bar on cmdline
-                                    std::cout << "*" << std::flush;
-                                )
+                                try
+                                {
+                                    /*
+                                    * Execute one iteration of the comp. graph.
+                                    * Then set bLoop to false if the execution returned pEoFContainer.
+                                    * If bLoop is false already (due to there beeing no 
+                                    * volatile module) then leave it as false.
+                                    */
+                                    //std::cout << "A) In thread:" << uiTid << " bLoop is: " << bLoop << std::endl;
+                                    bLoop &= pPledge->get() != Nil::pEoFContainer;
+                                    ////! if(!bLoop)
+                                    ////!     std::cout << "B) In thread:" << uiTid << " bLoop is: " << bLoop << std::endl;
+                                    // this callback function can be used to set a progress bar 
+                                    // for example.
+                                    callback();
+                                    DEBUG(
+                                        // print a progress bar on cmdline
+                                        // std::cout << "*" << std::flush;
+                                    )
+                                } catch(ModuleIO_Exception e) {
+                                    std::cerr << e.what() << std::endl;
+                                    exit(0);
+                                } catch(AlignerException e) {
+                                    std::cerr << "Module Failed: " << e.what() << std::endl;
+                                } catch (const std::exception& e) {
+                                    std::cerr << e.what() << std::endl;
+                                } catch (const std::string& e) {
+                                    std::cerr << e << std::endl;
+                                } catch (...) {
+                                    std::cerr << "unknown exception" << std::endl;
+                                } // catch
                             } while(bLoop);
                         },//lambda
                         pPledge
@@ -791,7 +807,7 @@ namespace libMA
                 }//if
             vPredecessors.clear();
             vSuccessors.clear();
-            aSync.clear();
+            //aSync.clear();
         }//function
     };//class
 }//namespace libMA

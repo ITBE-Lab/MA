@@ -1048,17 +1048,14 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     DEBUG_2(
         std::cout << beginRef << " " << endRef << std::endl;
     )
-    std::shared_ptr<NucSeq> pRef;
-    try
-    {
-        pRef = pRefPack->vExtract(beginRef, endRef);
-    } catch(std::runtime_error e)
+    if(beginRef >= endRef || pRefPack->bridgingSubsection(beginRef, endRef - beginRef))
     {
         std::shared_ptr<Alignment> pRet(new Alignment());
         pRet->xStats = pSeeds->xStats;
         pRet->xStats.sName = pQuery->sName;
         return pRet;
-    }// catch
+    }// if
+    std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(beginRef, endRef);
 
     //create the actual alignment
 

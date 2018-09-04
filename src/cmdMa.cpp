@@ -373,18 +373,28 @@ int main(int argc, char* argv[])
             std::shared_ptr<FMIndex> pFMDIndex_(new FMIndex());
             pFMDIndex_->vLoadFMIndex(sGenome);
             pFMDIndex->set(pFMDIndex_);
-            std::vector<std::shared_ptr<Pledge>> aQueries;
+            std::shared_ptr<Pledge> pQueries;
             std::shared_ptr<Pledge> pNil(new Pledge(std::shared_ptr<Container>(new Nil())));
             pNil->set(std::shared_ptr<Container>(new Nil()));
-            std::shared_ptr<FileReader> pReader;
-            for(std::string sFileName : aIn)
+            std::shared_ptr<Reader> pReader;
+            if(aIn.size() == 1)
             {
-                pReader = std::shared_ptr<FileReader>(new FileReader(sFileName));
-                aQueries.push_back(Module::promiseMe(
+                pReader = std::shared_ptr<FileReader>(new FileReader(aIn[0]));
+                pQueries = Module::promiseMe(
                     pReader, 
                     std::vector<std::shared_ptr<Pledge>> {pNil}
-                ));
-            }//for
+                );
+            } else if (aIn.size() == 2)
+            {
+                pReader = std::shared_ptr<PairedFileReader>(new PairedFileReader(aIn[0], aIn[1]));
+                pQueries = Module::promiseMe(
+                    pReader, 
+                    std::vector<std::shared_ptr<Pledge>> {pNil}
+                );
+            } else
+            {
+                throw AlignerException("Cannot have more than two inputs!");
+            }// else
             std::vector<std::shared_ptr<Module>> vOut;
 #ifdef WITH_POSTGRES
             if(sBbOutput.size() > 0)
@@ -406,14 +416,25 @@ int main(int argc, char* argv[])
                 else
                     vOut.emplace_back( new FileWriter(sOut, pPack_) );
             }// else
-            //setup the graph
-            std::vector<std::shared_ptr<Pledge>> aGraphSinks = setUpCompGraph(
-                pPack,
-                pFMDIndex,
-                aQueries,
-                vOut,
-                uiT//num threads
-            );
+            bool bPaired = defaults::bNormalDist || defaults::bUniformDist;
+            std::vector<std::shared_ptr<Pledge>> aGraphSinks;
+            if(bPaired)
+                aGraphSinks = setUpCompGraphPaired(
+                    pPack,
+                    pFMDIndex,
+                    pQueries,
+                    vOut,
+                    uiT//num threads
+                );
+            else
+                //setup the graph
+                aGraphSinks = setUpCompGraph(
+                    pPack,
+                    pFMDIndex,
+                    pQueries,
+                    vOut,
+                    uiT//num threads
+                );
             // this is a hidden option
             if(result.count("info") > 0)
             {

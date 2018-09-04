@@ -35,6 +35,26 @@ std::shared_ptr<Container> Splitter::execute(std::shared_ptr<ContainerVector> vp
     return pRet;
 }//function
 
+ContainerVector ReadSplitter::getInputType() const
+{
+    return ContainerVector{std::make_shared<ContainerVector>(std::make_shared<NucSeq>())};
+}//function
+
+std::shared_ptr<Container> ReadSplitter::getOutputType() const
+{
+    return std::make_shared<NucSeq>();
+}//function
+
+std::shared_ptr<Container> ReadSplitter::execute(std::shared_ptr<ContainerVector> vpInput)
+{
+    std::shared_ptr<ContainerVector> pReads =
+        std::dynamic_pointer_cast<ContainerVector>( (*vpInput)[0]); // dc
+    assert(!pReads->empty());
+    std::shared_ptr<Container> pRet = pReads->back();
+    pReads->pop_back();
+    return pRet;
+}//function
+
 ContainerVector Collector::getInputType() const
 {
     return ContainerVector{pVec->contentType};
@@ -90,13 +110,15 @@ std::shared_ptr<Container> UnLock::execute(std::shared_ptr<ContainerVector> vpIn
     )
     //unlock the given lock
     pLockPledge->set(nullptr);
-    pLockPledge->forAllSyncs(
-        []
-        (std::shared_ptr<Pledge> pSync)
-        {
-            pSync->set(nullptr);
-        }//lambda
-    );//for all function call
+
+    // sync is deprecated
+    // pLockPledge->forAllSyncs(
+    //     []
+    //     (std::shared_ptr<Pledge> pSync)
+    //     {
+    //         pSync->set(nullptr);
+    //     }//lambda
+    // );//for all function call
     return std::make_shared<Nil>();
 }//function
 

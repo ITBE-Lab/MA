@@ -70,15 +70,53 @@ namespace libMA
             return true;
         }//function
 
-        // @override
-        bool requiresLock() const
+        std::string getFullDesc() const
+        {
+            return std::string("Splitter");
+        }//function
+
+    };//class
+
+    
+    class ReadSplitter: public Module
+    {
+    public:
+
+        ReadSplitter()
+        {}//constructor
+
+        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+
+        /**
+         * @brief Used to check the input of execute.
+         * @details
+         * Returns:
+         * - Nil
+         * The input is given in the contructor...
+         */
+        ContainerVector EXPORTED getInputType() const;
+
+        /**
+         * @brief Used to check the output of execute.
+         * @details
+         * Returns:
+         * - ContainerVector(NucSeq)
+         */
+        std::shared_ptr<Container> EXPORTED getOutputType() const;
+
+        std::string getName() const
+        {
+            return "ReadSplitter";
+        }//function
+
+        bool outputsVolatile() const
         {
             return true;
         }//function
 
         std::string getFullDesc() const
         {
-            return std::string("Splitter");
+            return std::string("ReadSplitter");
         }//function
 
     };//class
@@ -192,6 +230,12 @@ namespace libMA
         std::string getFullDesc() const
         {
             return std::string("Lock");
+        }//function
+
+        // @override
+        bool requiresLock() const
+        {
+            return true;
         }//function
 
     };//class

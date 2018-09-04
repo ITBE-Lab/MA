@@ -161,9 +161,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraph(
     std::shared_ptr<libMA::Pledge> pPack,
     std::shared_ptr<libMA::Pledge> pFMDIndex,
-    std::vector<std::shared_ptr<libMA::Pledge>> aQueries,
+    std::shared_ptr<libMA::Pledge> pQueries,
     std::vector<std::shared_ptr<libMA::Module>>& vOut,
     unsigned int uiThreads
+);
+
+std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraphPaired(
+        std::shared_ptr<libMA::Pledge> pPack,
+        std::shared_ptr<libMA::Pledge> pFMDIndex,
+        std::shared_ptr<libMA::Pledge> pQueries,
+        std::vector<std::shared_ptr<libMA::Module>>& vOut,
+        unsigned int uiThreads
 );
 
 #endif

@@ -193,7 +193,7 @@ namespace libMA
             uiInitialRefEnd(0)
         {}
 
-        void operator=(AlignmentStatistics &rOther)
+        void operator=(const AlignmentStatistics &rOther)
         {
             index_of_strip = rOther.index_of_strip;
             num_seeds_in_strip = rOther.num_seeds_in_strip;
