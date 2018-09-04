@@ -8,6 +8,8 @@
 #endif
 using namespace libMA;
 
+//#define PRINT_BREAK_CRITERIA(x) DEFINE(x)
+#define PRINT_BREAK_CRITERIA(x)
 
 using namespace libMA::defaults;
 extern int libMA::defaults::iGap;
@@ -144,14 +146,14 @@ std::shared_ptr<Container> LinearLineSweep::execute(
     {
         if(++uiNumTries > uiMaxTries)
         {
-            DEBUG(
+            PRINT_BREAK_CRITERIA(
                 std::cout << "break after " << uiNumTries << " tries." << std::endl;
             )
             break;
         }
         auto pSeedsIn = pSoCIn->pop();
 
-        DEBUG(
+        PRINT_BREAK_CRITERIA(
             if(pSoCIn->empty())
                 std::cout << "exhausted all SoCs" << std::endl;
         )
@@ -193,7 +195,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 {
                     if(uiLastHarmScore > uiCurrSoCScore)
                     {
-                        DEBUG(
+                        PRINT_BREAK_CRITERIA(
                             std::cout << "skip because of SoC score minimum" << std::endl;
                         )
                         continue;
@@ -202,7 +204,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
                 if(uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0)
                 {
-                    DEBUG(
+                    PRINT_BREAK_CRITERIA(
                         std::cout << "Break because of fast SoC drop";
                     )
                     break;
@@ -521,14 +523,14 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         {
             if(uiCurrHarmScore < uiCurrHarmScoreMin )
             {
-                DEBUG(
+                PRINT_BREAK_CRITERIA(
                     std::cout << "skip because of abs. harmonization score minimum" << std::endl;
                 )
                 continue;
             }
             if(uiCurrHarmScore < pQuery->length() * fCurrHarmScoreMinRel )
             {
-                DEBUG(
+                PRINT_BREAK_CRITERIA(
                     std::cout << "skip because of rel. harmonization score minimum" << std::endl;
                 )
                 continue;
@@ -557,7 +559,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 // Prof. Kutzner's filter:
                 if(uiLastHarmScore > uiCurrHarmScore)
                 {
-                    DEBUG(
+                    PRINT_BREAK_CRITERIA(
                         std::cout << "skip because of harmonization score dropoff" << std::endl;
                     )
                     continue;
@@ -576,7 +578,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                     )
                 {
                     uiSoCRepeatCounter -= 1; // cause we haven't actually pushed the current soc yet...
-                    DEBUG(
+                    PRINT_BREAK_CRITERIA(
                         std::cout << "Break because of repeated harmonization score for short queries " << uiMaxEqualScoreLookahead << std::endl;
                     )
                     break;
@@ -594,7 +596,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             nucSeqIndex uiAccLen = pSeeds->getScore();
             if (uiAccumulativeSeedLength > uiAccLen )
             {
-                DEBUG(
+                PRINT_BREAK_CRITERIA(
                     std::cout << "skip because of accumulative seed length" << std::endl;
                 )
                 continue;
@@ -610,7 +612,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         pSoCs->pop_back();
 
     
-    DEBUG(
+    PRINT_BREAK_CRITERIA(
         std::cout << "computed " << pSoCs->size() << " SoCs." << std::endl;
     )// DEBUG
     

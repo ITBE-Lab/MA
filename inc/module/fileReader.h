@@ -270,6 +270,8 @@ namespace libMA
             DEBUG(
                 std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
                 std::cout << "read " << uiNumLinesWithNs << " lines with N's." << std::endl;
+                if( ! pFile->eof())
+                    std::cerr << "WARNING: Did abort before end of File." << std::endl;
             )// DEBUG
             pFile->close();
         }//deconstructor
@@ -515,6 +517,8 @@ namespace libMA
             xF1(sFileName1),
             xF2(sFileName2)
         {
+            if(xF1.getFileSize() != xF2.getFileSize())
+                std::cerr << "Paired alignment with differently sized files." << std::endl;
         }//constructor
 
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
@@ -561,12 +565,12 @@ namespace libMA
 
         size_t getCurrPosInFile() const
         {
-            return xF1.getCurrPosInFile();
+            return xF1.getCurrPosInFile() + xF2.getCurrPosInFile();
         }// function
 
         size_t getFileSize() const
         {
-            return xF1.getFileSize();
+            return xF1.getFileSize() + xF2.getFileSize();
         }// function
     };//class
 

@@ -137,9 +137,9 @@ Alignment options:
 
 Paired Read options:
     -p, --paUni                    Enable paired alignments and model the distance as uniform distribution.
-                                   If set --in shall be used as follows: --in '<fname1>, <fname2>'.
+                                   If set --in shall be used as follows: --in <fname1> --in <fname2>.
     -P, --paNorm                   Enable paired alignment and Model the distance as normal distribution.
-                                   If set --in shall be used as follows: '--in <fname1>, <fname2>'.
+                                   If set --in shall be used as follows: --in <fname1> --in <fname2>.
         --paIsolate <num>          Penalty for an unpaired read pair.
                                    Default is 17.
         --paMean <num>             Mean gap distance between read pairs.

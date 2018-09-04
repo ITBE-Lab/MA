@@ -53,6 +53,9 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
 {
     //std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
     std::shared_ptr<NucSeq> pRet(new NucSeq());
+    DEBUG(
+        pRet->uiFromLine = uiNumLinesRead;
+    )
     // FASTA format
     if(pFile->good() && !pFile->eof() && pFile->peek() == '>')
     {
@@ -76,9 +79,11 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
                     bool bOkay = false;
                     if(character == 'N' || character == 'n')
                     {
+                        if(uiNumLinesWithNs == 0)
+                            std::cerr << "WARNING: " << sLine << " contains Ns! line: "
+                                << uiNumLinesRead << " (this warning is only printed once)"
+                                << std::endl;
                         uiNumLinesWithNs++;
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: "
-                            << uiNumLinesRead << std::endl;
                         continue;
                     }
                     for(char c : std::vector<char>{'A', 'C', 'T', 'G', 'a', 'c', 't', 'g'})
@@ -111,7 +116,6 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         )// DEBUG_2
         DEBUG(
             pRet->check();
-            pRet->uiFromLine = uiNumLinesRead;
         )
         return pRet;
     }//if
@@ -147,9 +151,6 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
                 pRet->quality(i + uiPos) = (uint8_t)sLine[i];
             uiPos += uiLineSize;
         }//while
-        DEBUG(
-            pRet->uiFromLine = uiNumLinesRead;
-        )
         return pRet;
     }//if
 #else
@@ -171,16 +172,16 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
             if(sLine.size() == 0)
                 continue;
             DEBUG(
-                std::replace( sLine.begin(), sLine.end(), 'n', 'a'); // @ todo remove ME!
-                std::replace( sLine.begin(), sLine.end(), 'N', 'A');
                 for(auto character : sLine)
                 {
                     bool bOkay = false;
                     if(character == 'N' || character == 'n')
                     {
+                        if(uiNumLinesWithNs == 0)
+                            std::cerr << "WARNING: " << sLine << " contains Ns! line: "
+                                << uiNumLinesRead << " (this warning is only printed once)"
+                                << std::endl;
                         uiNumLinesWithNs++;
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: "
-                            << uiNumLinesRead << std::endl;
                         continue;
                     }
                     for(char c : std::vector<char>{'A', 'C', 'T', 'G', 'a', 'c', 't', 'g'})
@@ -209,9 +210,6 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
         }// while
         //if(pFile->good() && !pFile->eof() && pFile->peek() != '@')
         //    throw AlignerException("Invalid line in fastq");
-        DEBUG(
-            pRet->uiFromLine = uiNumLinesRead;
-        )
         return pRet;
     }//if
 #endif
