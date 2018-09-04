@@ -393,8 +393,8 @@ namespace libMA
                 {
                     // here we execute all previous modules in the comp graph
                     auto pX = pFuture->get();
-                    //assert(pX != nullptr);
-                    if(pX == Nil::pEoFContainer || pX == nullptr)
+                    assert(pX != nullptr);
+                    if(pX == Nil::pEoFContainer)
                         return false;
                     vInput->push_back(pX);
                 }// for

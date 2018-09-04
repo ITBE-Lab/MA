@@ -269,7 +269,7 @@ namespace libMA
         {
             DEBUG(
                 std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
-                std::cout << "read " << uiNumLinesWithNs << " lines with N's." << std::endl;
+                std::cout << "read " << uiNumLinesWithNs << " N's." << std::endl;
                 if( ! pFile->eof())
                     std::cerr << "WARNING: Did abort before end of File." << std::endl;
             )// DEBUG

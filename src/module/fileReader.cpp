@@ -25,10 +25,12 @@ size_t len(std::string& sLine)
             sLine[uiLineSize-1] != 'C' &&
             sLine[uiLineSize-1] != 'T' &&
             sLine[uiLineSize-1] != 'G' &&
+            sLine[uiLineSize-1] != 'N' &&
             sLine[uiLineSize-1] != 'a' &&
             sLine[uiLineSize-1] != 'c' &&
             sLine[uiLineSize-1] != 't' &&
-            sLine[uiLineSize-1] != 'g'
+            sLine[uiLineSize-1] != 'g' &&
+            sLine[uiLineSize-1] != 'n'
         )
         uiLineSize--;
     return uiLineSize;
@@ -81,7 +83,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
                     {
                         if(uiNumLinesWithNs == 0)
                             std::cerr << "WARNING: " << sLine << " contains Ns! line: "
-                                << uiNumLinesRead << " (this warning is only printed once)"
+                                << uiNumLinesRead << " (this is only printed once)"
                                 << std::endl;
                         uiNumLinesWithNs++;
                         continue;
@@ -179,7 +181,7 @@ std::shared_ptr<Container> FileReader::execute(std::shared_ptr<ContainerVector> 
                     {
                         if(uiNumLinesWithNs == 0)
                             std::cerr << "WARNING: " << sLine << " contains Ns! line: "
-                                << uiNumLinesRead << " (this warning is only printed once)"
+                                << uiNumLinesRead << " (this is only printed once)"
                                 << std::endl;
                         uiNumLinesWithNs++;
                         continue;
@@ -233,9 +235,9 @@ std::shared_ptr<Container> PairedFileReader::execute(std::shared_ptr<ContainerVe
 {
     auto pRet = std::make_shared<ContainerVector>();
     pRet->push_back(xF1.execute(vpInput));
-    if(pRet->back() == Nil::pEoFContainer)
-        return Nil::pEoFContainer;
     pRet->push_back(xF2.execute(vpInput));
+    if(pRet->front() == Nil::pEoFContainer)
+        return Nil::pEoFContainer;
     if(pRet->back() == Nil::pEoFContainer)
         return Nil::pEoFContainer;
     return pRet;
