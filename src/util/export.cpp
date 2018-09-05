@@ -69,7 +69,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph(
 
 
     auto pDummyQuery = std::make_shared<Pledge>(std::make_shared<NucSeq>());
-    pDummyQuery->set(std::make_shared<NucSeq>(nullptr));
+    pDummyQuery->set(std::make_shared<NucSeq>());
 
     //setup the computational graph
     std::vector<std::shared_ptr<Pledge>> aRet;
