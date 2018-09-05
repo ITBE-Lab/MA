@@ -104,7 +104,7 @@ Necessary arguments for alignments:
     -i, --in <fname>               FASTA or FASTAQ input files.
 
 Available presettings:
-     -m, --mode [str]              Operation mode for MA. (default is 'fast')
+     -m, --mode <str>              Operation mode for MA. (default is 'fast')
                                    fast:
                                        Best compromise between performance and accuracy.
                                    acc:

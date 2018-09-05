@@ -978,15 +978,16 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     if(pSeeds == nullptr)
         return std::shared_ptr<Alignment>(new Alignment());
 
+
     //no seeds => no spot found at all...
     if(pSeeds->empty())
     {
+        DEBUG(std::cerr << "WARNING: no seeds found for query: " + pQuery->sName << std::endl;)
         std::shared_ptr<Alignment> pRet(new Alignment());
         pRet->xStats = pSeeds->xStats;
         pRet->xStats.sName = pQuery->sName;
         return pRet;
     }//if
-
     DEBUG_2(
         std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
         for(Seed& rSeed : *pSeeds)
@@ -1020,13 +1021,64 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl;
     )// DEEBUG
 
+    if(beginRef >= endRef || pRefPack->bridgingSubsection(beginRef, endRef - beginRef))
+    {
+        // sometimes we can save the situation by making the last seed smaller...
+        if( ! pRefPack->bridgingSubsection(beginRef, pSeeds->back().start_ref() - beginRef))
+        {
+            int64_t iContig = pRefPack->uiSequenceIdForPositionOrRev(pSeeds->back().start_ref());
+            assert(pRefPack->endOfSequenceWithIdOrReverse(iContig) >= pSeeds->back().start_ref());
+            pSeeds->back().size( 
+                pRefPack->endOfSequenceWithIdOrReverse(iContig) - pSeeds->back().start_ref() - 1
+             );
+            endRef = pSeeds->back().end_ref();
+        }// if
+        else
+        {
+            DEBUG(
+                std::cerr << "WARNING: computed bridging alignment:\n";
+                std::cerr << beginRef << " - " << endRef << std::endl;
+                std::cerr << pRefPack->nameOfSequenceForPosition(beginRef) << " - " 
+                    << pRefPack->nameOfSequenceForPosition(endRef) << std::endl;
+                std::cerr << pRefPack->iAbsolutePosition(beginRef) << " - " << pRefPack->iAbsolutePosition(endRef) << std::endl;
+                auto names = pRefPack->contigNames();
+                auto starts = pRefPack->contigStarts();
+                auto lengths = pRefPack->contigLengths();
+                for(size_t i = 0; i < names.size(); i++)
+                {
+                    if(
+                        starts[i] + lengths[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(beginRef)
+                         || 
+                        starts[i] + lengths[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(endRef)
+                    )
+                        std::cerr << names[i] << ": [" << starts[i] << "-" 
+                                << starts[i] + lengths[i] << "] revComp: [" 
+                                << pRefPack->uiPositionToReverseStrand(starts[i]) << "-" 
+                                << pRefPack->uiPositionToReverseStrand(starts[i] + lengths[i]) 
+                                << "]" << std::endl;
+                    if(
+                        starts[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(beginRef) && 
+                        starts[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(endRef)
+                    )
+                        break;
+                }// for
+            )
+            std::shared_ptr<Alignment> pRet(new Alignment());
+            pRet->xStats = pSeeds->xStats;
+            pRet->xStats.sName = pQuery->sName;
+            return pRet;
+        }//else
+    }// if
+
     // here we have enough query coverage to attemt to fill in the gaps merely
     DEBUG_2(std::cout << "filling in gaps" << std::endl;)
+    assert( ! pRefPack->bridgingSubsection(beginRef, endRef - beginRef));
 
     std::shared_ptr<Alignment> pRet;
 
     if(!bLocal)
     {
+        int64_t iOldContig = pRefPack->uiSequenceIdForPositionOrRev(beginRef);
         beginRef -= uiPadding + beginQuery;
         if(beginRef > endRef)//check for underflow
             beginRef = 0;
@@ -1035,6 +1087,47 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
             endRef = pRefPack->uiUnpackedSizeForwardPlusReverse();
         endQuery = pQuery->length();
         beginQuery = 0;
+        if(pRefPack->uiSequenceIdForPositionOrRev(beginRef) != iOldContig)
+            //@todo really + 1 ?
+            beginRef = pRefPack->startOfSequenceWithIdOrReverse(iOldContig);
+        if(pRefPack->uiSequenceIdForPositionOrRev(endRef) != iOldContig)
+            //@todo really - 1 ?
+            endRef = pRefPack->endOfSequenceWithIdOrReverse(iOldContig);
+
+        DEBUG(
+            if(beginRef >= endRef || pRefPack->bridgingSubsection(beginRef, endRef - beginRef))
+            {
+                std::cerr << "ERROR: produced bridging alignment:\n";
+                std::cerr << beginRef << " - " << endRef << std::endl;
+                std::cerr << pRefPack->nameOfSequenceForPosition(beginRef) << " - " 
+                    << pRefPack->nameOfSequenceForPosition(endRef) << std::endl;
+                std::cerr << pRefPack->iAbsolutePosition(beginRef) << " - " 
+                    << pRefPack->iAbsolutePosition(endRef) << std::endl;
+                auto names = pRefPack->contigNames();
+                auto starts = pRefPack->contigStarts();
+                auto lengths = pRefPack->contigLengths();
+                for(size_t i = 0; i < names.size(); i++)
+                {
+                    if(
+                        starts[i] + lengths[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(beginRef)
+                         || 
+                        starts[i] + lengths[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(endRef)
+                    )
+                        std::cerr << names[i] << ": [" << starts[i] << "-" 
+                                << starts[i] + lengths[i] << "] revComp: [" 
+                                << pRefPack->uiPositionToReverseStrand(starts[i]) << "-" 
+                                << pRefPack->uiPositionToReverseStrand(starts[i] + lengths[i]) 
+                                << "]" << std::endl;
+                    if(
+                        starts[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(beginRef) && 
+                        starts[i] >= (nucSeqIndex)pRefPack->iAbsolutePosition(endRef)
+                    )
+                        break;
+                }// for
+            }// if
+        )
+        assert( ! pRefPack->bridgingSubsection(beginRef, endRef - beginRef) );
+        assert( beginRef <= pSeeds->front().start_ref() );
     }//if
     assert(endQuery <= pQuery->length());
     pRet = std::shared_ptr<Alignment>(
@@ -1048,13 +1141,6 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
     DEBUG_2(
         std::cout << beginRef << " " << endRef << std::endl;
     )
-    if(beginRef >= endRef || pRefPack->bridgingSubsection(beginRef, endRef - beginRef))
-    {
-        std::shared_ptr<Alignment> pRet(new Alignment());
-        pRet->xStats = pSeeds->xStats;
-        pRet->xStats.sName = pQuery->sName;
-        return pRet;
-    }// if
     std::shared_ptr<NucSeq> pRef = pRefPack->vExtract(beginRef, endRef);
 
     //create the actual alignment

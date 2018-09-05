@@ -36,6 +36,7 @@ namespace libMA
         unsigned int uiAmbiguity;
 #if DELTA_CACHE == ( 1 )
         nucSeqIndex uiDelta;
+        size_t uiContigId;
 #endif
 
         /**
@@ -77,6 +78,7 @@ namespace libMA
             uiAmbiguity(rOther.uiAmbiguity)
 #if DELTA_CACHE == ( 1 )
             , uiDelta(rOther.uiDelta)
+            , uiContigId(rOther.uiContigId)
 #endif
         {}//copy constructor
 
@@ -124,6 +126,7 @@ namespace libMA
             uiAmbiguity = rxOther.uiAmbiguity;
 #if DELTA_CACHE == ( 1 )
             uiDelta = rxOther.uiDelta;
+            uiContigId = rxOther.uiContigId;
 #endif
             return *this;
         }// operator

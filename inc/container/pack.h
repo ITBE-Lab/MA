@@ -888,6 +888,7 @@ namespace libMA
 
         /* Finds the id (absolute position of the sequence in the collection) of the sequence for some position in the collection. (former bns_pos2rid)
         * Returns -1 if uiPosition is out of range.
+        * (uses a binary search inside)
         */
         int64_t uiSequenceIdForPosition( uint64_t uiPosition ) const
         {
@@ -995,8 +996,15 @@ namespace libMA
         uint64_t endOfSequenceWithIdOrReverse( int64_t iSequenceId ) const
         {
             if(iSequenceId % 2 == 1)
-                return uiPositionToReverseStrand(startOfSequenceWithId(iSequenceId / 2));
+                return uiPositionToReverseStrand(startOfSequenceWithId(iSequenceId / 2)) - 1;
             return endOfSequenceWithId(iSequenceId / 2);
+        }//function
+
+        uint64_t startOfSequenceWithIdOrReverse( int64_t iSequenceId ) const
+        {
+            if(iSequenceId % 2 == 1)
+                return uiPositionToReverseStrand(endOfSequenceWithId(iSequenceId / 2)) + 1;
+            return startOfSequenceWithId(iSequenceId / 2);
         }//function
 
         /* Gives the relative position
@@ -1017,8 +1025,13 @@ namespace libMA
             if ( uiSize > 0 )
             {
                 int64_t riSequenceId = uiSequenceIdForPositionOrRev( uiBegin );
-                return    ( bPositionIsOnReversStrand( uiBegin ) != bPositionIsOnReversStrand( (uiBegin + uiSize) - 1 ) ) // bridging forward reverse border
-                    || ( riSequenceId != uiSequenceIdForPositionOrRev( (uiBegin + uiSize) - 1 ) ); // section crosses different sequences
+                 // bridging forward reverse border
+                return (
+                        bPositionIsOnReversStrand( uiBegin ) !=
+                        bPositionIsOnReversStrand( (uiBegin + uiSize) - 1 )
+                    ) || (
+                        riSequenceId != uiSequenceIdForPositionOrRev( (uiBegin + uiSize) - 1 )
+                    ); // section crosses different sequences
             } // if
             else
             {
@@ -1331,7 +1344,7 @@ namespace libMA
                     true
                 ); // get the reverse strand (true triggers appending)
             return pRet;
-        }//function
+        }// method
 
         std::vector<std::string> contigNames() const
         {
@@ -1339,7 +1352,15 @@ namespace libMA
             for(auto xContig : xVectorOfSequenceDescriptors)
                 vRet.push_back(xContig.sName);
             return vRet;
-        }// function
+        }// method
+
+        std::vector<std::string> contigSeqs() const
+        {
+            std::vector<std::string> vRet;
+            for(auto xContig : xVectorOfSequenceDescriptors)
+                vRet.push_back(xContig.sName);
+            return vRet;
+        }// method
 
         std::vector<nucSeqIndex> contigLengths() const
         {
@@ -1347,7 +1368,15 @@ namespace libMA
             for(auto xContig : xVectorOfSequenceDescriptors)
                 vRet.push_back(xContig.uiLengthUnpacked);
             return vRet;
-        }// function
+        }// method
+
+        std::vector<nucSeqIndex> contigStarts() const
+        {
+            std::vector<nucSeqIndex> vRet;
+            for(auto xContig : xVectorOfSequenceDescriptors)
+                vRet.push_back(xContig.uiStartOffsetUnpacked);
+            return vRet;
+        }// method
     //end markus
 
         /* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.

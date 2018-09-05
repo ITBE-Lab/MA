@@ -40,38 +40,22 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
 
     if(pInVec->empty())
         return pResults;
+    for(unsigned int i = 0; i < pResults->size(); i++)
     {
-        ThreadPool xPool( NUM_THREADS_ALIGNER );
-        for(unsigned int i = 0; i < pResults->size(); i++)
-        {
-            (*pResults)[i] = std::shared_ptr<Container>();
-            xPool.enqueue(
-                [&pResults, &vpInput]
-                (
-                    size_t, 
-                    std::shared_ptr<ContainerVector> pInVec,
-                    std::shared_ptr<Module> pModule,
-                    unsigned int i
-                )
-                {
-                    // create a input vector and add the first element to it
-                    // the appropriate element of the vector that is given as first input
-                    std::shared_ptr<ContainerVector> vInput(new ContainerVector { (*pInVec)[i] });
-                    // add all following elements
-                    for(unsigned int j = 1; j < vpInput->size(); j++)
-                        vInput->push_back((*vpInput)[j]);
-                    (*pResults)[i] = pModule->execute(vInput);
-                    if((*pResults)[i] == nullptr)
-                        std::cerr << pModule->getName() << " deleviered nullpointer as result" << std::endl;
-                    if((*pResults)[i] == nullptr)
-                        throw NullPointerException("module deleviered nullpointer as result");
-                },//lambda
-                pInVec, pModule, i
-            );
-        }//for
-    }//scope xPool
+        // create a input vector and add the first element to it
+        // the appropriate element of the vector that is given as first input
+        std::shared_ptr<ContainerVector> vInput(new ContainerVector { (*pInVec)[i] });
+        // add all following elements
+        for(unsigned int j = 1; j < vpInput->size(); j++)
+            vInput->push_back((*vpInput)[j]);
+        (*pResults)[i] = pModule->execute(vInput);
+        if((*pResults)[i] == nullptr)
+            std::cerr << pModule->getName() << " deleviered nullpointer as result" << std::endl;
+        if((*pResults)[i] == nullptr)
+            throw NullPointerException("module deleviered nullpointer as result");
+    }//for
 
-    if(sort)
+    if(sort && pResults->size() > 1)
     {
         //sort ascending
         std::sort(
@@ -79,6 +63,8 @@ std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> v
             []
             (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
             {
+                assert(a != nullptr);
+                assert(b != nullptr);
                 return a->larger(b);
             }//lambda
         );//sort function call

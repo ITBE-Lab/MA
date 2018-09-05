@@ -75,9 +75,9 @@ namespace libMA
             sParameterSet = "pacBio";
             sSeedSet = "maxSpan";
             bDisableHeuristics = true;
-            uiMaxTries = 5;
             fGiveUp = 0;
             dMaxOverlapSupplementary = 0.25;
+            uiPadding = 0;
         }// function
 
 #ifdef WITH_PYTHON

@@ -19,7 +19,7 @@ namespace libMA
         size_t uiMinAmbiguity = 0;       // stop the extension process if seeds are less ambiguous
         // @todo we effectively disabled this parameter
         size_t uiMinSeedSizeDrop = 15;   // minimum length for seeds to count towards the drop of
-        size_t uiMaxTries = 50;          // maximal number of SoCs
+        size_t uiMaxTries = 100;          // maximal number of SoCs
         size_t uiMaxEqualScoreLookahead = 3;     // lookahead distance for short queries
         size_t uiSwitchQLen = 800;       // q len to switch between break criteria
         uint64_t uiMaxGapArea = 10000;     // break alignments in harmonization if gap is larger

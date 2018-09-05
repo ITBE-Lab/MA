@@ -694,6 +694,10 @@ void exportPack()
                 "contigLengths", 
                 &Pack::contigLengths
             )
+        .def(
+                "contigStarts", 
+                &Pack::contigStarts
+            )
         ;
         
 

@@ -101,7 +101,10 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 (const Seed &a, const Seed &b)
                 {
         #if DELTA_CACHE == ( 1 )
-                    return a.uiDelta < b.uiDelta;
+                    if(a.uiContigId == b.uiContigId)
+                        return a.uiDelta < b.uiDelta;
+                    else
+                        return a.uiContigId < b.uiContigId;
         #else
                     return    getPositionForBucketing( uiQLen, a ) 
                             < getPositionForBucketing( uiQLen, b );
@@ -133,19 +136,18 @@ std::shared_ptr<Container> StripOfConsideration::execute(
             while(xStripEnd != pSeeds->end() && xStripStart != pSeeds->end())
             {
                 //move xStripEnd forwards while it is closer to xStripStart than uiStripSize
-                nucSeqIndex uiCurrSize = 0;
                 while(
-                    xStripEnd != pSeeds->end() &&
-                    getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
-                    >= getPositionForBucketing(uiQLen, *xStripEnd))
+                        xStripEnd != pSeeds->end() &&
+                        getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
+                        >= getPositionForBucketing(uiQLen, *xStripEnd) 
+                        
+        #if DELTA_CACHE == ( 1 )
+                        && xStripStart->uiContigId == xStripEnd->uiContigId
+        #endif
+                    )
                 {
                     //remember the additional score
                     xCurrScore += *xStripEnd;
-                    // compute the current SOC size
-                    uiCurrSize = xStripStart->start_ref() - xStripEnd->start_ref();
-                    // carefull here we might have seeds in the wrong order since we sorted by r - q not r.
-                    if(xStripEnd->start_ref() > xStripStart->start_ref())
-                        uiCurrSize = xStripEnd->start_ref() - xStripStart->start_ref();
                     //move the iterator forward
                     xStripEnd++;
                 }//while
@@ -158,24 +160,19 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                     );
                 ) // DEBUG
 
-
-                //here xStripEnd points one past the last element within the strip
-                int64_t iDummy;
-
                 //FILTER
                 /*
                 * if the SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at all
                 * fGiveUp = 0 disables this.
                 */
                 if(
-                        ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen ) && 
-                        !pRefSeq->bridgingSubsection(xStripStart->start_ref(), uiCurrSize, iDummy)
+                        fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen
                     )
                     pSoCs->push_back_no_overlap(
                         xCurrScore,
                         xStripStart,
                         xStripEnd,
-                        getPositionForBucketing(uiQLen, *xStripStart),
+                        getPositionForBucketing( uiQLen, *xStripStart),
                         getPositionForBucketing( uiQLen, *(xStripEnd-1) )
                     );
                 // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
