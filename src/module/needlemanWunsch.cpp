@@ -1035,6 +1035,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
         }// if
         else
         {
+#if CONTIG_ID_CACHE == ( 1 )
             DEBUG(
                 std::cerr << "WARNING: computed bridging alignment:\n";
                 std::cerr << beginRef << " - " << endRef << std::endl;
@@ -1062,7 +1063,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
                     )
                         break;
                 }// for
-            )
+            )// DEBUG
+#endif
             std::shared_ptr<Alignment> pRet(new Alignment());
             pRet->xStats = pSeeds->xStats;
             pRet->xStats.sName = pQuery->sName;

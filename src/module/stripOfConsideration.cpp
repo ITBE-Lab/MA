@@ -101,10 +101,14 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                 (const Seed &a, const Seed &b)
                 {
         #if DELTA_CACHE == ( 1 )
+            #if CONTIG_ID_CACHE == ( 1 )
                     if(a.uiContigId == b.uiContigId)
+            #endif
                         return a.uiDelta < b.uiDelta;
+            #if CONTIG_ID_CACHE == ( 1 )
                     else
                         return a.uiContigId < b.uiContigId;
+            #endif
         #else
                     return    getPositionForBucketing( uiQLen, a ) 
                             < getPositionForBucketing( uiQLen, b );
@@ -141,7 +145,7 @@ std::shared_ptr<Container> StripOfConsideration::execute(
                         getPositionForBucketing(uiQLen, *xStripStart) + uiStripSize 
                         >= getPositionForBucketing(uiQLen, *xStripEnd) 
                         
-        #if DELTA_CACHE == ( 1 )
+        #if CONTIG_ID_CACHE == ( 1 )
                         && xStripStart->uiContigId == xStripEnd->uiContigId
         #endif
                     )

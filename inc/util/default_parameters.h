@@ -77,6 +77,7 @@ namespace libMA
             bDisableHeuristics = true;
             fGiveUp = 0;
             dMaxOverlapSupplementary = 0.25;
+            uiMaxTries = 3;// @todo this might be way too low... 
             uiPadding = 0;
         }// function
 

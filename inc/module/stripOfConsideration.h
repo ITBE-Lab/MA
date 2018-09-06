@@ -159,6 +159,8 @@ namespace libMA
 #elif DELTA_CACHE == ( 1 )
                     rvSeedVector.back().uiDelta = 
                         getPositionForBucketing( uiQLen, rvSeedVector.back() );
+#endif
+#if CONTIG_ID_CACHE == ( 1 )
                     rvSeedVector.back().uiContigId = 
                         rxRefSequence.uiSequenceIdForPosition( rvSeedVector.back().start_ref() );
 #endif

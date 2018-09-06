@@ -262,7 +262,7 @@ namespace libMA
             std::ifstream xFileEnd(sFileName, std::ifstream::ate | std::ifstream::binary);
             uiFileSize = xFileEnd.tellg();
             if(uiFileSize == 0)
-                std::cerr << "Warning: using empty file " << sFileName << std::endl;
+                std::cerr << "Warning: empty file: " << sFileName << std::endl;
         }//constructor
 
         ~FileReader()
