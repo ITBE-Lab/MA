@@ -14,7 +14,7 @@
 /// @endcond
 
 #define DELTA_CACHE ( 1 )
-#define CONTIG_ID_CACHE ( 1 )
+#define CONTIG_ID_CACHE ( 0 )
 
 namespace libMA
 {

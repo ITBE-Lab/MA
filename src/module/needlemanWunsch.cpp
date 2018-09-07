@@ -1023,17 +1023,24 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     if(beginRef >= endRef || pRefPack->bridgingSubsection(beginRef, endRef - beginRef))
     {
+#if 0
         // sometimes we can save the situation by making the last seed smaller...
-        if( ! pRefPack->bridgingSubsection(beginRef, pSeeds->back().start_ref() - beginRef))
+        int64_t iContig = pRefPack->uiSequenceIdForPositionOrRev(pSeeds->back().start_ref());
+        if( iContig == pRefPack->uiSequenceIdForPositionOrRev(beginRef) )
         {
-            int64_t iContig = pRefPack->uiSequenceIdForPositionOrRev(pSeeds->back().start_ref());
-            assert(pRefPack->endOfSequenceWithIdOrReverse(iContig) >= pSeeds->back().start_ref());
             pSeeds->back().size( 
                 pRefPack->endOfSequenceWithIdOrReverse(iContig) - pSeeds->back().start_ref() - 1
              );
             endRef = pSeeds->back().end_ref();
+            for (auto xSeed : *pSeeds)
+                if(xSeed.end_ref() > endRef)
+                {
+                    xSeed.size(endRef - xSeed.start_ref());
+                    assert(endRef >= xSeed.end_ref());
+                }// if
         }// if
         else
+#endif
         {
 #if CONTIG_ID_CACHE == ( 1 )
             DEBUG(

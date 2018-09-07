@@ -75,10 +75,9 @@ namespace libMA
             sParameterSet = "pacBio";
             sSeedSet = "maxSpan";
             bDisableHeuristics = true;
-            fGiveUp = 0;
             dMaxOverlapSupplementary = 0.25;
-            uiMaxTries = 3;// @todo this might be way too low... 
-            uiPadding = 0;
+            fMinSecScoreRatio = 0.85;
+            uiReportN = 3;
         }// function
 
 #ifdef WITH_PYTHON

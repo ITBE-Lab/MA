@@ -51,6 +51,7 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
     std::shared_ptr<Pack> pPack =
         std::dynamic_pointer_cast<Pack>((*vpInput)[3]); // dc
 
+    std::string sCombined = "";
     for(std::shared_ptr<Container> pA : *pAlignments)
     {
         std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>(pA); // dc
@@ -133,36 +134,40 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
         else
             sMapQual = std::to_string( static_cast<int>(std::ceil(pAlignment->fMappingQuality * 254)) );
 
-        {// scope xGuard
-            //synchronize file output
-            std::lock_guard<std::mutex> xGuard(*pLock);
-
-            //print alignment
+        sCombined += 
             //query name
-            *pOut << sName << "\t";
+            sName + "\t" + 
             //alignment flag
-            *pOut << std::to_string(flag) << "\t";
+            std::to_string(flag) + "\t" + 
             //reference name
-            *pOut << sRefName << "\t";
+            sRefName + "\t" + 
             //pos
-            *pOut << std::to_string(uiRefPos) << "\t";
+            std::to_string(uiRefPos) + "\t" + 
             //mapping quality
-            *pOut << sMapQual << "\t";
+            sMapQual + "\t" + 
             //cigar
-            *pOut << sCigar  << "\t";
+            sCigar  + "\t" + 
             //Ref. name of the mate/next read
-            *pOut << sContigOther << "\t";
+            sContigOther + "\t" + 
             //Position of the mate/next read
-            *pOut << sPosOther << "\t";
+            sPosOther + "\t" + 
             //observed Template length
-            *pOut << sTlen << "\t";
+            sTlen + "\t" + 
             //segment sequence
-            *pOut << sSegment << "\t";
+            sSegment + "\t"
             //ASCII of Phred-scaled base Quality+33
-            *pOut << "*" << "\n"; // flushing will be done in the deconstructor
-        }// scope xGuard
+            + "*\n";
     }//for
 
+    if(sCombined.size() > 0)
+    {// scope xGuard
+        //synchronize file output
+        std::lock_guard<std::mutex> xGuard(*pLock);
+
+        //print alignment
+        // flushing will be done in the deconstructor
+        *pOut << sCombined;
+    }// if & scope xGuard
     return std::shared_ptr<Container>(new Nil());
 }//function
 
