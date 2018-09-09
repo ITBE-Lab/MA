@@ -161,10 +161,10 @@ std::shared_ptr<Container> FileWriter::execute(std::shared_ptr<ContainerVector> 
 
     if(sCombined.size() > 0)
     {// scope xGuard
-        //synchronize file output
+        // synchronize file output
         std::lock_guard<std::mutex> xGuard(*pLock);
 
-        //print alignment
+        // print alignment
         // flushing will be done in the deconstructor
         *pOut << sCombined;
     }// if & scope xGuard

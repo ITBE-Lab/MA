@@ -36,10 +36,10 @@ namespace libMA
         nucSeqIndex uiPosOnReference;
         unsigned int uiAmbiguity;
 #if DELTA_CACHE == ( 1 )
-        nucSeqIndex uiDelta;
+        nucSeqIndex uiDelta = 0;
 #endif
 #if CONTIG_ID_CACHE == ( 1 )
-        size_t uiContigId;
+        size_t uiContigId = 0;
 #endif
 
         /**
