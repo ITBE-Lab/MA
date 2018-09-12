@@ -18,6 +18,225 @@ extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
 extern nucSeqIndex libMA::defaults::uiMaxGapArea;
 
+std::shared_ptr<Seeds> LinearLineSweep::applyFilters(std::shared_ptr<Seeds>& pIn) const
+{
+    auto pRet = std::make_shared<Seeds>();
+    /*
+    * FILTER:
+    * do a gap cost estimation [ O(n) ]
+    * this does not improve quality but performance
+    * since we might remove some seeds that are too far from another
+    *
+    * this is much like the backtracking in SW/NW
+    * we make sure that we can only have a positive score
+    * 
+    * Also enforces that no gap is larger than max_gap either on query or reference
+    */
+    if(bDoGapCostEstimationCutting)
+    {
+        //running score
+        int64_t iScore = iMatch * pIn->front().size();
+        //maximal score
+        nucSeqIndex uiMaxScore = iScore;
+        //points to the last seed that had a score of 0
+        Seeds::iterator pLastStart = pIn->begin();
+        //outcome
+        Seeds::iterator pOptimalStart = pIn->begin();
+        //outcome
+        Seeds::iterator pOptimalEnd = pIn->begin();
+
+        /*
+        * the goal of this loop is to set pOptimalStart & end correctly
+        */
+        for(Seeds::iterator pSeed = pIn->begin() + 1; pSeed != pIn->end(); pSeed++)
+        {
+            assert(pSeed->start() <= pSeed->end());
+            //adjust the score correctly
+            iScore += iMatch * pSeed->size();
+            /*
+            * we need to extract the gap between the seeds in order to do that.
+            * we will assume that any gap can be spanned by a single indel
+            * while all nucleotides give matches.
+            * Therefore we need to get the width x and height y of the rectangular gap
+            * number of matches equals min(x, y)
+            * gap size equals |x-y|
+            */
+            nucSeqIndex uiGap = 0;
+            if(pSeed->start() > (pSeed-1)->start())
+                uiGap = pSeed->start() - (pSeed-1)->start();
+            if(pSeed->start_ref() > (pSeed-1)->start_ref())
+            {
+                if(pSeed->start_ref() - (pSeed-1)->start_ref() < uiGap)
+                {
+                    uiGap -= pSeed->start_ref() - (pSeed-1)->start_ref();
+                    if(optimisticGapEstimation)
+                        iScore += iMatch * (pSeed->start_ref() - (pSeed-1)->start_ref());
+                }//if
+                else
+                {
+                    if(optimisticGapEstimation)
+                        iScore += iMatch * uiGap;
+                    uiGap = (pSeed->start_ref() - (pSeed-1)->start_ref()) - uiGap;
+                }//else
+            }//if
+            uiGap *= iExtend;
+            if(uiGap > 0)
+                uiGap += iGap;
+            nucSeqIndex uiGapY = 
+                pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
+            if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )
+                uiGapY = 0;
+            nucSeqIndex uiGapX = 
+                pSeed->start_ref() - ((pSeed-1)->start_ref() + (pSeed-1)->size());
+            if( pSeed->start_ref() < ( (pSeed-1)->start_ref() + (pSeed-1)->size() ) )
+                uiGapX = 0;
+            if( //check for the maximal allowed gap area
+                    //uiMaxGapArea == 0 -> disabled
+                    ( uiMaxGapArea > 0 && uiGapX > uiMaxGapArea && uiGapY != 0 )
+                        ||
+                    ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
+                        ||
+                    //check for negative score
+                    iScore < (int64_t)uiGap
+                )
+            {
+                iScore = 0;
+                pLastStart = pSeed;
+            }//if
+            else
+                iScore -= uiGap;
+            if(iScore > (int64_t)uiMaxScore)
+            {
+                uiMaxScore = iScore;
+                pOptimalStart = pLastStart;
+                pOptimalEnd = pSeed;
+            }//if
+        }//for
+
+
+        /*
+        * we need to increment both iterator but check if they extend past the end of pIn
+        * (check twice because incrementing an iterator pointing to end will
+        * result in undefined behaviour)
+        *
+        * We then move all known suboptimal seeds to pRet and swap the shared pointers.
+        *
+        * @note: order is significant!
+        * """
+        * --- Iterator validity ---
+        * Iterators, pointers and references pointing to position (or first) and beyond are
+        * invalidated, with all iterators, pointers and references to elements 
+        * before position (or first) are guaranteed to keep referring to the same 
+        * elements they were referring to before the call.
+        * """
+        */
+        if(pOptimalStart != pIn->end())
+            for(auto pCur = pIn->begin(); pCur != pOptimalStart; pCur++)
+                pRet->push_back(*pCur);
+        //! if(pOptimalStart != pIn->end())
+        //! {
+        //!     pRet->resize( std::distance(pIn->begin(), pOptimalStart) );
+        //!     std::copy(pIn->begin(), pOptimalStart, pRet->begin());
+        //! }// if
+        if(pOptimalEnd != pIn->end())
+            if(++pOptimalEnd != pIn->end())
+            {
+                for(auto pCur = pOptimalEnd; pCur != pIn->end(); pCur++)
+                    pRet->push_back(*pCur);
+                //! auto xItCur = pRet->end();
+                //! pRet->resize( pRet->size() + std::distance(pOptimalEnd, pIn->end()) );
+                //! std::copy(pOptimalEnd, pIn->end(), xItCur);
+                pIn->erase(pOptimalEnd, pIn->end());
+            }
+        if(pOptimalStart != pIn->end())
+            pIn->erase(pIn->begin(), pOptimalStart);
+    }// if
+    // swap the shared pointers
+    pRet.swap(pIn);
+    /*
+    * Artifact filter:
+    */
+    if(pRet->size() > 2)
+    {
+        size_t uiPrePos = 0;
+        size_t uiCenterPos = 1;
+        while(uiCenterPos < pRet->size() - 1)
+        {
+            Seed& rPre = (*pRet)[uiPrePos];
+            Seed& rCenter = (*pRet)[uiCenterPos];
+            Seed& rPost = (*pRet)[uiCenterPos + 1];
+
+            int64_t iDeltaPre = rPre.start_ref() - (int64_t)rPre.start();
+            int64_t iDeltaCenter = rCenter.start_ref() - (int64_t)rCenter.start();
+            int64_t iDeltaPost = rPost.start_ref() - (int64_t)rPost.start();
+
+            int64_t iDeltaDistToPre = std::abs(iDeltaPre - iDeltaCenter);
+            int64_t iDeltaDistToPost = std::abs(iDeltaPost - iDeltaCenter);
+
+            double dDeltaDistDiff = std::abs(iDeltaDistToPre - iDeltaDistToPost)*2 / 
+                ((double) iDeltaDistToPre + iDeltaDistToPost );
+
+            if(
+                dDeltaDistDiff < dMaxDeltaDist &&
+                (uint64_t)iDeltaDistToPre > uiMinDeltaDist
+            )
+            {
+                // the filter triggered -> 
+                // we flag the seed to be ignored by setting it's size to zero
+                rCenter.size(0);
+                uiCenterPos++;
+            }// if
+            else
+            {
+                // the filter did not trigger move to the next triple
+                uiCenterPos++;
+                uiPrePos = uiCenterPos - 1;
+            }// else
+        }// while
+    }// if
+#if 0
+    /*
+        * SV detection (insertion & deletion)
+        */
+    for(size_t uiPos = 0; uiPos < pRet->size() - 1; uiPos++)
+    {
+        Seed& rA = (*pRet)[uiPos];
+        if(rA.size() == 0)
+            continue;// rA is already filtered out
+        size_t uiBPos = uiPos+1;
+
+        while(uiBPos < pRet->size() && (*pRet)[uiBPos].size() == 0)
+            uiBPos++;// rB is already filtered out
+        if(uiBPos == pRet->size())
+            break;// no more non filtered seeds in vector
+        Seed& rB = (*pRet)[uiBPos];
+
+        int64_t iX = std::max(
+                static_cast<int64_t>(0),
+                static_cast<int64_t>(rB.start_ref())-static_cast<int64_t>(rA.end_ref())
+            );
+        int64_t iY = std::max(
+                static_cast<int64_t>(0),
+                static_cast<int64_t>(rB.start()) - static_cast<int64_t>(rA.end())
+            );
+
+        if (iX == 0 && iY == 0)
+            continue;
+
+        double dXYRatio = std::min(iX, iY) / std::max(iY, iX);
+
+        if( 
+                iX > static_cast<int64_t>(uiMaxGapArea) ||
+                iY > static_cast<int64_t>(uiMaxGapArea)
+                    ||
+                (dXYRatio < dMaxSVRatio && std::max(iX, iY) > iMinSVDistance)
+            )
+            pRet->xSvInfo.vSeedIndicesOfSVIndels.push_back(uiPos + 1);
+    }// for
+#endif
+    return pRet;
+}// method
+
 inline nucSeqIndex difference(nucSeqIndex a, nucSeqIndex b)
 {
     if( a > b )
@@ -324,223 +543,21 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             )// DEBUG
 
             /*
-            * sometimes we have one or less seeds remaining after the cupling:
-            * in these cases we simply return the center seed (judging by the delta from SoCs)
-            * This increases accuracy since the aligner is guided towards the correct
-            * position rather than giving it the sound seed or no seed...
-            * 
-            * Note: returning the longest or leas ambiguous seed does not make sense here;
-            * In most cases where this condition triggeres we have seeds that are roughly the same  length
-            * and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
-            */
+             * sometimes we have one or less seeds remaining after the cupling:
+             * in these cases we simply return the center seed (judging by the delta from SoCs)
+             * This increases accuracy since the aligner is guided towards the correct
+             * position rather than a random seed or no seed...
+             * 
+             * Note: returning the longest or least ambiguous seed does not make sense here;
+             * In most cases where this condition triggeres we have seeds that are roughly the 
+             * same length and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
+             */
             if(pSeeds->size() <= 1)
             {
                 pSeeds->clear();
-                pSeeds->push_back( (*pSeedsIn)[pSeedsIn->size()/2]);
+                pSeeds->push_back( (*pSeedsIn)[pSeedsIn->size()/2] );
             }// if
             assert(!pSeeds->empty());
-
-#if 1
-            /*
-             * FILTER:
-             * do a gap cost estimation [ O(n) ]
-             * this does not improve quality but performance
-             * since we might remove some seeds that are too far from another
-             *
-             * this is much like the backtracking in SW/NW
-             * we make sure that we can only have a positive score
-             * 
-             * Also enforces that no gap is larger than max_gap either on query or reference
-             * 
-             * Can simply be dis- and enabled, since it's only effect is to delete some seeds.
-             */
-            if(bDoGapCostEstimationCutting)
-            {
-                //running score
-                int64_t iScore = iMatch * pSeeds->front().size();
-                //maximal score
-                nucSeqIndex uiMaxScore = iScore;
-                //points to the last seed that had a score of 0
-                Seeds::iterator pLastStart = pSeeds->begin();
-                //outcome
-                Seeds::iterator pOptimalStart = pSeeds->begin();
-                //outcome
-                Seeds::iterator pOptimalEnd = pSeeds->begin();
-
-                /*
-                * the goal of this loop is to set pOptimalStart & end correctly
-                */
-                for(Seeds::iterator pSeed = pSeeds->begin() + 1; pSeed != pSeeds->end(); pSeed++)
-                {
-                    assert(pSeed->start() <= pSeed->end());
-                    //adjust the score correctly
-                    iScore += iMatch * pSeed->size();
-                    /*
-                    * we need to extract the gap between the seeds in order to do that.
-                    * we will assume that any gap can be spanned by a single indel
-                    * while all nucleotides give matches.
-                    * Therefore we need to get the width x and height y of the rectangular gap
-                    * number of matches equals min(x, y)
-                    * gap size equals |x-y|
-                    */
-                    nucSeqIndex uiGap = 0;
-                    if(pSeed->start() > (pSeed-1)->start())
-                        uiGap = pSeed->start() - (pSeed-1)->start();
-                    if(pSeed->start_ref() > (pSeed-1)->start_ref())
-                    {
-                        if(pSeed->start_ref() - (pSeed-1)->start_ref() < uiGap)
-                        {
-                            uiGap -= pSeed->start_ref() - (pSeed-1)->start_ref();
-                            if(optimisticGapEstimation)
-                                iScore += iMatch * (pSeed->start_ref() - (pSeed-1)->start_ref());
-                        }//if
-                        else
-                        {
-                            if(optimisticGapEstimation)
-                                iScore += iMatch * uiGap;
-                            uiGap = (pSeed->start_ref() - (pSeed-1)->start_ref()) - uiGap;
-                        }//else
-                    }//if
-                    uiGap *= iExtend;
-                    if(uiGap > 0)
-                        uiGap += iGap;
-                    nucSeqIndex uiGapY = 
-                        pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
-                    if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )
-                        uiGapY = 0;
-                    nucSeqIndex uiGapX = 
-                        pSeed->start_ref() - ((pSeed-1)->start_ref() + (pSeed-1)->size());
-                    if( pSeed->start_ref() < ( (pSeed-1)->start_ref() + (pSeed-1)->size() ) )
-                        uiGapX = 0;
-                    if( //check for the maximal allowed gap area
-                            //uiMaxGapArea == 0 -> disabled
-                            ( uiMaxGapArea > 0 && uiGapX > uiMaxGapArea && uiGapY != 0 )
-                                ||
-                            ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
-                                ||
-                            //check for negative score
-                            iScore < (int64_t)uiGap
-                        )
-                    {
-                        iScore = 0;
-                        pLastStart = pSeed;
-                    }//if
-                    else
-                        iScore -= uiGap;
-                    if(iScore > (int64_t)uiMaxScore)
-                    {
-                        uiMaxScore = iScore;
-                        pOptimalStart = pLastStart;
-                        pOptimalEnd = pSeed;
-                    }//if
-                }//for
-
-                /*
-                * we need to increment both iterator but check if they extend past the end of pSeeds
-                * (check twice because incrementing an iterator pointing to end will
-                * result in undefined behaviour)
-                *
-                * We then simply remove all known suboptimal seeds
-                * this is an optimistic estimation so some suboptimal regions might remain
-                *
-                * @note: order is significant!
-                * """
-                * --- Iterator validity ---
-                * Iterators, pointers and references pointing to position (or first) and beyond are
-                * invalidated, with all iterators, pointers and references to elements 
-                * before position (or first) are guaranteed to keep referring to the same 
-                * elements they were referring to before the call.
-                * """
-                */
-                if(pOptimalEnd != pSeeds->end())
-                    if(++pOptimalEnd != pSeeds->end())
-                        pSeeds->erase(pOptimalEnd, pSeeds->end());
-                if(pOptimalStart != pSeeds->end())
-                    pSeeds->erase(pSeeds->begin(), pOptimalStart);
-            }// if
-#endif
-            /*
-            * Artifact filter:
-            */
-            if(pSeeds->size() > 2)
-            {
-                size_t uiPrePos = 0;
-                size_t uiCenterPos = 1;
-                while(uiCenterPos < pSeeds->size() - 1)
-                {
-                    Seed& rPre = (*pSeeds)[uiPrePos];
-                    Seed& rCenter = (*pSeeds)[uiCenterPos];
-                    Seed& rPost = (*pSeeds)[uiCenterPos + 1];
-
-                    int64_t iDeltaPre = rPre.start_ref() - (int64_t)rPre.start();
-                    int64_t iDeltaCenter = rCenter.start_ref() - (int64_t)rCenter.start();
-                    int64_t iDeltaPost = rPost.start_ref() - (int64_t)rPost.start();
-
-                    int64_t iDeltaDistToPre = std::abs(iDeltaPre - iDeltaCenter);
-                    int64_t iDeltaDistToPost = std::abs(iDeltaPost - iDeltaCenter);
-
-                    double dDeltaDistDiff = std::abs(iDeltaDistToPre - iDeltaDistToPost)*2 / 
-                        ((double) iDeltaDistToPre + iDeltaDistToPost );
-
-                    if(
-                        dDeltaDistDiff < dMaxDeltaDist &&
-                        (uint64_t)iDeltaDistToPre > uiMinDeltaDist
-                    )
-                    {
-                        // the filter triggered -> 
-                        // we flag the seed to be ignored by setting it's size to zero
-                        rCenter.size(0);
-                        uiCenterPos++;
-                    }// if
-                    else
-                    {
-                        // the filter did not trigger move to the next triple
-                        uiCenterPos++;
-                        uiPrePos = uiCenterPos - 1;
-                    }// else
-                }// while
-            }// if
-
-#if 0
-            /*
-             * SV detection (insertion & deletion)
-             */
-            for(size_t uiPos = 0; uiPos < pSeeds->size() - 1; uiPos++)
-            {
-                Seed& rA = (*pSeeds)[uiPos];
-                if(rA.size() == 0)
-                    continue;// rA is already filtered out
-                size_t uiBPos = uiPos+1;
-
-                while(uiBPos < pSeeds->size() && (*pSeeds)[uiBPos].size() == 0)
-                    uiBPos++;// rB is already filtered out
-                if(uiBPos == pSeeds->size())
-                    break;// no more non filtered seeds in vector
-                Seed& rB = (*pSeeds)[uiBPos];
-
-                int64_t iX = std::max(
-                        static_cast<int64_t>(0),
-                        static_cast<int64_t>(rB.start_ref())-static_cast<int64_t>(rA.end_ref())
-                    );
-                int64_t iY = std::max(
-                        static_cast<int64_t>(0),
-                        static_cast<int64_t>(rB.start()) - static_cast<int64_t>(rA.end())
-                    );
-
-                if (iX == 0 && iY == 0)
-                    continue;
-
-                double dXYRatio = std::min(iX, iY) / std::max(iY, iX);
-
-                if( 
-                        iX > static_cast<int64_t>(uiMaxGapArea) ||
-                        iY > static_cast<int64_t>(uiMaxGapArea)
-                            ||
-                        (dXYRatio < dMaxSVRatio && std::max(iX, iY) > iMinSVDistance)
-                    )
-                    pSeeds->xSvInfo.vSeedIndicesOfSVIndels.push_back(uiPos + 1);
-            }// for
-#endif
 
 
         }// if
@@ -555,6 +572,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 pSoCIn->vIngroup.push_back(std::make_shared<Seeds>());
                 pSoCIn->vSlopes.push_back(0);
                 pSoCIn->vIntercepts.push_back(0);
+                // @todo one more indirection to represent supplementary alignments
                 pSoCIn->vHarmSoCs.push_back(std::make_shared<Seeds>(pSeeds));
             )// DEBUG
         }// else
@@ -633,10 +651,8 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             uiLastHarmScore = uiCurrHarmScore;
         }// if
 
-        while(pSeeds->hasSV())
-            pSoCs->push_back(pSeeds->partitionOnSV());
-
-        pSoCs->push_back(pSeeds);
+        while(!pSeeds->empty())
+            pSoCs->push_back(this->applyFilters(pSeeds));
 
         //FILTER
 #if FILTER_1
@@ -657,8 +673,9 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
     }//while
 
-    if(bDoHeuristics) // @todo think about what to do here...
+    if(bDoHeuristics) 
     {
+        // @todo think about what to do here (maybe sorting is necessary)...
         for(unsigned int ui = 0; ui < uiSoCRepeatCounter && pSoCs->size() > 1; ui++)
             pSoCs->pop_back();
     }// if

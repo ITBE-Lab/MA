@@ -97,6 +97,8 @@ namespace libMA
             return std::abs(x - x_1);
         }// method
 
+        std::shared_ptr<Seeds> applyFilters(std::shared_ptr<Seeds>& pIn) const;
+
     public:
         /**
          * @brief true: estimate all possible position as matches in the gap cost filter
