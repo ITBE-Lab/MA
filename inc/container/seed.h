@@ -219,6 +219,17 @@ namespace libMA
         }//function
     };//class
 
+    class SVInfo
+    {
+    public:
+        /**
+         * @details
+         * Contains indices of seeds, where a structural variant (deletion or insertion)
+         * follows the seed.
+         */
+        std::vector<size_t> vSeedIndicesOfSVIndels;
+    };// class
+
     /**
      * @brief A list where one element is a Seed.
      * @details
@@ -227,14 +238,14 @@ namespace libMA
      */
     class Seeds
         :
-            public std::vector<Seed>,
+            public std::vector<Seed>,// @todo :@
             public Container
     {
     public:
         nucSeqIndex mem_score = 0;
         //some statistics
         AlignmentStatistics xStats;
-
+        SVInfo xSvInfo;
         bool bConsistent;
 
         Seeds(std::shared_ptr<Seeds> pOther)
@@ -296,6 +307,26 @@ namespace libMA
                 return true;
             return getScore() > pSeeds->getScore();
         }// operator
+
+        inline bool hasSV() const
+        {
+            return ! xSvInfo.vSeedIndicesOfSVIndels.empty();
+        }// method
+
+        inline std::shared_ptr<Seeds> partitionOnSV()
+        {
+            assert(hasSV());
+
+            auto pRet = std::make_shared<Seeds>();
+            for(size_t uiPos = xSvInfo.vSeedIndicesOfSVIndels.back(); uiPos < this->size(); uiPos++)
+                if( (*this)[uiPos].size() != 0 )
+                    pRet->emplace_back( (*this)[uiPos] );
+            this->resize(xSvInfo.vSeedIndicesOfSVIndels.back());
+            xSvInfo.vSeedIndicesOfSVIndels.pop_back();
+            assert( ! this->empty());
+            assert( ! pRet->empty());
+            return pRet;
+        }// method
 
     };//class
 }//namespace libMA

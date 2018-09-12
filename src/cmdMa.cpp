@@ -466,7 +466,7 @@ int main(int argc, char* argv[])
                     }// if
                 }// lambda
                 );
-            std::cout << "100% aligned.     " << std::endl;
+            std::cerr << "100% aligned.     " << std::endl;
         }//if
     }//try
     catch (const OptionException &ex)

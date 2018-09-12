@@ -57,6 +57,9 @@ namespace libMA
         extern uint64_t uiMinDeltaDist;
         extern double dMaxOverlapSupplementary;
         extern size_t uiMaxSupplementaryPerPrim;
+        extern bool bDisableGapCostEstimationCutting;
+        extern double dMaxSVRatio;
+        extern int64_t iMinSVDistance;
 
         inline void configureAccurate()
         {
@@ -78,6 +81,7 @@ namespace libMA
             dMaxOverlapSupplementary = 0.25;
             fMinSecScoreRatio = 0.85;
             uiReportN = 3;
+            //bDisableGapCostEstimationCutting = true;
         }// function
 
 #ifdef WITH_PYTHON

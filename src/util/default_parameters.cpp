@@ -45,6 +45,8 @@ namespace libMA
         bool bDisableHeuristics = false; // disable all heuristics in the harmonization
         // only output secondary alignments with a score larger than this * score of prim. alignment
         float fMinSecScoreRatio = .75;
+        // can only be accessed by pacBio presetting at the moment...
+        bool bDisableGapCostEstimationCutting = false; // do not remove seeds that are far away to generate alignments with positive score
 
         //artifact filter:
         // filter seeds if the difference between the delta distance to it's predecessor and
@@ -56,6 +58,10 @@ namespace libMA
         double dMaxOverlapSupplementary = 0.1;
         // each primary alignment can have at most x supplementary ones.
         size_t uiMaxSupplementaryPerPrim = 1;
+        
+        // @todo
+        double dMaxSVRatio = 0.01;
+        int64_t iMinSVDistance = 500;
         
 #ifdef WITH_PYTHON
         void exportDefaults()

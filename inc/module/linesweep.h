@@ -140,9 +140,15 @@ namespace libMA
 
         bool bDoHeuristics = !defaults::bDisableHeuristics;
 
+        bool bDoGapCostEstimationCutting = !defaults::bDisableGapCostEstimationCutting;
+
         double dMaxDeltaDist = defaults::dMaxDeltaDist;
 
         nucSeqIndex uiMinDeltaDist = defaults::uiMinDeltaDist;
+
+        double dMaxSVRatio = defaults::dMaxSVRatio;
+
+        int64_t iMinSVDistance = defaults::iMinSVDistance;
 
         LinearLineSweep() {}//default constructor
 

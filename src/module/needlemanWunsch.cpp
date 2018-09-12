@@ -52,7 +52,12 @@ inline void ksw_simplified(
         ksw_extz_t *ez, int8_t* mat
     )
 {
+    //assert(qlen * tlen < 10000000);
     int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
+    /*
+     * Adjust the bandwith according to the delta distance of the seeds creating this gap
+     * the add minAddBandwidth so that the alignment can go a little further out.
+     */
     if( std::abs(tlen - qlen) + minAddBandwidth > w)
         w = std::abs(tlen - qlen) + minAddBandwidth;
     ksw_extd2_sse(nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez);
@@ -116,7 +121,7 @@ void ksw(
 
     Wrapper_ksw_extz_t ez;
 
-    int uiBandwidth = 100;
+    int uiBandwidth = 10;
 
     assert(toQuery < pQuery->length());
     assert(toRef < pRef->length());
@@ -1085,22 +1090,30 @@ std::shared_ptr<Container> NeedlemanWunsch::execute(
 
     std::shared_ptr<Alignment> pRet;
 
+#define PADDING_W_Q ( 0 )
+
     if(!bLocal)
     {
         int64_t iOldContig = pRefPack->uiSequenceIdForPositionOrRev(beginRef);
+#if PADDING_W_Q == 1 
         beginRef -= uiPadding + beginQuery;
+#else
+        beginRef -= uiPadding;
+#endif
         if(beginRef > endRef)//check for underflow
             beginRef = 0;
+#if PADDING_W_Q == 1 
         endRef += uiPadding + (pQuery->length() - endQuery);
+#else
+        endRef += uiPadding;
+#endif
         if(beginRef > endRef)//check for overflow
             endRef = pRefPack->uiUnpackedSizeForwardPlusReverse();
         endQuery = pQuery->length();
         beginQuery = 0;
         if(pRefPack->uiSequenceIdForPositionOrRev(beginRef) != iOldContig)
-            //@todo really + 1 ?
             beginRef = pRefPack->startOfSequenceWithIdOrReverse(iOldContig);
         if(pRefPack->uiSequenceIdForPositionOrRev(endRef) != iOldContig)
-            //@todo really - 1 ?
             endRef = pRefPack->endOfSequenceWithIdOrReverse(iOldContig);
 
         DEBUG(
