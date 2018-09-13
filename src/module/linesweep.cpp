@@ -16,7 +16,7 @@ extern int libMA::defaults::iGap;
 extern int libMA::defaults::iExtend;
 extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
-extern nucSeqIndex libMA::defaults::uiMaxGapArea;
+//extern nucSeqIndex libMA::defaults::uiMaxGapArea;
 
 std::shared_ptr<Seeds> LinearLineSweep::applyFilters(std::shared_ptr<Seeds>& pIn) const
 {

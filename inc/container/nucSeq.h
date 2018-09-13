@@ -565,6 +565,11 @@ namespace libMA
         {
             reverse( pxSequenceRef, uiSize );
         } // method
+
+        inline void vReverse(size_t uiFrom, size_t uiTo)
+        {
+            reverse( pxSequenceRef + uiFrom, uiTo - uiFrom );
+        } // method
         
         /** WARNING: the inner string might not null-terminated after this operation.
          */

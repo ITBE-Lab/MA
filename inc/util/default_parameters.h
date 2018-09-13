@@ -60,6 +60,7 @@ namespace libMA
         extern bool bDisableGapCostEstimationCutting;
         extern double dMaxSVRatio;
         extern int64_t iMinSVDistance;
+        extern size_t uiZDrop;
 
         inline void configureAccurate()
         {
@@ -81,6 +82,7 @@ namespace libMA
             dMaxOverlapSupplementary = 0.25;
             fMinSecScoreRatio = 0.85;
             uiReportN = 3;
+            uiPadding = 1000;
             //bDisableGapCostEstimationCutting = true;
         }// function
 

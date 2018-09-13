@@ -151,6 +151,8 @@ namespace libMA
         double dMaxSVRatio = defaults::dMaxSVRatio;
 
         int64_t iMinSVDistance = defaults::iMinSVDistance;
+        
+        nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
 
         LinearLineSweep() {}//default constructor
 

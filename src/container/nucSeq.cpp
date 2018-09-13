@@ -76,10 +76,10 @@ void exportSequence()
                     "__str__", 
                     &NucSeq::toString
                 )
-            .def(
-                    "reverse", 
-                    &NucSeq::vReverse
-                )
+            //.def(
+            //        "reverse", 
+            //        &NucSeq::vReverse
+            //    )
 #if WITH_QUALITY
             .def(
                     "quality", 

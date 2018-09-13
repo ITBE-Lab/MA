@@ -11,6 +11,16 @@
 #include <vector>
 #include <cassert>
 
+#define KSW_EZ_SCORE_ONLY  0x01 // don't record alignment path/cigar
+#define KSW_EZ_RIGHT       0x02 // right-align gaps
+#define KSW_EZ_GENERIC_SC  0x04 // without this flag: match/mismatch only; last symbol is a wildcard
+#define KSW_EZ_APPROX_MAX  0x08 // approximate max; this is faster with sse
+#define KSW_EZ_APPROX_DROP 0x10 // approximate Z-drop; faster with sse
+#define KSW_EZ_EXTZ_ONLY   0x40 // only perform extension
+#define KSW_EZ_REV_CIGAR   0x80 // reverse CIGAR in the output
+#define KSW_EZ_SPLICE_FOR  0x100
+#define KSW_EZ_SPLICE_REV  0x200
+#define KSW_EZ_SPLICE_FLANK 0x400
 
 using namespace libMA;
 
@@ -21,8 +31,8 @@ extern int libMA::defaults::iGap2;
 extern int libMA::defaults::iExtend2;
 extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
-extern nucSeqIndex libMA::defaults::uiMaxGapArea;
 extern nucSeqIndex libMA::defaults::uiPadding;
+extern size_t libMA::defaults::uiZDrop;
 
 DEBUG(
     bool bAnalyzeHeuristics = false;
@@ -43,6 +53,29 @@ static void ksw_gen_simple_mat(int m, int8_t *mat, int8_t a, int8_t b)
 	}
 	for (j = 0; j < m; ++j)
 		mat[(m - 1) * m + j] = 0;
+}// function
+
+inline void ksw_ext(
+        int qlen, const uint8_t *query,
+        int tlen, const uint8_t *target,
+        int8_t q, int8_t e, int8_t q2, int8_t e2, int& w,
+        ksw_extz_t *ez, bool bRef
+    )
+{
+    if(bRef)
+        ksw_extd2_sse(
+                nullptr, qlen, query, tlen, target, 5,
+                mat, q, e, q2, e2, w, -1, uiZDrop,
+                KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR,
+                ez
+            );
+    else
+        ksw_extd2_sse(
+                nullptr, qlen, query, tlen, target, 5,
+                mat, q, e, q2, e2, w, -1, uiZDrop,
+                KSW_EZ_EXTZ_ONLY,
+                ez
+            );
 }// function
 
 inline void ksw_simplified(
@@ -126,10 +159,10 @@ void ksw(
     assert(toQuery < pQuery->length());
     assert(toRef < pRef->length());
     ksw_simplified(
-        toQuery - fromQuery, 
+        toQuery - fromQuery,
         pQuery->pGetSequenceRef() + fromQuery,
-        toRef - fromRef, 
-        pRef->pGetSequenceRef() + fromRef, 
+        toRef - fromRef,
+        pRef->pGetSequenceRef() + fromRef,
         iGap,
         iExtend,
         iGap2,
@@ -668,6 +701,16 @@ void NeedlemanWunsch::dynPrg(
         const bool bLocalEnd
     )
 {
+    // do not actually compute through gaps that are larger than a set maximum
+#if 0
+    if (toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea)
+    {
+        pAlignment->append(MatchType::deletion, toRef - fromRef );
+        pAlignment->append(MatchType::insertion, toQuery - fromQuery );
+        return;
+    }// if
+#endif
+
 // use NW naive backend for all cases
 #if 0
     //temp
@@ -715,7 +758,6 @@ void NeedlemanWunsch::dynPrg(
 
     const bool bReverse = bLocalBeginning;
 
-    const unsigned int uiBandWidth = 512;
 
     // in all other cases we use libGaba
     // do some checking for empty sequences though since libGaba does not offer that
@@ -748,6 +790,90 @@ void NeedlemanWunsch::dynPrg(
     /*
     * do the SW alignment
     */
+
+#if 1
+
+    Wrapper_ksw_extz_t ez;
+
+    int uiBandwidth = 512;
+
+    assert(toQuery < pQuery->length());
+    assert(toRef < pRef->length());
+    if(bReverse)
+    {
+        pQuery->vReverse(fromQuery, toQuery);
+        pRef->vReverse(fromRef, toRef);
+    }// if
+    ksw_ext(
+        toQuery - fromQuery,
+        pQuery->pGetSequenceRef() + fromQuery,
+        toRef - fromRef,
+        pRef->pGetSequenceRef() + fromRef,
+        iGap,
+        iExtend,
+        iGap2,
+        iExtend2,
+        uiBandwidth,
+        ez.ez, // return value
+        bReverse
+    );
+    if(bReverse)
+    {
+        pQuery->vReverse(fromQuery, toQuery);
+        pRef->vReverse(fromRef, toRef);
+    }// if
+
+    uint32_t qPos = fromQuery;
+    uint32_t rPos = fromRef;
+    if(bReverse)
+    {
+        rPos += toRef - ez.ez->max_t - 1;
+        qPos += toQuery - ez.ez->max_q - 1;
+    }// if
+
+    for (int i = 0; i < ez.ez->n_cigar; ++i)
+    {
+        uint32_t uiSymbol = ez.ez->cigar[i]&0xf;
+        uint32_t uiAmount = ez.ez->cigar[i]>>4;
+        switch (uiSymbol)
+        {
+            case 0:
+                for(uint32_t uiPos = 0; uiPos < uiAmount; uiPos++)
+                {
+                    if( (*pQuery)[uiPos + qPos] == (*pRef)[uiPos + rPos] )
+                        pAlignment->append(MatchType::match);
+                    else
+                        pAlignment->append(MatchType::missmatch);
+                }// for
+                qPos+=uiAmount;
+                rPos+=uiAmount;
+                break;
+            case 1:
+                pAlignment->append(MatchType::insertion, uiAmount);
+                qPos+=uiAmount;
+                break;
+            case 2:
+                pAlignment->append(MatchType::deletion, uiAmount);
+                rPos+=uiAmount;
+                break;
+            default:
+                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                assert(false);
+                break;
+        }//switch
+    }//for
+    /*
+     * Warning:
+     * Order is important: the shifting needs to be done after the cigar extraction
+     */
+    if(bReverse)
+    {
+        pAlignment->shiftOnRef( toRef - ez.ez->max_t - 1 );
+        pAlignment->shiftOnQuery( toQuery - ez.ez->max_q - 1 );
+    }// if
+
+#else 
+    const unsigned int uiBandWidth = 512;
     std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit(fromQuery, toQuery+1, bReverse);
     std::vector<uint8_t>   vRef4Bit =   pRef->as4Bit(  fromRef,   toRef+1, bReverse);
     DEBUG_3(
@@ -788,14 +914,14 @@ void NeedlemanWunsch::dynPrg(
     assert(xDb.pDp != nullptr);
     DEBUG_3(std::cout << "sw4.1" << std::endl;)
 
-    //Note f does not need to be freed apparently
 	struct gaba_section_s const *ap = &asec, *bp = &bsec;
     
+    //Note f does not need to be freed apparently
     struct gaba_fill_s const *f = gaba_dp_fill_root(
-        xDb.pDp,	    /* dp -> &dp[_dp_ctx_index(band_width)] makes the band width selectable */
+        xDb.pDp,	/* dp -> &dp[_dp_ctx_index(band_width)] makes the band width selectable */
 		ap, 0,		/* a-side (reference side) sequence and start position */
 		bp, 0,		/* b-side (query) */
-		UINT32_MAX		/* max extension length */
+		UINT32_MAX	/* max extension length */
 	);
     DEBUG_3(std::cout << "sw5" << std::endl;)
 
@@ -851,10 +977,6 @@ void NeedlemanWunsch::dynPrg(
     );
 
 	////printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
-    /*
-     * Having duplicate code here, but need the different functions
-     * Maybe template all that?
-     */
     if(bReverse)
         gaba_print_cigar_reverse(
             printer,                        /* printer function */
@@ -887,7 +1009,7 @@ void NeedlemanWunsch::dynPrg(
     }// if
 
     DEBUG_3(std::cout << "dynProg end" << std::endl;)
-    return;
+#endif
 }//function
 
 NeedlemanWunsch::NeedlemanWunsch()
@@ -948,7 +1070,6 @@ std::string NeedlemanWunsch::getFullDesc() const
         std::to_string(iMissMatch) + "," + 
         std::to_string(iGap) + "," + 
         std::to_string(iExtend) + "," + 
-        std::to_string(uiMaxGapArea) + "," + 
         std::to_string(bLocal) + "," + 
         std::to_string(uiPadding) + ")"
         ;

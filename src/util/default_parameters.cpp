@@ -63,6 +63,8 @@ namespace libMA
         double dMaxSVRatio = 0.01;
         int64_t iMinSVDistance = 500;
         
+        size_t uiZDrop = 400;
+        
 #ifdef WITH_PYTHON
         void exportDefaults()
         {

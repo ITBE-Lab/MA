@@ -111,6 +111,8 @@ namespace libMA
         */
         //the match missmatch matrix
         std::shared_ptr<Gaba_tWrapper> pGabaScoring;
+
+        nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
     public:
         bool bLocal = false;
 
