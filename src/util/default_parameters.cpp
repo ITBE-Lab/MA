@@ -23,7 +23,7 @@ namespace libMA
         size_t uiMaxEqualScoreLookahead = 3;     // lookahead distance for short queries
         size_t uiSwitchQLen = 800;       // q len to switch between break criteria
         uint64_t uiMaxGapArea = 10000;     // break alignments in harmonization if gap is larger
-        uint64_t uiPadding = 500;          // padding for DP
+        uint64_t uiPadding = 100;          // padding for DP
         size_t uiSoCWidth = 0;          // set a fixed SoC width; 0 = use the formula
         bool bFindMode = false;        // true: don't do DP
         bool bOptimisticGapEstimation = true;  // how to estimate gap costs in harmonization
@@ -58,6 +58,8 @@ namespace libMA
         double dMaxOverlapSupplementary = 0.1;
         // each primary alignment can have at most x supplementary ones.
         size_t uiMaxSupplementaryPerPrim = 1;
+
+        size_t uiSVPenalty = 100;
         
         // @todo
         double dMaxSVRatio = 0.01;

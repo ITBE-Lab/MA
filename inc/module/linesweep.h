@@ -154,6 +154,8 @@ namespace libMA
         
         nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
 
+        size_t uiSVPenalty = defaults::uiSVPenalty;
+
         LinearLineSweep() {}//default constructor
 
         //overload

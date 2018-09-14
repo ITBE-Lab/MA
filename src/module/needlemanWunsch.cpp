@@ -65,14 +65,14 @@ inline void ksw_ext(
     if(bRef)
         ksw_extd2_sse(
                 nullptr, qlen, query, tlen, target, 5,
-                mat, q, e, q2, e2, w, -1, uiZDrop,
+                mat, q, e, q2, e2, w, uiZDrop, -1,
                 KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR,
                 ez
             );
     else
         ksw_extd2_sse(
                 nullptr, qlen, query, tlen, target, 5,
-                mat, q, e, q2, e2, w, -1, uiZDrop,
+                mat, q, e, q2, e2, w, uiZDrop, -1,
                 KSW_EZ_EXTZ_ONLY,
                 ez
             );
@@ -691,6 +691,215 @@ int printer(void* pVoid, uint64_t uiLen, char c)
     return 0;
 }// function
 
+
+// banded global NW
+void ksw_dual_ext(
+        std::shared_ptr<NucSeq> pQuery,
+        std::shared_ptr<NucSeq> pRef,
+        nucSeqIndex fromQuery,
+        nucSeqIndex toQuery,
+        nucSeqIndex fromRef,
+        nucSeqIndex toRef,
+        std::shared_ptr<Alignment> pAlignment
+    )
+{
+    Wrapper_ksw_extz_t ez_left;
+    Wrapper_ksw_extz_t ez_right;
+    int uiBandwidth = 512;
+    
+    ksw_ext(
+        toQuery - fromQuery,
+        pQuery->pGetSequenceRef() + fromQuery,
+        toRef - fromRef,
+        pRef->pGetSequenceRef() + fromRef,
+        iGap,
+        iExtend,
+        iGap2,
+        iExtend2,
+        uiBandwidth,
+        ez_left.ez, // return value
+        false
+    );
+
+    pQuery->vReverse(fromQuery, toQuery);
+    pRef->vReverse(fromRef, toRef);
+    ksw_ext(
+        toQuery - fromQuery,
+        pQuery->pGetSequenceRef() + fromQuery,
+        toRef - fromRef,
+        pRef->pGetSequenceRef() + fromRef,
+        iGap,
+        iExtend,
+        iGap2,
+        iExtend2,
+        uiBandwidth,
+        ez_right.ez, // return value
+        true
+    );
+    pQuery->vReverse(fromQuery, toQuery);
+    pRef->vReverse(fromRef, toRef);
+
+    // center between both extensions
+    uint32_t qCenter = ( fromQuery + ez_left.ez->max_q + (toQuery - ez_right.ez->max_q - 1) ) / 2;
+    uint32_t rCenter = ( fromRef + ez_left.ez->max_t + (toRef - ez_right.ez->max_t - 1) ) / 2;
+
+    uint32_t qPos = fromQuery;
+    uint32_t rPos = fromRef;
+
+    for (int i = 0; i < ez_left.ez->n_cigar; ++i)
+    {
+        assert(qPos < qCenter);
+        assert(rPos < rCenter);
+        uint32_t uiSymbol = ez_left.ez->cigar[i]&0xf;
+        uint32_t uiAmount = ez_left.ez->cigar[i]>>4;
+        switch (uiSymbol)
+        {
+            case 0:
+                // dont go over the center
+                if(qPos + uiAmount > qCenter)
+                {
+                    assert(qCenter >= qPos);
+                    uiAmount = qCenter - qPos;
+                }// if
+                // dont go over the center
+                if(rPos + uiAmount > rCenter)
+                {
+                    assert(rCenter >= rPos);
+                    uiAmount = rCenter - rPos;
+                }// if
+                for(uint32_t uiPos = 0; uiPos < uiAmount; uiPos++)
+                {
+                    if( (*pQuery)[uiPos + qPos] == (*pRef)[uiPos + rPos] )
+                        pAlignment->append(MatchType::match);
+                    else
+                        pAlignment->append(MatchType::missmatch);
+                }// for
+                qPos+=uiAmount;
+                rPos+=uiAmount;
+                break;
+            case 1:
+                // dont go over the center
+                if(qPos + uiAmount > qCenter)
+                    uiAmount = qCenter - qPos;
+                pAlignment->append(MatchType::insertion, uiAmount);
+                qPos+=uiAmount;
+                break;
+            case 2:
+                // dont go over the center
+                if(rPos + uiAmount > rCenter)
+                    uiAmount = rCenter - rPos;
+                pAlignment->append(MatchType::deletion, uiAmount);
+                rPos+=uiAmount;
+                break;
+            default:
+                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                assert(false);
+                break;
+        }//switch
+        assert(rPos <= rCenter);
+        assert(qPos <= qCenter);
+        if(rPos == rCenter)
+            break;
+        if(qPos == qCenter)
+            break;
+    }//for
+    uint32_t rPosRight = toRef - ez_right.ez->max_t - 1;
+    uint32_t qPosRight = toQuery - ez_right.ez->max_q - 1;
+    uint32_t uiAmountNotUnrolled = 0;
+    MatchType xTypeLastUnrolledCigar = MatchType::match;
+    int i = 0;
+    // unroll the cigar until both query and refernce positions are past the center
+    for (;i < ez_right.ez->n_cigar; ++i)
+    {
+        // if we are past both centerlines stop unrolling 
+        if(rPosRight >= rCenter && qPosRight >= qCenter)
+            break;
+        uint32_t uiSymbol = ez_right.ez->cigar[i]&0xf;
+        uint32_t uiAmount = ez_right.ez->cigar[i]>>4;
+        switch (uiSymbol)
+        {
+            case 0:
+                if(rPosRight + uiAmount > rCenter && qPosRight + uiAmount > qCenter)
+                {
+                    if(rCenter - rPosRight > qCenter - qPosRight)
+                    {
+                        uiAmount = rCenter - rPosRight;
+                        uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
+                    }// if
+                    else
+                    {
+                        uiAmount = qCenter - qPosRight;
+                        uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
+                    }// else
+                }// if
+                qPosRight+=uiAmount;
+                rPosRight+=uiAmount;
+                xTypeLastUnrolledCigar = MatchType::match;
+                break;
+            case 1:
+                if(qPosRight + uiAmount > qCenter)
+                {
+                    uiAmount = qCenter - qPosRight;
+                    uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
+                }// if
+                qPosRight+=uiAmount;
+                xTypeLastUnrolledCigar = MatchType::insertion;
+                break;
+            case 2:
+                if(rPosRight + uiAmount > rCenter)
+                {
+                    uiAmount = rCenter - rPosRight;
+                    uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
+                }// if
+                rPosRight+=uiAmount;
+                xTypeLastUnrolledCigar = MatchType::deletion;
+                break;
+        }//switch
+    }//for
+
+    // fill in the gap between the left and right extension
+    pAlignment->append(MatchType::deletion, rPosRight - rPos);
+    pAlignment->append(MatchType::insertion, qPosRight - qPos);
+
+    // add the last cigar operation (it might have been partially unrolled...)
+    pAlignment->append(xTypeLastUnrolledCigar, uiAmountNotUnrolled);
+
+    // add all remaining cigar operations
+    for (;i < ez_right.ez->n_cigar; ++i)
+    {
+        uint32_t uiSymbol = ez_right.ez->cigar[i]&0xf;
+        uint32_t uiAmount = ez_right.ez->cigar[i]>>4;
+        switch (uiSymbol)
+        {
+            case 0:
+                for(uint32_t uiPos = 0; uiPos < uiAmount; uiPos++)
+                {
+                    if( (*pQuery)[uiPos + qPosRight] == (*pRef)[uiPos + rPosRight] )
+                        pAlignment->append(MatchType::match);
+                    else
+                        pAlignment->append(MatchType::missmatch);
+                }// for
+                qPosRight+=uiAmount;
+                rPosRight+=uiAmount;
+                break;
+            case 1:
+                pAlignment->append(MatchType::insertion, uiAmount);
+                qPosRight+=uiAmount;
+                break;
+            case 2:
+                pAlignment->append(MatchType::deletion, uiAmount);
+                rPosRight+=uiAmount;
+                break;
+            default:
+                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                assert(false);
+                break;
+        }//switch
+    }//for
+    assert(qPosRight == toQuery);
+    assert(rPosRight == toRef);
+}// function
+
 void NeedlemanWunsch::dynPrg(
         const std::shared_ptr<NucSeq> pQuery, 
         const std::shared_ptr<NucSeq> pRef,
@@ -701,12 +910,36 @@ void NeedlemanWunsch::dynPrg(
         const bool bLocalEnd
     )
 {
-    // do not actually compute through gaps that are larger than a set maximum
-#if 0
-    if (toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea)
+    // do some checking for empty sequences
+    if( toRef <= fromRef )
+        if( toQuery <= fromQuery )
+        {
+            DEBUG_3(std::cout << "dynProg end" << std::endl;)
+            return;
+        }// if
+    if( toQuery <= fromQuery )
     {
         pAlignment->append(MatchType::deletion, toRef - fromRef );
+        DEBUG_3(std::cout << "dynProg end" << std::endl;)
+        return;
+    }//if
+    if( toRef <= fromRef )
+    {
         pAlignment->append(MatchType::insertion, toQuery - fromQuery );
+        DEBUG_3(std::cout << "dynProg end" << std::endl;)
+        return;
+    }//if
+
+    // do not actually compute through gaps that are larger than a set maximum
+#if 1
+    if (toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea)
+    {
+        ksw_dual_ext(
+            pQuery, pRef,
+            fromQuery, toQuery,
+            fromRef, toRef,
+            pAlignment
+        );
         return;
     }// if
 #endif
@@ -760,25 +993,6 @@ void NeedlemanWunsch::dynPrg(
 
 
     // in all other cases we use libGaba
-    // do some checking for empty sequences though since libGaba does not offer that
-    if( toRef <= fromRef )
-        if( toQuery <= fromQuery )
-        {
-            DEBUG_3(std::cout << "dynProg end" << std::endl;)
-            return;
-        }// if
-    if( toQuery <= fromQuery )
-    {
-        pAlignment->append(MatchType::deletion, toRef - fromRef );
-        DEBUG_3(std::cout << "dynProg end" << std::endl;)
-        return;
-    }//if
-    if( toRef <= fromRef )
-    {
-        pAlignment->append(MatchType::insertion, toQuery - fromQuery );
-        DEBUG_3(std::cout << "dynProg end" << std::endl;)
-        return;
-    }//if
 
     // if we reached this point we actually have to align something
     DEBUG_2(

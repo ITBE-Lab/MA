@@ -82,6 +82,7 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters(std::shared_ptr<Seeds>& pIn
             uiGap *= iExtend;
             if(uiGap > 0)
                 uiGap += iGap;
+#if 0
             nucSeqIndex uiGapY = 
                 pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
             if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )
@@ -96,6 +97,11 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters(std::shared_ptr<Seeds>& pIn
                         ||
                     ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
                         ||
+#else
+            if( uiGap > uiSVPenalty )
+                uiGap = uiSVPenalty;
+            if( //check for the maximal allowed gap area
+#endif
                     //check for negative score
                     iScore < (int64_t)uiGap
                 )

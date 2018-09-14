@@ -61,6 +61,7 @@ namespace libMA
         extern double dMaxSVRatio;
         extern int64_t iMinSVDistance;
         extern size_t uiZDrop;
+        extern size_t uiSVPenalty;
 
         inline void configureAccurate()
         {

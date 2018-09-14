@@ -12,6 +12,7 @@ extern int libMA::defaults::iGap;
 extern int libMA::defaults::iExtend;
 extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
+extern size_t libMA::defaults::uiSVPenalty;
 //Note query 236 failed
 
 void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
@@ -22,6 +23,9 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
     std::cout << vTranslate[type] << size << std::endl;
 #endif
+    /*
+     * we are storing in a compressed format 
+     */
     if(size == 0)
         return;
     //adjust the score of the alignment
@@ -40,15 +44,30 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
     }// else if
     else if(type == MatchType::insertion || type == MatchType::deletion)
     {
-        //iGap & iExtend is a penalty not a score
-        if(length() == 0 || (data.back().first != type) )
-            iScore -= iGap;
-        iScore -= iExtend * size;
+        // add the sizes first so we do not have to revert them
         if(type == MatchType::insertion)
             uiEndOnQuery += size;
         else
             uiEndOnRef += size;
+        //iGap & iExtend is a penalty not a score
+        if( data.size() != 0 && (data.back().first == type) )
+        {
+            // revert last alignment but memorize the length
+            size += data.back().second;
+            uiLength -= data.back().second;
+            if(iExtend * data.back().second + iGap < uiSVPenalty)
+                iScore -= iExtend * data.back().second + iGap;
+            else
+                iScore -= uiSVPenalty;
+            data.pop_back();
+        }// if
+        // add the penalty for this indel (plus the possibly removed last one...)
+        if(iExtend * size + iGap < uiSVPenalty)
+            iScore -= iExtend * size + iGap;
+        else
+            iScore -= uiSVPenalty;
     }// else if
+    
     /*
      * we are storing in a compressed format 
      * since it actually makes quite a lot of things easier
@@ -103,8 +122,10 @@ unsigned int EXPORTED Alignment::localscore() const
         {
             case MatchType::deletion :
             case MatchType::insertion :
-                iScoreCurr -= iGap;
-                iScoreCurr -= iExtend * data[index].second;
+                if(iExtend * data[index].second + iGap < uiSVPenalty)
+                    iScoreCurr -= iExtend * data[index].second + iGap;
+                else
+                    iScoreCurr -= uiSVPenalty;
                 break;
             case MatchType::missmatch :
                 iScoreCurr -= iMissMatch * data[index].second;
@@ -149,8 +170,10 @@ void EXPORTED Alignment::makeLocal()
         {
             case MatchType::deletion :
             case MatchType::insertion :
-                iScoreCurr -= iGap;
-                iScoreCurr -= iExtend * data[index].second;
+                if(iExtend * data[index].second + iGap < uiSVPenalty)
+                    iScoreCurr -= iExtend * data[index].second + iGap;
+                else
+                    iScoreCurr -= uiSVPenalty;
                 break;
             case MatchType::missmatch :
                 iScoreCurr -= iMissMatch * data[index].second;
@@ -249,18 +272,30 @@ void EXPORTED Alignment::removeDangeling()
 
     if(data.empty())
         return;
-    while(data.front().first == MatchType::deletion)
+    while(data.front().first == MatchType::deletion || data.front().first == MatchType::insertion)
     {
-        uiBeginOnRef += data.front().second;
+        if(data.front().first == MatchType::deletion) // deletion
+            uiBeginOnRef += data.front().second;
+        else // insertion
+            uiBeginOnQuery += data.front().second;
+        if(iGap + iExtend * data.front().second < uiSVPenalty)
+            iScore += iGap + iExtend * data.front().second;
+        else
+            iScore += uiSVPenalty;
         uiLength -= data.front().second;
-        iScore += iGap + iExtend * data.front().second;
         data.erase(data.begin(), data.begin()+1);
     }//if
-    while(data.back().first == MatchType::deletion)
+    while(data.back().first == MatchType::deletion || data.back().first == MatchType::insertion)
     {
-        uiEndOnRef -= data.back().second;
+        if(data.back().first == MatchType::deletion) // deletion
+            uiEndOnRef -= data.back().second;
+        else // insertion
+            uiEndOnQuery -= data.back().second;
+        if(iGap + iExtend * data.back().second < uiSVPenalty)
+            iScore += iGap + iExtend * data.back().second;
+        else
+            iScore += uiSVPenalty;
         uiLength -= data.back().second;
-        iScore += iGap + iExtend * data.back().second;
         data.pop_back();
     }//if
     DEBUG(
@@ -296,8 +331,10 @@ int Alignment::reCalcScore() const
         {
             case MatchType::deletion :
             case MatchType::insertion :
-                iScore -= iGap;
-                iScore -= iExtend * data[index].second;
+                if(iExtend * data[index].second + iGap < uiSVPenalty)
+                    iScore -= iExtend * data[index].second + iGap;
+                else
+                    iScore -= uiSVPenalty;
                 break;
             case MatchType::missmatch :
                 iScore -= iMissMatch * data[index].second;
