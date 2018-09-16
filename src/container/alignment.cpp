@@ -17,11 +17,11 @@ extern size_t libMA::defaults::uiSVPenalty;
 
 void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
 {
-#if DEBUG_LEVEL >= 2
+#if DEBUG_LEVEL >= 1
     // get a copy of the alignment for later comparison in case something goes wrong
     std::vector<std::pair<MatchType, nucSeqIndex>> vCopyOfData(data.begin(), data.end());
-    const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
-    std::cout << vTranslate[type] << size << std::endl;
+    //const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
+    //std::cout << vTranslate[type] << size << std::endl;
 #endif
     /*
      * we are storing in a compressed format 
@@ -56,9 +56,9 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
             size += data.back().second;
             uiLength -= data.back().second;
             if(iExtend * data.back().second + iGap < uiSVPenalty)
-                iScore -= iExtend * data.back().second + iGap;
+                iScore += iExtend * data.back().second + iGap;
             else
-                iScore -= uiSVPenalty;
+                iScore += uiSVPenalty;
             data.pop_back();
         }// if
         // add the penalty for this indel (plus the possibly removed last one...)
@@ -81,24 +81,21 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
         data.push_back(std::make_pair(type, size));
     uiLength += size;
 
-    DEBUG_2(
+    DEBUG(
         if(reCalcScore() != iScore)
         {
             std::cerr << "WARNING set wrong score in append name: " 
-                << xStats.sName << " actual score: " << reCalcScore() << " score: " << iScore << std::endl;
+                << xStats.sName << " actual score: " << reCalcScore() << " score: " << iScore
+                << std::endl;
             for(auto tup : vCopyOfData)
-            {
-                if(std::get<0>(tup) == MatchType::seed)
-                    std::cout << "=============";
-                std::cout << std::get<0>(tup) << ":" << tup.second << " ";
-            }
+                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
             std::cout << std::endl;
             for(auto tup : data)
-                std::cout << std::get<0>(tup) << ":" << tup.second << " ";
+                std::cout << std::get<0>(tup) << ":" << std::get<1>(tup) << " ";
             std::cout << std::endl;
             assert(false);
         }// if
-    )// DEBUG_2
+    )// DEBUG
     DEBUG(
         nucSeqIndex uiCheck = 0;
         for(auto xTup : data)

@@ -154,7 +154,7 @@ void ksw(
 
     Wrapper_ksw_extz_t ez;
 
-    int uiBandwidth = 10;
+    int uiBandwidth = 20;
 
     assert(toQuery < pQuery->length());
     assert(toRef < pRef->length());

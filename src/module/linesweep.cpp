@@ -136,22 +136,19 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters(std::shared_ptr<Seeds>& pIn
         * elements they were referring to before the call.
         * """
         */
+#define KEEP_SMALLER_PART ( 0 )
+#if KEEP_SMALLER_PART == 1
         if(pOptimalStart != pIn->end())
             for(auto pCur = pIn->begin(); pCur != pOptimalStart; pCur++)
                 pRet->push_back(*pCur);
-        //! if(pOptimalStart != pIn->end())
-        //! {
-        //!     pRet->resize( std::distance(pIn->begin(), pOptimalStart) );
-        //!     std::copy(pIn->begin(), pOptimalStart, pRet->begin());
-        //! }// if
+#endif
         if(pOptimalEnd != pIn->end())
             if(++pOptimalEnd != pIn->end())
             {
+#if KEEP_SMALLER_PART == 1
                 for(auto pCur = pOptimalEnd; pCur != pIn->end(); pCur++)
                     pRet->push_back(*pCur);
-                //! auto xItCur = pRet->end();
-                //! pRet->resize( pRet->size() + std::distance(pOptimalEnd, pIn->end()) );
-                //! std::copy(pOptimalEnd, pIn->end(), xItCur);
+#endif
                 pIn->erase(pOptimalEnd, pIn->end());
             }
         if(pOptimalStart != pIn->end())
