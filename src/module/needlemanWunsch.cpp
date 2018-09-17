@@ -746,90 +746,105 @@ void ksw_dual_ext(
     uint32_t qPos = fromQuery;
     uint32_t rPos = fromRef;
 
-    for (int i = 0; i < ez_left.ez->n_cigar; ++i)
-    {
-        assert(qPos < qCenter);
-        assert(rPos < rCenter);
-        uint32_t uiSymbol = ez_left.ez->cigar[i]&0xf;
-        uint32_t uiAmount = ez_left.ez->cigar[i]>>4;
-        switch (uiSymbol)
+    if (rPos != rCenter && qPos != qCenter)
+        for (int i = 0; i < ez_left.ez->n_cigar; ++i)
         {
-            case 0:
-                // dont go over the center
-                if(qPos + uiAmount > qCenter)
-                {
-                    assert(qCenter >= qPos);
-                    uiAmount = qCenter - qPos;
-                }// if
-                // dont go over the center
-                if(rPos + uiAmount > rCenter)
-                {
-                    assert(rCenter >= rPos);
-                    uiAmount = rCenter - rPos;
-                }// if
-                for(uint32_t uiPos = 0; uiPos < uiAmount; uiPos++)
-                {
-                    if( (*pQuery)[uiPos + qPos] == (*pRef)[uiPos + rPos] )
-                        pAlignment->append(MatchType::match);
-                    else
-                        pAlignment->append(MatchType::missmatch);
-                }// for
-                qPos+=uiAmount;
-                rPos+=uiAmount;
+            assert(qPos < qCenter);
+            assert(rPos < rCenter);
+            uint32_t uiSymbol = ez_left.ez->cigar[i]&0xf;
+            uint32_t uiAmount = ez_left.ez->cigar[i]>>4;
+            switch (uiSymbol)
+            {
+                case 0:
+                    // dont go over the center
+                    if(qPos + uiAmount > qCenter)
+                    {
+                        assert(qCenter >= qPos);
+                        uiAmount = qCenter - qPos;
+                    }// if
+                    // dont go over the center
+                    if(rPos + uiAmount > rCenter)
+                    {
+                        assert(rCenter >= rPos);
+                        uiAmount = rCenter - rPos;
+                    }// if
+                    for(uint32_t uiPos = 0; uiPos < uiAmount; uiPos++)
+                    {
+                        if( (*pQuery)[uiPos + qPos] == (*pRef)[uiPos + rPos] )
+                            pAlignment->append(MatchType::match);
+                        else
+                            pAlignment->append(MatchType::missmatch);
+                    }// for
+                    qPos+=uiAmount;
+                    rPos+=uiAmount;
+                    break;
+                case 1:
+                    // dont go over the center
+                    if(qPos + uiAmount > qCenter)
+                        uiAmount = qCenter - qPos;
+                    pAlignment->append(MatchType::insertion, uiAmount);
+                    qPos+=uiAmount;
+                    break;
+                case 2:
+                    // dont go over the center
+                    if(rPos + uiAmount > rCenter)
+                        uiAmount = rCenter - rPos;
+                    pAlignment->append(MatchType::deletion, uiAmount);
+                    rPos+=uiAmount;
+                    break;
+                default:
+                    std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                    assert(false);
+                    break;
+            }//switch
+            assert(rPos <= rCenter);
+            assert(qPos <= qCenter);
+            if(rPos == rCenter)
                 break;
-            case 1:
-                // dont go over the center
-                if(qPos + uiAmount > qCenter)
-                    uiAmount = qCenter - qPos;
-                pAlignment->append(MatchType::insertion, uiAmount);
-                qPos+=uiAmount;
+            if(qPos == qCenter)
                 break;
-            case 2:
-                // dont go over the center
-                if(rPos + uiAmount > rCenter)
-                    uiAmount = rCenter - rPos;
-                pAlignment->append(MatchType::deletion, uiAmount);
-                rPos+=uiAmount;
-                break;
-            default:
-                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
-                assert(false);
-                break;
-        }//switch
-        assert(rPos <= rCenter);
-        assert(qPos <= qCenter);
-        if(rPos == rCenter)
-            break;
-        if(qPos == qCenter)
-            break;
-    }//for
+        }//for
+    assert(rPos <= rCenter);
+    assert(qPos <= qCenter);
+    assert(qPos == qCenter || rPos == rCenter || ez_left.ez->zdropped == 1);
     uint32_t rPosRight = toRef - ez_right.ez->max_t - 1;
     uint32_t qPosRight = toQuery - ez_right.ez->max_q - 1;
     uint32_t uiAmountNotUnrolled = 0;
-    MatchType xTypeLastUnrolledCigar = MatchType::match;
+    // should be overwritten or unused anyways...
+    MatchType xTypeLastUnrolledCigar = MatchType::seed;
     int i = 0;
     // unroll the cigar until both query and refernce positions are past the center
+    // it might be necessary to unroll one cigar operation partially...
     for (;i < ez_right.ez->n_cigar; ++i)
     {
         // if we are past both centerlines stop unrolling 
         if(rPosRight >= rCenter && qPosRight >= qCenter)
             break;
+        // uiAmountNotUnrolled should only be set in the very last iteration of this loop
+        assert(uiAmountNotUnrolled == 0);
         uint32_t uiSymbol = ez_right.ez->cigar[i]&0xf;
         uint32_t uiAmount = ez_right.ez->cigar[i]>>4;
         switch (uiSymbol)
         {
             case 0:
-                if(rPosRight + uiAmount > rCenter && qPosRight + uiAmount > qCenter)
+                if(rPosRight + uiAmount >= rCenter && qPosRight + uiAmount >= qCenter)
                 {
-                    if(rCenter - rPosRight > qCenter - qPosRight)
+                    if(
+                            rPosRight < rCenter && 
+                            ( qPosRight >= qCenter || rCenter - rPosRight > qCenter - qPosRight )
+                        )
                     {
+                        assert(rCenter > rPosRight);
+                        assert(uiAmount >= (rCenter - rPosRight));
+                        uiAmountNotUnrolled = uiAmount - (rCenter - rPosRight);
                         uiAmount = rCenter - rPosRight;
-                        uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
                     }// if
                     else
                     {
+                        assert(qCenter > qPosRight);
+                        assert(uiAmount >= (qCenter - qPosRight));
+                        uiAmountNotUnrolled = uiAmount - (qCenter - qPosRight);
                         uiAmount = qCenter - qPosRight;
-                        uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
                     }// else
                 }// if
                 qPosRight+=uiAmount;
@@ -837,32 +852,68 @@ void ksw_dual_ext(
                 xTypeLastUnrolledCigar = MatchType::match;
                 break;
             case 1:
-                if(qPosRight + uiAmount > qCenter)
+                if(qPosRight + uiAmount > qCenter && rPosRight >= rCenter)
                 {
+                    assert(qCenter > qPosRight);
+                    assert(uiAmount >= (qCenter - qPosRight));
+                    uiAmountNotUnrolled = uiAmount - (qCenter - qPosRight);
                     uiAmount = qCenter - qPosRight;
-                    uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
                 }// if
                 qPosRight+=uiAmount;
                 xTypeLastUnrolledCigar = MatchType::insertion;
                 break;
             case 2:
-                if(rPosRight + uiAmount > rCenter)
+                if(rPosRight + uiAmount > rCenter && qPosRight >= qCenter)
                 {
+                    assert(rCenter > rPosRight);
+                    assert(uiAmount >= (rCenter - rPosRight));
+                    uiAmountNotUnrolled = uiAmount - (rCenter - rPosRight);
                     uiAmount = rCenter - rPosRight;
-                    uiAmountNotUnrolled = qPosRight + uiAmount - qCenter;
                 }// if
                 rPosRight+=uiAmount;
                 xTypeLastUnrolledCigar = MatchType::deletion;
+                break;
+            default:
+                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                assert(false);
                 break;
         }//switch
     }//for
 
     // fill in the gap between the left and right extension
+    assert(rPosRight >= rPos);
     pAlignment->append(MatchType::deletion, rPosRight - rPos);
+    assert(qPosRight >= qPos);
     pAlignment->append(MatchType::insertion, qPosRight - qPos);
 
     // add the last cigar operation (it might have been partially unrolled...)
-    pAlignment->append(xTypeLastUnrolledCigar, uiAmountNotUnrolled);
+    if(xTypeLastUnrolledCigar == MatchType::match)
+        for(uint32_t uiPos = 0; uiPos < uiAmountNotUnrolled; uiPos++)
+        {
+            if( (*pQuery)[uiPos + qPosRight] == (*pRef)[uiPos + rPosRight] )
+                pAlignment->append(MatchType::match);
+            else
+                pAlignment->append(MatchType::missmatch);
+        }// for
+    else
+        pAlignment->append(xTypeLastUnrolledCigar, uiAmountNotUnrolled);
+
+    // move q & r pos forward 
+    switch (xTypeLastUnrolledCigar)
+    {
+        case MatchType::match:
+            qPosRight+=uiAmountNotUnrolled;
+            rPosRight+=uiAmountNotUnrolled;
+            break;
+        case MatchType::insertion:
+            qPosRight+=uiAmountNotUnrolled;
+            break;
+        case MatchType::deletion:
+            rPosRight+=uiAmountNotUnrolled;
+            break;
+        default:// if xTypeLastUnrolledCigar is unset: do nothing
+            break;
+    }//switch
 
     // add all remaining cigar operations
     for (;i < ez_right.ez->n_cigar; ++i)
