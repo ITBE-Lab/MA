@@ -17,7 +17,7 @@ extern size_t libMA::defaults::uiSVPenalty;
 
 void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
 {
-#if DEBUG_LEVEL >= 1
+#if DEBUG_LEVEL >= 2
     // get a copy of the alignment for later comparison in case something goes wrong
     std::vector<std::pair<MatchType, nucSeqIndex>> vCopyOfData(data.begin(), data.end());
     //const char vTranslate[5] = {'S', '=', 'X', 'I', 'D'};
@@ -81,7 +81,7 @@ void EXPORTED Alignment::append(MatchType type, nucSeqIndex size)
         data.push_back(std::make_pair(type, size));
     uiLength += size;
 
-    DEBUG(
+    DEBUG_2(
         if(reCalcScore() != iScore)
         {
             std::cerr << "WARNING set wrong score in append name: " 

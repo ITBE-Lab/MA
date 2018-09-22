@@ -740,11 +740,15 @@ void ksw_dual_ext(
     pRef->vReverse(fromRef, toRef);
 
     // center between both extensions
-    uint32_t qCenter = ( fromQuery + ez_left.ez->max_q + (toQuery - ez_right.ez->max_q - 1) ) / 2;
-    uint32_t rCenter = ( fromRef + ez_left.ez->max_t + (toRef - ez_right.ez->max_t - 1) ) / 2;
+    nucSeqIndex qCenter = (fromQuery + ez_left.ez->max_q + (toQuery - ez_right.ez->max_q - 1)) / 2;
+    // in case one of the extensions reaches to the other end but the other drops immediately
+    qCenter = std::max(fromQuery, std::min(toQuery, qCenter));
+    nucSeqIndex rCenter = ( fromRef + ez_left.ez->max_t + (toRef - ez_right.ez->max_t - 1) ) / 2;
+    // in case one of the extensions reaches to the other end but the other drops immediately
+    rCenter = std::max(fromRef, std::min(toRef, rCenter));
 
-    uint32_t qPos = fromQuery;
-    uint32_t rPos = fromRef;
+    nucSeqIndex qPos = fromQuery;
+    nucSeqIndex rPos = fromRef;
 
     if (rPos != rCenter && qPos != qCenter)
         for (int i = 0; i < ez_left.ez->n_cigar; ++i)
@@ -807,8 +811,8 @@ void ksw_dual_ext(
     assert(rPos <= rCenter);
     assert(qPos <= qCenter);
     assert(qPos == qCenter || rPos == rCenter || ez_left.ez->zdropped == 1);
-    uint32_t rPosRight = toRef - ez_right.ez->max_t - 1;
-    uint32_t qPosRight = toQuery - ez_right.ez->max_q - 1;
+    nucSeqIndex rPosRight = toRef - ez_right.ez->max_t - 1;
+    nucSeqIndex qPosRight = toQuery - ez_right.ez->max_q - 1;
     uint32_t uiAmountNotUnrolled = 0;
     // should be overwritten or unused anyways...
     MatchType xTypeLastUnrolledCigar = MatchType::seed;

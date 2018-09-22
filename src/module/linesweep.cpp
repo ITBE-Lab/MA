@@ -444,12 +444,13 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             vY.reserve(pSeedsIn->size());
             for(const auto& rSeed : *pSeedsIn)
             {
+                // middlepoint of seed in plane
                 vX.push_back( (double)rSeed.start_ref() + rSeed.size()/2.0);
                 vY.push_back( (double)rSeed.start() + rSeed.size()/2.0);
-
+                // start point of seed in plane
                 vX.push_back( (double)rSeed.start_ref());
                 vY.push_back( (double)rSeed.start());
-
+                // end point of seed in plane
                 vX.push_back( (double)rSeed.start_ref() + rSeed.size());
                 vY.push_back( (double)rSeed.start() + rSeed.size());
             }// for
