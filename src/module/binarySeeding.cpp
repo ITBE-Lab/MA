@@ -47,7 +47,7 @@ void BinarySeeding::procesInterval(
         Interval<nucSeqIndex> xAreaCovered;
         // performs extension and records any found seeds
         // here we use bLrExtension to choose the extension scheme
-        if(bLrExtension)
+        if(bLrExtension && pQuerySeq->length() >= uiUONAccMaxSize )
             xAreaCovered = maximallySpanningExtension(
                 xAreaToCover.center(), 
                 pFM_index, 

@@ -474,6 +474,7 @@ namespace libMA
             );
 
     public:
+        size_t uiUONAccMaxSize;
         /**
          * @brief Initialize a BinarySeeding Module
          * @details
@@ -485,7 +486,8 @@ namespace libMA
          */
         BinarySeeding()
                 :
-            bLrExtension(defaults::sSeedSet == "maxSpan")
+            bLrExtension(defaults::sSeedSet == "maxSpan"),
+            uiUONAccMaxSize(defaults::uiUONAccMaxSize)
         {}//constructor
         
         std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);

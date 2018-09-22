@@ -156,6 +156,8 @@ namespace libMA
 
         size_t uiSVPenalty = defaults::uiSVPenalty;
 
+        size_t uiUONAccMaxSize = defaults::uiUONAccMaxSize;
+
         LinearLineSweep() {}//default constructor
 
         //overload

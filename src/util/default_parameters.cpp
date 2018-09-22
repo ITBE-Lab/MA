@@ -66,6 +66,7 @@ namespace libMA
         int64_t iMinSVDistance = 500;
         
         size_t uiZDrop = 200;
+        size_t uiUONAccMaxSize = 0;
         
 #ifdef WITH_PYTHON
         void exportDefaults()

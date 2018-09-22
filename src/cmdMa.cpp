@@ -165,6 +165,8 @@ int main(int argc, char* argv[])
                     defaults::configureFast();
                 if(strcmp(argv[i+1], "pacBio") == 0)
                     defaults::configurePacBio();
+                if(strcmp(argv[i+1], "uon") == 0)
+                    defaults::configureUON();
             }// if
 
         options.add_options("Alignment options (requires -a)")

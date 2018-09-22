@@ -411,7 +411,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
             // Prof. Kutzners filter:
             // this merely checks weather we actually do have to do the harmonization at all
             //@todo uiSwitchQLen != 0 should be replaced with switch
-            if(bDoHeuristics)
+            if(bDoHeuristics || pQuery->length() < uiUONAccMaxSize) // @todo temporary
             {
                 if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
                 {
@@ -587,7 +587,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
         nucSeqIndex uiCurrHarmScore = 0;
         for(const auto& rSeed : *pSeeds)
             uiCurrHarmScore += rSeed.size();
-        if(bDoHeuristics)
+        if(bDoHeuristics || pQuery->length() < uiUONAccMaxSize) // @todo temporary
         {
             if(uiCurrHarmScore < uiCurrHarmScoreMin )
             {
@@ -619,7 +619,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
                 if(b)
                     pSoCIn->vExtractOrder.back().qCoverage++;
         )// DEBUG
-        if(bDoHeuristics)
+        if(bDoHeuristics || pQuery->length() < uiUONAccMaxSize) // @todo temporary
         {
             //@todo uiSwitchQLen != 0 should be replaced with switch
             if (pQuery->length() > uiSwitchQLen && uiSwitchQLen != 0)
@@ -660,7 +660,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
         //FILTER
 #if FILTER_1
-        if(bDoHeuristics)
+        if(bDoHeuristics || pQuery->length() < uiUONAccMaxSize) // @todo temporary
         {
             nucSeqIndex uiAccLen = pSeeds->getScore();
             if (uiAccumulativeSeedLength > uiAccLen )
@@ -677,7 +677,7 @@ std::shared_ptr<Container> LinearLineSweep::execute(
 
     }//while
 
-    if(bDoHeuristics) 
+    if(bDoHeuristics || pQuery->length() < uiUONAccMaxSize) // @todo temporary
     {
         // @todo think about what to do here (maybe sorting is necessary)...
         for(unsigned int ui = 0; ui < uiSoCRepeatCounter && pSoCs->size() > 1; ui++)
