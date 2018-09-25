@@ -62,7 +62,12 @@ Possible Makefile switches:
     *Tested using boost 1.65.1 (with the Boost.Python library) and Python3.*
 
 - DEBUG=1\
-    Compiles MA without optimizations and with assertions enabled. Further, there are multiple self-checks during runtime. The debug mode is primarily for bug hunting.
+    Compiles MA without optimizations and with assertions enabled. Further, there are multiple 
+    self-checks during runtime. The debug mode is primarily for bug hunting.
+
+- NO_SSE=1\
+    Compiles MA without SIMD (sse4.1) instructions. This will result in much worse runtimes and 
+    should therefore only be enabled if the underlying hardware does not support sse4.1.
 
 ### First Steps ...
 Test your installation with:
@@ -107,11 +112,10 @@ Available presettings:
      -m, --mode <str>              Operation mode for MA. (default is 'fast')
                                    fast:
                                        Best compromise between performance and accuracy.
+                                       Recommended for PacBio reads.
                                    acc:
                                        Better accuracy than in fast mode but worse runtimes.
-                                       Particularly effective for short reads.  
-                                   pacBio:
-                                       Operation mode for PacBio sequencer reads.
+                                       Particularly effective for short reads.
 
 Alignment options:
     -o, --out <fname>              Filename used for SAM file output. Default output stream is
@@ -165,7 +169,7 @@ Advanced options:
                                    Default is 10000000.
         --minSecToPrimRatio <num>  Limit output of secondary alignments to alignments with: 
                                    score-secondary-alignment >= <num> * score-primary-alignment.
-                                   Default is 0.75.
+                                   Default is 0.25.
         --maxOverlapSupp <num>     A secondary alignment becomes supplementary, if it overlaps less
                                    than <num> percent with the primary alignment.
                                    Default is 0.1.

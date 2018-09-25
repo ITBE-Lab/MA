@@ -51,11 +51,10 @@ const std::string sHelp =
 "\n     -m, --mode [str]              Operation mode for MA. (default is 'fast')"
 "\n                                   fast:"
 "\n                                       Best compromise between performance and accuracy."
+"\n                                       Recommended for PacBio reads."
 "\n                                   acc:"
 "\n                                       Better accuracy than in fast mode but worse runtimes."
-"\n                                       Particularly effective for short reads.  "
-"\n                                   pacBio:"
-"\n                                       Operation mode for PacBio sequencer reads."
+"\n                                       Particularly effective for short reads."
 "\n"
 "\nAlignments options:"
 "\n    -o, --out <fname>              Filename used for SAM file output. Default output stream is"
@@ -116,7 +115,7 @@ const std::string sHelp =
 "\n                                   Default is 10,000,000."
 "\n        --minSecToPrimRatio <num>  Limit output of secondary alignments to alignments with:"
 "\n                                   score-secondary-alignment >= <num> * score-primary-alignment."
-"\n                                   Default is 0.75."
+"\n                                   Default is 0.25."
 "\n        --maxOverlapSupp <num>     A secondary alignment becomes supplementary, if it overlaps"
 "\n                                   less than <num> percent with the primary alignment."
 "\n                                   Default is 0.1."
@@ -163,10 +162,6 @@ int main(int argc, char* argv[])
                     defaults::configureAccurate();
                 if(strcmp(argv[i+1], "fast") == 0)
                     defaults::configureFast();
-                if(strcmp(argv[i+1], "pacBio") == 0)
-                    defaults::configurePacBio();
-                if(strcmp(argv[i+1], "uon") == 0)
-                    defaults::configureUON();
             }// if
 
         options.add_options("Alignment options (requires -a)")

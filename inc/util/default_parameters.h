@@ -76,30 +76,13 @@ namespace libMA
             sSeedSet = "maxSpan";
         }// function
 
-        inline void configurePacBio()
-        {
-            sParameterSet = "pacBio";
-            sSeedSet = "maxSpan";
-            bDisableHeuristics = true;
-            dMaxOverlapSupplementary = 0.25;
-            fMinSecScoreRatio = 0.85;
-            uiReportN = 3;
-            uiPadding = 1000;
-            //bDisableGapCostEstimationCutting = true;
-        }// function
-
-        inline void configureUON()
-        {
-            sParameterSet = "uon";
-            sSeedSet = "maxSpan";
-            bDisableHeuristics = true;
-            dMaxOverlapSupplementary = 0.25;
-            fMinSecScoreRatio = 0.85;
-            uiReportN = 3;
-            uiPadding = 1000;
-            uiUONAccMaxSize = 800;
-            //bDisableGapCostEstimationCutting = true;
-        }// function
+        //inline void configurePacBio()
+        //{
+        //    sParameterSet = "pacBio";
+        //    sSeedSet = "maxSpan";
+        //    bDisableHeuristics = true;
+        //    uiReportN = 3;
+        //}// function
 
 #ifdef WITH_PYTHON
         void exportDefaults();

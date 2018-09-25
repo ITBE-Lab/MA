@@ -26,8 +26,14 @@ TARGET_OBJ= \
 
 # flags
 CC=gcc
-CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3 -g
-CFLAGS= -Wall -Werror -fPIC -O3 -g
+# use avx instead of sse
+ifeq ($(NO_SSE), 1)
+	CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3 -g
+	CFLAGS= -Wall -Werror -fPIC -O3 -g
+else
+	CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3 -g -msse4.1
+	CFLAGS= -Wall -Werror -fPIC -O3 -g -msse4.1
+endif
 LDFLAGS= -std=c++11
 LDLIBS= -L$(LIBGABA_HOME) -lm -lpthread -lstdc++ -lgaba
 INCLUDES= -isystem$(LIBGABA_HOME)/ -Iinc
@@ -59,10 +65,6 @@ else
 	MA_REQUIREMENT += $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a
 endif
 
-# use avx instead of sse
-ifeq ($(WITH_AVX2), 1)
-	CCFLAGS += -mavx2
-endif
 
 # compile with postgre support enabled
 ifeq ($(WITH_POSTGRES), 1)

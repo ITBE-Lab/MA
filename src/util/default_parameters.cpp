@@ -23,7 +23,7 @@ namespace libMA
         size_t uiMaxEqualScoreLookahead = 3;     // lookahead distance for short queries
         size_t uiSwitchQLen = 800;       // q len to switch between break criteria
         uint64_t uiMaxGapArea = 10000;     // break alignments in harmonization if gap is larger
-        uint64_t uiPadding = 300;          // padding for DP
+        uint64_t uiPadding = 1000;          // padding for DP
         size_t uiSoCWidth = 0;          // set a fixed SoC width; 0 = use the formula
         bool bFindMode = false;        // true: don't do DP
         bool bOptimisticGapEstimation = true;  // how to estimate gap costs in harmonization
@@ -44,7 +44,7 @@ namespace libMA
         size_t uiGenomeSizeDisable = 10000000;
         bool bDisableHeuristics = false; // disable all heuristics in the harmonization
         // only output secondary alignments with a score larger than this * score of prim. alignment
-        float fMinSecScoreRatio = .75;
+        float fMinSecScoreRatio = .25;
         // can only be accessed by pacBio presetting at the moment...
         bool bDisableGapCostEstimationCutting = false; // do not remove seeds that are far away to generate alignments with positive score
 
