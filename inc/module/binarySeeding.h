@@ -474,7 +474,6 @@ namespace libMA
             );
 
     public:
-        size_t uiUONAccMaxSize = defaults::uiUONAccMaxSize;
         /**
          * @brief Initialize a BinarySeeding Module
          * @details

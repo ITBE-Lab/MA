@@ -20,6 +20,7 @@ namespace libMA
         // @todo we effectively disabled this parameter
         size_t uiMinSeedSizeDrop = 15;   // minimum length for seeds to count towards the drop of
         size_t uiMaxTries = 30;          // maximal number of SoCs
+        size_t uiMinTries = 2;          // minimal number of SoCs
         size_t uiMaxEqualScoreLookahead = 3;     // lookahead distance for short queries
         size_t uiSwitchQLen = 800;       // q len to switch between break criteria
         uint64_t uiMaxGapArea = 10000;     // break alignments in harmonization if gap is larger
@@ -66,12 +67,10 @@ namespace libMA
         int64_t iMinSVDistance = 500;
         
         size_t uiZDrop = 200;
-        size_t uiUONAccMaxSize = 0;
         
 #ifdef WITH_PYTHON
         void exportDefaults()
         {
-            boost::python::def("configurePacBio", &configurePacBio);
             boost::python::def("configureFast", &configureFast);
             boost::python::def("configureAccurate", &configureAccurate);
         }//function

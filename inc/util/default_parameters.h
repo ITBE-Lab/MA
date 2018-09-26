@@ -31,6 +31,7 @@ namespace libMA
         extern size_t uiMinAmbiguity;
         extern size_t uiMinSeedSizeDrop;
         extern size_t uiMaxTries;
+        extern size_t uiMinTries;
         extern size_t uiMaxEqualScoreLookahead;
         extern size_t uiSwitchQLen;
         extern uint64_t uiMaxGapArea;
@@ -62,7 +63,6 @@ namespace libMA
         extern int64_t iMinSVDistance;
         extern size_t uiZDrop;
         extern size_t uiSVPenalty;
-        extern size_t uiUONAccMaxSize;
 
         inline void configureAccurate()
         {

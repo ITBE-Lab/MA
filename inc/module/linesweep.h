@@ -125,6 +125,8 @@ namespace libMA
 
         /// @brief Extract at most x SoCs.
         unsigned int uiMaxTries = defaults::bFindMode ? defaults::uiReportN : defaults::uiMaxTries;
+        /// @brief Extract at least x SoCs.
+        size_t uiMinTries = defaults::uiMinTries;
 
         /// @brief Lookahead for the equality break criteria.
         unsigned int uiMaxEqualScoreLookahead = defaults::uiMaxEqualScoreLookahead;
@@ -155,8 +157,6 @@ namespace libMA
         nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
 
         size_t uiSVPenalty = defaults::uiSVPenalty;
-
-        size_t uiUONAccMaxSize = defaults::uiUONAccMaxSize;
 
         LinearLineSweep() {}//default constructor
 
