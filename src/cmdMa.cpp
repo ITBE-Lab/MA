@@ -109,7 +109,10 @@ const std::string sHelp =
 "\n                                   scored SoC. However, if the best alignment is from a very"
 "\n                                   repetitive region, we might have to inspect several SoC's to"
 "\n                                   find the optimal one."
-"\n                                   Default is 50."
+"\n                                   Default is 30."
+"\n        --minTries <num>           At least <num> many SoC's are evaluated for a single"
+"\n                                   alignment."
+"\n                                   Default is 2."
 "\n        --minRefSize <num>         If the reference is smaller than <num> nt we disable post SoC"
 "\n                                   heuristics."
 "\n                                   Default is 10,000,000."
@@ -189,6 +192,9 @@ int main(int argc, char* argv[])
             )
             ("maxTries", "Max num SoC",
                 value<unsigned int>()->default_value(std::to_string(defaults::uiMaxTries))
+            )
+            ("minTries", "Min num SoC",
+                value<unsigned int>()->default_value(std::to_string(defaults::uiMinTries))
             )
             ("minRefSize", "ref size switch",
                 value<unsigned long long>()->default_value(std::to_string(defaults::uiGenomeSizeDisable))
@@ -328,6 +334,7 @@ int main(int argc, char* argv[])
         defaults::iGap =             result["Gap"].          as<int>();
         defaults::iGap2 =             result["Gap2"].          as<int>();
         defaults::uiMaxTries =         result["maxTries"].     as<unsigned int>();
+        defaults::uiMinTries =         result["minTries"].     as<unsigned int>();
         defaults::uiGenomeSizeDisable = result["minRefSize"].as<unsigned long long>();
         std::string sBbOutput = result["db_conninfo"].as<std::string>();
 #ifdef WITH_POSTGRES

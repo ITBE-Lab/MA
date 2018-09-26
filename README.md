@@ -164,7 +164,9 @@ Advanced options:
                                    Generally the best alignment is found in the best scored SoC.
                                    However, if the best alignment is from a very repetitive region,
                                    we might have to inspect several SoC's to find the optimal one.
-                                   Default is 50.
+                                   Default is 30.
+        --minTries <num>           At least <num> many SoC's are evaluated for a single alignment.
+                                   Default is 2.
         --minRefSize <num>         If the reference is smaller than <num> nt we disable all heuristics.
                                    Default is 10000000.
         --minSecToPrimRatio <num>  Limit output of secondary alignments to alignments with: 
