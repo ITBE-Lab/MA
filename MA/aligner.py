@@ -237,12 +237,11 @@ class NucSeq(libMA.NucSeq):
 class ContainerVector(libMA.ContainerVector):
     def __init__(self, args):
         if isinstance(args, list):
-            # @todo replace Parent.__init__ with super()
-            libMA.ContainerVector.__init__(self, args[0])
+            super(ContainerVector, args[0])
             for arg in args:
                 self.append(arg)
         else:
-            libMA.ContainerVector.__init__(self, args)
+            super(ContainerVector, args)
 
 
 ##
@@ -331,6 +330,17 @@ class FileReader(libMA.FileReader):
 
     def promise_me(self, *args):
         return super(FileReader, self).promise_me(ContainerVector(list(args)))
+
+
+##
+# @brief python wrapper for PairedFileReader
+class PairedFileReader(libMA.PairedFileReader):
+    def execute(self):
+        return super(PairedFileReader, self).execute(ContainerVector(Nil()))
+
+    def promise_me(self, *args):
+        return super(PairedFileReader, self).promise_me(
+            ContainerVector(list(args)))
 
 
 ##

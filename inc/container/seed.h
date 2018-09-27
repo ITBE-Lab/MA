@@ -242,7 +242,7 @@ class Seeds : public Container
     /// @brief is the seed set consistent (set to true after harmonization)
     bool bConsistent = false;
 
-    Seeds( std::initializer_list<Seed> init ) : vContent( init )
+    Seeds( std::initializer_list<value_type> init ) : vContent( init )
     {} // initializer list constructor
 
     template <class InputIt> Seeds( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
@@ -250,9 +250,6 @@ class Seeds : public Container
 
     Seeds( ) : vContent( )
     {} // default constructor
-
-    Seeds( std::shared_ptr<Seed> contentType ) : vContent( )
-    {} // constructor
 
     Seeds( const std::shared_ptr<Seeds> pOther ) : vContent( pOther->vContent )
     {} // constructor

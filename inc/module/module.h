@@ -157,7 +157,6 @@ class Module
      * @details
      * Internally calls execute after checking the input types.
      * Also checks the result returned by Execute.
-     * @todo
      */
     std::shared_ptr<Container> pyExecute( std::shared_ptr<ContainerVector> vInput )
     {
@@ -514,9 +513,8 @@ class Pledge : public Container
         return pledger;
     } // function
 
-    static EXPORTED std::shared_ptr<Pledge>
-    makePledge( std::shared_ptr<Module> pledger,
-                std::vector<std::shared_ptr<Pledge>> vPredecessors );
+    static EXPORTED std::shared_ptr<Pledge> makePledge(
+        std::shared_ptr<Module> pledger, std::vector<std::shared_ptr<Pledge>> vPredecessors );
 
 #ifdef WITH_PYTHON
     static inline std::shared_ptr<Pledge>

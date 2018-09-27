@@ -126,7 +126,8 @@ class FileReader : public Reader
                         unsigned int uiCharBufPosReadLen = searchEndline( );
                         /// std::cout << "\\n pos " << uiCharBufPosReadLen << std::endl;
                         for( unsigned int uiI = uiCharBufPosRead;
-                             uiI < uiCharBufPosRead + uiCharBufPosReadLen; uiI++ )
+                             uiI < uiCharBufPosRead + uiCharBufPosReadLen;
+                             uiI++ )
                             pCurr->sName += vBuffer[ uiI ];
                         uiCharBufPosRead += uiCharBufPosReadLen;
                         if( uiCharBufPosRead >= uiFileBufferSize )
@@ -168,7 +169,7 @@ class FileReader : public Reader
 
         ~BufferedReader( )
         {
-            //@todo if file is not completely read into the buffer this will not terminate
+            // if file is not completely read into the buffer this will not terminate
             xThread.join( );
             xFile.close( );
         } // deconstructor

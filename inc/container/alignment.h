@@ -311,8 +311,12 @@ class Alignment : public Container
     } // function
 
     /**
-     * @brief returns the overlap of the alignments on
-     * @todo
+     * @brief returns the overlap of the alignments on the query
+     * @details
+     * does consider deletions correctly. For example:
+     * alignment 1: ###--#---####
+     * alignment 2: ---###-------
+     * 1 and 2 would have overlap 1/13
      */
     inline double overlap( const Alignment &rOther ) const
     {

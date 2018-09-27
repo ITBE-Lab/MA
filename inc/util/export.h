@@ -130,8 +130,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @section todos TODOs
  *
- * @todo different output formats
- * @todo code cleanup
  *
  *
  * @section about_us_sec About Us
