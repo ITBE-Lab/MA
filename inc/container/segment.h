@@ -200,7 +200,7 @@ class SegmentVector : public std::vector<Segment>, public Container
      */
     template <class FUNCTOR>
     void emplaceAllEachSeeds( FMIndex &rxFMIndex, unsigned int uiMAxAmbiguity,
-                              unsigned int uiMinLen, std::vector<Seed> &rvSeedVector,
+                              unsigned int uiMinLen, Seeds &rvSeedVector,
                               FUNCTOR &&fDo // this function is called after each seed is emplaced
     )
     {

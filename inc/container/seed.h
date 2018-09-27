@@ -218,89 +218,198 @@ class SVInfo
 }; // class
 
 /**
- * @brief A list where one element is a Seed.
+ * @brief A set with Seed elements.
  * @details
  * Also holds the summed up score of the seeds within the list.
  * @ingroup Container
  */
-class Seeds : public std::vector<Seed>, // @todo :@
-              public Container
+class Seeds : public Container
 {
+  private:
+    typedef std::vector<Seed> TP_VEC;
+    ///@brief the content of the seed set
+    TP_VEC vContent;
+
   public:
+    typedef typename TP_VEC::value_type value_type;
+    typedef typename TP_VEC::size_type size_type;
+    typedef typename TP_VEC::difference_type difference_type;
+    typedef typename TP_VEC::iterator iterator;
+
     nucSeqIndex mem_score = 0;
     // some statistics
     AlignmentStatistics xStats;
-    // SVInfo xSvInfo;
-    bool bConsistent;
+    /// @brief is the seed set consistent (set to true after harmonization)
+    bool bConsistent = false;
 
-    Seeds( std::shared_ptr<Seeds> pOther )
-        : vector( ), Container( ), xStats( pOther->xStats ), bConsistent( pOther->bConsistent )
-    {
-        append( pOther );
-    } // copy constructor
+    Seeds( std::initializer_list<Seed> init ) : vContent( init )
+    {} // initializer list constructor
 
-    Seeds( ) : vector( ), Container( ), xStats( ), bConsistent( false )
-    {} // default constructor
-
-    template <class InputIt> Seeds( InputIt xBegin, InputIt xEnd ) : vector( xBegin, xEnd )
+    template <class InputIt> Seeds( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
     {} // iterator constructor
 
+    Seeds( ) : vContent( )
+    {} // default constructor
+
+    Seeds( std::shared_ptr<Seed> contentType ) : vContent( )
+    {} // constructor
+
+    Seeds( const std::shared_ptr<Seeds> pOther ) : vContent( pOther->vContent )
+    {} // constructor
+
+    Seeds( size_t numElements ) : vContent( numElements )
+    {} // constructor
+
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    inline bool canCast( std::shared_ptr<Container> c ) const
     {
         return std::dynamic_pointer_cast<Seeds>( c ) != nullptr;
-    } // function
+    } // method
 
     // overload
-    std::string getTypeName( ) const
+    inline std::string getTypeName( ) const
     {
         return "Seeds";
-    } // function
+    } // method
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    inline std::shared_ptr<Container> getType( ) const
     {
         return std::shared_ptr<Container>( new Seeds( ) );
-    } // function
+    } // method
 
-    /*returns the sum off all scores within the list*/
-    nucSeqIndex EXPORTED getScore( ) const;
-
-    /*append a copy of another list*/
-    void append( std::shared_ptr<Seeds> pOther )
+    /// @brief returns the sum off all scores within the list
+    inline nucSeqIndex getScore( ) const
     {
-        for( Seed &rS : *pOther )
-            push_back( rS );
+        nucSeqIndex iRet = 0;
+        for( const Seed &rS : *this )
+            iRet += rS.getValue( );
+        return iRet;
     } // function
 
-    bool larger( const std::shared_ptr<Container> pOther ) const
+    /// @brief append another seed set
+    inline void append( const std::shared_ptr<Seeds> pOther )
+    {
+        for( Seed &rS : pOther->vContent )
+            push_back( rS );
+    } // method
+
+    /// @briefreturn wether this seed set is larger according to getScore()
+    inline bool larger( const std::shared_ptr<Container> pOther ) const
     {
         const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>( pOther );
         if( pSeeds == nullptr )
             return true;
         return getScore( ) > pSeeds->getScore( );
+    } // method
+
+    // setter
+    inline value_type &operator[]( size_type uiI )
+    {
+        return vContent[ uiI ];
     } // operator
 
-    // inline bool hasSV() const
-    // {
-    //     return ! xSvInfo.vSeedIndicesOfSVIndels.empty();
-    // }// method
-    //
-    // inline std::shared_ptr<Seeds> partitionOnSV()
-    // {
-    //     assert(hasSV());
-    //
-    //     auto pRet = std::make_shared<Seeds>();
-    //     for(size_t uiPos = xSvInfo.vSeedIndicesOfSVIndels.back(); uiPos<this->size();uiPos++)
-    //         if( (*this)[uiPos].size() != 0 )
-    //             pRet->emplace_back( (*this)[uiPos] );
-    //     this->resize(xSvInfo.vSeedIndicesOfSVIndels.back());
-    //     xSvInfo.vSeedIndicesOfSVIndels.pop_back();
-    //     assert( ! this->empty());
-    //     assert( ! pRet->empty());
-    //     return pRet;
-    // }// method
+    // getter
+    inline const value_type &operator[]( size_type uiI ) const
+    {
+        return vContent[ uiI ];
+    } // operator
 
+    inline void push_back( const value_type &value )
+    {
+        vContent.push_back( value );
+    } // method
+
+    inline void pop_back( void )
+    {
+        vContent.pop_back( );
+    } // method
+
+    template <class... Args> inline void emplace_back( Args &&... args )
+    {
+        vContent.emplace_back( args... );
+    } // method
+
+    inline size_type size( void ) const
+    {
+        return vContent.size( );
+    } // method
+
+    inline bool empty( void ) const
+    {
+        return vContent.empty( );
+    } // method
+
+    inline value_type &front( void )
+    {
+        return vContent.front( );
+    } // method
+
+    inline value_type &back( void )
+    {
+        return vContent.back( );
+    } // method
+
+    inline const value_type &front( void ) const
+    {
+        return vContent.front( );
+    } // method
+
+    inline const value_type &back( void ) const
+    {
+        return vContent.back( );
+    } // method
+
+    inline TP_VEC::iterator begin( void ) noexcept
+    {
+        return vContent.begin( );
+    } // method
+
+    inline TP_VEC::iterator end( void ) noexcept
+    {
+        return vContent.end( );
+    } // method
+
+    inline TP_VEC::const_iterator begin( void ) const noexcept
+    {
+        return vContent.begin( );
+    } // method
+
+    inline TP_VEC::const_iterator end( void ) const noexcept
+    {
+        return vContent.end( );
+    } // method
+
+    inline void erase( TP_VEC::iterator pos )
+    {
+        vContent.erase( pos );
+    } // method
+
+    inline void erase( TP_VEC::iterator first, TP_VEC::iterator last )
+    {
+        vContent.erase( first, last );
+    } // method
+
+    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const value_type &value )
+    {
+        return vContent.insert( pos, value );
+    } // method
+
+    template <class InputIt>
+    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
+    {
+        return vContent.insert( pos, first, last );
+    } // method
+
+    void reserve( size_type uiN )
+    {
+        vContent.reserve( uiN );
+    } // method
+
+    void clear( ) noexcept
+    {
+        vContent.clear( );
+    } // method
 }; // class
 } // namespace libMA
 

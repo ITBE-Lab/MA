@@ -17,43 +17,6 @@ extern int libMA::defaults::iExtend;
 extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
 
-/*returns the sum off all scores within the list*/
-nucSeqIndex Seeds::getScore( ) const
-{
-#if 0
-    if(bConsistent)
-    {
-        nucSeqIndex iRet = 0;
-        nucSeqIndex uiLastQPos = 0;
-        nucSeqIndex uiLastRPos = 0;
-        for(const Seed& rS : *this)
-        {
-            iRet += rS.getValue() * iMatch;
-            if(uiLastQPos != 0 && uiLastRPos != 0)
-            {
-                nucSeqIndex uiQDist = rS.start() - uiLastQPos;
-                nucSeqIndex uiRDist = rS.start_ref() - uiLastRPos;
-                iRet -= iGap + iExtend * std::min(uiQDist, uiRDist);
-                nucSeqIndex uiDist = uiQDist - uiRDist;
-                if (uiRDist > uiQDist)
-                    uiDist = uiRDist - uiQDist;
-                iRet -= iMissMatch * uiDist;
-                uiLastQPos = rS.start();
-                uiLastRPos = rS.start_ref();
-            }//if
-        }//for
-        return iRet;
-    }//if
-    else
-    {
-#endif
-    nucSeqIndex iRet = 0;
-    for( const Seed &rS : *this )
-        iRet += rS.getValue( );
-    return iRet;
-    //    }//else
-} // function
-
 #ifdef WITH_PYTHON
 void exportSeed( )
 {

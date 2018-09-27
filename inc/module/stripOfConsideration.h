@@ -102,7 +102,7 @@ class StripOfConsideration : public Module
 
 
     inline void emplaceAllNonBridgingSeed( SegmentVector &rSegmentVector, FMIndex &rxFM_index,
-                                           Pack &rxRefSequence, std::vector<Seed> &rvSeedVector,
+                                           Pack &rxRefSequence, Seeds &rvSeedVector,
                                            const nucSeqIndex uiQLen )
     {
         rSegmentVector.emplaceAllEachSeeds(
