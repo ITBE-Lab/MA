@@ -552,47 +552,46 @@ class MyPrinterMemory
     } // constructor
 }; // class
 
-
-char vTrans[ 9 ] = {'?', 'A', 'C', '?', 'G', '?', '?', '?', 'T'};
-
-int printer( void* pVoid, uint64_t uiLen, char c )
-{
-    MyPrinterMemory* pM = ( MyPrinterMemory* )pVoid;
-    assert( pM != nullptr );
-    assert( pM->pAlignment != nullptr );
-    // std::cout << pM->pAlignment->length() << std::endl;
-    // std::cout << pM->pAlignment->data.size() << std::endl;
-    DEBUG_3( std::cout << c << uiLen << " "; )
-    switch ( c )
-    {
-        case 'M':
-            for ( size_t i = 0; i < uiLen; i++ )
-            {
-                if ( ( *pM->pQuery )[ pM->uiQPos + i ] == ( *pM->pRef )[ pM->uiRPos + i ] )
-                    pM->pAlignment->append( MatchType::match );
-                else
-                    pM->pAlignment->append( MatchType::missmatch );
-            } // for
-            pM->uiQPos += uiLen;
-            pM->uiRPos += uiLen;
-            DEBUG( pM->uiQueryExtensionSize += uiLen; pM->uiRefExtensionSize += uiLen; )
-            break;
-        case 'I':
-            pM->pAlignment->append( MatchType::insertion, uiLen );
-            pM->uiQPos += uiLen;
-            DEBUG( pM->uiQueryExtensionSize += uiLen; )
-            break;
-        case 'D':
-            pM->pAlignment->append( MatchType::deletion, uiLen );
-            pM->uiRPos += uiLen;
-            DEBUG( pM->uiRefExtensionSize += uiLen; )
-            break;
-        default:
-            std::cout << "GABA cigar contains unknown symbol: " << c << std::endl;
-            assert( false );
-    } // switch
-    return 0;
-} // function
+////// DEPRECATED
+//// char vTrans[ 9 ] = {'?', 'A', 'C', '?', 'G', '?', '?', '?', 'T'};
+//// int printer( void* pVoid, uint64_t uiLen, char c )
+//// {
+////     MyPrinterMemory* pM = ( MyPrinterMemory* )pVoid;
+////     assert( pM != nullptr );
+////     assert( pM->pAlignment != nullptr );
+////     // std::cout << pM->pAlignment->length() << std::endl;
+////     // std::cout << pM->pAlignment->data.size() << std::endl;
+////     DEBUG_3( std::cout << c << uiLen << " "; )
+////     switch ( c )
+////     {
+////         case 'M':
+////             for ( size_t i = 0; i < uiLen; i++ )
+////             {
+////                 if ( ( *pM->pQuery )[ pM->uiQPos + i ] == ( *pM->pRef )[ pM->uiRPos + i ] )
+////                     pM->pAlignment->append( MatchType::match );
+////                 else
+////                     pM->pAlignment->append( MatchType::missmatch );
+////             } // for
+////             pM->uiQPos += uiLen;
+////             pM->uiRPos += uiLen;
+////             DEBUG( pM->uiQueryExtensionSize += uiLen; pM->uiRefExtensionSize += uiLen; )
+////             break;
+////         case 'I':
+////             pM->pAlignment->append( MatchType::insertion, uiLen );
+////             pM->uiQPos += uiLen;
+////             DEBUG( pM->uiQueryExtensionSize += uiLen; )
+////             break;
+////         case 'D':
+////             pM->pAlignment->append( MatchType::deletion, uiLen );
+////             pM->uiRPos += uiLen;
+////             DEBUG( pM->uiRefExtensionSize += uiLen; )
+////             break;
+////         default:
+////             std::cout << "GABA cigar contains unknown symbol: " << c << std::endl;
+////             assert( false );
+////     } // switch
+////     return 0;
+//// } // function
 
 
 // banded global NW
@@ -903,8 +902,6 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     const bool bReverse = bLocalBeginning;
 
 
-    // in all other cases we use libGaba
-
     // if we reached this point we actually have to align something
     DEBUG_2( std::cout << pQuery->toString( ) << std::endl;
              std::cout << pRef->toString( ) << std::endl; )
@@ -1132,32 +1129,6 @@ NeedlemanWunsch::NeedlemanWunsch( )
                                               std::vector<char>( NAIVE_MAX_SIZE + 1 ) ) )
 #endif
 {
-    // Gaba context initialization
-    /*
-     *    GABA_PARAMS(
-     *            .xdrop = 100,
-     *            //match award,
-     *            //mismatch penalty,
-     *            //gap open penalty (G_i), and
-     *            //gap extension penalty (G_e)
-     *            GABA_SCORE_SIMPLE(iMatch, iMissMatch, iGap, iExtend)
-     *    )
-     */
-    gaba_params_s xParams = {
-        score_matrix :
-            {( int8_t )iMatch, ( int8_t )-iMissMatch, ( int8_t )-iMissMatch, ( int8_t )-iMissMatch,
-             ( int8_t )-iMissMatch, ( int8_t )iMatch, ( int8_t )-iMissMatch, ( int8_t )-iMissMatch,
-             ( int8_t )-iMissMatch, ( int8_t )-iMissMatch, ( int8_t )iMatch, ( int8_t )-iMissMatch,
-             ( int8_t )-iMissMatch, ( int8_t )-iMissMatch, ( int8_t )-iMissMatch, ( int8_t )iMatch},
-        gi : ( int8_t )iGap,
-        ge : ( int8_t )iExtend,
-        gfa : 0,
-        gfb : 0,
-        xdrop : 100
-    }; // struct
-
-    pGabaScoring = std::make_shared<Gaba_tWrapper>( xParams );
-
     // create match/missmatch matrix for ksw
     ksw_gen_simple_mat( 5, mat, iMatch, iMissMatch );
 } // constructor

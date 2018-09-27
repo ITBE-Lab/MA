@@ -143,7 +143,7 @@ const std::string sHelp =
     "\n                                   Default is 0.1."
     "\n        --disableHeuristics        All performance optimizing heuristics are turned off."
     "\n"
-    "\nVersion 0.1.2 (Aug 2018)"
+    "\nVersion 0.1.2 (Sep 2018)"
     "\nBy Markus Schmidt & Arne Kutzner"
     "\nFor more information visit: https://github.com/ITBE-Lab/ma";
 
@@ -247,7 +247,7 @@ int main( int argc, char *argv[] )
         {
             std::cout << sHelp << std::endl;
             //@todo cmake version number:
-            //https://stackoverflow.com/questions/27395120/correct-way-to-encode-embed-version-number-in-program-code
+            // https://stackoverflow.com/questions/27395120/correct-way-to-encode-embed-version-number-in-program-code
             DEBUG( std::cout << "DEBUG LEVEL: " << DEBUG_LEVEL << std::endl; )
             return 0;
         } // if

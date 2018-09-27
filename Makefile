@@ -12,7 +12,6 @@
 BOOST_LIB_PATH = $(BOOST_ROOT)/stage/lib/
 BOOST_LIB = boost_python3
 
-LIBGABA_HOME = ./libGaba
  
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
@@ -35,8 +34,8 @@ else
 	CFLAGS= -Wall -Werror -fPIC -O3 -g -msse4.1
 endif
 LDFLAGS= -std=c++11
-LDLIBS= -L$(LIBGABA_HOME) -lm -lpthread -lstdc++ -lgaba
-INCLUDES= -isystem$(LIBGABA_HOME)/ -Iinc
+LDLIBS= -lm -lpthread -lstdc++
+INCLUDES= -Iinc
 
 # this adds debug switches
 ifeq ($(DEBUG), 1)
@@ -62,7 +61,7 @@ ifeq ($(WITH_PYTHON), 1)
 	LDLIBS += $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB)))
 	INCLUDES += -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/
 else
-	MA_REQUIREMENT += $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a
+	MA_REQUIREMENT += $(TARGET_OBJ)
 endif
 
 
@@ -101,7 +100,7 @@ else
 endif
 
 # library target
-libMA: $(TARGET_OBJ) $(LIBGABA_HOME)/libgaba.a
+libMA: $(TARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(LDLIBS) -o libMA.so
 
 # special targets for the ksw2 library
@@ -125,10 +124,6 @@ dbg/%.o: src/%.cpp inc/%.h
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) $(INCLUDES) -c $< -o $@
 
-# the gaba library
-$(LIBGABA_HOME)/libgaba.a: 
-	$(MAKE) -C $(LIBGABA_HOME)
-
 # the gpu smith waterman
 sw_gpu.o:
 	$(MAKE) -f CUDA_Makefile
@@ -148,7 +143,6 @@ html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildc
 
 clean:
 	rm -f -r obj dbg libMA.so html ma
-	$(MAKE) -C $(LIBGABA_HOME) clean
 #	rm -r -f dist *.egg-info build
 
 docs: html/index.html
