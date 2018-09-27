@@ -260,7 +260,8 @@ LinearLineSweep::linesweep(
     // sort shadows (increasingly) by start coordinate of the match
     std::sort( pShadows->begin( ), pShadows->end( ),
                []( std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex> xA,
-                   std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex> xB ) {
+                   std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>
+                       xB ) {
                    /*
                     * sort by the interval starts
                     * if two intervals start at the same point the larger one shall be treated first
@@ -375,8 +376,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 
             // Prof. Kutzners filter:
             // this merely checks weather we actually do have to do the harmonization at all
-            //@todo uiSwitchQLen != 0 should be replaced with switch
-            if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+            if( bDoHeuristics && uiNumTries > uiMinTries )
             {
                 if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
                 {
@@ -507,8 +507,8 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
                    pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
                    pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( );
                    pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) );
-                   pSoCIn->vSlopes.push_back( 0 ); pSoCIn->vIntercepts.push_back( 0 );
-                   // @todo one more indirection to represent supplementary alignments
+                   pSoCIn->vSlopes.push_back( 0 );
+                   pSoCIn->vIntercepts.push_back( 0 );
                    pSoCIn->vHarmSoCs.push_back( std::make_shared<Seeds>( pSeeds ) ); ) // DEBUG
         } // else
 
@@ -518,7 +518,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
         nucSeqIndex uiCurrHarmScore = 0;
         for( const auto &rSeed : *pSeeds )
             uiCurrHarmScore += rSeed.size( );
-        if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+        if( bDoHeuristics && uiNumTries > uiMinTries )
             if( uiCurrHarmScore < uiCurrHarmScoreMin )
             {
                 PRINT_BREAK_CRITERIA(
@@ -548,7 +548,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             if( b )
                 pSoCIn->vExtractOrder.back( ).qCoverage++;
 #endif
-        if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+        if( bDoHeuristics && uiNumTries > uiMinTries )
         {
             //@todo uiSwitchQLen != 0 should be replaced with switch
             if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
@@ -587,7 +587,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 
             // FILTER
 #if FILTER_1
-        if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+        if( bDoHeuristics && uiNumTries > uiMinTries )
         {
             nucSeqIndex uiAccLen = pSeeds->getScore( );
             if( uiAccumulativeSeedLength > uiAccLen )
@@ -603,9 +603,8 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 
     } // while
 
-    if( bDoHeuristics ) // @todo temporary
+    if( bDoHeuristics )
     {
-        // @todo think about what to do here (maybe sorting is necessary)...
         for( unsigned int ui = 0; ui < uiSoCRepeatCounter && pSoCs->size( ) > uiMinTries; ui++ )
             pSoCs->pop_back( );
     } // if

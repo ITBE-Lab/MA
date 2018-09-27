@@ -15,7 +15,7 @@ BinPackArguments: 'true'
 BinPackParameters: 'true'
 BreakBeforeBraces: Custom
 BreakStringLiterals: 'true'
-ColumnLimit: '100'
+ColumnLimit: '120'
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
 IndentCaseLabels: 'true'
 IndentWidth: '4'

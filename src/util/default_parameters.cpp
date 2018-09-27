@@ -41,7 +41,6 @@ size_t uiCurrHarmScoreMin = 18; // minimal score after the harmonization
 std::string sParameterSet = "fast"; // name of the used presetting (if any)
 std::string sSeedSet; // name of the seed set that shall be computed
 // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
-// @todo apply this parameter
 size_t uiGenomeSizeDisable = 10000000;
 bool bDisableHeuristics = false; // disable all heuristics in the harmonization
 // only output secondary alignments with a score larger than this * score of prim. alignment

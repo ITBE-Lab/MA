@@ -128,9 +128,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @note this setup of @ref libMA::Module "modules" using a
  * computation graph can be seen @ref comp_graph_page "here".
  *
- * @section todos TODOs
- *
- *
  *
  * @section about_us_sec About Us
  *

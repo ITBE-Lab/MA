@@ -9,12 +9,11 @@ using namespace libMA;
 
 ContainerVector DbWriter::getInputType( ) const
 {
-    return ContainerVector{
-        std::shared_ptr<NucSeq>( new NucSeq( ) ),
-        std::shared_ptr<NucSeq>( new NucSeq( ) ), // @todo there must be a better way to do this
-        std::shared_ptr<ContainerVector>(
-            new ContainerVector( std::shared_ptr<Alignment>( new Alignment( ) ) ) ),
-        std::shared_ptr<Pack>( new Pack( ) )};
+    return ContainerVector{std::shared_ptr<NucSeq>( new NucSeq( ) ),
+                           std::shared_ptr<NucSeq>( new NucSeq( ) ),
+                           std::shared_ptr<ContainerVector>( new ContainerVector(
+                               std::shared_ptr<Alignment>( new Alignment( ) ) ) ),
+                           std::shared_ptr<Pack>( new Pack( ) )};
 } // function
 
 std::shared_ptr<Container> DbWriter::getOutputType( ) const
