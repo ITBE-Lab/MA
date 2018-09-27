@@ -1,0 +1,41 @@
+﻿---
+BasedOnStyle: Google
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: 'false'
+AlignConsecutiveDeclarations: 'false'
+AlignEscapedNewlinesLeft: 'false'
+AlignOperands: 'true'
+AlignTrailingComments: 'false'
+AllowShortBlocksOnASingleLine: 'false'
+AllowShortCaseLabelsOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: 'false'
+AllowShortLoopsOnASingleLine: 'false'
+BinPackArguments: 'true'
+BinPackParameters: 'true'
+BreakBeforeBraces: Allman
+BreakStringLiterals: 'true'
+ColumnLimit: '100'
+ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+IndentCaseLabels: 'true'
+IndentWidth: '4'
+JavaScriptQuotes: Double
+Language: Cpp
+MaxEmptyLinesToKeep: '2'
+NamespaceIndentation: None
+ReflowComments: 'true'
+SortIncludes: 'true'
+SpaceAfterCStyleCast: 'false'
+SpaceBeforeAssignmentOperators: 'true'
+SpaceInEmptyParentheses: 'true'
+SpacesBeforeTrailingComments: '1'
+SpacesInAngles: 'true'
+SpacesInCStyleCastParentheses: 'true'
+SpacesInContainerLiterals: 'true'
+SpacesInParentheses: 'true'
+SpacesInSquareBrackets: 'true'
+Standard: Cpp11
+TabWidth: '4'
+UseTab: Never
+
+...
