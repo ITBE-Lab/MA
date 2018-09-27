@@ -14,13 +14,12 @@ namespace libMA
 {
 class SMW : public Module
 {
-   public:
+  public:
     bool bBacktrack = true;
     DEBUG( bool bPrint = false; ) // DEBUG
 
     SMW( bool bBacktrack ) : bBacktrack( bBacktrack )
-    {
-    } // constructor
+    {} // constructor
 
     // overload
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );

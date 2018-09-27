@@ -32,21 +32,20 @@
  * can be overloaded to provide different tpyes of exeptions,
  * where each exception object can have it's unique description.
  */
-template <int N>
-class Annotated_exception : public std::exception
+template <int N> class Annotated_exception : public std::exception
 {
-   private:
+  private:
     /* automated memory deallocation !
      */
     std::string text;
 
-   public:
+  public:
     /**
      * @brief takes the string that shall be printed in case the exception is thrown.
      * @details
      * prepends information about the exception type to the string.
      */
-    Annotated_exception( const char* info )
+    Annotated_exception( const char *info )
     {
         text = std::string(
             ( N == 0 )
@@ -67,14 +66,13 @@ class Annotated_exception : public std::exception
     } // constructor
 
     ~Annotated_exception( ) throw( )
-    {
-    } // destructor
+    {} // destructor
 
     /**
      * @brief Information about the exception.
      * @returns instance specific information about the exception.
      */
-    virtual const char* what( ) const throw( )
+    virtual const char *what( ) const throw( )
     {
         return text.c_str( );
     } // method
@@ -85,10 +83,9 @@ class Annotated_exception : public std::exception
  */
 class DataReceiverException : public Annotated_exception<0>
 {
-   public:
-    DataReceiverException( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    DataReceiverException( const char *info ) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -96,13 +93,11 @@ class DataReceiverException : public Annotated_exception<0>
  */
 class AlignerException : public Annotated_exception<1>
 {
-   public:
-    AlignerException( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    AlignerException( const char *info ) : Annotated_exception( info )
+    {}
     AlignerException( const std::string info ) : Annotated_exception( info.c_str( ) )
-    {
-    }
+    {}
 };
 
 /**
@@ -110,10 +105,9 @@ class AlignerException : public Annotated_exception<1>
  */
 class fasta_reader_exception : public Annotated_exception<2>
 {
-   public:
-    fasta_reader_exception( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    fasta_reader_exception( const char *info ) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -121,10 +115,9 @@ class fasta_reader_exception : public Annotated_exception<2>
  */
 class NullPointerException : public Annotated_exception<3>
 {
-   public:
-    NullPointerException( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    NullPointerException( const char *info ) : Annotated_exception( info )
+    {}
 };
 
 
@@ -133,10 +126,9 @@ class NullPointerException : public Annotated_exception<3>
  */
 class NXBI_XML_Exception : public Annotated_exception<4>
 {
-   public:
-    NXBI_XML_Exception( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    NXBI_XML_Exception( const char *info ) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -144,10 +136,9 @@ class NXBI_XML_Exception : public Annotated_exception<4>
  */
 class BOOST_ASIO_Exception : public Annotated_exception<5>
 {
-   public:
-    BOOST_ASIO_Exception( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    BOOST_ASIO_Exception( const char *info ) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -155,10 +146,9 @@ class BOOST_ASIO_Exception : public Annotated_exception<5>
  */
 class Download_Exeption : public Annotated_exception<6>
 {
-   public:
-    Download_Exeption( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    Download_Exeption( const char *info ) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -166,10 +156,9 @@ class Download_Exeption : public Annotated_exception<6>
  */
 class ModuleIO_Exception : public Annotated_exception<7>
 {
-   public:
-    ModuleIO_Exception( const char* info ) : Annotated_exception( info )
-    {
-    }
+  public:
+    ModuleIO_Exception( const char *info ) : Annotated_exception( info )
+    {}
 };
 
 /**
@@ -177,20 +166,18 @@ class ModuleIO_Exception : public Annotated_exception<7>
  */
 class ModuleDryException : public std::exception
 {
-   public:
+  public:
     ModuleDryException( )
-    {
-    }
+    {}
 };
 
 
 /**
  * @brief A little method for null-pointer exception testing using our exception class.
  */
-template <typename T>
-T notNull( T pointer )
+template <typename T> T notNull( T pointer )
 {
-    if ( pointer == NULL )
+    if( pointer == NULL )
     {
         throw NullPointerException( "" );
     } // if

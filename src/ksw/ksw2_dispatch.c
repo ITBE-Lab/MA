@@ -1,6 +1,6 @@
 #ifdef KSW_CPU_DISPATCH
-#include <stdlib.h>
 #include "ksw/ksw2.h"
+#include <stdlib.h>
 
 #define SIMD_SSE 0x1
 #define SIMD_SSE2 0x2
@@ -33,29 +33,29 @@ int x86_simd( void )
     int flag = 0, cpuid[ 4 ], max_id;
     __cpuidex( cpuid, 0, 0 );
     max_id = cpuid[ 0 ];
-    if ( max_id == 0 )
+    if( max_id == 0 )
         return 0;
     __cpuidex( cpuid, 1, 0 );
-    if ( cpuid[ 3 ] >> 25 & 1 )
+    if( cpuid[ 3 ] >> 25 & 1 )
         flag |= SIMD_SSE;
-    if ( cpuid[ 3 ] >> 26 & 1 )
+    if( cpuid[ 3 ] >> 26 & 1 )
         flag |= SIMD_SSE2;
-    if ( cpuid[ 2 ] >> 0 & 1 )
+    if( cpuid[ 2 ] >> 0 & 1 )
         flag |= SIMD_SSE3;
-    if ( cpuid[ 2 ] >> 9 & 1 )
+    if( cpuid[ 2 ] >> 9 & 1 )
         flag |= SIMD_SSSE3;
-    if ( cpuid[ 2 ] >> 19 & 1 )
+    if( cpuid[ 2 ] >> 19 & 1 )
         flag |= SIMD_SSE4_1;
-    if ( cpuid[ 2 ] >> 20 & 1 )
+    if( cpuid[ 2 ] >> 20 & 1 )
         flag |= SIMD_SSE4_2;
-    if ( cpuid[ 2 ] >> 28 & 1 )
+    if( cpuid[ 2 ] >> 28 & 1 )
         flag |= SIMD_AVX;
-    if ( max_id >= 7 )
+    if( max_id >= 7 )
     {
         __cpuidex( cpuid, 7, 0 );
-        if ( cpuid[ 1 ] >> 5 & 1 )
+        if( cpuid[ 1 ] >> 5 & 1 )
             flag |= SIMD_AVX2;
-        if ( cpuid[ 1 ] >> 16 & 1 )
+        if( cpuid[ 1 ] >> 16 & 1 )
             flag |= SIMD_AVX512F;
     }
     return flag;
@@ -75,9 +75,9 @@ void ksw_extd2_sse( void *km, int qlen, const uint8_t *query, int tlen, const ui
                                  ksw_extz_t *ez );
     unsigned simd;
     simd = x86_simd( );
-    if ( simd & SIMD_SSE4_1 )
+    if( simd & SIMD_SSE4_1 )
         ksw_extd2_sse41( km, qlen, query, tlen, target, m, mat, q, e, q2, e2, w, zdrop, flag, ez );
-    else if ( simd & SIMD_SSE2 )
+    else if( simd & SIMD_SSE2 )
         ksw_extd2_sse2( km, qlen, query, tlen, target, m, mat, q, e, q2, e2, w, zdrop, flag, ez );
     else
         abort( );

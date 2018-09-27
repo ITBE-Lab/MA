@@ -30,7 +30,7 @@ namespace libMA
  */
 class Segment : public Container, public Interval<nucSeqIndex>
 {
-   public:
+  public:
     SAInterval xSaInterval;
     /**
      * @brief Creates a new Segment.
@@ -39,16 +39,13 @@ class Segment : public Container, public Interval<nucSeqIndex>
      */
     Segment( nucSeqIndex uiStart, nucSeqIndex uiSize, SAInterval xSaInterval )
         : Interval( uiStart, uiSize ), xSaInterval( xSaInterval )
-    {
-    } // constructor
+    {} // constructor
 
     Segment( ) : Interval( ), xSaInterval( )
-    {
-    } // constructor
+    {} // constructor
 
-    Segment( const Segment& other ) : Interval( other ), xSaInterval( other.xSaInterval )
-    {
-    } // copy constructor
+    Segment( const Segment &other ) : Interval( other ), xSaInterval( other.xSaInterval )
+    {} // copy constructor
 
 
     // overload
@@ -73,7 +70,7 @@ class Segment : public Container, public Interval<nucSeqIndex>
      * @brief The bwt interval within.
      * @returns the bwt interval within.
      */
-    inline const SAInterval& saInterval( ) const
+    inline const SAInterval &saInterval( ) const
     {
         return xSaInterval;
     } // function
@@ -82,7 +79,7 @@ class Segment : public Container, public Interval<nucSeqIndex>
      * @brief Copys from another Segment.
      * @note override
      */
-    inline Segment& operator=( const Segment& rxOther )
+    inline Segment &operator=( const Segment &rxOther )
     {
         Interval::operator=( rxOther );
         xSaInterval = rxOther.xSaInterval;
@@ -105,7 +102,7 @@ class Segment : public Container, public Interval<nucSeqIndex>
  */
 class SegmentVector : public std::vector<Segment>, public Container
 {
-   public:
+  public:
 #if MEASURE_DURATIONS == ( 1 )
     // is default constructed
     double fExtraction = 0, fSorting = 0, fLinesweep = 0;
@@ -113,24 +110,21 @@ class SegmentVector : public std::vector<Segment>, public Container
     inline size_t numSeedsLarger( size_t uiMinSize ) const
     {
         return std::accumulate( this->begin( ), this->end( ),
-                                ( size_t )0, // initial value for the accumulation
-                                [&uiMinSize]( size_t uiSum, const Segment& rSegment ) {
+                                (size_t)0, // initial value for the accumulation
+                                [&uiMinSize]( size_t uiSum, const Segment &rSegment ) {
                                     // the seed is scored by how many times it is larger than the
                                     // uiMinSize.
                                     // @note rounded downwards by the cast.
-                                    return uiSum + ( ( size_t )rSegment.size( ) / uiMinSize );
+                                    return uiSum + ( (size_t)rSegment.size( ) / uiMinSize );
                                 } // lambda
         );
     } // method
 
-    template <class InputIt>
-    SegmentVector( InputIt xBegin, InputIt xEnd ) : vector( xBegin, xEnd )
-    {
-    } // iterator constructor
+    template <class InputIt> SegmentVector( InputIt xBegin, InputIt xEnd ) : vector( xBegin, xEnd )
+    {} // iterator constructor
 
     SegmentVector( )
-    {
-    } // default constructor
+    {} // default constructor
 
     // overload
     bool canCast( std::shared_ptr<Container> c ) const
@@ -158,15 +152,15 @@ class SegmentVector : public std::vector<Segment>, public Container
      * @Note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
-    void forEachSeed( FMIndex& rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
-                      unsigned int uiMAxAmbiguity, unsigned int uiMinLen, bool bSkip, FUNCTOR&& fDo
+    void forEachSeed( FMIndex &rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
+                      unsigned int uiMAxAmbiguity, unsigned int uiMinLen, bool bSkip, FUNCTOR &&fDo
                       // std::function<bool(const Seed& s)> fDo
     )
     {
         // iterate over all the intervals that have been recorded using pushBackBwtInterval()
-        for ( const Segment& rSegment : *this )
+        for( const Segment &rSegment : *this )
         {
-            if ( rSegment.size( ) < uiMinLen )
+            if( rSegment.size( ) < uiMinLen )
                 continue;
             // if the interval contains more than uiMAxAmbiguity hits it's of no importance and will
             // produce nothing but noise
@@ -174,23 +168,23 @@ class SegmentVector : public std::vector<Segment>, public Container
             // if bSkip is not set uiJump by is used to not return more than uiMAxAmbiguity
 
             t_bwtIndex uiJumpBy = 1;
-            if ( rSegment.saInterval( ).size( ) > uiMAxAmbiguity && uiMAxAmbiguity != 0 )
+            if( rSegment.saInterval( ).size( ) > uiMAxAmbiguity && uiMAxAmbiguity != 0 )
             {
-                if ( bSkip )
+                if( bSkip )
                     continue;
                 uiJumpBy = rSegment.saInterval( ).size( ) / uiMAxAmbiguity;
             } // if
 
             // iterate over the interval in the BWT
-            for ( auto ulCurrPos = rSegment.saInterval( ).start( );
-                  ulCurrPos < rSegment.saInterval( ).end( ); ulCurrPos += uiJumpBy )
+            for( auto ulCurrPos = rSegment.saInterval( ).start( );
+                 ulCurrPos < rSegment.saInterval( ).end( ); ulCurrPos += uiJumpBy )
             {
                 // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every
                 // match individually
                 nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa( ulCurrPos );
                 // call the given function
-                if ( !fDo( Seed( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq,
-                                 rSegment.saInterval( ).size( ) ) ) )
+                if( !fDo( Seed( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq,
+                                rSegment.saInterval( ).size( ) ) ) )
                     return;
             } // for
         } // for
@@ -205,24 +199,24 @@ class SegmentVector : public std::vector<Segment>, public Container
      * @Note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
-    void emplaceAllEachSeeds( FMIndex& rxFMIndex, unsigned int uiMAxAmbiguity,
-                              unsigned int uiMinLen, std::vector<Seed>& rvSeedVector,
-                              FUNCTOR&& fDo // this function is called after each seed is emplaced
+    void emplaceAllEachSeeds( FMIndex &rxFMIndex, unsigned int uiMAxAmbiguity,
+                              unsigned int uiMinLen, std::vector<Seed> &rvSeedVector,
+                              FUNCTOR &&fDo // this function is called after each seed is emplaced
     )
     {
         // iterate over all the intervals that have been recorded using pushBackBwtInterval()
-        for ( const Segment& rSegment : *this )
+        for( const Segment &rSegment : *this )
         {
             // if the interval contains more than uiMAxAmbiguity hits it's of no importance and will
             // produce nothing but noise
-            if ( rSegment.saInterval( ).size( ) > uiMAxAmbiguity && uiMAxAmbiguity != 0 )
+            if( rSegment.saInterval( ).size( ) > uiMAxAmbiguity && uiMAxAmbiguity != 0 )
                 continue;
-            if ( rSegment.size( ) < uiMinLen )
+            if( rSegment.size( ) < uiMinLen )
                 continue;
 
             // iterate over the interval in the BWT
-            for ( auto ulCurrPos = rSegment.saInterval( ).start( );
-                  ulCurrPos < rSegment.saInterval( ).end( ); ulCurrPos += 1 //// uiJumpBy
+            for( auto ulCurrPos = rSegment.saInterval( ).start( );
+                 ulCurrPos < rSegment.saInterval( ).end( ); ulCurrPos += 1 //// uiJumpBy
             )
             {
                 // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every
@@ -231,7 +225,7 @@ class SegmentVector : public std::vector<Segment>, public Container
                 // call the given function
                 rvSeedVector.emplace_back( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq,
                                            rSegment.saInterval( ).size( ) );
-                if ( !fDo( ) )
+                if( !fDo( ) )
                     return;
             } // for
         } // for
@@ -246,7 +240,7 @@ class SegmentVector : public std::vector<Segment>, public Container
     {
         std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>( new Seeds( ) );
         forEachSeed( *pxFMIndex, uiMAxAmbiguity, uiMinLen, bSkip,
-                     [&pRet]( const Seed& s ) {
+                     [&pRet]( const Seed &s ) {
                          pRet->push_back( s );
                          return true;
                      } // lambda
@@ -261,8 +255,8 @@ class SegmentVector : public std::vector<Segment>, public Container
     inline unsigned int numSeeds( unsigned int max_size ) const
     {
         unsigned int uiTotal = 0;
-        for ( const Segment& rSegment : *this )
-            if ( max_size == 0 || rSegment.xSaInterval.size( ) <= max_size )
+        for( const Segment &rSegment : *this )
+            if( max_size == 0 || rSegment.xSaInterval.size( ) <= max_size )
                 uiTotal += rSegment.xSaInterval.size( );
         return uiTotal;
     } // function

@@ -52,7 +52,7 @@ enum MatchType
  */
 class Alignment : public Container
 {
-   public:
+  public:
 #if DEBUG_LEVEL >= 1
     std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vGapsScatter;
 #endif
@@ -90,8 +90,7 @@ class Alignment : public Container
           xStats( ),
           bSecondary( false ),
           bSupplementary( false )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief Creates an empty alignment,
@@ -107,8 +106,7 @@ class Alignment : public Container
           xStats( ),
           bSecondary( false ),
           bSupplementary( false )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief Creates an empty alignment,
@@ -124,8 +122,7 @@ class Alignment : public Container
           xStats( ),
           bSecondary( false ),
           bSupplementary( false )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief Creates an empty alignment,
@@ -142,18 +139,16 @@ class Alignment : public Container
           xStats( ),
           bSecondary( false ),
           bSupplementary( false )
-    {
-    } // constructor
+    {} // constructor
 
-    Alignment( const Alignment& rOther ) = delete;
+    Alignment( const Alignment &rOther ) = delete;
 
     inline std::string toString( ) const
     {
         std::string sRet = "Alignment Dump: ";
         constexpr char vTranslate[ 5 ] = {'S', '=', 'X', 'I', 'D'};
-        for ( auto& tuple : data )
-            sRet +=
-                vTranslate[ ( unsigned int )tuple.first ] + std::to_string( tuple.second ) + " ";
+        for( auto &tuple : data )
+            sRet += vTranslate[ (unsigned int)tuple.first ] + std::to_string( tuple.second ) + " ";
         sRet += std::to_string( iScore );
         return sRet;
     }
@@ -185,16 +180,16 @@ class Alignment : public Container
     MatchType at( nucSeqIndex i ) const
     {
         // everything after and before the query is a deletion
-        if ( i >= uiLength || i < 0 )
+        if( i >= uiLength || i < 0 )
             return MatchType::deletion;
 
         // the MatchType match type is stored in a compressed format -> extract it
         nucSeqIndex j = 0;
         unsigned int k = 0;
-        while ( k < data.size( ) )
+        while( k < data.size( ) )
         {
             j += data[ k ].second;
-            if ( j > i )
+            if( j > i )
                 break;
             k++;
         } // while
@@ -217,22 +212,22 @@ class Alignment : public Container
     std::vector<MatchType> extract( ) const
     {
         std::vector<MatchType> aRet;
-        for ( std::pair<MatchType, nucSeqIndex> xElement : data )
-            for ( unsigned int i = 0; i < xElement.second; i++ )
+        for( std::pair<MatchType, nucSeqIndex> xElement : data )
+            for( unsigned int i = 0; i < xElement.second; i++ )
                 aRet.push_back( xElement.first );
         return aRet;
     } // method
 
-    std::string cigarString( Pack& rPack )
+    std::string cigarString( Pack &rPack )
     {
         std::string sCigar = "";
-        if ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             std::reverse( data.begin( ), data.end( ) );
 
-        for ( std::pair<MatchType, nucSeqIndex> section : data )
+        for( std::pair<MatchType, nucSeqIndex> section : data )
         {
             sCigar.append( std::to_string( section.second ) );
-            switch ( section.first )
+            switch( section.first )
             {
                 case MatchType::seed:
                 case MatchType::match:
@@ -252,48 +247,48 @@ class Alignment : public Container
                     break;
             } // switch
         } // for
-        if ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             std::reverse( data.begin( ), data.end( ) );
         return sCigar;
     } // method
 
-    uint32_t getSamFlag( Pack& rPack ) const
+    uint32_t getSamFlag( Pack &rPack ) const
     {
         uint32_t uiRet = 0;
-        if ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             uiRet |= REVERSE_COMPLEMENTED;
-        if ( bSecondary )
+        if( bSecondary )
             uiRet |= SECONDARY_ALIGNMENT;
-        if ( bSupplementary )
+        if( bSupplementary )
             uiRet |= SUPPLEMENTARY_ALIGNMENT;
         return uiRet;
     } // method
 
-    std::string getContig( Pack& rPack ) const
+    std::string getContig( Pack &rPack ) const
     {
         return rPack.nameOfSequenceForPosition( uiBeginOnRef );
     } // method
 
-    nucSeqIndex getSamPosition( Pack& rPack ) const
+    nucSeqIndex getSamPosition( Pack &rPack ) const
     {
         std::string sRefName = getContig( rPack );
         auto uiRet = rPack.posInSequence( uiBeginOnRef, uiEndOnRef );
-        if ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             uiRet += 1;
         return uiRet;
     } // method
 
-    std::string getQuerySequence( NucSeq& rQuery, Pack& rPack )
+    std::string getQuerySequence( NucSeq &rQuery, Pack &rPack )
     {
-        if ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             return rQuery.fromToComplement( uiBeginOnQuery, uiEndOnQuery );
         else
             return rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
     } // method
 
-    std::string getRevCompQuerySequence( NucSeq& rQuery, Pack& rPack )
+    std::string getRevCompQuerySequence( NucSeq &rQuery, Pack &rPack )
     {
-        if ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             return rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
         else
             return rQuery.fromToComplement( uiBeginOnQuery, uiEndOnQuery );
@@ -319,13 +314,13 @@ class Alignment : public Container
      * @brief returns the overlap of the alignments on
      * @todo
      */
-    inline double overlap( const Alignment& rOther ) const
+    inline double overlap( const Alignment &rOther ) const
     {
         // get the total area where overlaps are possible
         nucSeqIndex uiS = std::max( uiBeginOnQuery, rOther.uiBeginOnQuery );
         nucSeqIndex uiE = std::min( uiEndOnQuery, rOther.uiEndOnQuery );
         // if the total area is zero we can return 0% immediately
-        if ( uiS >= uiE )
+        if( uiS >= uiE )
             return 0;
         // indices for walking through the alignments
         nucSeqIndex uiOverlap = 0;
@@ -334,24 +329,24 @@ class Alignment : public Container
         size_t uiIOther = 0;
         nucSeqIndex uiQposOther = rOther.uiBeginOnQuery;
         // move the index to the start positions
-        while ( uiQpos + data[ uiI ].second < uiS )
+        while( uiQpos + data[ uiI ].second < uiS )
         {
             // all match types move forward on the query apart from a deletion
-            if ( data[ uiI ].first != MatchType::deletion )
+            if( data[ uiI ].first != MatchType::deletion )
                 uiQpos += data[ uiI ].second;
             uiI++;
         } // while
         // move the index (of the other alignment) to the start positions
-        while ( uiQposOther + rOther.data[ uiIOther ].second < uiS )
+        while( uiQposOther + rOther.data[ uiIOther ].second < uiS )
         {
             // all match types move forward on the query apart from a deletion
-            if ( rOther.data[ uiIOther ].first != MatchType::deletion )
+            if( rOther.data[ uiIOther ].first != MatchType::deletion )
                 uiQposOther += rOther.data[ uiIOther ].second;
             uiIOther++;
         } // while
 
         // compute the overlap
-        while (
+        while(
             // we haven't reached the end of the possible overlap area
             uiQpos < uiE && uiQposOther < uiE &&
             // we haven't reached the end of the alignment
@@ -360,11 +355,11 @@ class Alignment : public Container
             // get the lengths on the query
             nucSeqIndex uiQLen = 0;
             // all match types have a query length apart from a deletion
-            if ( data[ uiI ].first != MatchType::deletion )
+            if( data[ uiI ].first != MatchType::deletion )
                 uiQLen = data[ uiI ].second;
             nucSeqIndex uiQLenOther = 0;
             // all match types have a query length apart from a deletion
-            if ( rOther.data[ uiIOther ].first != MatchType::deletion )
+            if( rOther.data[ uiIOther ].first != MatchType::deletion )
                 uiQLenOther = rOther.data[ uiIOther ].second;
 
             // compute the overlap
@@ -372,16 +367,16 @@ class Alignment : public Container
             nucSeqIndex uiE_inner =
                 std::min( std::min( uiQpos + uiQLen, uiQposOther + uiQLenOther ), uiE );
             nucSeqIndex uiCurrOverlap = 0;
-            if ( uiS_inner < uiE_inner )
+            if( uiS_inner < uiE_inner )
                 uiCurrOverlap = uiE_inner - uiS_inner;
 
             // if the type of the match is not an insertion, add to the amount of overlap
-            if ( data[ uiI ].first != MatchType::insertion &&
-                 rOther.data[ uiIOther ].first != MatchType::insertion )
+            if( data[ uiI ].first != MatchType::insertion &&
+                rOther.data[ uiIOther ].first != MatchType::insertion )
                 uiOverlap += uiCurrOverlap;
 
             // move the correct index forward
-            if ( uiQpos + uiQLen < uiQposOther + uiQLenOther )
+            if( uiQpos + uiQLen < uiQposOther + uiQLenOther )
             {
                 uiQpos += uiQLen;
                 uiI++;
@@ -403,9 +398,9 @@ class Alignment : public Container
     /**
      * @brief appends another alignment
      */
-    void append( const Alignment& rOther )
+    void append( const Alignment &rOther )
     {
-        for ( auto xTuple : rOther.data )
+        for( auto xTuple : rOther.data )
             append( xTuple.first, xTuple.second );
     } // function
 
@@ -425,9 +420,9 @@ class Alignment : public Container
     ///@brief Length of the alignment
     nucSeqIndex length( ) const
     {
-        DEBUG( nucSeqIndex uiCheck = 0; for ( auto xTup
-                                              : data ) uiCheck += xTup.second;
-               if ( uiCheck != uiLength ) {
+        DEBUG( nucSeqIndex uiCheck = 0; for( auto xTup
+                                             : data ) uiCheck += xTup.second;
+               if( uiCheck != uiLength ) {
                    std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength
                              << std::endl;
                    assert( false );
@@ -472,10 +467,10 @@ class Alignment : public Container
     float seedCoverage( ) const
     {
         unsigned int iCount = 0;
-        for ( unsigned int i = 0; i < length( ); i++ )
-            if ( at( i ) == MatchType::seed )
+        for( unsigned int i = 0; i < length( ); i++ )
+            if( at( i ) == MatchType::seed )
                 iCount++;
-        return ( ( float )iCount ) / ( float )length( );
+        return ( (float)iCount ) / (float)length( );
     }
 
     /*
@@ -484,8 +479,8 @@ class Alignment : public Container
     unsigned int numBySeeds( ) const
     {
         unsigned int iCount = 0;
-        for ( unsigned int i = 0; i < length( ); i++ )
-            if ( at( i ) == MatchType::seed )
+        for( unsigned int i = 0; i < length( ); i++ )
+            if( at( i ) == MatchType::seed )
                 iCount++;
         return iCount;
     }
@@ -499,23 +494,23 @@ class Alignment : public Container
     bool larger( const std::shared_ptr<Container> pOther ) const
     {
         const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>( pOther );
-        if ( pAlign == nullptr )
+        if( pAlign == nullptr )
             return false;
         size_t uiA = 0;
         size_t uiB = 0;
-        if ( pAlign->bSecondary )
+        if( pAlign->bSecondary )
             uiB = 2;
-        if ( pAlign->bSupplementary )
+        if( pAlign->bSupplementary )
             uiB = 1;
-        if ( bSecondary )
+        if( bSecondary )
             uiA = 2;
-        if ( bSupplementary )
+        if( bSupplementary )
             uiA = 1;
-        if ( uiA != uiB )
+        if( uiA != uiB )
             return uiA < uiB;
         auto uiS1 = score( );
         auto uiS2 = pAlign->score( );
-        if ( uiS1 == uiS2 )
+        if( uiS1 == uiS2 )
             // if both alignments have the same score output the one with
             // the higher SoC score first (this is determined by the lower SoC index)
             return xStats.index_of_strip < pAlign->xStats.index_of_strip;

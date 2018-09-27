@@ -3,10 +3,10 @@
  * @author Markus Schmidt
  */
 
+#include "container/nucSeq.h" // sequence slices
 #include <algorithm>
 #include <iostream>
 #include <string>
-#include "container/nucSeq.h" // sequence slices
 using namespace libMA;
 #include "module/SW_sequential.h"
 #include "module/needlemanWunsch.h"
@@ -41,7 +41,7 @@ std::string randomNucSeq( const int uiLen )
     static const char nucleotides[] = "ACGT";
 
     std::string sNucSeq( uiLen, ' ' );
-    for ( int i = 0; i < uiLen; ++i )
+    for( int i = 0; i < uiLen; ++i )
     {
         sNucSeq[ i ] = nucleotides[ rand( ) % ( sizeof( nucleotides ) - 1 ) ];
     } // for
@@ -77,7 +77,7 @@ int16_t alignSW_SIMD(
          */
         iMaxScore = xSIMDAligner.align( rReferenceSequence, rvMaxScorePositions );
     } // try
-    catch ( std::exception &e )
+    catch( std::exception &e )
     { /* Aligner can throw exceptions of type AlignerException
        */
         std::cout << "Caught exception: " << e.what( );
@@ -95,7 +95,7 @@ std::shared_ptr<Container> SMW::execute( std::shared_ptr<ContainerVector> vpInpu
         std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] ); // dc
     // std::shared_ptr<NucSeq> pReference = pRefPack->vColletionAsNucSeq();
 
-    if ( pQuerySeq->length( ) == 0 || pReference->length( ) == 0 )
+    if( pQuerySeq->length( ) == 0 || pReference->length( ) == 0 )
         return std::shared_ptr<ContainerVector>( new ContainerVector( ) );
 
     DEBUG_2( std::cout << pQuerySeq->length( ) << "x" << pReference->length( )
@@ -110,7 +110,7 @@ std::shared_ptr<Container> SMW::execute( std::shared_ptr<ContainerVector> vpInpu
         pQuerySeq->uxAlphabetSize( ) // alphabet size of input
     );
 
-    if ( bBacktrack )
+    if( bBacktrack )
     {
         /* Create aligner object */
         SW_align_type<true, // create data for backtracking
@@ -142,13 +142,16 @@ std::shared_ptr<Container> SMW::execute( std::shared_ptr<ContainerVector> vpInpu
         size_t endPositionQuery = 0;
         size_t startPositionRef = 0;
         size_t endPositionRef = 0;
-        xAligner.alignmentOutcomeMatrix.backtrackFromIndex( uiIndex, vTemp, startPositionQuery,
-                                                            endPositionQuery, startPositionRef,
+        xAligner.alignmentOutcomeMatrix.backtrackFromIndex( uiIndex,
+                                                            vTemp,
+                                                            startPositionQuery,
+                                                            endPositionQuery,
+                                                            startPositionRef,
                                                             endPositionRef );
         std::shared_ptr<Alignment> pAlignment =
             std::shared_ptr<Alignment>( new Alignment( startPositionRef, startPositionQuery ) );
-        for ( auto pos : vTemp )
-            switch ( pos.eElementKind )
+        for( auto pos : vTemp )
+            switch( pos.eElementKind )
             {
                 case EQUAL_PAIR:
                     pAlignment->append( MatchType::match );
@@ -167,9 +170,9 @@ std::shared_ptr<Container> SMW::execute( std::shared_ptr<ContainerVector> vpInpu
             } // switch
         // for
         pvRet->push_back( pAlignment );
-        DEBUG( if ( ( uiMaxScore != pAlignment->score( ) || bPrint ) ) {
+        DEBUG( if( ( uiMaxScore != pAlignment->score( ) || bPrint ) ) {
             auto best = xAligner.alignmentOutcomeMatrix.getMaxIndex( );
-            if ( best != uiIndex )
+            if( best != uiIndex )
                 std::cout << "row: " << vMaxScorePositions[ 0 ].first
                           << ", col: " << vMaxScorePositions[ 0 ].second
                           << ", rows: " << xAligner.numberOfRows
@@ -178,16 +181,16 @@ std::shared_ptr<Container> SMW::execute( std::shared_ptr<ContainerVector> vpInpu
             std::cout << "got score: " << pAlignment->score( ) << ", expected: " << uiMaxScore
                       << ", diff: " << uiMaxScore - pAlignment->score( ) << std::endl;
             std::cout << "\t";
-            for ( size_t i = 0; i < xAligner.alignmentOutcomeMatrix.numberOfColumns - 1; i++ )
+            for( size_t i = 0; i < xAligner.alignmentOutcomeMatrix.numberOfColumns - 1; i++ )
                 std::cout << "\t" << NucSeq::translateACGTCodeToCharacter( ( *pQuerySeq )[ i ] );
-            for ( size_t i = 0; i < xAligner.alignmentOutcomeMatrix.numberOfColumns *
-                                        xAligner.alignmentOutcomeMatrix.numberOfRows;
-                  i++ )
+            for( size_t i = 0; i < xAligner.alignmentOutcomeMatrix.numberOfColumns *
+                                       xAligner.alignmentOutcomeMatrix.numberOfRows;
+                 i++ )
             {
-                if ( i % xAligner.alignmentOutcomeMatrix.numberOfColumns == 0 )
+                if( i % xAligner.alignmentOutcomeMatrix.numberOfColumns == 0 )
                 {
                     std::cout << "\n";
-                    if ( i / xAligner.alignmentOutcomeMatrix.numberOfColumns > 0 )
+                    if( i / xAligner.alignmentOutcomeMatrix.numberOfColumns > 0 )
                         std::cout << NucSeq::translateACGTCodeToCharacter(
                             ( *pReference )[ i / xAligner.alignmentOutcomeMatrix.numberOfColumns -
                                              1 ] );
@@ -242,7 +245,7 @@ std::shared_ptr<Container> SMW::execute( std::shared_ptr<ContainerVector> vpInpu
         // 3. collect the results ...
         auto pvRet = std::make_shared<ContainerVector>( );
 
-        for ( nucSeqIndex revStart : vMaxScorePositions )
+        for( nucSeqIndex revStart : vMaxScorePositions )
         {
             // undo the reversion by substracting from absolute length
             std::shared_ptr<Alignment> pAlignment =

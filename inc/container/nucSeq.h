@@ -30,11 +30,10 @@ class NucSeq;
 
 /** Generic reverse function, as it occurs in std::algorithms
  */
-template <class T>
-void reverse( T word[], size_t length )
+template <class T> void reverse( T word[], size_t length )
 {
     char temp;
-    for ( size_t i = 0; i < length / 2; i++ )
+    for( size_t i = 0; i < length / 2; i++ )
     {
         temp = word[ i ];
         word[ i ] = word[ length - i - 1 ];
@@ -336,7 +335,7 @@ void reverse( T word[], size_t length )
  */
 class NucSeq : public Container
 {
-   public:
+  public:
     /** The encapsulated sequence
      */
     uint8_t *pxSequenceRef;
@@ -359,10 +358,10 @@ class NucSeq : public Container
     {
         /** Allocated memory will be released!
          */
-        if ( pxSequenceRef != NULL )
+        if( pxSequenceRef != NULL )
             free( pxSequenceRef );
 #if WITH_QUALITY
-        if ( pxQualityRef != NULL )
+        if( pxQualityRef != NULL )
             free( pxQualityRef );
 #endif
     } // protected method
@@ -391,16 +390,16 @@ class NucSeq : public Container
          * http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
          */
         auto pxReallocRef =
-            ( uint8_t * )realloc( pxSequenceRef, uxRequestedSize * sizeof( uint8_t ) );
+            (uint8_t *)realloc( pxSequenceRef, uxRequestedSize * sizeof( uint8_t ) );
 #if WITH_QUALITY
         auto pxReallocRef2 =
-            ( uint8_t * )realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
+            (uint8_t *)realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
 #endif
 
 
-        if ( pxReallocRef == NULL
+        if( pxReallocRef == NULL
 #if WITH_QUALITY
-             || pxReallocRef2 == NULL
+            || pxReallocRef2 == NULL
 #endif
         )
         {
@@ -417,7 +416,7 @@ class NucSeq : public Container
         uxCapacity = uxRequestedSize;
     } // method
 
-   public:
+  public:
     /** The table used to translate from base pairs to numeric codes for nucleotides
      */
     static const EXPORTED unsigned char xNucleotideTranslationTable[ 256 ];
@@ -536,7 +535,7 @@ class NucSeq : public Container
     inline void resize( size_t uiRequestedSize ) // throws exception
     { /* Check, whether we have enough capacity, if not reserve memory
        */
-        if ( uxCapacity < uiRequestedSize )
+        if( uxCapacity < uiRequestedSize )
         {
             vReserveMemory( uiRequestedSize );
         } // if
@@ -586,7 +585,7 @@ class NucSeq : public Container
     {
         size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
 
-        if ( uxCapacity < uxRequestedSize )
+        if( uxCapacity < uxRequestedSize )
         {
             vReserveMemory( uxRequestedSize );
         } // if
@@ -612,7 +611,7 @@ class NucSeq : public Container
 #endif
     )
     {
-        if ( this->uiSize >= this->uxCapacity )
+        if( this->uiSize >= this->uxCapacity )
         {
             vReserveMemory( this->uiSize + 1 );
         } // if
@@ -628,7 +627,7 @@ class NucSeq : public Container
      */
     inline bool equal( const NucSeq &rOtherSequence )
     {
-        if ( this->uiSize == rOtherSequence.uiSize )
+        if( this->uiSize == rOtherSequence.uiSize )
         {
             return memcmp( this->pxSequenceRef, rOtherSequence.pxSequenceRef,
                            sizeof( uint8_t ) * uiSize ) == 0;
@@ -663,7 +662,7 @@ class NucSeq : public Container
          */
         static const char chars[ 4 ] = {3, 2, 1, 0};
 
-        return ( iNucleotide < 4 ) ? chars[ ( int )iNucleotide ] : 5;
+        return ( iNucleotide < 4 ) ? chars[ (int)iNucleotide ] : 5;
     } // static method
 
     /** Iterates over all base pairs in the sequence and creates the complement.
@@ -671,7 +670,7 @@ class NucSeq : public Container
      */
     void vSwitchAllBasePairsToComplement( )
     {
-        for ( size_t uxIterator = 0; uxIterator < uiSize; uxIterator++ )
+        for( size_t uxIterator = 0; uxIterator < uiSize; uxIterator++ )
         {
             pxSequenceRef[ uxIterator ] = nucleotideComplement( pxSequenceRef[ uxIterator ] );
         } // for
@@ -682,7 +681,7 @@ class NucSeq : public Container
     inline void vTranslateToNumericFormUsingTable( const unsigned char *alphabetTranslationTable,
                                                    size_t uxStartIndex )
     {
-        for ( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
+        for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
         {
             pxSequenceRef[ uxIterator ] = alphabetTranslationTable[ pxSequenceRef[ uxIterator ] ];
         } // for
@@ -694,7 +693,7 @@ class NucSeq : public Container
     static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
     {
         static const char chars[ 4 ] = {'A', 'C', 'G', 'T'};
-        if ( uiNucleotideCode < 4 )
+        if( uiNucleotideCode < 4 )
         {
             return chars[ uiNucleotideCode ];
         } // if
@@ -708,10 +707,10 @@ class NucSeq : public Container
      */
     inline void vTranslateToCharacterForm( size_t uxStartIndex )
     {
-        for ( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
+        for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
         {
             pxSequenceRef[ uxIterator ] =
-                ( uint8_t )translateACGTCodeToCharacter( pxSequenceRef[ uxIterator ] );
+                (uint8_t)translateACGTCodeToCharacter( pxSequenceRef[ uxIterator ] );
         } // for
     } // method
 
@@ -741,7 +740,7 @@ class NucSeq : public Container
      */
     inline char charAt( size_t uxPosition )
     {
-        if ( uxPosition >= uiSize )
+        if( uxPosition >= uiSize )
         {
             throw fasta_reader_exception( "Index out of range" );
         } // if
@@ -754,7 +753,7 @@ class NucSeq : public Container
      */
     inline char compCharAt( size_t uxPosition )
     {
-        if ( uxPosition >= uiSize )
+        if( uxPosition >= uiSize )
         {
             throw fasta_reader_exception( "Index out of range" );
         } // if
@@ -773,7 +772,7 @@ class NucSeq : public Container
 
         /* WARNING! char and uint8_t must have the same size or we get a serious problem here!
          */
-        vAppend( ( const uint8_t * )pcString,
+        vAppend( (const uint8_t *)pcString,
 #if WITH_QUALITY
                  xQuality.data( ),
 #endif
@@ -793,7 +792,7 @@ class NucSeq : public Container
     std::string toString( )
     {
         std::string ret = "";
-        for ( unsigned int i = 0; i < length( ); i++ )
+        for( unsigned int i = 0; i < length( ); i++ )
             ret += charAt( i );
         return ret;
     } // function
@@ -802,7 +801,7 @@ class NucSeq : public Container
     {
         std::string ret = "";
         // for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
-        for ( long long i = ( ( long long )uiEnd ) - 1; i >= ( long long )uiStart; i-- )
+        for( long long i = ( (long long)uiEnd ) - 1; i >= (long long)uiStart; i-- )
             ret += compCharAt( i );
         return ret;
     } // function
@@ -810,7 +809,7 @@ class NucSeq : public Container
     std::string fromTo( unsigned int uiStart, unsigned int uiEnd )
     {
         std::string ret = "";
-        for ( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )
+        for( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )
             ret += charAt( i );
         return ret;
     } // function
@@ -819,8 +818,8 @@ class NucSeq : public Container
     std::string fromToQual( unsigned int uiStart, unsigned int uiEnd )
     {
         std::string ret = "";
-        for ( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )
-            ret += ( char )quality( i );
+        for( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )
+            ret += (char)quality( i );
         return ret;
     } // function
 #endif
@@ -837,13 +836,13 @@ class NucSeq : public Container
     std::string fastaq( )
     {
         std::string sRet = ">" + sName + "\n";
-        for ( unsigned int i = 0; i < length( ); i++ )
+        for( unsigned int i = 0; i < length( ); i++ )
             sRet += charAt( i );
         sRet += "\n";
 #if WITH_QUALITY
         sRet += "+\n";
-        for ( unsigned int i = 0; i < length( ); i++ )
-            sRet += ( char )quality( i );
+        for( unsigned int i = 0; i < length( ); i++ )
+            sRet += (char)quality( i );
         sRet += "\n";
 #endif
         return sRet;
@@ -852,20 +851,20 @@ class NucSeq : public Container
     std::string fastaq_l( unsigned int uiLineLength )
     {
         std::string sRet = ">" + sName;
-        for ( unsigned int i = 0; i < length( ); i++ )
+        for( unsigned int i = 0; i < length( ); i++ )
         {
-            if ( i % uiLineLength == 0 )
+            if( i % uiLineLength == 0 )
                 sRet += "\n";
             sRet += charAt( i );
         } // for
         sRet += "\n";
 #if WITH_QUALITY
         sRet += "+";
-        for ( unsigned int i = 0; i < length( ); i++ )
+        for( unsigned int i = 0; i < length( ); i++ )
         {
-            if ( i % uiLineLength == 0 )
+            if( i % uiLineLength == 0 )
                 sRet += "\n";
-            sRet += ( char )quality( i );
+            sRet += (char)quality( i );
         } // for
         sRet += "\n";
 #endif
@@ -877,9 +876,9 @@ class NucSeq : public Container
      */
     inline void check( )
     {
-        for ( unsigned int i = 0; i < length( ); i++ )
+        for( unsigned int i = 0; i < length( ); i++ )
         {
-            if ( pxSequenceRef[ i ] > 4 )
+            if( pxSequenceRef[ i ] > 4 )
             {
                 // if was not allow print error and throw exception
                 std::cerr << "Having invalid character in string: '" << pxSequenceRef[ i ]
@@ -897,20 +896,20 @@ class NucSeq : public Container
     {
         assert( uiTo <= length( ) );
         assert( uiFrom <= uiTo );
-        DEBUG_3( for ( size_t i = uiFrom; i < uiTo; i++ ) {
+        DEBUG_3( for( size_t i = uiFrom; i < uiTo; i++ ) {
             assert( pxSequenceRef[ i ] < 4 );
-            std::cout << ( int )pxSequenceRef[ i ] << " ";
+            std::cout << (int)pxSequenceRef[ i ] << " ";
         } // for
                      std::cout
                      << std::endl; ) // DEBUG
         static const uint8_t aTranslate[ 4 ] = {1, 2, 4, 8};
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
-        for ( size_t i = 0; i < vRet.size( ); i++ )
+        for( size_t i = 0; i < vRet.size( ); i++ )
             vRet[ bReversed ? vRet.size( ) - ( i + 1 ) : i ] =
                 aTranslate[ pxSequenceRef[ i + uiFrom ] ];
 
-        DEBUG_3( for ( size_t i = 0; i < vRet.size( ); i++ ) std::cout << ( int )vRet[ i ] << " ";
+        DEBUG_3( for( size_t i = 0; i < vRet.size( ); i++ ) std::cout << (int)vRet[ i ] << " ";
                  std::cout << std::endl; ) // DEBUG
         return vRet;
     } // method

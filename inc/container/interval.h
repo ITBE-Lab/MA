@@ -15,10 +15,9 @@
 /**
  * @brief A generic multipurpose Interval.
  */
-template <typename T>
-class Interval
+template <typename T> class Interval
 {
-   public:
+  public:
     /// @brief Start position of interval.
     T iStart;
     /// @brief Size of interval.
@@ -27,22 +26,19 @@ class Interval
      * @brief Creates a new Interval.
      */
     Interval( T iStart, T iSize ) : iStart( iStart ), iSize( iSize )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief Copys from another Interval.
      */
-    Interval( const Interval& c ) : iStart( c.iStart ), iSize( c.iSize )
-    {
-    } // copy constructor
+    Interval( const Interval &c ) : iStart( c.iStart ), iSize( c.iSize )
+    {} // copy constructor
 
     /**
      * @brief Default empty constructor.
      */
     Interval( )
-    {
-    } // default constructor
+    {} // default constructor
 
     inline static Interval start_end( T start, T end )
     {
@@ -168,9 +164,9 @@ class Interval
      */
     inline const T operator[]( const std::size_t i ) const
     {
-        if ( i == 0 )
+        if( i == 0 )
             return start( );
-        if ( i == 1 )
+        if( i == 1 )
             return end( );
         throw NullPointerException( "can only access index 0 and 1 of interval" );
     } // operator
@@ -178,7 +174,7 @@ class Interval
     /*
      * @brief copys from another Interval.
      */
-    inline Interval& operator=( const Interval& rxOther )
+    inline Interval &operator=( const Interval &rxOther )
     {
         iStart = rxOther.iStart;
         iSize = rxOther.iSize;
@@ -189,7 +185,7 @@ class Interval
      * @brief compares two Intervals.
      * @returns true if start and size are equal, false otherwise.
      */
-    inline bool operator==( const Interval& rxOther )
+    inline bool operator==( const Interval &rxOther )
     {
         return iStart == rxOther.iStart && iSize == rxOther.iSize;
     } // operator
@@ -197,8 +193,7 @@ class Interval
 
 
 #ifdef WITH_PYTHON
-template <typename T>
-void exportInterval( )
+template <typename T> void exportInterval( )
 {
     // export the Seed class
     boost::python::class_<Interval<T>>( "Interval", boost::python::init<T, T>( ) )

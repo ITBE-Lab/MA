@@ -21,7 +21,7 @@ typedef std::string TextSequence;
  */
 class FastaDescriptor
 {
-   public:
+  public:
     std::string sName; // name of the FASTA Record
     std::string sComment; // comment for the entry
     TextSequence qualifier; // qualifier (describes quality of a read.)
@@ -35,23 +35,21 @@ class FastaDescriptor
           sComment( ),
           qualifier( ),
           pSequenceRef( new TextSequence( ) ) // std::make_shared<TextSequence>() )
-    {
-    } // default constructor
+    {} // default constructor
 }; // class
 
 /**
  * @brief StreamType can be GzipInputStream or GzipInputFileStream.
  */
-template <int BUFFER_SIZE, typename StreamType>
-class BufferedStreamer
+template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
 {
-   protected:
+  protected:
     /* The stream used for all reading operations.
      * FIX ME: The position of the stream over here is a design flaw.
      */
     StreamType xBufferedStream;
 
-   private:
+  private:
     /* We prohibit the copy of Objects of this class.
      */
     BufferedStreamer<BUFFER_SIZE, StreamType>( const BufferedStreamer & );
@@ -77,22 +75,22 @@ class BufferedStreamer
          */
         xBufferedStream.read( &aBuffer[ 0 ], BUFFER_SIZE );
 
-        if ( xBufferedStream.bad( ) )
+        if( xBufferedStream.bad( ) )
         {
             throw fasta_reader_exception( "Something went wrong during FASTA stream reading" );
         } // if
 
         /* uiEnd saves the number of characters that we could read in the stream operation
          */
-        uiEnd = ( size_t )xBufferedStream.gcount( );
+        uiEnd = (size_t)xBufferedStream.gcount( );
 
-        if ( uiEnd < BUFFER_SIZE )
+        if( uiEnd < BUFFER_SIZE )
         {
             bIsEOF = 1;
         } // if
     } // inline method
 
-   public:
+  public:
     /* Constructor:
      * rxBufferedStreamConstructorArg is simply forwarded to the constructor of the buffered stream.
      */
@@ -103,20 +101,17 @@ class BufferedStreamer
           uiBegin( 0 ),
           uiEnd( 0 ),
           bIsEOF( false )
-    {
-    } // constructor
+    {} // constructor
 
     template <typename TP1, typename TP2>
     BufferedStreamer<BUFFER_SIZE, StreamType>( TP1 &a, TP2 &b /* const char* pcFileNameRef */ )
         : xBufferedStream( a, b /* pcFileNameRef */ ), uiBegin( 0 ), uiEnd( 0 ), bIsEOF( false )
-    {
-    } // constructor
+    {} // constructor
 
     /* Virtual destructor. (interesting in the context of polymorphism.)
      */
     virtual ~BufferedStreamer( )
-    {
-    } // destructor
+    {} // destructor
 
     bool fail( )
     {
@@ -127,13 +122,13 @@ class BufferedStreamer
      */
     inline bool getSingleChar( char &cChar )
     {
-        if ( uiBegin >= uiEnd )
+        if( uiBegin >= uiEnd )
         {
-            if ( bIsEOF == false )
+            if( bIsEOF == false )
             {
                 vRefillBuffer( );
 
-                if ( uiEnd == 0 )
+                if( uiEnd == 0 )
                 {
                     return false;
                 } // if level 3
@@ -158,19 +153,19 @@ class BufferedStreamer
     {
         rcLastCharacterRead = '\0';
 
-        while ( true )
+        while( true )
         {
             size_t uiIterator;
 
-            if ( uiBegin >= uiEnd )
+            if( uiBegin >= uiEnd )
             {
                 /* We consumed the complete buffer content
                  */
-                if ( bIsEOF == false )
+                if( bIsEOF == false )
                 {
                     vRefillBuffer( );
 
-                    if ( uiEnd == 0 )
+                    if( uiEnd == 0 )
                     {
                         /* We reached the end of file and couldn't read anything.
                          */
@@ -185,13 +180,13 @@ class BufferedStreamer
                 } // else
             } // if
 
-            if ( bUntil_CR_or_LF )
+            if( bUntil_CR_or_LF )
             {
                 /* We read until we see a CR or LF
                  */
-                for ( uiIterator = uiBegin; uiIterator < uiEnd; ++uiIterator )
+                for( uiIterator = uiBegin; uiIterator < uiEnd; ++uiIterator )
                 {
-                    if ( aBuffer[ uiIterator ] == '\n' || aBuffer[ uiIterator ] == '\r' )
+                    if( aBuffer[ uiIterator ] == '\n' || aBuffer[ uiIterator ] == '\r' )
                     {
                         break;
                     } // if
@@ -201,11 +196,11 @@ class BufferedStreamer
             {
                 /* We read until we see some space
                  */
-                for ( uiIterator = uiBegin; uiIterator < uiEnd; ++uiIterator )
+                for( uiIterator = uiBegin; uiIterator < uiEnd; ++uiIterator )
                 {
-                    if ( isspace( static_cast<unsigned char>(
-                             aBuffer[ uiIterator ] ) ) ) // CHECK: Is it possible to work with a
-                                                         // reinterpret_cast over here?
+                    if( isspace( static_cast<unsigned char>(
+                            aBuffer[ uiIterator ] ) ) ) // CHECK: Is it possible to work with a
+                                                        // reinterpret_cast over here?
                         break;
                 } // for
             }
@@ -216,7 +211,7 @@ class BufferedStreamer
 #endif
             uiBegin = uiIterator + 1;
 
-            if ( uiIterator < uiEnd )
+            if( uiIterator < uiEnd )
             {
                 /* We found the requested delimiters or spaces.
                  * We store the last character that we got in cLastCharacterRead
@@ -239,10 +234,9 @@ class BufferedStreamer
  * E.g.: std::istream, std::ifstream, GzipInputFileStream, GzipInputStream
  * FIX ME: Rethink the design of the FASTA reader. The current version is not really well made.
  */
-template <typename StreamType>
-class FastaStreamReader : public BufferedStreamer<8192, StreamType>
+template <typename StreamType> class FastaStreamReader : public BufferedStreamer<8192, StreamType>
 {
-   private:
+  private:
     /* Indicates internally, whether the currently processed sequence is the first one.
      */
     bool bIsFirstSequence = true;
@@ -258,18 +252,18 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
     {
         char cChar;
 
-        if ( bIsFirstSequence )
+        if( bIsFirstSequence )
         {
             /* then jump to the next header line
              */
-            while ( true )
+            while( true )
             {
-                if ( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
+                if( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
                 {
                     return -1;
                 } // if
 
-                if ( cChar == '>' || cChar == '@' )
+                if( cChar == '>' || cChar == '@' )
                 {
                     /* We did see the beginning of a FASTA record.
                      */
@@ -282,8 +276,8 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
         /* We read the name. (String until the first space / new line)
          */
         TextSequence bufferSequence;
-        if ( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( false, bufferSequence,
-                                                                     cChar ) == false )
+        if( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( false, bufferSequence,
+                                                                    cChar ) == false )
         {
             return -1;
         } // if
@@ -298,10 +292,10 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
 
         /* We read the remaining part of the first line as comment
          */
-        if ( cChar != '\n' && cChar != '\r' )
+        if( cChar != '\n' && cChar != '\r' )
         {
-            if ( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( true, bufferSequence,
-                                                                         cChar ) == false )
+            if( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( true, bufferSequence,
+                                                                        cChar ) == false )
             {
                 return -1;
             } // inner if
@@ -319,16 +313,16 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
 
         /* We read the core sequence
          */
-        while ( true )
+        while( true )
         {
-            if ( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
+            if( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
             {
                 /* EOF there isn't anything more ...
                  */
                 return 0;
             } // if
 
-            if ( ( cChar == '>' ) || ( cChar == '@' ) )
+            if( ( cChar == '>' ) || ( cChar == '@' ) )
             {
                 /* We found the beginning of a next sequence
                  * '>' == FASTA, '@' == FASTQ
@@ -336,14 +330,14 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
                 return 1;
             } // if
 
-            if ( cChar == '+' )
+            if( cChar == '+' )
             {
                 /* We found a qualifier ...
                  */
                 break;
             }
 
-            if ( isgraph( cChar ) )
+            if( isgraph( cChar ) )
             {
                 /* We found a printable non-space character and
                  * append the single character to the sequence
@@ -367,16 +361,16 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
 
         /* TO OD; Fore a reserve for qualifier using the size of the sequence
          */
-        while ( true )
+        while( true )
         {
-            if ( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
+            if( BufferedStreamer<8192, StreamType>::getSingleChar( cChar ) == false )
             {
                 /* EOF there isn't anything more ...
                  */
                 break;
             } // if
 
-            if ( cChar >= 33 && cChar <= 127 )
+            if( cChar >= 33 && cChar <= 127 )
             {
 #ifdef USE_STL
                 fastaRecord.qualifier.push_back( cChar );
@@ -387,13 +381,13 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
         } // while
 
 #ifdef USE_STL
-        if ( fastaRecord.pSequenceRef->length( ) !=
-             fastaRecord.qualifier
-                 .length( ) ) // <- if ( fastaRecord.pSequenceRef->uxGetSequenceSize() !=
-                              // fastaRecord.qualifier.uxGetSequenceSize() )
+        if( fastaRecord.pSequenceRef->length( ) !=
+            fastaRecord.qualifier
+                .length( ) ) // <- if ( fastaRecord.pSequenceRef->uxGetSequenceSize() !=
+                             // fastaRecord.qualifier.uxGetSequenceSize() )
 #else
-        if ( fastaRecord.pSequenceRef->uxGetSequenceSize( ) !=
-             fastaRecord.qualifier.uxGetSequenceSize( ) )
+        if( fastaRecord.pSequenceRef->uxGetSequenceSize( ) !=
+            fastaRecord.qualifier.uxGetSequenceSize( ) )
 #endif
         {
             return -2;
@@ -402,15 +396,14 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
         return 0;
     } // method
 
-   public:
+  public:
     /* Apply the function func to all FASTA sequences defined in the given FASTA stream.
      */
-    template <typename FunctionType>
-    void forAllSequencesDo( FunctionType &&function )
+    template <typename FunctionType> void forAllSequencesDo( FunctionType &&function )
     {
         int iContinue = 1;
 
-        while ( iContinue > 0 )
+        while( iContinue > 0 )
         {
             FastaDescriptor xFastaRecord; // FIX ME: Analyze whether it is better to always reuse
                                           // the same record and to clear instead.
@@ -446,13 +439,11 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
     template <typename TP>
     FastaStreamReader( TP &rxBufferedStreamConstructorArg )
         : BufferedStreamer<8192, StreamType>( rxBufferedStreamConstructorArg )
-    {
-    } // constructor
+    {} // constructor
 
     template <typename TP1, typename TP2>
     FastaStreamReader( TP1 &a, TP2 &b ) : BufferedStreamer<8192, StreamType>( a, b )
-    {
-    } // constructor
+    {} // constructor
 
     virtual ~FastaStreamReader( )
     {
@@ -467,16 +458,14 @@ class FastaStreamReader : public BufferedStreamer<8192, StreamType>
  * Use this a FASTA rader for file streams. (GzipInputFileStream and std::ifstream)
  * The constructor checks, whether the file could be successfully opened.
  */
-template <typename StreamType>
-class FastaFileStreamReader : public FastaStreamReader<StreamType>
+template <typename StreamType> class FastaFileStreamReader : public FastaStreamReader<StreamType>
 {
-   public:
+  public:
     /* The stream used for all reading operations.
      */
     FastaFileStreamReader( const std::string &rsFileName )
         : FastaStreamReader<StreamType>( rsFileName )
-    {
-    } // constructor
+    {} // constructor
 }; // class FastaFileStreamReader
 
 /**
@@ -484,12 +473,11 @@ class FastaFileStreamReader : public FastaStreamReader<StreamType>
  */
 class FastaReader : public FastaDescriptor
 {
-   public:
+  public:
     /* The default constructor.
      */
     FastaReader( )
-    {
-    }
+    {}
 
     /* The central load function.
      */
@@ -505,8 +493,7 @@ class FastaReader : public FastaDescriptor
     /* The destruction will free the memory of the FASTA-Record
      */
     ~FastaReader( )
-    {
-    } // destructor
+    {} // destructor
 }; // class
 
 
@@ -514,7 +501,7 @@ void Pack::vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor )
 {
     /* This is a bit inefficient. We could boost performance by allowing a move for the sequence
      */
-    if ( rxFastaDescriptor.pSequenceRef->length( ) == 0 )
+    if( rxFastaDescriptor.pSequenceRef->length( ) == 0 )
         return;
     // if(rxFastaDescriptor.pSequenceRef->length() > 50000)
     //    return;
@@ -538,7 +525,7 @@ void Pack::vAppendFASTA( const std::string &sFastaFilePath )
 
     /* We check, whether file opening worked well.
      */
-    if ( xFastaReader.fail( ) )
+    if( xFastaReader.fail( ) )
     { /* Something is wrong with respect to the input-file
        */
         throw fasta_reader_exception( "File open error." );
@@ -568,11 +555,10 @@ void exportPack( )
 {
     boost::python::class_<Pack, boost::noncopyable, boost::python::bases<Container>,
                           std::shared_ptr<Pack>>(
-        "Pack",
-        "unpacked_size_single_strand: the size of one strand\n"
-        "\n"
-        "Holds a packed sequence.\n"
-        "Usefull for long sequences.\n" )
+        "Pack", "unpacked_size_single_strand: the size of one strand\n"
+                "\n"
+                "Holds a packed sequence.\n"
+                "Usefull for long sequences.\n" )
         .def( "unpacked_size", &Pack::uiUnpackedSizeForwardPlusReverse,
               "arg1: self\n"
               "returns: the length of the sequence within the pack.\n" )

@@ -35,24 +35,24 @@ std::shared_ptr<Container> ExecOnVec::execute( std::shared_ptr<ContainerVector> 
     std::shared_ptr<ContainerVector> pResults = std::shared_ptr<ContainerVector>(
         new ContainerVector( pModule->getOutputType( ), pInVec->size( ) ) );
 
-    if ( pInVec->empty( ) )
+    if( pInVec->empty( ) )
         return pResults;
-    for ( unsigned int i = 0; i < pResults->size( ); i++ )
+    for( unsigned int i = 0; i < pResults->size( ); i++ )
     {
         // create a input vector and add the first element to it
         // the appropriate element of the vector that is given as first input
         std::shared_ptr<ContainerVector> vInput( new ContainerVector{( *pInVec )[ i ]} );
         // add all following elements
-        for ( unsigned int j = 1; j < vpInput->size( ); j++ )
+        for( unsigned int j = 1; j < vpInput->size( ); j++ )
             vInput->push_back( ( *vpInput )[ j ] );
         ( *pResults )[ i ] = pModule->execute( vInput );
-        if ( ( *pResults )[ i ] == nullptr )
+        if( ( *pResults )[ i ] == nullptr )
             std::cerr << pModule->getName( ) << " deleviered nullpointer as result" << std::endl;
-        if ( ( *pResults )[ i ] == nullptr )
+        if( ( *pResults )[ i ] == nullptr )
             throw NullPointerException( "module deleviered nullpointer as result" );
     } // for
 
-    if ( sort && pResults->size( ) > 1 )
+    if( sort && pResults->size( ) > 1 )
     {
         // sort ascending
         std::sort( pResults->begin( ), pResults->end( ),
@@ -65,7 +65,7 @@ std::shared_ptr<Container> ExecOnVec::execute( std::shared_ptr<ContainerVector> 
         assert( pResults->size( ) <= 1 || !pResults->back( )->larger( pResults->front( ) ) );
     } // if
 
-    if ( nMany != 0 && pResults->size( ) > nMany )
+    if( nMany != 0 && pResults->size( ) > nMany )
     {
         // remove the smallest elements
         pResults->erase( pResults->begin( ) + nMany, pResults->end( ) );
@@ -94,7 +94,7 @@ std::shared_ptr<Container> Tail::execute( std::shared_ptr<ContainerVector> vpInp
         std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 0 ] ) ); // dc
 
     std::shared_ptr<Container> pRet( nullptr );
-    if ( pInVec->empty( ) )
+    if( pInVec->empty( ) )
         return type;
 
     /*

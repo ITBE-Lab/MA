@@ -35,8 +35,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "util/export.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
-#include <string.h>
 #include <iostream>
+#include <string.h>
 #include <thread>
 /// @endcond
 
@@ -160,7 +160,7 @@ int main( int argc, char *argv[] )
             std::to_string( std::thread::hardware_concurrency( ) ) ),
         "arg     " );
 
-    if ( argc <= 1 )
+    if( argc <= 1 )
     {
         std::cout << "Invalid usage; you need to supply -x and -i at least!" << std::endl;
         std::cout << sHelp << std::endl;
@@ -170,12 +170,12 @@ int main( int argc, char *argv[] )
     try
     {
         defaults::configureFast( );
-        for ( int i = 0; i < argc - 1; i++ )
-            if ( strcmp( argv[ i ], "-m" ) == 0 || strcmp( argv[ i ], "--mode" ) == 0 )
+        for( int i = 0; i < argc - 1; i++ )
+            if( strcmp( argv[ i ], "-m" ) == 0 || strcmp( argv[ i ], "--mode" ) == 0 )
             {
-                if ( strcmp( argv[ i + 1 ], "acc" ) == 0 )
+                if( strcmp( argv[ i + 1 ], "acc" ) == 0 )
                     defaults::configureAccurate( );
-                if ( strcmp( argv[ i + 1 ], "fast" ) == 0 )
+                if( strcmp( argv[ i + 1 ], "fast" ) == 0 )
                     defaults::configureFast( );
             } // if
 
@@ -214,8 +214,8 @@ int main( int argc, char *argv[] )
             value<int>( )->default_value( std::to_string( defaults::iGap2 ) ) )(
             "Extend2", "DP gap extend penalty.",
             value<int>( )->default_value( std::to_string( defaults::iExtend2 ) ) )(
-            "x,idx", "Do FMD-index generation", value<std::string>( ) )(
-            "genIndex", "Do FMD-index generation" )(
+            "x,idx", "Do FMD-index generation",
+            value<std::string>( ) )( "genIndex", "Do FMD-index generation" )(
             "SoCWidth", "SoC width",
             value<unsigned int>( )->default_value( std::to_string( defaults::uiSoCWidth ) ) )(
             "disableHeuristics", "disable all heuristics",
@@ -243,7 +243,7 @@ int main( int argc, char *argv[] )
 
         auto result = options.parse( argc, argv );
 
-        if ( result.count( "help" ) )
+        if( result.count( "help" ) )
         {
             std::cout << sHelp << std::endl;
             //@todo cmake version number:
@@ -268,13 +268,13 @@ int main( int argc, char *argv[] )
         defaults::uiMinDeltaDist = result[ "minDeltaDist" ].as<uint64_t>( );
         defaults::dMaxDeltaDist = result[ "maxDeltaDist" ].as<double>( );
         defaults::dMaxOverlapSupplementary = result[ "maxOverlapSupp" ].as<double>( );
-        if ( defaults::bNormalDist && defaults::bUniformDist )
+        if( defaults::bNormalDist && defaults::bUniformDist )
         {
             std::cerr << "--normal and --uniform are exclusive." << std::endl;
             return 1;
         } // else if
         std::string sGenome;
-        if ( result.count( "idx" ) > 0 )
+        if( result.count( "idx" ) > 0 )
             sGenome = result[ "idx" ].as<std::string>( );
         else
         {
@@ -282,21 +282,21 @@ int main( int argc, char *argv[] )
             return 1;
         } // else if
         std::vector<std::string> aIn;
-        if ( result.count( "in" ) > 0 )
+        if( result.count( "in" ) > 0 )
             aIn = result[ "in" ].as<std::vector<std::string>>( );
         else
         {
             std::cerr << "error: --in is compulsory" << std::endl;
             return 1;
         } // else if
-        if ( aIn.size( ) != 1 && !( defaults::bNormalDist || defaults::bUniformDist ) &&
-             result.count( "genIndex" ) == 0 )
+        if( aIn.size( ) != 1 && !( defaults::bNormalDist || defaults::bUniformDist ) &&
+            result.count( "genIndex" ) == 0 )
         {
             std::cerr << "error: --in takes one argument in unpaired mode" << std::endl;
             return 1;
         } // if
-        else if ( aIn.size( ) != 2 && ( defaults::bNormalDist || defaults::bUniformDist ) &&
-                  result.count( "genIndex" ) == 0 )
+        else if( aIn.size( ) != 2 && ( defaults::bNormalDist || defaults::bUniformDist ) &&
+                 result.count( "genIndex" ) == 0 )
         {
             std::cerr << "error: --in takes two arguments in paired mode" << std::endl;
             return 1;
@@ -304,26 +304,26 @@ int main( int argc, char *argv[] )
         auto sOut = result[ "out" ].as<std::string>( );
         defaults::bFindMode = result.count( "noDP" ) > 0;
         defaults::fGiveUp = result[ "giveUp" ].as<double>( );
-        if ( defaults::fGiveUp < 0 || defaults::fGiveUp > 1 )
+        if( defaults::fGiveUp < 0 || defaults::fGiveUp > 1 )
         {
             std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
             return 1;
         } // else if
         defaults::iMatch = result[ "Match" ].as<int>( );
-        if ( defaults::iMatch == 0 )
+        if( defaults::iMatch == 0 )
         {
             std::cerr << "error: --Match must be larger than 0" << std::endl;
             return 1;
         } // else if
         defaults::iExtend = result[ "Extend" ].as<int>( );
-        if ( defaults::iExtend == 0 )
+        if( defaults::iExtend == 0 )
         {
             std::cerr << "error: --Extend must be larger than 0" << std::endl;
             return 1;
         } // else if
         defaults::iExtend2 = result[ "Extend2" ].as<int>( );
         defaults::iMissMatch = result[ "MisMatch" ].as<int>( );
-        if ( defaults::iMissMatch == 0 )
+        if( defaults::iMissMatch == 0 )
         {
             std::cerr << "error: --MisMatch must be larger than 0" << std::endl;
             return 1;
@@ -338,11 +338,11 @@ int main( int argc, char *argv[] )
         int32_t iRunId = result[ "run_id" ].as<int32_t>( );
 #endif
 
-        if ( result.count( "genIndex" ) )
+        if( result.count( "genIndex" ) )
         {
             std::shared_ptr<Pack> pPack( new Pack( ) );
             // create the pack
-            for ( std::string sFileName : aIn )
+            for( std::string sFileName : aIn )
                 pPack->vAppendFASTA( sFileName.c_str( ) );
             // store the pack
             pPack->vStoreCollection( sGenome );
@@ -358,7 +358,7 @@ int main( int argc, char *argv[] )
             //    std::cerr
             //        << "WARNING: Relative padding should be larger or equal to one"
             //        << std::endl;
-            if ( defaults::sSeedSet != "SMEMs" && defaults::sSeedSet != "maxSpan" )
+            if( defaults::sSeedSet != "SMEMs" && defaults::sSeedSet != "maxSpan" )
                 std::cerr << "WARNING: selected invalid seed set; using maxSpan" << std::endl;
             /*
              *
@@ -380,12 +380,12 @@ int main( int argc, char *argv[] )
             std::shared_ptr<Pledge> pNil( new Pledge( std::shared_ptr<Container>( new Nil( ) ) ) );
             pNil->set( std::shared_ptr<Container>( new Nil( ) ) );
             std::shared_ptr<Reader> pReader;
-            if ( aIn.size( ) == 1 )
+            if( aIn.size( ) == 1 )
             {
                 pReader = std::shared_ptr<FileReader>( new FileReader( aIn[ 0 ] ) );
                 pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
             }
-            else if ( aIn.size( ) == 2 )
+            else if( aIn.size( ) == 2 )
             {
                 pReader =
                     std::shared_ptr<PairedFileReader>( new PairedFileReader( aIn[ 0 ], aIn[ 1 ] ) );
@@ -397,9 +397,9 @@ int main( int argc, char *argv[] )
             } // else
             std::vector<std::shared_ptr<Module>> vOut;
 #ifdef WITH_POSTGRES
-            if ( sBbOutput.size( ) > 0 )
+            if( sBbOutput.size( ) > 0 )
             {
-                if ( iRunId == -1 )
+                if( iRunId == -1 )
                 {
                     DbRunConnection xConn( sBbOutput );
                     auto xRes = xConn.exec(
@@ -407,20 +407,20 @@ int main( int argc, char *argv[] )
                         "id" );
                     iRunId = std::stoi( xRes.get( 0, 0 ) );
                 } // setupConn scope
-                for ( size_t uiI = 0; uiI < uiT; uiI++ )
+                for( size_t uiI = 0; uiI < uiT; uiI++ )
                     vOut.emplace_back( new DbWriter( sBbOutput, iRunId ) );
             } // if
             else
 #endif
             {
-                if ( defaults::bFindMode )
+                if( defaults::bFindMode )
                     vOut.emplace_back( new SeedSetFileWriter( sOut ) );
                 else
                     vOut.emplace_back( new FileWriter( sOut, pPack_ ) );
             } // else
             bool bPaired = defaults::bNormalDist || defaults::bUniformDist;
             std::vector<std::shared_ptr<Pledge>> aGraphSinks;
-            if ( bPaired )
+            if( bPaired )
                 aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, vOut,
                                                     uiT // num threads
                 );
@@ -430,11 +430,11 @@ int main( int argc, char *argv[] )
                                               uiT // num threads
                 );
             // this is a hidden option
-            if ( result.count( "info" ) > 0 )
+            if( result.count( "info" ) > 0 )
             {
                 std::cout << "threads: " << uiT << std::endl;
                 std::cout << "computational Graph:" << std::endl;
-                for ( auto pledge : aGraphSinks )
+                for( auto pledge : aGraphSinks )
                     std::cout << pledge->getGraphDesc( ) << std::endl;
                 return 0;
             } // if
@@ -447,7 +447,7 @@ int main( int argc, char *argv[] )
                     std::lock_guard<std::mutex> xGuard( xPrintMutex );
                     size_t uiCurrProg =
                         ( 1000 * pReader->getCurrPosInFile( ) ) / pReader->getFileSize( );
-                    if ( uiCurrProg > uiLastProg )
+                    if( uiCurrProg > uiLastProg )
                     {
                         std::cerr << " " << static_cast<double>( uiCurrProg ) / 10
                                   << "% aligned.     " << '\r' << std::flush;
@@ -458,12 +458,12 @@ int main( int argc, char *argv[] )
             std::cerr << "100% aligned.     " << std::endl;
         } // if
     } // try
-    catch ( const OptionException &ex )
+    catch( const OptionException &ex )
     {
         std::cerr << ex.what( ) << std::endl;
         std::cout << sHelp << std::endl;
     } // catch
-    catch ( std::runtime_error &ex )
+    catch( std::runtime_error &ex )
     {
         std::cerr << ex.what( ) << std::endl;
     } // catch

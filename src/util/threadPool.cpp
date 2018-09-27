@@ -46,7 +46,7 @@ int main_threadpool( )
     // }
     {
         ThreadPool pool( 4 );
-        for ( int32_t i = 0; i < 10; i++ )
+        for( int32_t i = 0; i < 10; i++ )
         {
             pool.enqueue( [i]( size_t id, int j ) { itemWorker( i, id, j ); }, 6 );
         }

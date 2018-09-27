@@ -43,23 +43,20 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
  */
 class SAInterval : public Container, public Interval<t_bwtIndex>
 {
-   private:
+  private:
     t_bwtIndex startOfComplement;
 
-   public:
+  public:
     SAInterval( t_bwtIndex start, t_bwtIndex startOfComplement, t_bwtIndex size )
         : Interval( start, size ), startOfComplement( startOfComplement )
-    {
-    } // constructor
+    {} // constructor
 
     SAInterval( ) : Interval( ), startOfComplement( 0 )
-    {
-    } // constructor
+    {} // constructor
 
     SAInterval( const SAInterval &other )
         : Interval( other ), startOfComplement( other.startOfComplement )
-    {
-    } // copy constructor
+    {} // copy constructor
 
     // overload
     bool canCast( std::shared_ptr<Container> c ) const
@@ -132,7 +129,7 @@ typedef unsigned char ubyte_t;
  */
 class FMIndex : public Container
 {
-   public:
+  public:
     /* C(), cumulative counts (part of the FM index)
      * Initialization happens in the constructor.
      */
@@ -152,7 +149,7 @@ class FMIndex : public Container
 
     bool EXPORTED test( const std::shared_ptr<Pack> pPack, unsigned int uiNumTest );
 
-   protected:
+  protected:
     typedef int64_t bwtint_t;
 
     /* Count-table for 4 values of 2 bit.
@@ -186,7 +183,7 @@ class FMIndex : public Container
  * Used in the context of step 2 (bwt_bwtupdate_core_step2) for retrieving characters.
  * REMARK: Only correct in the case of OCC_INTERVAL==0x80
  */
-#define bwt_B00( k ) ( bwt[ ( k ) >> 4 ] >> ( ( ~( k )&0xf ) << 1 ) & 3 )
+#define bwt_B00( k ) ( bwt[ ( k ) >> 4 ] >> ( ( ~(k)&0xf ) << 1 ) & 3 )
 
     /** Injection of counting blocks into the BWT.
      * Inserts the required space for 4 uint_64 counters each 8 uint_32 blocks and initializes the
@@ -199,8 +196,8 @@ class FMIndex : public Container
  * counter. (Note that bwt_t::bwt is not exactly the BWT string and therefore this macro is called
  * bwt_B0 instead of bwt_B.) REMARK: Only correct in the case of OCC_INTERVAL==0x80
  */
-#define bwt_bwt( k ) ( bwt[ ( ( k ) >> 7 << 4 ) + sizeof( bwtint_t ) + ( ( ( k )&0x7f ) >> 4 ) ] )
-#define bwt_B0( k ) ( bwt_bwt( k ) >> ( ( ~( k )&0xf ) << 1 ) & 3 )
+#define bwt_bwt( k ) ( bwt[ ( ( k ) >> 7 << 4 ) + sizeof( bwtint_t ) + ( ( (k)&0x7f ) >> 4 ) ] )
+#define bwt_B0( k ) ( bwt_bwt( k ) >> ( ( ~(k)&0xf ) << 1 ) & 3 )
 
     /** The function Occ(c, k) is the number of occurrences of character c in the prefix L[1..k].
      * Ferragina and Manzini showed[1] that it is possible to compute Occ(c, k) in constant time.
@@ -230,14 +227,14 @@ class FMIndex : public Container
         bwtint_t n;
         uint32_t *p, *end;
 
-        if ( k == ( t_bwtIndex )uiRefSeqLength )
+        if( k == (t_bwtIndex)uiRefSeqLength )
         {
             return L2[ c + 1 ] - L2[ c ];
         } // if
 
         /* assertion: k != primary
          */
-        if ( k == ( bwtint_t )( -1 ) )
+        if( k == ( bwtint_t )( -1 ) )
         {
             return 0;
         } // if
@@ -246,21 +243,21 @@ class FMIndex : public Container
 
         /* retrieve Occ at k/OCC_INTERVAL
          */
-        n = ( ( bwtint_t * )( p = bwt_occ_intv( k ) ) )[ c ];
+        n = ( (bwtint_t *)( p = bwt_occ_intv( k ) ) )[ c ];
         p += sizeof( bwtint_t ); // jump to the start of the first BWT cell
 
         /* calculate Occ up to the last k/32
          */
         end = p + ( ( ( k >> 5 ) - ( ( k & ~OCC_INTV_MASK ) >> 5 ) ) << 1 );
-        for ( ; p < end; p += 2 )
+        for( ; p < end; p += 2 )
         {
-            n += __occ_aux( ( uint64_t )p[ 0 ] << 32 | p[ 1 ], c );
+            n += __occ_aux( (uint64_t)p[ 0 ] << 32 | p[ 1 ], c );
         } // for
 
         // calculate Occ
         n += __occ_aux(
-            ( ( uint64_t )p[ 0 ] << 32 | p[ 1 ] ) & ~( ( 1ull << ( ( ~k & 31 ) << 1 ) ) - 1 ), c );
-        if ( c == 0 )
+            ( (uint64_t)p[ 0 ] << 32 | p[ 1 ] ) & ~( ( 1ull << ( ( ~k & 31 ) << 1 ) ) - 1 ), c );
+        if( c == 0 )
         {
             n -= ~k & 31; // corrected for the masked bits
         } // if
@@ -342,13 +339,13 @@ class FMIndex : public Container
      */
     void _vInitCountTable( )
     {
-        for ( unsigned int i = 0; i != 256; ++i )
+        for( unsigned int i = 0; i != 256; ++i )
         {
             uint32_t x = 0; // 4 byte x[3],x[2],x[1],x[0]
 
             /* Count the occurrences of the 4 2-bit symbols in i
              */
-            for ( unsigned int j = 0; j != 4; ++j )
+            for( unsigned int j = 0; j != 4; ++j )
             {
                 x |= ( ( ( i & 3 ) == j ) + ( ( i >> 2 & 3 ) == j ) + ( ( i >> 4 & 3 ) == j ) +
                        ( i >> 6 == j ) )
@@ -368,7 +365,7 @@ class FMIndex : public Container
      */
     inline uint32_t __occ_aux4( uint32_t ux16symbols )
     {
-        return _aCountTable[ ( ux16symbols )&0xff ] +
+        return _aCountTable[ (ux16symbols)&0xff ] +
                _aCountTable[ ( ux16symbols ) >> 8 & 0xff ] // parallel add    of 4 bytes
                + _aCountTable[ ( ux16symbols ) >> 16 & 0xff ] // parallel add of 4 bytes
                + _aCountTable[ ( ux16symbols ) >> 24 ]; // parallel add of 4 bytes
@@ -399,7 +396,7 @@ class FMIndex : public Container
         uint64_t x; // originally 64 bit, but should work with a 32 bit value as well.
         uint32_t *p, tmp, *end; // pointer into bwt.
 
-        if ( k == ( t_bwtIndex )( -1 ) )
+        if( k == ( t_bwtIndex )( -1 ) )
         {
             std::memset( cnt, 0,
                          4 * sizeof( bwt64bitCounter ) ); // TO DO: Use C++ sizeof for arrays
@@ -438,7 +435,7 @@ class FMIndex : public Container
         /* Add up nucleotides within the blocks up to k, using the parallel addition approach.
          * At the end, we have in x the counting for A, C, G, T
          */
-        for ( x = 0; p < end; ++p )
+        for( x = 0; p < end; ++p )
         {
             x += __occ_aux4( *p );
         } // for
@@ -522,7 +519,7 @@ class FMIndex : public Container
         auto xFileStartPos = rxInputStream.tellg( ); // read position
         auto uiStreamLength = ( xFileEndPos - xFileStartPos ); // get the size of the stream
 
-        if ( rxInputStream.fail( ) ) // check whether we could successfully open the stream
+        if( rxInputStream.fail( ) ) // check whether we could successfully open the stream
         {
             throw std::runtime_error( "Opening of BWT of FM index failed: cannot seek." );
         } // if
@@ -548,7 +545,7 @@ class FMIndex : public Container
         rxInputStream.read( reinterpret_cast<char *>( &bwt[ 0 ] ),
                             sizeof( bwt[ 0 ] ) * uiExpectedBWTSize );
 
-        if ( rxInputStream.fail( ) )
+        if( rxInputStream.fail( ) )
         { /* We should have no bad stream over here, or the input file did not comprise the expected
            * number of bytes.
            */
@@ -569,7 +566,7 @@ class FMIndex : public Container
 
         rxInputStream.read( reinterpret_cast<char *>( &uiPrimaryReferenceValue ),
                             sizeof( primary ) ); // get the primary back into the data structure.
-        if ( primary != uiPrimaryReferenceValue )
+        if( primary != uiPrimaryReferenceValue )
         {
             throw std::runtime_error( "BWT and suffix array have different primary." );
         } // if
@@ -583,7 +580,7 @@ class FMIndex : public Container
             reinterpret_cast<char *>( &uiSeqLenReferenceValue ),
             sizeof(
                 uiSeqLenReferenceValue ) ); // read the sequence length for verification purposes
-        if ( this->uiRefSeqLength != uiSeqLenReferenceValue )
+        if( this->uiRefSeqLength != uiSeqLenReferenceValue )
         {
             throw std::runtime_error(
                 "SA-BWT inconsistency: suffix array has non matching sequence length stored." );
@@ -612,7 +609,7 @@ class FMIndex : public Container
         rxInputStream.read( reinterpret_cast<char *>( &sa[ 1 ] ),
                             sizeof( uint64_t ) * ( uiExpectedSASize - 1 ) );
 
-        if ( rxInputStream.fail( ) )
+        if( rxInputStream.fail( ) )
         { /* We should have no bad stream over here, or the input file did not comprise the expected
            * number of bytes.
            */
@@ -622,7 +619,7 @@ class FMIndex : public Container
 
         /* Check whether we read exactly the required number of elements.
          */
-        if ( sa.size( ) != uiExpectedSASize )
+        if( sa.size( ) != uiExpectedSASize )
         {
             throw std::runtime_error(
                 std::string( "Reading suffix array from file system failed due to non matching "
@@ -630,26 +627,26 @@ class FMIndex : public Container
         } // if
     } // method
 
-   public:
+  public:
     /** Like bwt_occ4, but it computes the counters for two indices simultaneously.
      * If k and l belong to the same internal interval (the FM index has a block structure),
      * bwt_2occ4 is more efficient than bwt_occ4. IMPORTANT: The indices are inclusive, i. e. we
      * count IMPORTANT: Requires k <= l
      */
-    inline void bwt_2occ4(
-        t_bwtIndex k, // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
-        t_bwtIndex l, // second end index in BWT (l can be negative: (t_bwtIndex)(-1) )
-        bwt64bitCounter cntk[ 4 ], bwt64bitCounter cntl[ 4 ] // (outputs) counter for k and l
+    inline void
+    bwt_2occ4( t_bwtIndex k, // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
+               t_bwtIndex l, // second end index in BWT (l can be negative: (t_bwtIndex)(-1) )
+               bwt64bitCounter cntk[ 4 ], bwt64bitCounter cntl[ 4 ] // (outputs) counter for k and l
     )
     { /* Adjusted versions of k and l, because $ is not in bwt
        */
         t_bwtIndex _k = k - ( k >= primary );
         t_bwtIndex _l = l - ( l >= primary );
 
-        if ( _l >> OCC_INTV_SHIFT != _k >> OCC_INTV_SHIFT // l and k belong to different intervals
-             || k == ( t_bwtIndex )( -1 ) //
-             || l == ( t_bwtIndex )( -1 ) //
-             || true )
+        if( _l >> OCC_INTV_SHIFT != _k >> OCC_INTV_SHIFT // l and k belong to different intervals
+            || k == ( t_bwtIndex )( -1 ) //
+            || l == ( t_bwtIndex )( -1 ) //
+            || true )
         {
             /* Interval decomposition step by two calls of bwt_occ4
              */
@@ -676,8 +673,8 @@ class FMIndex : public Container
             DEBUG_3( std::cout << "k is " << k << " p is " << p << "\n"; )
             memcpy( cntk, p, 4 * sizeof( bwt64bitCounter ) );
 
-            DEBUG_3( for ( int i = 0; i < 4; ++i ) std::cout << "cntk[" << i << "]=" << cntk[ i ]
-                                                             << "  ";
+            DEBUG_3( for( int i = 0; i < 4; ++i ) std::cout << "cntk[" << i << "]=" << cntk[ i ]
+                                                            << "  ";
                      std::cout << "\n"; )
 
             /* Step 2. (see bwt_occ4)
@@ -690,7 +687,7 @@ class FMIndex : public Container
 
             DEBUG_3( std::cout << "endk - p:" << endk - p << " endl - p:" << endl - p << "\n"; )
 
-            for ( x = 0; p < endk; ++p )
+            for( x = 0; p < endk; ++p )
             {
                 x += __occ_aux4( *p );
             } // for
@@ -703,7 +700,7 @@ class FMIndex : public Container
 
             /* Continue summing up for l
              */
-            for ( ; p < endl; ++p )
+            for( ; p < endl; ++p )
             {
                 y += __occ_aux4( *p );
             } // for
@@ -761,7 +758,7 @@ class FMIndex : public Container
 
         /* We iterate so long until we meet an interval value of the cache.
          */
-        while ( uiBWTposition & mask )
+        while( uiBWTposition & mask )
         {
             ++sa;
             uiBWTposition = bwt_invPsi( uiBWTposition );
@@ -821,14 +818,14 @@ class FMIndex : public Container
     void vLoadFMIndex_boost( const std::string &rxFileNamePrefix )
     {
         {
-            if ( !fileExists( rxFileNamePrefix + ".bwt" ) )
+            if( !fileExists( rxFileNamePrefix + ".bwt" ) )
             {
                 throw std::runtime_error( "File opening error: " + rxFileNamePrefix + ".bwt" );
             } // if
 
             std::ifstream xInputFiletream( rxFileNamePrefix + ".bwt",
                                            std::ios::binary | std::ios::in );
-            if ( xInputFiletream.fail( ) ) // check whether we could successfully open the stream
+            if( xInputFiletream.fail( ) ) // check whether we could successfully open the stream
             {
                 throw std::runtime_error( "Opening of BWT of FM index failed: " + rxFileNamePrefix +
                                           ".bwt" );
@@ -844,7 +841,7 @@ class FMIndex : public Container
         {
             std::ifstream xInputFileStream( rxFileNamePrefix + ".sa",
                                             std::ios::binary | std::ios::in );
-            if ( xInputFileStream.fail( ) ) // check whether we could successfully open the stream
+            if( xInputFileStream.fail( ) ) // check whether we could successfully open the stream
             {
                 throw std::runtime_error(
                     "Opening of suffix array of FM index failed: " + rxFileNamePrefix + ".sa" );
@@ -876,7 +873,7 @@ class FMIndex : public Container
                             : ( bwt != rxOtherFMIndex.bwt )
                                   ? "Different bwt_size"
                                   : ( sa != rxOtherFMIndex.sa ) ? "Different suffix arrays" : "";
-        if ( sErrorText != "" )
+        if( sErrorText != "" )
         {
             std::cerr << "BWT different: " << sErrorText << std::endl;
         } // if
@@ -944,7 +941,7 @@ class FMIndex : public Container
         : FMIndex( ) // call the default constructor
     {
         build_FMIndex( *pxSequenceCollection, 2 );
-        DEBUG( if ( !test( pxSequenceCollection, 10000 ) ) // test 10000 sequences
+        DEBUG( if( !test( pxSequenceCollection, 10000 ) ) // test 10000 sequences
                {
                    std::cerr << "WARNING: suffix array test failed" << std::endl;
                    exit( 0 );

@@ -46,8 +46,8 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
 
     const nucSeqIndex uiQLen = pQuerySeq->length( );
 
-    double fMinLen = std::max( ( double )fGiveUp * uiQLen, ( double )this->uiCurrHarmScoreMin );
-    if ( uiMinGenomeSize >= pRefSeq->uiUnpackedSizeForwardPlusReverse( ) )
+    double fMinLen = std::max( (double)fGiveUp * uiQLen, (double)this->uiCurrHarmScoreMin );
+    if( uiMinGenomeSize >= pRefSeq->uiUnpackedSizeForwardPlusReverse( ) )
         fMinLen = 0;
 
     /*
@@ -79,7 +79,7 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
 
 
     // make sure that we return at least an SoC set
-    if ( pSeeds->empty( ) )
+    if( pSeeds->empty( ) )
         return std::make_shared<SoCPriorityQueue>( pSeeds );
 
 #if MEASURE_DURATIONS == ( 1 )
@@ -90,7 +90,7 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
                                           [&]( const Seed &a, const Seed &b ) {
 #if DELTA_CACHE == ( 1 )
 #if CONTIG_ID_CACHE == ( 1 )
-                                              if ( a.uiContigId == b.uiContigId )
+                                              if( a.uiContigId == b.uiContigId )
 #endif
                                                   return a.uiDelta < b.uiDelta;
 #if CONTIG_ID_CACHE == ( 1 )
@@ -123,15 +123,15 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
             SoCOrder xCurrScore;
             std::vector<Seed>::iterator xStripStart = pSeeds->begin( );
             std::vector<Seed>::iterator xStripEnd = pSeeds->begin( );
-            while ( xStripEnd != pSeeds->end( ) && xStripStart != pSeeds->end( ) )
+            while( xStripEnd != pSeeds->end( ) && xStripStart != pSeeds->end( ) )
             {
                 // move xStripEnd forwards while it is closer to xStripStart than uiStripSize
-                while ( xStripEnd != pSeeds->end( ) &&
-                        getPositionForBucketing( uiQLen, *xStripStart ) + uiStripSize >=
-                            getPositionForBucketing( uiQLen, *xStripEnd )
+                while( xStripEnd != pSeeds->end( ) &&
+                       getPositionForBucketing( uiQLen, *xStripStart ) + uiStripSize >=
+                           getPositionForBucketing( uiQLen, *xStripEnd )
 
 #if CONTIG_ID_CACHE == ( 1 )
-                        && xStripStart->uiContigId == xStripEnd->uiContigId
+                       && xStripStart->uiContigId == xStripEnd->uiContigId
 #endif
                 )
                 {
@@ -151,7 +151,7 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
                  * if the SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at
                  * all fGiveUp = 0 disables this.
                  */
-                if ( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen )
+                if( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen )
                     pSoCs->push_back_no_overlap(
                         xCurrScore, xStripStart, xStripEnd,
                         getPositionForBucketing( uiQLen, *xStripStart ),

@@ -30,10 +30,10 @@ std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<ContainerVector> v
         std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 2 ] ); // dc
     std::shared_ptr<Pack> pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 3 ] ); // dc
 
-    for ( std::shared_ptr<Container> pA : *pAlignments )
+    for( std::shared_ptr<Container> pA : *pAlignments )
     {
         std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
-        if ( pAlignment->length( ) == 0 )
+        if( pAlignment->length( ) == 0 )
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
@@ -44,27 +44,27 @@ std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<ContainerVector> v
         std::string sSegment = "";
         std::string sTlen = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery );
         // paired
-        if ( pAlignment->xStats.pOther.lock( ) != nullptr )
+        if( pAlignment->xStats.pOther.lock( ) != nullptr )
         {
             // flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE // flag not actually required
             //                                  : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
-            if ( pPack->bPositionIsOnReversStrand(
-                     pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
+            if( pPack->bPositionIsOnReversStrand(
+                    pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
                 flag |= NEXT_REVERSE_COMPLEMENTED;
 
             sContigOther = pAlignment->xStats.pOther.lock( )->getContig( *pPack );
             sPosOther =
                 std::to_string( pAlignment->xStats.pOther.lock( )->getSamPosition( *pPack ) );
 
-            if ( !pAlignment->xStats.bFirst )
+            if( !pAlignment->xStats.bFirst )
             {
                 sSegment = pAlignment->getQuerySequence( *pQuery2, *pPack );
                 sTlen = "-" + sTlen;
             } // if
             else
                 sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
-            DEBUG( if ( pQuery->uiFromLine != pQuery2->uiFromLine ) {
+            DEBUG( if( pQuery->uiFromLine != pQuery2->uiFromLine ) {
                 std::cerr << "outputting paired alignment for reads from different lines: "
                           << pQuery->uiFromLine << " and " << pQuery2->uiFromLine
                           << "; query names are: " << pQuery->sName << " and " << pQuery2->sName

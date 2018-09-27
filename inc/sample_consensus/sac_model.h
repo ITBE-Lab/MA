@@ -116,7 +116,7 @@ inline geometry_msgs::Point32 cross( const geometry_msgs::Point32 &p1,
 inline void cross( const std::vector<double> &p1, const std::vector<double> &p2,
                    std::vector<double> &p3 )
 {
-    if ( p3.size( ) != 3 )
+    if( p3.size( ) != 3 )
         p3.resize( 3 );
     p3[ 0 ] = p1.at( 1 ) * p2.at( 2 ) - p1.at( 2 ) * p2.at( 1 );
     p3[ 1 ] = p1.at( 2 ) * p2.at( 0 ) - p1.at( 0 ) * p2.at( 2 );
@@ -187,21 +187,18 @@ namespace sample_consensus
 {
 class SACModel
 {
-   public:
+  public:
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Constructor for base SACModel. */
     SACModel( ) : cloud_( NULL )
-    {
-    }
+    {}
     SACModel( sensor_msgs::PointCloud cloud ) : cloud_( &cloud )
-    {
-    }
+    {}
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Destructor for base SACModel. */
     virtual ~SACModel( )
-    {
-    }
+    {}
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Get a set of random data samples and return them as point indices. Pure virtual.
@@ -288,7 +285,7 @@ class SACModel
         this->cloud_ = cloud;
         indices_.clear( );
         indices_.resize( cloud_->points.size( ) );
-        for ( unsigned int i = 0; i < cloud_->points.size( ); i++ )
+        for( unsigned int i = 0; i < cloud_->points.size( ); i++ )
             indices_[ i ] = i;
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -365,7 +362,7 @@ class SACModel
         return ( &this->indices_ );
     }
 
-   protected:
+  protected:
     /** \brief Holds a pointer to the point cloud data array, since we don't want to copy the whole
      * thing here */
     sensor_msgs::PointCloud *cloud_;

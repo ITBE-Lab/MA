@@ -23,7 +23,7 @@ class PerfectMatch;
  */
 class OtherSeeding : public Module
 {
-   public:
+  public:
     bool bBowtie;
 
     void bowtieExtension( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq,
@@ -32,13 +32,12 @@ class OtherSeeding : public Module
     void doBlasrExtension( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq,
                            std::shared_ptr<SegmentVector> pSegmentVector );
 
-   public:
+  public:
     /**
      * @brief Initialize a OtherSeeding Module
      */
     OtherSeeding( bool bBowtie ) : bBowtie( bBowtie )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 

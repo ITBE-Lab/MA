@@ -15,7 +15,7 @@ SAInterval FMIndex::extend_backward(
     // the character to extend with
     const uint8_t c )
 {
-    if ( c >= 4 /* A,C,T,G */ )
+    if( c >= 4 /* A,C,T,G */ )
         return SAInterval( 0, 0, 0 ); // return an empty interval
 
     bwt64bitCounter cntk[ 4 ]; // Number of A, C, G, T in BWT until start of interval ik
@@ -34,11 +34,11 @@ SAInterval FMIndex::extend_backward(
         cntl // output: Number of A, C, G, T until end of interval
     );
 
-    DEBUG( for ( unsigned int i = 0; i < 4; i++ ) assert( cntk[ i ] <= cntl[ i ] ); ) // DEBUG
+    DEBUG( for( unsigned int i = 0; i < 4; i++ ) assert( cntk[ i ] <= cntl[ i ] ); ) // DEBUG
 
     bwt64bitCounter cnts[ 4 ]; // Number of A, C, G, T in BWT interval ik
     // the cnts calculated here might be off by one
-    for ( unsigned int i = 0; i < 4; i++ )
+    for( unsigned int i = 0; i < 4; i++ )
         cnts[ i ] = cntl[ i ] - cntk[ i ];
 
     DEBUG_3( std::cout << cnts[ 0 ] << " + " << cnts[ 1 ] << " + " << cnts[ 2 ] << " + "
@@ -61,7 +61,7 @@ SAInterval FMIndex::extend_backward(
      *
      * lets adjust the sizes of the smaller intervals accordingly
      */
-    if ( ik.start( ) <= primary && ik.end( ) > primary )
+    if( ik.start( ) <= primary && ik.end( ) > primary )
     {
         cntk_2[ 0 ]++;
         DEBUG_2( std::cout << "adjusted cntk_2[0] because of primary" << std::endl; )
@@ -69,7 +69,7 @@ SAInterval FMIndex::extend_backward(
     } // if
     else
     {
-        if ( ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] ) != ik.size( ) )
+        if( ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] ) != ik.size( ) )
         {
             std::cout << ik.start( ) << " " << ik.end( ) << " " << primary << std::endl;
             std::cout << cnts[ 0 ] << " + " << cnts[ 1 ] << " + " << cnts[ 2 ] << " + " << cnts[ 3 ]
@@ -79,7 +79,7 @@ SAInterval FMIndex::extend_backward(
         assert( ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] ) == ik.size( ) );
     } // else
     // for all nucleotides
-    for ( unsigned int i = 1; i < 4; i++ )
+    for( unsigned int i = 1; i < 4; i++ )
         cntk_2[ i ] = cntk_2[ i - 1 ] + cnts[ complement( i - 1 ) ];
 
     assert( cnts[ c ] >= 0 );
@@ -99,9 +99,9 @@ SAInterval FMIndex::getInterval( std::shared_ptr<NucSeq> pQuerySeq )
     const uint8_t *q = pQuerySeq->pGetSequenceRef( );
 
     unsigned int i = pQuerySeq->length( ) - 1;
-    SAInterval ik( L2[ ( int )q[ i ] ] + 1, L2[ complement( q[ i ] ) ] + 1,
-                   L2[ ( int )q[ i ] + 1 ] - L2[ ( int )q[ i ] ] );
-    while ( i > 0 && ik.size( ) > 0 )
+    SAInterval ik( L2[ (int)q[ i ] ] + 1, L2[ complement( q[ i ] ) ] + 1,
+                   L2[ (int)q[ i ] + 1 ] - L2[ (int)q[ i ] ] );
+    while( i > 0 && ik.size( ) > 0 )
         ik = extend_backward( ik, q[ --i ] );
     return ik;
 } // function
@@ -114,13 +114,13 @@ unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
 bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack )
 {
     SAInterval ik = getInterval( pQuerySeq );
-    for ( auto ulCurrPos = ik.start( ); ulCurrPos < ik.end( ); ulCurrPos++ )
+    for( auto ulCurrPos = ik.start( ); ulCurrPos < ik.end( ); ulCurrPos++ )
     {
         // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match
         // individually
         bwtint_t ulIndexOnRefSeq = bwt_sa( ulCurrPos );
-        if ( !pPack->vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )
-                  ->equal( *pQuerySeq ) )
+        if( !pPack->vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )
+                 ->equal( *pQuerySeq ) )
             return false;
     } // for
 
@@ -130,10 +130,10 @@ bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shar
 
 bool FMIndex::test( const std::shared_ptr<Pack> pPack, unsigned int uiNumTest )
 {
-    while ( uiNumTest-- > 0 )
+    while( uiNumTest-- > 0 )
     {
         auto uiPos = std::rand( ) % pPack->uiUnpackedSizeForwardPlusReverse( );
-        if ( !testSaInterval( pPack->vExtract( uiPos, uiPos + 10 ), pPack ) )
+        if( !testSaInterval( pPack->vExtract( uiPos, uiPos + 10 ), pPack ) )
             return false;
     } // while
     return true;
@@ -157,7 +157,7 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
 
     /* Initialize the buffer with the reference sequence and prepare the cumulative count.
      */
-    for ( uint64_t i = 0; i < ( uiRefSeqLength ); ++i )
+    for( uint64_t i = 0; i < ( uiRefSeqLength ); ++i )
     {
         buf[ i ] = fn_pac[ i ]; // buf2[i >> 2] >> ((3 - (i & 3)) << 1) & 3;
         ++L2[ 1 + buf[ i ] ];
@@ -165,7 +165,7 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
 
     /* Complete cumulative count
      */
-    for ( int i = 2; i <= 4; ++i )
+    for( int i = 2; i <= 4; ++i )
     {
         L2[ i ] += L2[ i - 1 ];
     } // for
@@ -175,7 +175,7 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
      * The BWT construction happens in-place in buf. (This is why we allocate one byte
      * additionally.)
      */
-    primary = is_bwt( buf.get( ), ( int )uiRefSeqLength );
+    primary = is_bwt( buf.get( ), (int)uiRefSeqLength );
 
     /* Compute the expected size of the bwt expressed in 32 bit blocks and resize the bwt vector
      * appropriately.
@@ -185,7 +185,7 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
     /* Copy bwt from buffer into vector.
      * FIX ME: The construction programs should already work with the buffer.
      */
-    for ( uint64_t i = 0; i < uiRefSeqLength; ++i )
+    for( uint64_t i = 0; i < uiRefSeqLength; ++i )
     { /* Byte to packed transformation.
        */
         bwt[ i >> 4 ] |= buf[ i ] << ( ( 15 - ( i & 15 ) ) << 1 );
@@ -213,13 +213,13 @@ void FMIndex::bwt_bwtupdate_core_step2( )
      * i iterates over the nucleotides.
      * FIX ME: In the context of STL vectors the memcpy is not that nice anymore ...
      */
-    for ( i = k = 0; i < static_cast<bwtint_t>( uiRefSeqLength ); ++i )
+    for( i = k = 0; i < static_cast<bwtint_t>( uiRefSeqLength ); ++i )
     {
-        if ( i % OCC_INTERVAL == 0 )
+        if( i % OCC_INTERVAL == 0 )
         {
-            memcpy(
-                &xVectorWithOccInjections[ 0 ] + k, c,
-                sizeof( bwtint_t ) * 4 ); // set the 4 counter initially to the current value of c
+            memcpy( &xVectorWithOccInjections[ 0 ] + k, c,
+                    sizeof( bwtint_t ) *
+                        4 ); // set the 4 counter initially to the current value of c
 
             /* Increment k according to the required size. 4 * sizeof(bwtint_t) many bytes required.
              * k counts in 4 bytes steps. ( in fact: sizeof(bwtint_t)=4*(sizeof(bwtint_t)/4) )
@@ -229,7 +229,7 @@ void FMIndex::bwt_bwtupdate_core_step2( )
 
         /* i iterates over the nucleotides, so each 16 nucleotides we have a uint32_t for copying.
          */
-        if ( i % 16 == 0 )
+        if( i % 16 == 0 )
         {
             xVectorWithOccInjections[ k++ ] = bwt[ i / 16 ]; // 16 == sizeof(uint32_t)/2
         } // if
@@ -279,11 +279,11 @@ void FMIndex::bwt_cal_sa_step3( unsigned int intv )
      * Important observation: The suffix array can be always reconstructed using the BWT, because
      * indirectly the BWT contains all info.
      */
-    for ( bwtint_t i = 0; i < static_cast<bwtint_t>( uiRefSeqLength ); ++i )
+    for( bwtint_t i = 0; i < static_cast<bwtint_t>( uiRefSeqLength ); ++i )
     {
         /* Do we have an interval position?
          */
-        if ( isa % intv == 0 )
+        if( isa % intv == 0 )
         {
             this->sa[ isa / intv ] = sa;
         } // if
@@ -298,19 +298,19 @@ void FMIndex::bwt_cal_sa_step3( unsigned int intv )
 
     /* Do not forget the last block, if necessary.
      */
-    if ( isa % intv == 0 )
+    if( isa % intv == 0 )
     {
         this->sa[ isa / intv ] = sa;
     } // if
 
-    this->sa[ 0 ] = ( bwtint_t )-1; // before this line, bwt->sa[0] = bwt->seq_len
+    this->sa[ 0 ] = (bwtint_t)-1; // before this line, bwt->sa[0] = bwt->seq_len
 } // method
 
 void FMIndex::build_FMIndex(
     const Pack &rxSequenceCollection, // the pack for which we compute a BWT
     unsigned int uiAlgorithmSelection )
 {
-    if ( uiAlgorithmSelection > 1 )
+    if( uiAlgorithmSelection > 1 )
     {
         uiAlgorithmSelection = rxSequenceCollection.uiUnpackedSizeForwardPlusReverse( ) < 50000000
                                    ? 0
@@ -320,7 +320,7 @@ void FMIndex::build_FMIndex(
     /*
      * Step 1: Create the basic BWT.
      */
-    if ( uiAlgorithmSelection == 0 )
+    if( uiAlgorithmSelection == 0 )
     {
         /*
          * For small packs we transform the pack into a single sequence

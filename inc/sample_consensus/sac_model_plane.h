@@ -45,18 +45,16 @@ namespace sample_consensus
  */
 class SACModelPlane : public SACModel
 {
-   public:
+  public:
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Constructor for base SACModelPlane. */
     SACModelPlane( )
-    {
-    }
+    {}
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Destructor for base SACModelPlane. */
     virtual ~SACModelPlane( )
-    {
-    }
+    {}
 
     virtual void getSamples( int &iterations, std::vector<int> &samples );
 

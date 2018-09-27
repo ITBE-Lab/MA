@@ -6,15 +6,15 @@
 
 using namespace libMA;
 
-std::pair<double, double> run_ransac( const std::vector<double>& rvxValues,
-                                      const std::vector<double>& rvyValues,
+std::pair<double, double> run_ransac( const std::vector<double> &rvxValues,
+                                      const std::vector<double> &rvyValues,
                                       /*std::shared_ptr<Seeds> pvIngroup,*/
                                       double fDMA )
 {
     /* Fill the PointCloud with the vector data
      */
     sensor_msgs::PointCloud xCloud;
-    for ( size_t uiItr = 0; uiItr < rvxValues.size( ); uiItr++ )
+    for( size_t uiItr = 0; uiItr < rvxValues.size( ); uiItr++ )
     {
         xCloud.points.push_back(
             geometry_msgs::Point32{rvxValues[ uiItr ], rvyValues[ uiItr ], 0} );
@@ -44,7 +44,7 @@ std::pair<double, double> run_ransac( const std::vector<double>& rvxValues,
      */
     bool bSuccessfulModel = xRansac.computeModel( 0 ); // debug level 0
 
-    if ( !bSuccessfulModel )
+    if( !bSuccessfulModel )
     {
         DEBUG( std::cerr << "ransac failed to find ingroup" << std::endl; ) // DEBUG
         // return that no slope could be determined
@@ -79,7 +79,7 @@ std::pair<double, double> run_ransac( const std::vector<double>& rvxValues,
     std::vector<double> vY;
     vY.reserve( xModel.getBestInliers( ).size( ) );
 
-    for ( int iIndex : xModel.getBestInliers( ) )
+    for( int iIndex : xModel.getBestInliers( ) )
     {
         vX.push_back( xCloud.points[ iIndex ].x );
         vY.push_back( xCloud.points[ iIndex ].y );

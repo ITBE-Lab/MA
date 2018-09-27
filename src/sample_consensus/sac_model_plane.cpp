@@ -47,17 +47,17 @@ void SACModelPlane::getSamples( int &iterations, std::vector<int> &samples )
     double trand = indices_.size( ) / ( RAND_MAX + 1.0 );
 
     // Get a random number between 1 and max_indices
-    int idx = ( int )( rand( ) * trand );
+    int idx = (int)( rand( ) * trand );
     // Get the index
     samples[ 0 ] = indices_.at( idx );
 
     // Get a second point which is different than the first
     do
     {
-        idx = ( int )( rand( ) * trand );
+        idx = (int)( rand( ) * trand );
         samples[ 1 ] = indices_.at( idx );
         iterations++;
-    } while ( samples[ 1 ] == samples[ 0 ] );
+    } while( samples[ 1 ] == samples[ 0 ] );
     iterations--;
 
     double Dx1, Dy1, Dz1, Dx2, Dy2, Dz2, Dy1Dy2;
@@ -72,10 +72,10 @@ void SACModelPlane::getSamples( int &iterations, std::vector<int> &samples )
         // Get the third point, different from the first two
         do
         {
-            idx = ( int )( rand( ) * trand );
+            idx = (int)( rand( ) * trand );
             samples[ 2 ] = indices_.at( idx );
             iterations++;
-        } while ( ( samples[ 2 ] == samples[ 1 ] ) || ( samples[ 2 ] == samples[ 0 ] ) );
+        } while( ( samples[ 2 ] == samples[ 1 ] ) || ( samples[ 2 ] == samples[ 0 ] ) );
         iterations--;
 
         // Compute the segment values (in 3d) between XZ
@@ -86,7 +86,7 @@ void SACModelPlane::getSamples( int &iterations, std::vector<int> &samples )
         Dy1Dy2 = Dy1 / Dy2;
         iter++;
 
-        if ( iter > MAX_ITERATIONS_COLLINEAR )
+        if( iter > MAX_ITERATIONS_COLLINEAR )
         {
             std::cout << "[SACModelPlane::getSamples] WARNING: Could not select 3 non collinear "
                          "points in %d iterations!"
@@ -96,7 +96,7 @@ void SACModelPlane::getSamples( int &iterations, std::vector<int> &samples )
         iterations++;
     }
     // Use Zoli's method for collinearity check
-    while ( ( ( Dx1 / Dx2 ) == Dy1Dy2 ) && ( Dy1Dy2 == ( Dz1 / Dz2 ) ) );
+    while( ( ( Dx1 / Dx2 ) == Dy1Dy2 ) && ( Dy1Dy2 == ( Dz1 / Dz2 ) ) );
     iterations--;
 
     return;
@@ -118,14 +118,14 @@ void SACModelPlane::selectWithinDistance( const std::vector<double> &model_coeff
     inliers.resize( indices_.size( ) );
 
     // Iterate through the 3d points and calculate the distances from them to the plane
-    for ( unsigned int i = 0; i < indices_.size( ); i++ )
+    for( unsigned int i = 0; i < indices_.size( ); i++ )
     {
         // Calculate the distance from the point to the plane normal as the dot product
         // D = (P-A).N/|N|
-        if ( fabs( model_coefficients.at( 0 ) * cloud_->points.at( indices_.at( i ) ).x +
-                   model_coefficients.at( 1 ) * cloud_->points.at( indices_.at( i ) ).y +
-                   model_coefficients.at( 2 ) * cloud_->points.at( indices_.at( i ) ).z +
-                   model_coefficients.at( 3 ) ) < threshold )
+        if( fabs( model_coefficients.at( 0 ) * cloud_->points.at( indices_.at( i ) ).x +
+                  model_coefficients.at( 1 ) * cloud_->points.at( indices_.at( i ) ).y +
+                  model_coefficients.at( 2 ) * cloud_->points.at( indices_.at( i ) ).z +
+                  model_coefficients.at( 3 ) ) < threshold )
         {
             // Returns the indices of the points whose distances are smaller than the threshold
             inliers[ nr_p ] = indices_[ i ];
@@ -147,7 +147,7 @@ void SACModelPlane::getDistancesToModel( const std::vector<double> &model_coeffi
     distances.resize( indices_.size( ) );
 
     // Iterate through the 3d points and calculate the distances from them to the plane
-    for ( unsigned int i = 0; i < indices_.size( ); i++ )
+    for( unsigned int i = 0; i < indices_.size( ); i++ )
         // Calculate the distance from the point to the plane normal as the dot product
         // D = (P-A).N/|N|
         distances[ i ] = fabs( model_coefficients.at( 0 ) * cloud_->points.at( indices_[ i ] ).x +
@@ -172,7 +172,7 @@ void SACModelPlane::projectPoints( const std::vector<int> &inliers,
     projected_points.set_channels_size( cloud_->get_channels_size( ) );
 
     // Create the channels
-    for ( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
+    for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
     {
         projected_points.channels[ d ].name = cloud_->channels[ d ].name;
         projected_points.channels[ d ].values.resize( inliers.size( ) );
@@ -189,7 +189,7 @@ void SACModelPlane::projectPoints( const std::vector<int> &inliers,
     // model_coefficients.at (3) /= n_norm;
 
     // Iterate through the 3d points and calculate the distances from them to the plane
-    for ( unsigned int i = 0; i < inliers.size( ); i++ )
+    for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // Calculate the distance from the point to the plane
         double distance_to_plane =
@@ -205,7 +205,7 @@ void SACModelPlane::projectPoints( const std::vector<int> &inliers,
         projected_points.points[ i ].z =
             cloud_->points.at( inliers.at( i ) ).z - distance_to_plane * model_coefficients.at( 2 );
         // Copy the other attributes
-        for ( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
+        for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
             projected_points.channels[ d ].values[ i ] =
                 cloud_->channels[ d ].values[ inliers.at( i ) ];
     }
@@ -230,7 +230,7 @@ void SACModelPlane::projectPointsInPlace( const std::vector<int> &inliers,
     // model_coefficients.at (3) /= n_norm;
 
     // Iterate through the 3d points and calculate the distances from them to the plane
-    for ( unsigned int i = 0; i < inliers.size( ); i++ )
+    for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // Calculate the distance from the point to the plane
         double distance_to_plane =
@@ -269,7 +269,7 @@ bool SACModelPlane::computeModelCoefficients( const std::vector<int> &samples )
     Dz2 = cloud_->points.at( samples.at( 2 ) ).z - cloud_->points.at( samples.at( 0 ) ).z;
 
     Dy1Dy2 = Dy1 / Dy2;
-    if ( ( ( Dx1 / Dx2 ) == Dy1Dy2 ) && ( Dy1Dy2 == ( Dz1 / Dz2 ) ) ) // Check for collinearity
+    if( ( ( Dx1 / Dx2 ) == Dy1Dy2 ) && ( Dy1Dy2 == ( Dz1 / Dz2 ) ) ) // Check for collinearity
         return ( false );
 
     // Compute the plane coefficients from the 3 given points in a straightforward manner
@@ -344,11 +344,11 @@ bool SACModelPlane::computeModelCoefficients( const std::vector<int> &samples )
  */
 bool SACModelPlane::doSamplesVerifyModel( const std::set<int> &indices, double threshold )
 {
-    for ( std::set<int>::iterator it = indices.begin( ); it != indices.end( ); ++it )
-        if ( fabs( model_coefficients_.at( 0 ) * cloud_->points.at( *it ).x +
-                   model_coefficients_.at( 1 ) * cloud_->points.at( *it ).y +
-                   model_coefficients_.at( 2 ) * cloud_->points.at( *it ).z +
-                   model_coefficients_.at( 3 ) ) > threshold )
+    for( std::set<int>::iterator it = indices.begin( ); it != indices.end( ); ++it )
+        if( fabs( model_coefficients_.at( 0 ) * cloud_->points.at( *it ).x +
+                  model_coefficients_.at( 1 ) * cloud_->points.at( *it ).y +
+                  model_coefficients_.at( 2 ) * cloud_->points.at( *it ).z +
+                  model_coefficients_.at( 3 ) ) > threshold )
             return ( false );
 
     return ( true );

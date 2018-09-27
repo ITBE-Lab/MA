@@ -40,5 +40,5 @@ typedef int64_t sbgint_t;
 /**
  * @brief BWT-Index Construction for large inputs
  */
-std::tuple<bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int>> EXPORTED
-bwtLarge( const char *pcFileNamePack );
+std::tuple<bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int>>
+    EXPORTED bwtLarge( const char *pcFileNamePack );

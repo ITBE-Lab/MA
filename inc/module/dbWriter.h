@@ -16,17 +16,16 @@ namespace libMA
 {
 class DbRunConnection
 {
-   private:
-    PGconn* conn;
+  private:
+    PGconn *conn;
 
-   public:
+  public:
     class DbResult
     {
-       public:
-        PGresult* res;
+      public:
+        PGresult *res;
         DbResult( )
-        {
-        } // constructor
+        {} // constructor
 
         ~DbResult( )
         {
@@ -46,7 +45,7 @@ class DbRunConnection
         DbResult xRet;
         xRet.res = PQexec( conn, sTransaction.c_str( ) );
         ExecStatusType xState = PQresultStatus( xRet.res );
-        if ( !( xState == PGRES_COMMAND_OK || xState == PGRES_TUPLES_OK ) )
+        if( !( xState == PGRES_COMMAND_OK || xState == PGRES_TUPLES_OK ) )
         {
             std::cerr << PQerrorMessage( conn ) << std::endl;
             throw AlignerException( std::string( PQerrorMessage( conn ) ) );
@@ -59,7 +58,7 @@ class DbRunConnection
         conn = PQconnectdb( sConninfo.c_str( ) );
 
         /* Check to see that the backend connection was successfully made */
-        if ( PQstatus( conn ) != CONNECTION_OK )
+        if( PQstatus( conn ) != CONNECTION_OK )
             throw AlignerException( "Connection to database failed:" +
                                     std::string( PQerrorMessage( conn ) ) );
 
@@ -80,7 +79,7 @@ class DbRunConnection
  */
 class DbWriter : public Module
 {
-   public:
+  public:
     int32_t iRunId;
     DbRunConnection xConnection;
 
@@ -92,8 +91,7 @@ class DbWriter : public Module
      * The file will be truncated is it already exists.
      */
     DbWriter( std::string sConninfo, int32_t iRunId ) : iRunId( iRunId ), xConnection( sConninfo )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 

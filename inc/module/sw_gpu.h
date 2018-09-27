@@ -13,16 +13,14 @@
 #ifdef WITH_GPU_SW
 class GPUReturn
 {
-   public:
+  public:
     int iMaxScore;
     std::vector<size_t> vMaxPos;
     GPUReturn( int iMaxScore, std::vector<size_t> vMaxPos )
         : iMaxScore( iMaxScore ), vMaxPos( vMaxPos )
-    {
-    } // default constructor
+    {} // default constructor
     GPUReturn( )
-    {
-    }
+    {}
 
     bool operator==( const GPUReturn &rOther )
     {
@@ -30,10 +28,10 @@ class GPUReturn
     } // operator
 }; // class
 
-std::vector<GPUReturn> cudaAlign(
-    std::vector<char> &rvRefSeq, // reference sequence
-    std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
-    unsigned int uiDeviceId );
+std::vector<GPUReturn>
+cudaAlign( std::vector<char> &rvRefSeq, // reference sequence
+           std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
+           unsigned int uiDeviceId );
 #endif
 
 /**

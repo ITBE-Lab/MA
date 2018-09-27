@@ -17,7 +17,7 @@ namespace libMA
  */
 class ExtractAllSeeds : public Module
 {
-   public:
+  public:
     /**
      * @brief the maximal ambiguity a extracted seed shall have.
      * @details
@@ -32,8 +32,7 @@ class ExtractAllSeeds : public Module
     unsigned int uiMinLen = defaults::uiMinLen;
 
     ExtractAllSeeds( )
-    {
-    } // default constructor
+    {} // default constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 

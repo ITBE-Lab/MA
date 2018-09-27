@@ -24,7 +24,7 @@ std::shared_ptr<Container> Splitter::execute( std::shared_ptr<ContainerVector> v
         std::dynamic_pointer_cast<ContainerVector>( pVec->get( ) ); // dc
     // we have to lock the container separately since it is not part of the comp graph
     std::lock_guard<std::mutex> xGuard( *pMutex );
-    if ( pContent->empty( ) )
+    if( pContent->empty( ) )
         throw ModuleDryException( );
     // swap the back of the container out, so that there is no need to copy the element
     std::shared_ptr<Container> pRet( nullptr );

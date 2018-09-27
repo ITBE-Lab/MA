@@ -11,19 +11,18 @@
 /* As described in the papers:
  * TO DO: insert references
  */
-template <class SCORE_TP>
-class SimilarityMatrix
+template <class SCORE_TP> class SimilarityMatrix
 {
-   public:
+  public:
     const SCORE_TP xWeightMatch;
     const SCORE_TP xWeightMismatch;
     const uint8_t uxAlphabetSize;
 
-   private:
+  private:
     /* We avoid the copy of Objects
      * In C++11: FastaString(const FastaString& ) = delete;
      */
-    SimilarityMatrix( const SimilarityMatrix& );
+    SimilarityMatrix( const SimilarityMatrix & );
 
     /* the scoring table must have size 5 X 5 of type SCORE_TP
      */
@@ -32,20 +31,20 @@ class SimilarityMatrix
         /* initialize scoring matrix
          */
         size_t matrixIterator = 0;
-        for ( uint8_t i = 0; i < uxAlphabetSize; ++i )
+        for( uint8_t i = 0; i < uxAlphabetSize; ++i )
         {
-            for ( uint8_t j = 0; j < uxAlphabetSize; ++j )
+            for( uint8_t j = 0; j < uxAlphabetSize; ++j )
                 pSimilarityMatrixRef[ matrixIterator++ ] =
                     i == j ? this->xWeightMatch : this->xWeightMismatch;
         }
     } // method
 
-   public:
+  public:
     /* Quick lookup table for scoring. \
      * At the moment we allow direct access because of performance.
      * Here we should integrate a friend declaration.
      */
-    SCORE_TP* pSimilarityMatrixRef;
+    SCORE_TP *pSimilarityMatrixRef;
 
     SimilarityMatrix( SCORE_TP xWeightMatch, SCORE_TP xWeightMismatch, uint8_t uxAlphabetSize )
         : xWeightMatch( xWeightMatch ),
@@ -73,15 +72,14 @@ class SimilarityMatrix
     } // method
 }; // class
 
-template <class SCORE_TP>
-class SmithWatermanParamaterSet
+template <class SCORE_TP> class SmithWatermanParamaterSet
 {
-   private:
+  private:
     /* We avoid the copy of SmithWatermanParamaterSet Objects, for efficiency reasons.
      */
-    SmithWatermanParamaterSet( const SmithWatermanParamaterSet& );
+    SmithWatermanParamaterSet( const SmithWatermanParamaterSet & );
 
-   public:
+  public:
     /* Weights for Match and Mismatch
      */
     const SCORE_TP iWeightMatch;
@@ -104,8 +102,7 @@ class SmithWatermanParamaterSet
           similarityMatrix( xWeightMatch, xWeightMismatch, uiAlphabetSize ),
           iGapOpen( xGapo ),
           iGapExtend( xGape )
-    {
-    } // constructor
+    {} // constructor
 
     SCORE_TP xGetApproximatedBackTrackDistance( size_t uxSequenceSize, SCORE_TP xScore )
     {
@@ -115,14 +112,14 @@ class SmithWatermanParamaterSet
 
         SCORE_TP xScoreDifference = xMaximallyPossibleScore - xScore;
 
-        return ( SCORE_TP )uxSequenceSize + ( xScoreDifference / iGapExtend );
+        return (SCORE_TP)uxSequenceSize + ( xScoreDifference / iGapExtend );
     } // method
 
     /* Delivers the maximal possible score for the given query len.
      */
     long iPossibleMaxScore( size_t uiQueryLen ) const
     {
-        return ( long )( iWeightMatch * uiQueryLen );
+        return (long)( iWeightMatch * uiQueryLen );
     } // public method
 
     /* Delivers a textual description for all parameter of the parameter set

@@ -32,7 +32,7 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
      *
      * Also enforces that no gap is larger than max_gap either on query or reference
      */
-    if ( bDoGapCostEstimationCutting )
+    if( bDoGapCostEstimationCutting )
     {
         // running score
         int64_t iScore = iMatch * pIn->front( ).size( );
@@ -48,7 +48,7 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
         /*
          * the goal of this loop is to set pOptimalStart & end correctly
          */
-        for ( Seeds::iterator pSeed = pIn->begin( ) + 1; pSeed != pIn->end( ); pSeed++ )
+        for( Seeds::iterator pSeed = pIn->begin( ) + 1; pSeed != pIn->end( ); pSeed++ )
         {
             assert( pSeed->start( ) <= pSeed->end( ) );
             // adjust the score correctly
@@ -62,25 +62,25 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
              * gap size equals |x-y|
              */
             nucSeqIndex uiGap = 0;
-            if ( pSeed->start( ) > ( pSeed - 1 )->start( ) )
+            if( pSeed->start( ) > ( pSeed - 1 )->start( ) )
                 uiGap = pSeed->start( ) - ( pSeed - 1 )->start( );
-            if ( pSeed->start_ref( ) > ( pSeed - 1 )->start_ref( ) )
+            if( pSeed->start_ref( ) > ( pSeed - 1 )->start_ref( ) )
             {
-                if ( pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( ) < uiGap )
+                if( pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( ) < uiGap )
                 {
                     uiGap -= pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( );
-                    if ( optimisticGapEstimation )
+                    if( optimisticGapEstimation )
                         iScore += iMatch * ( pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( ) );
                 } // if
                 else
                 {
-                    if ( optimisticGapEstimation )
+                    if( optimisticGapEstimation )
                         iScore += iMatch * uiGap;
                     uiGap = ( pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( ) ) - uiGap;
                 } // else
             } // if
             uiGap *= iExtend;
-            if ( uiGap > 0 )
+            if( uiGap > 0 )
                 uiGap += iGap;
 #if 0
             nucSeqIndex uiGapY = 
@@ -98,9 +98,9 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
                     ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
                         ||
 #else
-            if ( uiGap > uiSVPenalty )
+            if( uiGap > uiSVPenalty )
                 uiGap = uiSVPenalty;
-            if ( // check for the maximal allowed gap area
+            if( // check for the maximal allowed gap area
 #endif
             // check for negative score
                     iScore < (int64_t)uiGap
@@ -110,7 +110,7 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
                         pLastStart = pSeed;
                     } // if
                     else iScore -= uiGap;
-                    if ( iScore > ( int64_t )uiMaxScore )
+                    if( iScore > (int64_t)uiMaxScore )
                     {
                         uiMaxScore = iScore;
                         pOptimalStart = pLastStart;
@@ -136,20 +136,20 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
          */
 #define KEEP_SMALLER_PART ( 0 )
 #if KEEP_SMALLER_PART == 1
-        if ( pOptimalStart != pIn->end( ) )
-            for ( auto pCur = pIn->begin( ); pCur != pOptimalStart; pCur++ )
+        if( pOptimalStart != pIn->end( ) )
+            for( auto pCur = pIn->begin( ); pCur != pOptimalStart; pCur++ )
                 pRet->push_back( *pCur );
 #endif
-        if ( pOptimalEnd != pIn->end( ) )
-            if ( ++pOptimalEnd != pIn->end( ) )
+        if( pOptimalEnd != pIn->end( ) )
+            if( ++pOptimalEnd != pIn->end( ) )
             {
 #if KEEP_SMALLER_PART == 1
-                for ( auto pCur = pOptimalEnd; pCur != pIn->end( ); pCur++ )
+                for( auto pCur = pOptimalEnd; pCur != pIn->end( ); pCur++ )
                     pRet->push_back( *pCur );
 #endif
                 pIn->erase( pOptimalEnd, pIn->end( ) );
             }
-        if ( pOptimalStart != pIn->end( ) )
+        if( pOptimalStart != pIn->end( ) )
             pIn->erase( pIn->begin( ), pOptimalStart );
     } // if
     // swap the shared pointers
@@ -157,27 +157,27 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
     /*
      * Artifact filter:
      */
-    if ( pRet->size( ) > 2 )
+    if( pRet->size( ) > 2 )
     {
         size_t uiPrePos = 0;
         size_t uiCenterPos = 1;
-        while ( uiCenterPos < pRet->size( ) - 1 )
+        while( uiCenterPos < pRet->size( ) - 1 )
         {
             Seed &rPre = ( *pRet )[ uiPrePos ];
             Seed &rCenter = ( *pRet )[ uiCenterPos ];
             Seed &rPost = ( *pRet )[ uiCenterPos + 1 ];
 
-            int64_t iDeltaPre = rPre.start_ref( ) - ( int64_t )rPre.start( );
-            int64_t iDeltaCenter = rCenter.start_ref( ) - ( int64_t )rCenter.start( );
-            int64_t iDeltaPost = rPost.start_ref( ) - ( int64_t )rPost.start( );
+            int64_t iDeltaPre = rPre.start_ref( ) - (int64_t)rPre.start( );
+            int64_t iDeltaCenter = rCenter.start_ref( ) - (int64_t)rCenter.start( );
+            int64_t iDeltaPost = rPost.start_ref( ) - (int64_t)rPost.start( );
 
             int64_t iDeltaDistToPre = std::abs( iDeltaPre - iDeltaCenter );
             int64_t iDeltaDistToPost = std::abs( iDeltaPost - iDeltaCenter );
 
             double dDeltaDistDiff = std::abs( iDeltaDistToPre - iDeltaDistToPost ) * 2 /
-                                    ( ( double )iDeltaDistToPre + iDeltaDistToPost );
+                                    ( (double)iDeltaDistToPre + iDeltaDistToPost );
 
-            if ( dDeltaDistDiff < dMaxDeltaDist && ( uint64_t )iDeltaDistToPre > uiMinDeltaDist )
+            if( dDeltaDistDiff < dMaxDeltaDist && (uint64_t)iDeltaDistToPre > uiMinDeltaDist )
             {
                 // the filter triggered ->
                 // we flag the seed to be ignored by setting it's size to zero
@@ -237,7 +237,7 @@ std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pI
 
 inline nucSeqIndex difference( nucSeqIndex a, nucSeqIndex b )
 {
-    if ( a > b )
+    if( a > b )
         return a - b;
     return b - a;
 } // function
@@ -265,7 +265,7 @@ LinearLineSweep::linesweep(
                     * sort by the interval starts
                     * if two intervals start at the same point the larger one shall be treated first
                     */
-                   if ( std::get<1>( xA ) == std::get<1>( xB ) )
+                   if( std::get<1>( xA ) == std::get<1>( xB ) )
                        return ( std::get<2>( xA ) > std::get<2>( xB ) );
                    return ( std::get<1>( xA ) < std::get<1>( xB ) );
                } // lambda
@@ -283,9 +283,9 @@ LinearLineSweep::linesweep(
 
     nucSeqIndex x = 0;
     // this is the line sweeping part
-    for ( auto &xTup : *pShadows )
+    for( auto &xTup : *pShadows )
     {
-        if ( x < std::get<2>( xTup ) )
+        if( x < std::get<2>( xTup ) )
         {
             pItervalEnds->push_back( xTup );
             x = std::get<2>( xTup );
@@ -298,22 +298,22 @@ LinearLineSweep::linesweep(
             // std::cout << "D-";
             nucSeqIndex uiPos = pItervalEnds->size( ); // uiPos is unsigned!!!
             bool bThisIsCloserToDiagonal = true;
-            while ( uiPos > 0 &&
-                    std::get<2>( ( *pItervalEnds )[ uiPos - 1 ] ) >= std::get<2>( xTup ) )
+            while( uiPos > 0 &&
+                   std::get<2>( ( *pItervalEnds )[ uiPos - 1 ] ) >= std::get<2>( xTup ) )
             {
                 double fDistanceOther = deltaDistance(
                     *std::get<0>( ( *pItervalEnds )[ uiPos - 1 ] ), fAngle, uiRStart );
-                if ( fDistanceOther <= fDistance )
+                if( fDistanceOther <= fDistance )
                 {
                     bThisIsCloserToDiagonal = false;
                     break;
                 } // if
                 --uiPos;
             } // while
-            if ( bThisIsCloserToDiagonal )
+            if( bThisIsCloserToDiagonal )
             {
-                while ( !pItervalEnds->empty( ) &&
-                        std::get<2>( pItervalEnds->back( ) ) >= std::get<2>( xTup ) )
+                while( !pItervalEnds->empty( ) &&
+                       std::get<2>( pItervalEnds->back( ) ) >= std::get<2>( xTup ) )
                     pItervalEnds->pop_back( );
                 pItervalEnds->push_back( xTup );
             } // if
@@ -340,9 +340,9 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 
     auto pSoCs = std::make_shared<ContainerVector>( std::make_shared<Seeds>( ) );
 
-    while ( !pSoCIn->empty( ) )
+    while( !pSoCIn->empty( ) )
     {
-        if ( ++uiNumTries > uiMaxTries )
+        if( ++uiNumTries > uiMaxTries )
         {
             PRINT_BREAK_CRITERIA( std::cout << "break after " << uiNumTries << " tries."
                                             << std::endl; )
@@ -350,12 +350,12 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
         }
         auto pSeedsIn = pSoCIn->pop( );
 
-        PRINT_BREAK_CRITERIA( if ( pSoCIn->empty( ) ) std::cout << "exhausted all SoCs"
-                                                                << std::endl; )
+        PRINT_BREAK_CRITERIA( if( pSoCIn->empty( ) ) std::cout << "exhausted all SoCs"
+                                                               << std::endl; )
 
         auto pSeeds = std::make_shared<Seeds>( );
         pSeeds->xStats = pSeedsIn->xStats;
-        if ( pSeedsIn->size( ) > 1 )
+        if( pSeedsIn->size( ) > 1 )
         {
             DEBUG( pSoCIn->vExtractOrder.push_back( SoCPriorityQueue::blub( ) );
                    pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
@@ -363,7 +363,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 
             assert( !pSeedsIn->empty( ) );
             nucSeqIndex uiCurrSoCScore = 0;
-            for ( const auto &rSeed : *pSeedsIn )
+            for( const auto &rSeed : *pSeedsIn )
             {
                 uiCurrSoCScore += rSeed.size( );
                 DEBUG( pSoCIn->vExtractOrder.back( ).rStartSoC =
@@ -376,11 +376,11 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             // Prof. Kutzners filter:
             // this merely checks weather we actually do have to do the harmonization at all
             //@todo uiSwitchQLen != 0 should be replaced with switch
-            if ( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+            if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
             {
-                if ( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
+                if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
                 {
-                    if ( uiLastHarmScore > uiCurrSoCScore )
+                    if( uiLastHarmScore > uiCurrSoCScore )
                     {
                         PRINT_BREAK_CRITERIA( std::cout << "skip because of SoC score minimum"
                                                         << std::endl; )
@@ -388,7 +388,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
                     } // if
                 } // if
 
-                if ( uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0 )
+                if( uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0 )
                 {
                     PRINT_BREAK_CRITERIA( std::cout << "Break because of fast SoC drop"; )
                     break;
@@ -402,17 +402,17 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             std::vector<double> vX, vY;
             vX.reserve( pSeedsIn->size( ) );
             vY.reserve( pSeedsIn->size( ) );
-            for ( const auto &rSeed : *pSeedsIn )
+            for( const auto &rSeed : *pSeedsIn )
             {
                 // middlepoint of seed in plane
-                vX.push_back( ( double )rSeed.start_ref( ) + rSeed.size( ) / 2.0 );
-                vY.push_back( ( double )rSeed.start( ) + rSeed.size( ) / 2.0 );
+                vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) / 2.0 );
+                vY.push_back( (double)rSeed.start( ) + rSeed.size( ) / 2.0 );
                 // start point of seed in plane
-                vX.push_back( ( double )rSeed.start_ref( ) );
-                vY.push_back( ( double )rSeed.start( ) );
+                vX.push_back( (double)rSeed.start_ref( ) );
+                vY.push_back( (double)rSeed.start( ) );
                 // end point of seed in plane
-                vX.push_back( ( double )rSeed.start_ref( ) + rSeed.size( ) );
-                vY.push_back( ( double )rSeed.start( ) + rSeed.size( ) );
+                vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) );
+                vY.push_back( (double)rSeed.start( ) + rSeed.size( ) );
             } // for
             /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
             double fMAD = medianAbsoluteDeviation<double>( vY );
@@ -426,9 +426,9 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             } );
 #else
             auto rMedianSeed = ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ];
-            auto xSlopeIntercept = std::make_pair(
-                0.785398, // forty five degrees
-                ( double )rMedianSeed.start_ref( ) - ( double )rMedianSeed.start( ) );
+            auto xSlopeIntercept =
+                std::make_pair( 0.785398, // forty five degrees
+                                (double)rMedianSeed.start_ref( ) - (double)rMedianSeed.start( ) );
 #endif
 
             DEBUG( pSoCIn->vSlopes.push_back( std::tan( xSlopeIntercept.first ) );
@@ -439,7 +439,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             pShadows->reserve( pSeedsIn->size( ) );
 
             // get the left shadows
-            for ( Seeds::iterator pSeed = pSeedsIn->begin( ); pSeed != pSeedsIn->end( ); pSeed++ )
+            for( Seeds::iterator pSeed = pSeedsIn->begin( ); pSeed != pSeedsIn->end( ); pSeed++ )
             {
                 pShadows->push_back( std::make_tuple( pSeed, pSeed->start( ), pSeed->end_ref( ) ) );
                 // std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," <<
@@ -452,7 +452,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             pShadows->reserve( pShadows2->size( ) );
 
             // get the right shadows
-            for ( auto &xT : *pShadows2 )
+            for( auto &xT : *pShadows2 )
                 pShadows->push_back( std::make_tuple( std::get<0>( xT ),
                                                       std::get<0>( xT )->start_ref( ),
                                                       std::get<0>( xT )->end( ) ) );
@@ -462,7 +462,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 
             pSeeds->reserve( pShadows->size( ) );
 
-            for ( auto &xT : *pShadows )
+            for( auto &xT : *pShadows )
                 pSeeds->push_back( *std::get<0>( xT ) );
 
             pSeeds->bConsistent = true;
@@ -472,7 +472,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             // seeds need to be sorted for the following steps
             std::sort( pSeeds->begin( ), pSeeds->end( ),
                        []( const Seed &xA, const Seed &xB ) {
-                           if ( xA.start_ref( ) == xB.start_ref( ) )
+                           if( xA.start_ref( ) == xB.start_ref( ) )
                                return xA.start( ) < xB.start( );
                            return xA.start_ref( ) < xB.start_ref( );
                        } // lambda
@@ -491,7 +491,7 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
              * In most cases where this condition triggeres we have seeds that are roughly the
              * same length and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
              */
-            if ( pSeeds->size( ) <= 1 )
+            if( pSeeds->size( ) <= 1 )
             {
                 pSeeds->clear( );
                 pSeeds->push_back( ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ] );
@@ -516,18 +516,18 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
          * end of FILTER
          */
         nucSeqIndex uiCurrHarmScore = 0;
-        for ( const auto &rSeed : *pSeeds )
+        for( const auto &rSeed : *pSeeds )
             uiCurrHarmScore += rSeed.size( );
-        if ( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
-            if ( uiCurrHarmScore < uiCurrHarmScoreMin )
+        if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+            if( uiCurrHarmScore < uiCurrHarmScoreMin )
             {
                 PRINT_BREAK_CRITERIA(
                     std::cout << "skip because of abs. harmonization score minimum" << std::endl; )
                 continue;
             } // if
-        if ( bDoHeuristics )
+        if( bDoHeuristics )
         {
-            if ( uiCurrHarmScore < pQuery->length( ) * fCurrHarmScoreMinRel )
+            if( uiCurrHarmScore < pQuery->length( ) * fCurrHarmScoreMinRel )
             {
                 PRINT_BREAK_CRITERIA(
                     std::cout << "skip because of rel. harmonization score minimum" << std::endl; )
@@ -537,24 +537,24 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 #if DEBUG_LEVEL >= 1
         std::vector<bool> vQCoverage( pQuery->length( ), false );
         pSoCIn->vExtractOrder.back( ).qCoverage = 0;
-        for ( const auto &rSeed : *pSeeds )
+        for( const auto &rSeed : *pSeeds )
         {
-            for ( auto uiX = rSeed.start( ); uiX < rSeed.end( ); uiX++ )
+            for( auto uiX = rSeed.start( ); uiX < rSeed.end( ); uiX++ )
                 vQCoverage[ uiX ] = true;
         } // for
         pSoCIn->vExtractOrder.back( ).second = uiCurrHarmScore;
 
-        for ( bool b : vQCoverage )
-            if ( b )
+        for( bool b : vQCoverage )
+            if( b )
                 pSoCIn->vExtractOrder.back( ).qCoverage++;
 #endif
-        if ( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+        if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
         {
             //@todo uiSwitchQLen != 0 should be replaced with switch
-            if ( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
+            if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
             {
                 // Prof. Kutzner's filter:
-                if ( uiLastHarmScore > uiCurrHarmScore )
+                if( uiLastHarmScore > uiCurrHarmScore )
                 {
                     PRINT_BREAK_CRITERIA( std::cout << "skip because of harmonization score dropoff"
                                                     << std::endl; )
@@ -563,13 +563,13 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
             } // if
             else
             {
-                if ( !( uiCurrHarmScore + ( pQuery->length( ) * fScoreDiffTolerance ) >=
-                            uiLastHarmScore &&
-                        uiCurrHarmScore - ( pQuery->length( ) * fScoreDiffTolerance ) <=
-                            uiLastHarmScore ) )
+                if( !( uiCurrHarmScore + ( pQuery->length( ) * fScoreDiffTolerance ) >=
+                           uiLastHarmScore &&
+                       uiCurrHarmScore - ( pQuery->length( ) * fScoreDiffTolerance ) <=
+                           uiLastHarmScore ) )
                     uiSoCRepeatCounter = 0;
-                else if ( ++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead &&
-                          uiMaxEqualScoreLookahead != 0 )
+                else if( ++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead &&
+                         uiMaxEqualScoreLookahead != 0 )
                 {
                     // cause we haven't actually pushed the current soc yet...
                     uiSoCRepeatCounter -= 1;
@@ -582,15 +582,15 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
         } // if
         uiLastHarmScore = uiCurrHarmScore;
 
-        while ( !pSeeds->empty( ) )
+        while( !pSeeds->empty( ) )
             pSoCs->push_back( this->applyFilters( pSeeds ) );
 
             // FILTER
 #if FILTER_1
-        if ( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
+        if( bDoHeuristics && uiNumTries > uiMinTries ) // @todo temporary
         {
             nucSeqIndex uiAccLen = pSeeds->getScore( );
-            if ( uiAccumulativeSeedLength > uiAccLen )
+            if( uiAccumulativeSeedLength > uiAccLen )
             {
                 PRINT_BREAK_CRITERIA( std::cout << "skip because of accumulative seed length"
                                                 << std::endl; )
@@ -603,10 +603,10 @@ std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVe
 
     } // while
 
-    if ( bDoHeuristics ) // @todo temporary
+    if( bDoHeuristics ) // @todo temporary
     {
         // @todo think about what to do here (maybe sorting is necessary)...
-        for ( unsigned int ui = 0; ui < uiSoCRepeatCounter && pSoCs->size( ) > uiMinTries; ui++ )
+        for( unsigned int ui = 0; ui < uiSoCRepeatCounter && pSoCs->size( ) > uiMinTries; ui++ )
             pSoCs->pop_back( );
     } // if
 

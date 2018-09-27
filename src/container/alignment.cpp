@@ -26,43 +26,43 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
     /*
      * we are storing in a compressed format
      */
-    if ( size == 0 )
+    if( size == 0 )
         return;
     // adjust the score of the alignment
-    if ( type == MatchType::seed || type == MatchType::match )
+    if( type == MatchType::seed || type == MatchType::match )
     {
         iScore += iMatch * size;
         uiEndOnRef += size;
         uiEndOnQuery += size;
     } // if
-    else if ( type == MatchType::missmatch )
+    else if( type == MatchType::missmatch )
     {
         // iMissMatch is a penalty not a score
         iScore -= iMissMatch * size;
         uiEndOnRef += size;
         uiEndOnQuery += size;
     } // else if
-    else if ( type == MatchType::insertion || type == MatchType::deletion )
+    else if( type == MatchType::insertion || type == MatchType::deletion )
     {
         // add the sizes first so we do not have to revert them
-        if ( type == MatchType::insertion )
+        if( type == MatchType::insertion )
             uiEndOnQuery += size;
         else
             uiEndOnRef += size;
         // iGap & iExtend is a penalty not a score
-        if ( data.size( ) != 0 && ( data.back( ).first == type ) )
+        if( data.size( ) != 0 && ( data.back( ).first == type ) )
         {
             // revert last alignment but memorize the length
             size += data.back( ).second;
             uiLength -= data.back( ).second;
-            if ( iExtend * data.back( ).second + iGap < uiSVPenalty )
+            if( iExtend * data.back( ).second + iGap < uiSVPenalty )
                 iScore += iExtend * data.back( ).second + iGap;
             else
                 iScore += uiSVPenalty;
             data.pop_back( );
         } // if
         // add the penalty for this indel (plus the possibly removed last one...)
-        if ( iExtend * size + iGap < uiSVPenalty )
+        if( iExtend * size + iGap < uiSVPenalty )
             iScore -= iExtend * size + iGap;
         else
             iScore -= uiSVPenalty;
@@ -75,27 +75,27 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
      *      if so just add the amount of new symbols
      *      else make a new entry with the correct amount of symbols
      */
-    if ( data.size( ) != 0 && data.back( ).first == type )
+    if( data.size( ) != 0 && data.back( ).first == type )
         data.back( ).second += size;
     else
         data.push_back( std::make_pair( type, size ) );
     uiLength += size;
 
-    DEBUG_2( if ( reCalcScore( ) != iScore ) {
+    DEBUG_2( if( reCalcScore( ) != iScore ) {
         std::cerr << "WARNING set wrong score in append name: " << xStats.sName
                   << " actual score: " << reCalcScore( ) << " score: " << iScore << std::endl;
-        for ( auto tup : vCopyOfData )
+        for( auto tup : vCopyOfData )
             std::cout << std::get<0>( tup ) << ":" << std::get<1>( tup ) << " ";
         std::cout << std::endl;
-        for ( auto tup : data )
+        for( auto tup : data )
             std::cout << std::get<0>( tup ) << ":" << std::get<1>( tup ) << " ";
         std::cout << std::endl;
         assert( false );
     } // if
              ) // DEBUG
-    DEBUG( nucSeqIndex uiCheck = 0; for ( auto xTup
-                                          : data ) uiCheck += xTup.second;
-           if ( uiCheck != uiLength ) {
+    DEBUG( nucSeqIndex uiCheck = 0; for( auto xTup
+                                         : data ) uiCheck += xTup.second;
+           if( uiCheck != uiLength ) {
                std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength
                          << std::endl;
                assert( false );
@@ -107,13 +107,13 @@ unsigned int EXPORTED Alignment::localscore( ) const
 {
     unsigned int uiMaxScore = 0;
     int iScoreCurr = 0;
-    for ( unsigned int index = 0; index < data.size( ); index++ )
+    for( unsigned int index = 0; index < data.size( ); index++ )
     {
-        switch ( data[ index ].first )
+        switch( data[ index ].first )
         {
             case MatchType::deletion:
             case MatchType::insertion:
-                if ( iExtend * data[ index ].second + iGap < uiSVPenalty )
+                if( iExtend * data[ index ].second + iGap < uiSVPenalty )
                     iScoreCurr -= iExtend * data[ index ].second + iGap;
                 else
                     iScoreCurr -= uiSVPenalty;
@@ -126,17 +126,17 @@ unsigned int EXPORTED Alignment::localscore( ) const
                 iScoreCurr += iMatch * data[ index ].second;
                 break;
         } // switch
-        if ( iScoreCurr < 0 )
+        if( iScoreCurr < 0 )
             iScoreCurr = 0;
-        if ( uiMaxScore < ( unsigned int )iScoreCurr )
-            uiMaxScore = ( unsigned int )iScoreCurr;
+        if( uiMaxScore < (unsigned int)iScoreCurr )
+            uiMaxScore = (unsigned int)iScoreCurr;
     } // for
     return uiMaxScore;
 } // function
 
 void EXPORTED Alignment::makeLocal( )
 {
-    if ( uiLength == 0 )
+    if( uiLength == 0 )
         return;
     std::vector<int> vScores;
     int iMaxScore = 0;
@@ -155,13 +155,13 @@ void EXPORTED Alignment::makeLocal( )
      *      - overwrite iMaxEnd with the current index
      * once the loop finished iMaxStart & iMaxEnd are set correctly.
      */
-    for ( unsigned int index = 0; index < data.size( ); index++ )
+    for( unsigned int index = 0; index < data.size( ); index++ )
     {
-        switch ( data[ index ].first )
+        switch( data[ index ].first )
         {
             case MatchType::deletion:
             case MatchType::insertion:
-                if ( iExtend * data[ index ].second + iGap < uiSVPenalty )
+                if( iExtend * data[ index ].second + iGap < uiSVPenalty )
                     iScoreCurr -= iExtend * data[ index ].second + iGap;
                 else
                     iScoreCurr -= uiSVPenalty;
@@ -174,14 +174,14 @@ void EXPORTED Alignment::makeLocal( )
                 iScoreCurr += iMatch * data[ index ].second;
                 break;
         } // switch
-        if ( iScoreCurr < 0 )
+        if( iScoreCurr < 0 )
         {
             iScoreCurr = 0;
             iLastStart = index + 1;
         } // if
         DEBUG_2( std::cout << data[ index ].first << "," << data[ index ].second << " ("
                            << iScoreCurr << ") | "; )
-        if ( iScoreCurr >= iMaxScore )
+        if( iScoreCurr >= iMaxScore )
         {
             iMaxScore = iScoreCurr;
             iMaxStart = iLastStart;
@@ -190,10 +190,10 @@ void EXPORTED Alignment::makeLocal( )
     } // for
     DEBUG_2( std::cout << std::endl; std::cout << iMaxStart << " " << iMaxEnd << std::endl; )
     // adjust the begin/end on ref/query according to the area that will be erased
-    if ( iMaxStart <= iMaxEnd )
+    if( iMaxStart <= iMaxEnd )
     {
-        for ( unsigned int index = 0; index < iMaxStart; index++ )
-            switch ( data[ index ].first )
+        for( unsigned int index = 0; index < iMaxStart; index++ )
+            switch( data[ index ].first )
             {
                 case MatchType::deletion:
                     uiBeginOnRef += data[ index ].second;
@@ -206,8 +206,8 @@ void EXPORTED Alignment::makeLocal( )
                     uiBeginOnQuery += data[ index ].second;
                     break;
             } // switch
-        for ( unsigned int index = iMaxEnd; index < data.size( ); index++ )
-            switch ( data[ index ].first )
+        for( unsigned int index = iMaxEnd; index < data.size( ); index++ )
+            switch( data[ index ].first )
             {
                 case MatchType::deletion:
                     uiEndOnRef -= data[ index ].second;
@@ -222,23 +222,23 @@ void EXPORTED Alignment::makeLocal( )
             } // switch
     } // if
     // erase everything before and after
-    if ( iMaxEnd < data.size( ) )
+    if( iMaxEnd < data.size( ) )
         data.erase( data.begin( ) + iMaxEnd, data.end( ) );
-    if ( iMaxStart > 0 )
+    if( iMaxStart > 0 )
         data.erase( data.begin( ), data.begin( ) + iMaxStart );
     // adjust score accordingly
     iScore = iMaxScore;
     // adjust length variable accordingly
     uiLength = 0;
-    for ( unsigned int index = 0; index < data.size( ); index++ )
+    for( unsigned int index = 0; index < data.size( ); index++ )
         uiLength += data[ index ].second;
-    DEBUG_2( if ( uiEndOnRef < uiBeginOnRef ) {
+    DEBUG_2( if( uiEndOnRef < uiBeginOnRef ) {
         std::cout << "---" << std::endl;
-        for ( unsigned int index = 0; index < data.size( ); index++ )
+        for( unsigned int index = 0; index < data.size( ); index++ )
             std::cout << data[ index ].first << "," << data[ index ].second << std::endl;
         exit( 0 );
     } )
-    DEBUG( if ( reCalcScore( ) != iScore ) std::cerr
+    DEBUG( if( reCalcScore( ) != iScore ) std::cerr
                << "WARNING set wrong score or removed wrong elements in makeLocal" << std::endl; )
 } // function
 
@@ -249,51 +249,50 @@ void EXPORTED Alignment::removeDangeling( )
     std::vector<std::tuple<MatchType, nucSeqIndex>> vCopyOfData( data.begin( ), data.end( ) );
 #endif
 
-    if ( data.empty( ) )
+    if( data.empty( ) )
         return;
-    while ( data.front( ).first == MatchType::deletion ||
-            data.front( ).first == MatchType::insertion )
+    while( data.front( ).first == MatchType::deletion ||
+           data.front( ).first == MatchType::insertion )
     {
-        if ( data.front( ).first == MatchType::deletion ) // deletion
+        if( data.front( ).first == MatchType::deletion ) // deletion
             uiBeginOnRef += data.front( ).second;
         else // insertion
             uiBeginOnQuery += data.front( ).second;
-        if ( iGap + iExtend * data.front( ).second < uiSVPenalty )
+        if( iGap + iExtend * data.front( ).second < uiSVPenalty )
             iScore += iGap + iExtend * data.front( ).second;
         else
             iScore += uiSVPenalty;
         uiLength -= data.front( ).second;
         data.erase( data.begin( ), data.begin( ) + 1 );
     } // if
-    while ( data.back( ).first == MatchType::deletion ||
-            data.back( ).first == MatchType::insertion )
+    while( data.back( ).first == MatchType::deletion || data.back( ).first == MatchType::insertion )
     {
-        if ( data.back( ).first == MatchType::deletion ) // deletion
+        if( data.back( ).first == MatchType::deletion ) // deletion
             uiEndOnRef -= data.back( ).second;
         else // insertion
             uiEndOnQuery -= data.back( ).second;
-        if ( iGap + iExtend * data.back( ).second < uiSVPenalty )
+        if( iGap + iExtend * data.back( ).second < uiSVPenalty )
             iScore += iGap + iExtend * data.back( ).second;
         else
             iScore += uiSVPenalty;
         uiLength -= data.back( ).second;
         data.pop_back( );
     } // if
-    DEBUG( if ( reCalcScore( ) != iScore ) {
+    DEBUG( if( reCalcScore( ) != iScore ) {
         std::cerr << "WARNING set wrong score or removed wrong elements in remove dangeling"
                   << std::endl;
-        for ( auto tup : vCopyOfData )
+        for( auto tup : vCopyOfData )
             std::cout << std::get<0>( tup ) << ":" << std::get<1>( tup ) << " ";
         std::cout << std::endl;
-        for ( auto tup : data )
+        for( auto tup : data )
             std::cout << std::get<0>( tup ) << ":" << std::get<1>( tup ) << " ";
         std::cout << std::endl;
     } // if
 
            nucSeqIndex uiCheck = 0;
-           for ( auto xTup
-                 : data ) uiCheck += xTup.second;
-           if ( uiCheck != uiLength ) {
+           for( auto xTup
+                : data ) uiCheck += xTup.second;
+           if( uiCheck != uiLength ) {
                std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength
                          << std::endl;
                assert( false );
@@ -304,12 +303,12 @@ void EXPORTED Alignment::removeDangeling( )
 int Alignment::reCalcScore( ) const
 {
     int iScore = 0;
-    for ( unsigned int index = 0; index < data.size( ); index++ )
-        switch ( std::get<0>( data[ index ] ) )
+    for( unsigned int index = 0; index < data.size( ); index++ )
+        switch( std::get<0>( data[ index ] ) )
         {
             case MatchType::deletion:
             case MatchType::insertion:
-                if ( iExtend * data[ index ].second + iGap < uiSVPenalty )
+                if( iExtend * data[ index ].second + iGap < uiSVPenalty )
                     iScore -= iExtend * data[ index ].second + iGap;
                 else
                     iScore -= uiSVPenalty;

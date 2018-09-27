@@ -28,7 +28,7 @@
 
 /* Visual C++ and g++ indicate the setting of the AVX2 flag via the __AVX2__ symbol.
  */
-#if ( __AVX2__ == 1 )
+#if( __AVX2__ == 1 )
 #pragma message( "Compilation of SIMD aligner using AVX2 intrinsics." )
 #define __USE_AVX2__ ( 1 )
 #else
@@ -36,7 +36,7 @@
 #define __USE_AVX2__ ( 0 )
 #endif
 
-#if ( __USE_AVX2__ == 1 )
+#if( __USE_AVX2__ == 1 )
 // AVX - 256 bit registers
 #ifdef __GNUC__
 #include <x86intrin.h> // AVX header
@@ -45,30 +45,28 @@
 /* Shifting for AVX2 256 bit vectors:
  * https://github.com/blegal/AVX2_shift_and_rotate_si256/blob/master/src/avx2_func.hpp
  */
-template <int N>
-inline __m256i _mm256_shift_left( __m256i A )
+template <int N> inline __m256i _mm256_shift_left( __m256i A )
 {
-    if ( N == 0 )
+    if( N == 0 )
         return A;
-    else if ( N < 16 )
+    else if( N < 16 )
         return _mm256_alignr_epi8( A, _mm256_permute2x128_si256( A, A, _MM_SHUFFLE( 0, 0, 2, 0 ) ),
                                    ( uint8_t )( 16 - N ) );
-    else if ( N == 16 )
+    else if( N == 16 )
         return _mm256_permute2x128_si256( A, A, _MM_SHUFFLE( 0, 0, 2, 0 ) );
     else
         return _mm256_slli_si256( _mm256_permute2x128_si256( A, A, _MM_SHUFFLE( 0, 0, 2, 0 ) ),
                                   ( uint8_t )( N - 16 ) );
 }
 
-template <int N>
-inline __m256i _mm256_shift_right( __m256i A )
+template <int N> inline __m256i _mm256_shift_right( __m256i A )
 {
-    if ( N == 0 )
+    if( N == 0 )
         return A;
-    else if ( N < 16 )
+    else if( N < 16 )
         return _mm256_alignr_epi8( _mm256_permute2x128_si256( A, A, _MM_SHUFFLE( 2, 0, 0, 1 ) ), A,
                                    ( uint8_t )( N ) );
-    else if ( N == 16 )
+    else if( N == 16 )
         return _mm256_permute2x128_si256( A, A, _MM_SHUFFLE( 2, 0, 0, 1 ) );
     else
         return _mm256_srli_si256( _mm256_permute2x128_si256( A, A, _MM_SHUFFLE( 2, 0, 0, 1 ) ),
@@ -102,7 +100,7 @@ inline __m256i _mm256_shift_right( __m256i A )
         ( xx ) = _mm256_max_epi16( ( xx ), _mm256_srli_si256( ( xx ), 4 ) );                       \
         ( xx ) = _mm256_max_epi16( ( xx ), _mm256_srli_si256( ( xx ), 2 ) );                       \
         ( ret ) = _mm256_extract_epi16( ( xx ), 0 );                                               \
-    } while ( 0 )
+    } while( 0 )
 #else
 // SSE2 - 128 bit registers
 //#ifdef __GNUC__
@@ -130,7 +128,7 @@ inline __m256i _mm256_shift_right( __m256i A )
         ( xx ) = _mm_max_epi16( ( xx ), _mm_srli_si128( ( xx ), 4 ) );                             \
         ( xx ) = _mm_max_epi16( ( xx ), _mm_srli_si128( ( xx ), 2 ) );                             \
         ( ret ) = _mm_extract_epi16( ( xx ), 0 );                                                  \
-    } while ( 0 )
+    } while( 0 )
 #endif
 
 // SIMD vector size as decided at comile time (SSE2 : 128 bit, AVX : 256 bit)
@@ -171,13 +169,12 @@ struct SW_SIMD_Aligner
           uiNumberOfBlocks( ( rQuerySequence.length( ) + scoresPerBlock - 1 ) / scoresPerBlock ),
           pSWparameterSetRef( SWparameterSet )
     {
-        if ( sizeof( SCORE_TP ) != 2 )
+        if( sizeof( SCORE_TP ) != 2 )
         { // The current design works for int16_t only.
             throw AlignerException( "Datatype for scores has wrong dimension (Must be int16_t)" );
         } // if
 
-        if ( SWparameterSet.iPossibleMaxScore( uiQueryLen ) >
-             std::numeric_limits<SCORE_TP>::max( ) )
+        if( SWparameterSet.iPossibleMaxScore( uiQueryLen ) > std::numeric_limits<SCORE_TP>::max( ) )
         { // The query might create a maximum beyond the max of SCORE_TP.
             throw AlignerException(
                 "Possible maximum for query exceeds maximum of scoring datatype" );
@@ -186,12 +183,12 @@ struct SW_SIMD_Aligner
         /* Allocation memory for the query profile and the 4 auxiliary vectors.
          * (We allocate this memory as a single block!)
          */
-        pStartOfReservedMemory = ( T__mXXXi * )malloc(
-            ( __mXXXi_SIZE - 1 ) // space for alignment
-            + sizeof( T__mXXXi ) * uiNumberOfBlocks *
-                  ( SWparameterSet.uiAlphabetSize + 4 ) // +4 for H0, H1, E, MAX
-        );
-        if ( pStartOfReservedMemory == NULL )
+        pStartOfReservedMemory =
+            (T__mXXXi *)malloc( ( __mXXXi_SIZE - 1 ) // space for alignment
+                                + sizeof( T__mXXXi ) * uiNumberOfBlocks *
+                                      ( SWparameterSet.uiAlphabetSize + 4 ) // +4 for H0, H1, E, MAX
+            );
+        if( pStartOfReservedMemory == NULL )
         {
             throw AlignerException( "Memory allocation for SIMD alignment failed" );
         } // if
@@ -200,8 +197,8 @@ struct SW_SIMD_Aligner
          * For T__mxxxi we need 16 byte aligned memory or things are inefficent.
          */
         pAlignedAllocatedMemoryRef =
-            ( T__mXXXi * )( ( ( T_size_t )pStartOfReservedMemory + ( __mXXXi_SIZE - 1 ) ) /
-                            __mXXXi_SIZE * __mXXXi_SIZE );
+            (T__mXXXi *)( ( (T_size_t)pStartOfReservedMemory + ( __mXXXi_SIZE - 1 ) ) /
+                          __mXXXi_SIZE * __mXXXi_SIZE );
 
         /* Memory layout:
          * 1. scoring profile for query - size : numberOfBlocks * SWparameterSet.uiAlphabetSize
@@ -222,7 +219,7 @@ struct SW_SIMD_Aligner
      */
     ~SW_SIMD_Aligner( )
     { // Aligned mem not used an longer ...
-        if ( pStartOfReservedMemory != NULL )
+        if( pStartOfReservedMemory != NULL )
         {
             free( pStartOfReservedMemory );
         } // if
@@ -240,17 +237,17 @@ struct SW_SIMD_Aligner
         SimilarityMatrix<SCORE_TP> xSimilarityMatrix( SWparameterSet.iWeightMatch,
                                                       SWparameterSet.iWeightMismatch,
                                                       SWparameterSet.uiAlphabetSize );
-        SCORE_TP *profileReference = ( SCORE_TP * )pAlignedAllocatedMemoryRef;
+        SCORE_TP *profileReference = (SCORE_TP *)pAlignedAllocatedMemoryRef;
 
-        for ( unsigned int alphabetIterator = 0; alphabetIterator < SWparameterSet.uiAlphabetSize;
-              ++alphabetIterator )
+        for( unsigned int alphabetIterator = 0; alphabetIterator < SWparameterSet.uiAlphabetSize;
+             ++alphabetIterator )
         {
             const SCORE_TP *scroringTableRow = xSimilarityMatrix.pSimilarityMatrixRef +
                                                ( alphabetIterator * SWparameterSet.uiAlphabetSize );
-            for ( T_size_t i = 0; i < uiNumberOfBlocks; ++i )
+            for( T_size_t i = 0; i < uiNumberOfBlocks; ++i )
             {
-                for ( T_size_t k = i; k < uiNumberOfBlocks * scoresPerBlock;
-                      k += uiNumberOfBlocks ) // p iterations
+                for( T_size_t k = i; k < uiNumberOfBlocks * scoresPerBlock;
+                     k += uiNumberOfBlocks ) // p iterations
                 { /* We take std::numeric_limits<SCORE_TP>::min() for the "non existing columns".
                    * (Don't take 0 instead of min, because then we get faulty values.)
                    */
@@ -273,13 +270,13 @@ struct SW_SIMD_Aligner
     /* Align for 16 bit sized scores.
      * Returns maximum score.
      */
-    SCORE_TP align(
-        const NucSeq &pReference,
-        std::vector<T_size_t>
-            &rvMaxScorePositions // vector will keep the positions of occurences of max score
-#if ( DO_CHECKS == 1 )
-        ,
-        std::vector<T_scoring> &rvSwRowMaxima // vector collecting row maxima (for debugging)
+    SCORE_TP
+    align( const NucSeq &pReference,
+           std::vector<T_size_t>
+               &rvMaxScorePositions // vector will keep the positions of occurences of max score
+#if( DO_CHECKS == 1 )
+           ,
+           std::vector<T_scoring> &rvSwRowMaxima // vector collecting row maxima (for debugging)
 #endif
     )
     {
@@ -295,7 +292,7 @@ struct SW_SIMD_Aligner
          */
         T__mXXXi gapoePar8 = _mmXXX_set1_epi16(
             ( int16_t )( pSWparameterSetRef.iGapOpen + pSWparameterSetRef.iGapExtend ) );
-        T__mXXXi gapePar8 = _mmXXX_set1_epi16( ( int16_t )pSWparameterSetRef.iGapExtend );
+        T__mXXXi gapePar8 = _mmXXX_set1_epi16( (int16_t)pSWparameterSetRef.iGapExtend );
 
         T__mXXXi gapoePar8F = _mmXXX_set1_epi16(
             ( int16_t )( pSWparameterSetRef.iGapOpen + GAP_EXT_HORIZONAL ) ); //// AK
@@ -304,7 +301,7 @@ struct SW_SIMD_Aligner
         /* We initialize the E, H0 and Hmax vectors with zero.
          * Idea: here we could take something build in function.
          */
-        for ( T_size_t uxIterator = 0; uxIterator < uiNumberOfBlocks; ++uxIterator )
+        for( T_size_t uxIterator = 0; uxIterator < uiNumberOfBlocks; ++uxIterator )
         {
             _mm_store_siXXX( pE + uxIterator, zero );
 
@@ -317,7 +314,7 @@ struct SW_SIMD_Aligner
 
         /* The outer loop iterates over the matrix rows. (The database sequence)
          */
-        for ( T_size_t uiRow = 0; uiRow < uiLenReference; ++uiRow )
+        for( T_size_t uiRow = 0; uiRow < uiLenReference; ++uiRow )
         {
             T__mXXXi f = zero;
             T__mXXXi maxima = zero;
@@ -337,7 +334,7 @@ struct SW_SIMD_Aligner
             /* The inner loop iterates over the blocks
              * Because of the segmentation it considers 8 values in parallel.
              */
-            for ( T_size_t j = 0; j < uiNumberOfBlocks; ++j )
+            for( T_size_t j = 0; j < uiNumberOfBlocks; ++j )
             { /* SW cells are computed in the following order:
                *   F(i,j+1) = max{H(i,j)-q, F(i,j) - r}
                */
@@ -380,10 +377,10 @@ struct SW_SIMD_Aligner
              * f values. This loop can become quite expensive in specific situations. Observation:
              * short queries (20 nt) create large k values.
              */
-            for ( unsigned int k = 0; k < __mXXXi_SIZE / 2; ++k )
+            for( unsigned int k = 0; k < __mXXXi_SIZE / 2; ++k )
             {
                 f = _mm_slli_siXXX( f, 2 );
-                for ( T_size_t j = 0; j < uiNumberOfBlocks; ++j )
+                for( T_size_t j = 0; j < uiNumberOfBlocks; ++j )
                 {
                     h = _mm_load_siXXX( pH_VectorCurrentRow + j );
                     h = _mmXXX_max_epi16( h, f );
@@ -398,7 +395,7 @@ struct SW_SIMD_Aligner
                      * _mm_cmpgt_epi16 : Compare packed 16-bit integers in a and b for equality, and
                      * store the results in dst
                      */
-                    if ( !_mmXXX_movemask_epi8( _mmXXX_cmpgt_epi16( f, h ) ) )
+                    if( !_mmXXX_movemask_epi8( _mmXXX_cmpgt_epi16( f, h ) ) )
                     {
                         goto exit_loop;
                     }
@@ -413,16 +410,16 @@ struct SW_SIMD_Aligner
             __max_8( iMaxScoreOfCurrentRow, maxima );
             //// std::cout << iMaxScoreOfCurrentRow << std::endl;
 
-#if ( DO_CHECKS == 1 )
+#if( DO_CHECKS == 1 )
             // Record computed row maximum
             rvSwRowMaxima.push_back( iMaxScoreOfCurrentRow );
 #endif
 
             /* Tracing of global maxima
              */
-            if ( iMaxScoreOfCurrentRow >= iOverallMaxScore )
+            if( iMaxScoreOfCurrentRow >= iOverallMaxScore )
             {
-                if ( iMaxScoreOfCurrentRow > iOverallMaxScore )
+                if( iMaxScoreOfCurrentRow > iOverallMaxScore )
                 { // fresh overall maximum detected
                     rvMaxScorePositions.clear( );
                     iOverallMaxScore = iMaxScoreOfCurrentRow;

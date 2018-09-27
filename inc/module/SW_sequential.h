@@ -1,9 +1,9 @@
 #pragma once
 /* Naive implementation of Smith-Waterman for debugging purposes */
-#include <functional>
-#include <vector>
 #include "container/nucSeq.h"
 #include "module/sw_common.h"
+#include <functional>
+#include <vector>
 
 /*
  * WARNING:
@@ -32,14 +32,12 @@ typedef enum
     BAR = 2
 } eSelectionType;
 
-template <class SCORE_TP>
-struct generic_eh_type
+template <class SCORE_TP> struct generic_eh_type
 {
     SCORE_TP h, e, f;
 };
 
-template <class SCORE_TP>
-struct sw_alignment_result_t
+template <class SCORE_TP> struct sw_alignment_result_t
 {
     /* The absolute index.
      * It has to interpreted as if the matrix were a plain data structure
@@ -50,27 +48,25 @@ struct sw_alignment_result_t
 
 /* The compare function used in the below qsort
  */
-template <class SCORE_TP>
-int compare_sw_alignment_result_t( const void *p1, const void *p2 )
+template <class SCORE_TP> int compare_sw_alignment_result_t( const void *p1, const void *p2 )
 {
-    const sw_alignment_result_t<SCORE_TP> f1 = *( const sw_alignment_result_t<SCORE_TP> * )p1;
-    const sw_alignment_result_t<SCORE_TP> f2 = *( const sw_alignment_result_t<SCORE_TP> * )p2;
+    const sw_alignment_result_t<SCORE_TP> f1 = *(const sw_alignment_result_t<SCORE_TP> *)p1;
+    const sw_alignment_result_t<SCORE_TP> f2 = *(const sw_alignment_result_t<SCORE_TP> *)p2;
     return f2.score - f1.score;
 } // compare_sw_alignment_result_t
 
 
 /* class for the description of alignments
  */
-template <class T>
-class alignment_description_element
+template <class T> class alignment_description_element
 {
-   private:
+  private:
     char cMarkedElement( const char c ) const
     {
         return ( eElementKind == UNEQUAL_PAIR ) ? tolower( c ) : c;
     } // private method
 
-   public:
+  public:
     /* Data elements of single alignment.
      */
     e_alignment_element_kind_t eElementKind;
@@ -82,14 +78,13 @@ class alignment_description_element
         : eElementKind( eElementKind ),
           entryOnRowSide( entryOnRowSide ),
           entryOnColumnSide( entryOnColumnSide )
-    {
-    } // constructor
+    {} // constructor
 }; // class
 
 template <class T>
 class alignment_description : public std::vector<alignment_description_element<T>>
 {
-   private:
+  private:
     /* Explanation for the typename below: (MSVC2013 accepts the code without typename)
      * http://www.parashift.com/c++-faq-lite/nondependent-name-lookup-types.html
      */
@@ -106,7 +101,7 @@ class alignment_description : public std::vector<alignment_description_element<T
         ); // for_each
     } // method
 
-   public:
+  public:
     /* Increments rForwardIterator as long as the predicate is true
      */
     vectorIterator vIterateForwardWhile(
@@ -115,8 +110,8 @@ class alignment_description : public std::vector<alignment_description_element<T
     {
         vectorIterator resultIterator = forwardIterator;
 
-        while ( ( resultIterator < this->end( ) ) &&
-                ( predciateFunction( *resultIterator ) == true ) )
+        while( ( resultIterator < this->end( ) ) &&
+               ( predciateFunction( *resultIterator ) == true ) )
         {
             resultIterator++;
         };
@@ -131,7 +126,7 @@ class alignment_description : public std::vector<alignment_description_element<T
     {
         std::shared_ptr<std::stringstream> pStringStreamRef =
             std::make_shared<std::stringstream>( );
-        if ( uxReverseStrandSize == 0 )
+        if( uxReverseStrandSize == 0 )
         {
             ( *pStringStreamRef ) << ( uxStartForAbsolutePosition + rSectionStartIterator ) -
                                          this->begin( ) + 1
@@ -158,7 +153,7 @@ class alignment_description : public std::vector<alignment_description_element<T
         int stride = 100;
         vectorIterator frontIterator = this->begin( );
 
-        while ( frontIterator < this->end( ) )
+        while( frontIterator < this->end( ) )
         {
             vectorIterator tailIterator =
                 ( this->end( ) - frontIterator ) >= stride ? frontIterator + stride : this->end( );
@@ -179,8 +174,7 @@ class alignment_description : public std::vector<alignment_description_element<T
 /* Class for the description of scoring matrices.
  * Scoring matrices can be used by the serial aligner for backtracking purposes.
  */
-template <class SCORE_TP, class T_size_t>
-struct AlignmentOutcomeMatrix
+template <class SCORE_TP, class T_size_t> struct AlignmentOutcomeMatrix
 {
     SCORE_TP *scoringOutcomeMatrix;
     sw_direction_t *backtrackMatrix[ 3 ]; // the three backtrack matrices
@@ -200,7 +194,7 @@ struct AlignmentOutcomeMatrix
      */
     void initializeFristColumnAndFirstRow( )
     {
-        for ( T_size_t uxIterator = 0; uxIterator < numberOfColumns; uxIterator++ )
+        for( T_size_t uxIterator = 0; uxIterator < numberOfColumns; uxIterator++ )
         {
             scoringOutcomeMatrix[ uxIterator ] = 0;
             backtrackMatrix[ LEFT_UP ][ uxIterator ] = STOP;
@@ -208,7 +202,7 @@ struct AlignmentOutcomeMatrix
             backtrackMatrix[ LEFT ][ uxIterator ] = STOP;
         } // for
 
-        for ( T_size_t uxIterator = 0; uxIterator < numberOfRows; uxIterator++ )
+        for( T_size_t uxIterator = 0; uxIterator < numberOfRows; uxIterator++ )
         {
             scoringOutcomeMatrix[ uxIterator * numberOfColumns ] = 0;
             backtrackMatrix[ LEFT_UP ][ uxIterator * numberOfColumns ] = STOP;
@@ -261,7 +255,7 @@ struct AlignmentOutcomeMatrix
 
         std::cout << "    - \t";
 
-        for ( size_t uxIteratorColum = 1; uxIteratorColum < numberOfColumns; uxIteratorColum++ )
+        for( size_t uxIteratorColum = 1; uxIteratorColum < numberOfColumns; uxIteratorColum++ )
         {
             std::cout << NucSeq::translateACGTCodeToCharacter(
                              puxColumnSequenceRef[ uxIteratorColum - 1 ] )
@@ -270,16 +264,16 @@ struct AlignmentOutcomeMatrix
 
         std::cout << std::endl;
 
-        for ( size_t uxIteratorRow = 0; uxIteratorRow < numberOfRows; uxIteratorRow++ )
+        for( size_t uxIteratorRow = 0; uxIteratorRow < numberOfRows; uxIteratorRow++ )
         {
-            if ( uxIteratorRow > 0 )
+            if( uxIteratorRow > 0 )
                 std::cout << NucSeq::translateACGTCodeToCharacter(
                                  puxRowSequenceRef[ uxIteratorRow - 1 ] )
                           << " : ";
             else
                 std::cout << "- : ";
 
-            for ( size_t uxIteratorColum = 0; uxIteratorColum < numberOfColumns; uxIteratorColum++ )
+            for( size_t uxIteratorColum = 0; uxIteratorColum < numberOfColumns; uxIteratorColum++ )
             {
                 std::cout
                     << directionSymbols[ backtrackMatrix[ LEFT_UP ]
@@ -415,22 +409,22 @@ struct AlignmentOutcomeMatrix
         // WARNING this assumes that the given startIndex is a maximum
         sw_direction_t direction = LEFT_UP;
 
-        while ( backtrackMatrix[ direction ][ currentIndex ] != STOP &&
-                scoringOutcomeMatrix[ currentIndex ] >= 0 )
+        while( backtrackMatrix[ direction ][ currentIndex ] != STOP &&
+               scoringOutcomeMatrix[ currentIndex ] >= 0 )
         {
             /* We calculate the current column and row on the foundation of the current index
              */
             T_size_t uxColumn = currentIndex % numberOfColumns;
             T_size_t uxRow = currentIndex / numberOfColumns;
 
-            switch ( direction )
+            switch( direction )
             {
                 case LEFT_UP:
                     /* We check whether the two symbols match
                      * WARNING: The scoring matrix is shifted into X as well Y direction by one
                      * position
                      */
-                    if ( puxRowSequenceRef[ uxRow - 1 ] == puxColumnSequenceRef[ uxColumn - 1 ] )
+                    if( puxRowSequenceRef[ uxRow - 1 ] == puxColumnSequenceRef[ uxColumn - 1 ] )
                     {
                         /* They match, so we insert a match into the vector. (push_back using &&)
                          */
@@ -465,7 +459,7 @@ struct AlignmentOutcomeMatrix
             /* Now we do the real backtracking.
              */
             previousIndex = currentIndex;
-            switch ( direction )
+            switch( direction )
             {
                 case LEFT_UP:
                     assert( uxColumn != 0 );
@@ -542,9 +536,9 @@ struct AlignmentOutcomeMatrix
         std::reverse( textBufferforRow.begin( ), textBufferforRow.end( ) );
         std::reverse( textBufferforColumn.begin( ), textBufferforColumn.end( ) );
         size_t counter = 0;
-        while ( true )
+        while( true )
         {
-            if ( counter >= textBufferforRow.size( ) )
+            if( counter >= textBufferforRow.size( ) )
             {
                 std::cout << sLineRef << "\n" << sLineQuery << std::endl;
                 break;
@@ -552,7 +546,7 @@ struct AlignmentOutcomeMatrix
             sLineRef += textBufferforRow[ counter ];
             sLineQuery += textBufferforColumn[ counter ];
             counter++;
-            if ( counter % 80 == 0 )
+            if( counter % 80 == 0 )
             {
                 std::cout << sLineRef << "\n" << sLineQuery << "\n" << std::endl;
                 sLineRef = "";
@@ -567,10 +561,10 @@ struct AlignmentOutcomeMatrix
             << " GapOpen: " << uiNumberGapOpen << std::endl;
 
         long long iScore =
-            ( long long )rxSW_Parameter.iWeightMatch * uiNumberMatches +
-            ( long long )rxSW_Parameter.iWeightMismatch * uiNumberMismatches -
-            ( long long )rxSW_Parameter.iGapExtend * ( uiNumberInsertions + uiNumberDeletions ) -
-            ( long long )rxSW_Parameter.iGapOpen * uiNumberGapOpen;
+            (long long)rxSW_Parameter.iWeightMatch * uiNumberMatches +
+            (long long)rxSW_Parameter.iWeightMismatch * uiNumberMismatches -
+            (long long)rxSW_Parameter.iGapExtend * ( uiNumberInsertions + uiNumberDeletions ) -
+            (long long)rxSW_Parameter.iGapOpen * uiNumberGapOpen;
         return iScore;
     } // method
 
@@ -582,7 +576,7 @@ struct AlignmentOutcomeMatrix
         sw_alignment_result_t<SCORE_TP> *swAlignmentOutcomes =
             new sw_alignment_result_t<SCORE_TP>[ matrixSize ];
 
-        for ( T_size_t uxIterator = 0; uxIterator < matrixSize; uxIterator++ )
+        for( T_size_t uxIterator = 0; uxIterator < matrixSize; uxIterator++ )
         {
             swAlignmentOutcomes[ uxIterator ].score = scoringOutcomeMatrix[ uxIterator ];
             swAlignmentOutcomes[ uxIterator ].uxIndex = uxIterator;
@@ -593,9 +587,9 @@ struct AlignmentOutcomeMatrix
         qsort( swAlignmentOutcomes, matrixSize, sizeof( sw_alignment_result_t<SCORE_TP> ),
                compare_sw_alignment_result_t<SCORE_TP> );
 
-        for ( T_size_t uxIterator = 0; uxIterator < matrixSize; uxIterator++ )
+        for( T_size_t uxIterator = 0; uxIterator < matrixSize; uxIterator++ )
         {
-            if ( swAlignmentOutcomes[ uxIterator ].score > 0 )
+            if( swAlignmentOutcomes[ uxIterator ].score > 0 )
             {
                 dumpAlignmentFromIndex( swAlignmentOutcomes[ uxIterator ].uxIndex,
                                         swAlignmentOutcomes[ uxIterator ].score );
@@ -612,8 +606,8 @@ struct AlignmentOutcomeMatrix
         SCORE_TP max = 0;
         T_size_t index = 0;
 
-        for ( T_size_t uxIterator = 0; uxIterator < matrixSize; uxIterator++ )
-            if ( scoringOutcomeMatrix[ uxIterator ] > max )
+        for( T_size_t uxIterator = 0; uxIterator < matrixSize; uxIterator++ )
+            if( scoringOutcomeMatrix[ uxIterator ] > max )
             {
                 max = scoringOutcomeMatrix[ uxIterator ];
                 index = uxIterator;
@@ -669,8 +663,7 @@ struct SW_align_type
           similarityMatrix( SWparameterSet.iWeightMatch, SWparameterSet.iWeightMismatch,
                             alphabetSize ),
           pSWparameterSetRef( SWparameterSet )
-    {
-    } // constructor
+    {} // constructor
 
     /* The central alignment method
      */
@@ -693,19 +686,19 @@ struct SW_align_type
          * ppt-file)
          */
         SCORE_TP *queryProfile =
-            ( SCORE_TP * )malloc( numberOfColumns * alphabetSize * sizeof( SCORE_TP ) );
-        generic_eh_type<SCORE_TP> *h_and_e_Columns = ( generic_eh_type<SCORE_TP> * )calloc(
+            (SCORE_TP *)malloc( numberOfColumns * alphabetSize * sizeof( SCORE_TP ) );
+        generic_eh_type<SCORE_TP> *h_and_e_Columns = (generic_eh_type<SCORE_TP> *)calloc(
             numberOfColumns + 1,
             sizeof( generic_eh_type<SCORE_TP> ) ); // memory for the score array
         /* Generate the query profile by using the scoring table
          */
         queryProfileIterator = 0;
-        for ( cNuc = 0; cNuc < alphabetSize; ++cNuc )
+        for( cNuc = 0; cNuc < alphabetSize; ++cNuc )
         {
             SCORE_TP *referenceToStartOfRow =
                 &similarityMatrix.pSimilarityMatrixRef[ cNuc * alphabetSize ];
 
-            for ( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
+            for( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
             {
                 //// std::cout << ":" << (int)columnSequence[uxIteratorColumn] << " " <<
                 /// referenceToStartOfRow[columnSequence[uxIteratorColumn]] << " | ";
@@ -722,14 +715,14 @@ struct SW_align_type
         maxScoreValue = 0;
 
 
-        for ( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
+        for( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
         {
             h_and_e_Columns[ uxIteratorColumn ].h = 0;
             h_and_e_Columns[ uxIteratorColumn ].e = 0;
             h_and_e_Columns[ uxIteratorColumn ].f = 0;
         } // for
 
-        for ( uxIteratorRow = 0; uxIteratorRow < numberOfRows; ++uxIteratorRow )
+        for( uxIteratorRow = 0; uxIteratorRow < numberOfRows; ++uxIteratorRow )
         {
             long long indexOfMaxScoreInCurrentRow = -1;
             SCORE_TP maxScoreInCurrentRow = 0;
@@ -750,7 +743,7 @@ struct SW_align_type
 
             sw_direction_t *backtrackingMatrixIterator[ 3 ];
 
-            for ( unsigned int i = 0; i < 3; i++ )
+            for( unsigned int i = 0; i < 3; i++ )
                 backtrackingMatrixIterator[ i ] =
                     alignmentOutcomeMatrix.backtrackMatrix[ i ] + uxMatrixStartShift;
 
@@ -764,7 +757,7 @@ struct SW_align_type
             SCORE_TP f_left_up = 0;
             SCORE_TP h_up = 0;
 
-            for ( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
+            for( uxIteratorColumn = 0; uxIteratorColumn < numberOfColumns; ++uxIteratorColumn )
             {
                 h_left_up = h_up;
                 e_left_up = e_up;
@@ -815,12 +808,12 @@ struct SW_align_type
 
                 // compute the h score
                 h = h_left_up;
-                if ( h < e_left_up )
+                if( h < e_left_up )
                 {
                     h = e_left_up;
                     eDirection[ LEFT_UP ] = UP;
                 } // if
-                if ( h < f_left_up )
+                if( h < f_left_up )
                 {
                     h = f_left_up;
                     eDirection[ LEFT_UP ] = LEFT;
@@ -830,12 +823,12 @@ struct SW_align_type
 
                 // compute the e score
                 e = e_up - pSWparameterSetRef.iGapExtend;
-                if ( e <= h_up - gapoe )
+                if( e <= h_up - gapoe )
                 {
                     e = h_up - gapoe;
                     eDirection[ UP ] = LEFT_UP;
                 } // if
-                if ( e < f_up - gapoe )
+                if( e < f_up - gapoe )
                 {
                     e = f_up - gapoe;
                     eDirection[ UP ] = LEFT;
@@ -843,12 +836,12 @@ struct SW_align_type
 
                 // update the f score
                 f = f_left - pSWparameterSetRef.iGapExtend;
-                if ( f <= h_left - gapoe )
+                if( f <= h_left - gapoe )
                 {
                     f = h_left - gapoe;
                     eDirection[ LEFT ] = LEFT_UP;
                 } // if
-                if ( f < e_left - gapoe )
+                if( f < e_left - gapoe )
                 {
                     f = e_left - gapoe;
                     eDirection[ LEFT ] = UP;
@@ -858,19 +851,19 @@ struct SW_align_type
                  * If any of the extensions leads to a negative score we set its direction to STOP.
                  * and the score to zero
                  */
-                if ( h < 0 )
+                if( h < 0 )
                 {
                     h = 0;
                     eDirection[ LEFT_UP ] = STOP;
                 } // if
 
-                if ( e < 0 )
+                if( e < 0 )
                 {
                     e = 0;
                     eDirection[ UP ] = STOP;
                 } // if
 
-                if ( f < 0 )
+                if( f < 0 )
                 {
                     f = 0;
                     eDirection[ LEFT ] = STOP;
@@ -931,10 +924,10 @@ struct SW_align_type
                 /* We store h in the Matrix for later analysis
                  * We also store all directions
                  */
-                if ( CONF_FILL_OUTCOME_MATRIX )
+                if( CONF_FILL_OUTCOME_MATRIX )
                 {
                     *( queryOutcomeMatrixIterator++ ) = h;
-                    for ( unsigned int i = 0; i < 3; i++ )
+                    for( unsigned int i = 0; i < 3; i++ )
                         *( backtrackingMatrixIterator[ i ]++ ) = eDirection[ i ];
                 } // if
             } // inner for
@@ -945,9 +938,9 @@ struct SW_align_type
              * Since this is the SW algorithm the maximum must be found in a H value...
              * We can therefore just store the max positions with respect to H
              */
-            if ( maxScoreInCurrentRow >= maxScoreValue )
+            if( maxScoreInCurrentRow >= maxScoreValue )
             {
-                if ( maxScoreInCurrentRow > maxScoreValue )
+                if( maxScoreInCurrentRow > maxScoreValue )
                 { // fresh overall maximum detected
                     rvMaxScorePositions.clear( );
                     maxScoreValue = maxScoreInCurrentRow;

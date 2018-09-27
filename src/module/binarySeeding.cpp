@@ -35,7 +35,7 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
                                     std::shared_ptr<FMIndex> pFM_index,
                                     std::shared_ptr<NucSeq> pQuerySeq )
 {
-    while ( true )
+    while( true )
     {
         DEBUG_2( std::cout << "interval (" << xAreaToCover.start( ) << "," << xAreaToCover.end( )
                            << ")" << std::endl; )
@@ -43,7 +43,7 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
         Interval<nucSeqIndex> xAreaCovered;
         // performs extension and records any found seeds
         // here we use bLrExtension to choose the extension scheme
-        if ( bLrExtension )
+        if( bLrExtension )
             xAreaCovered = maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq,
                                                        pSegmentVector );
         else
@@ -55,7 +55,7 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
                            << xAreaCovered.end( ) << ")" << std::endl; )
 
         // if the extension did not fully cover until uiStart:
-        if ( xAreaCovered.start( ) != 0 && xAreaToCover.start( ) + 1 < xAreaCovered.start( ) )
+        if( xAreaCovered.start( ) != 0 && xAreaToCover.start( ) + 1 < xAreaCovered.start( ) )
         {
             // enqueue procesInterval() for a new interval that spans from uiStart to
             // where the extension stopped
@@ -65,7 +65,7 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
                 pSegmentVector, pFM_index, pQuerySeq );
         } // if
         // if the extension did not fully cover until uiEnd:
-        if ( xAreaToCover.end( ) > xAreaCovered.end( ) + 1 )
+        if( xAreaToCover.end( ) > xAreaCovered.end( ) + 1 )
         {
             xAreaToCover.set( xAreaCovered.end( ) + 1,
                               xAreaToCover.end( ) - xAreaCovered.end( ) - 1 );
@@ -110,7 +110,7 @@ std::shared_ptr<Container> BinarySeeding::execute( std::shared_ptr<ContainerVect
 
     std::shared_ptr<NucSeq> pQuerySeq = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] );
 
-    if ( pQuerySeq == nullptr )
+    if( pQuerySeq == nullptr )
         return pSegmentVector;
 
     DEBUG_2( std::cout << pQuerySeq->fastaq( ) << std::endl; )
@@ -123,12 +123,12 @@ std::shared_ptr<Container> BinarySeeding::execute( std::shared_ptr<ContainerVect
      * If the minimum seed size is below uiMinSeedSizeDrop we can abort here already,
      * without loosing accuracy
      */
-    if ( uiMinSeedSizeDrop != 0 &&
-         pSegmentVector->numSeedsLarger( uiMinSeedSizeDrop ) <
-             fRelMinSeedSizeAmount * pQuerySeq->length( ) &&
-         uiMinGenomeSize < pFM_index->getRefSeqLength( )
+    if( uiMinSeedSizeDrop != 0 &&
+        pSegmentVector->numSeedsLarger( uiMinSeedSizeDrop ) <
+            fRelMinSeedSizeAmount * pQuerySeq->length( ) &&
+        uiMinGenomeSize < pFM_index->getRefSeqLength( )
 #if DEBUG_LEVEL >= 1
-         && !bAnalyzeHeuristics
+        && !bAnalyzeHeuristics
 #endif // DEBUG_LEVEL
     )
         pSegmentVector->clear( );

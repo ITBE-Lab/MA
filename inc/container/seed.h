@@ -31,7 +31,7 @@ typedef uint64_t nucSeqIndex;
  */
 class Seed : public Container, public Interval<nucSeqIndex>
 {
-   public:
+  public:
     ///@brief the beginning of the match on the reference
     nucSeqIndex uiPosOnReference;
     unsigned int uiAmbiguity;
@@ -48,8 +48,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
     Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength,
           const nucSeqIndex uiPosOnReference )
         : Interval( uiPosOnQuery, uiLength ), uiPosOnReference( uiPosOnReference ), uiAmbiguity( 0 )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief Creates a new Seed.
@@ -59,13 +58,12 @@ class Seed : public Container, public Interval<nucSeqIndex>
         : Interval( uiPosOnQuery, uiLength ),
           uiPosOnReference( uiPosOnReference ),
           uiAmbiguity( uiAmbiguity )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief Copys from a Seed.
      */
-    Seed( const Seed& rOther )
+    Seed( const Seed &rOther )
         : Interval( rOther ),
           uiPosOnReference( rOther.uiPosOnReference ),
           uiAmbiguity( rOther.uiAmbiguity )
@@ -77,15 +75,13 @@ class Seed : public Container, public Interval<nucSeqIndex>
           ,
           uiContigId( rOther.uiContigId )
 #endif
-    {
-    } // copy constructor
+    {} // copy constructor
 
     /**
      * @brief Default Constructor.
      */
     Seed( ) : Interval( )
-    {
-    } // default constructor
+    {} // default constructor
 
     /**
      * @brief Returns the beginning of the seed on the reference.
@@ -116,7 +112,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
     /**
      * @brief Copys from another Seed.
      */
-    inline Seed& operator=( const Seed& rxOther )
+    inline Seed &operator=( const Seed &rxOther )
     {
         Interval::operator=( rxOther );
         uiPosOnReference = rxOther.uiPosOnReference;
@@ -134,13 +130,13 @@ class Seed : public Container, public Interval<nucSeqIndex>
      * @brief compares two Seeds.
      * @returns true if start and size are equal, false otherwise.
      */
-    inline bool operator==( const Seed& rxOther )
+    inline bool operator==( const Seed &rxOther )
     {
         return Interval::operator==( rxOther ) && uiPosOnReference == rxOther.uiPosOnReference;
     } // operator
 
     // overload
-    inline bool canCast( const std::shared_ptr<Container>& c ) const
+    inline bool canCast( const std::shared_ptr<Container> &c ) const
     {
         return std::dynamic_pointer_cast<Seed>( c ) != nullptr;
     } // function
@@ -167,7 +163,7 @@ class Alignment;
  */
 class AlignmentStatistics
 {
-   public:
+  public:
     unsigned int index_of_strip;
     unsigned int num_seeds_in_strip;
     unsigned int anchor_size;
@@ -192,10 +188,9 @@ class AlignmentStatistics
           uiInitialRefBegin( 0 ),
           uiInitialQueryEnd( 0 ),
           uiInitialRefEnd( 0 )
-    {
-    }
+    {}
 
-    void operator=( const AlignmentStatistics& rOther )
+    void operator=( const AlignmentStatistics &rOther )
     {
         index_of_strip = rOther.index_of_strip;
         num_seeds_in_strip = rOther.num_seeds_in_strip;
@@ -213,7 +208,7 @@ class AlignmentStatistics
 
 class SVInfo
 {
-   public:
+  public:
     /**
      * @details
      * Contains indices of seeds, where a structural variant (deletion or insertion)
@@ -231,7 +226,7 @@ class SVInfo
 class Seeds : public std::vector<Seed>, // @todo :@
               public Container
 {
-   public:
+  public:
     nucSeqIndex mem_score = 0;
     // some statistics
     AlignmentStatistics xStats;
@@ -245,13 +240,10 @@ class Seeds : public std::vector<Seed>, // @todo :@
     } // copy constructor
 
     Seeds( ) : vector( ), Container( ), xStats( ), bConsistent( false )
-    {
-    } // default constructor
+    {} // default constructor
 
-    template <class InputIt>
-    Seeds( InputIt xBegin, InputIt xEnd ) : vector( xBegin, xEnd )
-    {
-    } // iterator constructor
+    template <class InputIt> Seeds( InputIt xBegin, InputIt xEnd ) : vector( xBegin, xEnd )
+    {} // iterator constructor
 
     // overload
     bool canCast( std::shared_ptr<Container> c ) const
@@ -277,14 +269,14 @@ class Seeds : public std::vector<Seed>, // @todo :@
     /*append a copy of another list*/
     void append( std::shared_ptr<Seeds> pOther )
     {
-        for ( Seed& rS : *pOther )
+        for( Seed &rS : *pOther )
             push_back( rS );
     } // function
 
     bool larger( const std::shared_ptr<Container> pOther ) const
     {
         const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>( pOther );
-        if ( pSeeds == nullptr )
+        if( pSeeds == nullptr )
             return true;
         return getScore( ) > pSeeds->getScore( );
     } // operator

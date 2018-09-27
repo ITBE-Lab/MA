@@ -52,7 +52,7 @@ void SACModelLine::getSamples( int &iterations, std::vector<int> &samples )
     double trand = indices_.size( ) / ( RAND_MAX + 1.0 );
 
     // Get a random number between 1 and max_indices
-    int idx = ( int )( rand( ) * trand );
+    int idx = (int)( rand( ) * trand );
     // Get the index
     samples[ 0 ] = indices_.at( idx );
 
@@ -60,18 +60,18 @@ void SACModelLine::getSamples( int &iterations, std::vector<int> &samples )
     int iter = 0;
     do
     {
-        idx = ( int )( rand( ) * trand );
+        idx = (int)( rand( ) * trand );
         samples[ 1 ] = indices_.at( idx );
         iter++;
 
-        if ( iter > MAX_ITERATIONS_UNIQUE )
+        if( iter > MAX_ITERATIONS_UNIQUE )
         {
             std::cout << "[SACModelLine::getSamples] WARNING: Could not select 2 unique points in "
                       << MAX_ITERATIONS_UNIQUE << " iterations!" << std::endl;
             break;
         }
         iterations++;
-    } while ( samples[ 1 ] == samples[ 0 ] );
+    } while( samples[ 1 ] == samples[ 0 ] );
     iterations--;
     return;
 }
@@ -98,7 +98,7 @@ void SACModelLine::selectWithinDistance( const std::vector<double> &model_coeffi
     p3.z = model_coefficients.at( 5 ) - model_coefficients.at( 2 );
 
     // Iterate through the 3d points and calculate the distances from them to the plane
-    for ( unsigned int i = 0; i < indices_.size( ); i++ )
+    for( unsigned int i = 0; i < indices_.size( ); i++ )
     {
         // Calculate the distance from the point to the line
         // D = ||(P2-P1) x (P1-P0)|| / ||P2-P1|| = norm (cross (p2-p1, p2-p0)) / norm(p2-p1)
@@ -119,7 +119,7 @@ void SACModelLine::selectWithinDistance( const std::vector<double> &model_coeffi
         double sqr_distance =
             ( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
 
-        if ( sqr_distance < sqr_threshold )
+        if( sqr_distance < sqr_threshold )
         {
             // Returns the indices of the points whose squared distances are smaller than the
             // threshold
@@ -148,7 +148,7 @@ void SACModelLine::getDistancesToModel( const std::vector<double> &model_coeffic
     p3.z = model_coefficients.at( 5 ) - model_coefficients.at( 2 );
 
     // Iterate through the 3d points and calculate the distances from them to the plane
-    for ( unsigned int i = 0; i < indices_.size( ); i++ )
+    for( unsigned int i = 0; i < indices_.size( ); i++ )
     {
         // Calculate the distance from the point to the line
         // D = ||(P2-P1) x (P1-P0)|| / ||P2-P1|| = norm (cross (p2-p1, p2-p0)) / norm(p2-p1)
@@ -178,7 +178,7 @@ void SACModelLine::projectPoints( const std::vector<int> &inliers,
     projected_points.set_channels_size( cloud_->get_channels_size( ) );
 
     // Create the channels
-    for ( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
+    for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
     {
         projected_points.channels[ d ].name = cloud_->channels[ d ].name;
         projected_points.channels[ d ].values.resize( inliers.size( ) );
@@ -191,7 +191,7 @@ void SACModelLine::projectPoints( const std::vector<int> &inliers,
     p21.z = model_coefficients.at( 5 ) - model_coefficients.at( 2 );
 
     // Iterate through the 3d points and calculate the distances from them to the line
-    for ( unsigned int i = 0; i < inliers.size( ); i++ )
+    for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // double k = (DOT_PROD_3D (points[i], p21) - dotA_B) / dotB_B;
         double k = ( cloud_->points.at( inliers.at( i ) ).x * p21.x +
@@ -205,7 +205,7 @@ void SACModelLine::projectPoints( const std::vector<int> &inliers,
         projected_points.points[ i ].y = model_coefficients_.at( 1 ) + k * p21.y;
         projected_points.points[ i ].z = model_coefficients_.at( 2 ) + k * p21.z;
         // Copy the other attributes
-        for ( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
+        for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
             projected_points.channels[ d ].values[ i ] =
                 cloud_->channels[ d ].values[ inliers.at( i ) ];
     }
@@ -226,7 +226,7 @@ void SACModelLine::projectPointsInPlace( const std::vector<int> &inliers,
     p21.z = model_coefficients.at( 5 ) - model_coefficients.at( 2 );
 
     // Iterate through the 3d points and calculate the distances from them to the line
-    for ( unsigned int i = 0; i < inliers.size( ); i++ )
+    for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // double k = (DOT_PROD_3D (points[i], p21) - dotA_B) / dotB_B;
         double k = ( cloud_->points.at( inliers.at( i ) ).x * p21.x +
@@ -311,7 +311,7 @@ bool SACModelLine::computeModelCoefficients( const std::vector<int> &samples )
 bool SACModelLine::doSamplesVerifyModel( const std::set<int> &indices, double threshold )
 {
     double sqr_threshold = threshold * threshold;
-    for ( std::set<int>::iterator it = indices.begin( ); it != indices.end( ); ++it )
+    for( std::set<int>::iterator it = indices.begin( ); it != indices.end( ); ++it )
     {
         geometry_msgs::Point32 p3, p4;
         p3.x = model_coefficients_.at( 3 ) - model_coefficients_.at( 0 );
@@ -326,7 +326,7 @@ bool SACModelLine::doSamplesVerifyModel( const std::set<int> &indices, double th
         double sqr_distance =
             ( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
 
-        if ( sqr_distance < sqr_threshold )
+        if( sqr_distance < sqr_threshold )
             return ( false );
     }
     return ( true );

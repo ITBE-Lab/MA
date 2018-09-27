@@ -14,9 +14,9 @@ extern int libMA::defaults::iMatch;
 
 double PairedReads::p( nucSeqIndex d ) const // TO DO inline me
 {
-    if ( bNormalDist )
+    if( bNormalDist )
         return 1 - 0.499 * ( 1 + std::erf( ( d - mean ) / ( std * std::sqrt( 2 ) ) ) );
-    if ( bUniformDist )
+    if( bUniformDist )
         /*
          * uniform distribution has following CDF:
          * (d - a) / (b - a)
@@ -54,9 +54,9 @@ std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector
     std::shared_ptr<Pack> pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 2 ] ); // dc
 
     // assert that we have at least one alignment for each mate.
-    if ( pAlignments1->size( ) == 0 )
+    if( pAlignments1->size( ) == 0 )
         return pAlignments2;
-    if ( pAlignments2->size( ) == 0 )
+    if( pAlignments2->size( ) == 0 )
         return pAlignments1;
 
     // the indices of the best alignment pair
@@ -66,28 +66,28 @@ std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector
     // try out all combinations
     // this assumes that not more than three or four alignments are reported
     // otherwise this here might be a serious bottleneck
-    for ( unsigned int i = 0; i < pAlignments1->size( ); i++ )
+    for( unsigned int i = 0; i < pAlignments1->size( ); i++ )
     {
         std::shared_ptr<Alignment> pAlignment1 =
             std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ i ] ); // dc
-        if ( pAlignment1->length( ) == 0 )
+        if( pAlignment1->length( ) == 0 )
             continue;
-        for ( unsigned int j = 0; j < pAlignments2->size( ); j++ )
+        for( unsigned int j = 0; j < pAlignments2->size( ); j++ )
         {
             std::shared_ptr<Alignment> pAlignment2 =
                 std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ j ] ); // dc
-            if ( pAlignment2->length( ) == 0 )
+            if( pAlignment2->length( ) == 0 )
                 continue;
 
             // get the correct start position on the forward strand
 
             nucSeqIndex uiP1 = pAlignment1->beginOnRef( );
-            if ( pPack->bPositionIsOnReversStrand( pAlignment1->beginOnRef( ) ) )
+            if( pPack->bPositionIsOnReversStrand( pAlignment1->beginOnRef( ) ) )
                 uiP1 = pPack->iAbsolutePosition( pAlignment1->endOnRef( ) );
 
             // get the correct start position on the forward strand
             nucSeqIndex uiP2 = pAlignment2->beginOnRef( );
-            if ( pPack->bPositionIsOnReversStrand( pAlignment2->beginOnRef( ) ) )
+            if( pPack->bPositionIsOnReversStrand( pAlignment2->beginOnRef( ) ) )
                 uiP2 = pPack->iAbsolutePosition( pAlignment2->endOnRef( ) );
 
 
@@ -111,7 +111,7 @@ std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector
             // std::cerr << "score: " << score << std::endl;
 
             // check if we have a new best pair
-            if ( score > maxScore )
+            if( score > maxScore )
             {
                 // if so update the score and indices
                 maxScore = score;
@@ -135,7 +135,7 @@ std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector
 
 
     // set the paired property in the respective alignment stats
-    if ( bPaired )
+    if( bPaired )
     {
         // set which read was first..
 

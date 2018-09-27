@@ -40,13 +40,12 @@ namespace sample_consensus
 {
 class RANSAC : public SAC
 {
-   public:
-    RANSAC( SACModel* model );
-    RANSAC( SACModel* model, double threshold );
+  public:
+    RANSAC( SACModel *model );
+    RANSAC( SACModel *model, double threshold );
 
     virtual ~RANSAC( )
-    {
-    }
+    {}
 
     bool computeModel( int debug = 0 );
 };

@@ -21,15 +21,14 @@ namespace libMA
  */
 class MappingQuality : public Module
 {
-   public:
+  public:
     unsigned int uiReportNBest = defaults::uiReportN;
     float fMinSecScoreRatio = defaults::fMinSecScoreRatio;
     double dMaxOverlapSupplementary = defaults::dMaxOverlapSupplementary;
     size_t uiMaxSupplementaryPerPrim = defaults::uiMaxSupplementaryPerPrim;
 
     MappingQuality( )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 

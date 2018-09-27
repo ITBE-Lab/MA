@@ -3,13 +3,13 @@
  * @author Markus Schmidt
  */
 #include "module/needlemanWunsch.h"
+#include "ksw/ksw2.h"
 #include <algorithm>
 #include <bitset>
 #include <cassert>
 #include <iostream>
 #include <string>
 #include <vector>
-#include "ksw/ksw2.h"
 
 #define KSW_EZ_SCORE_ONLY 0x01 // don't record alignment path/cigar
 #define KSW_EZ_RIGHT 0x02 // right-align gaps
@@ -39,25 +39,34 @@ DEBUG( bool bAnalyzeHeuristics = false; ) // DEBUG
 // match missmatch matrix for ksw
 int8_t mat[ 25 ];
 
-static void ksw_gen_simple_mat( int m, int8_t* mat, int8_t a, int8_t b )
+static void ksw_gen_simple_mat( int m, int8_t *mat, int8_t a, int8_t b )
 {
     int i, j;
     a = a < 0 ? -a : a;
     b = b > 0 ? -b : b;
-    for ( i = 0; i < m - 1; ++i )
+    for( i = 0; i < m - 1; ++i )
     {
-        for ( j = 0; j < m - 1; ++j )
+        for( j = 0; j < m - 1; ++j )
             mat[ i * m + j ] = i == j ? a : b;
         mat[ i * m + m - 1 ] = 0;
     }
-    for ( j = 0; j < m; ++j )
+    for( j = 0; j < m; ++j )
         mat[ ( m - 1 ) * m + j ] = 0;
 } // function
 
-inline void ksw_ext( int qlen, const uint8_t* query, int tlen, const uint8_t* target, int8_t q,
-                     int8_t e, int8_t q2, int8_t e2, int& w, ksw_extz_t* ez, bool bRef )
+inline void ksw_ext( int qlen,
+                     const uint8_t *query,
+                     int tlen,
+                     const uint8_t *target,
+                     int8_t q,
+                     int8_t e,
+                     int8_t q2,
+                     int8_t e2,
+                     int &w,
+                     ksw_extz_t *ez,
+                     bool bRef )
 {
-    if ( bRef )
+    if( bRef )
         ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1,
                        KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
     else
@@ -65,9 +74,9 @@ inline void ksw_ext( int qlen, const uint8_t* query, int tlen, const uint8_t* ta
                        KSW_EZ_EXTZ_ONLY, ez );
 } // function
 
-inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target,
-                            int8_t q, int8_t e, int8_t q2, int8_t e2, int& w, ksw_extz_t* ez,
-                            int8_t* mat )
+inline void ksw_simplified( int qlen, const uint8_t *query, int tlen, const uint8_t *target,
+                            int8_t q, int8_t e, int8_t q2, int8_t e2, int &w, ksw_extz_t *ez,
+                            int8_t *mat )
 {
     // assert(qlen * tlen < 10000000);
     int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
@@ -75,13 +84,13 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
      * Adjust the bandwith according to the delta distance of the seeds creating this gap
      * the add minAddBandwidth so that the alignment can go a little further out.
      */
-    if ( std::abs( tlen - qlen ) + minAddBandwidth > w )
+    if( std::abs( tlen - qlen ) + minAddBandwidth > w )
         w = std::abs( tlen - qlen ) + minAddBandwidth;
     ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez );
 } // function
 
-inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target,
-                            int8_t q, int8_t e, int8_t q2, int8_t e2, int& w, ksw_extz_t* ez )
+inline void ksw_simplified( int qlen, const uint8_t *query, int tlen, const uint8_t *target,
+                            int8_t q, int8_t e, int8_t q2, int8_t e2, int &w, ksw_extz_t *ez )
 {
     ksw_simplified( qlen, query, tlen, target, q, e, q2, e2, w, ez, mat );
 } // function
@@ -90,8 +99,8 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
 // small wrapper that takes care of deallocation
 class Wrapper_ksw_extz_t
 {
-   public:
-    ksw_extz_t* ez;
+  public:
+    ksw_extz_t *ez;
 
     Wrapper_ksw_extz_t( )
     {
@@ -112,15 +121,15 @@ void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIn
           std::shared_ptr<Alignment> pAlignment )
 {
     // sanity checks
-    if ( toRef <= fromRef )
-        if ( toQuery <= fromQuery )
+    if( toRef <= fromRef )
+        if( toQuery <= fromQuery )
             return;
-    if ( toQuery <= fromQuery )
+    if( toQuery <= fromQuery )
     {
         pAlignment->append( MatchType::deletion, toRef - fromRef );
         return;
     } // if
-    if ( toRef <= fromRef )
+    if( toRef <= fromRef )
     {
         pAlignment->append( MatchType::insertion, toQuery - fromQuery );
         return;
@@ -139,16 +148,16 @@ void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIn
 
     uint32_t qPos = fromQuery;
     uint32_t rPos = fromRef;
-    for ( int i = 0; i < ez.ez->n_cigar; ++i )
+    for( int i = 0; i < ez.ez->n_cigar; ++i )
     {
         uint32_t uiSymbol = ez.ez->cigar[ i ] & 0xf;
         uint32_t uiAmount = ez.ez->cigar[ i ] >> 4;
-        switch ( uiSymbol )
+        switch( uiSymbol )
         {
             case 0:
-                for ( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
+                for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                 {
-                    if ( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
+                    if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
                         pAlignment->append( MatchType::match );
                     else
                         pAlignment->append( MatchType::missmatch );
@@ -172,14 +181,14 @@ void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIn
     } // for
 #if DEBUG_LEVEL >= 1
     const char vMIDN[] = {'M', 'I', 'D', 'N'};
-    if ( qPos != ( uint32_t )toQuery && rPos != ( uint32_t )toRef )
+    if( qPos != (uint32_t)toQuery && rPos != (uint32_t)toRef )
     {
-        std::cerr << "ksw did neither extend till end of query nor ref " << ( int )toQuery - qPos
-                  << "; " << ( int )toRef - rPos << " bandwidth: " << uiBandwidth << std::endl;
+        std::cerr << "ksw did neither extend till end of query nor ref " << (int)toQuery - qPos
+                  << "; " << (int)toRef - rPos << " bandwidth: " << uiBandwidth << std::endl;
         std::cout << pQuery->fromTo( fromQuery, toQuery ) << std::endl;
         std::cout << pRef->fromTo( fromRef, toRef ) << std::endl;
         std::cout << "CIGAR:";
-        for ( int i = 0; i < ez.ez->n_cigar; ++i )
+        for( int i = 0; i < ez.ez->n_cigar; ++i )
         {
             uint32_t uiSymb = ez.ez->cigar[ i ] & 0xf;
             uint32_t uiAmount = ez.ez->cigar[ i ] >> 4;
@@ -219,29 +228,30 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
     /*
      * break conditions for actually empty areas
      */
-    DEBUG( if ( toQuery > pQuery->length( ) ) {
+    DEBUG( if( toQuery > pQuery->length( ) ) {
         std::cerr << toQuery << " " << pQuery->length( ) << std::endl;
         assert( false );
     } // if
-           if ( toRef > pRef->length( ) ) {
+           if( toRef > pRef->length( ) ) {
                std::cerr << toRef << " " << pRef->length( ) << std::endl;
                assert( false );
            } // if
            ) // DEBUG
-    if ( toRef <= fromRef )
-        if ( toQuery <= fromQuery )
+    if( toRef <= fromRef )
+        if( toQuery <= fromQuery )
             return;
     DEBUG_2( std::cout << toQuery - fromQuery << std::endl;
-             for ( nucSeqIndex i = fromQuery; i < toQuery; i++ ) std::cout << pQuery->charAt( i );
-             std::cout << std::endl; std::cout << toRef - fromRef << std::endl;
-             for ( nucSeqIndex i = fromRef; i < toRef; i++ ) std::cout << pRef->charAt( i );
+             for( nucSeqIndex i = fromQuery; i < toQuery; i++ ) std::cout << pQuery->charAt( i );
+             std::cout << std::endl;
+             std::cout << toRef - fromRef << std::endl;
+             for( nucSeqIndex i = fromRef; i < toRef; i++ ) std::cout << pRef->charAt( i );
              std::cout << std::endl; ) // DEBUG
-    if ( toQuery <= fromQuery )
+    if( toQuery <= fromQuery )
     {
         pAlignment->append( MatchType::deletion, toRef - fromRef );
         return;
     } // if
-    if ( toRef <= fromRef )
+    if( toRef <= fromRef )
     {
         pAlignment->append( MatchType::insertion, toQuery - fromQuery );
         return;
@@ -285,37 +295,37 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
     s[ 0 ][ 0 ][ 0 ] = 0;
     s[ 1 ][ 0 ][ 0 ] = LOWER;
     s[ 2 ][ 0 ][ 0 ] = LOWER;
-    dir[ 0 ][ 0 ][ 0 ] = 0; // this position will throw an error is the backtracker tries to use it
-    dir[ 1 ][ 0 ][ 0 ] = 0; // this position will throw an error is the backtracker tries to use it
-    dir[ 2 ][ 0 ][ 0 ] = 0; // this position will throw an error is the backtracker tries to use it
+    dir[ 0 ][ 0 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
+    dir[ 1 ][ 0 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
+    dir[ 2 ][ 0 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
 
     s[ 0 ][ 1 ][ 0 ] = LOWER;
-    dir[ 0 ][ 1 ][ 0 ] = 0; // this position will throw an error is the backtracker tries to use it
+    dir[ 0 ][ 1 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
     s[ 1 ][ 1 ][ 0 ] = -( iGap + iExtend );
     dir[ 1 ][ 1 ][ 0 ] = INS | DIR_0_NEXT;
     s[ 2 ][ 1 ][ 0 ] = LOWER;
-    dir[ 2 ][ 1 ][ 0 ] = 0; // this position will throw an error is the backtracker tries to use it
+    dir[ 2 ][ 1 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
 
     s[ 0 ][ 0 ][ 1 ] = LOWER;
-    dir[ 0 ][ 0 ][ 1 ] = 0; // this position will throw an error is the backtracker tries to use it
+    dir[ 0 ][ 0 ][ 1 ] = 0; // this position will throw an error if the backtracker tries to use it
     s[ 1 ][ 0 ][ 1 ] = LOWER;
-    dir[ 1 ][ 0 ][ 1 ] = 0; // this position will throw an error is the backtracker tries to use it
-    if ( bNoGapAtEnd ) // see note above
+    dir[ 1 ][ 0 ][ 1 ] = 0; // this position will throw an error if the backtracker tries to use it
+    if( bNoGapAtEnd ) // see note above
         s[ 2 ][ 0 ][ 1 ] = 0;
     else
         s[ 2 ][ 0 ][ 1 ] = -( iGap + iExtend );
     dir[ 2 ][ 0 ][ 1 ] = DEL | DIR_0_NEXT;
-    for ( unsigned int x = 0; x < 3; x++ )
+    for( unsigned int x = 0; x < 3; x++ )
     {
-        for ( nucSeqIndex uiI = 2; uiI < toQuery - fromQuery + 1; uiI++ )
+        for( nucSeqIndex uiI = 2; uiI < toQuery - fromQuery + 1; uiI++ )
         {
-            if ( bNoGapAtEnd ) // see note above
+            if( bNoGapAtEnd ) // see note above
                 s[ x ][ 0 ][ uiI ] = 0;
             else
                 s[ x ][ uiI ][ 0 ] = s[ x ][ uiI - 1 ][ 0 ] - iExtend;
             dir[ 1 ][ uiI ][ 0 ] = INS | DIR_1_NEXT;
         } // for
-        for ( nucSeqIndex uiI = 2; uiI < toRef - fromRef + 1; uiI++ )
+        for( nucSeqIndex uiI = 2; uiI < toRef - fromRef + 1; uiI++ )
         {
             s[ x ][ 0 ][ uiI ] = s[ x ][ 0 ][ uiI - 1 ] - iExtend;
             dir[ 2 ][ 0 ][ uiI ] = DEL | DIR_2_NEXT;
@@ -336,26 +346,26 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
      */
     int a, b;
     char c;
-    for ( nucSeqIndex uiI = 1; uiI < ( toQuery - fromQuery ) + 1; uiI++ )
+    for( nucSeqIndex uiI = 1; uiI < ( toQuery - fromQuery ) + 1; uiI++ )
     {
-        for ( nucSeqIndex uiJ = 1; uiJ < ( toRef - fromRef ) + 1; uiJ++ )
+        for( nucSeqIndex uiJ = 1; uiJ < ( toRef - fromRef ) + 1; uiJ++ )
         {
             // match / missmatch
             a = s[ 0 ][ uiI - 1 ][ uiJ - 1 ];
             c = DIA | DIR_0_NEXT;
             b = s[ 1 ][ uiI - 1 ][ uiJ - 1 ];
-            if ( b > a )
+            if( b > a )
             {
                 a = b;
                 c = DIA | DIR_1_NEXT;
             } // if
             b = s[ 2 ][ uiI - 1 ][ uiJ - 1 ];
-            if ( b > a )
+            if( b > a )
             {
                 a = b;
                 c = DIA | DIR_2_NEXT;
             } // if
-            if ( ( *pQuery )[ toQuery - uiI ] == ( *pRef )[ toRef - uiJ ] )
+            if( ( *pQuery )[ toQuery - uiI ] == ( *pRef )[ toRef - uiJ ] )
                 a += iMatch;
             else
                 a -= iMissMatch;
@@ -366,13 +376,13 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
             a = s[ 1 ][ uiI - 1 ][ uiJ ] - iExtend;
             c = INS | DIR_1_NEXT;
             b = s[ 0 ][ uiI - 1 ][ uiJ ] - ( iGap + iExtend );
-            if ( b >= a )
+            if( b >= a )
             {
                 a = b;
                 c = INS | DIR_0_NEXT;
             } // if
             b = s[ 2 ][ uiI - 1 ][ uiJ ] - ( iGap + iExtend );
-            if ( b > a )
+            if( b > a )
             {
                 a = b;
                 c = INS | DIR_2_NEXT;
@@ -384,13 +394,13 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
             a = s[ 2 ][ uiI ][ uiJ - 1 ] - iExtend;
             c = DEL | DIR_2_NEXT;
             b = s[ 0 ][ uiI ][ uiJ - 1 ] - ( iGap + iExtend );
-            if ( b >= a )
+            if( b >= a )
             {
                 a = b;
                 c = DEL | DIR_0_NEXT;
             } // if
             b = s[ 1 ][ uiI ][ uiJ - 1 ] - ( iGap + iExtend );
-            if ( b > a )
+            if( b > a )
             {
                 a = b;
                 c = DEL | DIR_1_NEXT;
@@ -404,20 +414,20 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
         /*
          * sanity prints
          */
-        for ( nucSeqIndex uiI = 0; uiI < toRef - fromRef + 1; uiI++ ) {
-            if ( uiI == 0 )
+        for( nucSeqIndex uiI = 0; uiI < toRef - fromRef + 1; uiI++ ) {
+            if( uiI == 0 )
                 std::cout << " \t \t";
             else
                 std::cout << pRef->charAt( toRef - uiI ) << "\t";
         } // for
             std::cout
             << std::endl;
-        for ( nucSeqIndex uiI = 0; uiI < toQuery - fromQuery + 1; uiI++ ) {
-            if ( uiI == 0 )
+        for( nucSeqIndex uiI = 0; uiI < toQuery - fromQuery + 1; uiI++ ) {
+            if( uiI == 0 )
                 std::cout << " \t";
             else
                 std::cout << pQuery->charAt( toQuery - uiI ) << "\t";
-            for ( nucSeqIndex uiJ = 0; uiJ < toRef - fromRef + 1; uiJ++ )
+            for( nucSeqIndex uiJ = 0; uiJ < toRef - fromRef + 1; uiJ++ )
                 std::cout << s[ 2 ][ uiI ][ uiJ ] << "\t";
             std::cout << std::endl;
         } // for
@@ -436,10 +446,10 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
      * along the reference
      * also: in this case the last direction must be a match
      */
-    if ( bNoGapAtBeginning )
+    if( bNoGapAtBeginning )
     {
-        for ( nucSeqIndex uiJ = 1; uiJ < toRef - fromRef; uiJ++ )
-            if ( s[ 0 ][ iX ][ uiJ ] > s[ 0 ][ iX ][ iY ] )
+        for( nucSeqIndex uiJ = 1; uiJ < toRef - fromRef; uiJ++ )
+            if( s[ 0 ][ iX ][ uiJ ] > s[ 0 ][ iX ][ iY ] )
                 iY = uiJ;
         DEBUG_2( std::cout << ( toRef - fromRef ) - iY << "D"; ) // DEBUG
         pAlignment->shiftOnRef( ( toRef - fromRef ) - iY );
@@ -448,30 +458,30 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
     {
         int a = s[ 0 ][ iX ][ iY ];
         int b = s[ 1 ][ iX ][ iY ];
-        if ( b > a )
+        if( b > a )
         {
             a = b;
             cLastDir = DIR_1_NEXT;
         } // if
         b = s[ 2 ][ iX ][ iY ];
-        if ( b > a )
+        if( b > a )
             cLastDir = DIR_2_NEXT;
     } // else
-    while ( iX > 0 || iY > 0 )
+    while( iX > 0 || iY > 0 )
     {
         // load the direction value from the correct matrix
-        if ( cLastDir & DIR_0_NEXT )
+        if( cLastDir & DIR_0_NEXT )
             cLastDir = dir[ 0 ][ iX ][ iY ];
-        else if ( cLastDir & DIR_1_NEXT )
+        else if( cLastDir & DIR_1_NEXT )
             cLastDir = dir[ 1 ][ iX ][ iY ];
-        else if ( cLastDir & DIR_2_NEXT )
+        else if( cLastDir & DIR_2_NEXT )
             cLastDir = dir[ 2 ][ iX ][ iY ];
         else
             std::cerr << "WARNING: no next pointer set in dynamic programming" << std::endl;
         // do the backtracking
-        if ( cLastDir & DIA )
+        if( cLastDir & DIA )
         {
-            if ( ( *pQuery )[ toQuery - iX ] == ( *pRef )[ toRef - iY ] )
+            if( ( *pQuery )[ toQuery - iX ] == ( *pRef )[ toRef - iY ] )
             {
                 pAlignment->append( MatchType::match );
                 DEBUG_2( std::cout << "M"; ) // DEBUG
@@ -484,13 +494,13 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
             iX--;
             iY--;
         } // if
-        else if ( cLastDir & INS )
+        else if( cLastDir & INS )
         {
             pAlignment->append( MatchType::insertion );
             iX--;
             DEBUG_2( std::cout << "I"; ) // DEBUG
         } // if
-        else if ( cLastDir & DEL )
+        else if( cLastDir & DEL )
         {
             pAlignment->append( MatchType::deletion );
             iY--;
@@ -504,7 +514,7 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
          * if there is no gap cost for the end
          * we should stop backtracking once we reached the end of the query
          */
-        if ( bNoGapAtEnd && iX <= 0 )
+        if( bNoGapAtEnd && iX <= 0 )
             return;
     } // while
 
@@ -512,13 +522,13 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
 
     // print the entire matrix if necessary
     DEBUG_3(
-        std::cout << "\t"; for ( auto i = toRef; i > fromRef; i-- ) std::cout
+        std::cout << "\t"; for( auto i = toRef; i > fromRef; i-- ) std::cout
                            << "\t" << NucSeq::translateACGTCodeToCharacter( ( *pRef )[ i - 1 ] );
-        for ( auto j = fromQuery; j <= toQuery; j++ ) {
+        for( auto j = fromQuery; j <= toQuery; j++ ) {
             std::cout << "\n";
-            if ( j > fromQuery )
+            if( j > fromQuery )
                 std::cout << NucSeq::translateACGTCodeToCharacter( ( *pQuery )[ toQuery - j ] );
-            for ( auto i = fromRef; i <= toRef; i++ )
+            for( auto i = fromRef; i <= toRef; i++ )
                 std::cout << "\t" << s[ 0 ][ j - fromQuery ][ i - fromRef ] << ","
                           << s[ 1 ][ j - fromQuery ][ i - fromRef ] << ","
                           << s[ 2 ][ j - fromQuery ][ i - fromRef ] << " ("
@@ -533,7 +543,7 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
 
 class MyPrinterMemory
 {
-   public:
+  public:
     std::shared_ptr<NucSeq> pQuery;
     std::shared_ptr<NucSeq> pRef;
     std::shared_ptr<Alignment> pAlignment;
@@ -548,8 +558,7 @@ class MyPrinterMemory
           pAlignment( pAlignment ),
           uiQPos( uiQueryStart ),
           uiRPos( uiRefStart )
-    {
-    } // constructor
+    {} // constructor
 }; // class
 
 ////// DEPRECATED
@@ -629,31 +638,31 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
     nucSeqIndex qPos = fromQuery;
     nucSeqIndex rPos = fromRef;
 
-    if ( rPos != rCenter && qPos != qCenter )
-        for ( int i = 0; i < ez_left.ez->n_cigar; ++i )
+    if( rPos != rCenter && qPos != qCenter )
+        for( int i = 0; i < ez_left.ez->n_cigar; ++i )
         {
             assert( qPos < qCenter );
             assert( rPos < rCenter );
             uint32_t uiSymbol = ez_left.ez->cigar[ i ] & 0xf;
             uint32_t uiAmount = ez_left.ez->cigar[ i ] >> 4;
-            switch ( uiSymbol )
+            switch( uiSymbol )
             {
                 case 0:
                     // dont go over the center
-                    if ( qPos + uiAmount > qCenter )
+                    if( qPos + uiAmount > qCenter )
                     {
                         assert( qCenter >= qPos );
                         uiAmount = qCenter - qPos;
                     } // if
                     // dont go over the center
-                    if ( rPos + uiAmount > rCenter )
+                    if( rPos + uiAmount > rCenter )
                     {
                         assert( rCenter >= rPos );
                         uiAmount = rCenter - rPos;
                     } // if
-                    for ( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
+                    for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                     {
-                        if ( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
+                        if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
                             pAlignment->append( MatchType::match );
                         else
                             pAlignment->append( MatchType::missmatch );
@@ -663,14 +672,14 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
                     break;
                 case 1:
                     // dont go over the center
-                    if ( qPos + uiAmount > qCenter )
+                    if( qPos + uiAmount > qCenter )
                         uiAmount = qCenter - qPos;
                     pAlignment->append( MatchType::insertion, uiAmount );
                     qPos += uiAmount;
                     break;
                 case 2:
                     // dont go over the center
-                    if ( rPos + uiAmount > rCenter )
+                    if( rPos + uiAmount > rCenter )
                         uiAmount = rCenter - rPos;
                     pAlignment->append( MatchType::deletion, uiAmount );
                     rPos += uiAmount;
@@ -682,9 +691,9 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
             } // switch
             assert( rPos <= rCenter );
             assert( qPos <= qCenter );
-            if ( rPos == rCenter )
+            if( rPos == rCenter )
                 break;
-            if ( qPos == qCenter )
+            if( qPos == qCenter )
                 break;
         } // for
     assert( rPos <= rCenter );
@@ -698,22 +707,22 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
     int i = 0;
     // unroll the cigar until both query and refernce positions are past the center
     // it might be necessary to unroll one cigar operation partially...
-    for ( ; i < ez_right.ez->n_cigar; ++i )
+    for( ; i < ez_right.ez->n_cigar; ++i )
     {
         // if we are past both centerlines stop unrolling
-        if ( rPosRight >= rCenter && qPosRight >= qCenter )
+        if( rPosRight >= rCenter && qPosRight >= qCenter )
             break;
         // uiAmountNotUnrolled should only be set in the very last iteration of this loop
         assert( uiAmountNotUnrolled == 0 );
         uint32_t uiSymbol = ez_right.ez->cigar[ i ] & 0xf;
         uint32_t uiAmount = ez_right.ez->cigar[ i ] >> 4;
-        switch ( uiSymbol )
+        switch( uiSymbol )
         {
             case 0:
-                if ( rPosRight + uiAmount >= rCenter && qPosRight + uiAmount >= qCenter )
+                if( rPosRight + uiAmount >= rCenter && qPosRight + uiAmount >= qCenter )
                 {
-                    if ( rPosRight < rCenter &&
-                         ( qPosRight >= qCenter || rCenter - rPosRight > qCenter - qPosRight ) )
+                    if( rPosRight < rCenter &&
+                        ( qPosRight >= qCenter || rCenter - rPosRight > qCenter - qPosRight ) )
                     {
                         assert( rCenter > rPosRight );
                         assert( uiAmount >= ( rCenter - rPosRight ) );
@@ -733,7 +742,7 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
                 xTypeLastUnrolledCigar = MatchType::match;
                 break;
             case 1:
-                if ( qPosRight + uiAmount > qCenter && rPosRight >= rCenter )
+                if( qPosRight + uiAmount > qCenter && rPosRight >= rCenter )
                 {
                     assert( qCenter > qPosRight );
                     assert( uiAmount >= ( qCenter - qPosRight ) );
@@ -744,7 +753,7 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
                 xTypeLastUnrolledCigar = MatchType::insertion;
                 break;
             case 2:
-                if ( rPosRight + uiAmount > rCenter && qPosRight >= qCenter )
+                if( rPosRight + uiAmount > rCenter && qPosRight >= qCenter )
                 {
                     assert( rCenter > rPosRight );
                     assert( uiAmount >= ( rCenter - rPosRight ) );
@@ -768,10 +777,10 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
     pAlignment->append( MatchType::insertion, qPosRight - qPos );
 
     // add the last cigar operation (it might have been partially unrolled...)
-    if ( xTypeLastUnrolledCigar == MatchType::match )
-        for ( uint32_t uiPos = 0; uiPos < uiAmountNotUnrolled; uiPos++ )
+    if( xTypeLastUnrolledCigar == MatchType::match )
+        for( uint32_t uiPos = 0; uiPos < uiAmountNotUnrolled; uiPos++ )
         {
-            if ( ( *pQuery )[ uiPos + qPosRight ] == ( *pRef )[ uiPos + rPosRight ] )
+            if( ( *pQuery )[ uiPos + qPosRight ] == ( *pRef )[ uiPos + rPosRight ] )
                 pAlignment->append( MatchType::match );
             else
                 pAlignment->append( MatchType::missmatch );
@@ -780,7 +789,7 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
         pAlignment->append( xTypeLastUnrolledCigar, uiAmountNotUnrolled );
 
     // move q & r pos forward
-    switch ( xTypeLastUnrolledCigar )
+    switch( xTypeLastUnrolledCigar )
     {
         case MatchType::match:
             qPosRight += uiAmountNotUnrolled;
@@ -797,16 +806,16 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
     } // switch
 
     // add all remaining cigar operations
-    for ( ; i < ez_right.ez->n_cigar; ++i )
+    for( ; i < ez_right.ez->n_cigar; ++i )
     {
         uint32_t uiSymbol = ez_right.ez->cigar[ i ] & 0xf;
         uint32_t uiAmount = ez_right.ez->cigar[ i ] >> 4;
-        switch ( uiSymbol )
+        switch( uiSymbol )
         {
             case 0:
-                for ( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
+                for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                 {
-                    if ( ( *pQuery )[ uiPos + qPosRight ] == ( *pRef )[ uiPos + rPosRight ] )
+                    if( ( *pQuery )[ uiPos + qPosRight ] == ( *pRef )[ uiPos + rPosRight ] )
                         pAlignment->append( MatchType::match );
                     else
                         pAlignment->append( MatchType::missmatch );
@@ -840,19 +849,19 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
                               const bool bLocalBeginning, const bool bLocalEnd )
 {
     // do some checking for empty sequences
-    if ( toRef <= fromRef )
-        if ( toQuery <= fromQuery )
+    if( toRef <= fromRef )
+        if( toQuery <= fromQuery )
         {
             DEBUG_3( std::cout << "dynProg end" << std::endl; )
             return;
         } // if
-    if ( toQuery <= fromQuery )
+    if( toQuery <= fromQuery )
     {
         pAlignment->append( MatchType::deletion, toRef - fromRef );
         DEBUG_3( std::cout << "dynProg end" << std::endl; )
         return;
     } // if
-    if ( toRef <= fromRef )
+    if( toRef <= fromRef )
     {
         pAlignment->append( MatchType::insertion, toQuery - fromQuery );
         DEBUG_3( std::cout << "dynProg end" << std::endl; )
@@ -861,7 +870,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
 
     // do not actually compute through gaps that are larger than a set maximum
 #if 1
-    if ( toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea )
+    if( toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea )
     {
         ksw_dual_ext( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment );
         return;
@@ -883,9 +892,9 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
 #endif
 
     DEBUG_3( std::cout << "dynProg begin" << std::endl; )
-    if ( !bLocalBeginning && !bLocalEnd )
+    if( !bLocalBeginning && !bLocalEnd )
     {
-        if ( toQuery - fromQuery > NAIVE_MAX_SIZE || toRef - fromRef > NAIVE_MAX_SIZE || true )
+        if( toQuery - fromQuery > NAIVE_MAX_SIZE || toRef - fromRef > NAIVE_MAX_SIZE || true )
             ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment );
         else
             naiveNeedlemanWunsch( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, false, false,
@@ -919,7 +928,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
 
     assert( toQuery < pQuery->length( ) );
     assert( toRef < pRef->length( ) );
-    if ( bReverse )
+    if( bReverse )
     {
         pQuery->vReverse( fromQuery, toQuery );
         pRef->vReverse( fromRef, toRef );
@@ -928,7 +937,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
              pRef->pGetSequenceRef( ) + fromRef, iGap, iExtend, iGap2, iExtend2, uiBandwidth,
              ez.ez, // return value
              bReverse );
-    if ( bReverse )
+    if( bReverse )
     {
         pQuery->vReverse( fromQuery, toQuery );
         pRef->vReverse( fromRef, toRef );
@@ -936,22 +945,22 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
 
     uint32_t qPos = fromQuery;
     uint32_t rPos = fromRef;
-    if ( bReverse )
+    if( bReverse )
     {
         rPos += toRef - ez.ez->max_t - 1;
         qPos += toQuery - ez.ez->max_q - 1;
     } // if
 
-    for ( int i = 0; i < ez.ez->n_cigar; ++i )
+    for( int i = 0; i < ez.ez->n_cigar; ++i )
     {
         uint32_t uiSymbol = ez.ez->cigar[ i ] & 0xf;
         uint32_t uiAmount = ez.ez->cigar[ i ] >> 4;
-        switch ( uiSymbol )
+        switch( uiSymbol )
         {
             case 0:
-                for ( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
+                for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                 {
-                    if ( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
+                    if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
                         pAlignment->append( MatchType::match );
                     else
                         pAlignment->append( MatchType::missmatch );
@@ -977,7 +986,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
      * Warning:
      * Order is important: the shifting needs to be done after the cigar extraction
      */
-    if ( bReverse )
+    if( bReverse )
     {
         pAlignment->shiftOnRef( toRef - ez.ez->max_t - 1 );
         pAlignment->shiftOnQuery( toQuery - ez.ez->max_q - 1 );
@@ -987,12 +996,12 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     const unsigned int uiBandWidth = 512;
     std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit( fromQuery, toQuery + 1, bReverse );
     std::vector<uint8_t> vRef4Bit = pRef->as4Bit( fromRef, toRef + 1, bReverse );
-    DEBUG_3( if ( bLocalBeginning ) {
-        for ( auto i : vQuery4Bit )
-            std::cout << ( int )i;
+    DEBUG_3( if( bLocalBeginning ) {
+        for( auto i : vQuery4Bit )
+            std::cout << (int)i;
         std::cout << std::endl;
-        for ( auto i : vRef4Bit )
-            std::cout << ( int )i;
+        for( auto i : vRef4Bit )
+            std::cout << (int)i;
         std::cout << std::endl;
     } // if
                  std::cout
@@ -1003,13 +1012,13 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     struct gaba_section_s asec = {
         // gaba_build_section(0,  &vQuery4Bit[0], vQuery4Bit.size());
         id : 0,
-        len : ( uint32_t )vRef4Bit.size( ),
+        len : (uint32_t)vRef4Bit.size( ),
         base : &vRef4Bit[ 0 ]
     }; // struct
     struct gaba_section_s bsec = {
         // gaba_build_section(2, &vRef4Bit[0], vRef4Bit.size());
         id : 2,
-        len : ( uint32_t )vQuery4Bit.size( ),
+        len : (uint32_t)vQuery4Bit.size( ),
         base : &vQuery4Bit[ 0 ]
     }; // struct
     struct gaba_section_s tail = {
@@ -1029,7 +1038,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     struct gaba_section_s const *ap = &asec, *bp = &bsec;
 
     // Note f does not need to be freed apparently
-    struct gaba_fill_s const* f = gaba_dp_fill_root(
+    struct gaba_fill_s const *f = gaba_dp_fill_root(
         xDb.pDp, /* dp -> &dp[_dp_ctx_index(band_width)] makes the band width selectable */
         ap, 0, /* a-side (reference side) sequence and start position */
         bp, 0, /* b-side (query) */
@@ -1038,16 +1047,16 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     DEBUG_3( std::cout << "sw5" << std::endl; )
 
     /* until X-drop condition is detected */
-    struct gaba_fill_s const* m = f;
+    struct gaba_fill_s const *m = f;
     /* track max */
-    while ( ( f->status & GABA_TERM ) == 0 )
+    while( ( f->status & GABA_TERM ) == 0 )
     {
         /* substitute the pointer by the tail section's if it reached the end */
-        if ( f->status & GABA_UPDATE_A )
+        if( f->status & GABA_UPDATE_A )
         {
             ap = &tail;
         }
-        if ( f->status & GABA_UPDATE_B )
+        if( f->status & GABA_UPDATE_B )
         {
             bp = &tail;
         }
@@ -1061,7 +1070,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     xDb.pR = gaba_dp_trace( xDb.pDp, m, /* section with the max */
                             NULL /* custom allocator: see struct gaba_alloc_s in gaba.h */
     ); // struct
-    if ( xDb.pR == nullptr )
+    if( xDb.pR == nullptr )
     {
         DEBUG( std::cerr << "WARNING libGaba delivered nullptr on alignment "
                          << pAlignment->xStats.sName << std::endl
@@ -1069,7 +1078,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
                          << "Query: " << fromQuery << " - " << toQuery << std::endl
                          << "Ref: " << fromRef << " - " << toRef << std::endl; ) // DEBUG
         // great what to do other than give up here...?
-        if ( bReverse )
+        if( bReverse )
         {
             pAlignment->shiftOnQuery( toQuery - fromQuery );
             pAlignment->shiftOnRef( toRef - fromRef );
@@ -1087,16 +1096,16 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
                               bReverse ? toRef - ( xDb.pR->agcnt + xDb.pR->dcnt ) : fromRef );
 
     ////printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
-    if ( bReverse )
+    if( bReverse )
         gaba_print_cigar_reverse( printer, /* printer function */
-                                  ( void* )&xPrinter, /* printer function input */
+                                  (void *)&xPrinter, /* printer function input */
                                   xDb.pR->path, /* bit-encoded path array */
                                   0, /* offset is always zero */
                                   xDb.pR->plen /* path length */
         );
     else
         gaba_print_cigar_forward( printer, /* printer function */
-                                  ( void* )&xPrinter, /* printer function input */
+                                  (void *)&xPrinter, /* printer function input */
                                   xDb.pR->path, /* bit-encoded path array */
                                   0, /* offset is always zero */
                                   xDb.pR->plen /* path length */
@@ -1110,7 +1119,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
      * Warning:
      * Order is important: the shifting needs to be done after the cigar extraction
      */
-    if ( bReverse )
+    if( bReverse )
     {
         pAlignment->shiftOnRef( vRef4Bit.size( ) - ( xDb.pR->agcnt + xDb.pR->dcnt ) );
         pAlignment->shiftOnQuery( vQuery4Bit.size( ) - ( xDb.pR->bgcnt + xDb.pR->dcnt ) );
@@ -1159,16 +1168,16 @@ std::shared_ptr<Container> NeedlemanWunsch::getOutputType( ) const
 
 std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVector> vpInput )
 {
-    const auto& pSeeds = std::dynamic_pointer_cast<Seeds>( ( *vpInput )[ 0 ] ); // dc
-    const auto& pQuery = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] ); // dc
-    const auto& pRefPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 2 ] ); // dc
+    const auto &pSeeds = std::dynamic_pointer_cast<Seeds>( ( *vpInput )[ 0 ] ); // dc
+    const auto &pQuery = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] ); // dc
+    const auto &pRefPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 2 ] ); // dc
 
-    if ( pSeeds == nullptr )
+    if( pSeeds == nullptr )
         return std::shared_ptr<Alignment>( new Alignment( ) );
 
 
     // no seeds => no spot found at all...
-    if ( pSeeds->empty( ) )
+    if( pSeeds->empty( ) )
     {
         DEBUG( std::cerr << "WARNING: no seeds found for query: " + pQuery->sName << std::endl; )
         std::shared_ptr<Alignment> pRet( new Alignment( ) );
@@ -1177,8 +1186,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
         return pRet;
     } // if
     DEBUG_2( std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
-             for ( Seed& rSeed
-                   : *pSeeds ) {
+             for( Seed &rSeed
+                  : *pSeeds ) {
                  std::cout << rSeed.start_ref( ) << ", " << rSeed.end_ref( ) << "; "
                            << rSeed.start( ) << ", " << rSeed.end( ) << std::endl;
              } // for
@@ -1192,22 +1201,22 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
     // actually need to check all seeds to get the proper end
     nucSeqIndex endQuery = pSeeds->back( ).end( );
     nucSeqIndex beginQuery = pSeeds->front( ).start( );
-    for ( auto xSeed : *pSeeds )
+    for( auto xSeed : *pSeeds )
     {
-        if ( endRef < xSeed.end_ref( ) )
+        if( endRef < xSeed.end_ref( ) )
             endRef = xSeed.end_ref( );
-        if ( beginRef > xSeed.start_ref( ) )
+        if( beginRef > xSeed.start_ref( ) )
             beginRef = xSeed.start_ref( );
-        if ( endQuery < xSeed.end( ) )
+        if( endQuery < xSeed.end( ) )
             endQuery = xSeed.end( );
-        if ( beginQuery > xSeed.end( ) )
+        if( beginQuery > xSeed.end( ) )
             beginQuery = xSeed.start( );
         assert( xSeed.start( ) <= xSeed.end( ) );
     } // for
     DEBUG_2( std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery
                        << std::endl; ) // DEEBUG
 
-    if ( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) )
+    if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) )
     {
 #if 0
         // sometimes we can save the situation by making the last seed smaller...
@@ -1235,21 +1244,22 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
                              << pRefPack->nameOfSequenceForPosition( endRef ) << std::endl;
                    std::cerr << pRefPack->iAbsolutePosition( beginRef ) << " - "
                              << pRefPack->iAbsolutePosition( endRef ) << std::endl;
-                   auto names = pRefPack->contigNames( ); auto starts = pRefPack->contigStarts( );
+                   auto names = pRefPack->contigNames( );
+                   auto starts = pRefPack->contigStarts( );
                    auto lengths = pRefPack->contigLengths( );
-                   for ( size_t i = 0; i < names.size( ); i++ ) {
-                       if ( starts[ i ] + lengths[ i ] >=
-                                ( nucSeqIndex )pRefPack->iAbsolutePosition( beginRef ) ||
-                            starts[ i ] + lengths[ i ] >=
-                                ( nucSeqIndex )pRefPack->iAbsolutePosition( endRef ) )
+                   for( size_t i = 0; i < names.size( ); i++ ) {
+                       if( starts[ i ] + lengths[ i ] >=
+                               (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
+                           starts[ i ] + lengths[ i ] >=
+                               (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
                            std::cerr
                                << names[ i ] << ": [" << starts[ i ] << "-"
                                << starts[ i ] + lengths[ i ] << "] revComp: ["
                                << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
                                << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] )
                                << "]" << std::endl;
-                       if ( starts[ i ] >= ( nucSeqIndex )pRefPack->iAbsolutePosition( beginRef ) &&
-                            starts[ i ] >= ( nucSeqIndex )pRefPack->iAbsolutePosition( endRef ) )
+                       if( starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) &&
+                           starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
                            break;
                    } // for
                    ) // DEBUG
@@ -1269,7 +1279,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
 
 #define PADDING_W_Q ( 0 )
 
-    if ( !bLocal )
+    if( !bLocal )
     {
         int64_t iOldContig = pRefPack->uiSequenceIdForPositionOrRev( beginRef );
 #if PADDING_W_Q == 1
@@ -1277,24 +1287,24 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
 #else
         beginRef -= uiPadding;
 #endif
-        if ( beginRef > endRef ) // check for underflow
+        if( beginRef > endRef ) // check for underflow
             beginRef = 0;
 #if PADDING_W_Q == 1
         endRef += uiPadding + ( pQuery->length( ) - endQuery );
 #else
         endRef += uiPadding;
 #endif
-        if ( beginRef > endRef ) // check for overflow
+        if( beginRef > endRef ) // check for overflow
             endRef = pRefPack->uiUnpackedSizeForwardPlusReverse( );
         endQuery = pQuery->length( );
         beginQuery = 0;
-        if ( pRefPack->uiSequenceIdForPositionOrRev( beginRef ) != iOldContig )
+        if( pRefPack->uiSequenceIdForPositionOrRev( beginRef ) != iOldContig )
             beginRef = pRefPack->startOfSequenceWithIdOrReverse( iOldContig );
-        if ( pRefPack->uiSequenceIdForPositionOrRev( endRef ) != iOldContig )
+        if( pRefPack->uiSequenceIdForPositionOrRev( endRef ) != iOldContig )
             endRef = pRefPack->endOfSequenceWithIdOrReverse( iOldContig );
 
-        DEBUG( if ( beginRef >= endRef ||
-                    pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) ) {
+        DEBUG( if( beginRef >= endRef ||
+                   pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) ) {
             std::cerr << "ERROR: produced bridging alignment:\n";
             std::cerr << beginRef << " - " << endRef << std::endl;
             std::cerr << pRefPack->nameOfSequenceForPosition( beginRef ) << " - "
@@ -1304,19 +1314,19 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
             auto names = pRefPack->contigNames( );
             auto starts = pRefPack->contigStarts( );
             auto lengths = pRefPack->contigLengths( );
-            for ( size_t i = 0; i < names.size( ); i++ )
+            for( size_t i = 0; i < names.size( ); i++ )
             {
-                if ( starts[ i ] + lengths[ i ] >=
-                         ( nucSeqIndex )pRefPack->iAbsolutePosition( beginRef ) ||
-                     starts[ i ] + lengths[ i ] >=
-                         ( nucSeqIndex )pRefPack->iAbsolutePosition( endRef ) )
+                if( starts[ i ] + lengths[ i ] >=
+                        (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
+                    starts[ i ] + lengths[ i ] >=
+                        (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
                     std::cerr << names[ i ] << ": [" << starts[ i ] << "-"
                               << starts[ i ] + lengths[ i ] << "] revComp: ["
                               << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
                               << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] )
                               << "]" << std::endl;
-                if ( starts[ i ] >= ( nucSeqIndex )pRefPack->iAbsolutePosition( beginRef ) &&
-                     starts[ i ] >= ( nucSeqIndex )pRefPack->iAbsolutePosition( endRef ) )
+                if( starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) &&
+                    starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
                     break;
             } // for
         } // if
@@ -1336,7 +1346,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
 
     // create the actual alignment
 
-    if ( !bLocal )
+    if( !bLocal )
     {
         dynPrg( pQuery, pRef, 0, pSeeds->front( ).start( ), 0,
                 pSeeds->front( ).start_ref( ) - beginRef, pRet, true, false );
@@ -1345,12 +1355,12 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
     nucSeqIndex endOfLastSeedQuery = pSeeds->front( ).end( );
     nucSeqIndex endOfLastSeedReference = pSeeds->front( ).end_ref( ) - beginRef;
 
-    DEBUG( if ( pRet->uiEndOnQuery != pSeeds->front( ).start( ) ) {
+    DEBUG( if( pRet->uiEndOnQuery != pSeeds->front( ).start( ) ) {
         std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front( ).start( ) << std::endl;
         std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front( ).start_ref( ) << std::endl;
         assert( false );
     } // if
-           if ( pRet->uiEndOnRef != pSeeds->front( ).start_ref( ) ) {
+           if( pRet->uiEndOnRef != pSeeds->front( ).start_ref( ) ) {
                std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front( ).start( ) << std::endl;
                std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front( ).start_ref( )
                          << std::endl;
@@ -1360,29 +1370,29 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
 
     pRet->append( MatchType::seed, pSeeds->front( ).size( ) );
     bool bSkip = true;
-    for ( Seed& rSeed : *pSeeds )
+    for( Seed &rSeed : *pSeeds )
     {
         // skip the first seed
         // we do this since the seed has already been appended before the loop
         // this makes the loop structure easier since this way
         // we can always first compute the NW and then append a seed
-        if ( bSkip )
+        if( bSkip )
         {
             bSkip = false;
             continue;
         } // if
-        if ( rSeed.size( ) == 0 )
+        if( rSeed.size( ) == 0 )
             continue;
         nucSeqIndex ovQ = endOfLastSeedQuery - rSeed.start( );
-        if ( rSeed.start( ) > endOfLastSeedQuery )
+        if( rSeed.start( ) > endOfLastSeedQuery )
             ovQ = 0;
         nucSeqIndex ovR = endOfLastSeedReference - ( rSeed.start_ref( ) - beginRef );
-        if ( rSeed.start_ref( ) > endOfLastSeedReference + beginRef )
+        if( rSeed.start_ref( ) > endOfLastSeedReference + beginRef )
             ovR = 0;
         nucSeqIndex len = rSeed.size( );
         nucSeqIndex overlap = std::max( ovQ, ovR );
         DEBUG_2( std::cout << "overlap: " << overlap << std::endl; ) // DEBUG
-        if ( len > overlap )
+        if( len > overlap )
         {
             dynPrg( pQuery, pRef, endOfLastSeedQuery, rSeed.start( ), endOfLastSeedReference,
                     rSeed.start_ref( ) - beginRef, pRet, false, false );
@@ -1391,35 +1401,35 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
                 pRet->vGapsScatter.push_back( std::make_pair(
                     rSeed.start( ) - endOfLastSeedQuery,
                     rSeed.start_ref( ) - beginRef - endOfLastSeedReference ) ); ) // DEBUG
-            if ( ovQ > ovR )
+            if( ovQ > ovR )
                 pRet->append( MatchType::deletion, ovQ - ovR );
-            DEBUG_2( for ( nucSeqIndex i = ovR; i < ovQ; i++ ) std::cout << "d"; )
-            if ( ovR > ovQ )
+            DEBUG_2( for( nucSeqIndex i = ovR; i < ovQ; i++ ) std::cout << "d"; )
+            if( ovR > ovQ )
                 pRet->append( MatchType::insertion, ovR - ovQ );
-            DEBUG_2( for ( nucSeqIndex i = ovQ; i < ovR; i++ ) std::cout << "i";
+            DEBUG_2( for( nucSeqIndex i = ovQ; i < ovR; i++ ) std::cout << "i";
                      std::cout << std::endl; ) // DEBUG
             pRet->append( MatchType::seed, len - overlap );
             DEBUG_2( std::cout << len - overlap << std::endl; ) // DEBUG_2
-            DEBUG_2( for ( nucSeqIndex i = overlap; i < len; i++ ) std::cout
+            DEBUG_2( for( nucSeqIndex i = overlap; i < len; i++ ) std::cout
                          << pQuery->charAt( i + rSeed.start( ) );
-                     std::cout << std::endl; for ( nucSeqIndex i = overlap; i < len; i++ ) std::cout
-                                             << pRef->charAt( i + rSeed.start_ref( ) - beginRef );
+                     std::cout << std::endl;
+                     for( nucSeqIndex i = overlap; i < len; i++ ) std::cout
+                     << pRef->charAt( i + rSeed.start_ref( ) - beginRef );
                      std::cout << std::endl; ) // DEBUG
-            DEBUG_2( for ( nucSeqIndex i = 0; i < len - overlap; i++ ) std::cout
-                         << "m"; ) // DEBUG_2
-            if ( rSeed.end( ) > endOfLastSeedQuery )
+            DEBUG_2( for( nucSeqIndex i = 0; i < len - overlap; i++ ) std::cout << "m"; ) // DEBUG_2
+            if( rSeed.end( ) > endOfLastSeedQuery )
                 endOfLastSeedQuery = rSeed.end( );
-            if ( rSeed.end_ref( ) > endOfLastSeedReference + beginRef )
+            if( rSeed.end_ref( ) > endOfLastSeedReference + beginRef )
                 endOfLastSeedReference = rSeed.end_ref( ) - beginRef;
         } // if
     } // for
 
-    if ( bLocal )
+    if( bLocal )
         assert( std::get<0>( pRet->data.front( ) ) == MatchType::seed );
     assert( std::get<0>( pRet->data.back( ) ) == MatchType::seed );
 
     DEBUG_2( std::cout << std::endl; )
-    if ( bLocal )
+    if( bLocal )
         pRet->makeLocal( );
     else
     {
@@ -1439,7 +1449,7 @@ std::vector<char> randomNucSeq( const size_t uiLen )
     static const char nucleotides[] = {0, 1, 2, 3};
 
     std::vector<char> vNucSeq( uiLen );
-    for ( size_t i = 0; i < uiLen; ++i )
+    for( size_t i = 0; i < uiLen; ++i )
     {
         vNucSeq[ i ] = nucleotides[ rand( ) % ( sizeof( nucleotides ) - 1 ) ];
     } // for
@@ -1450,7 +1460,7 @@ std::vector<char> randomNucSeq( const size_t uiLen )
 void testKsw( )
 {
     /* Seed the random number generator */
-    auto uiSeed = ( unsigned )time( NULL );
+    auto uiSeed = (unsigned)time( NULL );
     //// std::cout << "SEED:" << uiSeed << std::endl;
     srand( uiSeed );
 
@@ -1471,7 +1481,7 @@ void testKsw( )
 
     Wrapper_ksw_extz_t ez;
 
-    for ( int uiCounter = 0; uiCounter < 100; ++uiCounter )
+    for( int uiCounter = 0; uiCounter < 100; ++uiCounter )
     {
         std::cout << "score=" << ez.ez->score << " ciglen= " << ez.ez->n_cigar
                   << " cigar=" << std::endl;
@@ -1503,8 +1513,8 @@ void testKsw( )
             ez.ez // return value
         );
 #else
-        ksw_simplified( vQuerySeq.size( ), ( const uint8_t* )&vQuerySeq[ 0 ], vRefSeq.size( ),
-                        ( const uint8_t* )&vRefSeq[ 0 ], iGap, iExtend, iGap2, iExtend2, iBandwidth,
+        ksw_simplified( vQuerySeq.size( ), (const uint8_t *)&vQuerySeq[ 0 ], vRefSeq.size( ),
+                        (const uint8_t *)&vRefSeq[ 0 ], iGap, iExtend, iGap2, iExtend2, iBandwidth,
                         ez.ez // return value
         );
 #endif
@@ -1513,20 +1523,20 @@ void testKsw( )
                   << " cigar=" << std::endl;
         uint32_t qPos = 0;
         uint32_t rPos = 0;
-        for ( int i = 0; i < ez.ez->n_cigar; ++i )
+        for( int i = 0; i < ez.ez->n_cigar; ++i )
         {
             uint32_t uiSymb = ez.ez->cigar[ i ] & 0xf;
             uint32_t uiAmount = ez.ez->cigar[ i ] >> 4;
             std::cout << uiAmount << vMIDN[ uiSymb ] << " ";
-            if ( uiSymb == 0 || uiSymb == 1 )
+            if( uiSymb == 0 || uiSymb == 1 )
                 qPos += uiAmount;
-            if ( uiSymb == 0 || uiSymb == 2 )
+            if( uiSymb == 0 || uiSymb == 2 )
                 rPos += uiAmount;
         } // for
         std::cout << std::endl;
         std::cout << "qPos=" << qPos << " rPos= " << rPos << std::endl;
-        assert( qPos == ( uint32_t )uiQuerySize );
-        assert( rPos == ( uint32_t )uiRefSize );
+        assert( qPos == (uint32_t)uiQuerySize );
+        assert( rPos == (uint32_t)uiRefSize );
     } // for
 } // function
 
@@ -1539,10 +1549,10 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 
     Wrapper_ksw_extz_t ez;
     std::vector<uint8_t> vA;
-    for ( size_t i = 0; i < sA.size( ); i++ )
+    for( size_t i = 0; i < sA.size( ); i++ )
         vA.push_back( sA[ i ] );
     std::vector<uint8_t> vB;
-    for ( size_t i = 0; i < sB.size( ); i++ )
+    for( size_t i = 0; i < sB.size( ); i++ )
         vB.push_back( sB[ i ] );
     ksw_simplified( sA.size( ), &vA[ 0 ], sB.size( ), &vB[ 0 ], iO, iE, iO2, iE2, iW,
                     ez.ez, // return value
@@ -1551,7 +1561,7 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 
     const char vMIDN[] = {'M', 'I', 'D', 'X'};
     std::string sRet = "";
-    for ( int i = 0; i < ez.ez->n_cigar; ++i )
+    for( int i = 0; i < ez.ez->n_cigar; ++i )
     {
         uint32_t uiSymb = ez.ez->cigar[ i ] & 0xf;
         uint32_t uiAmount = ez.ez->cigar[ i ] >> 4;

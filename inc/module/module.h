@@ -15,9 +15,9 @@
 #include <Python.h>
 #include <boost/python/list.hpp>
 #endif
+#include "util/default_parameters.h"
 #include <chrono>
 #include <ctime>
-#include "util/default_parameters.h"
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
@@ -60,7 +60,7 @@ bool EXPORTED typeCheck( ContainerVector vData, ContainerVector vExpected );
  */
 class Module
 {
-   public:
+  public:
     /**
      * @brief Execute the implemented algorithm.
      * @details
@@ -138,13 +138,13 @@ class Module
      */
     std::shared_ptr<Container> saveExecute( std::shared_ptr<ContainerVector> vInput )
     {
-        if ( !typeCheck( *vInput, getInputType( ) ) )
+        if( !typeCheck( *vInput, getInputType( ) ) )
         {
             std::cerr << "input of module " << getName( ) << " had the wrong type" << std::endl;
             throw ModuleIO_Exception( "Input type and expected input type did not match." );
         } // if
         std::shared_ptr<Container> pRet = execute( vInput );
-        if ( !typeCheck( pRet, getOutputType( ) ) )
+        if( !typeCheck( pRet, getOutputType( ) ) )
         {
             std::cerr << "output of module " << getName( ) << " had the wrong type" << std::endl;
             throw ModuleIO_Exception( "Module produced output of wrong type." );
@@ -167,21 +167,21 @@ class Module
             std::shared_ptr<Container> pRet = saveExecute( vInput );
             return pRet;
         }
-        catch ( ModuleIO_Exception e )
+        catch( ModuleIO_Exception e )
         {
             std::cerr << e.what( ) << std::endl;
             std::cerr << "cant return to python - cpp module failed" << std::endl;
             exit( 0 );
         }
-        catch ( const std::exception& e )
+        catch( const std::exception &e )
         {
             std::cerr << e.what( ) << std::endl;
         }
-        catch ( const std::string& e )
+        catch( const std::string &e )
         {
             std::cerr << e << std::endl;
         }
-        catch ( ... )
+        catch( ... )
         {
             std::cerr << "unknown exception" << std::endl;
 #ifdef WITH_PYTHON
@@ -312,7 +312,7 @@ class Module
  */
 class Pledge : public Container
 {
-   private:
+  private:
     std::shared_ptr<Module> pledger;
 #ifdef WITH_PYTHON
     boost::python::object py_pledger;
@@ -324,10 +324,10 @@ class Pledge : public Container
     // std::vector<std::shared_ptr<Pledge>> aSync;
     std::shared_ptr<std::mutex> pMutex;
 
-   public:
+  public:
     double execTime;
 
-   private:
+  private:
     /**
      * @brief Create a new pledge with a cpp module responsible to fullfill it.
      * @details
@@ -346,8 +346,7 @@ class Pledge : public Container
           // aSync(),
           pMutex( new std::mutex ),
           execTime( 0 )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief Create a new pledge with a Python module responsible to fullfill it.
@@ -366,28 +365,27 @@ class Pledge : public Container
           // aSync(),
           pMutex( new std::mutex ),
           execTime( 0 )
-    {
-    } // constructor
+    {} // constructor
 #endif
 
     inline bool execForGet( )
     {
-        if ( pledger == nullptr
+        if( pledger == nullptr
 #ifdef WITH_PYTHON
-             && py_pledger.is_none( )
+            && py_pledger.is_none( )
 #endif
         )
             throw ModuleIO_Exception( "No pledger known for unfulfilled pledge" );
-        if ( pledger != nullptr )
+        if( pledger != nullptr )
         {
             //@todo i should use a container tuple type here...
             std::shared_ptr<ContainerVector> vInput( new ContainerVector( ) );
-            for ( std::shared_ptr<Pledge> pFuture : vPredecessors )
+            for( std::shared_ptr<Pledge> pFuture : vPredecessors )
             {
                 // here we execute all previous modules in the comp graph
                 auto pX = pFuture->get( );
                 assert( pX != nullptr );
-                if ( pX == Nil::pEoFContainer )
+                if( pX == Nil::pEoFContainer )
                     return false;
                 vInput->push_back( pX );
             } // for
@@ -404,11 +402,11 @@ class Pledge : public Container
         else
         {
             boost::python::list vInput;
-            for ( std::shared_ptr<Pledge> pFuture : vPredecessors )
+            for( std::shared_ptr<Pledge> pFuture : vPredecessors )
             {
                 auto pX = pFuture->get( );
                 assert( pX != nullptr );
-                if ( pX == Nil::pEoFContainer )
+                if( pX == Nil::pEoFContainer )
                     return false;
                 vInput.append( pX );
             } // for
@@ -421,8 +419,8 @@ class Pledge : public Container
                 py_pledger.attr( "save_execute" )( vInput ) );
             std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
             execTime = duration.count( );
-            DEBUG( if ( !typeCheck( content, type ) ) {
-                if ( pledger != nullptr )
+            DEBUG( if( !typeCheck( content, type ) ) {
+                if( pledger != nullptr )
                     std::cerr << pledger->getFullDesc( ) << std::endl;
                 else
                     std::cerr << "pledger is nullpointer" << std::endl;
@@ -441,11 +439,11 @@ class Pledge : public Container
      * Does not lock otherwise.
      * In either case fDo is called.
      */
-    inline std::shared_ptr<Container> lockIfNecessary(
-        std::function<std::shared_ptr<Container>( )> fDo )
+    inline std::shared_ptr<Container>
+    lockIfNecessary( std::function<std::shared_ptr<Container>( )> fDo )
     {
         // if(vSuccessors.size() > 1) @todo @fixme this should be here
-        if ( pledger != nullptr && pledger->requiresLock( ) )
+        if( pledger != nullptr && pledger->requiresLock( ) )
         {
             // multithreading is possible thus a guard is required here.
             // deadlock prevention is trivial,
@@ -457,7 +455,7 @@ class Pledge : public Container
             return fDo( );
     } // function
 
-   public:
+  public:
     /**
      * @brief Create a new pledge without a module giving the pledge.
      * @details
@@ -473,13 +471,12 @@ class Pledge : public Container
           vPredecessors( ),
           vSuccessors( ),
           execTime( 0 )
-    {
-    } // constructor
+    {} // constructor
 
     /**
      * @brief this is required due to the use of mutex
      */
-    Pledge( const Pledge& ) = delete; // copy constructor
+    Pledge( const Pledge & ) = delete; // copy constructor
 
     // overload
     bool canCast( std::shared_ptr<Container> c ) const
@@ -496,12 +493,12 @@ class Pledge : public Container
     std::string getGraphDesc( ) const
     {
         std::string sDesc = "";
-        if ( pledger != nullptr )
+        if( pledger != nullptr )
         {
             sDesc += pledger->getFullDesc( );
         } // if
         sDesc += "{";
-        for ( std::shared_ptr<Pledge> pPre : vPredecessors )
+        for( std::shared_ptr<Pledge> pPre : vPredecessors )
             sDesc += pPre->getGraphDesc( ) + "; ";
         return sDesc + "}";
     } // function
@@ -517,18 +514,19 @@ class Pledge : public Container
         return pledger;
     } // function
 
-    static EXPORTED std::shared_ptr<Pledge> makePledge(
-        std::shared_ptr<Module> pledger, std::vector<std::shared_ptr<Pledge>> vPredecessors );
+    static EXPORTED std::shared_ptr<Pledge>
+    makePledge( std::shared_ptr<Module> pledger,
+                std::vector<std::shared_ptr<Pledge>> vPredecessors );
 
 #ifdef WITH_PYTHON
-    static inline std::shared_ptr<Pledge> makePyPledge(
-        boost::python::object py_pledger, std::shared_ptr<Container> type,
-        std::vector<std::shared_ptr<Pledge>> vPredecessors )
+    static inline std::shared_ptr<Pledge>
+    makePyPledge( boost::python::object py_pledger, std::shared_ptr<Container> type,
+                  std::vector<std::shared_ptr<Pledge>> vPredecessors )
     {
         std::shared_ptr<Pledge> pRet =
             std::shared_ptr<Pledge>( new Pledge( py_pledger, type, vPredecessors ) );
 
-        for ( std::shared_ptr<Pledge> pPredecessor : vPredecessors )
+        for( std::shared_ptr<Pledge> pPredecessor : vPredecessors )
             pPredecessor->vSuccessors.push_back( std::weak_ptr<Pledge>( pRet ) );
 
         return pRet;
@@ -544,13 +542,13 @@ class Pledge : public Container
     void set( std::shared_ptr<Container> c )
     {
         // improves runtime (mostly when resetting module).
-        if ( content == c )
+        if( content == c )
             return;
         content = c;
-        for ( std::weak_ptr<Pledge> pSuccessor : vSuccessors )
+        for( std::weak_ptr<Pledge> pSuccessor : vSuccessors )
         {
             std::shared_ptr<Pledge> lock = pSuccessor.lock( );
-            if ( lock != nullptr )
+            if( lock != nullptr )
                 lock->set( nullptr );
         } // for
     } // function
@@ -561,10 +559,10 @@ class Pledge : public Container
     bool hasPythonPledger( )
     {
 #ifdef WITH_PYTHON
-        if ( !py_pledger.is_none( ) )
+        if( !py_pledger.is_none( ) )
             return true;
-        for ( std::shared_ptr<Pledge> pFuture : vPredecessors )
-            if ( pFuture->hasPythonPledger( ) )
+        for( std::shared_ptr<Pledge> pFuture : vPredecessors )
+            if( pFuture->hasPythonPledger( ) )
                 return true;
 #endif
         return false;
@@ -576,10 +574,10 @@ class Pledge : public Container
     bool hasVolatile( )
     {
         // @todo same for py_pledger here
-        if ( pledger != nullptr && pledger->outputsVolatile( ) )
+        if( pledger != nullptr && pledger->outputsVolatile( ) )
             return true;
-        for ( std::shared_ptr<Pledge> pFuture : vPredecessors )
-            if ( pFuture->hasVolatile( ) )
+        for( std::shared_ptr<Pledge> pFuture : vPredecessors )
+            if( pFuture->hasVolatile( ) )
                 return true;
         return false;
     } // function
@@ -607,18 +605,18 @@ class Pledge : public Container
     {
         bool bVolatile = false;
         // @todo same for py_pledger here
-        if ( pledger != nullptr )
+        if( pledger != nullptr )
             bVolatile = pledger->outputsVolatile( );
 
         // in this case there is no need to execute again
-        if ( bVolatile == false && content != nullptr )
+        if( bVolatile == false && content != nullptr )
             return content;
 
         // locks a mutex if this pledge can be reached from multiple leaves in the graph
         // does not lock otherwise...
         return lockIfNecessary( [&]( ) {
             // execute
-            if ( execForGet( ) == false )
+            if( execForGet( ) == false )
             {
                 /*
                  * If execForGet returns false we have a volatile module that's dry.
@@ -682,7 +680,7 @@ class Pledge : public Container
                                         std::function<void( )> callback = []( ) {},
                                         unsigned int numThreads = 0 )
     {
-        if ( numThreads == 0 )
+        if( numThreads == 0 )
             numThreads = vPledges.size( );
 
         /*
@@ -692,9 +690,9 @@ class Pledge : public Container
          * So, here we check if there is such a module and set the number of threads to one if
          * necessary.
          */
-        if ( numThreads > 1 )
-            for ( std::shared_ptr<Pledge> pPledge : vPledges )
-                if ( pPledge->hasPythonPledger( ) )
+        if( numThreads > 1 )
+            for( std::shared_ptr<Pledge> pPledge : vPledges )
+                if( pPledge->hasPythonPledger( ) )
                 {
                     numThreads = 1;
                     DEBUG( std::cout << "Detected python module. Cannot use more than one thread."
@@ -706,7 +704,7 @@ class Pledge : public Container
             // set up a threadpool
             ThreadPool xPool( numThreads );
             // enqueue a task that executes the comp. graph for each thread in the pool.
-            for ( std::shared_ptr<Pledge> pPledge : vPledges )
+            for( std::shared_ptr<Pledge> pPledge : vPledges )
             {
                 xPool.enqueue(
                     [&callback]( size_t uiTid, std::shared_ptr<Pledge> pPledge ) {
@@ -745,28 +743,28 @@ class Pledge : public Container
                                     // std::cout << "*" << std::flush;
                                 )
                             }
-                            catch ( ModuleIO_Exception e )
+                            catch( ModuleIO_Exception e )
                             {
                                 std::cerr << e.what( ) << std::endl;
                                 exit( 0 );
                             }
-                            catch ( AlignerException e )
+                            catch( AlignerException e )
                             {
                                 std::cerr << "Module Failed: " << e.what( ) << std::endl;
                             }
-                            catch ( const std::exception& e )
+                            catch( const std::exception &e )
                             {
                                 std::cerr << e.what( ) << std::endl;
                             }
-                            catch ( const std::string& e )
+                            catch( const std::string &e )
                             {
                                 std::cerr << e << std::endl;
                             }
-                            catch ( ... )
+                            catch( ... )
                             {
                                 std::cerr << "unknown exception" << std::endl;
                             } // catch
-                        } while ( bLoop );
+                        } while( bLoop );
                     }, // lambda
                     pPledge );
             } // for
@@ -782,8 +780,8 @@ class Pledge : public Container
         pledger.reset( );
         content.reset( );
         type.reset( );
-        for ( auto pOther : vPredecessors )
-            if ( pOther != nullptr )
+        for( auto pOther : vPredecessors )
+            if( pOther != nullptr )
             {
                 pOther->clear_graph( );
                 pOther.reset( );

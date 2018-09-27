@@ -42,8 +42,7 @@ void PrintMemoryInfo( DWORD processID );
 /* Meta function for measuring durations of function executions.
  * Using count() applied to the returned object we get the time in seconds.
  */
-template <class FUNCTOR>
-std::chrono::duration<double> metaMeasureDuration( FUNCTOR &&f )
+template <class FUNCTOR> std::chrono::duration<double> metaMeasureDuration( FUNCTOR &&f )
 { /* record start time
    */
     auto start = std::chrono::high_resolution_clock::now( );
@@ -60,7 +59,7 @@ void metaMeasureAndLogDuration( const std::string &sLogText, // additional loggi
                                 FUNCTOR &&f // the functor called for measuring execution time
 )
 {
-    if ( bLog )
+    if( bLog )
     { /* Measure duration and log.
        */
         auto xDuration = metaMeasureDuration( std::forward<FUNCTOR>( f ) );
@@ -75,8 +74,7 @@ void metaMeasureAndLogDuration( const std::string &sLogText, // additional loggi
 } // meta function
 
 #if _MSC_VER
-template <class TP_FUNC_APPLY>
-__int64 time_call_( TP_FUNC_APPLY &&f )
+template <class TP_FUNC_APPLY> __int64 time_call_( TP_FUNC_APPLY &&f )
 {
     __int64 begin = GetTickCount( );
     f( );
@@ -84,8 +82,7 @@ __int64 time_call_( TP_FUNC_APPLY &&f )
 } // function
 
 #elif __GNUC__
-template <class TP_FUNC_APPLY>
-timespec time_call_( TP_FUNC_APPLY &&f )
+template <class TP_FUNC_APPLY> timespec time_call_( TP_FUNC_APPLY &&f )
 {
     timespec startTime, endTime, differenceTime;
 
@@ -97,7 +94,7 @@ timespec time_call_( TP_FUNC_APPLY &&f )
 
     /* compute the time difference
      */
-    if ( ( endTime.tv_nsec - startTime.tv_nsec ) < 0 )
+    if( ( endTime.tv_nsec - startTime.tv_nsec ) < 0 )
     {
         /* overflow occurred
          */

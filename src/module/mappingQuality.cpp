@@ -30,7 +30,7 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
     auto pSupplementaries = std::make_shared<ContainerVector>( std::make_shared<Alignment>( ) );
 
     // if no alignment was found we cannot set any quality...
-    if ( pAlignments->size( ) == 0 )
+    if( pAlignments->size( ) == 0 )
         return std::shared_ptr<ContainerVector>(
             new ContainerVector( std::shared_ptr<Alignment>( new Alignment( ) ) ) );
 
@@ -43,17 +43,17 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
     // mapping qual of best one will be overridden
     size_t uiSupplementaries = 0;
     bool bFirst = true;
-    for ( auto pAlign : *pAlignments )
+    for( auto pAlign : *pAlignments )
     {
-        if ( bFirst )
+        if( bFirst )
         {
             bFirst = false;
             continue;
         } // if
         std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>( pAlign ); // dc
         pCasted->fMappingQuality = 0.0;
-        if ( uiSupplementaries < uiMaxSupplementaryPerPrim &&
-             pCasted->overlap( *pFirst ) < dMaxOverlapSupplementary )
+        if( uiSupplementaries < uiMaxSupplementaryPerPrim &&
+            pCasted->overlap( *pFirst ) < dMaxOverlapSupplementary )
         {
             pCasted->bSupplementary = true;
             pCasted->bSecondary = false;
@@ -68,18 +68,18 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
 
 
     // mapping quality based on scores
-    if ( pAlignments->size( ) - uiSupplementaries >= 2 )
+    if( pAlignments->size( ) - uiSupplementaries >= 2 )
     {
         size_t uiI = 1;
         std::shared_ptr<Alignment> pSecond;
-        while ( pSecond == nullptr || pSecond->bSupplementary )
+        while( pSecond == nullptr || pSecond->bSupplementary )
         {
             pSecond = std::dynamic_pointer_cast<Alignment>( // dc
                 ( *pAlignments )[ uiI ] );
             uiI++;
         } // while
         // this formula is given in the paper and is very similar to Heng li's approach in BWA-SW
-        if ( pFirst->score( ) == 0 )
+        if( pFirst->score( ) == 0 )
             pFirst->fMappingQuality = 0;
         else
             pFirst->fMappingQuality = static_cast<double>( pFirst->score( ) - pSecond->score( ) ) /
@@ -89,14 +89,14 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
         // the score of the second best alignment is 0 if we do not even find one...
         pFirst->fMappingQuality = 1; // pFirst->score() / (double)(iMatch * pQuery->length());
 
-    if ( uiSupplementaries > 0 )
+    if( uiSupplementaries > 0 )
     {
         // set supp mapping quality
-        for ( size_t uiI = 1; uiI < pAlignments->size( ); uiI++ )
+        for( size_t uiI = 1; uiI < pAlignments->size( ); uiI++ )
         {
             std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>( // dc
                 ( *pAlignments )[ uiI ] );
-            if ( pCasted->bSupplementary )
+            if( pCasted->bSupplementary )
                 pCasted->fMappingQuality = pFirst->fMappingQuality;
         } // for
         // move supplementary alignments forward
@@ -115,7 +115,7 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
 
     /// maybe this should be moved into it's own module but whatever...
     auto pRet = std::shared_ptr<ContainerVector>( new ContainerVector( pAlignments ) );
-    if ( uiReportNBest != 0 && pRet->size( ) > uiReportNBest + uiSupplementaries )
+    if( uiReportNBest != 0 && pRet->size( ) > uiReportNBest + uiSupplementaries )
     {
         // remove the smallest elements
         pRet->erase( pRet->begin( ) + uiReportNBest + uiSupplementaries, pRet->end( ) );
@@ -123,13 +123,13 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
     } // if
 
     // remove secondary with too small scores
-    while ( pRet->size( ) > 1 )
+    while( pRet->size( ) > 1 )
     {
         std::shared_ptr<Alignment> pCasted =
             std::dynamic_pointer_cast<Alignment>( pRet->back( ) ); // dc
-        if ( !pCasted->bSecondary )
+        if( !pCasted->bSecondary )
             break;
-        if ( pCasted->score( ) >= pFirst->score( ) * fMinSecScoreRatio )
+        if( pCasted->score( ) >= pFirst->score( ) * fMinSecScoreRatio )
             break;
         pRet->pop_back( );
     } // while

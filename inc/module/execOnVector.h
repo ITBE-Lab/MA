@@ -25,16 +25,15 @@ namespace libMA
  */
 class ExecOnVec : public Module
 {
-   private:
+  private:
     std::shared_ptr<Module> pModule;
     bool sort;
     unsigned int nMany; // 0 means return all
 
-   public:
+  public:
     ExecOnVec( std::shared_ptr<Module> pModule, bool sort = false, unsigned int nMany = 0 )
         : Module( ), pModule( pModule ), sort( sort ), nMany( nMany )
-    {
-    } // constructor
+    {} // constructor
 
     // overload
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
@@ -75,13 +74,12 @@ class ExecOnVec : public Module
  */
 class Tail : public Module
 {
-   private:
+  private:
     std::shared_ptr<Container> type;
 
-   public:
+  public:
     Tail( std::shared_ptr<Container> type ) : Module( ), type( type )
-    {
-    } // constructor
+    {} // constructor
 
     // overload
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );

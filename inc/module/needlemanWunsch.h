@@ -39,7 +39,7 @@ class NeedlemanWunsch : public Module
 
     nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
 
-   public:
+  public:
     bool bLocal = false;
 
     NeedlemanWunsch( );

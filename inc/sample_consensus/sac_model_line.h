@@ -45,18 +45,16 @@ namespace sample_consensus
  */
 class SACModelLine : public SACModel
 {
-   public:
+  public:
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Constructor for base SACModelLine. */
     SACModelLine( )
-    {
-    }
+    {}
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Destructor for base SACModelLine. */
     virtual ~SACModelLine( )
-    {
-    }
+    {}
 
     virtual void getSamples( int &iterations, std::vector<int> &samples );
 

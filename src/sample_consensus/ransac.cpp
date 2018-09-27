@@ -30,8 +30,8 @@
 
 /** \author Radu Bogdan Rusu */
 
-#include <sample_consensus/ransac.h>
 #include <limits>
+#include <sample_consensus/ransac.h>
 
 namespace sample_consensus
 {
@@ -40,7 +40,7 @@ namespace sample_consensus
  * \param model a Sample Consensus model
  * \param threshold distance to model threshold
  */
-RANSAC::RANSAC( SACModel* model, double threshold ) : SAC( model )
+RANSAC::RANSAC( SACModel *model, double threshold ) : SAC( model )
 {
     this->threshold_ = threshold;
     // Desired probability of choosing at least one sample free from outliers
@@ -55,9 +55,8 @@ RANSAC::RANSAC( SACModel* model, double threshold ) : SAC( model )
 /** \brief RANSAC (RAndom SAmple Consensus) main constructor
  * \param model a Sample Consensus model
  */
-RANSAC::RANSAC( SACModel* model ) : SAC( model )
-{
-}
+RANSAC::RANSAC( SACModel *model ) : SAC( model )
+{}
 
 ////////////////////////////////////////////////////////////////////////////////
 /** \brief Compute the actual model and find the inliers
@@ -76,12 +75,12 @@ bool RANSAC::computeModel( int debug )
     int n_inliers_count = 0;
 
     // Iterate
-    while ( iterations_ < k )
+    while( iterations_ < k )
     {
         // Get X samples which satisfy the model criteria
         sac_model_->getSamples( iterations_, selection );
 
-        if ( selection.size( ) == 0 )
+        if( selection.size( ) == 0 )
             break;
 
         // Search for inliers in the point cloud for the current plane model M
@@ -92,7 +91,7 @@ bool RANSAC::computeModel( int debug )
         n_inliers_count = inliers.size( );
 
         // Better match ?
-        if ( n_inliers_count > n_best_inliers_count )
+        if( n_inliers_count > n_best_inliers_count )
         {
             n_best_inliers_count = n_inliers_count;
             best_inliers = inliers;
@@ -100,9 +99,9 @@ bool RANSAC::computeModel( int debug )
             best_model = selection;
 
             // Compute the k parameter (k=log(z)/log(1-w^n))
-            double w = ( double )( ( double )n_inliers_count /
-                                   ( double )sac_model_->getIndices( )->size( ) );
-            double p_no_outliers = 1 - pow( w, ( double )selection.size( ) );
+            double w =
+                (double)( (double)n_inliers_count / (double)sac_model_->getIndices( )->size( ) );
+            double p_no_outliers = 1 - pow( w, (double)selection.size( ) );
             p_no_outliers = std::max( std::numeric_limits<double>::epsilon( ),
                                       p_no_outliers ); // Avoid division by -Inf
             p_no_outliers = std::min( 1 - std::numeric_limits<double>::epsilon( ),
@@ -111,29 +110,29 @@ bool RANSAC::computeModel( int debug )
         }
 
         iterations_ += 1;
-        if ( debug > 1 )
+        if( debug > 1 )
             std::cerr << "[RANSAC::computeModel] Trial " << iterations_ << " out of " << ceil( k )
                       << ": " << n_inliers_count << " inliers (best is: " << n_best_inliers_count
                       << " so far)." << std::endl;
-        if ( iterations_ > max_iterations_ )
+        if( iterations_ > max_iterations_ )
         {
-            if ( debug > 0 )
+            if( debug > 0 )
                 std::cerr << "[RANSAC::computeModel] RANSAC reached the maximum number of trials."
                           << std::endl;
             break;
         }
     }
 
-    if ( best_model.size( ) != 0 )
+    if( best_model.size( ) != 0 )
     {
-        if ( debug > 0 )
+        if( debug > 0 )
             std::cerr << "[RANSAC::computeModel] Model found: " << n_best_inliers_count
                       << " inliers." << std::endl;
         sac_model_->setBestModel( best_model );
         sac_model_->setBestInliers( best_inliers );
         return ( true );
     }
-    else if ( debug > 0 )
+    else if( debug > 0 )
         std::cerr << "[RANSAC::computeModel] Unable to find a solution!" << std::endl;
     return ( false );
 }

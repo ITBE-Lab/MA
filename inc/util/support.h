@@ -10,12 +10,12 @@
 #include "util/debug.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
-#include <stdlib.h>
-#include <sys/stat.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdlib.h>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 /// @endcond
 
@@ -67,7 +67,7 @@ template <typename ParameterType>
 void vRangeCheckAndThrowInclusive( const std::string &sText, const ParameterType &xRangeMin,
                                    const ParameterType &xVal, const ParameterType &xRangeMax )
 {
-    if ( xVal < xRangeMin || xVal > xRangeMax )
+    if( xVal < xRangeMin || xVal > xRangeMax )
     {
         throw std::runtime_error( (
             ( ( ( ( ( ( std::string( sText ) += "Out of range for value : " ) += std::to_string(
@@ -85,7 +85,7 @@ template <typename ParameterType>
 void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType &xRangeMin,
                                    const ParameterType &xVal, const ParameterType &xRangeMax )
 {
-    if ( xVal < xRangeMin || xVal >= xRangeMax )
+    if( xVal < xRangeMin || xVal >= xRangeMax )
     {
         throw std::runtime_error( (
             ( ( ( ( ( ( std::string( sText ) += "Out of range for value : " ) += std::to_string(

@@ -9,11 +9,11 @@ using namespace libMA;
 
 ContainerVector FileWriter::getInputType( ) const
 {
-    return ContainerVector{
-        std::shared_ptr<NucSeq>( new NucSeq( ) ), std::shared_ptr<NucSeq>( new NucSeq( ) ),
-        std::shared_ptr<ContainerVector>(
-            new ContainerVector( std::shared_ptr<Alignment>( new Alignment( ) ) ) ),
-        std::shared_ptr<Pack>( new Pack( ) )};
+    return ContainerVector{std::shared_ptr<NucSeq>( new NucSeq( ) ),
+                           std::shared_ptr<NucSeq>( new NucSeq( ) ),
+                           std::shared_ptr<ContainerVector>( new ContainerVector(
+                               std::shared_ptr<Alignment>( new Alignment( ) ) ) ),
+                           std::shared_ptr<Pack>( new Pack( ) )};
 } // function
 
 std::shared_ptr<Container> FileWriter::getOutputType( ) const
@@ -44,10 +44,10 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<ContainerVector>
     std::shared_ptr<Pack> pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 3 ] ); // dc
 
     std::string sCombined = "";
-    for ( std::shared_ptr<Container> pA : *pAlignments )
+    for( std::shared_ptr<Container> pA : *pAlignments )
     {
         std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
-        if ( pAlignment->length( ) == 0 )
+        if( pAlignment->length( ) == 0 )
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
@@ -59,27 +59,27 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<ContainerVector>
         std::string sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
         std::string sTlen = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery );
         // paired
-        if ( pAlignment->xStats.pOther.lock( ) != nullptr )
+        if( pAlignment->xStats.pOther.lock( ) != nullptr )
         {
             assert( pQuery2 != nullptr );
             // flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE // flag not actually required
             //                                  : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
-            if ( pPack->bPositionIsOnReversStrand(
-                     pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
+            if( pPack->bPositionIsOnReversStrand(
+                    pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
                 flag |= NEXT_REVERSE_COMPLEMENTED;
 
             sContigOther = pAlignment->xStats.pOther.lock( )->getContig( *pPack );
             sPosOther =
                 std::to_string( pAlignment->xStats.pOther.lock( )->getSamPosition( *pPack ) );
 
-            if ( !pAlignment->xStats.bFirst )
+            if( !pAlignment->xStats.bFirst )
             {
                 sSegment = pAlignment->getQuerySequence( *pQuery2, *pPack );
                 sName = pQuery2->sName;
                 sTlen = "-" + sTlen;
             } // if
-            DEBUG( if ( pQuery->uiFromLine != pQuery2->uiFromLine ) {
+            DEBUG( if( pQuery->uiFromLine != pQuery2->uiFromLine ) {
                 std::cerr << "outputting paired alignment for reads from different lines: "
                           << pQuery->uiFromLine << " and " << pQuery2->uiFromLine
                           << "; query names are: " << pQuery->sName << " and " << pQuery2->sName
@@ -94,22 +94,22 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<ContainerVector>
 
         DEBUG( // check if the position that is saved to the file is correct
             bool bWrong = false;
-            if ( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) ) {
+            if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) ) {
                 //@todo frill in this self check...
             } // if
             else {
-                if ( pAlignment->uiBeginOnRef !=
-                     pPack->startOfSequenceWithName( sRefName ) + uiRefPos - 1 )
+                if( pAlignment->uiBeginOnRef !=
+                    pPack->startOfSequenceWithName( sRefName ) + uiRefPos - 1 )
                     bWrong = true;
             } // else
 
-            if ( bWrong ) {
+            if( bWrong ) {
                 std::cerr << "Error: Tried to write wrong index to file" << std::endl;
                 std::cout << "Have: " << sRefName
                           << " (= " << pPack->startOfSequenceWithName( sRefName ) << ") "
                           << uiRefPos << std::endl;
                 std::cout << "Wanted: " << pAlignment->uiBeginOnRef << " " << uiRefPos << std::endl;
-                if ( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+                if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
                     std::cout << "Is reverse: True" << std::endl;
                 else
                     std::cout << "Is reverse: False" << std::endl;
@@ -120,7 +120,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<ContainerVector>
         // std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery,
         // pAlignment->uiEndOnQuery);
         std::string sMapQual;
-        if ( std::isnan( pAlignment->fMappingQuality ) )
+        if( std::isnan( pAlignment->fMappingQuality ) )
             sMapQual = "255";
         else
             sMapQual = std::to_string(
@@ -152,7 +152,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<ContainerVector>
             + "*\n";
     } // for
 
-    if ( sCombined.size( ) > 0 )
+    if( sCombined.size( ) > 0 )
     { // scope xGuard
         // synchronize file output
         std::lock_guard<std::mutex> xGuard( *pLock );
@@ -172,15 +172,15 @@ std::shared_ptr<Container> RadableFileWriter::execute( std::shared_ptr<Container
         std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 1 ] ); // dc
     std::shared_ptr<Pack> pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 2 ] ); // dc
 
-    for ( std::shared_ptr<Container> pA : *pAlignments )
+    for( std::shared_ptr<Container> pA : *pAlignments )
     {
         std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
-        if ( pAlignment->length( ) == 0 )
+        if( pAlignment->length( ) == 0 )
             continue;
 
         std::string sPaired = "";
         // paired
-        if ( !pAlignment->xStats.pOther.expired( ) )
+        if( !pAlignment->xStats.pOther.expired( ) )
             sPaired =
                 pAlignment->xStats.bFirst ? "first mate of read pair" : "second mate of read pair";
 
@@ -199,10 +199,10 @@ std::shared_ptr<Container> RadableFileWriter::execute( std::shared_ptr<Container
         // std::string sQual = pQuery->fromToQual(pAlignment->uiBeginOnQuery,
         // pAlignment->uiEndOnQuery);
         std::string sMapQual;
-        if ( std::isnan( pAlignment->fMappingQuality ) )
+        if( std::isnan( pAlignment->fMappingQuality ) )
             sMapQual = "255";
         else
-            sMapQual = std::to_string( ( int )( pAlignment->fMappingQuality * 254 ) );
+            sMapQual = std::to_string( (int)( pAlignment->fMappingQuality * 254 ) );
 
         std::string sQueryLine;
         std::string sMatchLine;
@@ -218,14 +218,14 @@ std::shared_ptr<Container> RadableFileWriter::execute( std::shared_ptr<Container
                   << "\nBegin on reference sequence: " << sRefName << " at position: " << sRefPos
                   << "\nBegin on Query: " << sQueryPos
                   << ( pAlignment->bSecondary ? " Secondary\n" : "\n" );
-            for ( std::tuple<MatchType, nucSeqIndex> section : pAlignment->data )
+            for( std::tuple<MatchType, nucSeqIndex> section : pAlignment->data )
             {
-                for ( unsigned int i = 0; i < std::get<1>( section ); i++ )
+                for( unsigned int i = 0; i < std::get<1>( section ); i++ )
                 {
-                    if ( uiAlignmentCounter % uiNucsPerLine == 0 )
+                    if( uiAlignmentCounter % uiNucsPerLine == 0 )
                         *pOut << std::to_string( uiAlignmentCounter ) << "-"
                               << std::to_string( uiAlignmentCounter + uiNucsPerLine ) << "\n";
-                    switch ( std::get<0>( section ) )
+                    switch( std::get<0>( section ) )
                     {
                         case MatchType::match:
                             sQueryLine += sSegmentQuery[ uiQueryCounter++ ];
@@ -253,7 +253,7 @@ std::shared_ptr<Container> RadableFileWriter::execute( std::shared_ptr<Container
                             sMatchLine += " ";
                             break;
                     } // switch
-                    if ( ++uiAlignmentCounter % uiNucsPerLine == 0 )
+                    if( ++uiAlignmentCounter % uiNucsPerLine == 0 )
                     {
                         *pOut << sQueryLine << "\tQuery\n";
                         *pOut << sMatchLine << "\n";
@@ -264,9 +264,9 @@ std::shared_ptr<Container> RadableFileWriter::execute( std::shared_ptr<Container
                     } // if
                 } // for
             } // for
-            if ( uiAlignmentCounter % uiNucsPerLine == 0 )
+            if( uiAlignmentCounter % uiNucsPerLine == 0 )
                 return std::shared_ptr<Container>( new Nil( ) );
-            while ( uiAlignmentCounter++ % uiNucsPerLine != 0 )
+            while( uiAlignmentCounter++ % uiNucsPerLine != 0 )
             {
                 sQueryLine += "-";
                 sRefLine += "-";
@@ -298,41 +298,41 @@ std::shared_ptr<Container> SeedSetFileWriter::getOutputType( ) const
 std::shared_ptr<Container> SeedSetFileWriter::execute( std::shared_ptr<ContainerVector> vpInput )
 {
     auto pSoCs = std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 0 ] ); // dc
-    const auto& pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 1 ] ); // dc
+    const auto &pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 1 ] ); // dc
     std::string sPrimary = "true";
 
-    for ( std::shared_ptr<Container> pS : *pSoCs )
+    for( std::shared_ptr<Container> pS : *pSoCs )
     {
-        const auto& pSeeds = std::dynamic_pointer_cast<Seeds>( pS ); // dc
+        const auto &pSeeds = std::dynamic_pointer_cast<Seeds>( pS ); // dc
         pSeeds->mem_score = 0;
-        for ( const auto& rSeed : *pSeeds )
+        for( const auto &rSeed : *pSeeds )
             pSeeds->mem_score += rSeed.getValue( );
     } // for
 
     // sort the harmonized SoCs
     // sort descending
     std::sort( pSoCs->begin( ), pSoCs->end( ),
-               []( std::shared_ptr<Container>& a_, std::shared_ptr<Container>& b_ ) {
-                   const auto& a = std::dynamic_pointer_cast<Seeds>( a_ ); // dc
-                   const auto& b = std::dynamic_pointer_cast<Seeds>( b_ ); // dc
+               []( std::shared_ptr<Container> &a_, std::shared_ptr<Container> &b_ ) {
+                   const auto &a = std::dynamic_pointer_cast<Seeds>( a_ ); // dc
+                   const auto &b = std::dynamic_pointer_cast<Seeds>( b_ ); // dc
                    return a->mem_score > b->mem_score;
                } // lambda
     ); // sort function call
     assert( pSoCs->size( ) <= 1 || !pSoCs->back( )->larger( pSoCs->front( ) ) );
 
-    for ( std::shared_ptr<Container> pS : *pSoCs )
+    for( std::shared_ptr<Container> pS : *pSoCs )
     {
-        const auto& pSeeds = std::dynamic_pointer_cast<Seeds>( pS ); // dc
+        const auto &pSeeds = std::dynamic_pointer_cast<Seeds>( pS ); // dc
 
         // sanity checks
-        if ( pSeeds == nullptr )
+        if( pSeeds == nullptr )
             continue;
-        if ( pSeeds->empty( ) )
+        if( pSeeds->empty( ) )
             continue;
 
         DEBUG_2( std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
-                 for ( Seed& rSeed
-                       : *pSeeds ) {
+                 for( Seed &rSeed
+                      : *pSeeds ) {
                      std::cout << rSeed.start_ref( ) << ", " << rSeed.end_ref( ) << "; "
                                << rSeed.start( ) << ", " << rSeed.end( ) << std::endl;
                  } // for
@@ -347,15 +347,15 @@ std::shared_ptr<Container> SeedSetFileWriter::execute( std::shared_ptr<Container
         nucSeqIndex beginQuery = pSeeds->front( ).start( );
         nucSeqIndex uiAccSeedLength = 0;
         nucSeqIndex uiNumSeeds = 0;
-        for ( auto xSeed : *pSeeds )
+        for( auto xSeed : *pSeeds )
         {
-            if ( endRef < xSeed.end_ref( ) )
+            if( endRef < xSeed.end_ref( ) )
                 endRef = xSeed.end_ref( );
-            if ( beginRef > xSeed.start_ref( ) )
+            if( beginRef > xSeed.start_ref( ) )
                 beginRef = xSeed.start_ref( );
-            if ( endQuery < xSeed.end( ) )
+            if( endQuery < xSeed.end( ) )
                 endQuery = xSeed.end( );
-            if ( beginQuery > xSeed.end( ) )
+            if( beginQuery > xSeed.end( ) )
                 beginQuery = xSeed.start( );
             uiAccSeedLength += xSeed.size( );
             uiNumSeeds++;

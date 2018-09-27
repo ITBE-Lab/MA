@@ -6,10 +6,10 @@
 #ifndef STRIP_OF_CONSIDERATION_H
 #define STRIP_OF_CONSIDERATION_H
 
-#include <cmath>
 #include "container/segment.h"
 #include "container/soc.h"
 #include "module/module.h"
+#include <cmath>
 
 namespace libMA
 {
@@ -19,7 +19,7 @@ namespace libMA
  */
 class StripOfConsideration : public Module
 {
-   public:
+  public:
     /// @brief Maximum ambiguity for a seed to be considered.
     unsigned int uiMaxAmbiguity = defaults::uiMaxAmbiguity;
     /// @brief Minimum seed length.
@@ -64,7 +64,7 @@ class StripOfConsideration : public Module
     inline nucSeqIndex getStripSize( nucSeqIndex uiQueryLength, int iMatch, int iExtend,
                                      int iGap ) const
     {
-        if ( uiSoCWidth != 0 )
+        if( uiSoCWidth != 0 )
             return uiSoCWidth;
 
         return ( iMatch * uiQueryLength - iGap ) / iExtend -
@@ -82,14 +82,14 @@ class StripOfConsideration : public Module
             [&rxRefSequence, &rxFM_index, &fDo, &addSize]( Seed &&xS ) {
                 // check if the match is bridging the forward/reverse strand
                 // or bridging between two chromosomes
-                if ( !rxRefSequence.bridgingSubsection(
-                         // prevent negative index
-                         xS.start_ref( ) > addSize ? xS.start_ref( ) - addSize : 0, // from
-                         // prevent index larger than reference
-                         xS.end_ref( ) + addSize <= rxFM_index.getRefSeqLength( )
-                             ? xS.size( ) - 1 + addSize
-                             : rxFM_index.getRefSeqLength( ) - xS.start_ref( ) - 1 // to
-                         ) )
+                if( !rxRefSequence.bridgingSubsection(
+                        // prevent negative index
+                        xS.start_ref( ) > addSize ? xS.start_ref( ) - addSize : 0, // from
+                        // prevent index larger than reference
+                        xS.end_ref( ) + addSize <= rxFM_index.getRefSeqLength( )
+                            ? xS.size( ) - 1 + addSize
+                            : rxFM_index.getRefSeqLength( ) - xS.start_ref( ) - 1 // to
+                        ) )
                 {
                     // if non-bridging use this seed
                     fDo( xS );
@@ -153,10 +153,9 @@ class StripOfConsideration : public Module
         );
     } // method
 
-   public:
+  public:
     StripOfConsideration( ) : fGiveUp( defaults::fGiveUp )
-    {
-    } // default constructor
+    {} // default constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 

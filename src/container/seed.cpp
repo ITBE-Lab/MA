@@ -48,7 +48,7 @@ nucSeqIndex Seeds::getScore( ) const
     {
 #endif
     nucSeqIndex iRet = 0;
-    for ( const Seed& rS : *this )
+    for( const Seed &rS : *this )
         iRet += rS.getValue( );
     return iRet;
     //    }//else

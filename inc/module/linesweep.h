@@ -24,7 +24,7 @@ namespace libMA
  */
 class LinearLineSweep : public Module
 {
-   private:
+  private:
     /**
      * @brief The shadow of a Seed.
      * @details
@@ -33,7 +33,7 @@ class LinearLineSweep : public Module
      */
     class ShadowInterval : public Interval<int64_t>
     {
-       public:
+      public:
         Seeds::iterator pSeed;
 
         /**
@@ -44,17 +44,15 @@ class LinearLineSweep : public Module
          */
         ShadowInterval( int64_t iBegin, int64_t iSize, Seeds::iterator pSeed )
             : Interval( iBegin, iSize ), pSeed( pSeed )
-        {
-        } // constructor
+        {} // constructor
 
         /**
          * @brief Copy constructor
          */
-        ShadowInterval( const ShadowInterval& rOther ) : Interval( rOther ), pSeed( rOther.pSeed )
-        {
-        } // copy constructor
+        ShadowInterval( const ShadowInterval &rOther ) : Interval( rOther ), pSeed( rOther.pSeed )
+        {} // copy constructor
 
-        bool within( const ShadowInterval& rOther )
+        bool within( const ShadowInterval &rOther )
         {
             return start( ) >= rOther.start( ) && end( ) <= rOther.end( );
         } // function
@@ -72,7 +70,7 @@ class LinearLineSweep : public Module
                    pShadows,
                const int64_t uiRStart, const double fAngle );
 
-    inline double deltaDistance( const Seed& rSeed, const double fAngle, const int64_t uiRStart )
+    inline double deltaDistance( const Seed &rSeed, const double fAngle, const int64_t uiRStart )
     {
         double y = rSeed.start_ref( ) + rSeed.start( ) / std::tan( PI / 2 - fAngle );
         double x = ( y - uiRStart ) * std::sin( fAngle );
@@ -81,9 +79,9 @@ class LinearLineSweep : public Module
         return std::abs( x - x_1 );
     } // method
 
-    std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds>& pIn ) const;
+    std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds> &pIn ) const;
 
-   public:
+  public:
     /**
      * @brief true: estimate all possible position as matches in the gap cost filter
      * @details
@@ -145,8 +143,7 @@ class LinearLineSweep : public Module
     size_t uiSVPenalty = defaults::uiSVPenalty;
 
     LinearLineSweep( )
-    {
-    } // default constructor
+    {} // default constructor
 
     // overload
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> pInput );

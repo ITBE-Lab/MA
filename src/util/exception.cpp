@@ -5,7 +5,7 @@
 #include "util/exception.h"
 
 #ifdef WITH_PYTHON
-void translator( ModuleIO_Exception const& x )
+void translator( ModuleIO_Exception const &x )
 {
     PyErr_SetString( PyExc_RuntimeError, x.what( ) );
 }

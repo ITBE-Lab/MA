@@ -87,14 +87,14 @@ static void initializeVAL( unsigned int *startAddr, const bgint_t length,
                            const unsigned int initValue )
 {
     bgint_t i;
-    for ( i = 0; i < length; i++ )
+    for( i = 0; i < length; i++ )
         startAddr[ i ] = initValue;
 }
 
 static void initializeVAL_bg( bgint_t *startAddr, const bgint_t length, const bgint_t initValue )
 {
     bgint_t i;
-    for ( i = 0; i < length; i++ )
+    for( i = 0; i < length; i++ )
         startAddr[ i ] = initValue;
 }
 
@@ -102,11 +102,11 @@ static void GenerateDNAOccCountTable( unsigned int *dnaDecodeTable )
 {
     unsigned int i, j, c, t;
 
-    for ( i = 0; i < DNA_OCC_CNT_TABLE_SIZE_IN_WORD; i++ )
+    for( i = 0; i < DNA_OCC_CNT_TABLE_SIZE_IN_WORD; i++ )
     {
         dnaDecodeTable[ i ] = 0;
         c = i;
-        for ( j = 0; j < 8; j++ )
+        for( j = 0; j < 8; j++ )
         {
             t = c & 0x00000003;
             dnaDecodeTable[ i ] += 1 << ( t * 8 );
@@ -148,14 +148,14 @@ static void BWTIncSetBuildSizeAndTextAddr( BWTInc *bwtInc )
 {
     bgint_t maxBuildSize;
 
-    if ( bwtInc->bwt->textLength == 0 )
+    if( bwtInc->bwt->textLength == 0 )
     {
         // initial build
         // Minus 2 because n+1 entries of seq and rank needed for n char
         maxBuildSize = ( bwtInc->availableWord -
                          ( 2 + OCC_INTERVAL / CHAR_PER_WORD ) * ( sizeof( bgint_t ) / 4 ) ) /
                        ( 2 * CHAR_PER_WORD + 1 ) * CHAR_PER_WORD / ( sizeof( bgint_t ) / 4 );
-        if ( bwtInc->initialMaxBuildSize > 0 )
+        if( bwtInc->initialMaxBuildSize > 0 )
         {
             bwtInc->buildSize = std::min( bwtInc->initialMaxBuildSize, maxBuildSize );
         }
@@ -173,14 +173,14 @@ static void BWTIncSetBuildSizeAndTextAddr( BWTInc *bwtInc )
               ( 3 + bwtInc->numberOfIterationDone * OCC_INTERVAL / BIT_PER_CHAR ) *
                   ( sizeof( bgint_t ) / 4 ) ) /
             3 / ( sizeof( bgint_t ) / 4 );
-        if ( maxBuildSize < CHAR_PER_WORD )
+        if( maxBuildSize < CHAR_PER_WORD )
         {
             fprintf( stderr,
                      "BWTIncSetBuildSizeAndTextAddr(): Not enough space allocated to continue "
                      "construction!\n" );
             exit( 1 );
         }
-        if ( bwtInc->incMaxBuildSize > 0 )
+        if( bwtInc->incMaxBuildSize > 0 )
         {
             bwtInc->buildSize = std::min( bwtInc->incMaxBuildSize, maxBuildSize );
         }
@@ -188,15 +188,14 @@ static void BWTIncSetBuildSizeAndTextAddr( BWTInc *bwtInc )
         {
             bwtInc->buildSize = maxBuildSize;
         }
-        if ( bwtInc->buildSize < CHAR_PER_WORD )
+        if( bwtInc->buildSize < CHAR_PER_WORD )
             bwtInc->buildSize = CHAR_PER_WORD;
     }
 
-    if ( bwtInc->buildSize < CHAR_PER_WORD )
+    if( bwtInc->buildSize < CHAR_PER_WORD )
     {
-        fprintf( stderr,
-                 "BWTIncSetBuildSizeAndTextAddr(): Not enough space allocated to continue "
-                 "construction!\n" );
+        fprintf( stderr, "BWTIncSetBuildSizeAndTextAddr(): Not enough space allocated to continue "
+                         "construction!\n" );
         exit( 1 );
     }
 
@@ -204,9 +203,8 @@ static void BWTIncSetBuildSizeAndTextAddr( BWTInc *bwtInc )
 
     bwtInc->packedText =
         bwtInc->workingMemory + 2 * ( bwtInc->buildSize + 1 ) * ( sizeof( bgint_t ) / 4 );
-    bwtInc->textBuffer =
-        ( unsigned char * )( bwtInc->workingMemory +
-                             ( bwtInc->buildSize + 1 ) * ( sizeof( bgint_t ) / 4 ) );
+    bwtInc->textBuffer = (unsigned char *)( bwtInc->workingMemory +
+                                            ( bwtInc->buildSize + 1 ) * ( sizeof( bgint_t ) / 4 ) );
 }
 
 // for ceilLog2()
@@ -224,9 +222,9 @@ unsigned int leadingZero( const unsigned int input )
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    if ( input & 0xFFFF0000 )
+    if( input & 0xFFFF0000 )
     {
-        if ( input & 0xFF000000 )
+        if( input & 0xFF000000 )
         {
             l = leadingZero8bit[ input >> 24 ];
         }
@@ -237,7 +235,7 @@ unsigned int leadingZero( const unsigned int input )
     }
     else
     {
-        if ( input & 0x0000FF00 )
+        if( input & 0x0000FF00 )
         {
             l = 16 + leadingZero8bit[ input >> 8 ];
         }
@@ -251,7 +249,7 @@ unsigned int leadingZero( const unsigned int input )
 // for BitPerBytePackedChar()
 static unsigned int ceilLog2( const unsigned int input )
 {
-    if ( input <= 1 )
+    if( input <= 1 )
         return 0;
     return BITS_IN_WORD - leadingZero( input - 1 );
 }
@@ -261,7 +259,7 @@ static unsigned int BitPerBytePackedChar( const unsigned int alphabetSize )
     unsigned int bitPerChar;
     bitPerChar = ceilLog2( alphabetSize );
     // Return the largest number of bit that does not affect packing efficiency
-    if ( BITS_IN_BYTE / ( BITS_IN_BYTE / bitPerChar ) > bitPerChar )
+    if( BITS_IN_BYTE / ( BITS_IN_BYTE / bitPerChar ) > bitPerChar )
         bitPerChar = BITS_IN_BYTE / ( BITS_IN_BYTE / bitPerChar );
     return bitPerChar;
 }
@@ -297,13 +295,13 @@ static void ConvertBytePackedToWordPacked( const unsigned char *input, unsigned 
     mask = truncateRight( ALL_ONE_MASK, BITS_IN_WORD - bitPerWordPackedChar );
     shift = BITS_IN_WORD - BITS_IN_BYTE + bitPerBytePackedChar - bitPerWordPackedChar;
 
-    while ( ( wordProcessed + 1 ) * charPerWord < textLength )
+    while( ( wordProcessed + 1 ) * charPerWord < textLength )
     {
         k = 0;
-        for ( i = 0; i < bytePerIteration; i++ )
+        for( i = 0; i < bytePerIteration; i++ )
         {
-            c = ( unsigned int )input[ byteProcessed ] << shift;
-            for ( j = 0; j < charPerByte; j++ )
+            c = (unsigned int)input[ byteProcessed ] << shift;
+            for( j = 0; j < charPerByte; j++ )
             {
                 buffer[ k ] = c & mask;
                 c <<= bitPerBytePackedChar;
@@ -313,7 +311,7 @@ static void ConvertBytePackedToWordPacked( const unsigned char *input, unsigned 
         }
 
         c = 0;
-        for ( i = 0; i < charPerWord; i++ )
+        for( i = 0; i < charPerWord; i++ )
         {
             c |= buffer[ i ] >> bitPerWordPackedChar * i;
         }
@@ -322,10 +320,10 @@ static void ConvertBytePackedToWordPacked( const unsigned char *input, unsigned 
     }
 
     k = 0;
-    for ( i = 0; i < ( textLength - wordProcessed * charPerWord - 1 ) / charPerByte + 1; i++ )
+    for( i = 0; i < ( textLength - wordProcessed * charPerWord - 1 ) / charPerByte + 1; i++ )
     {
-        c = ( unsigned int )input[ byteProcessed ] << shift;
-        for ( j = 0; j < charPerByte; j++ )
+        c = (unsigned int)input[ byteProcessed ] << shift;
+        for( j = 0; j < charPerByte; j++ )
         {
             buffer[ k ] = c & mask;
             c <<= bitPerBytePackedChar;
@@ -335,7 +333,7 @@ static void ConvertBytePackedToWordPacked( const unsigned char *input, unsigned 
     }
 
     c = 0;
-    for ( i = 0; i < textLength - wordProcessed * charPerWord; i++ )
+    for( i = 0; i < textLength - wordProcessed * charPerWord; i++ )
     {
         c |= buffer[ i ] >> bitPerWordPackedChar * i;
     }
@@ -346,20 +344,20 @@ BWT *BWTCreate( const bgint_t textLength, unsigned int *decodeTable )
 {
     BWT *bwt;
 
-    bwt = ( BWT * )calloc( 1, sizeof( BWT ) );
+    bwt = (BWT *)calloc( 1, sizeof( BWT ) );
 
     bwt->textLength = 0;
 
-    bwt->cumulativeFreq = ( bgint_t * )calloc( ( ALPHABET_SIZE + 1 ), sizeof( bgint_t ) );
+    bwt->cumulativeFreq = (bgint_t *)calloc( ( ALPHABET_SIZE + 1 ), sizeof( bgint_t ) );
     initializeVAL_bg( bwt->cumulativeFreq, ALPHABET_SIZE + 1, 0 );
 
     bwt->bwtSizeInWord = 0;
 
     // Generate decode tables
-    if ( decodeTable == NULL )
+    if( decodeTable == NULL )
     {
         bwt->decodeTable =
-            ( unsigned * )calloc( DNA_OCC_CNT_TABLE_SIZE_IN_WORD, sizeof( unsigned int ) );
+            (unsigned *)calloc( DNA_OCC_CNT_TABLE_SIZE_IN_WORD, sizeof( unsigned int ) );
         GenerateDNAOccCountTable( bwt->decodeTable );
     }
     else
@@ -368,7 +366,7 @@ BWT *BWTCreate( const bgint_t textLength, unsigned int *decodeTable )
     }
 
     bwt->occMajorSizeInWord = BWTOccValueMajorSizeInWord( textLength );
-    bwt->occValueMajor = ( bgint_t * )calloc( bwt->occMajorSizeInWord, sizeof( bgint_t ) );
+    bwt->occValueMajor = (bgint_t *)calloc( bwt->occMajorSizeInWord, sizeof( bgint_t ) );
 
     bwt->occSizeInWord = 0;
     bwt->occValue = NULL;
@@ -382,23 +380,23 @@ BWTInc *BWTIncCreate( const bgint_t textLength, bgint_t initialMaxBuildSize,
     BWTInc *bwtInc;
     //// unsigned int i, n_iter;
 
-    if ( textLength < incMaxBuildSize )
+    if( textLength < incMaxBuildSize )
         incMaxBuildSize = textLength;
-    if ( textLength < initialMaxBuildSize )
+    if( textLength < initialMaxBuildSize )
         initialMaxBuildSize = textLength;
 
-    bwtInc = ( BWTInc * )calloc( 1, sizeof( BWTInc ) );
+    bwtInc = (BWTInc *)calloc( 1, sizeof( BWTInc ) );
     bwtInc->numberOfIterationDone = 0;
     bwtInc->bwt = BWTCreate( textLength, NULL );
     bwtInc->initialMaxBuildSize = initialMaxBuildSize;
     bwtInc->incMaxBuildSize = incMaxBuildSize;
     bwtInc->cumulativeCountInCurrentBuild =
-        ( bgint_t * )calloc( ( ALPHABET_SIZE + 1 ), sizeof( bgint_t ) );
+        (bgint_t *)calloc( ( ALPHABET_SIZE + 1 ), sizeof( bgint_t ) );
     initializeVAL_bg( bwtInc->cumulativeCountInCurrentBuild, ALPHABET_SIZE + 1, 0 );
 
     // Build frequently accessed data
-    bwtInc->packedShift = ( unsigned * )calloc( CHAR_PER_WORD, sizeof( unsigned int ) );
-    for ( int32_t i = 0; i < CHAR_PER_WORD; i++ )
+    bwtInc->packedShift = (unsigned *)calloc( CHAR_PER_WORD, sizeof( unsigned int ) );
+    for( int32_t i = 0; i < CHAR_PER_WORD; i++ )
         bwtInc->packedShift[ i ] = BITS_IN_WORD - ( i + 1 ) * BIT_PER_CHAR;
 
     auto n_iter = ( textLength - initialMaxBuildSize ) / incMaxBuildSize + 1;
@@ -409,12 +407,12 @@ BWTInc *BWTIncCreate( const bgint_t textLength, bgint_t initialMaxBuildSize,
               ( sizeof( bgint_t ) / 4 ) // buffer at the end of occ array
         + incMaxBuildSize / 5 * 3 *
               ( sizeof( bgint_t ) / 4 ); // space for the 3 temporary arrays in each iteration
-    if ( bwtInc->availableWord < MIN_AVAILABLE_WORD )
+    if( bwtInc->availableWord < MIN_AVAILABLE_WORD )
         bwtInc->availableWord =
             MIN_AVAILABLE_WORD; // lh3: otherwise segfaul when availableWord is too small
-    fprintf( stderr, "[%s] textLength=%ld, availableWord=%ld\n", __func__, ( long )textLength,
-             ( long )bwtInc->availableWord );
-    bwtInc->workingMemory = ( unsigned * )calloc( bwtInc->availableWord, BYTES_IN_WORD );
+    fprintf( stderr, "[%s] textLength=%ld, availableWord=%ld\n", __func__, (long)textLength,
+             (long)bwtInc->availableWord );
+    bwtInc->workingMemory = (unsigned *)calloc( bwtInc->availableWord, BYTES_IN_WORD );
 
     return bwtInc;
 }
@@ -437,7 +435,7 @@ static void BWTIncPutPackedTextToRank( const unsigned int *packedText, bgint_t *
     rankIndex = numChar - 1;
 
     t = packedText[ lastWord ] >> ( BITS_IN_WORD - numCharInLastWord * BIT_PER_CHAR );
-    for ( i = 0; i < numCharInLastWord; i++ )
+    for( i = 0; i < numCharInLastWord; i++ )
     {
         c = t & packedMask;
         cumulativeCount[ c + 1 ]++;
@@ -446,10 +444,10 @@ static void BWTIncPutPackedTextToRank( const unsigned int *packedText, bgint_t *
         t >>= BIT_PER_CHAR;
     }
 
-    for ( i = lastWord; i--; )
+    for( i = lastWord; i--; )
     { // loop from lastWord - 1 to 0
         t = packedText[ i ];
-        for ( j = 0; j < CHAR_PER_WORD; j++ )
+        for( j = 0; j < CHAR_PER_WORD; j++ )
         {
             c = t & packedMask;
             cumulativeCount[ c + 1 ]++;
@@ -488,16 +486,16 @@ static void ForwardDNAAllOccCountNoLimit( const unsigned int *dna, const bgint_t
     uint32_t wordToCount = static_cast<uint32_t>( ( index - iteration * 256 ) / 16 );
     uint32_t charToCount = static_cast<uint32_t>( index - iteration * 256 - wordToCount * 16 );
 
-    for ( i = 0; i < iteration; i++ )
+    for( i = 0; i < iteration; i++ )
     {
         sum = 0;
-        for ( j = 0; j < 16; j++ )
+        for( j = 0; j < 16; j++ )
         {
             sum += dnaDecodeTable[ *dna >> 16 ];
             sum += dnaDecodeTable[ *dna & 0x0000FFFF ];
             dna++;
         }
-        if ( !DNA_OCC_SUM_EXCEPTION( sum ) )
+        if( !DNA_OCC_SUM_EXCEPTION( sum ) )
         {
             occCount[ 0 ] += sum & 0x000000FF;
             sum >>= 8;
@@ -511,19 +509,19 @@ static void ForwardDNAAllOccCountNoLimit( const unsigned int *dna, const bgint_t
         {
             // only some or all of the 3 bits are on
             // in reality, only one of the four cases are possible
-            if ( sum == 0x00000100 )
+            if( sum == 0x00000100 )
             {
                 occCount[ 0 ] += 256;
             }
-            else if ( sum == 0x00010000 )
+            else if( sum == 0x00010000 )
             {
                 occCount[ 1 ] += 256;
             }
-            else if ( sum == 0x01000000 )
+            else if( sum == 0x01000000 )
             {
                 occCount[ 2 ] += 256;
             }
-            else if ( sum == 0x00000000 )
+            else if( sum == 0x00000000 )
             {
                 occCount[ 3 ] += 256;
             }
@@ -536,14 +534,14 @@ static void ForwardDNAAllOccCountNoLimit( const unsigned int *dna, const bgint_t
     }
 
     sum = 0;
-    for ( j = 0; j < wordToCount; j++ )
+    for( j = 0; j < wordToCount; j++ )
     {
         sum += dnaDecodeTable[ *dna >> 16 ];
         sum += dnaDecodeTable[ *dna & 0x0000FFFF ];
         dna++;
     }
 
-    if ( charToCount > 0 )
+    if( charToCount > 0 )
     {
         c = *dna & truncateRightMask[ charToCount ]; // increase count of 'a' by 16 - c;
         sum += dnaDecodeTable[ c >> 16 ];
@@ -572,18 +570,18 @@ static void BWTIncBuildPackedBwt( const bgint_t *relativeRank, unsigned int *__r
 
     inverseSa0 = previousRank = relativeRank[ 0 ];
 
-    for ( i = 1; i <= numChar; i++ )
+    for( i = 1; i <= numChar; i++ )
     {
         currentRank = relativeRank[ i ];
         // previousRank > cumulativeCount[c] because $ is one of the char
         c = ( previousRank > cumulativeCount[ 1 ] ) + ( previousRank > cumulativeCount[ 2 ] ) +
             ( previousRank > cumulativeCount[ 3 ] );
         // set bwt for currentRank
-        if ( c > 0 )
+        if( c > 0 )
         {
             // c <> 'a'
             r = currentRank;
-            if ( r > inverseSa0 )
+            if( r > inverseSa0 )
             {
                 // - 1 because $ at inverseSa0 is not encoded
                 r--;
@@ -603,7 +601,7 @@ static inline bgint_t BWTOccValueExplicit( const BWT *bwt, const bgint_t occInde
 
     occIndexMajor = occIndexExplicit * OCC_INTERVAL / OCC_INTERVAL_MAJOR;
 
-    if ( occIndexExplicit % OCC_VALUE_PER_WORD == 0 )
+    if( occIndexExplicit % OCC_VALUE_PER_WORD == 0 )
     {
         return bwt->occValueMajor[ occIndexMajor * ALPHABET_SIZE + character ] +
                ( bwt->occValue[ occIndexExplicit / OCC_VALUE_PER_WORD * ALPHABET_SIZE +
@@ -636,13 +634,13 @@ static unsigned int ForwardDNAOccCount( const unsigned int *dna, const unsigned 
     wordToCount = index / 16;
     charToCount = index - wordToCount * 16;
 
-    for ( i = 0; i < wordToCount; i++ )
+    for( i = 0; i < wordToCount; i++ )
     {
         sum += dnaDecodeTable[ dna[ i ] >> 16 ];
         sum += dnaDecodeTable[ dna[ i ] & 0x0000FFFF ];
     }
 
-    if ( charToCount > 0 )
+    if( charToCount > 0 )
     {
         c = dna[ i ] & truncateRightMask[ charToCount ]; // increase count of 'a' by 16 - c;
         sum += dnaDecodeTable[ c >> 16 ];
@@ -671,7 +669,7 @@ static unsigned int BackwardDNAOccCount( const unsigned int *dna, const unsigned
 
     dna -= wordToCount + 1;
 
-    if ( charToCount > 0 )
+    if( charToCount > 0 )
     {
         c = *dna & truncateLeftMask[ charToCount ]; // increase count of 'a' by 16 - c;
         sum += dnaDecodeTable[ c >> 16 ];
@@ -679,7 +677,7 @@ static unsigned int BackwardDNAOccCount( const unsigned int *dna, const unsigned
         sum += charToCount - 16; // decrease count of 'a' by 16 - positionToProcess
     }
 
-    for ( i = 0; i < wordToCount; i++ )
+    for( i = 0; i < wordToCount; i++ )
     {
         dna++;
         sum += dnaDecodeTable[ *dna >> 16 ];
@@ -696,17 +694,17 @@ bgint_t BWTOccValue( const BWT *bwt, bgint_t index, const unsigned int character
 
     // $ is supposed to be positioned at inverseSa0 but it is not encoded
     // therefore index is subtracted by 1 for adjustment
-    if ( index > bwt->inverseSa0 )
+    if( index > bwt->inverseSa0 )
         index--;
 
     occExplicitIndex = ( index + OCC_INTERVAL / 2 - 1 ) / OCC_INTERVAL; // Bidirectional encoding
     occIndex = occExplicitIndex * OCC_INTERVAL;
     occValue = BWTOccValueExplicit( bwt, occExplicitIndex, character );
 
-    if ( occIndex == index )
+    if( occIndex == index )
         return occValue;
 
-    if ( occIndex < index )
+    if( occIndex < index )
     {
         return occValue + ForwardDNAOccCount( bwt->bwtCode + occIndex / CHAR_PER_WORD,
                                               static_cast<uint32_t>( index - occIndex ), character,
@@ -735,7 +733,7 @@ static bgint_t BWTIncGetAbsoluteRank( BWT *bwt, bgint_t *__restrict absoluteRank
     bgint_t seqIndexFromStart[ ALPHABET_SIZE ];
     bgint_t seqIndexFromEnd[ ALPHABET_SIZE ];
 
-    for ( i = 0; i < ALPHABET_SIZE; i++ )
+    for( i = 0; i < ALPHABET_SIZE; i++ )
     {
         seqIndexFromStart[ i ] = cumulativeCount[ i ];
         seqIndexFromEnd[ i ] = cumulativeCount[ i + 1 ] - 1;
@@ -747,17 +745,17 @@ static bgint_t BWTIncGetAbsoluteRank( BWT *bwt, bgint_t *__restrict absoluteRank
     rankIndex = numChar - 1;
 
     lastWord = numChar / CHAR_PER_WORD;
-    for ( i = lastWord; i--; )
+    for( i = lastWord; i--; )
     { // loop from lastWord - 1 to 0
         t = packedText[ i ];
-        for ( j = 0; j < CHAR_PER_WORD; j++ )
+        for( j = 0; j < CHAR_PER_WORD; j++ )
         {
             c = t & packedMask;
             saIndex = bwt->cumulativeFreq[ c ] + BWTOccValue( bwt, saIndex, c ) + 1;
             // A counting sort using the first character of suffix is done here
             // If rank > inverseSa0 -> fill seq from end, otherwise fill seq from start -> to leave
             // the right entry for inverseSa0
-            if ( saIndex > bwt->inverseSa0 )
+            if( saIndex > bwt->inverseSa0 )
             {
                 seq[ seqIndexFromEnd[ c ] ] = rankIndex;
                 absoluteRank[ seqIndexFromEnd[ c ] ] = saIndex;
@@ -795,7 +793,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
     bgint_t tempSeq, tempKey;
     int64_t numberOfEqualKey;
 
-    if ( numItem < 2 )
+    if( numItem < 2 )
         return;
 
     stackDepth = 0;
@@ -803,23 +801,23 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
     lowIndex = 0;
     highIndex = numItem - 1;
 
-    for ( ;; )
+    for( ;; )
     {
-        for ( ;; )
+        for( ;; )
         {
             // Sort small array of data
-            if ( highIndex - lowIndex < BWTINC_INSERT_SORT_NUM_ITEM )
+            if( highIndex - lowIndex < BWTINC_INSERT_SORT_NUM_ITEM )
             { // Insertion sort on smallest arrays
-                for ( i = lowIndex + 1; i <= highIndex; i++ )
+                for( i = lowIndex + 1; i <= highIndex; i++ )
                 {
                     tempSeq = seq[ i ];
                     tempKey = key[ i ];
-                    for ( j = i; j > lowIndex && key[ j - 1 ] > tempKey; j-- )
+                    for( j = i; j > lowIndex && key[ j - 1 ] > tempKey; j-- )
                     {
                         seq[ j ] = seq[ j - 1 ];
                         key[ j ] = key[ j - 1 ];
                     }
-                    if ( j != i )
+                    if( j != i )
                     {
                         seq[ j ] = tempSeq;
                         key[ j ] = tempKey;
@@ -831,7 +829,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
             // Choose pivot as median of the lowest, middle, and highest data; sort the three data
 
             midIndex = average( lowIndex, highIndex );
-            if ( key[ lowIndex ] > key[ midIndex ] )
+            if( key[ lowIndex ] > key[ midIndex ] )
             {
                 tempSeq = seq[ lowIndex ];
                 tempKey = key[ lowIndex ];
@@ -840,7 +838,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
                 seq[ midIndex ] = tempSeq;
                 key[ midIndex ] = tempKey;
             }
-            if ( key[ lowIndex ] > key[ highIndex ] )
+            if( key[ lowIndex ] > key[ highIndex ] )
             {
                 tempSeq = seq[ lowIndex ];
                 tempKey = key[ lowIndex ];
@@ -849,7 +847,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
                 seq[ highIndex ] = tempSeq;
                 key[ highIndex ] = tempKey;
             }
-            if ( key[ midIndex ] > key[ highIndex ] )
+            if( key[ midIndex ] > key[ highIndex ] )
             {
                 tempSeq = seq[ midIndex ];
                 tempKey = key[ midIndex ];
@@ -866,24 +864,24 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
             lowPartitionIndex = lowIndex + 1;
             highPartitionIndex = highIndex - 1;
 
-            for ( ;; )
+            for( ;; )
             {
-                while ( lowPartitionIndex <= highPartitionIndex &&
-                        key[ lowPartitionIndex ] <= key[ midIndex ] )
+                while( lowPartitionIndex <= highPartitionIndex &&
+                       key[ lowPartitionIndex ] <= key[ midIndex ] )
                 {
                     numberOfEqualKey += ( key[ lowPartitionIndex ] == key[ midIndex ] );
                     lowPartitionIndex++;
                 }
-                while ( lowPartitionIndex < highPartitionIndex )
+                while( lowPartitionIndex < highPartitionIndex )
                 {
-                    if ( key[ midIndex ] >= key[ highPartitionIndex ] )
+                    if( key[ midIndex ] >= key[ highPartitionIndex ] )
                     {
                         numberOfEqualKey += ( key[ midIndex ] == key[ highPartitionIndex ] );
                         break;
                     }
                     highPartitionIndex--;
                 }
-                if ( lowPartitionIndex >= highPartitionIndex )
+                if( lowPartitionIndex >= highPartitionIndex )
                 {
                     break;
                 }
@@ -893,7 +891,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
                 key[ lowPartitionIndex ] = key[ highPartitionIndex ];
                 seq[ highPartitionIndex ] = tempSeq;
                 key[ highPartitionIndex ] = tempKey;
-                if ( highPartitionIndex == midIndex )
+                if( highPartitionIndex == midIndex )
                 {
                     // partition key has been moved
                     midIndex = lowPartitionIndex;
@@ -914,26 +912,26 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
             seq[ lowPartitionIndex ] = tempSeq;
             key[ lowPartitionIndex ] = tempKey;
 
-            if ( highIndex - lowIndex + BWTINC_INSERT_SORT_NUM_ITEM <=
-                 EQUAL_KEY_THRESHOLD * numberOfEqualKey )
+            if( highIndex - lowIndex + BWTINC_INSERT_SORT_NUM_ITEM <=
+                EQUAL_KEY_THRESHOLD * numberOfEqualKey )
             {
                 // Many keys = partition key; separate the equal key data from the lower partition
 
                 midIndex = lowIndex;
 
-                for ( ;; )
+                for( ;; )
                 {
-                    while ( midIndex < lowPartitionIndex &&
-                            key[ midIndex ] < key[ lowPartitionIndex ] )
+                    while( midIndex < lowPartitionIndex &&
+                           key[ midIndex ] < key[ lowPartitionIndex ] )
                     {
                         midIndex++;
                     }
-                    while ( midIndex < lowPartitionIndex &&
-                            key[ lowPartitionIndex ] == key[ lowPartitionIndex - 1 ] )
+                    while( midIndex < lowPartitionIndex &&
+                           key[ lowPartitionIndex ] == key[ lowPartitionIndex - 1 ] )
                     {
                         lowPartitionIndex--;
                     }
-                    if ( midIndex >= lowPartitionIndex )
+                    if( midIndex >= lowPartitionIndex )
                     {
                         break;
                     }
@@ -948,7 +946,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
                 }
             }
 
-            if ( lowPartitionIndex - lowIndex > highIndex - highPartitionIndex )
+            if( lowPartitionIndex - lowIndex > highIndex - highPartitionIndex )
             {
                 // put the larger partition to stack
                 lowStack[ stackDepth ] = lowIndex;
@@ -964,7 +962,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
                 highStack[ stackDepth ] = highIndex;
                 stackDepth++;
                 // sort the smaller partition first
-                if ( lowPartitionIndex > lowIndex )
+                if( lowPartitionIndex > lowIndex )
                 {
                     highIndex = lowPartitionIndex - 1;
                 }
@@ -978,7 +976,7 @@ static void BWTIncSortKey( bgint_t *__restrict key, bgint_t *__restrict seq, con
         }
 
         // Pop a range from stack
-        if ( stackDepth > 0 )
+        if( stackDepth > 0 )
         {
             stackDepth--;
             lowIndex = lowStack[ stackDepth ];
@@ -1002,13 +1000,13 @@ static void BWTIncBuildRelativeRank( bgint_t *__restrict sortedRank, bgint_t *__
 
     lastIndex = numItem;
     lastRank = sortedRank[ numItem ];
-    if ( lastRank > oldInverseSa0 )
+    if( lastRank > oldInverseSa0 )
     {
         sortedRank[ numItem ]--; // to prepare for merging; $ is not encoded in bwt
     }
     s = seq[ numItem ];
     relativeRank[ s ] = numItem;
-    if ( lastRank == oldInverseSa0 )
+    if( lastRank == oldInverseSa0 )
     {
         oldInverseSa0++; // so that this segment of code is not run again
         lastRank++; // so that oldInverseSa0 become a sorted group with 1 item
@@ -1017,40 +1015,40 @@ static void BWTIncBuildRelativeRank( bgint_t *__restrict sortedRank, bgint_t *__
     c = ALPHABET_SIZE - 1;
     freq = cumulativeCount[ c ];
 
-    for ( i = numItem; i--; )
+    for( i = numItem; i--; )
     { // from numItem - 1 to 0
         r = sortedRank[ i ];
-        if ( r > oldInverseSa0 )
+        if( r > oldInverseSa0 )
             sortedRank[ i ]--; // to prepare for merging; $ is not encoded in bwt
         s = seq[ i ];
-        if ( i < freq )
+        if( i < freq )
         {
-            if ( lastIndex >= freq )
+            if( lastIndex >= freq )
                 lastRank++; // to trigger the group across alphabet boundary to be split
             c--;
             freq = cumulativeCount[ c ];
         }
-        if ( r == lastRank )
+        if( r == lastRank )
         {
             relativeRank[ s ] = lastIndex;
         }
         else
         {
-            if ( i == lastIndex - 1 )
+            if( i == lastIndex - 1 )
             {
-                if ( lastIndex < numItem && ( sbgint_t )seq[ lastIndex + 1 ] < 0 )
+                if( lastIndex < numItem && (sbgint_t)seq[ lastIndex + 1 ] < 0 )
                 {
                     seq[ lastIndex ] = seq[ lastIndex + 1 ] - 1;
                 }
                 else
                 {
-                    seq[ lastIndex ] = ( bgint_t )-1;
+                    seq[ lastIndex ] = (bgint_t)-1;
                 }
             }
             lastIndex = i;
             lastRank = r;
             relativeRank[ s ] = i;
-            if ( r == oldInverseSa0 )
+            if( r == oldInverseSa0 )
             {
                 oldInverseSa0++; // so that this segment of code is not run again
                 lastRank++; // so that oldInverseSa0 become a sorted group with 1 item
@@ -1068,7 +1066,7 @@ static void BWTIncBuildBwt( unsigned int *insertBwt, const bgint_t *relativeRank
 
     previousRank = relativeRank[ 0 ];
 
-    for ( i = 1; i <= numChar; i++ )
+    for( i = 1; i <= numChar; i++ )
     {
         currentRank = relativeRank[ i ];
         c = ( previousRank >= cumulativeCount[ 1 ] ) + ( previousRank >= cumulativeCount[ 2 ] ) +
@@ -1101,18 +1099,18 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
     mergedBwt[ 0 ] =
         0; // this can be cleared as merged Bwt slightly shift to the left in each iteration
 
-    while ( oIndex < numOldBwt )
+    while( oIndex < numOldBwt )
     {
         // copy from insertBwt
-        while ( iIndex <= numInsertBwt && sortedRank[ iIndex ] <= oIndex )
+        while( iIndex <= numInsertBwt && sortedRank[ iIndex ] <= oIndex )
         {
-            if ( sortedRank[ iIndex ] != 0 )
+            if( sortedRank[ iIndex ] != 0 )
             { // special value to indicate that this is for new inverseSa0
                 mergedBwt[ mWord ] |= insertBwt[ iIndex ]
                                       << ( BITS_IN_WORD - ( mChar + 1 ) * BIT_PER_CHAR );
                 mIndex++;
                 mChar++;
-                if ( mChar == CHAR_PER_WORD )
+                if( mChar == CHAR_PER_WORD )
                 {
                     mChar = 0;
                     mWord++;
@@ -1123,7 +1121,7 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
         }
 
         // Copy from oldBwt to mergedBwt
-        if ( iIndex <= numInsertBwt )
+        if( iIndex <= numInsertBwt )
         {
             o = sortedRank[ iIndex ];
         }
@@ -1135,7 +1133,7 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
 
         oWord = oIndex / CHAR_PER_WORD;
         oChar = oIndex - oWord * CHAR_PER_WORD;
-        if ( oChar > mChar )
+        if( oChar > mChar )
         {
             leftShift = ( oChar - mChar ) * BIT_PER_CHAR;
             rightShift = ( CHAR_PER_WORD + mChar - oChar ) * BIT_PER_CHAR;
@@ -1144,7 +1142,7 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
                 ( oldBwt[ oWord ] << ( oChar * BIT_PER_CHAR ) >> ( mChar * BIT_PER_CHAR ) ) |
                 ( oldBwt[ oWord + 1 ] >> rightShift );
             oIndex += std::min( numInsert, CHAR_PER_WORD - mChar );
-            while ( o > oIndex )
+            while( o > oIndex )
             {
                 oWord++;
                 mWord++;
@@ -1153,7 +1151,7 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
                 oIndex += CHAR_PER_WORD;
             }
         }
-        else if ( oChar < mChar )
+        else if( oChar < mChar )
         {
             rightShift = ( mChar - oChar ) * BIT_PER_CHAR;
             leftShift = ( CHAR_PER_WORD + oChar - mChar ) * BIT_PER_CHAR;
@@ -1161,7 +1159,7 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
                 mergedBwt[ mWord ] |
                 ( oldBwt[ oWord ] << ( oChar * BIT_PER_CHAR ) >> ( mChar * BIT_PER_CHAR ) );
             oIndex += std::min( numInsert, CHAR_PER_WORD - mChar );
-            while ( o > oIndex )
+            while( o > oIndex )
             {
                 oWord++;
                 mWord++;
@@ -1175,7 +1173,7 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
             mergedBwt[ mWord ] =
                 mergedBwt[ mWord ] | truncateLeft( oldBwt[ oWord ], mChar * BIT_PER_CHAR );
             oIndex += std::min( numInsert, CHAR_PER_WORD - mChar );
-            while ( o > oIndex )
+            while( o > oIndex )
             {
                 oWord++;
                 mWord++;
@@ -1189,7 +1187,7 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
         // Clear the trailing garbage in mergedBwt
         mWord = mIndex / CHAR_PER_WORD;
         mChar = mIndex - mWord * CHAR_PER_WORD;
-        if ( mChar == 0 )
+        if( mChar == 0 )
         {
             mergedBwt[ mWord ] = 0;
         }
@@ -1201,15 +1199,15 @@ static void BWTIncMergeBwt( const bgint_t *sortedRank, const unsigned int *oldBw
     }
 
     // copy from insertBwt
-    while ( iIndex <= numInsertBwt )
+    while( iIndex <= numInsertBwt )
     {
-        if ( sortedRank[ iIndex ] != 0 )
+        if( sortedRank[ iIndex ] != 0 )
         {
             mergedBwt[ mWord ] |= insertBwt[ iIndex ]
                                   << ( BITS_IN_WORD - ( mChar + 1 ) * BIT_PER_CHAR );
             mIndex++;
             mChar++;
-            if ( mChar == CHAR_PER_WORD )
+            if( mChar == CHAR_PER_WORD )
             {
                 mChar = 0;
                 mWord++;
@@ -1230,20 +1228,20 @@ void BWTClearTrailingBwtCode( BWT *bwt )
 
     wordIndex = bwt->textLength / CHAR_PER_WORD;
     offset = ( bwt->textLength - wordIndex * CHAR_PER_WORD ) * BIT_PER_CHAR;
-    if ( offset > 0 )
+    if( offset > 0 )
     {
         bwt->bwtCode[ wordIndex ] =
             truncateRight( bwt->bwtCode[ wordIndex ], BITS_IN_WORD - offset );
     }
     else
     {
-        if ( wordIndex < bwtResidentSizeInWord )
+        if( wordIndex < bwtResidentSizeInWord )
         {
             bwt->bwtCode[ wordIndex ] = 0;
         }
     }
 
-    for ( i = wordIndex + 1; i < bwtResidentSizeInWord; i++ )
+    for( i = wordIndex + 1; i < bwtResidentSizeInWord; i++ )
     {
         bwt->bwtCode[ i ] = 0;
     }
@@ -1283,9 +1281,9 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
 
     occIndex = 0;
     bwtIndex = 0;
-    for ( occMajorIndex = 1; occMajorIndex < numberOfOccValueMajor; occMajorIndex++ )
+    for( occMajorIndex = 1; occMajorIndex < numberOfOccValueMajor; occMajorIndex++ )
     {
-        for ( i = 0; i < numberOfOccIntervalPerMajor / 2; i++ )
+        for( i = 0; i < numberOfOccIntervalPerMajor / 2; i++ )
         {
             sum = 0;
             tempOccValue1[ 0 ] = tempOccValue0[ 0 ];
@@ -1293,14 +1291,14 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
             tempOccValue1[ 2 ] = tempOccValue0[ 2 ];
             tempOccValue1[ 3 ] = tempOccValue0[ 3 ];
 
-            for ( j = 0; j < wordBetweenOccValue; j++ )
+            for( j = 0; j < wordBetweenOccValue; j++ )
             {
                 c = bwt[ bwtIndex ];
                 sum += decodeTable[ c >> 16 ];
                 sum += decodeTable[ c & 0x0000FFFF ];
                 bwtIndex++;
             }
-            if ( !DNA_OCC_SUM_EXCEPTION( sum ) )
+            if( !DNA_OCC_SUM_EXCEPTION( sum ) )
             {
                 tempOccValue1[ 0 ] += ( sum & 0x000000FF );
                 sum >>= 8;
@@ -1312,15 +1310,15 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
             }
             else
             {
-                if ( sum == 0x00000100 )
+                if( sum == 0x00000100 )
                 {
                     tempOccValue1[ 0 ] += 256;
                 }
-                else if ( sum == 0x00010000 )
+                else if( sum == 0x00010000 )
                 {
                     tempOccValue1[ 1 ] += 256;
                 }
-                else if ( sum == 0x01000000 )
+                else if( sum == 0x01000000 )
                 {
                     tempOccValue1[ 2 ] += 256;
                 }
@@ -1341,14 +1339,14 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
 
             occIndex++;
 
-            for ( j = 0; j < wordBetweenOccValue; j++ )
+            for( j = 0; j < wordBetweenOccValue; j++ )
             {
                 c = bwt[ bwtIndex ];
                 sum += decodeTable[ c >> 16 ];
                 sum += decodeTable[ c & 0x0000FFFF ];
                 bwtIndex++;
             }
-            if ( !DNA_OCC_SUM_EXCEPTION( sum ) )
+            if( !DNA_OCC_SUM_EXCEPTION( sum ) )
             {
                 tempOccValue0[ 0 ] += ( sum & 0x000000FF );
                 sum >>= 8;
@@ -1360,15 +1358,15 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
             }
             else
             {
-                if ( sum == 0x00000100 )
+                if( sum == 0x00000100 )
                 {
                     tempOccValue0[ 0 ] += 256;
                 }
-                else if ( sum == 0x00010000 )
+                else if( sum == 0x00010000 )
                 {
                     tempOccValue0[ 1 ] += 256;
                 }
-                else if ( sum == 0x01000000 )
+                else if( sum == 0x01000000 )
                 {
                     tempOccValue0[ 2 ] += 256;
                 }
@@ -1393,21 +1391,21 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
         tempOccValue0[ 3 ] = 0;
     }
 
-    while ( occIndex < ( numberOfOccValue - 1 ) / 2 )
+    while( occIndex < ( numberOfOccValue - 1 ) / 2 )
     {
         sum = 0;
         tempOccValue1[ 0 ] = tempOccValue0[ 0 ];
         tempOccValue1[ 1 ] = tempOccValue0[ 1 ];
         tempOccValue1[ 2 ] = tempOccValue0[ 2 ];
         tempOccValue1[ 3 ] = tempOccValue0[ 3 ];
-        for ( j = 0; j < wordBetweenOccValue; j++ )
+        for( j = 0; j < wordBetweenOccValue; j++ )
         {
             c = bwt[ bwtIndex ];
             sum += decodeTable[ c >> 16 ];
             sum += decodeTable[ c & 0x0000FFFF ];
             bwtIndex++;
         }
-        if ( !DNA_OCC_SUM_EXCEPTION( sum ) )
+        if( !DNA_OCC_SUM_EXCEPTION( sum ) )
         {
             tempOccValue1[ 0 ] += ( sum & 0x000000FF );
             sum >>= 8;
@@ -1419,15 +1417,15 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
         }
         else
         {
-            if ( sum == 0x00000100 )
+            if( sum == 0x00000100 )
             {
                 tempOccValue1[ 0 ] += 256;
             }
-            else if ( sum == 0x00010000 )
+            else if( sum == 0x00010000 )
             {
                 tempOccValue1[ 1 ] += 256;
             }
-            else if ( sum == 0x01000000 )
+            else if( sum == 0x01000000 )
             {
                 tempOccValue1[ 2 ] += 256;
             }
@@ -1447,14 +1445,14 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
         sum = 0;
         occIndex++;
 
-        for ( j = 0; j < wordBetweenOccValue; j++ )
+        for( j = 0; j < wordBetweenOccValue; j++ )
         {
             c = bwt[ bwtIndex ];
             sum += decodeTable[ c >> 16 ];
             sum += decodeTable[ c & 0x0000FFFF ];
             bwtIndex++;
         }
-        if ( !DNA_OCC_SUM_EXCEPTION( sum ) )
+        if( !DNA_OCC_SUM_EXCEPTION( sum ) )
         {
             tempOccValue0[ 0 ] += ( sum & 0x000000FF );
             sum >>= 8;
@@ -1466,15 +1464,15 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
         }
         else
         {
-            if ( sum == 0x00000100 )
+            if( sum == 0x00000100 )
             {
                 tempOccValue0[ 0 ] += 256;
             }
-            else if ( sum == 0x00010000 )
+            else if( sum == 0x00010000 )
             {
                 tempOccValue0[ 1 ] += 256;
             }
-            else if ( sum == 0x01000000 )
+            else if( sum == 0x01000000 )
             {
                 tempOccValue0[ 2 ] += 256;
             }
@@ -1491,16 +1489,16 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
     tempOccValue1[ 2 ] = tempOccValue0[ 2 ];
     tempOccValue1[ 3 ] = tempOccValue0[ 3 ];
 
-    if ( occIndex * 2 < numberOfOccValue - 1 )
+    if( occIndex * 2 < numberOfOccValue - 1 )
     {
-        for ( j = 0; j < wordBetweenOccValue; j++ )
+        for( j = 0; j < wordBetweenOccValue; j++ )
         {
             c = bwt[ bwtIndex ];
             sum += decodeTable[ c >> 16 ];
             sum += decodeTable[ c & 0x0000FFFF ];
             bwtIndex++;
         }
-        if ( !DNA_OCC_SUM_EXCEPTION( sum ) )
+        if( !DNA_OCC_SUM_EXCEPTION( sum ) )
         {
             tempOccValue1[ 0 ] += ( sum & 0x000000FF );
             sum >>= 8;
@@ -1512,15 +1510,15 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
         }
         else
         {
-            if ( sum == 0x00000100 )
+            if( sum == 0x00000100 )
             {
                 tempOccValue1[ 0 ] += 256;
             }
-            else if ( sum == 0x00010000 )
+            else if( sum == 0x00010000 )
             {
                 tempOccValue1[ 1 ] += 256;
             }
-            else if ( sum == 0x01000000 )
+            else if( sum == 0x01000000 )
             {
                 tempOccValue1[ 2 ] += 256;
             }
@@ -1553,19 +1551,18 @@ static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
     initializeVAL_bg( bwtInc->cumulativeCountInCurrentBuild, ALPHABET_SIZE + 1, 0 );
 
 
-    if ( bwtInc->bwt->textLength == 0 )
+    if( bwtInc->bwt->textLength == 0 )
     { /* Initial build
        */
         // Set address
-        seq = ( bgint_t * )bwtInc->workingMemory;
+        seq = (bgint_t *)bwtInc->workingMemory;
         relativeRank = seq + bwtInc->buildSize + 1;
         // mergedBwt and packedTex may share memory
         mergedBwt = insertBwt =
             bwtInc->workingMemory + bwtInc->availableWord - mergedBwtSizeInWord; // build in place
 
-        assert( ( void * )( relativeRank + bwtInc->buildSize + 1 ) <=
-                ( void * )bwtInc->packedText );
-        assert( ( void * )( relativeRank + bwtInc->buildSize + 1 ) <= ( void * )mergedBwt );
+        assert( (void *)( relativeRank + bwtInc->buildSize + 1 ) <= (void *)bwtInc->packedText );
+        assert( (void *)( relativeRank + bwtInc->buildSize + 1 ) <= (void *)mergedBwt );
 
         // ->packedText is not used any more and may be overwritten by mergedBwt
         BWTIncPutPackedTextToRank( bwtInc->packedText, relativeRank,
@@ -1575,8 +1572,8 @@ static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
         relativeRank[ numChar ] = 0;
 
         // Sort suffix
-        QSufSortSuffixSort( ( qsint_t * )relativeRank, ( qsint_t * )seq, ( qsint_t )numChar,
-                            ( qsint_t )ALPHABET_SIZE - 1, 0, FALSE );
+        QSufSortSuffixSort( (qsint_t *)relativeRank, (qsint_t *)seq, (qsint_t)numChar,
+                            (qsint_t)ALPHABET_SIZE - 1, 0, FALSE );
         newInverseSa0 = relativeRank[ 0 ];
 
         // Clear BWT area
@@ -1593,13 +1590,13 @@ static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
     { /* Incremental build
        */
         // Set address
-        sortedRank = ( bgint_t * )bwtInc->workingMemory;
+        sortedRank = (bgint_t *)bwtInc->workingMemory;
         seq = sortedRank + bwtInc->buildSize + 1;
-        insertBwt = ( unsigned * )seq; // insertBwt and seq share memory
+        insertBwt = (unsigned *)seq; // insertBwt and seq share memory
         // relativeRank and ->packedText may share memory
         relativeRank = seq + bwtInc->buildSize + 1;
 
-        assert( ( void * )relativeRank <= ( void * )bwtInc->packedText );
+        assert( (void *)relativeRank <= (void *)bwtInc->packedText );
 
         // Store the first character of this iteration
         firstCharInThisIteration = bwtInc->packedText[ 0 ] >> ( BITS_IN_WORD - BIT_PER_CHAR );
@@ -1626,10 +1623,10 @@ static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
 
         // Sort rank by ALPHABET_SIZE + 2 groups (or ALPHABET_SIZE + 1 groups when inverseSa0 sit on
         // the border of a group)
-        for ( i = 0; i < ALPHABET_SIZE; i++ )
+        for( i = 0; i < ALPHABET_SIZE; i++ )
         {
-            if ( bwtInc->cumulativeCountInCurrentBuild[ i ] > oldInverseSa0RelativeRank ||
-                 bwtInc->cumulativeCountInCurrentBuild[ i + 1 ] <= oldInverseSa0RelativeRank )
+            if( bwtInc->cumulativeCountInCurrentBuild[ i ] > oldInverseSa0RelativeRank ||
+                bwtInc->cumulativeCountInCurrentBuild[ i + 1 ] <= oldInverseSa0RelativeRank )
             {
                 BWTIncSortKey( sortedRank + bwtInc->cumulativeCountInCurrentBuild[ i ],
                                seq + bwtInc->cumulativeCountInCurrentBuild[ i ],
@@ -1638,15 +1635,14 @@ static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
             }
             else
             {
-                if ( bwtInc->cumulativeCountInCurrentBuild[ i ] < oldInverseSa0RelativeRank )
+                if( bwtInc->cumulativeCountInCurrentBuild[ i ] < oldInverseSa0RelativeRank )
                 {
-                    BWTIncSortKey(
-                        sortedRank + bwtInc->cumulativeCountInCurrentBuild[ i ],
-                        seq + bwtInc->cumulativeCountInCurrentBuild[ i ],
-                        oldInverseSa0RelativeRank - bwtInc->cumulativeCountInCurrentBuild[ i ] );
+                    BWTIncSortKey( sortedRank + bwtInc->cumulativeCountInCurrentBuild[ i ],
+                                   seq + bwtInc->cumulativeCountInCurrentBuild[ i ],
+                                   oldInverseSa0RelativeRank -
+                                       bwtInc->cumulativeCountInCurrentBuild[ i ] );
                 }
-                if ( bwtInc->cumulativeCountInCurrentBuild[ i + 1 ] >
-                     oldInverseSa0RelativeRank + 1 )
+                if( bwtInc->cumulativeCountInCurrentBuild[ i + 1 ] > oldInverseSa0RelativeRank + 1 )
                 {
                     BWTIncSortKey( sortedRank + oldInverseSa0RelativeRank + 1,
                                    seq + oldInverseSa0RelativeRank + 1,
@@ -1664,8 +1660,8 @@ static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
         assert( relativeRank[ numChar ] == oldInverseSa0RelativeRank );
 
         // Sort suffix
-        QSufSortSuffixSort( ( qsint_t * )relativeRank, ( qsint_t * )seq, ( qsint_t )numChar,
-                            ( qsint_t )numChar, 1, TRUE );
+        QSufSortSuffixSort( (qsint_t *)relativeRank, (qsint_t *)seq, (qsint_t)numChar,
+                            (qsint_t)numChar, 1, TRUE );
 
         newInverseSa0RelativeRank = relativeRank[ 0 ];
         newInverseSa0 = sortedRank[ newInverseSa0RelativeRank ] + newInverseSa0RelativeRank;
@@ -1731,16 +1727,16 @@ BWTInc *BWTIncConstructFromPacked( const char *inputFileName, bgint_t initialMax
 
     BWTInc *bwtInc;
 
-    packedFile = ( FILE * )fopen( inputFileName, "rb" );
+    packedFile = (FILE *)fopen( inputFileName, "rb" );
 
-    if ( packedFile == NULL )
+    if( packedFile == NULL )
     {
         fprintf( stderr, "BWTIncConstructFromPacked() : Cannot open %s : %s\n", inputFileName,
                  strerror( errno ) );
         exit( 1 );
     }
 
-    if ( fseek( packedFile, -1, SEEK_END ) != 0 )
+    if( fseek( packedFile, -1, SEEK_END ) != 0 )
     {
         fprintf( stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n", inputFileName,
                  strerror( errno ) );
@@ -1748,13 +1744,13 @@ BWTInc *BWTIncConstructFromPacked( const char *inputFileName, bgint_t initialMax
     }
     packedFileLen = ftell( packedFile );
     // check was without the cast originally
-    if ( packedFileLen == ( bgint_t )-1 )
+    if( packedFileLen == (bgint_t)-1 )
     {
         fprintf( stderr, "BWTIncConstructFromPacked() : Can't ftell on %s : %s\n", inputFileName,
                  strerror( errno ) );
         exit( 1 );
     }
-    if ( fread( &lastByteLength, sizeof( unsigned char ), 1, packedFile ) != 1 )
+    if( fread( &lastByteLength, sizeof( unsigned char ), 1, packedFile ) != 1 )
     {
         fprintf( stderr, "BWTIncConstructFromPacked() : Can't read from %s : %s\n", inputFileName,
                  ferror( packedFile ) ? strerror( errno ) : "Unexpected end of file" );
@@ -1766,7 +1762,7 @@ BWTInc *BWTIncConstructFromPacked( const char *inputFileName, bgint_t initialMax
 
     BWTIncSetBuildSizeAndTextAddr( bwtInc );
 
-    if ( bwtInc->buildSize > totalTextLength )
+    if( bwtInc->buildSize > totalTextLength )
     {
         textToLoad = totalTextLength;
     }
@@ -1778,20 +1774,20 @@ BWTInc *BWTIncConstructFromPacked( const char *inputFileName, bgint_t initialMax
     }
     textSizeInByte = textToLoad / CHAR_PER_BYTE; // excluded the odd byte
 
-    if ( fseek( packedFile, -( ( long )textSizeInByte + 2 ), SEEK_CUR ) != 0 )
+    if( fseek( packedFile, -( (long)textSizeInByte + 2 ), SEEK_CUR ) != 0 )
     {
         fprintf( stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n", inputFileName,
                  strerror( errno ) );
         exit( 1 );
     }
-    if ( fread( bwtInc->textBuffer, sizeof( unsigned char ), textSizeInByte + 1, packedFile ) !=
-         textSizeInByte + 1 )
+    if( fread( bwtInc->textBuffer, sizeof( unsigned char ), textSizeInByte + 1, packedFile ) !=
+        textSizeInByte + 1 )
     {
         fprintf( stderr, "BWTIncConstructFromPacked() : Can't read from %s : %s\n", inputFileName,
                  ferror( packedFile ) ? strerror( errno ) : "Unexpected end of file" );
         exit( 1 );
     }
-    if ( fseek( packedFile, -( ( long )textSizeInByte + 1 ), SEEK_CUR ) != 0 )
+    if( fseek( packedFile, -( (long)textSizeInByte + 1 ), SEEK_CUR ) != 0 )
     {
         fprintf( stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n", inputFileName,
                  strerror( errno ) );
@@ -1804,29 +1800,29 @@ BWTInc *BWTIncConstructFromPacked( const char *inputFileName, bgint_t initialMax
 
     processedTextLength = textToLoad;
 
-    while ( processedTextLength < totalTextLength )
+    while( processedTextLength < totalTextLength )
     {
         textToLoad = bwtInc->buildSize / CHAR_PER_WORD * CHAR_PER_WORD;
-        if ( textToLoad > totalTextLength - processedTextLength )
+        if( textToLoad > totalTextLength - processedTextLength )
         {
             textToLoad = totalTextLength - processedTextLength;
         }
         textSizeInByte = textToLoad / CHAR_PER_BYTE;
-        if ( fseek( packedFile, -( ( long )textSizeInByte ), SEEK_CUR ) != 0 )
+        if( fseek( packedFile, -( (long)textSizeInByte ), SEEK_CUR ) != 0 )
         {
             fprintf( stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n", inputFileName,
                      strerror( errno ) );
             exit( 1 );
         }
-        if ( fread( bwtInc->textBuffer, sizeof( unsigned char ), textSizeInByte, packedFile ) !=
-             textSizeInByte )
+        if( fread( bwtInc->textBuffer, sizeof( unsigned char ), textSizeInByte, packedFile ) !=
+            textSizeInByte )
         {
             fprintf( stderr, "BWTIncConstructFromPacked() : Can't read from %s : %s\n",
                      inputFileName,
                      ferror( packedFile ) ? strerror( errno ) : "Unexpected end of file" );
             exit( 1 );
         }
-        if ( fseek( packedFile, -( ( long )textSizeInByte ), SEEK_CUR ) != 0 )
+        if( fseek( packedFile, -( (long)textSizeInByte ), SEEK_CUR ) != 0 )
         {
             fprintf( stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n", inputFileName,
                      strerror( errno ) );
@@ -1836,11 +1832,11 @@ BWTInc *BWTIncConstructFromPacked( const char *inputFileName, bgint_t initialMax
                                        textToLoad );
         BWTIncConstruct( bwtInc, textToLoad );
         processedTextLength += textToLoad;
-        if ( bwtInc->numberOfIterationDone % 10 == 0 )
+        if( bwtInc->numberOfIterationDone % 10 == 0 )
         {
             fprintf( stderr,
                      "[BWTIncConstructFromPacked] %lu iterations done. %lu characters processed.\n",
-                     ( long )bwtInc->numberOfIterationDone, ( long )processedTextLength );
+                     (long)bwtInc->numberOfIterationDone, (long)processedTextLength );
         }
     }
     fclose( packedFile ); // close the pack file (so that we can later remove it)
@@ -1850,7 +1846,7 @@ BWTInc *BWTIncConstructFromPacked( const char *inputFileName, bgint_t initialMax
 
 void BWTFree( BWT *bwt )
 {
-    if ( bwt == 0 )
+    if( bwt == 0 )
         return;
     free( bwt->cumulativeFreq );
     // free(bwt->bwtCode); // seems to be a trouble maker (can't find any calloc)
@@ -1862,7 +1858,7 @@ void BWTFree( BWT *bwt )
 
 void BWTIncFree( BWTInc *bwtInc )
 {
-    if ( bwtInc == 0 )
+    if( bwtInc == 0 )
     {
         return;
     } // if
@@ -1883,8 +1879,8 @@ void BWTSaveBwtCodeAndOcc( const BWT *bwt, const char *bwtFileName, const char *
     /*    FILE *occValueFile; */
     bgint_t bwtLength;
 
-    bwtFile = ( FILE * )fopen( bwtFileName, "wb" );
-    if ( bwtFile == NULL )
+    bwtFile = (FILE *)fopen( bwtFileName, "wb" );
+    if( bwtFile == NULL )
     {
         fprintf( stderr, "BWTSaveBwtCodeAndOcc(): Cannot open %s for writing: %s\n", bwtFileName,
                  strerror( errno ) );
@@ -1893,17 +1889,17 @@ void BWTSaveBwtCodeAndOcc( const BWT *bwt, const char *bwtFileName, const char *
 
     bwtLength = BWTFileSizeInWord( bwt->textLength );
 
-    if ( fwrite( &bwt->inverseSa0, sizeof( bgint_t ), 1, bwtFile ) != 1 // primary
-         || fwrite( bwt->cumulativeFreq + 1, sizeof( bgint_t ), ALPHABET_SIZE, bwtFile ) !=
-                ALPHABET_SIZE // L2[1] .. L2[5]
-         || fwrite( bwt->bwtCode, sizeof( unsigned int ), bwtLength, bwtFile ) !=
-                bwtLength ) // bwt itself
+    if( fwrite( &bwt->inverseSa0, sizeof( bgint_t ), 1, bwtFile ) != 1 // primary
+        || fwrite( bwt->cumulativeFreq + 1, sizeof( bgint_t ), ALPHABET_SIZE, bwtFile ) !=
+               ALPHABET_SIZE // L2[1] .. L2[5]
+        || fwrite( bwt->bwtCode, sizeof( unsigned int ), bwtLength, bwtFile ) !=
+               bwtLength ) // bwt itself
     {
         fprintf( stderr, "BWTSaveBwtCodeAndOcc(): Error writing to %s : %s\n", bwtFileName,
                  strerror( errno ) );
         exit( 1 );
     }
-    if ( fclose( bwtFile ) != 0 )
+    if( fclose( bwtFile ) != 0 )
     {
         fprintf( stderr, "BWTSaveBwtCodeAndOcc(): Error on closing %s : %s\n", bwtFileName,
                  strerror( errno ) );
@@ -1913,8 +1909,8 @@ void BWTSaveBwtCodeAndOcc( const BWT *bwt, const char *bwtFileName, const char *
 
 /* New function for interfacing with the FMIndex class
  */
-std::tuple<bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int>> bwtLarge(
-    const char *pcFileNamePack )
+std::tuple<bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int>>
+bwtLarge( const char *pcFileNamePack )
 {
     BWTInc *bwtInc;
     bwtInc = BWTIncConstructFromPacked( pcFileNamePack, 10000000, 10000000 );
@@ -1928,9 +1924,9 @@ std::tuple<bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int>> bw
         std::tuple<bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int>>(
             bwtLength, // length of BWT
             bwt->inverseSa0, // position of primary
-            std::vector<bgint_t>(
-                bwt->cumulativeFreq + 1,
-                ( bwt->cumulativeFreq + 1 ) + ALPHABET_SIZE ), // store the four cumulative counter
+            std::vector<bgint_t>( bwt->cumulativeFreq + 1,
+                                  ( bwt->cumulativeFreq + 1 ) +
+                                      ALPHABET_SIZE ), // store the four cumulative counter
             std::vector<unsigned int>( bwt->bwtCode,
                                        bwt->bwtCode + bwtLength ) // store the BWT itself
         ); // tuple construction

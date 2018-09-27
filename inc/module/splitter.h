@@ -8,10 +8,10 @@
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
-#include <fstream>
-#include <mutex>
 #include "container/nucSeq.h"
 #include "module/module.h"
+#include <fstream>
+#include <mutex>
 
 namespace libMA
 {
@@ -25,7 +25,7 @@ namespace libMA
  */
 class Splitter : public Module
 {
-   public:
+  public:
     std::shared_ptr<Pledge> pVec;
     std::shared_ptr<std::mutex> pMutex;
 
@@ -35,8 +35,7 @@ class Splitter : public Module
      * Takes the vector that shall be split as input.
      */
     Splitter( std::shared_ptr<Pledge> pVec ) : pVec( pVec ), pMutex( new std::mutex )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 
@@ -77,10 +76,9 @@ class Splitter : public Module
 
 class ReadSplitter : public Module
 {
-   public:
+  public:
     ReadSplitter( )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 
@@ -127,7 +125,7 @@ class ReadSplitter : public Module
  */
 class Collector : public Module
 {
-   public:
+  public:
     std::shared_ptr<ContainerVector> pVec;
     std::shared_ptr<std::mutex> pLock;
 
@@ -138,8 +136,7 @@ class Collector : public Module
      */
     Collector( std::shared_ptr<Container> pType )
         : pVec( new ContainerVector( pType ) ), pLock( new std::mutex )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 
@@ -187,7 +184,7 @@ class Collector : public Module
  */
 class Lock : public Module
 {
-   public:
+  public:
     std::shared_ptr<Container> pType;
 
     /**
@@ -196,8 +193,7 @@ class Lock : public Module
      * Needs information about the container type it shall lock.
      */
     Lock( std::shared_ptr<Container> pType ) : pType( pType )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 
@@ -242,7 +238,7 @@ class Lock : public Module
  */
 class UnLock : public Module
 {
-   public:
+  public:
     std::shared_ptr<Pledge> pLockPledge;
 
     /**
@@ -251,8 +247,7 @@ class UnLock : public Module
      * Takes the Lock it shall unlock as input.
      */
     UnLock( std::shared_ptr<Pledge> pLockPledge ) : pLockPledge( pLockPledge )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 

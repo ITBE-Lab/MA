@@ -71,6 +71,10 @@
     
 
 
+
+
+
+
     // the constructor just launches some amount of workers
     inline ThreadPool::ThreadPool(size_t threads)
         :   stop(false)
@@ -110,6 +114,10 @@
                 std::bind(std::forward<F>(f), std::forward<Args>(args)...)
             );
             
+
+
+
+
 
 
         std::future<return_type> res = task->get_future();
@@ -194,7 +202,7 @@
  */
 class ThreadPool
 {
-   private:
+  private:
     /* need to keep track of threads so we can join them
      */
     std::vector<std::thread> workers;
@@ -210,7 +218,7 @@ class ThreadPool
     bool bStop;
     const size_t threads;
 
-   public:
+  public:
     /* External definition
      */
     ThreadPool( size_t );
@@ -229,7 +237,7 @@ class ThreadPool
 
         /* Don't allow enqueueing after stopping the pool
          */
-        if ( bStop )
+        if( bStop )
         {
             throw std::runtime_error( "enqueue on stopped ThreadPool" );
         } // if
@@ -246,7 +254,7 @@ class ThreadPool
         std::future<return_type> xFuture = task->get_future( );
 
         // if the threadpool is set to have 0 threads then execute the task in the main thread
-        if ( threads == 0 )
+        if( threads == 0 )
         {
             ( *task )( 0 );
             return xFuture;
@@ -279,19 +287,19 @@ inline ThreadPool::ThreadPool( size_t threads )
     // if the threadpool is set to have 0 threads, we will execute every task in the main thread
     // immediately, thus we dont need to setup threads at all.
     // this can be used to disable multithreading simply setting the pool to have 0 threads
-    if ( threads == 0 )
+    if( threads == 0 )
         return;
-    for ( size_t i = 0; i < threads; ++i )
+    for( size_t i = 0; i < threads; ++i )
         workers.emplace_back( [this, i] {
             /* So long we have some data the thread processes these data
              */
-            for ( ;; )
+            for( ;; )
             {
                 /* Synchronization of mutual access to the task queue.
                  */
                 std::unique_lock<std::mutex> lock( this->queue_mutex );
 
-                while ( !this->bStop && this->tasks.empty( ) )
+                while( !this->bStop && this->tasks.empty( ) )
                 {
                     /* We release the lock, so that some producer can push some task into the queue.
                      * The produser will call notify_one(), in order to release
@@ -299,7 +307,7 @@ inline ThreadPool::ThreadPool( size_t threads )
                     this->condition.wait( lock );
                 } // while
 
-                if ( this->bStop && this->tasks.empty( ) )
+                if( this->bStop && this->tasks.empty( ) )
                 {
                     /* All work done and signal for termination received.
                      */
@@ -320,12 +328,12 @@ inline ThreadPool::ThreadPool( size_t threads )
                      */
                     task( i );
                 }
-                catch ( std::exception e )
+                catch( std::exception e )
                 {
                     std::cerr << "exception when executing task:" << std::endl;
                     std::cerr << e.what( ) << std::endl;
                 }
-                catch ( ... )
+                catch( ... )
                 {
                     std::cerr << "unknown exception when executing task" << std::endl;
                 }
@@ -341,7 +349,7 @@ inline ThreadPool::~ThreadPool( )
     // if the threadpool is set to have 0 threads, we will execute every task in the main thread
     // immediately, thus we dont need to setup threads at all.
     // this can be used to disable multithreading simply setting the pool to have 0 threads
-    if ( threads == 0 )
+    if( threads == 0 )
         return;
     {
         std::unique_lock<std::mutex> lock( queue_mutex );
@@ -352,7 +360,7 @@ inline ThreadPool::~ThreadPool( )
     /* We wait until all workers finished their job.
      * (Destruction thread is blocked until all workers finished their job.)
      */
-    for ( size_t i = 0; i < workers.size( ); ++i )
+    for( size_t i = 0; i < workers.size( ); ++i )
     {
         workers[ i ].join( );
     } // for
@@ -380,7 +388,7 @@ inline ThreadPool::~ThreadPool( )
  */
 class ThreadPoolAllowingRecursiveEnqueue
 {
-   private:
+  private:
     /* need to keep track of threads so we can join them
      */
     std::vector<std::thread> workers;
@@ -396,7 +404,7 @@ class ThreadPoolAllowingRecursiveEnqueue
     bool bStop;
     const size_t threads;
 
-   public:
+  public:
     /* External definition
      */
     ThreadPoolAllowingRecursiveEnqueue( size_t );
@@ -426,7 +434,7 @@ class ThreadPoolAllowingRecursiveEnqueue
         std::future<return_type> xFuture = task->get_future( );
 
         // if the threadpool is set to have 0 threads then execute the task in the main thread
-        if ( threads == 0 )
+        if( threads == 0 )
         {
             ( *task )( 0 );
             return xFuture;
@@ -459,19 +467,19 @@ inline ThreadPoolAllowingRecursiveEnqueue::ThreadPoolAllowingRecursiveEnqueue( s
     // if the threadpool is set to have 0 threads, we will execute every task in the main thread
     // immediately, thus we dont need to setup threads at all.
     // this can be used to disable multithreading simply setting the pool to have 0 threads
-    if ( threads == 0 )
+    if( threads == 0 )
         return;
-    for ( size_t i = 0; i < threads; ++i )
+    for( size_t i = 0; i < threads; ++i )
         workers.emplace_back( [this, i] {
             /* So long we have some data the thread processes these data
              */
-            for ( ;; )
+            for( ;; )
             {
                 /* Synchronization of mutual access to the task queue.
                  */
                 std::unique_lock<std::mutex> lock( this->queue_mutex );
 
-                while ( !this->bStop && this->tasks.empty( ) )
+                while( !this->bStop && this->tasks.empty( ) )
                 {
                     /* We release the lock, so that some producer can push some task into the queue.
                      * The produser will call notify_one(), in order to release
@@ -479,7 +487,7 @@ inline ThreadPoolAllowingRecursiveEnqueue::ThreadPoolAllowingRecursiveEnqueue( s
                     this->condition.wait( lock );
                 } // while
 
-                if ( this->bStop && this->tasks.empty( ) )
+                if( this->bStop && this->tasks.empty( ) )
                 {
                     /* All work done and signal for termination received.
                      */
@@ -509,7 +517,7 @@ inline ThreadPoolAllowingRecursiveEnqueue::~ThreadPoolAllowingRecursiveEnqueue( 
     // if the threadpool is set to have 0 threads, we will execute every task in the main thread
     // immediately, thus we dont need to setup threads at all.
     // this can be used to disable multithreading simply setting the pool to have 0 threads
-    if ( threads == 0 )
+    if( threads == 0 )
         return;
 
     {
@@ -521,7 +529,7 @@ inline ThreadPoolAllowingRecursiveEnqueue::~ThreadPoolAllowingRecursiveEnqueue( 
     /* We wait until all workers finished their job.
      * (Destruction thread is blocked until all workers finished their job.)
      */
-    for ( size_t i = 0; i < workers.size( ); ++i )
+    for( size_t i = 0; i < workers.size( ); ++i )
     {
         workers[ i ].join( );
     } // for

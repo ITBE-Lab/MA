@@ -49,7 +49,7 @@ BOOST_PYTHON_MODULE( libMA )
 std::vector<std::shared_ptr<Pledge>> setUpCompGraph( std::shared_ptr<Pledge> pPack,
                                                      std::shared_ptr<Pledge> pFMDIndex,
                                                      std::shared_ptr<Pledge> pQueries,
-                                                     std::vector<std::shared_ptr<Module>>& vOut,
+                                                     std::vector<std::shared_ptr<Module>> &vOut,
                                                      unsigned int uiThreads )
 {
     // setup all modules
@@ -69,7 +69,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph( std::shared_ptr<Pledge> pPa
 
     // setup the computational graph
     std::vector<std::shared_ptr<Pledge>> aRet;
-    for ( unsigned int i = 0; i < uiThreads; i++ )
+    for( unsigned int i = 0; i < uiThreads; i++ )
     {
         // lock the query in for this subgraph
         std::shared_ptr<Pledge> pQuery =
@@ -87,7 +87,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph( std::shared_ptr<Pledge> pPa
         // the coupling stage
         std::shared_ptr<Pledge> pCoupled =
             Module::promiseMe( pCouple, std::vector<std::shared_ptr<Pledge>>{pSOCs, pQuery} );
-        if ( defaults::bFindMode )
+        if( defaults::bFindMode )
         {
             // write the output to a file
             assert( vOut.size( ) == 1 );
@@ -108,7 +108,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph( std::shared_ptr<Pledge> pPa
             std::shared_ptr<Pledge> pAlignments = Module::promiseMe(
                 pMapping, std::vector<std::shared_ptr<Pledge>>{pQuery, pOptimal} );
             // write the output to a file
-            if ( vOut.size( ) == 1 )
+            if( vOut.size( ) == 1 )
             {
                 std::shared_ptr<Pledge> pNil = Module::promiseMe(
                     vOut[ 0 ],
@@ -137,10 +137,10 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraph( std::shared_ptr<Pledge> pPa
     return aRet;
 } // function
 
-std::vector<std::shared_ptr<Pledge>> setUpCompGraphPaired(
-    std::shared_ptr<Pledge> pPack, std::shared_ptr<Pledge> pFMDIndex,
-    std::shared_ptr<Pledge> pQueries, std::vector<std::shared_ptr<libMA::Module>>& vOut,
-    unsigned int uiThreads )
+std::vector<std::shared_ptr<Pledge>>
+setUpCompGraphPaired( std::shared_ptr<Pledge> pPack, std::shared_ptr<Pledge> pFMDIndex,
+                      std::shared_ptr<Pledge> pQueries,
+                      std::vector<std::shared_ptr<libMA::Module>> &vOut, unsigned int uiThreads )
 {
     // setup all modules
     // modules required for any alignment
@@ -160,7 +160,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraphPaired(
 
     // setup the computational graph
     std::vector<std::shared_ptr<Pledge>> aRet;
-    for ( unsigned int i = 0; i < uiThreads; i++ )
+    for( unsigned int i = 0; i < uiThreads; i++ )
     {
         // lock the query in for this subgraph
         std::shared_ptr<Pledge> pQueriesLocked =
@@ -205,7 +205,7 @@ std::vector<std::shared_ptr<Pledge>> setUpCompGraphPaired(
         std::shared_ptr<Pledge> pAlignments = Module::promiseMe(
             pPaired, std::vector<std::shared_ptr<Pledge>>{pAlignment1, pAlignment2, pPack} );
         // write the output to a file
-        if ( vOut.size( ) == 1 )
+        if( vOut.size( ) == 1 )
         {
             // write the output to a file
             std::shared_ptr<Pledge> pNil = Module::promiseMe(

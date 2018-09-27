@@ -29,8 +29,8 @@ void exportSequence( )
     boost::python::class_<NucSeq, boost::noncopyable, boost::python::bases<Container>,
                           std::shared_ptr<NucSeq>>(
         "NucSeq", "Holds a single nucleotide sequence.\n",
-        boost::python::init<const char*>( "arg1: self\n"
-                                          "arg2: string to initialize the sequence from\n" ) )
+        boost::python::init<const char *>( "arg1: self\n"
+                                           "arg2: string to initialize the sequence from\n" ) )
         .def( boost::python::init<const std::string>(
             "arg1: self\n"
             "arg2: string to initialize the sequence from\n" ) )

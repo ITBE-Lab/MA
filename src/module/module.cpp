@@ -8,23 +8,23 @@ using namespace libMA;
 
 bool libMA::typeCheck( std::shared_ptr<Container> pData, std::shared_ptr<Container> pExpected )
 {
-    if ( pExpected == nullptr )
+    if( pExpected == nullptr )
     {
         std::cerr << "Invalid expectation: nullptr" << std::endl;
         return false;
     } // if
-    if ( pExpected->getType( ) == nullptr )
+    if( pExpected->getType( ) == nullptr )
     {
         std::cerr << "Invalid expectation with type: nullptr" << std::endl;
         return false;
     } // if
-    if ( pData == nullptr )
+    if( pData == nullptr )
     {
         std::cerr << "Types did not match. Got: nullptr";
         std::cerr << " but expected: " << pExpected->getType( )->getTypeName( ) << std::endl;
         return false;
     } // if
-    if ( pExpected->getType( )->canCast( pData->getType( ) ) )
+    if( pExpected->getType( )->canCast( pData->getType( ) ) )
         return true;
     std::cerr << "Types did not match. Got: " << pData->getType( )->getTypeName( );
     std::cerr << " but expected: " << pExpected->getType( )->getTypeName( ) << std::endl;
@@ -33,31 +33,31 @@ bool libMA::typeCheck( std::shared_ptr<Container> pData, std::shared_ptr<Contain
 
 bool libMA::typeCheck( ContainerVector vData, ContainerVector vExpected )
 {
-    if ( vData.size( ) != vExpected.size( ) )
+    if( vData.size( ) != vExpected.size( ) )
     {
         std::cerr << "Types of vectors did not match. " << std::endl;
         std::cerr << "Expected " << vExpected.size( ) << " elements but got " << vData.size( );
         std::cerr << std::endl;
         std::cerr << "Expected: [";
-        for ( unsigned int i = 0; i < vExpected.size( ); i++ )
+        for( unsigned int i = 0; i < vExpected.size( ); i++ )
             std::cerr << vExpected[ i ]->getType( )->getTypeName( ) << ", ";
         std::cerr << "] but got: [";
-        for ( unsigned int i = 0; i < vData.size( ); i++ )
+        for( unsigned int i = 0; i < vData.size( ); i++ )
             std::cerr << vData[ i ]->getType( )->getTypeName( ) << ", ";
         std::cerr << "]" << std::endl;
         return false;
     } // for
-    for ( unsigned int i = 0; i < vData.size( ); i++ )
-        if ( !typeCheck( vData[ i ], vExpected[ i ] ) )
+    for( unsigned int i = 0; i < vData.size( ); i++ )
+        if( !typeCheck( vData[ i ], vExpected[ i ] ) )
         {
             std::cerr << "Types of vectors did not match.";
             std::cerr << std::endl;
             std::cerr << "Element " << i << "s type is incorrect." << std::endl;
             std::cerr << "Expected: [";
-            for ( unsigned int i = 0; i < vExpected.size( ); i++ )
+            for( unsigned int i = 0; i < vExpected.size( ); i++ )
                 std::cerr << vExpected[ i ]->getType( )->getTypeName( ) << ", ";
             std::cerr << "] but got: [";
-            for ( unsigned int i = 0; i < vData.size( ); i++ )
+            for( unsigned int i = 0; i < vData.size( ); i++ )
                 std::cerr << vData[ i ]->getType( )->getTypeName( ) << ", ";
             std::cerr << "]" << std::endl;
             return false;
@@ -69,7 +69,7 @@ std::shared_ptr<Pledge> Module::promiseMe( std::shared_ptr<Module> pThis,
                                            std::vector<std::shared_ptr<Pledge>> vInput )
 {
     ContainerVector vCastInput( vInput.begin( ), vInput.end( ) );
-    if ( !typeCheck( vCastInput, pThis->getInputType( ) ) )
+    if( !typeCheck( vCastInput, pThis->getInputType( ) ) )
     {
         std::cerr << "promise of module " << pThis->getName( ) << " had the wrong type"
                   << std::endl;
@@ -84,8 +84,8 @@ std::shared_ptr<Pledge> Pledge::makePledge( std::shared_ptr<Module> pledger,
     std::shared_ptr<Pledge> pRet =
         std::shared_ptr<Pledge>( new Pledge( pledger, pledger->getOutputType( ), vPredecessors ) );
     // if the pledge is created by a Lock we do not want it to be reset by previos pledges
-    if ( std::dynamic_pointer_cast<Lock>( pledger ) == nullptr )
-        for ( std::shared_ptr<Pledge> pPredecessor : vPredecessors )
+    if( std::dynamic_pointer_cast<Lock>( pledger ) == nullptr )
+        for( std::shared_ptr<Pledge> pPredecessor : vPredecessors )
             pPredecessor->vSuccessors.push_back( std::weak_ptr<Pledge>( pRet ) );
 
     return pRet;

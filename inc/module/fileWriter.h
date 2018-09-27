@@ -18,8 +18,8 @@ namespace libMA
  */
 class OutStream
 {
-   public:
-    virtual OutStream& operator<<( std::string )
+  public:
+    virtual OutStream &operator<<( std::string )
     {
         return *this;
     };
@@ -30,8 +30,8 @@ class OutStream
  */
 class StdOutStream : public OutStream
 {
-   public:
-    StdOutStream& operator<<( std::string s )
+  public:
+    StdOutStream &operator<<( std::string s )
     {
         std::cout << s;
         return *this;
@@ -50,13 +50,13 @@ class StdOutStream : public OutStream
  */
 class FileOutStream : public OutStream
 {
-   public:
+  public:
     std::ofstream file;
 
     FileOutStream( std::string sFileName )
         : file( sFileName, std::ofstream::out | std::ofstream::trunc )
     {
-        if ( !file.good( ) )
+        if( !file.good( ) )
         {
             throw AlignerException( "Unable to open file" + sFileName );
         } // if
@@ -68,7 +68,7 @@ class FileOutStream : public OutStream
         file.close( );
     } // deconstructor
 
-    FileOutStream& operator<<( std::string s )
+    FileOutStream &operator<<( std::string s )
     {
         file << s;
         return *this;
@@ -82,7 +82,7 @@ class FileOutStream : public OutStream
  */
 class FileWriter : public Module
 {
-   public:
+  public:
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
@@ -97,12 +97,12 @@ class FileWriter : public Module
     FileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer )
         : pLock( new std::mutex )
     {
-        if ( sFileName != "stdout" )
+        if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
         else
             pOut = std::shared_ptr<OutStream>( new StdOutStream( ) );
         //*pOut << "@HD VN:1.5 SO:unknown\n";
-        for ( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
+        for( auto &rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
         {
             *pOut << "@SQ\tSN:" << rSeqInPack.sName
                   << "\tLN:" << std::to_string( rSeqInPack.uiLengthUnpacked ) << "\n";
@@ -119,7 +119,7 @@ class FileWriter : public Module
         : pOut( pOut ), pLock( new std::mutex )
     {
         //*pOut << "@HD VN:1.5 SO:unknown\n";
-        for ( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
+        for( auto &rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
         {
             *pOut << "@SQ\tSN:" << rSeqInPack.sName
                   << " LN:" << std::to_string( rSeqInPack.uiLengthUnpacked ) << "\n";
@@ -163,7 +163,7 @@ class FileWriter : public Module
  */
 class RadableFileWriter : public Module
 {
-   public:
+  public:
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
@@ -173,8 +173,7 @@ class RadableFileWriter : public Module
      * @brief creates a new RadableFileWriter.
      */
     RadableFileWriter( std::shared_ptr<OutStream> pOut ) : pOut( pOut ), pLock( new std::mutex )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 
@@ -210,7 +209,7 @@ class RadableFileWriter : public Module
  */
 class SeedSetFileWriter : public Module
 {
-   public:
+  public:
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
@@ -224,7 +223,7 @@ class SeedSetFileWriter : public Module
      */
     SeedSetFileWriter( std::string sFileName ) : pLock( new std::mutex )
     {
-        if ( sFileName != "stdout" )
+        if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
         else
             pOut = std::shared_ptr<OutStream>( new StdOutStream( ) );

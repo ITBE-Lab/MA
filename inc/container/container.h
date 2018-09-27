@@ -44,7 +44,7 @@ class Pledge;
  */
 class Container
 {
-   public:
+  public:
 #if DEBUG_LEVEL >= 1
     size_t uiTombStone = TOMBSTONE_VAL_ALIVE;
 
@@ -91,12 +91,11 @@ class Container
  */
 class Nil : public Container
 {
-   public:
+  public:
     static const std::shared_ptr<Nil> pEoFContainer;
 
     Nil( )
-    {
-    } // default constructor
+    {} // default constructor
 
     bool canCast( std::shared_ptr<Container> c ) const
     {
@@ -126,7 +125,7 @@ class Nil : public Container
  */
 class ContainerVector : public Container
 {
-   public:
+  public:
     typedef std::shared_ptr<Container> TP_PTR_CONT;
     typedef std::vector<TP_PTR_CONT> TP_VEC;
     TP_VEC vContent;
@@ -147,32 +146,26 @@ class ContainerVector : public Container
 
     template <class InputIt>
     ContainerVector( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
-    {
-    } // iterator constructor
+    {} // iterator constructor
 
     ContainerVector( ) : vContent( ), contentType( new Container( ) )
-    {
-    } // container vector
+    {} // container vector
 
     ContainerVector( std::shared_ptr<Container> contentType )
         : vContent( ), contentType( contentType )
-    {
-    } // container vector
+    {} // container vector
 
     ContainerVector( const std::shared_ptr<ContainerVector> pOther )
         : vContent( pOther->vContent ), contentType( pOther->contentType )
-    {
-    } // container vector
+    {} // container vector
 
     ContainerVector( std::shared_ptr<std::vector<std::shared_ptr<Container>>> pContent )
         : vContent( *pContent ), contentType( pContent->front( )->getType( ) )
-    {
-    } // container vector
+    {} // container vector
 
     ContainerVector( std::shared_ptr<Container> contentType, size_t numElements )
         : vContent( numElements ), contentType( contentType )
-    {
-    } // container vector
+    {} // container vector
 
     // delete copy constructor @todo
     // ContainerVector(const ContainerVector& rOther) = delete;
@@ -181,7 +174,7 @@ class ContainerVector : public Container
     bool canCast( std::shared_ptr<Container> c ) const
     {
         std::shared_ptr<ContainerVector> casted = std::dynamic_pointer_cast<ContainerVector>( c );
-        if ( casted == nullptr )
+        if( casted == nullptr )
             return false;
         return casted->contentType->getType( )->canCast( contentType->getType( ) );
     } // function
@@ -205,18 +198,18 @@ class ContainerVector : public Container
     } // function
 
     // setter
-    inline TP_PTR_CONT& operator[]( size_t uiI )
+    inline TP_PTR_CONT &operator[]( size_t uiI )
     {
         return vContent[ uiI ];
     } // operator
 
     // getter
-    inline const TP_PTR_CONT& operator[]( size_t uiI ) const
+    inline const TP_PTR_CONT &operator[]( size_t uiI ) const
     {
         return vContent[ uiI ];
     } // operator
 
-    inline void push_back( const TP_PTR_CONT& value )
+    inline void push_back( const TP_PTR_CONT &value )
     {
         vContent.push_back( value );
     } // method
@@ -226,8 +219,7 @@ class ContainerVector : public Container
         vContent.pop_back( );
     } // method
 
-    template <class... Args>
-    inline void emplace_back( Args&&... args )
+    template <class... Args> inline void emplace_back( Args &&... args )
     {
         vContent.emplace_back( args... );
     } // method
@@ -242,22 +234,22 @@ class ContainerVector : public Container
         return vContent.empty( );
     } // method
 
-    inline TP_PTR_CONT& front( void )
+    inline TP_PTR_CONT &front( void )
     {
         return vContent.front( );
     } // method
 
-    inline TP_PTR_CONT& back( void )
+    inline TP_PTR_CONT &back( void )
     {
         return vContent.back( );
     } // method
 
-    inline const TP_PTR_CONT& front( void ) const
+    inline const TP_PTR_CONT &front( void ) const
     {
         return vContent.front( );
     } // method
 
-    inline const TP_PTR_CONT& back( void ) const
+    inline const TP_PTR_CONT &back( void ) const
     {
         return vContent.back( );
     } // method
@@ -292,7 +284,7 @@ class ContainerVector : public Container
         vContent.erase( first, last );
     } // method
 
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const TP_PTR_CONT& value )
+    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const TP_PTR_CONT &value )
     {
         return vContent.insert( pos, value );
     } // method

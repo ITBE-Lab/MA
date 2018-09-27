@@ -6,9 +6,9 @@
 #ifndef PAIRED_READS_H
 #define PAIRED_READS_H
 
-#include <cmath>
 #include "container/alignment.h"
 #include "module/module.h"
+#include <cmath>
 
 namespace libMA
 {
@@ -21,7 +21,7 @@ namespace libMA
  */
 class PairedReads : public Module
 {
-   public:
+  public:
     /**
      * @brief Penalty for unpaired reads.
      * @details
@@ -50,8 +50,7 @@ class PairedReads : public Module
     double EXPORTED p( nucSeqIndex d ) const;
 
     PairedReads( )
-    {
-    } // constructor
+    {} // constructor
 
     std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 

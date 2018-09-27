@@ -30,7 +30,7 @@ namespace libMA
 {
 class Reader : public Module
 {
-   public:
+  public:
     virtual size_t getCurrPosInFile( ) const = 0;
     virtual size_t getFileSize( ) const = 0;
 }; // class
@@ -43,7 +43,7 @@ class Reader : public Module
 class FileReader : public Reader
 {
 #if USE_BUFFERED_ASYNC_READER == 1
-   private:
+  private:
     /**
      * @brief Helper class.
      * @details
@@ -53,7 +53,7 @@ class FileReader : public Reader
      */
     class BufferedReader
     {
-       private:
+      private:
         size_t uiFileBufferSize = 1048576; // == 2^20 ~= 0.1 GB buffer size
         // @note this buffer must be of sufficient size to avoid errors due to overflows
         const size_t uiQueryBufferSize = 250;
@@ -68,13 +68,13 @@ class FileReader : public Reader
         std::thread xThread;
         inline void reFillBuffer( )
         {
-            if ( xFile.eof( ) )
+            if( xFile.eof( ) )
             {
                 throw AlignerException( "Unexpected end of file" );
             } // if
             DEBUG( std::cout << "refilling buffer" << std::endl; )
             xFile.read( vBuffer.data( ), uiFileBufferSize );
-            if ( xFile.eof( ) )
+            if( xFile.eof( ) )
             {
                 uiFileBufferSize = xFile.gcount( );
             } // if
@@ -84,16 +84,16 @@ class FileReader : public Reader
         inline unsigned int searchEndline( )
         {
             unsigned int uiI = 0;
-            while ( uiCharBufPosRead + uiI < uiFileBufferSize &&
-                    vBuffer[ uiCharBufPosRead + uiI ] != '\n' )
+            while( uiCharBufPosRead + uiI < uiFileBufferSize &&
+                   vBuffer[ uiCharBufPosRead + uiI ] != '\n' )
                 uiI++;
             return uiI;
         } // function
-       public:
+      public:
         BufferedReader( std::string sFileName )
             : vBuffer( uiFileBufferSize ), vpNucSeqBuffer( uiQueryBufferSize ), xFile( sFileName )
         {
-            if ( !xFile.is_open( ) )
+            if( !xFile.is_open( ) )
             {
                 throw AlignerException( "Unable to open file" + sFileName );
             } // if
@@ -106,30 +106,30 @@ class FileReader : public Reader
                 std::unique_lock<std::mutex> xLock( xMutex );
                 DEBUG( std::cout << "Dispatched async reader" << std::endl; )
                 xDispatchCv.notify_one( );
-                while ( !xFile.eof( ) || uiCharBufPosRead < uiFileBufferSize )
+                while( !xFile.eof( ) || uiCharBufPosRead < uiFileBufferSize )
                 {
-                    while ( ( ( uiNucSeqBufPosWrite + 1 ) % uiQueryBufferSize ) ==
-                            uiNucSeqBufPosRead )
+                    while( ( ( uiNucSeqBufPosWrite + 1 ) % uiQueryBufferSize ) ==
+                           uiNucSeqBufPosRead )
                         cv.wait( xLock );
                     auto pCurr = std::make_shared<NucSeq>( );
                     pCurr->sName = "";
-                    if ( uiCharBufPosRead >= uiFileBufferSize )
+                    if( uiCharBufPosRead >= uiFileBufferSize )
                         reFillBuffer( );
                     // find end of name
-                    if ( !( vBuffer[ uiCharBufPosRead ] == '>' ) )
+                    if( !( vBuffer[ uiCharBufPosRead ] == '>' ) )
                     {
                         throw AlignerException(
                             "Invalid file format: expecting '>' at query begin" );
                     } // if
-                    while ( true )
+                    while( true )
                     {
                         unsigned int uiCharBufPosReadLen = searchEndline( );
                         /// std::cout << "\\n pos " << uiCharBufPosReadLen << std::endl;
-                        for ( unsigned int uiI = uiCharBufPosRead;
-                              uiI < uiCharBufPosRead + uiCharBufPosReadLen; uiI++ )
+                        for( unsigned int uiI = uiCharBufPosRead;
+                             uiI < uiCharBufPosRead + uiCharBufPosReadLen; uiI++ )
                             pCurr->sName += vBuffer[ uiI ];
                         uiCharBufPosRead += uiCharBufPosReadLen;
-                        if ( uiCharBufPosRead >= uiFileBufferSize )
+                        if( uiCharBufPosRead >= uiFileBufferSize )
                             reFillBuffer( );
                         else
                             break;
@@ -140,17 +140,17 @@ class FileReader : public Reader
                     pCurr->sName = pCurr->sName.substr( 1, pCurr->sName.find( ' ' ) - 1 );
 
                     // find end of nuc section
-                    while ( ( !xFile.eof( ) && uiCharBufPosRead >= uiFileBufferSize ) ||
-                            ( uiCharBufPosRead < uiFileBufferSize &&
-                              vBuffer[ uiCharBufPosRead ] != '>' ) )
+                    while( ( !xFile.eof( ) && uiCharBufPosRead >= uiFileBufferSize ) ||
+                           ( uiCharBufPosRead < uiFileBufferSize &&
+                             vBuffer[ uiCharBufPosRead ] != '>' ) )
                     {
                         unsigned int uiCharBufPosReadLen = searchEndline( );
                         /// std::cout << "\\n pos " << uiCharBufPosReadLen << std::endl;
                         // memcpy the data over
-                        pCurr->vAppend( ( const uint8_t* )&vBuffer[ uiCharBufPosRead ],
+                        pCurr->vAppend( (const uint8_t *)&vBuffer[ uiCharBufPosRead ],
                                         uiCharBufPosReadLen );
                         uiCharBufPosRead += uiCharBufPosReadLen + 1;
-                        if ( !xFile.eof( ) && uiCharBufPosRead >= uiFileBufferSize )
+                        if( !xFile.eof( ) && uiCharBufPosRead >= uiFileBufferSize )
                             reFillBuffer( );
                     } // while
 
@@ -178,7 +178,7 @@ class FileReader : public Reader
          */
         bool hasNext( )
         {
-            if ( uiNucSeqBufPosRead != uiNucSeqBufPosWrite )
+            if( uiNucSeqBufPosRead != uiNucSeqBufPosWrite )
                 return true;
 
             // no data immediately available -> we have to wait
@@ -199,17 +199,16 @@ class FileReader : public Reader
             return pQuery;
         } // function
     }; // class
-   public:
+  public:
     std::shared_ptr<BufferedReader> pFile;
 
     /**
      * @brief creates a new FileReader.
      */
     FileReader( std::string sFileName ) : pFile( new BufferedReader( sFileName ) )
-    {
-    } // constructor
+    {} // constructor
 #else
-   public:
+  public:
     std::shared_ptr<std::ifstream> pFile;
     size_t uiFileSize = 0;
     DEBUG( size_t uiNumLinesRead = 0; size_t uiNumLinesWithNs = 0; ) // DEBUG
@@ -221,13 +220,13 @@ class FileReader : public Reader
     FileReader( std::string sFileName ) : pFile( new std::ifstream( sFileName ) )
     //,pSynchronizeReading(new std::mutex)
     {
-        if ( !pFile->is_open( ) )
+        if( !pFile->is_open( ) )
         {
             throw AlignerException( "Unable to open file" + sFileName );
         } // if
         std::ifstream xFileEnd( sFileName, std::ifstream::ate | std::ifstream::binary );
         uiFileSize = xFileEnd.tellg( );
-        if ( uiFileSize == 0 )
+        if( uiFileSize == 0 )
             std::cerr << "Warning: empty file: " << sFileName << std::endl;
     } // constructor
 
@@ -235,8 +234,8 @@ class FileReader : public Reader
     {
         DEBUG( std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
                std::cout << "read " << uiNumLinesWithNs << " N's." << std::endl;
-               if ( !pFile->eof( ) ) std::cerr << "WARNING: Did abort before end of File."
-                                               << std::endl; ) // DEBUG
+               if( !pFile->eof( ) ) std::cerr << "WARNING: Did abort before end of File."
+                                              << std::endl; ) // DEBUG
         pFile->close( );
     } // deconstructor
 #endif
@@ -294,17 +293,17 @@ class FileReader : public Reader
     {
         // std::srand(123);
         const unsigned int uiNumTests = 10000;
-        for ( unsigned int i = 0; i <= uiNumTests; i++ )
+        for( unsigned int i = 0; i <= uiNumTests; i++ )
         {
             const int uiLineLength = std::rand( ) % 25 + 25;
             // generate queries
             std::cout << "generating queries" << std::endl;
             std::vector<std::shared_ptr<NucSeq>> vOriginal;
-            for ( int j = 0; j < std::rand( ) % 20 + 100; j++ )
+            for( int j = 0; j < std::rand( ) % 20 + 100; j++ )
             {
                 vOriginal.push_back( std::make_shared<NucSeq>( ) );
                 vOriginal.back( )->sName = std::to_string( j ).append( " some description" );
-                for ( int j = 0; j < std::rand( ) % 500 + 10; j++ )
+                for( int j = 0; j < std::rand( ) % 500 + 10; j++ )
                 {
                     vOriginal.back( )->push_back( std::rand( ) % 5 );
                 } // for
@@ -316,7 +315,7 @@ class FileReader : public Reader
             // write file
             std::cout << "writing file" << std::endl;
             std::ofstream xOut( ".tempTest" );
-            for ( auto pSeq : vOriginal )
+            for( auto pSeq : vOriginal )
             {
                 xOut << pSeq->fastaq_l( uiLineLength );
             } // for
@@ -332,24 +331,24 @@ class FileReader : public Reader
 
             {
                 ThreadPool xTp( uiThreads );
-                for ( unsigned int uiT = 0; uiT < uiThreads; uiT++ )
+                for( unsigned int uiT = 0; uiT < uiThreads; uiT++ )
                     xTp.enqueue(
                         [&]( size_t uiTid, unsigned int uiX ) {
                             do
                             {
                                 std::lock_guard<std::mutex> xGuard( xMutex );
-                                if ( !xIn.hasNext( ) )
+                                if( !xIn.hasNext( ) )
                                     break;
                                 vReads[ uiX ].push_back( xIn.next( ) );
-                            } while ( true );
+                            } while( true );
                         }, // lambda
                         uiT ); // enqueue
             } // scope for threadpool
 
             // merge sequences
             std::vector<std::shared_ptr<NucSeq>> vRead;
-            for ( auto vMerge : vReads )
-                for ( auto pEle : vMerge )
+            for( auto vMerge : vReads )
+                for( auto pEle : vMerge )
                     vRead.push_back( pEle );
             std::sort( vRead.begin( ), vRead.end( ),
                        []( std::shared_ptr<NucSeq> pA, std::shared_ptr<NucSeq> pB ) {
@@ -357,7 +356,7 @@ class FileReader : public Reader
                            {
                                return std::stoi( pA->sName ) < std::stoi( pB->sName );
                            }
-                           catch ( ... )
+                           catch( ... )
                            {
                                std::cout << "error on stoi: " << pA->sName << " ?< " << pB->sName
                                          << std::endl;
@@ -369,15 +368,15 @@ class FileReader : public Reader
 
             // check
             std::cout << "checking" << std::endl;
-            if ( vOriginal.size( ) != vRead.size( ) )
+            if( vOriginal.size( ) != vRead.size( ) )
             {
                 std::cout << "[error] got different sizes " << vOriginal.size( )
                           << " != " << vRead.size( ) << std::endl;
                 return;
             } // if
-            for ( unsigned int i = 0; i < vOriginal.size( ); i++ )
+            for( unsigned int i = 0; i < vOriginal.size( ); i++ )
             {
-                if ( !vOriginal[ i ]->equal( *vRead[ i ] ) )
+                if( !vOriginal[ i ]->equal( *vRead[ i ] ) )
                 {
                     std::cout << "[error] got different sequences \n"
                               << vOriginal[ i ]->fastaq_l( 50 ) << " != \n"
@@ -400,7 +399,7 @@ class FileReader : public Reader
 #else
     size_t getCurrPosInFile( ) const
     {
-        if ( !pFile->good( ) || pFile->eof( ) )
+        if( !pFile->good( ) || pFile->eof( ) )
             return uiFileSize;
         return pFile->tellg( );
     } // function
@@ -408,18 +407,18 @@ class FileReader : public Reader
     size_t getFileSize( ) const
     {
         // prevent floating point exception here (this is only used for progress bar...)
-        if ( uiFileSize == 0 )
+        if( uiFileSize == 0 )
             return 1;
         return uiFileSize;
     } // function
 #endif
-   private:
+  private:
     /**
      * code taken from
      * https://stackoverflow.com/questions/6089231/getting-std-ifstream-to-handle-lf-cr-and-crlf
      * suports windows linux and mac line endings
      */
-    inline void safeGetline( std::string& t )
+    inline void safeGetline( std::string &t )
     {
         t.clear( );
         DEBUG( uiNumLinesRead++; ) // DEBUG
@@ -431,26 +430,26 @@ class FileReader : public Reader
         // such as thread synchronization and updating the stream state.
 
         std::istream::sentry se( *pFile, true );
-        std::streambuf* sb = pFile->rdbuf( );
+        std::streambuf *sb = pFile->rdbuf( );
 
-        for ( ;; )
+        for( ;; )
         {
             int c = sb->sbumpc( );
-            switch ( c )
+            switch( c )
             {
                 case '\n':
                     return;
                 case '\r':
-                    if ( sb->sgetc( ) == '\n' )
+                    if( sb->sgetc( ) == '\n' )
                         sb->sbumpc( );
                     return;
                 case std::streambuf::traits_type::eof( ):
                     // Also handle the case when the last line has no line ending
-                    if ( t.empty( ) )
+                    if( t.empty( ) )
                         pFile->setstate( std::ios::eofbit );
                     return;
                 default:
-                    t += ( char )c;
+                    t += (char)c;
             }
         }
     } // method
@@ -462,7 +461,7 @@ class FileReader : public Reader
  */
 class PairedFileReader : public Reader
 {
-   public:
+  public:
     FileReader xF1;
     FileReader xF2;
 
@@ -472,7 +471,7 @@ class PairedFileReader : public Reader
     PairedFileReader( std::string sFileName1, std::string sFileName2 )
         : xF1( sFileName1 ), xF2( sFileName2 )
     {
-        if ( xF1.getFileSize( ) != xF2.getFileSize( ) )
+        if( xF1.getFileSize( ) != xF2.getFileSize( ) )
             std::cerr << "Paired alignment with differently sized files." << std::endl;
     } // constructor
 

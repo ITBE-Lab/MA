@@ -45,7 +45,7 @@ namespace sample_consensus
 {
 class SAC
 {
-   public:
+  public:
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Constructor for base SAC. */
     SAC( ){
@@ -64,8 +64,7 @@ class SAC
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /** \brief Destructor for base SAC. */
     virtual ~SAC( )
-    {
-    }
+    {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /** \brief Set the threshold to model.
@@ -163,9 +162,8 @@ class SAC
     std::set<int> getRandomSamples( sensor_msgs::PointCloud points, int nr_samples )
     {
         std::set<int> random_idx;
-        for ( int i = 0; i < nr_samples; i++ )
-            random_idx.insert(
-                ( int )( points.points.size( ) * ( rand( ) / ( RAND_MAX + 1.0 ) ) ) );
+        for( int i = 0; i < nr_samples; i++ )
+            random_idx.insert( (int)( points.points.size( ) * ( rand( ) / ( RAND_MAX + 1.0 ) ) ) );
         return ( random_idx );
     }
 
@@ -181,12 +179,12 @@ class SAC
                                     int nr_samples )
     {
         std::set<int> random_idx;
-        for ( int i = 0; i < nr_samples; i++ )
-            random_idx.insert( ( int )( indices.size( ) * ( rand( ) / ( RAND_MAX + 1.0 ) ) ) );
+        for( int i = 0; i < nr_samples; i++ )
+            random_idx.insert( (int)( indices.size( ) * ( rand( ) / ( RAND_MAX + 1.0 ) ) ) );
         return ( random_idx );
     }
 
-   protected:
+  protected:
     /** \brief The underlying data model used (i.e. what is it that we attempt to search for). */
     SACModel *sac_model_;
 

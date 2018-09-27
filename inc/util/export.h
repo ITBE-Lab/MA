@@ -170,11 +170,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED
 setUpCompGraph( std::shared_ptr<libMA::Pledge> pPack, std::shared_ptr<libMA::Pledge> pFMDIndex,
                 std::shared_ptr<libMA::Pledge> pQueries,
-                std::vector<std::shared_ptr<libMA::Module>>& vOut, unsigned int uiThreads );
+                std::vector<std::shared_ptr<libMA::Module>> &vOut, unsigned int uiThreads );
 
 std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraphPaired(
     std::shared_ptr<libMA::Pledge> pPack, std::shared_ptr<libMA::Pledge> pFMDIndex,
-    std::shared_ptr<libMA::Pledge> pQueries, std::vector<std::shared_ptr<libMA::Module>>& vOut,
+    std::shared_ptr<libMA::Pledge> pQueries, std::vector<std::shared_ptr<libMA::Module>> &vOut,
     unsigned int uiThreads );
 
 #endif
