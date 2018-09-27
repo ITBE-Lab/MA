@@ -403,8 +403,14 @@ void exportFileWriter( )
     // export the FileWriter class
     boost::python::class_<FileWriter, boost::python::bases<Module>, std::shared_ptr<FileWriter>>(
         "FileWriter", boost::python::init<std::string, std::shared_ptr<Pack>>( ) );
-
     boost::python::implicitly_convertible<std::shared_ptr<FileWriter>, std::shared_ptr<Module>>( );
+
+    boost::python::class_<SeedSetFileWriter, boost::python::bases<Module>,
+                          std::shared_ptr<SeedSetFileWriter>>(
+        "SeedSetFileWriter", boost::python::init<std::string>( ) );
+    boost::python::implicitly_convertible<std::shared_ptr<SeedSetFileWriter>,
+                                          std::shared_ptr<Module>>( );
+
 
 } // function
 #endif

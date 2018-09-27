@@ -143,11 +143,17 @@ void exportSplitter( )
 
     boost::python::implicitly_convertible<std::shared_ptr<Lock>, std::shared_ptr<Module>>( );
 
-    // export the Lock class
+    // export the UnLock class
     boost::python::class_<UnLock, boost::python::bases<Module>, std::shared_ptr<UnLock>>(
         "UnLock", boost::python::init<std::shared_ptr<Pledge>>( ) );
 
     boost::python::implicitly_convertible<std::shared_ptr<UnLock>, std::shared_ptr<Module>>( );
+
+    // export the ReadSplitter class
+    boost::python::class_<ReadSplitter, boost::python::bases<Module>,
+                          std::shared_ptr<ReadSplitter>>( "ReadSplitter" );
+    boost::python::implicitly_convertible<std::shared_ptr<ReadSplitter>,
+                                          std::shared_ptr<Module>>( );
 
 } // function
 #endif

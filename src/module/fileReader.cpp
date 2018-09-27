@@ -238,8 +238,14 @@ void exportFileReader( )
         DEBUG(.def( "testBufReader", &FileReader::testBufReader ).staticmethod( "testBufReader" ) )
 #endif
             ;
-
     boost::python::implicitly_convertible<std::shared_ptr<FileReader>, std::shared_ptr<Module>>( );
+
+
+    boost::python::
+        class_<PairedFileReader, boost::python::bases<Module>, std::shared_ptr<PairedFileReader>>(
+            "PairedFileReader", boost::python::init<std::string, std::string>( ) );
+    boost::python::implicitly_convertible<std::shared_ptr<PairedFileReader>,
+                                          std::shared_ptr<Module>>( );
 
 } // function
 #endif

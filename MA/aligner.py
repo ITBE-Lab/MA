@@ -221,10 +221,10 @@ class NucSeq(libMA.NucSeq):
             ret = NucSeq()
             for index in range(val.start or 0, val.stop or len(self), val.step
                                or 1):
-                ret.append(libMA.NucSeq.__getitem__(self, index))
+                ret.append(super(NucSeq, self).__getitem__(index))
             return ret
         else:
-            return libMA.NucSeq.__getitem__(self, val)
+            return super(NucSeq, self).__getitem__(val)
 
 
 ##
@@ -237,11 +237,11 @@ class NucSeq(libMA.NucSeq):
 class ContainerVector(libMA.ContainerVector):
     def __init__(self, args):
         if isinstance(args, list):
-            super(ContainerVector, args[0])
+            super(ContainerVector, self).__init__(args[0])
             for arg in args:
                 self.append(arg)
         else:
-            super(ContainerVector, args)
+            super(ContainerVector, self).__init__(args)
 
 
 ##
