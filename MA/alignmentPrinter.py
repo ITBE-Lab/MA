@@ -10,13 +10,12 @@ from .aligner import *
 
 ##
 # @brief Print the given Alignment.
-# @details 
+# @details
 # Prints the alignment to the console.
 # @ingroup module
 #
 class AlignmentPrinter(Module):
-
-    def __init__(self, nuc_per_line = 80, check_for_errors_only=False):
+    def __init__(self, nuc_per_line=80, check_for_errors_only=False):
         self.nuc_per_line = nuc_per_line
         self.check_for_errors_only = check_for_errors_only
 
@@ -47,14 +46,15 @@ class AlignmentPrinter(Module):
         ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
 
         lines = [
-            "score: " + str(align.get_score()) + " cigar_length: " + str(len(align)) + 
-            " soc_index: " + str(align.stats.index_of_strip) + 
-            " maping_quality: " + str(align.mapping_quality), 
-            "query_name: " + str(align.stats.name) +
-            " state: " + ("secondary" if align.secondary else
-            ("supplementary" if align.supplementary else "primary")),
-            "reference: " + str(align.begin_on_ref) + " - " + str(align.end_on_ref),
-            "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query)
+            "score: " + str(align.get_score()) + " cigar_length: " + str(
+                len(align)) + " soc_index: " + str(align.stats.index_of_strip)
+            + " maping_quality: " + str(align.mapping_quality),
+            "query_name: " + str(align.stats.name) + " state: " +
+            ("secondary" if align.secondary else
+             ("supplementary" if align.supplementary else "primary")),
+            "reference: " + str(align.begin_on_ref) + " - " + str(
+                align.end_on_ref), "query: " + str(
+                    align.begin_on_query) + " - " + str(align.end_on_query)
         ]
         counter = 0
         ind_query = 0
@@ -71,11 +71,15 @@ class AlignmentPrinter(Module):
                 if counter > 0:
                     lines[-3] += "\treference"
                     lines[-1] += "\tquery"
-                    desc = str(counter) + "-" + str(counter + self.nuc_per_line)
+                    desc = str(counter) + "-" + str(counter +
+                                                    self.nuc_per_line)
                     lines.extend(["", desc, "", "", ""])
 
             #perform double check for messup:
-            if ind_ref >= len(ref) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.deletion or align[counter] == MatchType.missmatch):
+            if ind_ref >= len(ref) and (align[counter] == MatchType.match
+                                        or align[counter] == MatchType.seed or
+                                        align[counter] == MatchType.deletion or
+                                        align[counter] == MatchType.missmatch):
                 print("This should not happen... (ref)")
                 print(align[counter])
                 print(ind_ref)
@@ -87,7 +91,11 @@ class AlignmentPrinter(Module):
                 print("remaining cigar:", s)
                 atLeastOneMistake = True
                 break
-            if ind_query >= len(query) and (align[counter] == MatchType.match or align[counter] == MatchType.seed or align[counter] == MatchType.insertion or align[counter] == MatchType.missmatch):
+            if ind_query >= len(query) and (
+                    align[counter] == MatchType.match
+                    or align[counter] == MatchType.seed
+                    or align[counter] == MatchType.insertion
+                    or align[counter] == MatchType.missmatch):
                 print("This should not happen... (query)")
                 print(align[counter])
                 print(ind_query)

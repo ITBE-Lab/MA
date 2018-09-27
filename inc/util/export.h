@@ -24,8 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 /**
- * @mainpage @ref libMA::Module "Modular" Aligner using @ref libMA::BinarySeeding "BinarySeeding"
- * and @ref libMA::StripOfConsideration "Strips of Consideration"
+ * @mainpage @ref Documentation Main Page
  * @tableofcontents
  * @section intro_sec Introduction
  *

@@ -8,6 +8,7 @@
 from .aligner import *
 from .postgresInterface import *
 
+
 class ExecOnVecPy(Module):
     def __init__(self, module):
         self.module = module
@@ -29,10 +30,11 @@ class ExecOnVecPy(Module):
             ret.append(self.module.execute(element, *rem_inputs))
         return ret
 
+
 ##
-# @brief Setup the @ref comp_graph_sec "computational graph" 
+# @brief Setup the @ref comp_graph_sec "computational graph"
 # with the standard aligner comfiguration.
-# @details 
+# @details
 # Uses following Modules in this order:
 # - The given segmentation; default is BinarySeeding
 # - GetAnchors
@@ -69,28 +71,25 @@ class Aligner:
         self.dbWriter = DbWriter()
         dbWriterLoop = ExecOnVecPy(self.dbWriter)
 
-        non_existant_pledge = Pledge( Nil() )
+        non_existant_pledge = Pledge(Nil())
         non_existant_pledge.set(Nil())
 
-        self.query_pledge = lock.promise_me( splitter.promise_me( non_existant_pledge ) )
+        self.query_pledge = lock.promise_me(
+            splitter.promise_me(non_existant_pledge))
         unlock = UnLock(self.query_pledge)
 
-        self.seed_pledge = seeding.promise_me( self.fm_pledge, self.query_pledge )
-        self.soc_pledge = soc.promise_me(
-                self.seed_pledge, self.query_pledge, self.ref_pledge, self.fm_pledge
-            )
-        self.harm_pledge = harmonization.promise_me(
-                self.soc_pledge, self.query_pledge
-            )
-        self.nw_pledge = optimal.promise_me(
-                self.harm_pledge, self.query_pledge, self.ref_pledge
-            )
-        self.map_pledge = mappingQual.promise_me(
-            self.query_pledge, self.nw_pledge
-        )
+        self.seed_pledge = seeding.promise_me(self.fm_pledge,
+                                              self.query_pledge)
+        self.soc_pledge = soc.promise_me(self.seed_pledge, self.query_pledge,
+                                         self.ref_pledge, self.fm_pledge)
+        self.harm_pledge = harmonization.promise_me(self.soc_pledge,
+                                                    self.query_pledge)
+        self.nw_pledge = optimal.promise_me(self.harm_pledge,
+                                            self.query_pledge, self.ref_pledge)
+        self.map_pledge = mappingQual.promise_me(self.query_pledge,
+                                                 self.nw_pledge)
         self.writer_pledge = dbWriterLoop.promise_me(
-            self.map_pledge, self.query_pledge,  self.ref_pledge
-        )
+            self.map_pledge, self.query_pledge, self.ref_pledge)
         self.unlock_pledge = unlock.promise_me(self.writer_pledge)
 
     ##
@@ -134,7 +133,3 @@ class Aligner:
     def get_one(self):
         self.unlock_pledge.get()
         self.dbWriter.finalize()
-
-
-
-

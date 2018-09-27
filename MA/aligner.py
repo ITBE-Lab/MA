@@ -2,10 +2,10 @@
 # @package MA
 # @brief The Python part of the library is within this package
 # @package MA.aligner
-# @brief Implements @ref MA.aligner.Module "Module" and 
+# @brief Implements @ref MA.aligner.Module "Module" and
 # @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @file aligner.py
-# @brief Implements @ref MA.aligner.Module "Module" and 
+# @brief Implements @ref MA.aligner.Module "Module" and
 # @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @author Markus Schmidt
 #
@@ -13,13 +13,14 @@
 import libMA
 import traceback
 
+
 ##
 # @brief the Python implementation of @ref Module "module".
-# @details 
+# @details
 # The module overrides the @ref promiseMe "promise_me" function.
 # Thus telling the C++ code that any module inheriting from this class is written in python.
 # @see the C++ implementation of @ref Module "module".
-# @ingroup module 
+# @ingroup module
 #
 class Module(libMA.Module):
 
@@ -76,6 +77,7 @@ class SMW(libMA.SMW):
     def promise_me(self, *args):
         return super(SMW, self).promise_me(ContainerVector(list(args)))
 
+
 ##
 # @brief contains the final output of the aligner.
 # @details
@@ -86,12 +88,13 @@ class SMW(libMA.SMW):
 class Alignment(libMA.Alignment):
     pass
 
+
 ##
 # @brief Describes the type of match at one specific position of the alignment.
 # @details
 # - match: query and reference have the same nucleotide.
 # - seed: query and reference have the same nucleotide (the match was found as part of a seed).
-# - missmatch: query and reference have different nucleotides, 
+# - missmatch: query and reference have different nucleotides,
 #   but they are aligned to the same position nonetheless.
 # - insertion: a nucleotide is present on the query that has no counterpart on the reference.
 # - deletion: a nucleotide is present on the reference that has no counterpart on the query.
@@ -99,6 +102,7 @@ class Alignment(libMA.Alignment):
 #
 class MatchType(libMA.MatchType):
     pass
+
 
 ##
 # @brief Represents the pledge to deliver some container.
@@ -110,6 +114,7 @@ class MatchType(libMA.MatchType):
 class Pledge(libMA.Pledge):
     pass
 
+
 ##
 # @brief Contains a suffix array.
 # @details
@@ -119,6 +124,17 @@ class Pledge(libMA.Pledge):
 class FMIndex(libMA.FMIndex):
     pass
 
+
+##
+# @brief Contains sets of seeds ordered by SoC score
+# @details
+#
+# @ingroup container
+#
+class SoCPriorityQueue(libMA.SoCPriorityQueue):
+    pass
+
+
 ##
 # @brief And empty Container.
 # @details
@@ -127,6 +143,7 @@ class FMIndex(libMA.FMIndex):
 #
 class Nil(libMA.Nil):
     pass
+
 
 ##
 # @brief The Container for a SegmentVector
@@ -138,6 +155,7 @@ class Nil(libMA.Nil):
 class SegmentVector(libMA.SegmentVector):
     pass
 
+
 ##
 # @brief The Container for a Seeds_
 # @details
@@ -148,6 +166,7 @@ class SegmentVector(libMA.SegmentVector):
 class Seeds(libMA.Seeds):
     pass
 
+
 ##
 # @brief A interval on the query that contains one or multiple @ref Seed "seeds".
 # @details
@@ -156,6 +175,7 @@ class Seeds(libMA.Seeds):
 #
 class Segment(libMA.Segment):
     pass
+
 
 ##
 # @brief A packed version of a @ref NucSeq_ "NucSeq".
@@ -166,6 +186,7 @@ class Segment(libMA.Segment):
 class Pack(libMA.Pack):
     pass
 
+
 ##
 # @brief A single seed.
 # @details
@@ -175,6 +196,7 @@ class Pack(libMA.Pack):
 class Seed(libMA.Seed):
     pass
 
+
 ##
 # @brief A SAInterval.
 # @details
@@ -183,6 +205,7 @@ class Seed(libMA.Seed):
 #
 class SAInterval(libMA.SAInterval):
     pass
+
 
 ##
 # @brief A nucleotide sequence.
@@ -196,11 +219,13 @@ class NucSeq(libMA.NucSeq):
     def __getitem__(self, val):
         if isinstance(val, slice):
             ret = NucSeq()
-            for index in range(val.start or 0, val.stop or len(self), val.step or 1):
+            for index in range(val.start or 0, val.stop or len(self), val.step
+                               or 1):
                 ret.append(libMA.NucSeq.__getitem__(self, index))
             return ret
         else:
             return libMA.NucSeq.__getitem__(self, val)
+
 
 ##
 # @brief The ContainerVector Module.
@@ -219,6 +244,7 @@ class ContainerVector(libMA.ContainerVector):
         else:
             libMA.ContainerVector.__init__(self, args)
 
+
 ##
 # @brief python wrapper for BinarySeeding
 class BinarySeeding(libMA.BinarySeeding):
@@ -226,26 +252,76 @@ class BinarySeeding(libMA.BinarySeeding):
         return super(BinarySeeding, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(BinarySeeding, self).promise_me(ContainerVector(list(args)))
+        return super(BinarySeeding, self).promise_me(
+            ContainerVector(list(args)))
+
+
+##
+# @brief python wrapper for FileWriter
+class FileWriter(libMA.FileWriter):
+    def execute(self, *args):
+        return super(FileWriter, self).execute(ContainerVector(list(args)))
+
+    def promise_me(self, *args):
+        return super(FileWriter, self).promise_me(ContainerVector(list(args)))
+
+
+##
+# @brief python wrapper for PairedReads
+class PairedReads(libMA.PairedReads):
+    def execute(self, *args):
+        return super(PairedReads, self).execute(ContainerVector(list(args)))
+
+    def promise_me(self, *args):
+        return super(PairedReads, self).promise_me(ContainerVector(list(args)))
+
+
+##
+# @brief python wrapper for SeedSetFileWriter
+class SeedSetFileWriter(libMA.SeedSetFileWriter):
+    def execute(self, *args):
+        return super(SeedSetFileWriter, self).execute(
+            ContainerVector(list(args)))
+
+    def promise_me(self, *args):
+        return super(SeedSetFileWriter, self).promise_me(
+            ContainerVector(list(args)))
+
 
 ##
 # @brief python wrapper for StripOfConsideration
 class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
-        return super(StripOfConsideration, self).execute(ContainerVector(list(args)))
+        return super(StripOfConsideration, self).execute(
+            ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(StripOfConsideration, self).promise_me(ContainerVector(list(args)))
+        return super(StripOfConsideration, self).promise_me(
+            ContainerVector(list(args)))
+
+
+##
+# @brief python wrapper for ReadSplitter
+class ReadSplitter(libMA.ReadSplitter):
+    def execute(self, *args):
+        return super(ReadSplitter, self).execute(ContainerVector(list(args)))
+
+    def promise_me(self, *args):
+        return super(ReadSplitter, self).promise_me(
+            ContainerVector(list(args)))
 
 
 ##
 # @brief python wrapper for LinearLineSweep
 class LinearLineSweep(libMA.LinearLineSweep):
     def execute(self, *args):
-        return super(LinearLineSweep, self).execute(ContainerVector(list(args)))
+        return super(LinearLineSweep, self).execute(
+            ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(LinearLineSweep, self).promise_me(ContainerVector(list(args)))
+        return super(LinearLineSweep, self).promise_me(
+            ContainerVector(list(args)))
+
 
 ##
 # @brief python wrapper for FileReader
@@ -256,14 +332,18 @@ class FileReader(libMA.FileReader):
     def promise_me(self, *args):
         return super(FileReader, self).promise_me(ContainerVector(list(args)))
 
+
 ##
 # @brief python wrapper for LinearLineSweep
 class NeedlemanWunsch(libMA.NeedlemanWunsch):
     def execute(self, *args):
-        return super(NeedlemanWunsch, self).execute(ContainerVector(list(args)))
+        return super(NeedlemanWunsch, self).execute(
+            ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(NeedlemanWunsch, self).promise_me(ContainerVector(list(args)))
+        return super(NeedlemanWunsch, self).promise_me(
+            ContainerVector(list(args)))
+
 
 ##
 # @brief python wrapper for ExecOnVec
@@ -274,6 +354,7 @@ class ExecOnVec(libMA.ExecOnVec):
     def promise_me(self, *args):
         return super(ExecOnVec, self).promise_me(ContainerVector(list(args)))
 
+
 ##
 # @brief python wrapper for MappingQuality
 class MappingQuality(libMA.MappingQuality):
@@ -281,7 +362,9 @@ class MappingQuality(libMA.MappingQuality):
         return super(MappingQuality, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(MappingQuality, self).promise_me(ContainerVector(list(args)))
+        return super(MappingQuality, self).promise_me(
+            ContainerVector(list(args)))
+
 
 ##
 # @brief The Tail Module.
@@ -296,6 +379,7 @@ class Tail(libMA.Tail):
     def promise_me(self, *args):
         return super(Tail, self).promise_me(ContainerVector(list(args)))
 
+
 ##
 # @brief The ExtractAllSeeds Module.
 # @details
@@ -304,10 +388,13 @@ class Tail(libMA.Tail):
 #
 class ExtractAllSeeds(libMA.ExtractAllSeeds):
     def execute(self, *args):
-        return super(ExtractAllSeeds, self).execute(ContainerVector(list(args)))
+        return super(ExtractAllSeeds, self).execute(
+            ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(ExtractAllSeeds, self).promise_me(ContainerVector(list(args)))
+        return super(ExtractAllSeeds, self).promise_me(
+            ContainerVector(list(args)))
+
 
 ##
 # @brief The Splitter Module.
@@ -320,6 +407,7 @@ class Splitter(libMA.Splitter):
     def promise_me(self, *args):
         return super(Splitter, self).promise_me(ContainerVector(list(args)))
 
+
 ##
 # @brief The Collector Module.
 # @ingroup module
@@ -330,6 +418,7 @@ class Collector(libMA.Collector):
 
     def promise_me(self, *args):
         return super(Collector, self).promise_me(ContainerVector(list(args)))
+
 
 ##
 # @brief The Lock Module.
@@ -342,6 +431,7 @@ class Lock(libMA.Lock):
     def promise_me(self, *args):
         return super(Lock, self).promise_me(ContainerVector(list(args)))
 
+
 ##
 # @brief The UnLock Module.
 # @ingroup module
@@ -353,6 +443,7 @@ class UnLock(libMA.UnLock):
     def promise_me(self, *args):
         return super(UnLock, self).promise_me(ContainerVector(list(args)))
 
+
 ##
 # @brief The OtherSeeding Module.
 # @ingroup module
@@ -362,7 +453,9 @@ class OtherSeeding(libMA.OtherSeeding):
         return super(OtherSeeding, self).execute(ContainerVector(list(args)))
 
     def promise_me(self, *args):
-        return super(OtherSeeding, self).promise_me(ContainerVector(list(args)))
+        return super(OtherSeeding, self).promise_me(
+            ContainerVector(list(args)))
+
 
 def ksw(a_list, b_list, m=2, mm=4, o=4, e=2, o2=24, e2=1, w=0):
     ret = []
@@ -372,6 +465,6 @@ def ksw(a_list, b_list, m=2, mm=4, o=4, e=2, o2=24, e2=1, w=0):
         for x in cigar.split(",")[:-1]:
             num = int(x[:-1])
             sym = x[-1]
-            cigar_list.append( (num, sym) )
+            cigar_list.append((num, sym))
         ret.append(cigar_list)
     return ret

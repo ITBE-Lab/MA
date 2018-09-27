@@ -16,7 +16,7 @@ import os
 ##             print("Warning - did not commit due to exception")
 ##         self.cur.close()
 ##         self.conn.close()
-## 
+##
 ## with CustomCursor("host=192.168.1.10 port=5432 dbname=MA user=postgres") as cur:
 ##     cur.execute(
 ##             "INSERT INTO sam_header (genome_name) VALUES (%s) RETURNING id",
@@ -33,13 +33,15 @@ import os
 ##             (100, run_id)
 ##         )
 
+
 class DbWriter(Module):
     def __init__(self):
         #192.168.1.10
-        self.conn = psycopg2.connect("host=192.168.1.10 port=5432 dbname=MA user=postgres")
+        self.conn = psycopg2.connect(
+            "host=192.168.1.10 port=5432 dbname=MA user=postgres")
         self.cur = self.conn.cursor()
 
-        genome_id = 0 # used dummy
+        genome_id = 0  # used dummy
         ## @todo
         ## self.cur.execute(
         ##         "SELECT id FROM sam_header WHERE genome_name = %s",
@@ -53,9 +55,8 @@ class DbWriter(Module):
         ##         )
         ##     genome_id = self.cur.fetchone()
         self.cur.execute(
-                "INSERT INTO run (aligner_name, header_id) VALUES (%s, %s) RETURNING id",
-                ("MA-py", genome_id)
-            )
+            "INSERT INTO run (aligner_name, header_id) VALUES (%s, %s) RETURNING id",
+            ("MA-py", genome_id))
         self.run_id = self.cur.fetchone()
 
     def get_input_type(self):
@@ -72,17 +73,17 @@ class DbWriter(Module):
         length = align.end_on_ref - align.begin_on_ref
 
         self.cur.execute(
-                "INSERT INTO alignment (cigar, position, mapping_quality, query_id, run_id, sam_flags, contig, query_sequence, length) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (align.cigarString(pack), align.getSamPosition(pack), align.mapping_quality, align.stats.name, self.run_id, align.getSamFlag(pack), align.getContig(pack), align.getQuerySequence(query, pack), length)
-            )
+            "INSERT INTO alignment (cigar, position, mapping_quality, query_id, run_id, sam_flags, contig, query_sequence, length) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (align.cigarString(pack), align.getSamPosition(pack),
+             align.mapping_quality, align.stats.name, self.run_id,
+             align.getSamFlag(pack), align.getContig(pack),
+             align.getQuerySequence(query, pack), length))
 
     def finalize(self, runtime=None):
         if not (self.conn is None and self.cur is None):
             if not runtime is None:
-                self.cur.execute(
-                        "UPDATE run SET runtime=%s WHERE id=%s",
-                        (runtime, self.run_id)
-                    )
+                self.cur.execute("UPDATE run SET runtime=%s WHERE id=%s",
+                                 (runtime, self.run_id))
             self.conn.commit()
             self.cur.close()
             self.conn.close()
@@ -91,11 +92,12 @@ class DbWriter(Module):
 
 
 def get_alignments_from_db(run_id, contig, start, end):
-    conn = psycopg2.connect("host=192.168.1.10 port=5432 dbname=MA user=postgres")
+    conn = psycopg2.connect(
+        "host=192.168.1.10 port=5432 dbname=MA user=postgres")
     cur = conn.cursor()
 
     cur.execute(
-            """
+        """
             SELECT cigar, position, mapping_quality, query_id, sam_flags, query_sequence, length,
             contig_other, position_other
             FROM alignment
@@ -104,9 +106,7 @@ def get_alignments_from_db(run_id, contig, start, end):
             AND position + length > %s
             AND position < %s
             ORDER BY position
-            """,
-            (run_id, contig, start, end)
-        )
+            """, (run_id, contig, start, end))
 
     ret = cur.fetchall()
 
@@ -115,13 +115,14 @@ def get_alignments_from_db(run_id, contig, start, end):
 
     return ret
 
+
 def read_cigar(cigar):
     symbol_to_operation = {
-            "I": 1,
-            "D": 2,
-            "=": 7,
-            "X": 8,
-        }
+        "I": 1,
+        "D": 2,
+        "=": 7,
+        "X": 8,
+    }
     if cigar[0] == '*':
         return
     number_start = 0
@@ -138,6 +139,7 @@ def read_cigar(cigar):
         yield num, symbol_to_operation[sym], q_len
         number_start = symbol_start + 1
 
+
 def reads_to_bam(run_id, contig, start, end, pack, bam_file_name):
     alignment_list = get_alignments_from_db(run_id, contig, start, end)
     print("extracted", len(alignment_list), "alignments")
@@ -151,10 +153,10 @@ def reads_to_bam(run_id, contig, start, end, pack, bam_file_name):
     for l in pack.contigLengths():
         ref_len_list.append(l)
     with pysam.AlignmentFile(
-            bam_file_name, 'wb', 
+            bam_file_name,
+            'wb',
             reference_names=ref_name_list,
-            reference_lengths=ref_len_list
-        ) as bam_file:
+            reference_lengths=ref_len_list) as bam_file:
         for cigar, position, mapping_quality, query_id, sam_flags, query_sequence, length_, contig_other, position_other in alignment_list:
             pys_alignment = pysam.AlignedSegment()
             pys_alignment.query_name = query_id
@@ -174,39 +176,41 @@ def reads_to_bam(run_id, contig, start, end, pack, bam_file_name):
             cigar_list = []
             length = 0
             for amount, operation, length in read_cigar(cigar):
-                cigar_list.append( (operation, amount) )
+                cigar_list.append((operation, amount))
             pys_alignment.cigar = cigar_list
-            pys_alignment.mapping_quality = max(min(int(mapping_quality*254), 254), 0)
-            pys_alignment.template_length = length #len(query_sequence)
+            pys_alignment.mapping_quality = max(
+                min(int(mapping_quality * 254), 254), 0)
+            pys_alignment.template_length = length  #len(query_sequence)
             bam_file.write(pys_alignment)
+
 
 def reads_to_bam_w_bai(run_id, contig, start, end, pack, prefix):
     # allow abbreviations for the chromosomes
     name_trans_dict = {
-        "chr1"  : "CM000663.2",
-        "chr2"  : "CM000664.2",
-        "chr3"  : "CM000665.2",
-        "chr4"  : "CM000666.2",
-        "chr5"  : "CM000667.2",
-        "chr6"  : "CM000668.2",
-        "chr7"  : "CM000669.2",
-        "chr8"  : "CM000670.2",
-        "chr9"  : "CM000671.2",
-        "chr10" : "CM000672.2",
-        "chr11" : "CM000673.2",
-        "chr12" : "CM000674.2",
-        "chr13" : "CM000675.2",
-        "chr14" : "CM000676.2",
-        "chr15" : "CM000677.2",
-        "chr16" : "CM000678.2",
-        "chr17" : "CM000679.2",
-        "chr18" : "CM000680.2",
-        "chr19" : "CM000681.2",
-        "chr20" : "CM000682.2",
-        "chr21" : "CM000683.2",
-        "chr22" : "CM000684.2",
-        "chrX"  : "CM000685.2",
-        "chrY"  : "CM000686.2"
+        "chr1": "CM000663.2",
+        "chr2": "CM000664.2",
+        "chr3": "CM000665.2",
+        "chr4": "CM000666.2",
+        "chr5": "CM000667.2",
+        "chr6": "CM000668.2",
+        "chr7": "CM000669.2",
+        "chr8": "CM000670.2",
+        "chr9": "CM000671.2",
+        "chr10": "CM000672.2",
+        "chr11": "CM000673.2",
+        "chr12": "CM000674.2",
+        "chr13": "CM000675.2",
+        "chr14": "CM000676.2",
+        "chr15": "CM000677.2",
+        "chr16": "CM000678.2",
+        "chr17": "CM000679.2",
+        "chr18": "CM000680.2",
+        "chr19": "CM000681.2",
+        "chr20": "CM000682.2",
+        "chr21": "CM000683.2",
+        "chr22": "CM000684.2",
+        "chrX": "CM000685.2",
+        "chrY": "CM000686.2"
     }
     if contig in name_trans_dict:
         contig = name_trans_dict[contig]
