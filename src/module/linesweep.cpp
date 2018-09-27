@@ -18,9 +18,9 @@ extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
 // extern nucSeqIndex libMA::defaults::uiMaxGapArea;
 
-std::shared_ptr< Seeds > LinearLineSweep::applyFilters( std::shared_ptr< Seeds > &pIn ) const
+std::shared_ptr<Seeds> LinearLineSweep::applyFilters( std::shared_ptr<Seeds> &pIn ) const
 {
-    auto pRet = std::make_shared< Seeds >( );
+    auto pRet = std::make_shared<Seeds>( );
     /*
      * FILTER:
      * do a gap cost estimation [ O(n) ]
@@ -244,31 +244,30 @@ inline nucSeqIndex difference( nucSeqIndex a, nucSeqIndex b )
 
 ContainerVector LinearLineSweep::getInputType( ) const
 {
-    return ContainerVector{std::make_shared< SoCPriorityQueue >( ), std::make_shared< NucSeq >( )};
+    return ContainerVector{std::make_shared<SoCPriorityQueue>( ), std::make_shared<NucSeq>( )};
 } // function
 
-std::shared_ptr< Container > LinearLineSweep::getOutputType( ) const
+std::shared_ptr<Container> LinearLineSweep::getOutputType( ) const
 {
-    return std::make_shared< ContainerVector >( std::make_shared< Seeds >( ) );
+    return std::make_shared<ContainerVector>( std::make_shared<Seeds>( ) );
 } // function
 
-std::shared_ptr< std::vector< std::tuple< Seeds::iterator, nucSeqIndex, nucSeqIndex > > >
+std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
 LinearLineSweep::linesweep(
-    std::shared_ptr< std::vector< std::tuple< Seeds::iterator, nucSeqIndex, nucSeqIndex > > >
-        pShadows,
+    std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> pShadows,
     const int64_t uiRStart, const double fAngle )
 {
     // sort shadows (increasingly) by start coordinate of the match
     std::sort( pShadows->begin( ), pShadows->end( ),
-               []( std::tuple< Seeds::iterator, nucSeqIndex, nucSeqIndex > xA,
-                   std::tuple< Seeds::iterator, nucSeqIndex, nucSeqIndex > xB ) {
+               []( std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex> xA,
+                   std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex> xB ) {
                    /*
                     * sort by the interval starts
                     * if two intervals start at the same point the larger one shall be treated first
                     */
-                   if ( std::get< 1 >( xA ) == std::get< 1 >( xB ) )
-                       return ( std::get< 2 >( xA ) > std::get< 2 >( xB ) );
-                   return ( std::get< 1 >( xA ) < std::get< 1 >( xB ) );
+                   if ( std::get<1>( xA ) == std::get<1>( xB ) )
+                       return ( std::get<2>( xA ) > std::get<2>( xB ) );
+                   return ( std::get<1>( xA ) < std::get<1>( xB ) );
                } // lambda
     ); // sort function call
 
@@ -278,32 +277,32 @@ LinearLineSweep::linesweep(
     //    << std::get<0>(xTup)->size() << std::endl;
     //}
 
-    auto pItervalEnds = std::make_shared<
-        std::vector< std::tuple< Seeds::iterator, nucSeqIndex, nucSeqIndex > > >( );
+    auto pItervalEnds =
+        std::make_shared<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>( );
     pItervalEnds->reserve( pShadows->size( ) );
 
     nucSeqIndex x = 0;
     // this is the line sweeping part
     for ( auto &xTup : *pShadows )
     {
-        if ( x < std::get< 2 >( xTup ) )
+        if ( x < std::get<2>( xTup ) )
         {
             pItervalEnds->push_back( xTup );
-            x = std::get< 2 >( xTup );
+            x = std::get<2>( xTup );
         } // if
         else
         {
             assert( !pItervalEnds->empty( ) );
-            double fDistance = deltaDistance( *std::get< 0 >( xTup ), fAngle, uiRStart );
+            double fDistance = deltaDistance( *std::get<0>( xTup ), fAngle, uiRStart );
             ;
             // std::cout << "D-";
             nucSeqIndex uiPos = pItervalEnds->size( ); // uiPos is unsigned!!!
             bool bThisIsCloserToDiagonal = true;
             while ( uiPos > 0 &&
-                    std::get< 2 >( ( *pItervalEnds )[ uiPos - 1 ] ) >= std::get< 2 >( xTup ) )
+                    std::get<2>( ( *pItervalEnds )[ uiPos - 1 ] ) >= std::get<2>( xTup ) )
             {
                 double fDistanceOther = deltaDistance(
-                    *std::get< 0 >( ( *pItervalEnds )[ uiPos - 1 ] ), fAngle, uiRStart );
+                    *std::get<0>( ( *pItervalEnds )[ uiPos - 1 ] ), fAngle, uiRStart );
                 if ( fDistanceOther <= fDistance )
                 {
                     bThisIsCloserToDiagonal = false;
@@ -314,7 +313,7 @@ LinearLineSweep::linesweep(
             if ( bThisIsCloserToDiagonal )
             {
                 while ( !pItervalEnds->empty( ) &&
-                        std::get< 2 >( pItervalEnds->back( ) ) >= std::get< 2 >( xTup ) )
+                        std::get<2>( pItervalEnds->back( ) ) >= std::get<2>( xTup ) )
                     pItervalEnds->pop_back( );
                 pItervalEnds->push_back( xTup );
             } // if
@@ -325,10 +324,10 @@ LinearLineSweep::linesweep(
     return pItervalEnds;
 } // function
 
-std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< ContainerVector > vpInput )
+std::shared_ptr<Container> LinearLineSweep::execute( std::shared_ptr<ContainerVector> vpInput )
 {
-    const auto &pSoCIn = std::dynamic_pointer_cast< SoCPriorityQueue >( ( *vpInput )[ 0 ] ); // dc
-    const auto &pQuery = std::dynamic_pointer_cast< NucSeq >( ( *vpInput )[ 1 ] ); // dc
+    const auto &pSoCIn = std::dynamic_pointer_cast<SoCPriorityQueue>( ( *vpInput )[ 0 ] ); // dc
+    const auto &pQuery = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] ); // dc
 #define FILTER_1 ( 0 )
 #if FILTER_1
     nucSeqIndex uiAccumulativeSeedLength = 0;
@@ -339,7 +338,7 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
     nucSeqIndex uiBestSoCScore = 0;
     unsigned int uiSoCRepeatCounter = 0;
 
-    auto pSoCs = std::make_shared< ContainerVector >( std::make_shared< Seeds >( ) );
+    auto pSoCs = std::make_shared<ContainerVector>( std::make_shared<Seeds>( ) );
 
     while ( !pSoCIn->empty( ) )
     {
@@ -354,7 +353,7 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
         PRINT_BREAK_CRITERIA( if ( pSoCIn->empty( ) ) std::cout << "exhausted all SoCs"
                                                                 << std::endl; )
 
-        auto pSeeds = std::make_shared< Seeds >( );
+        auto pSeeds = std::make_shared<Seeds>( );
         pSeeds->xStats = pSeedsIn->xStats;
         if ( pSeedsIn->size( ) > 1 )
         {
@@ -398,9 +397,9 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
             uiBestSoCScore = std::max( uiBestSoCScore, uiCurrSoCScore );
 
             DEBUG( pSoCIn->vExtractOrder.back( ).first = uiCurrSoCScore;
-                   pSoCIn->vIngroup.push_back( std::make_shared< Seeds >( ) ); )
+                   pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) ); )
 #if USE_RANSAC == 1 // switch between ransac line angle + intercept estimation & 45deg median line
-            std::vector< double > vX, vY;
+            std::vector<double> vX, vY;
             vX.reserve( pSeedsIn->size( ) );
             vY.reserve( pSeedsIn->size( ) );
             for ( const auto &rSeed : *pSeedsIn )
@@ -416,7 +415,7 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
                 vY.push_back( ( double )rSeed.start( ) + rSeed.size( ) );
             } // for
             /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
-            double fMAD = medianAbsoluteDeviation< double >( vY );
+            double fMAD = medianAbsoluteDeviation<double>( vY );
             auto xSlopeIntercept = run_ransac( vX, vY, /*pSoCIn->vIngroup.back(),*/ fMAD );
 
             /*
@@ -436,7 +435,7 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
                    pSoCIn->vIntercepts.push_back( xSlopeIntercept.second ); ) // DEBUG
 
             auto pShadows = std::make_shared<
-                std::vector< std::tuple< Seeds::iterator, nucSeqIndex, nucSeqIndex > > >( );
+                std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>( );
             pShadows->reserve( pSeedsIn->size( ) );
 
             // get the left shadows
@@ -454,9 +453,9 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
 
             // get the right shadows
             for ( auto &xT : *pShadows2 )
-                pShadows->push_back( std::make_tuple( std::get< 0 >( xT ),
-                                                      std::get< 0 >( xT )->start_ref( ),
-                                                      std::get< 0 >( xT )->end( ) ) );
+                pShadows->push_back( std::make_tuple( std::get<0>( xT ),
+                                                      std::get<0>( xT )->start_ref( ),
+                                                      std::get<0>( xT )->end( ) ) );
 
             // perform the line sweep algorithm on the right shadows
             pShadows = linesweep( pShadows, xSlopeIntercept.second, xSlopeIntercept.first );
@@ -464,7 +463,7 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
             pSeeds->reserve( pShadows->size( ) );
 
             for ( auto &xT : *pShadows )
-                pSeeds->push_back( *std::get< 0 >( xT ) );
+                pSeeds->push_back( *std::get<0>( xT ) );
 
             pSeeds->bConsistent = true;
 
@@ -507,10 +506,10 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
                    pSoCIn->vExtractOrder.back( ).first = pSeedsIn->front( ).size( );
                    pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
                    pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( );
-                   pSoCIn->vIngroup.push_back( std::make_shared< Seeds >( ) );
+                   pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) );
                    pSoCIn->vSlopes.push_back( 0 ); pSoCIn->vIntercepts.push_back( 0 );
                    // @todo one more indirection to represent supplementary alignments
-                   pSoCIn->vHarmSoCs.push_back( std::make_shared< Seeds >( pSeeds ) ); ) // DEBUG
+                   pSoCIn->vHarmSoCs.push_back( std::make_shared<Seeds>( pSeeds ) ); ) // DEBUG
         } // else
 
         /*
@@ -536,7 +535,7 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
             } // if
         } // if
 #if DEBUG_LEVEL >= 1
-        std::vector< bool > vQCoverage( pQuery->length( ), false );
+        std::vector<bool> vQCoverage( pQuery->length( ), false );
         pSoCIn->vExtractOrder.back( ).qCoverage = 0;
         for ( const auto &rSeed : *pSeeds )
         {
@@ -621,8 +620,8 @@ std::shared_ptr< Container > LinearLineSweep::execute( std::shared_ptr< Containe
 void exportLinesweep( )
 {
     // export the LineSweepContainer class
-    boost::python::class_< LinearLineSweep, boost::python::bases< Module >,
-                           std::shared_ptr< LinearLineSweep > >( "LinearLineSweep" )
+    boost::python::class_<LinearLineSweep, boost::python::bases<Module>,
+                          std::shared_ptr<LinearLineSweep>>( "LinearLineSweep" )
         .def_readwrite( "optimistic_gap_estimation", &LinearLineSweep::optimisticGapEstimation )
         .def_readwrite( "min_coverage", &LinearLineSweep::fMinimalQueryCoverage )
         .def_readwrite( "tolerance", &LinearLineSweep::fScoreTolerace )
@@ -631,7 +630,7 @@ void exportLinesweep( )
         .def_readwrite( "diff_tolerance", &LinearLineSweep::fScoreDiffTolerance )
         .def_readwrite( "switch_q_len", &LinearLineSweep::uiSwitchQLen )
         .def_readwrite( "do_heuristics", &LinearLineSweep::bDoHeuristics );
-    boost::python::implicitly_convertible< std::shared_ptr< LinearLineSweep >,
-                                           std::shared_ptr< Module > >( );
+    boost::python::implicitly_convertible<std::shared_ptr<LinearLineSweep>,
+                                          std::shared_ptr<Module>>( );
 } // function
 #endif

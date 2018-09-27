@@ -7,40 +7,39 @@
 #ifndef SW_GPU_H
 #define SW_GPU_H
 
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 #ifdef WITH_GPU_SW
-    class GPUReturn
+class GPUReturn
+{
+   public:
+    int iMaxScore;
+    std::vector<size_t> vMaxPos;
+    GPUReturn( int iMaxScore, std::vector<size_t> vMaxPos )
+        : iMaxScore( iMaxScore ), vMaxPos( vMaxPos )
     {
-    public:
-        int iMaxScore;
-        std::vector<size_t> vMaxPos;
-        GPUReturn(int iMaxScore, std::vector<size_t> vMaxPos)
-                :
-            iMaxScore(iMaxScore),
-            vMaxPos(vMaxPos)
-        {}// default constructor
-        GPUReturn(){}
+    } // default constructor
+    GPUReturn( )
+    {
+    }
 
-        bool operator==(const GPUReturn& rOther)
-        {
-            return iMaxScore == rOther.iMaxScore;
-        }// operator
-    };// class
+    bool operator==( const GPUReturn &rOther )
+    {
+        return iMaxScore == rOther.iMaxScore;
+    } // operator
+}; // class
 
-    std::vector<GPUReturn> cudaAlign
-    (
-        std::vector<char> &rvRefSeq, // reference sequence
-        std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
-        unsigned int uiDeviceId
-    );
+std::vector<GPUReturn> cudaAlign(
+    std::vector<char> &rvRefSeq, // reference sequence
+    std::vector<std::vector<char>> &rvQuerySeqs, // vector of query sequences
+    unsigned int uiDeviceId );
 #endif
 
 /**
  * @brief Exposes the SweepAllReturnBest @ref Module "module" to boost python.
  * @ingroup export
  */
-void exportSW_GPU();
+void exportSW_GPU( );
 
 #endif

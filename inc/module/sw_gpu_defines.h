@@ -6,7 +6,13 @@
 
 #define NUM_OF_SYMBOLS ( 4 )
 
-#define CUERR { cudaError_t err;			\
-				if ((err = cudaGetLastError()) != cudaSuccess) {		\
-  					printf("CUDA error: %s : %s, line %d\n", cudaGetErrorString(err), __FILE__, __LINE__); exit(0); } \
-			  } 
+#define CUERR                                                                                      \
+    {                                                                                              \
+        cudaError_t err;                                                                           \
+        if ( ( err = cudaGetLastError( ) ) != cudaSuccess )                                        \
+        {                                                                                          \
+            printf( "CUDA error: %s : %s, line %d\n", cudaGetErrorString( err ), __FILE__,         \
+                    __LINE__ );                                                                    \
+            exit( 0 );                                                                             \
+        }                                                                                          \
+    }

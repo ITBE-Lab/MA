@@ -12,9 +12,10 @@
  *
  * @brief common 32cell-wide mask type
  */
-typedef struct v64_mask_s {
-	uint32_t m1;
-	uint32_t m2;
+typedef struct v64_mask_s
+{
+    uint32_t m1;
+    uint32_t m2;
 } v64_mask_t;
 typedef struct v64_mask_s v64i8_mask_t;
 
@@ -22,8 +23,8 @@ typedef struct v64_mask_s v64i8_mask_t;
  * @union v64_mask_u
  */
 typedef union v64_mask_u {
-	v64_mask_t mask;
-	uint64_t all;
+    v64_mask_t mask;
+    uint64_t all;
 } v64_masku_t;
 typedef union v64_mask_u v64i8_masku_t;
 
@@ -32,8 +33,9 @@ typedef union v64_mask_u v64i8_masku_t;
  *
  * @brief common 32cell-wide mask type
  */
-typedef struct v32_mask_s {
-	uint32_t m1;
+typedef struct v32_mask_s
+{
+    uint32_t m1;
 } v32_mask_t;
 typedef struct v32_mask_s v32i8_mask_t;
 
@@ -41,8 +43,8 @@ typedef struct v32_mask_s v32i8_mask_t;
  * @union v32_mask_u
  */
 typedef union v32_mask_u {
-	v32_mask_t mask;
-	uint32_t all;
+    v32_mask_t mask;
+    uint32_t all;
 } v32_masku_t;
 typedef union v32_mask_u v32i8_masku_t;
 
@@ -51,8 +53,9 @@ typedef union v32_mask_u v32i8_masku_t;
  *
  * @brief common 16cell-wide mask type
  */
-typedef struct v16_mask_s {
-	uint16_t m1;
+typedef struct v16_mask_s
+{
+    uint16_t m1;
 } v16_mask_t;
 typedef struct v16_mask_s v16i8_mask_t;
 
@@ -60,8 +63,8 @@ typedef struct v16_mask_s v16i8_mask_t;
  * @union v16_mask_u
  */
 typedef union v16_mask_u {
-	v16_mask_t mask;
-	uint16_t all;
+    v16_mask_t mask;
+    uint16_t all;
 } v16_masku_t;
 typedef union v16_mask_u v16i8_masku_t;
 
@@ -81,47 +84,127 @@ typedef union v16_mask_u v16i8_masku_t;
  * v32i16_t is for middle differences in banded alignment. It can be converted
  * from v32i8_t
  */
+#include "v16i16.h"
+#include "v16i8.h"
 #include "v2i32.h"
 #include "v2i64.h"
-#include "v16i8.h"
-#include "v16i16.h"
-#include "v32i8.h"
 #include "v32i16.h"
-#include "v64i8.h"
+#include "v32i8.h"
 #include "v64i16.h"
+#include "v64i8.h"
 
-#if defined(_ARCH_GCC_VERSION) && _ARCH_GCC_VERSION < 480
-#  define _mm256_broadcastsi128_si256		_mm_broadcastsi128_si256
+#if defined( _ARCH_GCC_VERSION ) && _ARCH_GCC_VERSION < 480
+#define _mm256_broadcastsi128_si256 _mm_broadcastsi128_si256
 #endif
 
 /* conversion and cast between vector types */
-#define _from_v16i8_v64i8(x)	(v64i8_t){ _mm256_broadcastsi128_si256((x).v1), _mm256_broadcastsi128_si256((x).v1) }
-#define _from_v32i8_v64i8(x)	(v64i8_t){ (x).v1, (x).v1 }
-#define _from_v64i8_v64i8(x)	(v64i8_t){ (x).v1, (x).v2 }
+#define _from_v16i8_v64i8( x )                                                                     \
+    ( v64i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_broadcastsi128_si256( ( x ).v1 ), _mm256_broadcastsi128_si256( ( x ).v1 )           \
+    }
+#define _from_v32i8_v64i8( x )                                                                     \
+    ( v64i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1, ( x ).v1                                                                         \
+    }
+#define _from_v64i8_v64i8( x )                                                                     \
+    ( v64i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1, ( x ).v2                                                                         \
+    }
 
-#define _from_v16i8_v32i8(x)	(v32i8_t){ _mm256_broadcastsi128_si256((x).v1) }
-#define _from_v32i8_v32i8(x)	(v32i8_t){ (x).v1 }
-#define _from_v32i8_v32i8(x)	(v32i8_t){ (x).v1 }
+#define _from_v16i8_v32i8( x )                                                                     \
+    ( v32i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_broadcastsi128_si256( ( x ).v1 )                                                    \
+    }
+#define _from_v32i8_v32i8( x )                                                                     \
+    ( v32i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
+#define _from_v32i8_v32i8( x )                                                                     \
+    ( v32i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
 
-#define _from_v16i8_v16i8(x)	(v16i8_t){ (x).v1 }
-#define _from_v32i8_v16i8(x)	(v16i8_t){ _mm256_castsi256_si128((x).v1) }
-#define _from_v64i8_v16i8(x)	(v16i8_t){ _mm256_castsi256_si128((x).v1) }
+#define _from_v16i8_v16i8( x )                                                                     \
+    ( v16i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
+#define _from_v32i8_v16i8( x )                                                                     \
+    ( v16i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_castsi256_si128( ( x ).v1 )                                                         \
+    }
+#define _from_v64i8_v16i8( x )                                                                     \
+    ( v16i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_castsi256_si128( ( x ).v1 )                                                         \
+    }
 
 /* inversed alias */
-#define _to_v64i8_v16i8(x)		(v64i8_t){ _mm256_broadcastsi128_si256((x).v1), _mm256_broadcastsi128_si256((x).v1) }
-#define _to_v64i8_v32i8(x)		(v64i8_t){ (x).v1, (x).v1 }
-#define _to_v64i8_v64i8(x)		(v64i8_t){ (x).v1, (x).v2 }
+#define _to_v64i8_v16i8( x )                                                                       \
+    ( v64i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_broadcastsi128_si256( ( x ).v1 ), _mm256_broadcastsi128_si256( ( x ).v1 )           \
+    }
+#define _to_v64i8_v32i8( x )                                                                       \
+    ( v64i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1, ( x ).v1                                                                         \
+    }
+#define _to_v64i8_v64i8( x )                                                                       \
+    ( v64i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1, ( x ).v2                                                                         \
+    }
 
-#define _to_v32i8_v16i8(x)		(v32i8_t){ _mm256_broadcastsi128_si256((x).v1) }
-#define _to_v32i8_v32i8(x)		(v32i8_t){ (x).v1 }
-#define _to_v32i8_v64i8(x)		(v32i8_t){ (x).v1 }
+#define _to_v32i8_v16i8( x )                                                                       \
+    ( v32i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_broadcastsi128_si256( ( x ).v1 )                                                    \
+    }
+#define _to_v32i8_v32i8( x )                                                                       \
+    ( v32i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
+#define _to_v32i8_v64i8( x )                                                                       \
+    ( v32i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
 
-#define _to_v16i8_v16i8(x)		(v16i8_t){ (x).v1 }
-#define _to_v16i8_v32i8(x)		(v16i8_t){ _mm256_castsi256_si128((x).v1) }
-#define _to_v16i8_v64i8(x)		(v16i8_t){ _mm256_castsi256_si128((x).v1) }
+#define _to_v16i8_v16i8( x )                                                                       \
+    ( v16i8_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
+#define _to_v16i8_v32i8( x )                                                                       \
+    ( v16i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_castsi256_si128( ( x ).v1 )                                                         \
+    }
+#define _to_v16i8_v64i8( x )                                                                       \
+    ( v16i8_t )                                                                                    \
+    {                                                                                              \
+        _mm256_castsi256_si128( ( x ).v1 )                                                         \
+    }
 
-#define _cast_v2i64_v2i32(x)	(v2i32_t){ (x).v1 }
-#define _cast_v2i32_v2i64(x)	(v2i64_t){ (x).v1 }
+#define _cast_v2i64_v2i32( x )                                                                     \
+    ( v2i32_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
+#define _cast_v2i32_v2i64( x )                                                                     \
+    ( v2i64_t )                                                                                    \
+    {                                                                                              \
+        ( x ).v1                                                                                   \
+    }
 
 #endif /* _VECTOR_H_INCLUDED */
 /**

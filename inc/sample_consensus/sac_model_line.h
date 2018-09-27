@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2008 Radu Bogdan Rusu <rusu -=- cs.tum.edu>
  *
  * All rights reserved.
@@ -33,52 +33,67 @@
 #ifndef _SAMPLE_CONSENSUS_SACMODELLINE_H_
 #define _SAMPLE_CONSENSUS_SACMODELLINE_H_
 
-#include <sample_consensus/sac_model.h>
 #include <sample_consensus/model_types.h>
+#include <sample_consensus/sac_model.h>
 
 /** \brief Define the maximum number of iterations for selecting 2 unique points */
 #define MAX_ITERATIONS_UNIQUE 1000
 
 namespace sample_consensus
 {
-  /** \brief A Sample Consensus Model class for 3D line segmentation.
-    */
-  class SACModelLine : public SACModel
-  {
-    public:
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      /** \brief Constructor for base SACModelLine. */
-      SACModelLine () { }
+/** \brief A Sample Consensus Model class for 3D line segmentation.
+ */
+class SACModelLine : public SACModel
+{
+   public:
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /** \brief Constructor for base SACModelLine. */
+    SACModelLine( )
+    {
+    }
 
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      /** \brief Destructor for base SACModelLine. */
-      virtual ~SACModelLine () { }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /** \brief Destructor for base SACModelLine. */
+    virtual ~SACModelLine( )
+    {
+    }
 
-      virtual void getSamples (int &iterations, std::vector<int> &samples);
+    virtual void getSamples( int &iterations, std::vector<int> &samples );
 
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      /** \brief Test whether the given model coefficients are valid given the input point cloud data.
-        * \param model_coefficients the model coefficients that need to be tested
-        * \todo implement this
-        */
-      bool testModelCoefficients (const std::vector<double> &model_coefficients) { return true; }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /** \brief Test whether the given model coefficients are valid given the input point cloud data.
+     * \param model_coefficients the model coefficients that need to be tested
+     * \todo implement this
+     */
+    bool testModelCoefficients( const std::vector<double> &model_coefficients )
+    {
+        return true;
+    }
 
-      virtual bool computeModelCoefficients (const std::vector<int> &samples);
+    virtual bool computeModelCoefficients( const std::vector<int> &samples );
 #if 0
       virtual void refitModel (const std::vector<int> &inliers, std::vector<double> &refit_coefficients);
 #endif
-      virtual void getDistancesToModel (const std::vector<double> &model_coefficients, std::vector<double> &distances);
-      virtual void selectWithinDistance (const std::vector<double> &model_coefficients, double threshold, std::vector<int> &inliers);
+    virtual void getDistancesToModel( const std::vector<double> &model_coefficients,
+                                      std::vector<double> &distances );
+    virtual void selectWithinDistance( const std::vector<double> &model_coefficients,
+                                       double threshold, std::vector<int> &inliers );
 
-      virtual void projectPoints (const std::vector<int> &inliers, const std::vector<double> &model_coefficients, sensor_msgs::PointCloud &projected_points);
+    virtual void projectPoints( const std::vector<int> &inliers,
+                                const std::vector<double> &model_coefficients,
+                                sensor_msgs::PointCloud &projected_points );
 
-      virtual void projectPointsInPlace (const std::vector<int> &inliers, const std::vector<double> &model_coefficients);
-      virtual bool doSamplesVerifyModel (const std::set<int> &indices, double threshold);
+    virtual void projectPointsInPlace( const std::vector<int> &inliers,
+                                       const std::vector<double> &model_coefficients );
+    virtual bool doSamplesVerifyModel( const std::set<int> &indices, double threshold );
 
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      /** \brief Return an unique id for this model (SACMODEL_LINE). */
-      virtual int getModelType () { return (SACMODEL_LINE); }
-  };
-}
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /** \brief Return an unique id for this model (SACMODEL_LINE). */
+    virtual int getModelType( )
+    {
+        return ( SACMODEL_LINE );
+    }
+};
+} // namespace sample_consensus
 
 #endif

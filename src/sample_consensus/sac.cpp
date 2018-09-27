@@ -36,32 +36,32 @@ using namespace sample_consensus;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /** \brief return the point cloud representing a set of given indices.
-  * \param indices a set of indices that represent the data that we're interested in */
-sensor_msgs::PointCloud
-  SAC::getPointCloud (std::vector<int> indices)
+ * \param indices a set of indices that represent the data that we're interested in */
+sensor_msgs::PointCloud SAC::getPointCloud( std::vector<int> indices )
 {
-  sensor_msgs::PointCloud i_points;
+    sensor_msgs::PointCloud i_points;
 
-  // Allocate enough space
-  i_points.points.resize (indices.size ());
-  i_points.set_channels_size (sac_model_->getCloud ()->get_channels_size ());
+    // Allocate enough space
+    i_points.points.resize( indices.size( ) );
+    i_points.set_channels_size( sac_model_->getCloud( )->get_channels_size( ) );
 
-  // Create the channels
-  for (unsigned int d = 0; d < i_points.get_channels_size (); d++)
-  {
-    i_points.channels[d].name = sac_model_->getCloud ()->channels[d].name;
-    i_points.channels[d].values.resize (indices.size ());
-  }
+    // Create the channels
+    for ( unsigned int d = 0; d < i_points.get_channels_size( ); d++ )
+    {
+        i_points.channels[ d ].name = sac_model_->getCloud( )->channels[ d ].name;
+        i_points.channels[ d ].values.resize( indices.size( ) );
+    }
 
-  // Copy the data
-  for (unsigned int i = 0; i < i_points.points.size (); i++)
-  {
-    i_points.points[i].x = sac_model_->getCloud ()->points[indices.at (i)].x;
-    i_points.points[i].y = sac_model_->getCloud ()->points[indices.at (i)].y;
-    i_points.points[i].z = sac_model_->getCloud ()->points[indices.at (i)].z;
-    for (unsigned int d = 0; d < i_points.get_channels_size (); d++)
-      i_points.channels[d].values[i] = sac_model_->getCloud ()->channels[d].values[indices.at (i)];
-  }
+    // Copy the data
+    for ( unsigned int i = 0; i < i_points.points.size( ); i++ )
+    {
+        i_points.points[ i ].x = sac_model_->getCloud( )->points[ indices.at( i ) ].x;
+        i_points.points[ i ].y = sac_model_->getCloud( )->points[ indices.at( i ) ].y;
+        i_points.points[ i ].z = sac_model_->getCloud( )->points[ indices.at( i ) ].z;
+        for ( unsigned int d = 0; d < i_points.get_channels_size( ); d++ )
+            i_points.channels[ d ].values[ i ] =
+                sac_model_->getCloud( )->channels[ d ].values[ indices.at( i ) ];
+    }
 
-  return (i_points);
+    return ( i_points );
 }

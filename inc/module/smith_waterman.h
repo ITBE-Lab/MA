@@ -7,57 +7,54 @@
 #ifndef SMITH_WATERMAN
 #define SMITH_WATERMAN
 
-#include "module/module.h"
 #include "container/alignment.h"
+#include "module/module.h"
 
 namespace libMA
 {
-    class SMW: public Module
+class SMW : public Module
+{
+   public:
+    bool bBacktrack = true;
+    DEBUG( bool bPrint = false; ) // DEBUG
+
+    SMW( bool bBacktrack ) : bBacktrack( bBacktrack )
     {
-    public:
-        bool bBacktrack = true;
-        DEBUG(
-            bool bPrint = false;
-        )//DEBUG
+    } // constructor
 
-        SMW(bool bBacktrack)
-                :
-            bBacktrack(bBacktrack)
-        {}//constructor
+    // overload
+    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 
-        //overload
-        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+    /**
+     * @brief Used to check the input of execute.
+     * @details
+     * Returns:
+     * - NucSeq
+     * - Pack
+     */
+    ContainerVector EXPORTED getInputType( ) const;
 
-        /**
-         * @brief Used to check the input of execute.
-         * @details
-         * Returns:
-         * - NucSeq
-         * - Pack
-         */
-        ContainerVector EXPORTED getInputType() const;
+    /**
+     * @brief Used to check the output of execute.
+     * @details
+     * Returns:
+     * - ContainerVector(Alignment)
+     */
+    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
 
-        /**
-         * @brief Used to check the output of execute.
-         * @details
-         * Returns:
-         * - ContainerVector(Alignment)
-         */
-        std::shared_ptr<Container> EXPORTED getOutputType() const;
-
-        std::string getName() const
-        {
-            return "SMW";
-        }
-    };//class
-}//namespace libMA
+    std::string getName( ) const
+    {
+        return "SMW";
+    }
+}; // class
+} // namespace libMA
 
 #ifdef WITH_PYTHON
 /**
  * @brief export the smith waterman @ref Module "modules" to python.
  * @ingroup export
  */
-void exportSMW();
+void exportSMW( );
 #endif
 
 #endif

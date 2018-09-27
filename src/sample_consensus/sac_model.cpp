@@ -30,30 +30,30 @@
 
 /** \author Radu Bogdan Rusu */
 
-#include <algorithm>
 #include <sample_consensus/sac_model.h>
+#include <algorithm>
 
 namespace sample_consensus
 {
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /** \brief Remove the inliers found from the initial set of given point indices. */
-  int
-    SACModel::removeInliers ()
-  {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/** \brief Remove the inliers found from the initial set of given point indices. */
+int SACModel::removeInliers( )
+{
     // The point indices used for computing the current model are in indices_
     // What we need to do is subtract the Inliers
     std::vector<int> remaining_indices;
 
     // Sort the inliers and the point cloud indices
-    std::sort (best_inliers_.begin (), best_inliers_.end ());
-    std::sort (indices_.begin (), indices_.end ());
+    std::sort( best_inliers_.begin( ), best_inliers_.end( ) );
+    std::sort( indices_.begin( ), indices_.end( ) );
 
-    set_difference (indices_.begin (), indices_.end (), best_inliers_.begin (), best_inliers_.end (),
-                    inserter (remaining_indices, remaining_indices.begin ()));
+    set_difference( indices_.begin( ), indices_.end( ), best_inliers_.begin( ),
+                    best_inliers_.end( ),
+                    inserter( remaining_indices, remaining_indices.begin( ) ) );
 
     indices_ = remaining_indices;
 
 
-    return indices_.size ();
-  }
+    return indices_.size( );
 }
+} // namespace sample_consensus

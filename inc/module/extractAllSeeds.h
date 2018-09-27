@@ -1,4 +1,4 @@
-/** 
+/**
  * @file extractAllSeeds.h
  * @brief Implements ExtractAllSeeds.
  * @author Markus Schmidt
@@ -11,66 +11,67 @@
 
 namespace libMA
 {
+/**
+ * @brief Extracts all Seeds from a SegmentList.
+ * @ingroup module
+ */
+class ExtractAllSeeds : public Module
+{
+   public:
     /**
-     * @brief Extracts all Seeds from a SegmentList.
-     * @ingroup module
+     * @brief the maximal ambiguity a extracted seed shall have.
+     * @details
+     * Will skip any segments that would lead to more than maxAmbiguity seeds.
      */
-    class ExtractAllSeeds: public Module
+    unsigned int maxAmbiguity = defaults::uiMaxAmbiguity;
+    /**
+     * @brief the minimal seed length required
+     * @details
+     * Will skip any segments that are shorter than uiMinLen.
+     */
+    unsigned int uiMinLen = defaults::uiMinLen;
+
+    ExtractAllSeeds( )
     {
-    public:
-        /**
-         * @brief the maximal ambiguity a extracted seed shall have.
-         * @details
-         * Will skip any segments that would lead to more than maxAmbiguity seeds.
-         */
-        unsigned int maxAmbiguity = defaults::uiMaxAmbiguity;
-        /**
-         * @brief the minimal seed length required
-         * @details
-         * Will skip any segments that are shorter than uiMinLen.
-         */
-        unsigned int uiMinLen = defaults::uiMinLen;
+    } // default constructor
 
-        ExtractAllSeeds(){}//default constructor
+    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
 
-        std::shared_ptr<Container> EXPORTED execute(std::shared_ptr<ContainerVector> vpInput);
+    /**
+     * @brief Used to check the input of execute.
+     * @details
+     * Returns:
+     * - SegmentVector
+     * - FMIndex
+     */
+    ContainerVector EXPORTED getInputType( ) const;
 
-        /**
-         * @brief Used to check the input of execute.
-         * @details
-         * Returns:
-         * - SegmentVector
-         * - FMIndex
-         */
-        ContainerVector EXPORTED getInputType() const;
+    /**
+     * @brief Used to check the output of execute.
+     * @details
+     * Returns:
+     * - Seeds
+     */
+    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
 
-        /**
-         * @brief Used to check the output of execute.
-         * @details
-         * Returns:
-         * - Seeds
-         */
-        std::shared_ptr<Container> EXPORTED getOutputType() const;
+    std::string getName( ) const
+    {
+        return "ExtractAllSeeds";
+    }
 
-        std::string getName() const
-        {
-            return "ExtractAllSeeds";
-        }
-
-        std::string getFullDesc() const
-        {
-            return std::string("ExtractAllSeeds(") + 
-                std::to_string(maxAmbiguity) + ")";
-        }//function
-    };//class
-}//namespace libMA
+    std::string getFullDesc( ) const
+    {
+        return std::string( "ExtractAllSeeds(" ) + std::to_string( maxAmbiguity ) + ")";
+    } // function
+}; // class
+} // namespace libMA
 
 #ifdef WITH_PYTHON
 /**
  * @brief export the ExtractAllSeeds @ref Module "module" to python.
  * @ingroup export
  */
-void exportExtractAllSeeds();
+void exportExtractAllSeeds( );
 #endif
 
 #endif

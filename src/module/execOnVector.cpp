@@ -1,4 +1,4 @@
-/** 
+/**
  * @file execOnVector.cpp
  * @author Markus Schmidt
  */
@@ -8,99 +8,93 @@
 
 using namespace libMA;
 
-ContainerVector ExecOnVec::getInputType() const
+ContainerVector ExecOnVec::getInputType( ) const
 {
-    std::shared_ptr<ContainerVector> pVec(new ContainerVector(pModule->getInputType()[0]));
+    std::shared_ptr<ContainerVector> pVec( new ContainerVector( pModule->getInputType( )[ 0 ] ) );
 
-    ContainerVector vRet = pModule->getInputType();
-    vRet[0] = pVec;
+    ContainerVector vRet = pModule->getInputType( );
+    vRet[ 0 ] = pVec;
 
     return vRet;
-}//function
+} // function
 
-std::shared_ptr<Container> ExecOnVec::getOutputType() const
+std::shared_ptr<Container> ExecOnVec::getOutputType( ) const
 {
-    return std::shared_ptr<Container>(new ContainerVector(pModule->getOutputType()));
-}//function
+    return std::shared_ptr<Container>( new ContainerVector( pModule->getOutputType( ) ) );
+} // function
 
-std::shared_ptr<Container> ExecOnVec::execute(std::shared_ptr<ContainerVector> vpInput)
+std::shared_ptr<Container> ExecOnVec::execute( std::shared_ptr<ContainerVector> vpInput )
 {
     // vp input is organized to following way: first a vector then single elements.
     // each element of the first vector shall be executed with all following elements
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
-        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[0])); // dc
+        std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 0 ] ) ); // dc
 
-    DEBUG_2(
-        std::cout << "executing on: " << pInVec->size() << std::endl;
-    )
+    DEBUG_2( std::cout << "executing on: " << pInVec->size( ) << std::endl; )
 
     std::shared_ptr<ContainerVector> pResults = std::shared_ptr<ContainerVector>(
-            new ContainerVector(pModule->getOutputType(), pInVec->size())
-        );
+        new ContainerVector( pModule->getOutputType( ), pInVec->size( ) ) );
 
-    if(pInVec->empty())
+    if ( pInVec->empty( ) )
         return pResults;
-    for(unsigned int i = 0; i < pResults->size(); i++)
+    for ( unsigned int i = 0; i < pResults->size( ); i++ )
     {
         // create a input vector and add the first element to it
         // the appropriate element of the vector that is given as first input
-        std::shared_ptr<ContainerVector> vInput(new ContainerVector { (*pInVec)[i] });
+        std::shared_ptr<ContainerVector> vInput( new ContainerVector{( *pInVec )[ i ]} );
         // add all following elements
-        for(unsigned int j = 1; j < vpInput->size(); j++)
-            vInput->push_back((*vpInput)[j]);
-        (*pResults)[i] = pModule->execute(vInput);
-        if((*pResults)[i] == nullptr)
-            std::cerr << pModule->getName() << " deleviered nullpointer as result" << std::endl;
-        if((*pResults)[i] == nullptr)
-            throw NullPointerException("module deleviered nullpointer as result");
-    }//for
+        for ( unsigned int j = 1; j < vpInput->size( ); j++ )
+            vInput->push_back( ( *vpInput )[ j ] );
+        ( *pResults )[ i ] = pModule->execute( vInput );
+        if ( ( *pResults )[ i ] == nullptr )
+            std::cerr << pModule->getName( ) << " deleviered nullpointer as result" << std::endl;
+        if ( ( *pResults )[ i ] == nullptr )
+            throw NullPointerException( "module deleviered nullpointer as result" );
+    } // for
 
-    if(sort && pResults->size() > 1)
+    if ( sort && pResults->size( ) > 1 )
     {
-        //sort ascending
-        std::sort(
-            pResults->begin(), pResults->end(),
-            []
-            (std::shared_ptr<Container> a, std::shared_ptr<Container> b)
-            {
-                assert(a != nullptr);
-                assert(b != nullptr);
-                return a->larger(b);
-            }//lambda
-        );//sort function call
-        assert(pResults->size() <= 1 || !pResults->back()->larger(pResults->front()));
-    }//if
+        // sort ascending
+        std::sort( pResults->begin( ), pResults->end( ),
+                   []( std::shared_ptr<Container> a, std::shared_ptr<Container> b ) {
+                       assert( a != nullptr );
+                       assert( b != nullptr );
+                       return a->larger( b );
+                   } // lambda
+        ); // sort function call
+        assert( pResults->size( ) <= 1 || !pResults->back( )->larger( pResults->front( ) ) );
+    } // if
 
-    if(nMany != 0 && pResults->size() > nMany)
+    if ( nMany != 0 && pResults->size( ) > nMany )
     {
-        //remove the smallest elements
-        pResults->erase(pResults->begin()+nMany, pResults->end());
-        assert(pResults->size() == nMany);
-    }//if
+        // remove the smallest elements
+        pResults->erase( pResults->begin( ) + nMany, pResults->end( ) );
+        assert( pResults->size( ) == nMany );
+    } // if
 
     return pResults;
-}//function
+} // function
 
-ContainerVector Tail::getInputType() const
+ContainerVector Tail::getInputType( ) const
 {
     return ContainerVector{
-                std::shared_ptr<ContainerVector>(new ContainerVector(type)),
-            };
-}//function
+        std::shared_ptr<ContainerVector>( new ContainerVector( type ) ),
+    };
+} // function
 
-std::shared_ptr<Container> Tail::getOutputType() const
+std::shared_ptr<Container> Tail::getOutputType( ) const
 {
     return type;
-}//function
+} // function
 
 
-std::shared_ptr<Container> Tail::execute(std::shared_ptr<ContainerVector> vpInput)
+std::shared_ptr<Container> Tail::execute( std::shared_ptr<ContainerVector> vpInput )
 {
     std::shared_ptr<ContainerVector> pInVec = std::shared_ptr<ContainerVector>(
-        std::dynamic_pointer_cast<ContainerVector>((*vpInput)[0])); // dc
+        std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 0 ] ) ); // dc
 
-    std::shared_ptr<Container> pRet(nullptr);
-    if(pInVec->empty())
+    std::shared_ptr<Container> pRet( nullptr );
+    if ( pInVec->empty( ) )
         return type;
 
     /*
@@ -108,58 +102,38 @@ std::shared_ptr<Container> Tail::execute(std::shared_ptr<ContainerVector> vpInpu
      * since python might delete the input after the function call returned.
      * Since we do not want to copy anything we replace the element.
      *
-     * This should be stated in the description of Tail... 
+     * This should be stated in the description of Tail...
      * sth like: invalidates the input vector
      */
-    pRet.swap(pInVec->back());
-    pInVec->pop_back();
+    pRet.swap( pInVec->back( ) );
+    pInVec->pop_back( );
 
     return pRet;
-}//function
+} // function
 
 #ifdef WITH_PYTHON
-void exportExecOnVector()
+void exportExecOnVector( )
 {
-    //export the ExecOnVec class
-    boost::python::class_<
-            ExecOnVec, 
-            boost::python::bases<Module>,
-            std::shared_ptr<ExecOnVec>
-        >(
-        "ExecOnVec",
-        boost::python::init<std::shared_ptr<Module>, bool, unsigned int>()
-            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
-    )
-        .def(
-            boost::python::init<
-            std::shared_ptr<Module>, bool>()
-            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
-            )
-        .def(
-            boost::python::init<std::shared_ptr<Module>>()
-            //[boost::python::with_custodian_and_ward_postcall<0,1>()]
-            )
-    ;
-    boost::python::implicitly_convertible< 
-        std::shared_ptr<ExecOnVec>,
-        std::shared_ptr<Module> 
-    >();
+    // export the ExecOnVec class
+    boost::python::class_<ExecOnVec, boost::python::bases<Module>, std::shared_ptr<ExecOnVec>>(
+        "ExecOnVec", boost::python::init<std::shared_ptr<Module>, bool, unsigned int>( )
+        //[boost::python::with_custodian_and_ward_postcall<0,1>()]
+        )
+        .def( boost::python::init<std::shared_ptr<Module>, bool>( )
+              //[boost::python::with_custodian_and_ward_postcall<0,1>()]
+              )
+        .def( boost::python::init<std::shared_ptr<Module>>( )
+              //[boost::python::with_custodian_and_ward_postcall<0,1>()]
+        );
+    boost::python::implicitly_convertible<std::shared_ptr<ExecOnVec>, std::shared_ptr<Module>>( );
 
-    //export the Tail class
-    boost::python::class_<
-            Tail, 
-            boost::python::bases<Module>,
-            std::shared_ptr<Tail>
-        >(
-        "Tail",
-        boost::python::init<std::shared_ptr<Container>>()
+    // export the Tail class
+    boost::python::class_<Tail, boost::python::bases<Module>, std::shared_ptr<Tail>>(
+        "Tail", boost::python::init<std::shared_ptr<Container>>( )
         //[
         //    boost::python::with_custodian_and_ward_postcall<0,1>()
         //]
     );
-    boost::python::implicitly_convertible< 
-        std::shared_ptr<Tail>,
-        std::shared_ptr<Module> 
-    >();
-}//function
+    boost::python::implicitly_convertible<std::shared_ptr<Tail>, std::shared_ptr<Module>>( );
+} // function
 #endif
