@@ -26,7 +26,6 @@
 
 namespace libMA
 {
-class Pledge;
 
 /**
  * @defgroup container
