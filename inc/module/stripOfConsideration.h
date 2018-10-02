@@ -17,7 +17,7 @@ namespace libMA
  * @brief Used to quickly find areas with high density of @ref Seed "seeds".
  * @ingroup module
  */
-class StripOfConsideration : public Module
+class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVector, NucSeq, Pack, FMIndex>
 {
   public:
     /// @brief Maximum ambiguity for a seed to be considered.
@@ -56,58 +56,52 @@ class StripOfConsideration : public Module
      */
     bool bSkipLongBWTIntervals = defaults::bSkipLongBWTIntervals;
 
-    inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed &xS )
+    inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed& xS )
     {
         return xS.start_ref( ) + ( uiQueryLength - xS.start( ) );
     } // function
 
-    inline nucSeqIndex getStripSize( nucSeqIndex uiQueryLength, int iMatch, int iExtend,
-                                     int iGap ) const
+    inline nucSeqIndex getStripSize( nucSeqIndex uiQueryLength, int iMatch, int iExtend, int iGap ) const
     {
         if( uiSoCWidth != 0 )
             return uiSoCWidth;
 
-        return ( iMatch * uiQueryLength - iGap ) / iExtend -
-               ( int64_t )( fScoreMinimum * uiQueryLength );
+        return ( iMatch * uiQueryLength - iGap ) / iExtend - ( int64_t )( fScoreMinimum * uiQueryLength );
     } // function
 
     template <class FUNCTOR>
-    inline void forEachNonBridgingSeed( SegmentVector &rSegmentVector, FMIndex &rxFM_index,
-                                        Pack &rxRefSequence,
-                                        FUNCTOR &&fDo, // std::function<void(const Seed &rxS)> fDo,
+    inline void forEachNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
+                                        FUNCTOR&& fDo, // std::function<void(const Seed &rxS)> fDo,
                                         nucSeqIndex addSize = 0 )
     {
-        rSegmentVector.forEachSeed(
-            rxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals,
-            [&rxRefSequence, &rxFM_index, &fDo, &addSize]( Seed &&xS ) {
-                // check if the match is bridging the forward/reverse strand
-                // or bridging between two chromosomes
-                if( !rxRefSequence.bridgingSubsection(
-                        // prevent negative index
-                        xS.start_ref( ) > addSize ? xS.start_ref( ) - addSize : 0, // from
-                        // prevent index larger than reference
-                        xS.end_ref( ) + addSize <= rxFM_index.getRefSeqLength( )
-                            ? xS.size( ) - 1 + addSize
-                            : rxFM_index.getRefSeqLength( ) - xS.start_ref( ) - 1 // to
-                        ) )
-                {
-                    // if non-bridging use this seed
-                    fDo( xS );
-                } // if
-                // returning true since we want to continue extracting seeds
-                return true;
-            } // lambda
+        rSegmentVector.forEachSeed( rxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals,
+                                    [&rxRefSequence, &rxFM_index, &fDo, &addSize]( Seed&& xS ) {
+                                        // check if the match is bridging the forward/reverse strand
+                                        // or bridging between two chromosomes
+                                        if( !rxRefSequence.bridgingSubsection(
+                                                // prevent negative index
+                                                xS.start_ref( ) > addSize ? xS.start_ref( ) - addSize : 0, // from
+                                                // prevent index larger than reference
+                                                xS.end_ref( ) + addSize <= rxFM_index.getRefSeqLength( )
+                                                    ? xS.size( ) - 1 + addSize
+                                                    : rxFM_index.getRefSeqLength( ) - xS.start_ref( ) - 1 // to
+                                                ) )
+                                        {
+                                            // if non-bridging use this seed
+                                            fDo( xS );
+                                        } // if
+                                        // returning true since we want to continue extracting seeds
+                                        return true;
+                                    } // lambda
         );
     } // method
 
 
-    inline void emplaceAllNonBridgingSeed( SegmentVector &rSegmentVector, FMIndex &rxFM_index,
-                                           Pack &rxRefSequence, Seeds &rvSeedVector,
-                                           const nucSeqIndex uiQLen )
+    inline void emplaceAllNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
+                                           Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
-        rSegmentVector.emplaceAllEachSeeds(
-            rxFM_index, uiMaxAmbiguity, uiMinLen, rvSeedVector,
-            [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]( ) {
+        rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiMaxAmbiguity, uiMinLen, rvSeedVector,
+                                            [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]( ) {
         /*
          * @note this bridging check is not required since we check weather a SoC
          * is brigding in general.
@@ -140,16 +134,16 @@ class StripOfConsideration : public Module
                     }// else
 #endif
 #elif DELTA_CACHE == ( 1 )
-                rvSeedVector.back( ).uiDelta =
-                    getPositionForBucketing( uiQLen, rvSeedVector.back( ) );
+                                                rvSeedVector.back( ).uiDelta =
+                                                    getPositionForBucketing( uiQLen, rvSeedVector.back( ) );
 #endif
 #if CONTIG_ID_CACHE == ( 1 )
-                rvSeedVector.back( ).uiContigId =
-                    rxRefSequence.uiSequenceIdForPosition( rvSeedVector.back( ).start_ref( ) );
+                                                rvSeedVector.back( ).uiContigId = rxRefSequence.uiSequenceIdForPosition(
+                                                    rvSeedVector.back( ).start_ref( ) );
 #endif
-                // returning true since we want to continue extracting seeds
-                return true;
-            } // lambda
+                                                // returning true since we want to continue extracting seeds
+                                                return true;
+                                            } // lambda
         );
     } // method
 
@@ -157,38 +151,13 @@ class StripOfConsideration : public Module
     StripOfConsideration( ) : fGiveUp( defaults::fGiveUp )
     {} // default constructor
 
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
-
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - SegmentVector
-     * - Seeds
-     * - NucSeq
-     * - Pack
-     * - FMIndex
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * - ContainerVector(Seeds)
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    std::string getName( ) const
-    {
-        return "StripOfConsideration";
-    }
-
-    std::string getFullDesc( ) const
-    {
-        return "StripOfConsideration(" + std::to_string( uiMaxAmbiguity ) + "," +
-               std::to_string( fScoreMinimum ) + "," + std::to_string( fGiveUp ) + "," + ")";
-    } // function
+    virtual std::shared_ptr<SoCPriorityQueue> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
+                                                                std::shared_ptr<NucSeq>
+                                                                    pQuerySeq,
+                                                                std::shared_ptr<Pack>
+                                                                    pRefSeq,
+                                                                std::shared_ptr<FMIndex>
+                                                                    pFM_index );
 }; // class
 
 

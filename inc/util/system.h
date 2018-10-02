@@ -42,7 +42,7 @@ void PrintMemoryInfo( DWORD processID );
 /* Meta function for measuring durations of function executions.
  * Using count() applied to the returned object we get the time in seconds.
  */
-template <class FUNCTOR> std::chrono::duration<double> metaMeasureDuration( FUNCTOR &&f )
+template <class FUNCTOR> std::chrono::duration<double> metaMeasureDuration( FUNCTOR&& f )
 { /* record start time
    */
     auto start = std::chrono::high_resolution_clock::now( );
@@ -55,16 +55,15 @@ template <class FUNCTOR> std::chrono::duration<double> metaMeasureDuration( FUNC
 } // meta function
 
 template <bool bLog, class FUNCTOR>
-void metaMeasureAndLogDuration( const std::string &sLogText, // additional logging text
-                                FUNCTOR &&f // the functor called for measuring execution time
+void metaMeasureAndLogDuration( const std::string& sLogText, // additional logging text
+                                FUNCTOR&& f // the functor called for measuring execution time
 )
 {
     if( bLog )
     { /* Measure duration and log.
        */
         auto xDuration = metaMeasureDuration( std::forward<FUNCTOR>( f ) );
-        std::cout << sLogText << " required " << xDuration.count( ) * 1000 << " milliseconds."
-                  << std::endl;
+        std::cout << sLogText << " required " << xDuration.count( ) * 1000 << " milliseconds." << std::endl;
     } // if
     else
     { /* Simply call the functor.
@@ -74,7 +73,7 @@ void metaMeasureAndLogDuration( const std::string &sLogText, // additional loggi
 } // meta function
 
 #if _MSC_VER
-template <class TP_FUNC_APPLY> __int64 time_call_( TP_FUNC_APPLY &&f )
+template <class TP_FUNC_APPLY> __int64 time_call_( TP_FUNC_APPLY&& f )
 {
     __int64 begin = GetTickCount( );
     f( );
@@ -82,7 +81,7 @@ template <class TP_FUNC_APPLY> __int64 time_call_( TP_FUNC_APPLY &&f )
 } // function
 
 #elif __GNUC__
-template <class TP_FUNC_APPLY> timespec time_call_( TP_FUNC_APPLY &&f )
+template <class TP_FUNC_APPLY> timespec time_call_( TP_FUNC_APPLY&& f )
 {
     timespec startTime, endTime, differenceTime;
 
@@ -112,9 +111,28 @@ template <class TP_FUNC_APPLY> timespec time_call_( TP_FUNC_APPLY &&f )
 #endif
 
 #ifdef __GNUC__
-std::string timeAsString( const timespec &time );
+std::string timeAsString( const timespec& time );
 #endif
 
 #ifdef _MSC_VER
-std::string timeAsString( const __int64 &time );
+std::string timeAsString( const __int64& time );
+#endif
+
+// taken from: https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
+#ifdef __GNUG__
+#include <cstdlib>
+#include <cxxabi.h>
+#include <memory>
+std::string demangle( const char* name )
+{
+    int status = -4; // some arbitrary value to eliminate the compiler warning
+    std::unique_ptr<char, void ( * )( void* )> res{abi::__cxa_demangle( name, NULL, NULL, &status ), std::free};
+    return ( status == 0 ) ? res.get( ) : name;
+} // function
+#else
+// does nothing if not g++
+std::string demangle( const char* name )
+{
+    return name;
+} // function
 #endif

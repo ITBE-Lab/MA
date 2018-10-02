@@ -8,10 +8,12 @@
 #define SUPPORT_H
 
 #include "util/debug.h"
+#include "util/system.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stdlib.h>
 #include <string>
@@ -134,23 +136,40 @@ template <size_t c, template <size_t> class Func> struct TemplateLoop
         if( !TemplateLoop<c - 1, Func>::iterate( rParams... ) )
             return false;
         return Func<c - 1>( )( rParams... );
-    }
-};
+    } // method
+}; // struct
 
 template <template <size_t> class Func> struct TemplateLoop<1, Func>
 {
     template <typename... TP_PARAMS> static bool iterate( TP_PARAMS&... rParams )
     {
         return Func<0>( )( rParams... );
-    }
-};
-// This makes is possible to have loops that are executed 0 times
+    } // method
+}; // struct
+
 template <template <size_t> class Func> struct TemplateLoop<0, Func>
 {
     template <typename... TP_PARAMS> static bool iterate( TP_PARAMS&... rParams )
     {
         return true;
-    }
-};
+    } // method
+}; // struct
+
+template <class X> std::string type_name( X* pType )
+{
+    if( pType == nullptr )
+        return "[static type] " + demangle( typeid( X ).name( ) );
+    return "[dynamic type] " + demangle( typeid( *pType ).name( ) );
+} // function
+
+template <class X> std::string type_name( std::shared_ptr<X> pType )
+{
+    return type_name( pType.get( ) );
+} // function
+
+template <class X> std::string type_name( )
+{
+    return type_name<X>( nullptr );
+} // function
 
 #endif

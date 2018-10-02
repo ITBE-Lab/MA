@@ -6,44 +6,7 @@
 
 using namespace libMA;
 
-ContainerVector FileReader::getInputType( ) const
-{
-    return ContainerVector{std::shared_ptr<Container>( new Nil( ) )};
-} // function
-
-std::shared_ptr<Container> FileReader::getOutputType( ) const
-{
-    return std::shared_ptr<Container>( new NucSeq( ) );
-} // function
-
-size_t len( std::string &sLine )
-{
-    size_t uiLineSize = sLine.length( );
-    while( uiLineSize > 0 && sLine[ uiLineSize - 1 ] != 'A' && sLine[ uiLineSize - 1 ] != 'C' &&
-           sLine[ uiLineSize - 1 ] != 'T' && sLine[ uiLineSize - 1 ] != 'G' &&
-           sLine[ uiLineSize - 1 ] != 'N' && sLine[ uiLineSize - 1 ] != 'a' &&
-           sLine[ uiLineSize - 1 ] != 'c' && sLine[ uiLineSize - 1 ] != 't' &&
-           sLine[ uiLineSize - 1 ] != 'g' && sLine[ uiLineSize - 1 ] != 'n' )
-        uiLineSize--;
-    return uiLineSize;
-}
-
-#if USE_BUFFERED_ASYNC_READER == 1
-std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    /*
-     * Has next and next require synchronized access.
-     * This is done by the module synchronization.
-     */
-    if( pFile->hasNext( ) )
-        return pFile->next( );
-
-    // if we reach this point we have read all content of the file
-    return Nil::pEoFContainer;
-} // function
-#else
-
-std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector> vpInput )
+std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<Container> )
 {
     // std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
     std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
@@ -54,7 +17,7 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
         std::string sLine = "";
         safeGetline( sLine );
         if( sLine.size( ) == 0 )
-            throw AlignerException( "Invalid line in fasta" );
+            throw AnnotatedException( "Invalid line in fasta" );
         ;
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
@@ -72,8 +35,7 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
                 if( character == 'N' || character == 'n' )
                 {
                     if( uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine
-                                  << " contains Ns! line: " << uiNumLinesRead
+                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << uiNumLinesRead
                                   << " (this is only printed once)" << std::endl;
                     uiNumLinesWithNs++;
                     continue;
@@ -84,7 +46,7 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
                 if( !bOkay )
                 {
                     std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
-                    throw AlignerException( "Invalid symbol in fasta" );
+                    throw AnnotatedException( "Invalid symbol in fasta" );
                 } // if
             } // for
                    ) // DEBUG
@@ -93,7 +55,7 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
             // uiLineSize uint8_t's with value 127
             std::vector<uint8_t> xQuality( uiLineSize, 126 );
 #endif
-            pRet->vAppend( (const uint8_t *)sLine.c_str( ),
+            pRet->vAppend( (const uint8_t*)sLine.c_str( ),
 #if WITH_QUALITY == 1
                            xQuality.data( ),
 #endif
@@ -104,6 +66,8 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
         // run self tests for the nucSeq
         DEBUG_2( std::cout << pRet->fastaq( ) << std::endl; ) // DEBUG_2
         DEBUG( pRet->check( ); )
+        if( pFile->eof( ) )
+            this->setFinished( );
         return pRet;
     } // if
 #if WITH_QUALITY == 1
@@ -126,7 +90,7 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
                 continue;
             size_t uiLineSize = len( sLine );
             std::vector<uint8_t> xQuality( uiLineSize, 126 ); // uiLineSize uint8_t's with value 127
-            pRet->vAppend( (const uint8_t *)sLine.c_str( ), xQuality.data( ), uiLineSize );
+            pRet->vAppend( (const uint8_t*)sLine.c_str( ), xQuality.data( ), uiLineSize );
         } // while
         pRet->vTranslateToNumericFormUsingTable( pRet->xNucleotideTranslationTable, 0 );
         // quality
@@ -139,6 +103,8 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
                 pRet->quality( i + uiPos ) = (uint8_t)sLine[ i ];
             uiPos += uiLineSize;
         } // while
+        if( pFile->eof( ) )
+            this->setFinished( );
         return pRet;
     } // if
 #else
@@ -148,7 +114,7 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
         std::string sLine = "";
         safeGetline( sLine );
         if( sLine.size( ) == 0 )
-            throw AlignerException( "Invalid line in fastq" );
+            throw AnnotatedException( "Invalid line in fastq" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
@@ -165,8 +131,7 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
                 if( character == 'N' || character == 'n' )
                 {
                     if( uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine
-                                  << " contains Ns! line: " << uiNumLinesRead
+                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << uiNumLinesRead
                                   << " (this is only printed once)" << std::endl;
                     uiNumLinesWithNs++;
                     continue;
@@ -177,34 +142,36 @@ std::shared_ptr<Container> FileReader::execute( std::shared_ptr<ContainerVector>
                 if( !bOkay )
                 {
                     std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
-                    throw AlignerException( "Invalid symbol in fastq" );
+                    throw AnnotatedException( "Invalid symbol in fastq" );
                 } // if
             } // for
                    ) // DEBUG
             size_t uiLineSize = len( sLine );
             uiNumChars += uiLineSize;
-            pRet->vAppend( (const uint8_t *)sLine.c_str( ), uiLineSize );
+            pRet->vAppend( (const uint8_t*)sLine.c_str( ), uiLineSize );
         } // while
         pRet->vTranslateToNumericFormUsingTable( pRet->xNucleotideTranslationTable, 0 );
         // quality
         safeGetline( sLine );
         if( sLine.size( ) != 1 || sLine[ 0 ] != '+' )
-            throw AlignerException( "Invalid line in fastq" );
+            throw AnnotatedException( "Invalid line in fastq" );
         while( pFile->good( ) && !pFile->eof( ) && uiNumChars > 0 )
         {
             safeGetline( sLine );
             uiNumChars -= sLine.size( );
         } // while
         // if(pFile->good() && !pFile->eof() && pFile->peek() != '@')
-        //    throw AlignerException("Invalid line in fastq");
+        //    throw AnnotatedException("Invalid line in fastq");
+        if( pFile->eof( ) )
+            this->setFinished( );
         return pRet;
     } // if
 #endif
     // if we reach this point we have read all content of the file
-    return Nil::pEoFContainer;
+    throw AnnotatedException( "Tried to read query past EoF" );
 } // function
-#endif
 
+#if 0
 ContainerVector PairedFileReader::getInputType( ) const
 {
     return ContainerVector{std::shared_ptr<Container>( new Nil( ) )};
@@ -227,6 +194,7 @@ std::shared_ptr<Container> PairedFileReader::execute( std::shared_ptr<ContainerV
         return Nil::pEoFContainer;
     return pRet;
 } // function
+#endif
 
 #ifdef WITH_PYTHON
 void exportFileReader( )
@@ -241,11 +209,9 @@ void exportFileReader( )
     boost::python::implicitly_convertible<std::shared_ptr<FileReader>, std::shared_ptr<Module>>( );
 
 
-    boost::python::
-        class_<PairedFileReader, boost::python::bases<Module>, std::shared_ptr<PairedFileReader>>(
-            "PairedFileReader", boost::python::init<std::string, std::string>( ) );
-    boost::python::implicitly_convertible<std::shared_ptr<PairedFileReader>,
-                                          std::shared_ptr<Module>>( );
+    boost::python::class_<PairedFileReader, boost::python::bases<Module>, std::shared_ptr<PairedFileReader>>(
+        "PairedFileReader", boost::python::init<std::string, std::string>( ) );
+    boost::python::implicitly_convertible<std::shared_ptr<PairedFileReader>, std::shared_ptr<Module>>( );
 
 } // function
 #endif

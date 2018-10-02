@@ -31,7 +31,7 @@ template <typename T> class Interval
     /**
      * @brief Copys from another Interval.
      */
-    Interval( const Interval &c ) : iStart( c.iStart ), iSize( c.iSize )
+    Interval( const Interval& c ) : iStart( c.iStart ), iSize( c.iSize )
     {} // copy constructor
 
     /**
@@ -168,13 +168,13 @@ template <typename T> class Interval
             return start( );
         if( i == 1 )
             return end( );
-        throw NullPointerException( "can only access index 0 and 1 of interval" );
+        throw AnnotatedException( "can only access index 0 and 1 of interval" );
     } // operator
 
     /*
      * @brief copys from another Interval.
      */
-    inline Interval &operator=( const Interval &rxOther )
+    inline Interval& operator=( const Interval& rxOther )
     {
         iStart = rxOther.iStart;
         iSize = rxOther.iSize;
@@ -185,7 +185,7 @@ template <typename T> class Interval
      * @brief compares two Intervals.
      * @returns true if start and size are equal, false otherwise.
      */
-    inline bool operator==( const Interval &rxOther )
+    inline bool operator==( const Interval& rxOther )
     {
         return iStart == rxOther.iStart && iSize == rxOther.iSize;
     } // operator

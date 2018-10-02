@@ -151,14 +151,12 @@ const std::string sHelp =
  * main function
  * @todo order of parameters seems to matter.. fix that
  */
-int main( int argc, char *argv[] )
+int main( int argc, char* argv[] )
 {
     Options options( "MA", "\t\t===== The Modular Aligner =====" );
     options.add_options( )( "h,help", "Display the complete help screen" )(
         "t,threads", "Number of threads",
-        value<unsigned int>( )->default_value(
-            std::to_string( std::thread::hardware_concurrency( ) ) ),
-        "arg     " );
+        value<unsigned int>( )->default_value( std::to_string( std::thread::hardware_concurrency( ) ) ), "arg     " );
 
     if( argc <= 1 )
     {
@@ -179,12 +177,10 @@ int main( int argc, char *argv[] )
                     defaults::configureFast( );
             } // if
 
-        options.add_options( "Alignment options (requires -a)" )(
-            "i,in", "Input file(s) as (multi-)fasta(-q)", value<std::vector<std::string>>( ),
-            "args" )( "o,out", "Output file as SAM",
-                      value<std::string>( )->default_value( "stdout" ) )(
-            "m,mode", "Pre-setting [fast/acc]",
-            value<std::string>( )->default_value( defaults::sParameterSet ) )(
+        options.add_options( "Alignment options (requires -a)" )( "i,in", "Input file(s) as (multi-)fasta(-q)",
+                                                                  value<std::vector<std::string>>( ), "args" )(
+            "o,out", "Output file as SAM", value<std::string>( )->default_value( "stdout" ) )(
+            "m,mode", "Pre-setting [fast/acc]", value<std::string>( )->default_value( defaults::sParameterSet ) )(
             "s,seedSet", "Seeding strategy [SMEMs/maxSpanning]",
             value<std::string>( )->default_value( defaults::sSeedSet ) )(
             "n,reportN", "Report up to N alignments; 0: unlimited",
@@ -200,42 +196,31 @@ int main( int argc, char *argv[] )
             "minTries", "Min num SoC",
             value<unsigned int>( )->default_value( std::to_string( defaults::uiMinTries ) ) )(
             "minRefSize", "ref size switch",
-            value<unsigned long long>( )->default_value(
-                std::to_string( defaults::uiGenomeSizeDisable ) ) )( "d,noDP", "Disable DP" )(
-            "Match", "DP match score.",
-            value<int>( )->default_value( std::to_string( defaults::iMatch ) ) )(
+            value<unsigned long long>( )->default_value( std::to_string( defaults::uiGenomeSizeDisable ) ) )(
+            "d,noDP", "Disable DP" )( "Match", "DP match score.",
+                                      value<int>( )->default_value( std::to_string( defaults::iMatch ) ) )(
             "MisMatch", "DP mismatch penalty.",
             value<int>( )->default_value( std::to_string( defaults::iMissMatch ) ) )(
-            "Gap", "DP gap open penalty.",
-            value<int>( )->default_value( std::to_string( defaults::iGap ) ) )(
-            "Extend", "DP gap extend penalty.",
-            value<int>( )->default_value( std::to_string( defaults::iExtend ) ) )(
-            "Gap2", "DP gap open penalty.",
-            value<int>( )->default_value( std::to_string( defaults::iGap2 ) ) )(
-            "Extend2", "DP gap extend penalty.",
-            value<int>( )->default_value( std::to_string( defaults::iExtend2 ) ) )(
-            "x,idx", "Do FMD-index generation",
-            value<std::string>( ) )( "genIndex", "Do FMD-index generation" )(
-            "SoCWidth", "SoC width",
-            value<unsigned int>( )->default_value( std::to_string( defaults::uiSoCWidth ) ) )(
+            "Gap", "DP gap open penalty.", value<int>( )->default_value( std::to_string( defaults::iGap ) ) )(
+            "Extend", "DP gap extend penalty.", value<int>( )->default_value( std::to_string( defaults::iExtend ) ) )(
+            "Gap2", "DP gap open penalty.", value<int>( )->default_value( std::to_string( defaults::iGap2 ) ) )(
+            "Extend2", "DP gap extend penalty.", value<int>( )->default_value( std::to_string( defaults::iExtend2 ) ) )(
+            "x,idx", "Do FMD-index generation", value<std::string>( ) )( "genIndex", "Do FMD-index generation" )(
+            "SoCWidth", "SoC width", value<unsigned int>( )->default_value( std::to_string( defaults::uiSoCWidth ) ) )(
             "disableHeuristics", "disable all heuristics",
             value<bool>( )->default_value( defaults::bDisableHeuristics ? "true" : "false" ) )(
-            "maxDeltaDist", "",
-            value<double>( )->default_value( std::to_string( defaults::dMaxDeltaDist ) ) )(
-            "minDeltaDist", "",
-            value<uint64_t>( )->default_value( std::to_string( defaults::uiMinDeltaDist ) ) )(
+            "maxDeltaDist", "", value<double>( )->default_value( std::to_string( defaults::dMaxDeltaDist ) ) )(
+            "minDeltaDist", "", value<uint64_t>( )->default_value( std::to_string( defaults::uiMinDeltaDist ) ) )(
             "maxOverlapSupp", "",
-            value<double>( )->default_value(
-                std::to_string( defaults::dMaxOverlapSupplementary ) ) );
+            value<double>( )->default_value( std::to_string( defaults::dMaxOverlapSupplementary ) ) );
 
         options.add_options( "Paired Reads options (requires either -U or -N)" )(
             "p,paUni", "Enable paired alignment; Distance as uniform distribution" )(
             "P,paNorm", "Enable paired alignment; Distance as normal distribution" )(
             "paIsolate", "Penalty for unpaired alignments",
             value<unsigned int>( )->default_value( std::to_string( defaults::uiUnpaired ) ),
-            "arg    " )(
-            "paMean", "Gap distance mean",
-            value<unsigned int>( )->default_value( std::to_string( defaults::uiMean ) ) )(
+            "arg    " )( "paMean", "Gap distance mean",
+                         value<unsigned int>( )->default_value( std::to_string( defaults::uiMean ) ) )(
             "paStd", "Gap distance standard deviation",
             value<double>( )->default_value( std::to_string( defaults::fStd ) ) )(
             "db_conninfo", "db_conninfo", value<std::string>( )->default_value( "" ) )(
@@ -366,13 +351,11 @@ int main( int argc, char *argv[] )
              *
              */
             // setup the alignment input
-            std::shared_ptr<Pledge> pPack(
-                new Pledge( std::shared_ptr<Container>( new Pack( ) ) ) );
+            std::shared_ptr<Pledge> pPack( new Pledge( std::shared_ptr<Container>( new Pack( ) ) ) );
             std::shared_ptr<Pack> pPack_( new Pack( ) );
             pPack_->vLoadCollection( sGenome );
             pPack->set( pPack_ );
-            std::shared_ptr<Pledge> pFMDIndex(
-                new Pledge( std::shared_ptr<Container>( new FMIndex( ) ) ) );
+            std::shared_ptr<Pledge> pFMDIndex( new Pledge( std::shared_ptr<Container>( new FMIndex( ) ) ) );
             std::shared_ptr<FMIndex> pFMDIndex_( new FMIndex( ) );
             pFMDIndex_->vLoadFMIndex( sGenome );
             pFMDIndex->set( pFMDIndex_ );
@@ -387,13 +370,12 @@ int main( int argc, char *argv[] )
             }
             else if( aIn.size( ) == 2 )
             {
-                pReader =
-                    std::shared_ptr<PairedFileReader>( new PairedFileReader( aIn[ 0 ], aIn[ 1 ] ) );
+                pReader = std::shared_ptr<PairedFileReader>( new PairedFileReader( aIn[ 0 ], aIn[ 1 ] ) );
                 pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
             }
             else
             {
-                throw AlignerException( "Cannot have more than two inputs!" );
+                throw AnnotatedException( "Cannot have more than two inputs!" );
             } // else
             std::vector<std::shared_ptr<Module>> vOut;
 #ifdef WITH_POSTGRES
@@ -402,9 +384,8 @@ int main( int argc, char *argv[] )
                 if( iRunId == -1 )
                 {
                     DbRunConnection xConn( sBbOutput );
-                    auto xRes = xConn.exec(
-                        "INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING "
-                        "id" );
+                    auto xRes = xConn.exec( "INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING "
+                                            "id" );
                     iRunId = std::stoi( xRes.get( 0, 0 ) );
                 } // setupConn scope
                 for( size_t uiI = 0; uiI < uiT; uiI++ )
@@ -441,29 +422,32 @@ int main( int argc, char *argv[] )
             // run the alignment
             size_t uiLastProg = 0;
             std::mutex xPrintMutex;
-            Pledge::simultaneousGet(
-                aGraphSinks,
-                [&]( ) {
-                    std::lock_guard<std::mutex> xGuard( xPrintMutex );
-                    size_t uiCurrProg =
-                        ( 1000 * pReader->getCurrPosInFile( ) ) / pReader->getFileSize( );
-                    if( uiCurrProg > uiLastProg )
-                    {
-                        std::cerr << " " << static_cast<double>( uiCurrProg ) / 10
-                                  << "% aligned.     " << '\r' << std::flush;
-                        uiLastProg = uiCurrProg;
-                    } // if
-                } // lambda
+            Pledge::simultaneousGet( aGraphSinks,
+                                     [&]( ) {
+                                         std::lock_guard<std::mutex> xGuard( xPrintMutex );
+                                         size_t uiCurrProg =
+                                             ( 1000 * pReader->getCurrPosInFile( ) ) / pReader->getFileSize( );
+                                         if( uiCurrProg > uiLastProg )
+                                         {
+                                             std::cerr << " " << static_cast<double>( uiCurrProg ) / 10
+                                                       << "% aligned.     " << '\r' << std::flush;
+                                             uiLastProg = uiCurrProg;
+                                         } // if
+                                     } // lambda
             );
             std::cerr << "100% aligned.     " << std::endl;
         } // if
     } // try
-    catch( const OptionException &ex )
+    catch( const OptionException& ex )
     {
         std::cerr << ex.what( ) << std::endl;
         std::cout << sHelp << std::endl;
     } // catch
-    catch( std::runtime_error &ex )
+    catch( std::runtime_error& ex )
+    {
+        std::cerr << ex.what( ) << std::endl;
+    } // catch
+    catch( std::exception& ex )
     {
         std::cerr << ex.what( ) << std::endl;
     } // catch

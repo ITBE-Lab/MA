@@ -9,34 +9,18 @@ using namespace libMA;
 using namespace libMA::defaults;
 extern int iMatch;
 
-ContainerVector MappingQuality::getInputType( ) const
-{
-    return ContainerVector{std::shared_ptr<Container>( new NucSeq( ) ),
-                           std::shared_ptr<Container>( new ContainerVector(
-                               std::shared_ptr<Alignment>( new Alignment( ) ) ) )};
-} // function
 
-std::shared_ptr<Container> MappingQuality::getOutputType( ) const
+std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::execute(
+    std::shared_ptr<NucSeq> pQuery, std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments )
 {
-    return std::shared_ptr<Container>(
-        new ContainerVector( std::shared_ptr<Alignment>( new Alignment( ) ) ) );
-} // function
-
-std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    std::shared_ptr<NucSeq> pQuery = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 0 ] ); // dc
-    std::shared_ptr<ContainerVector> pAlignments =
-        std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 1 ] ); // dc
-    auto pSupplementaries = std::make_shared<ContainerVector>( std::make_shared<Alignment>( ) );
+    auto pSupplementaries = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
 
     // if no alignment was found we cannot set any quality...
     if( pAlignments->size( ) == 0 )
-        return std::shared_ptr<ContainerVector>(
-            new ContainerVector( std::shared_ptr<Alignment>( new Alignment( ) ) ) );
+        return std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
 
     // compute the mapping quality for the best alignment
-    std::shared_ptr<Alignment> pFirst =
-        std::dynamic_pointer_cast<Alignment>( ( *pAlignments )[ 0 ] ); // dc
+    std::shared_ptr<Alignment> pFirst = std::dynamic_pointer_cast<Alignment>( ( *pAlignments )[ 0 ] ); // dc
     pFirst->bSecondary = false;
 
     // set the mapping quality for all alignments to zero
@@ -52,8 +36,7 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
         } // if
         std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>( pAlign ); // dc
         pCasted->fMappingQuality = 0.0;
-        if( uiSupplementaries < uiMaxSupplementaryPerPrim &&
-            pCasted->overlap( *pFirst ) < dMaxOverlapSupplementary )
+        if( uiSupplementaries < uiMaxSupplementaryPerPrim && pCasted->overlap( *pFirst ) < dMaxOverlapSupplementary )
         {
             pCasted->bSupplementary = true;
             pCasted->bSecondary = false;
@@ -82,8 +65,8 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
         if( pFirst->score( ) == 0 )
             pFirst->fMappingQuality = 0;
         else
-            pFirst->fMappingQuality = static_cast<double>( pFirst->score( ) - pSecond->score( ) ) /
-                                      static_cast<double>( pFirst->score( ) );
+            pFirst->fMappingQuality =
+                static_cast<double>( pFirst->score( ) - pSecond->score( ) ) / static_cast<double>( pFirst->score( ) );
     } // if
     else
         // the score of the second best alignment is 0 if we do not even find one...
@@ -101,9 +84,7 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
         } // for
         // move supplementary alignments forward
         std::sort( pAlignments->begin( ), pAlignments->end( ),
-                   []( std::shared_ptr<Container> a, std::shared_ptr<Container> b ) {
-                       return a->larger( b );
-                   } // lambda
+                   []( std::shared_ptr<Container> a, std::shared_ptr<Container> b ) { return a->larger( b ); } // lambda
         ); // sort function call
     } // if
 
@@ -114,7 +95,7 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
     // 0.01); pFirst->fMappingQuality *= dA;
 
     /// maybe this should be moved into it's own module but whatever...
-    auto pRet = std::shared_ptr<ContainerVector>( new ContainerVector( pAlignments ) );
+    auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( pAlignments );
     if( uiReportNBest != 0 && pRet->size( ) > uiReportNBest + uiSupplementaries )
     {
         // remove the smallest elements
@@ -125,8 +106,7 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
     // remove secondary with too small scores
     while( pRet->size( ) > 1 )
     {
-        std::shared_ptr<Alignment> pCasted =
-            std::dynamic_pointer_cast<Alignment>( pRet->back( ) ); // dc
+        std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>( pRet->back( ) ); // dc
         if( !pCasted->bSecondary )
             break;
         if( pCasted->score( ) >= pFirst->score( ) * fMinSecScoreRatio )
@@ -141,12 +121,11 @@ std::shared_ptr<Container> MappingQuality::execute( std::shared_ptr<ContainerVec
 void exportMappingQuality( )
 {
     // export the MappingQuality class
-    boost::python::class_<MappingQuality, boost::python::bases<Module>,
-                          std::shared_ptr<MappingQuality>>( "MappingQuality" )
+    boost::python::class_<MappingQuality, boost::python::bases<Module>, std::shared_ptr<MappingQuality>>(
+        "MappingQuality" )
         .def_readwrite( "report_n", &MappingQuality::uiReportNBest )
         .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
 
-    boost::python::implicitly_convertible<std::shared_ptr<MappingQuality>,
-                                          std::shared_ptr<Module>>( );
+    boost::python::implicitly_convertible<std::shared_ptr<MappingQuality>, std::shared_ptr<Module>>( );
 } // function
 #endif

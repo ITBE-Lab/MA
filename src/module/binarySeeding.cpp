@@ -31,28 +31,27 @@ DEBUG( extern bool bAnalyzeHeuristics; ) // DEBUG
  *        save the perfect match for later clustering
  */
 void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
-                                    std::shared_ptr<SegmentVector> pSegmentVector,
-                                    std::shared_ptr<FMIndex> pFM_index,
-                                    std::shared_ptr<NucSeq> pQuerySeq )
+                                    std::shared_ptr<SegmentVector>
+                                        pSegmentVector,
+                                    std::shared_ptr<FMIndex>
+                                        pFM_index,
+                                    std::shared_ptr<NucSeq>
+                                        pQuerySeq )
 {
     while( true )
     {
-        DEBUG_2( std::cout << "interval (" << xAreaToCover.start( ) << "," << xAreaToCover.end( )
-                           << ")" << std::endl; )
+        DEBUG_2( std::cout << "interval (" << xAreaToCover.start( ) << "," << xAreaToCover.end( ) << ")" << std::endl; )
 
         Interval<nucSeqIndex> xAreaCovered;
         // performs extension and records any found seeds
         // here we use bLrExtension to choose the extension scheme
         if( bLrExtension )
-            xAreaCovered = maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq,
-                                                       pSegmentVector );
+            xAreaCovered = maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector );
         else
-            xAreaCovered =
-                smemExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector );
+            xAreaCovered = smemExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector );
 
-        DEBUG_2( std::cout << "splitting interval (" << xAreaToCover.start( ) << ","
-                           << xAreaToCover.end( ) << ") at (" << xAreaCovered.start( ) << ","
-                           << xAreaCovered.end( ) << ")" << std::endl; )
+        DEBUG_2( std::cout << "splitting interval (" << xAreaToCover.start( ) << "," << xAreaToCover.end( ) << ") at ("
+                           << xAreaCovered.start( ) << "," << xAreaCovered.end( ) << ")" << std::endl; )
 
         // if the extension did not fully cover until uiStart:
         if( xAreaCovered.start( ) != 0 && xAreaToCover.start( ) + 1 < xAreaCovered.start( ) )
@@ -60,15 +59,13 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
             // enqueue procesInterval() for a new interval that spans from uiStart to
             // where the extension stopped
             procesInterval(
-                Interval<nucSeqIndex>( xAreaToCover.start( ),
-                                       xAreaCovered.start( ) - xAreaToCover.start( ) - 1 ),
+                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) - 1 ),
                 pSegmentVector, pFM_index, pQuerySeq );
         } // if
         // if the extension did not fully cover until uiEnd:
         if( xAreaToCover.end( ) > xAreaCovered.end( ) + 1 )
         {
-            xAreaToCover.set( xAreaCovered.end( ) + 1,
-                              xAreaToCover.end( ) - xAreaCovered.end( ) - 1 );
+            xAreaToCover.set( xAreaCovered.end( ) + 1, xAreaToCover.end( ) - xAreaCovered.end( ) - 1 );
             // REPLACED by while loop
             // enqueue procesInterval() for a new interval that spans from where the extension
             // stopped to uiEnd
@@ -85,38 +82,16 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
 } // function
 
 
-ContainerVector BinarySeeding::getInputType( ) const
-{
-    return ContainerVector{
-        // the forward fm_index
-        std::shared_ptr<Container>( new FMIndex( ) ),
-        // the query sequence
-        std::shared_ptr<Container>( new NucSeq( ) ),
-    };
-}
-
-
-std::shared_ptr<Container> BinarySeeding::getOutputType( ) const
-{
-    return std::shared_ptr<Container>( new SegmentVector( ) );
-}
-
-
-std::shared_ptr<Container> BinarySeeding::execute( std::shared_ptr<ContainerVector> vpInput )
+std::shared_ptr<SegmentVector> execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
-    std::shared_ptr<FMIndex> pFM_index =
-        std::dynamic_pointer_cast<FMIndex>( ( *vpInput )[ 0 ] ); // dc
-
-    std::shared_ptr<NucSeq> pQuerySeq = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] );
 
     if( pQuerySeq == nullptr )
         return pSegmentVector;
 
     DEBUG_2( std::cout << pQuerySeq->fastaq( ) << std::endl; )
 
-    procesInterval( Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index,
-                    pQuerySeq );
+    procesInterval( Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq );
 
     /*
      * Observation:
@@ -124,8 +99,7 @@ std::shared_ptr<Container> BinarySeeding::execute( std::shared_ptr<ContainerVect
      * without loosing accuracy
      */
     if( uiMinSeedSizeDrop != 0 &&
-        pSegmentVector->numSeedsLarger( uiMinSeedSizeDrop ) <
-            fRelMinSeedSizeAmount * pQuerySeq->length( ) &&
+        pSegmentVector->numSeedsLarger( uiMinSeedSizeDrop ) < fRelMinSeedSizeAmount * pQuerySeq->length( ) &&
         uiMinGenomeSize < pFM_index->getRefSeqLength( )
 #if DEBUG_LEVEL >= 1
         && !bAnalyzeHeuristics
@@ -140,13 +114,12 @@ std::shared_ptr<Container> BinarySeeding::execute( std::shared_ptr<ContainerVect
 void exportBinarySeeding( )
 {
     // export the BinarySeeding class
-    boost::python::class_<BinarySeeding, boost::python::bases<Module>,
-                          std::shared_ptr<BinarySeeding>>( "BinarySeeding" )
+    boost::python::class_<BinarySeeding, boost::python::bases<Module>, std::shared_ptr<BinarySeeding>>(
+        "BinarySeeding" )
         .def_readwrite( "min_ambiguity", &BinarySeeding::uiMinAmbiguity )
         .def_readwrite( "max_ambiguity", &BinarySeeding::uiMaxAmbiguity )
         .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );
-    boost::python::implicitly_convertible<std::shared_ptr<BinarySeeding>,
-                                          std::shared_ptr<Module>>( );
+    boost::python::implicitly_convertible<std::shared_ptr<BinarySeeding>, std::shared_ptr<Module>>( );
 
 } // function
 #endif

@@ -20,8 +20,8 @@
 /// @endcond
 
 #if DEBUG_LEVEL >= 1
-#define TOMBSTONE_VAL_ALIVE 455234879523
-#define TOMBSTONE_VAL_DEAD 111111111111
+#define TOMBSTONE_VAL_ALIVE 989798979897
+#define TOMBSTONE_VAL_DEAD 102010201020
 #endif
 
 namespace libMA
@@ -53,65 +53,11 @@ class Container
         uiTombStone = TOMBSTONE_VAL_DEAD;
     } // deconstructor
 #endif
-    /**
-     * @returns the type of the container as int.
-     * @brief Used by @ref Module "module" for type checking its Inputs.
-     */
-    volatile bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return true;
-    } // function
 
-    virtual std::string getTypeName( ) const
-    {
-        return "Container";
-    } // function
-
-    virtual std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Container( ) );
-    } // function
-
-    /**
-     * @details
-     * used by ExecOnVec to sort containers in order
-     */
-    virtual bool larger( const std::shared_ptr<Container> other ) const
-    {
-        return false;
-    } // operator
+    virtual void dummy( )
+    {} // make class abstract
 }; // class
 
-
-/**
- * @brief Container that shall represent Null
- * @details
- * Should be used if a module does not require input or produces no ouput.
- * @ingroup container
- */
-class Nil : public Container
-{
-  public:
-    static const std::shared_ptr<Nil> pEoFContainer;
-
-    Nil( )
-    {} // default constructor
-
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return false;
-    } // function
-
-    std::string getTypeName( ) const
-    {
-        return "Nil";
-    } // function
-
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Nil( ) );
-    } // function
-}; // class
 
 /**
  * @brief A vector of containers, that itself is a Container
@@ -123,11 +69,10 @@ class Nil : public Container
  * Could be solved using a template but then how should python deal with this class
  * @ingroup container
  */
-class ContainerVector : public Container
+template <class TP_CONTENT> class ContainerVector : public Container
 {
   public:
-    typedef std::shared_ptr<Container> TP_PTR_CONT;
-    typedef std::vector<TP_PTR_CONT> TP_VEC;
+    typedef std::vector<TP_CONTENT> TP_VEC;
     TP_VEC vContent;
 
     typedef typename TP_VEC::value_type value_type;
@@ -136,80 +81,48 @@ class ContainerVector : public Container
     typedef typename TP_VEC::iterator iterator;
 
 
-    std::shared_ptr<Container> contentType;
+    ContainerVector( std::initializer_list<std::shared_ptr<TP_CONTENT>> init ) : vContent( init )
+    {} // initializer list constructor
 
-    ContainerVector( std::initializer_list<std::shared_ptr<Container>> init )
-        : vContent( init ), contentType( new Container( ) )
-    {
-        contentType = front( )->getType( );
-    } // initializer list constructor
-
-    template <class InputIt>
-    ContainerVector( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
+    template <class InputIt> ContainerVector( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
     {} // iterator constructor
 
-    ContainerVector( ) : vContent( ), contentType( new Container( ) )
+    ContainerVector( ) : vContent( )
     {} // container vector
 
-    ContainerVector( std::shared_ptr<Container> contentType )
-        : vContent( ), contentType( contentType )
+    ContainerVector( std::shared_ptr<TP_CONTENT> contentType ) : vContent( )
     {} // container vector
 
-    ContainerVector( const std::shared_ptr<ContainerVector> pOther )
-        : vContent( pOther->vContent ), contentType( pOther->contentType )
+    ContainerVector( const std::shared_ptr<ContainerVector<TP_CONTENT>> pOther ) : vContent( pOther->vContent )
     {} // container vector
 
-    ContainerVector( std::shared_ptr<std::vector<std::shared_ptr<Container>>> pContent )
-        : vContent( *pContent ), contentType( pContent->front( )->getType( ) )
+    ContainerVector( std::shared_ptr<std::vector<std::shared_ptr<TP_CONTENT>>> pContent ) : vContent( *pContent )
     {} // container vector
 
-    ContainerVector( std::shared_ptr<Container> contentType, size_t numElements )
-        : vContent( numElements ), contentType( contentType )
+    ContainerVector( size_t numElements ) : vContent( numElements )
     {} // container vector
 
-    // delete copy constructor @todo
-    // ContainerVector(const ContainerVector& rOther) = delete;
+    // delete copy constructor
+    ContainerVector( const ContainerVector& rOther ) = delete;
 
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        std::shared_ptr<ContainerVector> casted = std::dynamic_pointer_cast<ContainerVector>( c );
-        if( casted == nullptr )
-            return false;
-        return casted->contentType->getType( )->canCast( contentType->getType( ) );
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "ContainerVector(" + contentType->getTypeName( ) + ")";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        assert( contentType != nullptr );
-        return std::shared_ptr<Container>( new ContainerVector( contentType ) );
-    } // function
-
-    std::vector<std::shared_ptr<Container>> get( )
+    std::vector<std::shared_ptr<TP_CONTENT>> get( )
     {
         return vContent;
     } // function
 
     // setter
-    inline TP_PTR_CONT &operator[]( size_t uiI )
+    inline TP_CONTENT& operator[]( size_t uiI )
     {
         return vContent[ uiI ];
     } // operator
 
     // getter
-    inline const TP_PTR_CONT &operator[]( size_t uiI ) const
+    inline const TP_CONTENT& operator[]( size_t uiI ) const
     {
         return vContent[ uiI ];
     } // operator
 
-    inline void push_back( const TP_PTR_CONT &value )
+    inline void push_back( const TP_CONTENT& value )
     {
         vContent.push_back( value );
     } // method
@@ -219,7 +132,7 @@ class ContainerVector : public Container
         vContent.pop_back( );
     } // method
 
-    template <class... Args> inline void emplace_back( Args &&... args )
+    template <class... Args> inline void emplace_back( Args&&... args )
     {
         vContent.emplace_back( args... );
     } // method
@@ -234,63 +147,63 @@ class ContainerVector : public Container
         return vContent.empty( );
     } // method
 
-    inline TP_PTR_CONT &front( void )
+    inline TP_CONTENT& front( void )
     {
         return vContent.front( );
     } // method
 
-    inline TP_PTR_CONT &back( void )
+    inline TP_CONTENT& back( void )
     {
         return vContent.back( );
     } // method
 
-    inline const TP_PTR_CONT &front( void ) const
+    inline const TP_CONTENT& front( void ) const
     {
         return vContent.front( );
     } // method
 
-    inline const TP_PTR_CONT &back( void ) const
+    inline const TP_CONTENT& back( void ) const
     {
         return vContent.back( );
     } // method
 
-    inline TP_VEC::iterator begin( void ) noexcept
+    inline typename TP_VEC::iterator begin( void ) noexcept
     {
         return vContent.begin( );
     } // method
 
-    inline TP_VEC::iterator end( void ) noexcept
+    inline typename TP_VEC::iterator end( void ) noexcept
     {
         return vContent.end( );
     } // method
 
-    inline TP_VEC::const_iterator begin( void ) const noexcept
+    inline typename TP_VEC::const_iterator begin( void ) const noexcept
     {
         return vContent.begin( );
     } // method
 
-    inline TP_VEC::const_iterator end( void ) const noexcept
+    inline typename TP_VEC::const_iterator end( void ) const noexcept
     {
         return vContent.end( );
     } // method
 
-    inline void erase( TP_VEC::iterator pos )
+    inline void erase( typename TP_VEC::iterator pos )
     {
         vContent.erase( pos );
     } // method
 
-    inline void erase( TP_VEC::iterator first, TP_VEC::iterator last )
+    inline void erase( typename TP_VEC::iterator first, typename TP_VEC::iterator last )
     {
         vContent.erase( first, last );
     } // method
 
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const TP_PTR_CONT &value )
+    inline typename TP_VEC::iterator insert( typename TP_VEC::const_iterator pos, const TP_CONTENT& value )
     {
         return vContent.insert( pos, value );
     } // method
 
     template <class InputIt>
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
+    inline typename TP_VEC::iterator insert( typename TP_VEC::const_iterator pos, InputIt first, InputIt last )
     {
         return vContent.insert( pos, first, last );
     } // method

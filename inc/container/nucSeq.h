@@ -23,9 +23,14 @@ class NucSeq;
 /** 32bit rounding to the next exponent as define
  */
 #ifndef kroundup32
-#define kroundup32( x )                                                                            \
-    ( --( x ), ( x ) |= ( x ) >> 1, ( x ) |= ( x ) >> 2, ( x ) |= ( x ) >> 4, ( x ) |= ( x ) >> 8, \
-      ( x ) |= ( x ) >> 16, ++( x ) )
+#define kroundup32( x )                                                                                                \
+    ( --( x ),                                                                                                         \
+      ( x ) |= ( x ) >> 1,                                                                                             \
+      ( x ) |= ( x ) >> 2,                                                                                             \
+      ( x ) |= ( x ) >> 4,                                                                                             \
+      ( x ) |= ( x ) >> 8,                                                                                             \
+      ( x ) |= ( x ) >> 16,                                                                                            \
+      ++( x ) )
 #endif
 
 /** Generic reverse function, as it occurs in std::algorithms
@@ -40,290 +45,6 @@ template <class T> void reverse( T word[], size_t length )
         word[ length - i - 1 ] = temp;
     } // for
 } // reverse
-// DEPRECATED
-#if 0
-    /** 
-     * @brief Class for the management of sequences (genetic or text).
-     * @details
-     * Special string class, for sequence handling. 
-     */
-    template <class ELEMENT_TYPE>
-    class PlainSequence
-    {
-    private:
-        //friend GeneticSequence; //DEPRECATED
-
-        /** Normally we avoid the copy of PlainSequence Objects, except in the context of the GeneticSequence class.
-         */
-        PlainSequence( const PlainSequence &rSequence )
-        {
-            /** We reset all attributes of our fresh sequence object.
-             */
-            vResetProtectedAttributes();
-
-            /** Now we copy all elements from the source sequence to the current sequence.
-             */
-            vAppend( rSequence.pGetSequenceRef(), rSequence.uxGetSequenceSize() );
-        } // copy constructor
-
-    protected:
-        /** The encapsulated sequence
-         */
-        ELEMENT_TYPE *pxSequenceRef;
-
-        /** Current size of the content of the encapsulated sequence
-         */
-        size_t uiSize;
-
-        /** Current size of the buffer.
-         */
-        size_t uxCapacity;
-
-        /** Resets all protected attributes to its initial values.
-         */
-        inline void vReleaseMemory()
-        {
-            /** Allocated memory will be released!
-             */
-            if ( pxSequenceRef != NULL ) 
-            {
-                free( pxSequenceRef );
-            } // if
-        } // protected method
-
-        void vResetProtectedAttributes()
-        {
-            pxSequenceRef = NULL;
-            uiSize = 0;
-            uxCapacity = 0;
-        } // protected method
-        
-        /** Tries to allocate the requested amount of memory and throws an exception if this process fails.
-         * uxRequestedSize is expressed in "number of requested elements.
-         */
-        void vReserveMemory( size_t uxRequestedSize )
-        {
-            /* TO DO: This should be a bit more sophisticated ...
-            */
-            kroundup32( uxRequestedSize );
-            
-            /* We try to reserve the requested memory.
-            * See: http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
-            */
-            auto pxReallocRef = (ELEMENT_TYPE*)realloc( pxSequenceRef, uxRequestedSize * sizeof(ELEMENT_TYPE) );
-
-            if ( pxReallocRef == NULL )
-            {
-                throw fasta_reader_exception( (std::string( "Memory Reallocation Failed for requested size ") + std::to_string( uxRequestedSize )).c_str() );
-            } // if
-
-            pxSequenceRef = pxReallocRef;
-            uxCapacity = uxRequestedSize;
-        } // method
-        
-    public :
-        PlainSequence() 
-        {
-            vResetProtectedAttributes();
-        } // default constructor
-
-        virtual ~PlainSequence()
-        {
-            /* Release all allocated memory.
-            */
-            vReleaseMemory();
-        } // destructor
-
-        /** This moves the ownership of the protected attributes to another object.
-         * The receiver of pxSequenceRef is responsible for its deletion.
-         */
-        void vTransferOwnership( PlainSequence &rReceivingSequence )
-        {
-            /* We transport the three protected attributes to the receiver ...
-            */
-            rReceivingSequence.pxSequenceRef = this->pxSequenceRef;
-            rReceivingSequence.uiSize = this->uiSize;
-            rReceivingSequence.uxCapacity = this->uxCapacity;
-
-            /* ... and delete the knowledge here
-            */
-            vResetProtectedAttributes();
-        } // protected method
-
-        /** Clears the inner sequence, but does not deallocate the memory.
-         */
-        inline void vClear()
-        {
-            uiSize = 0;
-        } // method
-
-        /** Returns whether the sequence is empty or not.
-         */
-        inline bool bEmpty()
-        {
-            return uiSize == 0;
-        } // method
-
-        inline bool empty() const
-        {
-            return uiSize == 0;
-        } // method
-
-        /** Fast getter and setter for element access.
-         * If assertions activated we do a range check.
-         */
-        inline ELEMENT_TYPE operator[]( size_t uiSubscript ) const
-        {
-            assert( uiSubscript < uiSize );
-            return pxSequenceRef[uiSubscript];
-        } // method (get)
-        inline ELEMENT_TYPE & operator[]( size_t uiSubscript )
-        {
-            assert( uiSubscript < uiSize );
-            return pxSequenceRef[uiSubscript];
-        } // method (set)
-
-        /** Resizes the internal buffer of the sequence to the requested value.
-         */
-        inline void resize( size_t uiRequestedSize ) // throws exception
-        {    /* Check, whether we have enough capacity, if not reserve memory
-            */
-            if ( uxCapacity < uiRequestedSize )
-            {
-                vReserveMemory( uiRequestedSize );
-            } // if
-            
-            uiSize = uiRequestedSize;
-        } // method
-
-        /** Because we want the reference to the sequence private we offer a getter method.
-         * WARNING! Here you can get a null-pointer.
-         */
-        inline const ELEMENT_TYPE* const pGetSequenceRef() const
-        {
-            return this->pxSequenceRef;
-        } // method
-
-        /** Because we want to keep the size private we offer a getter method.
-         */
-        inline const size_t uxGetSequenceSize() const
-        {
-            return this->uiSize;
-        } // method
-
-        inline const size_t length() const
-        {
-            return this->uiSize;
-        } // method
-
-        /** Reverse the elements of the plain sequence.
-         */
-        inline void vReverse()
-        {
-            reverse( pxSequenceRef, uiSize );
-        } // method
-        
-        /** WARNING: the inner string might not null-terminated after this operation.
-         */
-        inline PlainSequence& vAppend( const ELEMENT_TYPE* pSequence, size_t uxNumberOfElements )
-        {
-            size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
-
-            if ( uxCapacity < uxRequestedSize )
-            {
-                vReserveMemory ( uxRequestedSize );
-            } // if
-
-            /** WARNING: If we work later with non 8-bit data we have to be careful here
-             */
-            memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof(ELEMENT_TYPE) );
-
-            uiSize = uxRequestedSize;
-
-            return *this;
-        } // method
-
-        /** Push back of a single symbol.
-         */
-        inline void push_back( const ELEMENT_TYPE xElement )
-        {
-            if ( this->uiSize >= this->uxCapacity )
-            {
-                vReserveMemory( this->uiSize + 1 );
-            } // if
-
-            pxSequenceRef[uiSize + 1] = xElement;
-            uiSize++;
-        } // method
-
-        /** Compares two sequences for equality
-         */
-        inline bool equal(const PlainSequence &rOtherSequence)
-        {
-            if ( this->uiSize == rOtherSequence.uiSize )
-            {
-                return memcmp(this->pxSequenceRef, rOtherSequence.pxSequenceRef, sizeof(ELEMENT_TYPE) * uiSize ) == 0;
-            } // if
-            
-            return false;
-        } // method
-    }; // class PlainSequence
-#endif
-
-// DEPRECATED
-#if 0
-    /** 
-     * @brief a sequence of chars.
-     * @details
-     * This call was exclusively build for the fasta-reader.
-     * It shall boost performance for long inputs.
-     */
-    class TextSequence : public PlainSequence<char>
-    {
-    public :
-        TextSequence() : PlainSequence<char>()
-        {
-        } // default constructor
-
-        TextSequence( const char* pcString ) : PlainSequence<char>()
-        {
-                vAppend(pcString );
-        } // text constructor
-
-        /** Terminates the inner string in the C-style using a null-character and
-            * returns a reference to the location of the inner string.
-            */
-        inline char* cString()
-        {
-                if ( uxCapacity < this->uiSize + 1 )
-                {
-                        vReserveMemory ( this->uiSize + 1 );
-                } // if
-
-                this->pxSequenceRef[this->uiSize] = '\0';
-
-                return pxSequenceRef;
-        } // method
-
-        inline void vAppend( const char &pcChar )
-        {
-                if ( uxCapacity < ( this->uiSize + 1 ) )
-                {
-                        vReserveMemory ( this->uiSize + 1 );
-                } // if
-
-                this->pxSequenceRef[this->uiSize] = pcChar;
-                this->uiSize++;
-        } // method
-
-        /* Appends the content of pcString to the current buffer
-            */
-        inline void vAppend( const char* pcString )
-        {
-                PlainSequence<char>::vAppend( pcString, strlen( pcString ) );
-        } // method
-    }; // class
-#endif
 
 #define WITH_QUALITY ( 0 )
 
@@ -338,9 +59,9 @@ class NucSeq : public Container
   public:
     /** The encapsulated sequence
      */
-    uint8_t *pxSequenceRef;
+    uint8_t* pxSequenceRef;
 #if WITH_QUALITY
-    uint8_t *pxQualityRef;
+    uint8_t* pxQualityRef;
 #endif
 
     /** Current size of the content of the encapsulated sequence
@@ -389,11 +110,9 @@ class NucSeq : public Container
          * See:
          * http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
          */
-        auto pxReallocRef =
-            (uint8_t *)realloc( pxSequenceRef, uxRequestedSize * sizeof( uint8_t ) );
+        auto pxReallocRef = (uint8_t*)realloc( pxSequenceRef, uxRequestedSize * sizeof( uint8_t ) );
 #if WITH_QUALITY
-        auto pxReallocRef2 =
-            (uint8_t *)realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
+        auto pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
 #endif
 
 
@@ -403,9 +122,8 @@ class NucSeq : public Container
 #endif
         )
         {
-            throw fasta_reader_exception(
-                ( std::string( "Memory Reallocation Failed for requested size " ) +
-                  std::to_string( uxRequestedSize ) )
+            throw AnnotatedException(
+                ( std::string( "Memory Reallocation Failed for requested size " ) + std::to_string( uxRequestedSize ) )
                     .c_str( ) );
         } // if
 
@@ -434,7 +152,7 @@ class NucSeq : public Container
     /** Constructor that get the initial content of the sequence in text form.
      * FIX ME: This can be done a bit more efficient via the GeneticSequence class.
      */
-    NucSeq( const std::string &rsInitialText )
+    NucSeq( const std::string& rsInitialText )
     {
         vResetProtectedAttributes( );
         vAppend( rsInitialText.c_str( ) );
@@ -450,7 +168,7 @@ class NucSeq : public Container
     /** Move constructor on the foundation of text sequences.
      * Reuses the space of the text-sequence! TO DO: move & to &&
      */
-    NucSeq( NucSeq &rSequence )
+    NucSeq( NucSeq& rSequence )
     {
         vResetProtectedAttributes( );
         /* We strip the given sequence of its content and move it to our new sequence.
@@ -461,13 +179,13 @@ class NucSeq : public Container
 
 
     /** is implicitly deleted by geneticSequence but boost python needs to know */
-    NucSeq( const NucSeq & ) = delete;
+    NucSeq( const NucSeq& ) = delete;
 
 
     /** This moves the ownership of the protected attributes to another object.
      * The receiver of pxSequenceRef is responsible for its deletion.
      */
-    void vTransferOwnership( NucSeq &rReceivingSequence )
+    void vTransferOwnership( NucSeq& rReceivingSequence )
     {
         /* We transport the three protected attributes to the receiver ...
          */
@@ -510,14 +228,14 @@ class NucSeq : public Container
         assert( uiSubscript < uiSize );
         return pxSequenceRef[ uiSubscript ];
     } // method (get)
-    inline uint8_t &operator[]( size_t uiSubscript )
+    inline uint8_t& operator[]( size_t uiSubscript )
     {
         assert( uiSubscript < uiSize );
         return pxSequenceRef[ uiSubscript ];
     } // method (set)
 
 #if WITH_QUALITY
-    inline uint8_t &quality( size_t uiSubscript )
+    inline uint8_t& quality( size_t uiSubscript )
     {
         assert( uiSubscript < uiSize );
         return pxQualityRef[ uiSubscript ];
@@ -546,7 +264,7 @@ class NucSeq : public Container
     /** Because we want the reference to the sequence private we offer a getter method.
      * WARNING! Here you can get a null-pointer.
      */
-    inline const uint8_t *const pGetSequenceRef( ) const
+    inline const uint8_t* const pGetSequenceRef( ) const
     {
         return this->pxSequenceRef;
     } // method
@@ -577,9 +295,9 @@ class NucSeq : public Container
 
     /** WARNING: the inner string might not null-terminated after this operation.
      */
-    inline NucSeq &vAppend( const uint8_t *pSequence,
+    inline NucSeq& vAppend( const uint8_t* pSequence,
 #if WITH_QUALITY
-                            const uint8_t *pQuality,
+                            const uint8_t* pQuality,
 #endif
                             size_t uxNumberOfElements )
     {
@@ -625,12 +343,11 @@ class NucSeq : public Container
 
     /** Compares two sequences for equality
      */
-    inline bool equal( const NucSeq &rOtherSequence )
+    inline bool equal( const NucSeq& rOtherSequence )
     {
         if( this->uiSize == rOtherSequence.uiSize )
         {
-            return memcmp( this->pxSequenceRef, rOtherSequence.pxSequenceRef,
-                           sizeof( uint8_t ) * uiSize ) == 0;
+            return memcmp( this->pxSequenceRef, rOtherSequence.pxSequenceRef, sizeof( uint8_t ) * uiSize ) == 0;
         } // if
         return false;
     } // method
@@ -678,8 +395,7 @@ class NucSeq : public Container
 
     /** transforms the character representation into a representation on the foundation of digits.
      */
-    inline void vTranslateToNumericFormUsingTable( const unsigned char *alphabetTranslationTable,
-                                                   size_t uxStartIndex )
+    inline void vTranslateToNumericFormUsingTable( const unsigned char* alphabetTranslationTable, size_t uxStartIndex )
     {
         for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
         {
@@ -709,8 +425,7 @@ class NucSeq : public Container
     {
         for( size_t uxIterator = uxStartIndex; uxIterator < uiSize; uxIterator++ )
         {
-            pxSequenceRef[ uxIterator ] =
-                (uint8_t)translateACGTCodeToCharacter( pxSequenceRef[ uxIterator ] );
+            pxSequenceRef[ uxIterator ] = (uint8_t)translateACGTCodeToCharacter( pxSequenceRef[ uxIterator ] );
         } // for
     } // method
 
@@ -742,7 +457,7 @@ class NucSeq : public Container
     {
         if( uxPosition >= uiSize )
         {
-            throw fasta_reader_exception( "Index out of range" );
+            throw AnnotatedException( "Index out of range" );
         } // if
 
         return translateACGTCodeToCharacter( pxSequenceRef[ uxPosition ] );
@@ -755,14 +470,14 @@ class NucSeq : public Container
     {
         if( uxPosition >= uiSize )
         {
-            throw fasta_reader_exception( "Index out of range" );
+            throw AnnotatedException( "Index out of range" );
         } // if
 
         return translateACGTCodeToCharacter( nucleotideComplement( pxSequenceRef[ uxPosition ] ) );
     } // method
     /** Appends a string containing nucleotides as text and automatically translates the symbols.
      */
-    void vAppend( const char *pcString )
+    void vAppend( const char* pcString )
     {
         size_t uxSizeBeforeAppendOperation = this->uiSize;
 #if WITH_QUALITY
@@ -772,19 +487,18 @@ class NucSeq : public Container
 
         /* WARNING! char and uint8_t must have the same size or we get a serious problem here!
          */
-        vAppend( (const uint8_t *)pcString,
+        vAppend( (const uint8_t*)pcString,
 #if WITH_QUALITY
                  xQuality.data( ),
 #endif
                  strlen( pcString ) );
 
-        vTranslateToNumericFormUsingTable( xNucleotideTranslationTable,
-                                           uxSizeBeforeAppendOperation );
+        vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
     } // method
 
     /** wrapper for boost
      */
-    void vAppend_boost( const char *pcString )
+    void vAppend_boost( const char* pcString )
     {
         vAppend( pcString );
     } // method
@@ -881,9 +595,9 @@ class NucSeq : public Container
             if( pxSequenceRef[ i ] > 4 )
             {
                 // if was not allow print error and throw exception
-                std::cerr << "Having invalid character in string: '" << pxSequenceRef[ i ]
-                          << "' at position: " << i << " full fastaq: " << fastaq( ) << std::endl;
-                throw AlignerException( "Found invalid character in nucSeq." );
+                std::cerr << "Having invalid character in string: '" << pxSequenceRef[ i ] << "' at position: " << i
+                          << " full fastaq: " << fastaq( ) << std::endl;
+                throw AnnotatedException( "Found invalid character in nucSeq." );
             } // if
         } // for
     } // method
@@ -906,8 +620,7 @@ class NucSeq : public Container
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
         for( size_t i = 0; i < vRet.size( ); i++ )
-            vRet[ bReversed ? vRet.size( ) - ( i + 1 ) : i ] =
-                aTranslate[ pxSequenceRef[ i + uiFrom ] ];
+            vRet[ bReversed ? vRet.size( ) - ( i + 1 ) : i ] = aTranslate[ pxSequenceRef[ i + uiFrom ] ];
 
         DEBUG_3( for( size_t i = 0; i < vRet.size( ); i++ ) std::cout << (int)vRet[ i ] << " ";
                  std::cout << std::endl; ) // DEBUG

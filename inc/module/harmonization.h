@@ -1,6 +1,6 @@
 /**
- * @file linesweep.h
- * @brief Implements the linesweep @ref Module "module"
+ * @file harmonization.h
+ * @brief Implements the harmonization @ref Module "module"
  * @author Markus Schmidt
  */
 #ifndef LINESWEEP_H
@@ -16,13 +16,13 @@
 namespace libMA
 {
 /**
- * @brief Implements the LinearLineSweep algorithm.
+ * @brief Implements the Harmonization algorithm.
  * @ingroup module
  * @details
  * Removes all contradicting seeds.
  * This should only be used in combination with the StripOfConsideration module.
  */
-class LinearLineSweep : public Module
+class Harmonization : public Module<Seeds, false, SoCPriorityQueue, NucSeq>
 {
   private:
     /**
@@ -49,10 +49,10 @@ class LinearLineSweep : public Module
         /**
          * @brief Copy constructor
          */
-        ShadowInterval( const ShadowInterval &rOther ) : Interval( rOther ), pSeed( rOther.pSeed )
+        ShadowInterval( const ShadowInterval& rOther ) : Interval( rOther ), pSeed( rOther.pSeed )
         {} // copy constructor
 
-        bool within( const ShadowInterval &rOther )
+        bool within( const ShadowInterval& rOther )
         {
             return start( ) >= rOther.start( ) && end( ) <= rOther.end( );
         } // function
@@ -66,11 +66,10 @@ class LinearLineSweep : public Module
      * therefore it is provided as individual function.
      */
     std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> EXPORTED
-    linesweep( std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
-                   pShadows,
+    linesweep( std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> pShadows,
                const int64_t uiRStart, const double fAngle );
 
-    inline double deltaDistance( const Seed &rSeed, const double fAngle, const int64_t uiRStart )
+    inline double deltaDistance( const Seed& rSeed, const double fAngle, const int64_t uiRStart )
     {
         double y = rSeed.start_ref( ) + rSeed.start( ) / std::tan( PI / 2 - fAngle );
         double x = ( y - uiRStart ) * std::sin( fAngle );
@@ -79,7 +78,7 @@ class LinearLineSweep : public Module
         return std::abs( x - x_1 );
     } // method
 
-    std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds> &pIn ) const;
+    std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds>& pIn ) const;
 
   public:
     /**
@@ -142,49 +141,22 @@ class LinearLineSweep : public Module
 
     size_t uiSVPenalty = defaults::uiSVPenalty;
 
-    LinearLineSweep( )
+    Harmonization( )
     {} // default constructor
 
     // overload
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> pInput );
+    virtual std::shared_ptr<ContainerVector<Seeds>> EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCIn,
+                                                                      std::shared_ptr<NucSeq> pQuery );
 
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - Seeds
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * - Seeds
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    std::string getName( ) const
-    {
-        return "LineSweep2";
-    }
-
-    std::string getFullDesc( ) const
-    {
-        return std::string( "LineSweep2(" ) + std::to_string( optimisticGapEstimation ) + "," +
-               std::to_string( fMinimalQueryCoverage ) + "," + std::to_string( fScoreTolerace ) +
-               "," + std::to_string( uiMaxEqualScoreLookahead ) + "," +
-               std::to_string( fScoreDiffTolerance ) + "," + std::to_string( uiMaxTries ) + ")";
-    } // function
 }; // class
 } // namespace libMA
 
 #ifdef WITH_PYTHON
 /**
- * @brief Exposes the LineSweep @ref Module "module" to boost python.
+ * @brief Exposes the Harmonization @ref Module "module" to boost python.
  * @ingroup export
  */
-void exportLinesweep( );
+void exportHarmonization( );
 #endif
 
 #endif

@@ -10,14 +10,17 @@
 #include "util/threadPool.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
-#include <iostream>
 #ifdef WITH_PYTHON
 #include <Python.h>
 #include <boost/python/list.hpp>
 #endif
+
 #include "util/default_parameters.h"
+#include <bitset>
 #include <chrono>
 #include <ctime>
+#include <iostream>
+#include <typeinfo>
 /// @endcond
 
 #define PYTHON_MODULES_IN_COMP_GRAPH ( false )
@@ -27,29 +30,30 @@
  */
 namespace libMA
 {
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++
+ * 4. Unpack a tuple to call a matching function.
+ * FIX ME: Better naming scheme, more documentation.
+ * http://stackoverflow.com/questions/7858817/unpacking-a-tuple-to-call-a-matching-function-pointer
+ */
+template <int...> struct seq
+{};
+
+template <int N, int... S> struct gens : gens<N - 1, N - 1, S...>
+{};
+
+template <int... S> struct gens<0, S...>
+{
+    typedef seq<S...> type;
+};
+
+
 /**
  * @defgroup module
  * @brief All classes implementing some algorithm.
  * @details
  * These classes should all inherit from Module.
  */
-
-class Pledge;
-
-
-/**
- * @brief Checks weather the given container has the expected type.
- * @details
- * This requires a function since we have types like any of none.
- */
-bool EXPORTED typeCheck( std::shared_ptr<Container> pData, std::shared_ptr<Container> pExpected );
-
-/**
- * @brief Checks weather given containers have the expected types.
- * @details
- * This requires a function since we have types like any of none.
- */
-bool EXPORTED typeCheck( ContainerVector vData, ContainerVector vExpected );
 
 /**
  * @brief Abstract class intended for the implementaiton of various algorithms.
@@ -58,152 +62,79 @@ bool EXPORTED typeCheck( ContainerVector vData, ContainerVector vExpected );
  * @see the Python implementation of @ref MA.aligner.Module "module".
  * @ingroup module
  */
-class Module
+template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> class Module
 {
+  private:
+    std::bitset<1> xFlags;
+    static constexpr size_t uiFinishedFlag = 0;
+
+  public:
+    typedef TP_RETURN_ TP_RETURN;
+    static constexpr bool IS_VOLATILE = IS_VOLATILE_;
+    static constexpr size_t NUM_ARGUMENTS = sizeof...( TP_ARGUMENTS );
+    typedef std::tuple<std::shared_ptr<TP_ARGUMENTS>...> TP_TUPLE_ARGS;
+
+  private:
+    template <size_t IDX> struct ArgNamesCollector
+    {
+        bool operator( )( std::string& sArgNames, TP_TUPLE_ARGS& rArgs )
+        {
+            sArgNames += type_name( std::get<IDX>( rArgs ) ) + ", ";
+            return true;
+        } // operator
+    }; // struct
+
   public:
     /**
      * @brief Execute the implemented algorithm.
      * @details
      * Expects the given containers to have the correct types.
      */
-    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> pInput )
+    virtual std::shared_ptr<TP_RETURN> EXPORTED execute( std::shared_ptr<TP_ARGUMENTS>... args )
     {
+        std::string sArgNames;
+        auto rTup = std::make_tuple( args... );
+        TemplateLoop<NUM_ARGUMENTS, ArgNamesCollector>::iterate( sArgNames, rTup );
+        throw AnnotatedException( type_name( this ) + " did not implement execute with return type: " +
+                                  type_name<TP_RETURN>( ) + " and parameters: " + sArgNames );
         return nullptr;
-    } // function
+    } // method
 
-    /**
-     * @brief The expected input types.
-     * @details
-     * Used for type checking the inputs before calling execute.
-     */
-    virtual ContainerVector EXPORTED getInputType( ) const
+    inline void setFinished( )
     {
-        return ContainerVector{std::shared_ptr<Container>( new Nil( ) )};
-    } // function
+        if( IS_VOLATILE )
+            xFlags.set( uiFinishedFlag );
+    } // method
 
-    /**
-     * @brief The expected output type.
-     * @details
-     * Used for type checking weather the module returns expected data.
-     */
-    virtual std::shared_ptr<Container> EXPORTED getOutputType( ) const
+  private:
+    template <int... S> std::shared_ptr<TP_RETURN> callFunc( const TP_TUPLE_ARGS& tParams, seq<S...> )
     {
-        return std::shared_ptr<Container>( new Nil( ) );
-    } // function
+        return this->execute( std::get<S>( tParams )... );
+    } // method
 
-    /**
-     * @brief Return the name of the Module.
-     * @details
-     * Can be used to print a representation of the computational graph.
-     * Is also used when creating error messages.
-     */
-    virtual std::string EXPORTED getName( ) const
+  public:
+    virtual std::shared_ptr<TP_RETURN> EXPORTED executeTup( const TP_TUPLE_ARGS& tParams )
     {
-        throw AlignerException( "No Name available" );
-    } // function
+        /*
+         * gens is used to gereate a list of integers: 0, 1, 2, 3
+         * that is as long as sizeof...( TP_ARGUMENTS )
+         * Therefore we can use these ints in order to unpack the tuple tParams and pass it's content to execute
+         */
+        return this->callFunc( tParams, typename gens<sizeof...( TP_ARGUMENTS )>::type( ) );
+    } // method
 
-    /**
-     * @brief Return a description of the Module.
-     * @details
-     * Can be used to print a representation of the computational graph.
-     * Is also used when creating error messages.
-     */
-    virtual std::string EXPORTED getFullDesc( ) const
+    virtual bool isFinished( ) const
     {
-        throw AlignerException( "No full desc available" );
-    } // function
+        if( !IS_VOLATILE )
+            return false;
+        return xFlags[ uiFinishedFlag ];
+    } // method
 
-    /**
-     * @brief Can the module return different output for the same input.
-     * @details
-     * For example a file reader may create different output if called twice on the same file.
-     * If this is set to true the pledge will recompute the result each time get is called.
-     */
-    virtual bool EXPORTED outputsVolatile( ) const
+    virtual bool requiresLock( ) const
     {
         return false;
-    } // function
-
-    // temporary
-    virtual bool EXPORTED requiresLock( ) const
-    {
-        return false;
-    } // function
-
-    /**
-     * @brief Execute the implemented algorithm.
-     * @details
-     * Internally calls execute after checking the input types.
-     * Also checks the result returned by Execute.
-     */
-    std::shared_ptr<Container> saveExecute( std::shared_ptr<ContainerVector> vInput )
-    {
-        if( !typeCheck( *vInput, getInputType( ) ) )
-        {
-            std::cerr << "input of module " << getName( ) << " had the wrong type" << std::endl;
-            throw ModuleIO_Exception( "Input type and expected input type did not match." );
-        } // if
-        std::shared_ptr<Container> pRet = execute( vInput );
-        if( !typeCheck( pRet, getOutputType( ) ) )
-        {
-            std::cerr << "output of module " << getName( ) << " had the wrong type" << std::endl;
-            throw ModuleIO_Exception( "Module produced output of wrong type." );
-        } // if
-        return pRet;
-    } // function
-
-    /**
-     * @brief Execute the implemented algorithm.
-     * @details
-     * Internally calls execute after checking the input types.
-     * Also checks the result returned by Execute.
-     */
-    std::shared_ptr<Container> pyExecute( std::shared_ptr<ContainerVector> vInput )
-    {
-#if 1
-        try
-        {
-            std::shared_ptr<Container> pRet = saveExecute( vInput );
-            return pRet;
-        }
-        catch( ModuleIO_Exception e )
-        {
-            std::cerr << e.what( ) << std::endl;
-            std::cerr << "cant return to python - cpp module failed" << std::endl;
-            exit( 0 );
-        }
-        catch( const std::exception& e )
-        {
-            std::cerr << e.what( ) << std::endl;
-        }
-        catch( const std::string& e )
-        {
-            std::cerr << e << std::endl;
-        }
-        catch( ... )
-        {
-            std::cerr << "unknown exception" << std::endl;
-#ifdef WITH_PYTHON
-            boost::python::handle_exception( );
-#endif
-        } // catch
-        return nullptr;
-#else
-        throw AlignerException( "python modules are not allowed to call cpp modules currently - sorry" );
-#endif
-    } // function
-
-    /**
-     * @brief Make this module promise to execute it's function on the provided data.
-     * @details
-     * see Pledge for more information about the computational graph that can be build using
-     * promiseMe and Pledge.
-     * @note This is static since we need to save a reference to the shared_ptr of the Module
-     * promising.
-     */
-    static std::shared_ptr<Pledge> EXPORTED promiseMe( std::shared_ptr<Module> pThis,
-                                                       std::vector<std::shared_ptr<Pledge>> vInput );
-};
+    } // method
+}; // class
 
 /**
  * @page comp_graph_page Computational Graph Quick Start
@@ -291,6 +222,49 @@ class Module
  * Note that this setup does not perform well, since we skipped the seed filtering step.
  *
  */
+
+
+class BasePledge
+{
+  public:
+    /**
+     * @brief Reset the pledge
+     */
+    virtual void reset( )
+    {
+        throw AnnotatedException( type_name( this ) + " did not implement reset" );
+    } // method
+
+    virtual std::shared_ptr<Container> getAsBaseType( )
+    {
+        throw AnnotatedException( type_name( this ) + " did not implement getAsBaseType" );
+        return nullptr;
+    } // method
+
+    virtual void addSuccessor( BasePledge* pX )
+    {
+        throw AnnotatedException( type_name( this ) + " did not implement addSuccessor" );
+    } // method
+
+    virtual void removeSuccessor( BasePledge* pX )
+    {
+        throw AnnotatedException( type_name( this ) + " did not implement removeSuccessor" );
+    } // method
+
+    virtual bool hasVolatile( ) const
+    {
+        throw AnnotatedException( type_name( this ) + " did not implement hasVolatile" );
+        return false;
+    } // method
+
+    virtual bool isFinished( ) const
+    {
+        throw AnnotatedException( type_name( this ) + " did not implement isFinished" );
+        return false;
+    } // method
+}; // class
+
+
 /**
  * @brief Abstract class intended to hold promises to data objects used by Modules.
  * @details
@@ -308,126 +282,98 @@ class Module
  *
  * @ingroup container
  */
-class Pledge : public Container
+// TP_TYPE must be subtype of Container!
+template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> class Pledge : public BasePledge
 {
+  public:
+    double execTime = 0;
+    typedef TP_TYPE TP_CONTENT;
+    /*
+     * typename TP_DEPENDENCIES::TP_CONTENT...
+     * this does expand the parameter pack and refers to TP_CONTENT within each individual parameter
+     */
+    typedef Module<TP_CONTENT, IS_VOLATILE, typename TP_DEPENDENCIES::TP_CONTENT...> TP_PLEDGER;
+    friend TP_PLEDGER;
+    typedef std::tuple<std::shared_ptr<TP_DEPENDENCIES>...> TP_PREDECESSORS;
+    typedef std::tuple<std::shared_ptr<typename TP_DEPENDENCIES::TP_CONTENT>...> TP_INPUT;
+
   private:
-    std::shared_ptr<Module> pledger;
-#ifdef WITH_PYTHON
-    boost::python::object py_pledger;
-#endif
-    std::shared_ptr<Container> content;
-    std::shared_ptr<Container> type;
-    std::vector<std::shared_ptr<Pledge>> vPredecessors;
-    std::vector<std::weak_ptr<Pledge>> vSuccessors;
-    // std::vector<std::shared_ptr<Pledge>> aSync;
-    std::shared_ptr<std::mutex> pMutex;
+    std::shared_ptr<TP_PLEDGER> pPledger;
+    // content of the pledge
+    std::shared_ptr<TP_CONTENT> pContent = nullptr;
+    // this puts the shared_ptr around all elements of the variadic template individually
+    TP_PREDECESSORS tPredecessors;
+    // all pledges that have this pledge as predecessor
+    std::vector<BasePledge*> vSuccessors;
 
   public:
-    double execTime;
+    void addSuccessor( BasePledge* pX )
+    {
+        vSuccessors.push_back( pX );
+    } // method
+
+    void removeSuccessor( BasePledge* pX )
+    {
+        // moves the element(s) in question to the end of the vector
+        auto itNewEnd =
+            std::remove_if( vSuccessors.begin( ), vSuccessors.end( ), [&]( BasePledge* pY ) { return pX == pY; } );
+        // removes the element(s) in question
+        vSuccessors.resize( itNewEnd - vSuccessors.begin( ) );
+    } // method
 
   private:
-    /**
-     * @brief Create a new pledge with a cpp module responsible to fullfill it.
-     * @details
-     * This means that this Pledge can be automatically fullfilled by the given module.
-     */
-    Pledge( std::shared_ptr<Module> pledger, std::shared_ptr<Container> type,
-            std::vector<std::shared_ptr<Pledge>> vPredecessors )
-        : pledger( pledger ),
-#ifdef WITH_PYTHON
-          py_pledger( ),
-#endif
-          content( nullptr ),
-          type( type ),
-          vPredecessors( vPredecessors ),
-          vSuccessors( ),
-          // aSync(),
-          pMutex( new std::mutex ),
-          execTime( 0 )
-    {} // constructor
+    std::shared_ptr<std::mutex> pMutex;
 
-    /**
-     * @brief Create a new pledge with a Python module responsible to fullfill it.
-     * @details
-     * This means that this Pledge can be automatically fullfilled by the given module.
-     */
-#ifdef WITH_PYTHON
-    Pledge( boost::python::object py_pledger, std::shared_ptr<Container> type,
-            std::vector<std::shared_ptr<Pledge>> vPredecessors )
-        : pledger( ),
-          py_pledger( py_pledger ),
-          content( nullptr ),
-          type( type ),
-          vPredecessors( vPredecessors ),
-          vSuccessors( ),
-          // aSync(),
-          pMutex( new std::mutex ),
-          execTime( 0 )
-    {} // constructor
-#endif
-
-    inline bool execForGet( )
+    // @todo document
+    template <size_t IDX> struct GetCaller
     {
-        if( pledger == nullptr
-#ifdef WITH_PYTHON
-            && py_pledger.is_none( )
-#endif
-        )
-            throw ModuleIO_Exception( "No pledger known for unfulfilled pledge" );
-        if( pledger != nullptr )
+        bool operator( )( TP_PREDECESSORS& tPredecessors, TP_INPUT& tInput )
         {
-            //@todo i should use a container tuple type here...
-            std::shared_ptr<ContainerVector> vInput( new ContainerVector( ) );
-            for( std::shared_ptr<Pledge> pFuture : vPredecessors )
-            {
-                // here we execute all previous modules in the comp graph
-                auto pX = pFuture->get( );
-                assert( pX != nullptr );
-                if( pX == Nil::pEoFContainer )
-                    return false;
-                vInput->push_back( pX );
-            } // for
+            std::get<IDX>( tInput ) = std::get<IDX>( tPredecessors )->get( );
+            // handle EoF case
+            if( std::get<IDX>( tInput ) == nullptr )
+                return false;
+            return true;
+        } // operator
+    }; // struct
 
-            auto timeStamp = std::chrono::system_clock::now( );
-            // actually execute the module
-            content = pledger->execute( vInput );
-            std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
-            // increase the total executing time for this pledge
-            execTime += duration.count( );
-            assert( typeCheck( content, type ) );
-        } // if
-#ifdef WITH_PYTHON
-        else
+    // @todo document
+    template <size_t IDX> struct NonVolatileCaller
+    {
+        bool operator( )( const TP_PREDECESSORS& tPredecessors )
         {
-            boost::python::list vInput;
-            for( std::shared_ptr<Pledge> pFuture : vPredecessors )
-            {
-                auto pX = pFuture->get( );
-                assert( pX != nullptr );
-                if( pX == Nil::pEoFContainer )
-                    return false;
-                vInput.append( pX );
-            } // for
-            /*
-             * here we jump to python code to call a function and resume the cpp code
-             * once python is done...
-             */
-            auto timeStamp = std::chrono::system_clock::now( );
-            content = boost::python::extract<std::shared_ptr<Container>>( py_pledger.attr( "save_execute" )( vInput ) );
-            std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
-            execTime = duration.count( );
-            DEBUG( if( !typeCheck( content, type ) ) {
-                if( pledger != nullptr )
-                    std::cerr << pledger->getFullDesc( ) << std::endl;
-                else
-                    std::cerr << "pledger is nullpointer" << std::endl;
-                assert( false );
-            } // if
-            );
-        } // else
-#endif
-        return true;
-    } // function
+            return !std::get<IDX>( tPredecessors )->hasVolatile( );
+        } // operator
+    }; // struct
+
+    // @todo document
+    template <size_t IDX> struct NotFinishedCaller
+    {
+        bool operator( )( const TP_PREDECESSORS& tPredecessors )
+        {
+            return !std::get<IDX>( tPredecessors )->isFinished( );
+        } // operator
+    }; // struct
+
+    // @todo document
+    template <size_t IDX> struct AddToSuccessorCaller
+    {
+        bool operator( )( Pledge* pThis, TP_PREDECESSORS& tPredecessors )
+        {
+            std::get<IDX>( tPredecessors )->addSuccessor( pThis );
+            return true;
+        } // operator
+    }; // struct
+
+    // @todo document
+    template <size_t IDX> struct RemFromSuccessorCaller
+    {
+        bool operator( )( Pledge* pThis, TP_PREDECESSORS& tPredecessors )
+        {
+            std::get<IDX>( tPredecessors )->removeSuccessor( pThis );
+            return true;
+        } // operator
+    }; // struct
 
     /**
      * @brief Used to synchronize the execution of pledges in the comp. graph.
@@ -436,10 +382,10 @@ class Pledge : public Container
      * Does not lock otherwise.
      * In either case fDo is called.
      */
-    inline std::shared_ptr<Container> lockIfNecessary( std::function<std::shared_ptr<Container>( )> fDo )
+    template <typename FUNCTOR> inline std::shared_ptr<TP_CONTENT> lockIfNecessary( FUNCTOR&& fDo ) const
     {
         // if(vSuccessors.size() > 1) @todo @fixme this should be here
-        if( pledger != nullptr && pledger->requiresLock( ) )
+        if( pPledger->requiresLock( ) )
         {
             // multithreading is possible thus a guard is required here.
             // deadlock prevention is trivial,
@@ -453,20 +399,25 @@ class Pledge : public Container
 
   public:
     /**
+     * @brief Create a new pledge with a cpp module responsible to fullfill it.
+     * @details
+     * This means that this Pledge can be automatically fullfilled by the given module.
+     */
+    Pledge( std::shared_ptr<TP_PLEDGER> pPledger, std::shared_ptr<TP_DEPENDENCIES>... tPredecessors )
+        : pPledger( pPledger ), tPredecessors( tPredecessors... ), pMutex( new std::mutex )
+    {
+        // create a variable so that we can take a reference of it.
+        Pledge* pThis = this;
+        // add to the successor lists of the predecessors
+        TemplateLoop<sizeof...( TP_DEPENDENCIES ), AddToSuccessorCaller>::iterate( pThis, this->tPredecessors );
+    } // constructor
+
+    /**
      * @brief Create a new pledge without a module giving the pledge.
      * @details
      * This means that this Pledge has to be fullfilled by calling set manually.
      */
-    Pledge( std::shared_ptr<Container> type )
-        : pledger( nullptr ),
-#ifdef WITH_PYTHON
-          py_pledger( ),
-#endif
-          content( nullptr ),
-          type( type ),
-          vPredecessors( ),
-          vSuccessors( ),
-          execTime( 0 )
+    Pledge( )
     {} // constructor
 
     /**
@@ -474,58 +425,31 @@ class Pledge : public Container
      */
     Pledge( const Pledge& ) = delete; // copy constructor
 
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    ~Pledge( )
     {
-        return std::dynamic_pointer_cast<Pledge>( c ) != nullptr;
+        // create a variable so that we can take a reference of it.
+        Pledge* pThis = this;
+        // remove from the successor lists of the predecessors
+        TemplateLoop<sizeof...( TP_DEPENDENCIES ), RemFromSuccessorCaller>::iterate( pThis, this->tPredecessors );
+    } // deconstructor
+
+    inline const std::shared_ptr<TP_PLEDGER> getPledger( ) const
+    {
+        return pPledger;
     } // function
 
-    // overload
-    std::string getTypeName( ) const
+    /**
+     * @brief Reset the pledge
+     * @note override
+     */
+    void reset( )
     {
-        return "Pledge";
+        DEBUG( std::cout << "resetting: " << type_name( this ) << ": " << this << std::endl; )
+        pContent = nullptr;
+        for( BasePledge* pSuccessor : vSuccessors )
+            if( pSuccessor != nullptr )
+                pSuccessor->reset( );
     } // function
-
-    std::string getGraphDesc( ) const
-    {
-        std::string sDesc = "";
-        if( pledger != nullptr )
-        {
-            sDesc += pledger->getFullDesc( );
-        } // if
-        sDesc += "{";
-        for( std::shared_ptr<Pledge> pPre : vPredecessors )
-            sDesc += pPre->getGraphDesc( ) + "; ";
-        return sDesc + "}";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return type->getType( );
-    } // function
-
-    const std::shared_ptr<Module> getPledger( ) const
-    {
-        return pledger;
-    } // function
-
-    static EXPORTED std::shared_ptr<Pledge> makePledge( std::shared_ptr<Module> pledger,
-                                                        std::vector<std::shared_ptr<Pledge>> vPredecessors );
-
-#ifdef WITH_PYTHON
-    static inline std::shared_ptr<Pledge> makePyPledge( boost::python::object py_pledger,
-                                                        std::shared_ptr<Container> type,
-                                                        std::vector<std::shared_ptr<Pledge>> vPredecessors )
-    {
-        std::shared_ptr<Pledge> pRet = std::shared_ptr<Pledge>( new Pledge( py_pledger, type, vPredecessors ) );
-
-        for( std::shared_ptr<Pledge> pPredecessor : vPredecessors )
-            pPredecessor->vSuccessors.push_back( std::weak_ptr<Pledge>( pRet ) );
-
-        return pRet;
-    } // contructor function
-#endif
 
     /**
      * @brief Manually fullfill this pledge.
@@ -533,60 +457,37 @@ class Pledge : public Container
      * Invalidates the content of all following pledges.
      * @note It would be better to have a "constant" or "variable" class instead of this function.
      */
-    void set( std::shared_ptr<Container> c )
+    inline void set( std::shared_ptr<TP_CONTENT> pC )
     {
         // improves runtime (mostly when resetting module).
-        if( content == c )
+        if( pContent == pC )
             return;
-        content = c;
-        for( std::weak_ptr<Pledge> pSuccessor : vSuccessors )
-        {
-            std::shared_ptr<Pledge> lock = pSuccessor.lock( );
-            if( lock != nullptr )
-                lock->set( nullptr );
-        } // for
+        pContent = pC;
+        // the content of this pledge changed, therefore all following ones are invalidated and need to be reset.
+        for( BasePledge* pSuccessor : vSuccessors )
+            if( pSuccessor != nullptr )
+                pSuccessor->reset( );
     } // function
 
     /**
-     * @brief checks weather there is a python module upstream in the comp. graph.
+     * @brief checks wether there is a volatile module upstream in the comp. graph.
      */
-    bool hasPythonPledger( )
+    virtual bool hasVolatile( ) const
     {
-#ifdef WITH_PYTHON
-        if( !py_pledger.is_none( ) )
+        if( IS_VOLATILE )
             return true;
-        for( std::shared_ptr<Pledge> pFuture : vPredecessors )
-            if( pFuture->hasPythonPledger( ) )
-                return true;
-#endif
-        return false;
-    } // function
+        // double negation necessary here, so that the loop iterates until the first volatile module is found
+        // (in this case the NonVolatileCaller returns false, therefore breaks the loop, and !false is returned )
+        // or returns true at the end which then in turn is negated to become false (i.e. no volatile module found).
+        return !TemplateLoop<sizeof...( TP_DEPENDENCIES ), NonVolatileCaller>::iterate( tPredecessors );
+    } // method
 
-    /**
-     * @brief checks weather there is a volatile module upstream in the comp. graph.
-     */
-    bool hasVolatile( )
+    virtual bool isFinished( ) const
     {
-        // @todo same for py_pledger here
-        if( pledger != nullptr && pledger->outputsVolatile( ) )
+        if( pPledger != nullptr && pPledger->isFinished( ) )
             return true;
-        for( std::shared_ptr<Pledge> pFuture : vPredecessors )
-            if( pFuture->hasVolatile( ) )
-                return true;
-        return false;
-    } // function
-
-    /**
-     * @brief Warpper for boost python
-     * @details
-     * transfers the ownership of the given container from python to the c++ code
-     */
-    void set_boost( std::shared_ptr<Container> c )
-    {
-        std::shared_ptr<Container> swap;
-        swap.swap( c );
-        set( swap );
-    } // function
+        return !TemplateLoop<sizeof...( TP_DEPENDENCIES ), NotFinishedCaller>::iterate( tPredecessors );
+    } // method
 
     /**
      * @brief Get the promised container.
@@ -595,74 +496,59 @@ class Pledge : public Container
      * If necessary, uses the python or cpp module to fullfill the pledge,
      * and returns the respective container.
      */
-    std::shared_ptr<Container> get( )
+    virtual std::shared_ptr<TP_CONTENT> get( )
     {
-        bool bVolatile = false;
-        // @todo same for py_pledger here
-        if( pledger != nullptr )
-            bVolatile = pledger->outputsVolatile( );
-
+        if( pPledger == nullptr && pContent == nullptr )
+            throw AnnotatedException( "No pledger known for unfulfilled pledge of type " + type_name( this ) );
         // in this case there is no need to execute again
-        if( bVolatile == false && content != nullptr )
-            return content;
+        if( pContent != nullptr && !IS_VOLATILE )
+            return pContent;
 
         // locks a mutex if this pledge can be reached from multiple leaves in the graph
         // does not lock otherwise...
         return lockIfNecessary( [&]( ) {
-            // execute
-            if( execForGet( ) == false )
-            {
+            TP_INPUT tInput;
+            // execute all dependencies
+            if( !TemplateLoop<sizeof...( TP_DEPENDENCIES ), GetCaller>::iterate( tPredecessors, tInput ) )
                 /*
-                 * If execForGet returns false we have a volatile module that's dry.
+                 * if one dependency returns EoF then stop executing
+                 * We have a volatile module that's dry.
                  * In such cases we cannot compute the next element and therefore set
                  * the content of this module to EoF as well.
                  */
-                content = Nil::pEoFContainer;
-                return content;
-            } // if
-            // for(std::shared_ptr<Pledge> pSync : aSync)
-            //     if(pSync->execForGet() == false)
-            //     {
-            //         /*
-            //         * If execForGet returns false we have a volatile module that's dry.
-            //         * In such cases we cannot compute the next element and therefore set
-            //         * the content of this module to EoF as well.
-            //         */
-            //         content = Nil::pEoFContainer;
-            //         return content;
-            //     }// if
+                pContent = nullptr;
+            // handle the EoF case for this module
+            else if( IS_VOLATILE && pPledger->isFinished( ) )
+                pContent = nullptr;
+            else
+            {
+                auto timeStamp = std::chrono::system_clock::now( );
+
+                // actually execute the module
+                pContent = pPledger->executeTup( tInput );
+
+                std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
+                // increase the total executing time for this pledge
+                execTime += duration.count( );
+
+                // safety check
+                if( pContent == nullptr )
+                    throw AnnotatedException( "A module is not allowed to return nullpointers in execute; throw an "
+                                              "exception instead or return an empty container! Module type:" +
+                                              type_name( pPledger ) );
+            } // else
 
             // return must be here and returned throught the lambda to avoid data race...
-            return content;
+            return pContent;
         } // lambda
         ); // function call
     } // function
 
-    /**
-     * @brief Synchronize two pledges.
-     * @details
-     * They will always be executed right one after another.
-     * This can be used to for paired reads,
-     * where we want to read one read from file a and one from file b.
-     * We need to make sure that we always read the pairs together.
-     * @note deprecated
-     */
-    //// static inline void synchronize(std::shared_ptr<Pledge> pA, std::shared_ptr<Pledge> pB)
-    //// {
-    ////     //add each other to the caller list
-    ////     pA->aSync.push_back(pB);
-    ////     pB->aSync.push_back(pA);
-    ////     //sync the mutex of pA and pB
-    ////     pA->pMutex.reset();
-    ////     pA->pMutex = pB->pMutex;
-    ////     assert(pA->pMutex = pB->pMutex);
-    //// }//function
 
-    //// void forAllSyncs(std::function<void(std::shared_ptr<Pledge>)> fDo)
-    //// {
-    ////     for(std::shared_ptr<Pledge> pSync : aSync)
-    ////         fDo(pSync);
-    //// }//function
+    virtual std::shared_ptr<Container> getAsBaseType( )
+    {
+        return std::dynamic_pointer_cast<Container>( this->get( ) );
+    } // method
 
     /**
      * @brief Gets the given pledges simultaneously.
@@ -695,95 +581,206 @@ class Pledge : public Container
 
         {
             // set up a threadpool
-            ThreadPool xPool( numThreads );
+            // ThreadPool xPool(numThreads);
             // enqueue a task that executes the comp. graph for each thread in the pool.
             for( std::shared_ptr<Pledge> pPledge : vPledges )
             {
-                xPool.enqueue(
-                    [&callback]( size_t uiTid, std::shared_ptr<Pledge> pPledge ) {
-                        assert( pPledge != nullptr );
+                // xPool.enqueue(
+                //    [&callback](size_t uiTid, std::shared_ptr<Pledge> pPledge) {
+                //        assert(pPledge != nullptr);
 
+                /*
+                 * Set bLoop = true if there is a volatile module in the graph.
+                 * This enables looping.
+                 * If bLoop is not set to true here we only compute the result once,
+                 * as all further computations would yield the same result.
+                 */
+                bool bLoop = pPledge->hasVolatile( );
+
+                // execute the loop if bLoop == true or do just one iteration otherwise.
+                do
+                {
+                    try
+                    {
                         /*
-                         * Set bLoop = true if there is a volatile module in the graph.
-                         * This enables looping.
-                         * If bLoop is not set to true here we only compute the result once,
-                         * as all further computations would yield the same result.
+                         * Execute one iteration of the comp. graph.
+                         * Then set bLoop to false if the execution returned pEoFContainer.
+                         * If bLoop is false already (due to there beeing no
+                         * volatile module) then leave it as false.
                          */
-                        bool bLoop = pPledge->hasVolatile( );
+                        bLoop &= pPledge->get( ) != nullptr;
 
-                        // execute the loop if bLoop == true or do just one iteration otherwise.
-                        do
-                        {
-                            try
-                            {
-                                /*
-                                 * Execute one iteration of the comp. graph.
-                                 * Then set bLoop to false if the execution returned pEoFContainer.
-                                 * If bLoop is false already (due to there beeing no
-                                 * volatile module) then leave it as false.
-                                 */
-                                // std::cout << "A) In thread:" << uiTid << " bLoop is: " << bLoop
-                                // << std::endl;
-                                bLoop &= pPledge->get( ) != Nil::pEoFContainer;
-                                ////! if(!bLoop)
-                                ////!     std::cout << "B) In thread:" << uiTid << " bLoop is: " <<
-                                /// bLoop << std::endl;
-                                // this callback function can be used to set a progress bar
-                                // for example.
-                                callback( );
-                                DEBUG(
-                                    // print a progress bar on cmdline
-                                    // std::cout << "*" << std::flush;
-                                )
-                            }
-                            catch( ModuleIO_Exception e )
-                            {
-                                std::cerr << e.what( ) << std::endl;
-                                exit( 0 );
-                            }
-                            catch( AlignerException e )
-                            {
-                                std::cerr << "Module Failed: " << e.what( ) << std::endl;
-                            }
-                            catch( const std::exception& e )
-                            {
-                                std::cerr << e.what( ) << std::endl;
-                            }
-                            catch( const std::string& e )
-                            {
-                                std::cerr << e << std::endl;
-                            }
-                            catch( ... )
-                            {
-                                std::cerr << "unknown exception" << std::endl;
-                            } // catch
-                        } while( bLoop );
-                    }, // lambda
-                    pPledge );
+
+                        // this callback function can be used to set a progress bar
+                        // for example.
+                        callback( );
+                        DEBUG(
+                            // print a progress bar on cmdline
+                            // std::cout << "*" << std::flush;
+                        )
+                    }
+                    catch( AnnotatedException e )
+                    {
+                        std::cerr << "Module Failed: " << e.what( ) << std::endl;
+                    }
+                } while( bLoop );
+                //}, // lambda
+                // pPledge);
             } // for
             // wait for the pool to finish it's work
         } // scope xPool
     } // function
+}; // class
+
+/**
+ * @brief generate a pledge from a module pointer and the dependencies.
+ * @details
+ * Does nothing more than calling the correct constructor of Pledge.
+ * Use this function so that the compiler can figure out the templates itself.
+ */
+template <class TP_MODULE, class... TP_PLEDGES>
+std::shared_ptr<Pledge<typename TP_MODULE::TP_RETURN, TP_MODULE::IS_VOLATILE, TP_PLEDGES...>>
+promiseMe( std::shared_ptr<TP_MODULE> pModule, std::shared_ptr<TP_PLEDGES>... pPledges )
+{
+    return std::make_shared<Pledge<typename TP_MODULE::TP_RETURN, TP_MODULE::IS_VOLATILE, TP_PLEDGES...>>(
+        pModule, pPledges... );
+} // function
+
+
+/**
+ * @brief input for all python modules.
+ * @details
+ * Vector of containers.
+ */
+class PyContainerTuple : public Container
+{
+  public:
+    std::vector<std::shared_ptr<Container>> vContent;
+}; // class
+
+/**
+ * @brief
+ * @details
+ * @note must be exported twice
+ */
+class PyPledge : public Pledge<PyContainerTuple>
+{
+  private:
+    std::vector<std::shared_ptr<BasePledge>> vPledges;
+
+  public:
+    ~PyPledge( )
+    {
+        for( std::shared_ptr<BasePledge> pPledge : vPledges )
+            pPledge->removeSuccessor( this );
+    } // deconstructor
+
+    void push_back( std::shared_ptr<BasePledge> pX )
+    {
+        if( pX == nullptr )
+            throw AnnotatedException( "Cannot use a nullpointer as pledge" );
+        vPledges.emplace_back( pX );
+        pX->addSuccessor( this );
+    } // method
+
+    // overrides the base function
+    virtual std::shared_ptr<PyContainerTuple> get( )
+    {
+        auto pRet = std::make_shared<PyContainerTuple>( );
+        for( std::shared_ptr<BasePledge> pPledge : vPledges )
+        {
+            pRet->vContent.push_back( pPledge->getAsBaseType( ) );
+            // handle EoF case
+            if( pRet->vContent.back( ) == nullptr )
+                return nullptr;
+        } // for
+        return pRet;
+    } // method
 
     /**
-     * @brief clears the comp graph in font of this pledge
+     * @brief checks wether there is a volatile module upstream in the comp. graph.
+     * @details
+     * overrides the base function
      */
-    void clear_graph( )
+    virtual bool hasVolatile( ) const
     {
-        pledger.reset( );
-        content.reset( );
-        type.reset( );
-        for( auto pOther : vPredecessors )
-            if( pOther != nullptr )
-            {
-                pOther->clear_graph( );
-                pOther.reset( );
-            } // if
-        vPredecessors.clear( );
-        vSuccessors.clear( );
-        // aSync.clear();
-    } // function
+        for( std::shared_ptr<BasePledge> pPledge : vPledges )
+            if( pPledge->hasVolatile( ) )
+                return true;
+        return false;
+    } // method
+
+    virtual bool isFinished( ) const
+    {
+        // if( Pledge<PyContainerTuple>::isFinished( ) )
+        //    return true;
+        for( std::shared_ptr<BasePledge> pPledge : vPledges )
+            if( pPledge->isFinished( ) )
+                return true;
+        return false;
+    } // method
 }; // class
+
+// @note must be exported twice
+template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATILE, PyContainerTuple>
+{}; // class
+
+template <class TP_MODULE> class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
+{
+  public:
+    const std::shared_ptr<TP_MODULE> pModule;
+
+  private:
+    template <size_t IDX> struct TupleFiller
+    {
+        bool operator( )(
+            typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerTuple& vIn, const std::shared_ptr<TP_MODULE> pModule )
+        {
+            if( vIn.vContent[ IDX ] == nullptr )
+                throw AnnotatedException( "Wrong type for module (" + type_name( pModule ) +
+                                          ") input (parameter index: " + std::to_string( IDX ) +
+                                          "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
+                                          " but got: nullptr of type " + type_name( vIn.vContent[ IDX ] ) );
+            // convert the content in the vector to the element types of the tuple
+            auto pCasted = std::dynamic_pointer_cast<
+                typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>(
+                vIn.vContent[ IDX ] );
+            // if the cast is not possible we get a nullptr here
+            if( pCasted == nullptr )
+                throw AnnotatedException( "Wrong type for module (" + type_name( pModule ) +
+                                          ") input (parameter index: " + std::to_string( IDX ) +
+                                          "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
+                                          " but got: " + type_name( vIn.vContent[ IDX ] ) );
+            // if the cast is successfull we assign the tuple element
+            std::get<IDX>( tTup ) = pCasted;
+            return true;
+        } // operator
+    }; // struct
+
+  public:
+    ModuleWrapperCppToPy( ) : pModule( new TP_MODULE( ) )
+    {} // constructor
+
+#if 1 // set to zero triggers unimplemented exception
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<PyContainerTuple> pIn )
+    {
+        if( pIn->vContent.size( ) != TP_MODULE::NUM_ARGUMENTS )
+            throw AnnotatedException(
+                type_name( pModule ) + "'s pyExecute was called with the wrong amount of parameters. Expected: " +
+                std::to_string( TP_MODULE::NUM_ARGUMENTS ) + " but got: " + std::to_string( pIn->vContent.size( ) ) );
+
+        typename TP_MODULE::TP_TUPLE_ARGS tTyped;
+        TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn, pModule );
+        return pModule->executeTup( tTyped );
+    } // method
+#endif
+
+    virtual bool isFinished( ) const
+    {
+        return pModule->isFinished( );
+    } // method
+}; // class
+
 } // namespace libMA
 
 

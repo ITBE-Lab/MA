@@ -3,6 +3,7 @@
  * @brief Picks alignment pairs for alignming paired reads.
  * @author Markus Schmidt
  */
+#if 0
 #ifndef PAIRED_READS_H
 #define PAIRED_READS_H
 
@@ -88,4 +89,5 @@ void exportPairedReads( );
 #endif
 
 
+#endif
 #endif

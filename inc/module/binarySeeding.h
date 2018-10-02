@@ -23,7 +23,7 @@ class PerfectMatch;
  * Can use either the extension scheme by Li et Al. or ours.
  * @ingroup module
  */
-class BinarySeeding : public Module
+class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
 {
   public:
     const bool bLrExtension;
@@ -49,13 +49,12 @@ class BinarySeeding : public Module
      * Returns an interval spanning the entire covered area.
      * Segments are saved in pSegmentVector.
      */
-    inline Interval<nucSeqIndex>
-    maximallySpanningExtension( nucSeqIndex center, std::shared_ptr<FMIndex> pFM_index,
-                                std::shared_ptr<NucSeq> pQuerySeq,
-                                std::shared_ptr<SegmentVector> pSegmentVector )
+    inline Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center, std::shared_ptr<FMIndex> pFM_index,
+                                                             std::shared_ptr<NucSeq> pQuerySeq,
+                                                             std::shared_ptr<SegmentVector> pSegmentVector )
     {
         // query sequence itself
-        const uint8_t *q = pQuerySeq->pGetSequenceRef( );
+        const uint8_t* q = pQuerySeq->pGetSequenceRef( );
 
         // make sure we do not have any Ns
         if( q[ center ] >= 4 )
@@ -79,14 +78,13 @@ class BinarySeeding : public Module
         for( nucSeqIndex i = center + 1; i < pQuerySeq->length( ); i++ )
         {
             DEBUG_3( std::cout << i - 1 << " -> " << ik.start( ) << " " << ik.end( ) << std::endl;
-                     std::cout << i - 1 << " ~> " << ik.revComp( ).start( ) << " "
-                               << ik.revComp( ).end( ) << std::endl; )
+                     std::cout << i - 1 << " ~> " << ik.revComp( ).start( ) << " " << ik.revComp( ).end( )
+                               << std::endl; )
             assert( ik.size( ) > 0 );
             SAInterval ok = pFM_index->extend_backward( ik, complement( q[ i ] ) );
 
             DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( ) << std::endl;
-                     std::cout << i << " ~> " << ok.revComp( ).start( ) << " "
-                               << ok.revComp( ).end( ) << std::endl; )
+                     std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( ) << std::endl; )
             /*
              * In fact, if ok.getSize is zero, then there are no matches any more.
              */
@@ -108,15 +106,14 @@ class BinarySeeding : public Module
         {
             for( nucSeqIndex i = center - 1; i >= 0; i-- )
             {
-                DEBUG_3( std::cout << i + 1 << " -> " << ik.start( ) << " " << ik.end( )
-                                   << std::endl;
-                         std::cout << i + 1 << " ~> " << ik.revComp( ).start( ) << " "
-                                   << ik.revComp( ).end( ) << std::endl; )
+                DEBUG_3( std::cout << i + 1 << " -> " << ik.start( ) << " " << ik.end( ) << std::endl;
+                         std::cout << i + 1 << " ~> " << ik.revComp( ).start( ) << " " << ik.revComp( ).end( )
+                                   << std::endl; )
                 assert( ik.size( ) > 0 );
                 SAInterval ok = pFM_index->extend_backward( ik, q[ i ] );
                 DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( ) << std::endl;
-                         std::cout << i << " ~> " << ok.revComp( ).start( ) << " "
-                                   << ok.revComp( ).end( ) << std::endl; )
+                         std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( )
+                                   << std::endl; )
 
                 /*
                  * In fact, if ok.getSize is zero, then there are no matches any more.
@@ -144,9 +141,8 @@ class BinarySeeding : public Module
         // start I(q[x]) in T (start in BWT used for backward search) + 1,
         // because very first string in SA-array starts with $
         // size in T and T' is equal due to symmetry
-        ik = SAInterval(
-            pFM_index->L2[ q[ center ] ] + 1, pFM_index->L2[ (int)complement( q[ center ] ) ] + 1,
-            pFM_index->L2[ (int)q[ center ] + 1 ] - pFM_index->L2[ (int)q[ center ] ] );
+        ik = SAInterval( pFM_index->L2[ q[ center ] ] + 1, pFM_index->L2[ (int)complement( q[ center ] ) ] + 1,
+                         pFM_index->L2[ (int)q[ center ] + 1 ] - pFM_index->L2[ (int)q[ center ] ] );
         start = center;
         /*
          * extend ik left, until there are no more matches
@@ -155,15 +151,14 @@ class BinarySeeding : public Module
         {
             for( nucSeqIndex i = center - 1; i >= 0; i-- )
             {
-                DEBUG_3( std::cout << i + 1 << " -> " << ik.start( ) << " " << ik.end( )
-                                   << std::endl;
-                         std::cout << i + 1 << " ~> " << ik.revComp( ).start( ) << " "
-                                   << ik.revComp( ).end( ) << std::endl; )
+                DEBUG_3( std::cout << i + 1 << " -> " << ik.start( ) << " " << ik.end( ) << std::endl;
+                         std::cout << i + 1 << " ~> " << ik.revComp( ).start( ) << " " << ik.revComp( ).end( )
+                                   << std::endl; )
                 assert( ik.size( ) > 0 );
                 SAInterval ok = pFM_index->extend_backward( ik, q[ i ] );
                 DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( ) << std::endl;
-                         std::cout << i << " ~> " << ok.revComp( ).start( ) << " "
-                                   << ok.revComp( ).end( ) << std::endl; )
+                         std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( )
+                                   << std::endl; )
 
                 /*
                  * In fact, if ok.getSize is zero, then there are no matches any more.
@@ -189,14 +184,13 @@ class BinarySeeding : public Module
         for( nucSeqIndex i = center + 1; i < pQuerySeq->length( ); i++ )
         {
             DEBUG_3( std::cout << i - 1 << " -> " << ik.start( ) << " " << ik.end( ) << std::endl;
-                     std::cout << i - 1 << " ~> " << ik.revComp( ).start( ) << " "
-                               << ik.revComp( ).end( ) << std::endl; )
+                     std::cout << i - 1 << " ~> " << ik.revComp( ).start( ) << " " << ik.revComp( ).end( )
+                               << std::endl; )
             assert( ik.size( ) > 0 );
             SAInterval ok = pFM_index->extend_backward( ik, complement( q[ i ] ) );
 
             DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( ) << std::endl;
-                     std::cout << i << " ~> " << ok.revComp( ).start( ) << " "
-                               << ok.revComp( ).end( ) << std::endl; )
+                     std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( ) << std::endl; )
 
             /*
              * In fact, if ok.getSize is zero, then there are no matches any more.
@@ -214,7 +208,7 @@ class BinarySeeding : public Module
         pSegmentVector->emplace_back( start, end - start, ik.revComp( ) );
         assert( pSegmentVector->back( ).end( ) < pQuerySeq->length( ) );
 
-        const auto &rPrevBack = ( *pSegmentVector )[ pSegmentVector->size( ) - 2 ];
+        const auto& rPrevBack = ( *pSegmentVector )[ pSegmentVector->size( ) - 2 ];
         // to return the covered area
         Interval<nucSeqIndex> ret( center, 0 );
         if( pSegmentVector->back( ).start( ) < rPrevBack.start( ) )
@@ -245,7 +239,7 @@ class BinarySeeding : public Module
         Interval<nucSeqIndex> ret( center, 0 );
 
         // query sequence itself
-        const uint8_t *q = pQuerySeq->pGetSequenceRef( );
+        const uint8_t* q = pQuerySeq->pGetSequenceRef( );
 
         assert( center < pQuerySeq->length( ) );
 
@@ -278,8 +272,8 @@ class BinarySeeding : public Module
         for( nucSeqIndex i = center + 1; i < pQuerySeq->length( ); i++ )
         {
             DEBUG_3( std::cout << i - 1 << " -> " << ik.start( ) << " " << ik.end( ) << std::endl;
-                     std::cout << i - 1 << " ~> " << ik.revComp( ).start( ) << " "
-                               << ik.revComp( ).end( ) << std::endl; )
+                     std::cout << i - 1 << " ~> " << ik.revComp( ).start( ) << " " << ik.revComp( ).end( )
+                               << std::endl; )
             assert( ik.size( ) > 0 );
             // this is the extension
             SAInterval ok = pFM_index->extend_backward( ik, complement( q[ i ] ) );
@@ -300,8 +294,7 @@ class BinarySeeding : public Module
                 curr.push_back( Segment( center, i - center, ok.revComp( ) ) );
 
             DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( ) << std::endl;
-                     std::cout << i << " ~> " << ok.revComp( ).start( ) << " "
-                               << ok.revComp( ).end( ) << std::endl; )
+                     std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( ) << std::endl; )
             /*
              * In fact, if ok.getSize is zero, then there are no matches any more.
              * thus we can stop extending forwards
@@ -333,7 +326,7 @@ class BinarySeeding : public Module
 
         // FIXME: for some reason valgrind does NOT like this
         // maybe it cant deal with the pointers?
-        std::vector<Segment> *pPrev, *pCurr, *pTemp;
+        std::vector<Segment>*pPrev, *pCurr, *pTemp;
         pPrev = &curr;
         pCurr = &prev;
         // quick check that we can extend backwards at all (center is unsigned thus this is
@@ -359,21 +352,19 @@ class BinarySeeding : public Module
                  * for all remembered intervals
                  * (ordered by the start on the query)
                  */
-                for( Segment &ik : *pPrev )
+                for( Segment& ik : *pPrev )
                 {
-                    DEBUG_3( std::cout << i + 1 << " -> " << ik.saInterval( ).start( ) << " "
-                                       << ik.saInterval( ).end( ) << std::endl;
-                             std::cout << i + 1 << " ~> " << ik.saInterval( ).revComp( ).start( )
-                                       << " " << ik.saInterval( ).revComp( ).end( ) << std::endl; )
+                    DEBUG_3( std::cout << i + 1 << " -> " << ik.saInterval( ).start( ) << " " << ik.saInterval( ).end( )
+                                       << std::endl;
+                             std::cout << i + 1 << " ~> " << ik.saInterval( ).revComp( ).start( ) << " "
+                                       << ik.saInterval( ).revComp( ).end( ) << std::endl; )
                     // actually extend the current interval
                     SAInterval ok = pFM_index->extend_backward( ik.saInterval( ), q[ i ] );
-                    DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( )
-                                       << std::endl;
-                             std::cout << i << " ~> " << ok.revComp( ).start( ) << " "
-                                       << ok.revComp( ).end( ) << std::endl; )
-                    DEBUG_3( std::cout << ik.start( ) << ", " << ik.end( ) << ": "
-                                       << ik.saInterval( ).size( ) << " -> " << ok.size( )
+                    DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( ) << std::endl;
+                             std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( )
                                        << std::endl; )
+                    DEBUG_3( std::cout << ik.start( ) << ", " << ik.end( ) << ": " << ik.saInterval( ).size( ) << " -> "
+                                       << ok.size( ) << std::endl; )
                     // check if the extension resulted in a non enclosed interval
                     if( ok.size( ) <= uiMinAmbiguity && !bHaveOne )
                     {
@@ -385,8 +376,7 @@ class BinarySeeding : public Module
                         bHaveOne = true;
                     } // if
                     // check if we can extend this interval further
-                    else if( ok.size( ) > uiMinAmbiguity ||
-                             ( ok.size( ) > 0 && ik.size( ) >= uiMaxAmbiguity ) )
+                    else if( ok.size( ) > uiMinAmbiguity || ( ok.size( ) > 0 && ik.size( ) >= uiMaxAmbiguity ) )
                     {
                         // if so add the intervals to the list
                         Segment xSeg = Segment( i, ik.size( ) + 1, ok );
@@ -429,8 +419,7 @@ class BinarySeeding : public Module
             assert( pPrev->front( ).start( ) <= pPrev->front( ).end( ) );
             assert( pPrev->front( ).end( ) <= pQuerySeq->length( ) );
 
-            DEBUG_2( std::cout << pPrev->front( ).start( ) << ":" << pPrev->front( ).end( )
-                               << std::endl; )
+            DEBUG_2( std::cout << pPrev->front( ).start( ) << ":" << pPrev->front( ).end( ) << std::endl; )
         } // if
 
         // return the area that we covered
@@ -442,8 +431,7 @@ class BinarySeeding : public Module
      *    if the interval cannot be found this method splits the interval in half and repeats the
      * step with the first half, while queuing the second half as a task in the thread pool.
      */
-    void procesInterval( Interval<nucSeqIndex> xAreaToCover,
-                         std::shared_ptr<SegmentVector> pSegmentVector,
+    void procesInterval( Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
                          std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
 
   public:
@@ -459,35 +447,9 @@ class BinarySeeding : public Module
     BinarySeeding( ) : bLrExtension( defaults::sSeedSet == "maxSpan" )
     {} // constructor
 
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
+    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<FMIndex> pFM_index,
+                                                             std::shared_ptr<NucSeq> pQuerySeq );
 
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - FMIndex
-     * - NucSeq
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * - SegmentVector
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    std::string getName( ) const
-    {
-        return "BinarySeeding";
-    }
-
-    std::string getFullDesc( ) const
-    {
-        return std::string( "BinarySeeding(" ) + std::to_string( bLrExtension ) + "," +
-               std::to_string( uiMinAmbiguity ) + "," + std::to_string( uiMaxAmbiguity ) + ")";
-    } // function
 }; // class
 
 } // namespace libMA

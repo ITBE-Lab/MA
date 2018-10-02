@@ -15,35 +15,14 @@ extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
 
 
-ContainerVector StripOfConsideration::getInputType( ) const
+std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr<SegmentVector> pSegments,
+                                                                 std::shared_ptr<NucSeq>
+                                                                     pQuerySeq,
+                                                                 std::shared_ptr<Pack>
+                                                                     pRefSeq,
+                                                                 std::shared_ptr<FMIndex>
+                                                                     pFM_index )
 {
-    ContainerVector xvRet = {// all segments
-                             std::shared_ptr<Container>( new SegmentVector( ) ),
-                             // the query
-                             std::shared_ptr<Container>( new NucSeq( ) ),
-                             // the reference
-                             std::shared_ptr<Container>( new Pack( ) ),
-                             // the forward fm_index
-                             std::shared_ptr<Container>( new FMIndex( ) )};
-    return xvRet;
-} // function
-
-std::shared_ptr<Container> StripOfConsideration::getOutputType( ) const
-{
-    return std::shared_ptr<Container>( new SoCPriorityQueue( ) );
-} // function
-
-std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    const std::shared_ptr<SegmentVector> pSegments =
-        std::dynamic_pointer_cast<SegmentVector>( ( *vpInput )[ 0 ] ); // dc
-    const std::shared_ptr<NucSeq> pQuerySeq =
-        std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] ); // dc
-    const std::shared_ptr<Pack> pRefSeq =
-        std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 2 ] ); // dc
-    const std::shared_ptr<FMIndex> pFM_index =
-        std::dynamic_pointer_cast<FMIndex>( ( *vpInput )[ 3 ] ); // dc
-
     const nucSeqIndex uiQLen = pQuerySeq->length( );
 
     double fMinLen = std::max( (double)fGiveUp * uiQLen, (double)this->uiCurrHarmScoreMin );
@@ -64,17 +43,16 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
     pSeeds->reserve( pSegments->size( ) * 3 );
 
 #if MEASURE_DURATIONS == ( 1 )
-    pSegments->fExtraction +=
-        metaMeasureDuration( [&]( ) {
+    pSegments->fExtraction += metaMeasureDuration( [&]( ) {
 #endif
-            emplaceAllNonBridgingSeed( *pSegments, // Segment vector (outcome of seeding)
-                                       *pFM_index, *pRefSeq, *pSeeds,
-                                       uiQLen ); // emplace all function call
+                                  emplaceAllNonBridgingSeed( *pSegments, // Segment vector (outcome of seeding)
+                                                             *pFM_index, *pRefSeq, *pSeeds,
+                                                             uiQLen ); // emplace all function call
 #if MEASURE_DURATIONS == ( 1 )
-        } // lambda
-                             )
-            .count( ) *
-        1000; // metaMeasureDuration function call
+                              } // lambda
+                                                   )
+                                  .count( ) *
+                              1000; // metaMeasureDuration function call
 #endif
 
 
@@ -87,7 +65,7 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
 #endif
                                // sort the seeds according to their initial positions
                                std::sort( pSeeds->begin( ), pSeeds->end( ),
-                                          [&]( const Seed &a, const Seed &b ) {
+                                          [&]( const Seed& a, const Seed& b ) {
 #if DELTA_CACHE == ( 1 )
 #if CONTIG_ID_CACHE == ( 1 )
                                               if( a.uiContigId == b.uiContigId )
@@ -98,8 +76,7 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
                                                   return a.uiContigId < b.uiContigId;
 #endif
 #else
-                   return getPositionForBucketing( uiQLen, a ) <
-                          getPositionForBucketing( uiQLen, b );
+                   return getPositionForBucketing( uiQLen, a ) < getPositionForBucketing( uiQLen, b );
 #endif
                                           } // lambda
                                ); // sort function call
@@ -142,9 +119,8 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
                 } // while
 
 
-                DEBUG( pSoCs->vScores.push_back(
-                    std::make_pair( xCurrScore.uiAccumulativeLength,
-                                    xStripStart->start_ref( ) ) ); ) // DEBUG
+                DEBUG( pSoCs->vScores.push_back( std::make_pair( xCurrScore.uiAccumulativeLength,
+                                                                 xStripStart->start_ref( ) ) ); ) // DEBUG
 
                 // FILTER
                 /*
@@ -152,10 +128,9 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
                  * all fGiveUp = 0 disables this.
                  */
                 if( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen )
-                    pSoCs->push_back_no_overlap(
-                        xCurrScore, xStripStart, xStripEnd,
-                        getPositionForBucketing( uiQLen, *xStripStart ),
-                        getPositionForBucketing( uiQLen, *( xStripEnd - 1 ) ) );
+                    pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd,
+                                                 getPositionForBucketing( uiQLen, *xStripStart ),
+                                                 getPositionForBucketing( uiQLen, *( xStripEnd - 1 ) ) );
                 // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
                 xCurrScore -= *( xStripStart++ );
             } // while
@@ -182,14 +157,13 @@ std::shared_ptr<Container> StripOfConsideration::execute( std::shared_ptr<Contai
 void exportStripOfConsideration( )
 {
     // export the Bucketing class
-    boost::python::class_<StripOfConsideration, boost::python::bases<Module>,
-                          std::shared_ptr<StripOfConsideration>>( "StripOfConsideration" )
+    boost::python::class_<StripOfConsideration, boost::python::bases<Module>, std::shared_ptr<StripOfConsideration>>(
+        "StripOfConsideration" )
         .def_readwrite( "max_ambiguity", &StripOfConsideration::uiMaxAmbiguity )
         .def_readwrite( "min_score", &StripOfConsideration::fScoreMinimum )
         .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
 
-    boost::python::implicitly_convertible<std::shared_ptr<StripOfConsideration>,
-                                          std::shared_ptr<Module>>( );
+    boost::python::implicitly_convertible<std::shared_ptr<StripOfConsideration>, std::shared_ptr<Module>>( );
 
 } // function
 #endif

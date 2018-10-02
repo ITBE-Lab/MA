@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/pairedReads.h"
+#if 0
 
 
 using namespace libMA;
@@ -192,4 +193,5 @@ void exportPairedReads( )
     // tell boost that these two classes are convertible
     boost::python::implicitly_convertible<std::shared_ptr<PairedReads>, std::shared_ptr<Module>>( );
 } // function
+#endif
 #endif

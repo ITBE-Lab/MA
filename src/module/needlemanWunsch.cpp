@@ -39,7 +39,7 @@ DEBUG( bool bAnalyzeHeuristics = false; ) // DEBUG
 // match missmatch matrix for ksw
 int8_t mat[ 25 ];
 
-static void ksw_gen_simple_mat( int m, int8_t *mat, int8_t a, int8_t b )
+static void ksw_gen_simple_mat( int m, int8_t* mat, int8_t a, int8_t b )
 {
     int i, j;
     a = a < 0 ? -a : a;
@@ -55,28 +55,26 @@ static void ksw_gen_simple_mat( int m, int8_t *mat, int8_t a, int8_t b )
 } // function
 
 inline void ksw_ext( int qlen,
-                     const uint8_t *query,
+                     const uint8_t* query,
                      int tlen,
-                     const uint8_t *target,
+                     const uint8_t* target,
                      int8_t q,
                      int8_t e,
                      int8_t q2,
                      int8_t e2,
-                     int &w,
-                     ksw_extz_t *ez,
+                     int& w,
+                     ksw_extz_t* ez,
                      bool bRef )
 {
     if( bRef )
         ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1,
                        KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
     else
-        ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1,
-                       KSW_EZ_EXTZ_ONLY, ez );
+        ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez );
 } // function
 
-inline void ksw_simplified( int qlen, const uint8_t *query, int tlen, const uint8_t *target,
-                            int8_t q, int8_t e, int8_t q2, int8_t e2, int &w, ksw_extz_t *ez,
-                            int8_t *mat )
+inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target, int8_t q, int8_t e,
+                            int8_t q2, int8_t e2, int& w, ksw_extz_t* ez, int8_t* mat )
 {
     // assert(qlen * tlen < 10000000);
     int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
@@ -89,8 +87,8 @@ inline void ksw_simplified( int qlen, const uint8_t *query, int tlen, const uint
     ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez );
 } // function
 
-inline void ksw_simplified( int qlen, const uint8_t *query, int tlen, const uint8_t *target,
-                            int8_t q, int8_t e, int8_t q2, int8_t e2, int &w, ksw_extz_t *ez )
+inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target, int8_t q, int8_t e,
+                            int8_t q2, int8_t e2, int& w, ksw_extz_t* ez )
 {
     ksw_simplified( qlen, query, tlen, target, q, e, q2, e2, w, ez, mat );
 } // function
@@ -100,7 +98,7 @@ inline void ksw_simplified( int qlen, const uint8_t *query, int tlen, const uint
 class Wrapper_ksw_extz_t
 {
   public:
-    ksw_extz_t *ez;
+    ksw_extz_t* ez;
 
     Wrapper_ksw_extz_t( )
     {
@@ -116,9 +114,8 @@ class Wrapper_ksw_extz_t
 }; // class
 
 // banded global NW
-void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
-          nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
-          std::shared_ptr<Alignment> pAlignment )
+void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery, nucSeqIndex toQuery,
+          nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment )
 {
     // sanity checks
     if( toRef <= fromRef )
@@ -183,8 +180,8 @@ void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIn
     const char vMIDN[] = {'M', 'I', 'D', 'N'};
     if( qPos != (uint32_t)toQuery && rPos != (uint32_t)toRef )
     {
-        std::cerr << "ksw did neither extend till end of query nor ref " << (int)toQuery - qPos
-                  << "; " << (int)toRef - rPos << " bandwidth: " << uiBandwidth << std::endl;
+        std::cerr << "ksw did neither extend till end of query nor ref " << (int)toQuery - qPos << "; "
+                  << (int)toRef - rPos << " bandwidth: " << uiBandwidth << std::endl;
         std::cout << pQuery->fromTo( fromQuery, toQuery ) << std::endl;
         std::cout << pRef->fromTo( fromRef, toRef ) << std::endl;
         std::cout << "CIGAR:";
@@ -218,11 +215,9 @@ void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIn
  *      returns the gap at the beginning or end
  * otherwise : returns 0
  */
-void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
-                                            std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
-                                            nucSeqIndex toQuery, nucSeqIndex fromRef,
-                                            nucSeqIndex toRef, bool bNoGapAtBeginning,
-                                            bool bNoGapAtEnd,
+void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
+                                            nucSeqIndex fromQuery, nucSeqIndex toQuery, nucSeqIndex fromRef,
+                                            nucSeqIndex toRef, bool bNoGapAtBeginning, bool bNoGapAtEnd,
                                             std::shared_ptr<Alignment> pAlignment )
 {
     /*
@@ -263,11 +258,9 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
 #if ALLOCATE_ONCE == 0
     // allocate memory for the naive approach
     std::vector<std::vector<std::vector<int>>> s(
-        3, std::vector<std::vector<int>>( toQuery - fromQuery + 1,
-                                          std::vector<int>( toRef - fromRef + 1 ) ) );
+        3, std::vector<std::vector<int>>( toQuery - fromQuery + 1, std::vector<int>( toRef - fromRef + 1 ) ) );
     std::vector<std::vector<std::vector<char>>> dir(
-        3, std::vector<std::vector<char>>( toQuery - fromQuery + 1,
-                                           std::vector<char>( toRef - fromRef + 1 ) ) );
+        3, std::vector<std::vector<char>>( toQuery - fromQuery + 1, std::vector<char>( toRef - fromRef + 1 ) ) );
 #endif
 
 /*
@@ -521,23 +514,22 @@ void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery,
     DEBUG_2( std::cout << std::endl; ) // DEBUG
 
     // print the entire matrix if necessary
-    DEBUG_3(
-        std::cout << "\t"; for( auto i = toRef; i > fromRef; i-- ) std::cout
-                           << "\t" << NucSeq::translateACGTCodeToCharacter( ( *pRef )[ i - 1 ] );
-        for( auto j = fromQuery; j <= toQuery; j++ ) {
-            std::cout << "\n";
-            if( j > fromQuery )
-                std::cout << NucSeq::translateACGTCodeToCharacter( ( *pQuery )[ toQuery - j ] );
-            for( auto i = fromRef; i <= toRef; i++ )
-                std::cout << "\t" << s[ 0 ][ j - fromQuery ][ i - fromRef ] << ","
-                          << s[ 1 ][ j - fromQuery ][ i - fromRef ] << ","
-                          << s[ 2 ][ j - fromQuery ][ i - fromRef ] << " ("
-                          << std::bitset<6>( dir[ 0 ][ j - fromQuery ][ i - fromRef ] ) << ","
-                          << std::bitset<6>( dir[ 1 ][ j - fromQuery ][ i - fromRef ] ) << ","
-                          << std::bitset<6>( dir[ 2 ][ j - fromQuery ][ i - fromRef ] ) << ")";
-        } // for
-        std::cout
-        << std::endl; ) // DEBUG
+    DEBUG_3( std::cout << "\t"; for( auto i = toRef; i > fromRef; i-- ) std::cout
+                                << "\t" << NucSeq::translateACGTCodeToCharacter( ( *pRef )[ i - 1 ] );
+             for( auto j = fromQuery; j <= toQuery; j++ ) {
+                 std::cout << "\n";
+                 if( j > fromQuery )
+                     std::cout << NucSeq::translateACGTCodeToCharacter( ( *pQuery )[ toQuery - j ] );
+                 for( auto i = fromRef; i <= toRef; i++ )
+                     std::cout << "\t" << s[ 0 ][ j - fromQuery ][ i - fromRef ] << ","
+                               << s[ 1 ][ j - fromQuery ][ i - fromRef ] << ","
+                               << s[ 2 ][ j - fromQuery ][ i - fromRef ] << " ("
+                               << std::bitset<6>( dir[ 0 ][ j - fromQuery ][ i - fromRef ] ) << ","
+                               << std::bitset<6>( dir[ 1 ][ j - fromQuery ][ i - fromRef ] ) << ","
+                               << std::bitset<6>( dir[ 2 ][ j - fromQuery ][ i - fromRef ] ) << ")";
+             } // for
+             std::cout
+             << std::endl; ) // DEBUG
     return;
 } // function
 
@@ -551,13 +543,8 @@ class MyPrinterMemory
     DEBUG( nucSeqIndex uiQueryExtensionSize = 0; nucSeqIndex uiRefExtensionSize = 0; )
 
     MyPrinterMemory( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
-                     std::shared_ptr<Alignment> pAlignment, nucSeqIndex uiQueryStart,
-                     nucSeqIndex uiRefStart )
-        : pQuery( pQuery ),
-          pRef( pRef ),
-          pAlignment( pAlignment ),
-          uiQPos( uiQueryStart ),
-          uiRPos( uiRefStart )
+                     std::shared_ptr<Alignment> pAlignment, nucSeqIndex uiQueryStart, nucSeqIndex uiRefStart )
+        : pQuery( pQuery ), pRef( pRef ), pAlignment( pAlignment ), uiQPos( uiQueryStart ), uiRPos( uiRefStart )
     {} // constructor
 }; // class
 
@@ -604,9 +591,8 @@ class MyPrinterMemory
 
 
 // banded global NW
-void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
-                   nucSeqIndex fromQuery, nucSeqIndex toQuery, nucSeqIndex fromRef,
-                   nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment )
+void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
+                   nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment )
 {
     Wrapper_ksw_extz_t ez_left;
     Wrapper_ksw_extz_t ez_right;
@@ -627,8 +613,7 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
     pRef->vReverse( fromRef, toRef );
 
     // center between both extensions
-    nucSeqIndex qCenter =
-        ( fromQuery + ez_left.ez->max_q + ( toQuery - ez_right.ez->max_q - 1 ) ) / 2;
+    nucSeqIndex qCenter = ( fromQuery + ez_left.ez->max_q + ( toQuery - ez_right.ez->max_q - 1 ) ) / 2;
     // in case one of the extensions reaches to the other end but the other drops immediately
     qCenter = std::max( fromQuery, std::min( toQuery, qCenter ) );
     nucSeqIndex rCenter = ( fromRef + ez_left.ez->max_t + ( toRef - ez_right.ez->max_t - 1 ) ) / 2;
@@ -721,8 +706,7 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
             case 0:
                 if( rPosRight + uiAmount >= rCenter && qPosRight + uiAmount >= qCenter )
                 {
-                    if( rPosRight < rCenter &&
-                        ( qPosRight >= qCenter || rCenter - rPosRight > qCenter - qPosRight ) )
+                    if( rPosRight < rCenter && ( qPosRight >= qCenter || rCenter - rPosRight > qCenter - qPosRight ) )
                     {
                         assert( rCenter > rPosRight );
                         assert( uiAmount >= ( rCenter - rPosRight ) );
@@ -841,9 +825,8 @@ void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
     assert( rPosRight == toRef );
 } // function
 
-void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
-                              const std::shared_ptr<NucSeq> pRef, const nucSeqIndex fromQuery,
-                              const nucSeqIndex toQuery, const nucSeqIndex fromRef,
+void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::shared_ptr<NucSeq> pRef,
+                              const nucSeqIndex fromQuery, const nucSeqIndex toQuery, const nucSeqIndex fromRef,
                               const nucSeqIndex toRef,
                               std::shared_ptr<Alignment> pAlignment, // in & output
                               const bool bLocalBeginning, const bool bLocalEnd )
@@ -897,8 +880,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
         if( toQuery - fromQuery > NAIVE_MAX_SIZE || toRef - fromRef > NAIVE_MAX_SIZE || true )
             ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment );
         else
-            naiveNeedlemanWunsch( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, false, false,
-                                  pAlignment );
+            naiveNeedlemanWunsch( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, false, false, pAlignment );
         DEBUG_3( std::cout << "dynProg end" << std::endl; )
         return;
     } // if
@@ -912,8 +894,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
 
 
     // if we reached this point we actually have to align something
-    DEBUG_2( std::cout << pQuery->toString( ) << std::endl;
-             std::cout << pRef->toString( ) << std::endl; )
+    DEBUG_2( std::cout << pQuery->toString( ) << std::endl; std::cout << pRef->toString( ) << std::endl; )
 
     DEBUG_3( std::cout << "sw2" << std::endl; )
     /*
@@ -1038,16 +1019,16 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     struct gaba_section_s const *ap = &asec, *bp = &bsec;
 
     // Note f does not need to be freed apparently
-    struct gaba_fill_s const *f = gaba_dp_fill_root(
-        xDb.pDp, /* dp -> &dp[_dp_ctx_index(band_width)] makes the band width selectable */
-        ap, 0, /* a-side (reference side) sequence and start position */
-        bp, 0, /* b-side (query) */
-        UINT32_MAX /* max extension length */
-    );
+    struct gaba_fill_s const* f =
+        gaba_dp_fill_root( xDb.pDp, /* dp -> &dp[_dp_ctx_index(band_width)] makes the band width selectable */
+                           ap, 0, /* a-side (reference side) sequence and start position */
+                           bp, 0, /* b-side (query) */
+                           UINT32_MAX /* max extension length */
+        );
     DEBUG_3( std::cout << "sw5" << std::endl; )
 
     /* until X-drop condition is detected */
-    struct gaba_fill_s const *m = f;
+    struct gaba_fill_s const* m = f;
     /* track max */
     while( ( f->status & GABA_TERM ) == 0 )
     {
@@ -1072,8 +1053,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     ); // struct
     if( xDb.pR == nullptr )
     {
-        DEBUG( std::cerr << "WARNING libGaba delivered nullptr on alignment "
-                         << pAlignment->xStats.sName << std::endl
+        DEBUG( std::cerr << "WARNING libGaba delivered nullptr on alignment " << pAlignment->xStats.sName << std::endl
                          << "Maybe the area was too large?" << std::endl
                          << "Query: " << fromQuery << " - " << toQuery << std::endl
                          << "Ref: " << fromRef << " - " << toRef << std::endl; ) // DEBUG
@@ -1098,14 +1078,14 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
     ////printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
     if( bReverse )
         gaba_print_cigar_reverse( printer, /* printer function */
-                                  (void *)&xPrinter, /* printer function input */
+                                  (void*)&xPrinter, /* printer function input */
                                   xDb.pR->path, /* bit-encoded path array */
                                   0, /* offset is always zero */
                                   xDb.pR->plen /* path length */
         );
     else
         gaba_print_cigar_forward( printer, /* printer function */
-                                  (void *)&xPrinter, /* printer function input */
+                                  (void*)&xPrinter, /* printer function input */
                                   xDb.pR->path, /* bit-encoded path array */
                                   0, /* offset is always zero */
                                   xDb.pR->plen /* path length */
@@ -1132,45 +1112,18 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery,
 NeedlemanWunsch::NeedlemanWunsch( )
 #if ALLOCATE_ONCE == 1
     : // allocate memory for the naive approach
-      s( 3, std::vector<std::vector<int>>( NAIVE_MAX_SIZE + 1,
-                                           std::vector<int>( NAIVE_MAX_SIZE + 1 ) ) ),
-      dir( 3, std::vector<std::vector<char>>( NAIVE_MAX_SIZE + 1,
-                                              std::vector<char>( NAIVE_MAX_SIZE + 1 ) ) )
+      s( 3, std::vector<std::vector<int>>( NAIVE_MAX_SIZE + 1, std::vector<int>( NAIVE_MAX_SIZE + 1 ) ) ),
+      dir( 3, std::vector<std::vector<char>>( NAIVE_MAX_SIZE + 1, std::vector<char>( NAIVE_MAX_SIZE + 1 ) ) )
 #endif
 {
     // create match/missmatch matrix for ksw
     ksw_gen_simple_mat( 5, mat, iMatch, iMissMatch );
 } // constructor
 
-std::string NeedlemanWunsch::getFullDesc( ) const
-{
-    return std::string( "NeedlemanWunsch(" ) + std::to_string( iMatch ) + "," +
-           std::to_string( iMissMatch ) + "," + std::to_string( iGap ) + "," +
-           std::to_string( iExtend ) + "," + std::to_string( bLocal ) + "," +
-           std::to_string( uiPadding ) + ")";
-} // function
 
-ContainerVector NeedlemanWunsch::getInputType( ) const
+std::shared_ptr<Alignment> NeedlemanWunsch::execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<Pack> pRefPack )
 {
-    return ContainerVector{// the sound strip of consideration
-                           std::shared_ptr<Container>( new Seeds( ) ),
-                           // the query sequence
-                           std::shared_ptr<Container>( new NucSeq( ) ),
-                           // the reference sequence
-                           std::shared_ptr<Container>( new Pack( ) )};
-} // function
-
-std::shared_ptr<Container> NeedlemanWunsch::getOutputType( ) const
-{
-    return std::shared_ptr<Container>( new Alignment( ) );
-} // function
-
-
-std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    const auto &pSeeds = std::dynamic_pointer_cast<Seeds>( ( *vpInput )[ 0 ] ); // dc
-    const auto &pQuery = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] ); // dc
-    const auto &pRefPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 2 ] ); // dc
 
     if( pSeeds == nullptr )
         return std::shared_ptr<Alignment>( new Alignment( ) );
@@ -1185,12 +1138,11 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
         pRet->xStats.sName = pQuery->sName;
         return pRet;
     } // if
-    DEBUG_2( std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
-             for( Seed &rSeed
-                  : *pSeeds ) {
-                 std::cout << rSeed.start_ref( ) << ", " << rSeed.end_ref( ) << "; "
-                           << rSeed.start( ) << ", " << rSeed.end( ) << std::endl;
-             } // for
+    DEBUG_2( std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl; for( Seed& rSeed
+                                                                                                      : *pSeeds ) {
+        std::cout << rSeed.start_ref( ) << ", " << rSeed.end_ref( ) << "; " << rSeed.start( ) << ", " << rSeed.end( )
+                  << std::endl;
+    } // for
              ) // DEBUG
 
     // Determine the query and reverence coverage of the seeds
@@ -1213,8 +1165,7 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
             beginQuery = xSeed.start( );
         assert( xSeed.start( ) <= xSeed.end( ) );
     } // for
-    DEBUG_2( std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery
-                       << std::endl; ) // DEEBUG
+    DEBUG_2( std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl; ) // DEEBUG
 
     if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) )
     {
@@ -1248,16 +1199,12 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
                    auto starts = pRefPack->contigStarts( );
                    auto lengths = pRefPack->contigLengths( );
                    for( size_t i = 0; i < names.size( ); i++ ) {
-                       if( starts[ i ] + lengths[ i ] >=
-                               (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
-                           starts[ i ] + lengths[ i ] >=
-                               (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
-                           std::cerr
-                               << names[ i ] << ": [" << starts[ i ] << "-"
-                               << starts[ i ] + lengths[ i ] << "] revComp: ["
-                               << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
-                               << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] )
-                               << "]" << std::endl;
+                       if( starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
+                           starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
+                           std::cerr << names[ i ] << ": [" << starts[ i ] << "-" << starts[ i ] + lengths[ i ]
+                                     << "] revComp: [" << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
+                                     << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] ) << "]"
+                                     << std::endl;
                        if( starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) &&
                            starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
                            break;
@@ -1303,28 +1250,23 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
         if( pRefPack->uiSequenceIdForPositionOrRev( endRef ) != iOldContig )
             endRef = pRefPack->endOfSequenceWithIdOrReverse( iOldContig );
 
-        DEBUG( if( beginRef >= endRef ||
-                   pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) ) {
+        DEBUG( if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) ) {
             std::cerr << "ERROR: produced bridging alignment:\n";
             std::cerr << beginRef << " - " << endRef << std::endl;
             std::cerr << pRefPack->nameOfSequenceForPosition( beginRef ) << " - "
                       << pRefPack->nameOfSequenceForPosition( endRef ) << std::endl;
-            std::cerr << pRefPack->iAbsolutePosition( beginRef ) << " - "
-                      << pRefPack->iAbsolutePosition( endRef ) << std::endl;
+            std::cerr << pRefPack->iAbsolutePosition( beginRef ) << " - " << pRefPack->iAbsolutePosition( endRef )
+                      << std::endl;
             auto names = pRefPack->contigNames( );
             auto starts = pRefPack->contigStarts( );
             auto lengths = pRefPack->contigLengths( );
             for( size_t i = 0; i < names.size( ); i++ )
             {
-                if( starts[ i ] + lengths[ i ] >=
-                        (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
-                    starts[ i ] + lengths[ i ] >=
-                        (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
-                    std::cerr << names[ i ] << ": [" << starts[ i ] << "-"
-                              << starts[ i ] + lengths[ i ] << "] revComp: ["
-                              << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
-                              << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] )
-                              << "]" << std::endl;
+                if( starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
+                    starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
+                    std::cerr << names[ i ] << ": [" << starts[ i ] << "-" << starts[ i ] + lengths[ i ]
+                              << "] revComp: [" << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
+                              << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] ) << "]" << std::endl;
                 if( starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) &&
                     starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
                     break;
@@ -1348,8 +1290,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
 
     if( !bLocal )
     {
-        dynPrg( pQuery, pRef, 0, pSeeds->front( ).start( ), 0,
-                pSeeds->front( ).start_ref( ) - beginRef, pRet, true, false );
+        dynPrg( pQuery, pRef, 0, pSeeds->front( ).start( ), 0, pSeeds->front( ).start_ref( ) - beginRef, pRet, true,
+                false );
     } // if
 
     nucSeqIndex endOfLastSeedQuery = pSeeds->front( ).end( );
@@ -1362,15 +1304,14 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
     } // if
            if( pRet->uiEndOnRef != pSeeds->front( ).start_ref( ) ) {
                std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front( ).start( ) << std::endl;
-               std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front( ).start_ref( )
-                         << std::endl;
+               std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front( ).start_ref( ) << std::endl;
                assert( false );
            } // if
            ) // DEBUG
 
     pRet->append( MatchType::seed, pSeeds->front( ).size( ) );
     bool bSkip = true;
-    for( Seed &rSeed : *pSeeds )
+    for( Seed& rSeed : *pSeeds )
     {
         // skip the first seed
         // we do this since the seed has already been appended before the loop
@@ -1398,20 +1339,18 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
                     rSeed.start_ref( ) - beginRef, pRet, false, false );
             DEBUG(
                 // std::cout << pRet->vGapsScatter.size() << std::endl;
-                pRet->vGapsScatter.push_back( std::make_pair(
-                    rSeed.start( ) - endOfLastSeedQuery,
-                    rSeed.start_ref( ) - beginRef - endOfLastSeedReference ) ); ) // DEBUG
+                pRet->vGapsScatter.push_back(
+                    std::make_pair( rSeed.start( ) - endOfLastSeedQuery,
+                                    rSeed.start_ref( ) - beginRef - endOfLastSeedReference ) ); ) // DEBUG
             if( ovQ > ovR )
                 pRet->append( MatchType::deletion, ovQ - ovR );
             DEBUG_2( for( nucSeqIndex i = ovR; i < ovQ; i++ ) std::cout << "d"; )
             if( ovR > ovQ )
                 pRet->append( MatchType::insertion, ovR - ovQ );
-            DEBUG_2( for( nucSeqIndex i = ovQ; i < ovR; i++ ) std::cout << "i";
-                     std::cout << std::endl; ) // DEBUG
+            DEBUG_2( for( nucSeqIndex i = ovQ; i < ovR; i++ ) std::cout << "i"; std::cout << std::endl; ) // DEBUG
             pRet->append( MatchType::seed, len - overlap );
             DEBUG_2( std::cout << len - overlap << std::endl; ) // DEBUG_2
-            DEBUG_2( for( nucSeqIndex i = overlap; i < len; i++ ) std::cout
-                         << pQuery->charAt( i + rSeed.start( ) );
+            DEBUG_2( for( nucSeqIndex i = overlap; i < len; i++ ) std::cout << pQuery->charAt( i + rSeed.start( ) );
                      std::cout << std::endl;
                      for( nucSeqIndex i = overlap; i < len; i++ ) std::cout
                      << pRef->charAt( i + rSeed.start_ref( ) - beginRef );
@@ -1433,8 +1372,8 @@ std::shared_ptr<Container> NeedlemanWunsch::execute( std::shared_ptr<ContainerVe
         pRet->makeLocal( );
     else
     {
-        dynPrg( pQuery, pRef, endOfLastSeedQuery, endQuery - 1, endOfLastSeedReference,
-                endRef - beginRef - 1, pRet, false, true );
+        dynPrg( pQuery, pRef, endOfLastSeedQuery, endQuery - 1, endOfLastSeedReference, endRef - beginRef - 1, pRet,
+                false, true );
         // there should never be dangeling deletions with libGaba
         pRet->removeDangeling( );
     } // else
@@ -1483,8 +1422,7 @@ void testKsw( )
 
     for( int uiCounter = 0; uiCounter < 100; ++uiCounter )
     {
-        std::cout << "score=" << ez.ez->score << " ciglen= " << ez.ez->n_cigar
-                  << " cigar=" << std::endl;
+        std::cout << "score=" << ez.ez->score << " ciglen= " << ez.ez->n_cigar << " cigar=" << std::endl;
         // create match/missmatch matrix
         int8_t mat[ 25 ];
         ksw_gen_simple_mat( 5, mat, iMatch, iMissMatch );
@@ -1513,14 +1451,13 @@ void testKsw( )
             ez.ez // return value
         );
 #else
-        ksw_simplified( vQuerySeq.size( ), (const uint8_t *)&vQuerySeq[ 0 ], vRefSeq.size( ),
-                        (const uint8_t *)&vRefSeq[ 0 ], iGap, iExtend, iGap2, iExtend2, iBandwidth,
+        ksw_simplified( vQuerySeq.size( ), (const uint8_t*)&vQuerySeq[ 0 ], vRefSeq.size( ),
+                        (const uint8_t*)&vRefSeq[ 0 ], iGap, iExtend, iGap2, iExtend2, iBandwidth,
                         ez.ez // return value
         );
 #endif
 
-        std::cout << "score=" << ez.ez->score << " ciglen= " << ez.ez->n_cigar
-                  << " cigar=" << std::endl;
+        std::cout << "score=" << ez.ez->score << " ciglen= " << ez.ez->n_cigar << " cigar=" << std::endl;
         uint32_t qPos = 0;
         uint32_t rPos = 0;
         for( int i = 0; i < ez.ez->n_cigar; ++i )
@@ -1540,8 +1477,8 @@ void testKsw( )
     } // for
 } // function
 
-std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8_t iO, int8_t iO2,
-                     int8_t iE, int8_t iE2, int iW )
+std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8_t iO, int8_t iO2, int8_t iE,
+                     int8_t iE2, int iW )
 {
     // make matrix
     int8_t mat[ 25 ];
@@ -1585,14 +1522,13 @@ void exportNeedlemanWunsch( )
     boost::python::def( "run_ksw", &run_ksw );
 
     // export the segmentation class
-    boost::python::class_<NeedlemanWunsch, boost::python::bases<Module>,
-                          std::shared_ptr<NeedlemanWunsch>>( "NeedlemanWunsch" )
+    boost::python::class_<NeedlemanWunsch, boost::python::bases<Module>, std::shared_ptr<NeedlemanWunsch>>(
+        "NeedlemanWunsch" )
 #if DEBUG_LEVEL >= 1
         .def_readwrite( "analyze_heuristics", &bAnalyzeHeuristics )
 #endif // DEBUG_LEVEL
         ;
-    boost::python::implicitly_convertible<std::shared_ptr<NeedlemanWunsch>,
-                                          std::shared_ptr<Module>>( );
+    boost::python::implicitly_convertible<std::shared_ptr<NeedlemanWunsch>, std::shared_ptr<Module>>( );
 
 } // function
 #endif

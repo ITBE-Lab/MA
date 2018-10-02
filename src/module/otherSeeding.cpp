@@ -18,13 +18,15 @@ using namespace libMA;
 
 
 void OtherSeeding::bowtieExtension( std::shared_ptr<FMIndex> pFM_index,
-                                    std::shared_ptr<NucSeq> pQuerySeq,
-                                    std::shared_ptr<SegmentVector> pSegmentVector )
+                                    std::shared_ptr<NucSeq>
+                                        pQuerySeq,
+                                    std::shared_ptr<SegmentVector>
+                                        pSegmentVector )
 {
     unsigned int iSize = 16;
     unsigned int iStep = 1;
 
-    const uint8_t *q = pQuerySeq->pGetSequenceRef( );
+    const uint8_t* q = pQuerySeq->pGetSequenceRef( );
     for( nucSeqIndex i = 0; i < pQuerySeq->length( ) - iSize; i += iStep )
     {
         SAInterval ik( pFM_index->L2[ complement( q[ i ] ) ] + 1, pFM_index->L2[ (int)q[ i ] ] + 1,
@@ -53,10 +55,12 @@ void OtherSeeding::bowtieExtension( std::shared_ptr<FMIndex> pFM_index,
  *  if the seed is longer than K = 12 adn maxambiguity = ?
  */
 void OtherSeeding::doBlasrExtension( std::shared_ptr<FMIndex> pFM_index,
-                                     std::shared_ptr<NucSeq> pQuerySeq,
-                                     std::shared_ptr<SegmentVector> pSegmentVector )
+                                     std::shared_ptr<NucSeq>
+                                         pQuerySeq,
+                                     std::shared_ptr<SegmentVector>
+                                         pSegmentVector )
 {
-    const uint8_t *q = pQuerySeq->pGetSequenceRef( );
+    const uint8_t* q = pQuerySeq->pGetSequenceRef( );
     for( nucSeqIndex i = 0; i < pQuerySeq->length( ); i += 1 )
     {
         SAInterval ik( pFM_index->L2[ (int)q[ i ] ] + 1, pFM_index->L2[ complement( q[ i ] ) ] + 1,
@@ -80,27 +84,9 @@ void OtherSeeding::doBlasrExtension( std::shared_ptr<FMIndex> pFM_index,
     } // for
 } // function
 
-
-ContainerVector OtherSeeding::getInputType( ) const
+std::shared_ptr<SegmentVector>
+OtherSeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
-    return ContainerVector{
-        // the forward fm_index
-        std::shared_ptr<Container>( new FMIndex( ) ),
-        // the query sequence
-        std::shared_ptr<Container>( new NucSeq( ) ),
-    };
-}
-std::shared_ptr<Container> OtherSeeding::getOutputType( ) const
-{
-    return std::shared_ptr<Container>( new SegmentVector( ) );
-}
-
-
-std::shared_ptr<Container> OtherSeeding::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    std::shared_ptr<FMIndex> pFM_index =
-        std::dynamic_pointer_cast<FMIndex>( ( *vpInput )[ 0 ] ); // dc
-    std::shared_ptr<NucSeq> pQuerySeq = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] );
 
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
     if( pQuerySeq == nullptr )
@@ -121,11 +107,9 @@ std::shared_ptr<Container> OtherSeeding::execute( std::shared_ptr<ContainerVecto
 void exportOtherSeeding( )
 {
     // export the OtherSeeding class
-    boost::python::class_<OtherSeeding, boost::python::bases<Module>,
-                          std::shared_ptr<OtherSeeding>>( "OtherSeeding",
-                                                          boost::python::init<bool>( ) );
-    boost::python::implicitly_convertible<std::shared_ptr<OtherSeeding>,
-                                          std::shared_ptr<Module>>( );
+    boost::python::class_<OtherSeeding, boost::python::bases<Module>, std::shared_ptr<OtherSeeding>>(
+        "OtherSeeding", boost::python::init<bool>( ) );
+    boost::python::implicitly_convertible<std::shared_ptr<OtherSeeding>, std::shared_ptr<Module>>( );
 
 } // function
 #endif

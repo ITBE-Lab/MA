@@ -7,27 +7,13 @@
 #ifdef WITH_POSTGRES
 using namespace libMA;
 
-ContainerVector DbWriter::getInputType( ) const
-{
-    return ContainerVector{std::shared_ptr<NucSeq>( new NucSeq( ) ),
-                           std::shared_ptr<NucSeq>( new NucSeq( ) ),
-                           std::shared_ptr<ContainerVector>( new ContainerVector(
-                               std::shared_ptr<Alignment>( new Alignment( ) ) ) ),
-                           std::shared_ptr<Pack>( new Pack( ) )};
-} // function
 
-std::shared_ptr<Container> DbWriter::getOutputType( ) const
+std::shared_ptr<Container> execute( std::shared_ptr<NucSeq> pQuery,
+                                    std::shared_ptr<ContainerVector<Alignment>>
+                                        pAlignments,
+                                    std::shared_ptr<Pack>
+                                        pPack );
 {
-    return std::shared_ptr<Container>( new Nil( ) );
-} // function
-
-std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    std::shared_ptr<NucSeq> pQuery = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 0 ] ); // dc
-    std::shared_ptr<NucSeq> pQuery2 = std::dynamic_pointer_cast<NucSeq>( ( *vpInput )[ 1 ] ); // dc
-    std::shared_ptr<ContainerVector> pAlignments =
-        std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 2 ] ); // dc
-    std::shared_ptr<Pack> pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 3 ] ); // dc
 
     for( std::shared_ptr<Container> pA : *pAlignments )
     {
@@ -48,28 +34,25 @@ std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<ContainerVector> v
             // flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE // flag not actually required
             //                                  : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
-            if( pPack->bPositionIsOnReversStrand(
-                    pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
+            if( pPack->bPositionIsOnReversStrand( pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
                 flag |= NEXT_REVERSE_COMPLEMENTED;
 
             sContigOther = pAlignment->xStats.pOther.lock( )->getContig( *pPack );
-            sPosOther =
-                std::to_string( pAlignment->xStats.pOther.lock( )->getSamPosition( *pPack ) );
+            sPosOther = std::to_string( pAlignment->xStats.pOther.lock( )->getSamPosition( *pPack ) );
 
-            if( !pAlignment->xStats.bFirst )
-            {
-                sSegment = pAlignment->getQuerySequence( *pQuery2, *pPack );
-                sTlen = "-" + sTlen;
-            } // if
-            else
-                sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
-            DEBUG( if( pQuery->uiFromLine != pQuery2->uiFromLine ) {
-                std::cerr << "outputting paired alignment for reads from different lines: "
-                          << pQuery->uiFromLine << " and " << pQuery2->uiFromLine
-                          << "; query names are: " << pQuery->sName << " and " << pQuery2->sName
-                          << std::endl;
-            } // if
-                   ) // DEBUG
+            // if( !pAlignment->xStats.bFirst )
+            // {
+            //     sSegment = pAlignment->getQuerySequence( *pQuery2, *pPack );
+            //     sTlen = "-" + sTlen;
+            // } // if
+            // else
+            //     sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
+            // DEBUG( if( pQuery->uiFromLine != pQuery2->uiFromLine ) {
+            //     std::cerr << "outputting paired alignment for reads from different lines: " << pQuery->uiFromLine
+            //               << " and " << pQuery2->uiFromLine << "; query names are: " << pQuery->sName << " and "
+            //               << pQuery2->sName << std::endl;
+            // } // if
+            //        ) // DEBUG
         } // if
         else
             sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
@@ -83,9 +66,8 @@ std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<ContainerVector> v
 
         std::string sSQL = "";
 
-        sSQL +=
-            "INSERT INTO alignment (cigar, position, mapping_quality, query_id, run_id, sam_flags, "
-            "contig, query_sequence, contig_other, position_other, length) VALUES ( \'";
+        sSQL += "INSERT INTO alignment (cigar, position, mapping_quality, query_id, run_id, sam_flags, "
+                "contig, query_sequence, contig_other, position_other, length) VALUES ( \'";
 
         sSQL += sCigar + "\', ";
         sSQL += std::to_string( uiRefPos ) + ", ";
@@ -104,7 +86,7 @@ std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<ContainerVector> v
         xConnection.exec( sSQL );
     } // for
 
-    return std::shared_ptr<Container>( new Nil( ) );
+    return std::shared_ptr<Container>( new Container( ) ); // return empty container
 } // function
 
 #ifdef WITH_PYTHON

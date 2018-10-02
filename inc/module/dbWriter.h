@@ -17,13 +17,13 @@ namespace libMA
 class DbRunConnection
 {
   private:
-    PGconn *conn;
+    PGconn* conn;
 
   public:
     class DbResult
     {
       public:
-        PGresult *res;
+        PGresult* res;
         DbResult( )
         {} // constructor
 
@@ -48,7 +48,7 @@ class DbRunConnection
         if( !( xState == PGRES_COMMAND_OK || xState == PGRES_TUPLES_OK ) )
         {
             std::cerr << PQerrorMessage( conn ) << std::endl;
-            throw AlignerException( std::string( PQerrorMessage( conn ) ) );
+            throw AnnotatedException( std::string( PQerrorMessage( conn ) ) );
         } // if
         return xRet;
     } // method
@@ -59,8 +59,7 @@ class DbRunConnection
 
         /* Check to see that the backend connection was successfully made */
         if( PQstatus( conn ) != CONNECTION_OK )
-            throw AlignerException( "Connection to database failed:" +
-                                    std::string( PQerrorMessage( conn ) ) );
+            throw AnnotatedException( "Connection to database failed:" + std::string( PQerrorMessage( conn ) ) );
 
         exec( "BEGIN" );
     } // constructor
@@ -73,11 +72,12 @@ class DbRunConnection
     } // deconstructor
 }; // class
 
+
 /**
- * @brief Writes SAM output.
- * @note flushing of the outstream; this must be done in the deconstructor of OutStream
+ * @brief @todo
+ * @todo the query input here should actually be a n tuple input.
  */
-class DbWriter : public Module
+class DbWriter : public Module<Container, false, NucSeq, ContainerVector<Alignment>, Pack>
 {
   public:
     int32_t iRunId;
@@ -93,33 +93,11 @@ class DbWriter : public Module
     DbWriter( std::string sConninfo, int32_t iRunId ) : iRunId( iRunId ), xConnection( sConninfo )
     {} // constructor
 
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
-
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - Nil
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * - ContainerVector(NucSeq)
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    std::string getName( ) const
-    {
-        return "DbWriter";
-    } // function
-
-    std::string getFullDesc( ) const
-    {
-        return "DbWriter";
-    } // function
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
+                                                         std::shared_ptr<ContainerVector<Alignment>>
+                                                             pAlignments,
+                                                         std::shared_ptr<Pack>
+                                                             pPack );
 
 }; // class
 

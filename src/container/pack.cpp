@@ -31,10 +31,7 @@ class FastaDescriptor
     std::unique_ptr<TextSequence> pSequenceRef;
 
     FastaDescriptor( )
-        : sName( ),
-          sComment( ),
-          qualifier( ),
-          pSequenceRef( new TextSequence( ) ) // std::make_shared<TextSequence>() )
+        : sName( ), sComment( ), qualifier( ), pSequenceRef( new TextSequence( ) ) // std::make_shared<TextSequence>() )
     {} // default constructor
 }; // class
 
@@ -52,7 +49,7 @@ template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
   private:
     /* We prohibit the copy of Objects of this class.
      */
-    BufferedStreamer<BUFFER_SIZE, StreamType>( const BufferedStreamer & );
+    BufferedStreamer<BUFFER_SIZE, StreamType>( const BufferedStreamer& );
 
     /* The buffer is placed on the heap in order to safe stack space.
      */
@@ -77,7 +74,7 @@ template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
 
         if( xBufferedStream.bad( ) )
         {
-            throw fasta_reader_exception( "Something went wrong during FASTA stream reading" );
+            throw AnnotatedException( "Something went wrong during FASTA stream reading" );
         } // if
 
         /* uiEnd saves the number of characters that we could read in the stream operation
@@ -95,8 +92,7 @@ template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
      * rxBufferedStreamConstructorArg is simply forwarded to the constructor of the buffered stream.
      */
     template <typename TP>
-    BufferedStreamer<BUFFER_SIZE, StreamType>(
-        TP &rxBufferedStreamConstructorArg /* const char* pcFileNameRef */ )
+    BufferedStreamer<BUFFER_SIZE, StreamType>( TP& rxBufferedStreamConstructorArg /* const char* pcFileNameRef */ )
         : xBufferedStream( rxBufferedStreamConstructorArg /* pcFileNameRef */ ),
           uiBegin( 0 ),
           uiEnd( 0 ),
@@ -104,7 +100,7 @@ template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
     {} // constructor
 
     template <typename TP1, typename TP2>
-    BufferedStreamer<BUFFER_SIZE, StreamType>( TP1 &a, TP2 &b /* const char* pcFileNameRef */ )
+    BufferedStreamer<BUFFER_SIZE, StreamType>( TP1& a, TP2& b /* const char* pcFileNameRef */ )
         : xBufferedStream( a, b /* pcFileNameRef */ ), uiBegin( 0 ), uiEnd( 0 ), bIsEOF( false )
     {} // constructor
 
@@ -120,7 +116,7 @@ template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
 
     /* keep me here, so that I stay automatically inlined ...
      */
-    inline bool getSingleChar( char &cChar )
+    inline bool getSingleChar( char& cChar )
     {
         if( uiBegin >= uiEnd )
         {
@@ -148,8 +144,7 @@ template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
      * Returns: true  : could find some string until delimiter
      *          false : otherwise
      */
-    inline bool bGetUntilDelimiter( const bool bUntil_CR_or_LF, TextSequence &rSequence,
-                                    char &rcLastCharacterRead )
+    inline bool bGetUntilDelimiter( const bool bUntil_CR_or_LF, TextSequence& rSequence, char& rcLastCharacterRead )
     {
         rcLastCharacterRead = '\0';
 
@@ -248,7 +243,7 @@ template <typename StreamType> class FastaStreamReader : public BufferedStreamer
     -1   reading failed
     -2   truncated quality string
     */
-    int readFastaRecord( FastaDescriptor &fastaRecord ) //, bool bIsFirstSequence )
+    int readFastaRecord( FastaDescriptor& fastaRecord ) //, bool bIsFirstSequence )
     {
         char cChar;
 
@@ -276,8 +271,7 @@ template <typename StreamType> class FastaStreamReader : public BufferedStreamer
         /* We read the name. (String until the first space / new line)
          */
         TextSequence bufferSequence;
-        if( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( false, bufferSequence,
-                                                                    cChar ) == false )
+        if( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( false, bufferSequence, cChar ) == false )
         {
             return -1;
         } // if
@@ -294,8 +288,7 @@ template <typename StreamType> class FastaStreamReader : public BufferedStreamer
          */
         if( cChar != '\n' && cChar != '\r' )
         {
-            if( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( true, bufferSequence,
-                                                                        cChar ) == false )
+            if( BufferedStreamer<8192, StreamType>::bGetUntilDelimiter( true, bufferSequence, cChar ) == false )
             {
                 return -1;
             } // inner if
@@ -382,12 +375,10 @@ template <typename StreamType> class FastaStreamReader : public BufferedStreamer
 
 #ifdef USE_STL
         if( fastaRecord.pSequenceRef->length( ) !=
-            fastaRecord.qualifier
-                .length( ) ) // <- if ( fastaRecord.pSequenceRef->uxGetSequenceSize() !=
-                             // fastaRecord.qualifier.uxGetSequenceSize() )
+            fastaRecord.qualifier.length( ) ) // <- if ( fastaRecord.pSequenceRef->uxGetSequenceSize() !=
+                                              // fastaRecord.qualifier.uxGetSequenceSize() )
 #else
-        if( fastaRecord.pSequenceRef->uxGetSequenceSize( ) !=
-            fastaRecord.qualifier.uxGetSequenceSize( ) )
+        if( fastaRecord.pSequenceRef->uxGetSequenceSize( ) != fastaRecord.qualifier.uxGetSequenceSize( ) )
 #endif
         {
             return -2;
@@ -399,7 +390,7 @@ template <typename StreamType> class FastaStreamReader : public BufferedStreamer
   public:
     /* Apply the function func to all FASTA sequences defined in the given FASTA stream.
      */
-    template <typename FunctionType> void forAllSequencesDo( FunctionType &&function )
+    template <typename FunctionType> void forAllSequencesDo( FunctionType&& function )
     {
         int iContinue = 1;
 
@@ -421,7 +412,7 @@ template <typename StreamType> class FastaStreamReader : public BufferedStreamer
 
     /* Deprecated. Remove me.
      */
-    FastaStreamReader( std::istream &xInputStream, FastaDescriptor &fastaRecord )
+    FastaStreamReader( std::istream& xInputStream, FastaDescriptor& fastaRecord )
         : BufferedStreamer<8192, StreamType>( xInputStream ), bIsFirstSequence( true )
     {
         /* We read a single record.
@@ -437,12 +428,12 @@ template <typename StreamType> class FastaStreamReader : public BufferedStreamer
      * std::istream for std::istream
      */
     template <typename TP>
-    FastaStreamReader( TP &rxBufferedStreamConstructorArg )
+    FastaStreamReader( TP& rxBufferedStreamConstructorArg )
         : BufferedStreamer<8192, StreamType>( rxBufferedStreamConstructorArg )
     {} // constructor
 
     template <typename TP1, typename TP2>
-    FastaStreamReader( TP1 &a, TP2 &b ) : BufferedStreamer<8192, StreamType>( a, b )
+    FastaStreamReader( TP1& a, TP2& b ) : BufferedStreamer<8192, StreamType>( a, b )
     {} // constructor
 
     virtual ~FastaStreamReader( )
@@ -463,8 +454,7 @@ template <typename StreamType> class FastaFileStreamReader : public FastaStreamR
   public:
     /* The stream used for all reading operations.
      */
-    FastaFileStreamReader( const std::string &rsFileName )
-        : FastaStreamReader<StreamType>( rsFileName )
+    FastaFileStreamReader( const std::string& rsFileName ) : FastaStreamReader<StreamType>( rsFileName )
     {} // constructor
 }; // class FastaFileStreamReader
 
@@ -481,7 +471,7 @@ class FastaReader : public FastaDescriptor
 
     /* The central load function.
      */
-    void vLoadFastaFile( const char *pcFileName )
+    void vLoadFastaFile( const char* pcFileName )
     {
         /* If the FASTA reader experiences some problem, it will throw an exception.
          */
@@ -497,7 +487,7 @@ class FastaReader : public FastaDescriptor
 }; // class
 
 
-void Pack::vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor )
+void Pack::vAppendFastaSequence( const FastaDescriptor& rxFastaDescriptor )
 {
     /* This is a bit inefficient. We could boost performance by allowing a move for the sequence
      */
@@ -515,7 +505,7 @@ void Pack::vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor )
  * pcPackPrefix is some prefix for the pack-files.
  * Reads all sequences on the file system and creates a sequence collection out of them.
  */
-void Pack::vAppendFASTA( const std::string &sFastaFilePath )
+void Pack::vAppendFASTA( const std::string& sFastaFilePath )
 {
     /* Open a stream for FASTA File reading.
      * Open a FASTA Stream reader using the input stream.
@@ -528,14 +518,14 @@ void Pack::vAppendFASTA( const std::string &sFastaFilePath )
     if( xFastaReader.fail( ) )
     { /* Something is wrong with respect to the input-file
        */
-        throw fasta_reader_exception( "File open error." );
+        throw AnnotatedException( "File open error." );
     } // if
 
 
     /* Apply the lambda expression to all records in the file
      */
     xFastaReader.forAllSequencesDo(
-        [&]( const FastaDescriptor &xFastaRecord ) { /* Add the current FASTA sequence to the pack.
+        [&]( const FastaDescriptor& xFastaRecord ) { /* Add the current FASTA sequence to the pack.
                                                       */
                                                      // BOOST_LOG_TRIVIAL( trace ) << "Add sequence
                                                      // " << xFastaRecord.sName;
@@ -544,7 +534,7 @@ void Pack::vAppendFASTA( const std::string &sFastaFilePath )
     ); // function call
 } // method
 
-void Pack::vAppendFastaFile( const char *pcFileName )
+void Pack::vAppendFastaFile( const char* pcFileName )
 {
     vAppendFASTA( pcFileName );
 } // method
@@ -553,8 +543,7 @@ void Pack::vAppendFastaFile( const char *pcFileName )
 #ifdef WITH_PYTHON
 void exportPack( )
 {
-    boost::python::class_<Pack, boost::noncopyable, boost::python::bases<Container>,
-                          std::shared_ptr<Pack>>(
+    boost::python::class_<Pack, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<Pack>>(
         "Pack", "unpacked_size_single_strand: the size of one strand\n"
                 "\n"
                 "Holds a packed sequence.\n"
@@ -632,16 +621,15 @@ void exportPack( )
 
     // required by contigNames
     boost::python::class_<std::vector<std::string>>( "StringVector" )
-        .def(
-            boost::python::vector_indexing_suite<std::vector<std::string>,
-                                                 /*
-                                                  *    true = noproxy this means that the content of
-                                                  * the vector is already exposed by boost python.
-                                                  *    if this is kept as false, Container would be
-                                                  * exposed a second time. the two Containers would
-                                                  * be different and not inter castable.
-                                                  */
-                                                 true>( ) );
+        .def( boost::python::vector_indexing_suite<std::vector<std::string>,
+                                                   /*
+                                                    *    true = noproxy this means that the content of
+                                                    * the vector is already exposed by boost python.
+                                                    *    if this is kept as false, Container would be
+                                                    * exposed a second time. the two Containers would
+                                                    * be different and not inter castable.
+                                                    */
+                                                   true>( ) );
 
     // already exists
     // // required by contigLengths

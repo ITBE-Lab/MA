@@ -19,7 +19,8 @@ namespace libMA
  * first alignment on the basis of the second
  * @note the name quality is missleading it rather is a mapping confidence
  */
-class MappingQuality : public Module
+class MappingQuality
+    : public Module<ContainerVector<std::shared_ptr<Alignment>>, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>>
 {
   public:
     unsigned int uiReportNBest = defaults::uiReportN;
@@ -30,36 +31,9 @@ class MappingQuality : public Module
     MappingQuality( )
     {} // constructor
 
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
+    virtual std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+        EXPORTED execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments );
 
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - NucSeq
-     * - ContainerVector(Alignment)
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * - ContainerVector(Alignment)
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    std::string getName( ) const
-    {
-        return "MappingQuality";
-    }
-
-    std::string getFullDesc( ) const
-    {
-        return "MappingQuality(" + std::to_string( uiReportNBest ) + "," +
-               std::to_string( dMaxOverlapSupplementary ) + "," +
-               std::to_string( fMinSecScoreRatio ) + ")";
-    } // function
 }; // class
 } // namespace libMA
 

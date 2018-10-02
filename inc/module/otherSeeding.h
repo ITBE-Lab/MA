@@ -21,7 +21,7 @@ class PerfectMatch;
  * Can use either the extension scheme by Li et Al. or ours.
  * @ingroup module
  */
-class OtherSeeding : public Module
+class OtherSeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
 {
   public:
     bool bBowtie;
@@ -39,35 +39,10 @@ class OtherSeeding : public Module
     OtherSeeding( bool bBowtie ) : bBowtie( bBowtie )
     {} // constructor
 
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
+    // overload
+    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<FMIndex> pFM_index,
+                                                             std::shared_ptr<NucSeq> pQuerySeq );
 
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - FMIndex
-     * - NucSeq
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * - SegmentVector
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    std::string getName( ) const
-    {
-        return "OtherSeeding";
-    }
-
-
-    std::string getFullDesc( ) const
-    {
-        return std::string( "OtherSeeding(" ) + std::to_string( bBowtie ) + ")";
-    } // function
 }; // class
 
 } // namespace libMA
