@@ -50,13 +50,13 @@ typedef unsigned __int64 uint64_t;
 #endif
 #endif
 
-bool fileExists( const std::string &rsFile );
+bool fileExists( const std::string& rsFile );
 
-void makeDir( const std::string &rsFile );
+void makeDir( const std::string& rsFile );
 
 /* Constructs the full filename for a prefix, suffix combination.
  */
-std::string EXPORTED fullFileName( const char *pcFileNamePrefix, const char *pcSuffix );
+std::string EXPORTED fullFileName( const char* pcFileNamePrefix, const char* pcSuffix );
 
 /**
  * @brief Function for range checking.
@@ -64,15 +64,15 @@ std::string EXPORTED fullFileName( const char *pcFileNamePrefix, const char *pcS
  * Checks: Whether val is between min and max.
  */
 template <typename ParameterType>
-void vRangeCheckAndThrowInclusive( const std::string &sText, const ParameterType &xRangeMin,
-                                   const ParameterType &xVal, const ParameterType &xRangeMax )
+void vRangeCheckAndThrowInclusive( const std::string& sText, const ParameterType& xRangeMin, const ParameterType& xVal,
+                                   const ParameterType& xRangeMax )
 {
     if( xVal < xRangeMin || xVal > xRangeMax )
     {
-        throw std::runtime_error( (
-            ( ( ( ( ( ( std::string( sText ) += "Out of range for value : " ) += std::to_string(
-                          xVal ) ) += " range : [ " ) += std::to_string( xRangeMin ) ) += ".." ) +=
-              std::to_string( xRangeMax ) ) += "]" ) ); // runtime error
+        throw std::runtime_error(
+            ( ( ( ( ( ( ( std::string( sText ) += "Out of range for value : " ) += std::to_string( xVal ) ) +=
+                      " range : [ " ) += std::to_string( xRangeMin ) ) += ".." ) += std::to_string( xRangeMax ) ) +=
+              "]" ) ); // runtime error
     } // if
 } // template function
 
@@ -82,16 +82,75 @@ void vRangeCheckAndThrowInclusive( const std::string &sText, const ParameterType
  * Checks: Whether val is between min and max.
  */
 template <typename ParameterType>
-void vRangeCheckAndThrowExclusive( const std::string &sText, const ParameterType &xRangeMin,
-                                   const ParameterType &xVal, const ParameterType &xRangeMax )
+void vRangeCheckAndThrowExclusive( const std::string& sText, const ParameterType& xRangeMin, const ParameterType& xVal,
+                                   const ParameterType& xRangeMax )
 {
     if( xVal < xRangeMin || xVal >= xRangeMax )
     {
-        throw std::runtime_error( (
-            ( ( ( ( ( ( std::string( sText ) += "Out of range for value : " ) += std::to_string(
-                          xVal ) ) += " range : [ " ) += std::to_string( xRangeMin ) ) += ".." ) +=
-              std::to_string( xRangeMax ) ) += ")" ) ); // runtime error
+        throw std::runtime_error(
+            ( ( ( ( ( ( ( std::string( sText ) += "Out of range for value : " ) += std::to_string( xVal ) ) +=
+                      " range : [ " ) += std::to_string( xRangeMin ) ) += ".." ) += std::to_string( xRangeMax ) ) +=
+              ")" ) ); // runtime error
     } // if
 } // template function
+
+/**
+ * @brief Loop where the counter value is known during compiletime.
+ * @details
+ * Example Usage:
+ *   template <size_t IDX> struct Exec
+ *   {
+ *       bool operator( )( int& x )
+ *       {
+ *           std::cout << x << std::endl;
+ *           return true;
+ *       } // operator
+ *   }; // struct
+ *
+ *   int main()
+ *   {
+ *      int x = 10;
+ *      bool bComplete = TemplateLoop<3, Exec>::iterate(x);
+ *      if(bComplete)
+ *          std::cout << "true" << std::endl;
+ *      else
+ *          std::cout << "false" << std::endl;
+ *      return 0;
+ *   } // function
+ * Prints:
+ * 10
+ * 10
+ * 10
+ * true
+ *
+ *
+ * The executed struct can return false in order to break the iteration. If done so iterate returns false.
+ * Otherwise iterate returns true.
+ */
+template <size_t c, template <size_t> class Func> struct TemplateLoop
+{
+    template <typename... TP_PARAMS> static bool iterate( TP_PARAMS&... rParams )
+    {
+        if( !TemplateLoop<c - 1, Func>::iterate( rParams... ) )
+            return false;
+        return Func<c - 1>( )( rParams... );
+    }
+};
+
+template <template <size_t> class Func> struct TemplateLoop<1, Func>
+{
+    template <typename... TP_PARAMS> static bool iterate( TP_PARAMS&... rParams )
+    {
+        return Func<0>( )( rParams... );
+    }
+};
+// This makes is possible to have loops that are executed 0 times
+template <template <size_t> class Func> struct TemplateLoop<0, Func>
+{
+    template <typename... TP_PARAMS> static bool iterate( TP_PARAMS&... rParams )
+    {
+        return true;
+    }
+};
 
 #endif

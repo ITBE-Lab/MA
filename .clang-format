@@ -22,6 +22,7 @@ IndentWidth: '4'
 Language: Cpp
 MaxEmptyLinesToKeep: '2'
 NamespaceIndentation: None
+PointerAlignment: Left
 ReflowComments: 'true'
 SortIncludes: 'true'
 SpaceAfterCStyleCast: 'false'

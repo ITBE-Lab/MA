@@ -25,21 +25,23 @@ TARGET_OBJ= \
 
 # flags
 CC=gcc
+STD=-std=c++17
+#CC=clang++-6.0
 # use avx instead of sse
 ifeq ($(NO_SSE), 1)
-	CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3 -g
+	CCFLAGS= -Wall -Werror -fPIC $(STD) -O3 -g
 	CFLAGS= -Wall -Werror -fPIC -O3 -g
 else
-	CCFLAGS= -Wall -Werror -fPIC -std=c++11 -O3 -g -msse4.1
+	CCFLAGS= -Wall -Werror -fPIC $(STD) -O3 -g -msse4.1
 	CFLAGS= -Wall -Werror -fPIC -O3 -g -msse4.1
 endif
-LDFLAGS= -std=c++11
+LDFLAGS= $(STD)
 LDLIBS= -lm -lpthread -lstdc++
 INCLUDES= -Iinc
 
 # this adds debug switches
 ifeq ($(DEBUG), 1)
-	CCFLAGS = -Wall -Werror -fPIC -std=c++11 -g -DDEBUG_LEVEL=1 -Og
+	CCFLAGS = -Wall -Werror -fPIC $(STD) -g -DDEBUG_LEVEL=1 -Og
 	# we store release and debug objects in different folders
 	# no debug version for the ksw library
 	TARGET_OBJ= \

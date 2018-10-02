@@ -172,11 +172,11 @@ class Module
             std::cerr << "cant return to python - cpp module failed" << std::endl;
             exit( 0 );
         }
-        catch( const std::exception &e )
+        catch( const std::exception& e )
         {
             std::cerr << e.what( ) << std::endl;
         }
-        catch( const std::string &e )
+        catch( const std::string& e )
         {
             std::cerr << e << std::endl;
         }
@@ -189,8 +189,7 @@ class Module
         } // catch
         return nullptr;
 #else
-        throw AlignerException(
-            "python modules are not allowed to call cpp modules currently - sorry" );
+        throw AlignerException( "python modules are not allowed to call cpp modules currently - sorry" );
 #endif
     } // function
 
@@ -202,8 +201,8 @@ class Module
      * @note This is static since we need to save a reference to the shared_ptr of the Module
      * promising.
      */
-    static std::shared_ptr<Pledge> EXPORTED
-    promiseMe( std::shared_ptr<Module> pThis, std::vector<std::shared_ptr<Pledge>> vInput );
+    static std::shared_ptr<Pledge> EXPORTED promiseMe( std::shared_ptr<Module> pThis,
+                                                       std::vector<std::shared_ptr<Pledge>> vInput );
 };
 
 /**
@@ -414,8 +413,7 @@ class Pledge : public Container
              * once python is done...
              */
             auto timeStamp = std::chrono::system_clock::now( );
-            content = boost::python::extract<std::shared_ptr<Container>>(
-                py_pledger.attr( "save_execute" )( vInput ) );
+            content = boost::python::extract<std::shared_ptr<Container>>( py_pledger.attr( "save_execute" )( vInput ) );
             std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
             execTime = duration.count( );
             DEBUG( if( !typeCheck( content, type ) ) {
@@ -438,8 +436,7 @@ class Pledge : public Container
      * Does not lock otherwise.
      * In either case fDo is called.
      */
-    inline std::shared_ptr<Container>
-    lockIfNecessary( std::function<std::shared_ptr<Container>( )> fDo )
+    inline std::shared_ptr<Container> lockIfNecessary( std::function<std::shared_ptr<Container>( )> fDo )
     {
         // if(vSuccessors.size() > 1) @todo @fixme this should be here
         if( pledger != nullptr && pledger->requiresLock( ) )
@@ -475,7 +472,7 @@ class Pledge : public Container
     /**
      * @brief this is required due to the use of mutex
      */
-    Pledge( const Pledge & ) = delete; // copy constructor
+    Pledge( const Pledge& ) = delete; // copy constructor
 
     // overload
     bool canCast( std::shared_ptr<Container> c ) const
@@ -513,16 +510,15 @@ class Pledge : public Container
         return pledger;
     } // function
 
-    static EXPORTED std::shared_ptr<Pledge> makePledge(
-        std::shared_ptr<Module> pledger, std::vector<std::shared_ptr<Pledge>> vPredecessors );
+    static EXPORTED std::shared_ptr<Pledge> makePledge( std::shared_ptr<Module> pledger,
+                                                        std::vector<std::shared_ptr<Pledge>> vPredecessors );
 
 #ifdef WITH_PYTHON
-    static inline std::shared_ptr<Pledge>
-    makePyPledge( boost::python::object py_pledger, std::shared_ptr<Container> type,
-                  std::vector<std::shared_ptr<Pledge>> vPredecessors )
+    static inline std::shared_ptr<Pledge> makePyPledge( boost::python::object py_pledger,
+                                                        std::shared_ptr<Container> type,
+                                                        std::vector<std::shared_ptr<Pledge>> vPredecessors )
     {
-        std::shared_ptr<Pledge> pRet =
-            std::shared_ptr<Pledge>( new Pledge( py_pledger, type, vPredecessors ) );
+        std::shared_ptr<Pledge> pRet = std::shared_ptr<Pledge>( new Pledge( py_pledger, type, vPredecessors ) );
 
         for( std::shared_ptr<Pledge> pPredecessor : vPredecessors )
             pPredecessor->vSuccessors.push_back( std::weak_ptr<Pledge>( pRet ) );
@@ -693,8 +689,7 @@ class Pledge : public Container
                 if( pPledge->hasPythonPledger( ) )
                 {
                     numThreads = 1;
-                    DEBUG( std::cout << "Detected python module. Cannot use more than one thread."
-                                     << std::endl; )
+                    DEBUG( std::cout << "Detected python module. Cannot use more than one thread." << std::endl; )
                     break;
                 } // if
 
@@ -750,11 +745,11 @@ class Pledge : public Container
                             {
                                 std::cerr << "Module Failed: " << e.what( ) << std::endl;
                             }
-                            catch( const std::exception &e )
+                            catch( const std::exception& e )
                             {
                                 std::cerr << e.what( ) << std::endl;
                             }
-                            catch( const std::string &e )
+                            catch( const std::string& e )
                             {
                                 std::cerr << e << std::endl;
                             }
