@@ -7,6 +7,7 @@
 #define MODULE_H
 
 #include "container/container.h"
+#include "util/default_parameters.h"
 #include "util/threadPool.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -15,7 +16,7 @@
 #include <boost/python/list.hpp>
 #endif
 
-#include "util/default_parameters.h"
+#include <algorithm>
 #include <bitset>
 #include <chrono>
 #include <ctime>

@@ -311,8 +311,8 @@ Harmonization::linesweep( std::shared_ptr<std::vector<std::tuple<Seeds::iterator
     return pItervalEnds;
 } // function
 
-std::shared_ptr<ContainerVector<Seeds>> Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn,
-                                                                std::shared_ptr<NucSeq> pQuery )
+std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
+Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery )
 {
 #define FILTER_1 ( 0 )
 #if FILTER_1
@@ -324,7 +324,7 @@ std::shared_ptr<ContainerVector<Seeds>> Harmonization::execute( std::shared_ptr<
     nucSeqIndex uiBestSoCScore = 0;
     unsigned int uiSoCRepeatCounter = 0;
 
-    auto pSoCs = std::make_shared<ContainerVector>( std::make_shared<Seeds>( ) );
+    auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
 
     while( !pSoCIn->empty( ) )
     {

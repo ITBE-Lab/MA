@@ -76,13 +76,6 @@ ifeq ($(WITH_POSTGRES), 1)
 	LDLIBS += -L$(POSTGRE_LIB_DIR) -lpq
 endif
 
-# compile the gpu smith waterman as well
-ifeq ($(WITH_GPU_SW), 1)
-	TARGET_OBJ += sw_gpu.o
-	CCFLAGS += -DWITH_GPU_SW
-	LDLIBS += -L/usr/local/cuda-9.1/lib64/ -lcudart
-endif
-
 
 # primary target
 all: dirs build_ma
@@ -125,10 +118,6 @@ dbg/%.o: src/%.cpp inc/%.h
 # target for object files
 obj/%.o: src/%.cpp inc/%.h
 	$(CC) $(CCFLAGS) $(INCLUDES) -c $< -o $@
-
-# the gpu smith waterman
-sw_gpu.o:
-	$(MAKE) -f CUDA_Makefile
 
 # documentation generation
 html/index.html: $(wildcard inc/*) $(wildcard inc/*/*) $(wildcard src/*) $(wildcard src/*/*) $(wildcard MA/*.py) doxygen.config

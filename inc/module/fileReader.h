@@ -30,7 +30,33 @@ class Reader : public Module<Container, true, NucSeq>
  */
 class FileReader : public Reader
 {
+  public:
+    std::shared_ptr<std::ifstream> pFile;
+    size_t uiFileSize = 0;
+    DEBUG( size_t uiNumLinesRead = 0; size_t uiNumLinesWithNs = 0; ) // DEBUG
     std::shared_ptr<NucSeq> EXPORTED execute( std::shared_ptr<Container> );
+    /**
+     * @brief creates a new FileReader.
+     */
+    FileReader( std::string sFileName ) : pFile( new std::ifstream( sFileName ) )
+    {
+        if( !pFile->is_open( ) )
+        {
+            throw AnnotatedException( "Unable to open file" + sFileName );
+        } // if
+        std::ifstream xFileEnd( sFileName, std::ifstream::ate | std::ifstream::binary );
+        uiFileSize = xFileEnd.tellg( );
+        if( uiFileSize == 0 )
+            std::cerr << "Warning: empty file: " << sFileName << std::endl;
+    } // constructor
+
+    ~FileReader( )
+    {
+        DEBUG( std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
+               std::cout << "read " << uiNumLinesWithNs << " N's." << std::endl;
+               if( !pFile->eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
+        pFile->close( );
+    } // deconstructor
 
     // @override
     virtual bool requiresLock( ) const

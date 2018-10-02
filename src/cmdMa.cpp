@@ -237,7 +237,7 @@ int main( int argc, char* argv[] )
             return 0;
         } // if
 
-        auto uiT = result[ "threads" ].as<unsigned int>( );
+        // auto uiT = result[ "threads" ].as<unsigned int>( );
         defaults::bNormalDist = result.count( "paNorm" ) > 0;
         defaults::bUniformDist = result.count( "paUni" ) > 0;
         defaults::uiMean = result[ "paMean" ].as<unsigned int>( );
@@ -345,12 +345,13 @@ int main( int argc, char* argv[] )
             //        << std::endl;
             if( defaults::sSeedSet != "SMEMs" && defaults::sSeedSet != "maxSpan" )
                 std::cerr << "WARNING: selected invalid seed set; using maxSpan" << std::endl;
-            /*
-             *
-             * Alignment starts here
-             *
-             */
-            // setup the alignment input
+/*
+ *
+ * Alignment starts here
+ *
+ */
+// setup the alignment input
+#if 0
             std::shared_ptr<Pledge> pPack( new Pledge( std::shared_ptr<Container>( new Pack( ) ) ) );
             std::shared_ptr<Pack> pPack_( new Pack( ) );
             pPack_->vLoadCollection( sGenome );
@@ -435,6 +436,7 @@ int main( int argc, char* argv[] )
                                          } // if
                                      } // lambda
             );
+#endif
             std::cerr << "100% aligned.     " << std::endl;
         } // if
     } // try

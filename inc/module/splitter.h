@@ -28,7 +28,7 @@ namespace libMA
  * This locks this element and therefore enables is re usage.
  * Once the element does not need to be used anymore a UnLock can be used to unlock the element.
  */
-template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false TP_CONTAINER>
+template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false, TP_CONTAINER>
 {
   public:
     /**
@@ -53,7 +53,7 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false 
  * @details
  * @see lock
  */
-template <typename TP_CONTAINER, typename TP_PLEDGE> class UnLock : public Module<TP_CONTAINER, false TP_CONTAINER>
+template <typename TP_CONTAINER, typename TP_PLEDGE> class UnLock : public Module<TP_CONTAINER, false, TP_CONTAINER>
 {
   public:
     std::shared_ptr<TP_PLEDGE> pLockPledge;

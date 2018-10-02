@@ -6,6 +6,17 @@
 
 using namespace libMA;
 
+size_t len( std::string& sLine )
+{
+    size_t uiLineSize = sLine.length( );
+    while( uiLineSize > 0 && sLine[ uiLineSize - 1 ] != 'A' && sLine[ uiLineSize - 1 ] != 'C' &&
+           sLine[ uiLineSize - 1 ] != 'T' && sLine[ uiLineSize - 1 ] != 'G' && sLine[ uiLineSize - 1 ] != 'N' &&
+           sLine[ uiLineSize - 1 ] != 'a' && sLine[ uiLineSize - 1 ] != 'c' && sLine[ uiLineSize - 1 ] != 't' &&
+           sLine[ uiLineSize - 1 ] != 'g' && sLine[ uiLineSize - 1 ] != 'n' )
+        uiLineSize--;
+    return uiLineSize;
+} // function
+
 std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<Container> )
 {
     // std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);

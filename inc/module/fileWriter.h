@@ -79,7 +79,7 @@ class FileOutStream : public OutStream
  * @note flushing of the outstream; this must be done in the deconstructor of OutStream
  *
  */
-class FileWriter : public Module<Container, false, NucSeq, ContainerVector<Alignment>, Pack>
+class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
 {
   public:
     // holds a file ourstream if necessary
@@ -124,7 +124,7 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<Align
     } // constructor
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
-                                                         std::shared_ptr<ContainerVector<Alignment>>
+                                                         std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
                                                              pAlignments,
                                                          std::shared_ptr<Pack>
                                                              pPack );

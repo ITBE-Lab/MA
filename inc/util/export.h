@@ -146,29 +146,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define EXPORT_H
 
 #include "module/binarySeeding.h"
-#include "module/execOnVector.h"
-#include "module/extractAllSeeds.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
-#include "module/linesweep.h"
+#include "module/harmonization.h"
 #include "module/mappingQuality.h"
 #include "module/needlemanWunsch.h"
 #include "module/otherSeeding.h"
 #include "module/pairedReads.h"
-#include "module/smith_waterman.h"
-#include "module/splitter.h"
 #include "module/stripOfConsideration.h"
-#include "module/sw_gpu.h"
 #include "util/default_parameters.h"
+#if 0
+std::vector<std::shared_ptr<libMA::BasePledge>> EXPORTED setUpCompGraph( std::shared_ptr<libMA::Pledge> pPack,
+                                                                     std::shared_ptr<libMA::Pledge>
+                                                                         pFMDIndex,
+                                                                     std::shared_ptr<libMA::Pledge>
+                                                                         pQueries,
+                                                                     std::vector<std::shared_ptr<libMA::Module>>& vOut,
+                                                                     unsigned int uiThreads );
 
-std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED
-setUpCompGraph( std::shared_ptr<libMA::Pledge> pPack, std::shared_ptr<libMA::Pledge> pFMDIndex,
-                std::shared_ptr<libMA::Pledge> pQueries,
-                std::vector<std::shared_ptr<libMA::Module>> &vOut, unsigned int uiThreads );
-
-std::vector<std::shared_ptr<libMA::Pledge>> EXPORTED setUpCompGraphPaired(
-    std::shared_ptr<libMA::Pledge> pPack, std::shared_ptr<libMA::Pledge> pFMDIndex,
-    std::shared_ptr<libMA::Pledge> pQueries, std::vector<std::shared_ptr<libMA::Module>> &vOut,
-    unsigned int uiThreads );
+std::vector<std::shared_ptr<libMA::BasePledge>>
+    EXPORTED setUpCompGraphPaired( std::shared_ptr<libMA::Pledge> pPack, std::shared_ptr<libMA::Pledge> pFMDIndex,
+                                   std::shared_ptr<libMA::Pledge> pQueries,
+                                   std::vector<std::shared_ptr<libMA::Module>>& vOut, unsigned int uiThreads );
+#endif
 
 #endif

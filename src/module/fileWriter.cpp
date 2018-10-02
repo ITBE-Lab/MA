@@ -8,13 +8,13 @@ using namespace libMA;
 
 
 std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
-                                                std::shared_ptr<ContainerVector<Alignment>>
+                                                std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
                                                     pAlignments,
                                                 std::shared_ptr<Pack>
-                                                    pPack );
+                                                    pPack )
 {
     std::string sCombined = "";
-    for( std::shared_ptr<Container> pA : *pAlignments )
+    for( std::shared_ptr<Alignment> pA : *pAlignments )
     {
         std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
         if( pAlignment->length( ) == 0 )
@@ -124,7 +124,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         // flushing will be done in the deconstructor
         *pOut << sCombined;
     } // if & scope xGuard
-    return std::shared_ptr<Container>( new Nil( ) );
+    return std::shared_ptr<Container>( new Container( ) );
 } // function
 
 #ifdef WITH_PYTHON

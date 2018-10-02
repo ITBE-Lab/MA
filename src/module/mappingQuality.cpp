@@ -10,8 +10,9 @@ using namespace libMA::defaults;
 extern int iMatch;
 
 
-std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::execute(
-    std::shared_ptr<NucSeq> pQuery, std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments )
+std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
+                         std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments )
 {
     auto pSupplementaries = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
 
@@ -84,7 +85,7 @@ std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::exe
         } // for
         // move supplementary alignments forward
         std::sort( pAlignments->begin( ), pAlignments->end( ),
-                   []( std::shared_ptr<Container> a, std::shared_ptr<Container> b ) { return a->larger( b ); } // lambda
+                   []( std::shared_ptr<Alignment> a, std::shared_ptr<Alignment> b ) { return a->larger( b ); } // lambda
         ); // sort function call
     } // if
 

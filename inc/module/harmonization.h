@@ -22,7 +22,7 @@ namespace libMA
  * Removes all contradicting seeds.
  * This should only be used in combination with the StripOfConsideration module.
  */
-class Harmonization : public Module<Seeds, false, SoCPriorityQueue, NucSeq>
+class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq>
 {
   private:
     /**
@@ -145,8 +145,8 @@ class Harmonization : public Module<Seeds, false, SoCPriorityQueue, NucSeq>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<ContainerVector<Seeds>> EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCIn,
-                                                                      std::shared_ptr<NucSeq> pQuery );
+    virtual std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
+        EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery );
 
 }; // class
 } // namespace libMA

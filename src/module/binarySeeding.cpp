@@ -82,7 +82,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
 } // function
 
 
-std::shared_ptr<SegmentVector> execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector>
+BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
