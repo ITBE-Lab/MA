@@ -54,8 +54,7 @@ class SAInterval : public Container, public Interval<t_bwtIndex>
     SAInterval( ) : Interval( ), startOfComplement( 0 )
     {} // constructor
 
-    SAInterval( const SAInterval &other )
-        : Interval( other ), startOfComplement( other.startOfComplement )
+    SAInterval( const SAInterval& other ) : Interval( other ), startOfComplement( other.startOfComplement )
     {} // copy constructor
 
     // overload
@@ -100,7 +99,7 @@ class SAInterval : public Container, public Interval<t_bwtIndex>
     /*
      * @brief copys from another SAInterval.
      */
-    inline SAInterval &operator=( const SAInterval &rxOther )
+    inline SAInterval& operator=( const SAInterval& rxOther )
     {
         Interval::operator=( rxOther );
         assert( size( ) == rxOther.size( ) );
@@ -112,7 +111,7 @@ class SAInterval : public Container, public Interval<t_bwtIndex>
      * @brief compares two Intervals.
      * @returns true if start and size are equal, false otherwise.
      */
-    inline bool operator==( const SAInterval &rxOther )
+    inline bool operator==( const SAInterval& rxOther )
     {
         return Interval::operator==( rxOther ) && startOfComplement == rxOther.startOfComplement;
     } // operator
@@ -144,8 +143,7 @@ class FMIndex : public Container
 
     unsigned int EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
 
-    bool EXPORTED testSaInterval( std::shared_ptr<NucSeq> pQuerySeq,
-                                  const std::shared_ptr<Pack> pPack );
+    bool EXPORTED testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack );
 
     bool EXPORTED test( const std::shared_ptr<Pack> pPack, unsigned int uiNumTest );
 
@@ -177,7 +175,7 @@ class FMIndex : public Container
      * represent them. WARNING: Do not pass sequences comprising ambiguous symbols (e.g. symbol
      * 'N').
      */
-    void EXPORTED bwt_pac2bwt_step1( const NucSeq &fn_pac_arg );
+    void EXPORTED bwt_pac2bwt_step1( const NucSeq& fn_pac_arg );
 
 /** Retrieve character at position k from the $-removed packed BWT without occurrence counter.
  * Used in the context of step 2 (bwt_bwtupdate_core_step2) for retrieving characters.
@@ -243,7 +241,7 @@ class FMIndex : public Container
 
         /* retrieve Occ at k/OCC_INTERVAL
          */
-        n = ( (bwtint_t *)( p = bwt_occ_intv( k ) ) )[ c ];
+        n = ( (bwtint_t*)( p = bwt_occ_intv( k ) ) )[ c ];
         p += sizeof( bwtint_t ); // jump to the start of the first BWT cell
 
         /* calculate Occ up to the last k/32
@@ -255,8 +253,7 @@ class FMIndex : public Container
         } // for
 
         // calculate Occ
-        n += __occ_aux(
-            ( (uint64_t)p[ 0 ] << 32 | p[ 1 ] ) & ~( ( 1ull << ( ( ~k & 31 ) << 1 ) ) - 1 ), c );
+        n += __occ_aux( ( (uint64_t)p[ 0 ] << 32 | p[ 1 ] ) & ~( ( 1ull << ( ( ~k & 31 ) << 1 ) ) - 1 ), c );
         if( c == 0 )
         {
             n -= ~k & 31; // corrected for the masked bits
@@ -302,15 +299,14 @@ class FMIndex : public Container
      *                          1 manually selected algorithm for large inputs
      *                          2 automatic selection on foundation of input size
      */
-    void EXPORTED build_FMIndex(
-        const Pack &rxSequenceCollection, // the pack for which we compute a BWT
-        unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
+    void EXPORTED build_FMIndex( const Pack& rxSequenceCollection, // the pack for which we compute a BWT
+                                 unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
     );
 
     /** Builds up a FMIndex for the given input sequence.
      * REMARK: The sequence should be free of ambiguous bases (character N).
      */
-    void build_FMIndex( const NucSeq &fn_pac )
+    void build_FMIndex( const NucSeq& fn_pac )
     {
         /* Construction of core BWT.
          */
@@ -347,8 +343,7 @@ class FMIndex : public Container
              */
             for( unsigned int j = 0; j != 4; ++j )
             {
-                x |= ( ( ( i & 3 ) == j ) + ( ( i >> 2 & 3 ) == j ) + ( ( i >> 4 & 3 ) == j ) +
-                       ( i >> 6 == j ) )
+                x |= ( ( ( i & 3 ) == j ) + ( ( i >> 2 & 3 ) == j ) + ( ( i >> 4 & 3 ) == j ) + ( i >> 6 == j ) )
                      << ( j << 3 ); // (j << 3) is 0, 8, 16, 24
             } // for
 
@@ -376,10 +371,9 @@ class FMIndex : public Container
      * FIX ME: In the context of the BWT as vector this is not nice at all. (Work with references
      * over here)
      */
-    inline uint32_t *bwt_occ_intv( t_bwtIndex k )
+    inline uint32_t* bwt_occ_intv( t_bwtIndex k )
     {
-        return &bwt[ 0 ] +
-               ( ( k >> 7 ) << 4 ); // (k / 128) * 16  (we take 16, because we need twice the size)
+        return &bwt[ 0 ] + ( ( k >> 7 ) << 4 ); // (k / 128) * 16  (we take 16, because we need twice the size)
     } // method
 
     /** k (input) is the position of some nucleotide within the BWT.
@@ -418,8 +412,8 @@ class FMIndex : public Container
         DEBUG_3(
             // std::cout << "bwt_size : " << bwt_size << " k: " << k << " " << (k < bwt_size) <<
             // "\n";
-            std::cout << "cnt after copy " << cnt[ 0 ] << " " << cnt[ 1 ] << " " << cnt[ 2 ] << " "
-                      << cnt[ 3 ] << "\n"; )
+            std::cout << "cnt after copy " << cnt[ 0 ] << " " << cnt[ 1 ] << " " << cnt[ 2 ] << " " << cnt[ 3 ]
+                      << "\n"; )
 
         /* Step 2. Jump (4(==sizeof(uint_32)) * 8 bytes(==sizeof(uint_64))) to the start of the
          * first BWT cell (nucleotide) (see bwt_bwtupdate_core) This line is dirty, works only if
@@ -429,8 +423,7 @@ class FMIndex : public Container
 
         /* Pointer to the end (with respect to k) within the group
          */
-        end = p + ( ( k >> 4 ) - ( ( k & ~OCC_INTV_MASK ) >>
-                                   4 ) ); // this is the end point of the following loop
+        end = p + ( ( k >> 4 ) - ( ( k & ~OCC_INTV_MASK ) >> 4 ) ); // this is the end point of the following loop
 
         /* Add up nucleotides within the blocks up to k, using the parallel addition approach.
          * At the end, we have in x the counting for A, C, G, T
@@ -452,53 +445,44 @@ class FMIndex : public Container
         cnt[ 2 ] += x >> 16 & 0xff; // G
         cnt[ 3 ] += x >> 24 & 0xff; // T
 
-        DEBUG_3( std::cout << "GOT for k: " << k << " => " << cnt[ 0 ] << " " << cnt[ 1 ] << " "
-                           << cnt[ 2 ] << " " << cnt[ 3 ] << "\n"; )
+        DEBUG_3( std::cout << "GOT for k: " << k << " => " << cnt[ 0 ] << " " << cnt[ 1 ] << " " << cnt[ 2 ] << " "
+                           << cnt[ 3 ] << "\n"; )
     } // method
 
     /** Writes the BWT of the FM-Index to the stream given as argument.
      * WARNING: The given stream should be opened with flag ios::binary.
      */
-    void vSaveBWT( std::ostream &rxOutputStream )
+    void vSaveBWT( std::ostream& rxOutputStream )
     { /* Write the primary, 4 elements of L2 array as well as the BWT itself to the file system.
        */
-        rxOutputStream.write(
-            reinterpret_cast<const char *>( &primary ),
-            sizeof( primary ) ); // BWA code: err_fwrite( &bwt->primary, sizeof(bwtint_t), 1, fp );
-        rxOutputStream.write(
-            reinterpret_cast<const char *>( &L2[ 1 ] ),
-            sizeof( L2[ 0 ] ) *
-                4 ); //  BWA code: err_fwrite( bwt->L2 + 1, sizeof(bwtint_t), 4, fp );
+        rxOutputStream.write( reinterpret_cast<const char*>( &primary ),
+                              sizeof( primary ) ); // BWA code: err_fwrite( &bwt->primary, sizeof(bwtint_t), 1, fp );
+        rxOutputStream.write( reinterpret_cast<const char*>( &L2[ 1 ] ),
+                              sizeof( L2[ 0 ] ) * 4 ); //  BWA code: err_fwrite( bwt->L2 + 1, sizeof(bwtint_t), 4, fp );
         /* Write the vector to the file system.
          */
-        rxOutputStream.write( reinterpret_cast<const char *>( &bwt[ 0 ] ),
-                              sizeof( bwt[ 0 ] ) * bwt.size( ) );
+        rxOutputStream.write( reinterpret_cast<const char*>( &bwt[ 0 ] ), sizeof( bwt[ 0 ] ) * bwt.size( ) );
         rxOutputStream.flush( );
     } // method
 
     /** Writes the Suffix Array to the given stream.
      */
-    void vSaveSuffixArray( std::ostream &rxOutputStream )
+    void vSaveSuffixArray( std::ostream& rxOutputStream )
     {
-        rxOutputStream.write(
-            reinterpret_cast<const char *>( &primary ),
-            sizeof( primary ) ); // BWA code: err_fwrite( &bwt->primary, sizeof(bwtint_t), 1, fp );
-        rxOutputStream.write(
-            reinterpret_cast<const char *>( &L2[ 1 ] ),
-            sizeof( L2[ 0 ] ) *
-                4 ); //  BWA code: err_fwrite( bwt->L2 + 1, sizeof(bwtint_t), 4, fp );
-        rxOutputStream.write(
-            reinterpret_cast<const char *>( &sa_intv ),
-            sizeof( sa_intv ) ); // BWA code: err_fwrite( &bwt->sa_intv, sizeof(bwtint_t), 1, fp );
-        rxOutputStream.write( reinterpret_cast<const char *>( &uiRefSeqLength ),
+        rxOutputStream.write( reinterpret_cast<const char*>( &primary ),
+                              sizeof( primary ) ); // BWA code: err_fwrite( &bwt->primary, sizeof(bwtint_t), 1, fp );
+        rxOutputStream.write( reinterpret_cast<const char*>( &L2[ 1 ] ),
+                              sizeof( L2[ 0 ] ) * 4 ); //  BWA code: err_fwrite( bwt->L2 + 1, sizeof(bwtint_t), 4, fp );
+        rxOutputStream.write( reinterpret_cast<const char*>( &sa_intv ),
+                              sizeof( sa_intv ) ); // BWA code: err_fwrite( &bwt->sa_intv, sizeof(bwtint_t), 1, fp );
+        rxOutputStream.write( reinterpret_cast<const char*>( &uiRefSeqLength ),
                               sizeof( uiRefSeqLength ) ); // BWA code: err_fwrite( &bwt->seq_len,
                                                           // sizeof(bwtint_t), 1, fp );
         /* Write the suffix array to an file. rxOutputStream must be in binary mode!
          * Taken from:
          * http://stackoverflow.com/questions/12372531/reading-and-writing-a-stdvector-into-a-file-correctly
          */
-        rxOutputStream.write( reinterpret_cast<const char *>( &sa[ 1 ] ),
-                              ( sa.size( ) - 1 ) * sizeof( bwtint_t ) );
+        rxOutputStream.write( reinterpret_cast<const char*>( &sa[ 1 ] ), ( sa.size( ) - 1 ) * sizeof( bwtint_t ) );
         //// The following apporach does not work: Why? (we have no iterator for uint_64) std::copy(
         /// sa.begin() + 1, sa.end(), std::ostreambuf_iterator<char>( rxOutputStream ) );
         rxOutputStream.flush( );
@@ -508,7 +492,7 @@ class FMIndex : public Container
      * IMPROVEMENT: The original BWA design for BWT storage is quite crappy. Store the size of the
      * BWT as part of the data.
      */
-    void vRestoreBWT( std::ifstream &rxInputStream )
+    void vRestoreBWT( std::ifstream& rxInputStream )
     {
         /* Get the file size.
          * FIX ME: Move this code to a function of its own.
@@ -525,16 +509,15 @@ class FMIndex : public Container
         } // if
 
         rxInputStream.seekg( 0, std::ios::beg ); // go back to the beginning of the stream.
-        rxInputStream.read( reinterpret_cast<char *>( &primary ),
+        rxInputStream.read( reinterpret_cast<char*>( &primary ),
                             sizeof( primary ) ); // get the primary back into the data structure.
-        rxInputStream.read( reinterpret_cast<char *>( &L2[ 1 ] ),
+        rxInputStream.read( reinterpret_cast<char*>( &L2[ 1 ] ),
                             sizeof( L2[ 0 ] ) * 4 ); // get the L2 values back from the filesystem
 
         /* Compute the bwt size using the info about the stream size.
          */
         size_t uiExpectedBWTSize =
-            ( uiStreamLength - ( sizeof( primary ) + ( sizeof( L2[ 0 ] ) * 4 ) ) ) /
-            sizeof( bwt[ 0 ] );
+            ( uiStreamLength - ( sizeof( primary ) + ( sizeof( L2[ 0 ] ) * 4 ) ) ) / sizeof( bwt[ 0 ] );
 
         /* This resize is quite expensive, because all elements are initialized with 0.
          */
@@ -542,15 +525,13 @@ class FMIndex : public Container
 
         /* Restore vector by reading from file system.
          */
-        rxInputStream.read( reinterpret_cast<char *>( &bwt[ 0 ] ),
-                            sizeof( bwt[ 0 ] ) * uiExpectedBWTSize );
+        rxInputStream.read( reinterpret_cast<char*>( &bwt[ 0 ] ), sizeof( bwt[ 0 ] ) * uiExpectedBWTSize );
 
         if( rxInputStream.fail( ) )
         { /* We should have no bad stream over here, or the input file did not comprise the expected
            * number of bytes.
            */
-            throw std::runtime_error(
-                std::string( "Unexpected fail after reading BWT from stream. " ) );
+            throw std::runtime_error( std::string( "Unexpected fail after reading BWT from stream. " ) );
         } // if
 
         uiRefSeqLength = L2[ 4 ]; // restore seq_len;
@@ -559,12 +540,12 @@ class FMIndex : public Container
 
     /** Restore suffix array by using the given input stream.
      */
-    void vRestoreSuffixArray( std::istream &rxInputStream )
+    void vRestoreSuffixArray( std::istream& rxInputStream )
     {
         decltype( primary ) uiPrimaryReferenceValue;
         decltype( uiRefSeqLength ) uiSeqLenReferenceValue;
 
-        rxInputStream.read( reinterpret_cast<char *>( &uiPrimaryReferenceValue ),
+        rxInputStream.read( reinterpret_cast<char*>( &uiPrimaryReferenceValue ),
                             sizeof( primary ) ); // get the primary back into the data structure.
         if( primary != uiPrimaryReferenceValue )
         {
@@ -572,18 +553,15 @@ class FMIndex : public Container
         } // if
 
         char aSkipped[ sizeof( L2[ 0 ] ) * 4 ]; // small buffer for dummy reading
-        rxInputStream.read( reinterpret_cast<char *>( aSkipped ),
+        rxInputStream.read( reinterpret_cast<char*>( aSkipped ),
                             sizeof( L2[ 0 ] ) * 4 ); // get the L2 values but ignore them.
-        rxInputStream.read( reinterpret_cast<char *>( &sa_intv ),
+        rxInputStream.read( reinterpret_cast<char*>( &sa_intv ),
                             sizeof( sa_intv ) ); // read suffix array interval size.
-        rxInputStream.read(
-            reinterpret_cast<char *>( &uiSeqLenReferenceValue ),
-            sizeof(
-                uiSeqLenReferenceValue ) ); // read the sequence length for verification purposes
+        rxInputStream.read( reinterpret_cast<char*>( &uiSeqLenReferenceValue ),
+                            sizeof( uiSeqLenReferenceValue ) ); // read the sequence length for verification purposes
         if( this->uiRefSeqLength != uiSeqLenReferenceValue )
         {
-            throw std::runtime_error(
-                "SA-BWT inconsistency: suffix array has non matching sequence length stored." );
+            throw std::runtime_error( "SA-BWT inconsistency: suffix array has non matching sequence length stored." );
         } // if
 
         /* Take from:
@@ -606,24 +584,21 @@ class FMIndex : public Container
 
         /* Read all suffix array values except the first one, which is a always a special one
          */
-        rxInputStream.read( reinterpret_cast<char *>( &sa[ 1 ] ),
-                            sizeof( uint64_t ) * ( uiExpectedSASize - 1 ) );
+        rxInputStream.read( reinterpret_cast<char*>( &sa[ 1 ] ), sizeof( uint64_t ) * ( uiExpectedSASize - 1 ) );
 
         if( rxInputStream.fail( ) )
         { /* We should have no bad stream over here, or the input file did not comprise the expected
            * number of bytes.
            */
-            throw std::runtime_error(
-                std::string( "Unexpected bad after reading suffix array from stream. " ) );
+            throw std::runtime_error( std::string( "Unexpected bad after reading suffix array from stream. " ) );
         } // if
 
         /* Check whether we read exactly the required number of elements.
          */
         if( sa.size( ) != uiExpectedSASize )
         {
-            throw std::runtime_error(
-                std::string( "Reading suffix array from file system failed due to non matching "
-                             "expected size." ) );
+            throw std::runtime_error( std::string( "Reading suffix array from file system failed due to non matching "
+                                                   "expected size." ) );
         } // if
     } // method
 
@@ -633,10 +608,9 @@ class FMIndex : public Container
      * bwt_2occ4 is more efficient than bwt_occ4. IMPORTANT: The indices are inclusive, i. e. we
      * count IMPORTANT: Requires k <= l
      */
-    inline void
-    bwt_2occ4( t_bwtIndex k, // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
-               t_bwtIndex l, // second end index in BWT (l can be negative: (t_bwtIndex)(-1) )
-               bwt64bitCounter cntk[ 4 ], bwt64bitCounter cntl[ 4 ] // (outputs) counter for k and l
+    inline void bwt_2occ4( t_bwtIndex k, // first end index in BWT (k can be negative: (t_bwtIndex)(-1) )
+                           t_bwtIndex l, // second end index in BWT (l can be negative: (t_bwtIndex)(-1) )
+                           bwt64bitCounter cntk[ 4 ], bwt64bitCounter cntl[ 4 ] // (outputs) counter for k and l
     )
     { /* Adjusted versions of k and l, because $ is not in bwt
        */
@@ -673,14 +647,12 @@ class FMIndex : public Container
             DEBUG_3( std::cout << "k is " << k << " p is " << p << "\n"; )
             memcpy( cntk, p, 4 * sizeof( bwt64bitCounter ) );
 
-            DEBUG_3( for( int i = 0; i < 4; ++i ) std::cout << "cntk[" << i << "]=" << cntk[ i ]
-                                                            << "  ";
+            DEBUG_3( for( int i = 0; i < 4; ++i ) std::cout << "cntk[" << i << "]=" << cntk[ i ] << "  ";
                      std::cout << "\n"; )
 
             /* Step 2. (see bwt_occ4)
              */
-            p += sizeof(
-                bwt64bitCounter ); // sizeof(bwtint_t) = 4*(sizeof(bwtint_t)/sizeof(uint32_t))
+            p += sizeof( bwt64bitCounter ); // sizeof(bwtint_t) = 4*(sizeof(bwtint_t)/sizeof(uint32_t))
             // prepare cntk[]
             endk = p + ( ( k >> 4 ) - ( ( k & ~OCC_INTV_MASK ) >> 4 ) );
             endl = p + ( ( l >> 4 ) - ( ( l & ~OCC_INTV_MASK ) >> 4 ) );
@@ -707,10 +679,8 @@ class FMIndex : public Container
             tmp = *p & ~( ( 1U << ( ( ~l & 15 ) << 1 ) ) - 1 );
             y += __occ_aux4( tmp ) - ( ~l & 15 );
 
-            memcpy(
-                cntl, cntk,
-                4 * sizeof(
-                        bwt64bitCounter ) ); // could be moved to step 1, without changing semantics
+            memcpy( cntl, cntk,
+                    4 * sizeof( bwt64bitCounter ) ); // could be moved to step 1, without changing semantics
             cntk[ 0 ] += x & 0xff;
             cntl[ 0 ] += y & 0xff; // A
             cntk[ 1 ] += x >> 8 & 0xff;
@@ -731,7 +701,7 @@ class FMIndex : public Container
      */
     SAInterval extend_backward(
         // current interval
-        const SAInterval &ik,
+        const SAInterval& ik,
         // the character to extend with
         const uint8_t c );
 
@@ -750,8 +720,7 @@ class FMIndex : public Container
     { /* Check uiBWTposition for out of range
        */
         assert( ( uiBWTposition >= 0 ) &&
-                ( uiBWTposition <= static_cast<bwtint_t>(
-                                       uiRefSeqLength ) ) ); // Out of range check for uiBWTposition
+                ( uiBWTposition <= static_cast<bwtint_t>( uiRefSeqLength ) ) ); // Out of range check for uiBWTposition
 
         bwtint_t sa = 0;
         const bwtint_t mask = sa_intv - 1; // this is why sa_intv must be a power of 2
@@ -770,15 +739,14 @@ class FMIndex : public Container
         auto uiReturnedPosition = sa + this->sa[ uiBWTposition / sa_intv ];
         assert( ( uiReturnedPosition >= 0 ) &&
                 ( uiReturnedPosition <
-                  static_cast<bwtint_t>(
-                      uiRefSeqLength ) ) ); // Out of range for returned reference position
+                  static_cast<bwtint_t>( uiRefSeqLength ) ) ); // Out of range for returned reference position
 
         return uiReturnedPosition;
     } // method
 
     /** Checks whether the files required for loading a pack does exist on the file system.
      */
-    static bool packExistsOnFileSystem( const std::string &rsPrefix )
+    static bool packExistsOnFileSystem( const std::string& rsPrefix )
     {
         // 1 == use std o check for file existance
         return fileExists( std::string( rsPrefix ).append( ".bwt" ) ) &&
@@ -787,7 +755,7 @@ class FMIndex : public Container
 
     /** Dump the current FM-Index to two separated files for BWT and SA.
      */
-    void vStoreFMIndex_boost( const std::string &rxFileNamePrefix )
+    void vStoreFMIndex_boost( const std::string& rxFileNamePrefix )
     {
         { /* Save burrow wheeler transform
            */
@@ -799,15 +767,14 @@ class FMIndex : public Container
 
         { /* Save suffix array
            */
-            std::ofstream xOutputStream( rxFileNamePrefix + ".sa",
-                                         std::ios::binary | std::ios::trunc | std::ios::out );
+            std::ofstream xOutputStream( rxFileNamePrefix + ".sa", std::ios::binary | std::ios::trunc | std::ios::out );
             vSaveSuffixArray( xOutputStream );
             xOutputStream.close( );
         } // scope
     } // method
 
     /** wrap the vStoreFMIndex function in oder to make it acessible to pyhton */
-    void vStoreFMIndex( const char *sPrefix )
+    void vStoreFMIndex( const char* sPrefix )
     {
         std::string sPath( sPrefix );
         vStoreFMIndex_boost( sPath );
@@ -815,7 +782,7 @@ class FMIndex : public Container
 
     /** Load an FM-Index previously stored by vStoreFMIndex.
      */
-    void vLoadFMIndex_boost( const std::string &rxFileNamePrefix )
+    void vLoadFMIndex_boost( const std::string& rxFileNamePrefix )
     {
         {
             if( !fileExists( rxFileNamePrefix + ".bwt" ) )
@@ -823,12 +790,10 @@ class FMIndex : public Container
                 throw std::runtime_error( "File opening error: " + rxFileNamePrefix + ".bwt" );
             } // if
 
-            std::ifstream xInputFiletream( rxFileNamePrefix + ".bwt",
-                                           std::ios::binary | std::ios::in );
+            std::ifstream xInputFiletream( rxFileNamePrefix + ".bwt", std::ios::binary | std::ios::in );
             if( xInputFiletream.fail( ) ) // check whether we could successfully open the stream
             {
-                throw std::runtime_error( "Opening of BWT of FM index failed: " + rxFileNamePrefix +
-                                          ".bwt" );
+                throw std::runtime_error( "Opening of BWT of FM index failed: " + rxFileNamePrefix + ".bwt" );
             } // if
 
             vRestoreBWT( xInputFiletream );
@@ -839,12 +804,10 @@ class FMIndex : public Container
          * compatibility with the BWT.
          */
         {
-            std::ifstream xInputFileStream( rxFileNamePrefix + ".sa",
-                                            std::ios::binary | std::ios::in );
+            std::ifstream xInputFileStream( rxFileNamePrefix + ".sa", std::ios::binary | std::ios::in );
             if( xInputFileStream.fail( ) ) // check whether we could successfully open the stream
             {
-                throw std::runtime_error(
-                    "Opening of suffix array of FM index failed: " + rxFileNamePrefix + ".sa" );
+                throw std::runtime_error( "Opening of suffix array of FM index failed: " + rxFileNamePrefix + ".sa" );
             } // if
             vRestoreSuffixArray( xInputFileStream );
             xInputFileStream.close( );
@@ -861,18 +824,17 @@ class FMIndex : public Container
      * BWT can be build by several different functions. Here we can check for correctness.
      * So long it does not compare the BWT sequence itself.
      */
-    bool operator==( const FMIndex &rxOtherFMIndex )
+    bool operator==( const FMIndex& rxOtherFMIndex )
     {
-        std::string sErrorText =
-            ( L2 != rxOtherFMIndex.L2 )
-                ? "Different L2"
-                : ( primary != rxOtherFMIndex.primary )
-                      ? "Different primary"
-                      : ( uiRefSeqLength != rxOtherFMIndex.uiRefSeqLength )
-                            ? "Different seq_len"
-                            : ( bwt != rxOtherFMIndex.bwt )
-                                  ? "Different bwt_size"
-                                  : ( sa != rxOtherFMIndex.sa ) ? "Different suffix arrays" : "";
+        std::string sErrorText = ( L2 != rxOtherFMIndex.L2 )
+                                     ? "Different L2"
+                                     : ( primary != rxOtherFMIndex.primary )
+                                           ? "Different primary"
+                                           : ( uiRefSeqLength != rxOtherFMIndex.uiRefSeqLength )
+                                                 ? "Different seq_len"
+                                                 : ( bwt != rxOtherFMIndex.bwt )
+                                                       ? "Different bwt_size"
+                                                       : ( sa != rxOtherFMIndex.sa ) ? "Different suffix arrays" : "";
         if( sErrorText != "" )
         {
             std::cerr << "BWT different: " << sErrorText << std::endl;
@@ -911,9 +873,16 @@ class FMIndex : public Container
 
     /* FM-Index constructor. Builds a FM index on foundation of rxSequence.
      */
-    FMIndex( const NucSeq &rxSequence ) : FMIndex( ) // call the default constructor
+    FMIndex( const NucSeq& rxSequence ) : FMIndex( ) // call the default constructor
     {
         build_FMIndex( rxSequence );
+    } // constructor
+
+    /* FM-Index constructor. Loads a fm index.
+     */
+    FMIndex( const std::string sFileName ) : FMIndex( ) // call the default constructor
+    {
+        vLoadFMIndex( sFileName );
     } // constructor
 
     /* FM-Index constructor. Builds a FM index on foundation of pxSequence.
@@ -925,7 +894,7 @@ class FMIndex : public Container
 
     /* FM-Index constructor. Builds a FM index on foundation of a given sequence collection.
      */
-    FMIndex( const Pack &rxSequenceCollection, // the pack for which we require a BWT
+    FMIndex( const Pack& rxSequenceCollection, // the pack for which we require a BWT
              unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
              )
         : FMIndex( ) // call the default constructor
@@ -937,7 +906,8 @@ class FMIndex : public Container
      */
     FMIndex(
         // the pack for which we require a BWT
-        const std::shared_ptr<Pack> pxSequenceCollection )
+        const std::shared_ptr<Pack>
+            pxSequenceCollection )
         : FMIndex( ) // call the default constructor
     {
         build_FMIndex( *pxSequenceCollection, 2 );

@@ -263,6 +263,81 @@ class BasePledge
         throw AnnotatedException( type_name( this ) + " did not implement isFinished" );
         return false;
     } // method
+    /**
+     * @brief Gets the given pledges simultaneously.
+     * @details
+     * If bLoop is true the threads will keep going until all volatile modules are dry
+     * if numThreads is not specified numThreads will be set to the amount of pledges given.
+     */
+    static inline void simultaneousGet( std::vector<std::shared_ptr<BasePledge>> vPledges,
+                                        std::function<void( )> callback = []( ) {},
+                                        unsigned int numThreads = 0 )
+    {
+        if( numThreads == 0 )
+            numThreads = vPledges.size( );
+
+        /*
+         * If there is a python module in the comp. graph we can only use one single thread.
+         * This is due to a limitation in the Python interpreter. There can only ever be one
+         * active Python thread.
+         * So, here we check if there is such a module and set the number of threads to one if
+         * necessary. @todo
+         */
+        // if( numThreads > 1 )
+        //     for( std::shared_ptr<BasePledge> pPledge : vPledges )
+        //         if( pPledge->hasPythonPledger( ) )
+        //         {
+        //             numThreads = 1;
+        //             DEBUG( std::cout << "Detected python module. Cannot use more than one thread." << std::endl; )
+        //             break;
+        //         } // if
+
+        {
+            // set up a threadpool
+            ThreadPool xPool( numThreads );
+            // enqueue a task that executes the comp. graph for each thread in the pool.
+            for( std::shared_ptr<BasePledge> pPledge : vPledges )
+            {
+                xPool.enqueue(
+                    [&callback]( size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
+                        assert( pPledge != nullptr );
+
+                        /*
+                         * Set bLoop = true if there is a volatile module in the graph.
+                         * This enables looping.
+                         * If bLoop is not set to true here we only compute the result once,
+                         * as all further computations would yield the same result.
+                         */
+                        bool bLoop = pPledge->hasVolatile( );
+
+                        // execute the loop if bLoop == true or do just one iteration otherwise.
+                        do
+                        {
+                            try
+                            {
+                                /*
+                                 * Execute one iteration of the comp. graph.
+                                 * Then set bLoop to false if the execution returned pEoFContainer.
+                                 * If bLoop is false already (due to there beeing no
+                                 * volatile module) then leave it as false.
+                                 */
+                                bLoop &= pPledge->getAsBaseType( ) != nullptr;
+
+                                // this callback function can be used to set a progress bar
+                                // for example.
+                                callback( );
+                            } // try
+                            catch( AnnotatedException e )
+                            {
+                                std::cerr << "Module Failed: " << e.what( ) << std::endl;
+                            } // catch
+                        } while( bLoop );
+                    }, // lambda
+                    pPledge );
+            } // for
+            // wait for the pool to finish it's work
+        } // scope xPool
+    } // function
 }; // class
 
 
@@ -550,87 +625,6 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     {
         return std::dynamic_pointer_cast<Container>( this->get( ) );
     } // method
-
-    /**
-     * @brief Gets the given pledges simultaneously.
-     * @details
-     * If bLoop is true the threads will keep going until all volatile modules are dry
-     * if numThreads is not specified numThreads will be set to the amount of pledges given.
-     */
-    static inline void simultaneousGet( std::vector<std::shared_ptr<Pledge>> vPledges,
-                                        std::function<void( )> callback = []( ) {},
-                                        unsigned int numThreads = 0 )
-    {
-        if( numThreads == 0 )
-            numThreads = vPledges.size( );
-
-        /*
-         * If there is a python module in the comp. graph we can only use one single thread.
-         * This is due to a limitation in the Python interpreter. There can only ever be one
-         * active Python thread.
-         * So, here we check if there is such a module and set the number of threads to one if
-         * necessary.
-         */
-        if( numThreads > 1 )
-            for( std::shared_ptr<Pledge> pPledge : vPledges )
-                if( pPledge->hasPythonPledger( ) )
-                {
-                    numThreads = 1;
-                    DEBUG( std::cout << "Detected python module. Cannot use more than one thread." << std::endl; )
-                    break;
-                } // if
-
-        {
-            // set up a threadpool
-            // ThreadPool xPool(numThreads);
-            // enqueue a task that executes the comp. graph for each thread in the pool.
-            for( std::shared_ptr<Pledge> pPledge : vPledges )
-            {
-                // xPool.enqueue(
-                //    [&callback](size_t uiTid, std::shared_ptr<Pledge> pPledge) {
-                //        assert(pPledge != nullptr);
-
-                /*
-                 * Set bLoop = true if there is a volatile module in the graph.
-                 * This enables looping.
-                 * If bLoop is not set to true here we only compute the result once,
-                 * as all further computations would yield the same result.
-                 */
-                bool bLoop = pPledge->hasVolatile( );
-
-                // execute the loop if bLoop == true or do just one iteration otherwise.
-                do
-                {
-                    try
-                    {
-                        /*
-                         * Execute one iteration of the comp. graph.
-                         * Then set bLoop to false if the execution returned pEoFContainer.
-                         * If bLoop is false already (due to there beeing no
-                         * volatile module) then leave it as false.
-                         */
-                        bLoop &= pPledge->get( ) != nullptr;
-
-
-                        // this callback function can be used to set a progress bar
-                        // for example.
-                        callback( );
-                        DEBUG(
-                            // print a progress bar on cmdline
-                            // std::cout << "*" << std::flush;
-                        )
-                    }
-                    catch( AnnotatedException e )
-                    {
-                        std::cerr << "Module Failed: " << e.what( ) << std::endl;
-                    }
-                } while( bLoop );
-                //}, // lambda
-                // pPledge);
-            } // for
-            // wait for the pool to finish it's work
-        } // scope xPool
-    } // function
 }; // class
 
 /**
@@ -645,6 +639,13 @@ promiseMe( std::shared_ptr<TP_MODULE> pModule, std::shared_ptr<TP_PLEDGES>... pP
 {
     return std::make_shared<Pledge<typename TP_MODULE::TP_RETURN, TP_MODULE::IS_VOLATILE, TP_PLEDGES...>>(
         pModule, pPledges... );
+} // function
+
+template <class TP_CONTAINER, class... TP_ARGS> std::shared_ptr<Pledge<TP_CONTAINER>> makePledge( TP_ARGS&&... args )
+{
+    auto pRet = std::make_shared<Pledge<TP_CONTAINER>>( );
+    pRet->set( std::make_shared<TP_CONTAINER>( args... ) );
+    return pRet;
 } // function
 
 

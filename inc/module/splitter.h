@@ -53,24 +53,24 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false,
  * @details
  * @see lock
  */
-template <typename TP_CONTAINER, typename TP_PLEDGE> class UnLock : public Module<TP_CONTAINER, false, TP_CONTAINER>
+template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, false, TP_CONTAINER>
 {
   public:
-    std::shared_ptr<TP_PLEDGE> pLockPledge;
+    std::shared_ptr<BasePledge> pLockPledge;
 
     /**
      * @brief create a new UnLock.
      * @details
      * Takes the Lock it shall unlock as input.
      */
-    UnLock( std::shared_ptr<TP_PLEDGE> pLockPledge ) : pLockPledge( pLockPledge )
+    UnLock( std::shared_ptr<BasePledge> pLockPledge ) : pLockPledge( pLockPledge )
     {} // constructor
 
     virtual std::shared_ptr<TP_CONTAINER> EXPORTED execute( std::shared_ptr<TP_CONTAINER> pIn )
     {
         DEBUG_3( std::cout << "unlock" << std::endl; )
         // unlock the given lock
-        pLockPledge->set( nullptr );
+        pLockPledge->reset( );
 
         return pIn;
     } // method

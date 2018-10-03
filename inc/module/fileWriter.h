@@ -11,6 +11,10 @@
 
 namespace libMA
 {
+
+class WriterModule : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
+{}; // class
+
 /**
  * @brief wrapper for various out streams.
  * @details
@@ -79,7 +83,7 @@ class FileOutStream : public OutStream
  * @note flushing of the outstream; this must be done in the deconstructor of OutStream
  *
  */
-class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
+class FileWriter : public WriterModule
 {
   public:
     // holds a file ourstream if necessary

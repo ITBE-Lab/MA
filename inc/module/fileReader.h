@@ -16,7 +16,7 @@
 
 namespace libMA
 {
-class Reader : public Module<Container, true, NucSeq>
+class Reader : public Module<NucSeq, true>
 {
   public:
     virtual size_t getCurrPosInFile( ) const = 0;
@@ -34,7 +34,7 @@ class FileReader : public Reader
     std::shared_ptr<std::ifstream> pFile;
     size_t uiFileSize = 0;
     DEBUG( size_t uiNumLinesRead = 0; size_t uiNumLinesWithNs = 0; ) // DEBUG
-    std::shared_ptr<NucSeq> EXPORTED execute( std::shared_ptr<Container> );
+    std::shared_ptr<NucSeq> EXPORTED execute( );
     /**
      * @brief creates a new FileReader.
      */

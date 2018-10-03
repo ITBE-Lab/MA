@@ -17,7 +17,7 @@ size_t len( std::string& sLine )
     return uiLineSize;
 } // function
 
-std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<Container> )
+std::shared_ptr<NucSeq> FileReader::execute( )
 {
     // std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
     std::shared_ptr<NucSeq> pRet( new NucSeq( ) );

@@ -153,16 +153,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/needlemanWunsch.h"
 #include "module/otherSeeding.h"
 #include "module/pairedReads.h"
+#include "module/splitter.h"
 #include "module/stripOfConsideration.h"
 #include "util/default_parameters.h"
+
+namespace libMA
+{
+
+std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( std::shared_ptr<Pledge<Pack, false>> pPack,
+                                                                  std::shared_ptr<Pledge<FMIndex, false>>
+                                                                      pFMDIndex,
+                                                                  std::shared_ptr<Pledge<NucSeq, true>>
+                                                                      pQueries,
+                                                                  std::shared_ptr<WriterModule> pWriter,
+                                                                  unsigned int uiThreads );
+} // namespace libMA
 #if 0
-std::vector<std::shared_ptr<libMA::BasePledge>> EXPORTED setUpCompGraph( std::shared_ptr<libMA::Pledge> pPack,
-                                                                     std::shared_ptr<libMA::Pledge>
-                                                                         pFMDIndex,
-                                                                     std::shared_ptr<libMA::Pledge>
-                                                                         pQueries,
-                                                                     std::vector<std::shared_ptr<libMA::Module>>& vOut,
-                                                                     unsigned int uiThreads );
 
 std::vector<std::shared_ptr<libMA::BasePledge>>
     EXPORTED setUpCompGraphPaired( std::shared_ptr<libMA::Pledge> pPack, std::shared_ptr<libMA::Pledge> pFMDIndex,

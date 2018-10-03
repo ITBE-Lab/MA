@@ -21,7 +21,8 @@ namespace libMA
  * Returns a finished alignment if given a sound selection of seeds.
  * @ingroup module
  */
-class NeedlemanWunsch : public Module<Alignment, false, Seeds, NucSeq, Pack>
+class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>>, false,
+                                      ContainerVector<std::shared_ptr<Seeds>>, NucSeq, Pack>
 {
     std::vector<std::vector<std::vector<int>>> s;
     std::vector<std::vector<std::vector<char>>> dir;
@@ -43,9 +44,20 @@ class NeedlemanWunsch : public Module<Alignment, false, Seeds, NucSeq, Pack>
 
     NeedlemanWunsch( );
 
+
+    std::shared_ptr<Alignment> EXPORTED execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<Pack> pRefPack );
+
     // overload
-    virtual std::shared_ptr<Alignment> EXPORTED execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
-                                                         std::shared_ptr<Pack> pRefPack );
+    virtual std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+    execute( std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> pSeedSets, std::shared_ptr<NucSeq> pQuery,
+             std::shared_ptr<Pack> pRefPack )
+    {
+        auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
+        for( auto pSeeds : *pSeedSets )
+            pRet->push_back( execute_one( pSeeds, pQuery, pRefPack ) );
+        return pRet;
+    } // function
 
 }; // class
 

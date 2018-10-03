@@ -102,7 +102,7 @@ class Pack : public Container
      * to make such copies using the implicit constructor definitions. According the C++ standard
      * this should effect all other implicit constructors as well.
      */
-    Pack( const Pack & ) = delete;
+    Pack( const Pack& ) = delete;
 
   private:
     /* In the original BWA code the reverse strand is stored as part of the pack as well.
@@ -134,8 +134,8 @@ class Pack : public Container
 
         /* Initializing constructor.
          */
-        SequenceInPack( const std::string &sName, const std::string &sComment,
-                        const uint64_t uiOffsetInPack, const uint64_t length )
+        SequenceInPack( const std::string& sName, const std::string& sComment, const uint64_t uiOffsetInPack,
+                        const uint64_t length )
             : sName( sName ),
               sComment( sComment.empty( ) ? "none" : sComment ),
               uiStartOffsetUnpacked( uiOffsetInPack ),
@@ -165,11 +165,9 @@ class Pack : public Container
         for( size_t uiIndex = 0; uiIndex < xVectorOfSequenceDescriptors.size( ); uiIndex++ )
         {
             assert( uiRunningStartOffsetUnpacked < this->uiUnpackedSizeForwardStrand );
-            assert( xVectorOfSequenceDescriptors[ uiIndex ].uiStartOffsetUnpacked ==
-                    uiRunningStartOffsetUnpacked );
+            assert( xVectorOfSequenceDescriptors[ uiIndex ].uiStartOffsetUnpacked == uiRunningStartOffsetUnpacked );
 
-            uiRunningStartOffsetUnpacked +=
-                xVectorOfSequenceDescriptors[ uiIndex ].uiLengthUnpacked;
+            uiRunningStartOffsetUnpacked += xVectorOfSequenceDescriptors[ uiIndex ].uiLengthUnpacked;
         } // for
 
         assert( uiRunningStartOffsetUnpacked == this->uiUnpackedSizeForwardStrand );
@@ -222,8 +220,7 @@ class Pack : public Container
     inline void vSetNucleotideOnPos( const uint64_t uiPosition, const uint8_t uiValue )
     { /* We expect a correct position, when we come here.
        */
-        xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] |= uiValue
-                                                           << ( ( ~uiPosition & 3UL ) << 1 );
+        xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
     } // inline method
 
     /* Get the value at position uiPosition in the unpacked sequence.
@@ -232,19 +229,17 @@ class Pack : public Container
     inline uint8_t getNucleotideOnPos( const uint64_t uiPosition ) const
     { /* We expect a correct position, when we come here.
        */
-        return xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] >> ( ( ~uiPosition & 3UL ) << 1 ) &
-               3;
+        return xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] >> ( ( ~uiPosition & 3UL ) << 1 ) & 3;
     } // inline method
 
     /* Method can throw exception if I/O operation fails.
      * Writes the isolated content of the pack-vector to the file-system.
      */
-    void vStorePack( const std::string &rsFileNamePrefix,
-                     const decltype( xPackedNucSeqs ) &rxPackedSequences,
+    void vStorePack( const std::string& rsFileNamePrefix,
+                     const decltype( xPackedNucSeqs )& rxPackedSequences,
                      const uint64_t uiUnpackedSize ) const
     {
-        auto rsFileName( rsFileNamePrefix +
-                         ".pac" ); // final filename for writing the packed sequence
+        auto rsFileName( rsFileNamePrefix + ".pac" ); // final filename for writing the packed sequence
         DEBUG_2( std::cout << "Storing pack with filename " << rsFileName << std::endl; )
         std::ofstream xFileOutputStream( rsFileName, std::ios::out | std::ios::binary );
 
@@ -254,8 +249,7 @@ class Pack : public Container
         if( rxPackedSequences.size( ) > 0 )
         { /* For size 0 the address operation is "out of range".
            */
-            xFileOutputStream.write( (const char *)&rxPackedSequences[ 0 ],
-                                     rxPackedSequences.size( ) );
+            xFileOutputStream.write( (const char*)&rxPackedSequences[ 0 ], rxPackedSequences.size( ) );
         } // if
 
         /* Original comment: the following codes make the pac file size always (i64PacSize/4+1+1)
@@ -266,22 +260,21 @@ class Pack : public Container
         if( uiUnpackedSize % 4 == 0 )
         {
             uint8_t uiZero = 0;
-            xFileOutputStream.write( (const char *)&uiZero, 1 );
+            xFileOutputStream.write( (const char*)&uiZero, 1 );
         } // if
 
         /* We write the remainder as a single byte at the end of the file.
          * So we can later reconstruct the size of the total size of the unpacked sequence.
          */
         uint8_t uiChecksum = uiUnpackedSize % 4;
-        xFileOutputStream.write( (const char *)&uiChecksum, 1 );
+        xFileOutputStream.write( (const char*)&uiChecksum, 1 );
 
         /* Close the output stream and check whether everything is fine.
          */
         xFileOutputStream.close( );
         if( xFileOutputStream.fail( ) )
         {
-            throw(
-                std::runtime_error( std::string( "could not store pack " ).append( rsFileName ) ) );
+            throw( std::runtime_error( std::string( "could not store pack " ).append( rsFileName ) ) );
         } // if
     } // method
 
@@ -291,7 +284,7 @@ class Pack : public Container
      * prefix is the prefix of the filenames.
      * Improvement: The pack should comprise forward as well as reverse strand.
      */
-    void vStoreCollectionDescripton( const std::string &rsFileNamePrefix )
+    void vStoreCollectionDescripton( const std::string& rsFileNamePrefix )
     {
         /* Write records for all sequence entries.
          */
@@ -301,19 +294,15 @@ class Pack : public Container
 
             /* Write the head line, followed by writing the descriptors.
              */
-            xFileOutputStream << uiUnpackedSizeForwardStrand
-                              << " " // Store the size of the forward strand only.
-                              << xVectorOfSequenceDescriptors.size( )
-                              << " " // Number of sequences is the pack.
+            xFileOutputStream << uiUnpackedSizeForwardStrand << " " // Store the size of the forward strand only.
+                              << xVectorOfSequenceDescriptors.size( ) << " " // Number of sequences is the pack.
                               << seed << "\n";
 
-            for( const auto &rxEntry : xVectorOfSequenceDescriptors )
+            for( const auto& rxEntry : xVectorOfSequenceDescriptors )
             {
-                xFileOutputStream << rxEntry.gi << " " << rxEntry.sName << " " << rxEntry.sComment
-                                  << "\n"
-                                  << rxEntry.uiStartOffsetUnpacked << " "
-                                  << rxEntry.uiLengthUnpacked << " " << rxEntry.uiNumberOfHoles
-                                  << "\n";
+                xFileOutputStream << rxEntry.gi << " " << rxEntry.sName << " " << rxEntry.sComment << "\n"
+                                  << rxEntry.uiStartOffsetUnpacked << " " << rxEntry.uiLengthUnpacked << " "
+                                  << rxEntry.uiNumberOfHoles << "\n";
             } // for
         } // end of scope -> xFileOutputStream closed
 
@@ -325,17 +314,13 @@ class Pack : public Container
 
             /* Write Head line.
              */
-            xFileOutputStream << uiUnpackedSizeForwardStrand
-                              << " " // Store the size of the forward strand only.
-                              << xVectorOfSequenceDescriptors.size( )
-                              << " " // Number of sequences is the pack.
-                              << xVectorOfHoleDescriptors.size( )
-                              << "\n"; // number of holes in the pack.
+            xFileOutputStream << uiUnpackedSizeForwardStrand << " " // Store the size of the forward strand only.
+                              << xVectorOfSequenceDescriptors.size( ) << " " // Number of sequences is the pack.
+                              << xVectorOfHoleDescriptors.size( ) << "\n"; // number of holes in the pack.
 
-            for( const auto &rxEntry : xVectorOfHoleDescriptors )
+            for( const auto& rxEntry : xVectorOfHoleDescriptors )
             {
-                xFileOutputStream << rxEntry.offset << " " << rxEntry.length << " "
-                                  << rxEntry.xHoleCharacter << "\n";
+                xFileOutputStream << rxEntry.offset << " " << rxEntry.length << " " << rxEntry.xHoleCharacter << "\n";
             } // for
         } // end of scope -> xFileOutputStream closed
     } // method
@@ -344,9 +329,8 @@ class Pack : public Container
      * Restores a pack from the file-system.
      * When we come here, we expect, that uiUnpackedSizeForwardStrand has already been set.
      */
-    void vLoadPackedSequence(
-        std::string sFileNamePrefix,
-        uint64_t uiUnpackedSize // this size should be known in the moment of pack reconstruction
+    void vLoadPackedSequence( std::string sFileNamePrefix,
+                              uint64_t uiUnpackedSize // this size should be known in the moment of pack reconstruction
     )
     {
         /* Create the full file name and open the stream for input
@@ -374,15 +358,14 @@ class Pack : public Container
          * TO DO: On 32 Bit systems check for some overflow.
          */
         xPackedNucSeqs.resize( ( size_t )( uiFileSize - ( 1 + bZeroByteInjection ) ) );
-        xFileInputStream.read( (char *)&xPackedNucSeqs[ 0 ],
-                               uiFileSize - ( 1 + bZeroByteInjection ) );
+        xFileInputStream.read( (char*)&xPackedNucSeqs[ 0 ], uiFileSize - ( 1 + bZeroByteInjection ) );
 
         /* Check existence of injected zero-byte.
          */
         if( bZeroByteInjection )
         {
             uint8_t uiZeroByte;
-            xFileInputStream.read( (char *)&uiZeroByte, 1 );
+            xFileInputStream.read( (char*)&uiZeroByte, 1 );
             if( uiZeroByte != 0 )
             {
                 throw std::runtime_error( "Loading pack failed. Missed expected zero-byte." );
@@ -392,7 +375,7 @@ class Pack : public Container
         /* Read and verify the checksum.
          */
         uint8_t uiChecksum;
-        xFileInputStream.read( (char *)&uiChecksum, 1 );
+        xFileInputStream.read( (char*)&uiChecksum, 1 );
         if( uiChecksum != uiUnpackedSize % 4 )
         {
             throw std::runtime_error( "Loading pack failed. Wrong checksum." );
@@ -400,8 +383,7 @@ class Pack : public Container
 
         /* Check whether the unpacked sequence size is reasonable.
          */
-        if( ( uiUnpackedSize >> 2 ) + ( ( uiUnpackedSize & 3 ) == 0 ? 0 : 1 ) !=
-            xPackedNucSeqs.size( ) )
+        if( ( uiUnpackedSize >> 2 ) + ( ( uiUnpackedSize & 3 ) == 0 ? 0 : 1 ) != xPackedNucSeqs.size( ) )
         {
             //// std::cout << uiUnpackedSizeForwardStrand << "\n";
             //// std::cout << ( uiUnpackedSizeForwardStrand >> 2) + (( uiUnpackedSizeForwardStrand &
@@ -419,7 +401,7 @@ class Pack : public Container
      * Throws an exception, if something goes wrong.
      * Deserialization of the vector for sequence descriptors.
      */
-    void vLoadSequenceDescriptorVector( const char *pcFileNamePrefix )
+    void vLoadSequenceDescriptorVector( const char* pcFileNamePrefix )
     {
         size_t uiExpectedVectorSize = 0;
 
@@ -443,8 +425,7 @@ class Pack : public Container
             /* We read two lines containing sequence descriptor data.
              * The comment(annotation) might contain white-spaces, so we read it using getline.
              */
-            xFileInputStream >> rxEntry.gi >>
-                rxEntry.sName; // read the serialized GI and sequence name
+            xFileInputStream >> rxEntry.gi >> rxEntry.sName; // read the serialized GI and sequence name
             std::getline( xFileInputStream, rxEntry.sComment ); // read the comment
             xFileInputStream >> rxEntry.uiStartOffsetUnpacked >> rxEntry.uiLengthUnpacked >>
                 rxEntry.uiNumberOfHoles; // read start in pack, length and number of holes
@@ -463,11 +444,9 @@ class Pack : public Container
 
         /* Some very basic test, whether something went wrong.
          */
-        if( !xFileInputStream.eof( ) ||
-            uiExpectedVectorSize != xVectorOfSequenceDescriptors.size( ) )
+        if( !xFileInputStream.eof( ) || uiExpectedVectorSize != xVectorOfSequenceDescriptors.size( ) )
         {
-            throw std::runtime_error(
-                "Loading pack failed. Inconsistent or incomplete sequence descriptor data." );
+            throw std::runtime_error( "Loading pack failed. Inconsistent or incomplete sequence descriptor data." );
         } // if
     } // method
 
@@ -477,10 +456,11 @@ class Pack : public Container
 
 
 
+
     * Throws an exception, if something goes wrong.
     * Deserialization of the vector for hole descriptors.
     */
-    void vLoadHoleDescriptorVector( const char *pcFileNamePrefix )
+    void vLoadHoleDescriptorVector( const char* pcFileNamePrefix )
     {
         size_t uiExpectedSequenceDescriptorVectorSize = 0;
         size_t uiExpectedHoleDescriptorVectorSize = 0;
@@ -520,20 +500,17 @@ class Pack : public Container
 
         /* Some very basic test, whether something went wrong.
          */
-        if( !xFileInputStream.eof( ) ||
-            uiExpectedHoleDescriptorVectorSize != xVectorOfHoleDescriptors.size( ) )
+        if( !xFileInputStream.eof( ) || uiExpectedHoleDescriptorVectorSize != xVectorOfHoleDescriptors.size( ) )
         {
-            throw std::runtime_error(
-                "Loading pack failed. Inconsistent or incomplete hole descriptor data." );
+            throw std::runtime_error( "Loading pack failed. Inconsistent or incomplete hole descriptor data." );
         } // if
     } // method
 
   public:
     inline void printHoles( )
     {
-        for( auto &rHole : xVectorOfHoleDescriptors )
-            std::cout << rHole.offset << " " << rHole.length << " " << rHole.xHoleCharacter
-                      << std::endl;
+        for( auto& rHole : xVectorOfHoleDescriptors )
+            std::cout << rHole.offset << " " << rHole.length << " " << rHole.xHoleCharacter << std::endl;
     } // method
 
     friend void vTextSequenceCollectionClass( );
@@ -549,14 +526,12 @@ class Pack : public Container
         for( size_t uiIndex = 0; uiIndex < xVectorOfSequenceDescriptors.size( ); uiIndex++ )
         {
             if( !( uiRunningStartOffsetUnpacked < this->uiUnpackedSizeForwardStrand ) ||
-                !( xVectorOfSequenceDescriptors[ uiIndex ].uiStartOffsetUnpacked ==
-                   uiRunningStartOffsetUnpacked ) )
+                !( xVectorOfSequenceDescriptors[ uiIndex ].uiStartOffsetUnpacked == uiRunningStartOffsetUnpacked ) )
             {
                 return false;
             } // if
 
-            uiRunningStartOffsetUnpacked +=
-                xVectorOfSequenceDescriptors[ uiIndex ].uiLengthUnpacked;
+            uiRunningStartOffsetUnpacked += xVectorOfSequenceDescriptors[ uiIndex ].uiLengthUnpacked;
         } // for
 
         return uiRunningStartOffsetUnpacked == this->uiUnpackedSizeForwardStrand;
@@ -589,6 +564,22 @@ class Pack : public Container
         srand( seed );
     } // default constructor
 
+    /* constructor.
+     */
+    Pack( std::string sFileName )
+        : bPackComprisesReverseStrand( false ),
+          xVectorOfSequenceDescriptors( ),
+          xVectorOfHoleDescriptors( ),
+          xPackedNucSeqs( ),
+          seed( uint32_t( time( NULL ) ) ), // random number generator initial value
+          uiUnpackedSizeForwardStrand( 0 )
+    {
+        /* Initialize the random number generator
+         */
+        srand( seed );
+        this->vLoadCollection( sFileName );
+    } // constructor
+
 
     // overload
     bool canCast( std::shared_ptr<Container> c ) const
@@ -611,9 +602,9 @@ class Pack : public Container
     /* Appends a single nucleotide sequence to the collection.
      * TO DO: uiOffsetDistance seems not be required any longer.
      */
-    void vAppendSequence( const std::string &rsName, // name of the sequence within the collection
-                          const std::string &rsComment, // comment for the sequence
-                          const NucSeq &rxSequence // sequence itself (The sequence will be copied
+    void vAppendSequence( const std::string& rsName, // name of the sequence within the collection
+                          const std::string& rsComment, // comment for the sequence
+                          const NucSeq& rxSequence // sequence itself (The sequence will be copied
                                                    // and is not referred after method termination.)
     )
     { /* Skip empty sequences, because they may become troublemaker, particularly if the occur on
@@ -628,11 +619,10 @@ class Pack : public Container
         /* The initial offset of the current sequence, if we see all nucleotides as some contiguous
          * sequence.
          */
-        uint64_t uiOffsetDistance =
-            xVectorOfSequenceDescriptors.empty( )
-                ? 0
-                : xVectorOfSequenceDescriptors.back( ).uiStartOffsetUnpacked +
-                      xVectorOfSequenceDescriptors.back( ).uiLengthUnpacked;
+        uint64_t uiOffsetDistance = xVectorOfSequenceDescriptors.empty( )
+                                        ? 0
+                                        : xVectorOfSequenceDescriptors.back( ).uiStartOffsetUnpacked +
+                                              xVectorOfSequenceDescriptors.back( ).uiLengthUnpacked;
 
         assert( uiOffsetDistance == uiUnpackedSizeForwardStrand );
         DEBUG( auto uiInitialUnpackedSize = uiUnpackedSizeForwardStrand; ) // DEBUG
@@ -671,12 +661,10 @@ class Pack : public Container
                 { /* First N seen. We append a fresh record to vector of holes and initialize the
                    * record. We have to double the capacity if there is no space anymore.
                    */
-                    assert( uiSymbolCode == (unsigned int)'N' ||
-                            uiSymbolCode == (unsigned int)'n' );
-                    xVectorOfHoleDescriptors.emplace_back(
-                        HoleDescriptor( uiOffsetDistance, // offset
-                                        'N' // character
-                                        ) ); // vector insertion
+                    assert( uiSymbolCode == (unsigned int)'N' || uiSymbolCode == (unsigned int)'n' );
+                    xVectorOfHoleDescriptors.emplace_back( HoleDescriptor( uiOffsetDistance, // offset
+                                                                           'N' // character
+                                                                           ) ); // vector insertion
 
                     /* Our current sequence has one hole more ..
                      */
@@ -727,11 +715,11 @@ class Pack : public Container
     /*
      *    wrapper for boost
      */
-    void vAppendSequence_boost(
-        const char *rsName, // name of the sequence within the collection
-        const char *rsComment, // comment for the sequence
-        const std::shared_ptr<NucSeq> pxSequence // sequence itself (The sequence will be copied and
-                                                 // is not referred after method termination.)
+    void vAppendSequence_boost( const char* rsName, // name of the sequence within the collection
+                                const char* rsComment, // comment for the sequence
+                                const std::shared_ptr<NucSeq>
+                                    pxSequence // sequence itself (The sequence will be copied and
+                                               // is not referred after method termination.)
     )
     {
         vAppendSequence( std::string( rsName ), std::string( rsComment ), *pxSequence );
@@ -740,16 +728,16 @@ class Pack : public Container
 #ifdef FASTA_READER
     /* Appends a single FASTA record to the collection and pack.
      */
-    void EXPORTED vAppendFastaSequence( const FastaDescriptor &rxFastaDescriptor );
+    void EXPORTED vAppendFastaSequence( const FastaDescriptor& rxFastaDescriptor );
     /* Appends a single FASTA record to the collection and pack.
      */
-    void EXPORTED vAppendFastaFile( const char *pcFileName );
+    void EXPORTED vAppendFastaFile( const char* pcFileName );
 #endif
 
     /* Creates the reverse strand a saves the collection on the disk.
      * After finishing a collection it is impossible to add further sequences.
      */
-    void vStoreCollection( const std::string &rsPackPrefix )
+    void vStoreCollection( const std::string& rsPackPrefix )
     {
         assert( debugCheckSequenceDescriptorVector( ) );
 
@@ -763,14 +751,13 @@ class Pack : public Container
     /* This method is only required in the context of BWT-large, an old code part from the original
      * BWA code. Here we simply store the pure pack together with its reverse strand.
      */
-    void vCreateAndStorePackForBWTProcessing( const std::string &rxFilePath ) const
+    void vCreateAndStorePackForBWTProcessing( const std::string& rxFilePath ) const
     {
         /* Make a copy of the packed nucleotide sequence.
          */
         decltype( xPackedNucSeqs ) xPackedSequence = xPackedNucSeqs;
 
-        uint64_t uiRequiredSize =
-            ( uiUnpackedSizeForwardPlusReverse( ) + 3 ) / 4; // required size of packed sequence
+        uint64_t uiRequiredSize = ( uiUnpackedSizeForwardPlusReverse( ) + 3 ) / 4; // required size of packed sequence
 
         /* We adapt the size of the container and set all fresh elements to zero.
          */
@@ -780,20 +767,18 @@ class Pack : public Container
          * WARNING: forward iterator becomes negative.
          */
         int64_t iReversePosition = (int64_t)uiUnpackedSizeForwardStrand;
-        for( int64_t iForwardPosition = iReversePosition - 1; iForwardPosition >= 0;
-             --iForwardPosition )
+        for( int64_t iForwardPosition = iReversePosition - 1; iForwardPosition >= 0; --iForwardPosition )
         {
             /* Create for each forward BP the corresponding reverse strand BP.
              */
-            uint8_t uiValue = xPackedSequence[ ( size_t )( iForwardPosition >> 2 ) ] >>
-                                  ( ( ~iForwardPosition & 3UL ) << 1 ) &
-                              3; // get BP on forward strand
+            uint8_t uiValue =
+                xPackedSequence[ ( size_t )( iForwardPosition >> 2 ) ] >> ( ( ~iForwardPosition & 3UL ) << 1 ) &
+                3; // get BP on forward strand
 
             /* Fixed Bug: uiValue => (3 - uiValue)
              */
             xPackedSequence[ ( size_t )( iReversePosition >> 2 ) ] |=
-                ( 3 - uiValue ) << ( ( ~iReversePosition & 3UL )
-                                     << 1 ); // set complement on reverse strand
+                ( 3 - uiValue ) << ( ( ~iReversePosition & 3UL ) << 1 ); // set complement on reverse strand
             ++iReversePosition;
         } // for
 
@@ -803,10 +788,9 @@ class Pack : public Container
     } // method
     /* Checks whether the files required for loading a pack does exist on the file system.
      */
-    static bool packExistsOnFileSystem( const std::string &rsPrefix )
+    static bool packExistsOnFileSystem( const std::string& rsPrefix )
     {
-        return fileExists( rsPrefix + ".pac" ) && fileExists( rsPrefix + ".ann" ) &&
-               fileExists( rsPrefix + ".amb" );
+        return fileExists( rsPrefix + ".pac" ) && fileExists( rsPrefix + ".ann" ) && fileExists( rsPrefix + ".amb" );
     } // method
 
 #ifdef FASTA_READER
@@ -814,27 +798,25 @@ class Pack : public Container
      * pcPackPrefix is some prefix for the pack-files.
      * Reads all sequences on the file system and creates a sequence collection out of them.
      */
-    void EXPORTED
-    vPackFastaFilesDeprecated( const std::vector<std::string> &rxvFileNameOfFastaFiles,
-                               const char *pcPackPrefix, bool bMakeReverseStand = false );
+    void EXPORTED vPackFastaFilesDeprecated( const std::vector<std::string>& rxvFileNameOfFastaFiles,
+                                             const char* pcPackPrefix, bool bMakeReverseStand = false );
 
     /* Entry point, for the construction of packs.
      * pcPackPrefix is some prefix for the pack-files.
      * Reads all sequences on the file system and creates a sequence collection out of them.
      */
-    void EXPORTED vAppendFASTA( const std::string &sFastaFilePath );
+    void EXPORTED vAppendFASTA( const std::string& sFastaFilePath );
 #endif
 
     /* Restores a nucleotide sequence collection from the file system using the prefix given as
      * argument.
      */
-    void vLoadCollection( const std::string &rsFileNamePrefix )
+    void vLoadCollection( const std::string& rsFileNamePrefix )
     {
         if( !packExistsOnFileSystem( rsFileNamePrefix ) ) // if the files of the pack does not
                                                           // exist, we inform the caller.
         {
-            throw std::runtime_error( "Tried to load non-existing pack with prefix " +
-                                      rsFileNamePrefix );
+            throw std::runtime_error( "Tried to load non-existing pack with prefix " + rsFileNamePrefix );
         } // if
 
         vLoadSequenceDescriptorVector( rsFileNamePrefix.c_str( ) ); // load the .ann file
@@ -862,7 +844,7 @@ class Pack : public Container
      */
     uint64_t startOfSequenceWithName( std::string name ) const
     {
-        for( const SequenceInPack &seq : xVectorOfSequenceDescriptors )
+        for( const SequenceInPack& seq : xVectorOfSequenceDescriptors )
             if( seq.sName.compare( name ) == 0 )
                 return seq.uiStartOffsetUnpacked;
         return 0;
@@ -872,8 +854,7 @@ class Pack : public Container
      */
     uint64_t endOfSequenceWithId( int64_t iSequenceId ) const
     {
-        return startOfSequenceWithId( iSequenceId ) +
-               xVectorOfSequenceDescriptors[ iSequenceId ].uiLengthUnpacked;
+        return startOfSequenceWithId( iSequenceId ) + xVectorOfSequenceDescriptors[ iSequenceId ].uiLengthUnpacked;
     } // method
 
 
@@ -881,7 +862,7 @@ class Pack : public Container
      */
     uint64_t lengthOfSequenceWithName( std::string name ) const
     {
-        for( const SequenceInPack &seq : xVectorOfSequenceDescriptors )
+        for( const SequenceInPack& seq : xVectorOfSequenceDescriptors )
             if( seq.sName.compare( name ) == 0 )
                 return seq.uiLengthUnpacked;
         return 0;
@@ -890,10 +871,9 @@ class Pack : public Container
     /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver
      * "*".) FIX ME: This is design flaw from the original BWA code.
      */
-    inline const char *nameOfSequenceWithId( int64_t iSequenceId ) const
+    inline const char* nameOfSequenceWithId( int64_t iSequenceId ) const
     {
-        return ( iSequenceId >= 0 ) ? xVectorOfSequenceDescriptors[ iSequenceId ].sName.c_str( )
-                                    : "*";
+        return ( iSequenceId >= 0 ) ? xVectorOfSequenceDescriptors[ iSequenceId ].sName.c_str( ) : "*";
     } // method
 
     /* Returns true if given position belongs to reverse strand
@@ -909,18 +889,15 @@ class Pack : public Container
      */
     inline int64_t iAbsolutePosition( uint64_t uiPosition ) const
     {
-        return bPositionIsOnReversStrand( uiPosition )
-                   ? uiUnpackedSizeForwardPlusReverse( ) - ( uiPosition + 1 )
-                   : uiPosition;
+        return bPositionIsOnReversStrand( uiPosition ) ? uiUnpackedSizeForwardPlusReverse( ) - ( uiPosition + 1 )
+                                                       : uiPosition;
     } // method
 
     /* Gives the absolute start position of a sequence
      */
     inline int64_t iAbsolutePosition( uint64_t uiBegin, uint64_t uiEnd ) const
     {
-        return bPositionIsOnReversStrand( uiEnd )
-                   ? uiUnpackedSizeForwardPlusReverse( ) - ( uiEnd + 1 )
-                   : uiBegin;
+        return bPositionIsOnReversStrand( uiEnd ) ? uiUnpackedSizeForwardPlusReverse( ) - ( uiEnd + 1 ) : uiBegin;
     } // method
 
     /* Maps a forward strand position to the reverse strand.
@@ -948,9 +925,8 @@ class Pack : public Container
 
         uint64_t uiLeft = 0;
         uint64_t uiMid = 0;
-        uint64_t uiRight =
-            xVectorOfSequenceDescriptors
-                .size( ); // WARNING: size() - 1 doesn't work, because uiMid can't become uiRight
+        uint64_t uiRight = xVectorOfSequenceDescriptors
+                               .size( ); // WARNING: size() - 1 doesn't work, because uiMid can't become uiRight
 
         /* Binary search
          */
@@ -959,8 +935,7 @@ class Pack : public Container
            */
             uiMid = ( uiLeft + uiRight ) / 2;
 
-            if( iAbsPosition >= static_cast<int64_t>(
-                                    xVectorOfSequenceDescriptors[ uiMid ].uiStartOffsetUnpacked ) )
+            if( iAbsPosition >= static_cast<int64_t>( xVectorOfSequenceDescriptors[ uiMid ].uiStartOffsetUnpacked ) )
             { /* Limit search space to the right side.
                */
                 if( uiMid == xVectorOfSequenceDescriptors.size( ) - 1 )
@@ -968,8 +943,7 @@ class Pack : public Container
                     break;
                 } // if
                 if( iAbsPosition <
-                    static_cast<int64_t>(
-                        xVectorOfSequenceDescriptors[ uiMid + 1 ].uiStartOffsetUnpacked ) )
+                    static_cast<int64_t>( xVectorOfSequenceDescriptors[ uiMid + 1 ].uiStartOffsetUnpacked ) )
                 {
                     break; // bracketed
                 } // if
@@ -986,12 +960,10 @@ class Pack : public Container
          */
         assert( uiMid < xVectorOfSequenceDescriptors.size( ) );
         assert(
-            ( iAbsPosition >= static_cast<int64_t>(
-                                  xVectorOfSequenceDescriptors[ uiMid ].uiStartOffsetUnpacked ) ) &&
+            ( iAbsPosition >= static_cast<int64_t>( xVectorOfSequenceDescriptors[ uiMid ].uiStartOffsetUnpacked ) ) &&
             ( ( uiMid < xVectorOfSequenceDescriptors.size( ) - 1 )
                   ? ( iAbsPosition <
-                      static_cast<int64_t>(
-                          xVectorOfSequenceDescriptors[ uiMid + 1 ].uiStartOffsetUnpacked ) )
+                      static_cast<int64_t>( xVectorOfSequenceDescriptors[ uiMid + 1 ].uiStartOffsetUnpacked ) )
                   : true ) // conditional operator
         ); // assert
 
@@ -1009,8 +981,7 @@ class Pack : public Container
      * Returns false for a non-bridging section, where the sequence id belonging to the section is
      * transferred via the reference variable. Returns the sequence id additionally.
      */
-    bool bridgingSubsection( const uint64_t uiBegin, const uint64_t uiSize,
-                             int64_t &riSequenceId ) const
+    bool bridgingSubsection( const uint64_t uiBegin, const uint64_t uiSize, int64_t& riSequenceId ) const
     {
         if( uiSize > 0 )
         {
@@ -1018,11 +989,9 @@ class Pack : public Container
             if( uiBegin + uiSize > uiUnpackedSizeForwardStrand * 2 )
                 return true;
             return ( bPositionIsOnReversStrand( uiBegin ) !=
-                     bPositionIsOnReversStrand( ( uiBegin + uiSize ) -
-                                                1 ) ) // bridging forward reverse border
+                     bPositionIsOnReversStrand( ( uiBegin + uiSize ) - 1 ) ) // bridging forward reverse border
                    || ( riSequenceId !=
-                        uiSequenceIdForPosition( ( uiBegin + uiSize ) -
-                                                 1 ) ); // section crosses different sequences
+                        uiSequenceIdForPosition( ( uiBegin + uiSize ) - 1 ) ); // section crosses different sequences
         } // if
         else
         {
@@ -1080,11 +1049,9 @@ class Pack : public Container
         {
             int64_t riSequenceId = uiSequenceIdForPositionOrRev( uiBegin );
             // bridging forward reverse border
-            return ( bPositionIsOnReversStrand( uiBegin ) !=
-                     bPositionIsOnReversStrand( ( uiBegin + uiSize ) - 1 ) ) ||
+            return ( bPositionIsOnReversStrand( uiBegin ) != bPositionIsOnReversStrand( ( uiBegin + uiSize ) - 1 ) ) ||
                    ( riSequenceId !=
-                     uiSequenceIdForPositionOrRev( ( uiBegin + uiSize ) -
-                                                   1 ) ); // section crosses different sequences
+                     uiSequenceIdForPositionOrRev( ( uiBegin + uiSize ) - 1 ) ); // section crosses different sequences
         } // if
         else
         {
@@ -1106,7 +1073,7 @@ class Pack : public Container
      * non bridging
      * undefined behaviour for a non-bridging interval
      */
-    void unBridgeSubsection( uint64_t &uiBegin, uint64_t &uiSize ) const
+    void unBridgeSubsection( uint64_t& uiBegin, uint64_t& uiSize ) const
     {
         DEBUG( assert( bridgingSubsection( uiBegin, uiSize ) ); uint64_t uiSizeOriginal = uiSize; )
         assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse( ) );
@@ -1134,7 +1101,7 @@ class Pack : public Container
      */
     void vExtractSubsection( const int64_t iBegin, // begin of extraction
                              const int64_t iEnd, // end of extraction
-                             NucSeq &rxSequence, // receiver of the extraction process
+                             NucSeq& rxSequence, // receiver of the extraction process
                              bool bAppend = false // deliver true, if you would like to append to an
                                                   // existing nucleotide sequence
                              ) const
@@ -1150,15 +1117,13 @@ class Pack : public Container
          */
         if( bPositionIsOnReversStrand( iBegin ) != bPositionIsOnReversStrand( iEnd - 1 ) )
         {
-            throw std::runtime_error(
-                "(vExtractSubsection) Try to extract bridging sequence. This is impossible." );
+            throw std::runtime_error( "(vExtractSubsection) Try to extract bridging sequence. This is impossible." );
         } // if
 
         if( !( iBegin <= iEnd ) )
         { /* In the case of begin not smaller than end, we give up and throw an exception.
            */
-            throw std::runtime_error(
-                "(vExtractSubsection) Try to extract with begin greater than end." );
+            throw std::runtime_error( "(vExtractSubsection) Try to extract with begin greater than end." );
         } // if
 
         /* Prepare sequence
@@ -1190,8 +1155,7 @@ class Pack : public Container
             {
 #if CHECK_HOLE_DESC == 1
                 // move the hole iterator forwards
-                while( itHolesDesc != itEnd &&
-                       itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition )
+                while( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition )
                     itHolesDesc++;
                 // append an N if we are currently within a hole
                 if( itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition )
@@ -1217,8 +1181,7 @@ class Pack : public Container
                 while( itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition )
                     itHolesDesc++;
                 // append an N if we are currently within a hole
-                if( itHolesDesc != itEnd &&
-                    itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition )
+                if( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition )
                     rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
                 else // otherwise get the correct nucleotide
 #endif
@@ -1229,7 +1192,7 @@ class Pack : public Container
 
     void vExtractSubsectionN( const int64_t iBegin, // begin of extraction
                               const int64_t iEnd, // end of extraction
-                              NucSeq &rxSequence, // receiver of the extraction process
+                              NucSeq& rxSequence, // receiver of the extraction process
                               bool bAppend = false // deliver true, if you would like to append to
                                                    // an existing nucleotide sequence
                               ) const
@@ -1245,15 +1208,13 @@ class Pack : public Container
          */
         if( bPositionIsOnReversStrand( iBegin ) != bPositionIsOnReversStrand( iEnd - 1 ) )
         {
-            throw std::runtime_error(
-                "(vExtractSubsection) Try to extract bridging sequence. This is impossible." );
+            throw std::runtime_error( "(vExtractSubsection) Try to extract bridging sequence. This is impossible." );
         } // if
 
         if( !( iBegin <= iEnd ) )
         { /* In the case of begin not smaller than end, we give up and throw an exception.
            */
-            throw std::runtime_error(
-                "(vExtractSubsection) Try to extract with begin greater than end." );
+            throw std::runtime_error( "(vExtractSubsection) Try to extract with begin greater than end." );
         } // if
 
         /* Prepare sequence
@@ -1281,8 +1242,7 @@ class Pack : public Container
             for( auto iPosition = iBegin; iPosition < iEnd; ++iPosition )
             {
                 // move the hole iterator forwards
-                while( itHolesDesc != itEnd &&
-                       itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition )
+                while( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition )
                     itHolesDesc++;
                 // append an N if we are currently within a hole
                 if( itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition )
@@ -1304,8 +1264,7 @@ class Pack : public Container
                 while( itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition )
                     itHolesDesc++;
                 // append an N if we are currently within a hole
-                if( itHolesDesc != itEnd &&
-                    itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition )
+                if( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition )
                     rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
                 else // otherwise get the correct nucleotide
                     rxSequence[ uiSequenceIterator++ ] = 3 - getNucleotideOnPos( iPosition );
@@ -1409,7 +1368,7 @@ class Pack : public Container
      * If riBegin and riEnd are already with the sequence indicated by middle we do not change their
      * values.
      */
-    void vAlignPositions( int64_t &riBegin, const int64_t iMiddle, int64_t &riEnd ) const
+    void vAlignPositions( int64_t& riBegin, const int64_t iMiddle, int64_t& riEnd ) const
     {
         assert( ( riBegin <= iMiddle ) && ( iMiddle < riEnd ) ); // consistency check
 

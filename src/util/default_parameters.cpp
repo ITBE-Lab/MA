@@ -26,7 +26,6 @@ size_t uiSwitchQLen = 800; // q len to switch between break criteria
 uint64_t uiMaxGapArea = 10000; // break alignments in harmonization if gap is larger
 uint64_t uiPadding = 1000; // padding for DP
 size_t uiSoCWidth = 0; // set a fixed SoC width; 0 = use the formula
-bool bFindMode = false; // true: don't do DP
 bool bOptimisticGapEstimation = true; // how to estimate gap costs in harmonization
 bool bSkipLongBWTIntervals = true; // pick samples from long SAintervals or skip them
 bool bNormalDist = false; // use normal distribution to model gaps between paired reads

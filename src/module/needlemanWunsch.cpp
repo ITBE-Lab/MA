@@ -1121,8 +1121,8 @@ NeedlemanWunsch::NeedlemanWunsch( )
 } // constructor
 
 
-std::shared_ptr<Alignment> NeedlemanWunsch::execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
-                                                     std::shared_ptr<Pack> pRefPack )
+std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
+                                                         std::shared_ptr<Pack> pRefPack )
 {
 
     if( pSeeds == nullptr )

@@ -105,7 +105,7 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
     double fScoreTolerace = defaults::fScoreTolerace;
 
     /// @brief Extract at most x SoCs.
-    unsigned int uiMaxTries = defaults::bFindMode ? defaults::uiReportN : defaults::uiMaxTries;
+    unsigned int uiMaxTries = defaults::uiMaxTries;
     /// @brief Extract at least x SoCs.
     size_t uiMinTries = defaults::uiMinTries;
 

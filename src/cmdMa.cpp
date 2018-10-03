@@ -44,8 +44,7 @@ using namespace libMA;
 using namespace cxxopts;
 
 const std::string sHelp =
-    "====================================== The Modular Aligner "
-    "======================================"
+    "====================================== The Modular Aligner ======================================"
     "\nGeneral options:"
     "\n    -h, --help                     Display the complete help screen"
     "\n        --genIndex                 Do FMD-index Generation. The -i and -x options specify "
@@ -70,12 +69,10 @@ const std::string sHelp =
     "\n                                       Particularly effective for short reads."
     "\n"
     "\nAlignments options:"
-    "\n    -o, --out <fname>              Filename used for SAM file output. Default output stream "
-    "is"
+    "\n    -o, --out <fname>              Filename used for SAM file output. Default output stream is"
     "\n                                   standard output."
     "\n    -t, --threads <num>            Use <num> threads. On startup MA checks the hardware and "
     "\n                                   chooses this value accordingly."
-    "\n    -d, --noDP                     Switch that disables the final Dynamic Programming."
     "\n    -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited."
     "\n                                   Default is 0."
     "\n    -s, --seedSet [SMEMs/maxSpan]  Selects between the two seeding strategies super maximal"
@@ -237,7 +234,7 @@ int main( int argc, char* argv[] )
             return 0;
         } // if
 
-        // auto uiT = result[ "threads" ].as<unsigned int>( );
+        auto uiT = result[ "threads" ].as<unsigned int>( );
         defaults::bNormalDist = result.count( "paNorm" ) > 0;
         defaults::bUniformDist = result.count( "paUni" ) > 0;
         defaults::uiMean = result[ "paMean" ].as<unsigned int>( );
@@ -287,7 +284,6 @@ int main( int argc, char* argv[] )
             return 1;
         } // else if
         auto sOut = result[ "out" ].as<std::string>( );
-        defaults::bFindMode = result.count( "noDP" ) > 0;
         defaults::fGiveUp = result[ "giveUp" ].as<double>( );
         if( defaults::fGiveUp < 0 || defaults::fGiveUp > 1 )
         {
@@ -351,90 +347,71 @@ int main( int argc, char* argv[] )
  *
  */
 // setup the alignment input
-#if 0
-            std::shared_ptr<Pledge> pPack( new Pledge( std::shared_ptr<Container>( new Pack( ) ) ) );
-            std::shared_ptr<Pack> pPack_( new Pack( ) );
-            pPack_->vLoadCollection( sGenome );
-            pPack->set( pPack_ );
-            std::shared_ptr<Pledge> pFMDIndex( new Pledge( std::shared_ptr<Container>( new FMIndex( ) ) ) );
-            std::shared_ptr<FMIndex> pFMDIndex_( new FMIndex( ) );
-            pFMDIndex_->vLoadFMIndex( sGenome );
-            pFMDIndex->set( pFMDIndex_ );
-            std::shared_ptr<Pledge> pQueries;
-            std::shared_ptr<Pledge> pNil( new Pledge( std::shared_ptr<Container>( new Nil( ) ) ) );
-            pNil->set( std::shared_ptr<Container>( new Nil( ) ) );
-            std::shared_ptr<Reader> pReader;
-            if( aIn.size( ) == 1 )
-            {
-                pReader = std::shared_ptr<FileReader>( new FileReader( aIn[ 0 ] ) );
-                pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
-            }
-            else if( aIn.size( ) == 2 )
-            {
-                pReader = std::shared_ptr<PairedFileReader>( new PairedFileReader( aIn[ 0 ], aIn[ 1 ] ) );
-                pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
-            }
-            else
-            {
-                throw AnnotatedException( "Cannot have more than two inputs!" );
-            } // else
-            std::vector<std::shared_ptr<Module>> vOut;
+#if 1
+            auto pPack = makePledge<Pack>( sGenome );
+            auto pFMDIndex = makePledge<FMIndex>( sGenome );
+
+            auto pFileReader = std::make_shared<FileReader>( aIn[ 0 ] );
+            std::shared_ptr<WriterModule> pFileWriter = std::make_shared<FileWriter>( sOut, pPack->get( ) );
+
+            auto pQueries = promiseMe( pFileReader );
+            // if( aIn.size( ) == 1 )
+            // {
+            //     pReader = std::shared_ptr<FileReader>( new FileReader( aIn[ 0 ] ) );
+            //     pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
+            // } // if
+            // else if( aIn.size( ) == 2 )
+            // {
+            //     pReader = std::shared_ptr<PairedFileReader>( new PairedFileReader( aIn[ 0 ], aIn[ 1 ] ) );
+            //     pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
+            // }
+            // else
+            // {
+            //     throw AnnotatedException( "Cannot have more than two inputs!" );
+            // } // else
+            // std::vector<std::shared_ptr<Module>> vOut;
 #ifdef WITH_POSTGRES
-            if( sBbOutput.size( ) > 0 )
-            {
-                if( iRunId == -1 )
-                {
-                    DbRunConnection xConn( sBbOutput );
-                    auto xRes = xConn.exec( "INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING "
-                                            "id" );
-                    iRunId = std::stoi( xRes.get( 0, 0 ) );
-                } // setupConn scope
-                for( size_t uiI = 0; uiI < uiT; uiI++ )
-                    vOut.emplace_back( new DbWriter( sBbOutput, iRunId ) );
-            } // if
-            else
+            // if( sBbOutput.size( ) > 0 )
+            // {
+            //     if( iRunId == -1 )
+            //     {
+            //         DbRunConnection xConn( sBbOutput );
+            //         auto xRes = xConn.exec( "INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING "
+            //                                 "id" );
+            //         iRunId = std::stoi( xRes.get( 0, 0 ) );
+            //     } // setupConn scope
+            //     for( size_t uiI = 0; uiI < uiT; uiI++ )
+            //         vOut.emplace_back( new DbWriter( sBbOutput, iRunId ) );
+            // } // if
+            // else
 #endif
-            {
-                if( defaults::bFindMode )
-                    vOut.emplace_back( new SeedSetFileWriter( sOut ) );
-                else
-                    vOut.emplace_back( new FileWriter( sOut, pPack_ ) );
-            } // else
-            bool bPaired = defaults::bNormalDist || defaults::bUniformDist;
-            std::vector<std::shared_ptr<Pledge>> aGraphSinks;
-            if( bPaired )
-                aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, vOut,
-                                                    uiT // num threads
-                );
-            else
-                // setup the graph
-                aGraphSinks = setUpCompGraph( pPack, pFMDIndex, pQueries, vOut,
-                                              uiT // num threads
-                );
-            // this is a hidden option
-            if( result.count( "info" ) > 0 )
-            {
-                std::cout << "threads: " << uiT << std::endl;
-                std::cout << "computational Graph:" << std::endl;
-                for( auto pledge : aGraphSinks )
-                    std::cout << pledge->getGraphDesc( ) << std::endl;
-                return 0;
-            } // if
+            // {
+            //     vOut.emplace_back( new FileWriter( sOut, pPack_ ) );
+            // } // else
+            // bool bPaired = defaults::bNormalDist || defaults::bUniformDist;
+            // std::vector<std::shared_ptr<Pledge>> aGraphSinks;
+            // if( bPaired )
+            //    aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, vOut,
+            //                                        uiT // num threads
+            //    );
+            // else
+            // setup the graph
+            auto aGraphSinks = setUpCompGraph( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
             // run the alignment
             size_t uiLastProg = 0;
             std::mutex xPrintMutex;
-            Pledge::simultaneousGet( aGraphSinks,
-                                     [&]( ) {
-                                         std::lock_guard<std::mutex> xGuard( xPrintMutex );
-                                         size_t uiCurrProg =
-                                             ( 1000 * pReader->getCurrPosInFile( ) ) / pReader->getFileSize( );
-                                         if( uiCurrProg > uiLastProg )
-                                         {
-                                             std::cerr << " " << static_cast<double>( uiCurrProg ) / 10
-                                                       << "% aligned.     " << '\r' << std::flush;
-                                             uiLastProg = uiCurrProg;
-                                         } // if
-                                     } // lambda
+            BasePledge::simultaneousGet( aGraphSinks,
+                                         [&]( ) {
+                                             std::lock_guard<std::mutex> xGuard( xPrintMutex );
+                                             size_t uiCurrProg = ( 1000 * pFileReader->getCurrPosInFile( ) ) /
+                                                                 pFileReader->getFileSize( );
+                                             if( uiCurrProg > uiLastProg )
+                                             {
+                                                 std::cerr << " " << static_cast<double>( uiCurrProg ) / 10
+                                                           << "% aligned.     " << '\r' << std::flush;
+                                                 uiLastProg = uiCurrProg;
+                                             } // if
+                                         } // lambda
             );
 #endif
             std::cerr << "100% aligned.     " << std::endl;
