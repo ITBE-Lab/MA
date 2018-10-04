@@ -56,24 +56,26 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( std::shared_ptr<
                                                                     pWriter,
                                                                 unsigned int uiThreads )
 {
+    // set up the modules
     auto pLock = std::make_shared<Lock<NucSeq>>( );
     auto pSeeding = std::make_shared<BinarySeeding>( );
     auto pSOC = std::make_shared<StripOfConsideration>( );
     auto pHarmonization = std::make_shared<Harmonization>( );
     auto pDP = std::make_shared<NeedlemanWunsch>( );
     auto pMappingQual = std::make_shared<MappingQuality>( );
+
+    // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
     for( unsigned int i = 0; i < uiThreads; i++ )
     {
         auto pQuery = promiseMe( pLock, pQueries );
-        auto pUnlock = std::make_shared<UnLock<Container>>( pQuery ); // might require the correct pledge...
         auto pSeeds = promiseMe( pSeeding, pFMDIndex, pQuery );
         auto pSOCs = promiseMe( pSOC, pSeeds, pQuery, pPack, pFMDIndex );
         auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery );
         auto pAlignments = promiseMe( pDP, pHarmonized, pQuery, pPack );
         auto pAlignmentsWQuality = promiseMe( pMappingQual, pQuery, pAlignments );
         auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
-        auto pUnlockResult = promiseMe( pUnlock, pEmptyContainer );
+        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( pQuery ), pEmptyContainer );
         aRet.push_back( pUnlockResult );
     } // for
     return aRet;

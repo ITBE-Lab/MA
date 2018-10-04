@@ -41,7 +41,7 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false,
 
     virtual std::shared_ptr<TP_CONTAINER> EXPORTED execute( std::shared_ptr<TP_CONTAINER> pInput )
     {
-        DEBUG_3( std::cout << "lock" << std::endl; )
+        // DEBUG( std::cout << "lock" << std::endl; )
         // locking in the container is done automatically by the pledge
         return pInput;
     } // method
@@ -53,7 +53,7 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false,
  * @details
  * @see lock
  */
-template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, false, TP_CONTAINER>
+template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, true, TP_CONTAINER>
 {
   public:
     std::shared_ptr<BasePledge> pLockPledge;
@@ -68,7 +68,7 @@ template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, fals
 
     virtual std::shared_ptr<TP_CONTAINER> EXPORTED execute( std::shared_ptr<TP_CONTAINER> pIn )
     {
-        DEBUG_3( std::cout << "unlock" << std::endl; )
+        // DEBUG( std::cout << "unlock" << std::endl; )
         // unlock the given lock
         pLockPledge->reset( );
 

@@ -26,6 +26,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         std::string sContigOther = "*";
         std::string sPosOther = "0";
         std::string sName = pQuery->sName;
+        // DEBUG( std::cout << "Aligned: " << sName << std::endl; )
         std::string sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
         std::string sTlen = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery );
         // paired

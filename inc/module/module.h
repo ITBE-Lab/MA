@@ -329,9 +329,10 @@ class BasePledge
                             } // try
                             catch( AnnotatedException e )
                             {
-                                std::cerr << "Module Failed: " << e.what( ) << std::endl;
+                                std::cerr << "Exception: " << e.what( ) << std::endl;
                             } // catch
                         } while( bLoop );
+                        DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
                     }, // lambda
                     pPledge );
             } // for
@@ -520,7 +521,8 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
      */
     void reset( )
     {
-        DEBUG( std::cout << "resetting: " << type_name( this ) << ": " << this << std::endl; )
+        if( pContent == nullptr )
+            return;
         pContent = nullptr;
         for( BasePledge* pSuccessor : vSuccessors )
             if( pSuccessor != nullptr )
@@ -637,6 +639,15 @@ template <class TP_MODULE, class... TP_PLEDGES>
 std::shared_ptr<Pledge<typename TP_MODULE::TP_RETURN, TP_MODULE::IS_VOLATILE, TP_PLEDGES...>>
 promiseMe( std::shared_ptr<TP_MODULE> pModule, std::shared_ptr<TP_PLEDGES>... pPledges )
 {
+    return std::make_shared<Pledge<typename TP_MODULE::TP_RETURN, TP_MODULE::IS_VOLATILE, TP_PLEDGES...>>(
+        pModule, pPledges... );
+} // function
+
+template <class TP_MODULE, class... TP_PLEDGES>
+std::shared_ptr<Pledge<typename TP_MODULE::TP_RETURN, TP_MODULE::IS_VOLATILE, TP_PLEDGES...>>
+apply( std::shared_ptr<TP_PLEDGES>... pPledges )
+{
+    auto pModule = std::make_shared<TP_MODULE>( );
     return std::make_shared<Pledge<typename TP_MODULE::TP_RETURN, TP_MODULE::IS_VOLATILE, TP_PLEDGES...>>(
         pModule, pPledges... );
 } // function
