@@ -82,8 +82,8 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
     uiLength += size;
 
     DEBUG_2( if( reCalcScore( ) != iScore ) {
-        std::cerr << "WARNING set wrong score in append name: " << xStats.sName
-                  << " actual score: " << reCalcScore( ) << " score: " << iScore << std::endl;
+        std::cerr << "WARNING set wrong score in append name: " << xStats.sName << " actual score: " << reCalcScore( )
+                  << " score: " << iScore << std::endl;
         for( auto tup : vCopyOfData )
             std::cout << std::get<0>( tup ) << ":" << std::get<1>( tup ) << " ";
         std::cout << std::endl;
@@ -96,8 +96,7 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
     DEBUG( nucSeqIndex uiCheck = 0; for( auto xTup
                                          : data ) uiCheck += xTup.second;
            if( uiCheck != uiLength ) {
-               std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength
-                         << std::endl;
+               std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength << std::endl;
                assert( false );
            } // if
            ) // DEBUG
@@ -179,8 +178,7 @@ void EXPORTED Alignment::makeLocal( )
             iScoreCurr = 0;
             iLastStart = index + 1;
         } // if
-        DEBUG_2( std::cout << data[ index ].first << "," << data[ index ].second << " ("
-                           << iScoreCurr << ") | "; )
+        DEBUG_2( std::cout << data[ index ].first << "," << data[ index ].second << " (" << iScoreCurr << ") | "; )
         if( iScoreCurr >= iMaxScore )
         {
             iMaxScore = iScoreCurr;
@@ -238,8 +236,8 @@ void EXPORTED Alignment::makeLocal( )
             std::cout << data[ index ].first << "," << data[ index ].second << std::endl;
         exit( 0 );
     } )
-    DEBUG( if( reCalcScore( ) != iScore ) std::cerr
-               << "WARNING set wrong score or removed wrong elements in makeLocal" << std::endl; )
+    DEBUG( if( reCalcScore( ) != iScore ) std::cerr << "WARNING set wrong score or removed wrong elements in makeLocal"
+                                                    << std::endl; )
 } // function
 
 void EXPORTED Alignment::removeDangeling( )
@@ -251,8 +249,7 @@ void EXPORTED Alignment::removeDangeling( )
 
     if( data.empty( ) )
         return;
-    while( data.front( ).first == MatchType::deletion ||
-           data.front( ).first == MatchType::insertion )
+    while( data.front( ).first == MatchType::deletion || data.front( ).first == MatchType::insertion )
     {
         if( data.front( ).first == MatchType::deletion ) // deletion
             uiBeginOnRef += data.front( ).second;
@@ -279,8 +276,7 @@ void EXPORTED Alignment::removeDangeling( )
         data.pop_back( );
     } // if
     DEBUG( if( reCalcScore( ) != iScore ) {
-        std::cerr << "WARNING set wrong score or removed wrong elements in remove dangeling"
-                  << std::endl;
+        std::cerr << "WARNING set wrong score or removed wrong elements in remove dangeling" << std::endl;
         for( auto tup : vCopyOfData )
             std::cout << std::get<0>( tup ) << ":" << std::get<1>( tup ) << " ";
         std::cout << std::endl;
@@ -293,8 +289,7 @@ void EXPORTED Alignment::removeDangeling( )
            for( auto xTup
                 : data ) uiCheck += xTup.second;
            if( uiCheck != uiLength ) {
-               std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength
-                         << std::endl;
+               std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength << std::endl;
                assert( false );
            } // if
            ) // DEBUG
@@ -328,8 +323,7 @@ int Alignment::reCalcScore( ) const
 #ifdef WITH_PYTHON
 void exportAlignment( )
 {
-    boost::python::class_<Alignment, boost::noncopyable, boost::python::bases<Container>,
-                          std::shared_ptr<Alignment>>(
+    boost::python::class_<Alignment, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<Alignment>>(
         "Alignment", "contains the final output of the aligner\n" )
         .def( "at", &Alignment::at,
               "arg1: self\n"
@@ -395,19 +389,33 @@ void exportAlignment( )
         .value( "deletion", MatchType::deletion );
 
     boost::python::class_<std::vector<MatchType>>( "MatchTypeVector" )
-        .def(
-            boost::python::vector_indexing_suite<std::vector<MatchType>,
-                                                 /*
-                                                  *    true = noproxy this means that the content of
-                                                  * the vector is already exposed by boost python.
-                                                  *    if this is kept as false, Container would be
-                                                  * exposed a second time. the two Containers would
-                                                  * be different and not inter castable.
-                                                  */
-                                                 true>( ) );
+        .def( boost::python::vector_indexing_suite<std::vector<MatchType>,
+                                                   /*
+                                                    *    true = noproxy this means that the content of
+                                                    * the vector is already exposed by boost python.
+                                                    *    if this is kept as false, x would be
+                                                    * exposed a second time. the two x would
+                                                    * be different and not inter castable.
+                                                    */
+                                                   true>( ) );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    boost::python::implicitly_convertible<std::shared_ptr<Alignment>,
+    boost::python::implicitly_convertible<std::shared_ptr<Alignment>, std::shared_ptr<Container>>( );
+
+    boost::python::class_<ContainerVector<std::shared_ptr<Alignment>>, boost::noncopyable,
+                          boost::python::bases<Container>,
+                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>>( "AlignmentVector" )
+        /*
+         * true = noproxy this means that the content of
+         * the vector is already exposed by boost python.
+         * if this is kept as false, x would be
+         * exposed a second time. the two x would
+         * be different and not inter castable.
+         */
+        .def( boost::python::vector_indexing_suite<ContainerVector<std::shared_ptr<Alignment>>, true>( ) );
+
+    // tell boost python that pointers of these classes can be converted implicitly
+    boost::python::implicitly_convertible<std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>,
                                           std::shared_ptr<Container>>( );
 
 } // function

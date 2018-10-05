@@ -374,8 +374,10 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     typedef std::tuple<std::shared_ptr<TP_DEPENDENCIES>...> TP_PREDECESSORS;
     typedef std::tuple<std::shared_ptr<typename TP_DEPENDENCIES::TP_CONTENT>...> TP_INPUT;
 
-  private:
+  protected:
     std::shared_ptr<TP_PLEDGER> pPledger;
+
+  private:
     // content of the pledge
     std::shared_ptr<TP_CONTENT> pContent = nullptr;
     // this puts the shared_ptr around all elements of the variadic template individually
@@ -495,7 +497,9 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
      * This means that this Pledge has to be fullfilled by calling set manually.
      */
     Pledge( )
-    {} // constructor
+    {
+        static_assert(sizeof...(TP_DEPENDENCIES) == 0, "cannot default constuct pledge with dependencies");
+    } // constructor
 
     /**
      * @brief this is required due to the use of mutex
@@ -660,23 +664,27 @@ template <class TP_CONTAINER, class... TP_ARGS> std::shared_ptr<Pledge<TP_CONTAI
 } // function
 
 
+// @note must be exported twice
+template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATILE, PyContainerVector>
+{}; // class
+
 /**
  * @brief
  * @details
  */
-class PyPledge : public Pledge<PyContainerVector>
+class PyPledgeVector : public Pledge<PyContainerVector>
 {
   private:
     std::vector<std::shared_ptr<BasePledge>> vPledges;
 
   public:
-    ~PyPledge( )
+    ~PyPledgeVector( )
     {
         for( std::shared_ptr<BasePledge> pPledge : vPledges )
             pPledge->removeSuccessor( this );
     } // deconstructor
 
-    void push_back( std::shared_ptr<BasePledge> pX )
+    void append( std::shared_ptr<BasePledge> pX )
     {
         if( pX == nullptr )
             throw AnnotatedException( "Cannot use a nullpointer as pledge" );
@@ -722,10 +730,6 @@ class PyPledge : public Pledge<PyContainerVector>
     } // method
 }; // class
 
-// @note must be exported twice
-template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATILE, PyContainerVector>
-{}; // class
-
 template <class TP_MODULE, typename... TP_CONSTR_PARAMS>
 class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
 {
@@ -760,7 +764,6 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
     ModuleWrapperCppToPy( TP_CONSTR_PARAMS... params ) : xModule( params... )
     {} // constructor
 
-#if 1 // set to zero triggers unimplemented exception
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<PyContainerVector> pIn )
     {
         if( pIn->size( ) != TP_MODULE::NUM_ARGUMENTS )
@@ -772,7 +775,6 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
         TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn );
         return xModule.executeTup( tTyped );
     } // method
-#endif
 
     virtual bool isFinished( ) const
     {
