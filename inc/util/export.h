@@ -165,8 +165,11 @@ std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( std::shared_pt
                                                                       pFMDIndex,
                                                                   std::shared_ptr<Pledge<NucSeq, true>>
                                                                       pQueries,
-                                                                  std::shared_ptr<WriterModule> pWriter,
+                                                                  std::shared_ptr<WriterModule>
+                                                                      pWriter,
                                                                   unsigned int uiThreads );
+
+
 } // namespace libMA
 #if 0
 
@@ -176,4 +179,4 @@ std::vector<std::shared_ptr<libMA::BasePledge>>
                                    std::vector<std::shared_ptr<libMA::Module>>& vOut, unsigned int uiThreads );
 #endif
 
-#endif
+#endif // EXPORT_H

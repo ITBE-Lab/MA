@@ -84,8 +84,8 @@ void OtherSeeding::doBlasrExtension( std::shared_ptr<FMIndex> pFM_index,
     } // for
 } // function
 
-std::shared_ptr<SegmentVector>
-OtherSeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector> OtherSeeding::execute( std::shared_ptr<FMIndex> pFM_index,
+                                                      std::shared_ptr<NucSeq> pQuerySeq )
 {
 
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
@@ -107,9 +107,6 @@ OtherSeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSe
 void exportOtherSeeding( )
 {
     // export the OtherSeeding class
-    boost::python::class_<OtherSeeding, boost::python::bases<Module>, std::shared_ptr<OtherSeeding>>(
-        "OtherSeeding", boost::python::init<bool>( ) );
-    boost::python::implicitly_convertible<std::shared_ptr<OtherSeeding>, std::shared_ptr<Module>>( );
-
+    exportModule<OtherSeeding, bool>( "OtherSeeding" );
 } // function
 #endif

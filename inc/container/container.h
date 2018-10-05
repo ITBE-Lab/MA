@@ -57,7 +57,6 @@ class Container
     {} // make class abstract
 }; // class
 
-
 /**
  * @brief A vector of containers, that itself is a Container
  * @details
@@ -208,6 +207,18 @@ template <class TP_CONTENT> class ContainerVector : public Container
     } // method
 
 }; // class
+
+/**
+ * @brief input for all python modules.
+ * @details
+ * Vector of containers.
+ */
+class PyContainerVector : public ContainerVector<std::shared_ptr<Container>>
+{
+    // use the constructors of ContainerVector<std::shared_ptr<Container>>
+    using ContainerVector<std::shared_ptr<Container>>::ContainerVector;
+}; // class
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON

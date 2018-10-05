@@ -77,7 +77,7 @@ class DbRunConnection
  * @brief @todo
  * @todo the query input here should actually be a n tuple input.
  */
-class DbWriter : public Module<Container, false, NucSeq, ContainerVector<Alignment>, Pack>
+class DbWriter : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
 {
   public:
     int32_t iRunId;
@@ -94,7 +94,7 @@ class DbWriter : public Module<Container, false, NucSeq, ContainerVector<Alignme
     {} // constructor
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
-                                                         std::shared_ptr<ContainerVector<Alignment>>
+                                                         std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
                                                              pAlignments,
                                                          std::shared_ptr<Pack>
                                                              pPack );

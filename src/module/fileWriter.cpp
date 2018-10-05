@@ -132,8 +132,6 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
 void exportFileWriter( )
 {
     // export the FileWriter class
-    boost::python::class_<FileWriter, boost::python::bases<Module>, std::shared_ptr<FileWriter>>(
-        "FileWriter", boost::python::init<std::string, std::shared_ptr<Pack>>( ) );
-    boost::python::implicitly_convertible<std::shared_ptr<FileWriter>, std::shared_ptr<Module>>( );
+    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( "FileWriter" );
 } // function
 #endif

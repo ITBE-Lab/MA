@@ -18,7 +18,7 @@ BOOST_PYTHON_MODULE( libMA )
 {
     DEBUG_3( std::cout.setf( std::ios::unitbuf ); )
     exportContainer( );
-    exportModule( );
+    exportModuleClass( );
     exportFM_index( );
     exportSequence( );
     exportBinarySeeding( );
@@ -27,18 +27,14 @@ BOOST_PYTHON_MODULE( libMA )
     exportExceptions( );
     exportSeed( );
     exportAlignment( );
-    exportLinesweep( );
+    exportHarmonization( );
     exportNeedlemanWunsch( );
     exportStripOfConsideration( );
-    exportExtractAllSeeds( );
-    exportExecOnVector( );
     exportFileReader( );
     exportFileWriter( );
     exportMappingQuality( );
-    exportPairedReads( );
+    //exportPairedReads( );
     exportSplitter( );
-    exportSMW( );
-    exportSW_GPU( );
     exportSoC( );
     exportOtherSeeding( );
     defaults::exportDefaults( );

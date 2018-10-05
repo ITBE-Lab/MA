@@ -661,22 +661,10 @@ template <class TP_CONTAINER, class... TP_ARGS> std::shared_ptr<Pledge<TP_CONTAI
 
 
 /**
- * @brief input for all python modules.
- * @details
- * Vector of containers.
- */
-class PyContainerTuple : public Container
-{
-  public:
-    std::vector<std::shared_ptr<Container>> vContent;
-}; // class
-
-/**
  * @brief
  * @details
- * @note must be exported twice
  */
-class PyPledge : public Pledge<PyContainerTuple>
+class PyPledge : public Pledge<PyContainerVector>
 {
   private:
     std::vector<std::shared_ptr<BasePledge>> vPledges;
@@ -697,14 +685,14 @@ class PyPledge : public Pledge<PyContainerTuple>
     } // method
 
     // overrides the base function
-    virtual std::shared_ptr<PyContainerTuple> get( )
+    virtual std::shared_ptr<PyContainerVector> get( )
     {
-        auto pRet = std::make_shared<PyContainerTuple>( );
+        auto pRet = std::make_shared<PyContainerVector>( );
         for( std::shared_ptr<BasePledge> pPledge : vPledges )
         {
-            pRet->vContent.push_back( pPledge->getAsBaseType( ) );
+            pRet->push_back( pPledge->getAsBaseType( ) );
             // handle EoF case
-            if( pRet->vContent.back( ) == nullptr )
+            if( pRet->back( ) == nullptr )
                 return nullptr;
         } // for
         return pRet;
@@ -725,7 +713,7 @@ class PyPledge : public Pledge<PyContainerTuple>
 
     virtual bool isFinished( ) const
     {
-        // if( Pledge<PyContainerTuple>::isFinished( ) )
+        // if( Pledge<PyContainerVector>::isFinished( ) )
         //    return true;
         for( std::shared_ptr<BasePledge> pPledge : vPledges )
             if( pPledge->isFinished( ) )
@@ -735,35 +723,33 @@ class PyPledge : public Pledge<PyContainerTuple>
 }; // class
 
 // @note must be exported twice
-template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATILE, PyContainerTuple>
+template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATILE, PyContainerVector>
 {}; // class
 
-template <class TP_MODULE> class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
+template <class TP_MODULE, typename... TP_CONSTR_PARAMS>
+class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
 {
   public:
-    const std::shared_ptr<TP_MODULE> pModule;
+    TP_MODULE xModule;
 
   private:
     template <size_t IDX> struct TupleFiller
     {
-        bool operator( )(
-            typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerTuple& vIn, const std::shared_ptr<TP_MODULE> pModule )
+        bool operator( )( typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerVector& vIn )
         {
-            if( vIn.vContent[ IDX ] == nullptr )
-                throw AnnotatedException( "Wrong type for module (" + type_name( pModule ) +
+            if( vIn[ IDX ] == nullptr )
+                throw AnnotatedException( "Wrong type for module (" + type_name<TP_MODULE>( ) +
                                           ") input (parameter index: " + std::to_string( IDX ) +
                                           "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
-                                          " but got: nullptr of type " + type_name( vIn.vContent[ IDX ] ) );
+                                          " but got: nullptr of type " + type_name( vIn[ IDX ] ) );
             // convert the content in the vector to the element types of the tuple
             auto pCasted = std::dynamic_pointer_cast<
-                typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>(
-                vIn.vContent[ IDX ] );
+                typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>( vIn[ IDX ] );
             // if the cast is not possible we get a nullptr here
             if( pCasted == nullptr )
-                throw AnnotatedException( "Wrong type for module (" + type_name( pModule ) +
-                                          ") input (parameter index: " + std::to_string( IDX ) +
-                                          "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
-                                          " but got: " + type_name( vIn.vContent[ IDX ] ) );
+                throw AnnotatedException( "Wrong type for module (" + type_name<TP_MODULE>( ) +
+                                          ") input (parameter index: " + std::to_string( IDX ) + "). Expected: " +
+                                          type_name( std::get<IDX>( tTup ) ) + " but got: " + type_name( vIn[ IDX ] ) );
             // if the cast is successfull we assign the tuple element
             std::get<IDX>( tTup ) = pCasted;
             return true;
@@ -771,28 +757,67 @@ template <class TP_MODULE> class ModuleWrapperCppToPy : public PyModule<TP_MODUL
     }; // struct
 
   public:
-    ModuleWrapperCppToPy( ) : pModule( new TP_MODULE( ) )
+    ModuleWrapperCppToPy( TP_CONSTR_PARAMS... params ) : xModule( params... )
     {} // constructor
 
 #if 1 // set to zero triggers unimplemented exception
-    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<PyContainerTuple> pIn )
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<PyContainerVector> pIn )
     {
-        if( pIn->vContent.size( ) != TP_MODULE::NUM_ARGUMENTS )
+        if( pIn->size( ) != TP_MODULE::NUM_ARGUMENTS )
             throw AnnotatedException(
-                type_name( pModule ) + "'s pyExecute was called with the wrong amount of parameters. Expected: " +
-                std::to_string( TP_MODULE::NUM_ARGUMENTS ) + " but got: " + std::to_string( pIn->vContent.size( ) ) );
+                type_name<TP_MODULE>( ) + "'s pyExecute was called with the wrong amount of parameters. Expected: " +
+                std::to_string( TP_MODULE::NUM_ARGUMENTS ) + " but got: " + std::to_string( pIn->size( ) ) );
 
         typename TP_MODULE::TP_TUPLE_ARGS tTyped;
-        TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn, pModule );
-        return pModule->executeTup( tTyped );
+        TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn );
+        return xModule.executeTup( tTyped );
     } // method
 #endif
 
     virtual bool isFinished( ) const
     {
-        return pModule->isFinished( );
+        return xModule.isFinished( );
     } // method
 }; // class
+
+
+#ifdef WITH_PYTHON
+
+
+template <class TP_MODULE>
+void exportModule( const std::string&& sName,
+                   std::function<void( boost::python::class_<TP_MODULE>&& )> fExportMembers =
+                       []( boost::python::class_<TP_MODULE>&& ) {} )
+{
+    fExportMembers(
+        boost::python::class_<TP_MODULE>( ( std::string( "__" ) + sName ).c_str( ), boost::python::no_init ) );
+
+    boost::python::class_<ModuleWrapperCppToPy<TP_MODULE>,
+                          boost::python::bases<PyModule<TP_MODULE::IS_VOLATILE>>,
+                          std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>>( sName.c_str( ) )
+        .def_readonly( "mod", &ModuleWrapperCppToPy<TP_MODULE>::xModule );
+    boost::python::implicitly_convertible<std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>,
+                                          std::shared_ptr<PyModule<TP_MODULE::IS_VOLATILE>>>( );
+} // function
+
+template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
+void exportModule( const std::string&& sName,
+                   std::function<void( boost::python::class_<TP_MODULE>&& )> fExportMembers =
+                       []( boost::python::class_<TP_MODULE>&& ) {} )
+{
+    typedef ModuleWrapperCppToPy<TP_MODULE, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...> TP_TO_EXPORT;
+    fExportMembers(
+        boost::python::class_<TP_MODULE>( ( std::string( "__" ) + sName ).c_str( ), boost::python::no_init ) );
+
+    boost::python::
+        class_<TP_TO_EXPORT, boost::python::bases<PyModule<TP_MODULE::IS_VOLATILE>>, std::shared_ptr<TP_TO_EXPORT>>(
+            sName.c_str( ), boost::python::init<TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
+            .def_readonly( "mod", &TP_TO_EXPORT::xModule );
+    boost::python::implicitly_convertible<std::shared_ptr<TP_TO_EXPORT>,
+                                          std::shared_ptr<PyModule<TP_MODULE::IS_VOLATILE>>>( );
+} // function
+
+#endif
 
 } // namespace libMA
 
@@ -802,7 +827,7 @@ template <class TP_MODULE> class ModuleWrapperCppToPy : public PyModule<TP_MODUL
  * @brief Exposes the Module class to boost python.
  * @ingroup export
  */
-void exportModule( );
+void exportModuleClass( );
 #endif
 
 #endif

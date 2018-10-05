@@ -1521,14 +1521,11 @@ void exportNeedlemanWunsch( )
 
     boost::python::def( "run_ksw", &run_ksw );
 
-    // export the segmentation class
-    boost::python::class_<NeedlemanWunsch, boost::python::bases<Module>, std::shared_ptr<NeedlemanWunsch>>(
-        "NeedlemanWunsch" )
+    // export the NeedlemanWunsch class
+    exportModule<NeedlemanWunsch>( "NeedlemanWunsch", []( auto&& x ) {
 #if DEBUG_LEVEL >= 1
-        .def_readwrite( "analyze_heuristics", &bAnalyzeHeuristics )
+        x.def_readwrite( "analyze_heuristics", &bAnalyzeHeuristics );
 #endif // DEBUG_LEVEL
-        ;
-    boost::python::implicitly_convertible<std::shared_ptr<NeedlemanWunsch>, std::shared_ptr<Module>>( );
-
+    } );
 } // function
 #endif

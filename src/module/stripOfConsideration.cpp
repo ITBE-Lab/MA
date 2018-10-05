@@ -156,14 +156,11 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 #ifdef WITH_PYTHON
 void exportStripOfConsideration( )
 {
-    // export the Bucketing class
-    boost::python::class_<StripOfConsideration, boost::python::bases<Module>, std::shared_ptr<StripOfConsideration>>(
-        "StripOfConsideration" )
-        .def_readwrite( "max_ambiguity", &StripOfConsideration::uiMaxAmbiguity )
-        .def_readwrite( "min_score", &StripOfConsideration::fScoreMinimum )
-        .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
-
-    boost::python::implicitly_convertible<std::shared_ptr<StripOfConsideration>, std::shared_ptr<Module>>( );
-
+    // export the StripOfConsideration class
+    exportModule<StripOfConsideration>( "StripOfConsideration", []( auto&& x ) {
+        x.def_readwrite( "max_ambiguity", &StripOfConsideration::uiMaxAmbiguity )
+            .def_readwrite( "min_score", &StripOfConsideration::fScoreMinimum )
+            .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
+    } );
 } // function
 #endif

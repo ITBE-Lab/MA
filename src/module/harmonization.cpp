@@ -588,17 +588,15 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
 #ifdef WITH_PYTHON
 void exportHarmonization( )
 {
-    // export the Harmonization class
-    boost::python::class_<Harmonization, boost::python::bases<Module>, std::shared_ptr<Harmonization>>(
-        "Harmonization" )
-        .def_readwrite( "optimistic_gap_estimation", &Harmonization::optimisticGapEstimation )
-        .def_readwrite( "min_coverage", &Harmonization::fMinimalQueryCoverage )
-        .def_readwrite( "tolerance", &Harmonization::fScoreTolerace )
-        .def_readwrite( "max_tries", &Harmonization::uiMaxTries )
-        .def_readwrite( "equal_score_lookahead", &Harmonization::uiMaxEqualScoreLookahead )
-        .def_readwrite( "diff_tolerance", &Harmonization::fScoreDiffTolerance )
-        .def_readwrite( "switch_q_len", &Harmonization::uiSwitchQLen )
-        .def_readwrite( "do_heuristics", &Harmonization::bDoHeuristics );
-    boost::python::implicitly_convertible<std::shared_ptr<Harmonization>, std::shared_ptr<Module>>( );
+    exportModule<Harmonization>( "Harmonization", []( auto&& x ) {
+        x.def_readwrite( "optimistic_gap_estimation", &Harmonization::optimisticGapEstimation )
+            .def_readwrite( "min_coverage", &Harmonization::fMinimalQueryCoverage )
+            .def_readwrite( "tolerance", &Harmonization::fScoreTolerace )
+            .def_readwrite( "max_tries", &Harmonization::uiMaxTries )
+            .def_readwrite( "equal_score_lookahead", &Harmonization::uiMaxEqualScoreLookahead )
+            .def_readwrite( "diff_tolerance", &Harmonization::fScoreDiffTolerance )
+            .def_readwrite( "switch_q_len", &Harmonization::uiSwitchQLen )
+            .def_readwrite( "do_heuristics", &Harmonization::bDoHeuristics );
+    } );
 } // function
 #endif

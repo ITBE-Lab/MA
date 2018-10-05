@@ -56,7 +56,7 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false,
 template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, true, TP_CONTAINER>
 {
   public:
-    std::shared_ptr<BasePledge> pLockPledge;
+    const std::shared_ptr<BasePledge> pLockPledge;
 
     /**
      * @brief create a new UnLock.

@@ -316,7 +316,7 @@ int main( int argc, char* argv[] )
         defaults::uiGenomeSizeDisable = result[ "minRefSize" ].as<unsigned long long>( );
         std::string sBbOutput = result[ "db_conninfo" ].as<std::string>( );
 #ifdef WITH_POSTGRES
-        int32_t iRunId = result[ "run_id" ].as<int32_t>( );
+        //int32_t iRunId = result[ "run_id" ].as<int32_t>( );
 #endif
 
         if( result.count( "genIndex" ) )

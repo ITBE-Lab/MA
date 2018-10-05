@@ -122,11 +122,9 @@ MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
 void exportMappingQuality( )
 {
     // export the MappingQuality class
-    boost::python::class_<MappingQuality, boost::python::bases<Module>, std::shared_ptr<MappingQuality>>(
-        "MappingQuality" )
-        .def_readwrite( "report_n", &MappingQuality::uiReportNBest )
-        .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
-
-    boost::python::implicitly_convertible<std::shared_ptr<MappingQuality>, std::shared_ptr<Module>>( );
+    exportModule<MappingQuality>( "MappingQuality", []( auto&& x ) {
+        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest )
+            .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
+    } );
 } // function
 #endif

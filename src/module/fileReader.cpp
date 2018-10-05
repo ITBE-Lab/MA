@@ -211,18 +211,11 @@ std::shared_ptr<Container> PairedFileReader::execute( std::shared_ptr<ContainerV
 void exportFileReader( )
 {
     // export the FileReader class
-    boost::python::class_<FileReader, boost::python::bases<Module>, std::shared_ptr<FileReader>>(
-        "FileReader", boost::python::init<std::string>( ) )
-#if USE_BUFFERED_ASYNC_READER == 1
-        DEBUG(.def( "testBufReader", &FileReader::testBufReader ).staticmethod( "testBufReader" ) )
-#endif
-            ;
-    boost::python::implicitly_convertible<std::shared_ptr<FileReader>, std::shared_ptr<Module>>( );
+    exportModule<FileReader, std::string>( "FileReader" );
 
-
-    boost::python::class_<PairedFileReader, boost::python::bases<Module>, std::shared_ptr<PairedFileReader>>(
-        "PairedFileReader", boost::python::init<std::string, std::string>( ) );
-    boost::python::implicitly_convertible<std::shared_ptr<PairedFileReader>, std::shared_ptr<Module>>( );
+    // boost::python::class_<PairedFileReader, boost::python::bases<Module>, std::shared_ptr<PairedFileReader>>(
+    //    "PairedFileReader", boost::python::init<std::string, std::string>( ) );
+    // boost::python::implicitly_convertible<std::shared_ptr<PairedFileReader>, std::shared_ptr<Module>>( );
 
 } // function
 #endif

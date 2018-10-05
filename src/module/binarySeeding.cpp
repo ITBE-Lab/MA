@@ -81,9 +81,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-
-std::shared_ptr<SegmentVector>
-BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index,
+                                                       std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
@@ -115,12 +114,10 @@ BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucS
 void exportBinarySeeding( )
 {
     // export the BinarySeeding class
-    boost::python::class_<BinarySeeding, boost::python::bases<Module>, std::shared_ptr<BinarySeeding>>(
-        "BinarySeeding" )
-        .def_readwrite( "min_ambiguity", &BinarySeeding::uiMinAmbiguity )
-        .def_readwrite( "max_ambiguity", &BinarySeeding::uiMaxAmbiguity )
-        .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );
-    boost::python::implicitly_convertible<std::shared_ptr<BinarySeeding>, std::shared_ptr<Module>>( );
-
+    exportModule<BinarySeeding>( "BinarySeeding", []( auto&& x ) {
+        x.def_readwrite( "min_ambiguity", &BinarySeeding::uiMinAmbiguity )
+            .def_readwrite( "max_ambiguity", &BinarySeeding::uiMaxAmbiguity )
+            .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );
+    } );
 } // function
 #endif

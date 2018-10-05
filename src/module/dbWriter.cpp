@@ -8,16 +8,15 @@
 using namespace libMA;
 
 
-std::shared_ptr<Container> execute( std::shared_ptr<NucSeq> pQuery,
-                                    std::shared_ptr<ContainerVector<Alignment>>
+std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<NucSeq> pQuery,
+                                    std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
                                         pAlignments,
                                     std::shared_ptr<Pack>
-                                        pPack );
+                                        pPack )
 {
 
-    for( std::shared_ptr<Container> pA : *pAlignments )
+    for( std::shared_ptr<Alignment> pAlignment : *pAlignments )
     {
-        std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
         if( pAlignment->length( ) == 0 )
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
@@ -93,11 +92,8 @@ std::shared_ptr<Container> execute( std::shared_ptr<NucSeq> pQuery,
 void exportDBWriter( )
 {
     // export the FileWriter class
-    boost::python::class_<DbWriter, boost::python::bases<Module>, std::shared_ptr<DbWriter>>(
-        "DbWriter", boost::python::init<std::string, uint32_t>( ) );
-
-    boost::python::implicitly_convertible<std::shared_ptr<DbWriter>, std::shared_ptr<Module>>( );
-
+    exportModule<DbWriter, std::string, uint32_t>( "DbWriter" );
+    
 } // function
 
 #endif // WITH_PYTHON
