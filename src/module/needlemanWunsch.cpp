@@ -898,10 +898,8 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
 
     DEBUG_3( std::cout << "sw2" << std::endl; )
     /*
-     * do the SW alignment
+     * do the NW alignment
      */
-
-#if 1
 
     Wrapper_ksw_extz_t ez;
 
@@ -973,140 +971,6 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
         pAlignment->shiftOnQuery( toQuery - ez.ez->max_q - 1 );
     } // if
 
-#else
-    const unsigned int uiBandWidth = 512;
-    std::vector<uint8_t> vQuery4Bit = pQuery->as4Bit( fromQuery, toQuery + 1, bReverse );
-    std::vector<uint8_t> vRef4Bit = pRef->as4Bit( fromRef, toRef + 1, bReverse );
-    DEBUG_3( if( bLocalBeginning ) {
-        for( auto i : vQuery4Bit )
-            std::cout << (int)i;
-        std::cout << std::endl;
-        for( auto i : vRef4Bit )
-            std::cout << (int)i;
-        std::cout << std::endl;
-    } // if
-                 std::cout
-                 << "sw3" << std::endl; ) // DEBUG_3
-
-    uint8_t const t[ uiBandWidth ] = {0}; // tail array
-
-    struct gaba_section_s asec = {
-        // gaba_build_section(0,  &vQuery4Bit[0], vQuery4Bit.size());
-        id : 0,
-        len : (uint32_t)vRef4Bit.size( ),
-        base : &vRef4Bit[ 0 ]
-    }; // struct
-    struct gaba_section_s bsec = {
-        // gaba_build_section(2, &vRef4Bit[0], vRef4Bit.size());
-        id : 2,
-        len : (uint32_t)vQuery4Bit.size( ),
-        base : &vQuery4Bit[ 0 ]
-    }; // struct
-    struct gaba_section_s tail = {
-        // gaba_build_section(4, t, 64);
-        id : 4,
-        len : uiBandWidth,
-        base : t
-    }; // struct
-    DEBUG_3( std::cout << "sw4" << std::endl; )
-
-    assert( pGabaScoring->pContext != nullptr );
-
-    Gaba_dp_tWrapper xDb( gaba_dp_init( pGabaScoring->pContext ) );
-    assert( xDb.pDp != nullptr );
-    DEBUG_3( std::cout << "sw4.1" << std::endl; )
-
-    struct gaba_section_s const *ap = &asec, *bp = &bsec;
-
-    // Note f does not need to be freed apparently
-    struct gaba_fill_s const* f =
-        gaba_dp_fill_root( xDb.pDp, /* dp -> &dp[_dp_ctx_index(band_width)] makes the band width selectable */
-                           ap, 0, /* a-side (reference side) sequence and start position */
-                           bp, 0, /* b-side (query) */
-                           UINT32_MAX /* max extension length */
-        );
-    DEBUG_3( std::cout << "sw5" << std::endl; )
-
-    /* until X-drop condition is detected */
-    struct gaba_fill_s const* m = f;
-    /* track max */
-    while( ( f->status & GABA_TERM ) == 0 )
-    {
-        /* substitute the pointer by the tail section's if it reached the end */
-        if( f->status & GABA_UPDATE_A )
-        {
-            ap = &tail;
-        }
-        if( f->status & GABA_UPDATE_B )
-        {
-            bp = &tail;
-        }
-
-        /* extend the banded matrix */
-        f = gaba_dp_fill( xDb.pDp, f, ap, bp, UINT32_MAX );
-        /* swap if maximum score was updated */
-        m = f->max > m->max ? f : m;
-    } // while
-
-    xDb.pR = gaba_dp_trace( xDb.pDp, m, /* section with the max */
-                            NULL /* custom allocator: see struct gaba_alloc_s in gaba.h */
-    ); // struct
-    if( xDb.pR == nullptr )
-    {
-        DEBUG( std::cerr << "WARNING libGaba delivered nullptr on alignment " << pAlignment->xStats.sName << std::endl
-                         << "Maybe the area was too large?" << std::endl
-                         << "Query: " << fromQuery << " - " << toQuery << std::endl
-                         << "Ref: " << fromRef << " - " << toRef << std::endl; ) // DEBUG
-        // great what to do other than give up here...?
-        if( bReverse )
-        {
-            pAlignment->shiftOnQuery( toQuery - fromQuery );
-            pAlignment->shiftOnRef( toRef - fromRef );
-        } // if
-        return;
-    } // if
-
-    DEBUG_3( std::cout << "sw6" << std::endl; )
-
-    // used int the lambda function
-    MyPrinterMemory xPrinter( pQuery, pRef, pAlignment,
-                              // if we have a reverse alignment libGaba might not have fully aligned
-                              // till the end so we need to figure out where it ended
-                              bReverse ? toQuery - ( xDb.pR->bgcnt + xDb.pR->dcnt ) : fromQuery,
-                              bReverse ? toRef - ( xDb.pR->agcnt + xDb.pR->dcnt ) : fromRef );
-
-    ////printf("score(%" PRId64 "), path length(%" PRIu64 ")\n", xDb.pR->score, xDb.pR->plen);
-    if( bReverse )
-        gaba_print_cigar_reverse( printer, /* printer function */
-                                  (void*)&xPrinter, /* printer function input */
-                                  xDb.pR->path, /* bit-encoded path array */
-                                  0, /* offset is always zero */
-                                  xDb.pR->plen /* path length */
-        );
-    else
-        gaba_print_cigar_forward( printer, /* printer function */
-                                  (void*)&xPrinter, /* printer function input */
-                                  xDb.pR->path, /* bit-encoded path array */
-                                  0, /* offset is always zero */
-                                  xDb.pR->plen /* path length */
-        );
-    DEBUG_3( std::cout << std::endl; )
-
-    assert( xPrinter.uiQueryExtensionSize == xDb.pR->bgcnt + xDb.pR->dcnt );
-    assert( xPrinter.uiRefExtensionSize == xDb.pR->agcnt + xDb.pR->dcnt );
-
-    /*
-     * Warning:
-     * Order is important: the shifting needs to be done after the cigar extraction
-     */
-    if( bReverse )
-    {
-        pAlignment->shiftOnRef( vRef4Bit.size( ) - ( xDb.pR->agcnt + xDb.pR->dcnt ) );
-        pAlignment->shiftOnQuery( vQuery4Bit.size( ) - ( xDb.pR->bgcnt + xDb.pR->dcnt ) );
-    } // if
-
-    DEBUG_3( std::cout << "dynProg end" << std::endl; )
-#endif
 } // function
 
 NeedlemanWunsch::NeedlemanWunsch( )
@@ -1138,12 +1002,14 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         pRet->xStats.sName = pQuery->sName;
         return pRet;
     } // if
-    DEBUG_2( std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl; for( Seed& rSeed
-                                                                                                      : *pSeeds ) {
+#if DEBUG_LEVEL >= 2
+    std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
+    for( Seed& rSeed : *pSeeds )
+    {
         std::cout << rSeed.start_ref( ) << ", " << rSeed.end_ref( ) << "; " << rSeed.start( ) << ", " << rSeed.end( )
                   << std::endl;
     } // for
-             ) // DEBUG
+#endif
 
     // Determine the query and reverence coverage of the seeds
 
@@ -1512,12 +1378,8 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 #ifdef WITH_PYTHON
 void exportNeedlemanWunsch( )
 {
-    DEBUG(
-        // broken debug function
-        // boost::python::def("debugNW", &debugNW);
-
-        // test ksw function
-        boost::python::def( "testKsw", &testKsw ); ) // DEBUG
+    // test ksw function
+    DEBUG( boost::python::def( "testKsw", &testKsw ); ) // DEBUG
 
     boost::python::def( "run_ksw", &run_ksw );
 
