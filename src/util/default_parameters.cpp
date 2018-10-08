@@ -61,6 +61,12 @@ size_t uiMaxSupplementaryPerPrim = 1;
 
 size_t uiSVPenalty = 100;
 
+// Minimal bandwith when filling the gap between seeds.
+// This bandwidth gets increased if the seeds are not on a diagonal.
+int iMinBandwidthGapFilling = 20;
+// When extending the end of a alignment we use this bandwidth.
+int iBandwidthDPExtension = 512;
+
 // @todo
 double dMaxSVRatio = 0.01;
 int64_t iMinSVDistance = 500;

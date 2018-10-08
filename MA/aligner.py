@@ -327,14 +327,14 @@ class OtherSeeding(libMA.OtherSeeding):
             ContainerVector(list(args)))
 
 
-def ksw(a_list, b_list, m=2, mm=4, o=4, e=2, o2=24, e2=1, w=0):
-    ret = []
-    for a, b in zip(a_list, b_list):
-        cigar = libMA.run_ksw(a, b, m, mm, o, e, o2, e2, w)
-        cigar_list = []
-        for x in cigar.split(",")[:-1]:
-            num = int(x[:-1])
-            sym = x[-1]
-            cigar_list.append((num, sym))
-        ret.append(cigar_list)
-    return ret
+#def ksw(a_list, b_list, m=2, mm=4, o=4, e=2, o2=24, e2=1, w=0):
+#    ret = []
+#    for a, b in zip(a_list, b_list):
+#        cigar = libMA.run_ksw(a, b, m, mm, o, e, o2, e2, w)
+#        cigar_list = []
+#        for x in cigar.split(",")[:-1]:
+#            num = int(x[:-1])
+#            sym = x[-1]
+#            cigar_list.append((num, sym))
+#        ret.append(cigar_list)
+#    return ret

@@ -16,6 +16,7 @@ namespace libMA
 {
 namespace defaults
 {
+
 extern int iMatch;
 extern int iMissMatch;
 extern int iGap;
@@ -63,6 +64,8 @@ extern double dMaxSVRatio;
 extern int64_t iMinSVDistance;
 extern size_t uiZDrop;
 extern size_t uiSVPenalty;
+extern int iMinBandwidthGapFilling;
+extern int iBandwidthDPExtension;
 
 inline void configureAccurate( )
 {

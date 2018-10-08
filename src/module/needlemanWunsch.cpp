@@ -3,7 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/needlemanWunsch.h"
-#include "ksw/ksw2.h"
+//#include "ksw/ksw2.h"
 #include <algorithm>
 #include <bitset>
 #include <cassert>
@@ -11,72 +11,35 @@
 #include <string>
 #include <vector>
 
-#define KSW_EZ_SCORE_ONLY 0x01 // don't record alignment path/cigar
-#define KSW_EZ_RIGHT 0x02 // right-align gaps
-#define KSW_EZ_GENERIC_SC 0x04 // without this flag: match/mismatch only; last symbol is a wildcard
-#define KSW_EZ_APPROX_MAX 0x08 // approximate max; this is faster with sse
-#define KSW_EZ_APPROX_DROP 0x10 // approximate Z-drop; faster with sse
-#define KSW_EZ_EXTZ_ONLY 0x40 // only perform extension
-#define KSW_EZ_REV_CIGAR 0x80 // reverse CIGAR in the output
-#define KSW_EZ_SPLICE_FOR 0x100
-#define KSW_EZ_SPLICE_REV 0x200
-#define KSW_EZ_SPLICE_FLANK 0x400
-
 using namespace libMA;
 
-using namespace libMA::defaults;
-extern int libMA::defaults::iGap;
-extern int libMA::defaults::iExtend;
-extern int libMA::defaults::iGap2;
-extern int libMA::defaults::iExtend2;
-extern int libMA::defaults::iMatch;
-extern int libMA::defaults::iMissMatch;
-extern nucSeqIndex libMA::defaults::uiPadding;
-extern size_t libMA::defaults::uiZDrop;
-
-DEBUG( bool bAnalyzeHeuristics = false; ) // DEBUG
-
-// match missmatch matrix for ksw
-int8_t mat[ 25 ];
-
-static void ksw_gen_simple_mat( int m, int8_t* mat, int8_t a, int8_t b )
-{
-    int i, j;
-    a = a < 0 ? -a : a;
-    b = b > 0 ? -b : b;
-    for( i = 0; i < m - 1; ++i )
-    {
-        for( j = 0; j < m - 1; ++j )
-            mat[ i * m + j ] = i == j ? a : b;
-        mat[ i * m + m - 1 ] = 0;
-    }
-    for( j = 0; j < m; ++j )
-        mat[ ( m - 1 ) * m + j ] = 0;
-} // function
 
 inline void ksw_ext( int qlen,
                      const uint8_t* query,
                      int tlen,
                      const uint8_t* target,
-                     int8_t q,
-                     int8_t e,
-                     int8_t q2,
-                     int8_t e2,
-                     int& w,
-                     ksw_extz_t* ez,
+                     const KswCppParam<5>& rKswParameters,
+                     int w,
+                     size_t uiZDrop,
+                     kswcpp_extz_t* ez,
+                     AlignedMemoryManager& rMemoryManager,
                      bool bRef )
 {
     if( bRef )
-        ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1,
-                       KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
+        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, uiZDrop,
+                         KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez, rMemoryManager );
+    //-- ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1,
+    //--                KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
     else
-        ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez );
+        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, uiZDrop, KSW_EZ_EXTZ_ONLY, ez, rMemoryManager );
+    //-- ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez
+    //-- );
 } // function
 
-inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target, int8_t q, int8_t e,
-                            int8_t q2, int8_t e2, int& w, ksw_extz_t* ez, int8_t* mat )
+inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target,
+                            const KswCppParam<5>& rKswParameters, int w, kswcpp_extz_t* ez,
+                            AlignedMemoryManager& rMemoryManager )
 {
-    // assert(qlen * tlen < 10000000);
     int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
     /*
      * Adjust the bandwith according to the delta distance of the seeds creating this gap
@@ -84,13 +47,8 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
      */
     if( std::abs( tlen - qlen ) + minAddBandwidth > w )
         w = std::abs( tlen - qlen ) + minAddBandwidth;
-    ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez );
-} // function
-
-inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target, int8_t q, int8_t e,
-                            int8_t q2, int8_t e2, int& w, ksw_extz_t* ez )
-{
-    ksw_simplified( qlen, query, tlen, target, q, e, q2, e2, w, ez, mat );
+    //-- ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez );
+    kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, -1, 0, ez, rMemoryManager );
 } // function
 
 
@@ -98,24 +56,25 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
 class Wrapper_ksw_extz_t
 {
   public:
-    ksw_extz_t* ez;
+    kswcpp_extz_t* ez;
 
     Wrapper_ksw_extz_t( )
     {
-        ez = new ksw_extz_t{}; // {} forces zero initialization
+        ez = new kswcpp_extz_t{}; // {} forces zero initialization
 
     } // default constructor
 
     ~Wrapper_ksw_extz_t( )
     {
-        free( ez->cigar );
-        free( ez );
+        free( ez->cigar ); // malloced in c code
+        delete ez; // allocated by new in cpp code
     } // default constructor
 }; // class
 
 // banded global NW
-void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery, nucSeqIndex toQuery,
-          nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment )
+void NeedlemanWunsch::ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
+                           nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
+                           std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager )
 {
     // sanity checks
     if( toRef <= fromRef )
@@ -134,14 +93,12 @@ void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIn
 
     Wrapper_ksw_extz_t ez;
 
-    int uiBandwidth = 20;
-
     assert( toQuery < pQuery->length( ) );
     assert( toRef < pRef->length( ) );
     ksw_simplified( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
-                    pRef->pGetSequenceRef( ) + fromRef, iGap, iExtend, iGap2, iExtend2, uiBandwidth,
-                    ez.ez // return value
-    );
+                    pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iMinBandwidthGapFilling,
+                    ez.ez, // return value
+                    rMemoryManager );
 
     uint32_t qPos = fromQuery;
     uint32_t rPos = fromRef;
@@ -204,335 +161,6 @@ void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIn
     pAlignment->append( MatchType::insertion, toRef - rPos );
 } // function
 
-
-/**
- * @brief the NW dynamic programming algorithm
- * @details
- * This is a naive very slow version,
- * but it computes the correct score and it is capable of doing semi-global alignments.
- *
- * if bNoGapAtBeginning || bNoGapAtEnd :
- *      returns the gap at the beginning or end
- * otherwise : returns 0
- */
-void NeedlemanWunsch::naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef,
-                                            nucSeqIndex fromQuery, nucSeqIndex toQuery, nucSeqIndex fromRef,
-                                            nucSeqIndex toRef, bool bNoGapAtBeginning, bool bNoGapAtEnd,
-                                            std::shared_ptr<Alignment> pAlignment )
-{
-    /*
-     * break conditions for actually empty areas
-     */
-    DEBUG( if( toQuery > pQuery->length( ) ) {
-        std::cerr << toQuery << " " << pQuery->length( ) << std::endl;
-        assert( false );
-    } // if
-           if( toRef > pRef->length( ) ) {
-               std::cerr << toRef << " " << pRef->length( ) << std::endl;
-               assert( false );
-           } // if
-           ) // DEBUG
-    if( toRef <= fromRef )
-        if( toQuery <= fromQuery )
-            return;
-    DEBUG_2( std::cout << toQuery - fromQuery << std::endl;
-             for( nucSeqIndex i = fromQuery; i < toQuery; i++ ) std::cout << pQuery->charAt( i );
-             std::cout << std::endl;
-             std::cout << toRef - fromRef << std::endl;
-             for( nucSeqIndex i = fromRef; i < toRef; i++ ) std::cout << pRef->charAt( i );
-             std::cout << std::endl; ) // DEBUG
-    if( toQuery <= fromQuery )
-    {
-        pAlignment->append( MatchType::deletion, toRef - fromRef );
-        return;
-    } // if
-    if( toRef <= fromRef )
-    {
-        pAlignment->append( MatchType::insertion, toQuery - fromQuery );
-        return;
-    } // if
-
-    /*
-     * beginning of the actual NW
-     */
-#if ALLOCATE_ONCE == 0
-    // allocate memory for the naive approach
-    std::vector<std::vector<std::vector<int>>> s(
-        3, std::vector<std::vector<int>>( toQuery - fromQuery + 1, std::vector<int>( toRef - fromRef + 1 ) ) );
-    std::vector<std::vector<std::vector<char>>> dir(
-        3, std::vector<std::vector<char>>( toQuery - fromQuery + 1, std::vector<char>( toRef - fromRef + 1 ) ) );
-#endif
-
-/*
- * initialization:
- *      this part sets the scores for the last row and column (reverse order)
- *
- * Note:
- *      if we do not want a gap at the end since the alignment ends there we need to
- *      set the initial values along the reference to 0.
- *      we do not want a complete global alignment,
- *      merely a global alignment with respect to the query
- */
-//                  BINARY       DECIMAL
-#define DIA /*000001*/ 1
-#define INS /*000010*/ 2
-#define DEL /*000100*/ 4
-#define DIR_0_NEXT /*001000*/ 8
-#define DIR_1_NEXT /*010000*/ 16
-#define DIR_2_NEXT /*100000*/ 32
-
-// used to prevent the DP to make extensions from positions where this is set...
-// -iGap*10 should be more than enough
-#define LOWER -iGap * 1000
-
-    s[ 0 ][ 0 ][ 0 ] = 0;
-    s[ 1 ][ 0 ][ 0 ] = LOWER;
-    s[ 2 ][ 0 ][ 0 ] = LOWER;
-    dir[ 0 ][ 0 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
-    dir[ 1 ][ 0 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
-    dir[ 2 ][ 0 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
-
-    s[ 0 ][ 1 ][ 0 ] = LOWER;
-    dir[ 0 ][ 1 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
-    s[ 1 ][ 1 ][ 0 ] = -( iGap + iExtend );
-    dir[ 1 ][ 1 ][ 0 ] = INS | DIR_0_NEXT;
-    s[ 2 ][ 1 ][ 0 ] = LOWER;
-    dir[ 2 ][ 1 ][ 0 ] = 0; // this position will throw an error if the backtracker tries to use it
-
-    s[ 0 ][ 0 ][ 1 ] = LOWER;
-    dir[ 0 ][ 0 ][ 1 ] = 0; // this position will throw an error if the backtracker tries to use it
-    s[ 1 ][ 0 ][ 1 ] = LOWER;
-    dir[ 1 ][ 0 ][ 1 ] = 0; // this position will throw an error if the backtracker tries to use it
-    if( bNoGapAtEnd ) // see note above
-        s[ 2 ][ 0 ][ 1 ] = 0;
-    else
-        s[ 2 ][ 0 ][ 1 ] = -( iGap + iExtend );
-    dir[ 2 ][ 0 ][ 1 ] = DEL | DIR_0_NEXT;
-    for( unsigned int x = 0; x < 3; x++ )
-    {
-        for( nucSeqIndex uiI = 2; uiI < toQuery - fromQuery + 1; uiI++ )
-        {
-            if( bNoGapAtEnd ) // see note above
-                s[ x ][ 0 ][ uiI ] = 0;
-            else
-                s[ x ][ uiI ][ 0 ] = s[ x ][ uiI - 1 ][ 0 ] - iExtend;
-            dir[ 1 ][ uiI ][ 0 ] = INS | DIR_1_NEXT;
-        } // for
-        for( nucSeqIndex uiI = 2; uiI < toRef - fromRef + 1; uiI++ )
-        {
-            s[ x ][ 0 ][ uiI ] = s[ x ][ 0 ][ uiI - 1 ] - iExtend;
-            dir[ 2 ][ 0 ][ uiI ] = DEL | DIR_2_NEXT;
-        } // for
-    } // for
-    /*
-     * dynamic programming loop
-     * Note:
-     *      we iterate in the reverse order on reference and query
-     *      so that the backtracking can be done in forward order
-     *      this saves us the work to reverse the result
-     *
-     * This works as follows:
-     *      for each cell compute the scores if resuling from an insertion deletion match/missmatch
-     *      in this order. Store the score from the insertion and overwrite the score with the del
-     *      match of missmatch score if any of them is higher. Also keep track of which direction
-     *      we came from in the dir matrix.
-     */
-    int a, b;
-    char c;
-    for( nucSeqIndex uiI = 1; uiI < ( toQuery - fromQuery ) + 1; uiI++ )
-    {
-        for( nucSeqIndex uiJ = 1; uiJ < ( toRef - fromRef ) + 1; uiJ++ )
-        {
-            // match / missmatch
-            a = s[ 0 ][ uiI - 1 ][ uiJ - 1 ];
-            c = DIA | DIR_0_NEXT;
-            b = s[ 1 ][ uiI - 1 ][ uiJ - 1 ];
-            if( b > a )
-            {
-                a = b;
-                c = DIA | DIR_1_NEXT;
-            } // if
-            b = s[ 2 ][ uiI - 1 ][ uiJ - 1 ];
-            if( b > a )
-            {
-                a = b;
-                c = DIA | DIR_2_NEXT;
-            } // if
-            if( ( *pQuery )[ toQuery - uiI ] == ( *pRef )[ toRef - uiJ ] )
-                a += iMatch;
-            else
-                a -= iMissMatch;
-            dir[ 0 ][ uiI ][ uiJ ] = c;
-            s[ 0 ][ uiI ][ uiJ ] = a;
-
-            // insertion
-            a = s[ 1 ][ uiI - 1 ][ uiJ ] - iExtend;
-            c = INS | DIR_1_NEXT;
-            b = s[ 0 ][ uiI - 1 ][ uiJ ] - ( iGap + iExtend );
-            if( b >= a )
-            {
-                a = b;
-                c = INS | DIR_0_NEXT;
-            } // if
-            b = s[ 2 ][ uiI - 1 ][ uiJ ] - ( iGap + iExtend );
-            if( b > a )
-            {
-                a = b;
-                c = INS | DIR_2_NEXT;
-            } // if
-            dir[ 1 ][ uiI ][ uiJ ] = c;
-            s[ 1 ][ uiI ][ uiJ ] = a;
-
-            // deletion
-            a = s[ 2 ][ uiI ][ uiJ - 1 ] - iExtend;
-            c = DEL | DIR_2_NEXT;
-            b = s[ 0 ][ uiI ][ uiJ - 1 ] - ( iGap + iExtend );
-            if( b >= a )
-            {
-                a = b;
-                c = DEL | DIR_0_NEXT;
-            } // if
-            b = s[ 1 ][ uiI ][ uiJ - 1 ] - ( iGap + iExtend );
-            if( b > a )
-            {
-                a = b;
-                c = DEL | DIR_1_NEXT;
-            } // if
-            dir[ 2 ][ uiI ][ uiJ ] = c;
-            s[ 2 ][ uiI ][ uiJ ] = a;
-        } // for
-    } // for
-
-    DEBUG_3(
-        /*
-         * sanity prints
-         */
-        for( nucSeqIndex uiI = 0; uiI < toRef - fromRef + 1; uiI++ ) {
-            if( uiI == 0 )
-                std::cout << " \t \t";
-            else
-                std::cout << pRef->charAt( toRef - uiI ) << "\t";
-        } // for
-            std::cout
-            << std::endl;
-        for( nucSeqIndex uiI = 0; uiI < toQuery - fromQuery + 1; uiI++ ) {
-            if( uiI == 0 )
-                std::cout << " \t";
-            else
-                std::cout << pQuery->charAt( toQuery - uiI ) << "\t";
-            for( nucSeqIndex uiJ = 0; uiJ < toRef - fromRef + 1; uiJ++ )
-                std::cout << s[ 2 ][ uiI ][ uiJ ] << "\t";
-            std::cout << std::endl;
-        } // for
-        ) // DEBUG
-
-    /*
-     * backtracking
-     */
-    nucSeqIndex iX = toQuery - fromQuery;
-    nucSeqIndex iY = toRef - fromRef;
-
-    char cLastDir = DIR_0_NEXT;
-    /*
-     * if there is no gap cost for the beginning
-     * we should start backtracking where the score is maximal
-     * along the reference
-     * also: in this case the last direction must be a match
-     */
-    if( bNoGapAtBeginning )
-    {
-        for( nucSeqIndex uiJ = 1; uiJ < toRef - fromRef; uiJ++ )
-            if( s[ 0 ][ iX ][ uiJ ] > s[ 0 ][ iX ][ iY ] )
-                iY = uiJ;
-        DEBUG_2( std::cout << ( toRef - fromRef ) - iY << "D"; ) // DEBUG
-        pAlignment->shiftOnRef( ( toRef - fromRef ) - iY );
-    } // if
-    else // in this case the first direction might be an insertion or deletion
-    {
-        int a = s[ 0 ][ iX ][ iY ];
-        int b = s[ 1 ][ iX ][ iY ];
-        if( b > a )
-        {
-            a = b;
-            cLastDir = DIR_1_NEXT;
-        } // if
-        b = s[ 2 ][ iX ][ iY ];
-        if( b > a )
-            cLastDir = DIR_2_NEXT;
-    } // else
-    while( iX > 0 || iY > 0 )
-    {
-        // load the direction value from the correct matrix
-        if( cLastDir & DIR_0_NEXT )
-            cLastDir = dir[ 0 ][ iX ][ iY ];
-        else if( cLastDir & DIR_1_NEXT )
-            cLastDir = dir[ 1 ][ iX ][ iY ];
-        else if( cLastDir & DIR_2_NEXT )
-            cLastDir = dir[ 2 ][ iX ][ iY ];
-        else
-            std::cerr << "WARNING: no next pointer set in dynamic programming" << std::endl;
-        // do the backtracking
-        if( cLastDir & DIA )
-        {
-            if( ( *pQuery )[ toQuery - iX ] == ( *pRef )[ toRef - iY ] )
-            {
-                pAlignment->append( MatchType::match );
-                DEBUG_2( std::cout << "M"; ) // DEBUG
-            } // if
-            else
-            {
-                pAlignment->append( MatchType::missmatch );
-                DEBUG_2( std::cout << "W"; ) // DEBUG
-            } // else
-            iX--;
-            iY--;
-        } // if
-        else if( cLastDir & INS )
-        {
-            pAlignment->append( MatchType::insertion );
-            iX--;
-            DEBUG_2( std::cout << "I"; ) // DEBUG
-        } // if
-        else if( cLastDir & DEL )
-        {
-            pAlignment->append( MatchType::deletion );
-            iY--;
-            DEBUG_2( std::cout << "D"; ) // DEBUG
-        } // if
-        else
-        {
-            std::cerr << "WARNING: no direction set in dynamic programming" << std::endl;
-        } // else
-        /*
-         * if there is no gap cost for the end
-         * we should stop backtracking once we reached the end of the query
-         */
-        if( bNoGapAtEnd && iX <= 0 )
-            return;
-    } // while
-
-    DEBUG_2( std::cout << std::endl; ) // DEBUG
-
-    // print the entire matrix if necessary
-    DEBUG_3( std::cout << "\t"; for( auto i = toRef; i > fromRef; i-- ) std::cout
-                                << "\t" << NucSeq::translateACGTCodeToCharacter( ( *pRef )[ i - 1 ] );
-             for( auto j = fromQuery; j <= toQuery; j++ ) {
-                 std::cout << "\n";
-                 if( j > fromQuery )
-                     std::cout << NucSeq::translateACGTCodeToCharacter( ( *pQuery )[ toQuery - j ] );
-                 for( auto i = fromRef; i <= toRef; i++ )
-                     std::cout << "\t" << s[ 0 ][ j - fromQuery ][ i - fromRef ] << ","
-                               << s[ 1 ][ j - fromQuery ][ i - fromRef ] << ","
-                               << s[ 2 ][ j - fromQuery ][ i - fromRef ] << " ("
-                               << std::bitset<6>( dir[ 0 ][ j - fromQuery ][ i - fromRef ] ) << ","
-                               << std::bitset<6>( dir[ 1 ][ j - fromQuery ][ i - fromRef ] ) << ","
-                               << std::bitset<6>( dir[ 2 ][ j - fromQuery ][ i - fromRef ] ) << ")";
-             } // for
-             std::cout
-             << std::endl; ) // DEBUG
-    return;
-} // function
-
 class MyPrinterMemory
 {
   public:
@@ -591,24 +219,24 @@ class MyPrinterMemory
 
 
 // banded global NW
-void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
-                   nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment )
+void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
+                                    nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
+                                    std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager )
 {
     Wrapper_ksw_extz_t ez_left;
     Wrapper_ksw_extz_t ez_right;
-    int uiBandwidth = 512;
 
     ksw_ext( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
-             pRef->pGetSequenceRef( ) + fromRef, iGap, iExtend, iGap2, iExtend2, uiBandwidth,
+             pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_left.ez, // return value
-             false );
+             rMemoryManager, false );
 
     pQuery->vReverse( fromQuery, toQuery );
     pRef->vReverse( fromRef, toRef );
     ksw_ext( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
-             pRef->pGetSequenceRef( ) + fromRef, iGap, iExtend, iGap2, iExtend2, uiBandwidth,
+             pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_right.ez, // return value
-             true );
+             rMemoryManager, true );
     pQuery->vReverse( fromQuery, toQuery );
     pRef->vReverse( fromRef, toRef );
 
@@ -829,7 +457,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
                               const nucSeqIndex fromQuery, const nucSeqIndex toQuery, const nucSeqIndex fromRef,
                               const nucSeqIndex toRef,
                               std::shared_ptr<Alignment> pAlignment, // in & output
-                              const bool bLocalBeginning, const bool bLocalEnd )
+                              AlignedMemoryManager& rMemoryManager, const bool bLocalBeginning, const bool bLocalEnd )
 {
     // do some checking for empty sequences
     if( toRef <= fromRef )
@@ -855,32 +483,15 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
 #if 1
     if( toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea )
     {
-        ksw_dual_ext( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment );
+        ksw_dual_ext( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
         return;
     } // if
-#endif
-
-// use NW naive backend for all cases
-#if 0
-    //temp
-    naiveNeedlemanWunsch(
-        pQuery, pRef,
-        fromQuery, toQuery,
-        fromRef, toRef,
-        bLocalBeginning, bLocalEnd,
-        pAlignment
-    );
-    return;
-    //temp
 #endif
 
     DEBUG_3( std::cout << "dynProg begin" << std::endl; )
     if( !bLocalBeginning && !bLocalEnd )
     {
-        if( toQuery - fromQuery > NAIVE_MAX_SIZE || toRef - fromRef > NAIVE_MAX_SIZE || true )
-            ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment );
-        else
-            naiveNeedlemanWunsch( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, false, false, pAlignment );
+        ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
         DEBUG_3( std::cout << "dynProg end" << std::endl; )
         return;
     } // if
@@ -892,7 +503,6 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
 
     const bool bReverse = bLocalBeginning;
 
-
     // if we reached this point we actually have to align something
     DEBUG_2( std::cout << pQuery->toString( ) << std::endl; std::cout << pRef->toString( ) << std::endl; )
 
@@ -903,8 +513,6 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
 
     Wrapper_ksw_extz_t ez;
 
-    int uiBandwidth = 512;
-
     assert( toQuery < pQuery->length( ) );
     assert( toRef < pRef->length( ) );
     if( bReverse )
@@ -913,9 +521,9 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
         pRef->vReverse( fromRef, toRef );
     } // if
     ksw_ext( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
-             pRef->pGetSequenceRef( ) + fromRef, iGap, iExtend, iGap2, iExtend2, uiBandwidth,
+             pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez.ez, // return value
-             bReverse );
+             rMemoryManager, bReverse );
     if( bReverse )
     {
         pQuery->vReverse( fromQuery, toQuery );
@@ -973,25 +581,14 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
 
 } // function
 
-NeedlemanWunsch::NeedlemanWunsch( )
-#if ALLOCATE_ONCE == 1
-    : // allocate memory for the naive approach
-      s( 3, std::vector<std::vector<int>>( NAIVE_MAX_SIZE + 1, std::vector<int>( NAIVE_MAX_SIZE + 1 ) ) ),
-      dir( 3, std::vector<std::vector<char>>( NAIVE_MAX_SIZE + 1, std::vector<char>( NAIVE_MAX_SIZE + 1 ) ) )
-#endif
-{
-    // create match/missmatch matrix for ksw
-    ksw_gen_simple_mat( 5, mat, iMatch, iMissMatch );
-} // constructor
-
 
 std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
-                                                         std::shared_ptr<Pack> pRefPack )
+                                                         std::shared_ptr<Pack> pRefPack,
+                                                         AlignedMemoryManager& rMemoryManager )
 {
 
     if( pSeeds == nullptr )
         return std::shared_ptr<Alignment>( new Alignment( ) );
-
 
     // no seeds => no spot found at all...
     if( pSeeds->empty( ) )
@@ -1156,8 +753,8 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
 
     if( !bLocal )
     {
-        dynPrg( pQuery, pRef, 0, pSeeds->front( ).start( ), 0, pSeeds->front( ).start_ref( ) - beginRef, pRet, true,
-                false );
+        dynPrg( pQuery, pRef, 0, pSeeds->front( ).start( ), 0, pSeeds->front( ).start_ref( ) - beginRef, pRet,
+                rMemoryManager, true, false );
     } // if
 
     nucSeqIndex endOfLastSeedQuery = pSeeds->front( ).end( );
@@ -1202,7 +799,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         if( len > overlap )
         {
             dynPrg( pQuery, pRef, endOfLastSeedQuery, rSeed.start( ), endOfLastSeedReference,
-                    rSeed.start_ref( ) - beginRef, pRet, false, false );
+                    rSeed.start_ref( ) - beginRef, pRet, rMemoryManager, false, false );
             DEBUG(
                 // std::cout << pRet->vGapsScatter.size() << std::endl;
                 pRet->vGapsScatter.push_back(
@@ -1239,7 +836,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
     else
     {
         dynPrg( pQuery, pRef, endOfLastSeedQuery, endQuery - 1, endOfLastSeedReference, endRef - beginRef - 1, pRet,
-                false, true );
+                rMemoryManager, false, true );
         // there should never be dangeling deletions with libGaba
         pRet->removeDangeling( );
     } // else
@@ -1262,6 +859,7 @@ std::vector<char> randomNucSeq( const size_t uiLen )
     return vNucSeq;
 } // function
 
+#if 0
 void testKsw( )
 {
     /* Seed the random number generator */
@@ -1374,14 +972,14 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
     } // for
     return sRet;
 } // function
+#endif
 
 #ifdef WITH_PYTHON
 void exportNeedlemanWunsch( )
 {
     // test ksw function
-    DEBUG( boost::python::def( "testKsw", &testKsw ); ) // DEBUG
-
-    boost::python::def( "run_ksw", &run_ksw );
+    // DEBUG( boost::python::def( "testKsw", &testKsw ); ) // DEBUG
+    // boost::python::def( "run_ksw", &run_ksw );
 
     // export the NeedlemanWunsch class
     exportModule<NeedlemanWunsch>( "NeedlemanWunsch", []( auto&& x ) {

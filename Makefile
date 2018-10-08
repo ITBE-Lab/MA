@@ -16,11 +16,9 @@ BOOST_LIB = boost_python3
 # target files
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
 
+
 TARGET_OBJ= \
 	$(addprefix obj/,$(addsuffix .o,$(TARGET))) \
-	obj/ksw/ksw2_dispatch.co \
-	obj/ksw/ksw2_extd2_sse2.co \
-	obj/ksw/ksw2_extd2_sse41.co \
 	obj/container/qSufSort.co
 
 # flags
@@ -36,8 +34,8 @@ else
 	CFLAGS= -Wall -Werror -fPIC -O3 -g -msse4.1
 endif
 LDFLAGS= $(STD)
-LDLIBS= -lm -lpthread -lstdc++
-INCLUDES= -Iinc
+LDLIBS= -lm -lpthread -lstdc++ -Lcontrib/kswcpp/lib -lkswcpp
+INCLUDES= -Iinc -Icontrib/kswcpp/inc
 
 # this adds debug switches
 ifeq ($(DEBUG), 1)
@@ -46,9 +44,6 @@ ifeq ($(DEBUG), 1)
 	# no debug version for the ksw library
 	TARGET_OBJ= \
 		$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
-		obj/ksw/ksw2_dispatch.co \
-		obj/ksw/ksw2_extd2_sse2.co \
-		obj/ksw/ksw2_extd2_sse41.co \
 		obj/container/qSufSort.co
 endif
 
@@ -98,16 +93,7 @@ endif
 libMA: $(TARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(LDLIBS) -o libMA.so
 
-# special targets for the ksw2 library
-obj/ksw/ksw2_dispatch.co:src/ksw/ksw2_dispatch.c inc/ksw/ksw2.h
-	$(CC) -c $(CFLAGS) -Iinc -DKSW_CPU_DISPATCH $< -o $@
-
-obj/ksw/ksw2_extd2_sse2.co:src/ksw/ksw2_extd2_sse.c inc/ksw/ksw2.h
-	$(CC) -c $(CFLAGS) -Iinc -msse2 -mno-sse4.1 -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $< -o $@
-
-obj/ksw/ksw2_extd2_sse41.co:src/ksw/ksw2_extd2_sse.c inc/ksw/ksw2.h
-	$(CC) -c $(CFLAGS) -Iinc -msse4.1 -DKSW_CPU_DISPATCH $< -o $@
-
+# special target for the suffix sort
 obj/container/qSufSort.co:src/container/qSufSort.c inc/container/qSufSort.h
 	$(CC) -c $(CFLAGS) -Iinc $< -o $@
 

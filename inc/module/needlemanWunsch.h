@@ -7,11 +7,8 @@
 #define NEEDLEMAN_WUNSCH_H
 
 #include "container/alignment.h"
+#include "kswcpp.h"
 #include "module/module.h"
-// The NW library:
-
-#define ALLOCATE_ONCE ( 0 ) // naive approach is disabled
-#define NAIVE_MAX_SIZE 5
 
 namespace libMA
 {
@@ -27,35 +24,54 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
     std::vector<std::vector<std::vector<int>>> s;
     std::vector<std::vector<std::vector<char>>> dir;
 
-    void naiveNeedlemanWunsch( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
-                               nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef, bool bNoGapAtBeginning,
-                               bool bNoGapAtEnd, std::shared_ptr<Alignment> pAlignment );
-
     void EXPORTED dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::shared_ptr<NucSeq> pRef,
                           const nucSeqIndex fromQuery, const nucSeqIndex toQuery, const nucSeqIndex fromRef,
                           const nucSeqIndex toRef,
                           std::shared_ptr<Alignment> pAlignment, // in & output
-                          const bool bLocalBeginning, const bool bLocalEnd );
+                          AlignedMemoryManager& rMemoryManager, const bool bLocalBeginning, const bool bLocalEnd );
+
+    void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
+                       nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
+                       std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager );
+    
+    void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery, nucSeqIndex toQuery,
+          nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment,
+          AlignedMemoryManager& rMemoryManager );
 
     nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
+    nucSeqIndex uiPadding = defaults::uiPadding;
+    size_t uiZDrop = defaults::uiZDrop;
+    const KswCppParam<5> xKswParameters;
+    /*
+     * @details
+     * Minimal bandwith when filling the gap between seeds.
+     * This bandwidth gets increased if the seeds are not on a diagonal.
+     */
+    int iMinBandwidthGapFilling = defaults::iMinBandwidthGapFilling;
+    // bandwidth when extending the edge of an alignment
+    int iBandwidthDPExtension = defaults::iBandwidthDPExtension;
 
   public:
     bool bLocal = false;
 
-    NeedlemanWunsch( );
+    NeedlemanWunsch( )
+        : xKswParameters( defaults::iMatch, defaults::iMissMatch, defaults::iGap, defaults::iExtend, defaults::iGap2,
+                          defaults::iExtend2 ){}; // default constructor
 
 
     std::shared_ptr<Alignment> EXPORTED execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
-                                                     std::shared_ptr<Pack> pRefPack );
+                                                     std::shared_ptr<Pack> pRefPack,
+                                                     AlignedMemoryManager& rMemoryManager );
 
     // overload
     virtual std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
     execute( std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> pSeedSets, std::shared_ptr<NucSeq> pQuery,
              std::shared_ptr<Pack> pRefPack )
     {
+        AlignedMemoryManager xMemoryManager;
         auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
         for( auto pSeeds : *pSeedSets )
-            pRet->push_back( execute_one( pSeeds, pQuery, pRefPack ) );
+            pRet->push_back( execute_one( pSeeds, pQuery, pRefPack, xMemoryManager ) );
         return pRet;
     } // function
 
