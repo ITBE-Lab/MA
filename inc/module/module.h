@@ -403,7 +403,11 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
   private:
     std::shared_ptr<std::mutex> pMutex;
 
-    // @todo document
+    /**
+     * @brief calls the get function of the predecessor IDX.
+     * @details
+     * Can be used with template loops.
+     */
     template <size_t IDX> struct GetCaller
     {
         bool operator( )( TP_PREDECESSORS& tPredecessors, TP_INPUT& tInput )
@@ -416,7 +420,11 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         } // operator
     }; // struct
 
-    // @todo document
+    /**
+     * @brief calls the hasVolatile function of the predecessor IDX.
+     * @details
+     * Can be used with template loops.
+     */
     template <size_t IDX> struct NonVolatileCaller
     {
         bool operator( )( const TP_PREDECESSORS& tPredecessors )
@@ -425,7 +433,11 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         } // operator
     }; // struct
 
-    // @todo document
+    /**
+     * @brief calls the isFinished function of the predecessor IDX.
+     * @details
+     * Can be used with template loops.
+     */
     template <size_t IDX> struct NotFinishedCaller
     {
         bool operator( )( const TP_PREDECESSORS& tPredecessors )
@@ -434,7 +446,11 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         } // operator
     }; // struct
 
-    // @todo document
+    /**
+     * @brief calls the addSuccessor function of the predecessor IDX.
+     * @details
+     * Can be used with template loops.
+     */
     template <size_t IDX> struct AddToSuccessorCaller
     {
         bool operator( )( Pledge* pThis, TP_PREDECESSORS& tPredecessors )
@@ -444,7 +460,11 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         } // operator
     }; // struct
 
-    // @todo document
+    /**
+     * @brief calls the removeSuccessor function of the predecessor IDX.
+     * @details
+     * Can be used with template loops.
+     */
     template <size_t IDX> struct RemFromSuccessorCaller
     {
         bool operator( )( Pledge* pThis, TP_PREDECESSORS& tPredecessors )
@@ -498,7 +518,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
      */
     Pledge( )
     {
-        static_assert(sizeof...(TP_DEPENDENCIES) == 0, "cannot default constuct pledge with dependencies");
+        static_assert( sizeof...( TP_DEPENDENCIES ) == 0, "cannot default constuct pledge with dependencies" );
     } // constructor
 
     /**
@@ -664,13 +684,19 @@ template <class TP_CONTAINER, class... TP_ARGS> std::shared_ptr<Pledge<TP_CONTAI
 } // function
 
 
-// @note must be exported twice
+/**
+ * @brief The module class that is exported to Python.
+ */
 template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATILE, PyContainerVector>
 {}; // class
 
 /**
- * @brief
+ * @brief Input pledge for all python modules
  * @details
+ * This is used to break the typesaveness of the cpp code. 
+ * We cannot have the types for python due to the dynamic types used there.
+ * This vector allows us to combine all pledges adn them send them as a single pledge (i.e. an object of this class).
+ * Each python module then outputs a container that can in turn be pushed into one of these Pledge vectors.
  */
 class PyPledgeVector : public Pledge<PyContainerVector>
 {
