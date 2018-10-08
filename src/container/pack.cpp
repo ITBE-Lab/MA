@@ -631,20 +631,19 @@ void exportPack( )
                                                     */
                                                    true>( ) );
 
-    // already exists
-    // // required by contigLengths
-    // boost::python::class_<std::vector<nucSeqIndex>
-    // >("nucSeqIndexVector")
-    // .def(boost::python::vector_indexing_suite<
-    //         std::vector<nucSeqIndex>,
-    //         /*
-    //          *    true = noproxy this means that the content of the vector is already exposed by
-    //          *    boost python.
-    //          *    if this is kept as false, Container would be exposed a second time.
-    //          *    the two Containers would be different and not inter castable.
-    //          */
-    //         true
-    //     >());
+    // required by contigLengths
+    boost::python::class_<std::vector<nucSeqIndex>
+    >("nucSeqIndexVector")
+    .def(boost::python::vector_indexing_suite<
+            std::vector<nucSeqIndex>,
+            /*
+             *    true = noproxy this means that the content of the vector is already exposed by
+             *    boost python.
+             *    if this is kept as false, Container would be exposed a second time.
+             *    the two Containers would be different and not inter castable.
+             */
+            true
+        >());
 
     // tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<std::shared_ptr<Pack>, std::shared_ptr<Container>>( );

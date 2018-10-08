@@ -2,8 +2,15 @@
  * @file needlemanWunsch.cpp
  * @author Markus Schmidt
  */
+
+#define OLD_KSW ( 0 )
+
 #include "module/needlemanWunsch.h"
-//#include "ksw/ksw2.h"
+
+#if OLD_KSW == 1
+#include "ksw/ksw2.h"
+#endif
+
 #include <algorithm>
 #include <bitset>
 #include <cassert>
@@ -21,23 +28,38 @@ inline void ksw_ext( int qlen,
                      const KswCppParam<5>& rKswParameters,
                      int w,
                      size_t uiZDrop,
+#if OLD_KSW == 1
+                     ksw_extz_t* ez,
+#else
                      kswcpp_extz_t* ez,
+#endif
                      AlignedMemoryManager& rMemoryManager,
                      bool bRef )
 {
+#if OLD_KSW == 1
+    if( bRef )
+        ksw_extd2_sse_( nullptr, qlen, query, tlen, target, 5, &rKswParameters.mat[ 0 ], rKswParameters.q,
+                       rKswParameters.e, rKswParameters.q2, rKswParameters.e2, w, uiZDrop, -1,
+                       KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
+    else
+        ksw_extd2_sse_( nullptr, qlen, query, tlen, target, 5, &rKswParameters.mat[ 0 ], rKswParameters.q,
+                       rKswParameters.e, rKswParameters.q2, rKswParameters.e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez );
+#else
     if( bRef )
         kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, uiZDrop,
                          KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez, rMemoryManager );
-    //-- ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1,
-    //--                KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
     else
         kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, uiZDrop, KSW_EZ_EXTZ_ONLY, ez, rMemoryManager );
-    //-- ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez
-    //-- );
+#endif
 } // function
 
 inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint8_t* target,
-                            const KswCppParam<5>& rKswParameters, int w, kswcpp_extz_t* ez,
+                            const KswCppParam<5>& rKswParameters, int w,
+#if OLD_KSW == 1
+                            ksw_extz_t* ez,
+#else
+                            kswcpp_extz_t* ez,
+#endif
                             AlignedMemoryManager& rMemoryManager )
 {
     int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
@@ -47,8 +69,13 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
      */
     if( std::abs( tlen - qlen ) + minAddBandwidth > w )
         w = std::abs( tlen - qlen ) + minAddBandwidth;
-    //-- ksw_extd2_sse( nullptr, qlen, query, tlen, target, 5, mat, q, e, q2, e2, w, -1, -1, 0, ez );
+
+#if OLD_KSW == 1
+    ksw_extd2_sse_( nullptr, qlen, query, tlen, target, 5, &rKswParameters.mat[ 0 ], rKswParameters.q, rKswParameters.e,
+                   rKswParameters.q2, rKswParameters.e2, w, -1, -1, 0, ez );
+#else
     kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, -1, 0, ez, rMemoryManager );
+#endif
 } // function
 
 
@@ -56,11 +83,19 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
 class Wrapper_ksw_extz_t
 {
   public:
+#if OLD_KSW == 1
+    ksw_extz_t* ez;
+#else
     kswcpp_extz_t* ez;
+#endif
 
     Wrapper_ksw_extz_t( )
     {
+#if OLD_KSW == 1
+        ez = new ksw_extz_t{}; // {} forces zero initialization
+#else
         ez = new kswcpp_extz_t{}; // {} forces zero initialization
+#endif
 
     } // default constructor
 
