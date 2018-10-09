@@ -55,6 +55,6 @@ int SACModel::removeInliers( )
     indices_ = remaining_indices;
 
 
-    return indices_.size( );
+    return (int)indices_.size( );
 }
 } // namespace sample_consensus

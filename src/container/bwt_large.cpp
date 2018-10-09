@@ -1327,10 +1327,10 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
                     tempOccValue1[ 3 ] += 256;
                 }
             }
-            occValue[ occIndex * 4 + 0 ] = ( tempOccValue0[ 0 ] << 16 ) | tempOccValue1[ 0 ];
-            occValue[ occIndex * 4 + 1 ] = ( tempOccValue0[ 1 ] << 16 ) | tempOccValue1[ 1 ];
-            occValue[ occIndex * 4 + 2 ] = ( tempOccValue0[ 2 ] << 16 ) | tempOccValue1[ 2 ];
-            occValue[ occIndex * 4 + 3 ] = ( tempOccValue0[ 3 ] << 16 ) | tempOccValue1[ 3 ];
+            occValue[ occIndex * 4 + 0 ] = (unsigned int)(( tempOccValue0[ 0 ] << 16 ) | tempOccValue1[ 0 ]);
+            occValue[ occIndex * 4 + 1 ] = (unsigned int)(( tempOccValue0[ 1 ] << 16 ) | tempOccValue1[ 1 ]);
+            occValue[ occIndex * 4 + 2 ] = (unsigned int)(( tempOccValue0[ 2 ] << 16 ) | tempOccValue1[ 2 ]);
+            occValue[ occIndex * 4 + 3 ] = (unsigned int)(( tempOccValue0[ 3 ] << 16 ) | tempOccValue1[ 3 ]);
             tempOccValue0[ 0 ] = tempOccValue1[ 0 ];
             tempOccValue0[ 1 ] = tempOccValue1[ 1 ];
             tempOccValue0[ 2 ] = tempOccValue1[ 2 ];
@@ -1434,10 +1434,10 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
                 tempOccValue1[ 3 ] += 256;
             }
         }
-        occValue[ occIndex * 4 + 0 ] = ( tempOccValue0[ 0 ] << 16 ) | tempOccValue1[ 0 ];
-        occValue[ occIndex * 4 + 1 ] = ( tempOccValue0[ 1 ] << 16 ) | tempOccValue1[ 1 ];
-        occValue[ occIndex * 4 + 2 ] = ( tempOccValue0[ 2 ] << 16 ) | tempOccValue1[ 2 ];
-        occValue[ occIndex * 4 + 3 ] = ( tempOccValue0[ 3 ] << 16 ) | tempOccValue1[ 3 ];
+        occValue[ occIndex * 4 + 0 ] = (unsigned int)(( tempOccValue0[ 0 ] << 16 ) | tempOccValue1[ 0 ]);
+        occValue[ occIndex * 4 + 1 ] = (unsigned int)(( tempOccValue0[ 1 ] << 16 ) | tempOccValue1[ 1 ]);
+        occValue[ occIndex * 4 + 2 ] = (unsigned int)(( tempOccValue0[ 2 ] << 16 ) | tempOccValue1[ 2 ]);
+        occValue[ occIndex * 4 + 3 ] = (unsigned int)(( tempOccValue0[ 3 ] << 16 ) | tempOccValue1[ 3 ]);
         tempOccValue0[ 0 ] = tempOccValue1[ 0 ];
         tempOccValue0[ 1 ] = tempOccValue1[ 1 ];
         tempOccValue0[ 2 ] = tempOccValue1[ 2 ];
@@ -1529,10 +1529,10 @@ void BWTGenerateOccValueFromBwt( const unsigned int *bwt, unsigned int *__restri
         }
     }
 
-    occValue[ occIndex * 4 + 0 ] = ( tempOccValue0[ 0 ] << 16 ) | tempOccValue1[ 0 ];
-    occValue[ occIndex * 4 + 1 ] = ( tempOccValue0[ 1 ] << 16 ) | tempOccValue1[ 1 ];
-    occValue[ occIndex * 4 + 2 ] = ( tempOccValue0[ 2 ] << 16 ) | tempOccValue1[ 2 ];
-    occValue[ occIndex * 4 + 3 ] = ( tempOccValue0[ 3 ] << 16 ) | tempOccValue1[ 3 ];
+    occValue[ occIndex * 4 + 0 ] = (unsigned int)(( tempOccValue0[ 0 ] << 16 ) | tempOccValue1[ 0 ]);
+    occValue[ occIndex * 4 + 1 ] = (unsigned int)(( tempOccValue0[ 1 ] << 16 ) | tempOccValue1[ 1 ]);
+    occValue[ occIndex * 4 + 2 ] = (unsigned int)(( tempOccValue0[ 2 ] << 16 ) | tempOccValue1[ 2 ]);
+    occValue[ occIndex * 4 + 3 ] = (unsigned int)(( tempOccValue0[ 3 ] << 16 ) | tempOccValue1[ 3 ]);
 }
 
 static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
@@ -1568,7 +1568,7 @@ static void BWTIncConstruct( BWTInc *bwtInc, const bgint_t numChar )
         BWTIncPutPackedTextToRank( bwtInc->packedText, relativeRank,
                                    bwtInc->cumulativeCountInCurrentBuild, numChar );
 
-        firstCharInThisIteration = relativeRank[ 0 ];
+        firstCharInThisIteration = (unsigned int)relativeRank[ 0 ];
         relativeRank[ numChar ] = 0;
 
         // Sort suffix

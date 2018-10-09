@@ -23,7 +23,7 @@ class MappingQuality
     : public Module<ContainerVector<std::shared_ptr<Alignment>>, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>>
 {
   public:
-    unsigned int uiReportNBest = defaults::uiReportN;
+    size_t uiReportNBest = defaults::uiReportN;
     float fMinSecScoreRatio = defaults::fMinSecScoreRatio;
     double dMaxOverlapSupplementary = defaults::dMaxOverlapSupplementary;
     size_t uiMaxSupplementaryPerPrim = defaults::uiMaxSupplementaryPerPrim;

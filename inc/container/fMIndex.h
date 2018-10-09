@@ -141,7 +141,7 @@ class FMIndex : public Container
 
     SAInterval EXPORTED getInterval( std::shared_ptr<NucSeq> pQuerySeq );
 
-    unsigned int EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
+	t_bwtIndex EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
 
     bool EXPORTED testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack );
 

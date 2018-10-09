@@ -17,9 +17,7 @@ BOOST_LIB = boost_python3
 TARGET = $(subst .cpp,,$(subst src/,,$(wildcard src/*/*.cpp)))
 
 
-TARGET_OBJ= \
-	$(addprefix obj/,$(addsuffix .o,$(TARGET))) \
-	obj/container/qSufSort.co
+TARGET_OBJ= $(addprefix obj/,$(addsuffix .o,$(TARGET)))
 
 # flags
 CC=gcc
@@ -28,10 +26,8 @@ STD=-std=c++17
 # use avx instead of sse
 ifeq ($(NO_SSE), 1)
 	CCFLAGS= -Wall -Werror -fPIC $(STD) -O3 -g
-	CFLAGS= -Wall -Werror -fPIC -O3 -g
 else
 	CCFLAGS= -Wall -Werror -fPIC $(STD) -O3 -g -msse4.1
-	CFLAGS= -Wall -Werror -fPIC -O3 -g -msse4.1
 endif
 LDFLAGS= $(STD)
 LDLIBS= -lm -lpthread -lstdc++ -Lcontrib/kswcpp/lib -lkswcpp
@@ -42,9 +38,7 @@ ifeq ($(DEBUG), 1)
 	CCFLAGS = -Wall -Werror -fPIC $(STD) -g -DDEBUG_LEVEL=1 -Og
 	# we store release and debug objects in different folders
 	# no debug version for the ksw library
-	TARGET_OBJ= \
-		$(addprefix dbg/,$(addsuffix .o,$(TARGET))) \
-		obj/container/qSufSort.co
+	TARGET_OBJ= $(addprefix dbg/,$(addsuffix .o,$(TARGET)))
 endif
 
 MA_REQUIREMENT= src/cmdMa.cpp
@@ -53,7 +47,6 @@ ifeq ($(WITH_PYTHON), 1)
 	MA_REQUIREMENT += libMA
 	LDFLAGS += -shared -Wl,--export-dynamic
 	CCFLAGS += -DWITH_PYTHON -DBOOST_ALL_DYN_LINK
-	CFLAGS += -DWITH_PYTHON
 	LDLIBS += $(PYTHON_LIB) -L$(BOOST_LIB_PATH)
 	LDLIBS += $(addprefix -l,$(addsuffix $(BOOST_SUFFIX),$(BOOST_LIB)))
 	INCLUDES += -isystem$(PYTHON_INCLUDE)/ -isystem$(BOOST_ROOT)/
@@ -92,10 +85,6 @@ endif
 # library target
 libMA: $(TARGET_OBJ)
 	$(CC) $(LDFLAGS) $(TARGET_OBJ) $(LDLIBS) -o libMA.so
-
-# special target for the suffix sort
-obj/container/qSufSort.co:src/container/qSufSort.c inc/container/qSufSort.h
-	$(CC) -c $(CFLAGS) -Iinc $< -o $@
 
 # target for debug object files
 dbg/%.o: src/%.cpp inc/%.h

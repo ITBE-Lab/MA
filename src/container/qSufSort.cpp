@@ -41,9 +41,6 @@
 
 #define QSINT_MAX +9223372036854775807LL
 
-#if !_MSC_VER
-#define min( value1, value2 ) ( ( ( value1 ) < ( value2 ) ) ? ( value1 ) : ( value2 ) )
-#endif
 #define med3( a, b, c ) ( a < b ? ( b < c ? b : a < c ? c : a ) : ( b > c ? b : a > c ? c : a ) )
 #define swap( a, b, t )                                                                            \
     ;                                                                                              \

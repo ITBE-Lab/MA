@@ -15,7 +15,7 @@ extern int libMA::defaults::iMissMatch;
 extern size_t libMA::defaults::uiSVPenalty;
 // Note query 236 failed
 
-void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
+void EXPORTED Alignment::append( MatchType type, nucSeqIndex size)
 {
 #if DEBUG_LEVEL >= 2
     // get a copy of the alignment for later comparison in case something goes wrong
@@ -105,7 +105,7 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
 unsigned int EXPORTED Alignment::localscore( ) const
 {
     unsigned int uiMaxScore = 0;
-    int iScoreCurr = 0;
+    int64_t iScoreCurr = 0;
     for( unsigned int index = 0; index < data.size( ); index++ )
     {
         switch( data[ index ].first )
@@ -138,11 +138,11 @@ void EXPORTED Alignment::makeLocal( )
     if( uiLength == 0 )
         return;
     std::vector<int> vScores;
-    int iMaxScore = 0;
-    unsigned int iMaxStart = 0;
-    unsigned int iMaxEnd = data.size( );
-    unsigned int iLastStart = 0;
-    int iScoreCurr = 0;
+	int64_t iMaxScore = 0;
+    nucSeqIndex iMaxStart = 0;
+    nucSeqIndex iMaxEnd = data.size( );
+    nucSeqIndex iLastStart = 0;
+    int64_t iScoreCurr = 0;
     /*
      * the purpose of this loop is to set iMaxStart & iMaxEnd correctly.
      * this is done using an approach similar to SW backtracking:
@@ -190,7 +190,7 @@ void EXPORTED Alignment::makeLocal( )
     // adjust the begin/end on ref/query according to the area that will be erased
     if( iMaxStart <= iMaxEnd )
     {
-        for( unsigned int index = 0; index < iMaxStart; index++ )
+        for(nucSeqIndex index = 0; index < iMaxStart; index++ )
             switch( data[ index ].first )
             {
                 case MatchType::deletion:
@@ -204,7 +204,7 @@ void EXPORTED Alignment::makeLocal( )
                     uiBeginOnQuery += data[ index ].second;
                     break;
             } // switch
-        for( unsigned int index = iMaxEnd; index < data.size( ); index++ )
+        for(nucSeqIndex index = iMaxEnd; index < data.size( ); index++ )
             switch( data[ index ].first )
             {
                 case MatchType::deletion:
@@ -295,9 +295,9 @@ void EXPORTED Alignment::removeDangeling( )
            ) // DEBUG
 } // function
 
-int Alignment::reCalcScore( ) const
+int64_t Alignment::reCalcScore( ) const
 {
-    int iScore = 0;
+    int64_t iScore = 0;
     for( unsigned int index = 0; index < data.size( ); index++ )
         switch( std::get<0>( data[ index ] ) )
         {

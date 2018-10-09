@@ -28,8 +28,8 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
   public:
     const bool bLrExtension;
     // 18.05.04: increasing uiMinAmbiguity merely has negative runtime effects
-    unsigned int uiMinAmbiguity = defaults::uiMinAmbiguity;
-    unsigned int uiMaxAmbiguity = defaults::uiMaxAmbiguity;
+    unsigned int uiMinAmbiguity = (unsigned int)defaults::uiMinAmbiguity;
+    unsigned int uiMaxAmbiguity = (unsigned int)defaults::uiMaxAmbiguity;
     ///
     size_t uiMinSeedSizeDrop = defaults::uiMinSeedSizeDrop;
     double fRelMinSeedSizeAmount = defaults::fRelMinSeedSizeAmount;

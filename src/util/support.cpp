@@ -3,7 +3,7 @@
  * @author Arne Kutzner
  */
 #ifdef _MSC_VER
-#include <direct.h>  
+#include <direct.h>
 #endif
 
 #include <cerrno>
@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vector>
-#include <filesystem>
 
 #include "util/exception.h"
 #include "util/support.h"

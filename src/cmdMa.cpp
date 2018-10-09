@@ -240,7 +240,7 @@ int main( int argc, char* argv[] )
         defaults::uiMean = result[ "paMean" ].as<unsigned int>( );
         defaults::fStd = result[ "paStd" ].as<double>( );
         defaults::uiUnpaired = result[ "paIsolate" ].as<unsigned int>( );
-        defaults::fMinSecScoreRatio = result[ "minSecToPrimRatio" ].as<double>( );
+        defaults::fMinSecScoreRatio = result[ "minSecToPrimRatio" ].as<float>( );
         defaults::uiReportN = result[ "reportN" ].as<unsigned int>( );
         defaults::sParameterSet = result[ "mode" ].as<std::string>( );
         defaults::sSeedSet = result[ "seedSet" ].as<std::string>( );
@@ -284,7 +284,7 @@ int main( int argc, char* argv[] )
             return 1;
         } // else if
         auto sOut = result[ "out" ].as<std::string>( );
-        defaults::fGiveUp = result[ "giveUp" ].as<double>( );
+        defaults::fGiveUp = result[ "giveUp" ].as<float>( );
         if( defaults::fGiveUp < 0 || defaults::fGiveUp > 1 )
         {
             std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
@@ -352,7 +352,8 @@ int main( int argc, char* argv[] )
             auto pFMDIndex = makePledge<FMIndex>( sGenome );
 
             auto pFileReader = std::make_shared<FileReader>( aIn[ 0 ] );
-            std::shared_ptr<WriterModule> pFileWriter = std::make_shared<FileWriter>( sOut, pPack->get( ) );
+            std::shared_ptr<WriterModule> pFileWriter = std::static_pointer_cast<WriterModule>(
+				std::make_shared<FileWriter>( sOut, pPack->get( ) ));
 
             auto pQueries = promiseMe( pFileReader );
             // if( aIn.size( ) == 1 )

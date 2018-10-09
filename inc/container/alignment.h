@@ -69,7 +69,7 @@ class Alignment : public Container
     /// The end of the alignment on the query sequence.
     nucSeqIndex uiEndOnQuery;
 
-    int iScore = 0;
+    int64_t iScore = 0;
     double fMappingQuality = NAN;
 
     // some statistics
@@ -171,7 +171,7 @@ class Alignment : public Container
         return std::shared_ptr<Container>( new Alignment( ) );
     } // function
 
-    int EXPORTED reCalcScore( ) const;
+    int64_t EXPORTED reCalcScore( ) const;
 
     /**
      * @returns the type of math for the given position i.
@@ -452,7 +452,7 @@ class Alignment : public Container
     /**
      * @brief the NMW score for this alignment
      */
-    int score( ) const
+    int64_t score( ) const
     {
         // the data.size() == 0 is to allow SW to set the score directly
         assert( data.size( ) == 0 || reCalcScore( ) == iScore );

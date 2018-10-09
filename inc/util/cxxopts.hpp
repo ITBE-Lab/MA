@@ -472,7 +472,7 @@ template <typename T> void integer_parser( const std::string &text, T &value )
             throw argument_incorrect_type( text );
         }
 
-        result = result * base + digit;
+        result = (US)(result * base + digit);
     }
 
     detail::check_signed_range<T>( negative, result, text );

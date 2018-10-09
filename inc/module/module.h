@@ -274,7 +274,7 @@ class BasePledge
                                         unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
-            numThreads = vPledges.size( );
+            numThreads = (unsigned int)(vPledges.size( ));
 
         /*
          * If there is a python module in the comp. graph we can only use one single thread.

@@ -175,7 +175,7 @@ struct PointCloud
     {
         channels.resize( x );
     }
-    unsigned int get_channels_size( )
+    size_t get_channels_size( )
     {
         return channels.size( );
     }

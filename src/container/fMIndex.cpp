@@ -98,7 +98,7 @@ SAInterval FMIndex::getInterval( std::shared_ptr<NucSeq> pQuerySeq )
     // query sequence itself
     const uint8_t *q = pQuerySeq->pGetSequenceRef( );
 
-    unsigned int i = pQuerySeq->length( ) - 1;
+    size_t i = pQuerySeq->length( ) - 1;
     SAInterval ik( L2[ (int)q[ i ] ] + 1, L2[ complement( q[ i ] ) ] + 1,
                    L2[ (int)q[ i ] + 1 ] - L2[ (int)q[ i ] ] );
     while( i > 0 && ik.size( ) > 0 )
@@ -106,7 +106,7 @@ SAInterval FMIndex::getInterval( std::shared_ptr<NucSeq> pQuerySeq )
     return ik;
 } // function
 
-unsigned int FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
+t_bwtIndex FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
 {
     return getInterval( pQuerySeq ).size( );
 } // function

@@ -105,12 +105,12 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
     double fScoreTolerace = defaults::fScoreTolerace;
 
     /// @brief Extract at most x SoCs.
-    unsigned int uiMaxTries = defaults::uiMaxTries;
+    size_t uiMaxTries = defaults::uiMaxTries;
     /// @brief Extract at least x SoCs.
     size_t uiMinTries = defaults::uiMinTries;
 
     /// @brief Lookahead for the equality break criteria.
-    unsigned int uiMaxEqualScoreLookahead = defaults::uiMaxEqualScoreLookahead;
+    size_t uiMaxEqualScoreLookahead = defaults::uiMaxEqualScoreLookahead;
 
     /// @brief Consider two scores equal if they do not differ by more than x (relative to the total
     /// score).

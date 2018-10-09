@@ -46,10 +46,10 @@ inline void ksw_ext( int qlen,
                        rKswParameters.e, rKswParameters.q2, rKswParameters.e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez );
 #else
     if( bRef )
-        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, uiZDrop,
+        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, (int)uiZDrop,
                          KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez, rMemoryManager );
     else
-        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, uiZDrop, KSW_EZ_EXTZ_ONLY, ez, rMemoryManager );
+        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, (int)uiZDrop, KSW_EZ_EXTZ_ONLY, ez, rMemoryManager );
 #endif
 } // function
 
@@ -130,13 +130,13 @@ void NeedlemanWunsch::ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSe
 
     assert( toQuery < pQuery->length( ) );
     assert( toRef < pRef->length( ) );
-    ksw_simplified( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
+    ksw_simplified( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int) (toRef - fromRef),
                     pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iMinBandwidthGapFilling,
                     ez.ez, // return value
                     rMemoryManager );
 
-    uint32_t qPos = fromQuery;
-    uint32_t rPos = fromRef;
+    nucSeqIndex qPos = fromQuery;
+    nucSeqIndex rPos = fromRef;
     for( int i = 0; i < ez.ez->n_cigar; ++i )
     {
         uint32_t uiSymbol = ez.ez->cigar[ i ] & 0xf;
@@ -261,14 +261,14 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     Wrapper_ksw_extz_t ez_left;
     Wrapper_ksw_extz_t ez_right;
 
-    ksw_ext( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
+    ksw_ext( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int)(toRef - fromRef),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_left.ez, // return value
              rMemoryManager, false );
 
     pQuery->vReverse( fromQuery, toQuery );
     pRef->vReverse( fromRef, toRef );
-    ksw_ext( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
+    ksw_ext( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int)(toRef - fromRef),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_right.ez, // return value
              rMemoryManager, true );
@@ -300,13 +300,13 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                     if( qPos + uiAmount > qCenter )
                     {
                         assert( qCenter >= qPos );
-                        uiAmount = qCenter - qPos;
+                        uiAmount = (uint32_t)(qCenter - qPos);
                     } // if
                     // dont go over the center
                     if( rPos + uiAmount > rCenter )
                     {
                         assert( rCenter >= rPos );
-                        uiAmount = rCenter - rPos;
+                        uiAmount = (uint32_t)(rCenter - rPos);
                     } // if
                     for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                     {
@@ -321,14 +321,14 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                 case 1:
                     // dont go over the center
                     if( qPos + uiAmount > qCenter )
-                        uiAmount = qCenter - qPos;
+						uiAmount = (uint32_t)(qCenter - qPos);
                     pAlignment->append( MatchType::insertion, uiAmount );
                     qPos += uiAmount;
                     break;
                 case 2:
                     // dont go over the center
                     if( rPos + uiAmount > rCenter )
-                        uiAmount = rCenter - rPos;
+						uiAmount = (uint32_t)(rCenter - rPos);
                     pAlignment->append( MatchType::deletion, uiAmount );
                     rPos += uiAmount;
                     break;
@@ -373,15 +373,15 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                     {
                         assert( rCenter > rPosRight );
                         assert( uiAmount >= ( rCenter - rPosRight ) );
-                        uiAmountNotUnrolled = uiAmount - ( rCenter - rPosRight );
-                        uiAmount = rCenter - rPosRight;
+                        uiAmountNotUnrolled = uiAmount - (uint32_t)( rCenter - rPosRight );
+                        uiAmount = (uint32_t)(rCenter - rPosRight);
                     } // if
                     else
                     {
                         assert( qCenter > qPosRight );
                         assert( uiAmount >= ( qCenter - qPosRight ) );
-                        uiAmountNotUnrolled = uiAmount - ( qCenter - qPosRight );
-                        uiAmount = qCenter - qPosRight;
+                        uiAmountNotUnrolled = uiAmount - (uint32_t)( qCenter - qPosRight );
+                        uiAmount = (uint32_t)(qCenter - qPosRight);
                     } // else
                 } // if
                 qPosRight += uiAmount;
@@ -393,8 +393,8 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                 {
                     assert( qCenter > qPosRight );
                     assert( uiAmount >= ( qCenter - qPosRight ) );
-                    uiAmountNotUnrolled = uiAmount - ( qCenter - qPosRight );
-                    uiAmount = qCenter - qPosRight;
+                    uiAmountNotUnrolled = uiAmount - (uint32_t)( qCenter - qPosRight );
+					uiAmount = (uint32_t)(qCenter - qPosRight);
                 } // if
                 qPosRight += uiAmount;
                 xTypeLastUnrolledCigar = MatchType::insertion;
@@ -404,8 +404,8 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                 {
                     assert( rCenter > rPosRight );
                     assert( uiAmount >= ( rCenter - rPosRight ) );
-                    uiAmountNotUnrolled = uiAmount - ( rCenter - rPosRight );
-                    uiAmount = rCenter - rPosRight;
+                    uiAmountNotUnrolled = uiAmount - (uint32_t)( rCenter - rPosRight );
+					uiAmount = (uint32_t)(rCenter - rPosRight);
                 } // if
                 rPosRight += uiAmount;
                 xTypeLastUnrolledCigar = MatchType::deletion;
@@ -555,7 +555,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
         pQuery->vReverse( fromQuery, toQuery );
         pRef->vReverse( fromRef, toRef );
     } // if
-    ksw_ext( toQuery - fromQuery, pQuery->pGetSequenceRef( ) + fromQuery, toRef - fromRef,
+    ksw_ext( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int)(toRef - fromRef),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez.ez, // return value
              rMemoryManager, bReverse );
@@ -565,8 +565,8 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
         pRef->vReverse( fromRef, toRef );
     } // if
 
-    uint32_t qPos = fromQuery;
-    uint32_t rPos = fromRef;
+    nucSeqIndex qPos = fromQuery;
+    nucSeqIndex rPos = fromRef;
     if( bReverse )
     {
         rPos += toRef - ez.ez->max_t - 1;

@@ -63,7 +63,7 @@ static void induceSA( const unsigned char *T, int *SA, int *C, int *B, int n, in
             --j;
             if( ( c0 = chr( j ) ) != c1 )
             {
-                B[ c1 ] = b - SA;
+                B[ c1 ] = (int)( b - SA);
                 b = SA + B[ c1 = c0 ];
             }
             *b++ = ( ( 0 < j ) && ( chr( j - 1 ) < c1 ) ) ? ~j : j;
@@ -80,7 +80,7 @@ static void induceSA( const unsigned char *T, int *SA, int *C, int *B, int n, in
             --j;
             if( ( c0 = chr( j ) ) != c1 )
             {
-                B[ c1 ] = b - SA;
+                B[ c1 ] = (int)( b - SA );
                 b = SA + B[ c1 = c0 ];
             }
             *--b = ( ( j == 0 ) || ( chr( j - 1 ) > c1 ) ) ? ~j : j;

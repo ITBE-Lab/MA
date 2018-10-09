@@ -175,7 +175,7 @@ void SACModelLine::projectPoints( const std::vector<int> &inliers,
 {
     // Allocate enough space
     projected_points.points.resize( inliers.size( ) );
-    projected_points.set_channels_size( cloud_->get_channels_size( ) );
+    projected_points.set_channels_size( (unsigned int) cloud_->get_channels_size( ) );
 
     // Create the channels
     for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )

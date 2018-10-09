@@ -312,7 +312,7 @@ class SegmentVector : public Container
                 nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa( ulCurrPos );
                 // call the given function
                 if( !fDo( Seed( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq,
-                                rSegment.saInterval( ).size( ) ) ) )
+                                (unsigned int)rSegment.saInterval( ).size( ) ) ) )
                     return;
             } // for
         } // for
@@ -327,8 +327,7 @@ class SegmentVector : public Container
      * @Note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
-    void emplaceAllEachSeeds( FMIndex &rxFMIndex, unsigned int uiMAxAmbiguity,
-                              unsigned int uiMinLen, Seeds &rvSeedVector,
+    void emplaceAllEachSeeds( FMIndex &rxFMIndex, size_t uiMAxAmbiguity, size_t uiMinLen, Seeds &rvSeedVector,
                               FUNCTOR &&fDo // this function is called after each seed is emplaced
     )
     {
@@ -337,7 +336,7 @@ class SegmentVector : public Container
         {
             // if the interval contains more than uiMAxAmbiguity hits it's of no importance and will
             // produce nothing but noise
-            if( rSegment.saInterval( ).size( ) > uiMAxAmbiguity && uiMAxAmbiguity != 0 )
+            if( rSegment.saInterval( ).size( ) > (t_bwtIndex)uiMAxAmbiguity && uiMAxAmbiguity != 0 )
                 continue;
             if( rSegment.size( ) < uiMinLen )
                 continue;
@@ -353,7 +352,7 @@ class SegmentVector : public Container
                 nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa( ulCurrPos );
                 // call the given function
                 rvSeedVector.emplace_back( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq,
-                                           rSegment.saInterval( ).size( ) );
+                                           (unsigned int)rSegment.saInterval( ).size( ) );
                 if( !fDo( ) )
                     return;
             } // for
@@ -381,12 +380,12 @@ class SegmentVector : public Container
     /**
      * @brief returns the number of seeds
      */
-    inline unsigned int numSeeds( unsigned int max_size ) const
+    inline uint64_t numSeeds( unsigned int max_size ) const
     {
-        unsigned int uiTotal = 0;
+		uint64_t uiTotal = 0;
         for( const Segment &rSegment : *this )
             if( max_size == 0 || rSegment.xSaInterval.size( ) <= max_size )
-                uiTotal += rSegment.xSaInterval.size( );
+                uiTotal += rSegment.xSaInterval.size();
         return uiTotal;
     } // function
 }; // class

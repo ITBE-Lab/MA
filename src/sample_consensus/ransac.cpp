@@ -88,7 +88,7 @@ bool RANSAC::computeModel( int debug )
 
         sac_model_->selectWithinDistance( sac_model_->getModelCoefficients( ), threshold_,
                                           inliers );
-        n_inliers_count = inliers.size( );
+        n_inliers_count = (int)inliers.size( );
 
         // Better match ?
         if( n_inliers_count > n_best_inliers_count )

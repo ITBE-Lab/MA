@@ -453,7 +453,7 @@ class NucSeq : public Container
     /** The symbol on some position in textual form.
      * We count starting from 0.
      */
-    inline char charAt( size_t uxPosition )
+    inline char charAt(nucSeqIndex uxPosition )
     {
         if( uxPosition >= uiSize )
         {
@@ -511,7 +511,7 @@ class NucSeq : public Container
         return ret;
     } // function
 
-    std::string fromToComplement( unsigned int uiStart, unsigned int uiEnd )
+    std::string fromToComplement( nucSeqIndex uiStart, nucSeqIndex uiEnd )
     {
         std::string ret = "";
         // for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
@@ -520,16 +520,16 @@ class NucSeq : public Container
         return ret;
     } // function
 
-    std::string fromTo( unsigned int uiStart, unsigned int uiEnd )
+    std::string fromTo(nucSeqIndex uiStart, nucSeqIndex uiEnd )
     {
         std::string ret = "";
-        for( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )
+        for(nucSeqIndex i = uiStart; i < uiEnd && i < length( ); i++ )
             ret += charAt( i );
         return ret;
     } // function
 
 #if WITH_QUALITY
-    std::string fromToQual( unsigned int uiStart, unsigned int uiEnd )
+    std::string fromToQual(nucSeqIndex uiStart, nucSeqIndex uiEnd )
     {
         std::string ret = "";
         for( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )

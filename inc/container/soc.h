@@ -166,7 +166,7 @@ class SoCPriorityQueue : public Container
     {} // constructor
 
     /// @brief Returns the size (usable in either state).
-    inline unsigned int size( ) const
+    inline size_t size( ) const
     {
         return vMaxima.size( );
     }

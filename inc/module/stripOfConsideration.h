@@ -21,9 +21,9 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
 {
   public:
     /// @brief Maximum ambiguity for a seed to be considered.
-    unsigned int uiMaxAmbiguity = defaults::uiMaxAmbiguity;
+    size_t uiMaxAmbiguity = defaults::uiMaxAmbiguity;
     /// @brief Minimum seed length.
-    unsigned int uiMinLen = defaults::uiMinLen;
+    size_t uiMinLen = defaults::uiMinLen;
     /**
      * @brief Minimal SoC score.
      * @details
@@ -39,14 +39,14 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
      * 0 = never abort.
      */
     const float fGiveUp;
-    unsigned int uiCurrHarmScoreMin = defaults::uiCurrHarmScoreMin;
+    size_t uiCurrHarmScoreMin = defaults::uiCurrHarmScoreMin;
 
     /**
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
      */
     nucSeqIndex uiMinGenomeSize = defaults::uiGenomeSizeDisable;
 
-    unsigned int uiSoCWidth = defaults::uiSoCWidth;
+    size_t uiSoCWidth = defaults::uiSoCWidth;
 
     /**
      * @brief skip seeds with too much ambiguity

@@ -43,7 +43,7 @@ sensor_msgs::PointCloud SAC::getPointCloud( std::vector<int> indices )
 
     // Allocate enough space
     i_points.points.resize( indices.size( ) );
-    i_points.set_channels_size( sac_model_->getCloud( )->get_channels_size( ) );
+    i_points.set_channels_size( (unsigned int)sac_model_->getCloud( )->get_channels_size( ) );
 
     // Create the channels
     for( unsigned int d = 0; d < i_points.get_channels_size( ); d++ )
