@@ -179,7 +179,7 @@ class NucSeq : public Container
 
 
     /** is implicitly deleted by geneticSequence but boost python needs to know */
-    NucSeq( const NucSeq& ) = delete;
+    // AK: VSC++ complained: NucSeq( const NucSeq& ) = delete;
 
 
     /** This moves the ownership of the protected attributes to another object.

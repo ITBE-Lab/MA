@@ -493,7 +493,6 @@ class Alignment : public Container
      * @brief for sorting alignment by their score
      * @details
      * When multiple alignments are created we use this function to sort them.
-     * Overload from Module.
      */
     bool larger( const std::shared_ptr<Container> pOther ) const
     {

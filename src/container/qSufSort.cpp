@@ -36,6 +36,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
 
 
 #define QSINT_MAX +9223372036854775807LL
@@ -191,7 +192,7 @@ static void QSufSortSortSplit( qsint_t *__restrict V, qsint_t *__restrict I,
 
     s = a - lowestPos;
     t = b - a;
-    s = min( s, t );
+    s = std::min( s, t );
     for( l = lowestPos, m = b - s; m < b; l++, m++ )
     {
         swap( I[ l ], I[ m ], tmp );
@@ -199,7 +200,7 @@ static void QSufSortSortSplit( qsint_t *__restrict V, qsint_t *__restrict I,
 
     s = d - c;
     t = highestPos - d;
-    s = min( s, t );
+    s = std::min( s, t );
     for( l = b, m = highestPos - s + 1; m <= highestPos; l++, m++ )
     {
         swap( I[ l ], I[ m ], tmp );

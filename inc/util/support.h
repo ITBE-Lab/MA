@@ -3,6 +3,10 @@
  * @brief Implements GzipInputStream, vRangeCheckAndThrowInclusive and vRangeCheckAndThrowExclusive
  * @author Arne Kutzner
  */
+#ifdef _MSC_VER
+#define NOMINMAX
+#include <windows.h>
+#endif
 
 #ifndef SUPPORT_H
 #define SUPPORT_H
@@ -52,7 +56,7 @@ typedef unsigned __int64 uint64_t;
 #endif
 #endif
 
-bool fileExists( const std::string& rsFile );
+bool EXPORTED fileExists( const std::string& rsFile );
 
 void makeDir( const std::string& rsFile );
 
@@ -171,5 +175,7 @@ template <class X> std::string type_name( )
 {
     return type_name<X>( nullptr );
 } // function
+
+std::string EXPORTED demangle(const char* name);
 
 #endif

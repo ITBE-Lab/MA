@@ -33,10 +33,10 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
     void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
                        nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
                        std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager );
-    
+
     void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery, nucSeqIndex toQuery,
-          nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment,
-          AlignedMemoryManager& rMemoryManager );
+              nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment,
+              AlignedMemoryManager& rMemoryManager );
 
     nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
     nucSeqIndex uiPadding = defaults::uiPadding;
@@ -72,6 +72,10 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
         auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
         for( auto pSeeds : *pSeedSets )
             pRet->push_back( execute_one( pSeeds, pQuery, pRefPack, xMemoryManager ) );
+        // we need to move the best alignment to the first spot @todo
+        // std::sort( pRet->begin( ), pRet->end( ),
+        //           []( std::shared_ptr<Alignment>& pA, std::shared_ptr<Alignment>& pB ) { return pA->larger( pB ); }
+        //           );
         return pRet;
     } // function
 

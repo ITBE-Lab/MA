@@ -12,7 +12,9 @@
 
 #if DEBUG_LEVEL == 0
 // disable instertions
+#ifndef _MSC_VER
 #define NDEBUG
+#endif
 #endif
 
 #if DEBUG_LEVEL >= 1

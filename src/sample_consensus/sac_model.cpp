@@ -31,6 +31,7 @@
 /** \author Radu Bogdan Rusu */
 
 #include <algorithm>
+#include <iterator>
 #include <sample_consensus/sac_model.h>
 
 namespace sample_consensus
@@ -49,7 +50,7 @@ int SACModel::removeInliers( )
 
     set_difference( indices_.begin( ), indices_.end( ), best_inliers_.begin( ),
                     best_inliers_.end( ),
-                    inserter( remaining_indices, remaining_indices.begin( ) ) );
+                    std::inserter( remaining_indices, remaining_indices.begin( ) ) );
 
     indices_ = remaining_indices;
 

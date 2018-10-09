@@ -10,26 +10,23 @@
 #include <iostream>
 #include <string>
 
-#if _MSC_VER
+//-- #if _MSC_VER
+//-- 
+//-- /* Avoids problems with the nasty min-max define-macros of windows.
+//--  */
+//-- #ifndef NOMINMAX
+//-- #define NOMINMAX
+//-- #endif
+//-- 
+//-- /* By defining WIN32_LEAN_AND_MEAN we avoid the inclusion of Winsock.h by windows.h.
+//--  */
+//-- #define WIN32_LEAN_AND_MEAN
+//-- #include <psapi.h>
+//-- #include <windows.h>
+//-- 
+//-- #pragma comment( lib, "psapi.lib" )
+//-- #endif
 
-/* Avoids problems with the nasty min-max define-macros of windows.
- */
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
-/* By defining WIN32_LEAN_AND_MEAN we avoid the inclusion of Winsock.h by windows.h.
- */
-#define WIN32_LEAN_AND_MEAN
-#include <psapi.h>
-#include <windows.h>
-
-#pragma comment( lib, "psapi.lib" )
-#endif
-
-#if _MSC_VER
-void PrintMemoryInfo( DWORD processID );
-#endif
 
 #if __GNUC__
 #include <time.h>
@@ -118,4 +115,3 @@ std::string timeAsString( const timespec& time );
 std::string timeAsString( const __int64& time );
 #endif
 
-std::string demangle( const char* name );

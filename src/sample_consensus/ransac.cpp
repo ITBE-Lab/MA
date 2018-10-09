@@ -29,7 +29,7 @@
  */
 
 /** \author Radu Bogdan Rusu */
-
+#include <algorithm>
 #include <limits>
 #include <sample_consensus/ransac.h>
 

@@ -6,6 +6,7 @@
 #ifndef DEFAULT_PARAMETERS_H
 #define DEFAULT_PARAMETERS_H
 
+#include "util/support.h"
 #include <string>
 
 #ifdef WITH_PYTHON
@@ -17,55 +18,55 @@ namespace libMA
 namespace defaults
 {
 
-extern int iMatch;
-extern int iMissMatch;
-extern int iGap;
-extern int iExtend;
-extern int iGap2;
-extern int iExtend2;
-extern size_t uiUnpaired;
-extern size_t uiMean;
-extern double fStd;
-extern size_t uiReportN;
-extern size_t uiMaxAmbiguity;
-extern size_t uiMinLen;
-extern size_t uiMinAmbiguity;
-extern size_t uiMinSeedSizeDrop;
-extern size_t uiMaxTries;
-extern size_t uiMinTries;
-extern size_t uiMaxEqualScoreLookahead;
-extern size_t uiSwitchQLen;
-extern uint64_t uiMaxGapArea;
-extern uint64_t uiPadding;
-extern size_t uiSoCWidth;
-extern bool bFindMode;
-extern bool bOptimisticGapEstimation;
-extern bool bSkipLongBWTIntervals;
-extern bool bNormalDist;
-extern bool bUniformDist;
-extern float fGiveUp;
-extern float fRelMinSeedSizeAmount;
-extern float fScoreDiffTolerance;
-extern float fSoCScoreMinimum;
-extern float fMinimalQueryCoverage;
-extern float fScoreTolerace;
-extern size_t uiCurrHarmScoreMin;
-extern std::string sParameterSet;
-extern std::string sSeedSet;
-extern size_t uiGenomeSizeDisable;
-extern bool bDisableHeuristics;
-extern float fMinSecScoreRatio;
-extern double dMaxDeltaDist;
-extern uint64_t uiMinDeltaDist;
-extern double dMaxOverlapSupplementary;
-extern size_t uiMaxSupplementaryPerPrim;
-extern bool bDisableGapCostEstimationCutting;
-extern double dMaxSVRatio;
-extern int64_t iMinSVDistance;
-extern size_t uiZDrop;
-extern size_t uiSVPenalty;
-extern int iMinBandwidthGapFilling;
-extern int iBandwidthDPExtension;
+extern EXPORTED int iMatch;
+extern EXPORTED int iMissMatch;
+extern EXPORTED int iGap;
+extern EXPORTED int iExtend;
+extern EXPORTED int iGap2;
+extern EXPORTED int iExtend2;
+extern EXPORTED size_t uiUnpaired;
+extern EXPORTED size_t uiMean;
+extern EXPORTED double fStd;
+extern EXPORTED size_t uiReportN;
+extern EXPORTED size_t uiMaxAmbiguity;
+extern EXPORTED size_t uiMinLen;
+extern EXPORTED size_t uiMinAmbiguity;
+extern EXPORTED size_t uiMinSeedSizeDrop;
+extern EXPORTED size_t uiMaxTries;
+extern EXPORTED size_t uiMinTries;
+extern EXPORTED size_t uiMaxEqualScoreLookahead;
+extern EXPORTED size_t uiSwitchQLen;
+extern EXPORTED uint64_t uiMaxGapArea;
+extern EXPORTED uint64_t uiPadding;
+extern EXPORTED size_t uiSoCWidth;
+extern EXPORTED bool bFindMode;
+extern EXPORTED bool bOptimisticGapEstimation;
+extern EXPORTED bool bSkipLongBWTIntervals;
+extern EXPORTED bool bNormalDist;
+extern EXPORTED bool bUniformDist;
+extern EXPORTED float fGiveUp;
+extern EXPORTED float fRelMinSeedSizeAmount;
+extern EXPORTED float fScoreDiffTolerance;
+extern EXPORTED float fSoCScoreMinimum;
+extern EXPORTED float fMinimalQueryCoverage;
+extern EXPORTED float fScoreTolerace;
+extern EXPORTED size_t uiCurrHarmScoreMin;
+extern EXPORTED std::string sParameterSet;
+extern EXPORTED std::string sSeedSet;
+extern EXPORTED size_t uiGenomeSizeDisable;
+extern EXPORTED bool bDisableHeuristics;
+extern EXPORTED float fMinSecScoreRatio;
+extern EXPORTED double dMaxDeltaDist;
+extern EXPORTED uint64_t uiMinDeltaDist;
+extern EXPORTED double dMaxOverlapSupplementary;
+extern EXPORTED size_t uiMaxSupplementaryPerPrim;
+extern EXPORTED bool bDisableGapCostEstimationCutting;
+extern EXPORTED double dMaxSVRatio;
+extern EXPORTED int64_t iMinSVDistance;
+extern EXPORTED size_t uiZDrop;
+extern EXPORTED size_t uiSVPenalty;
+extern EXPORTED int iMinBandwidthGapFilling;
+extern EXPORTED int iBandwidthDPExtension;
 
 inline void configureAccurate( )
 {
