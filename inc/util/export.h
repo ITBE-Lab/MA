@@ -163,8 +163,8 @@ namespace libMA
 typedef Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_WRITER;
 typedef Module<Container, false, NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_PAIRED_WRITER;
 
-std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( std::shared_ptr<Pledge<Pack, false>> pPack,
-                                                                  std::shared_ptr<Pledge<FMIndex, false>>
+std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( std::shared_ptr<Pledge<Pack>> pPack,
+                                                                  std::shared_ptr<Pledge<FMIndex>>
                                                                       pFMDIndex,
                                                                   std::shared_ptr<Pledge<NucSeq, true>>
                                                                       pQueries,
@@ -172,8 +172,8 @@ std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( std::shared_pt
                                                                       pWriter,
                                                                   unsigned int uiThreads );
 
-std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraphPaired( std::shared_ptr<Pledge<Pack, false>> pPack,
-                                                                        std::shared_ptr<Pledge<FMIndex, false>>
+std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraphPaired( std::shared_ptr<Pledge<Pack>> pPack,
+                                                                        std::shared_ptr<Pledge<FMIndex>>
                                                                             pFMDIndex,
                                                                         std::shared_ptr<Pledge<TP_PAIRED_READS, true>>
                                                                             pQueries,

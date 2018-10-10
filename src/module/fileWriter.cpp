@@ -229,5 +229,8 @@ void exportFileWriter( )
 {
     // export the FileWriter class
     exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( "FileWriter" );
+
+    // export the PairedFileWriter class
+    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( "PairedFileWriter" );
 } // function
 #endif

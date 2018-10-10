@@ -43,8 +43,8 @@ BOOST_PYTHON_MODULE( libMA )
 #endif
 
 
-std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( std::shared_ptr<Pledge<Pack, false>> pPack,
-                                                                std::shared_ptr<Pledge<FMIndex, false>>
+std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( std::shared_ptr<Pledge<Pack>> pPack,
+                                                                std::shared_ptr<Pledge<FMIndex>>
                                                                     pFMDIndex,
                                                                 std::shared_ptr<Pledge<NucSeq, true>>
                                                                     pQueries,
@@ -77,8 +77,8 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( std::shared_ptr<
     return aRet;
 } // function
 
-std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( std::shared_ptr<Pledge<Pack, false>> pPack,
-                                                                      std::shared_ptr<Pledge<FMIndex, false>>
+std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( std::shared_ptr<Pledge<Pack>> pPack,
+                                                                      std::shared_ptr<Pledge<FMIndex>>
                                                                           pFMDIndex,
                                                                       std::shared_ptr<Pledge<TP_PAIRED_READS, true>>
                                                                           pQueries,
@@ -102,8 +102,8 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( std::share
     for( unsigned int i = 0; i < uiThreads; i++ )
     {
         auto pQueryTuple = promiseMe( pLock, pQueries );
-        auto pQueryA = promiseMe( pGetFirst, pQueries );
-        auto pQueryB = promiseMe( pGetSecond, pQueries );
+        auto pQueryA = promiseMe( pGetFirst, pQueryTuple );
+        auto pQueryB = promiseMe( pGetSecond, pQueryTuple );
         auto pSeedsA = promiseMe( pSeeding, pFMDIndex, pQueryA );
         auto pSeedsB = promiseMe( pSeeding, pFMDIndex, pQueryB );
         auto pSOCsA = promiseMe( pSOC, pSeedsA, pQueryA, pPack, pFMDIndex );

@@ -61,9 +61,13 @@ std::shared_ptr<Container> DbWriter::execute( std::shared_ptr<NucSeq> pQuery,
 } // function
 
 
-std::shared_ptr<Container> PairedDbWriter::execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
-                                              std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
-                                              std::shared_ptr<Pack> pPack )
+std::shared_ptr<Container> PairedDbWriter::execute( std::shared_ptr<NucSeq> pQuery1,
+                                                    std::shared_ptr<NucSeq>
+                                                        pQuery2,
+                                                    std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+                                                        pAlignments,
+                                                    std::shared_ptr<Pack>
+                                                        pPack )
 {
 
     for( std::shared_ptr<Alignment> pAlignment : *pAlignments )

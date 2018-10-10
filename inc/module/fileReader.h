@@ -145,13 +145,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
 
     // @override
-    bool outputsVolatile( ) const
-    {
-        return true;
-    } // function
-
-    // @override
-    bool requiresLock( ) const
+    virtual bool requiresLock( ) const
     {
         return true;
     } // function

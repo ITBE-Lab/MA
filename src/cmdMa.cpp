@@ -240,7 +240,8 @@ int main( int argc, char* argv[] )
         defaults::uiMean = result[ "paMean" ].as<unsigned int>( );
         defaults::fStd = result[ "paStd" ].as<double>( );
         defaults::uiUnpaired = result[ "paIsolate" ].as<unsigned int>( );
-        defaults::fMinSecScoreRatio = result[ "minSecToPrimRatio" ].as<float>( );
+        // for some reason cxxopts cannot deal with float...
+        defaults::fMinSecScoreRatio = (float)result[ "minSecToPrimRatio" ].as<double>( );
         defaults::uiReportN = result[ "reportN" ].as<unsigned int>( );
         defaults::sParameterSet = result[ "mode" ].as<std::string>( );
         defaults::sSeedSet = result[ "seedSet" ].as<std::string>( );
@@ -284,7 +285,9 @@ int main( int argc, char* argv[] )
             return 1;
         } // else if
         auto sOut = result[ "out" ].as<std::string>( );
-        defaults::fGiveUp = result[ "giveUp" ].as<float>( );
+
+        // for some reason cxxopts cannot deal with float...
+        defaults::fGiveUp = (float)result[ "giveUp" ].as<double>( );
         if( defaults::fGiveUp < 0 || defaults::fGiveUp > 1 )
         {
             std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
@@ -383,9 +386,27 @@ int main( int argc, char* argv[] )
             } // if
             else if( aIn.size( ) == 2 )
             {
+                std::shared_ptr<TP_PAIRED_WRITER> pFileWriter;
+#ifdef WITH_POSTGRES
+                if( sBbOutput.size( ) > 0 )
+                {
+                    if( iRunId == -1 )
+                    {
+                        DbRunConnection xConn( sBbOutput );
+                        auto xRes =
+                            xConn.exec( "INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING "
+                                        "id" );
+                        iRunId = std::stoi( xRes.get( 0, 0 ) );
+                    } // setupConn scope
+                    pFileWriter = std::make_shared<PairedDbWriter>( sBbOutput, iRunId );
+                } // if
+                else
+#endif
+                {
+                    pFileWriter = std::make_shared<PairedFileWriter>( sOut, pPack->get( ) );
+                } // else or scope
                 auto pFileReader = std::make_shared<PairedFileReader>( aIn[ 0 ], aIn[ 1 ] );
                 pReader = pFileReader;
-                auto pFileWriter = std::make_shared<PairedFileWriter>( sOut, pPack->get( ) );
 
                 auto pQueries = promiseMe( pFileReader );
                 aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
@@ -398,6 +419,7 @@ int main( int argc, char* argv[] )
             // run the alignment
             size_t uiLastProg = 0;
             std::mutex xPrintMutex;
+
             BasePledge::simultaneousGet( aGraphSinks,
                                          [&]( ) {
                                              std::lock_guard<std::mutex> xGuard( xPrintMutex );
@@ -428,9 +450,9 @@ int main( int argc, char* argv[] )
     {
         std::cerr << ex.what( ) << std::endl;
     } // catch
-    // catch (...)
-    //{
-    //    std::cerr << "unknown exception encountered" << std::endl;
-    //}//catch
+    catch( ... )
+    {
+        std::cerr << "unknown exception encountered" << std::endl;
+    } // catch
     return 0;
 } // main function

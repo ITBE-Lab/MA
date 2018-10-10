@@ -83,7 +83,7 @@ template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, true
  * the tuple must implement operator[].
  */
 template <typename TP_TUPLE, size_t IDX>
-class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, true, TP_TUPLE>
+class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, false, TP_TUPLE>
 {
   public:
     virtual typename TP_TUPLE::value_type EXPORTED execute( std::shared_ptr<TP_TUPLE> pIn )

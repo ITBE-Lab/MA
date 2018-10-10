@@ -13,8 +13,6 @@ using namespace libMA;
 #include <vector>
 
 
-DEBUG( extern bool bAnalyzeHeuristics; ) // DEBUG
-
 /* this function implements the segmentation of the query
  *
  * the process is synchronized using a thread pool
@@ -81,8 +79,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index,
-                                                       std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector>
+BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
@@ -100,11 +98,7 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> 
      */
     if( uiMinSeedSizeDrop != 0 &&
         pSegmentVector->numSeedsLarger( uiMinSeedSizeDrop ) < fRelMinSeedSizeAmount * pQuerySeq->length( ) &&
-        uiMinGenomeSize < pFM_index->getRefSeqLength( )
-#if DEBUG_LEVEL >= 1
-        && !bAnalyzeHeuristics
-#endif // DEBUG_LEVEL
-    )
+        uiMinGenomeSize < pFM_index->getRefSeqLength( ) )
         pSegmentVector->clear( );
 
     return pSegmentVector;

@@ -173,7 +173,7 @@ void NeedlemanWunsch::ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSe
     if( qPos != (uint32_t)toQuery && rPos != (uint32_t)toRef )
     {
         std::cerr << "ksw did neither extend till end of query nor ref " << (int)toQuery - qPos << "; "
-                  << (int)toRef - rPos << " bandwidth: " << uiBandwidth << std::endl;
+                  << (int)toRef - rPos << " bandwidth: " << iMinBandwidthGapFilling << std::endl;
         std::cout << pQuery->fromTo( fromQuery, toQuery ) << std::endl;
         std::cout << pRef->fromTo( fromRef, toRef ) << std::endl;
         std::cout << "CIGAR:";
@@ -1017,10 +1017,6 @@ void exportNeedlemanWunsch( )
     // boost::python::def( "run_ksw", &run_ksw );
 
     // export the NeedlemanWunsch class
-    exportModule<NeedlemanWunsch>( "NeedlemanWunsch", []( auto&& x ) {
-#if DEBUG_LEVEL >= 1
-        x.def_readwrite( "analyze_heuristics", &bAnalyzeHeuristics );
-#endif // DEBUG_LEVEL
-    } );
+    exportModule<NeedlemanWunsch>( "NeedlemanWunsch" );
 } // function
 #endif

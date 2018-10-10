@@ -330,6 +330,12 @@ class BasePledge
                             catch( AnnotatedException e )
                             {
                                 std::cerr << "Exception: " << e.what( ) << std::endl;
+                            } catch(const std::exception& e)
+                            {
+                                std::cerr << e.what() << '\n';
+                            } catch(...)
+                            {
+                                std::cerr << "unknown exception in simultaneous get" << '\n';
                             } // catch
                         } while( bLoop );
                         DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
