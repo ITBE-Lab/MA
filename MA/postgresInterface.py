@@ -34,7 +34,7 @@ import os
 ##         )
 
 
-class DbWriter(Module):
+class PyDbWriter(Module):
     def __init__(self):
         #192.168.1.10
         self.conn = psycopg2.connect(
@@ -58,12 +58,6 @@ class DbWriter(Module):
             "INSERT INTO run (aligner_name, header_id) VALUES (%s, %s) RETURNING id",
             ("MA-py", genome_id))
         self.run_id = self.cur.fetchone()
-
-    def get_input_type(self):
-        return [Alignment(), NucSeq(), Pack()]
-
-    def get_output_type(self):
-        return Nil()
 
     def execute(self, *input):
         align = input[0]

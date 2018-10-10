@@ -33,27 +33,31 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         // sam file format has 1-based indices bam 0-based...
         auto uiRefPos = pAlignment->getSamPosition( *pPack ) + 1;
 
-        DEBUG( // check if the position that is saved to the file is correct
-            bool bWrong = false; if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) ) {
-                //@todo frill in this self check...
-            } // if
-            else {
-                if( pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName( sRefName ) + uiRefPos - 1 )
-                    bWrong = true;
-            } // else
+#if DEBUG_LEVEL > 0
+        bool bWrong = false;
+        if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+        {
+            //@todo frill in this self check...
+        } // if
+        else
+        {
+            if( pAlignment->uiBeginOnRef != pPack->startOfSequenceWithName( sRefName ) + uiRefPos - 1 )
+                bWrong = true;
+        } // else
 
-            if( bWrong ) {
-                std::cerr << "Error: Tried to write wrong index to file" << std::endl;
-                std::cout << "Have: " << sRefName << " (= " << pPack->startOfSequenceWithName( sRefName ) << ") "
-                          << uiRefPos << std::endl;
-                std::cout << "Wanted: " << pAlignment->uiBeginOnRef << " " << uiRefPos << std::endl;
-                if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
-                    std::cout << "Is reverse: True" << std::endl;
-                else
-                    std::cout << "Is reverse: False" << std::endl;
-                exit( 0 );
-            } // if
-            ) // DEBUG
+        if( bWrong )
+        {
+            std::cerr << "Error: Tried to write wrong index to file" << std::endl;
+            std::cout << "Have: " << sRefName << " (= " << pPack->startOfSequenceWithName( sRefName ) << ") "
+                      << uiRefPos << std::endl;
+            std::cout << "Wanted: " << pAlignment->uiBeginOnRef << " " << uiRefPos << std::endl;
+            if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+                std::cout << "Is reverse: True" << std::endl;
+            else
+                std::cout << "Is reverse: False" << std::endl;
+            exit( 0 );
+        } // if
+#endif
 
         std::string sMapQual;
         if( std::isnan( pAlignment->fMappingQuality ) )

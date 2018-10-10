@@ -20,20 +20,6 @@ class AlignmentPrinter(Module):
         self.check_for_errors_only = check_for_errors_only
 
     ##
-    # @brief returns the @ref ContainerType "container types" alignment, nucSeq, packedNucSeq.
-    # @details
-    # Reimplemented from MA.aligner.Module.get_input_type.
-    def get_input_type(self):
-        return [Alignment(), NucSeq(), Pack()]
-
-    ##
-    # @brief returns the @ref ContainerType "container type" nothing.
-    # @details
-    # Reimplemented from MA.aligner.Module.get_output_type.
-    def get_output_type(self):
-        return Nil()
-
-    ##
     # @brief Execute LineSweep for all given seeds.
     # @details
     # Reimplemented from MA.aligner.Module.execute.

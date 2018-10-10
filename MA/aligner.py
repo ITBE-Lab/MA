@@ -23,7 +23,9 @@ def promise_me(module, *args):
     elif isinstance(module, libMA.VolatileModule):
         return libMA.VolatileModulePledge(module, arg_vector)
     else:
-        raise Exception("module must be an instance of Module or VolatileModule")
+        raise Exception(
+            "module must be an instance of Module or VolatileModule")
+
 
 ##
 # @brief the Python implementation of @ref Module "module".
@@ -49,7 +51,6 @@ class Module(libMA.Module):
     # Reimplemented from @ref Module::promiseMe.
     def promise_me(self, *args):
         return Pledge.make_pledge(self, self.get_output_type(), args)
-
 
 
 ##
@@ -172,6 +173,18 @@ class SAInterval(libMA.SAInterval):
 
 
 ##
+# @brief A ContainerVector.
+# @details
+#
+# @ingroup container
+#
+class ContainerVector(libMA.ContainerVector):
+    def __init__(self, l=[]):
+        for x in l:
+            super(ContainerVector, self).append(x)
+
+
+##
 # @brief A nucleotide sequence.
 # @details
 #
@@ -197,10 +210,6 @@ class BinarySeeding(libMA.BinarySeeding):
     def execute(self, *args):
         return super(BinarySeeding, self).execute(ContainerVector(list(args)))
 
-    def promise_me(self, *args):
-        return super(BinarySeeding, self).promise_me(
-            ContainerVector(list(args)))
-
 
 ##
 # @brief python wrapper for FileWriter
@@ -208,18 +217,34 @@ class FileWriter(libMA.FileWriter):
     def execute(self, *args):
         return super(FileWriter, self).execute(ContainerVector(list(args)))
 
-    def promise_me(self, *args):
-        return super(FileWriter, self).promise_me(ContainerVector(list(args)))
+
+##
+# @brief python wrapper for PairedFileWriter
+class PairedFileWriter(libMA.PairedFileWriter):
+    def execute(self, *args):
+        return super(PairedFileWriter, self).execute(
+            ContainerVector(list(args)))
+
+
+##
+# @brief python wrapper for DbWriter
+class DbWriter(libMA.DbWriter):
+    def execute(self, *args):
+        return super(DbWriter, self).execute(ContainerVector(list(args)))
+
+
+##
+# @brief python wrapper for PairedDbWriter
+class PairedDbWriter(libMA.PairedDbWriter):
+    def execute(self, *args):
+        return super(PairedDbWriter, self).execute(ContainerVector(list(args)))
 
 
 ##
 # @brief python wrapper for PairedReads
-# class PairedReads(libMA.PairedReads):
-#     def execute(self, *args):
-#         return super(PairedReads, self).execute(ContainerVector(list(args)))
-# 
-#     def promise_me(self, *args):
-#         return super(PairedReads, self).promise_me(ContainerVector(list(args)))
+class PairedReads(libMA.PairedReads):
+    def execute(self, *args):
+        return super(PairedReads, self).execute(ContainerVector(list(args)))
 
 
 ##
@@ -229,42 +254,26 @@ class StripOfConsideration(libMA.StripOfConsideration):
         return super(StripOfConsideration, self).execute(
             ContainerVector(list(args)))
 
-    def promise_me(self, *args):
-        return super(StripOfConsideration, self).promise_me(
-            ContainerVector(list(args)))
-
 
 ##
 # @brief python wrapper for Harmonization
 class Harmonization(libMA.Harmonization):
     def execute(self, *args):
-        return super(Harmonization, self).execute(
-            ContainerVector(list(args)))
-
-    def promise_me(self, *args):
-        return super(Harmonization, self).promise_me(
-            ContainerVector(list(args)))
+        return super(Harmonization, self).execute(ContainerVector(list(args)))
 
 
 ##
 # @brief python wrapper for FileReader
 class FileReader(libMA.FileReader):
     def execute(self):
-        return super(FileReader, self).execute(ContainerVector(Nil()))
-
-    def promise_me(self, *args):
-        return super(FileReader, self).promise_me(ContainerVector(list(args)))
+        return super(FileReader, self).execute(ContainerVector())
 
 
 ##
 # @brief python wrapper for PairedFileReader
-# class PairedFileReader(libMA.PairedFileReader):
-#     def execute(self):
-#         return super(PairedFileReader, self).execute(ContainerVector(Nil()))
-# 
-#     def promise_me(self, *args):
-#         return super(PairedFileReader, self).promise_me(
-#             ContainerVector(list(args)))
+class PairedFileReader(libMA.PairedFileReader):
+    def execute(self):
+        return super(PairedFileReader, self).execute(ContainerVector())
 
 
 ##
@@ -274,20 +283,12 @@ class NeedlemanWunsch(libMA.NeedlemanWunsch):
         return super(NeedlemanWunsch, self).execute(
             ContainerVector(list(args)))
 
-    def promise_me(self, *args):
-        return super(NeedlemanWunsch, self).promise_me(
-            ContainerVector(list(args)))
-
 
 ##
 # @brief python wrapper for MappingQuality
 class MappingQuality(libMA.MappingQuality):
     def execute(self, *args):
         return super(MappingQuality, self).execute(ContainerVector(list(args)))
-
-    def promise_me(self, *args):
-        return super(MappingQuality, self).promise_me(
-            ContainerVector(list(args)))
 
 
 ##
@@ -298,9 +299,6 @@ class Lock(libMA.Lock):
     def execute(self, *args):
         return super(Lock, self).execute(ContainerVector(list(args)))
 
-    def promise_me(self, *args):
-        return super(Lock, self).promise_me(ContainerVector(list(args)))
-
 
 ##
 # @brief The UnLock Module.
@@ -310,8 +308,23 @@ class UnLock(libMA.UnLock):
     def execute(self, *args):
         return super(UnLock, self).execute(ContainerVector(list(args)))
 
-    def promise_me(self, *args):
-        return super(UnLock, self).promise_me(ContainerVector(list(args)))
+
+##
+# @brief The UnLock Module.
+# @ingroup module
+#
+class GetFirstQuery(libMA.GetFirstQuery):
+    def execute(self, *args):
+        return super(GetFirstQuery, self).execute(ContainerVector(list(args)))
+
+
+##
+# @brief The UnLock Module.
+# @ingroup module
+#
+class GetSecondQuery(libMA.GetSecondQuery):
+    def execute(self, *args):
+        return super(GetSecondQuery, self).execute(ContainerVector(list(args)))
 
 
 ##
@@ -321,20 +334,3 @@ class UnLock(libMA.UnLock):
 class OtherSeeding(libMA.OtherSeeding):
     def execute(self, *args):
         return super(OtherSeeding, self).execute(ContainerVector(list(args)))
-
-    def promise_me(self, *args):
-        return super(OtherSeeding, self).promise_me(
-            ContainerVector(list(args)))
-
-
-#def ksw(a_list, b_list, m=2, mm=4, o=4, e=2, o2=24, e2=1, w=0):
-#    ret = []
-#    for a, b in zip(a_list, b_list):
-#        cigar = libMA.run_ksw(a, b, m, mm, o, e, o2, e2, w)
-#        cigar_list = []
-#        for x in cigar.split(",")[:-1]:
-#            num = int(x[:-1])
-#            sym = x[-1]
-#            cigar_list.append((num, sym))
-#        ret.append(cigar_list)
-#    return ret
