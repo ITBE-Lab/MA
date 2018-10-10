@@ -16,7 +16,7 @@
 
 namespace libMA
 {
-class Reader : public Module<NucSeq, true>
+class Reader
 {
   public:
     virtual size_t getCurrPosInFile( ) const = 0;
@@ -28,7 +28,7 @@ class Reader : public Module<NucSeq, true>
  * @details
  * Reads (multi-)fasta or fastaq format.
  */
-class FileReader : public Reader
+class FileReader : public Module<NucSeq, true>, public Reader
 {
   public:
     std::shared_ptr<std::ifstream> pFile;
@@ -98,7 +98,7 @@ class FileReader : public Reader
         std::istream::sentry se( *pFile, true );
         std::streambuf* sb = pFile->rdbuf( );
 
-        for( ;; )
+        while( true )
         {
             int c = sb->sbumpc( );
             switch( c )
@@ -116,18 +116,18 @@ class FileReader : public Reader
                     return;
                 default:
                     t += (char)c;
-            }
-        }
+            } // switch
+        } // while
     } // method
 }; // class
 
-#if 0
+typedef ContainerVector<std::shared_ptr<NucSeq>> TP_PAIRED_READS;
 /**
  * @brief Reads Queries from a file.
  * @details
  * Reads (multi-)fasta or fastaq format.
  */
-class PairedFileReader : public Reader
+class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
 {
   public:
     FileReader xF1;
@@ -139,38 +139,10 @@ class PairedFileReader : public Reader
     PairedFileReader( std::string sFileName1, std::string sFileName2 ) : xF1( sFileName1 ), xF2( sFileName2 )
     {
         if( xF1.getFileSize( ) != xF2.getFileSize( ) )
-            std::cerr << "Paired alignment with differently sized files." << std::endl;
+            std::cerr << "WARNING: Doing paired alignment with differently sized files." << std::endl;
     } // constructor
 
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
-
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - Nil
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * - ContainerVector(NucSeq)
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    // @override
-    std::string getName( ) const
-    {
-        return "PairedFileReader";
-    } // function
-
-    // @override
-    std::string getFullDesc( ) const
-    {
-        return std::string( "PairedFileReader" );
-    } // function
+    std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
 
     // @override
     bool outputsVolatile( ) const
@@ -194,7 +166,6 @@ class PairedFileReader : public Reader
         return xF1.getFileSize( ) + xF2.getFileSize( );
     } // function
 }; // class
-#endif
 
 } // namespace libMA
 

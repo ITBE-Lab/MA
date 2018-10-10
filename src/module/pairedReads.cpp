@@ -3,8 +3,6 @@
  * @author Markus Schmidt
  */
 #include "module/pairedReads.h"
-#if 0
-
 
 using namespace libMA;
 
@@ -25,34 +23,18 @@ double PairedReads::p( nucSeqIndex d ) const // TO DO inline me
          * the mean is thus: (b+a)/2
          * the std is: (b-a)*sqrt(12)
          */
-        return 1 - std::max(
-                       0.0, std::min( 1.0, ( d - mean - std / ( SQ_12 * 2 ) ) / ( std / SQ_12 ) ) );
+        return 1 - std::max( 0.0, std::min( 1.0, ( d - mean - std / ( SQ_12 * 2 ) ) / ( std / SQ_12 ) ) );
 
     return 0.0;
 } // function
 
-ContainerVector PairedReads::getInputType( ) const
+std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments1,
+                      std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+                          pAlignments2,
+                      std::shared_ptr<Pack>
+                          pPack )
 {
-    return ContainerVector{std::shared_ptr<ContainerVector>( new ContainerVector(
-                               std::shared_ptr<Container>( new Alignment( ) ) ) ),
-                           std::shared_ptr<ContainerVector>( new ContainerVector(
-                               std::shared_ptr<Container>( new Alignment( ) ) ) ),
-                           std::shared_ptr<Pack>( new Pack( ) )};
-} // function
-
-std::shared_ptr<Container> PairedReads::getOutputType( ) const
-{
-    return std::shared_ptr<Container>(
-        new ContainerVector( std::shared_ptr<Alignment>( new Alignment( ) ) ) );
-} // function
-
-std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    std::shared_ptr<ContainerVector> pAlignments1 =
-        std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 0 ] ); // dc
-    std::shared_ptr<ContainerVector> pAlignments2 =
-        std::dynamic_pointer_cast<ContainerVector>( ( *vpInput )[ 1 ] ); // dc
-    std::shared_ptr<Pack> pPack = std::dynamic_pointer_cast<Pack>( ( *vpInput )[ 2 ] ); // dc
 
     // assert that we have at least one alignment for each mate.
     if( pAlignments1->size( ) == 0 )
@@ -69,14 +51,12 @@ std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector
     // otherwise this here might be a serious bottleneck
     for( unsigned int i = 0; i < pAlignments1->size( ); i++ )
     {
-        std::shared_ptr<Alignment> pAlignment1 =
-            std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ i ] ); // dc
+        std::shared_ptr<Alignment> pAlignment1 = ( *pAlignments1 )[ i ]; // dc
         if( pAlignment1->length( ) == 0 )
             continue;
         for( unsigned int j = 0; j < pAlignments2->size( ); j++ )
         {
-            std::shared_ptr<Alignment> pAlignment2 =
-                std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ j ] ); // dc
+            std::shared_ptr<Alignment> pAlignment2 = ( *pAlignments2 )[ j ]; // dc
             if( pAlignment2->length( ) == 0 )
                 continue;
 
@@ -140,10 +120,8 @@ std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector
     {
         // set which read was first..
 
-        std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ uiI1 ] )->xStats.bFirst =
-            true; // dc
-        std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ uiI2 ] )->xStats.bFirst =
-            false; // dc
+        ( *pAlignments1 )[ uiI1 ]->xStats.bFirst = true; // dc
+        ( *pAlignments2 )[ uiI2 ]->xStats.bFirst = false; // dc
 
         // { // temp code
         //     std::shared_ptr<Alignment> pAlignment1 = std::dynamic_pointer_cast<Alignment>(//
@@ -170,28 +148,27 @@ std::shared_ptr<Container> PairedReads::execute( std::shared_ptr<ContainerVector
         //          std::dynamic_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bFirst <<
         //          std::endl;
         std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ uiI1 ] )->xStats.pOther = // dc
-            std::weak_ptr<Alignment>(
-                std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ uiI2 ] ) ); // dc
+            std::weak_ptr<Alignment>( std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ uiI2 ] ) ); // dc
 
         std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ uiI2 ] )->xStats.pOther = // dc
-            std::weak_ptr<Alignment>(
-                std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ uiI1 ] ) ); // dc
+            std::weak_ptr<Alignment>( std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ uiI1 ] ) ); // dc
     } // if
 
-    // return the best pair
-    return std::shared_ptr<ContainerVector>( new ContainerVector{
-        ( *pAlignments1 )[ uiI1 ], ( *pAlignments2 )[ uiI2 ]} // container vector
-    );
+    // return the alignments
+    auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
+    for( auto pX : *pAlignments1 )
+        pRet->push_back( pX );
+    for( auto pX : *pAlignments2 )
+        pRet->push_back( pX );
+    return pRet;
 } // function
 
 #ifdef WITH_PYTHON
+
 void exportPairedReads( )
 {
     // export the PairedReads class
-    boost::python::class_<PairedReads, boost::python::bases<Module>, std::shared_ptr<PairedReads>>(
-        "PairedReads" );
-    // tell boost that these two classes are convertible
-    boost::python::implicitly_convertible<std::shared_ptr<PairedReads>, std::shared_ptr<Module>>( );
+    exportModule<PairedReads>( "PairedReads" );
 } // function
-#endif
+
 #endif

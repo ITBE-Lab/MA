@@ -316,7 +316,7 @@ int main( int argc, char* argv[] )
         defaults::uiGenomeSizeDisable = result[ "minRefSize" ].as<unsigned long long>( );
         std::string sBbOutput = result[ "db_conninfo" ].as<std::string>( );
 #ifdef WITH_POSTGRES
-        //int32_t iRunId = result[ "run_id" ].as<int32_t>( );
+        int32_t iRunId = result[ "run_id" ].as<int32_t>( );
 #endif
 
         if( result.count( "genIndex" ) )
@@ -350,62 +350,59 @@ int main( int argc, char* argv[] )
 #if 1
             auto pPack = makePledge<Pack>( sGenome );
             auto pFMDIndex = makePledge<FMIndex>( sGenome );
+            std::vector<std::shared_ptr<BasePledge>> aGraphSinks;
+            std::shared_ptr<Reader> pReader;
 
-            auto pFileReader = std::make_shared<FileReader>( aIn[ 0 ] );
-            std::shared_ptr<WriterModule> pFileWriter = std::static_pointer_cast<WriterModule>(
-				std::make_shared<FileWriter>( sOut, pPack->get( ) ));
-
-            auto pQueries = promiseMe( pFileReader );
-            // if( aIn.size( ) == 1 )
-            // {
-            //     pReader = std::shared_ptr<FileReader>( new FileReader( aIn[ 0 ] ) );
-            //     pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
-            // } // if
-            // else if( aIn.size( ) == 2 )
-            // {
-            //     pReader = std::shared_ptr<PairedFileReader>( new PairedFileReader( aIn[ 0 ], aIn[ 1 ] ) );
-            //     pQueries = Module::promiseMe( pReader, std::vector<std::shared_ptr<Pledge>>{pNil} );
-            // }
-            // else
-            // {
-            //     throw AnnotatedException( "Cannot have more than two inputs!" );
-            // } // else
-            // std::vector<std::shared_ptr<Module>> vOut;
-#ifdef WITH_POSTGRES
-            // if( sBbOutput.size( ) > 0 )
-            // {
-            //     if( iRunId == -1 )
-            //     {
-            //         DbRunConnection xConn( sBbOutput );
-            //         auto xRes = xConn.exec( "INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING "
-            //                                 "id" );
-            //         iRunId = std::stoi( xRes.get( 0, 0 ) );
-            //     } // setupConn scope
-            //     for( size_t uiI = 0; uiI < uiT; uiI++ )
-            //         vOut.emplace_back( new DbWriter( sBbOutput, iRunId ) );
-            // } // if
-            // else
-#endif
-            // {
-            //     vOut.emplace_back( new FileWriter( sOut, pPack_ ) );
-            // } // else
-            // bool bPaired = defaults::bNormalDist || defaults::bUniformDist;
-            // std::vector<std::shared_ptr<Pledge>> aGraphSinks;
-            // if( bPaired )
-            //    aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, vOut,
-            //                                        uiT // num threads
-            //    );
-            // else
             // setup the graph
-            auto aGraphSinks = setUpCompGraph( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
+            if( aIn.size( ) == 1 )
+            {
+                std::shared_ptr<TP_WRITER> pFileWriter;
+#ifdef WITH_POSTGRES
+                if( sBbOutput.size( ) > 0 )
+                {
+                    if( iRunId == -1 )
+                    {
+                        DbRunConnection xConn( sBbOutput );
+                        auto xRes =
+                            xConn.exec( "INSERT INTO run (aligner_name, header_id) VALUES (\'MA\', 0) RETURNING "
+                                        "id" );
+                        iRunId = std::stoi( xRes.get( 0, 0 ) );
+                    } // setupConn scope
+                    pFileWriter = std::make_shared<DbWriter>( sBbOutput, iRunId );
+                } // if
+                else
+#endif
+                {
+                    pFileWriter = std::make_shared<FileWriter>( sOut, pPack->get( ) );
+                } // else or scope
+                auto pFileReader = std::make_shared<FileReader>( aIn[ 0 ] );
+                pReader = pFileReader;
+
+                auto pQueries = promiseMe( pFileReader );
+                aGraphSinks = setUpCompGraph( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
+            } // if
+            else if( aIn.size( ) == 2 )
+            {
+                auto pFileReader = std::make_shared<PairedFileReader>( aIn[ 0 ], aIn[ 1 ] );
+                pReader = pFileReader;
+                auto pFileWriter = std::make_shared<PairedFileWriter>( sOut, pPack->get( ) );
+
+                auto pQueries = promiseMe( pFileReader );
+                aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
+            } // else if
+            else
+            {
+                throw AnnotatedException( "Cannot have more that two input files." );
+            } // else
+
             // run the alignment
             size_t uiLastProg = 0;
             std::mutex xPrintMutex;
             BasePledge::simultaneousGet( aGraphSinks,
                                          [&]( ) {
                                              std::lock_guard<std::mutex> xGuard( xPrintMutex );
-                                             size_t uiCurrProg = ( 1000 * pFileReader->getCurrPosInFile( ) ) /
-                                                                 pFileReader->getFileSize( );
+                                             size_t uiCurrProg =
+                                                 ( 1000 * pReader->getCurrPosInFile( ) ) / pReader->getFileSize( );
                                              if( uiCurrProg > uiLastProg )
                                              {
                                                  std::cerr << " " << static_cast<double>( uiCurrProg ) / 10

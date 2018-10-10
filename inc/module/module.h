@@ -646,7 +646,6 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         ); // function call
     } // function
 
-
     virtual std::shared_ptr<Container> getAsBaseType( )
     {
         return std::dynamic_pointer_cast<Container>( this->get( ) );

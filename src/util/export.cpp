@@ -33,7 +33,7 @@ BOOST_PYTHON_MODULE( libMA )
     exportFileReader( );
     exportFileWriter( );
     exportMappingQuality( );
-    //exportPairedReads( );
+    // exportPairedReads( );
     exportSplitter( );
     exportSoC( );
     exportOtherSeeding( );
@@ -48,7 +48,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( std::shared_ptr<
                                                                     pFMDIndex,
                                                                 std::shared_ptr<Pledge<NucSeq, true>>
                                                                     pQueries,
-                                                                std::shared_ptr<WriterModule>
+                                                                std::shared_ptr<TP_WRITER>
                                                                     pWriter,
                                                                 unsigned int uiThreads )
 {
@@ -77,199 +77,47 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( std::shared_ptr<
     return aRet;
 } // function
 
-#if 0
-std::vector<std::shared_ptr<Pledge>> setUpCompGraph( std::shared_ptr<Pledge> pPack,
-                                                     std::shared_ptr<Pledge>
-                                                         pFMDIndex,
-                                                     std::shared_ptr<Pledge>
-                                                         pQueries,
-                                                     std::vector<std::shared_ptr<Module>>& vOut,
-                                                     unsigned int uiThreads )
+std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( std::shared_ptr<Pledge<Pack, false>> pPack,
+                                                                      std::shared_ptr<Pledge<FMIndex, false>>
+                                                                          pFMDIndex,
+                                                                      std::shared_ptr<Pledge<TP_PAIRED_READS, true>>
+                                                                          pQueries,
+                                                                      std::shared_ptr<TP_PAIRED_WRITER>
+                                                                          pWriter,
+                                                                      unsigned int uiThreads )
 {
-    // setup all modules
-    // modules required for any alignment
-    std::shared_ptr<Module> pLockQuery( new Lock( std::shared_ptr<Container>( new NucSeq( ) ) ) );
+    // set up the modules
+    auto pLock = std::make_shared<Lock<TP_PAIRED_READS>>( );
+    auto pGetFirst = std::make_shared<TupleGet<TP_PAIRED_READS, 0>>( );
+    auto pGetSecond = std::make_shared<TupleGet<TP_PAIRED_READS, 1>>( );
     auto pSeeding = std::make_shared<BinarySeeding>( );
     auto pSOC = std::make_shared<StripOfConsideration>( );
-    std::shared_ptr<LinearLineSweep> pCouple( new LinearLineSweep( ) );
-    // we only want to report the best alignment
-    std::shared_ptr<Module> pDoOptimal(
-        new ExecOnVec( std::shared_ptr<Module>( new NeedlemanWunsch( ) ), true, 0 ) );
-    std::shared_ptr<MappingQuality> pMapping( new MappingQuality( ) );
+    auto pHarmonization = std::make_shared<Harmonization>( );
+    auto pDP = std::make_shared<NeedlemanWunsch>( );
+    auto pMappingQual = std::make_shared<MappingQuality>( );
+    auto pPairedReads = std::make_shared<PairedReads>( );
 
-
-    auto pDummyQuery = std::make_shared<Pledge>( std::make_shared<NucSeq>( ) );
-    pDummyQuery->set( std::make_shared<NucSeq>( ) );
-
-    // setup the computational graph
-    std::vector<std::shared_ptr<Pledge>> aRet;
+    // create the graph
+    std::vector<std::shared_ptr<BasePledge>> aRet;
     for( unsigned int i = 0; i < uiThreads; i++ )
     {
-        // lock the query in for this subgraph
-        std::shared_ptr<Pledge> pQuery =
-            Module::promiseMe( pLockQuery, std::vector<std::shared_ptr<Pledge>>{pQueries} );
-        // one more module to unlock the locked-in query
-        // this requires the pledge from the lock
-        // therefore we have to create one module for each subgraph
-        std::shared_ptr<Module> pUnLock( new UnLock( pQuery ) );
-        // the seeding stage
-        std::shared_ptr<Pledge> pSeeds =
-            Module::promiseMe( pSeeding, std::vector<std::shared_ptr<Pledge>>{pFMDIndex, pQuery} );
-        // the filtering stage
-        std::shared_ptr<Pledge> pSOCs = Module::promiseMe(
-            pSOC, std::vector<std::shared_ptr<Pledge>>{pSeeds, pQuery, pPack, pFMDIndex} );
-        // the coupling stage
-        std::shared_ptr<Pledge> pCoupled =
-            Module::promiseMe( pCouple, std::vector<std::shared_ptr<Pledge>>{pSOCs, pQuery} );
-        if( defaults::bFindMode )
-        {
-            // write the output to a file
-            assert( vOut.size( ) == 1 );
-            std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                vOut[ 0 ], std::vector<std::shared_ptr<Pledge>>{pCoupled, pPack} );
-            // unlock the query so that this subgraph can be executed multiple times
-            std::shared_ptr<Pledge> pRet =
-                Module::promiseMe( pUnLock, std::vector<std::shared_ptr<Pledge>>{pNil} );
-            // save the
-            aRet.push_back( pRet );
-        } // if
-        else
-        {
-            // the optimal matching stage
-            std::shared_ptr<Pledge> pOptimal = Module::promiseMe(
-                pDoOptimal, std::vector<std::shared_ptr<Pledge>>{pCoupled, pQuery, pPack} );
-            // assign a mapping quality
-            std::shared_ptr<Pledge> pAlignments = Module::promiseMe(
-                pMapping, std::vector<std::shared_ptr<Pledge>>{pQuery, pOptimal} );
-            // write the output to a file
-            if( vOut.size( ) == 1 )
-            {
-                std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                    vOut[ 0 ],
-                    std::vector<std::shared_ptr<Pledge>>{pQuery, pDummyQuery, pAlignments, pPack} );
-                // unlock the query so that this subgraph can be executed multiple times
-                std::shared_ptr<Pledge> pRet =
-                    Module::promiseMe( pUnLock, std::vector<std::shared_ptr<Pledge>>{pNil} );
-                // save the
-                aRet.push_back( pRet );
-            } // if
-            else
-            {
-                assert( i < vOut.size( ) );
-                std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                    vOut[ i ],
-                    std::vector<std::shared_ptr<Pledge>>{pQuery, pDummyQuery, pAlignments, pPack} );
-                // unlock the query so that this subgraph can be executed multiple times
-                std::shared_ptr<Pledge> pRet =
-                    Module::promiseMe( pUnLock, std::vector<std::shared_ptr<Pledge>>{pNil} );
-                // save the pledge
-                aRet.push_back( pRet );
-            } // else
-        } // else
+        auto pQueryTuple = promiseMe( pLock, pQueries );
+        auto pQueryA = promiseMe( pGetFirst, pQueries );
+        auto pQueryB = promiseMe( pGetSecond, pQueries );
+        auto pSeedsA = promiseMe( pSeeding, pFMDIndex, pQueryA );
+        auto pSeedsB = promiseMe( pSeeding, pFMDIndex, pQueryB );
+        auto pSOCsA = promiseMe( pSOC, pSeedsA, pQueryA, pPack, pFMDIndex );
+        auto pSOCsB = promiseMe( pSOC, pSeedsB, pQueryB, pPack, pFMDIndex );
+        auto pHarmonizedA = promiseMe( pHarmonization, pSOCsA, pQueryA );
+        auto pHarmonizedB = promiseMe( pHarmonization, pSOCsB, pQueryB );
+        auto pAlignmentsA = promiseMe( pDP, pHarmonizedA, pQueryA, pPack );
+        auto pAlignmentsB = promiseMe( pDP, pHarmonizedB, pQueryB, pPack );
+        auto pAlignmentsWQualityA = promiseMe( pMappingQual, pQueryA, pAlignmentsA );
+        auto pAlignmentsWQualityB = promiseMe( pMappingQual, pQueryB, pAlignmentsB );
+        auto pAlignmentsWQuality = promiseMe( pPairedReads, pAlignmentsA, pAlignmentsB, pPack );
+        auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
+        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( pQueryTuple ), pEmptyContainer );
+        aRet.push_back( pUnlockResult );
     } // for
-
     return aRet;
 } // function
-
-std::vector<std::shared_ptr<Pledge>> setUpCompGraphPaired( std::shared_ptr<Pledge> pPack,
-                                                           std::shared_ptr<Pledge>
-                                                               pFMDIndex,
-                                                           std::shared_ptr<Pledge>
-                                                               pQueries,
-                                                           std::vector<std::shared_ptr<libMA::Module>>& vOut,
-                                                           unsigned int uiThreads )
-{
-    // setup all modules
-    // modules required for any alignment
-    std::shared_ptr<Module> pLockQueries( new Lock( std::make_shared<ContainerVector>( ) ) );
-    std::shared_ptr<Module> pLock( new Lock( std::make_shared<NucSeq>( ) ) );
-    auto pSplitter = std::make_shared<ReadSplitter>( );
-    auto pSeeding = std::make_shared<BinarySeeding>( );
-    auto pSOC = std::make_shared<StripOfConsideration>( );
-    std::shared_ptr<LinearLineSweep> pCouple( new LinearLineSweep( ) );
-    // we only want to report the best alignment
-    std::shared_ptr<Module> pDoOptimal( new ExecOnVec( std::shared_ptr<Module>( new NeedlemanWunsch( ) ), true, 0 ) );
-    std::shared_ptr<MappingQuality> pMapping( new MappingQuality( ) );
-    // modules for the paired alignment
-    std::shared_ptr<Module> pPaired( new PairedReads( ) );
-
-
-    // setup the computational graph
-    std::vector<std::shared_ptr<Pledge>> aRet;
-    for( unsigned int i = 0; i < uiThreads; i++ )
-    {
-        // lock the query in for this subgraph
-        std::shared_ptr<Pledge> pQueriesLocked =
-            Module::promiseMe( pLockQueries, std::vector<std::shared_ptr<Pledge>>{pQueries} );
-        std::shared_ptr<Pledge> pQuery =
-            Module::promiseMe( pSplitter, std::vector<std::shared_ptr<Pledge>>{pQueriesLocked} );
-        std::shared_ptr<Pledge> pQuery1 = Module::promiseMe( pLock, std::vector<std::shared_ptr<Pledge>>{pQuery} );
-        std::shared_ptr<Pledge> pQuery2 = Module::promiseMe( pLock, std::vector<std::shared_ptr<Pledge>>{pQuery} );
-        // one more module to unlock the locked-in query
-        // this requires the pledge from the lock
-        // therefore we have to create one module for each subgraph
-        std::shared_ptr<Module> pUnLock( new UnLock( pQueriesLocked ) );
-        std::shared_ptr<Module> pUnLock2( new UnLock( pQuery1 ) );
-        std::shared_ptr<Module> pUnLock3( new UnLock( pQuery2 ) );
-        // the seeding stage
-        std::shared_ptr<Pledge> pSeeds1 =
-            Module::promiseMe( pSeeding, std::vector<std::shared_ptr<Pledge>>{pFMDIndex, pQuery1} );
-        std::shared_ptr<Pledge> pSeeds2 =
-            Module::promiseMe( pSeeding, std::vector<std::shared_ptr<Pledge>>{pFMDIndex, pQuery2} );
-        // the filtering stage
-        std::shared_ptr<Pledge> pSOCs1 =
-            Module::promiseMe( pSOC, std::vector<std::shared_ptr<Pledge>>{pSeeds1, pQuery1, pPack, pFMDIndex} );
-        std::shared_ptr<Pledge> pSOCs2 =
-            Module::promiseMe( pSOC, std::vector<std::shared_ptr<Pledge>>{pSeeds2, pQuery2, pPack, pFMDIndex} );
-        // the coupling stage
-        std::shared_ptr<Pledge> pCoupled1 =
-            Module::promiseMe( pCouple, std::vector<std::shared_ptr<Pledge>>{pSOCs1, pQuery1} );
-        std::shared_ptr<Pledge> pCoupled2 =
-            Module::promiseMe( pCouple, std::vector<std::shared_ptr<Pledge>>{pSOCs2, pQuery2} );
-        // the optimal matching stage
-        std::shared_ptr<Pledge> pOptimal1 =
-            Module::promiseMe( pDoOptimal, std::vector<std::shared_ptr<Pledge>>{pCoupled1, pQuery1, pPack} );
-        std::shared_ptr<Pledge> pOptimal2 =
-            Module::promiseMe( pDoOptimal, std::vector<std::shared_ptr<Pledge>>{pCoupled2, pQuery2, pPack} );
-        // assign a mapping quality
-        std::shared_ptr<Pledge> pAlignment1 =
-            Module::promiseMe( pMapping, std::vector<std::shared_ptr<Pledge>>{pQuery1, pOptimal1} );
-        std::shared_ptr<Pledge> pAlignment2 =
-            Module::promiseMe( pMapping, std::vector<std::shared_ptr<Pledge>>{pQuery2, pOptimal2} );
-        std::shared_ptr<Pledge> pAlignments =
-            Module::promiseMe( pPaired, std::vector<std::shared_ptr<Pledge>>{pAlignment1, pAlignment2, pPack} );
-        // write the output to a file
-        if( vOut.size( ) == 1 )
-        {
-            // write the output to a file
-            std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                vOut[ 0 ], std::vector<std::shared_ptr<Pledge>>{pQuery1, pQuery2, pAlignments, pPack} );
-            // unlock the query so that this subgraph can be executed multiple times
-            std::shared_ptr<Pledge> pRet = Module::promiseMe( pUnLock, std::vector<std::shared_ptr<Pledge>>{pNil} );
-            // unlock the query so that this subgraph can be executed multiple times
-            pRet = Module::promiseMe( pUnLock2, std::vector<std::shared_ptr<Pledge>>{pRet} );
-            // unlock the query so that this subgraph can be executed multiple times
-            pRet = Module::promiseMe( pUnLock3, std::vector<std::shared_ptr<Pledge>>{pRet} );
-            // save the
-            aRet.push_back( pRet );
-        } // if
-        else
-        {
-            assert( i < vOut.size( ) );
-            // write the output to a file
-            std::shared_ptr<Pledge> pNil = Module::promiseMe(
-                vOut[ i ], std::vector<std::shared_ptr<Pledge>>{pQuery1, pQuery2, pAlignments, pPack} );
-            // unlock the query so that this subgraph can be executed multiple times
-            std::shared_ptr<Pledge> pRet = Module::promiseMe( pUnLock, std::vector<std::shared_ptr<Pledge>>{pNil} );
-            // unlock the query so that this subgraph can be executed multiple times
-            pRet = Module::promiseMe( pUnLock2, std::vector<std::shared_ptr<Pledge>>{pRet} );
-            // unlock the query so that this subgraph can be executed multiple times
-            pRet = Module::promiseMe( pUnLock3, std::vector<std::shared_ptr<Pledge>>{pRet} );
-            // save the pledge
-            aRet.push_back( pRet );
-        } // else
-    } // for
-
-    return aRet;
-} // function
-#endif

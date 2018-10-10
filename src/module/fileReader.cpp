@@ -182,30 +182,17 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     throw AnnotatedException( "Tried to read query past EoF" );
 } // function
 
-#if 0
-ContainerVector PairedFileReader::getInputType( ) const
+std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
 {
-    return ContainerVector{std::shared_ptr<Container>( new Nil( ) )};
-} // function
-
-std::shared_ptr<Container> PairedFileReader::getOutputType( ) const
-{
-    return std::make_shared<ContainerVector>( std::make_shared<NucSeq>( ) );
-} // function
-
-
-std::shared_ptr<Container> PairedFileReader::execute( std::shared_ptr<ContainerVector> vpInput )
-{
-    auto pRet = std::make_shared<ContainerVector>( );
-    pRet->push_back( xF1.execute( vpInput ) );
-    pRet->push_back( xF2.execute( vpInput ) );
-    if( pRet->front( ) == Nil::pEoFContainer )
-        return Nil::pEoFContainer;
-    if( pRet->back( ) == Nil::pEoFContainer )
-        return Nil::pEoFContainer;
+    auto pRet = std::make_shared<TP_PAIRED_READS>( );
+    pRet->push_back( xF1.execute( ) );
+    pRet->push_back( xF2.execute( ) );
+    if( ( *pRet )[ 0 ] == nullptr )
+        return nullptr;
+    if( ( *pRet )[ 1 ] == nullptr )
+        return nullptr;
     return pRet;
 } // function
-#endif
 
 #ifdef WITH_PYTHON
 void exportFileReader( )
@@ -213,9 +200,17 @@ void exportFileReader( )
     // export the FileReader class
     exportModule<FileReader, std::string>( "FileReader" );
 
-    // boost::python::class_<PairedFileReader, boost::python::bases<Module>, std::shared_ptr<PairedFileReader>>(
-    //    "PairedFileReader", boost::python::init<std::string, std::string>( ) );
-    // boost::python::implicitly_convertible<std::shared_ptr<PairedFileReader>, std::shared_ptr<Module>>( );
-
+    boost::python::class_<TP_PAIRED_READS, boost::noncopyable, boost::python::bases<Container>,
+                          std::shared_ptr<TP_PAIRED_READS>>( "QueryVector" )
+        /*
+         * true = noproxy this means that the content of
+         * the vector is already exposed by boost python.
+         * if this is kept as false, Container would be
+         * exposed a second time. the two Containers would
+         * be different and not inter castable.
+         */
+        .def( boost::python::vector_indexing_suite<TP_PAIRED_READS, true>( ) );
+    // export the PairedFileReader class
+    exportModule<PairedFileReader, std::string, std::string>( "PairedFileReader" );
 } // function
 #endif

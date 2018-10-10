@@ -3,7 +3,6 @@
  * @brief Picks alignment pairs for alignming paired reads.
  * @author Markus Schmidt
  */
-#if 0
 #ifndef PAIRED_READS_H
 #define PAIRED_READS_H
 
@@ -20,7 +19,11 @@ namespace libMA
  * Given two vector of alignments this module picks one alignment of each vector,
  * so that their combined score and penalty for the insert size is maximal.
  */
-class PairedReads : public Module
+class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, // out
+                                  false, // not volatile
+                                  ContainerVector<std::shared_ptr<Alignment>>, // alignments for first paired read
+                                  ContainerVector<std::shared_ptr<Alignment>>, // alignments for second paired read
+                                  Pack>
 {
   public:
     /**
@@ -50,33 +53,10 @@ class PairedReads : public Module
      */
     double EXPORTED p( nucSeqIndex d ) const;
 
-    PairedReads( )
-    {} // constructor
-
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<ContainerVector> vpInput );
-
-    /**
-     * @brief Used to check the input of execute.
-     * @details
-     * Returns:
-     * - ContainerVector(Alignment)
-     * - ContainerVector(Alignment)
-     */
-    ContainerVector EXPORTED getInputType( ) const;
-
-    /**
-     * @brief Used to check the output of execute.
-     * @details
-     * Returns:
-     * ContainerVector(Alignment)
-     * with two elements
-     */
-    std::shared_ptr<Container> EXPORTED getOutputType( ) const;
-
-    std::string getName( ) const
-    {
-        return "PairedReads";
-    }
+    std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+        EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pA,
+                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pB,
+                          std::shared_ptr<Pack> pPack );
 }; // class
 } // namespace libMA
 
@@ -89,5 +69,4 @@ void exportPairedReads( );
 #endif
 
 
-#endif
 #endif

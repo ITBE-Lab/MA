@@ -12,9 +12,6 @@
 namespace libMA
 {
 
-class WriterModule : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
-{}; // class
-
 /**
  * @brief wrapper for various out streams.
  * @details
@@ -83,7 +80,7 @@ class FileOutStream : public OutStream
  * @note flushing of the outstream; this must be done in the deconstructor of OutStream
  *
  */
-class FileWriter : public WriterModule
+class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
 {
   public:
     // holds a file ourstream if necessary
@@ -132,6 +129,63 @@ class FileWriter : public WriterModule
                                                              pAlignments,
                                                          std::shared_ptr<Pack>
                                                              pPack );
+
+}; // class
+
+/**
+ * @brief Writes SAM output.
+ * @note flushing of the outstream; this must be done in the deconstructor of OutStream
+ *
+ */
+class PairedFileWriter
+    : public Module<Container, false, NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
+{
+  public:
+    // holds a file ourstream if necessary
+    std::shared_ptr<OutStream> pOut;
+    std::shared_ptr<std::mutex> pLock;
+
+    /**
+     * @brief creates a new FileWriter.
+     * @details
+     * if sFileName is "stdout" the writer will output to stdout instead of the file.
+     * Otherwise sFileName is used as the filename to write to.
+     * The file will be truncated is it already exists.
+     */
+    PairedFileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer ) : pLock( new std::mutex )
+    {
+        if( sFileName != "stdout" )
+            pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
+        else
+            pOut = std::shared_ptr<OutStream>( new StdOutStream( ) );
+        //*pOut << "@HD VN:1.5 SO:unknown\n";
+        for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
+        {
+            *pOut << "@SQ\tSN:" << rSeqInPack.sName << "\tLN:" << std::to_string( rSeqInPack.uiLengthUnpacked ) << "\n";
+        } // for
+        *pOut << "@PG\tID:ma\tPN:ma\tVN:0.1.0\tCL:na\n";
+    } // constructor
+
+    /**
+     * @brief creates a new FileWriter.
+     * @details
+     * Allows more control of the output by using a given OutStream.
+     */
+    PairedFileWriter( std::shared_ptr<OutStream> pOut, std::shared_ptr<Pack> pPackContainer )
+        : pOut( pOut ), pLock( new std::mutex )
+    {
+        //*pOut << "@HD VN:1.5 SO:unknown\n";
+        for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
+        {
+            *pOut << "@SQ\tSN:" << rSeqInPack.sName << " LN:" << std::to_string( rSeqInPack.uiLengthUnpacked ) << "\n";
+        } // for
+        *pOut << "@PG\tID:ma\tPN:ma\tVN:0.1.0\tCL:na\n";
+    } // constructor
+
+    virtual std::shared_ptr<Container>
+        EXPORTED execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
+                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
+                          std::shared_ptr<Pack> pPack );
 
 }; // class
 
