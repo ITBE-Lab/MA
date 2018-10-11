@@ -77,6 +77,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         // run self tests for the nucSeq
         DEBUG_2( std::cout << pRet->fastaq( ) << std::endl; ) // DEBUG_2
         DEBUG( pRet->check( ); )
+        pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
         return pRet;
@@ -114,6 +115,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
                 pRet->quality( i + uiPos ) = (uint8_t)sLine[ i ];
             uiPos += uiLineSize;
         } // while
+        pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
         return pRet;
@@ -173,6 +175,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         } // while
         // if(pFile->good() && !pFile->eof() && pFile->peek() != '@')
         //    throw AnnotatedException("Invalid line in fastq");
+        pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
         return pRet;
@@ -187,6 +190,9 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
     auto pRet = std::make_shared<TP_PAIRED_READS>( );
     pRet->push_back( xF1.execute( ) );
     pRet->push_back( xF2.execute( ) );
+    // forward the finished flags...
+    if( xF1.isFinished( ) || xF2.isFinished( ) )
+        this->setFinished( );
     if( ( *pRet )[ 0 ] == nullptr )
         return nullptr;
     if( ( *pRet )[ 1 ] == nullptr )
@@ -200,16 +206,17 @@ void exportFileReader( )
     // export the FileReader class
     exportModule<FileReader, std::string>( "FileReader" );
 
-    boost::python::class_<TP_PAIRED_READS, boost::noncopyable, boost::python::bases<Container>,
-                          std::shared_ptr<TP_PAIRED_READS>>( "QueryVector" )
-        /*
-         * true = noproxy this means that the content of
-         * the vector is already exposed by boost python.
-         * if this is kept as false, Container would be
-         * exposed a second time. the two Containers would
-         * be different and not inter castable.
-         */
-        .def( boost::python::vector_indexing_suite<TP_PAIRED_READS, true>( ) );
+    boost::python::
+        class_<TP_PAIRED_READS, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<TP_PAIRED_READS>>(
+            "QueryVector" )
+            /*
+             * true = noproxy this means that the content of
+             * the vector is already exposed by boost python.
+             * if this is kept as false, Container would be
+             * exposed a second time. the two Containers would
+             * be different and not inter castable.
+             */
+            .def( boost::python::vector_indexing_suite<TP_PAIRED_READS, true>( ) );
     // export the PairedFileReader class
     exportModule<PairedFileReader, std::string, std::string>( "PairedFileReader" );
 } // function

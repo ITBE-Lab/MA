@@ -39,17 +39,18 @@ inline void ksw_ext( int qlen,
 #if OLD_KSW == 1
     if( bRef )
         ksw_extd2_sse_( nullptr, qlen, query, tlen, target, 5, &rKswParameters.mat[ 0 ], rKswParameters.q,
-                       rKswParameters.e, rKswParameters.q2, rKswParameters.e2, w, uiZDrop, -1,
-                       KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
+                        rKswParameters.e, rKswParameters.q2, rKswParameters.e2, w, uiZDrop, -1,
+                        KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez );
     else
         ksw_extd2_sse_( nullptr, qlen, query, tlen, target, 5, &rKswParameters.mat[ 0 ], rKswParameters.q,
-                       rKswParameters.e, rKswParameters.q2, rKswParameters.e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez );
+                        rKswParameters.e, rKswParameters.q2, rKswParameters.e2, w, uiZDrop, -1, KSW_EZ_EXTZ_ONLY, ez );
 #else
     if( bRef )
         kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, (int)uiZDrop,
                          KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez, rMemoryManager );
     else
-        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, (int)uiZDrop, KSW_EZ_EXTZ_ONLY, ez, rMemoryManager );
+        kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, (int)uiZDrop, KSW_EZ_EXTZ_ONLY, ez,
+                         rMemoryManager );
 #endif
 } // function
 
@@ -72,7 +73,7 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
 
 #if OLD_KSW == 1
     ksw_extd2_sse_( nullptr, qlen, query, tlen, target, 5, &rKswParameters.mat[ 0 ], rKswParameters.q, rKswParameters.e,
-                   rKswParameters.q2, rKswParameters.e2, w, -1, -1, 0, ez );
+                    rKswParameters.q2, rKswParameters.e2, w, -1, -1, 0, ez );
 #else
     kswcpp_dispatch( qlen, query, tlen, target, rKswParameters, w, -1, 0, ez, rMemoryManager );
 #endif
@@ -130,7 +131,7 @@ void NeedlemanWunsch::ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSe
 
     assert( toQuery < pQuery->length( ) );
     assert( toRef < pRef->length( ) );
-    ksw_simplified( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int) (toRef - fromRef),
+    ksw_simplified( (int)( toQuery - fromQuery ), pQuery->pGetSequenceRef( ) + fromQuery, (int)( toRef - fromRef ),
                     pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iMinBandwidthGapFilling,
                     ez.ez, // return value
                     rMemoryManager );
@@ -261,14 +262,14 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     Wrapper_ksw_extz_t ez_left;
     Wrapper_ksw_extz_t ez_right;
 
-    ksw_ext( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int)(toRef - fromRef),
+    ksw_ext( (int)( toQuery - fromQuery ), pQuery->pGetSequenceRef( ) + fromQuery, (int)( toRef - fromRef ),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_left.ez, // return value
              rMemoryManager, false );
 
     pQuery->vReverse( fromQuery, toQuery );
     pRef->vReverse( fromRef, toRef );
-    ksw_ext( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int)(toRef - fromRef),
+    ksw_ext( (int)( toQuery - fromQuery ), pQuery->pGetSequenceRef( ) + fromQuery, (int)( toRef - fromRef ),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_right.ez, // return value
              rMemoryManager, true );
@@ -300,13 +301,13 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                     if( qPos + uiAmount > qCenter )
                     {
                         assert( qCenter >= qPos );
-                        uiAmount = (uint32_t)(qCenter - qPos);
+                        uiAmount = ( uint32_t )( qCenter - qPos );
                     } // if
                     // dont go over the center
                     if( rPos + uiAmount > rCenter )
                     {
                         assert( rCenter >= rPos );
-                        uiAmount = (uint32_t)(rCenter - rPos);
+                        uiAmount = ( uint32_t )( rCenter - rPos );
                     } // if
                     for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                     {
@@ -321,14 +322,14 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                 case 1:
                     // dont go over the center
                     if( qPos + uiAmount > qCenter )
-						uiAmount = (uint32_t)(qCenter - qPos);
+                        uiAmount = ( uint32_t )( qCenter - qPos );
                     pAlignment->append( MatchType::insertion, uiAmount );
                     qPos += uiAmount;
                     break;
                 case 2:
                     // dont go over the center
                     if( rPos + uiAmount > rCenter )
-						uiAmount = (uint32_t)(rCenter - rPos);
+                        uiAmount = ( uint32_t )( rCenter - rPos );
                     pAlignment->append( MatchType::deletion, uiAmount );
                     rPos += uiAmount;
                     break;
@@ -373,15 +374,15 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                     {
                         assert( rCenter > rPosRight );
                         assert( uiAmount >= ( rCenter - rPosRight ) );
-                        uiAmountNotUnrolled = uiAmount - (uint32_t)( rCenter - rPosRight );
-                        uiAmount = (uint32_t)(rCenter - rPosRight);
+                        uiAmountNotUnrolled = uiAmount - ( uint32_t )( rCenter - rPosRight );
+                        uiAmount = ( uint32_t )( rCenter - rPosRight );
                     } // if
                     else
                     {
                         assert( qCenter > qPosRight );
                         assert( uiAmount >= ( qCenter - qPosRight ) );
-                        uiAmountNotUnrolled = uiAmount - (uint32_t)( qCenter - qPosRight );
-                        uiAmount = (uint32_t)(qCenter - qPosRight);
+                        uiAmountNotUnrolled = uiAmount - ( uint32_t )( qCenter - qPosRight );
+                        uiAmount = ( uint32_t )( qCenter - qPosRight );
                     } // else
                 } // if
                 qPosRight += uiAmount;
@@ -393,8 +394,8 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                 {
                     assert( qCenter > qPosRight );
                     assert( uiAmount >= ( qCenter - qPosRight ) );
-                    uiAmountNotUnrolled = uiAmount - (uint32_t)( qCenter - qPosRight );
-					uiAmount = (uint32_t)(qCenter - qPosRight);
+                    uiAmountNotUnrolled = uiAmount - ( uint32_t )( qCenter - qPosRight );
+                    uiAmount = ( uint32_t )( qCenter - qPosRight );
                 } // if
                 qPosRight += uiAmount;
                 xTypeLastUnrolledCigar = MatchType::insertion;
@@ -404,8 +405,8 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                 {
                     assert( rCenter > rPosRight );
                     assert( uiAmount >= ( rCenter - rPosRight ) );
-                    uiAmountNotUnrolled = uiAmount - (uint32_t)( rCenter - rPosRight );
-					uiAmount = (uint32_t)(rCenter - rPosRight);
+                    uiAmountNotUnrolled = uiAmount - ( uint32_t )( rCenter - rPosRight );
+                    uiAmount = ( uint32_t )( rCenter - rPosRight );
                 } // if
                 rPosRight += uiAmount;
                 xTypeLastUnrolledCigar = MatchType::deletion;
@@ -555,7 +556,7 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
         pQuery->vReverse( fromQuery, toQuery );
         pRef->vReverse( fromRef, toRef );
     } // if
-    ksw_ext( (int)(toQuery - fromQuery), pQuery->pGetSequenceRef( ) + fromQuery, (int)(toRef - fromRef),
+    ksw_ext( (int)( toQuery - fromQuery ), pQuery->pGetSequenceRef( ) + fromQuery, (int)( toRef - fromRef ),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez.ez, // return value
              rMemoryManager, bReverse );
@@ -665,7 +666,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
     } // for
     DEBUG_2( std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl; ) // DEEBUG
 
-    if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) )
+    if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) )
     {
 #if 0
         // sometimes we can save the situation by making the last seed smaller...
@@ -687,27 +688,28 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
 #endif
         {
 #if CONTIG_ID_CACHE == ( 1 )
-            DEBUG( std::cerr << "WARNING: computed bridging alignment:\n";
-                   std::cerr << beginRef << " - " << endRef << std::endl;
-                   std::cerr << pRefPack->nameOfSequenceForPosition( beginRef ) << " - "
-                             << pRefPack->nameOfSequenceForPosition( endRef ) << std::endl;
-                   std::cerr << pRefPack->iAbsolutePosition( beginRef ) << " - "
-                             << pRefPack->iAbsolutePosition( endRef ) << std::endl;
-                   auto names = pRefPack->contigNames( );
-                   auto starts = pRefPack->contigStarts( );
-                   auto lengths = pRefPack->contigLengths( );
-                   for( size_t i = 0; i < names.size( ); i++ ) {
-                       if( starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
-                           starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
-                           std::cerr << names[ i ] << ": [" << starts[ i ] << "-" << starts[ i ] + lengths[ i ]
-                                     << "] revComp: [" << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
-                                     << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] ) << "]"
-                                     << std::endl;
-                       if( starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) &&
-                           starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
-                           break;
-                   } // for
-                   ) // DEBUG
+#if DEBUG_LEVEL > 0
+            std::cerr << "WARNING: computed bridging alignment:\n";
+            std::cerr << beginRef << " - " << endRef << std::endl;
+            std::cerr << pRefPack->nameOfSequenceForPosition( beginRef ) << " - "
+                      << pRefPack->nameOfSequenceForPosition( endRef ) << std::endl;
+            std::cerr << pRefPack->iAbsolutePosition( beginRef ) << " - " << pRefPack->iAbsolutePosition( endRef )
+                      << std::endl;
+            auto names = pRefPack->contigNames( );
+            auto starts = pRefPack->contigStarts( );
+            auto lengths = pRefPack->contigLengths( );
+            for( size_t i = 0; i < names.size( ); i++ )
+            {
+                if( starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
+                    starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
+                    std::cerr << names[ i ] << ": [" << starts[ i ] << "-" << starts[ i ] + lengths[ i ]
+                              << "] revComp: [" << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
+                              << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] ) << "]" << std::endl;
+                if( starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) &&
+                    starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
+                    break;
+            } // for
+#endif
 #endif
             std::shared_ptr<Alignment> pRet( new Alignment( ) );
             pRet->xStats = pSeeds->xStats;
@@ -718,7 +720,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
 
     // here we have enough query coverage to attemt to fill in the gaps merely
     DEBUG_2( std::cout << "filling in gaps" << std::endl; )
-    assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) );
+    assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) );
 
     std::shared_ptr<Alignment> pRet;
 
@@ -746,9 +748,11 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         if( pRefPack->uiSequenceIdForPositionOrRev( beginRef ) != iOldContig )
             beginRef = pRefPack->startOfSequenceWithIdOrReverse( iOldContig );
         if( pRefPack->uiSequenceIdForPositionOrRev( endRef ) != iOldContig )
-            endRef = pRefPack->endOfSequenceWithIdOrReverse( iOldContig );
+            endRef = pRefPack->endOfSequenceWithIdOrReverse( iOldContig ) - 1;
 
-        DEBUG( if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) ) {
+#if DEBUG_LEVEL > 0
+        if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) )
+        {
             std::cerr << "ERROR: produced bridging alignment:\n";
             std::cerr << beginRef << " - " << endRef << std::endl;
             std::cerr << pRefPack->nameOfSequenceForPosition( beginRef ) << " - "
@@ -770,8 +774,8 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
                     break;
             } // for
         } // if
-        )
-        assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) );
+#endif
+        assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) );
         assert( beginRef <= pSeeds->front( ).start_ref( ) );
     } // if
     assert( endQuery <= pQuery->length( ) );
