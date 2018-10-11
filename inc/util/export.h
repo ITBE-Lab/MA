@@ -146,6 +146,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define EXPORT_H
 
 #include "module/binarySeeding.h"
+#include "module/dbWriter.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
 #include "module/harmonization.h"
@@ -159,7 +160,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace libMA
 {
-    
+
 typedef Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_WRITER;
 typedef Module<Container, false, NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_PAIRED_WRITER;
 

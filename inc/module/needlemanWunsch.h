@@ -71,11 +71,18 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
         AlignedMemoryManager xMemoryManager;
         auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
         for( auto pSeeds : *pSeedSets )
-            pRet->push_back( execute_one( pSeeds, pQuery, pRefPack, xMemoryManager ) );
-        // we need to move the best alignment to the first spot @todo
-        // std::sort( pRet->begin( ), pRet->end( ),
-        //           []( std::shared_ptr<Alignment>& pA, std::shared_ptr<Alignment>& pB ) { return pA->larger( pB ); }
-        //           );
+        {
+            // if we have a seed set with an inversion we need to generate two alignments...
+            auto pRevSeeds = pSeeds->splitOnStrands( pRefPack->uiStartOfReverseStrand( ), pQuery->length() );
+            if( !pRevSeeds->empty( ) )
+                pRet->push_back( execute_one( pRevSeeds, pQuery, pRefPack, xMemoryManager ) );
+            if( !pSeeds->empty( ) )
+                pRet->push_back( execute_one( pSeeds, pQuery, pRefPack, xMemoryManager ) );
+        } // for
+        std::cout << "Computed " << pRet->size() << " alignments" << std::endl;
+        // we need to move the best alignment to the first spot
+        std::sort( pRet->begin( ), pRet->end( ),
+                   []( std::shared_ptr<Alignment>& pA, std::shared_ptr<Alignment>& pB ) { return pA->larger( pB ); } );
         return pRet;
     } // function
 

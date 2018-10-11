@@ -72,9 +72,9 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
     template <class FUNCTOR>
     inline void forEachNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
                                         FUNCTOR&& fDo, // std::function<void(const Seed &rxS)> fDo,
-                                        nucSeqIndex addSize = 0 )
+                                        const nucSeqIndex uiQLen, nucSeqIndex addSize = 0 )
     {
-        rSegmentVector.forEachSeed( rxFM_index, uiMaxAmbiguity, bSkipLongBWTIntervals,
+        rSegmentVector.forEachSeed( rxFM_index, uiQLen, uiMaxAmbiguity, bSkipLongBWTIntervals,
                                     [&rxRefSequence, &rxFM_index, &fDo, &addSize]( Seed&& xS ) {
                                         // check if the match is bridging the forward/reverse strand
                                         // or bridging between two chromosomes
@@ -100,7 +100,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
     inline void emplaceAllNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
-        rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiMaxAmbiguity, uiMinLen, rvSeedVector,
+        rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiQLen, uiMaxAmbiguity, uiMinLen, rvSeedVector,
                                             [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]( ) {
         /*
          * @note this bridging check is not required since we check weather a SoC
@@ -136,6 +136,14 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
 #elif DELTA_CACHE == ( 1 )
                                                 rvSeedVector.back( ).uiDelta =
                                                     getPositionForBucketing( uiQLen, rvSeedVector.back( ) );
+#if CONTIG_ID_IN_DELTA == ( 1 )
+                                                size_t uiContig = rxRefSequence.uiSequenceIdForPosition(
+                                                    rvSeedVector.back( ).start_ref( ) );
+                                                // move the delta position to the right by the contig index
+                                                // this way we ensure seeds are ordered by contigs first
+                                                // and then their delta positions within the contig.
+                                                rvSeedVector.back( ).uiDelta += ( uiQLen + 10 ) * uiContig;
+#endif
 #endif
 #if CONTIG_ID_CACHE == ( 1 )
                                                 rvSeedVector.back( ).uiContigId = rxRefSequence.uiSequenceIdForPosition(

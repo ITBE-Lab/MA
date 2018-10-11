@@ -33,8 +33,9 @@ BOOST_PYTHON_MODULE( libMA )
     exportFileReader( );
     exportFileWriter( );
     exportMappingQuality( );
-    // exportPairedReads( );
+    exportPairedReads( );
     exportSplitter( );
+    exportDBWriter( );
     exportSoC( );
     exportOtherSeeding( );
     defaults::exportDefaults( );

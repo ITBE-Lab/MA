@@ -857,6 +857,12 @@ class Pack : public Container
         return startOfSequenceWithId( iSequenceId ) + xVectorOfSequenceDescriptors[ iSequenceId ].uiLengthUnpacked;
     } // method
 
+    bool isForwPositionInSequenceWithId( size_t iSequenceId, uint64_t uiPosition ) const
+    {
+        assert( iSequenceId < xVectorOfSequenceDescriptors.size( ) );
+        assert( uiPosition < uiStartOfReverseStrand( ) );
+        return startOfSequenceWithId( iSequenceId ) <= uiPosition && uiPosition < endOfSequenceWithId( iSequenceId );
+    } // method
 
     /* Start of in sequence with id on forward strand.
      */
@@ -969,6 +975,7 @@ class Pack : public Container
 
         return uiMid;
     } // method
+
 
     /* Name of the sequence on position.
      */

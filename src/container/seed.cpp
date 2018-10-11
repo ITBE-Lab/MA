@@ -24,6 +24,7 @@ void exportSeed( )
     // export the Seed class
     boost::python::class_<Seed, boost::python::bases<Interval<nucSeqIndex>>>( "Seed" )
         .def_readwrite( "start_ref", &Seed::uiPosOnReference )
+        .def_readwrite( "on_forward_strand", &Seed::bOnForwStrand )
         .def( "__eq__", &Seed::operator==);
 
 

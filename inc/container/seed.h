@@ -10,11 +10,13 @@
 #include "container/interval.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
+#include <algorithm>
 #include <list>
 /// @endcond
 
 #define DELTA_CACHE ( 1 )
-#define CONTIG_ID_CACHE ( 0 )
+#define CONTIG_ID_IN_DELTA ( 1 )
+#define CONTIG_ID_CACHE ( 0 ) // DEPRECATED
 
 namespace libMA
 {
@@ -35,6 +37,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
     ///@brief the beginning of the match on the reference
     nucSeqIndex uiPosOnReference;
     unsigned int uiAmbiguity;
+    bool bOnForwStrand;
 #if DELTA_CACHE == ( 1 )
     nucSeqIndex uiDelta = 0;
 #endif
@@ -45,28 +48,33 @@ class Seed : public Container, public Interval<nucSeqIndex>
     /**
      * @brief Creates a new Seed.
      */
-    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength,
-          const nucSeqIndex uiPosOnReference )
-        : Interval( uiPosOnQuery, uiLength ), uiPosOnReference( uiPosOnReference ), uiAmbiguity( 0 )
+    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength, const nucSeqIndex uiPosOnReference,
+          const bool bOnForwStrand )
+        : Interval( uiPosOnQuery, uiLength ),
+          uiPosOnReference( uiPosOnReference ),
+          uiAmbiguity( 0 ),
+          bOnForwStrand( bOnForwStrand )
     {} // constructor
 
     /**
      * @brief Creates a new Seed.
      */
-    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength,
-          const nucSeqIndex uiPosOnReference, const unsigned int uiAmbiguity )
+    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength, const nucSeqIndex uiPosOnReference,
+          const unsigned int uiAmbiguity, const bool bOnForwStrand )
         : Interval( uiPosOnQuery, uiLength ),
           uiPosOnReference( uiPosOnReference ),
-          uiAmbiguity( uiAmbiguity )
+          uiAmbiguity( uiAmbiguity ),
+          bOnForwStrand( bOnForwStrand )
     {} // constructor
 
     /**
      * @brief Copys from a Seed.
      */
-    Seed( const Seed &rOther )
+    Seed( const Seed& rOther )
         : Interval( rOther ),
           uiPosOnReference( rOther.uiPosOnReference ),
-          uiAmbiguity( rOther.uiAmbiguity )
+          uiAmbiguity( rOther.uiAmbiguity ),
+          bOnForwStrand( rOther.bOnForwStrand )
 #if DELTA_CACHE == ( 1 )
           ,
           uiDelta( rOther.uiDelta )
@@ -112,11 +120,12 @@ class Seed : public Container, public Interval<nucSeqIndex>
     /**
      * @brief Copys from another Seed.
      */
-    inline Seed &operator=( const Seed &rxOther )
+    inline Seed& operator=( const Seed& rxOther )
     {
         Interval::operator=( rxOther );
         uiPosOnReference = rxOther.uiPosOnReference;
         uiAmbiguity = rxOther.uiAmbiguity;
+        bOnForwStrand = rxOther.bOnForwStrand;
 #if DELTA_CACHE == ( 1 )
         uiDelta = rxOther.uiDelta;
 #endif
@@ -130,13 +139,14 @@ class Seed : public Container, public Interval<nucSeqIndex>
      * @brief compares two Seeds.
      * @returns true if start and size are equal, false otherwise.
      */
-    inline bool operator==( const Seed &rxOther )
+    inline bool operator==( const Seed& rxOther )
     {
-        return Interval::operator==( rxOther ) && uiPosOnReference == rxOther.uiPosOnReference;
+        return Interval::operator==( rxOther ) && uiPosOnReference == rxOther.uiPosOnReference &&
+               bOnForwStrand == rxOther.bOnForwStrand;
     } // operator
 
     // overload
-    inline bool canCast( const std::shared_ptr<Container> &c ) const
+    inline bool canCast( const std::shared_ptr<Container>& c ) const
     {
         return std::dynamic_pointer_cast<Seed>( c ) != nullptr;
     } // function
@@ -190,7 +200,7 @@ class AlignmentStatistics
           uiInitialRefEnd( 0 )
     {}
 
-    void operator=( const AlignmentStatistics &rOther )
+    void operator=( const AlignmentStatistics& rOther )
     {
         index_of_strip = rOther.index_of_strip;
         num_seeds_in_strip = rOther.num_seeds_in_strip;
@@ -257,29 +267,11 @@ class Seeds : public Container
     Seeds( size_t numElements ) : vContent( numElements )
     {} // constructor
 
-    // overload
-    inline bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<Seeds>( c ) != nullptr;
-    } // method
-
-    // overload
-    inline std::string getTypeName( ) const
-    {
-        return "Seeds";
-    } // method
-
-    // overload
-    inline std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Seeds( ) );
-    } // method
-
     /// @brief returns the sum off all scores within the list
     inline nucSeqIndex getScore( ) const
     {
         nucSeqIndex iRet = 0;
-        for( const Seed &rS : *this )
+        for( const Seed& rS : *this )
             iRet += rS.getValue( );
         return iRet;
     } // function
@@ -287,7 +279,7 @@ class Seeds : public Container
     /// @brief append another seed set
     inline void append( const std::shared_ptr<Seeds> pOther )
     {
-        for( Seed &rS : pOther->vContent )
+        for( Seed& rS : pOther->vContent )
             push_back( rS );
     } // method
 
@@ -301,20 +293,44 @@ class Seeds : public Container
     } // method
 
     // setter
-    inline value_type &operator[]( size_type uiI )
+    inline value_type& operator[]( size_type uiI )
     {
         return vContent[ uiI ];
     } // operator
 
     // getter
-    inline const value_type &operator[]( size_type uiI ) const
+    inline const value_type& operator[]( size_type uiI ) const
     {
         return vContent[ uiI ];
     } // operator
 
-    inline void push_back( const value_type &value )
+    inline void push_back( const value_type& value )
     {
         vContent.push_back( value );
+    } // method
+
+    inline std::shared_ptr<Seeds> splitOnStrands( nucSeqIndex uiReferenceLength, nucSeqIndex uiQueryLength )
+    {
+        auto pRet = std::make_shared<Seeds>( );
+        std::cout << "Spliting " << vContent.size() << " seeds." << std::endl;
+        // move all seeds on reverse strand to pRet and erase them from here
+        vContent.erase( std::remove_if( vContent.begin( ), vContent.end( ),
+                                        [&]( const Seed& rSeed ) {
+                                            if( !rSeed.bOnForwStrand )
+                                            {
+                                                pRet->push_back( rSeed );
+                                                pRet->back( ).uiPosOnReference =
+                                                    uiReferenceLength * 2 - pRet->back( ).end_ref( ) + 1;
+                                                pRet->back( ).iStart =
+                                                    uiQueryLength - pRet->back( ).end( ) + 1;
+                                                return true;
+                                            } // if
+                                            return false;
+                                        } ),
+                        vContent.end( ) );
+        std::cout << "Forward: " << vContent.size() << std::endl;
+        std::cout << "Reverse: " << pRet->size() << std::endl;
+        return pRet;
     } // method
 
     inline void pop_back( void )
@@ -322,7 +338,7 @@ class Seeds : public Container
         vContent.pop_back( );
     } // method
 
-    template <class... Args> inline void emplace_back( Args &&... args )
+    template <class... Args> inline void emplace_back( Args&&... args )
     {
         vContent.emplace_back( args... );
     } // method
@@ -337,22 +353,22 @@ class Seeds : public Container
         return vContent.empty( );
     } // method
 
-    inline value_type &front( void )
+    inline value_type& front( void )
     {
         return vContent.front( );
     } // method
 
-    inline value_type &back( void )
+    inline value_type& back( void )
     {
         return vContent.back( );
     } // method
 
-    inline const value_type &front( void ) const
+    inline const value_type& front( void ) const
     {
         return vContent.front( );
     } // method
 
-    inline const value_type &back( void ) const
+    inline const value_type& back( void ) const
     {
         return vContent.back( );
     } // method
@@ -387,13 +403,12 @@ class Seeds : public Container
         vContent.erase( first, last );
     } // method
 
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const value_type &value )
+    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const value_type& value )
     {
         return vContent.insert( pos, value );
     } // method
 
-    template <class InputIt>
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
+    template <class InputIt> inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
     {
         return vContent.insert( pos, first, last );
     } // method

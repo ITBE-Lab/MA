@@ -82,7 +82,7 @@ std::shared_ptr<Seeds> Harmonization::applyFilters( std::shared_ptr<Seeds>& pIn 
             uiGap *= iExtend;
             if( uiGap > 0 )
                 uiGap += iGap;
-#if 0
+#if 0 // @todo cleanup pls
             nucSeqIndex uiGapY = 
                 pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
             if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )

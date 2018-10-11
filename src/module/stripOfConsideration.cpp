@@ -100,13 +100,28 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
             SoCOrder xCurrScore;
             std::vector<Seed>::iterator xStripStart = pSeeds->begin( );
             std::vector<Seed>::iterator xStripEnd = pSeeds->begin( );
+#if CONTIG_ID_IN_DELTA == ( 1 )
+            size_t uiContigIdStart = pRefSeq->uiSequenceIdForPosition( xStripStart->start_ref( ) );
+            size_t uiContigIdEnd = pRefSeq->uiSequenceIdForPosition( xStripEnd->start_ref( ) );
+            assert( pRefSeq->isForwPositionInSequenceWithId( uiContigIdStart, xStripStart->start_ref( ) ) );
+            assert( pRefSeq->isForwPositionInSequenceWithId( uiContigIdEnd, xStripEnd->start_ref( ) ) );
+#endif
             while( xStripEnd != pSeeds->end( ) && xStripStart != pSeeds->end( ) )
             {
+#if CONTIG_ID_IN_DELTA == ( 1 )
+                // xStripStart might have moved forward so adjust uiContigIdStart.
+                assert( (int64_t)uiContigIdStart <= pRefSeq->uiSequenceIdForPosition( xStripStart->start_ref( ) ) );
+                // adjust the contig id
+                while( !pRefSeq->isForwPositionInSequenceWithId( uiContigIdStart, xStripStart->start_ref( ) ) )
+                    uiContigIdStart++;
+#endif
                 // move xStripEnd forwards while it is closer to xStripStart than uiStripSize
                 while( xStripEnd != pSeeds->end( ) &&
                        getPositionForBucketing( uiQLen, *xStripStart ) + uiStripSize >=
                            getPositionForBucketing( uiQLen, *xStripEnd )
-
+#if CONTIG_ID_IN_DELTA == ( 1 )
+                       && uiContigIdStart == uiContigIdEnd
+#endif
 #if CONTIG_ID_CACHE == ( 1 )
                        && xStripStart->uiContigId == xStripEnd->uiContigId
 #endif
@@ -116,6 +131,23 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
                     xCurrScore += *xStripEnd;
                     // move the iterator forward
                     xStripEnd++;
+#if CONTIG_ID_IN_DELTA == ( 1 )
+                    if( xStripEnd != pSeeds->end( ) )
+                    {
+#if DEBUG_LEVEL > 0
+                        int64_t uiExpectedContigIdEnd = pRefSeq->uiSequenceIdForPosition( xStripEnd->start_ref( ) );
+                        if( (int64_t)uiContigIdEnd > uiExpectedContigIdEnd )
+                        {
+                            std::cerr << "got wierd contig id: " << uiContigIdEnd << " " << uiExpectedContigIdEnd
+                                      << std::endl;
+                            assert( false );
+                        } // if
+#endif
+                        // adjust the contig id
+                        while( !pRefSeq->isForwPositionInSequenceWithId( uiContigIdEnd, xStripEnd->start_ref( ) ) )
+                            uiContigIdEnd++;
+                    } // if
+#endif
                 } // while
 
 
@@ -135,11 +167,9 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
                 xCurrScore -= *( xStripStart++ );
             } // while
 
-
             // make a max heap from the SOC starting points according to the scores,
             // so that we can extract the best SOC first
             pSoCs->make_heap( );
-
 
 #if MEASURE_DURATIONS == ( 1 )
         } // lambda
