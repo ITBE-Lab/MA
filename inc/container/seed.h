@@ -14,10 +14,6 @@
 #include <list>
 /// @endcond
 
-#define DELTA_CACHE ( 1 )
-#define CONTIG_ID_IN_DELTA ( 1 )
-#define CONTIG_ID_CACHE ( 0 ) // DEPRECATED
-
 namespace libMA
 {
 ///@brief any index on the query or reference nucleotide sequence is given in this datatype
@@ -38,12 +34,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
     nucSeqIndex uiPosOnReference;
     unsigned int uiAmbiguity;
     bool bOnForwStrand;
-#if DELTA_CACHE == ( 1 )
     nucSeqIndex uiDelta = 0;
-#endif
-#if CONTIG_ID_CACHE == ( 1 )
-    size_t uiContigId = 0;
-#endif
 
     /**
      * @brief Creates a new Seed.
@@ -74,15 +65,8 @@ class Seed : public Container, public Interval<nucSeqIndex>
         : Interval( rOther ),
           uiPosOnReference( rOther.uiPosOnReference ),
           uiAmbiguity( rOther.uiAmbiguity ),
-          bOnForwStrand( rOther.bOnForwStrand )
-#if DELTA_CACHE == ( 1 )
-          ,
+          bOnForwStrand( rOther.bOnForwStrand ),
           uiDelta( rOther.uiDelta )
-#endif
-#if CONTIG_ID_CACHE == ( 1 )
-          ,
-          uiContigId( rOther.uiContigId )
-#endif
     {} // copy constructor
 
     /**
@@ -126,12 +110,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
         uiPosOnReference = rxOther.uiPosOnReference;
         uiAmbiguity = rxOther.uiAmbiguity;
         bOnForwStrand = rxOther.bOnForwStrand;
-#if DELTA_CACHE == ( 1 )
         uiDelta = rxOther.uiDelta;
-#endif
-#if CONTIG_ID_CACHE == ( 1 )
-        uiContigId = rxOther.uiContigId;
-#endif
         return *this;
     } // operator
 
@@ -309,27 +288,83 @@ class Seeds : public Container
         vContent.push_back( value );
     } // method
 
-    inline std::shared_ptr<Seeds> splitOnStrands( nucSeqIndex uiReferenceLength, nucSeqIndex uiQueryLength )
+    inline size_type size( void ) const
+    {
+        return vContent.size( );
+    } // method
+
+    inline bool mainStrandIsForward( ) const
+    {
+        size_type uiForw = 0;
+        size_type uiRev = 0;
+        for( const Seed& rS : vContent )
+        {
+            if( rS.bOnForwStrand )
+                uiForw++;
+            else
+                uiRev++;
+            if( uiForw * 2 >= size( ) )
+                return true;
+            if( uiRev * 2 >= size( ) )
+                return false;
+        } // for
+        return uiForw >= uiRev;
+    } // method
+
+    inline void mirror( nucSeqIndex uiReferenceLength, nucSeqIndex uiQueryLength )
+    {
+        for( Seed& rS : vContent )
+        {
+            rS.uiPosOnReference = uiReferenceLength * 2 - rS.end_ref( ) + 1;
+            rS.iStart = uiQueryLength - rS.start( );
+        } // for
+    } // method
+
+    inline void flipOnQuery( nucSeqIndex uiQueryLength )
+    {
+        nucSeqIndex uiTop = 0;
+        nucSeqIndex uiBottom = uiQueryLength - vContent.front( ).start( );
+        for( Seed& rS : vContent )
+        {
+            rS.iStart = uiQueryLength - rS.start( );
+            // get top and bottom
+            uiTop = std::max( uiTop, rS.end( ) );
+            uiBottom = std::min( uiBottom, rS.start( ) );
+        } // for
+        nucSeqIndex uiCenter = ( uiTop + uiBottom ) / 2;
+        for( Seed& rS : vContent )
+        {
+            int64_t uiMovDist = ( int64_t )( rS.start( ) + rS.end() ) / 2 - (int64_t)uiCenter;
+            int64_t uiNewPos = rS.iStart - uiMovDist * 2;
+            assert(uiNewPos >= 0);
+            rS.iStart = ( nucSeqIndex )( uiNewPos );
+        } // for
+    } // method
+
+    inline std::shared_ptr<Seeds> extractStrand( bool bStrand )
     {
         auto pRet = std::make_shared<Seeds>( );
-        std::cout << "Spliting " << vContent.size() << " seeds." << std::endl;
-        // move all seeds on reverse strand to pRet and erase them from here
+        // move all seeds on bStrand to pRet and erase them from here
         vContent.erase( std::remove_if( vContent.begin( ), vContent.end( ),
                                         [&]( const Seed& rSeed ) {
-                                            if( !rSeed.bOnForwStrand )
+                                            if( rSeed.bOnForwStrand == bStrand )
                                             {
                                                 pRet->push_back( rSeed );
-                                                pRet->back( ).uiPosOnReference =
-                                                    uiReferenceLength * 2 - pRet->back( ).end_ref( ) + 1;
-                                                pRet->back( ).iStart =
-                                                    uiQueryLength - pRet->back( ).end( ) + 1;
                                                 return true;
                                             } // if
                                             return false;
                                         } ),
                         vContent.end( ) );
-        std::cout << "Forward: " << vContent.size() << std::endl;
-        std::cout << "Reverse: " << pRet->size() << std::endl;
+        return pRet;
+    } // method
+
+    inline std::shared_ptr<Seeds> splitOnStrands( nucSeqIndex uiReferenceLength, nucSeqIndex uiQueryLength )
+    {
+        std::cout << "Spliting " << vContent.size( ) << " seeds." << std::endl;
+        auto pRet = extractStrand( true );
+        pRet->mirror( uiReferenceLength, uiQueryLength );
+        std::cout << "Forward: " << vContent.size( ) << std::endl;
+        std::cout << "Reverse: " << pRet->size( ) << std::endl;
         return pRet;
     } // method
 
@@ -341,11 +376,6 @@ class Seeds : public Container
     template <class... Args> inline void emplace_back( Args&&... args )
     {
         vContent.emplace_back( args... );
-    } // method
-
-    inline size_type size( void ) const
-    {
-        return vContent.size( );
     } // method
 
     inline bool empty( void ) const

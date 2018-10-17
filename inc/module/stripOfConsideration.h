@@ -100,58 +100,25 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
     inline void emplaceAllNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
-        rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiQLen, uiMaxAmbiguity, uiMinLen, rvSeedVector,
-                                            [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]( ) {
-        /*
-         * @note this bridging check is not required since we check weather a SoC
-         * is brigding in general.
-         * If any of the seeds within a SoC are bridging then the SoC is bridging.
-         * Could turn this into a debug assertion...
-         */
-#if 0 // enable / disable the bridging check for all seeds
-                    constexpr const nucSeqIndex addSize = 0;
-                    auto& rS = rvSeedVector.back();
-                    // check if the match is bridging the forward/reverse strand 
-                    // or bridging between two chromosomes
-                    if ( rxRefSequence.bridgingSubsection(
-                            //prevent negative index
-                            rS.start_ref() > addSize ? rS.start_ref() - addSize : 0,//from
-                            //prevent index larger than reference
-                            rS.end_ref() + addSize <= rxFM_index.getRefSeqLength() ?
-                                rS.size() - 1 + addSize :
-                                rxFM_index.getRefSeqLength() - rS.start_ref() - 1//to
-                            ) 
-                        )
-                    {
-                        //if bridging remove this seed
-                        rvSeedVector.pop_back();
-                    }//if
-#if DELTA_CACHE == ( 1 )
-                    else
-                    {
-                        // set the delta cache
-                        rS.uiDelta = getPositionForBucketing( uiQLen, rS );
-                    }// else
-#endif
-#elif DELTA_CACHE == ( 1 )
-                                                rvSeedVector.back( ).uiDelta =
-                                                    getPositionForBucketing( uiQLen, rvSeedVector.back( ) );
-#if CONTIG_ID_IN_DELTA == ( 1 )
-                                                size_t uiContig = rxRefSequence.uiSequenceIdForPosition(
-                                                    rvSeedVector.back( ).start_ref( ) );
-                                                // move the delta position to the right by the contig index
-                                                // this way we ensure seeds are ordered by contigs first
-                                                // and then their delta positions within the contig.
-                                                rvSeedVector.back( ).uiDelta += ( uiQLen + 10 ) * uiContig;
-#endif
-#endif
-#if CONTIG_ID_CACHE == ( 1 )
-                                                rvSeedVector.back( ).uiContigId = rxRefSequence.uiSequenceIdForPosition(
-                                                    rvSeedVector.back( ).start_ref( ) );
-#endif
-                                                // returning true since we want to continue extracting seeds
-                                                return true;
-                                            } // lambda
+        rSegmentVector.emplaceAllEachSeeds(
+            rxFM_index, uiQLen, uiMaxAmbiguity, uiMinLen, rvSeedVector,
+            [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]( ) {
+                /*
+                 * @note this bridging check is not required since we check weather a SoC
+                 * is brigding in general.
+                 * If any of the seeds within a SoC are bridging then the SoC is bridging.
+                 * Could turn this into a debug assertion...
+                 */
+                rvSeedVector.back( ).uiDelta = getPositionForBucketing( uiQLen, rvSeedVector.back( ) );
+
+                size_t uiContig = rxRefSequence.uiSequenceIdForPosition( rvSeedVector.back( ).start_ref( ) );
+                // move the delta position to the right by the contig index
+                // this way we ensure seeds are ordered by contigs first
+                // and then their delta positions within the contig.
+                rvSeedVector.back( ).uiDelta += ( uiQLen + 10 ) * uiContig;
+                // returning true since we want to continue extracting seeds
+                return true;
+            } // lambda
         );
     } // method
 

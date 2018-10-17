@@ -22,7 +22,7 @@ namespace libMA
  * Removes all contradicting seeds.
  * This should only be used in combination with the StripOfConsideration module.
  */
-class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq>
+class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
 {
   private:
     /**
@@ -78,7 +78,20 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
         return std::abs( x - x_1 );
     } // method
 
+    std::pair<double, double> ransac( std::shared_ptr<libMA::Seeds> pSeedsIn );
+
+    std::shared_ptr<libMA::Seeds> applyLinesweeps( std::shared_ptr<libMA::Seeds> pSeedsIn
+#if DEBUG_LEVEL > 0
+                                                   ,
+                                                   std::shared_ptr<SoCPriorityQueue>
+                                                       pSoCIn,
+                                                   bool bRecord
+#endif
+    );
+
     std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds>& pIn ) const;
+
+    std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> cluster( std::shared_ptr<Seeds> pSeedsIn ) const;
 
   public:
     /**
@@ -146,7 +159,8 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 
     // overload
     virtual std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
-        EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery );
+        EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery,
+                          std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 } // namespace libMA

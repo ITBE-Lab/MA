@@ -68,7 +68,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( std::shared_ptr<
         auto pQuery = promiseMe( pLock, pQueries );
         auto pSeeds = promiseMe( pSeeding, pFMDIndex, pQuery );
         auto pSOCs = promiseMe( pSOC, pSeeds, pQuery, pPack, pFMDIndex );
-        auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery );
+        auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery, pFMDIndex );
         auto pAlignments = promiseMe( pDP, pHarmonized, pQuery, pPack );
         auto pAlignmentsWQuality = promiseMe( pMappingQual, pQuery, pAlignments );
         auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
@@ -109,8 +109,8 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( std::share
         auto pSeedsB = promiseMe( pSeeding, pFMDIndex, pQueryB );
         auto pSOCsA = promiseMe( pSOC, pSeedsA, pQueryA, pPack, pFMDIndex );
         auto pSOCsB = promiseMe( pSOC, pSeedsB, pQueryB, pPack, pFMDIndex );
-        auto pHarmonizedA = promiseMe( pHarmonization, pSOCsA, pQueryA );
-        auto pHarmonizedB = promiseMe( pHarmonization, pSOCsB, pQueryB );
+        auto pHarmonizedA = promiseMe( pHarmonization, pSOCsA, pQueryA, pFMDIndex );
+        auto pHarmonizedB = promiseMe( pHarmonization, pSOCsB, pQueryB, pFMDIndex );
         auto pAlignmentsA = promiseMe( pDP, pHarmonizedA, pQueryA, pPack );
         auto pAlignmentsB = promiseMe( pDP, pHarmonizedB, pQueryB, pPack );
         auto pAlignmentsWQualityA = promiseMe( pMappingQual, pQueryA, pAlignmentsA );

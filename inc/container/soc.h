@@ -38,7 +38,7 @@ class SoCOrder
      * @details
      * Adjusts all three stored values accordingly.
      */
-    inline void operator+=( const Seed &rS )
+    inline void operator+=( const Seed& rS )
     {
         uiSeedAmbiguity += rS.uiAmbiguity;
         uiSeedAmount++;
@@ -53,7 +53,7 @@ class SoCOrder
      * was added to this SoC score before.
      * Otherwise this may result in undefined behaviour while sorting SoCs.
      */
-    inline void operator-=( const Seed &rS )
+    inline void operator-=( const Seed& rS )
     {
         assert( uiSeedAmbiguity >= rS.uiAmbiguity );
         uiSeedAmbiguity -= rS.uiAmbiguity;
@@ -68,7 +68,7 @@ class SoCOrder
      * Compares the accumulative seed length and
      * uses the accumulative ambiguity as a tie breaker.
      */
-    inline bool operator<( const SoCOrder &rOther ) const
+    inline bool operator<( const SoCOrder& rOther ) const
     {
         if( uiAccumulativeLength == rOther.uiAccumulativeLength )
             return uiSeedAmbiguity > rOther.uiSeedAmbiguity;
@@ -81,7 +81,7 @@ class SoCOrder
      * Compares the accumulative seed length and
      * uses the accumulative ambiguity as a tie breaker.
      */
-    inline void operator=( const SoCOrder &rOther )
+    inline void operator=( const SoCOrder& rOther )
     {
         uiAccumulativeLength = rOther.uiAccumulativeLength;
         uiSeedAmbiguity = rOther.uiSeedAmbiguity;
@@ -102,9 +102,8 @@ class SoCPriorityQueue : public Container
     class blub
     {
       public:
-        nucSeqIndex first = 0, second = 0, qCoverage = 0, rStart = 0, rEnd = 0, rStartSoC = 0,
-                    rEndSoC = 0;
-        inline void operator=( const blub &rOther )
+        nucSeqIndex first = 0, second = 0, qCoverage = 0, rStart = 0, rEnd = 0, rStartSoC = 0, rEndSoC = 0;
+        inline void operator=( const blub& rOther )
         {
             first = rOther.first;
             second = rOther.second;
@@ -114,11 +113,10 @@ class SoCPriorityQueue : public Container
             rStartSoC = rOther.rStartSoC;
             rEndSoC = rOther.rEndSoC;
         } // operator
-        inline bool operator==( const blub &rOther ) const
+        inline bool operator==( const blub& rOther ) const
         {
-            return first == rOther.first && second == rOther.second &&
-                   qCoverage == rOther.qCoverage && rStart == rOther.rStart &&
-                   rEnd == rOther.rEnd && rStartSoC == rOther.rStartSoC &&
+            return first == rOther.first && second == rOther.second && qCoverage == rOther.qCoverage &&
+                   rStart == rOther.rStart && rEnd == rOther.rEnd && rStartSoC == rOther.rStartSoC &&
                    rEndSoC == rOther.rEndSoC;
         } // operator
     };
@@ -128,23 +126,22 @@ class SoCPriorityQueue : public Container
     std::vector<double> vSlopes;
     std::vector<double> vIntercepts;
     std::vector<std::shared_ptr<Seeds>> vIngroup;
+    nucSeqIndex uiQLen;
 #endif
     /// @brief The index of the next SoC during the extraction process.
     unsigned int uiSoCIndex = 0;
     /// @brief The complete seed set.
     std::shared_ptr<Seeds> pSeeds;
     /// @brief Contains the SoCs in for of tuples (score, start, end).
-    std::vector<std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>>
-        vMaxima;
+    std::vector<std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>> vMaxima;
     /// @brief End position of the last SoC during collection; required to determine overlaps.
     nucSeqIndex uiLastEnd = 0;
     /// @brief Function used to for the make_max_heap call.
-    static bool heapOrder(
-        const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator> &rA,
-        const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator> &rB )
+    static bool heapOrder( const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>& rA,
+                           const std::tuple<SoCOrder, std::vector<Seed>::iterator, std::vector<Seed>::iterator>& rB )
     {
         return std::get<0>( rA ) < std::get<0>( rB );
-    } // function
+    } // method
 
     /**
      * @brief Create a new SoC priority queue with pSeeds as the seed set.
@@ -172,28 +169,65 @@ class SoCPriorityQueue : public Container
     }
 
     // overload
-    inline bool canCast( const std::shared_ptr<Container> &c ) const
+    inline bool canCast( const std::shared_ptr<Container>& c ) const
     {
         return std::dynamic_pointer_cast<SoCPriorityQueue>( c ) != nullptr;
-    } // function
+    } // method
 
     // overload
     inline std::string getTypeName( ) const
     {
         return "SoCPriorityQueue";
-    } // function
+    } // method
 
     // overload
     inline std::shared_ptr<Container> getType( ) const
     {
         return std::shared_ptr<Container>( new SoCPriorityQueue( ) );
-    } // function
+    } // method
 
     /// @brief Returns weather the queue is empty (usable in either state).
     inline bool empty( ) const
     {
         return vMaxima.empty( );
-    } // function
+    } // method
+
+    inline void rectangularSoC( )
+    {
+        std::vector<std::pair<nucSeqIndex, nucSeqIndex>> vRefPosMaxima;
+        // populate vRefPosMaxima with the reference start and end positions of all SoCs.
+        for( auto& tSoC : vMaxima )
+        {
+            auto xItStart = std::get<1>( tSoC );
+            auto xItEnd = std::get<2>( tSoC );
+            vRefPosMaxima.emplace_back( xItStart->start_ref( ), xItStart->start_ref( ) );
+            while( xItStart != xItEnd )
+            {
+                vRefPosMaxima.back( ).first = std::min( vRefPosMaxima.back( ).first, xItStart->start_ref( ) );
+                vRefPosMaxima.back( ).second = std::max( vRefPosMaxima.back( ).second, xItStart->start_ref( ) );
+                xItStart++;
+            } // while
+        } // for
+        // sort seeds after the start and end positions.
+        std::sort( pSeeds->begin( ), pSeeds->end( ),
+                   []( const Seed& rA, const Seed& rB ) { return rA.start_ref( ) < rB.start_ref( ); } );
+        // repopulate vMaxima
+        vMaxima.clear( );
+        for( auto& rP : vRefPosMaxima )
+        {
+            vMaxima.emplace_back( );
+            std::get<1>( vMaxima.back( ) ) =
+                std::lower_bound( pSeeds->begin( ), pSeeds->end( ), rP.first,
+                                  []( const Seed& rS, nucSeqIndex uiPos ) { return rS.start_ref( ) < uiPos; } );
+            auto xIt = std::get<1>( vMaxima.back( ) );
+            while( xIt != pSeeds->end( ) && xIt->start_ref( ) <= rP.second )
+            {
+                std::get<0>( vMaxima.back( ) ) += *xIt;
+                xIt++;
+            } // while
+            std::get<2>( vMaxima.back( ) ) = xIt;
+        } // for
+    } // method
 
     /**
      * @brief Returns the first SoC (usable in second state only).
@@ -239,15 +273,13 @@ class SoCPriorityQueue : public Container
             pRet->push_back( *( xCollect2++ ) );
         } // while
 
-        DEBUG( vSoCs.push_back( pRet ); )
-
 
         // move to the next strip
         std::pop_heap( vMaxima.begin( ), vMaxima.end( ), heapOrder );
         vMaxima.pop_back( );
 
         return pRet;
-    } // function
+    } // method
 
     /**
      * @brief Add a new SoC (usable in first state only).
@@ -259,14 +291,12 @@ class SoCPriorityQueue : public Container
      * Otherwise the new SoC is merely pushed onto the stack.
      * @note itStripEnd points to one element past end of the SoC.
      */
-    inline void push_back_no_overlap( const SoCOrder &rCurrScore,
-                                      const std::vector<Seed>::iterator itStrip,
-                                      const std::vector<Seed>::iterator itStripEnd,
-                                      const nucSeqIndex uiCurrStart, const nucSeqIndex uiCurrEnd )
+    inline void push_back_no_overlap( const SoCOrder& rCurrScore, const std::vector<Seed>::iterator itStrip,
+                                      const std::vector<Seed>::iterator itStripEnd, const nucSeqIndex uiCurrStart,
+                                      const nucSeqIndex uiCurrEnd )
     {
         DEBUG( assert( !bInPriorityMode ); )
-        if( vMaxima.empty( ) || uiLastEnd < uiCurrStart ||
-            std::get<0>( vMaxima.back( ) ) < rCurrScore )
+        if( vMaxima.empty( ) || uiLastEnd < uiCurrStart || std::get<0>( vMaxima.back( ) ) < rCurrScore )
         {
             // if we reach this point we want to save the current SoC
             if( !vMaxima.empty( ) && uiLastEnd >= uiCurrStart )
@@ -280,7 +310,7 @@ class SoCPriorityQueue : public Container
             uiLastEnd = uiCurrEnd;
         } // if
         // else new and last SoC overlap and the new one has a lower score => ignore the new one
-    } // function
+    } // method
 
     /**
      * @brief switch to second state (usable in first state only).
@@ -295,7 +325,7 @@ class SoCPriorityQueue : public Container
         // make a max heap from the SOC starting points according to the scores,
         // so that we can extract the best SOC first
         std::make_heap( vMaxima.begin( ), vMaxima.end( ), heapOrder );
-    } // function
+    } // method
 }; // class
 } // namespace libMA
 

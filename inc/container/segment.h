@@ -312,7 +312,8 @@ class SegmentVector : public Container
                 if( !bOnForw )
                 {
                     ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ( ulIndexOnRefSeq + rSegment.size( ) );
-                    uiPosOnQuery = uiQLen - ( uiPosOnQuery + rSegment.size( ) );
+                    assert( uiPosOnQuery < uiQLen );
+                    uiPosOnQuery = uiQLen - uiPosOnQuery;
                 } // if
                 assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );
                 // call the given function
@@ -338,7 +339,7 @@ class SegmentVector : public Container
     )
     {
         forEachSeed( rxFMIndex, uiQLen, uiMAxAmbiguity, uiMinLen, true, [&]( Seed&& rS ) {
-            rvSeedVector.push_back(rS);
+            rvSeedVector.push_back( rS );
             return fDo( );
         } );
     } // function

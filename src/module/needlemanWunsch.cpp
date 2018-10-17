@@ -687,30 +687,6 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         else
 #endif
         {
-#if CONTIG_ID_CACHE == ( 1 )
-#if DEBUG_LEVEL > 0
-            std::cerr << "WARNING: computed bridging alignment:\n";
-            std::cerr << beginRef << " - " << endRef << std::endl;
-            std::cerr << pRefPack->nameOfSequenceForPosition( beginRef ) << " - "
-                      << pRefPack->nameOfSequenceForPosition( endRef ) << std::endl;
-            std::cerr << pRefPack->iAbsolutePosition( beginRef ) << " - " << pRefPack->iAbsolutePosition( endRef )
-                      << std::endl;
-            auto names = pRefPack->contigNames( );
-            auto starts = pRefPack->contigStarts( );
-            auto lengths = pRefPack->contigLengths( );
-            for( size_t i = 0; i < names.size( ); i++ )
-            {
-                if( starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) ||
-                    starts[ i ] + lengths[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
-                    std::cerr << names[ i ] << ": [" << starts[ i ] << "-" << starts[ i ] + lengths[ i ]
-                              << "] revComp: [" << pRefPack->uiPositionToReverseStrand( starts[ i ] ) << "-"
-                              << pRefPack->uiPositionToReverseStrand( starts[ i ] + lengths[ i ] ) << "]" << std::endl;
-                if( starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( beginRef ) &&
-                    starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
-                    break;
-            } // for
-#endif
-#endif
             std::shared_ptr<Alignment> pRet( new Alignment( ) );
             pRet->xStats = pSeeds->xStats;
             pRet->xStats.sName = pQuery->sName;
