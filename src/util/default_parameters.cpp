@@ -73,6 +73,9 @@ int64_t EXPORTED iMinSVDistance = 500;
 
 size_t EXPORTED uiZDrop = 200;
 
+/// @brief maximal distance between the deltas of the closest two seeds in a cluster
+uint64_t uiMaxDeltaDistanceInCLuster = 200;
+
 #ifdef WITH_PYTHON
 void exportDefaults( )
 {

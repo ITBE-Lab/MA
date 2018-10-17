@@ -91,7 +91,8 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 
     std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds>& pIn ) const;
 
-    std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> cluster( std::shared_ptr<Seeds> pSeedsIn ) const;
+    std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> cluster( std::shared_ptr<Seeds> pSeedsIn,
+                                                                      nucSeqIndex uiQLen ) const;
 
   public:
     /**
@@ -153,6 +154,8 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
     nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
 
     size_t uiSVPenalty = defaults::uiSVPenalty;
+
+    nucSeqIndex uiMaxDeltaDistanceInCLuster = defaults::uiMaxDeltaDistanceInCLuster;
 
     Harmonization( )
     {} // default constructor

@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/harmonization.h"
+#include "module/stripOfConsideration.h"
 #if USE_RANSAC == 1
 #include "sample_consensus/test_ransac.h"
 #endif
@@ -722,13 +723,28 @@ std::shared_ptr<libMA::Seeds> Harmonization::applyLinesweeps( std::shared_ptr<li
 } // method
 
 
-std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> Harmonization::cluster(std::shared_ptr<Seeds> pSeedsIn) const
+std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> Harmonization::cluster( std::shared_ptr<Seeds> pSeedsIn,
+                                                                                 nucSeqIndex uiQLen ) const
 {
-    //for(Seed& rS : *pSeedsIn)
-    //{
-    //    rS.
-    //}
-    return nullptr;
+    // set the delta values correctly
+    for( Seed& rS : *pSeedsIn )
+    {
+        rS.uiDelta = StripOfConsideration::getPositionForBucketing( uiQLen, rS );
+    } // for
+    // sort the seeds
+    std::sort( pSeedsIn->begin( ), pSeedsIn->end( ),
+               []( const Seed& rA, const Seed& rB ) { return rA.uiDelta < rB.uiDelta; } );
+    // walk over the sorted seeds and extract clusters
+    auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
+
+    // clustering
+    for( Seed& rS : *pSeedsIn )
+        if( pRet->empty( ) || pRet->back( )->back( ).uiDelta + uiMaxDeltaDistanceInCLuster < rS.uiDelta )
+            pRet->emplace_back( new Seeds{rS} );
+        else
+            pRet->back( )->push_back( rS );
+
+    return pRet;
 } // method
 
 std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
@@ -746,9 +762,10 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
         bool bPrimaryStrandIsForw = pPrimaryStrand->mainStrandIsForward( );
         auto pSecondaryStrand = pPrimaryStrand->extractStrand( !bPrimaryStrandIsForw );
 
-        while( !pSecondaryStrand->empty( ) )
+        auto pClustered = cluster( pSecondaryStrand, pQuery->length( ) );
+        for( auto pSeeds : *pClustered )
         {
-            auto pSecondarySeeds = applyLinesweeps( pSecondaryStrand /*,*/ DEBUG_PARAM( pSoCIn ) DEBUG_PARAM( false ) );
+            auto pSecondarySeeds = applyLinesweeps( pSeeds /*,*/ DEBUG_PARAM( pSoCIn ) DEBUG_PARAM( false ) );
             pSecondarySeeds->flipOnQuery( pQuery->length( ) );
             pPrimaryStrand->append( pSecondarySeeds );
             std::cout << "secondary sweep: " << pSecondarySeeds->size( ) << std::endl;

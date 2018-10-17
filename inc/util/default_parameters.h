@@ -67,6 +67,7 @@ extern EXPORTED size_t uiZDrop;
 extern EXPORTED size_t uiSVPenalty;
 extern EXPORTED int iMinBandwidthGapFilling;
 extern EXPORTED int iBandwidthDPExtension;
+extern EXPORTED uint64_t uiMaxDeltaDistanceInCLuster;
 
 inline void configureAccurate( )
 {
