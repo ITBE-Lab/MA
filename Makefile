@@ -30,8 +30,8 @@ else
 	CCFLAGS= -Wall -Werror -fPIC $(STD) -O3 -g -msse4.1
 endif
 LDFLAGS= $(STD)
-LDLIBS= -lm -lpthread -lstdc++ -Lcontrib/kswcpp/lib -lkswcpp
-INCLUDES= -Iinc -Icontrib/kswcpp/inc
+LDLIBS= -lm -lpthread -lstdc++ -Lcontrib/kswcpp/lib -lkswcpp -Lcontrib/sqlite3 -lsqlite3
+INCLUDES= -Iinc -Icontrib/kswcpp/inc -Icontrib/sqlite3 -Icontrib/CppSQLite
 
 # this adds debug switches
 ifeq ($(DEBUG), 1)
@@ -64,9 +64,13 @@ ifeq ($(WITH_POSTGRES), 1)
 	LDLIBS += -L$(POSTGRE_LIB_DIR) -lpq
 endif
 
+TARGET_OBJ += obj/CppSQLite3.o
 
 # primary target
 all: dirs build_ma
+
+sqlite3:
+	$(CC) $(CCFLAGS) $(INCLUDES) $(LDFLAGS) $(LDLIBS) src/util/sqlite3.cpp obj/CppSQLite3.o -o sqlite3_test
 
 # create build directories if not present
 dirs:
@@ -92,6 +96,9 @@ dbg/%.o: src/%.cpp inc/%.h
 
 # target for object files
 obj/%.o: src/%.cpp inc/%.h
+	$(CC) $(CCFLAGS) $(INCLUDES) -c $< -o $@
+
+obj/CppSQLite3.o: contrib/CppSQLite/CppSQLite3.cpp contrib/CppSQLite/CppSQLite3.h
 	$(CC) $(CCFLAGS) $(INCLUDES) -c $< -o $@
 
 # documentation generation
