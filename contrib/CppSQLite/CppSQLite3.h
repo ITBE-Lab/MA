@@ -10,10 +10,31 @@
 
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <sqlite3.h>
 #include <string>
 
 #define CPPSQLITE_ERROR 1000
+
+
+class SQL_BLOB
+{
+  public:
+    /// @note class must take case of deallocation itself!
+    virtual const unsigned char* toBlob( ) const
+    {
+        return nullptr;
+    };
+
+    virtual const size_t blobSize( ) const
+    {
+        return 0;
+    };
+
+    virtual void fromBlob( const unsigned char*, const size_t ){};
+}; // class
+
+std::ostream& operator<<( std::ostream& os, const SQL_BLOB& );
 
 class CppSQLite3Exception : public std::exception
 {
@@ -226,7 +247,8 @@ class CppSQLite3Statement
     void bind( int nParam, const long nValue );
     void bind( int nParam, const long long nValue );
     void bind( int nParam, const double dwValue );
-    void bind( int nParam, const unsigned char* blobValue, int nLen );
+    // void bind( int nParam, const unsigned char* blobValue, int nLen );
+    void bind( int nParam, const SQL_BLOB& rBlob );
     void bindNull( int nParam );
 
     void reset( );

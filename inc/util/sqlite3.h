@@ -219,12 +219,12 @@ struct GetTupleElement
         rValue = *rxQuery.getStringField( iFieldIndex );
     } // method
 
-    void getColumnElement( std::vector<unsigned char>& rValue, const int iFieldIndex )
+    void getColumnElement( SQL_BLOB& rValue, const int iFieldIndex )
     {
         /* Copies the blob content into a vector of bytes */
         int iBlobSize;
         const unsigned char* pBlobRef = rxQuery.getBlobField( iFieldIndex, iBlobSize );
-        rValue.insert( rValue.end( ), &pBlobRef[ 0 ], &pBlobRef[ iBlobSize ] );
+        rValue.fromBlob( pBlobRef, iBlobSize );
     } // method
 
     /* The trick within the operator is the overloading of getColumnElement.
@@ -934,6 +934,15 @@ class CppSQLiteExtImmediateTransactionContext
     } // destructor
 }; // class CppSQLiteExtTransactionContex
 
+
+template <typename TP_TYPE> std::string getSQLTypeName( )
+{
+    static_assert( std::is_base_of<SQL_BLOB, TP_TYPE>(),
+                   "Database column type must be either a primitive or inherit from SQL_BLOB!" );
+    return "BLOB";
+} // method
+
+
 /* C++ wrapper/interface for a SQL-table.
  */
 template <typename... Types> class CppSQLiteExtBasicTable
@@ -948,11 +957,11 @@ template <typename... Types> class CppSQLiteExtBasicTable
      */
     bool bAutomaticPrimaryKeyColumn;
 
+    // rxDatabaseColumns = the names and type of the database columns.
     /* Create the table within the associated database.
      * May throw an exception if the process fails.
      */
-    void
-    vCreateTableInDB( const std::vector<std::string>& rxDatabaseColumns ) // the names and type of the database columns.
+    void vCreateTableInDB( const std::vector<std::string>& rxDatabaseColumns )
     {
         /* Forward the creation of the table to the database object.
          * Improvement: Create a second statement, where we infer the column types in SQL from the C++ datatypes, given
@@ -960,6 +969,26 @@ template <typename... Types> class CppSQLiteExtBasicTable
          */
         rxDatabase.vCreateTable( rxDatabaseColumns, sTableName.c_str( ), bAutomaticPrimaryKeyColumn );
     } // method
+
+
+    /**
+     * @brief infer the type of each table column.
+     */
+    template <size_t N, typename TP_CURR, typename... TP_LIST> struct InferTypes
+    {
+        static void iterate( std::vector<std::string>& rxDatabaseColumns )
+        {
+            rxDatabaseColumns[ rxDatabaseColumns.size( ) - N ] += " " + getSQLTypeName<TP_CURR>();
+            InferTypes<N - 1, TP_LIST...>::iterate( rxDatabaseColumns );
+        } // method
+    }; // struct
+    template <typename TP_CURR> struct InferTypes<1, TP_CURR>
+    {
+        static void iterate( std::vector<std::string>& rxDatabaseColumns )
+        {
+            rxDatabaseColumns.back( ) += " " + getSQLTypeName<TP_CURR>();
+        } // method
+    }; // struct
 
   public:
     /* the name of the table
@@ -980,7 +1009,9 @@ template <typename... Types> class CppSQLiteExtBasicTable
         {
             /* If the database is opened in a "creation mode", we create the table within the database.
              */
-            vCreateTableInDB( rxDatabaseColumns );
+            std::vector<std::string> xTypedDatabaseColumns( rxDatabaseColumns );
+            InferTypes<sizeof...( Types ), Types...>::iterate( xTypedDatabaseColumns );
+            vCreateTableInDB( xTypedDatabaseColumns );
         } // if
     } // constructor
 }; // class

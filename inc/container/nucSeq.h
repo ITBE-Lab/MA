@@ -6,6 +6,7 @@
 #pragma once
 
 #include "container/seed.h"
+#include "util/sqlite3.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
@@ -142,6 +143,34 @@ class NucSeq : public Container
     std::string sName = "unknown";
     DEBUG( size_t uiFromLine = 0; ) // DEBUG
 
+
+    /** WARNING: the inner string might not null-terminated after this operation.
+     */
+    inline NucSeq& vAppend( const uint8_t* pSequence,
+#if WITH_QUALITY
+                            const uint8_t* pQuality,
+#endif
+                            size_t uxNumberOfElements )
+    {
+        size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
+
+        if( uxCapacity < uxRequestedSize )
+        {
+            vReserveMemory( uxRequestedSize );
+        } // if
+
+        /** WARNING: If we work later with non 8-bit data we have to be careful here
+         */
+        memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof( uint8_t ) );
+#if WITH_QUALITY
+        memcpy( this->pxQualityRef + uiSize, pQuality, uxNumberOfElements * sizeof( uint8_t ) );
+#endif
+
+        uiSize = uxRequestedSize;
+
+        return *this;
+    } // method
+
     /** Default constructor
      */
     NucSeq( )
@@ -175,6 +204,15 @@ class NucSeq : public Container
          * WARNING: Here we assume that the sizes for the types char and uint8_t are equal.
          */
         rSequence.vTransferOwnership( *this );
+    } // constructor
+
+    /** Move constructor on the foundation of text sequences.
+     * Reuses the space of the text-sequence! TO DO: move & to &&
+     */
+    NucSeq( const NucSeq& rOther )
+    {
+        vResetProtectedAttributes( );
+        vAppend( rOther.pxSequenceRef, rOther.uiSize );
     } // constructor
 
 
@@ -291,33 +329,6 @@ class NucSeq : public Container
     inline void vReverse( size_t uiFrom, size_t uiTo )
     {
         reverse( pxSequenceRef + uiFrom, uiTo - uiFrom );
-    } // method
-
-    /** WARNING: the inner string might not null-terminated after this operation.
-     */
-    inline NucSeq& vAppend( const uint8_t* pSequence,
-#if WITH_QUALITY
-                            const uint8_t* pQuality,
-#endif
-                            size_t uxNumberOfElements )
-    {
-        size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
-
-        if( uxCapacity < uxRequestedSize )
-        {
-            vReserveMemory( uxRequestedSize );
-        } // if
-
-        /** WARNING: If we work later with non 8-bit data we have to be careful here
-         */
-        memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof( uint8_t ) );
-#if WITH_QUALITY
-        memcpy( this->pxQualityRef + uiSize, pQuality, uxNumberOfElements * sizeof( uint8_t ) );
-#endif
-
-        uiSize = uxRequestedSize;
-
-        return *this;
     } // method
 
     /** Push back of a single symbol.
@@ -453,7 +464,7 @@ class NucSeq : public Container
     /** The symbol on some position in textual form.
      * We count starting from 0.
      */
-    inline char charAt(nucSeqIndex uxPosition )
+    inline char charAt( nucSeqIndex uxPosition )
     {
         if( uxPosition >= uiSize )
         {
@@ -520,16 +531,16 @@ class NucSeq : public Container
         return ret;
     } // function
 
-    std::string fromTo(nucSeqIndex uiStart, nucSeqIndex uiEnd )
+    std::string fromTo( nucSeqIndex uiStart, nucSeqIndex uiEnd )
     {
         std::string ret = "";
-        for(nucSeqIndex i = uiStart; i < uiEnd && i < length( ); i++ )
+        for( nucSeqIndex i = uiStart; i < uiEnd && i < length( ); i++ )
             ret += charAt( i );
         return ret;
     } // function
 
 #if WITH_QUALITY
-    std::string fromToQual(nucSeqIndex uiStart, nucSeqIndex uiEnd )
+    std::string fromToQual( nucSeqIndex uiStart, nucSeqIndex uiEnd )
     {
         std::string ret = "";
         for( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )
@@ -627,6 +638,30 @@ class NucSeq : public Container
         return vRet;
     } // method
 }; // class NucSeq
+
+class NucSeqSql : public SQL_BLOB
+{
+  public:
+    std::shared_ptr<NucSeq> pNucSeq;
+
+    const unsigned char* toBlob( ) const
+    {
+        return (unsigned char*)pNucSeq->pxSequenceRef;
+    } // method
+
+    const size_t blobSize( ) const
+    {
+        return pNucSeq->uiSize;
+    } // method
+
+    void fromBlob( const unsigned char* ucBlob, const size_t uiSize )
+    {
+        pNucSeq = std::make_shared<NucSeq>( );
+        pNucSeq->vClear( );
+        pNucSeq->vAppend( (const uint8_t*)ucBlob, uiSize );
+    } // method
+}; // class
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON

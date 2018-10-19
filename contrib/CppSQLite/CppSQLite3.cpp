@@ -9,6 +9,11 @@
 #include <cstdlib>
 
 
+std::ostream& operator<<( std::ostream& os, const SQL_BLOB& )
+{
+    return os << "<SQL_BLOB>";
+} // function
+
 // Named constant for passing to CppSQLite3Exception when passing it a string
 // that cannot be deleted.
 static const bool DONT_DELETE_MSG = false;
@@ -1030,16 +1035,28 @@ void CppSQLite3Statement::bind( int nParam, const double dValue )
 }
 
 
-void CppSQLite3Statement::bind( int nParam, const unsigned char* blobValue, int nLen )
+void CppSQLite3Statement::bind( int nParam, const SQL_BLOB& rBlob )
 {
     checkVM( );
-    int nRes = sqlite3_bind_blob( mpVM, nParam, (const void*)blobValue, nLen, SQLITE_TRANSIENT );
+    int nRes = sqlite3_bind_blob( mpVM, nParam, (const void*)rBlob.toBlob( ), rBlob.blobSize( ), SQLITE_TRANSIENT );
 
     if( nRes != SQLITE_OK )
     {
         throw CppSQLite3Exception( nRes, "Error binding blob param", DONT_DELETE_MSG );
     }
 }
+
+
+// void CppSQLite3Statement::bind( int nParam, const unsigned char* blobValue, int nLen )
+// {
+//     checkVM( );
+//     int nRes = sqlite3_bind_blob( mpVM, nParam, (const void*)blobValue, nLen, SQLITE_TRANSIENT );
+// 
+//     if( nRes != SQLITE_OK )
+//     {
+//         throw CppSQLite3Exception( nRes, "Error binding blob param", DONT_DELETE_MSG );
+//     }
+// }
 
 
 void CppSQLite3Statement::bindNull( int nParam )
@@ -1425,6 +1442,7 @@ sqlite3_stmt* CppSQLite3DB::compile_v2( const char* szSQL )
 int sqlite3_encode_binary( const unsigned char* xFilteredInputStreamBuf, int n, unsigned char* out )
 {
     int i, j, e, m;
+    e = 0;
     int cnt[ 256 ];
     if( n <= 0 )
     {

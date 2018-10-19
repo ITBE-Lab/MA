@@ -1,4 +1,57 @@
 #include "util/sqlite3.h"
+#include "container/nucSeq.h"
+
+// list of valied types:
+template <> std::string getSQLTypeName<std::string>( )
+{
+    return "TEXT";
+}
+// numeric:
+// full number:
+// sqLITE maps all numbers to INTEGER anyways?
+// signed
+template <> std::string getSQLTypeName<int8_t>( )
+{
+    return "INTEGER";
+}
+template <> std::string getSQLTypeName<int16_t>( )
+{
+    return "INTEGER";
+}
+template <> std::string getSQLTypeName<int32_t>( )
+{
+    return "INTEGER";
+}
+template <> std::string getSQLTypeName<int64_t>( )
+{
+    return "INTEGER";
+}
+
+// unsigned
+template <> std::string getSQLTypeName<uint8_t>( )
+{
+    return "INTEGER";
+}
+template <> std::string getSQLTypeName<uint16_t>( )
+{
+    return "INTEGER";
+}
+template <> std::string getSQLTypeName<uint32_t>( )
+{
+    return "INTEGER";
+}
+
+// template <> std::string SQLTypeName<uint64_t>::name = "INTEGER"; <- this is too large for sqlite3
+
+// floating point:
+template <> std::string getSQLTypeName<double>( )
+{
+    return "DOUBLE";
+}
+template <> std::string getSQLTypeName<float>( )
+{
+    return "FLOAT";
+}
 
 /* Initialize the two transaction statements.
  */
@@ -62,10 +115,11 @@ void CppSQLiteDBExtended::vCreateTable(
     sTableCreationStatement.append( xDatabaseColumns.back( ) ).append( ")" );
 
     /* Execute the table statement */
+    std::cout << sTableCreationStatement << std::endl;
     execDML( sTableCreationStatement.c_str( ) );
 } // method
 
-
+using namespace libMA;
 /** @brief SQLite interface usage example function
  */
 void doSqlite3Test( void )
@@ -86,29 +140,31 @@ void doSqlite3Test( void )
     //                       "table1" // sTableName
     // );
 
-    CppSQLiteExtTable<int, std::string> table1(
+    NucSeqSql xSeq;
+    xSeq.pNucSeq = std::make_shared<NucSeq>( "ACCGTG" );
+
+    CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, NucSeqSql> table1(
         xTestDB, // the database where the table resides
         "table1", // name of the table in the database
-        std::vector<std::string>{"number", "text"}, // column definitions of the table
-        false // true == we build automatically a column for the primary key
+        std::vector<std::string>{"number", "nucSeq"} // column definitions of the table
     );
     {
         CppSQLiteExtImmediateTransactionContext xTransactionContext( xTestDB );
         std::cout << "START INSERT" << std::endl;
-        table1.xInsertRow( 12, "abc " );
-        table1.xInsertRow( 14, "gfd " );
+        table1.xInsertRow( 12, xSeq );
+        table1.xInsertRow( 14, xSeq );
         std::cout << "END INSERT" << std::endl;
     }
     table1.vDump( std::cout );
-    table1.vForAllTableRowsUnpackedDo( []( int i, std::string s ) { std::cout << s << std::endl; } );
+    table1.vForAllTableRowsUnpackedDo( []( int, int64_t i, NucSeqSql s ) { std::cout << s.pNucSeq->toString( ) << std::endl; } );
 
-    CppSQLiteExtQueryStatement<int> statement ( xTestDB,
-                                                 std::string( "SELECT number FROM " ).append( "table1" ).c_str( ) );
-    statement.vExecuteAndForAllRowsUnpackedDo(  []( int i ) { std::cout << i << std::endl; });
+    CppSQLiteExtQueryStatement<int> statement( xTestDB, "SELECT number FROM table1" );
+    statement.vExecuteAndForAllRowsUnpackedDo( []( int64_t i ) { std::cout << i << std::endl; } );
 
 
 } // function
 
+#ifdef SQLITE_MAIN
 int main( void )
 {
     try
@@ -124,3 +180,4 @@ int main( void )
         std::cout << "Catched general exception" << std::endl;
     }
 } // function
+#endif

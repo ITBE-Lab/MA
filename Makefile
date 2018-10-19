@@ -70,7 +70,7 @@ TARGET_OBJ += obj/CppSQLite3.o
 all: dirs build_ma
 
 sqlite3:
-	$(CC) $(CCFLAGS) $(INCLUDES) $(LDFLAGS) $(LDLIBS) src/util/sqlite3.cpp obj/CppSQLite3.o -o sqlite3_test
+	$(CC) $(CCFLAGS) $(INCLUDES) $(LDFLAGS) $(LDLIBS) -DSQLITE_MAIN src/util/sqlite3.cpp src/container/nucSeq.cpp contrib/CppSQLite/CppSQLite3.cpp -o sqlite3_test
 
 # create build directories if not present
 dirs:
