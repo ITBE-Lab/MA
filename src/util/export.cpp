@@ -38,6 +38,7 @@ BOOST_PYTHON_MODULE( libMA )
     exportDBWriter( );
     exportSoC( );
     exportOtherSeeding( );
+    exportSoCDbWriter();
     defaults::exportDefaults( );
 } // function
 

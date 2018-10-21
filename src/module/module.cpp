@@ -24,8 +24,7 @@ void exportModuleClass( )
         .def( "set", &PyPledgeVector::set )
         .def( "append", &PyPledgeVector::append )
         .def( "get", &PyPledgeVector::get )
-        .def( "simultaneous_get", &PyPledgeVector::simultaneousGet )
-        .staticmethod( "simultaneous_get" )
+        .def( "simultaneous_get", &PyPledgeVector::simultaneousGetPy )
         .def_readwrite( "exec_time", &PyPledgeVector::execTime );
     boost::python::implicitly_convertible<std::shared_ptr<PyPledgeVector>, std::shared_ptr<BasePledge>>( );
 

@@ -282,6 +282,29 @@ class SoCPriorityQueue : public Container
     } // method
 
     /**
+     * @brief Returns information about the first SoC (usable in second state only).
+     * @details
+     * After the queue has been turned into a max heap you may extract the SoCs
+     * in order of their scores.
+     * Pop removes and the best SoC and returns information about it's start end and score.
+     */
+    inline std::tuple<nucSeqIndex, nucSeqIndex, uint32_t> pop_info( )
+    {
+        DEBUG( assert( !empty( ) ); assert( bInPriorityMode ); ) // DEBUG
+
+        // the information that shall be returned
+        nucSeqIndex uiStart = std::get<1>( vMaxima.front( ) )->start_ref();
+        nucSeqIndex uiEnd = std::get<2>( vMaxima.front( ) )->end_ref();
+        uint32_t uiScore = std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
+
+        // move to the next strip
+        std::pop_heap( vMaxima.begin( ), vMaxima.end( ), heapOrder );
+        vMaxima.pop_back( );
+
+        return std::make_tuple(uiStart, uiEnd, uiScore);
+    } // method
+
+    /**
      * @brief Add a new SoC (usable in first state only).
      * @details
      * While collecting SoCs this queue functions as a Stack.

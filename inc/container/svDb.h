@@ -6,6 +6,8 @@
 
 #include "container/container.h"
 #include "container/nucSeq.h"
+#include "container/soc.h"
+#include "module/module.h"
 #include "util/sqlite3.h"
 
 namespace libMA
@@ -28,12 +30,14 @@ class SV_DB : public CppSQLite3DB, public Container
         SequencerTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             : TP_SEQUENCER_TABLE( *pDatabase, // the database where the table resides
                                   "sequencer_table", // name of the table in the database
-                                  std::vector<std::string>{"name UNIQUE", "mode"} // column definitions of the table
-                                  ),
+                                  // column definitions of the table
+                                  std::vector<std::string>{"name", "mode"},
+                                  std::vector<std::string>{"unique_sequencer_name_constraint UNIQUE (name)"} ),
               pDatabase( pDatabase ),
-              xGetSequencerId( *pDatabase, "SELECT id FROM sequencer_table WHERE name == ?" )
+              xGetSequencerId( *pDatabase, "SELECT id FROM sequencer_table WHERE name = ?" )
         {
             pDatabase->execDML( "CREATE INDEX sequencer_id_index ON sequencer_table (id)" );
+            DEBUG(std::cout << "Created SequencerTable" << std::endl;)
         } // default constructor
 
         inline size_t insertSequencer( std::string& sSequencerName )
@@ -66,10 +70,11 @@ class SV_DB : public CppSQLite3DB, public Container
                   std::vector<std::string>{"sequencer_id", "name", "sequence", "paired_read_id"},
                   std::vector<std::string>{"read_name_sequencer_id_constraint UNIQUE (sequencer_id, name)"} ),
               pDatabase( pDatabase ),
-              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id == ? AND name == ?" ),
-              xUpdateReadId( *pDatabase, "UPDATE read_table SET paired_read_id = ? WHERE is == ?" )
+              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" ),
+              xUpdateReadId( *pDatabase, "UPDATE read_table SET paired_read_id = ? WHERE id = ?" )
         {
             pDatabase->execDML( "CREATE INDEX read_id_index ON read_table (id)" );
+            DEBUG(std::cout << "Created ReadTable" << std::endl;)
         } // default constructor
 
         inline int32_t insertRead( int32_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
@@ -79,10 +84,10 @@ class SV_DB : public CppSQLite3DB, public Container
         } // method
 
         inline std::pair<int32_t, int32_t> insertPairedRead( int32_t uiSequencerId, //
-                                                      std::shared_ptr<NucSeq>
-                                                          pReadA,
-                                                      std::shared_ptr<NucSeq>
-                                                          pReadB )
+                                                             std::shared_ptr<NucSeq>
+                                                                 pReadA,
+                                                             std::shared_ptr<NucSeq>
+                                                                 pReadB )
         {
             // insert both reads
             xInsertRow( uiSequencerId, pReadA->sName, NucSeqSql( pReadA ), -1 );
@@ -117,6 +122,7 @@ class SV_DB : public CppSQLite3DB, public Container
               pDatabase( pDatabase )
         {
             pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table (soc_start)" );
+            DEBUG(std::cout << "Created SoCTable" << std::endl;)
         } // default constructor
     }; // class
 
@@ -168,17 +174,56 @@ class SV_DB : public CppSQLite3DB, public Container
               xTransactionContext( *rDB.pDatabase )
         {} // constructor
 
+        SoCInserter( const SoCInserter& rOther ) = delete;
+
         inline ReadContex getReadContext( std::shared_ptr<NucSeq> pRead )
         {
             return ReadContex( pReadTable->insertRead( uiSequencerId, pRead ), pSocTable );
         } // method
+
+        inline std::pair<ReadContex, ReadContex> getPairedReadContext( //
+            std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+        {
+            auto xIdPair = pReadTable->insertPairedRead( uiSequencerId, pReadA, pReadB );
+            return std::make_pair( ReadContex( xIdPair.first, pSocTable ), ReadContex( xIdPair.second, pSocTable ) );
+        } // method
     }; // class
 
-    inline SoCInserter addSequencerType( std::string& sSequencerName )
+    inline std::shared_ptr<SoCInserter> addSequencerType( std::string sSequencerName )
     {
-        return SoCInserter( *this, pSequencerTable->insertSequencer( sSequencerName ) );
+        return std::make_shared<SoCInserter>( *this, pSequencerTable->insertSequencer( sSequencerName ) );
     } // method
 
 }; // class
 
+class SoCDbWriter : public Module<Container, false, NucSeq, SoCPriorityQueue>
+{
+  private:
+    std::shared_ptr<SV_DB::SoCInserter> pInserter;
+    size_t uiNumSoCsToRecord;
+
+  public:
+    SoCDbWriter( std::shared_ptr<SV_DB::SoCInserter> pInserter ) : pInserter( pInserter )
+    {} // constructor
+
+    std::shared_ptr<Container> execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<SoCPriorityQueue> pSoCQueue )
+    {
+        auto xInsertContext = pInserter->getReadContext( pQuery );
+        for( size_t uiI = 0; uiI < uiNumSoCsToRecord; uiI++ )
+        {
+            if( pSoCQueue->empty( ) )
+                break;
+
+            auto xSoCTup = pSoCQueue->pop_info( );
+            xInsertContext( std::get<0>( xSoCTup ), std::get<1>( xSoCTup ), std::get<2>( xSoCTup ) );
+        } // for
+
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
 }; // namespace libMA
+
+#ifdef WITH_PYTHON
+void exportSoCDbWriter( );
+#endif

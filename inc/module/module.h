@@ -274,7 +274,7 @@ class BasePledge
                                         unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
-            numThreads = (unsigned int)(vPledges.size( ));
+            numThreads = (unsigned int)( vPledges.size( ) );
 
         /*
          * If there is a python module in the comp. graph we can only use one single thread.
@@ -330,10 +330,12 @@ class BasePledge
                             catch( AnnotatedException e )
                             {
                                 std::cerr << "Exception: " << e.what( ) << std::endl;
-                            } catch(const std::exception& e)
+                            }
+                            catch( const std::exception& e )
                             {
-                                std::cerr << e.what() << '\n';
-                            } catch(...)
+                                std::cerr << e.what( ) << '\n';
+                            }
+                            catch( ... )
                             {
                                 std::cerr << "unknown exception in simultaneous get" << '\n';
                             } // catch
@@ -698,7 +700,7 @@ template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATIL
 /**
  * @brief Input pledge for all python modules
  * @details
- * This is used to break the typesaveness of the cpp code. 
+ * This is used to break the typesaveness of the cpp code.
  * We cannot have the types for python due to the dynamic types used there.
  * This vector allows us to combine all pledges adn them send them as a single pledge (i.e. an object of this class).
  * Each python module then outputs a container that can in turn be pushed into one of these Pledge vectors.
@@ -758,6 +760,11 @@ class PyPledgeVector : public Pledge<PyContainerVector>
             if( pPledge->isFinished( ) )
                 return true;
         return false;
+    } // method
+
+    inline void simultaneousGetPy( unsigned int numThreads = 0 )
+    {
+        BasePledge::simultaneousGet( vPledges, []( ) {}, numThreads );
     } // method
 }; // class
 

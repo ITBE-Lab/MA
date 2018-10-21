@@ -1343,7 +1343,7 @@ template <typename... Types> class CppSQLiteExtTableWithAutomaticPrimaryKey : pu
            */
           CppSQLiteExtTable( rxDatabase, rsTableName, rxDatabaseColumns, true, vConstraints )
 #else
-          CppSQLiteExtTable<Types...>( rxDatabase, rsTableName, rxDatabaseColumns, true )
+          CppSQLiteExtTable<Types...>( rxDatabase, rsTableName, rxDatabaseColumns, true, vConstraints )
 #endif
     {} // constructor
 }; // class

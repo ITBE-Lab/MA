@@ -112,6 +112,7 @@ void CppSQLiteDBExtended::vCreateTable(
     /* Create the sequence of column defintions in textual form */
     for( size_t i = 0; i < xDatabaseColumns.size( ) - 1; i++ )
         sTableCreationStatement.append( xDatabaseColumns[ i ] ).append( ", " );
+    sTableCreationStatement.append( xDatabaseColumns.back( ) );
 
     for(const std::string& sConstraint : vConstraints )
     {
@@ -119,7 +120,7 @@ void CppSQLiteDBExtended::vCreateTable(
         sTableCreationStatement.append("CONSTRAINT " + sConstraint);
     } // for
 
-    sTableCreationStatement.append( xDatabaseColumns.back( ) ).append( ")" );
+    sTableCreationStatement.append( ")" );
 
     /* Execute the table statement */
     std::cout << sTableCreationStatement << std::endl;

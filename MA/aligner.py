@@ -13,9 +13,14 @@
 import libMA
 import traceback
 
+##
+# @brief A SV_DB.
+#
+class VectorPledge(libMA.VectorPledge):
+    pass
 
 def promise_me(module, *args):
-    arg_vector = libMA.VectorPledge()
+    arg_vector = VectorPledge()
     for arg in args:
         arg_vector.append(arg)
     if isinstance(module, libMA.Module):
@@ -169,6 +174,13 @@ class Seed(libMA.Seed):
 # @ingroup container
 #
 class SAInterval(libMA.SAInterval):
+    pass
+
+
+##
+# @brief A SV_DB.
+#
+class SV_DB(libMA.SV_DB):
     pass
 
 
@@ -334,3 +346,12 @@ class GetSecondQuery(libMA.GetSecondQuery):
 class OtherSeeding(libMA.OtherSeeding):
     def execute(self, *args):
         return super(OtherSeeding, self).execute(ContainerVector(list(args)))
+
+
+##
+# @brief The OtherSeeding Module.
+# @ingroup module
+#
+class SoCDbWriter(libMA.SoCDbWriter):
+    def execute(self, *args):
+        return super(SoCDbWriter, self).execute(ContainerVector(list(args)))
