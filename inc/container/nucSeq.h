@@ -644,6 +644,12 @@ class NucSeqSql : public SQL_BLOB
   public:
     std::shared_ptr<NucSeq> pNucSeq;
 
+    NucSeqSql( std::shared_ptr<NucSeq> pNucSeq ) : pNucSeq( pNucSeq )
+    {} // constructor
+
+    NucSeqSql( )
+    {} // default constructor
+
     const unsigned char* toBlob( ) const
     {
         return (unsigned char*)pNucSeq->pxSequenceRef;

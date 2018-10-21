@@ -245,7 +245,15 @@ class CppSQLite3Statement
     void bind( int nParam, const std::string& szValue ); // inserted Arne 19/03/2016
     void bind( int nParam, const int nValue );
     void bind( int nParam, const long nValue );
+    void bind( int nParam, const unsigned int nValue )
+    {
+        bind( nParam, (const long)nValue );
+    } // method
     void bind( int nParam, const long long nValue );
+    void bind( int nParam, const unsigned long nValue )
+    {
+        bind( nParam, (const long long)nValue );
+    } // method
     void bind( int nParam, const double dwValue );
     // void bind( int nParam, const unsigned char* blobValue, int nLen );
     void bind( int nParam, const SQL_BLOB& rBlob );

@@ -1,7 +1,7 @@
 #include "util/sqlite3.h"
 #include "container/nucSeq.h"
 
-// list of valied types:
+
 template <> std::string getSQLTypeName<std::string>( )
 {
     return "TEXT";
@@ -98,8 +98,8 @@ std::string sCreateSQLInsertStatementText(
 void CppSQLiteDBExtended::vCreateTable(
     const std::vector<std::string>& xDatabaseColumns, // The names of the database columns
     const char* sTableName, // Table name
-    bool bInsertColumnIdAsPrimaryKey // If we get a true here, then we insert a column id as primary key
-)
+    bool bInsertColumnIdAsPrimaryKey, // If we get a true here, then we insert a column id as primary key
+    const std::vector<std::string>& vConstraints )
 {
     /* We drop the table in the case that it exists already. */
     execDML( std::string( "DROP TABLE IF EXISTS " ).append( sTableName ).c_str( ) );
@@ -112,6 +112,13 @@ void CppSQLiteDBExtended::vCreateTable(
     /* Create the sequence of column defintions in textual form */
     for( size_t i = 0; i < xDatabaseColumns.size( ) - 1; i++ )
         sTableCreationStatement.append( xDatabaseColumns[ i ] ).append( ", " );
+
+    for(const std::string& sConstraint : vConstraints )
+    {
+        sTableCreationStatement.append( ", " );
+        sTableCreationStatement.append("CONSTRAINT " + sConstraint);
+    } // for
+
     sTableCreationStatement.append( xDatabaseColumns.back( ) ).append( ")" );
 
     /* Execute the table statement */
@@ -140,8 +147,7 @@ void doSqlite3Test( void )
     //                       "table1" // sTableName
     // );
 
-    NucSeqSql xSeq;
-    xSeq.pNucSeq = std::make_shared<NucSeq>( "ACCGTG" );
+    NucSeqSql xSeq( std::make_shared<NucSeq>( "ACCGTG" ) );
 
     CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, NucSeqSql> table1(
         xTestDB, // the database where the table resides
@@ -156,7 +162,8 @@ void doSqlite3Test( void )
         std::cout << "END INSERT" << std::endl;
     }
     table1.vDump( std::cout );
-    table1.vForAllTableRowsUnpackedDo( []( int, int64_t i, NucSeqSql s ) { std::cout << s.pNucSeq->toString( ) << std::endl; } );
+    table1.vForAllTableRowsUnpackedDo(
+        []( int, int64_t i, NucSeqSql s ) { std::cout << s.pNucSeq->toString( ) << std::endl; } );
 
     CppSQLiteExtQueryStatement<int> statement( xTestDB, "SELECT number FROM table1" );
     statement.vExecuteAndForAllRowsUnpackedDo( []( int64_t i ) { std::cout << i << std::endl; } );
