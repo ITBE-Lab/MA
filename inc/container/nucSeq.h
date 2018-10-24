@@ -666,6 +666,7 @@ class NucSeqSql : public SQL_BLOB
         pNucSeq->vClear( );
         pNucSeq->vAppend( (const uint8_t*)ucBlob, uiSize );
     } // method
+
 }; // class
 
 } // namespace libMA

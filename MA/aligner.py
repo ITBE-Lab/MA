@@ -13,14 +13,16 @@
 import libMA
 import traceback
 
+
 ##
 # @brief A SV_DB.
 #
 class VectorPledge(libMA.VectorPledge):
     pass
 
+
 def promise_me(module, *args):
-    arg_vector = VectorPledge()
+    arg_vector = libMA.VectorPledge()
     for arg in args:
         arg_vector.append(arg)
     if isinstance(module, libMA.Module):
@@ -185,6 +187,13 @@ class SV_DB(libMA.SV_DB):
 
 
 ##
+# @brief A SoCInserter.
+#
+class SoCInserter(libMA.SoCInserter):
+    pass
+
+
+##
 # @brief A ContainerVector.
 # @details
 #
@@ -194,6 +203,13 @@ class ContainerVector(libMA.ContainerVector):
     def __init__(self, l=[]):
         for x in l:
             super(ContainerVector, self).append(x)
+
+
+def to_container_vec(*args):
+    ret = libMA.ContainerVector()
+    for x in args:
+        ret.append(x)
+    return ret
 
 
 ##
@@ -220,87 +236,84 @@ class NucSeq(libMA.NucSeq):
 # @brief python wrapper for BinarySeeding
 class BinarySeeding(libMA.BinarySeeding):
     def execute(self, *args):
-        return super(BinarySeeding, self).execute(ContainerVector(list(args)))
+        return super(BinarySeeding, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for FileWriter
 class FileWriter(libMA.FileWriter):
     def execute(self, *args):
-        return super(FileWriter, self).execute(ContainerVector(list(args)))
+        return super(FileWriter, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for PairedFileWriter
 class PairedFileWriter(libMA.PairedFileWriter):
     def execute(self, *args):
-        return super(PairedFileWriter, self).execute(
-            ContainerVector(list(args)))
+        return super(PairedFileWriter, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for DbWriter
 class DbWriter(libMA.DbWriter):
     def execute(self, *args):
-        return super(DbWriter, self).execute(ContainerVector(list(args)))
+        return super(DbWriter, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for PairedDbWriter
 class PairedDbWriter(libMA.PairedDbWriter):
     def execute(self, *args):
-        return super(PairedDbWriter, self).execute(ContainerVector(list(args)))
+        return super(PairedDbWriter, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for PairedReads
 class PairedReads(libMA.PairedReads):
     def execute(self, *args):
-        return super(PairedReads, self).execute(ContainerVector(list(args)))
+        return super(PairedReads, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for StripOfConsideration
 class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
-        return super(StripOfConsideration, self).execute(
-            ContainerVector(list(args)))
+        return super(StripOfConsideration, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for Harmonization
 class Harmonization(libMA.Harmonization):
     def execute(self, *args):
-        return super(Harmonization, self).execute(ContainerVector(list(args)))
+        return super(Harmonization, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for FileReader
 class FileReader(libMA.FileReader):
     def execute(self):
-        return super(FileReader, self).execute(ContainerVector())
+        return super(FileReader, self).execute(libMA.ContainerVector())
 
 
 ##
 # @brief python wrapper for PairedFileReader
 class PairedFileReader(libMA.PairedFileReader):
     def execute(self):
-        return super(PairedFileReader, self).execute(ContainerVector())
+        return super(PairedFileReader, self).execute(libMA.ContainerVector())
 
 
 ##
 # @brief python wrapper for LinearLineSweep
 class NeedlemanWunsch(libMA.NeedlemanWunsch):
     def execute(self, *args):
-        return super(NeedlemanWunsch, self).execute(
-            ContainerVector(list(args)))
+        return super(NeedlemanWunsch, self).execute(to_container_vec(*args))
 
 
 ##
 # @brief python wrapper for MappingQuality
 class MappingQuality(libMA.MappingQuality):
     def execute(self, *args):
-        return super(MappingQuality, self).execute(ContainerVector(list(args)))
+        return super(MappingQuality, self).execute(to_container_vec(*args))
 
 
 ##
@@ -309,7 +322,7 @@ class MappingQuality(libMA.MappingQuality):
 #
 class Lock(libMA.Lock):
     def execute(self, *args):
-        return super(Lock, self).execute(ContainerVector(list(args)))
+        return super(Lock, self).execute(to_container_vec(*args))
 
 
 ##
@@ -318,7 +331,7 @@ class Lock(libMA.Lock):
 #
 class UnLock(libMA.UnLock):
     def execute(self, *args):
-        return super(UnLock, self).execute(ContainerVector(list(args)))
+        return super(UnLock, self).execute(to_container_vec(*args))
 
 
 ##
@@ -327,7 +340,7 @@ class UnLock(libMA.UnLock):
 #
 class GetFirstQuery(libMA.GetFirstQuery):
     def execute(self, *args):
-        return super(GetFirstQuery, self).execute(ContainerVector(list(args)))
+        return super(GetFirstQuery, self).execute(to_container_vec(*args))
 
 
 ##
@@ -336,7 +349,7 @@ class GetFirstQuery(libMA.GetFirstQuery):
 #
 class GetSecondQuery(libMA.GetSecondQuery):
     def execute(self, *args):
-        return super(GetSecondQuery, self).execute(ContainerVector(list(args)))
+        return super(GetSecondQuery, self).execute(to_container_vec(*args))
 
 
 ##
@@ -345,13 +358,32 @@ class GetSecondQuery(libMA.GetSecondQuery):
 #
 class OtherSeeding(libMA.OtherSeeding):
     def execute(self, *args):
-        return super(OtherSeeding, self).execute(ContainerVector(list(args)))
+        return super(OtherSeeding, self).execute(to_container_vec(*args))
 
 
 ##
-# @brief The OtherSeeding Module.
+# @brief The SoCDbWriter Module.
 # @ingroup module
 #
 class SoCDbWriter(libMA.SoCDbWriter):
     def execute(self, *args):
-        return super(SoCDbWriter, self).execute(ContainerVector(list(args)))
+        return super(SoCDbWriter, self).execute(to_container_vec(*args))
+
+
+##
+# @brief The NucSeqFromSql Module.
+# @ingroup module
+#
+class NucSeqFromSql(libMA.NucSeqFromSql):
+    def execute(self, *args):
+        return super(NucSeqFromSql, self).execute(to_container_vec(*args))
+
+##
+# @brief convert bytes to a NucSeq
+# @details
+# Usefull for converting reads stored as blob data in sqlite3 to NucSeq objects.
+#
+def nuc_seq_from_bytes(blob):
+    converter = libMA.NucSeqSql()
+    converter.fromBlob(blob)
+    return converter.seq

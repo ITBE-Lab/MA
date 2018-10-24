@@ -31,7 +31,13 @@ class SQL_BLOB
         return 0;
     };
 
-    virtual void fromBlob( const unsigned char*, const size_t ){};
+    virtual void fromBlob( const unsigned char*, const size_t )
+    {}
+
+    void fromPyBytesBlob( const std::string sStr )
+    {
+        fromBlob( (const unsigned char*)sStr.c_str( ), sStr.size( ) );
+    }
 }; // class
 
 std::ostream& operator<<( std::ostream& os, const SQL_BLOB& );

@@ -915,14 +915,14 @@ class CppSQLiteExtImmediateTransactionContext
   private:
     /* The database for the transaction context
      */
-    CppSQLiteDBExtended& _rxDatabase;
+    CppSQLiteDBExtended& rxDatabase;
 
   public:
     /* The constructor initializes the database and starts the transaction.
      */
-    CppSQLiteExtImmediateTransactionContext( CppSQLiteDBExtended& rxDatabase ) : _rxDatabase( rxDatabase )
+    CppSQLiteExtImmediateTransactionContext( CppSQLiteDBExtended& rxDatabase ) : rxDatabase( rxDatabase )
     {
-        std::cout << "Begin transaction" << std::endl;
+        // std::cout << "Begin transaction" << std::endl;
         rxDatabase.xStatementBeginTransaction->execDML( );
     } // constructor
 
@@ -930,10 +930,10 @@ class CppSQLiteExtImmediateTransactionContext
      */
     ~CppSQLiteExtImmediateTransactionContext( )
     {
-        std::cout << "End transaction" << std::endl;
-        _rxDatabase.xStatementEndTransaction->execDML( );
+        // std::cout << "End transaction" << std::endl;
+        rxDatabase.xStatementEndTransaction->execDML( );
     } // destructor
-}; // class CppSQLiteExtTransactionContex
+}; // class CppSQLiteExtImmediateTransactionContext
 
 
 template <typename TP_TYPE> std::string getSQLTypeName( )
@@ -1056,7 +1056,7 @@ template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLit
                                  sCreateSQLInsertStatementText( pcTableName, sizeof...( Types ), bFirstColumnAsNULL )
                                      .c_str( ) ) // call superclass constructor
     {
-        std::cout << "Create Insertion statement for table \"" << pcTableName << "\"" << std::endl;
+        // std::cout << "Create Insertion statement for table \"" << pcTableName << "\"" << std::endl;
     } // constructor
 
     /* Destructor for insertion statement.
@@ -1335,8 +1335,7 @@ template <typename... Types> class CppSQLiteExtTableWithAutomaticPrimaryKey : pu
         CppSQLiteDBExtended& rxDatabase, // the database where the table resides
         const std::string& rsTableName, // name of the table in the database
         const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
-        const std::vector<std::string>& vConstraints = {}
-        )
+        const std::vector<std::string>& vConstraints = {} )
         :
 #if _MSC_VER
           /* Visual C++ 2013 crashes with the below code

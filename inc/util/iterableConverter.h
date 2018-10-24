@@ -66,5 +66,38 @@ class IterableConverter
     } // function
 }; // class
 
+// taken from: https://stackoverflow.com/questions/42186986/boostpython-converting-tuple-to-python-works-vectortuple-does-not
+template <typename T>
+struct TupleToPython {
+    TupleToPython() {
+        boost::python::to_python_converter<T, TupleToPython<T>>();
+    }
+
+    template<int...>
+    struct sequence {};
+
+    template<int N, int... S>
+    struct generator : generator<N-1, N-1, S...> { };
+
+    template<int... S>
+    struct generator<0, S...> {
+        using type = sequence<S...>;
+    };
+
+    template <int... I>
+    static boost::python::tuple boostConvertImpl(const T& t, sequence<I...>) {
+        return boost::python::make_tuple(std::get<I>(t)...);
+    }
+
+    template <typename... Args>
+    static boost::python::tuple boostConvert(const std::tuple<Args...> & t) {
+        return boostConvertImpl(t, typename generator<sizeof...(Args)>::type());
+    }
+
+    static PyObject* convert(const T& t) {
+        return boost::python::incref(boostConvert(t).ptr());
+    }
+};
+
 #endif
 #endif

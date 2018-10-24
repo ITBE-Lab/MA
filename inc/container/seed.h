@@ -316,7 +316,7 @@ class Seeds : public Container
         for( Seed& rS : vContent )
         {
             rS.uiPosOnReference = uiReferenceLength * 2 - rS.end_ref( ) + 1;
-            rS.iStart = uiQueryLength - rS.start( );
+            rS.iStart = uiQueryLength - rS.start( ) + 1;
         } // for
     } // method
 

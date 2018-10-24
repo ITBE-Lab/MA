@@ -92,6 +92,29 @@ class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, fals
     } // method
 }; // class
 
+/**
+ * @brief Get a specific tuple element
+ * @details
+ * the tuple element must contain shared pointers of type TP_TUPLE::value_type
+ * the tuple must implement operator[].
+ */
+template <typename... TP_VEC_CONTENT> class Collector : public Module<Container, false, TP_VEC_CONTENT...>
+{
+  public:
+    std::vector<std::tuple<std::shared_ptr<TP_VEC_CONTENT>...>> vCollection;
+    std::shared_ptr<std::mutex> pMutex;
+
+    Collector( ) : pMutex( new std::mutex )
+    {}
+
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    {
+        std::lock_guard<std::mutex> xGuard( *pMutex );
+        vCollection.push_back( std::make_tuple( pIn... ) );
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON

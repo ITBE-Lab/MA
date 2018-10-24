@@ -123,7 +123,7 @@ void CppSQLiteDBExtended::vCreateTable(
     sTableCreationStatement.append( ")" );
 
     /* Execute the table statement */
-    std::cout << sTableCreationStatement << std::endl;
+    //std::cout << sTableCreationStatement << std::endl;
     execDML( sTableCreationStatement.c_str( ) );
 } // method
 
