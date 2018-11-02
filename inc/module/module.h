@@ -274,7 +274,7 @@ class BasePledge
                                         unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
-            numThreads = (unsigned int)(vPledges.size( ));
+            numThreads = (unsigned int)( vPledges.size( ) );
 
         /*
          * If there is a python module in the comp. graph we can only use one single thread.
@@ -330,12 +330,17 @@ class BasePledge
                             catch( AnnotatedException e )
                             {
                                 std::cerr << "Exception: " << e.what( ) << std::endl;
-                            } catch(const std::exception& e)
+                                DEBUG( return; ) // DEBUG
+                            } // catch
+                            catch( const std::exception& e )
                             {
-                                std::cerr << e.what() << '\n';
-                            } catch(...)
+                                std::cerr << e.what( ) << '\n';
+                                DEBUG( return; ) // DEBUG
+                            } // catch
+                            catch( ... )
                             {
                                 std::cerr << "unknown exception in simultaneous get" << '\n';
+                                DEBUG( return; ) // DEBUG
                             } // catch
                         } while( bLoop );
                         DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
@@ -382,14 +387,14 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
 
   protected:
     std::shared_ptr<TP_PLEDGER> pPledger;
+    // all pledges that have this pledge as predecessor
+    std::vector<BasePledge*> vSuccessors;
 
   private:
     // content of the pledge
     std::shared_ptr<TP_CONTENT> pContent = nullptr;
     // this puts the shared_ptr around all elements of the variadic template individually
     TP_PREDECESSORS tPredecessors;
-    // all pledges that have this pledge as predecessor
-    std::vector<BasePledge*> vSuccessors;
 
   public:
     void addSuccessor( BasePledge* pX )
@@ -536,7 +541,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     {
         // create a variable so that we can take a reference of it.
         Pledge* pThis = this;
-        // remove from the successor lists of the predecessors
+        // remove this pledge from the successor lists of all predecessors
         TemplateLoop<sizeof...( TP_DEPENDENCIES ), RemFromSuccessorCaller>::iterate( pThis, this->tPredecessors );
     } // deconstructor
 
@@ -549,7 +554,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
      * @brief Reset the pledge
      * @note override
      */
-    void reset( )
+    virtual void reset( )
     {
         if( pContent == nullptr )
             return;
@@ -607,7 +612,8 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     virtual std::shared_ptr<TP_CONTENT> get( )
     {
         if( pPledger == nullptr && pContent == nullptr )
-            throw AnnotatedException( "No pledger known for unfulfilled pledge of type " + type_name( this ) );
+            throw AnnotatedException( "No pledger known for unfulfilled pledge of type " + type_name( this ) +
+                                      "; With container type: " + type_name( pContent ) );
         // in this case there is no need to execute again
         if( pContent != nullptr && !IS_VOLATILE )
             return pContent;
@@ -698,7 +704,7 @@ template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATIL
 /**
  * @brief Input pledge for all python modules
  * @details
- * This is used to break the typesaveness of the cpp code. 
+ * This is used to break the typesaveness of the cpp code.
  * We cannot have the types for python due to the dynamic types used there.
  * This vector allows us to combine all pledges adn them send them as a single pledge (i.e. an object of this class).
  * Each python module then outputs a container that can in turn be pushed into one of these Pledge vectors.
@@ -709,6 +715,8 @@ class PyPledgeVector : public Pledge<PyContainerVector>
     std::vector<std::shared_ptr<BasePledge>> vPledges;
 
   public:
+    using Pledge<PyContainerVector>::Pledge;
+
     ~PyPledgeVector( )
     {
         for( std::shared_ptr<BasePledge> pPledge : vPledges )
@@ -737,6 +745,15 @@ class PyPledgeVector : public Pledge<PyContainerVector>
         return pRet;
     } // method
 
+    // overrides the base function
+    virtual void reset( )
+    {
+        // force reset on successors
+        for( BasePledge* pSuccessor : vSuccessors )
+            if( pSuccessor != nullptr )
+                pSuccessor->reset( );
+    } // function
+
     /**
      * @brief checks wether there is a volatile module upstream in the comp. graph.
      * @details
@@ -758,6 +775,11 @@ class PyPledgeVector : public Pledge<PyContainerVector>
             if( pPledge->isFinished( ) )
                 return true;
         return false;
+    } // method
+
+    inline void simultaneousGetPy( unsigned int numThreads = 0 )
+    {
+        BasePledge::simultaneousGet( vPledges, []( ) {}, numThreads );
     } // method
 }; // class
 
@@ -811,6 +833,11 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
     {
         return xModule.isFinished( );
     } // method
+
+    virtual bool requiresLock( ) const
+    {
+        return xModule.requiresLock( );
+    } // method
 }; // class
 
 
@@ -828,7 +855,7 @@ void exportModule( const std::string&& sName,
     boost::python::class_<ModuleWrapperCppToPy<TP_MODULE>,
                           boost::python::bases<PyModule<TP_MODULE::IS_VOLATILE>>,
                           std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>>( sName.c_str( ) )
-        .def_readonly( "mod", &ModuleWrapperCppToPy<TP_MODULE>::xModule );
+        .def_readonly( "cpp_module", &ModuleWrapperCppToPy<TP_MODULE>::xModule );
     boost::python::implicitly_convertible<std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>,
                                           std::shared_ptr<PyModule<TP_MODULE::IS_VOLATILE>>>( );
 } // function
@@ -845,7 +872,7 @@ void exportModule( const std::string&& sName,
     boost::python::
         class_<TP_TO_EXPORT, boost::python::bases<PyModule<TP_MODULE::IS_VOLATILE>>, std::shared_ptr<TP_TO_EXPORT>>(
             sName.c_str( ), boost::python::init<TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
-            .def_readonly( "mod", &TP_TO_EXPORT::xModule );
+            .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
     boost::python::implicitly_convertible<std::shared_ptr<TP_TO_EXPORT>,
                                           std::shared_ptr<PyModule<TP_MODULE::IS_VOLATILE>>>( );
 } // function
