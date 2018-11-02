@@ -6,6 +6,12 @@ template <> std::string getSQLTypeName<std::string>( )
 {
     return "TEXT";
 }
+
+template <> std::string getSQLTypeName<bool>( )
+{
+    return "BOOLEAN";
+}
+
 // numeric:
 // full number:
 // sqLITE maps all numbers to INTEGER anyways?

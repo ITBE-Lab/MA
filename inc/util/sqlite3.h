@@ -193,6 +193,11 @@ struct GetTupleElement
         rValue = rxQuery.getInt64Field( iFieldIndex );
     } // method
 
+    void getColumnElement( unsigned int& rValue, const int iFieldIndex )
+    {
+        rValue = rxQuery.getInt64Field( iFieldIndex );
+    } // method
+
     void getColumnElement( double& rValue, const int iFieldIndex )
     {
         rValue = rxQuery.getFloatField( iFieldIndex );
@@ -217,6 +222,12 @@ struct GetTupleElement
     void getColumnElement( char& rValue, const int iFieldIndex )
     {
         rValue = *rxQuery.getStringField( iFieldIndex );
+    } // method
+
+    /* We extract the boolean delivered by SQLite. */
+    void getColumnElement( bool& bValue, const int iFieldIndex )
+    {
+        bValue = rxQuery.getIntField( iFieldIndex ) != 0;
     } // method
 
     void getColumnElement( SQL_BLOB& rValue, const int iFieldIndex )
@@ -945,6 +956,7 @@ template <typename TP_TYPE> std::string getSQLTypeName( )
 
 // list of valied types:
 template <> std::string getSQLTypeName<std::string>( );
+template <> std::string getSQLTypeName<bool>( );
 // numeric:
 // full number:
 // sqLITE maps all numbers to INTEGER anyways?
@@ -964,6 +976,7 @@ template <> std::string getSQLTypeName<uint32_t>( );
 // floating point:
 template <> std::string getSQLTypeName<double>( );
 template <> std::string getSQLTypeName<float>( );
+
 
 
 /* C++ wrapper/interface for a SQL-table.
@@ -1091,6 +1104,8 @@ template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLit
             } // try
             catch( CppSQLite3Exception& xException )
             {
+                if(xException.errorCode() == 19) // sqlite constraint failed
+                    throw xException;
                 /* Something went wrong, in most cases a timeout due to some lock.
                  * We try once again...
                  */

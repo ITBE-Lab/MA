@@ -119,7 +119,7 @@ bool RANSAC::computeModel( int debug )
             // Better match ?
             if( n_inliers_count > n_best_inliers_count )
             {
-                std::cout  << "New best angle: " << dAngle << std::endl;
+                //std::cout  << "New best angle: " << dAngle << std::endl;
                 n_best_inliers_count = n_inliers_count;
                 best_inliers = inliers;
                 // inliers.clear ();

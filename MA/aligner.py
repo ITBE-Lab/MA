@@ -278,7 +278,16 @@ class PairedReads(libMA.PairedReads):
 # @brief python wrapper for StripOfConsideration
 class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
-        return super(StripOfConsideration, self).execute(to_container_vec(*args))
+        return super(StripOfConsideration, self).execute(
+            to_container_vec(*args))
+
+
+##
+# @brief python wrapper for HarmonizationSingle
+class HarmonizationSingle(libMA.HarmonizationSingle):
+    def execute(self, *args):
+        return super(HarmonizationSingle, self).execute(
+            to_container_vec(*args))
 
 
 ##
@@ -286,6 +295,13 @@ class StripOfConsideration(libMA.StripOfConsideration):
 class Harmonization(libMA.Harmonization):
     def execute(self, *args):
         return super(Harmonization, self).execute(to_container_vec(*args))
+
+
+##
+# @brief python wrapper for SeedLumping
+class SeedLumping(libMA.SeedLumping):
+    def execute(self, *args):
+        return super(SeedLumping, self).execute(to_container_vec(*args))
 
 
 ##
@@ -377,6 +393,7 @@ class SoCDbWriter(libMA.SoCDbWriter):
 class NucSeqFromSql(libMA.NucSeqFromSql):
     def execute(self, *args):
         return super(NucSeqFromSql, self).execute(to_container_vec(*args))
+
 
 ##
 # @brief convert bytes to a NucSeq

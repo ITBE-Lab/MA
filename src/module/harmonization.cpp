@@ -9,8 +9,6 @@
 #endif
 using namespace libMA;
 
-//#define PRINT_BREAK_CRITERIA(x) DEFINE(x)
-#define PRINT_BREAK_CRITERIA( x )
 
 using namespace libMA::defaults;
 extern int libMA::defaults::iGap;
@@ -19,7 +17,7 @@ extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
 // extern nucSeqIndex libMA::defaults::uiMaxGapArea;
 
-std::shared_ptr<Seeds> Harmonization::applyFilters( std::shared_ptr<Seeds>& pIn ) const
+std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>& pIn ) const
 {
     auto pRet = std::make_shared<Seeds>( );
     /*
@@ -204,9 +202,9 @@ inline nucSeqIndex difference( nucSeqIndex a, nucSeqIndex b )
     return b - a;
 } // function
 
-std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
-Harmonization::linesweep( std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> pShadows,
-                          const int64_t uiRStart, const double fAngle )
+std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> HarmonizationSingle::linesweep(
+    std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> pShadows,
+    const int64_t uiRStart, const double fAngle )
 {
     // sort shadows (increasingly) by start coordinate of the match
     std::sort( pShadows->begin( ), pShadows->end( ),
@@ -553,7 +551,7 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
 
 #else
 
-std::pair<double, double> Harmonization::ransac( std::shared_ptr<libMA::Seeds> pSeedsIn )
+std::pair<double, double> HarmonizationSingle::ransac( std::shared_ptr<libMA::Seeds> pSeedsIn )
 {
     std::vector<double> vX, vY;
     vX.reserve( pSeedsIn->size( ) );
@@ -575,15 +573,15 @@ std::pair<double, double> Harmonization::ransac( std::shared_ptr<libMA::Seeds> p
     return run_ransac( vX, vY, /*pSoCIn->vIngroup.back(),*/ fMAD );
 } // method
 
-std::shared_ptr<libMA::Seeds> Harmonization::applyLinesweeps( std::shared_ptr<libMA::Seeds> pSeedsIn
+std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_ptr<libMA::Seeds> pSeedsIn
 #if DEBUG_LEVEL > 0
-                                                              ,
-                                                              std::shared_ptr<SoCPriorityQueue>
-                                                                  pSoCIn,
-                                                              bool bRecord = true
+                                                                    ,
+                                                                    bool bRecord = true
 #endif
 )
 {
+    DEBUG( std::shared_ptr<SoCPriorityQueue> pSoCIn = pSeedsIn->pSoCIn;
+           if( pSoCIn == nullptr ) bRecord = false; ) // DEBUG
     auto pSeeds = std::make_shared<Seeds>( );
     pSeeds->xStats = pSeedsIn->xStats;
     if( pSeedsIn->size( ) == 0 )
@@ -723,14 +721,12 @@ std::shared_ptr<libMA::Seeds> Harmonization::applyLinesweeps( std::shared_ptr<li
 } // method
 
 
-std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> Harmonization::cluster( std::shared_ptr<Seeds> pSeedsIn,
-                                                                                 nucSeqIndex uiQLen ) const
+std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> HarmonizationSingle::cluster( std::shared_ptr<Seeds> pSeedsIn,
+                                                                                       nucSeqIndex uiQLen ) const
 {
     // set the delta values correctly
     for( Seed& rS : *pSeedsIn )
-    {
         rS.uiDelta = StripOfConsideration::getPositionForBucketing( uiQLen, rS );
-    } // for
     // sort the seeds
     std::sort( pSeedsIn->begin( ), pSeedsIn->end( ),
                []( const Seed& rA, const Seed& rB ) { return rA.uiDelta < rB.uiDelta; } );
@@ -747,56 +743,47 @@ std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> Harmonization::cluster(
     return pRet;
 } // method
 
-std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
-Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery,
-                        std::shared_ptr<FMIndex> pFMIndex )
+std::shared_ptr<Seeds> HarmonizationSingle::execute( std::shared_ptr<Seeds> pPrimaryStrand,
+                                                     std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex )
 {
-    unsigned int uiNumTries = 0;
-
     auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
 
-    for( ; uiNumTries < uiMaxTries && !pSoCIn->empty( ); uiNumTries++ )
+    bool bPrimaryStrandIsForw = pPrimaryStrand->mainStrandIsForward( );
+    auto pSecondaryStrand = pPrimaryStrand->extractStrand( !bPrimaryStrandIsForw );
+
+    auto pClustered = cluster( pSecondaryStrand, pQuery->length( ) );
+    for( auto pSeeds : *pClustered )
     {
-        auto pPrimaryStrand = pSoCIn->pop( );
+        auto pSecondarySeeds = applyLinesweeps( pSeeds /*,*/ DEBUG_PARAM( false ) );
+        pSecondarySeeds->flipOnQuery( pQuery->length( ) );
+        pPrimaryStrand->append( pSecondarySeeds );
+        std::cout << "secondary sweep: " << pSecondarySeeds->size( ) << std::endl;
+    } // while
 
-        bool bPrimaryStrandIsForw = pPrimaryStrand->mainStrandIsForward( );
-        auto pSecondaryStrand = pPrimaryStrand->extractStrand( !bPrimaryStrandIsForw );
-
-        auto pClustered = cluster( pSecondaryStrand, pQuery->length( ) );
-        for( auto pSeeds : *pClustered )
-        {
-            auto pSecondarySeeds = applyLinesweeps( pSeeds /*,*/ DEBUG_PARAM( pSoCIn ) DEBUG_PARAM( false ) );
-            pSecondarySeeds->flipOnQuery( pQuery->length( ) );
-            pPrimaryStrand->append( pSecondarySeeds );
-            std::cout << "secondary sweep: " << pSecondarySeeds->size( ) << std::endl;
-        } // while
-
-        auto pPrimarySeeds = applyLinesweeps( pPrimaryStrand /*,*/ DEBUG_PARAM( pSoCIn ) );
-        while( !pPrimarySeeds->empty( ) )
-            pSoCs->push_back( this->applyFilters( pPrimarySeeds ) );
-
-    } // for
-
-    PRINT_BREAK_CRITERIA( if( pSoCIn->empty( ) ) std::cout << "exhausted all SoCs" << std::endl;
-                          else std::cout << "break after " << uiNumTries << " tries." << std::endl;
-                          std::cout << "computed " << pSoCs->size( ) << " SoCs." << std::endl; )
-
-    return pSoCs;
+    auto pPrimarySeeds = applyLinesweeps( pPrimaryStrand );
+    return this->applyFilters( pPrimarySeeds );
+    // while( !pPrimarySeeds->empty( ) ) DEPRECATED
+    //    pSoCs->push_back( this->applyFilters( pPrimarySeeds ) );
+    // return pSoCs;
 } // function
 #endif
 
 #ifdef WITH_PYTHON
 void exportHarmonization( )
 {
-    exportModule<Harmonization>( "Harmonization", []( auto&& x ) {
-        x.def_readwrite( "optimistic_gap_estimation", &Harmonization::optimisticGapEstimation )
-            .def_readwrite( "min_coverage", &Harmonization::fMinimalQueryCoverage )
-            .def_readwrite( "tolerance", &Harmonization::fScoreTolerace )
-            .def_readwrite( "max_tries", &Harmonization::uiMaxTries )
-            .def_readwrite( "equal_score_lookahead", &Harmonization::uiMaxEqualScoreLookahead )
-            .def_readwrite( "diff_tolerance", &Harmonization::fScoreDiffTolerance )
-            .def_readwrite( "switch_q_len", &Harmonization::uiSwitchQLen )
-            .def_readwrite( "do_heuristics", &Harmonization::bDoHeuristics );
+    exportModule<HarmonizationSingle>( "HarmonizationSingle", []( auto&& x ) {
+        x.def_readwrite( "optimistic_gap_estimation", &HarmonizationSingle::optimisticGapEstimation )
+            .def_readwrite( "min_coverage", &HarmonizationSingle::fMinimalQueryCoverage )
+            .def_readwrite( "tolerance", &HarmonizationSingle::fScoreTolerace )
+            .def_readwrite( "equal_score_lookahead", &HarmonizationSingle::uiMaxEqualScoreLookahead )
+            .def_readwrite( "diff_tolerance", &HarmonizationSingle::fScoreDiffTolerance )
+            .def_readwrite( "switch_q_len", &HarmonizationSingle::uiSwitchQLen )
+            .def_readwrite( "do_heuristics", &HarmonizationSingle::bDoHeuristics );
     } );
+
+    exportModule<Harmonization>( "Harmonization", []( auto&& x ) {
+        x.def_readwrite( "single", &Harmonization::xSingle ).def_readwrite( "max_tries", &Harmonization::uiMaxTries );
+    } );
+    exportModule<SeedLumping>( "SeedLumping" );
 } // function
 #endif

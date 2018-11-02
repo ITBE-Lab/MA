@@ -10,6 +10,9 @@
 #include "container/soc.h"
 #include "module/module.h"
 
+//#define PRINT_BREAK_CRITERIA(x) x
+#define PRINT_BREAK_CRITERIA( x )
+
 #define USE_RANSAC ( 1 )
 #define PI 3.14159265
 
@@ -22,7 +25,7 @@ namespace libMA
  * Removes all contradicting seeds.
  * This should only be used in combination with the StripOfConsideration module.
  */
-class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
+class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
 {
   private:
     /**
@@ -83,8 +86,6 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
     std::shared_ptr<libMA::Seeds> applyLinesweeps( std::shared_ptr<libMA::Seeds> pSeedsIn
 #if DEBUG_LEVEL > 0
                                                    ,
-                                                   std::shared_ptr<SoCPriorityQueue>
-                                                       pSoCIn,
                                                    bool bRecord
 #endif
     );
@@ -118,8 +119,6 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
     /// @brief Stop the SoC extraction if the harmonized score drops more than x.
     double fScoreTolerace = defaults::fScoreTolerace;
 
-    /// @brief Extract at most x SoCs.
-    size_t uiMaxTries = defaults::uiMaxTries;
     /// @brief Extract at least x SoCs.
     size_t uiMinTries = defaults::uiMinTries;
 
@@ -157,15 +156,93 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 
     nucSeqIndex uiMaxDeltaDistanceInCLuster = defaults::uiMaxDeltaDistanceInCLuster;
 
+    HarmonizationSingle( )
+    {} // default constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
+                                                     std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<FMIndex> pFMIndex );
+
+}; // class
+
+
+class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
+{
+  public:
+    HarmonizationSingle xSingle;
+
+
+    /// @brief Extract at most x SoCs.
+    size_t uiMaxTries = defaults::uiMaxTries;
+
     Harmonization( )
     {} // default constructor
 
     // overload
     virtual std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
-        EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery,
-                          std::shared_ptr<FMIndex> pFMIndex );
+        EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCSsIn, std::shared_ptr<NucSeq> pQuery,
+                          std::shared_ptr<FMIndex> pFMIndex )
+    {
+        unsigned int uiNumTries = 0;
 
+        auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
+
+        for( ; uiNumTries < uiMaxTries && !pSoCSsIn->empty( ); uiNumTries++ )
+        {
+            auto pSoC = pSoCSsIn->pop( );
+            DEBUG( pSoC->pSoCIn = pSoCSsIn; ) // DEBUG
+            // @todo changed behaviour here -> harmonization single now returns no more than one seed set
+            pSoCs->push_back( xSingle.execute( pSoC, pQuery, pFMIndex ) );
+        } // for
+
+        PRINT_BREAK_CRITERIA( if( pSoCSsIn->empty( ) ) std::cout << "exhausted all SoCs" << std::endl;
+                              else std::cout << "break after " << uiNumTries << " tries." << std::endl;
+                              std::cout << "computed " << pSoCs->size( ) << " SoCs." << std::endl; )
+
+        return pSoCs;
+    } // method
 }; // class
+
+
+class SeedLumping : public Module<Seeds, false, Seeds>
+{
+  public:
+    SeedLumping( )
+    {} // default constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
+    {
+        auto pRet = std::make_shared<Seeds>( );
+
+        int64_t iDelta = pIn->front( ).start_ref( ) - (int64_t)pIn->front( ).start( );
+        pRet->push_back( pIn->front( ) );
+
+        auto xIt = pIn->begin( ) + 1;
+        while( xIt != pIn->end( ) )
+        {
+            int64_t iNewDelta = xIt->start_ref( ) - (int64_t)xIt->start( );
+            if( iDelta == iNewDelta && xIt->start( ) <= pRet->back( ).end( ) )
+            {
+                if( xIt->end( ) > pRet->back( ).end( ) )
+                    pRet->back( ).iSize += xIt->end( ) - pRet->back( ).end( );
+                assert( pRet->back( ).end( ) >= xIt->end( ) );
+                assert( pRet->back( ).end_ref( ) >= xIt->end_ref( ) );
+            } // if
+            else
+            {
+                pRet->push_back( *xIt );
+                iDelta = iNewDelta;
+            } // else
+            xIt++;
+        } // while
+
+        return pRet;
+    } // method
+}; // class
+
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON

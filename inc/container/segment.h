@@ -311,9 +311,9 @@ class SegmentVector : public Container
                 bool bOnForw = ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2;
                 if( !bOnForw )
                 {
-                    ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ( ulIndexOnRefSeq + rSegment.size( ) );
+                    ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ( ulIndexOnRefSeq + rSegment.size( ) + 1 );
                     assert( uiPosOnQuery < uiQLen );
-                    uiPosOnQuery = uiQLen - uiPosOnQuery - 1;
+                    uiPosOnQuery = uiQLen - (uiPosOnQuery + rSegment.size( ));
                 } // if
                 assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );
                 // call the given function

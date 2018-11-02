@@ -206,6 +206,8 @@ class SVInfo
     std::vector<size_t> vSeedIndicesOfSVIndels;
 }; // class
 
+DEBUG( class SoCPriorityQueue; ) // DEBUG
+
 /**
  * @brief A set with Seed elements.
  * @details
@@ -220,6 +222,8 @@ class Seeds : public Container
     TP_VEC vContent;
 
   public:
+    DEBUG( std::shared_ptr<SoCPriorityQueue> pSoCIn; ) // DEBUG
+
     typedef typename TP_VEC::value_type value_type;
     typedef typename TP_VEC::size_type size_type;
     typedef typename TP_VEC::difference_type difference_type;
@@ -315,8 +319,8 @@ class Seeds : public Container
     {
         for( Seed& rS : vContent )
         {
-            rS.uiPosOnReference = uiReferenceLength * 2 - rS.end_ref( ) + 1;
-            rS.iStart = uiQueryLength - rS.start( ) + 1;
+            rS.uiPosOnReference = uiReferenceLength * 2 - rS.end_ref( ); // @todo check if this is still correct...
+            rS.iStart = uiQueryLength - rS.end( ); // @todo check if this is still correct...
         } // for
     } // method
 
@@ -334,9 +338,9 @@ class Seeds : public Container
         nucSeqIndex uiCenter = ( uiTop + uiBottom ) / 2;
         for( Seed& rS : vContent )
         {
-            int64_t uiMovDist = ( int64_t )( rS.start( ) + rS.end() ) / 2 - (int64_t)uiCenter;
+            int64_t uiMovDist = ( int64_t )( rS.start( ) + rS.end( ) ) / 2 - (int64_t)uiCenter;
             int64_t uiNewPos = rS.iStart - uiMovDist * 2;
-            assert(uiNewPos >= 0);
+            assert( uiNewPos >= 0 );
             rS.iStart = ( nucSeqIndex )( uiNewPos );
         } // for
     } // method
