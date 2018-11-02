@@ -6,6 +6,7 @@
 #
 
 #@todo use pkg-config to find locations...
+# @todo autocompile ksw
 
 # location of the Boost Python include files and library
 # $(BOOST_ROOT) must be set in the system environment!
