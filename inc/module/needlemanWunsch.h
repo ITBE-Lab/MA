@@ -11,10 +11,6 @@
 #include "module/module.h"
 
 
-
-class NeedlemanWunsch : public Module<std::shared_ptr<Alignment>, false,
-                                      std::shared_ptr<Alignment>, NucSeq, Pack>
-
 namespace libMA
 {
 /**
