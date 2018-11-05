@@ -10,9 +10,9 @@
 # @author Markus Schmidt
 #
 
-import libMA
 import traceback
-
+from libs.ma.libMA import FMIndex
+import libs.ma.libMA as libMA
 
 def promise_me(module, *args):
     arg_vector = libMA.VectorPledge()
@@ -87,16 +87,6 @@ class MatchType(libMA.MatchType):
 # @ingroup container
 #
 class Pledge(libMA.Pledge):
-    pass
-
-
-##
-# @brief Contains a suffix array.
-# @details
-#
-# @ingroup container
-#
-class FMIndex(libMA.FMIndex):
     pass
 
 
@@ -179,9 +169,9 @@ class SAInterval(libMA.SAInterval):
 # @ingroup container
 #
 class ContainerVector(libMA.ContainerVector):
-    def __init__(self, l=[]):
-        for x in l:
-            super(ContainerVector, self).append(x)
+    def __init__(self, *args):
+        for arg in args:
+            super(ContainerVector, self).append(arg)
 
 
 ##
@@ -205,10 +195,13 @@ class NucSeq(libMA.NucSeq):
 
 
 ##
-# @brief python wrapper for BinarySeeding
+# @brief python wrapper for BinarySeeding @todo change all module execute definitions to match this one!
 class BinarySeeding(libMA.BinarySeeding):
     def execute(self, *args):
-        return super(BinarySeeding, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(BinarySeeding, self).execute(vec)
 
 
 ##
@@ -228,23 +221,23 @@ class PairedFileWriter(libMA.PairedFileWriter):
 
 ##
 # @brief python wrapper for DbWriter
-class DbWriter(libMA.DbWriter):
-    def execute(self, *args):
-        return super(DbWriter, self).execute(ContainerVector(list(args)))
-
-
-##
-# @brief python wrapper for PairedDbWriter
-class PairedDbWriter(libMA.PairedDbWriter):
-    def execute(self, *args):
-        return super(PairedDbWriter, self).execute(ContainerVector(list(args)))
-
-
-##
-# @brief python wrapper for PairedReads
-class PairedReads(libMA.PairedReads):
-    def execute(self, *args):
-        return super(PairedReads, self).execute(ContainerVector(list(args)))
+# class DbWriter(libMA.DbWriter):
+#     def execute(self, *args):
+#         return super(DbWriter, self).execute(ContainerVector(list(args)))
+# 
+# 
+# ##
+# # @brief python wrapper for PairedDbWriter
+# class PairedDbWriter(libMA.PairedDbWriter):
+#     def execute(self, *args):
+#         return super(PairedDbWriter, self).execute(ContainerVector(list(args)))
+# 
+# 
+# ##
+# # @brief python wrapper for PairedReads
+# class PairedReads(libMA.PairedReads):
+#     def execute(self, *args):
+#         return super(PairedReads, self).execute(ContainerVector(list(args)))
 
 
 ##
