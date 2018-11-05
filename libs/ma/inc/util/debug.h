@@ -10,13 +10,6 @@
 #define DEBUG_LEVEL 0
 #endif // DEBUG_LEVEL
 
-#if DEBUG_LEVEL == 0
-// disable instertions
-#ifndef _MSC_VER
-#define NDEBUG
-#endif
-#endif
-
 #if DEBUG_LEVEL >= 1
 #define DEBUG( x ) x
 #define DEBUG_PARAM( x ) , x

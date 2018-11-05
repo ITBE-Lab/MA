@@ -11,7 +11,7 @@ endif()
 # Look for boost
 # Info: https://feralchicken.wordpress.com/2013/12/07/boost-python-hello-world-example-using-cmake/
 # If your boost is not within the standard path, then set BOOST_ROOT appropriately
-set(BOOST_ROOT "C:\\Boost\\boost_1_62_0")
+set(BOOST_ROOT "/opt/dev/")
 find_package( Boost 1.60.0 COMPONENTS python3 )
 
 # Define library libMA as target
