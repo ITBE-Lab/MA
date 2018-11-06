@@ -71,5 +71,5 @@ add_subdirectory ( libs )
 
 # Build the MA executable itself
 add_executable ( maCMD cmdMa.cpp )
-target_include_directories ( maCMD PUBLIC libs/ma/inc contrib/CppSQLite3/inc contrib/sqlite3/inc ) # @todo
+target_include_directories ( maCMD PUBLIC libs/ma/inc )
 target_link_libraries ( maCMD PUBLIC kswcpp MA Threads::Threads )

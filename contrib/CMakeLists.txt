@@ -4,9 +4,15 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-# Include sub-projects.
+# Include contributed (external) projects.
+
 message( "Include sqlite3 ..." )
 add_subdirectory (sqlite3)
 
 message( "Include CppSQLite3 ..." )
 add_subdirectory (CppSQLite3)
+
+if( PythonLibs_FOUND )
+	message( "Include pybind11 ..." )
+	add_subdirectory (pybind11)
+endif()

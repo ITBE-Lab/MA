@@ -34,9 +34,8 @@ endif()
 set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Set includes and library dependencies 
-target_include_directories(MA PUBLIC inc ../kswcpp/inc ../../contrib/CppSQLite3/inc) # @todo
-target_link_libraries ( MA LINK_PUBLIC kswcpp )
-target_link_libraries ( MA LINK_PUBLIC CppSQLite3 )
+target_include_directories( MA PUBLIC inc )
+target_link_libraries ( MA PUBLIC kswcpp CppSQLite3 )
 
 # Add the Python support to MA (if Python and Boost are available) 
 if( PythonLibs_FOUND AND Boost_FOUND )

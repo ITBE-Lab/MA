@@ -13,7 +13,6 @@ add_library(CppSQLite3 STATIC
 # cmake will add the -fPIC for compilation with GCC
 set_property( TARGET CppSQLite3 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-
 target_link_libraries ( CppSQLite3 LINK_PUBLIC sqlite3 )
 
 # location of all includes with the CppSQLite3 library
