@@ -74,11 +74,14 @@ int64_t EXPORTED iMinSVDistance = 500;
 size_t EXPORTED uiZDrop = 200;
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportDefaults( )
 {
     boost::python::def( "configureFast", &configureFast );
     boost::python::def( "configureAccurate", &configureAccurate );
 } // function
+#endif
 #endif
 }; // namespace defaults
 }; // namespace libMA

@@ -18,6 +18,8 @@ extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportSeed( )
 {
     exportInterval<nucSeqIndex>( );
@@ -60,4 +62,5 @@ void exportSeed( )
     // tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<std::shared_ptr<Seeds>, std::shared_ptr<Container>>( );
 } // function
+#endif
 #endif

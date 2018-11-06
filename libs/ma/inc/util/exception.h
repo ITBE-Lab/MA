@@ -22,7 +22,9 @@
 #include <cmath>
 #include <string>
 #ifdef WITH_PYTHON
-#include <boost/python.hpp>
+    #ifdef BOOST_PYTHON
+        #include <boost/python.hpp>
+    #endif
 #endif
 /// @endcond
 

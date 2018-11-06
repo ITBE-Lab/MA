@@ -165,10 +165,12 @@ PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>
 
 #ifdef WITH_PYTHON
 
+#ifdef BOOST_PYTHON
 void exportPairedReads( )
 {
     // export the PairedReads class
     exportModule<PairedReads>( "PairedReads" );
 } // function
+#endif
 
 #endif

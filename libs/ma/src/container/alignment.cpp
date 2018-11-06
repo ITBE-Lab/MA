@@ -321,6 +321,8 @@ int64_t Alignment::reCalcScore( ) const
 
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportAlignment( )
 {
     boost::python::class_<Alignment, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<Alignment>>(
@@ -419,4 +421,5 @@ void exportAlignment( )
                                           std::shared_ptr<Container>>( );
 
 } // function
+#endif
 #endif

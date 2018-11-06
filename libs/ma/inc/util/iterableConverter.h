@@ -9,7 +9,7 @@
 
 #ifndef ITERABLE_CONVERTER_H
 #define ITERABLE_CONVERTER_H
-
+#ifdef BOOST_PYTHON
 /**
  * @brief Type that allows for registration of conversions from python iterable types.
  */
@@ -66,5 +66,6 @@ class IterableConverter
     } // function
 }; // class
 
+#endif
 #endif
 #endif

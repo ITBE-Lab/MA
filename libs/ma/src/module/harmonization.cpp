@@ -586,6 +586,8 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
 } // function
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportHarmonization( )
 {
     exportModule<Harmonization>( "Harmonization", []( auto&& x ) {
@@ -599,4 +601,5 @@ void exportHarmonization( )
             .def_readwrite( "do_heuristics", &Harmonization::bDoHeuristics );
     } );
 } // function
+#endif
 #endif

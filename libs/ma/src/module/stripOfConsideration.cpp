@@ -154,6 +154,8 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 } // function
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportStripOfConsideration( )
 {
     // export the StripOfConsideration class
@@ -163,4 +165,5 @@ void exportStripOfConsideration( )
             .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
     } );
 } // function
+#endif
 #endif

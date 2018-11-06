@@ -201,6 +201,8 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
 } // function
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportFileReader( )
 {
     // export the FileReader class
@@ -220,4 +222,5 @@ void exportFileReader( )
     // export the PairedFileReader class
     exportModule<PairedFileReader, std::string, std::string>( "PairedFileReader" );
 } // function
+#endif
 #endif

@@ -109,8 +109,11 @@ void test_ransac( )
 } // function
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void export_ransac( )
 {
     boost::python::def( "test_ransac", &test_ransac );
 } // function
+#endif
 #endif

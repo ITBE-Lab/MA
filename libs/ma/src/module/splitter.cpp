@@ -8,6 +8,8 @@ using namespace libMA;
 
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportSplitter( )
 {
     // export the Lock class
@@ -21,4 +23,5 @@ void exportSplitter( )
     exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 0>>( "GetFirstQuery" );
     exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 1>>( "GetSecondQuery" );
 } // function
+#endif
 #endif

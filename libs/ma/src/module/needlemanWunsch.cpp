@@ -1014,6 +1014,8 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 #endif
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportNeedlemanWunsch( )
 {
     // test ksw function
@@ -1023,4 +1025,5 @@ void exportNeedlemanWunsch( )
     // export the NeedlemanWunsch class
     exportModule<NeedlemanWunsch>( "NeedlemanWunsch" );
 } // function
+#endif
 #endif

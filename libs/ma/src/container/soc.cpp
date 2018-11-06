@@ -6,6 +6,8 @@
 using namespace libMA;
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportSoC( )
 {
 #if DEBUG_LEVEL >= 1
@@ -72,4 +74,5 @@ void exportSoC( )
     boost::python::implicitly_convertible<std::shared_ptr<SoCPriorityQueue>,
                                           std::shared_ptr<Container>>( );
 } // function
+#endif
 #endif

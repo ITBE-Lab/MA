@@ -6,6 +6,8 @@
 using namespace libMA;
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportIntervalTree( )
 {
     // export the SegmentVector class
@@ -45,4 +47,5 @@ void exportIntervalTree( )
                                           std::shared_ptr<Container>>( );
 
 } // function
+#endif
 #endif

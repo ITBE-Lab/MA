@@ -119,6 +119,8 @@ MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
 } // function
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportMappingQuality( )
 {
     // export the MappingQuality class
@@ -127,4 +129,5 @@ void exportMappingQuality( )
             .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
     } );
 } // function
+#endif
 #endif

@@ -630,9 +630,13 @@ class NucSeq : public Container
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef BOOST_PYTHON
 /**
  * @brief export this @ref Module "modules" to boost python
  * @ingroup export
  */
-void exportSequence( );
+void exportNucSeq( );
+#else
+void exportNucSeq( py::module& rxPyModuleId );
+#endif
 #endif

@@ -9,6 +9,7 @@ using namespace libMA;
 
 
 #ifdef WITH_PYTHON
+#ifdef BOOST_PYTHON
 void exportContainer( )
 {
     // container is an abstract class and should never be initialized
@@ -29,4 +30,20 @@ void exportContainer( )
     boost::python::implicitly_convertible<std::shared_ptr<PyContainerVector>, std::shared_ptr<Container>>( );
 
 } // function
+#else
+
+PYBIND11_MAKE_OPAQUE( PyContainerVector );
+void exportContainer( py::module& rxPyModuleId )
+{
+    py::class_<Container, std::shared_ptr<Container>>( rxPyModuleId, "Container" );
+
+    // container is an abstract class and should never be initialized
+   
+    py::bind_vector<PyContainerVector, std::shared_ptr<PyContainerVector>>( rxPyModuleId, "ContainerVector" );
+
+    // tell boost python that pointers of these classes can be converted implicitly
+    py::implicitly_convertible<PyContainerVector, Container>( );
+
+} // function
+#endif
 #endif
