@@ -35,10 +35,12 @@ BOOST_PYTHON_MODULE( libMA )
     exportMappingQuality( );
     exportPairedReads( );
     exportSplitter( );
+#ifdef WITH_POSTGRES
     exportDBWriter( );
+#endif
+    exportSoCDbWriter();
     exportSoC( );
     exportOtherSeeding( );
-    exportSoCDbWriter();
     defaults::exportDefaults( );
 } // function
 

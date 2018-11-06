@@ -66,9 +66,10 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Build all required libraries
+add_subdirectory ( contrib )
 add_subdirectory ( libs )
 
-# Build the MA excecutable itself
+# Build the MA executable itself
 add_executable ( maCMD cmdMa.cpp )
 target_include_directories ( maCMD PUBLIC libs/ma/inc )
 target_link_libraries ( maCMD PUBLIC kswcpp libMA Threads::Threads )

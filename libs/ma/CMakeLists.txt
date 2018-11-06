@@ -14,46 +14,15 @@ endif()
 set(BOOST_ROOT "/opt/dev/")
 find_package( Boost 1.60.0 COMPONENTS python3 )
 
+
+file(GLOB libMA_SRC
+    "src/*/*.cpp"
+) # file
+
+
 # Define library libMA as target
 add_library(libMA SHARED
-	src/container/alignment.cpp
-	src/container/bwt_large.cpp
-	src/container/container.cpp
-	src/container/fMIndex.cpp
-	src/container/is.cpp
-	src/container/nucSeq.cpp
-	src/container/pack.cpp
-	src/container/qSufSort.cpp
-	src/container/seed.cpp
-	src/container/segment.cpp
-	src/container/soc.cpp
-    
-	src/module/binarySeeding.cpp
-	src/module/dbWriter.cpp
-	src/module/fileReader.cpp
-	src/module/fileWriter.cpp
-	src/module/harmonization.cpp
-	src/module/mappingQuality.cpp
-	src/module/module.cpp
-	src/module/needlemanWunsch.cpp
-	src/module/otherSeeding.cpp
-	src/module/pairedReads.cpp
-	src/module/splitter.cpp
-	src/module/stripOfConsideration.cpp
-	
-	src/sample_consensus/ransac.cpp
-	src/sample_consensus/sac.cpp
-	src/sample_consensus/sac_model.cpp
-	src/sample_consensus/sac_model_line.cpp
-	src/sample_consensus/sac_model_plane.cpp
-	src/sample_consensus/test_ransac.cpp
-	
-	src/util/default_parameters.cpp
-	src/util/exception.cpp
-	src/util/export.cpp
-	src/util/support.cpp
-	src/util/system.cpp
-	src/util/threadPool.cpp
+	${libMA_SRC}
 ) # add_library
 
 if( MSVC )
@@ -68,6 +37,7 @@ set_property(TARGET libMA PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Set includes and library dependencies 
 target_include_directories(libMA PUBLIC inc ../kswcpp/inc)
 target_link_libraries ( libMA LINK_PUBLIC kswcpp )
+target_link_libraries ( libMA LINK_PUBLIC CppSQLite3 )
 
 # Add the Python support to libMA (if Python and Boost are available) 
 if( PythonLibs_FOUND AND Boost_FOUND )
