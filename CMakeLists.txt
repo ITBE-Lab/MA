@@ -61,6 +61,13 @@ else()
     endif()
 endif()
 
+# Look for Python
+find_package( PythonLibs 3.5 )
+if( PythonLibs_FOUND )
+	message( "Found Python Libs")
+endif()
+
+
 # Required for linking via libpthreads on UNIX systems
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -71,5 +78,4 @@ add_subdirectory ( libs )
 
 # Build the MA executable itself
 add_executable ( maCMD cmdMa.cpp )
-target_include_directories ( maCMD PUBLIC libs/ma/inc )
-target_link_libraries ( maCMD PUBLIC kswcpp MA Threads::Threads )
+target_link_libraries ( maCMD PUBLIC MA Threads::Threads )

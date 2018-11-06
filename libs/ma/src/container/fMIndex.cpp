@@ -388,6 +388,8 @@ void FMIndex::build_FMIndex(
 } // method
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportFM_index( )
 {
     exportInterval<t_bwtIndex>( );
@@ -414,4 +416,5 @@ void exportFM_index( )
     // tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<std::shared_ptr<FMIndex>, std::shared_ptr<Container>>( );
 } // function
+#endif
 #endif

@@ -193,6 +193,7 @@ template <typename T> class Interval
 
 
 #ifdef WITH_PYTHON
+#ifdef BOOST_PYTHON
 template <typename T> void exportInterval( )
 {
     // export the Seed class
@@ -200,4 +201,5 @@ template <typename T> void exportInterval( )
         .def_readwrite( "start", &Interval<T>::iStart )
         .def_readwrite( "size", &Interval<T>::iSize );
 } // function
+#endif
 #endif

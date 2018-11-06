@@ -144,6 +144,8 @@ std::shared_ptr<Container> PairedDbWriter::execute( std::shared_ptr<NucSeq> pQue
 } // function
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportDBWriter( )
 {
     // export the DbWriter class
@@ -152,6 +154,7 @@ void exportDBWriter( )
     exportModule<PairedDbWriter, std::string, uint32_t>( "PairedDbWriter" );
 
 } // function
+#endif
 
 #endif // WITH_PYTHON
 

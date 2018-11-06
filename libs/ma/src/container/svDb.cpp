@@ -3,6 +3,8 @@
 using namespace libMA;
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportSoCDbWriter( )
 {
 
@@ -19,4 +21,5 @@ void exportSoCDbWriter( )
     // export the NucSeqFromSql class
     exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>, std::string>( "NucSeqFromSql" );
 } // function
+#endif
 #endif

@@ -104,9 +104,12 @@ std::shared_ptr<SegmentVector> OtherSeeding::execute( std::shared_ptr<FMIndex> p
 
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportOtherSeeding( )
 {
     // export the OtherSeeding class
     exportModule<OtherSeeding, bool>( "OtherSeeding" );
 } // function
+#endif
 #endif

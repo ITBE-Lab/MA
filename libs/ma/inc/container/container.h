@@ -15,13 +15,22 @@
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
 #ifdef WITH_PYTHON
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+
+
+#ifdef BOOST_PYTHON
+    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#else
+    #include <pybind11/stl_bind.h>
+    namespace py = pybind11;
+#endif
+
+
 #endif
 /// @endcond
 
 #if DEBUG_LEVEL >= 1
-#define TOMBSTONE_VAL_ALIVE 989798979897
-#define TOMBSTONE_VAL_DEAD 102010201020
+    #define TOMBSTONE_VAL_ALIVE 989798979897
+    #define TOMBSTONE_VAL_DEAD 102010201020
 #endif
 
 namespace libMA
@@ -206,7 +215,48 @@ template <class TP_CONTENT> class ContainerVector : public Container
         return vContent.insert( pos, first, last );
     } // method
 
+    inline void reserve( size_type n )
+    {
+        vContent.reserve( n );
+    } // method
+
 }; // class
+
+template <class TP_CONTENT>
+inline bool operator==( const ContainerVector<TP_CONTENT>& rLeft, const ContainerVector<TP_CONTENT>& rRight )
+{
+    return rLeft.vContent == rRight.vContent;
+} // function
+
+template <class TP_CONTENT>
+inline bool operator!=( const ContainerVector<TP_CONTENT>& rLeft, const ContainerVector<TP_CONTENT>& rRight )
+{
+    return rLeft.vContent != rRight.vContent;
+} // function
+
+template <class TP_CONTENT>
+inline bool operator<( const ContainerVector<TP_CONTENT>& rLeft, const ContainerVector<TP_CONTENT>& rRight )
+{
+    return rLeft.vContent < rRight.vContent;
+} // function
+
+template <class TP_CONTENT>
+inline bool operator<=( const ContainerVector<TP_CONTENT>& rLeft, const ContainerVector<TP_CONTENT>& rRight )
+{
+    return rLeft.vContent <= rRight.vContent;
+} // function
+
+template <class TP_CONTENT>
+inline bool operator>( const ContainerVector<TP_CONTENT>& rLeft, const ContainerVector<TP_CONTENT>& rRight )
+{
+    return rLeft.vContent > rRight.vContent;
+} // function
+
+template <class TP_CONTENT>
+inline bool operator>=( const ContainerVector<TP_CONTENT>& rLeft, const ContainerVector<TP_CONTENT>& rRight )
+{
+    return rLeft.vContent >= rRight.vContent;
+} // function
 
 /**
  * @brief input for all python modules.
@@ -221,12 +271,18 @@ class PyContainerVector : public ContainerVector<std::shared_ptr<Container>>
 
 } // namespace libMA
 
+
 #ifdef WITH_PYTHON
 /**
  * @brief Function to export Container to boost python.
  * @ingroup export
  */
+
+#ifdef BOOST_PYTHON
 void exportContainer( );
+#else
+void exportContainer( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

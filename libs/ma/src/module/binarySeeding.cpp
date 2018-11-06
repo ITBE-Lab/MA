@@ -105,6 +105,8 @@ BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucS
 } // function
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportBinarySeeding( )
 {
     // export the BinarySeeding class
@@ -114,4 +116,5 @@ void exportBinarySeeding( )
             .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );
     } );
 } // function
+#endif
 #endif

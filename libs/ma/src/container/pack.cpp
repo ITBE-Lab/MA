@@ -541,6 +541,7 @@ void Pack::vAppendFastaFile( const char* pcFileName )
 
 
 #ifdef WITH_PYTHON
+#ifdef BOOST_PYTHON
 void exportPack( )
 {
     boost::python::class_<Pack, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<Pack>>(
@@ -648,4 +649,5 @@ void exportPack( )
     // tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<std::shared_ptr<Pack>, std::shared_ptr<Container>>( );
 } // function
+#endif
 #endif

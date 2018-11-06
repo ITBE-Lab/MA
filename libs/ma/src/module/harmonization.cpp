@@ -769,6 +769,8 @@ std::shared_ptr<Seeds> HarmonizationSingle::execute( std::shared_ptr<Seeds> pPri
 #endif
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 void exportHarmonization( )
 {
     exportModule<HarmonizationSingle>( "HarmonizationSingle", []( auto&& x ) {
@@ -786,4 +788,5 @@ void exportHarmonization( )
     } );
     exportModule<SeedLumping>( "SeedLumping" );
 } // function
+#endif
 #endif

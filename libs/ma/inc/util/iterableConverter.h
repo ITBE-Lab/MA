@@ -9,7 +9,7 @@
 
 #ifndef ITERABLE_CONVERTER_H
 #define ITERABLE_CONVERTER_H
-
+#ifdef BOOST_PYTHON
 /**
  * @brief Type that allows for registration of conversions from python iterable types.
  */
@@ -99,5 +99,6 @@ struct TupleToPython {
     }
 };
 
+#endif
 #endif
 #endif

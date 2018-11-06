@@ -7,6 +7,8 @@
 using namespace libMA;
 
 #ifdef WITH_PYTHON
+
+#ifdef BOOST_PYTHON
 /**
  * @brief The boost-python main method.
  *
@@ -20,7 +22,7 @@ BOOST_PYTHON_MODULE( libMA )
     exportContainer( );
     exportModuleClass( );
     exportFM_index( );
-    exportSequence( );
+    exportNucSeq( );
     exportBinarySeeding( );
     exportPack( );
     exportIntervalTree( );
@@ -43,6 +45,39 @@ BOOST_PYTHON_MODULE( libMA )
     exportOtherSeeding( );
     defaults::exportDefaults( );
 } // function
+
+#else
+
+PYBIND11_MODULE(libMA, libMaModule) {
+    DEBUG_3( std::cout.setf( std::ios::unitbuf ); )
+    exportContainer( libMaModule );
+    exportModuleClass( libMaModule );
+    //exportFM_index( libMaModule );
+    exportNucSeq( libMaModule );
+    //exportBinarySeeding( libMaModule );
+    //exportPack( libMaModule );
+    //exportIntervalTree( libMaModule );
+    //exportExceptions( libMaModule );
+    //exportSeed( libMaModule );
+    //exportAlignment( libMaModule );
+    //exportHarmonization( libMaModule );
+    //exportNeedlemanWunsch( libMaModule );
+    //exportStripOfConsideration( libMaModule );
+    //exportFileReader( libMaModule );
+    //exportFileWriter( libMaModule );
+    //exportMappingQuality( libMaModule );
+    //exportPairedReads( libMaModule );
+    //exportSplitter( libMaModule );
+#ifdef WITH_POSTGRES
+    //exportDBWriter( libMaModule );
+#endif
+    //exportSoCDbWriter( libMaModule );
+    //exportSoC( libMaModule );
+    //exportOtherSeeding( libMaModule );
+    //defaults::exportDefaults( libMaModule );
+} // function
+
+#endif
 
 #endif
 
