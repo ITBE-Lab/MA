@@ -11,167 +11,35 @@
 #
 
 import traceback
+from libs.ma.libMA import Alignment
+from libs.ma.libMA import MatchType
+from libs.ma.libMA import Pledge
+from libs.ma.libMA import SoCPriorityQueue
+from libs.ma.libMA import SegmentVector
+from libs.ma.libMA import Seeds
+from libs.ma.libMA import Segment
+from libs.ma.libMA import Pack
+from libs.ma.libMA import Seed
+from libs.ma.libMA import SAInterval
 from libs.ma.libMA import FMIndex
+from libs.ma.libMA import Module
+from libs.ma.libMA import VolatileModule
+from libs.ma.libMA import configureAccurate
+from libs.ma.libMA import configureFast
 import libs.ma.libMA as libMA
+
 
 def promise_me(module, *args):
     arg_vector = libMA.VectorPledge()
     for arg in args:
         arg_vector.append(arg)
-    if isinstance(module, libMA.Module):
+    if isinstance(module, Module):
         return libMA.ModulePledge(module, arg_vector)
-    elif isinstance(module, libMA.VolatileModule):
+    elif isinstance(module, VolatileModule):
         return libMA.VolatileModulePledge(module, arg_vector)
     else:
         raise Exception(
             "module must be an instance of Module or VolatileModule")
-
-
-##
-# @brief the Python implementation of @ref Module "module".
-# @details
-# The module overrides the @ref promiseMe "promise_me" function.
-# Thus telling the C++ code that any module inheriting from this class is written in python.
-# @see the C++ implementation of @ref Module "module".
-# @ingroup module
-#
-class Module(libMA.Module):
-
-    ##
-    # @brief Execute the implemented algorithm.
-    # @details
-    # Reimplemented from @ref Module::saveExecute.
-    def execute(self, *args):
-        self.__store_result = Module.execute(args)
-        return self.__store_result
-
-    ##
-    # @brief Make this module promise to execute it's function on the provided data.
-    # @details
-    # Reimplemented from @ref Module::promiseMe.
-    def promise_me(self, *args):
-        return Pledge.make_pledge(self, self.get_output_type(), args)
-
-
-##
-# @brief contains the final output of the aligner.
-# @details
-# Holds a sparse vector like representation of one alignment.
-#
-# @ingroup container
-#
-class Alignment(libMA.Alignment):
-    pass
-
-
-##
-# @brief Describes the type of match at one specific position of the alignment.
-# @details
-# - match: query and reference have the same nucleotide.
-# - seed: query and reference have the same nucleotide (the match was found as part of a seed).
-# - missmatch: query and reference have different nucleotides,
-#   but they are aligned to the same position nonetheless.
-# - insertion: a nucleotide is present on the query that has no counterpart on the reference.
-# - deletion: a nucleotide is present on the reference that has no counterpart on the query.
-# @note libMA::MatchType is an enum and therefore does not show up in the class hierarchy.
-#
-class MatchType(libMA.MatchType):
-    pass
-
-
-##
-# @brief Represents the pledge to deliver some container.
-# @details
-# Content may be provided by a @ref Module::promiseMe "module" or by calling @ref set.
-#
-# @ingroup container
-#
-class Pledge(libMA.Pledge):
-    pass
-
-
-##
-# @brief Contains sets of seeds ordered by SoC score
-# @details
-#
-# @ingroup container
-#
-class SoCPriorityQueue(libMA.SoCPriorityQueue):
-    pass
-
-
-##
-# @brief The Container for a SegmentVector
-# @details
-# A doubly linked list holding Segments.
-#
-# @ingroup container
-#
-class SegmentVector(libMA.SegmentVector):
-    pass
-
-
-##
-# @brief The Container for a Seeds_
-# @details
-# is iterable
-#
-# @ingroup container
-#
-class Seeds(libMA.Seeds):
-    pass
-
-
-##
-# @brief A interval on the query that contains one or multiple @ref Seed "seeds".
-# @details
-#
-# @ingroup container
-#
-class Segment(libMA.Segment):
-    pass
-
-
-##
-# @brief A packed version of a @ref NucSeq_ "NucSeq".
-# @details
-#
-# @ingroup container
-#
-class Pack(libMA.Pack):
-    pass
-
-
-##
-# @brief A single seed.
-# @details
-#
-# @ingroup container
-#
-class Seed(libMA.Seed):
-    pass
-
-
-##
-# @brief A SAInterval.
-# @details
-#
-# @ingroup container
-#
-class SAInterval(libMA.SAInterval):
-    pass
-
-
-##
-# @brief A ContainerVector.
-# @details
-#
-# @ingroup container
-#
-class ContainerVector(libMA.ContainerVector):
-    def __init__(self, *args):
-        for arg in args:
-            super(ContainerVector, self).append(arg)
 
 
 ##
@@ -195,7 +63,7 @@ class NucSeq(libMA.NucSeq):
 
 
 ##
-# @brief python wrapper for BinarySeeding @todo change all module execute definitions to match this one!
+# @brief python wrapper for BinarySeeding
 class BinarySeeding(libMA.BinarySeeding):
     def execute(self, *args):
         vec = libMA.ContainerVector()
@@ -208,80 +76,131 @@ class BinarySeeding(libMA.BinarySeeding):
 # @brief python wrapper for FileWriter
 class FileWriter(libMA.FileWriter):
     def execute(self, *args):
-        return super(FileWriter, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(FileWriter, self).execute(vec)
 
 
 ##
 # @brief python wrapper for PairedFileWriter
 class PairedFileWriter(libMA.PairedFileWriter):
     def execute(self, *args):
-        return super(PairedFileWriter, self).execute(
-            ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(PairedFileWriter, self).execute(vec)
+
+
+if hasattr(libMA, "DBWriter"):
+    ##
+    # @brief python wrapper for DbWriter
+    # @details
+    # This requires a switch in order to be compiled
+    class DbWriter(libMA.DbWriter):
+        def execute(self, *args):
+            vec = libMA.ContainerVector()
+            for arg in args:
+                vec.append(arg)
+            return super(DbWriter, self).execute(vec)
+else:
+    ##
+    # @brief python wrapper for DbWriter
+    class DbWriter:
+        def __init__(self):
+            raise NotImplementedError(
+                "libMA was complied without the WITH_POSTGRES" +
+                " switch, so this class is unavailable")
+
+
+if hasattr(libMA, "PairedDbWriter"):
+    ##
+    # @brief python wrapper for PairedDbWriter
+    # This requires a switch in order to be compiled
+    class PairedDbWriter(libMA.PairedDbWriter):
+        def execute(self, *args):
+            vec = libMA.ContainerVector()
+            for arg in args:
+                vec.append(arg)
+            return super(PairedDbWriter, self).execute(vec)
+else:
+    ##
+    # @brief python wrapper for PairedDbWriter
+    class PairedDbWriter:
+        def __init__(self):
+            raise NotImplementedError(
+                "libMA was complied without the WITH_POSTGRES" +
+                " switch, so this class is unavailable")
 
 
 ##
-# @brief python wrapper for DbWriter
-# class DbWriter(libMA.DbWriter):
-#     def execute(self, *args):
-#         return super(DbWriter, self).execute(ContainerVector(list(args)))
-# 
-# 
-# ##
-# # @brief python wrapper for PairedDbWriter
-# class PairedDbWriter(libMA.PairedDbWriter):
-#     def execute(self, *args):
-#         return super(PairedDbWriter, self).execute(ContainerVector(list(args)))
-# 
-# 
-# ##
-# # @brief python wrapper for PairedReads
-# class PairedReads(libMA.PairedReads):
-#     def execute(self, *args):
-#         return super(PairedReads, self).execute(ContainerVector(list(args)))
+# @brief python wrapper for PairedReads
+class PairedReads(libMA.PairedReads):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(PairedReads, self).execute(vec)
 
 
 ##
 # @brief python wrapper for StripOfConsideration
 class StripOfConsideration(libMA.StripOfConsideration):
     def execute(self, *args):
-        return super(StripOfConsideration, self).execute(
-            ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(StripOfConsideration, self).execute(vec)
 
 
 ##
 # @brief python wrapper for Harmonization
 class Harmonization(libMA.Harmonization):
     def execute(self, *args):
-        return super(Harmonization, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(Harmonization, self).execute(vec)
 
 
 ##
 # @brief python wrapper for FileReader
 class FileReader(libMA.FileReader):
     def execute(self):
-        return super(FileReader, self).execute(ContainerVector())
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(FileReader, self).execute(vec)
 
 
 ##
 # @brief python wrapper for PairedFileReader
 class PairedFileReader(libMA.PairedFileReader):
     def execute(self):
-        return super(PairedFileReader, self).execute(ContainerVector())
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(PairedFileReader, self).execute(vec)
 
 
 ##
 # @brief python wrapper for LinearLineSweep
 class NeedlemanWunsch(libMA.NeedlemanWunsch):
     def execute(self, *args):
-        return super(NeedlemanWunsch, self).execute(
-            ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(NeedlemanWunsch, self).execute(vec)
 
 
 ##
 # @brief python wrapper for MappingQuality
 class MappingQuality(libMA.MappingQuality):
     def execute(self, *args):
-        return super(MappingQuality, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(MappingQuality, self).execute(vec)
 
 
 ##
@@ -290,7 +209,10 @@ class MappingQuality(libMA.MappingQuality):
 #
 class Lock(libMA.Lock):
     def execute(self, *args):
-        return super(Lock, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(Lock, self).execute(vec)
 
 
 ##
@@ -299,7 +221,10 @@ class Lock(libMA.Lock):
 #
 class UnLock(libMA.UnLock):
     def execute(self, *args):
-        return super(UnLock, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(UnLock, self).execute(vec)
 
 
 ##
@@ -308,7 +233,10 @@ class UnLock(libMA.UnLock):
 #
 class GetFirstQuery(libMA.GetFirstQuery):
     def execute(self, *args):
-        return super(GetFirstQuery, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(GetFirstQuery, self).execute(vec)
 
 
 ##
@@ -317,7 +245,10 @@ class GetFirstQuery(libMA.GetFirstQuery):
 #
 class GetSecondQuery(libMA.GetSecondQuery):
     def execute(self, *args):
-        return super(GetSecondQuery, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(GetSecondQuery, self).execute(vec)
 
 
 ##
@@ -326,4 +257,7 @@ class GetSecondQuery(libMA.GetSecondQuery):
 #
 class OtherSeeding(libMA.OtherSeeding):
     def execute(self, *args):
-        return super(OtherSeeding, self).execute(ContainerVector(list(args)))
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(OtherSeeding, self).execute(vec)
