@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "CppSQLite3.h"
+#include <CppSQLite3.h>
 #include <iostream>
 #include <memory>
 #include <mutex>

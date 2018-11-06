@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project("CppSQLite3" VERSION 0.1 DESCRIPTION "Cpp Sqlite Library")
 
-# Define the target (library sqlite3)
+# Define the target (library CppSQLite3)
 add_library(CppSQLite3 STATIC
 	src/CppSQLite3.cpp
 )
@@ -16,5 +16,5 @@ set_property( TARGET CppSQLite3 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries ( CppSQLite3 LINK_PUBLIC sqlite3 )
 
-# location of all includes with the sqlite3 library
+# location of all includes with the CppSQLite3 library
 target_include_directories( CppSQLite3 PUBLIC inc )

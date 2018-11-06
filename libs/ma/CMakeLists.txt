@@ -14,42 +14,41 @@ endif()
 set(BOOST_ROOT "/opt/dev/")
 find_package( Boost 1.60.0 COMPONENTS python3 )
 
-
-file(GLOB libMA_SRC
+# Get all .cpp files in the src folder
+file(GLOB MA_SRC
     "src/*/*.cpp"
 ) # file
 
-
-# Define library libMA as target
-add_library(libMA SHARED
-	${libMA_SRC}
+# Define library MA as target
+add_library(MA SHARED
+	${MA_SRC}
 ) # add_library
 
 if( MSVC )
 	# Activate __declspec(dllexport) for DLL export 
 	# PRIVATE => depending projects will not inherit the EXPORT definition
-	target_compile_definitions( libMA PRIVATE EXPORT )  
+	target_compile_definitions( MA PRIVATE EXPORT )  
 endif()
 
 # CMake will add the -fPIC for compilation with GCC
-set_property(TARGET libMA PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Set includes and library dependencies 
-target_include_directories(libMA PUBLIC inc ../kswcpp/inc)
-target_link_libraries ( libMA LINK_PUBLIC kswcpp )
-target_link_libraries ( libMA LINK_PUBLIC CppSQLite3 )
+target_include_directories(MA PUBLIC inc ../kswcpp/inc ../../contrib/CppSQLite3/inc) # @todo
+target_link_libraries ( MA LINK_PUBLIC kswcpp )
+target_link_libraries ( MA LINK_PUBLIC CppSQLite3 )
 
-# Add the Python support to libMA (if Python and Boost are available) 
+# Add the Python support to MA (if Python and Boost are available) 
 if( PythonLibs_FOUND AND Boost_FOUND )
 	message( "Add Python Support to MA")
 	if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
 		# GCC complains that boost uses the deprecated auto_ptr.
 		# Corresponding warning will be switched off.
 		message( "Add -Wnodeprecated-declarations for gcc")
-		target_compile_options( libMA PRIVATE "-Wno-deprecated-declarations")
+		target_compile_options( MA PRIVATE "-Wno-deprecated-declarations")
 	endif()
 	
-	target_include_directories( libMA PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} )
-	target_compile_definitions( libMA PRIVATE BOOST_ALL_DYN_LINK WITH_PYTHON )
-	target_link_libraries( libMA PUBLIC ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
+	target_include_directories( MA PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} )
+	target_compile_definitions( MA PRIVATE BOOST_ALL_DYN_LINK WITH_PYTHON )
+	target_link_libraries( MA PUBLIC ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
 endif()
