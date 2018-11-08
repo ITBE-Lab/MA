@@ -73,6 +73,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Build all required libraries
+add_subdirectory ( contrib )
 add_subdirectory ( libs )
 
 # Build the MA excecutable itself

@@ -11,8 +11,8 @@ endif()
 # Look for boost
 # Info: https://feralchicken.wordpress.com/2013/12/07/boost-python-hello-world-example-using-cmake/
 # If your boost is not within the standard path, then set BOOST_ROOT appropriately
-set(BOOST_ROOT "/opt/dev/")
-find_package( Boost 1.60.0 COMPONENTS python3 )
+# set(BOOST_ROOT "/opt/dev/")
+# find_package( Boost 1.60.0 COMPONENTS python3 )
 
 # Get all .cpp files in the src folder
 file(GLOB MA_SRC
@@ -32,11 +32,11 @@ endif()
 target_compile_definitions( MA PRIVATE EXPORT )
 
 # CMake will add the -fPIC for compilation with GCC
-set_property(TARGET libMA PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Set includes and library dependencies 
-target_include_directories(libMA PUBLIC inc ../kswcpp/inc)
-target_link_libraries ( libMA LINK_PUBLIC kswcpp )
+target_include_directories(MA PUBLIC inc ../kswcpp/inc)
+target_link_libraries ( MA LINK_PUBLIC kswcpp )
 
 # additionally link to python if available
 if( PythonLibs_FOUND )

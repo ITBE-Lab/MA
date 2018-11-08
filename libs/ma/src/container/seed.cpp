@@ -69,7 +69,6 @@ void exportSeed( py::module& rxPyModuleId )
     // export the Seed class
     py::class_<Seed, Interval<nucSeqIndex>>( rxPyModuleId, "Seed" )
         .def_readwrite( "start_ref", &Seed::uiPosOnReference )
-        .def_readwrite( "on_forward_strand", &Seed::bOnForwStrand )
         .def( "__eq__", &Seed::operator==);
 
     py::class_<AlignmentStatistics>( rxPyModuleId, "AlignmentStatistics" )

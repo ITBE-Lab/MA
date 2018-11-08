@@ -67,7 +67,6 @@ PYBIND11_MODULE(libMA, libMaModule) {
 #ifdef WITH_POSTGRES
     exportDBWriter( libMaModule );
 #endif
-    exportSoCDbWriter( libMaModule );
     exportSoC( libMaModule );
     exportOtherSeeding( libMaModule );
     defaults::exportDefaults( libMaModule );

@@ -604,20 +604,15 @@ void exportHarmonization( )
 #else
 void exportHarmonization( py::module& rxPyModuleId )
 {
-    exportModule<HarmonizationSingle>( rxPyModuleId, "HarmonizationSingle", []( auto&& x ) {
-        x.def_readwrite( "optimistic_gap_estimation", &HarmonizationSingle::optimisticGapEstimation )
-            .def_readwrite( "min_coverage", &HarmonizationSingle::fMinimalQueryCoverage )
-            .def_readwrite( "tolerance", &HarmonizationSingle::fScoreTolerace )
-            .def_readwrite( "equal_score_lookahead", &HarmonizationSingle::uiMaxEqualScoreLookahead )
-            .def_readwrite( "diff_tolerance", &HarmonizationSingle::fScoreDiffTolerance )
-            .def_readwrite( "switch_q_len", &HarmonizationSingle::uiSwitchQLen )
-            .def_readwrite( "do_heuristics", &HarmonizationSingle::bDoHeuristics );
-    } );
-
     exportModule<Harmonization>( rxPyModuleId, "Harmonization", []( auto&& x ) {
-        x.def_readwrite( "single", &Harmonization::xSingle ).def_readwrite( "max_tries", &Harmonization::uiMaxTries );
+        x.def_readwrite( "optimistic_gap_estimation", &Harmonization::optimisticGapEstimation )
+            .def_readwrite( "min_coverage", &Harmonization::fMinimalQueryCoverage )
+            .def_readwrite( "tolerance", &Harmonization::fScoreTolerace )
+            .def_readwrite( "equal_score_lookahead", &Harmonization::uiMaxEqualScoreLookahead )
+            .def_readwrite( "diff_tolerance", &Harmonization::fScoreDiffTolerance )
+            .def_readwrite( "switch_q_len", &Harmonization::uiSwitchQLen )
+            .def_readwrite( "do_heuristics", &Harmonization::bDoHeuristics );
     } );
-    exportModule<SeedLumping>( rxPyModuleId, "SeedLumping" );
 } // function
 #endif
 #endif
