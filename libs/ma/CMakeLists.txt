@@ -8,23 +8,15 @@ if( PythonLibs_FOUND )
 	message( "Found Python Libs")
 endif()
 
-# Look for boost
-# Info: https://feralchicken.wordpress.com/2013/12/07/boost-python-hello-world-example-using-cmake/
-# If your boost is not within the standard path, then set BOOST_ROOT appropriately
-set(BOOST_ROOT "/opt/dev/")
-find_package( Boost 1.60.0 COMPONENTS python3 )
-
 # Get all .cpp files in the src folder
-file(GLOB MA_SRC
-    "src/*/*.cpp"
-) # file
+file(GLOB MA_SRC "src/*/*.cpp" )
 
 # Define library MA as target
 if( PythonLibs_FOUND )
-    pybind11_add_module( MA SHARED NO_EXTRAS SYSTEM THIN_LTO ${MA_SRC} )
+    pybind11_add_module( MA SHARED SYSTEM ${MA_SRC} )
     target_compile_definitions( MA PRIVATE WITH_PYTHON )
 else()
-    add_library(MA SHARED ${MA_SRC} ) 
+    add_library( MA SHARED ${MA_SRC} ) 
 endif()
 
 # Activate __declspec(dllexport) for DLL export 
@@ -42,19 +34,3 @@ target_link_libraries ( MA PUBLIC kswcpp CppSQLite3 )
 if( PythonLibs_FOUND )
     target_link_libraries ( MA PUBLIC ${PYTHON_LIBRARIES} )
 endif()
-
-
-# # Add the Python support to MA (if Python and Boost are available) 
-# if( PythonLibs_FOUND AND Boost_FOUND )
-# 	message( "Add Python Support to MA")
-# 	if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
-# 		# GCC complains that boost uses the deprecated auto_ptr.
-# 		# Corresponding warning will be switched off.
-# 		message( "Add -Wnodeprecated-declarations for gcc")
-# 		target_compile_options( MA PRIVATE "-Wno-deprecated-declarations")
-# 	endif()
-# 	
-# 	target_include_directories( MA PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} )
-# 	target_compile_definitions( MA PRIVATE BOOST_ALL_DYN_LINK WITH_PYTHON )
-# 	target_link_libraries( MA PUBLIC ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
-# endif()
