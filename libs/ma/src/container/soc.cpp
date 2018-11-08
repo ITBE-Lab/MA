@@ -77,10 +77,6 @@ void exportSoC( )
 void exportSoC( py::module& rxPyModuleId )
 {
 #if DEBUG_LEVEL >= 1
-    py::class_<std::pair<nucSeqIndex, nucSeqIndex>>( rxPyModuleId, "nucSeqPair" )
-        .def( py::init<nucSeqIndex, nucSeqIndex>( ) )
-        .def_readwrite( "first", &std::pair<nucSeqIndex, nucSeqIndex>::first )
-        .def_readwrite( "second", &std::pair<nucSeqIndex, nucSeqIndex>::second );
     py::bind_vector<std::vector<std::pair<nucSeqIndex, nucSeqIndex>>>( rxPyModuleId, "nucSeqPairVector" );
 
     py::class_<SoCPriorityQueue::blub>( rxPyModuleId, "nucSeqNucSeqInterval" )

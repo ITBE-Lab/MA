@@ -365,14 +365,18 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
             /*
              * remove outliers
              */
-            std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), [&]( const Seed& rS ) {
-                return deltaDistance( rS, xSlopeIntercept.first, (int64_t) xSlopeIntercept.second ) > fMAD;
-            } );
-#endif
+            pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ),
+                                             [&]( const Seed& rS ) {
+                                                 return deltaDistance( rS, xSlopeIntercept.first,
+                                                                       (int64_t)xSlopeIntercept.second ) > fMAD;
+                                             } ),
+                             pSeedsIn->end( ) );
+
 #else
             auto rMedianSeed = ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ];
             auto xSlopeIntercept = std::make_pair( 0.785398, // forty five degrees
                                                    (double)rMedianSeed.start_ref( ) - (double)rMedianSeed.start( ) );
+#endif
 #endif
 
             DEBUG( pSoCIn->vSlopes.push_back( std::tan( xSlopeIntercept.first ) );
@@ -390,7 +394,7 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
             } // for
 
             // perform the line sweep algorithm on the left shadows
-            auto pShadows2 = linesweep( pShadows, (int64_t) xSlopeIntercept.second, xSlopeIntercept.first );
+            auto pShadows2 = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
             pShadows->clear( );
             pShadows->reserve( pShadows2->size( ) );
 
@@ -400,7 +404,7 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
                     std::make_tuple( std::get<0>( xT ), std::get<0>( xT )->start_ref( ), std::get<0>( xT )->end( ) ) );
 
             // perform the line sweep algorithm on the right shadows
-            pShadows = linesweep( pShadows, (int64_t) xSlopeIntercept.second, xSlopeIntercept.first );
+            pShadows = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
 
             pSeeds->reserve( pShadows->size( ) );
 
@@ -493,7 +497,7 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
             //@todo uiSwitchQLen != 0 should be replaced with switch
             if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
             {
-                // Prof. Kutzner's filter:
+                // Prof. Kutzners filter:
                 if( uiLastHarmScore > uiCurrHarmScore )
                 {
                     PRINT_BREAK_CRITERIA( std::cout << "skip because of harmonization score dropoff" << std::endl; )

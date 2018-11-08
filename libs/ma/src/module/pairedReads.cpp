@@ -2,6 +2,10 @@
  * @file pairedReads.cpp
  * @author Markus Schmidt
  */
+#ifdef _MSC_VER
+#define NOMINMAX
+#endif
+
 #include "module/pairedReads.h"
 
 using namespace libMA;
@@ -86,7 +90,7 @@ PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>
 
             // (Heng Li)
             double score = pAlignment1->score( ) + pAlignment2->score( ) -
-                           std::min( -iMatch * std::log( p( d ) ) / std::log( 4 ), u );
+                           std::min( -iMatch * std::log( p( d ) ) / std::log( 4 ), (double)u );
 
 
             // std::cerr << "score: " << score << std::endl;

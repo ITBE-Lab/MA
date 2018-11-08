@@ -7,6 +7,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 
+
 # Collect all arguments of the CMake call (just for info purposes ...)
 get_cmake_property(CACHE_VARS CACHE_VARIABLES)
 foreach(CACHE_VAR ${CACHE_VARS})
@@ -23,11 +24,13 @@ foreach(CACHE_VAR ${CACHE_VARS})
 endforeach()
 
 # Print info about the current call/environment of CMake
-message("CMAKE_ARGS: ${CMAKE_ARGS}")
-message("CMAKE_BUILD_TYPE = \"${CMAKE_BUILD_TYPE}\"")
-message("CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
-message("CMAKE_CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
-message("CMAKE_CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
+message("// CMAKE_ARGS: ${CMAKE_ARGS}")
+message("// CMAKE_BUILD_TYPE = \"${CMAKE_BUILD_TYPE}\"")
+message("// CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
+message("// CMAKE_CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
+message("// CMAKE_CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
+message("// CMAKE_CXX_FLAGS_RELWITHDEBINFO = ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+message("// CMAKE_CXX_FLAGS_MINSIZEREL = ${CMAKE_CXX_FLAGS_MINSIZEREL}")
 
 if( CMAKE_BUILD_TYPE STREQUAL "" )
 	# Switch to the release mode, so that we get full optimization
@@ -45,15 +48,17 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 		# Corresponding warning will be switched off.
 		message( "Add -Wno-unused-variable for gcc")
 		add_compile_options( "-Wno-unused-variable" )
+	elseif( MSVC )
+		# FOr MSVC with have to adapt the RelWithDebInfo setting in order to avoid linking problems
+		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MDd /Zi /O2 /Ob2")
+		message("CMAKE_CXX_FLAGS_RELWITHDEBINFO changed to ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 	endif()
 endif()
 
 # Add additional general compile flags
 # Note: Some flags are already preset by the generator depending on the build-type
 # TODO: use set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -foo" )
-if( MSVC )
-    add_compile_options( "/std:c++latest" )
-else()
+if( NOT MSVC )
 	# Note: Adding "-Wextra" delivers more warnings 
     add_compile_options( "-Werror" "-Wall" ) 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -72,10 +77,20 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+# Use Cpp 17 standard
+if (NOT MSVC)
+    set(PYBIND11_CPP_STANDARD -std=c++17)
+else()
+    set(PYBIND11_CPP_STANDARD /std:c++17)
+endif()
+set(CMAKE_CXX_STANDARD 17)
+# Build all required contributor libraries
+add_subdirectory ( contrib )
 # Build all required libraries
 add_subdirectory ( contrib )
 add_subdirectory ( libs )
 
 # Build the MA executable itself
 add_executable ( maCMD cmdMa.cpp )
+# Link cmdMA
 target_link_libraries ( maCMD PUBLIC MA Threads::Threads )

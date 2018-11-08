@@ -5,9 +5,9 @@ def test_aligner():
     configureFast()
 
     reference_pack = Pack()
-    reference_pack.load("/MAdata/genome/eColi")
+    reference_pack.load("C:\\Users\\Markus\\Desktop\\MAdata\\eColi")
     reference_index = FMIndex()
-    reference_index.load("/MAdata/genome/eColi")
+    reference_index.load("C:\\Users\\Markus\\Desktop\\MAdata\\eColi")
 
     query = reference_pack.extract_from_to(10000, 10200)
 
