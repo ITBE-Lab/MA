@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/fileReader.h"
+#include "util/pybind11.h"
 
 using namespace libMA;
 
@@ -221,6 +222,17 @@ void exportFileReader( )
             .def( boost::python::vector_indexing_suite<TP_PAIRED_READS, true>( ) );
     // export the PairedFileReader class
     exportModule<PairedFileReader, std::string, std::string>( "PairedFileReader" );
+} // function
+#else
+void exportFileReader( py::module& rxPyModuleId )
+{
+    // export the FileReader class
+    exportModule<FileReader, std::string>( rxPyModuleId, "FileReader" );
+
+    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>( rxPyModuleId, "QueryVector" );
+
+    // export the PairedFileReader class
+    exportModule<PairedFileReader, std::string, std::string>( rxPyModuleId, "PairedFileReader" );
 } // function
 #endif
 #endif

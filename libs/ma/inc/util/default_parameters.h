@@ -12,6 +12,9 @@
 #ifdef WITH_PYTHON
     #ifdef BOOST_PYTHON
         #include <boost/python.hpp>
+    #else
+        #include <pybind11/stl_bind.h>
+        namespace py = pybind11;
     #endif
 #endif
 
@@ -92,7 +95,11 @@ inline void configureFast( )
 //}// function
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportDefaults( );
+#else
+void exportDefaults( py::module& rxPyModuleId );
+#endif
 #endif
 } // namespace defaults
 } // namespace libMA

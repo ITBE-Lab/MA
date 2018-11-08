@@ -364,7 +364,11 @@ class SoCPriorityQueue : public Container
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportSoC( );
+#else
+void exportSoC( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

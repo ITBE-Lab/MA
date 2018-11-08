@@ -192,7 +192,11 @@ class PairedFileWriter
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportFileWriter( );
+#else
+void exportFileWriter( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

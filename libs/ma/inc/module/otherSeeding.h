@@ -53,7 +53,11 @@ class OtherSeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
  * @brief exports the Segmentation @ref Module "module" to python.
  * @ingroup export
  */
+#ifdef WITH_BOOST
 void exportOtherSeeding( );
+#else
+void exportOtherSeeding( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

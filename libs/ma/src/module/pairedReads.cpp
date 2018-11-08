@@ -171,6 +171,12 @@ void exportPairedReads( )
     // export the PairedReads class
     exportModule<PairedReads>( "PairedReads" );
 } // function
+#else
+void exportPairedReads( py::module& rxPyModuleId )
+{
+    // export the PairedReads class
+    exportModule<PairedReads>( rxPyModuleId, "PairedReads" );
+} // function
 #endif
 
 #endif

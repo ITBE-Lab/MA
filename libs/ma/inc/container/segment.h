@@ -380,7 +380,11 @@ class SegmentVector : public Container
  * @brief Exposes the SegmentVector to boost python.
  * @ingroup export
  */
-void exportIntervalTree( );
+#ifdef WITH_BOOST
+void exportSegment( );
+#else
+void exportSegment( py::module& rxPyModuleId );
+#endif
 #endif
 
 

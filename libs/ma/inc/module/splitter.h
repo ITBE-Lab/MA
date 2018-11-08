@@ -118,7 +118,11 @@ template <typename... TP_VEC_CONTENT> class Collector : public Module<Container,
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportSplitter( );
+#else
+void exportSplitter( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

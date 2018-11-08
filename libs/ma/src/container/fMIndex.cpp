@@ -11,7 +11,7 @@ using namespace libMA;
 
 SAInterval FMIndex::extend_backward(
     // current interval
-    const SAInterval &ik,
+    const SAInterval& ik,
     // the character to extend with
     const uint8_t c )
 {
@@ -41,10 +41,9 @@ SAInterval FMIndex::extend_backward(
     for( unsigned int i = 0; i < 4; i++ )
         cnts[ i ] = cntl[ i ] - cntk[ i ];
 
-    DEBUG_3( std::cout << cnts[ 0 ] << " + " << cnts[ 1 ] << " + " << cnts[ 2 ] << " + "
-                       << cnts[ 3 ] << " = "
-                       << ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] )
-                       << " ?= " << ik.size( ) << "(-1)" << std::endl; )
+    DEBUG_3( std::cout << cnts[ 0 ] << " + " << cnts[ 1 ] << " + " << cnts[ 2 ] << " + " << cnts[ 3 ] << " = "
+                       << ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] ) << " ?= " << ik.size( )
+                       << "(-1)" << std::endl; )
 
     bwt64bitCounter cntk_2[ 4 ];
     cntk_2[ 0 ] = ik.startRevComp( );
@@ -72,9 +71,9 @@ SAInterval FMIndex::extend_backward(
         if( ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] ) != ik.size( ) )
         {
             std::cout << ik.start( ) << " " << ik.end( ) << " " << primary << std::endl;
-            std::cout << cnts[ 0 ] << " + " << cnts[ 1 ] << " + " << cnts[ 2 ] << " + " << cnts[ 3 ]
-                      << " = " << ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] )
-                      << " ?= " << ik.size( ) << "(-1)" << std::endl;
+            std::cout << cnts[ 0 ] << " + " << cnts[ 1 ] << " + " << cnts[ 2 ] << " + " << cnts[ 3 ] << " = "
+                      << ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] ) << " ?= " << ik.size( )
+                      << "(-1)" << std::endl;
         } // if
         assert( ( t_bwtIndex )( cnts[ 0 ] + cnts[ 1 ] + cnts[ 2 ] + cnts[ 3 ] ) == ik.size( ) );
     } // else
@@ -96,11 +95,10 @@ SAInterval FMIndex::extend_backward(
 SAInterval FMIndex::getInterval( std::shared_ptr<NucSeq> pQuerySeq )
 {
     // query sequence itself
-    const uint8_t *q = pQuerySeq->pGetSequenceRef( );
+    const uint8_t* q = pQuerySeq->pGetSequenceRef( );
 
     size_t i = pQuerySeq->length( ) - 1;
-    SAInterval ik( L2[ (int)q[ i ] ] + 1, L2[ complement( q[ i ] ) ] + 1,
-                   L2[ (int)q[ i ] + 1 ] - L2[ (int)q[ i ] ] );
+    SAInterval ik( L2[ (int)q[ i ] ] + 1, L2[ complement( q[ i ] ) ] + 1, L2[ (int)q[ i ] + 1 ] - L2[ (int)q[ i ] ] );
     while( i > 0 && ik.size( ) > 0 )
         ik = extend_backward( ik, q[ --i ] );
     return ik;
@@ -119,8 +117,7 @@ bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shar
         // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match
         // individually
         bwtint_t ulIndexOnRefSeq = bwt_sa( ulCurrPos );
-        if( !pPack->vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )
-                 ->equal( *pQuerySeq ) )
+        if( !pPack->vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )->equal( *pQuerySeq ) )
             return false;
     } // for
 
@@ -139,7 +136,7 @@ bool FMIndex::test( const std::shared_ptr<Pack> pPack, unsigned int uiNumTest )
     return true;
 } // function
 
-void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
+void FMIndex::bwt_pac2bwt_step1( const NucSeq& fn_pac )
 {
     /* Size of the reference sequence
      */
@@ -152,8 +149,7 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq &fn_pac )
     /* Buffer for BWT construction. The BWT will be finally inside the buffer.
      */
     std::unique_ptr<uint8_t[]> buf(
-        new uint8_t[ uiRefSeqLength +
-                     1 ] ); // original code: buf = (ubyte_t*)calloc( bwt->seq_len + 1, 1 );
+        new uint8_t[ uiRefSeqLength + 1 ] ); // original code: buf = (ubyte_t*)calloc( bwt->seq_len + 1, 1 );
 
     /* Initialize the buffer with the reference sequence and prepare the cumulative count.
      */
@@ -218,8 +214,7 @@ void FMIndex::bwt_bwtupdate_core_step2( )
         if( i % OCC_INTERVAL == 0 )
         {
             memcpy( &xVectorWithOccInjections[ 0 ] + k, c,
-                    sizeof( bwtint_t ) *
-                        4 ); // set the 4 counter initially to the current value of c
+                    sizeof( bwtint_t ) * 4 ); // set the 4 counter initially to the current value of c
 
             /* Increment k according to the required size. 4 * sizeof(bwtint_t) many bytes required.
              * k counts in 4 bytes steps. ( in fact: sizeof(bwtint_t)=4*(sizeof(bwtint_t)/4) )
@@ -248,8 +243,7 @@ void FMIndex::bwt_bwtupdate_core_step2( )
      * Check whether everything is fine.
      */
     memcpy( &xVectorWithOccInjections[ 0 ] + k, c, sizeof( bwtint_t ) * 4 );
-    assert( k + sizeof( bwtint_t ) ==
-            xVectorWithOccInjections.size( ) ); //  "inconsistent bwt_size"
+    assert( k + sizeof( bwtint_t ) == xVectorWithOccInjections.size( ) ); //  "inconsistent bwt_size"
 
     /* Move the bwt with injections to the bwt of the FM-index.
      */
@@ -306,9 +300,8 @@ void FMIndex::bwt_cal_sa_step3( unsigned int intv )
     this->sa[ 0 ] = (bwtint_t)-1; // before this line, bwt->sa[0] = bwt->seq_len
 } // method
 
-void FMIndex::build_FMIndex(
-    const Pack &rxSequenceCollection, // the pack for which we compute a BWT
-    unsigned int uiAlgorithmSelection )
+void FMIndex::build_FMIndex( const Pack& rxSequenceCollection, // the pack for which we compute a BWT
+                             unsigned int uiAlgorithmSelection )
 {
     if( uiAlgorithmSelection > 1 )
     {
@@ -327,8 +320,7 @@ void FMIndex::build_FMIndex(
          * with reverse strand and apply the algorithm for small inputs.
          */
         auto pSequence =
-            rxSequenceCollection
-                .vColletionAsNucSeq( ); // unpack the pack into a single nucleotide sequence
+            rxSequenceCollection.vColletionAsNucSeq( ); // unpack the pack into a single nucleotide sequence
         bwt_pac2bwt_step1( *pSequence ); // construct with build in function
     } // if
     else
@@ -349,12 +341,11 @@ void FMIndex::build_FMIndex(
 
         // Create temporary filename for pack export.
         const auto xTempFileName = tempDir.append(
-            std::to_string( std::chrono::system_clock::to_time_t(
-                                std::chrono::system_clock::now( ) ) ) // current time as string
+            std::to_string(
+                std::chrono::system_clock::to_time_t( std::chrono::system_clock::now( ) ) ) // current time as string
                 .append( "-" )
-                .append( std::to_string(
-                    rxSequenceCollection
-                        .uiUnpackedSizeForwardPlusReverse( ) ) ) // pack size as string
+                .append(
+                    std::to_string( rxSequenceCollection.uiUnpackedSizeForwardPlusReverse( ) ) ) // pack size as string
         ); // temporary filename construction
         // pac file construction adds a suffix
         const auto sTempFileNameWithSuffix = std::string( xTempFileName ).append( ".pac" );
@@ -366,8 +357,7 @@ void FMIndex::build_FMIndex(
 
         /* Start the BWT construction.
          */
-        auto xBWTAsTriple = bwtLarge(
-            sTempFileNameWithSuffix.c_str( ) ); // construct the BWT using the old BWA code.
+        auto xBWTAsTriple = bwtLarge( sTempFileNameWithSuffix.c_str( ) ); // construct the BWT using the old BWA code.
 
         /* Move the externally constructed BWT to this BWT-object.
          */
@@ -398,12 +388,10 @@ void exportFM_index( )
     // export the FM_index class
     boost::python::class_<FMIndex, boost::python::bases<Container>, std::shared_ptr<FMIndex>>(
         "FMIndex", "contains the BWT of a nucleotide sequence\n" )
-        .def( boost::python::init<std::shared_ptr<NucSeq>>(
-            "arg1: self\n"
-            "arg2: the NucSeq to create the BWT Index from\n" ) )
-        .def( boost::python::init<std::shared_ptr<Pack>>(
-            "arg1: self\n"
-            "arg2: the Pack to create the BWT Index from\n" ) )
+        .def( boost::python::init<std::shared_ptr<NucSeq>>( "arg1: self\n"
+                                                            "arg2: the NucSeq to create the BWT Index from\n" ) )
+        .def( boost::python::init<std::shared_ptr<Pack>>( "arg1: self\n"
+                                                          "arg2: the Pack to create the BWT Index from\n" ) )
         .def( "load", &FMIndex::vLoadFMIndex )
         .def( "exists", &FMIndex::packExistsOnFileSystem )
         .staticmethod( "exists" )
@@ -415,6 +403,29 @@ void exportFM_index( )
 
     // tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<std::shared_ptr<FMIndex>, std::shared_ptr<Container>>( );
+} // function
+#else
+
+void exportFM_index( py::module& rxPyModuleId )
+{
+    exportInterval<t_bwtIndex>( rxPyModuleId, "t_bwtIndexInterval" );
+    // export the SAInterval class
+    py::class_<SAInterval, Interval<t_bwtIndex>>( rxPyModuleId, "SAInterval" );
+    // export the FM_index class
+    py::class_<FMIndex, Container, std::shared_ptr<FMIndex>>( rxPyModuleId, "FMIndex" )
+        .def( py::init<>( ) ) // default constructor
+        .def( py::init<std::shared_ptr<NucSeq>>( ) )
+        .def( py::init<std::shared_ptr<Pack>>( ) )
+        .def( "load", &FMIndex::vLoadFMIndex )
+        .def_static( "exists", &FMIndex::packExistsOnFileSystem )
+        .def( "store", &FMIndex::vStoreFMIndex )
+        .def( "bwt_sa", &FMIndex::bwt_sa )
+        .def( "get_ambiguity", &FMIndex::get_ambiguity )
+        .def( "test_sa_interval", &FMIndex::testSaInterval )
+        .def( "bwt_2occ4", &FMIndex::bwt_2occ4 );
+
+    // tell boost python that pointers of these classes can be converted implicitly
+    py::implicitly_convertible<FMIndex, Container>( );
 } // function
 #endif
 #endif

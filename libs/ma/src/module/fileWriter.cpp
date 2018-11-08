@@ -249,5 +249,14 @@ void exportFileWriter( )
     // export the PairedFileWriter class
     exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( "PairedFileWriter" );
 } // function
+#else
+void exportFileWriter( py::module& rxPyModuleId )
+{
+    // export the FileWriter class
+    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "FileWriter" );
+
+    // export the PairedFileWriter class
+    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "PairedFileWriter" );
+} // function
 #endif
 #endif

@@ -1001,5 +1001,11 @@ void exportNeedlemanWunsch( )
     // export the NeedlemanWunsch class
     exportModule<NeedlemanWunsch>( "NeedlemanWunsch" );
 } // function
+#else
+void exportNeedlemanWunsch( py::module& rxPyModuleId )
+{
+    // export the NeedlemanWunsch class
+    exportModule<NeedlemanWunsch>( rxPyModuleId, "NeedlemanWunsch" );
+} // function
 #endif
 #endif

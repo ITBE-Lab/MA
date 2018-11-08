@@ -435,5 +435,9 @@ class NucSeqFromSql : public Module<NucSeq, true>
 }; // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportSoCDbWriter( );
+#else
+void exportSoCDbWriter( py::module& rxPyModuleId );
+#endif
 #endif

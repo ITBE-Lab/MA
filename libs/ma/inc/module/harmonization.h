@@ -250,7 +250,11 @@ class SeedLumping : public Module<Seeds, false, Seeds>
  * @brief Exposes the Harmonization @ref Module "module" to boost python.
  * @ingroup export
  */
+#ifdef WITH_BOOSt
 void exportHarmonization( );
+#else
+void exportHarmonization( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

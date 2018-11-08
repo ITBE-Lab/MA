@@ -21,10 +21,10 @@ def test_aligner():
     #execute modules
     seeds = seeding_module.execute(reference_index, query)
     print("seed set (q,r,l):")
-    for seed in seeds.extract_seeds(reference_index, 100, 0, True):
+    for seed in seeds.extract_seeds(reference_index, 100, 0, len(query), True):
         print(seed.start, seed.start_ref, seed.size)
     socs = soc_module.execute(seeds, query, reference_pack, reference_index)
-    harm_seeds = harm_module.execute(socs, query)
+    harm_seeds = harm_module.execute(socs, query, reference_index)
     alignments = nw_module.execute(harm_seeds, query, reference_pack)
 
     for index, alignment in enumerate(alignments):

@@ -110,6 +110,12 @@ void exportOtherSeeding( )
 {
     // export the OtherSeeding class
     exportModule<OtherSeeding, bool>( "OtherSeeding" );
+} // func
+#else
+void exportOtherSeeding( py::module& rxPyModuleId )
+{
+    // export the OtherSeeding class
+    exportModule<OtherSeeding, bool>( rxPyModuleId, "OtherSeeding" );
 } // function
 #endif
 #endif

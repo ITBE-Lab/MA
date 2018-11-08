@@ -4,6 +4,7 @@
  */
 #include "container/pack.h"
 #include "container/nucSeq.h"
+#include "util/pybind11.h"
 
 using namespace libMA;
 
@@ -633,21 +634,55 @@ void exportPack( )
                                                    true>( ) );
 
     // required by contigLengths
-    boost::python::class_<std::vector<nucSeqIndex>
-    >("nucSeqIndexVector")
-    .def(boost::python::vector_indexing_suite<
-            std::vector<nucSeqIndex>,
-            /*
-             *    true = noproxy this means that the content of the vector is already exposed by
-             *    boost python.
-             *    if this is kept as false, Container would be exposed a second time.
-             *    the two Containers would be different and not inter castable.
-             */
-            true
-        >());
+    boost::python::class_<std::vector<nucSeqIndex>>( "nucSeqIndexVector" )
+        .def( boost::python::vector_indexing_suite<std::vector<nucSeqIndex>,
+                                                   /*
+                                                    *    true = noproxy this means that the content of the vector is
+                                                    * already exposed by boost python. if this is kept as false,
+                                                    * Container would be exposed a second time. the two Containers would
+                                                    * be different and not inter castable.
+                                                    */
+                                                   true>( ) );
 
     // tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<std::shared_ptr<Pack>, std::shared_ptr<Container>>( );
+} // function
+#else
+void exportPack( py::module& rxPyModuleId )
+{
+    py::class_<Pack, Container, std::shared_ptr<Pack>>( rxPyModuleId, "Pack" )
+        .def( py::init<>() )
+        .def( "unpacked_size", &Pack::uiUnpackedSizeForwardPlusReverse )
+        .def( "append", &Pack::vAppendSequence_boost )
+#if 1
+        .def( "append_fasta_file", &Pack::vAppendFastaFile )
+#endif
+        .def( "store", &Pack::vStoreCollection )
+        .def_static( "exists", &Pack::packExistsOnFileSystem )
+        .def( "load", &Pack::vLoadCollection )
+        .def( "extract_from_to", &Pack::vExtractPy )
+        .def( "extract_complete", &Pack::vColletionAsNucSeq )
+        .def( "extract_forward_strand", &Pack::vColletionWithoutReverseStrandAsNucSeq )
+        .def( "extract_reverse_strand", &Pack::vColletionOnlyReverseStrandAsNucSeq )
+        .def( "is_bridging", &Pack::bridgingSubsection_boost )
+        .def( "printHoles", &Pack::printHoles )
+        .def( "start_of_sequence", &Pack::startOfSequenceWithName )
+        .def( "length_of_sequence", &Pack::lengthOfSequenceWithName )
+        .def( "start_of_sequence_id", &Pack::startOfSequenceWithId )
+        .def( "name_of_sequence", &Pack::nameOfSequenceForPosition )
+        .def_readonly( "unpacked_size_single_strand", &Pack::uiUnpackedSizeForwardStrand )
+        .def( "contigNames", &Pack::contigNames )
+        .def( "contigLengths", &Pack::contigLengths )
+        .def( "contigStarts", &Pack::contigStarts );
+
+    // tell boost python that pointers of these classes can be converted implicitly
+    py::implicitly_convertible<Pack, Container>( );
+
+    // required by contigNames
+    py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector" );
+
+    // required by contigLengths
+    py::bind_vector<std::vector<nucSeqIndex>>( rxPyModuleId, "nucSeqIndexVector" );
 } // function
 #endif
 #endif

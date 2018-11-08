@@ -154,6 +154,15 @@ void exportDBWriter( )
     exportModule<PairedDbWriter, std::string, uint32_t>( "PairedDbWriter" );
 
 } // function
+#else
+void exportDBWriter( py::module& rxPyModuleId )
+{
+    // export the DbWriter class
+    exportModule<DbWriter, std::string, uint32_t>( rxPyModuleId, "DbWriter" );
+    // export the PairedDbWriter class
+    exportModule<PairedDbWriter, std::string, uint32_t>( rxPyModuleId, "PairedDbWriter" );
+
+} // function
 #endif
 
 #endif // WITH_PYTHON
