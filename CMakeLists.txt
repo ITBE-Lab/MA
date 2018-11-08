@@ -24,11 +24,13 @@ foreach(CACHE_VAR ${CACHE_VARS})
 endforeach()
 
 # Print info about the current call/environment of CMake
-message("CMAKE_ARGS: ${CMAKE_ARGS}")
-message("CMAKE_BUILD_TYPE = \"${CMAKE_BUILD_TYPE}\"")
-message("CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
-message("CMAKE_CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
-message("CMAKE_CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
+message("// CMAKE_ARGS: ${CMAKE_ARGS}")
+message("// CMAKE_BUILD_TYPE = \"${CMAKE_BUILD_TYPE}\"")
+message("// CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
+message("// CMAKE_CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
+message("// CMAKE_CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
+message("// CMAKE_CXX_FLAGS_RELWITHDEBINFO = ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+message("// CMAKE_CXX_FLAGS_MINSIZEREL = ${CMAKE_CXX_FLAGS_MINSIZEREL}")
 
 if( CMAKE_BUILD_TYPE STREQUAL "" )
 	# Switch to the release mode, so that we get full optimization
@@ -46,6 +48,10 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 		# Corresponding warning will be switched off.
 		message( "Add -Wno-unused-variable for gcc")
 		add_compile_options( "-Wno-unused-variable" )
+	elseif( MSVC )
+		# FOr MSVC with have to adapt the RelWithDebInfo setting in order to avoid linking problems
+		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MDd /Zi /O2 /Ob2")
+		message("CMAKE_CXX_FLAGS_RELWITHDEBINFO changed to ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 	endif()
 endif()
 

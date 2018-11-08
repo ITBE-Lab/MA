@@ -533,7 +533,7 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
             //@todo uiSwitchQLen != 0 should be replaced with switch
             if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
             {
-                // Prof. Kutzner's filter:
+                // Prof. Kutzners filter:
                 if( uiLastHarmScore > uiCurrHarmScore )
                 {
                     PRINT_BREAK_CRITERIA( std::cout << "skip because of harmonization score dropoff" << std::endl; )

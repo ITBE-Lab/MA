@@ -2,12 +2,6 @@
 
 project("MA Lib" VERSION 1.0.1 DESCRIPTION "Core library of MA")
 
-# Look for Python
-find_package( PythonLibs 3.5 )
-if( PythonLibs_FOUND )
-	message( "Found Python Libs")
-endif()
-
 # Look for boost
 # Info: https://feralchicken.wordpress.com/2013/12/07/boost-python-hello-world-example-using-cmake/
 # If your boost is not within the standard path, then set BOOST_ROOT appropriately
@@ -21,9 +15,13 @@ file(GLOB MA_SRC
 
 # Define library MA as target
 if( PythonLibs_FOUND )
-    pybind11_add_module( MA SHARED NO_EXTRAS SYSTEM THIN_LTO ${MA_SRC} )
+    # Build shared library with Python support and surpress warnings form within Pybind11
+    message( "-- libMA: Build shared library with python support via local pybind11." )
+    pybind11_add_module( MA SHARED SYSTEM ${MA_SRC} )
     target_compile_definitions( MA PRIVATE WITH_PYTHON )
 else()
+    # Build the plain shared library without Python support
+    message( "-- libMA: Build shared library without python support." )
     add_library(MA SHARED ${MA_SRC} ) 
 endif()
 
@@ -38,23 +36,12 @@ set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(MA PUBLIC inc ../kswcpp/inc)
 target_link_libraries ( MA LINK_PUBLIC kswcpp )
 
+# With MSVC: build the shared library in the folder of the .exe 
+if( MSVC )
+    set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+endif()
+
 # additionally link to python if available
 if( PythonLibs_FOUND )
     target_link_libraries ( MA PUBLIC ${PYTHON_LIBRARIES} )
 endif()
-
-
-# # Add the Python support to MA (if Python and Boost are available) 
-# if( PythonLibs_FOUND AND Boost_FOUND )
-# 	message( "Add Python Support to MA")
-# 	if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
-# 		# GCC complains that boost uses the deprecated auto_ptr.
-# 		# Corresponding warning will be switched off.
-# 		message( "Add -Wnodeprecated-declarations for gcc")
-# 		target_compile_options( MA PRIVATE "-Wno-deprecated-declarations")
-# 	endif()
-# 	
-# 	target_include_directories( MA PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} )
-# 	target_compile_definitions( MA PRIVATE BOOST_ALL_DYN_LINK WITH_PYTHON )
-# 	target_link_libraries( MA PUBLIC ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
-# endif()

@@ -9,7 +9,10 @@ cmake_minimum_required (VERSION 3.8)
 # optimization it is too slow.
 message( "Include libkswcpp ..." )
 set( CMAKE_BUILD_TYPE_BACKUP ${CMAKE_BUILD_TYPE} )
-set( CMAKE_BUILD_TYPE "Release" )
+if( NOT CMAKE_BUILD_TYPE MATCHES "Release" )
+	set( CMAKE_BUILD_TYPE "RelWithDebInfo" )
+    message( "Switch for kswcpp to CMAKE_BUILD_TYPE \"RelWithDebInfo\"" )
+endif()
 add_subdirectory (kswcpp)
 set( CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_BACKUP} )
 

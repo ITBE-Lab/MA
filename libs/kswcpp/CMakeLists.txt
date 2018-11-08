@@ -5,15 +5,6 @@ cmake_minimum_required (VERSION 3.8)
 
 project("kswcpp" VERSION 0.1 DESCRIPTION "Needleman-Wunsch SSE2 implementation")
 
-# Note: add_compile_options must occur BEFORE the target.
-#       (target_compile_options have to appear following the target)
-if( MSVC )
-	add_compile_options( "/O2" ) # Optimization for maximal speed
-else()
-	# GCC etc.
-	add_compile_options( "-O3" )
-endif()
-
 # Define the target (library kswcpp)
 add_library(kswcpp STATIC
 	src/cpu_info.cpp
