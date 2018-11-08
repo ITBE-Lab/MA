@@ -7,6 +7,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 
+
 # Collect all arguments of the CMake call (just for info purposes ...)
 get_cmake_property(CACHE_VARS CACHE_VARIABLES)
 foreach(CACHE_VAR ${CACHE_VARS})
@@ -51,9 +52,7 @@ endif()
 # Add additional general compile flags
 # Note: Some flags are already preset by the generator depending on the build-type
 # TODO: use set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -foo" )
-if( MSVC )
-    add_compile_options( "/std:c++latest" )
-else()
+if( NOT MSVC )
 	# Note: Adding "-Wextra" delivers more warnings 
     add_compile_options( "-Werror" "-Wall" ) 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -72,10 +71,19 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# Build all required libraries
+# Use Cpp 17 standard
+if (NOT MSVC)
+    set(PYBIND11_CPP_STANDARD -std=c++17)
+else()
+    set(PYBIND11_CPP_STANDARD /std:c++17)
+endif()
+set(CMAKE_CXX_STANDARD 17)
+# Build all required contributor libraries
 add_subdirectory ( contrib )
+# Build all required libraries
 add_subdirectory ( libs )
 
 # Build the MA excecutable itself
 add_executable ( maCMD cmdMa.cpp )
+# Link cmdMA
 target_link_libraries ( maCMD PUBLIC MA Threads::Threads )

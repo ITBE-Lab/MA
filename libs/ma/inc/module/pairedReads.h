@@ -35,13 +35,13 @@ class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, /
      * between the paired seed we make an unpaired alignment.
      * The default value is taken from BWA-MEM as we use the same formula for pairing.
      */
-    double u = defaults::uiUnpaired;
+    size_t u = defaults::uiUnpaired;
     ///@brief use normal distribution for the insert size
     bool bNormalDist = defaults::bNormalDist;
     ///@brief use uniform distribution for the insert size
     bool bUniformDist = defaults::bUniformDist;
     ///@brief the mean of the insert size
-    unsigned int mean = defaults::uiMean;
+    size_t mean = defaults::uiMean;
     ///@brief the standard deviation of the insert size
     double std = defaults::fStd;
 
