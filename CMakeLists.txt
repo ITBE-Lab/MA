@@ -87,7 +87,6 @@ set(CMAKE_CXX_STANDARD 17)
 # Build all required contributor libraries
 add_subdirectory ( contrib )
 # Build all required libraries
-add_subdirectory ( contrib )
 add_subdirectory ( libs )
 
 # Build the MA executable itself
