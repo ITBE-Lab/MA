@@ -25,7 +25,7 @@ BOOST_PYTHON_MODULE( libMA )
     exportNucSeq( );
     exportBinarySeeding( );
     exportPack( );
-    exportIntervalTree( );
+    exportSegment( );
     exportExceptions( );
     exportSeed( );
     exportAlignment( );
@@ -48,29 +48,29 @@ PYBIND11_MODULE(libMA, libMaModule) {
     DEBUG_3( std::cout.setf( std::ios::unitbuf ); )
     exportContainer( libMaModule );
     exportModuleClass( libMaModule );
-    //exportFM_index( libMaModule );
+    exportFM_index( libMaModule );
     exportNucSeq( libMaModule );
-    //exportBinarySeeding( libMaModule );
-    //exportPack( libMaModule );
-    //exportIntervalTree( libMaModule );
-    //exportExceptions( libMaModule );
-    //exportSeed( libMaModule );
-    //exportAlignment( libMaModule );
-    //exportHarmonization( libMaModule );
-    //exportNeedlemanWunsch( libMaModule );
-    //exportStripOfConsideration( libMaModule );
-    //exportFileReader( libMaModule );
-    //exportFileWriter( libMaModule );
-    //exportMappingQuality( libMaModule );
-    //exportPairedReads( libMaModule );
-    //exportSplitter( libMaModule );
+    exportBinarySeeding( libMaModule );
+    exportPack( libMaModule );
+    exportSegment( libMaModule );
+    exportExceptions( libMaModule );
+    exportSeed( libMaModule );
+    exportAlignment( libMaModule );
+    exportHarmonization( libMaModule );
+    exportNeedlemanWunsch( libMaModule );
+    exportStripOfConsideration( libMaModule );
+    exportFileReader( libMaModule );
+    exportFileWriter( libMaModule );
+    exportMappingQuality( libMaModule );
+    exportPairedReads( libMaModule );
+    exportSplitter( libMaModule );
 #ifdef WITH_POSTGRES
-    //exportDBWriter( libMaModule );
+    exportDBWriter( libMaModule );
 #endif
-    //exportSoCDbWriter( libMaModule );
-    //exportSoC( libMaModule );
-    //exportOtherSeeding( libMaModule );
-    //defaults::exportDefaults( libMaModule );
+    exportSoCDbWriter( libMaModule );
+    exportSoC( libMaModule );
+    exportOtherSeeding( libMaModule );
+    defaults::exportDefaults( libMaModule );
 } // function
 
 #endif

@@ -88,7 +88,11 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
  * @brief Exposes the Alignment container to boost python.
  * @ingroup export
  */
+#ifdef WITH_BOOST
 void exportNeedlemanWunsch( );
+#else
+void exportNeedlemanWunsch( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

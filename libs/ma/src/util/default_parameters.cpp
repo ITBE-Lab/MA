@@ -81,6 +81,12 @@ void exportDefaults( )
     boost::python::def( "configureFast", &configureFast );
     boost::python::def( "configureAccurate", &configureAccurate );
 } // function
+#else
+void exportDefaults( py::module& rxPyModuleId )
+{
+    rxPyModuleId.def( "configureFast", &configureFast );
+    rxPyModuleId.def( "configureAccurate", &configureAccurate );
+} // function
 #endif
 #endif
 }; // namespace defaults

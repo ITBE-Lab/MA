@@ -1409,5 +1409,10 @@ class Pack : public Container
  * @brief exports the Pack class to python.
  * @ingroup export
  */
+#ifdef WITH_BOOST
 void exportPack( );
+#else
+void exportPack( py::module& rxPyModuleId );
+#endif
+
 #endif

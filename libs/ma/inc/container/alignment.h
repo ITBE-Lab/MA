@@ -569,7 +569,11 @@ class Alignment : public Container
  * @brief Exposes the Alignment container to boost python.
  * @ingroup export
  */
+#ifdef WITH_BOOST
 void exportAlignment( );
+#else
+void exportAlignment( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

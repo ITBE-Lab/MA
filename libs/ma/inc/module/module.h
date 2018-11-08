@@ -12,13 +12,13 @@
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #ifdef WITH_PYTHON
-    #ifdef BOOST_PYTHON
-        #include <Python.h>
-        #include <boost/python/list.hpp>
-    #else
-        #include <pybind11/pybind11.h>
-        namespace py = pybind11;
-    #endif
+#ifdef BOOST_PYTHON
+#include <Python.h>
+#include <boost/python/list.hpp>
+#else
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+#endif
 #endif
 
 #include <algorithm>
@@ -892,35 +892,36 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
 )
 { // Export Class members
     fExportMembers( py::class_<TP_MODULE>( xPyModuleId,
-                                            ( std::string( "__" ) + sName ).c_str( ) ) // Python class name
+                                           ( std::string( "__" ) + sName ).c_str( ) ) // Python class name
     );
 
     // Export MA-Module Class
     py::class_<ModuleWrapperCppToPy<TP_MODULE>, // derived class
                PyModule<TP_MODULE::IS_VOLATILE>, // base class
-        std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>> // reference holder
-            ( xPyModuleId, sName.c_str( ) ).def_readonly( "mod", &ModuleWrapperCppToPy<TP_MODULE>::xModule );
+               std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>> // reference holder
+        ( xPyModuleId, sName.c_str( ) )
+            .def( py::init<>( ) )
+            .def_readonly( "cpp_module", &ModuleWrapperCppToPy<TP_MODULE>::xModule );
 
-    py::implicitly_convertible<std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>,
-                               std::shared_ptr<PyModule<TP_MODULE::IS_VOLATILE>>>( );
+    py::implicitly_convertible<ModuleWrapperCppToPy<TP_MODULE>, PyModule<TP_MODULE::IS_VOLATILE>>( );
 } // function
 
-//- template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
-//- void exportModule( const std::string&& sName,
-//-                    std::function<void( boost::python::class_<TP_MODULE>&& )> fExportMembers =
-//-                        []( boost::python::class_<TP_MODULE>&& ) {} )
-//- {
-//-     typedef ModuleWrapperCppToPy<TP_MODULE, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...> TP_TO_EXPORT;
-//-     fExportMembers(
-//-         boost::python::class_<TP_MODULE>( ( std::string( "__" ) + sName ).c_str( ), boost::python::no_init ) );
-//- 
-//-     boost::python::
-//-         class_<TP_TO_EXPORT, boost::python::bases<PyModule<TP_MODULE::IS_VOLATILE>>, std::shared_ptr<TP_TO_EXPORT>>(
-//-             sName.c_str( ), boost::python::init<TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
-//-             .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
-//-     boost::python::implicitly_convertible<std::shared_ptr<TP_TO_EXPORT>,
-//-                                           std::shared_ptr<PyModule<TP_MODULE::IS_VOLATILE>>>( );
-//- } // function
+template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
+void exportModule( pybind11::module& xPyModuleId, // pybind module variable
+                   const std::string&& sName, // module name
+                   std::function<void( py::class_<TP_MODULE>&& )> fExportMembers =
+                       []( py::class_<TP_MODULE>&& ) {} // default lambda
+)
+{
+    typedef ModuleWrapperCppToPy<TP_MODULE, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...> TP_TO_EXPORT;
+    fExportMembers( py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__" ) + sName ).c_str(  ) ) );
+
+    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>(
+        xPyModuleId, sName.c_str( ) )
+        .def( py::init<TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
+        .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
+    py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
+} // function
 
 #endif
 #endif

@@ -129,5 +129,14 @@ void exportMappingQuality( )
             .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
     } );
 } // function
+#else
+void exportMappingQuality( py::module& rxPyModuleId )
+{
+    // export the MappingQuality class
+    exportModule<MappingQuality>( rxPyModuleId, "MappingQuality", []( auto&& x ) {
+        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest )
+            .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
+    } );
+} // function
 #endif
 #endif

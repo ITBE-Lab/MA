@@ -5,6 +5,7 @@
 
 #include "container/alignment.h"
 #include "util/default_parameters.h"
+#include "util/pybind11.h"
 using namespace libMA;
 
 using namespace libMA::defaults;
@@ -15,7 +16,7 @@ extern int libMA::defaults::iMissMatch;
 extern size_t libMA::defaults::uiSVPenalty;
 // Note query 236 failed
 
-void EXPORTED Alignment::append( MatchType type, nucSeqIndex size)
+void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
 {
 #if DEBUG_LEVEL >= 2
     // get a copy of the alignment for later comparison in case something goes wrong
@@ -138,7 +139,7 @@ void EXPORTED Alignment::makeLocal( )
     if( uiLength == 0 )
         return;
     std::vector<int> vScores;
-	int64_t iMaxScore = 0;
+    int64_t iMaxScore = 0;
     nucSeqIndex iMaxStart = 0;
     nucSeqIndex iMaxEnd = data.size( );
     nucSeqIndex iLastStart = 0;
@@ -190,7 +191,7 @@ void EXPORTED Alignment::makeLocal( )
     // adjust the begin/end on ref/query according to the area that will be erased
     if( iMaxStart <= iMaxEnd )
     {
-        for(nucSeqIndex index = 0; index < iMaxStart; index++ )
+        for( nucSeqIndex index = 0; index < iMaxStart; index++ )
             switch( data[ index ].first )
             {
                 case MatchType::deletion:
@@ -204,7 +205,7 @@ void EXPORTED Alignment::makeLocal( )
                     uiBeginOnQuery += data[ index ].second;
                     break;
             } // switch
-        for(nucSeqIndex index = iMaxEnd; index < data.size( ); index++ )
+        for( nucSeqIndex index = iMaxEnd; index < data.size( ); index++ )
             switch( data[ index ].first )
             {
                 case MatchType::deletion:
@@ -419,6 +420,62 @@ void exportAlignment( )
     // tell boost python that pointers of these classes can be converted implicitly
     boost::python::implicitly_convertible<std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>,
                                           std::shared_ptr<Container>>( );
+
+} // function
+#else
+void exportAlignment( py::module& rxPyModuleId )
+{
+    py::class_<Alignment, Container, std::shared_ptr<Alignment>>( rxPyModuleId, "Alignment" )
+        .def( "at", &Alignment::at )
+        .def( py::init<nucSeqIndex>( ) )
+        .def( py::init<nucSeqIndex, nucSeqIndex>( ) )
+        .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex>( ) )
+        .def( "__getitem__", &Alignment::at )
+        .def( "append", &Alignment::append_boost1 )
+        .def( "append", &Alignment::append_boost2 )
+        .def( "begin_on_ref", &Alignment::beginOnRef )
+        .def( "end_on_ref", &Alignment::endOnRef )
+        .def( "__len__", &Alignment::length )
+        .def( "length", &Alignment::length )
+        .def( "seed_coverage", &Alignment::seedCoverage )
+        .def( "get_score", &Alignment::score )
+        .def( "get_local_score", &Alignment::localscore )
+        .def( "num_by_seeds", &Alignment::numBySeeds )
+        .def( "make_local", &Alignment::makeLocal )
+        .def( "extract", &Alignment::extract )
+        .def( "overlap", &Alignment::overlap )
+        .def( "cigarString", &Alignment::cigarString )
+        .def( "getSamFlag", &Alignment::getSamFlag )
+        .def( "getContig", &Alignment::getContig )
+        .def( "getSamPosition", &Alignment::getSamPosition )
+        .def( "getQuerySequence", &Alignment::getQuerySequence )
+        .def_readonly( "stats", &Alignment::xStats )
+        .def_readwrite( "begin_on_query", &Alignment::uiBeginOnQuery )
+        .def_readwrite( "end_on_query", &Alignment::uiEndOnQuery )
+        .def_readwrite( "begin_on_ref", &Alignment::uiBeginOnRef )
+        .def_readwrite( "end_on_ref", &Alignment::uiEndOnRef )
+        .def_readwrite( "mapping_quality", &Alignment::fMappingQuality )
+        .def_readwrite( "secondary", &Alignment::bSecondary )
+        .def_readwrite( "supplementary", &Alignment::bSupplementary )
+            DEBUG(.def_readwrite( "vGapsScatter", &Alignment::vGapsScatter ) );
+
+
+    // export the matchType enum
+    py::enum_<MatchType>( rxPyModuleId, "MatchType" )
+        .value( "match", MatchType::match )
+        .value( "seed", MatchType::seed )
+        .value( "missmatch", MatchType::missmatch )
+        .value( "insertion", MatchType::insertion )
+        .value( "deletion", MatchType::deletion )
+        .export_values( );
+
+    py::bind_vector<std::vector<MatchType>>( rxPyModuleId, "MatchTypeVector" );
+
+    py::bind_vector_ext<ContainerVector<std::shared_ptr<Alignment>>, Container,
+                    std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>>( rxPyModuleId, "AlignmentVector" );
+
+    // tell boost python that pointers of these classes can be converted implicitly
+    py::implicitly_convertible<ContainerVector<std::shared_ptr<Alignment>>, Container>( );
 
 } // function
 #endif

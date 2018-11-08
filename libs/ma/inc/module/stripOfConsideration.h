@@ -168,7 +168,11 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
  * @brief export the bucketing @ref Module "module" to python.
  * @ingroup export
  */
+#ifdef WITH_BOOST
 void exportStripOfConsideration( );
+#else
+void exportStripOfConsideration( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

@@ -79,8 +79,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-std::shared_ptr<SegmentVector>
-BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index,
+                                                       std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
@@ -111,6 +111,16 @@ void exportBinarySeeding( )
 {
     // export the BinarySeeding class
     exportModule<BinarySeeding>( "BinarySeeding", []( auto&& x ) {
+        x.def_readwrite( "min_ambiguity", &BinarySeeding::uiMinAmbiguity )
+            .def_readwrite( "max_ambiguity", &BinarySeeding::uiMaxAmbiguity )
+            .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );
+    } );
+} // function
+#else
+void exportBinarySeeding( py::module& rxPyModuleId )
+{
+    // export the BinarySeeding class
+    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding", []( auto&& x ) {
         x.def_readwrite( "min_ambiguity", &BinarySeeding::uiMinAmbiguity )
             .def_readwrite( "max_ambiguity", &BinarySeeding::uiMaxAmbiguity )
             .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );

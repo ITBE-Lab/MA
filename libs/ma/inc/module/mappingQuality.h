@@ -42,7 +42,11 @@ class MappingQuality
  * @brief export the MappingQuality @ref Module "module" to python.
  * @ingroup export
  */
+#ifdef WITH_BOOST
 void exportMappingQuality( );
+#else
+void exportMappingQuality( py::module& rxPyModuleId );
+#endif
 #endif
 
 

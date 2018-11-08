@@ -133,7 +133,11 @@ class PairedDbWriter
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportDBWriter( );
+#else
+void exportDBWriter( py::module& rxPyModuleId );
+#endif
 #endif // WITH_PYTHON
 
 #endif // WITH_POSTGRES

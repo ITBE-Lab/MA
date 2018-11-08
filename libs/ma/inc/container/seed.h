@@ -415,7 +415,11 @@ class Seeds : public Container
  * @brief exports the Seed and Seedlist classes to python.
  * @ingroup export
  */
+#ifdef WITH_BOOST
 void exportSeed( );
+#else
+void exportSeed( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

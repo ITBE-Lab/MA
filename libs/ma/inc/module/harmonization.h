@@ -156,7 +156,11 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
  * @brief Exposes the Harmonization @ref Module "module" to boost python.
  * @ingroup export
  */
+#ifdef WITH_BOOSt
 void exportHarmonization( );
+#else
+void exportHarmonization( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

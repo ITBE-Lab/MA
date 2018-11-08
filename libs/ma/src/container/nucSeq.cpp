@@ -3,6 +3,7 @@
  * @author Arne Kutzner
  */
 #include "container/nucSeq.h"
+#include "util/pybind11.h"
 using namespace libMA;
 
 /* The translation table for columns.
@@ -89,9 +90,6 @@ void exportNucSeq( py::module& rxPyModuleId )
 #endif
         .def( "fastaq", &NucSeq::fastaq )
         .def_readwrite( "name", &NucSeq::sName );
-
-    // tell boost python that pointers of these classes can be converted implicitly\
-    py::implicitly_convertible<NucSeq, Container>( );
 
     // register return values of vectors of nucseqs
     py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc" );

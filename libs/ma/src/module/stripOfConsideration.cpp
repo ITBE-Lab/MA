@@ -165,5 +165,15 @@ void exportStripOfConsideration( )
             .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
     } );
 } // function
+#else
+void exportStripOfConsideration( py::module& rxPyModuleId )
+{
+    // export the StripOfConsideration class
+    exportModule<StripOfConsideration>( rxPyModuleId, "StripOfConsideration", []( auto&& x ) {
+        x.def_readwrite( "max_ambiguity", &StripOfConsideration::uiMaxAmbiguity )
+            .def_readwrite( "min_score", &StripOfConsideration::fScoreMinimum )
+            .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
+    } );
+} // function
 #endif
 #endif

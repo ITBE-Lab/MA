@@ -164,7 +164,11 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportFileReader( );
+#else
+void exportFileReader( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif

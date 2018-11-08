@@ -54,8 +54,10 @@ void exportModuleClass( )
 void exportModuleClass( py::module& rxPyModuleId )
 {
     // module is an abstract class and should never be initialized
-    py::class_<PyModule<false>>( rxPyModuleId, "Module" ).def( "execute", &PyModule<false>::execute );
-    py::class_<PyModule<true>>( rxPyModuleId, "VolatileModule" ).def( "execute", &PyModule<true>::execute );
+    py::class_<PyModule<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
+        .def( "execute", &PyModule<false>::execute );
+    py::class_<PyModule<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId, "VolatileModule" )
+        .def( "execute", &PyModule<true>::execute );
 
     py::class_<BasePledge, std::shared_ptr<BasePledge>>( rxPyModuleId, "BasePledge" );
 

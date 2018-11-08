@@ -95,7 +95,11 @@ class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, fals
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+#ifdef WITH_BOOST
 void exportSplitter( );
+#else
+void exportSplitter( py::module& rxPyModuleId );
+#endif
 #endif
 
 #endif
