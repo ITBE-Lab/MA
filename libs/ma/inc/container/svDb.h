@@ -123,9 +123,9 @@ class SV_DB : public CppSQLite3DB, public Container
                 {
                     // insert both reads
                     xInsertRow( uiSequencerId, pReadA->sName, NucSeqSql( pReadA ), -1 );
-                    size_t uiReadAid = xGetReadId.scalar( uiSequencerId, pReadA->sName );
+                    int32_t uiReadAid = xGetReadId.scalar( uiSequencerId, pReadA->sName );
                     xInsertRow( uiSequencerId, pReadB->sName, NucSeqSql( pReadB ), -1 );
-                    size_t uiReadBid = xGetReadId.scalar( uiSequencerId, pReadB->sName );
+                    int32_t uiReadBid = xGetReadId.scalar( uiSequencerId, pReadB->sName );
                     // update the paired read ids
                     xUpdateReadId.bindAndExecute( uiReadAid, uiReadBid );
                     xUpdateReadId.bindAndExecute( uiReadBid, uiReadAid );

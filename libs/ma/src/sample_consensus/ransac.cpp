@@ -109,7 +109,7 @@ bool RANSAC::computeModel( int debug )
         double dAngle = -90;
         // if we are in the correct quadrant we compute an angle
         if( dHorizontalDist > 0 && dVerticalDist > 0 )
-            dAngle = atan( dVerticalDist / dHorizontalDist ) * 180 / M_PI;
+            dAngle = atan( dVerticalDist / dHorizontalDist ) * 180 / std::acos(-1);
         if( dAngle >= 20 && dAngle <= 70 )
         {
 

@@ -71,37 +71,6 @@ void exportNucSeq( )
         .def_readwrite( "seq", &NucSeqSql::pNucSeq );
 } // function
 #else
-#endif
-void exportNucSeq( py::module& rxPyModuleId )
-{
-    // export the nucleotidesequence class
-    py::class_<NucSeq, Container, std::shared_ptr<NucSeq>>( rxPyModuleId, "NucSeq" )
-        .def( py::init<>( ) ) // default constructor
-        .def( py::init<const char*>( ) )
-        .def( py::init<const std::string>( ) )
-        .def( "at", &NucSeq::charAt )
-        .def( "__getitem__", &NucSeq::charAt )
-        .def( "append", &NucSeq::vAppend_boost )
-        .def( "length", &NucSeq::length )
-        .def( "__len__", &NucSeq::length )
-        .def( "__str__", &NucSeq::toString )
-#if WITH_QUALITY
-        .def( "quality", &NucSeq::getQuality )
-#endif
-        .def( "fastaq", &NucSeq::fastaq )
-        .def_readwrite( "name", &NucSeq::sName );
-
-    // register return values of vectors of nucseqs
-    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc" );
-
-    // export the NucSeqSql class
-    py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( rxPyModuleId, "NucSeqSql" )
-        .def( py::init<>( ) ) // default constructor
-        .def( "fromBlob", &NucSeqSql::fromPyBytesBlob )
-        .def_readwrite( "seq", &NucSeqSql::pNucSeq );
-} // function
-#else
-#endif
 void exportNucSeq( py::module& rxPyModuleId )
 {
     // export the nucleotidesequence class
@@ -124,4 +93,5 @@ void exportNucSeq( py::module& rxPyModuleId )
     // register return values of vectors of nucseqs
     py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc" );
 } // function
+#endif
 #endif

@@ -34,14 +34,17 @@ set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Set includes and library dependencies 
 target_include_directories(MA PUBLIC inc ../kswcpp/inc)
-target_link_libraries ( MA LINK_PUBLIC kswcpp )
+target_link_libraries ( MA LINK_PUBLIC kswcpp CppSQLite3 )
 
-# With MSVC: build the shared library in the folder of the .exe 
-if( MSVC )
-    set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
-endif()
+# build the shared library in the folder of the .exe 
+set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+set_target_properties(MA PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 # additionally link to python if available
 if( PythonLibs_FOUND )
     target_link_libraries ( MA PUBLIC ${PYTHON_LIBRARIES} )
+    if( MSVC )
+        set_target_properties( MA PROPERTIES OUTPUT_NAME "libMA" )
+        set_target_properties( MA PROPERTIES SUFFIX ".pyd" ) )
+    endif()
 endif()

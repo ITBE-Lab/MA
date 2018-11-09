@@ -37,15 +37,15 @@ enum enumSQLite3DBOpenMode
  * http://stackoverflow.com/questions/7858817/unpacking-a-tuple-to-call-a-matching-function-pointer
  * FIXME: Use the construct from the standard
  */
-template <int...> struct seq
+template <int...> struct Seq
 {};
 
-template <int N, int... S> struct gens : gens<N - 1, N - 1, S...>
+template <int N, int... S> struct Gens : Gens<N - 1, N - 1, S...>
 {};
 
-template <int... S> struct gens<0, S...>
+template <int... S> struct Gens<0, S...>
 {
-    typedef seq<S...> type;
+    typedef Seq<S...> type;
 };
 
 /* METAPROGRAMMING
@@ -58,14 +58,14 @@ template <typename... Args> struct TupleUnpackToParameterByReference
    */
     const std::function<void( const Args&... )>& func;
 
-    template <int... S> void callFunc( const std::tuple<Args...>& params, seq<S...> )
+    template <int... S> void callFunc( const std::tuple<Args...>& params, Seq<S...> )
     {
         func( std::get<S>( params )... );
     }
 
     void operator( )( const std::tuple<Args...>& params )
     {
-        callFunc( params, typename gens<sizeof...( Args )>::type( ) );
+        callFunc( params, typename Gens<sizeof...( Args )>::type( ) );
     }
 
     TupleUnpackToParameterByReference( const std::function<void( const Args&... )>& func ) : func( func )
@@ -79,14 +79,14 @@ template <typename... Args> struct TupleUnpackAndCallFunctor
 {
     const std::tuple<Args...>& _params;
 
-    template <typename Functor, int... S> void callFunc( Functor&& f, seq<S...> )
+    template <typename Functor, int... S> void callFunc( Functor&& f, Seq<S...> )
     {
         f( std::get<S>( _params )... );
     } // method
 
     template <typename Functor> void operator( )( Functor&& f )
     {
-        callFunc( std::forward<Functor>( f ), typename gens<sizeof...( Args )>::type( ) );
+        callFunc( std::forward<Functor>( f ), typename Gens<sizeof...( Args )>::type( ) );
     } // operator ()
 
     TupleUnpackAndCallFunctor( const std::tuple<Args...>& params ) : _params( params )
@@ -96,7 +96,7 @@ template <typename... Args> struct TupleUnpackAndCallFunctor
     template <typename Functor>
     TupleUnpackAndCallFunctor( Functor&& f, const std::tuple<Args...>& params ) : _params( params )
     {
-        callFunc( std::forward<Functor>( f ), typename gens<sizeof...( Args )>::type( ) );
+        callFunc( std::forward<Functor>( f ), typename Gens<sizeof...( Args )>::type( ) );
     } // constructor
 }; // struct
 

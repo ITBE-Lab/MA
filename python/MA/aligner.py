@@ -11,24 +11,24 @@
 #
 
 import traceback
-from libs.ma.libMA import Alignment
-from libs.ma.libMA import MatchType
-from libs.ma.libMA import Pledge
-from libs.ma.libMA import SoCPriorityQueue
-from libs.ma.libMA import SegmentVector
-from libs.ma.libMA import Seeds
-from libs.ma.libMA import Segment
-from libs.ma.libMA import Pack
-from libs.ma.libMA import Seed
-from libs.ma.libMA import SAInterval
-from libs.ma.libMA import FMIndex
-from libs.ma.libMA import Module
-from libs.ma.libMA import VolatileModule
-from libs.ma.libMA import configureAccurate
-from libs.ma.libMA import configureFast
-from libs.ma.libMA import NucSeq
-from libs.ma.libMA import NucSeq
-import libs.ma.libMA as libMA
+from libMA import Alignment
+from libMA import MatchType
+from libMA import Pledge
+from libMA import SoCPriorityQueue
+from libMA import SegmentVector
+from libMA import Seeds
+from libMA import Segment
+from libMA import Pack
+from libMA import Seed
+from libMA import SAInterval
+from libMA import FMIndex
+from libMA import Module
+from libMA import VolatileModule
+from libMA import configureAccurate
+from libMA import configureFast
+from libMA import NucSeq
+from libMA import NucSeq
+import libMA as libMA
 
 
 def promise_me(module, *args):
