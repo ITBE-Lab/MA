@@ -36,12 +36,19 @@ set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(MA PUBLIC inc ../kswcpp/inc)
 target_link_libraries ( MA LINK_PUBLIC kswcpp )
 
-# With MSVC: build the shared library in the folder of the .exe 
-if( MSVC )
-    set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
-endif()
+# build the shared library in the folder of the .exe 
+set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+set_target_properties(MA PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 # additionally link to python if available
 if( PythonLibs_FOUND )
     target_link_libraries ( MA PUBLIC ${PYTHON_LIBRARIES} )
+    # if we are under windows and we want to support python we need to do two things:
+    if( MSVC )
+        # change the name of the library from MA to libMA (under linux lib is used as prefix automatically)
+        set_target_properties( MA PROPERTIES OUTPUT_NAME "libMA" )
+        # change the suffix to .pdy so that python recognized the file as module 
+        # (this does not effect the executable; it can still load libMA.pyd as dynamic linked library)
+        set_target_properties( MA PROPERTIES SUFFIX ".pyd" )
+    endif()
 endif()
