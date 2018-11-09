@@ -27,6 +27,8 @@ from libMA import VolatileModule
 from libMA import configureAccurate
 from libMA import configureFast
 from libMA import NucSeq
+from libMA import SV_DB
+from libMA import VectorPledge
 import libMA
 
 
@@ -161,6 +163,26 @@ class Harmonization(libMA.Harmonization):
         for arg in args:
             vec.append(arg)
         return super(Harmonization, self).execute(vec)
+
+
+##
+# @brief python wrapper for HarmonizationSingle
+class HarmonizationSingle(libMA.HarmonizationSingle):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(HarmonizationSingle, self).execute(vec)
+
+
+##
+# @brief python wrapper for SeedLumping
+class SeedLumping(libMA.SeedLumping):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(SeedLumping, self).execute(vec)
 
 
 ##

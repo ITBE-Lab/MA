@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/splitter.h"
+#include "container/soc.h"
 
 using namespace libMA;
 
@@ -36,6 +37,13 @@ void exportSplitter( py::module& rxPyModuleId )
     // export the TupleGet class
     exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 0>>( rxPyModuleId, "GetFirstQuery" );
     exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 1>>( rxPyModuleId, "GetSecondQuery" );
+
+    py::bind_vector<std::vector<std::tuple<std::shared_ptr<NucSeq>, std::shared_ptr<SoCPriorityQueue>>>>(
+        rxPyModuleId, "SoCPriorityQueueVector" );
+
+    exportModule<Collector<NucSeq, SoCPriorityQueue>>( rxPyModuleId, "NucSeqSoCCollector", []( auto&& x ) {
+        x.def_readwrite( "collection", &Collector<NucSeq, SoCPriorityQueue>::vCollection );
+    } );
 } // function
 #endif
 #endif

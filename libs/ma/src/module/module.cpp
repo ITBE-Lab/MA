@@ -71,7 +71,7 @@ void exportModuleClass( py::module& rxPyModuleId )
 
 
     typedef Pledge<Container, false, PyPledgeVector> TP_MODULE_PLEDGE;
-    py::class_<TP_MODULE_PLEDGE, std::shared_ptr<TP_MODULE_PLEDGE>>( rxPyModuleId, "ModulePledge" )
+    py::class_<TP_MODULE_PLEDGE, BasePledge, std::shared_ptr<TP_MODULE_PLEDGE>>( rxPyModuleId, "ModulePledge" )
         .def( py::init<std::shared_ptr<PyModule<false>>, std::shared_ptr<PyPledgeVector>>( ) )
         .def( "get", &TP_MODULE_PLEDGE::get );
 
@@ -79,7 +79,8 @@ void exportModuleClass( py::module& rxPyModuleId )
 
 
     typedef Pledge<Container, true, PyPledgeVector> TP_VOLATILE_PLEDGE;
-    py::class_<TP_VOLATILE_PLEDGE, std::shared_ptr<TP_VOLATILE_PLEDGE>>( rxPyModuleId, "VolatileModulePledge" )
+    py::class_<TP_VOLATILE_PLEDGE, BasePledge, std::shared_ptr<TP_VOLATILE_PLEDGE>>( rxPyModuleId,
+                                                                                     "VolatileModulePledge" )
         .def( py::init<std::shared_ptr<PyModule<true>>, std::shared_ptr<PyPledgeVector>>( ) );
 
     py::implicitly_convertible<TP_VOLATILE_PLEDGE, BasePledge>( );
