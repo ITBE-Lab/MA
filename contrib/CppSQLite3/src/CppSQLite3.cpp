@@ -1038,7 +1038,7 @@ void CppSQLite3Statement::bind( int nParam, const double dValue )
 void CppSQLite3Statement::bind( int nParam, const SQL_BLOB& rBlob )
 {
     checkVM( );
-    int nRes = sqlite3_bind_blob( mpVM, nParam, (const void*)rBlob.toBlob( ), rBlob.blobSize( ), SQLITE_TRANSIENT );
+    size_t nRes = sqlite3_bind_blob( mpVM, nParam, (const void*)rBlob.toBlob( ), rBlob.blobSize( ), SQLITE_TRANSIENT );
 
     if( nRes != SQLITE_OK )
     {

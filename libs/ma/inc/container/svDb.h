@@ -44,7 +44,7 @@ class SV_DB : public CppSQLite3DB, public Container
                 pDatabase->execDML( "CREATE INDEX sequencer_id_index ON sequencer_table (id)" );
         } // deconstructor
 
-        inline size_t insertSequencer( std::string& sSequencerName )
+        inline uint32_t insertSequencer( std::string& sSequencerName )
         {
             xInsertRow( sSequencerName, "not supported yet" );
             return xGetSequencerId.scalar( sSequencerName );
@@ -321,18 +321,18 @@ class SV_DB : public CppSQLite3DB, public Container
         // this is here so that it gets destructed after the transaction context
         std::shared_ptr<SV_DB> pDB;
 
-        size_t uiSequencerId;
+        uint32_t uiSequencerId;
         // must be first so that it is deconstructed first
         CppSQLiteExtImmediateTransactionContext xTransactionContext;
 
         class ReadContex
         {
           private:
-            size_t uiReadId;
+            uint32_t uiReadId;
             std::shared_ptr<SoCTable> pSocTable;
 
           public:
-            ReadContex( size_t uiReadId, std::shared_ptr<SoCTable> pSocTable )
+            ReadContex( uint32_t uiReadId, std::shared_ptr<SoCTable> pSocTable )
                 : uiReadId( uiReadId ), pSocTable( pSocTable )
             {} // constructor
 
@@ -388,7 +388,7 @@ class SoCDbWriter : public Module<Container, false, NucSeq, SoCPriorityQueue>
                 break;
 
             auto xSoCTup = pSoCQueue->pop_info( );
-            xInsertContext( std::get<0>( xSoCTup ), std::get<1>( xSoCTup ), std::get<2>( xSoCTup ),
+            xInsertContext( (uint32_t)std::get<0>( xSoCTup ), (uint32_t)std::get<1>( xSoCTup ), std::get<2>( xSoCTup ),
                             std::get<3>( xSoCTup ) );
         } // for
 

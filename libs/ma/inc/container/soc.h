@@ -297,7 +297,7 @@ class SoCPriorityQueue : public Container
         auto xCollectEnd = std::get<2>( vMaxima.front( ) );
         nucSeqIndex uiStart = xCollect->start_ref( );
         nucSeqIndex uiEnd = (xCollectEnd-1)->end_ref( );
-        uint32_t uiScore = std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
+        uint32_t uiScore = (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
         size_t uiForwSeeds = 0;
         size_t uiSeedsTotal = 0;
         while( xCollect != pSeeds->end( ) && xCollect != xCollectEnd )

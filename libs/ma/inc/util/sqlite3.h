@@ -195,7 +195,7 @@ struct GetTupleElement
 
     void getColumnElement( unsigned int& rValue, const int iFieldIndex )
     {
-        rValue = rxQuery.getInt64Field( iFieldIndex );
+        rValue = (unsigned int)rxQuery.getInt64Field( iFieldIndex );
     } // method
 
     void getColumnElement( double& rValue, const int iFieldIndex )

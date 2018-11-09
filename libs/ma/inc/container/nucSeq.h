@@ -197,18 +197,6 @@ class NucSeq : public Container
     /** Move constructor on the foundation of text sequences.
      * Reuses the space of the text-sequence! TO DO: move & to &&
      */
-    NucSeq( NucSeq& rSequence )
-    {
-        vResetProtectedAttributes( );
-        /* We strip the given sequence of its content and move it to our new sequence.
-         * WARNING: Here we assume that the sizes for the types char and uint8_t are equal.
-         */
-        rSequence.vTransferOwnership( *this );
-    } // constructor
-
-    /** Move constructor on the foundation of text sequences.
-     * Reuses the space of the text-sequence! TO DO: move & to &&
-     */
     NucSeq( const NucSeq& rOther )
     {
         vResetProtectedAttributes( );

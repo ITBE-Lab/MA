@@ -27,8 +27,7 @@ from libMA import VolatileModule
 from libMA import configureAccurate
 from libMA import configureFast
 from libMA import NucSeq
-from libMA import NucSeq
-import libMA as libMA
+import libMA
 
 
 def promise_me(module, *args):
@@ -98,7 +97,7 @@ if hasattr(libMA, "DBWriter"):
     # @brief python wrapper for DbWriter
     # @details
     # This requires a switch in order to be compiled
-    class DbWriter(libMA.DbWriter):
+    class DbWriter(libMA.DbWriter): #pylint: disable=I1101
         def execute(self, *args):
             vec = libMA.ContainerVector()
             for arg in args:
@@ -118,7 +117,7 @@ if hasattr(libMA, "PairedDbWriter"):
     ##
     # @brief python wrapper for PairedDbWriter
     # This requires a switch in order to be compiled
-    class PairedDbWriter(libMA.PairedDbWriter):
+    class PairedDbWriter(libMA.PairedDbWriter): #pylint: disable=I1101
         def execute(self, *args):
             vec = libMA.ContainerVector()
             for arg in args:
@@ -167,7 +166,7 @@ class Harmonization(libMA.Harmonization):
 ##
 # @brief python wrapper for FileReader
 class FileReader(libMA.FileReader):
-    def execute(self):
+    def execute(self, *args):
         vec = libMA.ContainerVector()
         for arg in args:
             vec.append(arg)
@@ -177,7 +176,7 @@ class FileReader(libMA.FileReader):
 ##
 # @brief python wrapper for PairedFileReader
 class PairedFileReader(libMA.PairedFileReader):
-    def execute(self):
+    def execute(self, *args):
         vec = libMA.ContainerVector()
         for arg in args:
             vec.append(arg)

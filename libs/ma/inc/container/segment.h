@@ -278,7 +278,7 @@ class SegmentVector : public Container
      */
     template <class FUNCTOR>
     void forEachSeed( FMIndex& rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
-                      nucSeqIndex uiQLen, unsigned int uiMAxAmbiguity, unsigned int uiMinLen, bool bSkip, FUNCTOR&& fDo
+                      nucSeqIndex uiQLen, size_t uiMAxAmbiguity, size_t uiMinLen, bool bSkip, FUNCTOR&& fDo
                       // std::function<bool(const Seed& s)> fDo
     )
     {
@@ -293,7 +293,7 @@ class SegmentVector : public Container
             // if bSkip is not set uiJump by is used to not return more than uiMAxAmbiguity
 
             t_bwtIndex uiJumpBy = 1;
-            if( rSegment.saInterval( ).size( ) > uiMAxAmbiguity && uiMAxAmbiguity != 0 )
+            if( rSegment.saInterval( ).size( ) > (t_bwtIndex)uiMAxAmbiguity && uiMAxAmbiguity != 0 )
             {
                 if( bSkip )
                     continue;
