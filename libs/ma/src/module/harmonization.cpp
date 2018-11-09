@@ -705,7 +705,7 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
             // mark for deletion
             std::get<0>( xT )->size( 0 );
         } // for
-        DEBUG( unsigned int uiSizeBefore = pSeedsIn->size( ); ) // DEBUG
+        DEBUG( size_t uiSizeBefore = pSeedsIn->size( ); ) // DEBUG
         // remove the seeds that have been harmonized
         pSeedsIn->erase(
             std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
