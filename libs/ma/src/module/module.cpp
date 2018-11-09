@@ -87,7 +87,7 @@ void exportModuleClass( py::module& rxPyModuleId )
 
 
     typedef Pledge<Container, false> TP_PLEDGE;
-    py::class_<TP_PLEDGE, std::shared_ptr<TP_PLEDGE>>( rxPyModuleId, "Pledge" )
+    py::class_<TP_PLEDGE, BasePledge, std::shared_ptr<TP_PLEDGE>>( rxPyModuleId, "Pledge" )
         .def( py::init<>( ) ) // default constructor
         .def( "set", &TP_PLEDGE::set )
         .def( "get", &TP_PLEDGE::get );
