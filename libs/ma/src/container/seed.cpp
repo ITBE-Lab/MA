@@ -66,9 +66,11 @@ void exportSeed( )
 #else
 void exportSeed( py::module& rxPyModuleId )
 {
-    exportInterval<nucSeqIndex>( rxPyModuleId, "nucSeqIndexInterval" );
     // export the Seed class
-    py::class_<Seed, Interval<nucSeqIndex>>( rxPyModuleId, "Seed" )
+    py::class_<Seed>( rxPyModuleId, "Seed" )
+        .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, bool>() )
+        .def_readwrite( "start", &Seed::iStart )
+        .def_readwrite( "size", &Seed::iSize )
         .def_readwrite( "start_ref", &Seed::uiPosOnReference )
         .def_readwrite( "on_forward_strand", &Seed::bOnForwStrand )
         .def( "__eq__", &Seed::operator==);
