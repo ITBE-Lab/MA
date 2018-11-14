@@ -33,6 +33,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "util/debug.h"
 #include "util/default_parameters.h"
 #include "util/export.h"
+#include "version.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <iostream>
@@ -140,9 +141,12 @@ const std::string sHelp =
     "\n                                   Default is 0.1."
     "\n        --disableHeuristics        All performance optimizing heuristics are turned off."
     "\n"
-    "\nVersion 0.1.2 (Sep 2018)"
-    "\nBy Markus Schmidt & Arne Kutzner"
-    "\nFor more information visit: https://github.com/ITBE-Lab/ma";
+    "\nVersion " MA_VERSION "\nBy Markus Schmidt & Arne Kutzner"
+    "\nFor more information visit: https://github.com/ITBE-Lab/ma"
+#if DEBUG_LEVEL > 0
+    "\nDEBUG MODE"
+#endif
+    ;
 
 /**
  * main function
@@ -150,6 +154,12 @@ const std::string sHelp =
  */
 int main( int argc, char* argv[] )
 {
+    if( MA_VERSION != sLibMaVersion )
+    {
+        std::cerr << "cmbMA verion \"" << MA_VERSION << "\" does not match libMA version \"" << sLibMaVersion << "\""
+                  << std::endl;
+        return 1;
+    } // if
     Options options( "MA", "\t\t===== The Modular Aligner =====" );
     options.add_options( )( "h,help", "Display the complete help screen" )(
         "t,threads", "Number of threads",
@@ -228,9 +238,6 @@ int main( int argc, char* argv[] )
         if( result.count( "help" ) )
         {
             std::cout << sHelp << std::endl;
-            //@todo cmake version number:
-            // https://stackoverflow.com/questions/27395120/correct-way-to-encode-embed-version-number-in-program-code
-            DEBUG( std::cout << "DEBUG LEVEL: " << DEBUG_LEVEL << std::endl; )
             return 0;
         } // if
 

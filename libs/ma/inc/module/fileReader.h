@@ -25,16 +25,25 @@ namespace libMA
 class FileStream
 {
   public:
+    DEBUG( size_t uiNumLinesRead = 0; ) // DEBUG
+
     FileStream( )
     {}
 
     FileStream( const FileStream& ) = delete;
 
-    virtual bool is_open( ) const
+    virtual bool eof( ) const
     {
         throw AnnotatedException( "Unimplemented" );
     }
-    virtual bool eof( ) const
+    
+    ~FileStream( )
+    {
+        DEBUG( std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
+               if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
+    }// deconstrucotr
+
+    virtual bool is_open( ) const
     {
         throw AnnotatedException( "Unimplemented" );
     }
@@ -65,14 +74,14 @@ class StdFileStream : public FileStream
     StdFileStream( std::string sFilename ) : xStream( sFilename )
     {} // constructor
 
-    bool is_open( ) const
-    {
-        return xStream.is_open( );
-    } // method
-
     bool eof( ) const
     {
         return !xStream.good( ) || xStream.eof( );
+    } // method
+
+    bool is_open( ) const
+    {
+        return xStream.is_open( );
     } // method
 
     void close( )
@@ -220,8 +229,8 @@ class FileReader : public Module<NucSeq, true>, public Reader
   public:
     std::shared_ptr<FileStream> pFile;
     size_t uiFileSize = 0;
-    DEBUG( size_t uiNumLinesRead = 0; size_t uiNumLinesWithNs = 0; ) // DEBUG
     std::shared_ptr<NucSeq> EXPORTED execute( );
+    DEBUG( size_t uiNumLinesWithNs = 0; ) // DEBUG
     /**
      * @brief creates a new FileReader.
      */
@@ -245,9 +254,6 @@ class FileReader : public Module<NucSeq, true>, public Reader
 
     ~FileReader( )
     {
-        DEBUG( std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
-               std::cout << "read " << uiNumLinesWithNs << " N's." << std::endl;
-               if( !pFile->eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
         pFile->close( );
     } // deconstructor
 
