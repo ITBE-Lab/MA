@@ -22,7 +22,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
 {
     // std::lock_guard<std::mutex> xGuard(*pSynchronizeReading);
     std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
-    DEBUG( pRet->uiFromLine = uiNumLinesRead; )
+    DEBUG( pRet->uiFromLine = pFile->uiNumLinesRead; )
     // FASTA format
     if( !pFile->eof( ) && pFile->peek( ) == '>' )
     {
@@ -47,7 +47,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
                 if( character == 'N' || character == 'n' )
                 {
                     if( uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << uiNumLinesRead
+                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << pFile->uiNumLinesRead
                                   << " (this is only printed once)" << std::endl;
                     uiNumLinesWithNs++;
                     continue;
@@ -145,7 +145,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
                 if( character == 'N' || character == 'n' )
                 {
                     if( uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << uiNumLinesRead
+                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << pFile->uiNumLinesRead
                                   << " (this is only printed once)" << std::endl;
                     uiNumLinesWithNs++;
                     continue;

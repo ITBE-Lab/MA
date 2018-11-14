@@ -1,0 +1,11 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+#include <string>
+#include "util/support.h"
+
+#define MA_VERSION "@MA_VERSION@"
+
+extern EXPORTED std::string sLibMaVersion;
+
+#endif

@@ -51,15 +51,6 @@ endif()
 
 # Generate a version of MA based on the current commit
 
-# Get the current working branch
-execute_process(
-  COMMAND git rev-parse --abbrev-ref HEAD
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE GIT_BRANCH
-  RESULT_VARIABLE RESULT_BRANCH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
 # Get the latest abbreviated commit hash of the working branch
 execute_process(
   COMMAND git rev-parse --short HEAD
@@ -79,28 +70,24 @@ execute_process(
 )
 
 if( "${GIT_STATUS}" STREQUAL "" )
-    set(GIT_STATUS "clean")
+    set(GIT_STATUS "")
 else()
-    set(GIT_STATUS "dirty")
+    set(GIT_STATUS "-D")
 endif()
 
-if(NOT RESULT_BRANCH STREQUAL "0" OR NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
-    message( "-- libMA: WARNING cannot inferr verison from git (maybe git.exe is not in your path?)" )
-    set(GIT_BRANCH "?")
-    set(GIT_COMMIT_HASH "?")
-    set(GIT_STATUS "?")
+if(NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
+    message( "-- libMA: WARNING cannot inferr verison from git (maybe git.exe is not in your environment path?)" )
+    set(MA_VERSION "Unknown")
+else()
+    set(MA_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")
+    message( "-- libMA: Version = ${MA_VERSION}" )
 endif()
 
-message( "-- libMA: Version=${GIT_BRANCH}-${GIT_COMMIT_HASH}-${GIT_STATUS}" )
-
-# Add the version as definition
-target_compile_definitions(
-    MA PUBLIC
-    GIT_BRANCH=${GIT_BRANCH}
-    DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}
-    GIT_STATUS=${GIT_STATUS}
+configure_file(
+  inc/util/version.h.in
+  ${CMAKE_BINARY_DIR}/generated/version.h
 )
-
+target_include_directories(MA PUBLIC ${CMAKE_BINARY_DIR}/generated)
 
 # build the shared library in the folder of the .exe 
 set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
