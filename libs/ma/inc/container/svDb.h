@@ -404,7 +404,7 @@ class NucSeqFromSql : public Module<NucSeq, true>
     NucSeqFromSql( std::shared_ptr<SV_DB> pDb, std::string sSql )
     {
         CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xSql(
-            *pDb->pDatabase, ( "SELECT sequence, id FROM read_table " + sSql ).c_str( ) );
+            *pDb->pDatabase, ( "SELECT read_table.sequence, read_table.id FROM read_table " + sSql ).c_str( ) );
         xSql.vExecuteAndForAllRowsUnpackedDo( [&]( const NucSeqSql& xNucSeq, const uint32_t& uiId ) {
             vSequences.push_back( xNucSeq.pNucSeq );
             vSequences.back( )->sName = std::to_string( uiId );
