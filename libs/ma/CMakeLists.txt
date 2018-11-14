@@ -49,6 +49,50 @@ else()
     message( "-- libMA: Not building shared library components that rely on zlib." )
 endif()
 
+# Generate a version of MA based on the current commit
+
+# Get the current working branch
+execute_process(
+  COMMAND git rev-parse --short HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_BRANCH
+  RESULT_VARIABLE GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest abbreviated commit hash of the working branch
+execute_process(
+  COMMAND git log -1 --format=%h
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  RESULT_VARIABLE  GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Check if there are any modified files
+execute_process(
+  COMMAND git status -s
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_STATUS
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if( "${GIT_STATUS}" STREQUAL "" )
+    set(GIT_STATUS "clean")
+else()
+    set(GIT_STATUS "dirty")
+endif()
+
+message( "-- libMA Version: ${GIT_BRANCH}-${GIT_COMMIT_HASH}-${GIT_STATUS}" )
+
+# Add the version as definition
+target_compile_definitions(
+    MA PUBLIC
+    GIT_BRANCH=${GIT_BRANCH}
+    DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}
+    GIT_STATUS=${GIT_STATUS}
+)
+
+
 # build the shared library in the folder of the .exe 
 set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 set_target_properties(MA PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
