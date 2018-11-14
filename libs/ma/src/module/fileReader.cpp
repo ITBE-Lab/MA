@@ -24,10 +24,10 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
     DEBUG( pRet->uiFromLine = uiNumLinesRead; )
     // FASTA format
-    if( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) == '>' )
+    if( !pFile->eof( ) && pFile->peek( ) == '>' )
     {
         std::string sLine = "";
-        safeGetline( sLine );
+        pFile->safeGetLine( sLine );
         if( sLine.size( ) == 0 )
             throw AnnotatedException( "Invalid line in fasta" );
         ;
@@ -35,10 +35,10 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         // in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
 
-        while( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) != '>' && pFile->peek( ) != ' ' )
+        while( !pFile->eof( ) && pFile->peek( ) != '>' && pFile->peek( ) != ' ' )
         {
             sLine = ""; // in the case that we hit an empty line getline does nothing...
-            safeGetline( sLine );
+            pFile->safeGetLine( sLine );
             if( sLine.size( ) == 0 )
                 continue;
             DEBUG( for( auto character
@@ -88,7 +88,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     if( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) == '@' )
     {
         std::string sLine;
-        safeGetline( sLine );
+        pFile->safeGetLine( sLine );
         if( sLine.size( ) == 0 )
             throw AlignerException( "Invalid line in fasta" );
         ;
@@ -98,7 +98,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         while( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) != '+' && pFile->peek( ) != ' ' )
         {
             sLine = "";
-            safeGetline( sLine );
+            pFile->safeGetLine( sLine );
             if( sLine.size( ) == 0 )
                 continue;
             size_t uiLineSize = len( sLine );
@@ -110,7 +110,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         unsigned int uiPos = 0;
         while( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) != '@' )
         {
-            safeGetline( sLine );
+            pFile->safeGetLine( sLine );
             size_t uiLineSize = len( sLine );
             for( size_t i = 0; i < uiLineSize; i++ )
                 pRet->quality( i + uiPos ) = (uint8_t)sLine[ i ];
@@ -123,20 +123,20 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     } // if
 #else
     // FASTAQ format
-    if( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) == '@' )
+    if( !pFile->eof( ) && pFile->peek( ) == '@' )
     {
         std::string sLine = "";
-        safeGetline( sLine );
+        pFile->safeGetLine( sLine );
         if( sLine.size( ) == 0 )
             throw AnnotatedException( "Invalid line in fastq" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
         size_t uiNumChars = 0;
-        while( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) != '+' && pFile->peek( ) != ' ' )
+        while( !pFile->eof( ) && pFile->peek( ) != '+' && pFile->peek( ) != ' ' )
         {
             sLine = "";
-            safeGetline( sLine );
+            pFile->safeGetLine( sLine );
             if( sLine.size( ) == 0 )
                 continue;
             DEBUG( for( auto character
@@ -166,12 +166,12 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         } // while
         pRet->vTranslateToNumericFormUsingTable( pRet->xNucleotideTranslationTable, 0 );
         // quality
-        safeGetline( sLine );
+        pFile->safeGetLine( sLine );
         if( sLine.size( ) != 1 || sLine[ 0 ] != '+' )
             throw AnnotatedException( "Invalid line in fastq" );
-        while( pFile->good( ) && !pFile->eof( ) && uiNumChars > 0 )
+        while( !pFile->eof( ) && uiNumChars > 0 )
         {
-            safeGetline( sLine );
+            pFile->safeGetLine( sLine );
             uiNumChars -= sLine.size( );
         } // while
         // if(pFile->good() && !pFile->eof() && pFile->peek() != '@')
@@ -183,7 +183,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     } // if
 #endif
     // if we reach this point we have read all content of the file
-    throw AnnotatedException( "Tried to read query past EoF" );
+    throw AnnotatedException( "Tried to read query past EoF: '" + std::to_string( pFile->peek( ) ) + "'" );
 } // function
 
 std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )

@@ -72,6 +72,11 @@ if( PythonLibs_FOUND )
 	message( "Found Python Libs")
 endif()
 
+# Look for zlib
+find_package( zlib )
+if( ZLIB_FOUND )
+	message( "Found zlib" )
+endif()
 
 # Required for linking via libpthreads on UNIX systems
 set(THREADS_PREFER_PTHREAD_FLAG ON)

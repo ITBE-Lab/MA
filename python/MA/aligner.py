@@ -10,7 +10,6 @@
 # @author Markus Schmidt
 #
 
-import traceback
 from libMA import Alignment
 from libMA import MatchType
 from libMA import Pledge

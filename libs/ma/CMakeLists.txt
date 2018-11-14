@@ -36,6 +36,19 @@ set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(MA PUBLIC inc ../kswcpp/inc)
 target_link_libraries ( MA LINK_PUBLIC kswcpp CppSQLite3 )
 
+# if there is a zlib
+if( ZLIB_FOUND )
+    # Activate code that relies on zlib by defining WITH_ZLIB
+    target_compile_definitions( MA PUBLIC WITH_ZLIB )
+    # Add include directories of zlib
+    target_include_directories(MA PUBLIC ${ZLIB_INCLUDE_DIRS})
+    # link to the zlib libraries
+    target_link_libraries ( MA LINK_PUBLIC ${ZLIB_LIBRARIES} )
+    message( "-- libMA: Building shared library components that rely on zlib." )
+else()
+    message( "-- libMA: Not building shared library components that rely on zlib." )
+endif()
+
 # build the shared library in the folder of the .exe 
 set_target_properties(MA PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 set_target_properties(MA PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
