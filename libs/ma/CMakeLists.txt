@@ -53,18 +53,19 @@ endif()
 
 # Get the current working branch
 execute_process(
-  COMMAND git rev-parse --short HEAD
+  COMMAND git rev-parse --abbrev-ref HEAD
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   OUTPUT_VARIABLE GIT_BRANCH
-  RESULT_VARIABLE GIT_BRANCH
+  RESULT_VARIABLE RESULT_BRANCH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
 # Get the latest abbreviated commit hash of the working branch
 execute_process(
-  COMMAND git log -1 --format=%h
+  COMMAND git rev-parse --short HEAD
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  RESULT_VARIABLE  GIT_COMMIT_HASH
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  RESULT_VARIABLE RESULT_COMMIT
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
@@ -73,6 +74,7 @@ execute_process(
   COMMAND git status -s
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   OUTPUT_VARIABLE GIT_STATUS
+  RESULT_VARIABLE RESULT_STATUS
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
@@ -82,7 +84,14 @@ else()
     set(GIT_STATUS "dirty")
 endif()
 
-message( "-- libMA Version: ${GIT_BRANCH}-${GIT_COMMIT_HASH}-${GIT_STATUS}" )
+if(NOT RESULT_BRANCH STREQUAL "0" OR NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
+    message( "-- libMA: WARNING cannot inferr verison from git (maybe git.exe is not in your path?)" )
+    set(GIT_BRANCH "?")
+    set(GIT_COMMIT_HASH "?")
+    set(GIT_STATUS "?")
+endif()
+
+message( "-- libMA: Version=${GIT_BRANCH}-${GIT_COMMIT_HASH}-${GIT_STATUS}" )
 
 # Add the version as definition
 target_compile_definitions(
