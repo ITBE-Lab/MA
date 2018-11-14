@@ -1303,7 +1303,6 @@ sqlite3_stmt* CppSQLite3DB::compile_v2( const char* szSQL )
 {
     checkDB( );
 
-    char* szError = 0;
     const char* szTail = 0;
     sqlite3_stmt* pVM;
 
@@ -1311,7 +1310,8 @@ sqlite3_stmt* CppSQLite3DB::compile_v2( const char* szSQL )
 
     if( nRet != SQLITE_OK )
     {
-        throw CppSQLite3Exception( nRet, szError );
+        const char* szError = sqlite3_errmsg( mpDB );
+        throw CppSQLite3Exception( nRet, szError, DONT_DELETE_MSG );
     }
 
     return pVM;

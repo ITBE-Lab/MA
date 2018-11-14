@@ -141,6 +141,7 @@ class StdFileStream : public FileStream
     } // method
 }; // class
 
+#ifdef WITH_ZLIB
 class GzFileStream : public FileStream
 {
   private:
@@ -210,6 +211,7 @@ class GzFileStream : public FileStream
         lastReadReturn = gzread( pFile, &cBuff, 1 );
     } // method
 }; // class
+#endif
 
 
 class Reader
