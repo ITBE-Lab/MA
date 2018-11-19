@@ -183,7 +183,12 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     } // if
 #endif
     // if we reach this point we have read all content of the file
-    throw AnnotatedException( "Tried to read query past EoF: '" + std::to_string( pFile->peek( ) ) + "'" );
+    std::string sLine = "EoF";
+    if(!pFile->eof( ))
+        pFile->safeGetLine( sLine );
+    else
+        this->setFinished( );
+    throw AnnotatedException( "Tried to read query past EoF: '" + sLine + "'" );
 } // function
 
 std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )

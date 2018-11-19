@@ -10,6 +10,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -29,8 +30,8 @@ std::string fullFileName( const char* pcFileNamePrefix, const char* pcSuffix )
 
 bool EXPORTED fileExists( const std::string& rsFile )
 {
-    struct stat buffer;
-    return ( stat( rsFile.c_str( ), &buffer ) == 0 );
+    std::ifstream fStream( rsFile.c_str( ) );
+    return fStream.good( );
 } // function
 
 void makeDir( const std::string& rsFile )

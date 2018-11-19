@@ -177,8 +177,7 @@ class SV_DB : public CppSQLite3DB, public Container
         {
             if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
             {
-                pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table (soc_start)" );
-                pDatabase->execDML( "CREATE INDEX soc_end_index ON soc_table (soc_end)" );
+                pDatabase->execDML( "CREATE INDEX soc_index ON soc_table (soc_start, soc_end)" );
             } // if
         } // deconstructor
     }; // class

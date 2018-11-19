@@ -36,12 +36,12 @@ class FileStream
     {
         throw AnnotatedException( "Unimplemented" );
     }
-    
+
     ~FileStream( )
     {
         DEBUG( std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
-    }// deconstrucotr
+    } // deconstrucotr
 
     virtual bool is_open( ) const
     {
@@ -196,10 +196,10 @@ class GzFileStream : public FileStream
             if( lastReadReturn != 1 )
                 break;
             // if we reached the end of the line return
-            if(cBuff == '\r')
+            if( cBuff == '\r' )
                 // read the \n that should be the next character
                 lastReadReturn = gzread( pFile, &cBuff, 1 );
-            if( cBuff == '\n')
+            if( lastReadReturn != 1 || cBuff == '\n' )
                 break;
             t += cBuff;
 
@@ -208,7 +208,8 @@ class GzFileStream : public FileStream
         } // while
 
         // read one char from the stream
-        lastReadReturn = gzread( pFile, &cBuff, 1 );
+        if( lastReadReturn != 1 )
+            lastReadReturn = gzread( pFile, &cBuff, 1 );
     } // method
 }; // class
 #endif

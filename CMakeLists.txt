@@ -72,8 +72,8 @@ if( PythonLibs_FOUND )
 	message( "Found Python Libs")
 endif()
 
-# Look for zlib
-find_package( zlib )
+# Look for zlib Note: ZLIB must be capitalized in order for it to work on debian
+find_package( ZLIB )
 if( ZLIB_FOUND )
 	message( "Found zlib" )
 endif()
