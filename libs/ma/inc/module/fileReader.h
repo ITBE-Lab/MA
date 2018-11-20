@@ -148,7 +148,7 @@ class GzFileStream : public FileStream
     // gzFile is a pointer type
     gzFile pFile;
     int lastReadReturn = 1; // 1 == last read was ok; 0 == eof; -1 == error
-    char cBuff;
+    unsigned char cBuff;
 
   public:
     GzFileStream( std::string sFilename )
@@ -158,6 +158,8 @@ class GzFileStream : public FileStream
         if( pFile != nullptr )
             // fill internal buffer
             lastReadReturn = gzread( pFile, &cBuff, 1 );
+        else
+            lastReadReturn = -1; //if the file could net be opened set error immediately
     } // constructor
 
     bool is_open( ) const
@@ -190,6 +192,7 @@ class GzFileStream : public FileStream
         t.clear( );
         DEBUG( uiNumLinesRead++; ) // DEBUG
 
+        // read until EoF or EoL is reached
         while( true )
         {
             // gzread returns the number of bytes read; if we do not get 1 here something went wrong
@@ -207,8 +210,8 @@ class GzFileStream : public FileStream
             lastReadReturn = gzread( pFile, &cBuff, 1 );
         } // while
 
-        // read one char from the stream
-        if( lastReadReturn != 1 )
+        // read the EoL char from the stream (if the stream is ok)
+        if( lastReadReturn == 1 )
             lastReadReturn = gzread( pFile, &cBuff, 1 );
     } // method
 }; // class

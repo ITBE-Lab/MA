@@ -182,12 +182,12 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         return pRet;
     } // if
 #endif
-    // if we reach this point we have read all content of the file
     std::string sLine = "EoF";
     if(!pFile->eof( ))
         pFile->safeGetLine( sLine );
     else
         this->setFinished( );
+    // if we reach this point we have read all content of the file
     throw AnnotatedException( "Tried to read query past EoF: '" + sLine + "'" );
 } // function
 
