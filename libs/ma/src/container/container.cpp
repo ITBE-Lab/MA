@@ -41,7 +41,8 @@ void exportContainer( py::module& rxPyModuleId )
    
     py::bind_vector_ext<PyContainerVector, Container, std::shared_ptr<PyContainerVector>>( rxPyModuleId, "ContainerVector" );
 
-    // tell boost python that pointers of these classes can be converted implicitly
+    // tell boost python that pointers of these classes can be converted implicitly 
+    // @todo is this still necessary?
     py::implicitly_convertible<PyContainerVector, Container>( );
 
 } // function

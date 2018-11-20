@@ -9,6 +9,7 @@ using namespace libMA;
 
 
 #ifdef WITH_PYTHON
+#include "util/pybind11.h"
 
 #ifdef BOOST_PYTHON
 void exportSplitter( )
@@ -33,6 +34,10 @@ void exportSplitter( py::module& rxPyModuleId )
     // export the UnLock class
     exportModule<UnLock<Container>, std::shared_ptr<BasePledge>>( rxPyModuleId, "UnLock" );
 
+    // export the Splitter<NucSeq> class
+    exportModule<Splitter<NucSeq>>( rxPyModuleId, "NucSeqSplitter" );
+
+    py::bind_vector_ext<ContainerVector<NucSeq>, Container, std::shared_ptr<ContainerVector<NucSeq>>>( rxPyModuleId, "NucSeqContainerVector" );
 
     // export the TupleGet class
     exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 0>>( rxPyModuleId, "GetFirstQuery" );

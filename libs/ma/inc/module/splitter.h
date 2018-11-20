@@ -93,6 +93,27 @@ class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, fals
 }; // class
 
 /**
+ * @brief Split a ContainerVector into its elements
+ * @details
+ */
+template <typename TP>
+class Splitter : public Module<TP, true, ContainerVector<std::shared_ptr<TP>>>
+{
+  public:
+    virtual typename std::shared_ptr<TP> EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
+    {
+        if(pIn->empty())
+            // if we reach this point we have read all content vector
+            throw AnnotatedException( "Tried to extract element from empty vector" );
+        auto pBack = pIn->back();
+        pIn->pop_back();
+        if(pIn->empty())
+            this->setFinished( );
+        return pBack;
+    } // method
+}; // class
+
+/**
  * @brief Get a specific tuple element
  * @details
  * the tuple element must contain shared pointers of type TP_TUPLE::value_type
