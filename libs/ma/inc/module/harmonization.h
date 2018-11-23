@@ -192,8 +192,8 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
         {
             auto pSoC = pSoCSsIn->pop( );
             DEBUG( pSoC->pSoCIn = pSoCSsIn; ) // DEBUG
-            // @todo changed behaviour here -> harmonization single now returns no more than one seed set
-            pSoCs->push_back( xSingle.execute( pSoC, pQuery, pFMIndex ) );
+            while(!pSoC->empty())
+                pSoCs->push_back( xSingle.execute( pSoC, pQuery, pFMIndex ) );
         } // for
 
         PRINT_BREAK_CRITERIA( if( pSoCSsIn->empty( ) ) std::cout << "exhausted all SoCs" << std::endl;

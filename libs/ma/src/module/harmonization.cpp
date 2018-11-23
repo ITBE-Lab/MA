@@ -8,6 +8,7 @@
 #include "sample_consensus/test_ransac.h"
 #endif
 using namespace libMA;
+#include "util/pybind11.h"
 
 
 using namespace libMA::defaults;
@@ -750,6 +751,7 @@ std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> HarmonizationSingle::cl
 std::shared_ptr<Seeds> HarmonizationSingle::execute( std::shared_ptr<Seeds> pPrimaryStrand,
                                                      std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex )
 {
+#if 0 // of -> seeds must be on same strand
     auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
 
     bool bPrimaryStrandIsForw = pPrimaryStrand->mainStrandIsForward( );
@@ -763,6 +765,7 @@ std::shared_ptr<Seeds> HarmonizationSingle::execute( std::shared_ptr<Seeds> pPri
         pPrimaryStrand->append( pSecondarySeeds );
         std::cout << "secondary sweep: " << pSecondarySeeds->size( ) << std::endl;
     } // while
+#endif
 
     auto pPrimarySeeds = applyLinesweeps( pPrimaryStrand );
     return this->applyFilters( pPrimarySeeds );
@@ -809,6 +812,10 @@ void exportHarmonization( py::module& rxPyModuleId )
         x.def_readwrite( "single", &Harmonization::xSingle ).def_readwrite( "max_tries", &Harmonization::uiMaxTries );
     } );
     exportModule<SeedLumping>( rxPyModuleId, "SeedLumping" );
+
+    py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,
+                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "SeedsVector" )
+        .def( py::init<>( ) );
 } // function
 #endif
 #endif
