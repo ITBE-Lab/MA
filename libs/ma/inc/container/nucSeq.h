@@ -319,6 +319,11 @@ class NucSeq : public Container
         reverse( pxSequenceRef + uiFrom, uiTo - uiFrom );
     } // method
 
+    inline void vReverseAll( )
+    {
+        vReverse();
+    } // method
+
     /** Push back of a single symbol.
      */
     inline void push_back( const uint8_t xElement

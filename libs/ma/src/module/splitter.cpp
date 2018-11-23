@@ -37,7 +37,10 @@ void exportSplitter( py::module& rxPyModuleId )
     // export the Splitter<NucSeq> class
     exportModule<Splitter<NucSeq>>( rxPyModuleId, "NucSeqSplitter" );
 
-    py::bind_vector_ext<ContainerVector<NucSeq>, Container, std::shared_ptr<ContainerVector<NucSeq>>>( rxPyModuleId, "NucSeqContainerVector" );
+    // exported in fileReader.cpp
+    //py::bind_vector_ext<ContainerVector<std::shared_ptr<NucSeq>>, Container,
+    //                    std::shared_ptr<ContainerVector<std::shared_ptr<NucSeq>>>>( rxPyModuleId,
+    //                                                                                "NucSeqContainerVector" );
 
     // export the TupleGet class
     exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 0>>( rxPyModuleId, "GetFirstQuery" );

@@ -82,6 +82,8 @@ void exportNucSeq( py::module& rxPyModuleId )
         .def( "__getitem__", &NucSeq::charAt )
         .def( "append", &NucSeq::vAppend_boost )
         .def( "length", &NucSeq::length )
+        .def( "complement", &NucSeq::vSwitchAllBasePairsToComplement )
+        .def( "reverse", &NucSeq::vReverseAll )
         .def( "__len__", &NucSeq::length )
         .def( "__str__", &NucSeq::toString )
 #if WITH_QUALITY

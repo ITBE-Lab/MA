@@ -216,7 +216,7 @@ void exportFileReader( )
 
     boost::python::
         class_<TP_PAIRED_READS, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<TP_PAIRED_READS>>(
-            "QueryVector" )
+            "NucSeqContainerVector" )
             /*
              * true = noproxy this means that the content of
              * the vector is already exposed by boost python.
@@ -234,7 +234,7 @@ void exportFileReader( py::module& rxPyModuleId )
     // export the FileReader class
     exportModule<FileReader, std::string>( rxPyModuleId, "FileReader" );
 
-    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>( rxPyModuleId, "QueryVector" );
+    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>( rxPyModuleId, "NucSeqContainerVector" );
 
     // export the PairedFileReader class
     exportModule<PairedFileReader, std::string, std::string>( rxPyModuleId, "PairedFileReader" );

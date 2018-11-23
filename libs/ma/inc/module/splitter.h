@@ -100,6 +100,12 @@ template <typename TP>
 class Splitter : public Module<TP, true, ContainerVector<std::shared_ptr<TP>>>
 {
   public:
+    // @override
+    virtual bool requiresLock( ) const
+    {
+        return true;
+    } // function
+    
     virtual typename std::shared_ptr<TP> EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
     {
         if(pIn->empty())

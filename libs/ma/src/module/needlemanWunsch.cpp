@@ -874,6 +874,61 @@ std::vector<char> randomNucSeq( const size_t uiLen )
     return vNucSeq;
 } // function
 
+
+std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef )
+{
+    auto pAlignment = std::make_shared<Alignment>( );
+    Wrapper_ksw_extz_t ez;
+    AlignedMemoryManager xMemoryManager;
+    KswCppParam<5> xParams( defaults::iMatch, defaults::iMissMatch, defaults::iGap, defaults::iExtend, defaults::iGap2,
+                             defaults::iExtend2 );
+
+    ksw_simplified( pQuery->length( ),
+                    pQuery->pGetSequenceRef( ),
+                    pRef->length( ),
+                    pRef->pGetSequenceRef( ),
+                    xParams,
+                    -1,
+                    ez.ez, // return value
+                    xMemoryManager );
+
+    uint32_t qPos = 0;
+    uint32_t rPos = 0;
+    for( int i = 0; i < ez.ez->n_cigar; ++i )
+    {
+        uint32_t uiSymbol = ez.ez->cigar[ i ] & 0xf;
+        uint32_t uiAmount = ez.ez->cigar[ i ] >> 4;
+        switch( uiSymbol )
+        {
+            case 0:
+                for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
+                {
+                    if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
+                        pAlignment->append( MatchType::match );
+                    else
+                        pAlignment->append( MatchType::missmatch );
+                } // for
+                qPos += uiAmount;
+                rPos += uiAmount;
+                break;
+            case 1:
+                pAlignment->append( MatchType::insertion, uiAmount );
+                qPos += uiAmount;
+                break;
+            case 2:
+                pAlignment->append( MatchType::deletion, uiAmount );
+                rPos += uiAmount;
+                break;
+            default:
+                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                assert( false );
+                break;
+        } // switch
+    } // for
+    return pAlignment;
+} // function
+
+
 #if 0
 void testKsw( )
 {
@@ -1006,6 +1061,8 @@ void exportNeedlemanWunsch( py::module& rxPyModuleId )
 {
     // export the NeedlemanWunsch class
     exportModule<NeedlemanWunsch>( rxPyModuleId, "NeedlemanWunsch" );
+
+    rxPyModuleId.def("runKsw", &runKsw);
 } // function
 #endif
 #endif
