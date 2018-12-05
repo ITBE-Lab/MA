@@ -205,7 +205,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         // std::shared_ptr<Segment> pLeftRight(new Segment(start,end-start,ik.revComp()));
         assert( start >= 0 );
         assert( end < pQuerySeq->length( ) );
-        // check so that we do not record the exact interval twice
+        // check so that we do not record the same interval twice
         if(pSegmentVector->back().start() != start || pSegmentVector->back().end() != end)
             pSegmentVector->emplace_back( start, end - start, ik.revComp( ) );
         assert( pSegmentVector->back( ).end( ) < pQuerySeq->length( ) );

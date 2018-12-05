@@ -98,7 +98,7 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
                     ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
                         ||
 #else
-            if( uiGap > uiSVPenalty )
+            if( uiGap > uiSVPenalty && uiSVPenalty != 0 )
                 uiGap = uiSVPenalty;
             if( // check for the maximal allowed gap area
 #endif
@@ -700,18 +700,40 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
         pSeedsIn->erase( pSeedsIn->begin( ) + pSeedsIn->size( ) / 2 );
     else // in case we actually did the harmonization process
     {
-        for( auto& xT : *pShadows )
+        // @todo make this more efficient?
+        pShadows->clear( ); // @note the sorting will invalidate these iterators so clear them
+        std::sort( pSeeds->begin( ), pSeeds->end( ),
+                   []( const Seed& xA, const Seed& xB ) {
+                       if( xA.start( ) == xB.start( ) )
+                           return xA.size( ) > xB.size( );
+                       return xA.start( ) < xB.start( );
+                   } // lambda
+        ); // sort function call
+        std::sort( pSeedsIn->begin( ), pSeedsIn->end( ),
+                   []( const Seed& xA, const Seed& xB ) {
+                       if( xA.start( ) == xB.start( ) )
+                           return xA.size( ) > xB.size( );
+                       return xA.start( ) < xB.start( );
+                   } // lambda
+        ); // sort function call
+        auto itHarmSet = pSeeds->begin( );
+        auto itOrigSet = pSeedsIn->begin( );
+        while( true )
         {
-            assert( std::get<0>( xT )->size( ) != 0 );
-            // mark for deletion
-            std::get<0>( xT )->size( 0 );
-        } // for
-        DEBUG( size_t uiSizeBefore = pSeedsIn->size( ); ) // DEBUG
-        // remove the seeds that have been harmonized
+            // move harm it rightwards if necessary
+            while( itHarmSet != pSeeds->end( ) && itOrigSet->start( ) > itHarmSet->end( ) )
+                itHarmSet++;
+            if( itOrigSet == pSeedsIn->end( ) || itHarmSet == pSeeds->end( ) )
+                break;
+            // check overlap
+            if( itHarmSet->start( ) <= itOrigSet->end( ) && itHarmSet->end( ) >= itOrigSet->start( ) )
+                itOrigSet->size( 0 ); // mark for deletion
+            itOrigSet++;
+        } // while
+        // remove all seeds that overlap a harmonized seeds on the query
         pSeedsIn->erase(
             std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
             pSeedsIn->end( ) );
-        DEBUG( assert( uiSizeBefore == pSeedsIn->size( ) + pShadows->size( ) ); ) // DEBUG
     } // else
 
     // seeds need to be sorted for the following steps
@@ -805,7 +827,8 @@ void exportHarmonization( py::module& rxPyModuleId )
             .def_readwrite( "equal_score_lookahead", &HarmonizationSingle::uiMaxEqualScoreLookahead )
             .def_readwrite( "diff_tolerance", &HarmonizationSingle::fScoreDiffTolerance )
             .def_readwrite( "switch_q_len", &HarmonizationSingle::uiSwitchQLen )
-            .def_readwrite( "do_heuristics", &HarmonizationSingle::bDoHeuristics );
+            .def_readwrite( "do_heuristics", &HarmonizationSingle::bDoHeuristics )
+            .def_readwrite( "uiSVPenalty", &HarmonizationSingle::uiSVPenalty );
     } );
 
     exportModule<Harmonization>( rxPyModuleId, "Harmonization", []( auto&& x ) {

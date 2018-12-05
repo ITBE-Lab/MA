@@ -191,9 +191,17 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
         for( ; uiNumTries < uiMaxTries && !pSoCSsIn->empty( ); uiNumTries++ )
         {
             auto pSoC = pSoCSsIn->pop( );
+            // for(auto seed : *pSoC)
+            //     std::cout << seed.start() << ", " << seed.start_ref() << ", " << seed.size() << std::endl;
             DEBUG( pSoC->pSoCIn = pSoCSsIn; ) // DEBUG
+            // split seeds into forward and reverse strand
+            auto pSecondaryStrand = pSoC->extractStrand( false );
+            // deal with seeds on forward strand
             while(!pSoC->empty())
                 pSoCs->push_back( xSingle.execute( pSoC, pQuery, pFMIndex ) );
+            // deal with seeds on reverse strand
+            while(!pSecondaryStrand->empty())
+                pSoCs->push_back( xSingle.execute( pSecondaryStrand, pQuery, pFMIndex ) );
         } // for
 
         PRINT_BREAK_CRITERIA( if( pSoCSsIn->empty( ) ) std::cout << "exhausted all SoCs" << std::endl;

@@ -20,7 +20,7 @@ size_t EXPORTED uiMinAmbiguity = 0; // stop the extension process if seeds are l
 // @todo we effectively disabled this parameter
 size_t EXPORTED uiMinSeedSizeDrop = 15; // minimum length for seeds to count towards the drop of
 size_t EXPORTED uiMaxTries = 30; // maximal number of SoCs
-size_t EXPORTED uiMinTries = 1;//2; // minimal number of SoCs @todo
+size_t EXPORTED uiMinTries = 1; // 2; // minimal number of SoCs @todo
 size_t EXPORTED uiMaxEqualScoreLookahead = 3; // lookahead distance for short queries
 size_t EXPORTED uiSwitchQLen = 800; // q len to switch between break criteria
 uint64_t EXPORTED uiMaxGapArea = 10000; // break alignments in harmonization if gap is larger
@@ -88,6 +88,7 @@ void exportDefaults( )
 void exportDefaults( py::module& rxPyModuleId )
 {
     rxPyModuleId.def( "configureFast", &configureFast );
+    rxPyModuleId.attr( "uiSVPenalty" ) = uiSVPenalty;
     rxPyModuleId.def( "configureAccurate", &configureAccurate );
 } // function
 #endif
