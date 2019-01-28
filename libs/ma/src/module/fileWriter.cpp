@@ -137,8 +137,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         if( pAlignment->xStats.pOther.lock( ) != nullptr )
         {
             // assert( pQuery2 != nullptr );
-            // flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE // flag not actually required
-            //                                  : LAST_IN_TEMPLATE;
+            flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
             flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
             if( pPack->bPositionIsOnReversStrand( pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
                 flag |= NEXT_REVERSE_COMPLEMENTED;
