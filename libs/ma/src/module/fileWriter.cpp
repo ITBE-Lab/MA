@@ -118,6 +118,9 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
     std::string sCombined = "";
     for( std::shared_ptr<Alignment> pA : *pAlignments )
     {
+#if DEBUG_LEVEL > 0
+        pA->checkLengthOnQuery();
+#endif
         std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
         if( pAlignment->length( ) == 0 )
             continue;

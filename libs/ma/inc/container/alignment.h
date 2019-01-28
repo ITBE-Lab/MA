@@ -149,6 +149,7 @@ class Alignment : public Container
         constexpr char vTranslate[ 5 ] = {'S', '=', 'X', 'I', 'D'};
         for( auto &tuple : data )
             sRet += vTranslate[ (unsigned int)tuple.first ] + std::to_string( tuple.second ) + " ";
+        sRet += " | Score: ";
         sRet += std::to_string( iScore );
         return sRet;
     }
@@ -560,6 +561,44 @@ class Alignment : public Container
     {
         uiBeginOnQuery += uiBy;
         uiEndOnQuery += uiBy;
+    } // method
+
+    /**
+     * @brief debug function
+     * @details
+     * Checks wether the cigar and uiBegin and EndOnQuery are consistent.
+     * Does nothing in release mode.
+     */
+    void checkLengthOnQuery()
+    {
+        assert(this->uiBeginOnQuery <= this->uiEndOnQuery);
+#if DEBUG_LEVEL > 0
+        int64_t uiTlen = static_cast<int64_t>(this->uiEndOnQuery) - static_cast<int64_t>(this->uiBeginOnQuery);
+        for( std::pair<MatchType, nucSeqIndex> section : this->data )
+        {
+            switch( section.first )
+            {
+                case MatchType::seed:
+                case MatchType::match:
+                case MatchType::insertion:
+                case MatchType::missmatch:
+                    uiTlen -= static_cast<int64_t>(section.second);
+                    break;
+                case MatchType::deletion:
+                default:
+                    break;
+            } // switch
+        } // for
+        if(uiTlen != 0)
+        {
+            std::cerr << "Error: Alignment length on query does not match cigar. Length is off by " << uiTlen 
+                      << std::endl;
+            std::cerr << "Query name: " << xStats.sName << std::endl;
+            std::cerr << this->toString() << std::endl;
+            std::cerr << "Query Coords: " << this->uiBeginOnQuery << " to " << this->uiEndOnQuery << std::endl;
+            assert(false);
+        } // if
+#endif
     } // method
 }; // class
 } // namespace libMA

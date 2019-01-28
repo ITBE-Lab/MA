@@ -855,6 +855,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         // there should never be dangeling deletions with libGaba
         pRet->removeDangeling( );
     } // else
+    DEBUG(pRet->checkLengthOnQuery();)
     return pRet;
 } // function
 

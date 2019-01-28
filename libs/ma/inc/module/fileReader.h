@@ -34,34 +34,28 @@ class FileStream
 
     virtual bool eof( ) const
     {
-        throw AnnotatedException( "Unimplemented" );
+        throw AnnotatedException( "This function should have been overridden" );
     }
-
-    ~FileStream( )
-    {
-        DEBUG( std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
-               if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
-    } // deconstrucotr
 
     virtual bool is_open( ) const
     {
-        throw AnnotatedException( "Unimplemented" );
+        throw AnnotatedException( "This function should have been overridden" );
     }
     virtual void close( )
     {
-        throw AnnotatedException( "Unimplemented" );
+        throw AnnotatedException( "This function should have been overridden" );
     }
     virtual size_t tellg( )
     {
-        throw AnnotatedException( "Unimplemented" );
+        throw AnnotatedException( "This function should have been overridden" );
     }
     virtual char peek( )
     {
-        throw AnnotatedException( "Unimplemented" );
+        throw AnnotatedException( "This function should have been overridden" );
     }
     virtual void safeGetLine( std::string& t )
     {
-        throw AnnotatedException( "Unimplemented" );
+        throw AnnotatedException( "This function should have been overridden" );
     }
 }; // class
 
@@ -78,6 +72,12 @@ class StdFileStream : public FileStream
     {
         return !xStream.good( ) || xStream.eof( );
     } // method
+
+    ~StdFileStream( )
+    {
+        DEBUG( std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
+                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
+    } // deconstructor
 
     bool is_open( ) const
     {
@@ -162,14 +162,20 @@ class GzFileStream : public FileStream
             lastReadReturn = -1; //if the file could net be opened set error immediately
     } // constructor
 
-    bool is_open( ) const
-    {
-        return pFile != nullptr;
-    } // method
-
     bool eof( ) const
     {
         return lastReadReturn != 1;
+    } // method
+
+    ~GzFileStream( )
+    {
+        DEBUG( std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
+                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
+    } // deconstructor
+
+    bool is_open( ) const
+    {
+        return pFile != nullptr;
     } // method
 
     void close( )
