@@ -663,6 +663,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         if( beginQuery > xSeed.end( ) )
             beginQuery = xSeed.start( );
         assert( xSeed.start( ) <= xSeed.end( ) );
+        assert( xSeed.end() <= pQuery->length() );
     } // for
     DEBUG_2( std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl; ) // DEEBUG
 
@@ -775,17 +776,20 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
     nucSeqIndex endOfLastSeedQuery = pSeeds->front( ).end( );
     nucSeqIndex endOfLastSeedReference = pSeeds->front( ).end_ref( ) - beginRef;
 
-    DEBUG( if( pRet->uiEndOnQuery != pSeeds->front( ).start( ) ) {
+#if DEBUG_LEVEL > 0
+    if( pRet->uiEndOnQuery != pSeeds->front( ).start( ) )
+    {
         std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front( ).start( ) << std::endl;
         std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front( ).start_ref( ) << std::endl;
         assert( false );
     } // if
-           if( pRet->uiEndOnRef != pSeeds->front( ).start_ref( ) ) {
-               std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front( ).start( ) << std::endl;
-               std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front( ).start_ref( ) << std::endl;
-               assert( false );
-           } // if
-           ) // DEBUG
+    if( pRet->uiEndOnRef != pSeeds->front( ).start_ref( ) )
+    {
+        std::cout << pRet->uiEndOnQuery << " ?= " << pSeeds->front( ).start( ) << std::endl;
+        std::cout << pRet->uiEndOnRef << " ?= " << pSeeds->front( ).start_ref( ) << std::endl;
+        assert( false );
+    } // if
+#endif
 
     pRet->append( MatchType::seed, pSeeds->front( ).size( ) );
     bool bSkip = true;
@@ -846,6 +850,8 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
     assert( std::get<0>( pRet->data.back( ) ) == MatchType::seed );
 
     DEBUG_2( std::cout << std::endl; )
+    DEBUG( if( pRet->uiEndOnQuery > pQuery->length( ) ) std::cerr << "Alignment longer than query (1). "
+                                                                  << pRet->xStats.sName << std::endl; )
     if( bLocal )
         pRet->makeLocal( );
     else
@@ -855,7 +861,9 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         // there should never be dangeling deletions with libGaba
         pRet->removeDangeling( );
     } // else
-    DEBUG(pRet->checkLengthOnQuery();)
+    DEBUG( if( pRet->uiEndOnQuery > pQuery->length( ) ) std::cerr << "Alignment longer than query (2). "
+                                                                  << pRet->xStats.sName << std::endl; )
+    DEBUG( pRet->checkLengthOnQuery( ); )
     return pRet;
 } // function
 
@@ -940,9 +948,9 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
 
     if( bRev )
     {
-        pQuery->vReverse();
-        pRef->vReverse();
-    }// if
+        pQuery->vReverse( );
+        pRef->vReverse( );
+    } // if
     ksw_ext( pQuery->length( ),
              pQuery->pGetSequenceRef( ),
              pRef->length( ),
@@ -989,9 +997,9 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
     } // for
     if( bRev )
     {
-        pQuery->vReverse();
-        pRef->vReverse();
-    }// if
+        pQuery->vReverse( );
+        pRef->vReverse( );
+    } // if
     return pAlignment;
 } // function
 

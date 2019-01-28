@@ -87,7 +87,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // Position of the mate/next read
             sPosOther + "\t" +
             // observed Template length
-            sTlen + "\t" +
+            /*sTlen*/ "0" + "\t" + // output information unavailable for now...
             // segment sequence
             sSegment +
             "\t"
@@ -119,7 +119,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
     for( std::shared_ptr<Alignment> pA : *pAlignments )
     {
 #if DEBUG_LEVEL > 0
-        pA->checkLengthOnQuery();
+        pA->checkLengthOnQuery( );
 #endif
         std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
         if( pAlignment->length( ) == 0 )
@@ -151,7 +151,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             {
                 sSegment = pAlignment->getQuerySequence( *pQuery2, *pPack );
                 sName = pQuery2->sName;
-                sTlen = "-" + sTlen;
+                sTlen = "-" + sTlen; // The leftmost segment has a plus sign and the rightmost has a minus sign
             } // if
 
 #if DEBUG_LEVEL > 0
@@ -222,7 +222,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             // Position of the mate/next read
             sPosOther + "\t" +
             // observed Template length
-            sTlen + "\t" +
+            /*sTlen*/ "0" + "\t" + // output information unavailable for now...
             // segment sequence
             sSegment + "\t" +
             // ASCII of Phred-scaled base Quality+33

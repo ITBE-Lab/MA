@@ -321,7 +321,7 @@ class NucSeq : public Container
 
     inline void vReverseAll( )
     {
-        vReverse();
+        vReverse( );
     } // method
 
     /** Push back of a single symbol.
@@ -519,8 +519,8 @@ class NucSeq : public Container
     {
         std::string ret = "";
         // for (unsigned int i = uiStart; i < uiEnd && i < length(); i++)
-        for( long long i = ( (long long)uiEnd ) - 1; i >= (long long)uiStart; i-- )
-            ret += compCharAt( i );
+        for( nucSeqIndex i = uiEnd; i > uiStart; i-- )
+            ret += compCharAt( i - 1 );
         return ret;
     } // function
 

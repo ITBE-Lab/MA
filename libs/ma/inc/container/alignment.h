@@ -128,8 +128,7 @@ class Alignment : public Container
      * @brief Creates an empty alignment,
      * where the interval of the reference that is used is already known.
      */
-    Alignment( nucSeqIndex uiBeginOnRef, nucSeqIndex uiBeginOnQuery, nucSeqIndex uiEndOnRef,
-               nucSeqIndex uiEndOnQuery )
+    Alignment( nucSeqIndex uiBeginOnRef, nucSeqIndex uiBeginOnQuery, nucSeqIndex uiEndOnRef, nucSeqIndex uiEndOnQuery )
         : data( ),
           uiLength( 0 ),
           uiBeginOnRef( uiBeginOnRef ),
@@ -141,13 +140,13 @@ class Alignment : public Container
           bSupplementary( false )
     {} // constructor
 
-    Alignment( const Alignment &rOther ) = delete;
+    Alignment( const Alignment& rOther ) = delete;
 
     inline std::string toString( ) const
     {
         std::string sRet = "Alignment Dump: ";
         constexpr char vTranslate[ 5 ] = {'S', '=', 'X', 'I', 'D'};
-        for( auto &tuple : data )
+        for( auto& tuple : data )
             sRet += vTranslate[ (unsigned int)tuple.first ] + std::to_string( tuple.second ) + " ";
         sRet += " | Score: ";
         sRet += std::to_string( iScore );
@@ -219,7 +218,7 @@ class Alignment : public Container
         return aRet;
     } // method
 
-    std::string cigarString( Pack &rPack )
+    std::string cigarString( Pack& rPack )
     {
         std::string sCigar = "";
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
@@ -253,7 +252,7 @@ class Alignment : public Container
         return sCigar;
     } // method
 
-    uint32_t getSamFlag( Pack &rPack ) const
+    uint32_t getSamFlag( Pack& rPack ) const
     {
         uint32_t uiRet = 0;
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
@@ -265,12 +264,12 @@ class Alignment : public Container
         return uiRet;
     } // method
 
-    std::string getContig( Pack &rPack ) const
+    std::string getContig( Pack& rPack ) const
     {
         return rPack.nameOfSequenceForPosition( uiBeginOnRef );
     } // method
 
-    nucSeqIndex getSamPosition( Pack &rPack ) const
+    nucSeqIndex getSamPosition( Pack& rPack ) const
     {
         std::string sRefName = getContig( rPack );
         auto uiRet = rPack.posInSequence( uiBeginOnRef, uiEndOnRef );
@@ -279,15 +278,27 @@ class Alignment : public Container
         return uiRet;
     } // method
 
-    std::string getQuerySequence( NucSeq &rQuery, Pack &rPack )
+    std::string getQuerySequence( NucSeq& rQuery, Pack& rPack )
     {
+        std::string sRet;
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
-            return rQuery.fromToComplement( uiBeginOnQuery, uiEndOnQuery );
+            sRet = rQuery.fromToComplement( uiBeginOnQuery, uiEndOnQuery );
         else
-            return rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
+            sRet = rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
+        int64_t iOff = sRet.length( ) - static_cast<int64_t>( this->uiEndOnQuery - this->uiBeginOnQuery );
+        if( iOff != 0 )
+            throw AnnotatedException(
+                "Query length is off by " + std::to_string( iOff ) + ". Query is on " +
+                ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) ? "refstrand" : "forwstrand" ) +
+                ". Alignment name:" + xStats.sName + " " + this->toString( ) + ". Expected length: " +
+                std::to_string( static_cast<int64_t>( this->uiEndOnQuery - this->uiBeginOnQuery ) ) +
+                ". Querysegment: " + sRet + ". Query size: " + std::to_string( rQuery.uiSize ) +
+                ". Alignment pos on query: " + std::to_string( this->uiBeginOnQuery ) + " to " +
+                std::to_string( this->uiEndOnQuery ) );
+        return sRet;
     } // method
 
-    std::string getRevCompQuerySequence( NucSeq &rQuery, Pack &rPack )
+    std::string getRevCompQuerySequence( NucSeq& rQuery, Pack& rPack )
     {
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             return rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
@@ -319,7 +330,7 @@ class Alignment : public Container
      * alignment 2: ---###-------
      * 1 and 2 would have overlap 1/13
      */
-    inline double overlap( const Alignment &rOther ) const
+    inline double overlap( const Alignment& rOther ) const
     {
         // get the total area where overlaps are possible
         nucSeqIndex uiS = std::max( uiBeginOnQuery, rOther.uiBeginOnQuery );
@@ -369,15 +380,13 @@ class Alignment : public Container
 
             // compute the overlap
             nucSeqIndex uiS_inner = std::max( std::max( uiQpos, uiQposOther ), uiS );
-            nucSeqIndex uiE_inner =
-                std::min( std::min( uiQpos + uiQLen, uiQposOther + uiQLenOther ), uiE );
+            nucSeqIndex uiE_inner = std::min( std::min( uiQpos + uiQLen, uiQposOther + uiQLenOther ), uiE );
             nucSeqIndex uiCurrOverlap = 0;
             if( uiS_inner < uiE_inner )
                 uiCurrOverlap = uiE_inner - uiS_inner;
 
             // if the type of the match is not an insertion, add to the amount of overlap
-            if( data[ uiI ].first != MatchType::insertion &&
-                rOther.data[ uiIOther ].first != MatchType::insertion )
+            if( data[ uiI ].first != MatchType::insertion && rOther.data[ uiIOther ].first != MatchType::insertion )
                 uiOverlap += uiCurrOverlap;
 
             // move the correct index forward
@@ -395,15 +404,14 @@ class Alignment : public Container
 
         // divide by the size of the smaller alignment so that the returned overlap is in
         // percent
-        nucSeqIndex uiSize =
-            std::min( uiEndOnQuery - uiBeginOnQuery, rOther.uiEndOnQuery - rOther.uiBeginOnQuery );
+        nucSeqIndex uiSize = std::min( uiEndOnQuery - uiBeginOnQuery, rOther.uiEndOnQuery - rOther.uiBeginOnQuery );
         return uiOverlap / static_cast<double>( uiSize );
     } // mehtod
 
     /**
      * @brief appends another alignment
      */
-    void append( const Alignment &rOther )
+    void append( const Alignment& rOther )
     {
         for( auto xTuple : rOther.data )
             append( xTuple.first, xTuple.second );
@@ -428,8 +436,7 @@ class Alignment : public Container
         DEBUG( nucSeqIndex uiCheck = 0; for( auto xTup
                                              : data ) uiCheck += xTup.second;
                if( uiCheck != uiLength ) {
-                   std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength
-                             << std::endl;
+                   std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength << std::endl;
                    assert( false );
                } // if
                ) // DEBUG
@@ -569,11 +576,11 @@ class Alignment : public Container
      * Checks wether the cigar and uiBegin and EndOnQuery are consistent.
      * Does nothing in release mode.
      */
-    void checkLengthOnQuery()
+    void checkLengthOnQuery( )
     {
-        assert(this->uiBeginOnQuery <= this->uiEndOnQuery);
+        assert( this->uiBeginOnQuery <= this->uiEndOnQuery );
 #if DEBUG_LEVEL > 0
-        int64_t uiTlen = static_cast<int64_t>(this->uiEndOnQuery) - static_cast<int64_t>(this->uiBeginOnQuery);
+        int64_t uiTlen = static_cast<int64_t>( this->uiEndOnQuery ) - static_cast<int64_t>( this->uiBeginOnQuery );
         for( std::pair<MatchType, nucSeqIndex> section : this->data )
         {
             switch( section.first )
@@ -582,21 +589,21 @@ class Alignment : public Container
                 case MatchType::match:
                 case MatchType::insertion:
                 case MatchType::missmatch:
-                    uiTlen -= static_cast<int64_t>(section.second);
+                    uiTlen -= static_cast<int64_t>( section.second );
                     break;
                 case MatchType::deletion:
                 default:
                     break;
             } // switch
         } // for
-        if(uiTlen != 0)
+        if( uiTlen != 0 )
         {
-            std::cerr << "Error: Alignment length on query does not match cigar. Length is off by " << uiTlen 
+            std::cerr << "Error: Alignment length on query does not match cigar. Length is off by " << uiTlen
                       << std::endl;
             std::cerr << "Query name: " << xStats.sName << std::endl;
-            std::cerr << this->toString() << std::endl;
+            std::cerr << this->toString( ) << std::endl;
             std::cerr << "Query Coords: " << this->uiBeginOnQuery << " to " << this->uiEndOnQuery << std::endl;
-            assert(false);
+            assert( false );
         } // if
 #endif
     } // method
