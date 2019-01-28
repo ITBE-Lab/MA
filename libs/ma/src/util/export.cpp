@@ -148,7 +148,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( std::share
         auto pAlignmentsB = promiseMe( pDP, pHarmonizedB, pQueryB, pPack );
         auto pAlignmentsWQualityA = promiseMe( pMappingQual, pQueryA, pAlignmentsA );
         auto pAlignmentsWQualityB = promiseMe( pMappingQual, pQueryB, pAlignmentsB );
-        auto pAlignmentsWQuality = promiseMe( pPairedReads, pAlignmentsA, pAlignmentsB, pPack );
+        auto pAlignmentsWQuality = promiseMe( pPairedReads, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
         auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
         auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( pQueryTuple ), pEmptyContainer );
         aRet.push_back( pUnlockResult );
