@@ -275,7 +275,7 @@ class Alignment : public Container
         auto uiRet = rPack.posInSequence( uiBeginOnRef, uiEndOnRef );
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             uiRet += 1;
-        return uiRet;
+        return uiRet + 1;
     } // method
 
     std::string getQuerySequence( NucSeq &rQuery, Pack &rPack )

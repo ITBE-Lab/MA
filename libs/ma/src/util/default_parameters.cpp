@@ -73,6 +73,8 @@ int64_t EXPORTED iMinSVDistance = 500;
 
 size_t EXPORTED uiZDrop = 200;
 
+bool bOmitSecondaryAlignments = false; // do not report any secondary alignments
+
 #ifdef WITH_PYTHON
 
 #ifdef BOOST_PYTHON

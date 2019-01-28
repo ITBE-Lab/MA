@@ -14,10 +14,11 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
                                                     pPack )
 {
     std::string sCombined = "";
-    for( std::shared_ptr<Alignment> pA : *pAlignments )
+    for( std::shared_ptr<Alignment> pAlignment : *pAlignments )
     {
-        std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
         if( pAlignment->length( ) == 0 )
+            continue;
+        if(bOmitSecondaryAlignments && pAlignment->bSecondary)
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
@@ -31,7 +32,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
 
         std::string sRefName = pAlignment->getContig( *pPack );
         // sam file format has 1-based indices bam 0-based...
-        auto uiRefPos = pAlignment->getSamPosition( *pPack ) + 1;
+        auto uiRefPos = pAlignment->getSamPosition( *pPack );
 
 #if DEBUG_LEVEL > 0
         bool bWrong = false;
@@ -116,10 +117,11 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                                                           pPack )
 {
     std::string sCombined = "";
-    for( std::shared_ptr<Alignment> pA : *pAlignments )
+    for( std::shared_ptr<Alignment> pAlignment : *pAlignments )
     {
-        std::shared_ptr<Alignment> pAlignment = std::dynamic_pointer_cast<Alignment>( pA ); // dc
         if( pAlignment->length( ) == 0 )
+            continue;
+        if(bOmitSecondaryAlignments && pAlignment->bSecondary)
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
@@ -160,10 +162,14 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             } // if
 #endif
         } // if
+#if DEBUG_LEVEL > 0
+        else if( !pAlignment->bSecondary && !pAlignment->bSupplementary )
+            std::cerr << "[Info] read " << pQuery1->sName << " is unpaired." << std::endl;
+#endif
 
         std::string sRefName = pAlignment->getContig( *pPack );
         // sam file format has 1-based indices bam 0-based...
-        auto uiRefPos = pAlignment->getSamPosition( *pPack ) + 1;
+        auto uiRefPos = pAlignment->getSamPosition( *pPack );
 
 #if DEBUG_LEVEL > 0
         bool bWrong = false;

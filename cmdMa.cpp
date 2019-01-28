@@ -216,6 +216,8 @@ int main( int argc, char* argv[] )
             "SoCWidth", "SoC width", value<unsigned int>( )->default_value( std::to_string( defaults::uiSoCWidth ) ) )(
             "disableHeuristics", "disable all heuristics",
             value<bool>( )->default_value( defaults::bDisableHeuristics ? "true" : "false" ) )(
+            "S,omitSecondaryAlignments", "omit secondary alignments",
+            value<bool>( )->default_value( defaults::bOmitSecondaryAlignments ? "true" : "false" ) )(
             "maxDeltaDist", "", value<double>( )->default_value( std::to_string( defaults::dMaxDeltaDist ) ) )(
             "minDeltaDist", "", value<uint64_t>( )->default_value( std::to_string( defaults::uiMinDeltaDist ) ) )(
             "maxOverlapSupp", "",
@@ -255,6 +257,7 @@ int main( int argc, char* argv[] )
         defaults::uiMinLen = result[ "minLen" ].as<unsigned int>( );
         defaults::uiSoCWidth = result[ "SoCWidth" ].as<unsigned int>( );
         defaults::bDisableHeuristics = result[ "disableHeuristics" ].as<bool>( );
+        defaults::bOmitSecondaryAlignments = result[ "omitSecondaryAlignments" ].as<bool>( );
         defaults::uiMinDeltaDist = result[ "minDeltaDist" ].as<uint64_t>( );
         defaults::dMaxDeltaDist = result[ "maxDeltaDist" ].as<double>( );
         defaults::dMaxOverlapSupplementary = result[ "maxOverlapSupp" ].as<double>( );

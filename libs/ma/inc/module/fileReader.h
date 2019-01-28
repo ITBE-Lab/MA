@@ -36,12 +36,6 @@ class FileStream
     {
         throw AnnotatedException( "Unimplemented" );
     }
-    
-    ~FileStream( )
-    {
-        DEBUG( std::cout << "read " << uiNumLinesRead << " lines in total." << std::endl;
-               if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
-    }// deconstrucotr
 
     virtual bool is_open( ) const
     {
@@ -78,6 +72,12 @@ class StdFileStream : public FileStream
     {
         return !xStream.good( ) || xStream.eof( );
     } // method
+    
+    ~StdFileStream( )
+    {
+        DEBUG( std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
+               if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
+    }// deconstrucotr
 
     bool is_open( ) const
     {
@@ -168,6 +168,12 @@ class GzFileStream : public FileStream
     {
         return lastReadReturn != 1;
     } // method
+    
+    ~GzFileStream( )
+    {
+        DEBUG( std::cout << "GzFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
+               if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
+    }// deconstrucotr
 
     void close( )
     {

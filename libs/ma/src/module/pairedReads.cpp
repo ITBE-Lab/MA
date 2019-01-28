@@ -151,11 +151,16 @@ PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>
         //          << " uiI2 " <<
         //          std::dynamic_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bFirst <<
         //          std::endl;
-        std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ uiI1 ] )->xStats.pOther = // dc
-            std::weak_ptr<Alignment>( std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ uiI2 ] ) ); // dc
+        for( auto pX : *pAlignments1 )
+            pX->bSecondary = true;
+        ( *pAlignments1 )[ uiI1 ]->bSecondary = false;
+        ( *pAlignments1 )[ uiI1 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments2 )[ uiI2 ] );
 
-        std::dynamic_pointer_cast<Alignment>( ( *pAlignments2 )[ uiI2 ] )->xStats.pOther = // dc
-            std::weak_ptr<Alignment>( std::dynamic_pointer_cast<Alignment>( ( *pAlignments1 )[ uiI1 ] ) ); // dc
+        for( auto pX : *pAlignments2 )
+            pX->bSecondary = true;
+        ( *pAlignments2 )[ uiI2 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments1 )[ uiI1 ] );
+        ( *pAlignments2 )[ uiI2 ]->bSecondary = false;
+        
     } // if
 
     // return the alignments

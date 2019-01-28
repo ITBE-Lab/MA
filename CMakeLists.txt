@@ -73,7 +73,7 @@ if( PythonLibs_FOUND )
 endif()
 
 # Look for zlib
-find_package( zlib )
+find_package( ZLIB )
 if( ZLIB_FOUND )
 	message( "Found zlib" )
 endif()

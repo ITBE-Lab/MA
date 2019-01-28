@@ -86,6 +86,7 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
+    bool bOmitSecondaryAlignments;
 
     /**
      * @brief creates a new FileWriter.
@@ -94,7 +95,8 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
      * Otherwise sFileName is used as the filename to write to.
      * The file will be truncated is it already exists.
      */
-    FileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer ) : pLock( new std::mutex )
+    FileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer )
+        : pLock( new std::mutex ), bOmitSecondaryAlignments( defaults::bOmitSecondaryAlignments )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -144,6 +146,7 @@ class PairedFileWriter
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
+    bool bOmitSecondaryAlignments;
 
     /**
      * @brief creates a new FileWriter.
@@ -152,7 +155,8 @@ class PairedFileWriter
      * Otherwise sFileName is used as the filename to write to.
      * The file will be truncated is it already exists.
      */
-    PairedFileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer ) : pLock( new std::mutex )
+    PairedFileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer )
+        : pLock( new std::mutex ), bOmitSecondaryAlignments( defaults::bOmitSecondaryAlignments )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
