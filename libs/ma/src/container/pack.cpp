@@ -679,10 +679,10 @@ void exportPack( py::module& rxPyModuleId )
     py::implicitly_convertible<Pack, Container>( );
 
     // required by contigNames
-    py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector" );
+    py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector", "docstr" );
 
     // required by contigLengths
-    py::bind_vector<std::vector<nucSeqIndex>>( rxPyModuleId, "nucSeqIndexVector" );
+    py::bind_vector<std::vector<nucSeqIndex>>( rxPyModuleId, "nucSeqIndexVector", "docstr" );
 } // function
 #endif
 #endif

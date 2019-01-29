@@ -469,10 +469,12 @@ void exportAlignment( py::module& rxPyModuleId )
         .value( "deletion", MatchType::deletion )
         .export_values( );
 
-    py::bind_vector<std::vector<MatchType>>( rxPyModuleId, "MatchTypeVector" );
+    py::bind_vector<std::vector<MatchType>>( rxPyModuleId, "MatchTypeVector", "docstr" );
 
-    py::bind_vector_ext<ContainerVector<std::shared_ptr<Alignment>>, Container,
-                    std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>>( rxPyModuleId, "AlignmentVector" );
+    py::bind_vector_ext<ContainerVector<std::shared_ptr<Alignment>>,
+                        Container,
+                        std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>>(
+        rxPyModuleId, "AlignmentVector", "docstr" );
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<ContainerVector<std::shared_ptr<Alignment>>, Container>( );

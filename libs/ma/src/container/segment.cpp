@@ -53,7 +53,8 @@ void exportSegment( py::module& rxPyModuleId )
     py::class_<Segment, Container, std::shared_ptr<Segment>>( rxPyModuleId, "Segment" );
 
     // export the SegmentVector class
-    py::bind_vector_ext<SegmentVector, Container, std::shared_ptr<SegmentVector>>( rxPyModuleId, "SegmentVector" )
+    py::bind_vector_ext<SegmentVector, Container, std::shared_ptr<SegmentVector>>( rxPyModuleId, "SegmentVector",
+                                                                                   "docstr" )
         .def( "extract_seeds", &SegmentVector::extractSeeds )
         .def( "num_seeds", &SegmentVector::numSeeds )
 #if MEASURE_DURATIONS == ( 1 )

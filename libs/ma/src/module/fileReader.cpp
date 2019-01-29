@@ -184,7 +184,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
 #endif
     // if we reach this point we have read all content of the file
     std::string sLine = "EoF";
-    if(!pFile->eof( ))
+    if( !pFile->eof( ) )
         pFile->safeGetLine( sLine );
     else
         this->setFinished( );
@@ -235,7 +235,8 @@ void exportFileReader( py::module& rxPyModuleId )
     // export the FileReader class
     exportModule<FileReader, std::string>( rxPyModuleId, "FileReader" );
 
-    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>( rxPyModuleId, "QueryVector" );
+    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
+        rxPyModuleId, "QueryVector", "docstr" );
 
     // export the PairedFileReader class
     exportModule<PairedFileReader, std::string, std::string>( rxPyModuleId, "PairedFileReader" );

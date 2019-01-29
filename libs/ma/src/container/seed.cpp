@@ -84,7 +84,7 @@ void exportSeed( py::module& rxPyModuleId )
         .def_readwrite( "initial_r_end", &AlignmentStatistics::uiInitialRefEnd );
 
     // export the Seeds class
-    py::bind_vector_ext<Seeds, Container, std::shared_ptr<Seeds>>( rxPyModuleId, "Seeds" )
+    py::bind_vector_ext<Seeds, Container, std::shared_ptr<Seeds>>( rxPyModuleId, "Seeds", "docstr" )
         .def( py::init<std::shared_ptr<Seeds>>( ) )
         .def( py::init<>( ) );
 

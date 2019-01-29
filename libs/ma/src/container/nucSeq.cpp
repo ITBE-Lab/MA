@@ -92,6 +92,6 @@ void exportNucSeq( py::module& rxPyModuleId )
         .def_readwrite( "name", &NucSeq::sName );
 
     // register return values of vectors of nucseqs
-    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc" );
+    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" );
 } // function
 #endif

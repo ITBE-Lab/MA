@@ -77,7 +77,7 @@ void exportSoC( )
 void exportSoC( py::module& rxPyModuleId )
 {
 #if DEBUG_LEVEL >= 1
-    py::bind_vector<std::vector<std::pair<nucSeqIndex, nucSeqIndex>>>( rxPyModuleId, "nucSeqPairVector" );
+    py::bind_vector<std::vector<std::pair<nucSeqIndex, nucSeqIndex>>>( rxPyModuleId, "nucSeqPairVector", "docstr" );
 
     py::class_<SoCPriorityQueue::blub>( rxPyModuleId, "nucSeqNucSeqInterval" )
         .def_readwrite( "first", &SoCPriorityQueue::blub::first )
@@ -87,10 +87,10 @@ void exportSoC( py::module& rxPyModuleId )
         .def_readwrite( "rEnd", &SoCPriorityQueue::blub::rEnd )
         .def_readwrite( "rStartSoC", &SoCPriorityQueue::blub::rStartSoC )
         .def_readwrite( "rEndSoC", &SoCPriorityQueue::blub::rEndSoC );
-    py::bind_vector<std::vector<SoCPriorityQueue::blub>>( rxPyModuleId, "nucSeqNucSeqIntervalVector" );
+    py::bind_vector<std::vector<SoCPriorityQueue::blub>>( rxPyModuleId, "nucSeqNucSeqIntervalVector", "docstr" );
 
-    py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "seedVector" );
-    py::bind_vector<std::vector<double>>( rxPyModuleId, "doubleVector" );
+    py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "seedVector", "docstr" );
+    py::bind_vector<std::vector<double>>( rxPyModuleId, "doubleVector", "docstr" );
 #endif
     // export the SoCPriorityQueue class
     py::class_<SoCPriorityQueue, Container, std::shared_ptr<SoCPriorityQueue>>( rxPyModuleId, "SoCPriorityQueue" )
