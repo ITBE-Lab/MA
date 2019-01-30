@@ -43,6 +43,7 @@ std::string EXPORTED sSeedSet; // name of the seed set that shall be computed
 size_t EXPORTED uiGenomeSizeDisable = 10000000;
 bool EXPORTED bDisableHeuristics = false; // disable all heuristics in the harmonization
 bool EXPORTED bNoSecondary = false; // do not output any secondary alignemnts
+bool EXPORTED bNoSupplementary = false; // do not output any supplementary alignemnts
 // can only be accessed by pacBio presetting at the moment...
 bool EXPORTED bDisableGapCostEstimationCutting =
     false; // do not remove seeds that are far away to generate alignments with positive score

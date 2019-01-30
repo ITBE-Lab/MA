@@ -18,7 +18,9 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
     {
         if( pAlignment->length( ) == 0 )
             continue;
-        if(bNoSecondary && pAlignment->bSecondary)
+        if( bNoSecondary && pAlignment->bSecondary )
+            continue;
+        if( bNoSupplementary && pAlignment->bSupplementary )
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
@@ -95,6 +97,17 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // ASCII of Phred-scaled base Quality+33
             + "*\n";
     } // for
+    // if we have not computed any alignment then we should still output the query as unaligned:
+    if( pAlignments->size( ) == 0 )
+    {
+        sCombined +=
+            // query name
+            pQuery->sName + "\t" +
+            // alignment flag
+            std::to_string( SEGMENT_UNMAPPED ) + "\t*\t0\t255\t*\t*\t0\t0\t" +
+            // segment sequence
+            pQuery->toString( ) + "\t*\n";
+    } // if
 
     if( sCombined.size( ) > 0 )
     { // scope xGuard
@@ -117,22 +130,31 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                                                           pPack )
 {
     std::string sCombined = "";
+    bool bFirstQueryHasAlignment = false;
+    bool bSecondQueryHasAlignment = false;
     for( std::shared_ptr<Alignment> pAlignment : *pAlignments )
     {
         if( pAlignment->length( ) == 0 )
             continue;
-        if(bNoSecondary && pAlignment->bSecondary)
+        if( bNoSecondary && pAlignment->bSecondary )
             continue;
+        if( bNoSupplementary && pAlignment->bSupplementary )
+            continue;
+        if(pAlignment->xStats.bFirst)
+            bFirstQueryHasAlignment = true;
+        if(!pAlignment->xStats.bFirst)
+            bSecondQueryHasAlignment = true;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
         uint32_t flag = pAlignment->getSamFlag( *pPack );
 
         std::string sContigOther = "*";
         std::string sPosOther = "0";
-        std::string sName = pQuery1->sName;
+        std::string sName = pAlignment->xStats.bFirst ? pQuery1->sName : pQuery2->sName;
         // DEBUG( std::cout << "Aligned: " << sName << std::endl; )
-        std::string sSegment = pAlignment->getQuerySequence( *pQuery1, *pPack );
-        std::string sTlen = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery );
+        std::string sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
+        std::string sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) +
+                            std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery );
         // paired
         flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
         if( pAlignment->xStats.pOther.lock( ) != nullptr )
@@ -144,13 +166,6 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
 
             sContigOther = pAlignment->xStats.pOther.lock( )->getContig( *pPack );
             sPosOther = std::to_string( pAlignment->xStats.pOther.lock( )->getSamPosition( *pPack ) );
-
-            if( !pAlignment->xStats.bFirst )
-            {
-                sSegment = pAlignment->getQuerySequence( *pQuery2, *pPack );
-                sName = pQuery2->sName;
-                sTlen = "-" + sTlen;
-            } // if
 
 #if DEBUG_LEVEL > 0
             if( pQuery1->uiFromLine != pQuery2->uiFromLine )
@@ -230,6 +245,28 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             // ASCII of Phred-scaled base Quality+33
             "*\n";
     } // for
+    // if we have not computed any alignment then we should still output the query as unaligned:
+    if( !bFirstQueryHasAlignment)
+    {
+        sCombined +=
+            // query name
+            pQuery1->sName + "\t" +
+            // alignment flag
+            std::to_string( SEGMENT_UNMAPPED | MULTIPLE_SEGMENTS_IN_TEMPLATE ) + "\t*\t0\t255\t*\t*\t0\t0\t" +
+            // segment sequence
+            pQuery1->toString( ) + "\t*\n";
+    } // if
+    // if we have not computed any alignment then we should still output the query as unaligned:
+    if( !bSecondQueryHasAlignment )
+    {
+        sCombined +=
+            // query name
+            pQuery2->sName + "\t" +
+            // alignment flag
+            std::to_string( SEGMENT_UNMAPPED | MULTIPLE_SEGMENTS_IN_TEMPLATE ) + "\t*\t0\t255\t*\t*\t0\t0\t" +
+            // segment sequence
+            pQuery2->toString( ) + "\t*\n";
+    } // if
 
     if( sCombined.size( ) > 0 )
     { // scope xGuard

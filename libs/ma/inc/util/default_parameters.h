@@ -61,6 +61,7 @@ extern EXPORTED std::string sSeedSet;
 extern EXPORTED size_t uiGenomeSizeDisable;
 extern EXPORTED bool bDisableHeuristics;
 extern EXPORTED bool bNoSecondary;
+extern EXPORTED bool bNoSupplementary;
 extern EXPORTED double dMaxDeltaDist;
 extern EXPORTED uint64_t uiMinDeltaDist;
 extern EXPORTED double dMaxOverlapSupplementary;

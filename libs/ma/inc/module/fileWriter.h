@@ -87,6 +87,7 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
     bool bNoSecondary = defaults::bNoSecondary;
+    bool bNoSupplementary = defaults::bNoSupplementary;
 
     /**
      * @brief creates a new FileWriter.
@@ -147,6 +148,7 @@ class PairedFileWriter
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
     bool bNoSecondary = defaults::bNoSecondary;
+    bool bNoSupplementary = defaults::bNoSupplementary;
 
     /**
      * @brief creates a new FileWriter.

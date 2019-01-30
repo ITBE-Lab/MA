@@ -127,6 +127,8 @@ const std::string sHelp =
     "\n                                   Default is 10,000,000."
     "\n        --noSecondary              Do not output secondary alignments."
     "\n                                   Off by default."
+    "\n        --noSupplementary          Do not output supplementary alignments."
+    "\n                                   Off by default."
     "\n        --maxOverlapSupp <num>     A secondary alignment becomes supplementary, if it overlaps"
     "\n                                   less than <num> percent with the primary alignment."
     "\n                                   Default is 0.1."
@@ -207,6 +209,8 @@ int main( int argc, char* argv[] )
             value<bool>( )->default_value( defaults::bDisableHeuristics ? "true" : "false" ) )(
             "noSecondary", "noSecondary",
             value<bool>( )->default_value( defaults::bNoSecondary ? "true" : "false" ) )(
+            "noSupplementary", "noSupplementary",
+            value<bool>( )->default_value( defaults::bNoSupplementary ? "true" : "false" ) )(
             "maxDeltaDist", "", value<double>( )->default_value( std::to_string( defaults::dMaxDeltaDist ) ) )(
             "minDeltaDist", "", value<uint64_t>( )->default_value( std::to_string( defaults::uiMinDeltaDist ) ) )(
             "maxOverlapSupp", "",
@@ -246,6 +250,7 @@ int main( int argc, char* argv[] )
         defaults::uiSoCWidth = result[ "SoCWidth" ].as<unsigned int>( );
         defaults::bDisableHeuristics = result[ "disableHeuristics" ].as<bool>( );
         defaults::bNoSecondary = result[ "noSecondary" ].as<bool>( );
+        defaults::bNoSupplementary = result[ "noSupplementary" ].as<bool>( );
         defaults::uiMinDeltaDist = result[ "minDeltaDist" ].as<uint64_t>( );
         defaults::dMaxDeltaDist = result[ "maxDeltaDist" ].as<double>( );
         defaults::dMaxOverlapSupplementary = result[ "maxOverlapSupp" ].as<double>( );

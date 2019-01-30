@@ -330,7 +330,8 @@ class BasePledge
 
                                 // this callback function can be used to set a progress bar
                                 // for example.
-                                callback( );
+                                if(uiTid == 0)
+                                    callback( );
                             } // try
                             catch( AnnotatedException e )
                             {
