@@ -60,7 +60,7 @@ extern EXPORTED std::string sParameterSet;
 extern EXPORTED std::string sSeedSet;
 extern EXPORTED size_t uiGenomeSizeDisable;
 extern EXPORTED bool bDisableHeuristics;
-extern EXPORTED float fMinSecScoreRatio;
+extern EXPORTED bool bNoSecondary;
 extern EXPORTED double dMaxDeltaDist;
 extern EXPORTED uint64_t uiMinDeltaDist;
 extern EXPORTED double dMaxOverlapSupplementary;
@@ -72,7 +72,6 @@ extern EXPORTED size_t uiZDrop;
 extern EXPORTED size_t uiSVPenalty;
 extern EXPORTED int iMinBandwidthGapFilling;
 extern EXPORTED int iBandwidthDPExtension;
-extern EXPORTED bool bOmitSecondaryAlignments;
 
 inline void configureAccurate( )
 {

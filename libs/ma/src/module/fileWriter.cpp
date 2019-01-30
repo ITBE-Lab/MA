@@ -18,7 +18,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
     {
         if( pAlignment->length( ) == 0 )
             continue;
-        if(bOmitSecondaryAlignments && pAlignment->bSecondary)
+        if(bNoSecondary && pAlignment->bSecondary)
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
@@ -121,7 +121,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
     {
         if( pAlignment->length( ) == 0 )
             continue;
-        if(bOmitSecondaryAlignments && pAlignment->bSecondary)
+        if(bNoSecondary && pAlignment->bSecondary)
             continue;
         std::string sCigar = pAlignment->cigarString( *pPack );
 

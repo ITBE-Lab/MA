@@ -48,12 +48,9 @@ const std::string sHelp =
     "====================================== The Modular Aligner ======================================"
     "\nGeneral options:"
     "\n    -h, --help                     Display the complete help screen"
-    "\n        --genIndex                 Do FMD-index Generation. The -i and -x options specify "
-    "the"
-    "\n                                   FASTA file used for index generation and the index "
-    "prefix,"
-    "\n                                   respectively. If this option is not set, the aligner "
-    "performs"
+    "\n        --genIndex                 Do FMD-index Generation. The -i and -x options specify the"
+    "\n                                   FASTA file used for index generation and the index prefix,"
+    "\n                                   respectively. If this option is not set, the aligner performs"
     "\n                                   alignments. "
     "\n"
     "\nNecessary arguments for alignments:"
@@ -117,26 +114,20 @@ const std::string sHelp =
     "\n                                   cause the aligner to miss the correct reference location."
     "\n                                   Default is 0.002."
     "\n        --maxTries <num>           Maximally <num> many SoC's are evaluated for a single"
-    "\n                                   alignment. Generally the best alignment is found in the "
-    "best"
+    "\n                                   alignment. Generally the best alignment is found in the best"
     "\n                                   scored SoC. However, if the best alignment is from a very"
-    "\n                                   repetitive region, we might have to inspect several "
-    "SoC's to"
+    "\n                                   repetitive region, we might have to inspect several SoC's to"
     "\n                                   find the optimal one."
     "\n                                   Default is 30."
     "\n        --minTries <num>           At least <num> many SoC's are evaluated for a single"
     "\n                                   alignment."
     "\n                                   Default is 2."
-    "\n        --minRefSize <num>         If the reference is smaller than <num> nt we disable "
-    "post SoC"
+    "\n        --minRefSize <num>         If the reference is smaller than <num> nt we disable post SoC"
     "\n                                   heuristics."
     "\n                                   Default is 10,000,000."
-    "\n        --minSecToPrimRatio <num>  Limit output of secondary alignments to alignments with:"
-    "\n                                   score-secondary-alignment >= <num> * "
-    "score-primary-alignment."
-    "\n                                   Default is 0.25."
-    "\n        --maxOverlapSupp <num>     A secondary alignment becomes supplementary, if it "
-    "overlaps"
+    "\n        --noSecondary              Do not output secondary alignments."
+    "\n                                   Off by default."
+    "\n        --maxOverlapSupp <num>     A secondary alignment becomes supplementary, if it overlaps"
     "\n                                   less than <num> percent with the primary alignment."
     "\n                                   Default is 0.1."
     "\n        --disableHeuristics        All performance optimizing heuristics are turned off."
@@ -196,8 +187,6 @@ int main( int argc, char* argv[] )
             value<unsigned int>( )->default_value( std::to_string( defaults::uiMinLen ) ) )(
             "giveUp", "Minimum SoC score (relative to query length)",
             value<double>( )->default_value( std::to_string( defaults::fGiveUp ) ) )(
-            "minSecToPrimRatio", "Minimum sec score ratio",
-            value<double>( )->default_value( std::to_string( defaults::fMinSecScoreRatio ) ) )(
             "maxTries", "Max num SoC",
             value<unsigned int>( )->default_value( std::to_string( defaults::uiMaxTries ) ) )(
             "minTries", "Min num SoC",
@@ -216,8 +205,8 @@ int main( int argc, char* argv[] )
             "SoCWidth", "SoC width", value<unsigned int>( )->default_value( std::to_string( defaults::uiSoCWidth ) ) )(
             "disableHeuristics", "disable all heuristics",
             value<bool>( )->default_value( defaults::bDisableHeuristics ? "true" : "false" ) )(
-            "S,omitSecondaryAlignments", "omit secondary alignments",
-            value<bool>( )->default_value( defaults::bOmitSecondaryAlignments ? "true" : "false" ) )(
+            "noSecondary", "noSecondary",
+            value<bool>( )->default_value( defaults::bNoSecondary ? "true" : "false" ) )(
             "maxDeltaDist", "", value<double>( )->default_value( std::to_string( defaults::dMaxDeltaDist ) ) )(
             "minDeltaDist", "", value<uint64_t>( )->default_value( std::to_string( defaults::uiMinDeltaDist ) ) )(
             "maxOverlapSupp", "",
@@ -250,14 +239,13 @@ int main( int argc, char* argv[] )
         defaults::fStd = result[ "paStd" ].as<double>( );
         defaults::uiUnpaired = result[ "paIsolate" ].as<unsigned int>( );
         // for some reason cxxopts cannot deal with float...
-        defaults::fMinSecScoreRatio = (float)result[ "minSecToPrimRatio" ].as<double>( );
         defaults::uiReportN = result[ "reportN" ].as<unsigned int>( );
         defaults::sParameterSet = result[ "mode" ].as<std::string>( );
         defaults::sSeedSet = result[ "seedSet" ].as<std::string>( );
         defaults::uiMinLen = result[ "minLen" ].as<unsigned int>( );
         defaults::uiSoCWidth = result[ "SoCWidth" ].as<unsigned int>( );
         defaults::bDisableHeuristics = result[ "disableHeuristics" ].as<bool>( );
-        defaults::bOmitSecondaryAlignments = result[ "omitSecondaryAlignments" ].as<bool>( );
+        defaults::bNoSecondary = result[ "noSecondary" ].as<bool>( );
         defaults::uiMinDeltaDist = result[ "minDeltaDist" ].as<uint64_t>( );
         defaults::dMaxDeltaDist = result[ "maxDeltaDist" ].as<double>( );
         defaults::dMaxOverlapSupplementary = result[ "maxOverlapSupp" ].as<double>( );

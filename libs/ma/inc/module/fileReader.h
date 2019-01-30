@@ -8,6 +8,7 @@
 
 #include "container/nucSeq.h"
 #include "module/module.h"
+#include "util/support.h"
 
 
 #ifdef WITH_ZLIB
@@ -72,12 +73,12 @@ class StdFileStream : public FileStream
     {
         return !xStream.good( ) || xStream.eof( );
     } // method
-    
+
     ~StdFileStream( )
     {
         DEBUG( std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
-    }// deconstrucotr
+    } // deconstrucotr
 
     bool is_open( ) const
     {
@@ -168,12 +169,12 @@ class GzFileStream : public FileStream
     {
         return lastReadReturn != 1;
     } // method
-    
+
     ~GzFileStream( )
     {
         DEBUG( std::cout << "GzFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
-    }// deconstrucotr
+    } // deconstrucotr
 
     void close( )
     {
@@ -201,10 +202,10 @@ class GzFileStream : public FileStream
             if( lastReadReturn != 1 )
                 break;
             // if we reached the end of the line return
-            if(cBuff == '\r')
+            if( cBuff == '\r' )
                 // read the \n that should be the next character
                 lastReadReturn = gzread( pFile, &cBuff, 1 );
-            if( cBuff == '\n')
+            if( cBuff == '\n' )
                 break;
             t += cBuff;
 
@@ -302,8 +303,13 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
      */
     PairedFileReader( std::string sFileName1, std::string sFileName2 ) : xF1( sFileName1 ), xF2( sFileName2 )
     {
-        if( xF1.getFileSize( ) != xF2.getFileSize( ) )
-            std::cerr << "WARNING: Doing paired alignment with differently sized files." << std::endl;
+        /*
+         * Print a warning if the fasta files have different sizes.
+         * However, if they are compressed this check does not make sense.
+         */
+        if( !ends_with( sFileName1, ".gz" ) && !ends_with( sFileName2, ".gz" ) )
+            if( xF1.getFileSize( ) != xF2.getFileSize( ) )
+                std::cerr << "WARNING: Doing paired alignment with differently sized files." << std::endl;
     } // constructor
 
     std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );

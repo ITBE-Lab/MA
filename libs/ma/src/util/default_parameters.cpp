@@ -42,8 +42,7 @@ std::string EXPORTED sSeedSet; // name of the seed set that shall be computed
 // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
 size_t EXPORTED uiGenomeSizeDisable = 10000000;
 bool EXPORTED bDisableHeuristics = false; // disable all heuristics in the harmonization
-// only output secondary alignments with a score larger than this * score of prim. alignment
-float EXPORTED fMinSecScoreRatio = .25;
+bool EXPORTED bNoSecondary = false; // do not output any secondary alignemnts
 // can only be accessed by pacBio presetting at the moment...
 bool EXPORTED bDisableGapCostEstimationCutting =
     false; // do not remove seeds that are far away to generate alignments with positive score
@@ -72,8 +71,6 @@ double EXPORTED dMaxSVRatio = 0.01;
 int64_t EXPORTED iMinSVDistance = 500;
 
 size_t EXPORTED uiZDrop = 200;
-
-bool bOmitSecondaryAlignments = false; // do not report any secondary alignments
 
 #ifdef WITH_PYTHON
 

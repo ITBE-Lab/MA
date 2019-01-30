@@ -86,7 +86,7 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
-    bool bOmitSecondaryAlignments;
+    bool bNoSecondary = defaults::bNoSecondary;
 
     /**
      * @brief creates a new FileWriter.
@@ -96,7 +96,7 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
      * The file will be truncated is it already exists.
      */
     FileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer )
-        : pLock( new std::mutex ), bOmitSecondaryAlignments( defaults::bOmitSecondaryAlignments )
+        : pLock( new std::mutex )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -146,7 +146,7 @@ class PairedFileWriter
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
-    bool bOmitSecondaryAlignments;
+    bool bNoSecondary = defaults::bNoSecondary;
 
     /**
      * @brief creates a new FileWriter.
@@ -156,7 +156,7 @@ class PairedFileWriter
      * The file will be truncated is it already exists.
      */
     PairedFileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer )
-        : pLock( new std::mutex ), bOmitSecondaryAlignments( defaults::bOmitSecondaryAlignments )
+        : pLock( new std::mutex )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );

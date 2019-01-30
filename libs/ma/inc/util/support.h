@@ -159,7 +159,7 @@ template <template <size_t> class Func> struct TemplateLoop<0, Func>
     } // method
 }; // struct
 
-std::string EXPORTED demangle(const char* name);
+std::string EXPORTED demangle( const char* name );
 
 template <class X> std::string type_name( X* pType )
 {
@@ -177,5 +177,7 @@ template <class X> std::string type_name( )
 {
     return type_name<X>( nullptr );
 } // function
+
+bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd );
 
 #endif

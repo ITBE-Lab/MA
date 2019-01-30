@@ -104,17 +104,6 @@ MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
         assert( pRet->size( ) == uiReportNBest + uiSupplementaries );
     } // if
 
-    // remove secondary with too small scores
-    while( pRet->size( ) > 1 )
-    {
-        std::shared_ptr<Alignment> pCasted = std::dynamic_pointer_cast<Alignment>( pRet->back( ) ); // dc
-        if( !pCasted->bSecondary )
-            break;
-        if( pCasted->score( ) >= pFirst->score( ) * fMinSecScoreRatio )
-            break;
-        pRet->pop_back( );
-    } // while
-
     return pRet;
 } // function
 
@@ -125,8 +114,7 @@ void exportMappingQuality( )
 {
     // export the MappingQuality class
     exportModule<MappingQuality>( "MappingQuality", []( auto&& x ) {
-        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest )
-            .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
+        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest );
     } );
 } // function
 #else
@@ -134,8 +122,7 @@ void exportMappingQuality( py::module& rxPyModuleId )
 {
     // export the MappingQuality class
     exportModule<MappingQuality>( rxPyModuleId, "MappingQuality", []( auto&& x ) {
-        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest )
-            .def_readwrite( "prim_sec_score_ratio", &MappingQuality::fMinSecScoreRatio );
+        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest );
     } );
 } // function
 #endif

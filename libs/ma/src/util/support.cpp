@@ -33,6 +33,11 @@ bool EXPORTED fileExists( const std::string& rsFile )
     return ( stat( rsFile.c_str( ), &buffer ) == 0 );
 } // function
 
+bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd )
+{
+    return rsX.compare( rsX.length( ) - rsEnd.length( ), rsEnd.length( ), rsEnd ) == 0;
+} // function
+
 void makeDir( const std::string& rsFile )
 {
     int nError = 0;
@@ -73,4 +78,5 @@ std::string EXPORTED demangle( const char* name )
 {
     return std::string( name );
 } // function
+
 #endif
