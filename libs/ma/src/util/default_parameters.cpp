@@ -10,7 +10,7 @@ int EXPORTED iGap = 4; // penalty for a DP gap opening (used in SoC width comput
 int EXPORTED iExtend = 2; // penalty for a DP gap extension (used in SoC width computation)
 int EXPORTED iGap2 = 24; // penalty for a DP gap opening (used in SoC width computation)
 int EXPORTED iExtend2 = 1; // penalty for a DP gap extension (used in SoC width computation)
-size_t EXPORTED uiUnpaired = 17; // penalty for unpaired reads
+double EXPORTED dUnpaired = 17; // penalty for unpaired reads
 size_t EXPORTED uiMean = 400; // mean distance for paired reads
 double EXPORTED fStd = 150; // standard deviation for distance of paired reads
 size_t EXPORTED uiReportN = 0; // report n alignments
@@ -29,7 +29,6 @@ size_t EXPORTED uiSoCWidth = 0; // set a fixed SoC width; 0 = use the formula
 bool EXPORTED bOptimisticGapEstimation = true; // how to estimate gap costs in harmonization
 bool EXPORTED bSkipLongBWTIntervals = true; // pick samples from long SAintervals or skip them
 bool EXPORTED bNormalDist = false; // use normal distribution to model gaps between paired reads
-bool EXPORTED bUniformDist = false; // use normal distribution to model gaps between paired reads
 float EXPORTED fGiveUp = 0.002f; // do not store socs with score less than this * query len
 float EXPORTED fRelMinSeedSizeAmount = 0.005f; // minimum seed coverage to consider a query
 float EXPORTED fScoreDiffTolerance = 0.0001f; // break if the harm score falls faster than this

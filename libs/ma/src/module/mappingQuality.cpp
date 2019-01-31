@@ -7,7 +7,7 @@
 using namespace libMA;
 
 using namespace libMA::defaults;
-extern int iMatch;
+//extern int iMatch;
 
 
 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
@@ -71,7 +71,7 @@ MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
     } // if
     else
         // the score of the second best alignment is 0 if we do not even find one...
-        pFirst->fMappingQuality = 1; // pFirst->score() / (double)(iMatch * pQuery->length());
+        pFirst->fMappingQuality = pFirst->score() / (double)(iMatch * pQuery->length());
 
     if( uiSupplementaries > 0 )
     {

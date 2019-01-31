@@ -460,8 +460,8 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
                        } // lambda
             ); // sort function call
 
-            DEBUG( pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
-                   pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
+            DEBUG( if(!pSeeds->empty()) pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
+                   if(!pSeeds->empty()) pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
 
             /*
              * sometimes we have one or less seeds remaining after the cupling:

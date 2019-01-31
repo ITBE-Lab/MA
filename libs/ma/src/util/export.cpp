@@ -44,7 +44,8 @@ BOOST_PYTHON_MODULE( libMA )
 
 #else
 
-PYBIND11_MODULE(libMA, libMaModule) {
+PYBIND11_MODULE( libMA, libMaModule )
+{
     DEBUG_3( std::cout.setf( std::ios::unitbuf ); )
     exportContainer( libMaModule );
     exportModuleClass( libMaModule );
@@ -148,7 +149,8 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( std::share
         auto pAlignmentsB = promiseMe( pDP, pHarmonizedB, pQueryB, pPack );
         auto pAlignmentsWQualityA = promiseMe( pMappingQual, pQueryA, pAlignmentsA );
         auto pAlignmentsWQualityB = promiseMe( pMappingQual, pQueryB, pAlignmentsB );
-        auto pAlignmentsWQuality = promiseMe( pPairedReads, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
+        auto pAlignmentsWQuality =
+            promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
         auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
         auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( pQueryTuple ), pEmptyContainer );
         aRet.push_back( pUnlockResult );

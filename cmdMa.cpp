@@ -89,16 +89,12 @@ const std::string sHelp =
     "\n                                   Default is 1"
     "\n"
     "\nPaired Reads options:"
-    "\n    -p, --paUni                    Enable paired alignments and model the distance as"
-    "\n                                   uniform distribution."
-    "\n                                   If set --in shall be used as follows:"
-    "\n                                   --in <fname1> --in <fname2>."
-    "\n    -P, --paNorm                   Enable paired alignment and Model the distance as"
+    "\n    -p, --Paired                   Enable paired alignment and Model the distance as"
     "\n                                   normal distribution."
     "\n                                   If set --in shall be used as follows:"
     "\n                                   --in <fname1> --in <fname2>."
     "\n        --paIsolate <num>          Penalty for an unpaired read pair."
-    "\n                                   Default is 17."
+    "\n                                   Default is 0.3."
     "\n        --paMean <num>             Mean gap distance between read pairs."
     "\n                                   Default is 400."
     "\n        --paStd <num>              Standard deviation of gap distance between read pairs."
@@ -217,10 +213,9 @@ int main( int argc, char* argv[] )
             value<double>( )->default_value( std::to_string( defaults::dMaxOverlapSupplementary ) ) );
 
         options.add_options( "Paired Reads options (requires either -U or -N)" )(
-            "p,paUni", "Enable paired alignment; Distance as uniform distribution" )(
-            "P,paNorm", "Enable paired alignment; Distance as normal distribution" )(
+            "p,Paired", "Enable paired alignment; Distance as normal distribution" )(
             "paIsolate", "Penalty for unpaired alignments",
-            value<unsigned int>( )->default_value( std::to_string( defaults::uiUnpaired ) ),
+            value<double>( )->default_value( std::to_string( defaults::dUnpaired ) ),
             "arg    " )( "paMean", "Gap distance mean",
                          value<unsigned int>( )->default_value( std::to_string( defaults::uiMean ) ) )(
             "paStd", "Gap distance standard deviation",
@@ -237,11 +232,10 @@ int main( int argc, char* argv[] )
         } // if
 
         auto uiT = result[ "threads" ].as<unsigned int>( );
-        defaults::bNormalDist = result.count( "paNorm" ) > 0;
-        defaults::bUniformDist = result.count( "paUni" ) > 0;
+        defaults::bNormalDist = result.count( "Paired" ) > 0;
         defaults::uiMean = result[ "paMean" ].as<unsigned int>( );
         defaults::fStd = result[ "paStd" ].as<double>( );
-        defaults::uiUnpaired = result[ "paIsolate" ].as<unsigned int>( );
+        defaults::dUnpaired = result[ "paIsolate" ].as<double>( );
         // for some reason cxxopts cannot deal with float...
         defaults::uiReportN = result[ "reportN" ].as<unsigned int>( );
         defaults::sParameterSet = result[ "mode" ].as<std::string>( );
@@ -254,11 +248,6 @@ int main( int argc, char* argv[] )
         defaults::uiMinDeltaDist = result[ "minDeltaDist" ].as<uint64_t>( );
         defaults::dMaxDeltaDist = result[ "maxDeltaDist" ].as<double>( );
         defaults::dMaxOverlapSupplementary = result[ "maxOverlapSupp" ].as<double>( );
-        if( defaults::bNormalDist && defaults::bUniformDist )
-        {
-            std::cerr << "--normal and --uniform are exclusive." << std::endl;
-            return 1;
-        } // else if
         std::string sGenome;
         if( result.count( "idx" ) > 0 )
             sGenome = result[ "idx" ].as<std::string>( );
@@ -275,13 +264,13 @@ int main( int argc, char* argv[] )
             std::cerr << "error: --in is compulsory" << std::endl;
             return 1;
         } // else if
-        if( aIn.size( ) != 1 && !( defaults::bNormalDist || defaults::bUniformDist ) &&
+        if( aIn.size( ) != 1 && !( defaults::bNormalDist ) &&
             result.count( "genIndex" ) == 0 )
         {
             std::cerr << "error: --in takes one argument in unpaired mode" << std::endl;
             return 1;
         } // if
-        else if( aIn.size( ) != 2 && ( defaults::bNormalDist || defaults::bUniformDist ) &&
+        else if( aIn.size( ) != 2 && ( defaults::bNormalDist ) &&
                  result.count( "genIndex" ) == 0 )
         {
             std::cerr << "error: --in takes two arguments in paired mode" << std::endl;

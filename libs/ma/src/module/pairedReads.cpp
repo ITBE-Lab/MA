@@ -6,6 +6,7 @@
 #define NOMINMAX
 #endif
 
+#include <limits>
 #include "module/pairedReads.h"
 
 using namespace libMA;
@@ -13,31 +14,11 @@ using namespace libMA;
 using namespace libMA::defaults;
 extern int libMA::defaults::iMatch;
 
-#define SQ_12 std::sqrt( 12 )
-
-double PairedReads::p( nucSeqIndex d ) const // TO DO inline me
-{
-    if( bNormalDist )
-        return 1 - 0.499 * ( 1 + std::erf( ( d - mean ) / ( std * std::sqrt( 2 ) ) ) );
-    if( bUniformDist )
-        /*
-         * uniform distribution has following CDF:
-         * (d - a) / (b - a)
-         * where a and b are min,max.
-         * the mean is thus: (b+a)/2
-         * the std is: (b-a)*sqrt(12)
-         */
-        return 1 - std::max( 0.0, std::min( 1.0, ( d - mean - std / ( SQ_12 * 2 ) ) / ( std / SQ_12 ) ) );
-
-    return 0.0;
-} // function
-
 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments1,
-                      std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-                          pAlignments2,
-                      std::shared_ptr<Pack>
-                          pPack )
+PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
+                      std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments1,
+                      std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments2,
+                      std::shared_ptr<Pack> pPack )
 {
 
     // assert that we have at least one alignment for each mate.
@@ -45,6 +26,7 @@ PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>
         return pAlignments2;
     if( pAlignments2->size( ) == 0 )
         return pAlignments1;
+    //std::cerr << "new read" << std::endl;
 
     // the indices of the best alignment pair
     unsigned int uiI1 = 0, uiI2 = 0;
@@ -64,20 +46,22 @@ PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>
             if( pAlignment2->length( ) == 0 )
                 continue;
 
-            // get the correct start position on the forward strand
+            // illumina reads must be on opposite strands
+            if( pPack->bPositionIsOnReversStrand( pAlignment1->beginOnRef( ) ) ==
+                pPack->bPositionIsOnReversStrand( pAlignment2->beginOnRef( ) ) )
+                continue;
 
             nucSeqIndex uiP1 = pAlignment1->beginOnRef( );
-            if( pPack->bPositionIsOnReversStrand( pAlignment1->beginOnRef( ) ) )
-                uiP1 = pPack->iAbsolutePosition( pAlignment1->endOnRef( ) );
-
-            // get the correct start position on the forward strand
-            nucSeqIndex uiP2 = pAlignment2->beginOnRef( );
-            if( pPack->bPositionIsOnReversStrand( pAlignment2->beginOnRef( ) ) )
-                uiP2 = pPack->iAbsolutePosition( pAlignment2->endOnRef( ) );
-
+            // for illumina the reads are always on opposite strands
+            nucSeqIndex uiP2 = pPack->uiPositionToReverseStrand( pAlignment2->beginOnRef( ) );
 
             // get the distance of the alignments on the reference
             nucSeqIndex d = uiP1 < uiP2 ? uiP2 - uiP1 : uiP1 - uiP2;
+
+            //      r->low  = (int)(p25 - OUTLIER_BOUND * (p75 - p25) + .499);
+            //      if (r->low < 1) r->low = 1;
+            //      r->high = (int)(p75 + OUTLIER_BOUND * (p75 - p25) + .499);
+
             // std::cerr << "A1: " << pAlignment1->xStats.sName
             //           << " A2: " << pAlignment2->xStats.sName << std::endl;
             // if( d < 1000 )
@@ -89,32 +73,28 @@ PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>
             // M_SQRT1_2)) * opt->iMatchScore + .499);
 
             // (Heng Li)
-            double score = pAlignment1->score( ) + pAlignment2->score( ) -
-                           std::min( -iMatch * std::log( p( d ) ) / std::log( 4 ), (double)u );
+            double dPairedScore =
+                pAlignment1->score( ) + pAlignment2->score( ) +
+                0.721 * std::log( 2. * std::erfc( std::abs( ( d - mean ) / std ) / std::sqrt( 2 ) ) ) * iMatch + .499;
+            if( dPairedScore < 0 )
+                dPairedScore = 0;
 
 
             // std::cerr << "score: " << score << std::endl;
 
             // check if we have a new best pair
-            if( score > maxScore )
+            //std::cerr << dPairedScore << " to " << pAlignment1->score( ) + pAlignment2->score( ) - dUnpaired << " pref " << maxScore << " blub "<< 2. * std::erfc( std::abs( ( d - mean ) / std ) / std::sqrt( 2 ) ) << std::endl;
+            if( dPairedScore > maxScore )
             {
                 // if so update the score and indices
-                maxScore = score;
+                maxScore = dPairedScore;
                 uiI1 = i;
                 uiI2 = j;
                 // it's possible that the best pair is two individual alignments
-
-                // std::cerr << "s2: " << -iMatch * std::log(p(d))/std::log(4) << std::endl;
-                // if (-iMatch * std::log(p(d))/std::log(4) > 0)
-                // {
-                //     std::cerr << " > 0" << std::endl;
-                //     exit(0);
-                // }
-
-                bPaired = -iMatch * std::log( p( d ) ) / std::log( 4 ) < u;
-                // if( !bPaired)
-                //     std::cerr << "Distance: " << d << "Paired: " << bPaired << std::endl;
+                bPaired = dPairedScore >= pAlignment1->score( ) + pAlignment2->score( ) - dUnpaired;
+                bPaired = true;
             } // if
+            // if( bPaired)
         } // for
     } // for
 
@@ -126,42 +106,17 @@ PairedReads::execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>
 
         ( *pAlignments1 )[ uiI1 ]->xStats.bFirst = true; // dc
         ( *pAlignments2 )[ uiI2 ]->xStats.bFirst = false; // dc
-
-        // { // temp code
-        //     std::shared_ptr<Alignment> pAlignment1 = std::dynamic_pointer_cast<Alignment>(//
-        //     (*pAlignments1)[uiI1]); // dc std::shared_ptr<Alignment> pAlignment2 =
-        //     std::dynamic_pointer_cast<Alignment>(// (*pAlignments2)[uiI2]); // dc nucSeqIndex
-        //     uiP1 = pAlignment1->beginOnRef(); if
-        //     (pPack->bPositionIsOnReversStrand(pAlignment1->beginOnRef()))
-        //         uiP1 = pPack->iAbsolutePosition(pAlignment1->endOnRef());
-        //
-        //     // get the correct start position on the forward strand
-        //     nucSeqIndex uiP2 = pAlignment2->beginOnRef();
-        //     if (pPack->bPositionIsOnReversStrand(pAlignment2->beginOnRef()))
-        //         uiP2 = pPack->iAbsolutePosition(pAlignment2->endOnRef());
-        //
-        //     // get the distance of the alignments on the reference
-        //     nucSeqIndex d = uiP1 < uiP2 ? uiP2 - uiP1 : uiP1 - uiP2;
-        //     if (d > 4000)
-        //         std::cerr << "WARNING: " << d << std::endl;
-        // }
-
-        // std::cout << " uiI1 " <<
-        // std::dynamic_pointer_cast<Alignment>((*pAlignments1)[uiI1])->xStats.bFirst << "\n"
-        //          << " uiI2 " <<
-        //          std::dynamic_pointer_cast<Alignment>((*pAlignments2)[uiI2])->xStats.bFirst <<
-        //          std::endl;
-        for( auto pX : *pAlignments1 )
-            pX->bSecondary = true;
         ( *pAlignments1 )[ uiI1 ]->bSecondary = false;
-        ( *pAlignments1 )[ uiI1 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments2 )[ uiI2 ] );
-
-        for( auto pX : *pAlignments2 )
-            pX->bSecondary = true;
-        ( *pAlignments2 )[ uiI2 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments1 )[ uiI1 ] );
         ( *pAlignments2 )[ uiI2 ]->bSecondary = false;
-        
+        ( *pAlignments1 )[ uiI1 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments2 )[ uiI2 ] );
+        ( *pAlignments2 )[ uiI2 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments1 )[ uiI1 ] );
+
+        auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
+        pRet->push_back( ( *pAlignments1 )[ uiI1 ] );
+        pRet->push_back( ( *pAlignments2 )[ uiI2 ] );
+        return pRet;
     } // if
+    // if we do not have paired reads...
 
     // return the alignments
     auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );

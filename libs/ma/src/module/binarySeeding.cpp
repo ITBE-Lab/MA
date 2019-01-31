@@ -101,6 +101,15 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> 
         uiMinGenomeSize < pFM_index->getRefSeqLength( ) )
         pSegmentVector->clear( );
 
+    /*
+     * If we extremeley few seeds we may be able to compute merely one alignment.
+     * In that case we cannot do a mapping quality estimation. Therefore we will do a reseeding in this case.
+     */
+    if(pSegmentVector->size() <= 3)
+    {
+        
+    }// if
+
     return pSegmentVector;
 } // function
 

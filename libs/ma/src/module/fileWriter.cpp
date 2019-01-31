@@ -30,7 +30,6 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         std::string sPosOther = "0";
         std::string sName = pQuery->sName;
         std::string sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
-        std::string sTlen = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery );
 
         std::string sRefName = pAlignment->getContig( *pPack );
         // sam file format has 1-based indices bam 0-based...
@@ -90,7 +89,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // Position of the mate/next read
             sPosOther + "\t" +
             // observed Template length
-            sTlen + "\t" +
+            "0\t" +
             // segment sequence
             sSegment +
             "\t"
@@ -153,12 +152,19 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         std::string sName = pAlignment->xStats.bFirst ? pQuery1->sName : pQuery2->sName;
         // DEBUG( std::cout << "Aligned: " << sName << std::endl; )
         std::string sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
-        std::string sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) +
-                            std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery );
         // paired
         flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
+        std::string sTlen = "0";
         if( pAlignment->xStats.pOther.lock( ) != nullptr )
         {
+            
+            nucSeqIndex uiP1 = pAlignment->beginOnRef( );
+            // for illumina the reads are always on opposite strands
+            nucSeqIndex uiP2 = pPack->uiPositionToReverseStrand( pAlignment->xStats.pOther.lock( )->beginOnRef( ) );
+            // get the distance of the alignments on the reference
+            nucSeqIndex d = uiP1 < uiP2 ? uiP2 - uiP1 : uiP1 - uiP2;
+            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( std::abs(d) );
+
             // assert( pQuery2 != nullptr );
             flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
             if( pPack->bPositionIsOnReversStrand( pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
