@@ -139,9 +139,9 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             continue;
         if( bNoSupplementary && pAlignment->bSupplementary )
             continue;
-        if(pAlignment->xStats.bFirst)
+        if( pAlignment->xStats.bFirst )
             bFirstQueryHasAlignment = true;
-        if(!pAlignment->xStats.bFirst)
+        if( !pAlignment->xStats.bFirst )
             bSecondQueryHasAlignment = true;
         std::string sCigar = pAlignment->cigarString( *pPack );
 
@@ -157,13 +157,13 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         std::string sTlen = "0";
         if( pAlignment->xStats.pOther.lock( ) != nullptr )
         {
-            
+
             nucSeqIndex uiP1 = pAlignment->beginOnRef( );
             // for illumina the reads are always on opposite strands
             nucSeqIndex uiP2 = pPack->uiPositionToReverseStrand( pAlignment->xStats.pOther.lock( )->beginOnRef( ) );
             // get the distance of the alignments on the reference
             nucSeqIndex d = uiP1 < uiP2 ? uiP2 - uiP1 : uiP1 - uiP2;
-            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( std::abs(d) );
+            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( std::abs( d ) );
 
             // assert( pQuery2 != nullptr );
             flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
@@ -225,7 +225,11 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         if( std::isnan( pAlignment->fMappingQuality ) )
             sMapQual = "255";
         else
-            sMapQual = std::to_string( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ) );
+        {
+            assert( pAlignment->fMappingQuality >= 0 );
+            sMapQual =
+                std::to_string( std::min( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ), 255 ) );
+        }
 
         sCombined +=
             // query name
@@ -252,7 +256,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             "*\n";
     } // for
     // if we have not computed any alignment then we should still output the query as unaligned:
-    if( !bFirstQueryHasAlignment)
+    if( !bFirstQueryHasAlignment )
     {
         sCombined +=
             // query name

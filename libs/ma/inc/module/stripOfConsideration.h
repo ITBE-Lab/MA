@@ -100,7 +100,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
     inline void emplaceAllNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
-        rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiMaxAmbiguity, uiMinLen, rvSeedVector,
+        rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiMaxAmbiguity, uiMinLen, bSkipLongBWTIntervals, rvSeedVector,
                                             [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]( ) {
         /*
          * @note this bridging check is not required since we check weather a SoC

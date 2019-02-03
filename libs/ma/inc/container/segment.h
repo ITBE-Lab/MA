@@ -44,7 +44,7 @@ class Segment : public Container, public Interval<nucSeqIndex>
     Segment( ) : Interval( ), xSaInterval( )
     {} // constructor
 
-    Segment( const Segment &other ) : Interval( other ), xSaInterval( other.xSaInterval )
+    Segment( const Segment& other ) : Interval( other ), xSaInterval( other.xSaInterval )
     {} // copy constructor
 
 
@@ -70,7 +70,7 @@ class Segment : public Container, public Interval<nucSeqIndex>
      * @brief The bwt interval within.
      * @returns the bwt interval within.
      */
-    inline const SAInterval &saInterval( ) const
+    inline const SAInterval& saInterval( ) const
     {
         return xSaInterval;
     } // function
@@ -79,7 +79,7 @@ class Segment : public Container, public Interval<nucSeqIndex>
      * @brief Copys from another Segment.
      * @note override
      */
-    inline Segment &operator=( const Segment &rxOther )
+    inline Segment& operator=( const Segment& rxOther )
     {
         Interval::operator=( rxOther );
         xSaInterval = rxOther.xSaInterval;
@@ -107,6 +107,7 @@ class SegmentVector : public Container
     TP_VEC vContent;
 
   public:
+    bool bSetMappingQualityToZero = false;
     typedef typename TP_VEC::value_type value_type;
     typedef typename TP_VEC::size_type size_type;
     typedef typename TP_VEC::difference_type difference_type;
@@ -119,8 +120,7 @@ class SegmentVector : public Container
     SegmentVector( std::initializer_list<value_type> init ) : vContent( init )
     {} // initializer list constructor
 
-    template <class InputIt>
-    SegmentVector( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
+    template <class InputIt> SegmentVector( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
     {} // iterator constructor
 
     SegmentVector( ) : vContent( )
@@ -133,18 +133,18 @@ class SegmentVector : public Container
     {} // constructor
 
     // setter
-    inline value_type &operator[]( size_type uiI )
+    inline value_type& operator[]( size_type uiI )
     {
         return vContent[ uiI ];
     } // operator
 
     // getter
-    inline const value_type &operator[]( size_type uiI ) const
+    inline const value_type& operator[]( size_type uiI ) const
     {
         return vContent[ uiI ];
     } // operator
 
-    inline void push_back( const value_type &value )
+    inline void push_back( const value_type& value )
     {
         vContent.push_back( value );
     } // method
@@ -154,7 +154,7 @@ class SegmentVector : public Container
         vContent.pop_back( );
     } // method
 
-    template <class... Args> inline void emplace_back( Args &&... args )
+    template <class... Args> inline void emplace_back( Args&&... args )
     {
         vContent.emplace_back( args... );
     } // method
@@ -169,22 +169,22 @@ class SegmentVector : public Container
         return vContent.empty( );
     } // method
 
-    inline value_type &front( void )
+    inline value_type& front( void )
     {
         return vContent.front( );
     } // method
 
-    inline value_type &back( void )
+    inline value_type& back( void )
     {
         return vContent.back( );
     } // method
 
-    inline const value_type &front( void ) const
+    inline const value_type& front( void ) const
     {
         return vContent.front( );
     } // method
 
-    inline const value_type &back( void ) const
+    inline const value_type& back( void ) const
     {
         return vContent.back( );
     } // method
@@ -219,13 +219,12 @@ class SegmentVector : public Container
         vContent.erase( first, last );
     } // method
 
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const value_type &value )
+    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const value_type& value )
     {
         return vContent.insert( pos, value );
     } // method
 
-    template <class InputIt>
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
+    template <class InputIt> inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
     {
         return vContent.insert( pos, first, last );
     } // method
@@ -244,7 +243,7 @@ class SegmentVector : public Container
     {
         return std::accumulate( this->begin( ), this->end( ),
                                 (size_t)0, // initial value for the accumulation
-                                [&uiMinSize]( size_t uiSum, const Segment &rSegment ) {
+                                [&uiMinSize]( size_t uiSum, const Segment& rSegment ) {
                                     // the seed is scored by how many times it is larger than the
                                     // uiMinSize.
                                     // @note rounded downwards by the cast.
@@ -279,13 +278,13 @@ class SegmentVector : public Container
      * @Note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
-    void forEachSeed( FMIndex &rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
-                      unsigned int uiMAxAmbiguity, unsigned int uiMinLen, bool bSkip, FUNCTOR &&fDo
+    void forEachSeed( FMIndex& rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
+                      unsigned int uiMAxAmbiguity, unsigned int uiMinLen, bool bSkip, FUNCTOR&& fDo
                       // std::function<bool(const Seed& s)> fDo
     )
     {
         // iterate over all the intervals that have been recorded using pushBackBwtInterval()
-        for( const Segment &rSegment : *this )
+        for( const Segment& rSegment : *this )
         {
             if( rSegment.size( ) < uiMinLen )
                 continue;
@@ -303,8 +302,7 @@ class SegmentVector : public Container
             } // if
 
             // iterate over the interval in the BWT
-            for( auto ulCurrPos = rSegment.saInterval( ).start( );
-                 ulCurrPos < rSegment.saInterval( ).end( );
+            for( auto ulCurrPos = rSegment.saInterval( ).start( ); ulCurrPos < rSegment.saInterval( ).end( );
                  ulCurrPos += uiJumpBy )
             {
                 // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every
@@ -327,24 +325,29 @@ class SegmentVector : public Container
      * @Note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
-    void emplaceAllEachSeeds( FMIndex &rxFMIndex, size_t uiMAxAmbiguity, size_t uiMinLen, Seeds &rvSeedVector,
-                              FUNCTOR &&fDo // this function is called after each seed is emplaced
+    void emplaceAllEachSeeds( FMIndex& rxFMIndex, size_t uiMAxAmbiguity, size_t uiMinLen, bool bSkip,
+                              Seeds& rvSeedVector,
+                              FUNCTOR&& fDo // this function is called after each seed is emplaced
     )
     {
         // iterate over all the intervals that have been recorded using pushBackBwtInterval()
-        for( const Segment &rSegment : *this )
+        for( const Segment& rSegment : *this )
         {
             // if the interval contains more than uiMAxAmbiguity hits it's of no importance and will
             // produce nothing but noise
-            if( rSegment.saInterval( ).size( ) > (t_bwtIndex)uiMAxAmbiguity && uiMAxAmbiguity != 0 )
-                continue;
             if( rSegment.size( ) < uiMinLen )
                 continue;
 
+            t_bwtIndex uiJumpBy = 1;
+            if( rSegment.saInterval( ).size( ) > (t_bwtIndex)uiMAxAmbiguity && uiMAxAmbiguity != 0 )
+            {
+                if( bSkip )
+                    continue;
+                uiJumpBy = rSegment.saInterval( ).size( ) / uiMAxAmbiguity;
+            } // if
             // iterate over the interval in the BWT
-            for( auto ulCurrPos = rSegment.saInterval( ).start( );
-                 ulCurrPos < rSegment.saInterval( ).end( );
-                 ulCurrPos += 1 //// uiJumpBy
+            for( auto ulCurrPos = rSegment.saInterval( ).start( ); ulCurrPos < rSegment.saInterval( ).end( );
+                 ulCurrPos += uiJumpBy //// uiJumpBy
             )
             {
                 // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every
@@ -362,13 +365,12 @@ class SegmentVector : public Container
     /**
      * @brief Extracts all seeds from the segment list.
      */
-    std::shared_ptr<Seeds> extractSeeds( std::shared_ptr<FMIndex> pxFMIndex,
-                                         unsigned int uiMAxAmbiguity, unsigned int uiMinLen,
-                                         bool bSkip = true )
+    std::shared_ptr<Seeds> extractSeeds( std::shared_ptr<FMIndex> pxFMIndex, unsigned int uiMAxAmbiguity,
+                                         unsigned int uiMinLen, bool bSkip = true )
     {
         std::shared_ptr<Seeds> pRet = std::shared_ptr<Seeds>( new Seeds( ) );
         forEachSeed( *pxFMIndex, uiMAxAmbiguity, uiMinLen, bSkip,
-                     [&pRet]( const Seed &s ) {
+                     [&pRet]( const Seed& s ) {
                          pRet->push_back( s );
                          return true;
                      } // lambda
@@ -382,10 +384,10 @@ class SegmentVector : public Container
      */
     inline uint64_t numSeeds( unsigned int max_size ) const
     {
-		uint64_t uiTotal = 0;
-        for( const Segment &rSegment : *this )
+        uint64_t uiTotal = 0;
+        for( const Segment& rSegment : *this )
             if( max_size == 0 || rSegment.xSaInterval.size( ) <= max_size )
-                uiTotal += rSegment.xSaInterval.size();
+                uiTotal += rSegment.xSaInterval.size( );
         return uiTotal;
     } // function
 }; // class

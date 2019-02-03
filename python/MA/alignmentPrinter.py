@@ -39,8 +39,9 @@ class AlignmentPrinter(Module):
             ("secondary" if align.secondary else
              ("supplementary" if align.supplementary else "primary")),
             "reference: " + str(align.begin_on_ref) + " - " + str(
-                align.end_on_ref), "query: " + str(
-                    align.begin_on_query) + " - " + str(align.end_on_query)
+                align.end_on_ref), 
+            "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query),
+            "Alignment length: " + str(len(align))
         ]
         counter = 0
         ind_query = 0
@@ -95,7 +96,7 @@ class AlignmentPrinter(Module):
 
             #check for match or missmatch
             #print str(ind_ref) + " of " + str(align.end_on_ref() - align.begin_on_ref())
-            if align[counter] is MatchType.match:
+            if align[counter] == MatchType.match:
                 if ref[ind_ref] != query[ind_query]:
                     lines[-2] += 'x'
                     atLeastOneMistake = True
@@ -105,7 +106,7 @@ class AlignmentPrinter(Module):
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
-            if align[counter] is MatchType.seed:
+            elif align[counter] == MatchType.seed:
                 if ref[ind_ref] != query[ind_query]:
                     lines[-2] += 'X'
                     atLeastOneMistake = True
@@ -115,7 +116,7 @@ class AlignmentPrinter(Module):
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
-            elif align[counter] is MatchType.missmatch:
+            elif align[counter] == MatchType.missmatch:
                 if ref[ind_ref] == query[ind_query]:
                     lines[-2] += ':'
                     atLeastOneMistake = True
@@ -125,16 +126,18 @@ class AlignmentPrinter(Module):
                 lines[-1] += query[ind_query]
                 ind_ref += 1
                 ind_query += 1
-            elif align[counter] is MatchType.insertion:
+            elif align[counter] == MatchType.insertion:
                 lines[-3] += '-'
                 lines[-2] += ' '
                 lines[-1] += query[ind_query]
                 ind_query += 1
-            elif align[counter] is MatchType.deletion:
+            elif align[counter] == MatchType.deletion:
                 lines[-3] += ref[ind_ref]
                 lines[-2] += ' '
                 lines[-1] += '-'
                 ind_ref += 1
+            else:
+                print("wierd symbol in cigar:", align[counter])
             counter += 1
 
         while len(lines[-1]) < self.nuc_per_line:

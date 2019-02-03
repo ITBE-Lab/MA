@@ -24,6 +24,7 @@ class MappingQuality
 {
   public:
     size_t uiReportNBest = defaults::uiReportN;
+    size_t uiMinAlignmentScore = defaults::uiMinAlignmentScore;
     double dMaxOverlapSupplementary = defaults::dMaxOverlapSupplementary;
     size_t uiMaxSupplementaryPerPrim = defaults::uiMaxSupplementaryPerPrim;
 

@@ -10,12 +10,12 @@
 #include <string>
 
 #ifdef WITH_PYTHON
-    #ifdef BOOST_PYTHON
-        #include <boost/python.hpp>
-    #else
-        #include <pybind11/stl_bind.h>
-        namespace py = pybind11;
-    #endif
+#ifdef BOOST_PYTHON
+#include <boost/python.hpp>
+#else
+#include <pybind11/stl_bind.h>
+namespace py = pybind11;
+#endif
 #endif
 
 namespace libMA
@@ -35,6 +35,7 @@ extern EXPORTED double fStd;
 extern EXPORTED size_t uiReportN;
 extern EXPORTED size_t uiMaxAmbiguity;
 extern EXPORTED size_t uiMinLen;
+extern EXPORTED size_t uiMinAlignmentScore;
 extern EXPORTED size_t uiMinAmbiguity;
 extern EXPORTED size_t uiMinSeedSizeDrop;
 extern EXPORTED size_t uiMaxTries;
@@ -77,12 +78,35 @@ inline void configureAccurate( )
 {
     sParameterSet = "acc";
     sSeedSet = "SMEMs";
+    // uiMaxAmbiguity = 10000 <- increases accuracy extremely
+    uiMaxAmbiguity = 10000;
+    uiMinLen = 14;
 } // function
 
 inline void configureFast( )
 {
     sParameterSet = "fast";
     sSeedSet = "maxSpan";
+} // function
+
+inline void setMinTries( size_t x )
+{
+    uiMinTries = x;
+} // function
+
+inline void setDisableHeuristics( bool x )
+{
+    bDisableHeuristics = x;
+} // function
+
+inline void setMaxTries( size_t x )
+{
+    uiMaxTries = x;
+} // function
+
+inline void setMinAlignmentScore( size_t x )
+{
+    uiMinAlignmentScore = x;
 } // function
 
 // inline void configurePacBio()

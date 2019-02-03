@@ -33,7 +33,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
     ///
     size_t uiMinSeedSizeDrop = defaults::uiMinSeedSizeDrop;
     double fRelMinSeedSizeAmount = defaults::fRelMinSeedSizeAmount;
-
+    bool bDisableHeuristics = defaults::bDisableHeuristics;
     /**
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
      */
@@ -51,8 +51,11 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
      */
     inline Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center, std::shared_ptr<FMIndex> pFM_index,
                                                              std::shared_ptr<NucSeq> pQuerySeq,
-                                                             std::shared_ptr<SegmentVector> pSegmentVector )
+                                                             std::shared_ptr<SegmentVector> pSegmentVector,
+                                                             bool bFirst )
     {
+        //+ const size_t uiTempExtLen = 20;
+        //+ const long uiTempMaxOcc = 4;
         // query sequence itself
         const uint8_t* q = pQuerySeq->pGetSequenceRef( );
 
@@ -85,6 +88,11 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
 
             DEBUG_3( std::cout << i << " -> " << ok.start( ) << " " << ok.end( ) << std::endl;
                      std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( ) << std::endl; )
+
+            //- if( bFirst && i == center + uiTempExtLen )
+            //-     std::cerr << "num occurrences is " << ok.size() << std::endl;
+            //+ if( bFirst && i == center + uiTempExtLen && ok.size() > uiTempMaxOcc )
+            //+     pSegmentVector->bSetMappingQualityToZero = true;
             /*
              * In fact, if ok.getSize is zero, then there are no matches any more.
              */
@@ -160,6 +168,10 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
                          std::cout << i << " ~> " << ok.revComp( ).start( ) << " " << ok.revComp( ).end( )
                                    << std::endl; )
 
+                //- if( bFirst && i == center - uiTempExtLen )
+                //-     std::cerr << "num occurrences is " << ok.size() << std::endl;
+                //+ if( bFirst && i == center - uiTempExtLen && ok.size() > uiTempMaxOcc )
+                //+     pSegmentVector->bSetMappingQualityToZero = true;
                 /*
                  * In fact, if ok.getSize is zero, then there are no matches any more.
                  */
@@ -432,7 +444,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
      * step with the first half, while queuing the second half as a task in the thread pool.
      */
     void procesInterval( Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
-                         std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
+                         std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq, size_t uiCnt );
 
   public:
     /**

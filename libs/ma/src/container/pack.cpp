@@ -673,6 +673,7 @@ void exportPack( py::module& rxPyModuleId )
         .def_readonly( "unpacked_size_single_strand", &Pack::uiUnpackedSizeForwardStrand )
         .def( "contigNames", &Pack::contigNames )
         .def( "contigLengths", &Pack::contigLengths )
+        .def( "pos_to_rev_strand", &Pack::uiPositionToReverseStrand )
         .def( "contigStarts", &Pack::contigStarts );
 
     // tell boost python that pointers of these classes can be converted implicitly

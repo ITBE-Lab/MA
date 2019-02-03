@@ -7,13 +7,17 @@
 using namespace libMA;
 
 using namespace libMA::defaults;
-//extern int iMatch;
+// extern int iMatch;
 
 
-std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
-                         std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments )
+std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::execute(
+    std::shared_ptr<NucSeq> pQuery, std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments )
 {
+    std::sort(
+        pAlignments->begin( ),
+        pAlignments->end( ),
+        []( std::shared_ptr<Alignment>& pA, std::shared_ptr<Alignment>& pB ) { return pA->score( ) > pB->score( ); } );
+
     auto pSupplementaries = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
 
     // if no alignment was found we cannot set any quality...
@@ -63,15 +67,30 @@ MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
             uiI++;
         } // while
         // this formula is given in the paper and is very similar to Heng li's approach in BWA-SW
+        assert( pFirst->score( ) >= pSecond->score( ) );
         if( pFirst->score( ) == 0 )
             pFirst->fMappingQuality = 0;
         else
+        {
             pFirst->fMappingQuality =
                 static_cast<double>( pFirst->score( ) - pSecond->score( ) ) / static_cast<double>( pFirst->score( ) );
+        } // else
     } // if
     else
         // the score of the second best alignment is 0 if we do not even find one...
-        pFirst->fMappingQuality = pFirst->score() / (double)(iMatch * pQuery->length());
+        pFirst->fMappingQuality = pFirst->score( ) / (double)( iMatch * pQuery->length( ) );
+
+    if(pFirst->getNumSeeds() <= 1)
+        pFirst->fMappingQuality /= 2;
+
+    if(pFirst->score() >= iMatch * pQuery->length( ) * 0.8 && pAlignments->size() >= 3)
+        pFirst->fMappingQuality *= 2;
+    if(pFirst->fMappingQuality > 1)
+        pFirst->fMappingQuality = 1;
+
+    assert( !pFirst->xStats.bSetMappingQualityToZero );
+    if( pFirst->xStats.bSetMappingQualityToZero )
+        pFirst->fMappingQuality = 0;
 
     if( uiSupplementaries > 0 )
     {
@@ -104,6 +123,12 @@ MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
         assert( pRet->size( ) == uiReportNBest + uiSupplementaries );
     } // if
 
+    // remove alignments below the minimal score
+    pRet->erase( std::remove_if(
+                     pRet->begin( ), pRet->end( ),
+                     [&]( const std::shared_ptr<Alignment>& pA ) { return pA->score( ) < (long)uiMinAlignmentScore; } ),
+                 pRet->end( ) );
+
     return pRet;
 } // function
 
@@ -113,17 +138,15 @@ MappingQuality::execute( std::shared_ptr<NucSeq> pQuery,
 void exportMappingQuality( )
 {
     // export the MappingQuality class
-    exportModule<MappingQuality>( "MappingQuality", []( auto&& x ) {
-        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest );
-    } );
+    exportModule<MappingQuality>( "MappingQuality",
+                                  []( auto&& x ) { x.def_readwrite( "report_n", &MappingQuality::uiReportNBest ); } );
 } // function
 #else
 void exportMappingQuality( py::module& rxPyModuleId )
 {
     // export the MappingQuality class
-    exportModule<MappingQuality>( rxPyModuleId, "MappingQuality", []( auto&& x ) {
-        x.def_readwrite( "report_n", &MappingQuality::uiReportNBest );
-    } );
+    exportModule<MappingQuality>( rxPyModuleId, "MappingQuality",
+                                  []( auto&& x ) { x.def_readwrite( "report_n", &MappingQuality::uiReportNBest ); } );
 } // function
 #endif
 #endif

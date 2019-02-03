@@ -38,6 +38,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
     // extract the seeds
     auto pSeeds = std::make_shared<Seeds>( );
     pSeeds->xStats.sName = pQuerySeq->sName;
+    pSeeds->xStats.bSetMappingQualityToZero = pSegments->bSetMappingQualityToZero;
     // rough estimate of how many seeds we will have
     // (trying to avoid multiple allocations)
     pSeeds->reserve( pSegments->size( ) * 3 );
