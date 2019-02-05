@@ -273,9 +273,11 @@ class BasePledge
      * @details
      * If bLoop is true the threads will keep going until all volatile modules are dry
      * if numThreads is not specified numThreads will be set to the amount of pledges given.
+     * callback is called by one of the worker threads everytime the thread has finished one task.
+     * If callback returns false the threadspool is destroyed.
      */
     static inline void simultaneousGet( std::vector<std::shared_ptr<BasePledge>> vPledges,
-                                        std::function<void( )> callback = []( ) {},
+                                        std::function<bool( )> callback = []( ) {},
                                         unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
@@ -298,6 +300,12 @@ class BasePledge
         //         } // if
 
         {
+            /*
+             * This variable is volatile so that every thread has to load if from memory each loop.
+             * This way, if callback returns false thread 0 can set bContinue to false and all threads will stop after
+             * their next iteration.
+             */
+            volatile bool bContinue = true;
             // set up a threadpool
             ThreadPool xPool( numThreads );
             // enqueue a task that executes the comp. graph for each thread in the pool.
@@ -331,7 +339,7 @@ class BasePledge
                                 // this callback function can be used to set a progress bar
                                 // for example.
                                 if(uiTid == 0)
-                                    callback( );
+                                    bContinue == callback( );
                             } // try
                             catch( AnnotatedException e )
                             {
@@ -348,7 +356,7 @@ class BasePledge
                                 std::cerr << "unknown exception in simultaneous get" << '\n';
                                 DEBUG( return; ) // DEBUG
                             } // catch
-                        } while( bLoop );
+                        } while( bLoop && bContinue );
                         DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
                     }, // lambda
                     pPledge );
@@ -785,7 +793,7 @@ class PyPledgeVector : public Pledge<PyContainerVector>
 
     inline void simultaneousGetPy( unsigned int numThreads = 0 )
     {
-        BasePledge::simultaneousGet( vPledges, []( ) {}, numThreads );
+        BasePledge::simultaneousGet( vPledges, []( ) {return true;}, numThreads );
     } // method
 }; // class
 
