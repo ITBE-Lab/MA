@@ -163,7 +163,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             nucSeqIndex uiP2 = pPack->uiPositionToReverseStrand( pAlignment->xStats.pOther.lock( )->beginOnRef( ) );
             // get the distance of the alignments on the reference
             nucSeqIndex d = uiP1 < uiP2 ? uiP2 - uiP1 : uiP1 - uiP2;
-            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( std::abs( d ) );
+            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( std::llabs( d ) );
 
             // assert( pQuery2 != nullptr );
             flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;

@@ -60,7 +60,7 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
                 // bonus score if alignments are paired
                 if( ( (double)d ) >= ( (double)mean ) - std * 3 && ( (double)d ) <= ( (double)mean ) + std * 3 )
                 {
-                    iScore *= dUnpaired;
+                    iScore = (int64_t)(iScore * dUnpaired);
                     bIsPaired = true;
                 } // if
             }
