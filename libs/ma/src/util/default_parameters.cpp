@@ -10,12 +10,12 @@ int EXPORTED iGap = 4; // penalty for a DP gap opening (used in SoC width comput
 int EXPORTED iExtend = 2; // penalty for a DP gap extension (used in SoC width computation)
 int EXPORTED iGap2 = 24; // penalty for a DP gap opening (used in SoC width computation)
 int EXPORTED iExtend2 = 1; // penalty for a DP gap extension (used in SoC width computation)
-double EXPORTED dUnpaired = 1.10; // penalty for unpaired reads
+double EXPORTED dUnpaired = 1.25; // penalty for unpaired reads
 size_t EXPORTED uiMean = 400; // mean distance for paired reads
 double EXPORTED fStd = 150; // standard deviation for distance of paired reads
 size_t EXPORTED uiReportN = 0; // report n alignments
 size_t EXPORTED uiMaxAmbiguity = 500; // maximal ambiguity of seeds
-size_t EXPORTED uiMinLen = 15; // minimal seed length
+size_t EXPORTED uiMinLen = 16; // minimal seed length
 size_t EXPORTED uiMinAlignmentScore = 75; // minimal score for an alignment to be valid
 size_t EXPORTED uiMinAmbiguity = 0; // stop the extension process if seeds are less ambiguous
 // @todo we effectively disabled this parameter

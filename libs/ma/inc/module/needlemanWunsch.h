@@ -72,10 +72,6 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
         auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
         for( auto pSeeds : *pSeedSets )
             pRet->push_back( execute_one( pSeeds, pQuery, pRefPack, xMemoryManager ) );
-        // we need to move the best alignment to the first spot @todo
-        // std::sort( pRet->begin( ), pRet->end( ),
-        //           []( std::shared_ptr<Alignment>& pA, std::shared_ptr<Alignment>& pB ) { return pA->larger( pB ); }
-        //           );
         return pRet;
     } // function
 

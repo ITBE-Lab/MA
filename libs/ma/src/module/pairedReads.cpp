@@ -92,14 +92,12 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
         float fMapQ =
             ( (float)( std::get<0>( vScores[ 0 ] ) - std::get<0>( vScores[ 1 ] ) ) ) / std::get<0>( vScores[ 0 ] );
 
-        if(( *pAlignments1 )[ uiI1 ]->getNumSeeds() <= 1)
-            fMapQ /= 2;
-        if(( *pAlignments2 )[ uiI2 ]->getNumSeeds() <= 1)
+        if(( *pAlignments1 )[ uiI1 ]->getNumSeeds() <= 1 && ( *pAlignments2 )[ uiI2 ]->getNumSeeds() <= 1)
             fMapQ /= 2;
 
         if(( *pAlignments1 )[ uiI1 ]->score() >= iMatch * pQ1->length( ) * 0.8 && pAlignments1->size() >= 3)
             fMapQ *= 2;
-        if(( *pAlignments2 )[ uiI2 ]->score() >= iMatch * pQ2->length( ) * 0.8 && pAlignments2->size() >= 3)
+        else if(( *pAlignments2 )[ uiI2 ]->score() >= iMatch * pQ2->length( ) * 0.8 && pAlignments2->size() >= 3)
             fMapQ *= 2;
         if(fMapQ > 1)
             fMapQ = 1;
