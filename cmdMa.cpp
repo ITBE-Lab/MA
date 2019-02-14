@@ -423,6 +423,7 @@ int main( int argc, char* argv[] )
                                                            << "% aligned.     " << '\r' << std::flush;
                                                  uiLastProg = uiCurrProg;
                                              } // if
+                                             return true;
                                          } // lambda
             );
 #endif

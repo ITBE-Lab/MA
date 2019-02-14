@@ -93,6 +93,8 @@ set(CMAKE_CXX_STANDARD 17)
 add_subdirectory ( contrib )
 # Build all required libraries
 add_subdirectory ( libs )
+# Build wxWidgets GUI
+add_subdirectory ( gui )
 
 # Build the MA excecutable itself
 add_executable ( maCMD cmdMa.cpp )

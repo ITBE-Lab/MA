@@ -277,7 +277,7 @@ class BasePledge
      * If callback returns false the threadspool is destroyed.
      */
     static inline void simultaneousGet( std::vector<std::shared_ptr<BasePledge>> vPledges,
-                                        std::function<bool( )> callback = []( ) {},
+                                        std::function<bool( )> callback = []( ) {return true;},
                                         unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
@@ -312,7 +312,7 @@ class BasePledge
             for( std::shared_ptr<BasePledge> pPledge : vPledges )
             {
                 xPool.enqueue(
-                    [&callback]( size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
+                    [&callback, &bContinue]( size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
                         assert( pPledge != nullptr );
 
                         /*
@@ -339,7 +339,7 @@ class BasePledge
                                 // this callback function can be used to set a progress bar
                                 // for example.
                                 if(uiTid == 0)
-                                    bContinue == callback( );
+                                    bContinue = callback( );
                             } // try
                             catch( AnnotatedException e )
                             {
