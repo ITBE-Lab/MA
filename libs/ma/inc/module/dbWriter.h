@@ -74,7 +74,7 @@ class DbRunConnection
 
 
 /**
- * @brief @todo
+ * @brief Writes the alignment into a postgres database
  * @todo the query input here should actually be a n tuple input.
  */
 class DbWriter : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>
