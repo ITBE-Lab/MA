@@ -54,8 +54,8 @@
 #include "util/export.h"
 using namespace libMA;
 
-#include "execution-context.h"
-#include "parameter.h"
+#include "util/execution-context.h"
+#include "util/parameter.h"
 
 // Global MA execution context
 ExecutionContext xExecutionContext;

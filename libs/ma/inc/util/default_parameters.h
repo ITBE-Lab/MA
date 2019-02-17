@@ -29,8 +29,8 @@ extern EXPORTED int iGap;
 extern EXPORTED int iExtend;
 extern EXPORTED int iGap2;
 extern EXPORTED int iExtend2;
-extern EXPORTED double dUnpaired;
-extern EXPORTED size_t uiMean;
+extern EXPORTED double dUnpaired; // @todo this should be a called paired bonus dPairedBonus
+extern EXPORTED size_t uiMean; // @todo this should be a double -> dMean
 extern EXPORTED double fStd;
 extern EXPORTED size_t uiReportN;
 extern EXPORTED size_t uiMaxAmbiguity;

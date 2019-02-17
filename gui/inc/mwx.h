@@ -12,7 +12,7 @@
 #include <memory>
 #include <vector>
 
-#include "parameter.h"
+#include "util/parameter.h"
 // Include all bitmaps (Note: All bitmaps are static)
 #include "png_bitmaps.c"
 

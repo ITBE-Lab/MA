@@ -1,4 +1,4 @@
-#include "parameter.h"
+#include "util/parameter.h"
 #include "util/export.h" // MA aligner interface
 
 using namespace libMA;
