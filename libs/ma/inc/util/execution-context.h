@@ -1,5 +1,5 @@
-#include "util/parameter.h"
 #include "util/export.h" // MA aligner interface
+#include "util/parameter.h"
 
 using namespace libMA;
 
@@ -127,7 +127,7 @@ class OutputManager
     std::string SAMFullFileName( void )
     {
         // SAM filename generation according to parameter settings.
-		auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.bSAMOutputInReadsFolder.value
+        auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.bSAMOutputInReadsFolder.value
                                    ? pxReadsManager->getReadsFolderPath( )
                                    : pxParameterSetManager->xGlobalParameterSet.xSAMOutputPath.get( ) );
         ( ( ( sFullFileName /= pxReadsManager->getReadsFileNameStem( ) ) += '-' ) += this->dateTimeString( ) ) +=
@@ -156,7 +156,7 @@ class ExecutionContext
     void doAlign( std::function<void( double dPercentageProgress )> fProgressCallBack = []( double ) {} )
     {
         std::cout << "Do align started ..." << std::endl;
-		// FIXME: Read correct value for uiConcurrency  
+        // FIXME: Read correct value for uiConcurrency
         unsigned int uiConcurency = 1;
 
         // FIXME: This kind of call updateGlobalParameter is not nice ...
@@ -183,8 +183,9 @@ class ExecutionContext
             std::shared_ptr<TP_PAIRED_WRITER> pxPairedWriter;
             pxPairedWriter.reset( new PairedFileWriter( sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
 
-            auto pxPairedFileReader = std::make_shared<PairedFileReader>(
-                xReadsManager.sPrimaryQueryFullFileName.string( ), xReadsManager.sMateQueryFullFileName.string( ) );
+            std::vector<std::string> vA{xReadsManager.sPrimaryQueryFullFileName.string( )};
+            std::vector<std::string> vB{xReadsManager.sMateQueryFullFileName.string( )};
+            auto pxPairedFileReader = std::make_shared<PairedFileReader>( vA, vB );
             pxReader = pxPairedFileReader;
             auto pxPairedQueriesPledge = promiseMe( pxPairedFileReader );
             aGraphSinks = setUpCompGraphPaired( xGenomeManager.pxPackPledge, // Pack

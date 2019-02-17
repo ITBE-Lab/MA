@@ -199,7 +199,15 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
     pRet->push_back( xF2.execute( ) );
     // forward the finished flags...
     if( xF1.isFinished( ) || xF2.isFinished( ) )
+    {
+        /*
+         * Print a warning if the fasta files have a different number of queries.
+         */
+        if( !xF1.isFinished( ) || !xF2.isFinished( ) )
+            std::cerr << "WARNING: Doing paired alignment with files containing different amounts of reads."
+                      << std::endl;
         this->setFinished( );
+    }
     if( ( *pRet )[ 0 ] == nullptr )
         return nullptr;
     if( ( *pRet )[ 1 ] == nullptr )
@@ -214,6 +222,7 @@ void exportFileReader( )
 {
     // export the FileReader class
     exportModule<FileReader, std::string>( "FileReader" );
+    exportModule<FileListReader, std::vector<std::string>>( "FileListReader" );
 
     boost::python::
         class_<TP_PAIRED_READS, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<TP_PAIRED_READS>>(
@@ -227,19 +236,21 @@ void exportFileReader( )
              */
             .def( boost::python::vector_indexing_suite<TP_PAIRED_READS, true>( ) );
     // export the PairedFileReader class
-    exportModule<PairedFileReader, std::string, std::string>( "PairedFileReader" );
+    exportModule<PairedFileReader, std::vector<std::string>, std::vector<std::string>>( "PairedFileReader" );
 } // function
 #else
 void exportFileReader( py::module& rxPyModuleId )
 {
     // export the FileReader class
     exportModule<FileReader, std::string>( rxPyModuleId, "FileReader" );
+    exportModule<FileListReader, std::vector<std::string>>( rxPyModuleId, "FileListReader" );
 
     py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
         rxPyModuleId, "QueryVector", "docstr" );
 
     // export the PairedFileReader class
-    exportModule<PairedFileReader, std::string, std::string>( rxPyModuleId, "PairedFileReader" );
+    exportModule<PairedFileReader, std::vector<std::string>, std::vector<std::string>>( rxPyModuleId,
+                                                                                        "PairedFileReader" );
 } // function
 #endif
 #endif

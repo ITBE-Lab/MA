@@ -55,7 +55,8 @@ const std::string sHelp =
     "\n"
     "\nNecessary arguments for alignments:"
     "\n    -x, --idx <prefix>             FMD-index used for alignments"
-    "\n    -i, --in <fname>               FASTA or FASTAQ input files."
+    "\n    -i, --in <fname>               FASTA or FASTAQ input files. Multiple files can be given as follows:"
+    "\n                                   --in <fname1> --in <fname2>."
     "\n"
     "\nAvailable presettings:"
     "\n     -m, --mode [str]              Operation mode for MA. (default is 'fast')"
@@ -89,10 +90,8 @@ const std::string sHelp =
     "\n                                   Default is 1"
     "\n"
     "\nPaired Reads options:"
-    "\n    -p, --Paired                   Enable paired alignment and Model the distance as"
-    "\n                                   normal distribution."
-    "\n                                   If set --in shall be used as follows:"
-    "\n                                   --in <fname1> --in <fname2>."
+    "\n    -p, --Paired <fname>           Enable paired alignment."
+    "\n                                   <val> shall be the filename of the mate reads."
     "\n        --paIsolate <num>          Penalty for an unpaired read pair."
     "\n                                   Default is 0.3."
     "\n        --paMean <num>             Mean gap distance between read pairs."
@@ -203,8 +202,7 @@ int main( int argc, char* argv[] )
             "SoCWidth", "SoC width", value<unsigned int>( )->default_value( std::to_string( defaults::uiSoCWidth ) ) )(
             "disableHeuristics", "disable all heuristics",
             value<bool>( )->default_value( defaults::bDisableHeuristics ? "true" : "false" ) )(
-            "noSecondary", "noSecondary",
-            value<bool>( )->default_value( defaults::bNoSecondary ? "true" : "false" ) )(
+            "noSecondary", "noSecondary", value<bool>( )->default_value( defaults::bNoSecondary ? "true" : "false" ) )(
             "noSupplementary", "noSupplementary",
             value<bool>( )->default_value( defaults::bNoSupplementary ? "true" : "false" ) )(
             "maxDeltaDist", "", value<double>( )->default_value( std::to_string( defaults::dMaxDeltaDist ) ) )(
@@ -213,11 +211,11 @@ int main( int argc, char* argv[] )
             value<double>( )->default_value( std::to_string( defaults::dMaxOverlapSupplementary ) ) );
 
         options.add_options( "Paired Reads options (requires either -U or -N)" )(
-            "p,Paired", "Enable paired alignment; Distance as normal distribution" )(
-            "paIsolate", "Penalty for unpaired alignments",
-            value<double>( )->default_value( std::to_string( defaults::dUnpaired ) ),
-            "arg    " )( "paMean", "Gap distance mean",
-                         value<unsigned int>( )->default_value( std::to_string( defaults::uiMean ) ) )(
+            "p,Paired", "Enable paired alignment; Distance as normal distribution", value<std::vector<std::string>>( ),
+            "args" )( "paIsolate", "Penalty for unpaired alignments",
+                      value<double>( )->default_value( std::to_string( defaults::dUnpaired ) ),
+                      "arg    " )( "paMean", "Gap distance mean",
+                                   value<unsigned int>( )->default_value( std::to_string( defaults::uiMean ) ) )(
             "paStd", "Gap distance standard deviation",
             value<double>( )->default_value( std::to_string( defaults::fStd ) ) )(
             "db_conninfo", "db_conninfo", value<std::string>( )->default_value( "" ) )(
@@ -264,14 +262,12 @@ int main( int argc, char* argv[] )
             std::cerr << "error: --in is compulsory" << std::endl;
             return 1;
         } // else if
-        if( aIn.size( ) != 1 && !( defaults::bNormalDist ) &&
-            result.count( "genIndex" ) == 0 )
+        if( aIn.size( ) != 1 && !( defaults::bNormalDist ) && result.count( "genIndex" ) == 0 )
         {
             std::cerr << "error: --in takes one argument in unpaired mode" << std::endl;
             return 1;
         } // if
-        else if( aIn.size( ) != 2 && ( defaults::bNormalDist ) &&
-                 result.count( "genIndex" ) == 0 )
+        else if( aIn.size( ) != 2 && ( defaults::bNormalDist ) && result.count( "genIndex" ) == 0 )
         {
             std::cerr << "error: --in takes two arguments in paired mode" << std::endl;
             return 1;
@@ -349,7 +345,7 @@ int main( int argc, char* argv[] )
             std::shared_ptr<Reader> pReader;
 
             // setup the graph
-            if( aIn.size( ) == 1 )
+            if( result.count( "p" ) == 0 )
             {
                 std::shared_ptr<TP_WRITER> pFileWriter;
 #ifdef WITH_POSTGRES
@@ -370,13 +366,13 @@ int main( int argc, char* argv[] )
                 {
                     pFileWriter = std::make_shared<FileWriter>( sOut, pPack->get( ) );
                 } // else or scope
-                auto pFileReader = std::make_shared<FileReader>( aIn[ 0 ] );
+                auto pFileReader = std::make_shared<FileListReader>( aIn );
                 pReader = pFileReader;
 
                 auto pQueries = promiseMe( pFileReader );
                 aGraphSinks = setUpCompGraph( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
             } // if
-            else if( aIn.size( ) == 2 )
+            else
             {
                 std::shared_ptr<TP_PAIRED_WRITER> pFileWriter;
 #ifdef WITH_POSTGRES
@@ -397,15 +393,12 @@ int main( int argc, char* argv[] )
                 {
                     pFileWriter = std::make_shared<PairedFileWriter>( sOut, pPack->get( ) );
                 } // else or scope
-                auto pFileReader = std::make_shared<PairedFileReader>( aIn[ 0 ], aIn[ 1 ] );
+                std::vector<std::string> aIn2 = result[ "p" ].as<std::vector<std::string>>( );
+                auto pFileReader = std::make_shared<PairedFileReader>( aIn, aIn2 );
                 pReader = pFileReader;
 
                 auto pQueries = promiseMe( pFileReader );
                 aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
-            } // else if
-            else
-            {
-                throw AnnotatedException( "Cannot have more that two input files." );
             } // else
 
             // run the alignment

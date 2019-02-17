@@ -225,6 +225,8 @@ class Reader
   public:
     virtual size_t getCurrPosInFile( ) const = 0;
     virtual size_t getFileSize( ) const = 0;
+    virtual size_t getCurrFileIndex( ) const = 0;
+    virtual size_t getNumFiles( ) const = 0;
 }; // class
 
 /**
@@ -237,7 +239,6 @@ class FileReader : public Module<NucSeq, true>, public Reader
   public:
     std::shared_ptr<FileStream> pFile;
     size_t uiFileSize = 0;
-    std::shared_ptr<NucSeq> EXPORTED execute( );
     DEBUG( size_t uiNumLinesWithNs = 0; ) // DEBUG
     /**
      * @brief creates a new FileReader.
@@ -265,6 +266,8 @@ class FileReader : public Module<NucSeq, true>, public Reader
         pFile->close( );
     } // deconstructor
 
+    std::shared_ptr<NucSeq> EXPORTED execute( );
+
     // @override
     virtual bool requiresLock( ) const
     {
@@ -285,6 +288,73 @@ class FileReader : public Module<NucSeq, true>, public Reader
             return 1;
         return uiFileSize;
     } // function
+
+    size_t getCurrFileIndex( ) const
+    {
+        return 0;
+    } // method
+
+    size_t getNumFiles( ) const
+    {
+        return 1;
+    } // method
+}; // class
+
+class FileListReader : public Module<NucSeq, true>, public Reader
+{
+  public:
+    FileReader xFileReader;
+    std::vector<std::string> vsFileNames;
+    size_t uiFileIndex = 0;
+
+    inline void openNextFile( )
+    {
+        uiFileIndex++;
+        if( uiFileIndex >= vsFileNames.size( ) )
+            this->setFinished( );
+        else
+            xFileReader = FileReader( vsFileNames[ uiFileIndex ] );
+    } // method
+
+    /**
+     * @brief creates a new FileReader.
+     */
+    FileListReader( std::vector<std::string> vsFileNames )
+        : vsFileNames( vsFileNames ), xFileReader( vsFileNames[ uiFileIndex ] )
+    {} // constructor
+
+    std::shared_ptr<NucSeq> EXPORTED execute( )
+    {
+        if( xFileReader.isFinished( ) )
+            openNextFile( );
+        return xFileReader.execute( );
+    } // method
+
+    // @override
+    virtual bool requiresLock( ) const
+    {
+        return xFileReader.requiresLock( );
+    } // function
+
+    size_t getCurrPosInFile( ) const
+    {
+        return xFileReader.getCurrPosInFile( );
+    } // function
+
+    size_t getFileSize( ) const
+    {
+        return xFileReader.getFileSize( );
+    } // function
+
+    size_t getCurrFileIndex( ) const
+    {
+        return uiFileIndex;
+    } // method
+
+    size_t getNumFiles( ) const
+    {
+        return vsFileNames.size( );
+    } // method
 }; // class
 
 typedef ContainerVector<std::shared_ptr<NucSeq>> TP_PAIRED_READS;
@@ -296,29 +366,22 @@ typedef ContainerVector<std::shared_ptr<NucSeq>> TP_PAIRED_READS;
 class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
 {
   public:
-    FileReader xF1;
-    FileReader xF2;
+    FileListReader xF1;
+    FileListReader xF2;
 
     /**
      * @brief creates a new FileReader.
      */
-    PairedFileReader( std::string sFileName1, std::string sFileName2 ) : xF1( sFileName1 ), xF2( sFileName2 )
-    {
-        /*
-         * Print a warning if the fasta files have different sizes.
-         * However, if they are compressed this check does not make sense.
-         */
-        if( !ends_with( sFileName1, ".gz" ) && !ends_with( sFileName2, ".gz" ) )
-            if( xF1.getFileSize( ) != xF2.getFileSize( ) )
-                std::cerr << "WARNING: Doing paired alignment with differently sized files." << std::endl;
-    } // constructor
+    PairedFileReader( std::vector<std::string> vsFileName1, std::vector<std::string> vsFileName2 )
+        : xF1( vsFileName1 ), xF2( vsFileName2 )
+    {} // constructor
 
     std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
 
     // @override
     virtual bool requiresLock( ) const
     {
-        return true;
+        return xF1.requiresLock() || xF2.requiresLock();
     } // function
 
     size_t getCurrPosInFile( ) const
@@ -330,6 +393,16 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     {
         return xF1.getFileSize( ) + xF2.getFileSize( );
     } // function
+
+    size_t getCurrFileIndex( ) const
+    {
+        return xF1.getCurrFileIndex( ) + xF2.getCurrFileIndex( );
+    } // method
+
+    size_t getNumFiles( ) const
+    {
+        return xF1.getNumFiles( ) + xF2.getNumFiles( );
+    } // method
 }; // class
 
 } // namespace libMA
