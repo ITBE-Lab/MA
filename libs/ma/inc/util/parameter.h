@@ -1,6 +1,8 @@
 #pragma once
 
 #include "util/default_parameters.h"
+#include "util/exception.h"
+#include "util/exported.h"
 
 #if defined( __GNUC__ ) && ( __GNUC__ < 8 )
 #include <experimental/filesystem>
@@ -10,37 +12,29 @@ namespace fs = std::experimental::filesystem;
 namespace fs = std::filesystem;
 #endif
 
+#include <functional>
 #include <map>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
+class Presetting;
+
 /* Generic conversion of string to different value types.
  * (Specialized for some types)
  */
-template <typename VALUE_TYPE> VALUE_TYPE genericStringToValue( const std::string& sString );
+template <typename VALUE_TYPE> EXPORTED VALUE_TYPE genericStringToValue( const std::string& sString );
 
-template <> std::string genericStringToValue<std::string>( const std::string& sString )
-{
-    return std::string( sString );
-} // function
-
-template <> int genericStringToValue<int>( const std::string& sString )
-{
-    return stoi( sString );
-} // function
-
-template <typename VALUE_TYPE> VALUE_TYPE genericStringToValue( const std::string& sString )
-{
-    std::stringstream xLineStream( sString );
-    /* Throw an exception if something goes wrong with conversion */
-    xLineStream.exceptions( std::ios::failbit );
-    VALUE_TYPE value;
-    xLineStream >> value;
-    return value;
-} // function
-
+// template <typename VALUE_TYPE> VALUE_TYPE genericStringToValue( const std::string& sString )
+// {
+//     std::stringstream xLineStream( sString );
+//     /* Throw an exception if something goes wrong with conversion */
+//     xLineStream.exceptions( std::ios::failbit );
+//     VALUE_TYPE value;
+//     xLineStream >> value;
+//     return value;
+// } // function
 
 /* Predicate that checks for positive value */
 static void checkPositiveValue( const int& iValue )
@@ -59,9 +53,12 @@ class AlignerParameterBase
     const std::string sName; // Name of parameter
     const std::string sDescription; // Description of parameter
 
-    AlignerParameterBase( const std::string& sName, const std::string& sDescription )
-        : sName( sName ), sDescription( sDescription )
-    {} // constructor
+    EXPORTED AlignerParameterBase( Presetting* pPresetting, const std::string& sName, const std::string& sDescription );
+
+    void mirror( const AlignerParameterBase* pOther )
+    {
+        throw AnnotatedException( "trying to mirror pointers of different types" );
+    } // method
 }; // class
 
 
@@ -78,10 +75,10 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     std::function<void( const VALUE_TYPE& )> fPredicate;
 
     /* Constructor */
-    AlignerParameter( const std::string& sName, const std::string& sDescription,
+    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
                       const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameterBase( sName, sDescription ), value( value ), fPredicate( fPredicate )
+        : AlignerParameterBase( pPresetting, sName, sDescription ), value( value ), fPredicate( fPredicate )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -106,9 +103,19 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
         return this->value;
     } // method
 
-    void mirror( const AlignerParameter<VALUE_TYPE>& rxOther )
+    VALUE_TYPE get_py( void )
     {
-        this->value = rxOther.value;
+        return get();
+    } // method
+
+    const VALUE_TYPE get( void ) const
+    {
+        return this->value;
+    } // method
+
+    void mirror( const AlignerParameter<VALUE_TYPE>* pOther )
+    {
+        this->value = pOther->value;
     } // method
 }; // class
 
@@ -121,10 +128,10 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     AlignerParameterBase::ChoicesType vChoices; // Possible text values of the parameter
     unsigned int uiSelection; // integral value of the selected choice (0 for first choice, 1 for second etc.)
 
-    AlignerParameter( const std::string& sName, const std::string& sDescription,
+    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( sName, sDescription ), vChoices( rvChoices ), uiSelection( uiSelection )
+        : AlignerParameterBase( pPresetting, sName, sDescription ), vChoices( rvChoices ), uiSelection( uiSelection )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -140,9 +147,16 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
         return vChoices.at( uiSelection ).first;
     } // method
 
-    void mirror( const AlignerParameter<AlignerParameterBase::ChoicesType>& rxOther )
+    /* Get the corresponding internal string for selection */
+    const std::string get( void ) const
     {
-        this->uiSelection = rxOther.uiSelection;
+        std::cout << "Internal Setting:" << vChoices.at( uiSelection ).first << std::endl;
+        return vChoices.at( uiSelection ).first;
+    } // method
+
+    void mirror( const AlignerParameter<AlignerParameterBase::ChoicesType>* pOther )
+    {
+        this->uiSelection = pOther->uiSelection;
     } // method
 }; // class
 
@@ -153,10 +167,10 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
   public:
     fs::path xPath; // Current path
 
-    AlignerParameter( const std::string& sName, const std::string& sDescription,
+    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( sName, sDescription ), xPath( rxPath )
+        : AlignerParameterBase( pPresetting, sName, sDescription ), xPath( rxPath )
     {} // constructor
 
     /* Set path to argument.
@@ -178,10 +192,16 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
         return this->xPath;
     } // method
 
-    /* Used in the case of objects copies (object mirroring) */
-    void mirror( const AlignerParameter<fs::path>& rxOther )
+    /* Get the corresponding internal string for selection */
+    const fs::path get( void ) const
     {
-        this->xPath = rxOther.xPath;
+        return this->xPath;
+    } // method
+
+    /* Used in the case of objects copies (object mirroring) */
+    void mirror( const AlignerParameter<fs::path>* pOther )
+    {
+        this->xPath = pOther->xPath;
     } // method
 }; // class
 
@@ -192,9 +212,53 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
 class Presetting
 {
   public:
-    /* IMPORTANT: If you add a new parameter, don't forget to add it to the mirror method */
+    std::map<std::string, AlignerParameterBase*> xpAllParameters;
     AlignerParameter<int> xMatch; // score for a DP match (used in SoC width computation)
     AlignerParameter<int> xMisMatch; // score for a DP match (used in SoC width computation)
+    AlignerParameter<int> xGap; // @todo
+    AlignerParameter<int> xExtend; // @todo
+    AlignerParameter<int> xGap2; // @todo
+    AlignerParameter<int> xExtend2; // @todo
+    AlignerParameter<double> xPairedBonus; // @todo
+    AlignerParameter<double> xMeanPairedReadDistance; // @todo
+    AlignerParameter<double> xStdPairedReadDistance; // @todo
+    AlignerParameter<int> xReportN; // @todo
+    AlignerParameter<int> xMaximalSeedAmbiguity; // @todo
+    AlignerParameter<int> xMinSeedLength; // @todo
+    AlignerParameter<int> xMinAlignmentScore; // @todo
+    AlignerParameter<int> xMinimalSeedAmbiguity; // @todo
+    AlignerParameter<int> xMinimalSeedSizeDrop; // @todo
+    AlignerParameter<int> xMaxNumSoC; // @todo
+    AlignerParameter<int> xMinNumSoC; // @todo
+    AlignerParameter<int> xMaxScoreLookahead; // @todo
+    AlignerParameter<int> xSwitchQlen; // @todo
+    AlignerParameter<int> xMaxGapArea; // @todo
+    AlignerParameter<int> xPadding; // @todo
+    AlignerParameter<int> xSoCWidth; // @todo
+    AlignerParameter<bool> xOptimisticGapCostEstimation; // @todo
+    AlignerParameter<bool> xSkipAmbiguousSeeds; // @todo
+    AlignerParameter<double> xRelMinSeedSizeAmount; // @todo
+    AlignerParameter<double> xScoreDiffTolerance; // @todo
+    AlignerParameter<double> xMinQueryCoverage; // @todo
+    AlignerParameter<double> xSoCScoreDecreaseTolerance; // @todo
+    AlignerParameter<int> xHarmScoreMin; // @todo
+    AlignerParameter<double> xHarmScoreMinRel; // @todo
+    AlignerParameter<int> xGenomeSizeDisable; // @todo
+    AlignerParameter<bool> xDisableHeuristics; // @todo
+    AlignerParameter<bool> xNoSecondary; // @todo
+    AlignerParameter<bool> xNoSupplementary; // @todo
+    AlignerParameter<bool> xDisableGapCostEstimationCutting; // @todo
+    AlignerParameter<double> xMaxDeltaDist; // @todo
+    AlignerParameter<int> xMinDeltaDist; // @todo
+    AlignerParameter<double> xMaxOverlapSupplementary; // @todo
+    AlignerParameter<int> xMaxSupplementaryPerPrim; // @todo
+    AlignerParameter<int> xSVPenalty; // @todo
+    AlignerParameter<int> xMinBandwidthGapFilling; // @todo
+    AlignerParameter<int> xBandwidthDPExtension; // @todo
+    AlignerParameter<double> xMaxSVRatio; // @todo
+    AlignerParameter<int> xMinSVDistance; // @todo
+    AlignerParameter<int> xZDrop; // @todo
+
     AlignerParameter<AlignerParameterBase::ChoicesType> xSeedingTechnique; // Seeding Technique
     AlignerParameter<bool> xUsePairedReads; // If true, work with paired reads
 
@@ -209,17 +273,68 @@ class Presetting
     /* Constructor */
     Presetting( )
         : // sName( sName ), //
-          xMatch( "Match Score",
+          xMatch( this, "Match Score",
                   "Match score used in the context of Dynamic Programming\nand for SoC width computation.", 2,
                   checkPositiveValue ),
-          xMisMatch( "Mismatch Penalty", "Penalty for a Dynamic Programming mismatch", 4, checkPositiveValue ),
-          xSeedingTechnique( "Seeding Technique", "Technique used for the initial seeding.",
-                             {{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
-          xUsePairedReads( "Use Paired Reads", "If your reads occur as paired reads, activate this flag.", false ),
+          xMisMatch( this, "Mismatch Penalty", "Penalty for a Dynamic Programming mismatch", 4, checkPositiveValue ),
+          xGap(this, "","", 4),
+          xExtend(this, "","", 2),
+          xGap2(this, "","", 24),
+          xExtend2(this, "","", 1),
+          xPairedBonus(this, "", "", 1.25),
+          xMeanPairedReadDistance(this, "", "", 400),
+          xStdPairedReadDistance(this, "", "", 150),
+          xReportN(this, "", "", 0),
+          xMaximalSeedAmbiguity(this, "", "", 500),
+          xMinSeedLength(this, "", "", 16),
+          xMinAlignmentScore(this, "", "", 75),
+          xMinimalSeedAmbiguity(this, "", "", 0),
+          xMinimalSeedSizeDrop(this, "", "", 15),
+          xMaxNumSoC(this, "", "", 30),
+          xMinNumSoC(this, "", "", 1),
+          xMaxScoreLookahead(this, "", "", 3),
+          xSwitchQlen(this, "", "", 800),
+          xMaxGapArea(this, "", "", 10000),
+          xPadding(this, "", "", 1000),
+          xSoCWidth(this, "", "", 0),
+          xOptimisticGapCostEstimation(this, "", "", true),
+          xSkipAmbiguousSeeds(this, "", "", false),
+          xRelMinSeedSizeAmount(this, "", "", 0.005),
+          xScoreDiffTolerance(this, "", "", 0.0001),
+          xMinQueryCoverage(this, "", "", 1.1),
+          xSoCScoreDecreaseTolerance(this, "", "", 0.1),
+          xHarmScoreMin(this, "", "", 18),
+          xHarmScoreMinRel(this, "", "", 0.002),
+          xGenomeSizeDisable(this, "", "", 10000000),
+          xDisableHeuristics(this, "", "", false),
+          xNoSecondary(this, "", "", false),
+          xNoSupplementary(this, "", "", false),
+          xDisableGapCostEstimationCutting(this, "", "", false),
+          xMaxDeltaDist(this, "", "", 0.1),
+          xMinDeltaDist(this, "", "", 16),
+          xMaxOverlapSupplementary(this, "", "", 0.1),
+          xMaxSupplementaryPerPrim(this, "", "", 1),
+          xSVPenalty(this, "", "", 100),
+          xMinBandwidthGapFilling(this, "", "", 20),
+          xBandwidthDPExtension(this, "", "", 512),
+          xMaxSVRatio(this, "", "", 0.01),
+          xMinSVDistance(this, "", "", 500),
+          xZDrop(this, "", "", 200),
 
-          xExampleCheckBox( "Example Checkbox", "This is an example of a checkbox.", true ),
-          xExamplePath( "Example Path", "This is an example of a file path.", "C:/" )
+          xSeedingTechnique( this, "Seeding Technique", "Technique used for the initial seeding.",
+                             {{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
+          xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
+                           false ),
+          xExampleCheckBox( this, "Example Checkbox", "This is an example of a checkbox.", true ),
+          xExamplePath( this, "Example Path", "This is an example of a file path.", "C:/" )
     {} // constructor
+
+    /* Mirror the setting of one parameter-set into another */
+    void mirror( const Presetting& rxOtherSet )
+    {
+        for( auto& rxTup : xpAllParameters )
+            rxTup.second->mirror( rxOtherSet.xpAllParameters.at( rxTup.first ) );
+    } // method
 
     /* Named copy Constructor */
     Presetting( const Presetting& rxOtherSet, const std::string& sName ) : Presetting( )
@@ -227,35 +342,24 @@ class Presetting
         this->mirror( rxOtherSet );
     } // copy constructor
 
-    /* Mirror the setting of one parameter-set into another */
-    void mirror( const Presetting& rxOtherSet )
-    {
-        xMatch.mirror( rxOtherSet.xMatch );
-        xMisMatch.mirror( rxOtherSet.xMisMatch );
-        xSeedingTechnique.mirror( rxOtherSet.xSeedingTechnique );
-        xUsePairedReads.mirror( rxOtherSet.xUsePairedReads );
-
-        xExampleCheckBox.mirror( rxOtherSet.xExampleCheckBox );
-        xExamplePath.mirror( rxOtherSet.xExamplePath );
-    } // method
-
-    // int EXPORTED iGap = 4; // penalty for a DP gap opening (used in SoC width computation)
-    // int EXPORTED iExtend = 2; // penalty for a DP gap extension (used in SoC width computation)
-    // int EXPORTED iGap2 = 24; // penalty for a DP gap opening (used in SoC width computation)
-    // int EXPORTED iExtend2 = 1; // penalty for a DP gap extension (used in SoC width computation)
-
-    /* Updates the global parameter using the values of the current parameter set */
-    void updateGlobalParameter( void )
-    {
-        libMA::defaults::iMatch = this->xMatch.get( );
-        libMA::defaults::iMissMatch = this->xMisMatch.get( );
-        libMA::defaults::sSeedSet = this->xSeedingTechnique.get( );
-    } // method
-
     /* True if the parameter-set uses paired reads */
     bool usesPairedReads( void )
     {
         return xUsePairedReads.value;
+    } // method
+
+    /**
+     * Every parameter has to call this function from it's constructor.
+     * We use this in order to generate a map of all available parameters
+     */
+    void registerParameter( AlignerParameterBase* pParameter )
+    {
+        xpAllParameters.emplace( pParameter->sName, pParameter );
+    } // method
+
+    AlignerParameterBase* byName( std::string& rS )
+    {
+        return xpAllParameters[ rS ];
     } // method
 }; // class
 
@@ -272,9 +376,9 @@ class GeneralParameter
 
     /* Constructor */
     GeneralParameter( )
-        : bSAMOutputInReadsFolder( "SAM files in same folder as reads",
+        : bSAMOutputInReadsFolder( nullptr, "SAM files in same folder as reads",
                                    "If set, the SAM files are written in the folder of the reads.", true ),
-          xSAMOutputPath( "Folder (path) for SAM files", "All SAM-output will be written to this folder",
+          xSAMOutputPath( nullptr, "Folder (path) for SAM files", "All SAM-output will be written to this folder",
                           fs::temp_directory_path( ) )
 
     {} // constructor
@@ -288,8 +392,8 @@ class GeneralParameter
     /* Mirror the setting of the other parameter-set into the current parameter-set */
     void mirror( const GeneralParameter& rxOtherSet )
     {
-        this->xSAMOutputPath.mirror( rxOtherSet.xSAMOutputPath );
-        this->bSAMOutputInReadsFolder.mirror( rxOtherSet.bSAMOutputInReadsFolder );
+        this->xSAMOutputPath.mirror( &rxOtherSet.xSAMOutputPath );
+        this->bSAMOutputInReadsFolder.mirror( &rxOtherSet.bSAMOutputInReadsFolder );
     } // method
 }; // class
 
@@ -335,4 +439,19 @@ class ParameterSetManager
     {
         return pSelectedParamSet;
     } // method
+
+    /* Delivers pointer to selected parameter-set */
+    const Presetting* getSelected( void ) const
+    {
+        return pSelectedParamSet;
+    } // method
+
+    /* pybind11 can't export overloaded functions */
+    Presetting* getSelected_py( void )
+    {
+        return getSelected();
+    } // method
 }; // class
+
+
+// parameter set manager is exported from export.cpp....

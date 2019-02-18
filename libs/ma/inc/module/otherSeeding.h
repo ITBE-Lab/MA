@@ -24,7 +24,7 @@ class PerfectMatch;
 class OtherSeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
 {
   public:
-    bool bBowtie;
+    const bool bBowtie;
 
     void bowtieExtension( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq,
                           std::shared_ptr<SegmentVector> pSegmentVector );
@@ -36,7 +36,7 @@ class OtherSeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
     /**
      * @brief Initialize a OtherSeeding Module
      */
-    OtherSeeding( bool bBowtie ) : bBowtie( bBowtie )
+    OtherSeeding( const ParameterSetManager& rParameters, bool bBowtie ) : bBowtie( bBowtie )
     {} // constructor
 
     // overload

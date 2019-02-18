@@ -138,15 +138,13 @@ std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::exe
 void exportMappingQuality( )
 {
     // export the MappingQuality class
-    exportModule<MappingQuality>( "MappingQuality",
-                                  []( auto&& x ) { x.def_readwrite( "report_n", &MappingQuality::uiReportNBest ); } );
+    exportModule<MappingQuality>( "MappingQuality" );
 } // function
 #else
 void exportMappingQuality( py::module& rxPyModuleId )
 {
     // export the MappingQuality class
-    exportModule<MappingQuality>( rxPyModuleId, "MappingQuality",
-                                  []( auto&& x ) { x.def_readwrite( "report_n", &MappingQuality::uiReportNBest ); } );
+    exportModule<MappingQuality>( rxPyModuleId, "MappingQuality" );
 } // function
 #endif
 #endif

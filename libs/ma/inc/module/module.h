@@ -8,6 +8,7 @@
 
 #include "container/container.h"
 #include "util/default_parameters.h"
+#include "util/parameter.h"
 #include "util/threadPool.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -277,7 +278,7 @@ class BasePledge
      * If callback returns false the threadspool is destroyed.
      */
     static inline void simultaneousGet( std::vector<std::shared_ptr<BasePledge>> vPledges,
-                                        std::function<bool( )> callback = []( ) {return true;},
+                                        std::function<bool( )> callback = []( ) { return true; },
                                         unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
@@ -338,7 +339,7 @@ class BasePledge
 
                                 // this callback function can be used to set a progress bar
                                 // for example.
-                                if(uiTid == 0)
+                                if( uiTid == 0 )
                                     bContinue = callback( );
                             } // try
                             catch( AnnotatedException e )
@@ -793,7 +794,7 @@ class PyPledgeVector : public Pledge<PyContainerVector>
 
     inline void simultaneousGetPy( unsigned int numThreads = 0 )
     {
-        BasePledge::simultaneousGet( vPledges, []( ) {return true;}, numThreads );
+        BasePledge::simultaneousGet( vPledges, []( ) { return true; }, numThreads );
     } // method
 }; // class
 
@@ -904,15 +905,16 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
                                            ( std::string( "__" ) + sName ).c_str( ) ) // Python class name
     );
 
+    typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&> TP_TO_EXPORT;
     // Export MA-Module Class
-    py::class_<ModuleWrapperCppToPy<TP_MODULE>, // derived class
+    py::class_<TP_TO_EXPORT, // derived class
                PyModule<TP_MODULE::IS_VOLATILE>, // base class
-               std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>> // reference holder
+               std::shared_ptr<TP_TO_EXPORT>> // reference holder
         ( xPyModuleId, sName.c_str( ) )
-            .def( py::init<>( ) )
-            .def_readonly( "cpp_module", &ModuleWrapperCppToPy<TP_MODULE>::xModule );
+            .def( py::init<const ParameterSetManager&>( ) )
+            .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
 
-    py::implicitly_convertible<ModuleWrapperCppToPy<TP_MODULE>, PyModule<TP_MODULE::IS_VOLATILE>>( );
+    py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
 } // function
 
 template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
@@ -922,12 +924,13 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
                        []( py::class_<TP_MODULE>&& ) {} // default lambda
 )
 {
-    typedef ModuleWrapperCppToPy<TP_MODULE, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...> TP_TO_EXPORT;
-    fExportMembers( py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__" ) + sName ).c_str(  ) ) );
+    typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>
+        TP_TO_EXPORT;
+    fExportMembers( py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__" ) + sName ).c_str( ) ) );
 
-    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>(
-        xPyModuleId, sName.c_str( ) )
-        .def( py::init<TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
+    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xPyModuleId,
+                                                                                               sName.c_str( ) )
+        .def( py::init<const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
         .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
     py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
 } // function

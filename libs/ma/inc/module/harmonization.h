@@ -95,53 +95,71 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
      * @note not beeing optimistic here has negative affect on the accuracy
      * but improves runtime significantly
      */
-    bool optimisticGapEstimation = defaults::bOptimisticGapEstimation;
+    const bool optimisticGapEstimation;
 
     /// @brief If the seeds cover less that x percent of the query we use SW,
     /// otherwise we fill in the gaps.
-    double fMinimalQueryCoverage = defaults::fMinimalQueryCoverage;
+    const double fMinimalQueryCoverage;
 
     /// @brief Stop the SoC extraction if the harmonized score drops more than x.
-    double fScoreTolerace = defaults::fScoreTolerace;
+    const double fScoreTolerace;
 
     /// @brief Extract at most x SoCs.
-    size_t uiMaxTries = defaults::uiMaxTries;
+    const size_t uiMaxTries;
     /// @brief Extract at least x SoCs.
-    size_t uiMinTries = defaults::uiMinTries;
+    const size_t uiMinTries;
 
     /// @brief Lookahead for the equality break criteria.
-    size_t uiMaxEqualScoreLookahead = defaults::uiMaxEqualScoreLookahead;
+    const size_t uiMaxEqualScoreLookahead;
 
     /// @brief Consider two scores equal if they do not differ by more than x (relative to the total
     /// score).
-    float fScoreDiffTolerance = defaults::fScoreDiffTolerance;
+    const double fScoreDiffTolerance;
 
     /// @brief switch between the two break criteria based on weather the query len is larger than
     /// x.
-    nucSeqIndex uiSwitchQLen = defaults::uiSwitchQLen;
+    const nucSeqIndex uiSwitchQLen;
 
     /// @brief minimum accumulated seed length after the harmonization as absolute value.
-    nucSeqIndex uiCurrHarmScoreMin = defaults::uiCurrHarmScoreMin;
+    const nucSeqIndex uiCurrHarmScoreMin;
     /// @brief minimum accumulated seed length after the harmonization relative to query length.
-    float fCurrHarmScoreMinRel = defaults::fGiveUp;
+    const double fCurrHarmScoreMinRel;
 
-    bool bDoHeuristics = !defaults::bDisableHeuristics;
+    const bool bDoHeuristics;
 
-    bool bDoGapCostEstimationCutting = !defaults::bDisableGapCostEstimationCutting;
+    const bool bDoGapCostEstimationCutting;
 
-    double dMaxDeltaDist = defaults::dMaxDeltaDist;
+    const double dMaxDeltaDist;
 
-    nucSeqIndex uiMinDeltaDist = defaults::uiMinDeltaDist;
+    const nucSeqIndex uiMinDeltaDist;
 
-    double dMaxSVRatio = defaults::dMaxSVRatio;
+    const double dMaxSVRatio;
 
-    int64_t iMinSVDistance = defaults::iMinSVDistance;
+    const int64_t iMinSVDistance;
 
-    nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
+    const nucSeqIndex uiMaxGapArea;
 
-    size_t uiSVPenalty = defaults::uiSVPenalty;
+    const size_t uiSVPenalty;
 
-    Harmonization( )
+    Harmonization( const ParameterSetManager& rParameters ) : 
+        optimisticGapEstimation( rParameters.getSelected( )->xOptimisticGapCostEstimation.get( ) ),
+        fMinimalQueryCoverage( rParameters.getSelected( )->xMinQueryCoverage.get( ) ),
+        fScoreTolerace( rParameters.getSelected( )->xSoCScoreDecreaseTolerance.get( ) ),
+        uiMaxTries( rParameters.getSelected( )->xMaxNumSoC.get( ) ),
+        uiMinTries( rParameters.getSelected( )->xMinNumSoC.get( ) ),
+        uiMaxEqualScoreLookahead( rParameters.getSelected( )->xMaxScoreLookahead.get( ) ),
+        fScoreDiffTolerance( rParameters.getSelected( )->xScoreDiffTolerance.get( ) ),
+        uiSwitchQLen( rParameters.getSelected( )->xSwitchQlen.get( ) ),
+        uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin.get( ) ),
+        fCurrHarmScoreMinRel( rParameters.getSelected( )->xHarmScoreMinRel.get( ) ),
+        bDoHeuristics( !rParameters.getSelected( )->xDisableHeuristics.get( ) ),
+        bDoGapCostEstimationCutting( !rParameters.getSelected( )->xDisableGapCostEstimationCutting.get( ) ),
+        dMaxDeltaDist( rParameters.getSelected( )->xMaxDeltaDist.get( ) ),
+        uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist.get( ) ),
+        dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio.get( ) ),
+        iMinSVDistance( rParameters.getSelected( )->xMinSVDistance.get( ) ),
+        uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea.get( ) ),
+        uiSVPenalty( rParameters.getSelected( )->xSVPenalty.get( ) )
     {} // default constructor
 
     // overload

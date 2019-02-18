@@ -38,25 +38,35 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
               nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment,
               AlignedMemoryManager& rMemoryManager );
 
-    nucSeqIndex uiMaxGapArea = defaults::uiMaxGapArea;
-    nucSeqIndex uiPadding = defaults::uiPadding;
-    size_t uiZDrop = defaults::uiZDrop;
     const KswCppParam<5> xKswParameters;
+    const nucSeqIndex uiMaxGapArea;
+    const nucSeqIndex uiPadding;
+    const size_t uiZDrop;
     /*
      * @details
      * Minimal bandwith when filling the gap between seeds.
      * This bandwidth gets increased if the seeds are not on a diagonal.
      */
-    int iMinBandwidthGapFilling = defaults::iMinBandwidthGapFilling;
+    const int iMinBandwidthGapFilling;
     // bandwidth when extending the edge of an alignment
-    int iBandwidthDPExtension = defaults::iBandwidthDPExtension;
+    const int iBandwidthDPExtension;
 
   public:
     bool bLocal = false;
 
-    NeedlemanWunsch( )
-        : xKswParameters( defaults::iMatch, defaults::iMissMatch, defaults::iGap, defaults::iExtend, defaults::iGap2,
-                          defaults::iExtend2 ){}; // default constructor
+    NeedlemanWunsch( const ParameterSetManager& rParameters )
+        : xKswParameters( rParameters.getSelected( )->xMatch.get( ),
+                          rParameters.getSelected( )->xMisMatch.get( ),
+                          rParameters.getSelected( )->xGap.get( ),
+                          rParameters.getSelected( )->xExtend.get( ),
+                          rParameters.getSelected( )->xGap2.get( ),
+                          rParameters.getSelected( )->xExtend2.get( ) ),
+          uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea.get() ),
+          uiPadding( rParameters.getSelected( )->xPadding.get() ),
+          uiZDrop( rParameters.getSelected( )->xZDrop.get() ),
+          iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling.get() ),
+          iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension.get() )
+          {}; // default constructor
 
 
     std::shared_ptr<Alignment> EXPORTED execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,

@@ -21,32 +21,24 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
 {
   public:
     /// @brief Maximum ambiguity for a seed to be considered.
-    size_t uiMaxAmbiguity = defaults::uiMaxAmbiguity;
+    const size_t uiMaxAmbiguity;
     /// @brief Minimum seed length.
-    size_t uiMinLen = defaults::uiMinLen;
-    /**
-     * @brief Minimal SoC score.
-     * @details
-     * Must be [0,-inf]!
-     * The minimal score that should be allowed during SoC collection.
-     * Is interpreted relative to the query length.
-     */
-    float fScoreMinimum = defaults::fSoCScoreMinimum;
+    const size_t uiMinLen;
     /**
      * @brief If the best SoC has seeds of accumulative length smaller than this, abort.
      * @details
      * Is multiplied by query length.
      * 0 = never abort.
      */
-    const float fGiveUp;
-    size_t uiCurrHarmScoreMin = defaults::uiCurrHarmScoreMin;
+    const double fGiveUp;
+    const size_t uiCurrHarmScoreMin;
 
     /**
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
      */
-    nucSeqIndex uiMinGenomeSize = defaults::uiGenomeSizeDisable;
+    const nucSeqIndex uiMinGenomeSize;
 
-    size_t uiSoCWidth = defaults::uiSoCWidth;
+    const size_t uiSoCWidth;
 
     /**
      * @brief skip seeds with too much ambiguity
@@ -54,7 +46,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
      * True: skip all seeds with to much ambiguity
      * False: use max_hits instances of the seeds with more ambiguity
      */
-    bool bSkipLongBWTIntervals = defaults::bSkipLongBWTIntervals;
+    const bool bSkipLongBWTIntervals;
 
     inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed& xS )
     {
@@ -66,7 +58,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
         if( uiSoCWidth != 0 )
             return uiSoCWidth;
 
-        return ( iMatch * uiQueryLength - iGap ) / iExtend - ( int64_t )( fScoreMinimum * uiQueryLength );
+        return ( iMatch * uiQueryLength - iGap ) / iExtend;
     } // function
 
     template <class FUNCTOR>
@@ -148,7 +140,14 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
     } // method
 
   public:
-    StripOfConsideration( ) : fGiveUp( defaults::fGiveUp )
+    StripOfConsideration( const ParameterSetManager& rParameters ) 
+        : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity.get( ) ),
+          uiMinLen( rParameters.getSelected( )->xMinSeedLength.get( ) ),
+          fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel.get( ) ),
+          uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin.get( ) ),
+          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable.get( ) ),
+          uiSoCWidth( rParameters.getSelected( )->xSoCWidth.get( ) ),
+          bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds.get( ) )
     {} // default constructor
 
     virtual std::shared_ptr<SoCPriorityQueue> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,

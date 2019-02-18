@@ -338,6 +338,7 @@ int main( int argc, char* argv[] )
  *
  */
 // setup the alignment input
+            ParameterSetManager xParameterManager;
 #if 1
             auto pPack = makePledge<Pack>( sGenome );
             auto pFMDIndex = makePledge<FMIndex>( sGenome );
@@ -359,18 +360,18 @@ int main( int argc, char* argv[] )
                                         "id" );
                         iRunId = std::stoi( xRes.get( 0, 0 ) );
                     } // setupConn scope
-                    pFileWriter = std::make_shared<DbWriter>( sBbOutput, iRunId );
+                    pFileWriter = std::make_shared<DbWriter>( xParameterManager, sBbOutput, iRunId );
                 } // if
                 else
 #endif
                 {
-                    pFileWriter = std::make_shared<FileWriter>( sOut, pPack->get( ) );
+                    pFileWriter = std::make_shared<FileWriter>( xParameterManager, sOut, pPack->get( ) );
                 } // else or scope
                 auto pFileReader = std::make_shared<FileListReader>( aIn );
                 pReader = pFileReader;
 
                 auto pQueries = promiseMe( pFileReader );
-                aGraphSinks = setUpCompGraph( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
+                aGraphSinks = setUpCompGraph( xParameterManager, pPack, pFMDIndex, pQueries, pFileWriter, uiT );
             } // if
             else
             {
@@ -386,23 +387,24 @@ int main( int argc, char* argv[] )
                                         "id" );
                         iRunId = std::stoi( xRes.get( 0, 0 ) );
                     } // setupConn scope
-                    pFileWriter = std::make_shared<PairedDbWriter>( sBbOutput, iRunId );
+                    pFileWriter = std::make_shared<PairedDbWriter>( xParameterManager, sBbOutput, iRunId );
                 } // if
                 else
 #endif
                 {
-                    pFileWriter = std::make_shared<PairedFileWriter>( sOut, pPack->get( ) );
+                    pFileWriter = std::make_shared<PairedFileWriter>( xParameterManager, sOut, pPack->get( ) );
                 } // else or scope
                 std::vector<std::string> aIn2 = result[ "p" ].as<std::vector<std::string>>( );
-                auto pFileReader = std::make_shared<PairedFileReader>( aIn, aIn2 );
+                auto pFileReader = std::make_shared<PairedFileReader>( xParameterManager, aIn, aIn2 );
                 pReader = pFileReader;
 
                 auto pQueries = promiseMe( pFileReader );
-                aGraphSinks = setUpCompGraphPaired( pPack, pFMDIndex, pQueries, pFileWriter, uiT );
+                aGraphSinks = setUpCompGraphPaired( xParameterManager, pPack, pFMDIndex, pQueries, pFileWriter, uiT );
             } // else
 
             // run the alignment
             size_t uiLastProg = 0;
+            size_t uiLastFile = 0;
             std::mutex xPrintMutex;
 
             BasePledge::simultaneousGet( aGraphSinks,
@@ -410,17 +412,19 @@ int main( int argc, char* argv[] )
                                              std::lock_guard<std::mutex> xGuard( xPrintMutex );
                                              size_t uiCurrProg =
                                                  ( 1000 * pReader->getCurrPosInFile( ) ) / pReader->getFileSize( );
-                                             if( uiCurrProg > uiLastProg )
+                                             if( pReader->getCurrFileIndex( ) > uiLastFile || uiCurrProg > uiLastProg )
                                              {
-                                                 std::cerr << " " << static_cast<double>( uiCurrProg ) / 10
-                                                           << "% aligned.     " << '\r' << std::flush;
+                                                 std::cerr << "File " << pReader->getCurrFileIndex( ) << "/"
+                                                           << pReader->getNumFiles( ) << ": "
+                                                           << static_cast<double>( uiCurrProg ) / 10
+                                                           << "% aligned.          " << '\r' << std::flush;
                                                  uiLastProg = uiCurrProg;
                                              } // if
                                              return true;
                                          } // lambda
             );
 #endif
-            std::cerr << "100% aligned.     " << std::endl;
+            std::cerr << "done.                " << std::endl;
         } // if
     } // try
     catch( const OptionException& ex )

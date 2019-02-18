@@ -240,10 +240,9 @@ class FileReader : public Module<NucSeq, true>, public Reader
     std::shared_ptr<FileStream> pFile;
     size_t uiFileSize = 0;
     DEBUG( size_t uiNumLinesWithNs = 0; ) // DEBUG
-    /**
-     * @brief creates a new FileReader.
-     */
-    FileReader( std::string sFileName )
+
+  private:
+    void construct( std::string sFileName )
     {
 #ifdef WITH_ZLIB
         if( sFileName.size( ) > 3 && sFileName.substr( sFileName.size( ) - 3, 3 ) == ".gz" )
@@ -259,6 +258,22 @@ class FileReader : public Module<NucSeq, true>, public Reader
         uiFileSize = xFileEnd.tellg( );
         if( uiFileSize == 0 )
             std::cerr << "Warning: empty file: " << sFileName << std::endl;
+    }
+
+  public:
+    /**
+     * @brief creates a new FileReader.
+     */
+    FileReader( std::string sFileName )
+    {
+        construct( sFileName );
+    } // constructor
+    /**
+     * @brief creates a new FileReader.
+     */
+    FileReader( const ParameterSetManager& rParameters, std::string sFileName )
+    {
+        construct( sFileName );
     } // constructor
 
     ~FileReader( )
@@ -323,6 +338,10 @@ class FileListReader : public Module<NucSeq, true>, public Reader
         : vsFileNames( vsFileNames ), xFileReader( vsFileNames[ uiFileIndex ] )
     {} // constructor
 
+    FileListReader( const ParameterSetManager& rParameters, std::vector<std::string> vsFileNames )
+        : vsFileNames( vsFileNames ), xFileReader( vsFileNames[ uiFileIndex ] )
+    {} // constructor
+
     std::shared_ptr<NucSeq> EXPORTED execute( )
     {
         if( xFileReader.isFinished( ) )
@@ -372,7 +391,11 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     /**
      * @brief creates a new FileReader.
      */
-    PairedFileReader( std::vector<std::string> vsFileName1, std::vector<std::string> vsFileName2 )
+    PairedFileReader( const ParameterSetManager& rParameters,
+                      std::vector<std::string>
+                          vsFileName1,
+                      std::vector<std::string>
+                          vsFileName2 )
         : xF1( vsFileName1 ), xF2( vsFileName2 )
     {} // constructor
 
@@ -381,7 +404,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     // @override
     virtual bool requiresLock( ) const
     {
-        return xF1.requiresLock() || xF2.requiresLock();
+        return xF1.requiresLock( ) || xF2.requiresLock( );
     } // function
 
     size_t getCurrPosInFile( ) const

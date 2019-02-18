@@ -159,10 +159,6 @@ class ExecutionContext
         // FIXME: Read correct value for uiConcurrency
         unsigned int uiConcurency = 1;
 
-        // FIXME: This kind of call updateGlobalParameter is not nice ...
-        // Update the global parameter setting using the selected parameter-set
-        xParameterSetManager.getSelected( )->updateGlobalParameter( );
-
         // For now, we build a computational graph for each call of doAlign
         // Possible Improvement: Cache the graph ...
         std::vector<std::shared_ptr<BasePledge>> aGraphSinks;
@@ -181,14 +177,16 @@ class ExecutionContext
         {
             // Wish AK: TP_PAIRED_WRITER -> PairedWriterType
             std::shared_ptr<TP_PAIRED_WRITER> pxPairedWriter;
-            pxPairedWriter.reset( new PairedFileWriter( sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
+            pxPairedWriter.reset(
+                new PairedFileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
 
             std::vector<std::string> vA{xReadsManager.sPrimaryQueryFullFileName.string( )};
             std::vector<std::string> vB{xReadsManager.sMateQueryFullFileName.string( )};
-            auto pxPairedFileReader = std::make_shared<PairedFileReader>( vA, vB );
+            auto pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager, vA, vB );
             pxReader = pxPairedFileReader;
             auto pxPairedQueriesPledge = promiseMe( pxPairedFileReader );
-            aGraphSinks = setUpCompGraphPaired( xGenomeManager.pxPackPledge, // Pack
+            aGraphSinks = setUpCompGraphPaired( xParameterSetManager,
+                                                xGenomeManager.pxPackPledge, // Pack
                                                 xGenomeManager.pxFMDIndexPledge, // FMD index
                                                 pxPairedQueriesPledge, // (for paired reads we require two queries!)
                                                 pxPairedWriter, // Output writer module(output of alignments)
@@ -198,12 +196,14 @@ class ExecutionContext
         {
             // Wish AK: TP_WRITER -> WriterType
             std::shared_ptr<TP_WRITER> pxWriter;
-            pxWriter.reset( new FileWriter( sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
+            pxWriter.reset( new FileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
 
-            auto pxFileReader = std::make_shared<FileReader>( xReadsManager.sPrimaryQueryFullFileName.string( ) );
+            auto pxFileReader =
+                std::make_shared<FileReader>( xParameterSetManager, xReadsManager.sPrimaryQueryFullFileName.string( ) );
             pxReader = pxFileReader;
             auto pxQueriesPledge = promiseMe( pxFileReader );
-            aGraphSinks = setUpCompGraph( xGenomeManager.pxPackPledge, // Pack
+            aGraphSinks = setUpCompGraph( xParameterSetManager,
+                                          xGenomeManager.pxPackPledge, // Pack
                                           xGenomeManager.pxFMDIndexPledge, // FMD index
                                           pxQueriesPledge, // Queries
                                           pxWriter, // Output writer module(output of alignments)

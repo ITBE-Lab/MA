@@ -28,16 +28,16 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
   public:
     const bool bLrExtension;
     // 18.05.04: increasing uiMinAmbiguity merely has negative runtime effects
-    unsigned int uiMinAmbiguity = (unsigned int)defaults::uiMinAmbiguity;
-    unsigned int uiMaxAmbiguity = (unsigned int)defaults::uiMaxAmbiguity;
+    const unsigned int uiMinAmbiguity;
+    const unsigned int uiMaxAmbiguity;
     ///
-    size_t uiMinSeedSizeDrop = defaults::uiMinSeedSizeDrop;
-    double fRelMinSeedSizeAmount = defaults::fRelMinSeedSizeAmount;
-    bool bDisableHeuristics = defaults::bDisableHeuristics;
+    const size_t uiMinSeedSizeDrop;
+    const double fRelMinSeedSizeAmount;
+    const bool bDisableHeuristics;
     /**
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
      */
-    nucSeqIndex uiMinGenomeSize = defaults::uiGenomeSizeDisable;
+    const nucSeqIndex uiMinGenomeSize;
 
     /**
      * @brief The simplified extension scheme presented in our Paper.
@@ -456,11 +456,18 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
      * However Li et Al.s approach will increase the overall accuracy of the alignment
      * for short queries.
      */
-    BinarySeeding( ) : bLrExtension( defaults::sSeedSet == "maxSpan" )
+    BinarySeeding( const ParameterSetManager& rParameters )
+        : bLrExtension( rParameters.getSelected( )->xSeedingTechnique.get( ) == "maxSpan" ),
+          uiMinAmbiguity( rParameters.getSelected( )->xMinimalSeedAmbiguity.get( ) ),
+          uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity.get( ) ),
+          uiMinSeedSizeDrop( rParameters.getSelected( )->xMinimalSeedSizeDrop.get( ) ),
+          fRelMinSeedSizeAmount( rParameters.getSelected( )->xRelMinSeedSizeAmount.get( ) ),
+          bDisableHeuristics( rParameters.getSelected( )->xDisableHeuristics.get( ) ),
+          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable.get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<FMIndex> pFM_index,
-                                                             std::shared_ptr<NucSeq> pQuerySeq );
+    virtual std::shared_ptr<SegmentVector>
+        EXPORTED execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
 
 }; // class
 

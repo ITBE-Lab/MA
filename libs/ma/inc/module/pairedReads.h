@@ -37,12 +37,16 @@ class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, /
      * The default value is taken from BWA-MEM as we use the same formula for pairing.
      */
     double u = defaults::dUnpaired;
-    ///@brief use normal distribution for the insert size
-    bool bNormalDist = defaults::bNormalDist;
     ///@brief the mean of the insert size
     size_t mean = defaults::uiMean;
     ///@brief the standard deviation of the insert size
     double std = defaults::fStd;
+
+    PairedReads( const ParameterSetManager& rParameters )
+        : u( rParameters.getSelected( )->xPairedBonus.get( ) ),
+          mean( (size_t) rParameters.getSelected( )->xMeanPairedReadDistance.get( ) ),
+          std( rParameters.getSelected( )->xStdPairedReadDistance.get( ) )
+    {} // constructor
 
     /**
      * @brief The probability for a insert size >= d.

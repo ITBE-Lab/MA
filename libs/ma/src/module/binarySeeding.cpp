@@ -175,21 +175,13 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> 
 void exportBinarySeeding( )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( "BinarySeeding", []( auto&& x ) {
-        x.def_readwrite( "min_ambiguity", &BinarySeeding::uiMinAmbiguity )
-            .def_readwrite( "max_ambiguity", &BinarySeeding::uiMaxAmbiguity )
-            .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );
-    } );
+    exportModule<BinarySeeding>( "BinarySeeding" );
 } // function
 #else
 void exportBinarySeeding( py::module& rxPyModuleId )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding", []( auto&& x ) {
-        x.def_readwrite( "min_ambiguity", &BinarySeeding::uiMinAmbiguity )
-            .def_readwrite( "max_ambiguity", &BinarySeeding::uiMaxAmbiguity )
-            .def_readwrite( "min_seed_size_drop", &BinarySeeding::uiMinSeedSizeDrop );
-    } );
+    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding" );
 } // function
 #endif
 #endif

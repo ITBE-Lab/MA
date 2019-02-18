@@ -82,7 +82,6 @@ class DbWriter : public Module<Container, false, NucSeq, ContainerVector<std::sh
   public:
     int32_t iRunId;
     DbRunConnection xConnection;
-
     /**
      * @brief creates a new FileWriter.
      * @details
@@ -90,7 +89,7 @@ class DbWriter : public Module<Container, false, NucSeq, ContainerVector<std::sh
      * Otherwise sFileName is used as the filename to write to.
      * The file will be truncated is it already exists.
      */
-    DbWriter( std::string sConninfo, int32_t iRunId ) : iRunId( iRunId ), xConnection( sConninfo )
+    DbWriter( const ParameterSetManager& rParameters, std::string sConninfo, int32_t iRunId ) : iRunId( iRunId ), xConnection( sConninfo )
     {} // constructor
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
@@ -120,7 +119,7 @@ class PairedDbWriter
      * Otherwise sFileName is used as the filename to write to.
      * The file will be truncated is it already exists.
      */
-    PairedDbWriter( std::string sConninfo, int32_t iRunId ) : iRunId( iRunId ), xConnection( sConninfo )
+    PairedDbWriter( const ParameterSetManager& rParameters, std::string sConninfo, int32_t iRunId ) : iRunId( iRunId ), xConnection( sConninfo )
     {} // constructor
 
     virtual std::shared_ptr<Container>

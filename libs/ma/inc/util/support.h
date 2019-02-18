@@ -13,6 +13,7 @@
 
 #include "util/debug.h"
 #include "util/system.h"
+#include "util/exported.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <fstream>
@@ -31,8 +32,6 @@
 // SSE2
 #include <emmintrin.h>
 
-// under gnu EXPORTED is not needed to do anything
-#define EXPORTED
 #elif _MSC_VER
 /* Several data-type definitions of stdint.h not contained in the MSC compiler
  */
@@ -46,14 +45,6 @@ typedef unsigned __int16 uint16_t;
 typedef signed __int16 int16_t;
 
 typedef unsigned __int64 uint64_t;
-
-// under msc we need to export or import a function according to weather we are building the dll or
-// using it
-#ifdef EXPORT
-#define EXPORTED __declspec( dllexport )
-#else
-#define EXPORTED __declspec( dllimport )
-#endif
 #endif
 
 bool EXPORTED fileExists( const std::string& rsFile );

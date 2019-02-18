@@ -594,29 +594,12 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
 #ifdef BOOST_PYTHON
 void exportHarmonization( )
 {
-    exportModule<Harmonization>( "Harmonization", []( auto&& x ) {
-        x.def_readwrite( "optimistic_gap_estimation", &Harmonization::optimisticGapEstimation )
-            .def_readwrite( "min_coverage", &Harmonization::fMinimalQueryCoverage )
-            .def_readwrite( "tolerance", &Harmonization::fScoreTolerace )
-            .def_readwrite( "max_tries", &Harmonization::uiMaxTries )
-            .def_readwrite( "equal_score_lookahead", &Harmonization::uiMaxEqualScoreLookahead )
-            .def_readwrite( "diff_tolerance", &Harmonization::fScoreDiffTolerance )
-            .def_readwrite( "switch_q_len", &Harmonization::uiSwitchQLen )
-            .def_readwrite( "do_heuristics", &Harmonization::bDoHeuristics );
-    } );
+    exportModule<Harmonization>( "Harmonization" );
 } // function
 #else
 void exportHarmonization( py::module& rxPyModuleId )
 {
-    exportModule<Harmonization>( rxPyModuleId, "Harmonization", []( auto&& x ) {
-        x.def_readwrite( "optimistic_gap_estimation", &Harmonization::optimisticGapEstimation )
-            .def_readwrite( "min_coverage", &Harmonization::fMinimalQueryCoverage )
-            .def_readwrite( "tolerance", &Harmonization::fScoreTolerace )
-            .def_readwrite( "equal_score_lookahead", &Harmonization::uiMaxEqualScoreLookahead )
-            .def_readwrite( "diff_tolerance", &Harmonization::fScoreDiffTolerance )
-            .def_readwrite( "switch_q_len", &Harmonization::uiSwitchQLen )
-            .def_readwrite( "do_heuristics", &Harmonization::bDoHeuristics );
-    } );
+    exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 } // function
 #endif
 #endif
