@@ -59,6 +59,10 @@ class AlignerParameterBase
     const std::string sName; // Name of parameter
     const std::string sDescription; // Description of parameter
 
+    // Callback that is called on demand.
+    // By default a parameter is always active.
+    std::function<bool( void )> fEnabled = []( ) { return true; };
+
     AlignerParameterBase( const std::string& sName, const std::string& sDescription )
         : sName( sName ), sDescription( sDescription )
     {} // constructor
@@ -75,7 +79,7 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     // Universal predicate
     static void predicateAlwaysOK( const VALUE_TYPE& )
     {} // static method
-    std::function<void( const VALUE_TYPE& )> fPredicate;
+    std::function<void( const VALUE_TYPE& )> fPredicate; // FIXME: Currently, errors are indicated by exceptions
 
     /* Constructor */
     AlignerParameter( const std::string& sName, const std::string& sDescription,
@@ -277,7 +281,9 @@ class GeneralParameter
           xSAMOutputPath( "Folder (path) for SAM files", "All SAM-output will be written to this folder",
                           fs::temp_directory_path( ) )
 
-    {} // constructor
+    {
+        xSAMOutputPath.fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder.get( ) == false; };
+    } // constructor
 
     /* Named copy Constructor */
     GeneralParameter( const GeneralParameter& rxOtherSet ) : GeneralParameter( )

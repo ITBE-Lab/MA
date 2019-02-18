@@ -5,6 +5,7 @@
  */
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
+#include <wx/filepicker.h>
 #include <wx/notebook.h>
 #include <wx/textctrl.h>
 #endif
@@ -236,8 +237,8 @@ class mwxOK_Cancel_Dialog : public wxDialog
         std::function<void( wxCommandEvent& )> OK_handler = []( wxCommandEvent& ) {} ) // handler of OK button
 
         : wxDialog( pxHostWindow, wxID_ANY, sTitle, xPos, wxSize( 500, 400 ),
-                    ( wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL ) /* ^ wxRESIZE_BORDER */ ^
-                        wxMAXIMIZE_BOX ^ wxMINIMIZE_BOX ^ ( bDoFit ? wxRESIZE_BORDER : 0 ) )
+                    ( wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL ) /* ^ wxRESIZE_BORDER */ ^ wxMAXIMIZE_BOX ^
+                        wxMINIMIZE_BOX ^ ( bDoFit ? wxRESIZE_BORDER : 0 ) )
     {
         SetSizeHints( wxDefaultSize, wxDefaultSize );
         SetBackgroundColour( wxColor( 255, 255, 255 ) );
@@ -282,7 +283,7 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
   private:
     const std::string sFileDialogTitle; // "Open Reference file"
     const std::string sFilePattern; // "Reference files (*.maReference)|*.maReference|All Files|*"
-    std::function<void( const std::string& )> fHandler;
+    std::function<void( const fs::path& )> fHandler;
 
     void onFolderButton( wxCommandEvent& WXUNUSED( event ) )
     {
@@ -291,7 +292,7 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
         if( openFileDialog.ShowModal( ) == wxID_OK )
         {
             // Call handler to inform about new selection
-            fHandler( std::string( openFileDialog.GetPath( ).c_str( ) ) );
+            fHandler( fs::path( std::string( openFileDialog.GetPath( ).c_str( ) ) ) );
         } // if
     } // method
 
@@ -308,7 +309,7 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
         const std::string& rsText, // text of the button group
         const std::string& rsFileDialogTitle,
         const std::string& rsFilePattern,
-        std::function<void( const std::string& )> fHandler = []( const std::string& ) {}, // called, if OK is selected
+        std::function<void( const fs::path& )> fHandler = []( const fs::path& ) {}, // called, if OK is selected
         bool bWithClearButton = true )
         : mwxBoxSizer( pxConnector, wxVERTICAL ),
           pxConnector( pxConnector ),
@@ -516,6 +517,7 @@ class mwxPropertyPanel : public wxPanel
     {
       public:
         mwxPropertyPanel* pxHost; // Parent of property (manages destruction of text fields)
+        wxStaticText* pxStaticText;
 
         /* Constructor */
         mwxProperty( mwxPropertyPanel* pxHost, // parent of property
@@ -523,13 +525,31 @@ class mwxPropertyPanel : public wxPanel
             : pxHost( pxHost )
         {
             /* Parent of host will manage destruction of wxStaticText */
-            pxHost->pxFlexLayout->Add(
-                new wxStaticText( pxHost, wxID_ANY, sName.c_str( ), wxDefaultPosition, wxDefaultSize, 0 ), 0,
-                wxALL | wxALIGN_CENTER_VERTICAL, 5 );
+            pxHost->pxFlexLayout->Add( pxStaticText = new wxStaticText( pxHost, wxID_ANY, sName.c_str( ),
+                                                                        wxDefaultPosition, wxDefaultSize, 0 ),
+                                       0, wxALL | wxALIGN_CENTER_VERTICAL, 5 );
         } // constructor
 
         virtual ~mwxProperty( )
-        {}
+        {} // destructor
+
+        /* Update visual properties */
+        virtual void updateEnabledDisabledDispatch( void )
+        {} // method
+
+        void updateEnabledDisabled( bool bEnabled, wxControl* pxControl )
+        {
+            if( bEnabled )
+            {
+                pxStaticText->Enable( );
+                pxControl->Enable( );
+            } // if
+            else
+            {
+                pxStaticText->Disable( );
+                pxControl->Disable( );
+            } // else
+        } // method
     }; // inner class
 
     /* Inner class describing text property */
@@ -563,6 +583,8 @@ class mwxPropertyPanel : public wxPanel
              * wxEvent::Skip() on their event argument to allow the default handling to take place.
              */
             rxEvent.Skip( );
+
+            pxHost->updateEnabledDisabled( );
         } // method
 
         /* Constructor */
@@ -602,6 +624,12 @@ class mwxPropertyPanel : public wxPanel
             pxTextCtrl->wxEvtHandler::Bind( wxEVT_COMMAND_TEXT_ENTER,
                                             [&]( wxCommandEvent& rxEvent ) { this->pxTextCtrl->Navigate( ); } );
         } // constructor
+
+        virtual void updateEnabledDisabledDispatch( void )
+        {
+            if( this->pxParameter )
+                updateEnabledDisabled( this->pxParameter->fEnabled( ), pxTextCtrl );
+        } // method
     }; // inner class
 
     /* Inner class describing text property */
@@ -610,43 +638,21 @@ class mwxPropertyPanel : public wxPanel
       public:
         mwxPropertyPanel* pxHost; // keep host for folder dialog creation
         AlignerParameter<fs::path>* pxParameter = nullptr; // pointer to parameter object
-        wxTextCtrl* pxTextCtrl; // Text control holding the actual value
-        mwxBitmapButton* pxButton; // Button for folder selection
-
-
-        void onButton( wxCommandEvent& WXUNUSED( event ) )
-        {
-            wxDirDialog xDirDialog( pxHost, "Select folder", "" );
-            if( xDirDialog.ShowModal( ) == wxID_OK )
-            {
-                pxTextCtrl->SetValue( std::string( xDirDialog.GetPath( ) ) );
-                this->pxParameter->set( std::string( xDirDialog.GetPath( ) ) );
-            } // if
-        } // method
-
-        /* Update the value of the property */
-        void update( void )
-        {
-            pxTextCtrl->SetValue( this->pxParameter->get( ).string( ) );
-        } // method
+        wxDirPickerCtrl* pxDirPickerCtrl; // Folder picker
 
         /* Handler is called whenever the user leaves the input field (the user ends property editing) */
-        void focusHandler( wxFocusEvent& rxEvent )
+        void handler( wxCommandEvent& rxEvent )
         {
-            // Wrong inputs (out of range etc.) are reported via exceptions
-            std::string sPath( this->pxTextCtrl->GetValue( ).c_str( ) );
+            fs::path sPath( std::string( this->pxDirPickerCtrl->GetPath( ).c_str( ) ) );
 
-            // Check folder in textCtrl for existence
-            if( fs::exists( fs::path( sPath ) ) )
+            // Check folder for existence
+            if( fs::exists( sPath ) )
                 pxParameter->set( sPath );
             else
-                wxMessageBox( wxString( std::string( "Folder " ) + sPath + " does not exist." ), "Error",
+                wxMessageBox( wxString( std::string( "Folder " ) + sPath.string( ) + " does not exist." ), "Error",
                               wxICON_ERROR );
-            this->update( );
-            // From wxWidgets documentation:
-            // The focus event handlers should almost invariably call
-            // wxEvent::Skip() on their event argument to allow the default handling to take place.
-            rxEvent.Skip( );
+
+            pxHost->updateEnabledDisabled( );
         } // method
 
         /* Constructor for AlignerParameter */
@@ -656,34 +662,24 @@ class mwxPropertyPanel : public wxPanel
             : mwxProperty( pxHost, pxParameter->sName ),
               pxHost( pxHost ),
               pxParameter( pxParameter ),
-              pxTextCtrl( new wxTextCtrl( pxHost, wxID_ANY, this->pxParameter->get( ).string( ), wxDefaultPosition,
-                                          wxSize( 200, -1 ), wxTE_PROCESS_ENTER ) ),
-              pxButton( new mwxBitmapButton( pxHost, wxBITMAP_PNG_FROM_DATA( FolderButtonSmall ),
-                                             wxBITMAP_PNG_FROM_DATA( FolderButtonSmallSelected ),
-                                             std::bind( &mwxFolderProperty::onButton, this, std::placeholders::_1 ) ) )
-
+              pxDirPickerCtrl( new wxDirPickerCtrl( pxHost, wxID_ANY, pxParameter->get( ).string( ),
+                                                    wxT( "Select a folder" ), wxDefaultPosition, wxDefaultSize,
+                                                    wxDIRP_DEFAULT_STYLE ) )
         {
-            // Place textCtrl plus button in horizontal sizer
-            auto* pxSizer = new wxBoxSizer( wxHORIZONTAL );
-            pxSizer->Add( pxTextCtrl, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5 );
-            pxSizer->Add( pxButton, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5 );
-            pxHost->pxFlexLayout->Add( pxSizer );
+            pxHost->pxFlexLayout->Add( pxDirPickerCtrl, 0, wxALL, 5 );
 
-            // // Bind button to folder selection
-            // this->pxButton->wxEvtHandler::Bind(
-            //     wxEVT_BUTTON, std::bind( &mwxFolderProperty::onButton, this, std::placeholders::_1 ), wxID_ANY );
-
-            // The description of the parameter is used as ToolTip-text
-            this->pxTextCtrl->SetToolTip( pxParameter->sDescription );
-            this->pxButton->SetToolTip( "Folder selection" );
+            this->pxDirPickerCtrl->SetToolTip( pxParameter->sDescription );
 
             // Bind "focus leave" to the handler
-            this->pxTextCtrl->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
-                                                  [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
-            // Make the enter key to behave like the tab key
-            this->pxTextCtrl->wxEvtHandler::Bind( wxEVT_COMMAND_TEXT_ENTER,
-                                                  [&]( wxCommandEvent& rxEvent ) { this->pxTextCtrl->Navigate( ); } );
+            this->pxDirPickerCtrl->wxEvtHandler::Bind(
+                wxEVT_DIRPICKER_CHANGED, [this]( wxCommandEvent& rxEvent ) { this->handler( rxEvent ); } );
         } // constructor
+
+        virtual void updateEnabledDisabledDispatch( void )
+        {
+			if (this->pxParameter)
+				updateEnabledDisabled( this->pxParameter->fEnabled( ), pxDirPickerCtrl );
+        } // method
     }; // inner class
 
 
@@ -706,7 +702,6 @@ class mwxPropertyPanel : public wxPanel
             // Wrong input (out of range etc.) are reported via exceptions
             try
             {
-                std::cout << "Selected is: " << pxCombo->GetSelection( ) << std::endl; // GetValue
                 pxParameter->set( pxCombo->GetSelection( ) );
             } // try
             catch( std::exception& xException )
@@ -718,6 +713,8 @@ class mwxPropertyPanel : public wxPanel
             // The focus event handlers should almost invariably call
             // wxEvent::Skip() on their event argument to allow the default handling to take place.
             rxEvent.Skip( );
+
+            pxHost->updateEnabledDisabled( );
         } // method
 
         /* Constructor */
@@ -757,6 +754,12 @@ class mwxPropertyPanel : public wxPanel
             pxCombo->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
                                          [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
         } // constructor
+
+        virtual void updateEnabledDisabledDispatch( void )
+        {
+			if (this->pxParameter)
+				updateEnabledDisabled( this->pxParameter->fEnabled( ), pxCombo );
+        } // method
     }; // inner class
 
 
@@ -772,6 +775,7 @@ class mwxPropertyPanel : public wxPanel
         {
             // Copy boolean value to parameter
             pxParameter->set( pxCheckBox->GetValue( ) );
+            pxHost->updateEnabledDisabled( );
         } // method
 
         mwxCheckBoxProperty( mwxPropertyPanel* pxHost, // parent of property
@@ -803,6 +807,12 @@ class mwxPropertyPanel : public wxPanel
             pxCheckBox->wxEvtHandler::Bind( wxEVT_CHECKBOX,
                                             [this]( wxCommandEvent& rxEvent ) { this->commandHandler( rxEvent ); } );
         } // constructor
+
+        virtual void updateEnabledDisabledDispatch( void )
+        {
+			if (this->pxParameter)
+				updateEnabledDisabled( this->pxParameter->fEnabled( ), pxCheckBox );
+        } // method
     }; // inner class
 
   public:
@@ -896,5 +906,14 @@ class mwxPropertyPanel : public wxPanel
         this->Layout( );
         this->pxFlexLayout->Fit( this );
         // pxHostSizer->Add( this, 1, wxEXPAND | wxALL, 5 );
+    } // method
+
+    /* Updates enabled, disabled according to the corresponding parameter function */
+    void updateEnabledDisabled( void )
+    {
+        for( auto pxProperty : vProperties )
+        {
+            pxProperty->updateEnabledDisabledDispatch( );
+        } // for
     } // method
 }; // class
