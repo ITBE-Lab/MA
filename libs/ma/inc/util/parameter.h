@@ -49,11 +49,14 @@ class AlignerParameterBase
 {
   public:
     typedef std::vector<std::pair<std::string, std::string>> ChoicesType;
+    static const char NO_SHORT_DEFINED = ' ';
 
     const std::string sName; // Name of parameter
     const std::string sDescription; // Description of parameter
+    const char cShort;
 
-    EXPORTED AlignerParameterBase( Presetting* pPresetting, const std::string& sName, const std::string& sDescription );
+    EXPORTED AlignerParameterBase( Presetting* pPresetting, const std::string& sName, const char cShort,
+                                   const std::string& sDescription );
 
     void mirror( const AlignerParameterBase* pOther )
     {
@@ -75,10 +78,18 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     std::function<void( const VALUE_TYPE& )> fPredicate;
 
     /* Constructor */
+    AlignerParameter( Presetting* pPresetting, const std::string& sName, const char cShort,
+                      const std::string& sDescription,
+                      const VALUE_TYPE value, // initial value
+                      std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
+        : AlignerParameterBase( pPresetting, sName, cShort, sDescription ), value( value ), fPredicate( fPredicate )
+    {} // constructor
+
+    /* Constructor */
     AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
                       const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameterBase( pPresetting, sName, sDescription ), value( value ), fPredicate( fPredicate )
+        : AlignerParameter( pPresetting, sName, NO_SHORT_DEFINED, sDescription, value, predicateAlwaysOK )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -103,11 +114,6 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
         return this->value;
     } // method
 
-    VALUE_TYPE get_py( void )
-    {
-        return get();
-    } // method
-
     const VALUE_TYPE get( void ) const
     {
         return this->value;
@@ -128,10 +134,19 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     AlignerParameterBase::ChoicesType vChoices; // Possible text values of the parameter
     unsigned int uiSelection; // integral value of the selected choice (0 for first choice, 1 for second etc.)
 
+    AlignerParameter( Presetting* pPresetting, const std::string& sName, const char cShort,
+                      const std::string& sDescription,
+                      const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
+                      unsigned int uiSelection = 0 ) // initially selected choice
+        : AlignerParameterBase( pPresetting, sName, cShort, sDescription ),
+          vChoices( rvChoices ),
+          uiSelection( uiSelection )
+    {} // constructor
+
     AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( pPresetting, sName, sDescription ), vChoices( rvChoices ), uiSelection( uiSelection )
+        : AlignerParameter( pPresetting, sName, NO_SHORT_DEFINED, sDescription, rvChoices, uiSelection )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -167,10 +182,18 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
   public:
     fs::path xPath; // Current path
 
-    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
+    AlignerParameter( Presetting* pPresetting, const std::string& sName, const char cShort,
+                      const std::string& sDescription,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( pPresetting, sName, sDescription ), xPath( rxPath )
+        : AlignerParameterBase( pPresetting, sName, cShort, sDescription ), xPath( rxPath )
+    {} // constructor
+
+    /* Constructor */
+    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
+                      const fs::path& rxPath, // choices of the parameter
+                      unsigned int uiSelection = 0 )
+        : AlignerParameter( pPresetting, sName, NO_SHORT_DEFINED, sDescription, rxPath, uiSelection )
     {} // constructor
 
     /* Set path to argument.
@@ -213,6 +236,7 @@ class Presetting
 {
   public:
     std::map<std::string, AlignerParameterBase*> xpAllParameters;
+    std::map<char, AlignerParameterBase*> xpParametersByShort;
     AlignerParameter<int> xMatch; // score for a DP match (used in SoC width computation)
     AlignerParameter<int> xMisMatch; // score for a DP match (used in SoC width computation)
     AlignerParameter<int> xGap; // @todo
@@ -277,49 +301,49 @@ class Presetting
                   "Match score used in the context of Dynamic Programming\nand for SoC width computation.", 2,
                   checkPositiveValue ),
           xMisMatch( this, "Mismatch Penalty", "Penalty for a Dynamic Programming mismatch", 4, checkPositiveValue ),
-          xGap(this, "","", 4),
-          xExtend(this, "","", 2),
-          xGap2(this, "","", 24),
-          xExtend2(this, "","", 1),
-          xPairedBonus(this, "", "", 1.25),
-          xMeanPairedReadDistance(this, "", "", 400),
-          xStdPairedReadDistance(this, "", "", 150),
-          xReportN(this, "", "", 0),
-          xMaximalSeedAmbiguity(this, "", "", 500),
-          xMinSeedLength(this, "", "", 16),
-          xMinAlignmentScore(this, "", "", 75),
-          xMinimalSeedAmbiguity(this, "", "", 0),
-          xMinimalSeedSizeDrop(this, "", "", 15),
-          xMaxNumSoC(this, "", "", 30),
-          xMinNumSoC(this, "", "", 1),
-          xMaxScoreLookahead(this, "", "", 3),
-          xSwitchQlen(this, "", "", 800),
-          xMaxGapArea(this, "", "", 10000),
-          xPadding(this, "", "", 1000),
-          xSoCWidth(this, "", "", 0),
-          xOptimisticGapCostEstimation(this, "", "", true),
-          xSkipAmbiguousSeeds(this, "", "", false),
-          xRelMinSeedSizeAmount(this, "", "", 0.005),
-          xScoreDiffTolerance(this, "", "", 0.0001),
-          xMinQueryCoverage(this, "", "", 1.1),
-          xSoCScoreDecreaseTolerance(this, "", "", 0.1),
-          xHarmScoreMin(this, "", "", 18),
-          xHarmScoreMinRel(this, "", "", 0.002),
-          xGenomeSizeDisable(this, "", "", 10000000),
-          xDisableHeuristics(this, "", "", false),
-          xNoSecondary(this, "", "", false),
-          xNoSupplementary(this, "", "", false),
-          xDisableGapCostEstimationCutting(this, "", "", false),
-          xMaxDeltaDist(this, "", "", 0.1),
-          xMinDeltaDist(this, "", "", 16),
-          xMaxOverlapSupplementary(this, "", "", 0.1),
-          xMaxSupplementaryPerPrim(this, "", "", 1),
-          xSVPenalty(this, "", "", 100),
-          xMinBandwidthGapFilling(this, "", "", 20),
-          xBandwidthDPExtension(this, "", "", 512),
-          xMaxSVRatio(this, "", "", 0.01),
-          xMinSVDistance(this, "", "", 500),
-          xZDrop(this, "", "", 200),
+          xGap( this, "", "", 4 ),
+          xExtend( this, "", "", 2 ),
+          xGap2( this, "", "", 24 ),
+          xExtend2( this, "", "", 1 ),
+          xPairedBonus( this, "", "", 1.25 ),
+          xMeanPairedReadDistance( this, "", "", 400 ),
+          xStdPairedReadDistance( this, "", "", 150 ),
+          xReportN( this, "", "", 0 ),
+          xMaximalSeedAmbiguity( this, "", "", 500 ),
+          xMinSeedLength( this, "", "", 16 ),
+          xMinAlignmentScore( this, "", "", 75 ),
+          xMinimalSeedAmbiguity( this, "", "", 0 ),
+          xMinimalSeedSizeDrop( this, "", "", 15 ),
+          xMaxNumSoC( this, "", "", 30 ),
+          xMinNumSoC( this, "", "", 1 ),
+          xMaxScoreLookahead( this, "", "", 3 ),
+          xSwitchQlen( this, "", "", 800 ),
+          xMaxGapArea( this, "", "", 10000 ),
+          xPadding( this, "", "", 1000 ),
+          xSoCWidth( this, "", "", 0 ),
+          xOptimisticGapCostEstimation( this, "", "", true ),
+          xSkipAmbiguousSeeds( this, "", "", false ),
+          xRelMinSeedSizeAmount( this, "", "", 0.005 ),
+          xScoreDiffTolerance( this, "", "", 0.0001 ),
+          xMinQueryCoverage( this, "", "", 1.1 ),
+          xSoCScoreDecreaseTolerance( this, "", "", 0.1 ),
+          xHarmScoreMin( this, "", "", 18 ),
+          xHarmScoreMinRel( this, "", "", 0.002 ),
+          xGenomeSizeDisable( this, "", "", 10000000 ),
+          xDisableHeuristics( this, "", "", false ),
+          xNoSecondary( this, "", "", false ),
+          xNoSupplementary( this, "", "", false ),
+          xDisableGapCostEstimationCutting( this, "", "", false ),
+          xMaxDeltaDist( this, "", "", 0.1 ),
+          xMinDeltaDist( this, "", "", 16 ),
+          xMaxOverlapSupplementary( this, "", "", 0.1 ),
+          xMaxSupplementaryPerPrim( this, "", "", 1 ),
+          xSVPenalty( this, "", "", 100 ),
+          xMinBandwidthGapFilling( this, "", "", 20 ),
+          xBandwidthDPExtension( this, "", "", 512 ),
+          xMaxSVRatio( this, "", "", 0.01 ),
+          xMinSVDistance( this, "", "", 500 ),
+          xZDrop( this, "", "", 200 ),
 
           xSeedingTechnique( this, "Seeding Technique", "Technique used for the initial seeding.",
                              {{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
@@ -355,11 +379,32 @@ class Presetting
     void registerParameter( AlignerParameterBase* pParameter )
     {
         xpAllParameters.emplace( pParameter->sName, pParameter );
+        if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
+        {
+            auto xEmplaceRet = xpParametersByShort.emplace( pParameter->cShort, pParameter );
+            if( !xEmplaceRet.second ) // there is another parameter with this shorthand...
+                throw AnnotatedException( std::string( "Shorthand: " )
+                                              .append( std::to_string( pParameter->cShort ) )
+                                              .append( " used twice: 1) " )
+                                              .append( xEmplaceRet.first->second->sName )
+                                              .append( " 2)" )
+                                              .append( pParameter->sName ) );
+        }
     } // method
 
-    AlignerParameterBase* byName( std::string& rS )
+    AlignerParameterBase* byName( const std::string& rS )
     {
-        return xpAllParameters[ rS ];
+        try{
+            return xpAllParameters.at( rS );
+        } catch(std::out_of_range& rEx)
+        {
+            throw AlignerException(  );
+        }
+    } // method
+
+    AlignerParameterBase* byShort( const char cX )
+    {
+        return xpParametersByShort.at( cX );
     } // method
 }; // class
 
@@ -444,12 +489,6 @@ class ParameterSetManager
     const Presetting* getSelected( void ) const
     {
         return pSelectedParamSet;
-    } // method
-
-    /* pybind11 can't export overloaded functions */
-    Presetting* getSelected_py( void )
-    {
-        return getSelected();
     } // method
 }; // class
 

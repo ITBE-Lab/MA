@@ -1,5 +1,5 @@
 #include "util/parameter.h"
-
+#include <algorithm>
 
 template <> EXPORTED std::string genericStringToValue<std::string>( const std::string& sString )
 {
@@ -18,8 +18,8 @@ template <> EXPORTED bool genericStringToValue<bool>( const std::string& sString
 
 // provide implementation for forward declared constructor.
 EXPORTED AlignerParameterBase::AlignerParameterBase( Presetting* pPresetting, const std::string& sName,
-                                            const std::string& sDescription )
-    : sName( sName ), sDescription( sDescription )
+                                                     const char cShort, const std::string& sDescription )
+    : sName( sName ), cShort( cShort ), sDescription( sDescription )
 {
     if( pPresetting != nullptr )
         pPresetting->registerParameter( this );
