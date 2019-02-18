@@ -1,54 +1,148 @@
+#include <iomanip> // for std::setw
+
 #include "util/export.h" // MA aligner interface
 #include "util/parameter.h"
 
+// Documentation: https://github.com/nlohmann/json
+#include "contrib/json/json.hpp" // FIXME: Move to different location
+
 using namespace libMA;
+namespace json = nlohmann;
 
 /* Manages Pack and FMD-Index of genomes */
 class GenomeManager
 {
+  public:
+    typedef decltype( makePledge<Pack>( std::string( ) ) ) PackPledgeType;
+    typedef decltype( makePledge<FMIndex>( std::string( ) ) ) FMDIndexPledgeType;
+
+  private:
     // Genome-prefix initially empty (equal to no genome selected)
     std::string sPackPrefix;
     std::string sGenomeName;
 
-  public:
     // shared pointer to pack (pledge)
-    decltype( makePledge<Pack>( std::string( ) ) ) pxPackPledge;
+    PackPledgeType pxPackPledge;
     // shared pointer to FMD-index (pledge)
-    decltype( makePledge<FMIndex>( std::string( ) ) ) pxFMDIndexPledge;
+    FMDIndexPledgeType pxFMDIndexPledge;
 
-    /* sFileName must be a MAreference file
-     * FIX ME: Better exception management if something goes wrong.
-     * FIX ME: In GUI avoid the call with empty file-name during initializing
-     */
-    void setGenome( const std::string& sFileName )
+  public:
+    /* Constructor */
+    GenomeManager( void ) : sPackPrefix( "" ), sGenomeName( "" ), pxPackPledge( nullptr ), pxFMDIndexPledge( nullptr )
+    {} // constructor
+
+    /* Getter for pack pledge */
+    PackPledgeType getPackPledge( void )
     {
-        if( sFileName.empty( ) )
-            return;
-
-        std::ifstream xInfile( sFileName );
-        std::getline( xInfile, this->sGenomeName );
-        // sPackPrefix is the full path without the final suffix
-        sPackPrefix = sFileName.substr( 0, sFileName.find_last_of( '.' ) );
-
-        this->pxPackPledge = makePledge<Pack>( sPackPrefix );
-        this->pxFMDIndexPledge = makePledge<FMIndex>( sPackPrefix );
-
-        //-- auto xDummyGenome = this->pxPackPledge->get( );
-        //-- xDummyGenome->printHoles( );
+        if( this->pxPackPledge )
+            return this->pxPackPledge;
+        else
+            // Avoid null-pointer problems and throw exception
+            throw std::runtime_error( "Genome undetermined (Missing Pack)." );
     } // method
 
-    GenomeManager( void ) : pxPackPledge( nullptr ), pxFMDIndexPledge( nullptr )
-    {} // constructor
+    /* Getter for FMD-Index pledge */
+    FMDIndexPledgeType getFMDIndexPledge( void )
+    {
+        if( this->pxFMDIndexPledge )
+            return this->pxFMDIndexPledge;
+        else
+            // Avoid null-pointer problems and throw exception
+            throw std::runtime_error( "Genome undetermined (Missing FMD-Index)." );
+    } // method
+
+    /* Loads genome using info given in JSON-file
+     * Returns empty string if loading went well
+     */
+    std::string loadGenome( const fs::path& rsJsonFilePath ) // folder containing json, pack and fmd-index
+    {
+        // read a JSON file
+        try
+        {
+            // Read JSON with genome info
+            std::ifstream xInputStream( rsJsonFilePath );
+            json::json xJSON;
+            xInputStream >> xJSON;
+
+            // Check JSON for correctness
+            if( xJSON[ "type" ] != "MA Genome" )
+                return ( "JSON file does not contain valid MA genome information." );
+            if( !( xJSON[ "version" ][ "major" ] == 1 && xJSON[ "version" ][ "minor" ] == 0 ) )
+                return ( "Wrong version of MA genome.\n(Expected major:1 minor:0)" );
+
+            // Extract genome data from JSON ...
+            this->sGenomeName = xJSON[ "name" ];
+            this->sPackPrefix = ( rsJsonFilePath.parent_path( ) / std::string( xJSON[ "prefix" ] ) ).string( );
+
+            // Get pledges for pack and FMD-index
+            this->pxPackPledge = makePledge<Pack>( sPackPrefix );
+            this->pxFMDIndexPledge = makePledge<FMIndex>( sPackPrefix );
+            // (DEBUG) auto xDummyGenome = this->pxPackPledge->get( );
+            // (DEBUG) xDummyGenome->printHoles( );
+        } // try
+        catch( std::exception& rxException )
+        {
+            // JSON loading failed
+            return std::string( rxException.what( ) );
+        } // catch
+
+        return ""; // loading went fine
+    } // method
+
+    /* Create JSON that informs about genome */
+    json::json createGenomeJSON( const std::string& rsGenomeTitle, const std::string& rsGenomePrefix )
+    {
+        return {{"type", "MA Genome"},
+                {"version", {{"major", 1}, {"minor", 0}}},
+                {"name", rsGenomeTitle},
+                {"prefix", rsGenomePrefix}};
+    } // method
+
+    // std::vector<json::json> findAllGenomesInFolder( const fs::path& sFolderPath )
+    // {} // method
+
+    /* Computation of Pack and FM-Index for a genome in FASTA file */
+    void makeIndexAndPackForGenome( const fs::path& rsGenomeFolderPath, // Folder for genome storage
+                                    const fs::path& rsFastaFilePath, // Path to FASTA-file that contains genome
+                                    const std::string& rsGenomeTitle, // Name of genome
+                                    std::function<void( const std::string& )> // Feedback to the caller
+                                        fCallBack )
+    {
+        // Genome prefix is always FASTA prefix
+        auto sGenomePrefix = rsFastaFilePath.stem( );
+        auto sGenomeFullPathPrefix = fs::path( rsGenomeFolderPath ) /= sGenomePrefix;
+        fCallBack( std::string( "Genome prefix:\n" ) + sGenomeFullPathPrefix.string( ) + "\n" );
+
+        // Create and store pack
+        fCallBack( "Create pack and write pack to file system.\n" );
+        std::shared_ptr<Pack> pxPack( new Pack( ) );
+        pxPack->vAppendFASTA( rsFastaFilePath.string( ) );
+        pxPack->vStoreCollection( sGenomeFullPathPrefix.string( ) );
+
+        // Create and store FMD index
+        fCallBack( "Compute FMD-index...\nImportant note: This may take long time.\n" );
+        FMIndex xFMDIndex( pxPack );
+        fCallBack( "Write FMD-Index to file system.\n" );
+        xFMDIndex.vStoreFMIndex( sGenomeFullPathPrefix.string( ).c_str( ) );
+
+        // Create JSON genome info
+        fCallBack( "Create JSON info.\n" );
+
+        std::ofstream xOutStream( ( fs::path( rsGenomeFolderPath ) /= rsGenomeTitle ) += ".json" );
+        xOutStream << std::setw( 4 ) << createGenomeJSON( rsGenomeTitle, sGenomePrefix.string( ) ) << std::endl;
+
+        fCallBack( "All done!\n" );
+    } // method
 
     /* Delivers name of selected genome */
     std::string getGenomeName( void )
     {
-        return pxPackPledge ? sGenomeName : "No genome selected";
+        return this->pxPackPledge ? this->sGenomeName : "No genome selected";
     } // method
 
     bool isReady( void )
     {
-        return pxPackPledge && pxFMDIndexPledge;
+        return this->pxPackPledge && this->pxFMDIndexPledge;
     } // method
 }; // class
 
@@ -167,7 +261,6 @@ class ExecutionContext
         std::shared_ptr<Reader> pxReader;
 
         const std::string sSAMFileName = xOutputManager.SAMFullFileName( );
-        std::cout << "SAM output to file: " << sSAMFileName << std::endl;
 
         // Build a vector of aligner instances. (aGraphSinks is a vector of final pledges)
         // Each Pledge corresponds to a thread.
@@ -175,6 +268,7 @@ class ExecutionContext
         // The Pledge is later given to a worker for evaluation.
         if( xParameterSetManager.getSelected( )->usesPairedReads( ) )
         {
+            // Paired reads.
             // Wish AK: TP_PAIRED_WRITER -> PairedWriterType
             std::shared_ptr<TP_PAIRED_WRITER> pxPairedWriter;
             pxPairedWriter.reset(
@@ -194,6 +288,7 @@ class ExecutionContext
         } // if
         else
         {
+            // Singular (Non-Paired) reads.
             // Wish AK: TP_WRITER -> WriterType
             std::shared_ptr<TP_WRITER> pxWriter;
             pxWriter.reset( new FileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
@@ -221,203 +316,7 @@ class ExecutionContext
         ); // function call
 
         // Destroy computational graph; release memory
+		// @Markus: Is this really necessary? 
         aGraphSinks.clear( );
     } // method
-#if 0
-	void onAlign( wxCommandEvent& /*e*/ )
-    {
-        if( pxGenomeSelectionChoice->GetSelection( ) == wxNOT_FOUND )
-        {
-            wxMessageBox( "You have to select a reference genome.", "Error", wxICON_ERROR );
-            return;
-        } // if
-
-        bool bInputIsFromFile = !xQueryEdit->IsEditable( );
-        if( paired && !xMateEdit->IsEditable( ) != bInputIsFromFile )
-        {
-            wxMessageBox( "Cannot do paired alignment with one input from file and one from text.", "Error",
-                          wxICON_ERROR );
-            return;
-        } // if
-
-
-        if( bConsole )
-        {
-#ifdef _MSC_VER
-            AllocConsole( );
-            freopen( "CONOUT$", "w", stdout );
-            freopen( "CONOUT$", "w", stderr );
-#endif
-        }
-        /* Build the pack for the selected genome */
-        try
-        {
-            auto iSelction = pxGenomeSelectionChoice->GetSelection( );
-            std::string s = vRefPrefix[ iSelction ];
-            auto pPackPledge = makePledge<Pack>( s );
-
-            auto pFMDIndexPledge = makePledge<FMIndex>( vRefPrefix[ iSelction ] );
-            std::shared_ptr<Reader> pReader;
-
-
-            if( bInputIsFromFile )
-            {
-                // sets the progress bar range
-                if( paired )
-                {
-                    std::shared_ptr<TP_PAIRED_WRITER> pOut;
-                    wxFileDialog saveFileDialog( this, _( "Save Alignment to file" ), "", "",
-                                                 "SAMFiles(*.sam)|*.sam|All Files (*.*)|*.*", wxFD_SAVE );
-                    if( saveFileDialog.ShowModal( ) == wxID_OK )
-                        pOut.reset(
-                            new PairedFileWriter( std::string( saveFileDialog.GetPath( ) ), pPackPledge->get( ) ) );
-                    else
-                        return;
-                    auto pFileReader = std::make_shared<PairedFileReader>( sQueryIn, sMateIn );
-                    auto pQueriesPledge = promiseMe( pFileReader );
-                    pReader = pFileReader;
-                    /* Build a vector of aligner instances. (The number of instances is decided by the degress og
-                     * concurrency) aGraphSinks is a vector of final pledges. Each Pledge corresponds to a thread.
-                     */
-                    aGraphSinks = setUpCompGraphPaired( pPackPledge, // pack
-                                                        pFMDIndexPledge, // FMD index
-                                                        pQueriesPledge, // (for paired reads we require two queries!)
-                                                        pOut, // Output writer module(output of alignments)
-                                                        uiConcurency // num threads
-                    );
-                } // if
-                else
-                {
-                    // bool bPrintInfos = false;
-                    std::shared_ptr<TP_WRITER> pOut;
-                    wxFileDialog saveFileDialog( this, _( "Save Alignment to file" ), "", "",
-                                                 "SAMFiles(*.sam)|*.sam|All Files (*.*)|*.*", wxFD_SAVE );
-                    if( saveFileDialog.ShowModal( ) == wxID_OK )
-                        pOut.reset( new FileWriter( std::string( saveFileDialog.GetPath( ) ), pPackPledge->get( ) ) );
-                    else
-                        return;
-
-                    auto pFileReader = std::make_shared<FileReader>( sQueryIn );
-                    auto pQueriesPledge = promiseMe( pFileReader );
-                    pReader = pFileReader;
-                    /* Build a vector of aligner instances. (The number of instances is decided by the degress og
-                     * concurrency) aGraphSinks is a vector of final pledges. Each Pledge corresponds to a thread.
-                     */
-                    aGraphSinks = setUpCompGraph( pPackPledge, // pack
-                                                  pFMDIndexPledge, // FMD index
-                                                  pQueriesPledge, // queries
-                                                  pOut, // Output writer module(output of alignments)
-                                                  uiConcurency // num threads
-                    );
-                } // else
-            } // if
-            // else @todo re-enable input from text box
-            //{
-            //    auto pQuery = std::make_shared<NucSeq>( std::string( xQueryEdit->GetValue( ) ) );
-            //    aQueriesPledge.push_back( std::make_shared<Pledge>( std::make_shared<NucSeq>( ) ) );
-            //    aQueriesPledge.back( )->set( pQuery );
-            //
-            //    if( paired )
-            //    {
-            //        auto pQuery2 = std::make_shared<NucSeq>( std::string( xMateEdit->GetValue( ) ) );
-            //        aQueriesPledge.push_back( std::make_shared<Pledge>( std::make_shared<NucSeq>( ) ) );
-            //        aQueriesPledge.back( )->set( pQuery2 );
-            //    } // if
-            //} // else
-
-
-            try
-            {
-                // run the alignment
-                if( pWorker != nullptr )
-                    pWorker->join( );
-                pWorker = std::make_shared<std::thread>( [&]( ) {
-                    Disable( );
-                    /**
-                     * compute the actual alignments.
-                     * sets the progress bar after each finished alignment.
-                     */
-                    BasePledge::simultaneousGet( aGraphSinks,
-                                                 [&]( ) {
-                                                     if( bInputIsFromFile )
-                                                     { // sets the progress bar
-                                                         size_t uiCurrProg = ( 1000 * pReader->getCurrPosInFile( ) ) /
-                                                                             pReader->getFileSize( );
-                                                         pProgressBar->SetValue( uiCurrProg );
-                                                     }
-                                                     return true;
-                                                 } // lambda
-                    );
-                    // release memory
-                    {
-                        // delete the computational graph
-                        aGraphSinks.clear( );
-                        auto xCommandEvent = wxCommandEvent( );
-                        onRefClear( xCommandEvent );
-                    }
-                    {
-                        // clear the main query field
-                        auto xCommandEvent = wxCommandEvent( );
-                        onQueryClear( xCommandEvent );
-                    }
-                    {
-                        // clear the mate query field
-                        auto xCommandEvent = wxCommandEvent( );
-                        onMateClear( xCommandEvent );
-                    }
-                    pProgressBar->SetValue( 0 );
-                    wxMessageBox( "Task completed.", "Done", wxICON_INFORMATION );
-                    Enable( );
-                } // lambda
-                );
-            }
-            catch( AnnotatedException e )
-            {
-                std::cerr << "failed setting up aligner\n" << std::endl;
-                std::cerr << e.what( ) << std::endl;
-                return;
-            }
-            catch( ... )
-            {
-                std::cerr << "failed setting up aligner\n" << std::endl;
-                std::cerr << "got unkown exception\n" << std::endl;
-                return;
-            }
-#if 0
-			Task* frame = new Task(
-				"test",
-				[&]
-				(Task* t, std::string sQueryIn, unsigned int uiToFileSelect, bool bPaired, std::string sMateIn, unsigned int uiThreads,
-					unsigned int uiSeedSet, unsigned int uiDistribution, unsigned int uiMean, unsigned int uiSTD, unsigned int pairedPenalty,
-					unsigned int uiReportN, bool bGlobal, unsigned int uiMaxAmbiguity, unsigned int uiNumSOC, std::string sPref, bool bConsole)
-				{
-                
-						t->print("done\n");
-				},
-				sQueryIn,
-				uiToFileSelect,
-				paired,
-				sMateIn,
-				uiConcurency,
-				(selected == 0 ? /*fast:*/ 0 : (selected == 1 ? /*accurate:*/ 1 : /*custom:*/ uiSeedSetSelect) ),
-				uiDistributionSelect,
-				uiMeanDistance,
-				uiSTD,
-				uiUnpairedPenalty,
-				uiReport,
-				bGlobalAlignment,
-				(selected == 0 ? /*fast:*/ 10 : (selected == 1 ? /*accurate:*/ 100 : /*custom:*/ uiMaxAmbiguity)),
-				(selected == 0 ? /*fast:*/ 2 :  (selected == 1 ? /*accurate:*/  10 : /*custom:*/ uiNumSOC)),
-				aRefPrefix[pxGenomeSelectionChoice->GetSelection()],
-				bConsole
-			);
-			frame->Show();
-#endif
-        }
-        catch( std::exception& rxEception )
-        {
-            std::cout << "Caught: " << rxEception.what( ) << std::endl;
-        }
-    }
-#endif
 }; // class

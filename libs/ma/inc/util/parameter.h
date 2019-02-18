@@ -53,7 +53,11 @@ class AlignerParameterBase
 
     const std::string sName; // Name of parameter
     const std::string sDescription; // Description of parameter
-    const char cShort;
+    const char cShort; // Shorthand character for parameter in command line interface.
+    
+    // Callback that is called on demand.
+    // By default a parameter is always active.
+    std::function<bool( void )> fEnabled = []( ) { return true; };
 
     EXPORTED AlignerParameterBase( Presetting* pPresetting, const std::string& sName, const char cShort,
                                    const std::string& sDescription );
@@ -426,7 +430,9 @@ class GeneralParameter
           xSAMOutputPath( nullptr, "Folder (path) for SAM files", "All SAM-output will be written to this folder",
                           fs::temp_directory_path( ) )
 
-    {} // constructor
+    {
+        xSAMOutputPath.fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder.get( ) == false; };
+    } // constructor
 
     /* Named copy Constructor */
     GeneralParameter( const GeneralParameter& rxOtherSet ) : GeneralParameter( )

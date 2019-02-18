@@ -1,20 +1,13 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        minimal.cpp
-// Purpose:     Minimal wxWidgets sample
-// Author:      Julian Smart
-// Modified by:
-// Created:     04/01/98
-// Copyright:   (c) Julian Smart
-// Licence:     wxWindows licence
+// Name:        maGUI.cpp
+// Purpose:     MA wxWidgets Graphical User Interface
+// Author:      Arne Kutzner
+// Created:     01/01/2019
+// Copyright:   (c) Arne Kutzner, Markus Schmidt
+// Licence:		MIT
 /////////////////////////////////////////////////////////////////////////////
 
-// ============================================================================
-// declarations
-// ============================================================================
-
-// ----------------------------------------------------------------------------
-// headers
-// ----------------------------------------------------------------------------
+// TO DO: number threads with doALign is still always one.
 
 #include <fstream> // STL
 #include <functional> // STL
@@ -186,7 +179,8 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
                   pxPropertyPanel->append( rxGlobalParameterSet.bSAMOutputInReadsFolder )
-                      .append( rxGlobalParameterSet.xSAMOutputPath );
+                      .append( rxGlobalParameterSet.xSAMOutputPath )
+                      .updateEnabledDisabled( );
 
                   return pxPropertyPanel;
               }, // lambda
@@ -195,7 +189,6 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
               true ) // fit the size of the dialog to the size of its content
     {} // constructor
 }; // class
-
 
 WX_DEFINE_ARRAY_PTR( wxWizardPageSimple*, WizardPages );
 
@@ -256,6 +249,7 @@ class FMIndexCreationWizard : public wxWizard
 
     /* Handler called, if 'Next'-button pushed.
      * We need a worker, so that the event-loop can continue ...
+     * Computes pack and FM-index
      */
     void onPageShown( void )
     {
@@ -268,25 +262,14 @@ class FMIndexCreationWizard : public wxWizard
 
             // FM-Index creation happens in a separated thread
             pWorker = std::make_unique<std::thread>( [this]( ) {
-                auto sGenomePrefix = fs::path( sGenomeFolderPath( ) ) /= sFastaFilePath( ).stem( );
-                queueStringMessage( wxEVT_WORKER_MESSAGE,
-                                    std::string( "Genome prefix:\n" ) + sGenomePrefix.string( ) + "\n" );
-
-                // Create and store pack
-                queueStringMessage( wxEVT_WORKER_MESSAGE, "Create pack and write pack to file system.\n" );
-                std::shared_ptr<Pack> pxPack( new Pack( ) );
-                pxPack->vAppendFASTA( sFastaFilePath( ).string( ) );
-                pxPack->vStoreCollection( sGenomePrefix.string( ) );
-
-                // Create and store FMD index
-                queueStringMessage( wxEVT_WORKER_MESSAGE,
-                                    "Compute FMD-index...\nImportant note: This may take long time.\n" );
-                FMIndex xFMDIndex( pxPack );
-                queueStringMessage( wxEVT_WORKER_MESSAGE, "Write FMD-Index to file system.\n" );
-                xFMDIndex.vStoreFMIndex( sGenomePrefix.string( ).c_str( ) );
-
-                // FIXME: Write genome name to description file.
-                queueStringMessage( wxEVT_WORKER_MESSAGE, "All done!\n" );
+                xExecutionContext.xGenomeManager.makeIndexAndPackForGenome(
+                    sGenomeFolderPath( ), // Folder for genome storage
+                    sFastaFilePath( ), // Path to FASTA-file that contains genome
+                    std::string( pxTextCtrlIndexName->GetValue( ).c_str( ) ), // Title of genome
+                    [this]( const std::string& sMessage ) {
+                        queueStringMessage( wxEVT_WORKER_MESSAGE, sMessage );
+                    } // lambda
+                );
 
                 // Enable 'Finish' button
                 queueStringMessage( wxEVT_WORKER_COMPLETED, "" );
@@ -551,7 +534,7 @@ class AlignFrame : public wxDialog
     {
         wxMessageBox( "Aligner failed due to exception:\n" + rxEvent.GetString( ), "Error", wxICON_ERROR );
         // Handler enables the OK button
-        pxTextCtrl->AppendText( "Alignment failed\n" );
+        pxTextCtrl->AppendText( "Alignment failed.\n" );
         pxStopOKButton->Enable( );
     } // method
 
@@ -568,7 +551,7 @@ class AlignFrame : public wxDialog
     {
         // create worker thread, which communicates via events
         pWorker = std::make_unique<std::thread>( [&]( ) {
-            queueStringMessage( wxEVT_WORKER_MESSAGE, "Do alignment\n" );
+            queueStringMessage( wxEVT_WORKER_MESSAGE, "Do alignment.\n" );
             // If sErrorMessage is empty, the alignment is fine succeeded
             std::string sErrorMessage;
             bool bExexutionSucceeded = false;
@@ -589,9 +572,11 @@ class AlignFrame : public wxDialog
 
             if( bExexutionSucceeded )
             { // Enable the OK button only if the alignment succeeded
-                queueStringMessage( wxEVT_WORKER_MESSAGE, "Task completed\n" );
-                queueStringMessage( wxEVT_WORKER_COMPLETED, "" ); // triggers activation of OK button
+                queueStringMessage( wxEVT_WORKER_MESSAGE, "Task completed.\n" );
+
             } // if
+
+            queueStringMessage( wxEVT_WORKER_COMPLETED, "" ); // triggers activation of OK button
         } // lambda
         );
 
@@ -738,10 +723,19 @@ class MA_MainFrame : public wxFrame
     wxTextCtrl* xGenomeNameTextCtrl;
 
     /* Handler for genome selection button */
-    void onGenomeSelection( const std::string& sFileName )
+    void onGenomeSelection( const fs::path& rsFileName )
     {
-        xExecutionContext.xGenomeManager.setGenome( sFileName );
-        xGenomeNameTextCtrl->SetValue( xExecutionContext.xGenomeManager.getGenomeName( ) );
+        if( rsFileName.empty( ) )
+            // special case of deletion
+            xGenomeNameTextCtrl->SetValue( xExecutionContext.xGenomeManager.getGenomeName( ) );
+        else
+        {
+            auto sError = xExecutionContext.xGenomeManager.loadGenome( rsFileName );
+            if( sError.empty( ) )
+                xGenomeNameTextCtrl->SetValue( xExecutionContext.xGenomeManager.getGenomeName( ) );
+            else
+                wxMessageBox( "Genome loading failed with error:\n" + sError, "Genome loading failed", wxICON_ERROR );
+        } // else
     } // method
 
     wxTextCtrl* xQueryTextCtrl;
@@ -766,18 +760,19 @@ class MA_MainFrame : public wxFrame
 
         if( xWizard.RunWizard( xWizard.xWizardPages.Item( 0 ) ) )
         {
+            // For debugging ...
         } // if
     } // method
 
     /* Handler query select/clear button pair */
-    void onQuerySelection( const std::string& sFileName, wxTextCtrl* xTargetTextCtrl )
+    void onQuerySelection( const fs::path& sFileName, wxTextCtrl* xTargetTextCtrl )
     {
         // FIXME: Add code for paired inputs
         xExecutionContext.xReadsManager.sPrimaryQueryFullFileName = sFileName;
         if( sFileName.empty( ) )
             xTargetTextCtrl->SetValue( "Type your query here or select a FASTA-file ..." );
         else
-            xTargetTextCtrl->SetValue( sFileName );
+            xTargetTextCtrl->SetValue( sFileName.string( ) );
 
         xTargetTextCtrl->SetEditable( sFileName.empty( ) );
     } // method
@@ -803,8 +798,6 @@ class MA_MainFrame : public wxFrame
         xMenuBar = new mwxMenuBar;
         this->xMenuBar->push_back( "&File" )
             .menu( ) // File Menu
-            .append( "O&pen\tAlt-O", // Open
-                     [&]( wxCommandEvent& ) { this->Close( true ); } )
             .append( "E&xit\tAlt-X", // Exit
                      [&]( wxCommandEvent& ) { this->Close( true ); } );
 
@@ -891,10 +884,15 @@ class MA_MainFrame : public wxFrame
                             xStaticBoxSizer.Add(
                                 new wxTextCtrl(
                                     xStaticBoxSizer.xConnector.pxWindow, wxID_ANY,
-                                    wxT( "1. Select the sequencing technology of your reads. (Illumina etc.)\n"
-                                         "2. Choose your output format" ),
+                                    wxT( "1. Choose 'Aligner Settings' according to the type of your reads. (Illumina etc.)\n" 
+                                         "2. Select format and location (folder) for the aligner output.\n"
+										 "3. Select your reference genome.\n"
+										 "        MA requires precomputed FMD-Indices for genomes.\n" 
+										 "        FMD-Index creation for genomes in FASTA format can be done via the F2 key\n"
+										 "4. Specify your reads. Either via direct input or by selection of FASTA files."
+									),
                                     wxDefaultPosition, wxDefaultSize,
-                                    wxTE_AUTO_URL | wxTE_RICH | wxHSCROLL | wxTE_MULTILINE | wxTE_READONLY |
+                                    wxHSCROLL | wxTE_MULTILINE | wxTE_READONLY |
                                         wxNO_BORDER ),
                                 1, wxEXPAND, 5 );
                         } );
@@ -924,7 +922,7 @@ class MA_MainFrame : public wxFrame
                     // File Selector for genome selection
                     pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
                                         pxBoxSizer.pxConnector, "Genome selection", "Select Reference Genome",
-                                        "Reference files (*.maReference)|*.maReference|All Files|*",
+                                        "Genome descriptions (*.json)|*.json|All Files|*",
                                         std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ),
                                         false ), // no clear button
                                     wxSizerFlags( 0 ) );
