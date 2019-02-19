@@ -19,8 +19,6 @@ namespace fs = std::filesystem;
 #include <utility>
 #include <vector>
 
-class Presetting;
-
 /* Generic conversion of string to different value types.
  * (Specialized for some types)
  */
@@ -52,19 +50,26 @@ class AlignerParameterBase
     static const char NO_SHORT_DEFINED = ' ';
 
     const std::string sName; // Name of parameter
-    const std::string sDescription; // Description of parameter
     const char cShort; // Shorthand character for parameter in command line interface.
-    
+    const std::string sDescription; // Description of parameter
+
+    /* Delete copy constructor */
+    AlignerParameterBase( const AlignerParameterBase& rxOtherSet ) = delete;
+    AlignerParameterBase( AlignerParameterBase&& other ) = default; // required for getting emplace with maps working
+    AlignerParameterBase&
+    operator=( AlignerParameterBase&& other ) = default; // required for getting emplace with maps working
+
     // Callback that is called on demand.
     // By default a parameter is always active.
     std::function<bool( void )> fEnabled = []( ) { return true; };
 
-    EXPORTED AlignerParameterBase( Presetting* pPresetting, const std::string& sName, const char cShort,
-                                   const std::string& sDescription );
+    AlignerParameterBase( const std::string& sName, const char cShort, const std::string& sDescription )
+        : sName( sName ), cShort( cShort ), sDescription( sDescription )
+    {} // constructor
 
-    void mirror( const AlignerParameterBase* pOther )
+    virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
     {
-        throw AnnotatedException( "trying to mirror pointers of different types" );
+        throw AnnotatedException( "Mirroring of AlignerParameterBase objects is prohibited." );
     } // method
 }; // class
 
@@ -82,24 +87,24 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     std::function<void( const VALUE_TYPE& )> fPredicate;
 
     /* Constructor */
-    AlignerParameter( Presetting* pPresetting, const std::string& sName, const char cShort,
-                      const std::string& sDescription,
+    AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
                       const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameterBase( pPresetting, sName, cShort, sDescription ), value( value ), fPredicate( fPredicate )
+        : AlignerParameterBase( sName, cShort, sDescription ), value( value ), fPredicate( fPredicate )
     {} // constructor
 
     /* Constructor */
-    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
+    AlignerParameter( const std::string& sName, const std::string& sDescription,
                       const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameter( pPresetting, sName, NO_SHORT_DEFINED, sDescription, value, predicateAlwaysOK )
+        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, value, fPredicate )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
     void set( VALUE_TYPE newValue )
     {
         /* Check the value. ( Error is indicated by exception )*/
+        std::cout << "CHECK PREDICATE" << std::endl;
         fPredicate( newValue );
 
         /* In the case of an exception this line is skipped !*/
@@ -118,14 +123,22 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
         return this->value;
     } // method
 
+    /** required for exporting get to python do not use in cpp code */
+    VALUE_TYPE get_py( void )
+    {
+        return this->get( );
+    } // method
+
     const VALUE_TYPE get( void ) const
     {
         return this->value;
     } // method
 
-    void mirror( const AlignerParameter<VALUE_TYPE>* pOther )
+    virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
     {
-        this->value = pOther->value;
+        auto pOtherDerived = std::dynamic_pointer_cast<const AlignerParameter<VALUE_TYPE>>( pOther );
+        std::cout << "Mirror: " << sName << " from " << this->value << " to " << pOtherDerived->value << std::endl;
+        this->value = pOtherDerived->value;
     } // method
 }; // class
 
@@ -138,19 +151,16 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     AlignerParameterBase::ChoicesType vChoices; // Possible text values of the parameter
     unsigned int uiSelection; // integral value of the selected choice (0 for first choice, 1 for second etc.)
 
-    AlignerParameter( Presetting* pPresetting, const std::string& sName, const char cShort,
-                      const std::string& sDescription,
+    AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( pPresetting, sName, cShort, sDescription ),
-          vChoices( rvChoices ),
-          uiSelection( uiSelection )
+        : AlignerParameterBase( sName, cShort, sDescription ), vChoices( rvChoices ), uiSelection( uiSelection )
     {} // constructor
 
-    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
+    AlignerParameter( const std::string& sName, const std::string& sDescription,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameter( pPresetting, sName, NO_SHORT_DEFINED, sDescription, rvChoices, uiSelection )
+        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, rvChoices, uiSelection )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -173,9 +183,16 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
         return vChoices.at( uiSelection ).first;
     } // method
 
-    void mirror( const AlignerParameter<AlignerParameterBase::ChoicesType>* pOther )
+    // void mirror( const AlignerParameter<AlignerParameterBase::ChoicesType>* pOther )
+    // {
+    //     this->uiSelection = pOther->uiSelection;
+    // } // method
+    //
+    virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
     {
-        this->uiSelection = pOther->uiSelection;
+        auto pOtherDerived =
+            std::dynamic_pointer_cast<const AlignerParameter<AlignerParameterBase::ChoicesType>>( pOther );
+        this->uiSelection = pOtherDerived->uiSelection;
     } // method
 }; // class
 
@@ -186,18 +203,17 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
   public:
     fs::path xPath; // Current path
 
-    AlignerParameter( Presetting* pPresetting, const std::string& sName, const char cShort,
-                      const std::string& sDescription,
+    AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( pPresetting, sName, cShort, sDescription ), xPath( rxPath )
+        : AlignerParameterBase( sName, cShort, sDescription ), xPath( rxPath )
     {} // constructor
 
     /* Constructor */
-    AlignerParameter( Presetting* pPresetting, const std::string& sName, const std::string& sDescription,
+    AlignerParameter( const std::string& sName, const std::string& sDescription,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 )
-        : AlignerParameter( pPresetting, sName, NO_SHORT_DEFINED, sDescription, rxPath, uiSelection )
+        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, rxPath, uiSelection )
     {} // constructor
 
     /* Set path to argument.
@@ -225,13 +241,46 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
         return this->xPath;
     } // method
 
-    /* Used in the case of objects copies (object mirroring) */
-    void mirror( const AlignerParameter<fs::path>* pOther )
+    // /* Used in the case of objects copies (object mirroring) */
+    // void mirror( const AlignerParameter<fs::path>* pOther )
+    // {
+    //     this->xPath = pOther->xPath;
+    // } // method
+
+    virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
     {
-        this->xPath = pOther->xPath;
+        auto pOtherDerived = std::dynamic_pointer_cast<const AlignerParameter<fs::path>>( pOther );
+        this->xPath = pOtherDerived->xPath;
     } // method
 }; // class
 
+class Presetting; // forward declaration required for AlignerParameterPointer
+
+template <typename VALUE_TYPE> class AlignerParameterPointer
+{
+  private:
+    void do_register( Presetting* pPresetting );
+
+  public:
+    std::shared_ptr<AlignerParameter<VALUE_TYPE>> pContent;
+
+    template <typename... ARGUMENT_TYPES>
+    AlignerParameterPointer( Presetting* pPresetting, ARGUMENT_TYPES&&... arguments )
+        : pContent( std::make_shared<AlignerParameter<VALUE_TYPE>>( arguments... ) )
+    {
+        do_register( pPresetting );
+    } // constructor
+
+    std::shared_ptr<AlignerParameter<VALUE_TYPE>> operator->( )
+    {
+        return pContent;
+    } // operator
+
+    const std::shared_ptr<AlignerParameter<VALUE_TYPE>> operator->( ) const
+    {
+        return pContent;
+    } // operator
+}; // class
 
 /* Class for management of aligner parameter sets.
  * Idea: By using Reflections this code could be improved. (e.g. https://www.rttr.org/)
@@ -239,59 +288,61 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
 class Presetting
 {
   public:
-    std::map<std::string, AlignerParameterBase*> xpAllParameters;
-    std::map<char, AlignerParameterBase*> xpParametersByShort;
-    AlignerParameter<int> xMatch; // score for a DP match (used in SoC width computation)
-    AlignerParameter<int> xMisMatch; // score for a DP match (used in SoC width computation)
-    AlignerParameter<int> xGap; // @todo
-    AlignerParameter<int> xExtend; // @todo
-    AlignerParameter<int> xGap2; // @todo
-    AlignerParameter<int> xExtend2; // @todo
-    AlignerParameter<double> xPairedBonus; // @todo
-    AlignerParameter<double> xMeanPairedReadDistance; // @todo
-    AlignerParameter<double> xStdPairedReadDistance; // @todo
-    AlignerParameter<int> xReportN; // @todo
-    AlignerParameter<int> xMaximalSeedAmbiguity; // @todo
-    AlignerParameter<int> xMinSeedLength; // @todo
-    AlignerParameter<int> xMinAlignmentScore; // @todo
-    AlignerParameter<int> xMinimalSeedAmbiguity; // @todo
-    AlignerParameter<int> xMinimalSeedSizeDrop; // @todo
-    AlignerParameter<int> xMaxNumSoC; // @todo
-    AlignerParameter<int> xMinNumSoC; // @todo
-    AlignerParameter<int> xMaxScoreLookahead; // @todo
-    AlignerParameter<int> xSwitchQlen; // @todo
-    AlignerParameter<int> xMaxGapArea; // @todo
-    AlignerParameter<int> xPadding; // @todo
-    AlignerParameter<int> xSoCWidth; // @todo
-    AlignerParameter<bool> xOptimisticGapCostEstimation; // @todo
-    AlignerParameter<bool> xSkipAmbiguousSeeds; // @todo
-    AlignerParameter<double> xRelMinSeedSizeAmount; // @todo
-    AlignerParameter<double> xScoreDiffTolerance; // @todo
-    AlignerParameter<double> xMinQueryCoverage; // @todo
-    AlignerParameter<double> xSoCScoreDecreaseTolerance; // @todo
-    AlignerParameter<int> xHarmScoreMin; // @todo
-    AlignerParameter<double> xHarmScoreMinRel; // @todo
-    AlignerParameter<int> xGenomeSizeDisable; // @todo
-    AlignerParameter<bool> xDisableHeuristics; // @todo
-    AlignerParameter<bool> xNoSecondary; // @todo
-    AlignerParameter<bool> xNoSupplementary; // @todo
-    AlignerParameter<bool> xDisableGapCostEstimationCutting; // @todo
-    AlignerParameter<double> xMaxDeltaDist; // @todo
-    AlignerParameter<int> xMinDeltaDist; // @todo
-    AlignerParameter<double> xMaxOverlapSupplementary; // @todo
-    AlignerParameter<int> xMaxSupplementaryPerPrim; // @todo
-    AlignerParameter<int> xSVPenalty; // @todo
-    AlignerParameter<int> xMinBandwidthGapFilling; // @todo
-    AlignerParameter<int> xBandwidthDPExtension; // @todo
-    AlignerParameter<double> xMaxSVRatio; // @todo
-    AlignerParameter<int> xMinSVDistance; // @todo
-    AlignerParameter<int> xZDrop; // @todo
+    // Reflection of all parameter
+    std::map<std::string, std::shared_ptr<AlignerParameterBase>> xpAllParameters;
+    std::map<char, std::shared_ptr<AlignerParameterBase>> xpParametersByShort;
 
-    AlignerParameter<AlignerParameterBase::ChoicesType> xSeedingTechnique; // Seeding Technique
-    AlignerParameter<bool> xUsePairedReads; // If true, work with paired reads
+    AlignerParameterPointer<int> xMatch; // score for a DP match (used in SoC width computation)
+    AlignerParameterPointer<int> xMisMatch; // score for a DP match (used in SoC width computation)
+    AlignerParameterPointer<int> xGap; // @todo
+    AlignerParameterPointer<int> xExtend; // @todo
+    AlignerParameterPointer<int> xGap2; // @todo
+    AlignerParameterPointer<int> xExtend2; // @todo
+    AlignerParameterPointer<double> xPairedBonus; // @todo
+    AlignerParameterPointer<double> xMeanPairedReadDistance; // @todo
+    AlignerParameterPointer<double> xStdPairedReadDistance; // @todo
+    AlignerParameterPointer<int> xReportN; // @todo
+    AlignerParameterPointer<int> xMaximalSeedAmbiguity; // @todo
+    AlignerParameterPointer<int> xMinSeedLength; // @todo
+    AlignerParameterPointer<int> xMinAlignmentScore; // @todo
+    AlignerParameterPointer<int> xMinimalSeedAmbiguity; // @todo
+    AlignerParameterPointer<int> xMinimalSeedSizeDrop; // @todo
+    AlignerParameterPointer<int> xMaxNumSoC; // @todo
+    AlignerParameterPointer<int> xMinNumSoC; // @todo
+    AlignerParameterPointer<int> xMaxScoreLookahead; // @todo
+    AlignerParameterPointer<int> xSwitchQlen; // @todo
+    AlignerParameterPointer<int> xMaxGapArea; // @todo
+    AlignerParameterPointer<int> xPadding; // @todo
+    AlignerParameterPointer<int> xSoCWidth; // @todo
+    AlignerParameterPointer<bool> xOptimisticGapCostEstimation; // @todo
+    AlignerParameterPointer<bool> xSkipAmbiguousSeeds; // @todo
+    AlignerParameterPointer<double> xRelMinSeedSizeAmount; // @todo
+    AlignerParameterPointer<double> xScoreDiffTolerance; // @todo
+    AlignerParameterPointer<double> xMinQueryCoverage; // @todo
+    AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // @todo
+    AlignerParameterPointer<int> xHarmScoreMin; // @todo
+    AlignerParameterPointer<double> xHarmScoreMinRel; // @todo
+    AlignerParameterPointer<int> xGenomeSizeDisable; // @todo
+    AlignerParameterPointer<bool> xDisableHeuristics; // @todo
+    AlignerParameterPointer<bool> xNoSecondary; // @todo
+    AlignerParameterPointer<bool> xNoSupplementary; // @todo
+    AlignerParameterPointer<bool> xDisableGapCostEstimationCutting; // @todo
+    AlignerParameterPointer<double> xMaxDeltaDist; // @todo
+    AlignerParameterPointer<int> xMinDeltaDist; // @todo
+    AlignerParameterPointer<double> xMaxOverlapSupplementary; // @todo
+    AlignerParameterPointer<int> xMaxSupplementaryPerPrim; // @todo
+    AlignerParameterPointer<int> xSVPenalty; // @todo
+    AlignerParameterPointer<int> xMinBandwidthGapFilling; // @todo
+    AlignerParameterPointer<int> xBandwidthDPExtension; // @todo
+    AlignerParameterPointer<double> xMaxSVRatio; // @todo
+    AlignerParameterPointer<int> xMinSVDistance; // @todo
+    AlignerParameterPointer<int> xZDrop; // @todo
 
-    AlignerParameter<bool> xExampleCheckBox;
-    AlignerParameter<fs::path> xExamplePath;
+    AlignerParameterPointer<AlignerParameterBase::ChoicesType> xSeedingTechnique; // Seeding Technique
+    AlignerParameterPointer<bool> xUsePairedReads; // If true, work with paired reads
+
+    AlignerParameterPointer<bool> xExampleCheckBox;
+    AlignerParameterPointer<fs::path> xExamplePath;
 
     /* Delete copy constructor */
     Presetting( const Presetting& rxOtherSet ) = delete;
@@ -350,7 +401,7 @@ class Presetting
           xZDrop( this, "", "", 200 ),
 
           xSeedingTechnique( this, "Seeding Technique", "Technique used for the initial seeding.",
-                             {{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
+                             AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
           xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
                            false ),
           xExampleCheckBox( this, "Example Checkbox", "This is an example of a checkbox.", true ),
@@ -373,14 +424,14 @@ class Presetting
     /* True if the parameter-set uses paired reads */
     bool usesPairedReads( void )
     {
-        return xUsePairedReads.value;
+        return xUsePairedReads->value;
     } // method
 
     /**
      * Every parameter has to call this function from it's constructor.
      * We use this in order to generate a map of all available parameters
      */
-    void registerParameter( AlignerParameterBase* pParameter )
+    void registerParameter( const std::shared_ptr<AlignerParameterBase> pParameter )
     {
         xpAllParameters.emplace( pParameter->sName, pParameter );
         if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
@@ -396,22 +447,30 @@ class Presetting
         }
     } // method
 
-    AlignerParameterBase* byName( const std::string& rS )
-    {
-        try{
-            return xpAllParameters.at( rS );
-        } catch(std::out_of_range& rEx)
-        {
-            throw AlignerException(  );
-        }
-    } // method
-
-    AlignerParameterBase* byShort( const char cX )
-    {
-        return xpParametersByShort.at( cX );
-    } // method
+    // AlignerParameterBase* byName( const std::string& rParameterName )
+    //{
+    //    try
+    //    {
+    //        return xpAllParameters.at( rParameterName );
+    //    } // try
+    //    catch( std::out_of_range& )
+    //    {
+    //        throw AnnotatedException( std::string( "Could not find parameter: " ).append( rParameterName ) );
+    //    } // catch
+    //} // method
+    //
+    // AlignerParameterBase* byShort( const char cX )
+    //{
+    //    return xpParametersByShort.at( cX );
+    //} // method
 }; // class
 
+template <typename VALUE_TYPE> // @todo maybe this can be part of the constructor ?
+void AlignerParameterPointer<VALUE_TYPE>::do_register( Presetting* pPresetting )
+{
+    if( pPresetting != nullptr )
+        pPresetting->registerParameter( this->pContent );
+} // method
 
 /* Parameter which occur only once.
  * (Not sequencing technique / configuration related parameters)
@@ -420,18 +479,26 @@ class GeneralParameter
 {
   public:
     // FIXME: Set this to a standard path in the beginning (~home/ma/SAM)
-    AlignerParameter<bool> bSAMOutputInReadsFolder; // SAM Output in the same folder as the reads.
-    AlignerParameter<fs::path> xSAMOutputPath; // folder path
+    AlignerParameterPointer<bool> bSAMOutputInReadsFolder; // SAM Output in the same folder as the reads.
+    AlignerParameterPointer<fs::path> xSAMOutputPath; // folder path
+    AlignerParameterPointer<bool> pbUseMaxHardareConcurrency; // Exploit all cores
+    AlignerParameterPointer<int> piNumberOfThreads; // selected number of threads
 
     /* Constructor */
     GeneralParameter( )
         : bSAMOutputInReadsFolder( nullptr, "SAM files in same folder as reads",
                                    "If set, the SAM files are written in the folder of the reads.", true ),
           xSAMOutputPath( nullptr, "Folder (path) for SAM files", "All SAM-output will be written to this folder",
-                          fs::temp_directory_path( ) )
+                          fs::temp_directory_path( ) ),
+          pbUseMaxHardareConcurrency( nullptr, "Use all processor cores",
+                                      "The number of threads used for aligning is chosen to be identical to the number "
+                                      "of your processor cores.",
+                                      true ),
+          piNumberOfThreads( nullptr, "Number of threads", "Number of threads used in the context of alignments.", 1 )
 
     {
-        xSAMOutputPath.fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder.get( ) == false; };
+        xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };
+        piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
     } // constructor
 
     /* Named copy Constructor */
@@ -443,8 +510,10 @@ class GeneralParameter
     /* Mirror the setting of the other parameter-set into the current parameter-set */
     void mirror( const GeneralParameter& rxOtherSet )
     {
-        this->xSAMOutputPath.mirror( &rxOtherSet.xSAMOutputPath );
-        this->bSAMOutputInReadsFolder.mirror( &rxOtherSet.bSAMOutputInReadsFolder );
+        this->xSAMOutputPath->mirror( rxOtherSet.xSAMOutputPath.pContent );
+        this->bSAMOutputInReadsFolder->mirror( rxOtherSet.bSAMOutputInReadsFolder.pContent );
+        this->pbUseMaxHardareConcurrency->mirror( rxOtherSet.pbUseMaxHardareConcurrency.pContent );
+        this->piNumberOfThreads->mirror( rxOtherSet.piNumberOfThreads.pContent );
     } // method
 }; // class
 
@@ -466,7 +535,7 @@ class ParameterSetManager
     {
         xParametersSets.emplace( "Illumina", Presetting( ) );
         xParametersSets.emplace( "Illumina Paired", Presetting( ) );
-        xParametersSets[ "Illumina Paired" ].xUsePairedReads.set( true );
+        xParametersSets[ "Illumina Paired" ].xUsePairedReads->set( true );
 
         // Initially select Illumina
         this->pSelectedParamSet = &( xParametersSets[ "Illumina" ] );
@@ -489,6 +558,12 @@ class ParameterSetManager
     Presetting* getSelected( void )
     {
         return pSelectedParamSet;
+    } // method
+
+    /** required for exporting get to python do not use in cpp code */
+    Presetting* getSelected_py( void )
+    {
+        return this->getSelected( );
     } // method
 
     /* Delivers pointer to selected parameter-set */

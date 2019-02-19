@@ -318,8 +318,8 @@ class FileReader : public Module<NucSeq, true>, public Reader
 class FileListReader : public Module<NucSeq, true>, public Reader
 {
   public:
-    FileReader xFileReader;
     std::vector<std::string> vsFileNames;
+    FileReader xFileReader;
     size_t uiFileIndex = 0;
 
     inline void openNextFile( )

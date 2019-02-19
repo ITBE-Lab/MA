@@ -98,8 +98,8 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
      */
     FileWriter( const ParameterSetManager& rParameters, std::string sFileName, std::shared_ptr<Pack> pPackContainer )
         : pLock( new std::mutex ),
-          bNoSecondary( rParameters.getSelected( )->xNoSecondary.get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary.get( ) )
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -122,8 +122,8 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
                 std::shared_ptr<Pack> pPackContainer )
         : pOut( pOut ),
           pLock( new std::mutex ),
-          bNoSecondary( rParameters.getSelected( )->xNoSecondary.get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary.get( ) )
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {
         //*pOut << "@HD VN:1.5 SO:unknown\n";
         for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
@@ -166,8 +166,8 @@ class PairedFileWriter
     PairedFileWriter( const ParameterSetManager& rParameters, std::string sFileName,
                       std::shared_ptr<Pack> pPackContainer )
         : pLock( new std::mutex ),
-          bNoSecondary( rParameters.getSelected( )->xNoSecondary.get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary.get( ) )
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -190,8 +190,8 @@ class PairedFileWriter
                       std::shared_ptr<Pack> pPackContainer )
         : pOut( pOut ),
           pLock( new std::mutex ),
-          bNoSecondary( rParameters.getSelected( )->xNoSecondary.get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary.get( ) )
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {
         //*pOut << "@HD VN:1.5 SO:unknown\n";
         for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )

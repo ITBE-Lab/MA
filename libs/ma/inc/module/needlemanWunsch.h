@@ -55,17 +55,17 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
     bool bLocal = false;
 
     NeedlemanWunsch( const ParameterSetManager& rParameters )
-        : xKswParameters( rParameters.getSelected( )->xMatch.get( ),
-                          rParameters.getSelected( )->xMisMatch.get( ),
-                          rParameters.getSelected( )->xGap.get( ),
-                          rParameters.getSelected( )->xExtend.get( ),
-                          rParameters.getSelected( )->xGap2.get( ),
-                          rParameters.getSelected( )->xExtend2.get( ) ),
-          uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea.get() ),
-          uiPadding( rParameters.getSelected( )->xPadding.get() ),
-          uiZDrop( rParameters.getSelected( )->xZDrop.get() ),
-          iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling.get() ),
-          iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension.get() )
+        : xKswParameters( rParameters.getSelected( )->xMatch->get( ),
+                          rParameters.getSelected( )->xMisMatch->get( ),
+                          rParameters.getSelected( )->xGap->get( ),
+                          rParameters.getSelected( )->xExtend->get( ),
+                          rParameters.getSelected( )->xGap2->get( ),
+                          rParameters.getSelected( )->xExtend2->get( ) ),
+          uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get() ),
+          uiPadding( rParameters.getSelected( )->xPadding->get() ),
+          uiZDrop( rParameters.getSelected( )->xZDrop->get() ),
+          iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling->get() ),
+          iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get() )
           {}; // default constructor
 
 

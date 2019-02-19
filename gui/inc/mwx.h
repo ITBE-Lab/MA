@@ -557,7 +557,7 @@ class mwxPropertyPanel : public wxPanel
     {
       public:
         wxTextCtrl* pxTextCtrl; // Text control holding the actual value
-        AlignerParameter<VALUE_TYPE>* pxParameter = nullptr; // pointer to parameter object
+        std::shared_ptr<AlignerParameter<VALUE_TYPE>> pxParameter = nullptr; // pointer to parameter object
 
         /* Update the value of the property */
         void update( void )
@@ -605,7 +605,7 @@ class mwxPropertyPanel : public wxPanel
 
         /* Constructor with AlignerParameter */
         mwxTextProperty( mwxPropertyPanel* pxHost, // parent of property
-                         AlignerParameter<VALUE_TYPE>* pxParameter // parameter reference
+                         std::shared_ptr<AlignerParameter<VALUE_TYPE>> pxParameter // parameter reference
                          )
             : mwxProperty( pxHost, pxParameter->sName ),
               pxTextCtrl( new wxTextCtrl( pxHost, wxID_ANY, std::to_string( pxParameter->value ), wxDefaultPosition,
@@ -637,7 +637,7 @@ class mwxPropertyPanel : public wxPanel
     {
       public:
         mwxPropertyPanel* pxHost; // keep host for folder dialog creation
-        AlignerParameter<fs::path>* pxParameter = nullptr; // pointer to parameter object
+        std::shared_ptr<AlignerParameter<fs::path>> pxParameter = nullptr; // pointer to parameter object
         wxDirPickerCtrl* pxDirPickerCtrl; // Folder picker
 
         /* Handler is called whenever the user leaves the input field (the user ends property editing) */
@@ -657,7 +657,7 @@ class mwxPropertyPanel : public wxPanel
 
         /* Constructor for AlignerParameter */
         mwxFolderProperty( mwxPropertyPanel* pxHost, // parent of property
-                           AlignerParameter<fs::path>* pxParameter // parameter reference
+                           std::shared_ptr<AlignerParameter<fs::path>> pxParameter // parameter reference
                            )
             : mwxProperty( pxHost, pxParameter->sName ),
               pxHost( pxHost ),
@@ -687,7 +687,7 @@ class mwxPropertyPanel : public wxPanel
     class mwxChoiceProperty : public mwxProperty
     {
       public:
-        AlignerParameter<AlignerParameterBase::ChoicesType>* pxParameter = nullptr; // pointer to parameter object
+        std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>> pxParameter = nullptr; // pointer to parameter object
         wxComboBox* pxCombo; // Text control holding the actual value
 
         /* Update the value of the property */
@@ -735,7 +735,7 @@ class mwxPropertyPanel : public wxPanel
 
         /* Constructor with AlignerParameter */
         mwxChoiceProperty( mwxPropertyPanel* pxHost, // parent of property
-                           AlignerParameter<AlignerParameterBase::ChoicesType>* pxParameter // parameter reference
+                           std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>> pxParameter // parameter reference
                            )
             : mwxProperty( pxHost, pxParameter->sName ), pxParameter( pxParameter )
         {
@@ -767,7 +767,7 @@ class mwxPropertyPanel : public wxPanel
     class mwxCheckBoxProperty : public mwxProperty
     {
       public:
-        AlignerParameter<bool>* pxParameter = nullptr; // pointer to parameter object
+        std::shared_ptr<AlignerParameter<bool>> pxParameter = nullptr; // pointer to parameter object
         wxCheckBox* pxCheckBox; // Text control holding the actual value
 
         /* Handler is called whenever the user leaves the input field (the user ends property editing) */
@@ -789,7 +789,7 @@ class mwxPropertyPanel : public wxPanel
         } // constructor
 
         mwxCheckBoxProperty( mwxPropertyPanel* pxHost, // parent of property
-                             AlignerParameter<bool>* pxParameter // parameter reference
+                             std::shared_ptr<AlignerParameter<bool>> pxParameter // parameter reference
                              )
             : // pxHost( pxHost ),
               mwxProperty( pxHost, pxParameter->sName ),
@@ -850,33 +850,33 @@ class mwxPropertyPanel : public wxPanel
     } // method
 
     /* Add value property */
-    mwxPropertyPanel& append( AlignerParameter<int>& rxParameter )
+    mwxPropertyPanel& append( AlignerParameterPointer<int>& rxParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxTextProperty<int>>( this, &rxParameter ) );
+        vProperties.emplace_back( std::make_shared<mwxTextProperty<int>>( this, rxParameter.pContent ) );
 
         return *this;
     } // method
 
     /* Add value property */
-    mwxPropertyPanel& append( AlignerParameter<bool>& rxParameter )
+    mwxPropertyPanel& append( AlignerParameterPointer<bool>& rxParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxCheckBoxProperty>( this, &rxParameter ) );
+        vProperties.emplace_back( std::make_shared<mwxCheckBoxProperty>( this, rxParameter.pContent ) );
 
         return *this;
     } // method
 
     /* Add choices property */
-    mwxPropertyPanel& append( AlignerParameter<AlignerParameterBase::ChoicesType>& rxParameter )
+    mwxPropertyPanel& append( AlignerParameterPointer<AlignerParameterBase::ChoicesType>& rxParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxChoiceProperty>( this, &rxParameter ) );
+        vProperties.emplace_back( std::make_shared<mwxChoiceProperty>( this, rxParameter.pContent ) );
 
         return *this;
     } // method
 
     /* Add path (file-system) property */
-    mwxPropertyPanel& append( AlignerParameter<fs::path>& rxParameter )
+    mwxPropertyPanel& append( AlignerParameterPointer<fs::path>& rxParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxFolderProperty>( this, &rxParameter ) );
+        vProperties.emplace_back( std::make_shared<mwxFolderProperty>( this, rxParameter.pContent ) );
 
         return *this;
     } // method

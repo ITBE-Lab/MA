@@ -141,13 +141,13 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
 
   public:
     StripOfConsideration( const ParameterSetManager& rParameters ) 
-        : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity.get( ) ),
-          uiMinLen( rParameters.getSelected( )->xMinSeedLength.get( ) ),
-          fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel.get( ) ),
-          uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin.get( ) ),
-          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable.get( ) ),
-          uiSoCWidth( rParameters.getSelected( )->xSoCWidth.get( ) ),
-          bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds.get( ) )
+        : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
+          uiMinLen( rParameters.getSelected( )->xMinSeedLength->get( ) ),
+          fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ),
+          uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
+          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) ),
+          uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) ),
+          bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds->get( ) )
     {} // default constructor
 
     virtual std::shared_ptr<SoCPriorityQueue> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,

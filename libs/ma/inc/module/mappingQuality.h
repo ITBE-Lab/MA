@@ -29,10 +29,10 @@ class MappingQuality : public Module<ContainerVector<std::shared_ptr<Alignment>>
     const size_t uiMaxSupplementaryPerPrim;
 
     MappingQuality( const ParameterSetManager& rParameters )
-        : uiReportNBest( rParameters.getSelected( )->xReportN.get( ) ),
-          uiMinAlignmentScore( rParameters.getSelected( )->xMinAlignmentScore.get( ) ),
-          dMaxOverlapSupplementary( rParameters.getSelected( )->xMaxOverlapSupplementary.get( ) ),
-          uiMaxSupplementaryPerPrim( rParameters.getSelected( )->xMaxSupplementaryPerPrim.get( ) )
+        : uiReportNBest( rParameters.getSelected( )->xReportN->get( ) ),
+          uiMinAlignmentScore( rParameters.getSelected( )->xMinAlignmentScore->get( ) ),
+          dMaxOverlapSupplementary( rParameters.getSelected( )->xMaxOverlapSupplementary->get( ) ),
+          uiMaxSupplementaryPerPrim( rParameters.getSelected( )->xMaxSupplementaryPerPrim->get( ) )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> EXPORTED

@@ -87,21 +87,13 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
 
                   auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( "Custom" );
                   ( new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) ) )
-                      ->append( "Maximal Ambiguity", &this->iValue )
-                      .append( "Number of SoC", &this->iValue )
-                      .append( rxParameterSet.xSeedingTechnique )
+                      ->append( rxParameterSet.xSeedingTechnique )
                       .append( rxParameterSet.xExampleCheckBox );
 
                   pxScrolledStatixBoxesContext = pxNotebook->addPage( "General" );
                   ( new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) ) )
-                      ->append( "Report", &iValue )
-                      .append( rxParameterSet.xUsePairedReads )
-                      .append( rxParameterSet.xExamplePath )
-                      .appendCheckBox( "Global ALignment", &iValue )
-                      .append( "Write to file if", {"input is from file", "always", "never"}, &iValue )
-                      .append( "Concurrency", &iValue )
-                      .append( "Max NM area", &iValue )
-                      .appendCheckBox( "Show stdout/stderr", &iValue );
+                      ->append( rxParameterSet.xUsePairedReads )
+                      .append( rxParameterSet.xExamplePath );
 
                   pxScrolledStatixBoxesContext = pxNotebook->addPage( "Paired Alignments" );
                   ( new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) ) )
@@ -125,7 +117,7 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
     /* Destructor */
     virtual ~mwxSettingsDialog( )
     {
-        std::cout << "Destruct mwxSettingsDialog" << std::endl;
+        // (DEBUG) std::cout << "Destruct mwxSettingsDialog" << std::endl;
     } // destructor
 }; // class
 
@@ -140,27 +132,56 @@ class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
     mwxPairedSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                              Presetting& rxParameterSet // Parameter used for the dialog
                              )
-        : mwxOK_Cancel_Dialog(
-              pxHostWindow, // host ( responsible for destruction)
-              "Paired Reads Settings", // Title of Dialog
-              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                  pxPropertyPanel->append( "Mean distance", &iValue )
-                      .append( "Used distribution", {"normal", "uniform"}, &iValue )
-                      .append( "Standard deviation", &iValue )
-                      .append( "Unpaired penalty", &iValue );
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "Paired Reads Settings", // Title of Dialog
+                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                                   pxPropertyPanel->append( "Mean distance", &iValue )
+                                       .append( "Used distribution", {"normal", "uniform"}, &iValue )
+                                       .append( "Standard deviation", &iValue )
+                                       .append( "Unpaired penalty", &iValue );
 
-                  return pxPropertyPanel;
-              }, // lambda
+                                   return pxPropertyPanel;
+                               }, // lambda
 
-              wxDefaultPosition,
-              true ) // fit the size of the dialog to the size of its content
+                               wxDefaultPosition,
+                               true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
     /* Destructor */
     virtual ~mwxPairedSettingsDialog( )
     {
-        std::cout << "Destruct mwxPairedSettingsDialog" << std::endl;
+        // (DEBUG) std::cout << "Destruct mwxPairedSettingsDialog" << std::endl;
+    } // destructor
+}; // class
+
+
+/* Dialog for entering the paired read parameter */
+class mwxGlobalSettingsDialog : public mwxOK_Cancel_Dialog
+{
+  public:
+    /* Constructor */
+    mwxGlobalSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
+                             GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
+                             )
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "Global Settings", // Title of Dialog
+                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                                   pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency )
+                                       .append( rxGlobalParameterSet.piNumberOfThreads )
+                                       .updateEnabledDisabled( );
+                                   return pxPropertyPanel;
+                               }, // lambda
+
+                               wxDefaultPosition,
+                               true ) // fit the size of the dialog to the size of its content
+    {} // constructor
+
+    /* Destructor */
+    virtual ~mwxGlobalSettingsDialog( )
+    {
+        // (DEBUG) std::cout << "Destruct mwxGlobalSettingsDialog" << std::endl;
     } // destructor
 }; // class
 
@@ -173,20 +194,19 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
     mwxSAMSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                           GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
                           )
-        : mwxOK_Cancel_Dialog(
-              pxHostWindow, // host ( responsible for destruction)
-              "SAM Settings", // Title of Dialog
-              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                  pxPropertyPanel->append( rxGlobalParameterSet.bSAMOutputInReadsFolder )
-                      .append( rxGlobalParameterSet.xSAMOutputPath )
-                      .updateEnabledDisabled( );
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "SAM Settings", // Title of Dialog
+                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                                   pxPropertyPanel->append( rxGlobalParameterSet.bSAMOutputInReadsFolder )
+                                       .append( rxGlobalParameterSet.xSAMOutputPath )
+                                       .updateEnabledDisabled( );
 
-                  return pxPropertyPanel;
-              }, // lambda
+                                   return pxPropertyPanel;
+                               }, // lambda
 
-              wxDefaultPosition,
-              true ) // fit the size of the dialog to the size of its content
+                               wxDefaultPosition,
+                               true ) // fit the size of the dialog to the size of its content
     {} // constructor
 }; // class
 
@@ -671,6 +691,25 @@ class MA_MainFrame : public wxFrame
         this->updateLayout( );
     } // method
 
+    /* Handler for options dialog */
+    void doOptionsDialog( wxCommandEvent& WXUNUSED( event ) )
+    {
+        // Create a copy of the global parameter-set for editing
+        GeneralParameter xGeneralParameter( xExecutionContext.xParameterSetManager.xGlobalParameterSet );
+        auto xSettingsDialog = new mwxGlobalSettingsDialog( this, xGeneralParameter );
+        auto iReturnedChoice = xSettingsDialog->ShowModal( );
+        if( iReturnedChoice == wxID_OK )
+        {
+            // save the changed parameter into the selected parameter-set
+            xExecutionContext.xParameterSetManager.xGlobalParameterSet.mirror( xGeneralParameter );
+        } // if
+
+        xSettingsDialog->Destroy( );
+
+        // The parameter-set might have changed to paired ...
+        this->updateLayout( );
+    } // method
+
     /* Handler for gear button  of aligner settings */
     void onSettingsGearButton( wxCommandEvent& event )
     {
@@ -798,6 +837,9 @@ class MA_MainFrame : public wxFrame
         xMenuBar = new mwxMenuBar;
         this->xMenuBar->push_back( "&File" )
             .menu( ) // File Menu
+            .append(
+                "O&ptions\tF3", // Options
+                std::bind( &MA_MainFrame::doOptionsDialog, this, std::placeholders::_1 ) )
             .append( "E&xit\tAlt-X", // Exit
                      [&]( wxCommandEvent& ) { this->Close( true ); } );
 
@@ -882,18 +924,18 @@ class MA_MainFrame : public wxFrame
                         [this]( mwxStaticBoxSizer& xStaticBoxSizer ) // BoxSizer content
                         {
                             xStaticBoxSizer.Add(
-                                new wxTextCtrl(
-                                    xStaticBoxSizer.xConnector.pxWindow, wxID_ANY,
-                                    wxT( "1. Choose 'Aligner Settings' according to the type of your reads. (Illumina etc.)\n" 
-                                         "2. Select format and location (folder) for the aligner output.\n"
-										 "3. Select your reference genome.\n"
-										 "        MA requires precomputed FMD-Indices for genomes.\n" 
-										 "        FMD-Index creation for genomes in FASTA format can be done via the F2 key\n"
-										 "4. Specify your reads. Either via direct input or by selection of FASTA files."
-									),
-                                    wxDefaultPosition, wxDefaultSize,
-                                    wxHSCROLL | wxTE_MULTILINE | wxTE_READONLY |
-                                        wxNO_BORDER ),
+                                new wxTextCtrl( xStaticBoxSizer.xConnector.pxWindow, wxID_ANY,
+                                                wxT( "1. Choose 'Aligner Settings' according to the type of your "
+                                                     "reads. (Illumina etc.)\n"
+                                                     "2. Select format and location (folder) for the aligner output.\n"
+                                                     "3. Select your reference genome.\n"
+                                                     "        MA requires precomputed FMD-Indices for genomes.\n"
+                                                     "        FMD-Index creation for genomes in FASTA format can be "
+                                                     "done via the F2 key\n"
+                                                     "4. Specify your reads. Either via direct input or by selection "
+                                                     "of FASTA files." ),
+                                                wxDefaultPosition, wxDefaultSize,
+                                                wxHSCROLL | wxTE_MULTILINE | wxTE_READONLY | wxNO_BORDER ),
                                 1, wxEXPAND, 5 );
                         } );
                 } ) // add horizontal BoxSizer

@@ -43,9 +43,9 @@ class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, /
     double std = defaults::fStd;
 
     PairedReads( const ParameterSetManager& rParameters )
-        : u( rParameters.getSelected( )->xPairedBonus.get( ) ),
-          mean( (size_t) rParameters.getSelected( )->xMeanPairedReadDistance.get( ) ),
-          std( rParameters.getSelected( )->xStdPairedReadDistance.get( ) )
+        : u( rParameters.getSelected( )->xPairedBonus->get( ) ),
+          mean( (size_t) rParameters.getSelected( )->xMeanPairedReadDistance->get( ) ),
+          std( rParameters.getSelected( )->xStdPairedReadDistance->get( ) )
     {} // constructor
 
     /**

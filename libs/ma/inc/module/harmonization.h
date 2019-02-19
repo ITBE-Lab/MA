@@ -142,24 +142,24 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
     const size_t uiSVPenalty;
 
     Harmonization( const ParameterSetManager& rParameters ) : 
-        optimisticGapEstimation( rParameters.getSelected( )->xOptimisticGapCostEstimation.get( ) ),
-        fMinimalQueryCoverage( rParameters.getSelected( )->xMinQueryCoverage.get( ) ),
-        fScoreTolerace( rParameters.getSelected( )->xSoCScoreDecreaseTolerance.get( ) ),
-        uiMaxTries( rParameters.getSelected( )->xMaxNumSoC.get( ) ),
-        uiMinTries( rParameters.getSelected( )->xMinNumSoC.get( ) ),
-        uiMaxEqualScoreLookahead( rParameters.getSelected( )->xMaxScoreLookahead.get( ) ),
-        fScoreDiffTolerance( rParameters.getSelected( )->xScoreDiffTolerance.get( ) ),
-        uiSwitchQLen( rParameters.getSelected( )->xSwitchQlen.get( ) ),
-        uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin.get( ) ),
-        fCurrHarmScoreMinRel( rParameters.getSelected( )->xHarmScoreMinRel.get( ) ),
-        bDoHeuristics( !rParameters.getSelected( )->xDisableHeuristics.get( ) ),
-        bDoGapCostEstimationCutting( !rParameters.getSelected( )->xDisableGapCostEstimationCutting.get( ) ),
-        dMaxDeltaDist( rParameters.getSelected( )->xMaxDeltaDist.get( ) ),
-        uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist.get( ) ),
-        dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio.get( ) ),
-        iMinSVDistance( rParameters.getSelected( )->xMinSVDistance.get( ) ),
-        uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea.get( ) ),
-        uiSVPenalty( rParameters.getSelected( )->xSVPenalty.get( ) )
+        optimisticGapEstimation( rParameters.getSelected( )->xOptimisticGapCostEstimation->get( ) ),
+        fMinimalQueryCoverage( rParameters.getSelected( )->xMinQueryCoverage->get( ) ),
+        fScoreTolerace( rParameters.getSelected( )->xSoCScoreDecreaseTolerance->get( ) ),
+        uiMaxTries( rParameters.getSelected( )->xMaxNumSoC->get( ) ),
+        uiMinTries( rParameters.getSelected( )->xMinNumSoC->get( ) ),
+        uiMaxEqualScoreLookahead( rParameters.getSelected( )->xMaxScoreLookahead->get( ) ),
+        fScoreDiffTolerance( rParameters.getSelected( )->xScoreDiffTolerance->get( ) ),
+        uiSwitchQLen( rParameters.getSelected( )->xSwitchQlen->get( ) ),
+        uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
+        fCurrHarmScoreMinRel( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ),
+        bDoHeuristics( !rParameters.getSelected( )->xDisableHeuristics->get( ) ),
+        bDoGapCostEstimationCutting( !rParameters.getSelected( )->xDisableGapCostEstimationCutting->get( ) ),
+        dMaxDeltaDist( rParameters.getSelected( )->xMaxDeltaDist->get( ) ),
+        uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist->get( ) ),
+        dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
+        iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
+        uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
+        uiSVPenalty( rParameters.getSelected( )->xSVPenalty->get( ) )
     {} // default constructor
 
     // overload

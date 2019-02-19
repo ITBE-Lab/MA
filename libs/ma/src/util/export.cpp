@@ -49,7 +49,7 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
 {
     py::class_<AlignerParameter<TP_VALUE>, AlignerParameterBase>( rxPyModuleId, sName.c_str( ) ) //
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
-        .def( "get", py::overload_cast<void>(&AlignerParameter<TP_VALUE>::get) );
+        .def( "get", &AlignerParameter<TP_VALUE>::get_py );
     py::implicitly_convertible<AlignerParameter<TP_VALUE>, AlignerParameterBase>( );
 } // function
 
@@ -70,16 +70,16 @@ void exportParameter( py::module& rxPyModuleId )
 
     // Export Presetting Class
     py::class_<Presetting>( rxPyModuleId, "Presetting" ) //
-        .def( py::init<>( ) ) //
-        .def( "__setitem__", &Presetting::byName )
-        .def( "__getitem__", &Presetting::byName );
+        .def( py::init<>( ) ); //
+        //.def( "__setitem__", &Presetting::byName )
+        //.def( "__getitem__", &Presetting::byName );
 
     // Export ParameterSetManager Class
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
         .def( py::init<>( ) ) //
         .def( "get", &ParameterSetManager::get )
         .def( "set_selected", &ParameterSetManager::setSelected )
-        .def( "get_selected", py::overload_cast<void>(&ParameterSetManager::getSelected) );
+        .def( "get_selected", &ParameterSetManager::getSelected_py );
 } // function
 
 PYBIND11_MODULE( libMA, libMaModule )

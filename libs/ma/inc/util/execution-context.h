@@ -221,9 +221,9 @@ class OutputManager
     std::string SAMFullFileName( void )
     {
         // SAM filename generation according to parameter settings.
-        auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.bSAMOutputInReadsFolder.value
+        auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.bSAMOutputInReadsFolder->value
                                    ? pxReadsManager->getReadsFolderPath( )
-                                   : pxParameterSetManager->xGlobalParameterSet.xSAMOutputPath.get( ) );
+                                   : pxParameterSetManager->xGlobalParameterSet.xSAMOutputPath->get( ) );
         ( ( ( sFullFileName /= pxReadsManager->getReadsFileNameStem( ) ) += '-' ) += this->dateTimeString( ) ) +=
             ".sam";
         return sFullFileName.string( );
@@ -251,7 +251,7 @@ class ExecutionContext
     {
         std::cout << "Do align started ..." << std::endl;
         // FIXME: Read correct value for uiConcurrency
-        unsigned int uiConcurency = 1;
+        unsigned int uiConcurency = std::thread::hardware_concurrency();
 
         // For now, we build a computational graph for each call of doAlign
         // Possible Improvement: Cache the graph ...
@@ -272,7 +272,7 @@ class ExecutionContext
             // Wish AK: TP_PAIRED_WRITER -> PairedWriterType
             std::shared_ptr<TP_PAIRED_WRITER> pxPairedWriter;
             pxPairedWriter.reset(
-                new PairedFileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
+                new PairedFileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
 
             std::vector<std::string> vA{xReadsManager.sPrimaryQueryFullFileName.string( )};
             std::vector<std::string> vB{xReadsManager.sMateQueryFullFileName.string( )};
@@ -280,8 +280,8 @@ class ExecutionContext
             pxReader = pxPairedFileReader;
             auto pxPairedQueriesPledge = promiseMe( pxPairedFileReader );
             aGraphSinks = setUpCompGraphPaired( xParameterSetManager,
-                                                xGenomeManager.pxPackPledge, // Pack
-                                                xGenomeManager.pxFMDIndexPledge, // FMD index
+                                                xGenomeManager.getPackPledge( ), // Pack
+                                                xGenomeManager.getFMDIndexPledge( ), // FMD index
                                                 pxPairedQueriesPledge, // (for paired reads we require two queries!)
                                                 pxPairedWriter, // Output writer module(output of alignments)
                                                 uiConcurency ); // Number of threads
@@ -291,15 +291,16 @@ class ExecutionContext
             // Singular (Non-Paired) reads.
             // Wish AK: TP_WRITER -> WriterType
             std::shared_ptr<TP_WRITER> pxWriter;
-            pxWriter.reset( new FileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.pxPackPledge->get( ) ) );
+            pxWriter.reset(
+                new FileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
 
             auto pxFileReader =
                 std::make_shared<FileReader>( xParameterSetManager, xReadsManager.sPrimaryQueryFullFileName.string( ) );
             pxReader = pxFileReader;
             auto pxQueriesPledge = promiseMe( pxFileReader );
             aGraphSinks = setUpCompGraph( xParameterSetManager,
-                                          xGenomeManager.pxPackPledge, // Pack
-                                          xGenomeManager.pxFMDIndexPledge, // FMD index
+                                          xGenomeManager.getPackPledge( ), // Pack
+                                          xGenomeManager.getFMDIndexPledge( ), // FMD index
                                           pxQueriesPledge, // Queries
                                           pxWriter, // Output writer module(output of alignments)
                                           uiConcurency ); // Number of threads
@@ -316,7 +317,7 @@ class ExecutionContext
         ); // function call
 
         // Destroy computational graph; release memory
-		// @Markus: Is this really necessary? 
+        // @Markus: Is this really necessary?
         aGraphSinks.clear( );
     } // method
 }; // class

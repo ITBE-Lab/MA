@@ -457,13 +457,13 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
      * for short queries.
      */
     BinarySeeding( const ParameterSetManager& rParameters )
-        : bLrExtension( rParameters.getSelected( )->xSeedingTechnique.get( ) == "maxSpan" ),
-          uiMinAmbiguity( rParameters.getSelected( )->xMinimalSeedAmbiguity.get( ) ),
-          uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity.get( ) ),
-          uiMinSeedSizeDrop( rParameters.getSelected( )->xMinimalSeedSizeDrop.get( ) ),
-          fRelMinSeedSizeAmount( rParameters.getSelected( )->xRelMinSeedSizeAmount.get( ) ),
-          bDisableHeuristics( rParameters.getSelected( )->xDisableHeuristics.get( ) ),
-          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable.get( ) )
+        : bLrExtension( rParameters.getSelected( )->xSeedingTechnique->get( ) == "maxSpan" ),
+          uiMinAmbiguity( rParameters.getSelected( )->xMinimalSeedAmbiguity->get( ) ),
+          uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
+          uiMinSeedSizeDrop( rParameters.getSelected( )->xMinimalSeedSizeDrop->get( ) ),
+          fRelMinSeedSizeAmount( rParameters.getSelected( )->xRelMinSeedSizeAmount->get( ) ),
+          bDisableHeuristics( rParameters.getSelected( )->xDisableHeuristics->get( ) ),
+          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) )
     {} // constructor
 
     virtual std::shared_ptr<SegmentVector>
