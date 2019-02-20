@@ -300,6 +300,10 @@ class BasePledge
         //             break;
         //         } // if
 
+        std::mutex xExceptionMutex;
+        bool bExceptionSet = false;
+        AnnotatedException xExceptionFromThread("no exception thrown");
+
         {
             /*
              * This variable is volatile so that every thread has to load if from memory each loop.
@@ -309,11 +313,14 @@ class BasePledge
             volatile bool bContinue = true;
             // set up a threadpool
             ThreadPool xPool( numThreads );
+
+
             // enqueue a task that executes the comp. graph for each thread in the pool.
             for( std::shared_ptr<BasePledge> pPledge : vPledges )
             {
                 xPool.enqueue(
-                    [&callback, &bContinue]( size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
+                    [&callback, &bContinue, &xExceptionMutex, &xExceptionFromThread, &bExceptionSet, &xPool](
+                        size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
                         assert( pPledge != nullptr );
 
                         /*
@@ -342,20 +349,44 @@ class BasePledge
                                 if( uiTid == 0 )
                                     bContinue = callback( );
                             } // try
-                            catch( AnnotatedException e )
+                            catch( AnnotatedException& rxException )
                             {
-                                std::cerr << "Exception: " << e.what( ) << std::endl;
-                                DEBUG( return; ) // DEBUG
+                                std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
+                                if(bExceptionSet)
+                                    std::cerr << "Ignored exception: " << rxException.what( ) << std::endl;
+                                else
+                                {
+                                    bExceptionSet = true;
+                                    xExceptionFromThread = rxException;
+                                    bContinue = false;
+                                    return;
+                                } // else
                             } // catch
-                            catch( const std::exception& e )
+                            catch( const std::exception& rxException )
                             {
-                                std::cerr << e.what( ) << '\n';
-                                DEBUG( return; ) // DEBUG
+                                std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
+                                if(bExceptionSet)
+                                    std::cerr << "Ignored exception: " << rxException.what( ) << std::endl;
+                                else
+                                {
+                                    bExceptionSet = true;
+                                    xExceptionFromThread = AnnotatedException( rxException.what() );
+                                    bContinue = false;
+                                    return;
+                                } // else
                             } // catch
                             catch( ... )
                             {
-                                std::cerr << "unknown exception in simultaneous get" << '\n';
-                                DEBUG( return; ) // DEBUG
+                                std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
+                                if(bExceptionSet)
+                                    std::cerr << "Ignored unknown exception" << std::endl;
+                                else
+                                {
+                                    bExceptionSet = true;
+                                    xExceptionFromThread = AnnotatedException( "Unknown exception" );
+                                    bContinue = false;
+                                    return;
+                                } // else
                             } // catch
                         } while( bLoop && bContinue );
                         DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
@@ -364,6 +395,8 @@ class BasePledge
             } // for
             // wait for the pool to finish it's work
         } // scope xPool
+        if(bExceptionSet)
+            throw xExceptionFromThread;
     } // function
 }; // class
 

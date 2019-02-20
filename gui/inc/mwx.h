@@ -58,10 +58,9 @@ class mwxMenu : public wxMenu
     std::vector<mwxMenuItem> vChilds;
 
     /* Appends an item to the menu. */
-    mwxMenu& append(
-        const std::string& sMenuItemText, // text of menu-item
-        std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
-        const std::string& sHelpText = "" ) // helper text for menu item
+    mwxMenu& append( const std::string& sMenuItemText, // text of menu-item
+                     std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
+                     const std::string& sHelpText = "" ) // helper text for menu item
     {
         auto iItemID = mxwExecutionContext::uniqueID( );
         vChilds.emplace_back( mwxMenuItem( sMenuItemText ) );
@@ -205,13 +204,12 @@ class mwxBitmapButton : public wxBitmapButton
 {
   public:
     /* Constructor */
-    mwxBitmapButton(
-        wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
-        const wxBitmap& rxBitmapNormal, // Bitmap unpressed
-        const wxBitmap& rxBitmapPressed, // Bitmap for pressed button
-        std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
-        const wxPoint rxPos = wxDefaultPosition,
-        const wxSize rxSize = wxDefaultSize )
+    mwxBitmapButton( wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
+                     const wxBitmap& rxBitmapNormal, // Bitmap unpressed
+                     const wxBitmap& rxBitmapPressed, // Bitmap for pressed button
+                     std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
+                     const wxPoint rxPos = wxDefaultPosition,
+                     const wxSize rxSize = wxDefaultSize )
         : wxBitmapButton( pxHostWindow, wxID_ANY, rxBitmapNormal, rxPos, rxSize, wxNO_BORDER )
     {
         this->SetBitmapPressed( rxBitmapPressed );
@@ -227,14 +225,14 @@ class mwxOK_Cancel_Dialog : public wxDialog
 {
   public:
     /* Constructor */
-    mwxOK_Cancel_Dialog(
-        wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
-        const wxString& sTitle, // title of the dialog
-        std::function<wxWindow*( wxWindow* )>
-            fMakeContent, // called for creating the content of the dialog
-        const wxPoint& xPos = wxDefaultPosition, // position of the dialog
-        bool bDoFit = false, // adapt the size of the dialog to the size of its content
-        std::function<void( wxCommandEvent& )> OK_handler = []( wxCommandEvent& ) {} ) // handler of OK button
+    mwxOK_Cancel_Dialog( wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
+                         const wxString& sTitle, // title of the dialog
+                         std::function<wxWindow*( wxWindow* )>
+                             fMakeContent, // called for creating the content of the dialog
+                         const wxPoint& xPos = wxDefaultPosition, // position of the dialog
+                         bool bDoFit = false, // adapt the size of the dialog to the size of its content
+                         std::function<void( wxCommandEvent& )> OK_handler =
+                             []( wxCommandEvent& ) {} ) // handler of OK button
 
         : wxDialog( pxHostWindow, wxID_ANY, sTitle, xPos, wxSize( 500, 400 ),
                     ( wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL ) /* ^ wxRESIZE_BORDER */ ^ wxMAXIMIZE_BOX ^
@@ -304,13 +302,13 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
     } // method
 
   public:
-    mwxFileSelectDeleteButtonSizer(
-        const mwxConnector& pxConnector, // connector for BoxSizer
-        const std::string& rsText, // text of the button group
-        const std::string& rsFileDialogTitle,
-        const std::string& rsFilePattern,
-        std::function<void( const fs::path& )> fHandler = []( const fs::path& ) {}, // called, if OK is selected
-        bool bWithClearButton = true )
+    mwxFileSelectDeleteButtonSizer( const mwxConnector& pxConnector, // connector for BoxSizer
+                                    const std::string& rsText, // text of the button group
+                                    const std::string& rsFileDialogTitle,
+                                    const std::string& rsFilePattern,
+                                    std::function<void( const fs::path& )> fHandler =
+                                        []( const fs::path& ) {}, // File Handler for Folder Button
+                                    bool bWithClearButton = true )
         : mwxBoxSizer( pxConnector, wxVERTICAL ),
           pxConnector( pxConnector ),
           sFileDialogTitle( rsFileDialogTitle ),
@@ -358,10 +356,9 @@ class mwxMapDrivenComboBox : public wxComboBox
 
     // Constructor
     template <typename TYPE>
-    mwxMapDrivenComboBox(
-        wxWindow* pxHost,
-        const std::map<std::string, TYPE>& rxMap,
-        std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {} ) // handler
+    mwxMapDrivenComboBox( wxWindow* pxHost,
+                          const std::map<std::string, TYPE>& rxMap,
+                          std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {} ) // handler
         : wxComboBox( )
     {
         for( auto& rxKeyValue : rxMap )
@@ -506,6 +503,24 @@ class mwxPropertyNotebook : public wxNotebook
     } // method
 }; // class
 
+namespace prettyPrint
+{
+    template <typename VALUE_TYPE> std::string mwxProperty_to_string( const VALUE_TYPE& value )
+    {
+        return std::to_string( value );
+    } // function
+
+    template <> std::string mwxProperty_to_string<double> ( const double& value )
+    {
+        // Taken from: https://stackoverflow.com/questions/13686482/c11-stdto-stringdouble-no-trailing-zeros
+        std::string sText( std::to_string( value ) );
+        int iOffset = 1;
+        if( sText.find_last_not_of( '0' ) == sText.find( '.' ) )
+            iOffset = 0;
+        sText.erase( sText.find_last_not_of( '0' ) + iOffset, std::string::npos );
+        return sText;
+    } // function
+} // namespace
 
 /* Managed wxWidgets extension for property management.
  * FIXME: Extend pxFlexLayout in order to get deallocation problem solved.
@@ -562,7 +577,7 @@ class mwxPropertyPanel : public wxPanel
         /* Update the value of the property */
         void update( void )
         {
-            pxTextCtrl->SetValue( std::to_string( this->pxParameter->value ) );
+            pxTextCtrl->SetValue( prettyPrint::mwxProperty_to_string<VALUE_TYPE>( this->pxParameter->value ) );
         } // method
 
         /* Handler is called whenever the user leaves the input field (the user ends property editing) */
@@ -587,41 +602,28 @@ class mwxPropertyPanel : public wxPanel
             pxHost->updateEnabledDisabled( );
         } // method
 
-        /* Constructor */
-        mwxTextProperty( mwxPropertyPanel* pxHost, // parent of property
-                         const std::string& sName, // property name
-                         int* pValue // address of the managed value
-                         )
-            : mwxProperty( pxHost, sName ),
-              pxTextCtrl( new wxTextCtrl( pxHost, wxID_ANY, std::to_string( *pValue ), wxDefaultPosition, wxDefaultSize,
-                                          wxTE_PROCESS_ENTER ) )
-        {
-            pxHost->pxFlexLayout->Add( pxTextCtrl, 0, wxALL, 5 );
-
-            /* Make the enter key to behave like the tab key. */
-            pxTextCtrl->wxEvtHandler::Bind( wxEVT_COMMAND_TEXT_ENTER,
-                                            [&]( wxCommandEvent& rxEvent ) { this->pxTextCtrl->Navigate( ); } );
-        } // constructor
-
         /* Constructor with AlignerParameter */
         mwxTextProperty( mwxPropertyPanel* pxHost, // parent of property
-                         std::shared_ptr<AlignerParameter<VALUE_TYPE>> pxParameter // parameter reference
+                         std::shared_ptr<AlignerParameter<VALUE_TYPE>>
+                             pxParameter // parameter reference
                          )
             : mwxProperty( pxHost, pxParameter->sName ),
-              pxTextCtrl( new wxTextCtrl( pxHost, wxID_ANY, std::to_string( pxParameter->value ), wxDefaultPosition,
-                                          wxDefaultSize, wxTE_PROCESS_ENTER ) ),
+              pxTextCtrl( new wxTextCtrl( pxHost, wxID_ANY,
+                                          prettyPrint::mwxProperty_to_string<VALUE_TYPE>( pxParameter->value ),
+                                          wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER ) ),
               pxParameter( pxParameter )
         {
             pxHost->pxFlexLayout->Add( pxTextCtrl, 0, wxALL, 5 );
 
             /* The description of the parameter is used as ToolTip-text */
-            pxTextCtrl->SetToolTip( pxParameter->sDescription );
+            this->pxTextCtrl->SetToolTip( pxParameter->sDescription );
+            this->pxStaticText->SetToolTip( pxParameter->sDescription );
 
             /* Bind "focus leave" to the handler */
-            pxTextCtrl->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
+            this->pxTextCtrl->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
                                             [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
             /* Make the enter key to behave like the tab key. */
-            pxTextCtrl->wxEvtHandler::Bind( wxEVT_COMMAND_TEXT_ENTER,
+            this->pxTextCtrl->wxEvtHandler::Bind( wxEVT_COMMAND_TEXT_ENTER,
                                             [&]( wxCommandEvent& rxEvent ) { this->pxTextCtrl->Navigate( ); } );
         } // constructor
 
@@ -657,7 +659,8 @@ class mwxPropertyPanel : public wxPanel
 
         /* Constructor for AlignerParameter */
         mwxFolderProperty( mwxPropertyPanel* pxHost, // parent of property
-                           std::shared_ptr<AlignerParameter<fs::path>> pxParameter // parameter reference
+                           std::shared_ptr<AlignerParameter<fs::path>>
+                               pxParameter // parameter reference
                            )
             : mwxProperty( pxHost, pxParameter->sName ),
               pxHost( pxHost ),
@@ -669,6 +672,7 @@ class mwxPropertyPanel : public wxPanel
             pxHost->pxFlexLayout->Add( pxDirPickerCtrl, 0, wxALL, 5 );
 
             this->pxDirPickerCtrl->SetToolTip( pxParameter->sDescription );
+            this->pxStaticText->SetToolTip( pxParameter->sDescription );
 
             // Bind "focus leave" to the handler
             this->pxDirPickerCtrl->wxEvtHandler::Bind(
@@ -677,8 +681,8 @@ class mwxPropertyPanel : public wxPanel
 
         virtual void updateEnabledDisabledDispatch( void )
         {
-			if (this->pxParameter)
-				updateEnabledDisabled( this->pxParameter->fEnabled( ), pxDirPickerCtrl );
+            if( this->pxParameter )
+                updateEnabledDisabled( this->pxParameter->fEnabled( ), pxDirPickerCtrl );
         } // method
     }; // inner class
 
@@ -687,7 +691,8 @@ class mwxPropertyPanel : public wxPanel
     class mwxChoiceProperty : public mwxProperty
     {
       public:
-        std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>> pxParameter = nullptr; // pointer to parameter object
+        std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>> pxParameter =
+            nullptr; // pointer to parameter object
         wxComboBox* pxCombo; // Text control holding the actual value
 
         /* Update the value of the property */
@@ -717,25 +722,10 @@ class mwxPropertyPanel : public wxPanel
             pxHost->updateEnabledDisabled( );
         } // method
 
-        /* Constructor */
-        mwxChoiceProperty( mwxPropertyPanel* pxHost, // parent of property
-                           const std::string& sName, // property name
-                           const std::vector<std::string>& vsChoices, // property choices
-                           int* pValue // address of the managed value corresponding to choice
-                           )
-            : mwxProperty( pxHost, sName )
-        {
-            // Prepare required string array of wxWidgets and create the choice widget
-            wxArrayString xChoices;
-            for( auto& sChoiceText : vsChoices )
-                xChoices.Add( sChoiceText.c_str( ) );
-            pxCombo = new wxComboBox( pxHost, wxID_ANY, xChoices[ 0 ], wxDefaultPosition, wxDefaultSize, xChoices );
-            pxHost->pxFlexLayout->Add( pxCombo, 0, wxALL, 5 );
-        } // constructor
-
         /* Constructor with AlignerParameter */
         mwxChoiceProperty( mwxPropertyPanel* pxHost, // parent of property
-                           std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>> pxParameter // parameter reference
+                           std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>
+                               pxParameter // parameter reference
                            )
             : mwxProperty( pxHost, pxParameter->sName ), pxParameter( pxParameter )
         {
@@ -743,22 +733,23 @@ class mwxPropertyPanel : public wxPanel
             wxArrayString aChoices;
             for( auto& sChoiceText : pxParameter->vChoices )
                 aChoices.Add( sChoiceText.second.c_str( ) );
-            pxCombo = new wxComboBox( pxHost, wxID_ANY, aChoices[ pxParameter->uiSelection ], wxDefaultPosition,
+            this->pxCombo = new wxComboBox( pxHost, wxID_ANY, aChoices[ pxParameter->uiSelection ], wxDefaultPosition,
                                       wxDefaultSize, aChoices, wxCB_READONLY );
             pxHost->pxFlexLayout->Add( pxCombo, 0, wxALL, 5 );
 
             // Description of the parameter is used as ToolTip-text
-            pxCombo->SetToolTip( pxParameter->sDescription );
+            this->pxCombo->SetToolTip( pxParameter->sDescription );
+            this->pxStaticText->SetToolTip( pxParameter->sDescription );
 
             // Bind handler that process changes
-            pxCombo->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
+           this->pxCombo->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
                                          [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
         } // constructor
 
         virtual void updateEnabledDisabledDispatch( void )
         {
-			if (this->pxParameter)
-				updateEnabledDisabled( this->pxParameter->fEnabled( ), pxCombo );
+            if( this->pxParameter )
+                updateEnabledDisabled( this->pxParameter->fEnabled( ), pxCombo );
         } // method
     }; // inner class
 
@@ -779,17 +770,8 @@ class mwxPropertyPanel : public wxPanel
         } // method
 
         mwxCheckBoxProperty( mwxPropertyPanel* pxHost, // parent of property
-                             const std::string& sName, // property name
-                             int* pValue // address of the managed value corresponding to choice
-                             )
-            : mwxProperty( pxHost, sName ), // pxHost( pxHost ),
-              pxCheckBox( new wxCheckBox( pxHost, wxID_ANY, wxT( "" ), wxDefaultPosition, wxDefaultSize, 0 ) )
-        {
-            pxHost->pxFlexLayout->Add( pxCheckBox, 0, wxALL, 5 );
-        } // constructor
-
-        mwxCheckBoxProperty( mwxPropertyPanel* pxHost, // parent of property
-                             std::shared_ptr<AlignerParameter<bool>> pxParameter // parameter reference
+                             std::shared_ptr<AlignerParameter<bool>>
+                                 pxParameter // parameter reference
                              )
             : // pxHost( pxHost ),
               mwxProperty( pxHost, pxParameter->sName ),
@@ -802,16 +784,17 @@ class mwxPropertyPanel : public wxPanel
 
             // Description of the parameter is used as ToolTip-text
             this->pxCheckBox->SetToolTip( pxParameter->sDescription );
+            this->pxStaticText->SetToolTip( pxParameter->sDescription );
 
             // Bind handler that process changes
-            pxCheckBox->wxEvtHandler::Bind( wxEVT_CHECKBOX,
+            this->pxCheckBox->wxEvtHandler::Bind( wxEVT_CHECKBOX,
                                             [this]( wxCommandEvent& rxEvent ) { this->commandHandler( rxEvent ); } );
         } // constructor
 
         virtual void updateEnabledDisabledDispatch( void )
         {
-			if (this->pxParameter)
-				updateEnabledDisabled( this->pxParameter->fEnabled( ), pxCheckBox );
+            if( this->pxParameter )
+                updateEnabledDisabled( this->pxParameter->fEnabled( ), pxCheckBox );
         } // method
     }; // inner class
 
@@ -840,64 +823,78 @@ class mwxPropertyPanel : public wxPanel
     {} // constructor
 
     /* Add value property */
-    mwxPropertyPanel& append( const std::string& sName, // property name
-                              int* pValue // address of the managed value
-    )
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<int>>& pParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxTextProperty<int>>( this, sName, pValue ) );
+        vProperties.emplace_back( std::make_shared<mwxTextProperty<int>>( this, pParameter ) );
 
         return *this;
     } // method
 
     /* Add value property */
-    mwxPropertyPanel& append( AlignerParameterPointer<int>& rxParameter )
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<bool>>& pParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxTextProperty<int>>( this, rxParameter.pContent ) );
+        vProperties.emplace_back( std::make_shared<mwxCheckBoxProperty>( this, pParameter ) );
 
         return *this;
     } // method
 
     /* Add value property */
-    mwxPropertyPanel& append( AlignerParameterPointer<bool>& rxParameter )
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<double>>& pParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxCheckBoxProperty>( this, rxParameter.pContent ) );
+        vProperties.emplace_back( std::make_shared<mwxTextProperty<double>>( this, pParameter ) );
 
         return *this;
     } // method
 
     /* Add choices property */
-    mwxPropertyPanel& append( AlignerParameterPointer<AlignerParameterBase::ChoicesType>& rxParameter )
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>& pParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxChoiceProperty>( this, rxParameter.pContent ) );
+        vProperties.emplace_back( std::make_shared<mwxChoiceProperty>( this, pParameter ) );
 
         return *this;
     } // method
 
     /* Add path (file-system) property */
-    mwxPropertyPanel& append( AlignerParameterPointer<fs::path>& rxParameter )
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<fs::path>>& pParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxFolderProperty>( this, rxParameter.pContent ) );
+        vProperties.emplace_back( std::make_shared<mwxFolderProperty>( this, pParameter ) );
 
         return *this;
     } // method
 
-    /* Add choice property */
-    mwxPropertyPanel& append( const std::string& sName, // property name
-                              const std::vector<std::string>& vsChoices, // choices
-                              int* pValue // address of the managed value
-    )
+    /* Add ... */
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameterBase>& pParameter )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxChoiceProperty>( this, sName, vsChoices, pValue ) );
-        return *this;
-    } // method
+        {
+            std::shared_ptr<AlignerParameter<int>> pCasted =
+                std::dynamic_pointer_cast<AlignerParameter<int>>( pParameter );
+            if( pCasted != nullptr )
+                return append( pCasted );
+        } // scope
+        {
+            auto pCasted = std::dynamic_pointer_cast<AlignerParameter<double>>( pParameter );
+            if( pCasted != nullptr )
+                return append( pCasted );
+        } // scope
+        {
+            auto pCasted = std::dynamic_pointer_cast<AlignerParameter<bool>>( pParameter );
+            if( pCasted != nullptr )
+                return append( pCasted );
+        } // scope
+        {
+            auto pCasted = std::dynamic_pointer_cast<AlignerParameter<AlignerParameterBase::ChoicesType>>( pParameter );
+            if( pCasted != nullptr )
+                return append( pCasted );
+        } // scope
+        {
+            auto pCasted = std::dynamic_pointer_cast<AlignerParameter<fs::path>>( pParameter );
+            if( pCasted != nullptr )
+                return append( pCasted );
+        } // scope
 
-    /* Add check-box property */
-    mwxPropertyPanel& appendCheckBox( const std::string& sName, // property name
-                                      int* pValue // address of the managed value
-    )
-    { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxCheckBoxProperty>( this, sName, pValue ) );
-        return *this;
+        throw std::runtime_error( std::string( "Could not append parameter:" )
+                                      .append( pParameter->sName )
+                                      .append( " to the settings menu. Maybe it's type is not overloaded?" ) );
     } // method
 
     void layout( )

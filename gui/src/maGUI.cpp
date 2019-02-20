@@ -45,6 +45,7 @@
 /* Due to MSVC libMa should be included after the wxWidgets includes */
 #include "util/default_parameters.h"
 #include "util/export.h"
+#include "version.h"
 using namespace libMA;
 
 #include "util/execution-context.h"
@@ -78,40 +79,28 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
     mwxSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                        Presetting& rxParameterSet // Parameter used for the dialog
                        )
-        : mwxOK_Cancel_Dialog(
-              pxHostWindow, // host ( responsible for destruction)
-              "Parameter Settings", // Title of Dialog
-              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                  this->iValue = 0;
-                  auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "Parameter Settings", // Title of Dialog
+                               [&] //
+                               ( wxWindow * pxHostWindow ) //
+                               { // Content of Dialog
+                                   this->iValue = 0;
+                                   auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
 
-                  auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( "Custom" );
-                  ( new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) ) )
-                      ->append( rxParameterSet.xSeedingTechnique )
-                      .append( rxParameterSet.xExampleCheckBox );
+                                   for( auto xPair : rxParameterSet.xpParametersByCategory )
+                                   {
+                                       // xPair.first.second extracts the category name
+                                       auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
+                                       auto* pPanel = new mwxPropertyPanel(
+                                           pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
+                                       for( auto pParameter : xPair.second )
+                                           pPanel->append( pParameter );
+                                       pPanel->updateEnabledDisabled( );
+                                   } // for
 
-                  pxScrolledStatixBoxesContext = pxNotebook->addPage( "General" );
-                  ( new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) ) )
-                      ->append( rxParameterSet.xUsePairedReads )
-                      .append( rxParameterSet.xExamplePath );
-
-                  pxScrolledStatixBoxesContext = pxNotebook->addPage( "Paired Alignments" );
-                  ( new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) ) )
-                      ->append( "Used distribution", {"normal", "uniform"}, &iValue )
-                      .append( "Mean distance", &iValue )
-                      .append( "Standard deviation", &iValue )
-                      .append( "Unpaired penalty", &iValue );
-
-                  pxScrolledStatixBoxesContext = pxNotebook->addPage( "DP Scoring" );
-                  ( new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) ) )
-                      ->append( rxParameterSet.xMatch )
-                      .append( rxParameterSet.xMisMatch )
-                      .append( "Gap open penalty", &iValue )
-                      .append( "Gap extend penalty", &iValue );
-
-                  return pxNotebook;
-              }, // lambda
-              wxDefaultPosition )
+                                   return pxNotebook;
+                               }, // lambda
+                               wxDefaultPosition )
     {} // constructor
 
     /* Destructor */
@@ -136,10 +125,7 @@ class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
                                "Paired Reads Settings", // Title of Dialog
                                [&]( wxWindow* pxHostWindow ) { // Content of Dialog
                                    auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( "Mean distance", &iValue )
-                                       .append( "Used distribution", {"normal", "uniform"}, &iValue )
-                                       .append( "Standard deviation", &iValue )
-                                       .append( "Unpaired penalty", &iValue );
+                                   pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
 
                                    return pxPropertyPanel;
                                }, // lambda
@@ -168,8 +154,8 @@ class mwxGlobalSettingsDialog : public mwxOK_Cancel_Dialog
                                "Global Settings", // Title of Dialog
                                [&]( wxWindow* pxHostWindow ) { // Content of Dialog
                                    auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency )
-                                       .append( rxGlobalParameterSet.piNumberOfThreads )
+                                   pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency.pContent )
+                                       .append( rxGlobalParameterSet.piNumberOfThreads.pContent )
                                        .updateEnabledDisabled( );
                                    return pxPropertyPanel;
                                }, // lambda
@@ -198,8 +184,8 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
                                "SAM Settings", // Title of Dialog
                                [&]( wxWindow* pxHostWindow ) { // Content of Dialog
                                    auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.bSAMOutputInReadsFolder )
-                                       .append( rxGlobalParameterSet.xSAMOutputPath )
+                                   pxPropertyPanel->append( rxGlobalParameterSet.bSAMOutputInReadsFolder.pContent )
+                                       .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
                                        .updateEnabledDisabled( );
 
                                    return pxPropertyPanel;
@@ -665,9 +651,9 @@ class MA_MainFrame : public wxFrame
     /* Handler for menu Item 'About' */
     void onAbout( wxCommandEvent& WXUNUSED( event ) )
     {
-        wxMessageBox( wxT( "MA - The Modular Aligner\nCreated by Markus Schmidt and Arne "
-                           "Kutzner\nVersion: 1.0" ),
-                      wxT( "About" ), wxICON_INFORMATION );
+        wxMessageBox(
+            wxT( "MA - The Modular Aligner\nVersion: " MA_VERSION "\n\u00A9 Markus Schmidt and Arne Kutzner (2019)" ),
+            wxT( "About" ), wxICON_INFORMATION );
     } // method
 
     /* Handler for the gear button */
@@ -816,6 +802,7 @@ class MA_MainFrame : public wxFrame
         xTargetTextCtrl->SetEditable( sFileName.empty( ) );
     } // method
 
+
   public:
     MA_MainFrame( const wxString& title )
         : wxFrame( NULL,
@@ -837,9 +824,8 @@ class MA_MainFrame : public wxFrame
         xMenuBar = new mwxMenuBar;
         this->xMenuBar->push_back( "&File" )
             .menu( ) // File Menu
-            .append(
-                "O&ptions\tF3", // Options
-                std::bind( &MA_MainFrame::doOptionsDialog, this, std::placeholders::_1 ) )
+            .append( "O&ptions\tF3", // Options
+                     std::bind( &MA_MainFrame::doOptionsDialog, this, std::placeholders::_1 ) )
             .append( "E&xit\tAlt-X", // Exit
                      [&]( wxCommandEvent& ) { this->Close( true ); } );
 
@@ -991,15 +977,27 @@ class MA_MainFrame : public wxFrame
                                             wxDefaultSize, wxHSCROLL | wxTE_MULTILINE );
                         pxBoxSizer.Add( this->xQueryTextCtrl, 1, wxALL | wxEXPAND, 5 );
 
+                        // Set callback for rReadManager
+                        xExecutionContext.xReadsManager.fCallBackGetPrimaryQuery = [this]( ) {
+                            return std::string( this->xQueryTextCtrl->GetValue( ).c_str( ) );
+                        }; // lambda
+
                         this->xMatesStaticText =
                             new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY, wxT( "Paired reads mates" ),
                                               wxDefaultPosition, wxDefaultSize, 0 );
                         pxBoxSizer.Add( this->xMatesStaticText, 0, wxTOP | wxLEFT, 5 );
 
-                        this->xMatesTextCtrl = new wxTextCtrl( pxBoxSizer.pxConnector.pxWindow, wxID_ANY, wxEmptyString,
-                                                               wxDefaultPosition, wxDefaultSize, 0 );
+                        this->xMatesTextCtrl =
+                            new wxTextCtrl( pxBoxSizer.pxConnector.pxWindow, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                                            wxDefaultSize, wxHSCROLL | wxTE_MULTILINE );
                         pxBoxSizer.Add( this->xMatesTextCtrl, 1, wxALL | wxEXPAND, 5 );
 
+                        // Set callback for rReadManager
+                        xExecutionContext.xReadsManager.fCallBackGetMateyQuery = [this]( ) {
+                            return std::string( this->xMatesTextCtrl->GetValue( ).c_str( ) );
+                        }; // lambda
+
+                        // Make mate fields invisible
                         xMatesStaticText->Show( false );
                         xMatesTextCtrl->Show( false );
                     } ); // add vertical BoxSizer
@@ -1013,7 +1011,9 @@ class MA_MainFrame : public wxFrame
                         // File Selection for Reads
                         pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
                                             pxBoxSizer.pxConnector, "Reads Selection", "Select Query File",
-                                            "FASTA(Q) Files(*.fasta;*fastaq)|*.fasta;*.fastaq|All Files (*.*)|*.*",
+                                            "FASTA(Q) "
+                                            "Files(*.fasta;*.fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*.fastq;*.fasta.gz;*."
+                                            "fastq.gz|All Files (*.*)|*.*",
                                             std::bind( &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
                                                        this->xQueryTextCtrl ) ),
                                         wxSizerFlags( 1 ) );
@@ -1033,8 +1033,9 @@ class MA_MainFrame : public wxFrame
                                         pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
                                                             pxBoxSizer.pxConnector, "Mates Selection",
                                                             "Open Query Mate file",
-                                                            "FASTA(Q) Files(*.fasta;*fastaq)|*.fasta;*.fastaq|All "
-                                                            "Files (*.*)|*.*",
+                                                            "FASTA(Q) "
+                                                            "Files(*.fasta;*fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*."
+                                                            "fastq;*.fasta.gz;*.fastq.gz|All Files (*.*)|*.*",
                                                             std::bind( &MA_MainFrame::onQuerySelection, this,
                                                                        std::placeholders::_1, this->xMatesTextCtrl ) ),
                                                         wxSizerFlags( 0 ) );

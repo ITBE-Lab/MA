@@ -99,7 +99,7 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 
     /// @brief If the seeds cover less that x percent of the query we use SW,
     /// otherwise we fill in the gaps.
-    const double fMinimalQueryCoverage;
+    //const double fMinimalQueryCoverage;
 
     /// @brief Stop the SoC extraction if the harmonized score drops more than x.
     const double fScoreTolerace;
@@ -133,9 +133,9 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 
     const nucSeqIndex uiMinDeltaDist;
 
-    const double dMaxSVRatio;
+    //const double dMaxSVRatio;
 
-    const int64_t iMinSVDistance;
+    //const int64_t iMinSVDistance;
 
     const nucSeqIndex uiMaxGapArea;
 
@@ -143,7 +143,7 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 
     Harmonization( const ParameterSetManager& rParameters ) : 
         optimisticGapEstimation( rParameters.getSelected( )->xOptimisticGapCostEstimation->get( ) ),
-        fMinimalQueryCoverage( rParameters.getSelected( )->xMinQueryCoverage->get( ) ),
+        //fMinimalQueryCoverage( rParameters.getSelected( )->xMinQueryCoverage->get( ) ),
         fScoreTolerace( rParameters.getSelected( )->xSoCScoreDecreaseTolerance->get( ) ),
         uiMaxTries( rParameters.getSelected( )->xMaxNumSoC->get( ) ),
         uiMinTries( rParameters.getSelected( )->xMinNumSoC->get( ) ),
@@ -156,8 +156,8 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
         bDoGapCostEstimationCutting( !rParameters.getSelected( )->xDisableGapCostEstimationCutting->get( ) ),
         dMaxDeltaDist( rParameters.getSelected( )->xMaxDeltaDist->get( ) ),
         uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist->get( ) ),
-        dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
-        iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
+        //dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
+        //iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
         uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
         uiSVPenalty( rParameters.getSelected( )->xSVPenalty->get( ) )
     {} // default constructor

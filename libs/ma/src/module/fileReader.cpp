@@ -189,21 +189,22 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     else
         this->setFinished( );
     // if we reach this point we have read all content of the file
-    throw AnnotatedException( "Tried to read query past EoF: '" + std::to_string( pFile->peek( ) ) + "'" );
+    throw AnnotatedException( "Tried to read query past EoF: '" + std::to_string( pFile->peek( ) ) +
+                              "'\nIs your input really in FASTA format?" );
 } // function
 
 std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
 {
     auto pRet = std::make_shared<TP_PAIRED_READS>( );
-    pRet->push_back( xF1.execute( ) );
-    pRet->push_back( xF2.execute( ) );
+    pRet->push_back( pF1->execute( ) );
+    pRet->push_back( pF2->execute( ) );
     // forward the finished flags...
-    if( xF1.isFinished( ) || xF2.isFinished( ) )
+    if( pF1->isFinished( ) || pF2->isFinished( ) )
     {
         /*
          * Print a warning if the fasta files have a different number of queries.
          */
-        if( !xF1.isFinished( ) || !xF2.isFinished( ) )
+        if( !pF1->isFinished( ) || !pF2->isFinished( ) )
             std::cerr << "WARNING: Doing paired alignment with files containing different amounts of reads."
                       << std::endl;
         this->setFinished( );

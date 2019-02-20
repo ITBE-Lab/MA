@@ -52,6 +52,7 @@ class AlignerParameterBase
     const std::string sName; // Name of parameter
     const char cShort; // Shorthand character for parameter in command line interface.
     const std::string sDescription; // Description of parameter
+    const std::pair<size_t, std::string> sCategory; // Description of parameter
 
     /* Delete copy constructor */
     AlignerParameterBase( const AlignerParameterBase& rxOtherSet ) = delete;
@@ -63,8 +64,9 @@ class AlignerParameterBase
     // By default a parameter is always active.
     std::function<bool( void )> fEnabled = []( ) { return true; };
 
-    AlignerParameterBase( const std::string& sName, const char cShort, const std::string& sDescription )
-        : sName( sName ), cShort( cShort ), sDescription( sDescription )
+    AlignerParameterBase( const std::string& sName, const char cShort, const std::string& sDescription,
+                          const std::pair<size_t, std::string>& sCategory )
+        : sName( sName ), cShort( cShort ), sDescription( sDescription ), sCategory( sCategory )
     {} // constructor
 
     virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
@@ -88,16 +90,17 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
 
     /* Constructor */
     AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
-                      const VALUE_TYPE value, // initial value
+                      const std::pair<size_t, std::string>& sCategory, const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameterBase( sName, cShort, sDescription ), value( value ), fPredicate( fPredicate )
+        : AlignerParameterBase( sName, cShort, sDescription, sCategory ), value( value ), fPredicate( fPredicate )
     {} // constructor
 
     /* Constructor */
     AlignerParameter( const std::string& sName, const std::string& sDescription,
+                      const std::pair<size_t, std::string>& sCategory,
                       const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, value, fPredicate )
+        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, sCategory, value, fPredicate )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -137,7 +140,7 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
     {
         auto pOtherDerived = std::dynamic_pointer_cast<const AlignerParameter<VALUE_TYPE>>( pOther );
-        std::cout << "Mirror: " << sName << " from " << this->value << " to " << pOtherDerived->value << std::endl;
+        // std::cout << "Mirror: " << sName << " from " << this->value << " to " << pOtherDerived->value << std::endl;
         this->value = pOtherDerived->value;
     } // method
 }; // class
@@ -152,15 +155,19 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     unsigned int uiSelection; // integral value of the selected choice (0 for first choice, 1 for second etc.)
 
     AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
+                      const std::pair<size_t, std::string>& sCategory,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( sName, cShort, sDescription ), vChoices( rvChoices ), uiSelection( uiSelection )
+        : AlignerParameterBase( sName, cShort, sDescription, sCategory ),
+          vChoices( rvChoices ),
+          uiSelection( uiSelection )
     {} // constructor
 
     AlignerParameter( const std::string& sName, const std::string& sDescription,
+                      const std::pair<size_t, std::string>& sCategory,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, rvChoices, uiSelection )
+        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, sCategory, rvChoices, uiSelection )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -204,16 +211,18 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
     fs::path xPath; // Current path
 
     AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
+                      const std::pair<size_t, std::string>& sCategory,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( sName, cShort, sDescription ), xPath( rxPath )
+        : AlignerParameterBase( sName, cShort, sDescription, sCategory ), xPath( rxPath )
     {} // constructor
 
     /* Constructor */
     AlignerParameter( const std::string& sName, const std::string& sDescription,
+                      const std::pair<size_t, std::string>& sCategory,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 )
-        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, rxPath, uiSelection )
+        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, sCategory, rxPath, uiSelection )
     {} // constructor
 
     /* Set path to argument.
@@ -291,7 +300,9 @@ class Presetting
     // Reflection of all parameter
     std::map<std::string, std::shared_ptr<AlignerParameterBase>> xpAllParameters;
     std::map<char, std::shared_ptr<AlignerParameterBase>> xpParametersByShort;
+    std::map<std::pair<size_t, std::string>, std::vector<std::shared_ptr<AlignerParameterBase>>> xpParametersByCategory;
 
+    AlignerParameterPointer<bool> xUsePairedReads; // If true, work with paired reads
     AlignerParameterPointer<int> xMatch; // score for a DP match (used in SoC width computation)
     AlignerParameterPointer<int> xMisMatch; // score for a DP match (used in SoC width computation)
     AlignerParameterPointer<int> xGap; // @todo
@@ -309,16 +320,15 @@ class Presetting
     AlignerParameterPointer<int> xMinimalSeedSizeDrop; // @todo
     AlignerParameterPointer<int> xMaxNumSoC; // @todo
     AlignerParameterPointer<int> xMinNumSoC; // @todo
-    AlignerParameterPointer<int> xMaxScoreLookahead; // @todo
     AlignerParameterPointer<int> xSwitchQlen; // @todo
     AlignerParameterPointer<int> xMaxGapArea; // @todo
     AlignerParameterPointer<int> xPadding; // @todo
     AlignerParameterPointer<int> xSoCWidth; // @todo
-    AlignerParameterPointer<bool> xOptimisticGapCostEstimation; // @todo
     AlignerParameterPointer<bool> xSkipAmbiguousSeeds; // @todo
     AlignerParameterPointer<double> xRelMinSeedSizeAmount; // @todo
     AlignerParameterPointer<double> xScoreDiffTolerance; // @todo
-    AlignerParameterPointer<double> xMinQueryCoverage; // @todo
+    AlignerParameterPointer<int> xMaxScoreLookahead; // @todo
+    // AlignerParameterPointer<double> xMinQueryCoverage; // @todo
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // @todo
     AlignerParameterPointer<int> xHarmScoreMin; // @todo
     AlignerParameterPointer<double> xHarmScoreMinRel; // @todo
@@ -326,23 +336,27 @@ class Presetting
     AlignerParameterPointer<bool> xDisableHeuristics; // @todo
     AlignerParameterPointer<bool> xNoSecondary; // @todo
     AlignerParameterPointer<bool> xNoSupplementary; // @todo
-    AlignerParameterPointer<bool> xDisableGapCostEstimationCutting; // @todo
     AlignerParameterPointer<double> xMaxDeltaDist; // @todo
     AlignerParameterPointer<int> xMinDeltaDist; // @todo
     AlignerParameterPointer<double> xMaxOverlapSupplementary; // @todo
     AlignerParameterPointer<int> xMaxSupplementaryPerPrim; // @todo
+    AlignerParameterPointer<bool> xDisableGapCostEstimationCutting; // @todo
+    AlignerParameterPointer<bool> xOptimisticGapCostEstimation; // @todo
     AlignerParameterPointer<int> xSVPenalty; // @todo
     AlignerParameterPointer<int> xMinBandwidthGapFilling; // @todo
     AlignerParameterPointer<int> xBandwidthDPExtension; // @todo
-    AlignerParameterPointer<double> xMaxSVRatio; // @todo
-    AlignerParameterPointer<int> xMinSVDistance; // @todo
+    // AlignerParameterPointer<double> xMaxSVRatio; // @todo
+    // AlignerParameterPointer<int> xMinSVDistance; // @todo
     AlignerParameterPointer<int> xZDrop; // @todo
 
     AlignerParameterPointer<AlignerParameterBase::ChoicesType> xSeedingTechnique; // Seeding Technique
-    AlignerParameterPointer<bool> xUsePairedReads; // If true, work with paired reads
 
-    AlignerParameterPointer<bool> xExampleCheckBox;
-    AlignerParameterPointer<fs::path> xExamplePath;
+    static const EXPORTED std::pair<size_t, std::string> DP_PARAMETERS;
+    static const EXPORTED std::pair<size_t, std::string> HEURISTIC_PARAMETERS;
+    static const EXPORTED std::pair<size_t, std::string> SEEDING_PARAMETERS;
+    static const EXPORTED std::pair<size_t, std::string> SOC_PARAMETERS;
+    static const EXPORTED std::pair<size_t, std::string> PAIRED_PARAMETERS;
+    static const EXPORTED std::pair<size_t, std::string> SAM_PARAMETERS;
 
     /* Delete copy constructor */
     Presetting( const Presetting& rxOtherSet ) = delete;
@@ -352,61 +366,143 @@ class Presetting
     /* Constructor */
     Presetting( )
         : // sName( sName ), //
-          xMatch( this, "Match Score",
-                  "Match score used in the context of Dynamic Programming\nand for SoC width computation.", 2,
-                  checkPositiveValue ),
-          xMisMatch( this, "Mismatch Penalty", "Penalty for a Dynamic Programming mismatch", 4, checkPositiveValue ),
-          xGap( this, "", "", 4 ),
-          xExtend( this, "", "", 2 ),
-          xGap2( this, "", "", 24 ),
-          xExtend2( this, "", "", 1 ),
-          xPairedBonus( this, "", "", 1.25 ),
-          xMeanPairedReadDistance( this, "", "", 400 ),
-          xStdPairedReadDistance( this, "", "", 150 ),
-          xReportN( this, "", "", 0 ),
-          xMaximalSeedAmbiguity( this, "", "", 500 ),
-          xMinSeedLength( this, "", "", 16 ),
-          xMinAlignmentScore( this, "", "", 75 ),
-          xMinimalSeedAmbiguity( this, "", "", 0 ),
-          xMinimalSeedSizeDrop( this, "", "", 15 ),
-          xMaxNumSoC( this, "", "", 30 ),
-          xMinNumSoC( this, "", "", 1 ),
-          xMaxScoreLookahead( this, "", "", 3 ),
-          xSwitchQlen( this, "", "", 800 ),
-          xMaxGapArea( this, "", "", 10000 ),
-          xPadding( this, "", "", 1000 ),
-          xSoCWidth( this, "", "", 0 ),
-          xOptimisticGapCostEstimation( this, "", "", true ),
-          xSkipAmbiguousSeeds( this, "", "", false ),
-          xRelMinSeedSizeAmount( this, "", "", 0.005 ),
-          xScoreDiffTolerance( this, "", "", 0.0001 ),
-          xMinQueryCoverage( this, "", "", 1.1 ),
-          xSoCScoreDecreaseTolerance( this, "", "", 0.1 ),
-          xHarmScoreMin( this, "", "", 18 ),
-          xHarmScoreMinRel( this, "", "", 0.002 ),
-          xGenomeSizeDisable( this, "", "", 10000000 ),
-          xDisableHeuristics( this, "", "", false ),
-          xNoSecondary( this, "", "", false ),
-          xNoSupplementary( this, "", "", false ),
-          xDisableGapCostEstimationCutting( this, "", "", false ),
-          xMaxDeltaDist( this, "", "", 0.1 ),
-          xMinDeltaDist( this, "", "", 16 ),
-          xMaxOverlapSupplementary( this, "", "", 0.1 ),
-          xMaxSupplementaryPerPrim( this, "", "", 1 ),
-          xSVPenalty( this, "", "", 100 ),
-          xMinBandwidthGapFilling( this, "", "", 20 ),
-          xBandwidthDPExtension( this, "", "", 512 ),
-          xMaxSVRatio( this, "", "", 0.01 ),
-          xMinSVDistance( this, "", "", 500 ),
-          xZDrop( this, "", "", 200 ),
-
-          xSeedingTechnique( this, "Seeding Technique", "Technique used for the initial seeding.",
-                             AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
           xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
-                           false ),
-          xExampleCheckBox( this, "Example Checkbox", "This is an example of a checkbox.", true ),
-          xExamplePath( this, "Example Path", "This is an example of a file path.", "C:/" )
-    {} // constructor
+                           PAIRED_PARAMETERS, false ),
+          xMatch( this, "Match Score",
+                  "Match score used in the context of Dynamic Programming and for SoC width computation.",
+                  DP_PARAMETERS, 2, checkPositiveValue ),
+          xMisMatch( this, "Mismatch Penalty", "Penalty for a Dynamic Programming mismatch", DP_PARAMETERS, 4,
+                     checkPositiveValue ),
+          xGap( this, "Gap penalty", "First penalty for a DP gap opening.", DP_PARAMETERS, 4 ),
+          xExtend( this, "Extend penalty", "First penalty for a DP gap extension.", DP_PARAMETERS, 2 ),
+          xGap2( this, "Second gap penalty", "Second penalty for a DP gap opening.", DP_PARAMETERS, 24 ),
+          xExtend2( this, "Second extend penalty", "Second penalty for a DP gap extension.", DP_PARAMETERS, 1 ),
+          xPairedBonus( this, "Score factor for paired reads",
+                        "This factor is multiplied to the score of successfully paired reads. Used in the context of "
+                        "the computation of the mapping quality and for picking optimal alignment pairs. [val] < 1 "
+                        "results in penalty; [val] > 1 results in bonus.",
+                        PAIRED_PARAMETERS, 1.25 ),
+          xMeanPairedReadDistance(
+              this, "Mean distance of paired reads",
+              "Two reads can be paired if they are within mean +- (standard deviation)*3 distance from one another on "
+              "the expected strands (depends on Use Mate Pair on/off) Used in the context of the computation of the "
+              "mapping quality and for picking optimal alignment pairs.",
+              PAIRED_PARAMETERS, 400 ),
+          xStdPairedReadDistance(
+              this, "Standard deviation of paired reads",
+              "<val> represents the standard deviation for the distance between paired reads. Used in the context of "
+              "the computation of the mapping quality and for picking optimal alignment pairs.",
+              PAIRED_PARAMETERS, 150 ),
+          xReportN( this, "Max. number of Reported alignments",
+                    "Do not output more than <val> alignments. 0 = no limit.", SAM_PARAMETERS, 0 ),
+          xMaximalSeedAmbiguity( this, "Maximal ambiguity", "Maximal ambiguity of seeds.", SEEDING_PARAMETERS, 500 ),
+          xMinSeedLength( this, "Minimal Seed length", "Minimal seed length.", SEEDING_PARAMETERS, 16 ),
+          xMinAlignmentScore( this, "Minimal alignment score",
+                              "Suppress the output of alignments with a score below val.", SAM_PARAMETERS, 75 ),
+          xMinimalSeedAmbiguity( this, "Min ambiguity", "Stop the extension process if seeds are less ambiguous.",
+                                 SEEDING_PARAMETERS, 0 ),
+          xMinimalSeedSizeDrop( this, "Seeding drop-off A - Drop-off min seed size",
+                                "Heuristic runtime optimization: For a given read R, let N be the number of seeds of "
+                                "size >= [val]. Discard R, if N < [length(R)] * [Seeding drop-off B].",
+                                SEEDING_PARAMETERS, 15 ),
+          xMaxNumSoC( this, "Maximal Number of SoC's", "Only consider the <val> best scored SoC's. 0 = no limit.",
+                      SOC_PARAMETERS, 30 ),
+          xMinNumSoC( this, "Min Number SoC’s",
+                      "Always consider the first <val> SoC's no matter the Heuristic optimizations.", SOC_PARAMETERS,
+                      1 ),
+          xSwitchQlen( this, "Harmonization Score dropoff - Minimal Query length",
+                       "For reads of length >= [val]: Ignore all SoC's with harmonization scores lower than the "
+                       "current maximal score. 0 = disabled.",
+                       HEURISTIC_PARAMETERS, 800 ),
+          xMaxGapArea( this, "Maximal Gap Area", "Split alignments in harmonization if gap area is larger than <val>.",
+                       HEURISTIC_PARAMETERS, 10000 ),
+          xPadding( this, "Padding",
+                    "Padding for DP extensions. Maximal area in front and back of the alignment that gets checked "
+                    "using DP extensions.",
+                    DP_PARAMETERS, 1000 ),
+          xSoCWidth( this, "Fixed SoC Width",
+                     "Set the SoC width to a fixed value. 0 = use the formula given in the paper. This parameter is "
+                     "intended for debugging purposes.",
+                     SOC_PARAMETERS, 0 ),
+          xSkipAmbiguousSeeds( this, "Skip ambiguous seeds",
+                               "Enabled: Discard all seeds that are more ambiguous than [max ambiguity]. Disabled: "
+                               "sample [max ambiguity] random seeds from too ambiguous seeds.",
+                               SEEDING_PARAMETERS, false ),
+          xRelMinSeedSizeAmount( this, "Seeding drop off B - Drop-off percentage",
+                                 "Heuristic runtime optimization: Percentage for seed drop-off calculation. For more "
+                                 "information see parameter [Seeding drop-off A]. ",
+                                 SEEDING_PARAMETERS, 0.005 ),
+          xScoreDiffTolerance(
+              this, "Harmonization Drop-off A - Score difference",
+              "Let x be the maximal encountered harmonization score. Stop harmonizing further SoC's if there are "
+              "<Harmonization Drop-off B> SoC's with lower scores than x-<readlength>*<val> in a row.",
+              HEURISTIC_PARAMETERS, 0.0001 ),
+          xMaxScoreLookahead( this, "Harmonization Drop-off B - Lookahead", "See Harmonization Drop-off A.",
+                              HEURISTIC_PARAMETERS, 3 ),
+          // xMinQueryCoverage( this, "", "", 1.1 ),
+          xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
+                                      "Let x be the maximal encountered SoC score. Stop harmonizing SoC's if there is "
+                                      "a SoC with a score lower than <val>*x.",
+                                      SEEDING_PARAMETERS, 0.1 ),
+          xHarmScoreMin( this, "Minimal Harmonization Score",
+                         "Discard all harmonized SoC's with scores lower than <val>.", SEEDING_PARAMETERS, 18 ),
+          xHarmScoreMinRel( this, "Relative Minimal Harmonization Score",
+                            "Discard all harmonized SoC's with scores lower than length(read)*<val>.",
+                            SEEDING_PARAMETERS, 0.002 ),
+          xGenomeSizeDisable( this, "Minimum Genome Size for Heuristics",
+                              "Some heuristics can only be applied on long enough genomes. Disables: SoC score "
+                              "Drop-off if the genome is shorter than <val>.",
+                              SEEDING_PARAMETERS, 10000000 ),
+          xDisableHeuristics( this, "Disable All Heuristics",
+                              "Disables all runtime heuristics. (Intended for debugging.)", SEEDING_PARAMETERS, false ),
+          xNoSecondary( this, "Omit secondary alignments", "Suppress the output of secondary alignments.",
+                        SAM_PARAMETERS, false ),
+          xNoSupplementary( this, "Omit supplementary alignments", "Suppress the output of supplementary alignments.",
+                            SAM_PARAMETERS, false ),
+          xMaxDeltaDist( this, "Artifact Filter A - Maximal Delta Distance",
+                         "Filter seeds if the difference between the delta distance to it's predecessor and successor "
+                         "is less then [val] percent (set to 1 to disable filter) and the delta distance to it's pre- "
+                         "and successor is more than [Artifact Filter B] nt.",
+                         HEURISTIC_PARAMETERS, 0.1 ),
+          xMinDeltaDist( this, "Artifact Filter B - Minimal Delta Distance", "See Artifact Filter A",
+                         HEURISTIC_PARAMETERS, 16 ),
+          xMaxOverlapSupplementary(
+              this, "Maximal supplementary overlap",
+              "An non-primary alignment A is considered supplementary, if less than val percent of A overlap with the "
+              "primary alignment on the query. Otherwise A is considered secondary.",
+              SAM_PARAMETERS, 0.1 ),
+          xMaxSupplementaryPerPrim( this, "Number Supplementary alignments",
+                                    "Maximal Number of supplementary alignments per primary alignment.", SAM_PARAMETERS,
+                                    1 ),
+          xDisableGapCostEstimationCutting( this, "Pick Local Seed Set A - Enabled",
+                                            "<val> = true enables local seed set computiaion.", HEURISTIC_PARAMETERS,
+                                            false ),
+          xOptimisticGapCostEstimation(
+              this, "Pick Local Seed Set B - Optimistic Gap Estimation",
+              "After the harmonization MA checks weather it is possible to compute a positively scored alignment from "
+              "the seed set. Gaps between seeds can be estimated in two ways: Optimistic [true]: Assume that the gap "
+              "can be filled using merely matches and a single insertion/deletion. Pessimistic [false]: Assume that "
+              "the gap can be filled using matches and mismatches that add up to a score of 0 and a single "
+              "insertion/deletion.",
+              HEURISTIC_PARAMETERS, true ),
+          xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
+                      "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100 ),
+          xMinBandwidthGapFilling( this, "Minimal bandwidth in gaps", "Minimal bandwidth for DP in gaps between seeds.",
+                                   DP_PARAMETERS, 20 ),
+          xBandwidthDPExtension( this, "Bandwidth for extensions", "Bandwidth for DP extensions.", DP_PARAMETERS, 512 ),
+          // xMaxSVRatio( this, "", "", "CATEGORY",0.01 ),
+          // xMinSVDistance( this, "", "", "CATEGORY",500 ),
+          xZDrop( this, "Z Drop", "If the DP score drops faster than <val> stop the extension process.", DP_PARAMETERS,
+                  200 ),
+
+          xSeedingTechnique( this, "Seeding Technique", "Technique used for the initial seeding.", SEEDING_PARAMETERS,
+                             AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} )
+    {
+
+        xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+    } // constructor
 
     /* Mirror the setting of one parameter-set into another */
     void mirror( const Presetting& rxOtherSet )
@@ -434,6 +530,7 @@ class Presetting
     void registerParameter( const std::shared_ptr<AlignerParameterBase> pParameter )
     {
         xpAllParameters.emplace( pParameter->sName, pParameter );
+        xpParametersByCategory[ pParameter->sCategory ].push_back( pParameter );
         if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
         {
             auto xEmplaceRet = xpParametersByShort.emplace( pParameter->cShort, pParameter );
@@ -487,14 +584,16 @@ class GeneralParameter
     /* Constructor */
     GeneralParameter( )
         : bSAMOutputInReadsFolder( nullptr, "SAM files in same folder as reads",
-                                   "If set, the SAM files are written in the folder of the reads.", true ),
+                                   "If set, the SAM files are written in the folder of the reads.",
+                                   std::pair<size_t, std::string>( ), true ),
           xSAMOutputPath( nullptr, "Folder (path) for SAM files", "All SAM-output will be written to this folder",
-                          fs::temp_directory_path( ) ),
+                          std::pair<size_t, std::string>( ), fs::temp_directory_path( ) ),
           pbUseMaxHardareConcurrency( nullptr, "Use all processor cores",
                                       "The number of threads used for aligning is chosen to be identical to the number "
                                       "of your processor cores.",
-                                      true ),
-          piNumberOfThreads( nullptr, "Number of threads", "Number of threads used in the context of alignments.", 1 )
+                                      std::pair<size_t, std::string>( ), true ),
+          piNumberOfThreads( nullptr, "Number of threads", "Number of threads used in the context of alignments.",
+                             std::pair<size_t, std::string>( ), 1 )
 
     {
         xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };

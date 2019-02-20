@@ -151,8 +151,22 @@ class GenomeManager
 class ReadsManager
 {
   public:
+    // Option 1: User entered FASTA filenames
     fs::path sPrimaryQueryFullFileName;
     fs::path sMateQueryFullFileName;
+
+
+    // Option 2: User directly entered FASTA sequences
+    std::function<std::string( void )> // Feedback to the caller
+        fCallBackGetPrimaryQuery = []( ) {
+            throw std::runtime_error( "fCallBackGetPrimaryQuery not set." );
+            return "";
+        };
+    std::function<std::string( void )> // Feedback to the caller
+        fCallBackGetMateyQuery = []( ) {
+            throw std::runtime_error( "fCallBackGetMateQuery not set." );
+            return "";
+        };
 
     /* For paired reads (Illumina etc.) */
     void setReadsFileSource( const std::string& rsPrimaryQuery, const std::string& rsMateQuery )
@@ -183,6 +197,16 @@ class ReadsManager
     {
         this->sPrimaryQueryFullFileName.clear( );
         this->sMateQueryFullFileName.clear( );
+    } // method
+
+    bool hasPrimaryPath( )
+    {
+        return !sPrimaryQueryFullFileName.empty( );
+    } // method
+
+    bool hasMatePath( )
+    {
+        return !sMateQueryFullFileName.empty( );
     } // method
 }; // class
 
@@ -251,7 +275,12 @@ class ExecutionContext
     {
         std::cout << "Do align started ..." << std::endl;
         // FIXME: Read correct value for uiConcurrency
-        unsigned int uiConcurency = std::thread::hardware_concurrency();
+        unsigned int uiConcurency = std::thread::hardware_concurrency( );
+        if( !xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->get() )
+        {
+            uiConcurency = xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->get();
+            std::cout << "Manually picked concurrency: " << uiConcurency << std::endl;
+        } // if
 
         // For now, we build a computational graph for each call of doAlign
         // Possible Improvement: Cache the graph ...
@@ -274,9 +303,21 @@ class ExecutionContext
             pxPairedWriter.reset(
                 new PairedFileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
 
-            std::vector<std::string> vA{xReadsManager.sPrimaryQueryFullFileName.string( )};
-            std::vector<std::string> vB{xReadsManager.sMateQueryFullFileName.string( )};
-            auto pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager, vA, vB );
+
+            if( xReadsManager.hasPrimaryPath( ) != xReadsManager.hasMatePath( ) )
+                throw AnnotatedException( "Cannot combine file and text input." );
+
+            std::shared_ptr<PairedFileReader> pxPairedFileReader;
+            if( xReadsManager.hasPrimaryPath( ) && xReadsManager.hasMatePath( ) )
+            {
+                std::vector<std::string> vA{xReadsManager.sPrimaryQueryFullFileName.string( )};
+                std::vector<std::string> vB{xReadsManager.sMateQueryFullFileName.string( )};
+                pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager, vA, vB );
+            }// if
+            if( !xReadsManager.hasPrimaryPath( ) && !xReadsManager.hasMatePath( ) )
+                pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager,
+                                                                         xReadsManager.fCallBackGetPrimaryQuery( ),
+                                                                         xReadsManager.fCallBackGetMateyQuery( ) );
             pxReader = pxPairedFileReader;
             auto pxPairedQueriesPledge = promiseMe( pxPairedFileReader );
             aGraphSinks = setUpCompGraphPaired( xParameterSetManager,
@@ -293,9 +334,19 @@ class ExecutionContext
             std::shared_ptr<TP_WRITER> pxWriter;
             pxWriter.reset(
                 new FileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
+            std::string sPrimaryQuery;
 
-            auto pxFileReader =
-                std::make_shared<FileReader>( xParameterSetManager, xReadsManager.sPrimaryQueryFullFileName.string( ) );
+            std::shared_ptr<FileReader> pxFileReader;
+            if( xReadsManager.hasPrimaryPath( ) )
+                pxFileReader = std::make_shared<FileReader>( xParameterSetManager,
+                                                             xReadsManager.sPrimaryQueryFullFileName.string( ) );
+            else
+            {
+                sPrimaryQuery = xReadsManager.fCallBackGetPrimaryQuery( );
+                pxFileReader =
+                    std::make_shared<FileReader>( xParameterSetManager, sPrimaryQuery, sPrimaryQuery.size( ) );
+            } // else
+
             pxReader = pxFileReader;
             auto pxQueriesPledge = promiseMe( pxFileReader );
             aGraphSinks = setUpCompGraph( xParameterSetManager,
