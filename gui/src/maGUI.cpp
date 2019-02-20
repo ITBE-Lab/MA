@@ -67,6 +67,8 @@ int mxwExecutionContext::iHighestID = wxID_HIGHEST + 30;
 wxDEFINE_EVENT( wxEVT_WORKER_MESSAGE, wxCommandEvent );
 wxDEFINE_EVENT( wxEVT_WORKER_COMPLETED, wxCommandEvent );
 wxDEFINE_EVENT( wxEVT_WORKER_UPDATE_GAUGE, wxCommandEvent );
+wxDEFINE_EVENT( wxEVT_WORKER_UPDATE_GAUGE_OVERALL, wxCommandEvent );
+wxDEFINE_EVENT( wxEVT_WORKER_UPDATE_GAUGE_OVERALL_RANGE, wxCommandEvent );
 wxDEFINE_EVENT( wxEVT_WORKER_ALIGNMENT_ERROR, wxCommandEvent );
 
 /* Settings Dialog for aligner parameter management */
@@ -497,30 +499,77 @@ bool bConsole = false;
 class AlignFrame : public wxDialog
 {
   public:
+    wxStaticText* pxStaticTextLabelOverall;
+    wxStaticText* pxStaticTextLabelIndividual;
     wxTextCtrl* pxTextCtrl;
+    wxGauge* pxGaugeOverall; // Gauge shaow progress with respect to multiple files
     wxGauge* pxGauge;
     wxButton* pxStopOKButton;
     double dPreviousPercentage = -1;
+    int uiPreviousNumFile = -1;
     std::unique_ptr<std::thread> pWorker;
+    std::atomic<bool> bForceStop = false;
+    bool bAlignmentDone = false;
+    int iNumFiles = -1;
+    bool bNumFilesEventQueued = false;
 
-    /* Callback called by worker.
+    /* Callback. Executed by worker!
+     * Return false for telling the worker to stop.
      */
-    void onCallBack( double dPercentage )
+    bool onCallBack( double dPercentage, int uiNumCurrFile, int uiNumFilesTotal )
     {
+        if( !bNumFilesEventQueued )
+        {
+            bNumFilesEventQueued = true;
+            auto* pxEventOverall = new wxCommandEvent( wxEVT_WORKER_UPDATE_GAUGE_OVERALL_RANGE, wxID_ANY );
+            pxEventOverall->SetInt( uiNumFilesTotal );
+            this->QueueEvent( pxEventOverall ); // owner-ship transfered to handler
+        } // if
         dPercentage = round( dPercentage );
-        if( dPercentage > dPreviousPercentage )
+        if( dPercentage > dPreviousPercentage || uiNumCurrFile > uiPreviousNumFile )
         {
             dPreviousPercentage = dPercentage;
             auto* pxEvent = new wxCommandEvent( wxEVT_WORKER_UPDATE_GAUGE, wxID_ANY );
             pxEvent->SetInt( static_cast<int>( dPercentage ) );
             this->QueueEvent( pxEvent ); // owner-ship transfered to handler
-        }
+        } // if
+        if( uiNumCurrFile > uiPreviousNumFile )
+        {
+            uiPreviousNumFile = uiNumCurrFile;
+            dPreviousPercentage = -1;
+            auto* pxEventOverall = new wxCommandEvent( wxEVT_WORKER_UPDATE_GAUGE_OVERALL, wxID_ANY );
+            pxEventOverall->SetInt( uiNumCurrFile );
+            this->QueueEvent( pxEventOverall ); // owner-ship transfered to handler
+        } // if
+
+        return !bForceStop;
     } // method
 
     /* Handler for printing from worker */
     void onWorkerGaugeUpdate( wxCommandEvent& rxEvent )
     {
-        pxGauge->SetValue( static_cast<int>( rxEvent.GetInt( ) ) );
+        // Dirty Trick: https://forums.wxwidgets.org/viewtopic.php?t=42138
+        int iGaugeVal = static_cast<int>( rxEvent.GetInt( ) );
+        int iGaugeValPlusOne = std::min( iGaugeVal + 1, 100 );
+        pxGauge->SetValue( iGaugeValPlusOne );
+        pxGauge->SetValue( iGaugeVal );
+    } // method
+
+    /* Handler for printing from worker */
+    void onWorkerGaugeUpdateOverall( wxCommandEvent& rxEvent )
+    {
+        // Dirty Trick: https://forums.wxwidgets.org/viewtopic.php?t=42138
+        int iGaugeVal = static_cast<int>( rxEvent.GetInt( ) ) + 1;
+        int iGaugeValPlusOne = std::min( iGaugeVal + 1, iNumFiles );
+        pxGaugeOverall->SetValue( iGaugeValPlusOne );
+        pxGaugeOverall->SetValue( iGaugeVal );
+    } // method
+
+    /* Handler for printing from worker */
+    void onWorkerGaugeUpdateOverallRange( wxCommandEvent& rxEvent )
+    {
+        iNumFiles = static_cast<int>( rxEvent.GetInt( ) );
+        pxGaugeOverall->SetRange(iNumFiles);
     } // method
 
     /* Handler for printing from worker */
@@ -532,7 +581,13 @@ class AlignFrame : public wxDialog
     /* Handler for completion by worker */
     void onWorkerCompleted( wxCommandEvent& rxEvent )
     {
-        pxStopOKButton->Enable( );
+        if( this->bForceStop )
+            pxStopOKButton->Enable( );
+        else
+        {
+            pxStopOKButton->SetLabel( "OK" );
+            this->bAlignmentDone = true;
+        } // else
     } // method
 
     /* Handler for display of error messages */
@@ -542,6 +597,26 @@ class AlignFrame : public wxDialog
         // Handler enables the OK button
         pxTextCtrl->AppendText( "Alignment failed.\n" );
         pxStopOKButton->Enable( );
+    } // method
+
+    /* Handler for CancelOK Button
+     * Excuted by the event loop.
+     */
+    void onCancelOKButtonClicked( wxCommandEvent& rxEvent )
+    {
+        if( !this->bForceStop && !this->bAlignmentDone )
+        {
+            this->pxStopOKButton->Disable( );
+            this->bForceStop = true;
+            this->pxStopOKButton->SetLabel( "Continue" );
+            this->pxGauge->Hide( );
+            this->pxGaugeOverall->Hide( );
+            this->pxStaticTextLabelOverall->Hide( );
+            this->pxStaticTextLabelIndividual->Hide( );
+            this->pxTextCtrl->AppendText( "Alignment canceled!\n" );
+        } // if
+        else
+            EndModal( 0 );
     } // method
 
     /* Queues event of the worker comprising text */
@@ -560,12 +635,17 @@ class AlignFrame : public wxDialog
             queueStringMessage( wxEVT_WORKER_MESSAGE, "Do alignment.\n" );
             // If sErrorMessage is empty, the alignment is fine succeeded
             std::string sErrorMessage;
-            bool bExexutionSucceeded = false;
 
             try
             {
-                xExecutionContext.doAlign( std::bind( &AlignFrame::onCallBack, this, std::placeholders::_1 ) );
-                bExexutionSucceeded = true;
+                xExecutionContext.doAlign( std::bind( &AlignFrame::onCallBack, this, std::placeholders::_1,
+                                                      std::placeholders::_2, std::placeholders::_3 ) );
+
+                if( !bForceStop )
+                { // Enable the OK button only if the alignment succeeded
+                    queueStringMessage( wxEVT_WORKER_MESSAGE, "Task completed.\n" );
+
+                } // if
             } // try
             catch( std::exception& xException )
             {
@@ -575,12 +655,6 @@ class AlignFrame : public wxDialog
             {
                 queueStringMessage( wxEVT_WORKER_ALIGNMENT_ERROR, "Aligner failed due to unknown reason.\n" );
             } // catch ellipsis
-
-            if( bExexutionSucceeded )
-            { // Enable the OK button only if the alignment succeeded
-                queueStringMessage( wxEVT_WORKER_MESSAGE, "Task completed.\n" );
-
-            } // if
 
             queueStringMessage( wxEVT_WORKER_COMPLETED, "" ); // triggers activation of OK button
         } // lambda
@@ -609,23 +683,39 @@ class AlignFrame : public wxDialog
         pxSizer->Add( pxTextCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
                                                    wxTE_MULTILINE | wxTE_READONLY ),
                       1, wxBOTTOM | wxEXPAND | wxLEFT | wxRIGHT, 5 );
-        pxSizer->Add( new wxStaticText( this, wxID_ANY, wxT( "Progress" ) ), 0, wxALL, 5 );
 
-        this->pxGauge = new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL );
-        this->pxGauge->SetValue( 0 );
-        pxSizer->Add( this->pxGauge, 0, wxBOTTOM | wxEXPAND | wxLEFT | wxRIGHT, 5 );
+        pxSizer->Add( pxStaticTextLabelOverall = new wxStaticText( this, wxID_ANY, wxT( "Overall Progress" ) ), 0,
+                      wxALL, 5 );
+        pxSizer->Add( this->pxGaugeOverall =
+                          new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL ),
+                      0, wxBOTTOM | wxEXPAND | wxLEFT | wxRIGHT, 5 );
 
-        pxSizer->Add( pxStopOKButton = new wxButton( this, wxID_OK, wxT( "OK" ) ), 0, wxALIGN_CENTER | wxALL, 5 );
+        pxSizer->Add( pxStaticTextLabelIndividual =
+                          new wxStaticText( this, wxID_ANY, wxT( "Individual File Progress" ) ),
+                      0, wxALL, 5 );
+        pxSizer->Add( this->pxGauge =
+                          new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL ),
+                      0, wxBOTTOM | wxEXPAND | wxLEFT | wxRIGHT, 5 );
+
+
+        pxSizer->Add( pxStopOKButton = new wxButton( this, wxID_OK, wxT( "Cancel" ) ), 0, wxALIGN_CENTER | wxALL, 5 );
+        pxStopOKButton->Bind( wxEVT_BUTTON,
+                              std::bind( &AlignFrame::onCancelOKButtonClicked, this, std::placeholders::_1 ) );
+
 
         SetSizer( pxSizer );
         Layout( );
-        pxStopOKButton->Disable( );
+        // pxStopOKButton->Disable( );
         Centre( wxBOTH );
 
         // Bind worker events
         Bind( wxEVT_WORKER_MESSAGE, std::bind( &AlignFrame::onWorkerPrint, this, std::placeholders::_1 ) );
         Bind( wxEVT_WORKER_COMPLETED, std::bind( &AlignFrame::onWorkerCompleted, this, std::placeholders::_1 ) );
         Bind( wxEVT_WORKER_UPDATE_GAUGE, std::bind( &AlignFrame::onWorkerGaugeUpdate, this, std::placeholders::_1 ) );
+        Bind( wxEVT_WORKER_UPDATE_GAUGE_OVERALL,
+              std::bind( &AlignFrame::onWorkerGaugeUpdateOverall, this, std::placeholders::_1 ) );
+        Bind( wxEVT_WORKER_UPDATE_GAUGE_OVERALL_RANGE,
+              std::bind( &AlignFrame::onWorkerGaugeUpdateOverallRange, this, std::placeholders::_1 ) );
         Bind( wxEVT_WORKER_ALIGNMENT_ERROR, std::bind( &AlignFrame::onWorkerError, this, std::placeholders::_1 ) );
     } // constructor
 
@@ -748,14 +838,14 @@ class MA_MainFrame : public wxFrame
     wxTextCtrl* xGenomeNameTextCtrl;
 
     /* Handler for genome selection button */
-    void onGenomeSelection( const fs::path& rsFileName )
+    void onGenomeSelection( const std::vector<fs::path>& rvsFileNames )
     {
-        if( rsFileName.empty( ) )
+        if( rvsFileNames.empty( ) )
             // special case of deletion
             xGenomeNameTextCtrl->SetValue( xExecutionContext.xGenomeManager.getGenomeName( ) );
         else
         {
-            auto sError = xExecutionContext.xGenomeManager.loadGenome( rsFileName );
+            auto sError = xExecutionContext.xGenomeManager.loadGenome( rvsFileNames[ 0 ] );
             if( sError.empty( ) )
                 xGenomeNameTextCtrl->SetValue( xExecutionContext.xGenomeManager.getGenomeName( ) );
             else
@@ -790,16 +880,21 @@ class MA_MainFrame : public wxFrame
     } // method
 
     /* Handler query select/clear button pair */
-    void onQuerySelection( const fs::path& sFileName, wxTextCtrl* xTargetTextCtrl )
+    void onQuerySelection( const std::vector<fs::path>& vsFileNames, wxTextCtrl* xTargetTextCtrl )
     {
         // FIXME: Add code for paired inputs
-        xExecutionContext.xReadsManager.sPrimaryQueryFullFileName = sFileName;
-        if( sFileName.empty( ) )
+        xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName = vsFileNames;
+        if( vsFileNames.empty( ) )
             xTargetTextCtrl->SetValue( "Type your query here or select a FASTA-file ..." );
         else
-            xTargetTextCtrl->SetValue( sFileName.string( ) );
+        {
+            std::string sFileNames;
+            for( fs::path sFileName : vsFileNames )
+                sFileNames.append( sFileName.string( ) ).append( "\n" );
+            xTargetTextCtrl->SetValue( sFileNames );
+        } // else
 
-        xTargetTextCtrl->SetEditable( sFileName.empty( ) );
+        xTargetTextCtrl->SetEditable( vsFileNames.empty( ) );
     } // method
 
 
@@ -950,11 +1045,11 @@ class MA_MainFrame : public wxFrame
                     // File Selector for genome selection
                     pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
                                         pxBoxSizer.pxConnector, "Genome selection", "Select Reference Genome",
-                                        "Genome descriptions (*.json)|*.json|All Files|*",
+                                        "Genome descriptions (*.json)|*.json|All Files|*", false,
                                         std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ),
                                         false ), // no clear button
                                     wxSizerFlags( 0 ) );
-                    this->onGenomeSelection( "" );
+                    this->onGenomeSelection( std::vector<fs::path>( ) );
                 } // lambda
                 ) // add horizontal BoxSizer
             ; // add horizontal BoxSizer
@@ -1014,6 +1109,7 @@ class MA_MainFrame : public wxFrame
                                             "FASTA(Q) "
                                             "Files(*.fasta;*.fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*.fastq;*.fasta.gz;*."
                                             "fastq.gz|All Files (*.*)|*.*",
+                                            true,
                                             std::bind( &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
                                                        this->xQueryTextCtrl ) ),
                                         wxSizerFlags( 1 ) );
@@ -1036,6 +1132,7 @@ class MA_MainFrame : public wxFrame
                                                             "FASTA(Q) "
                                                             "Files(*.fasta;*fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*."
                                                             "fastq;*.fasta.gz;*.fastq.gz|All Files (*.*)|*.*",
+                                                            true,
                                                             std::bind( &MA_MainFrame::onQuerySelection, this,
                                                                        std::placeholders::_1, this->xMatesTextCtrl ) ),
                                                         wxSizerFlags( 0 ) );

@@ -152,8 +152,8 @@ class ReadsManager
 {
   public:
     // Option 1: User entered FASTA filenames
-    fs::path sPrimaryQueryFullFileName;
-    fs::path sMateQueryFullFileName;
+    std::vector<fs::path> vsPrimaryQueryFullFileName;
+    std::vector<fs::path> vsMateQueryFullFileName;
 
 
     // Option 2: User directly entered FASTA sequences
@@ -167,12 +167,12 @@ class ReadsManager
             throw std::runtime_error( "fCallBackGetMateQuery not set." );
             return "";
         };
-
+#if 0
     /* For paired reads (Illumina etc.) */
     void setReadsFileSource( const std::string& rsPrimaryQuery, const std::string& rsMateQuery )
     {
-        this->sPrimaryQueryFullFileName = rsPrimaryQuery;
-        this->sMateQueryFullFileName = rsMateQuery;
+        this->vsPrimaryQueryFullFileName.front() = rsPrimaryQuery;
+        this->vsMateQueryFullFileName.front() = rsMateQuery;
     } // method
 
     void setReadsFileSource( const std::string& rsPrimaryQuery )
@@ -180,33 +180,38 @@ class ReadsManager
         this->sPrimaryQueryFullFileName = rsPrimaryQuery;
         this->sMateQueryFullFileName.clear( );
     } // method
-
-    /* Delivers folder of primary reads */
-    fs::path getReadsFolderPath( void )
-    {
-        return sPrimaryQueryFullFileName.parent_path( );
-    } // method
+#endif
 
     /* Delivers filename of primary reads without suffix */
     fs::path getReadsFileNameStem( void )
     {
-        return sPrimaryQueryFullFileName.stem( );
+        if( vsPrimaryQueryFullFileName.empty( ) )
+            return fs::path( "Unnamed" );
+        return vsPrimaryQueryFullFileName[ 0 ].stem( );
+    } // method
+
+    /* Delivers folder of primary reads */
+    fs::path getReadsFolderPath( void )
+    {
+        if( vsPrimaryQueryFullFileName.empty( ) )
+            return fs::path( "./" );
+        return vsPrimaryQueryFullFileName[ 0 ].parent_path( );
     } // method
 
     void reset( void )
     {
-        this->sPrimaryQueryFullFileName.clear( );
-        this->sMateQueryFullFileName.clear( );
+        this->vsPrimaryQueryFullFileName.clear( );
+        this->vsMateQueryFullFileName.clear( );
     } // method
 
     bool hasPrimaryPath( )
     {
-        return !sPrimaryQueryFullFileName.empty( );
+        return !vsPrimaryQueryFullFileName.empty( );
     } // method
 
     bool hasMatePath( )
     {
-        return !sMateQueryFullFileName.empty( );
+        return !vsMateQueryFullFileName.empty( );
     } // method
 }; // class
 
@@ -271,14 +276,16 @@ class ExecutionContext
     /* Computes alignments for reads.
      * Throws an exception if something goes wrong.
      */
-    void doAlign( std::function<void( double dPercentageProgress )> fProgressCallBack = []( double ) {} )
+    void
+    doAlign( std::function<bool( double dPercentageProgress, int iFileNum, int iNumFilesOverall )> fProgressCallBack =
+                 []( double, int, int ) { return true; } )
     {
         std::cout << "Do align started ..." << std::endl;
         // FIXME: Read correct value for uiConcurrency
         unsigned int uiConcurency = std::thread::hardware_concurrency( );
-        if( !xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->get() )
+        if( !xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->get( ) )
         {
-            uiConcurency = xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->get();
+            uiConcurency = xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->get( );
             std::cout << "Manually picked concurrency: " << uiConcurency << std::endl;
         } // if
 
@@ -310,10 +317,10 @@ class ExecutionContext
             std::shared_ptr<PairedFileReader> pxPairedFileReader;
             if( xReadsManager.hasPrimaryPath( ) && xReadsManager.hasMatePath( ) )
             {
-                std::vector<std::string> vA{xReadsManager.sPrimaryQueryFullFileName.string( )};
-                std::vector<std::string> vB{xReadsManager.sMateQueryFullFileName.string( )};
+                std::vector<fs::path> vA = xReadsManager.vsPrimaryQueryFullFileName;
+                std::vector<fs::path> vB = xReadsManager.vsMateQueryFullFileName;
                 pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager, vA, vB );
-            }// if
+            } // if
             if( !xReadsManager.hasPrimaryPath( ) && !xReadsManager.hasMatePath( ) )
                 pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager,
                                                                          xReadsManager.fCallBackGetPrimaryQuery( ),
@@ -336,10 +343,14 @@ class ExecutionContext
                 new FileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
             std::string sPrimaryQuery;
 
-            std::shared_ptr<FileReader> pxFileReader;
+            std::shared_ptr<SingleFileReader> pxFileReader;
             if( xReadsManager.hasPrimaryPath( ) )
-                pxFileReader = std::make_shared<FileReader>( xParameterSetManager,
-                                                             xReadsManager.sPrimaryQueryFullFileName.string( ) );
+            {
+                for( auto xPAth : xReadsManager.vsPrimaryQueryFullFileName )
+                    std::cout << xPAth << std::endl;
+                pxFileReader =
+                    std::make_shared<FileListReader>( xParameterSetManager, xReadsManager.vsPrimaryQueryFullFileName );
+            }
             else
             {
                 sPrimaryQuery = xReadsManager.fCallBackGetPrimaryQuery( );
@@ -359,12 +370,13 @@ class ExecutionContext
 
         // Compute the actual alignments.
         // Sets the progress bar after each finished alignment.
-        BasePledge::simultaneousGet(
-            aGraphSinks,
-            [&]( ) {
-                fProgressCallBack( ( (double)pxReader->getCurrPosInFile( ) * 100 ) / (double)pxReader->getFileSize( ) );
-                return true;
-            } // lambda
+        BasePledge::simultaneousGet( aGraphSinks,
+                                     [&]( ) {
+                                         return fProgressCallBack( ( (double)pxReader->getCurrPosInFile( ) * 100 ) /
+                                                                       (double)pxReader->getFileSize( ),
+                                                                   pxReader->getCurrFileIndex( ),
+                                                                   pxReader->getNumFiles( ) );
+                                     } // lambda
         ); // function call
 
         // Destroy computational graph; release memory

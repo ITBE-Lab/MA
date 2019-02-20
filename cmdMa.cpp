@@ -136,6 +136,117 @@ const std::string sHelp =
 #endif
     ;
 
+void generateHelpMessage( ParameterSetManager& rManager )
+{
+    const std::string sHeader =
+        "========================================= The Modular Aligner =========================================";
+    const std::string sIndentOptions = "    ";
+    std::string sIndentDesc;
+    for( size_t uiI = 0; uiI < sHeader.size( ) / 2; uiI++ )
+        sIndentDesc += " ";
+    std::cout << sHeader << std::endl;
+
+    // presettings
+    std::cout << "Available presettings:" << std::endl;
+    std::cout << sIndentOptions << "-m, --mode <";
+    std::string sOptions;
+    for( auto& xPair : rManager.xParametersSets )
+    {
+        std::string sOut = xPair.first;
+        std::replace( sOut.begin( ), sOut.end( ), ' ', '_' );
+        sOptions += sOut + "/";
+    }
+    sOptions.pop_back( );
+    std::cout << sOptions << "> [" << rManager.xParametersSets.begin( )->first << "]" << std::endl << sIndentDesc;
+
+    std::string sDescription =
+        "Operation mode for MA. The selected mode will change the parameters. However, parameters you "
+        "set manually will overwrite the presetting.";
+    std::istringstream xStream( sDescription );
+    size_t uiCharCount = 0;
+    const size_t uiMaxCharCnt = sHeader.size( ) - sIndentDesc.size( );
+    for( std::string sWord; xStream >> sWord; )
+    {
+        if( uiCharCount + sWord.size( ) >= uiMaxCharCnt )
+        {
+            uiCharCount = 0;
+            std::cout << std::endl << sIndentDesc;
+        } // if
+        std::cout << sWord << " ";
+        uiCharCount += sWord.size( ) + 1;
+    } // for
+    std::cout << std::endl << std::endl;
+
+
+    // general options
+    std::cout << "General options: (these options are not affected by presettings)" << std::endl;
+    for( auto xTup : rManager.xGlobalParameterSet.xpAllParameters )
+    {
+        auto pParameter = xTup.second;
+        std::cout << sIndentOptions;
+        if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
+            std::cout << "-" << pParameter->cShort << ", ";
+        std::string sName = pParameter->sName;
+        std::replace( sName.begin( ), sName.end( ), ' ', '_' );
+        std::cout << "--" << sName << " <" << pParameter->type_name( ) << "> [";
+        std::cout << pParameter->asText( ) << "]";
+        std::cout << std::endl << sIndentDesc;
+
+        std::istringstream xStream( pParameter->sDescription );
+        size_t uiCharCount = 0;
+        const size_t uiMaxCharCnt = sHeader.size( ) - sIndentDesc.size( );
+        for( std::string sWord; xStream >> sWord; )
+        {
+            if( uiCharCount + sWord.size( ) >= uiMaxCharCnt )
+            {
+                uiCharCount = 0;
+                std::cout << std::endl << sIndentDesc;
+            } // if
+            std::cout << sWord << " ";
+            uiCharCount += sWord.size( ) + 1;
+        } // for
+        std::cout << std::endl << std::endl;
+    } // for
+
+    // other options
+    for( auto xPair : rManager.getSelected( )->xpParametersByCategory )
+    {
+        std::cout << xPair.first.second << " options:" << std::endl;
+        for( auto pParameter : xPair.second )
+        {
+            std::cout << sIndentOptions;
+            if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
+                std::cout << "-" << pParameter->cShort << ", ";
+            std::string sName = pParameter->sName;
+            std::replace( sName.begin( ), sName.end( ), ' ', '_' );
+            std::cout << "--" << sName << " <" << pParameter->type_name( ) << "> [";
+            std::cout << pParameter->asText( ) << "]";
+            std::cout << std::endl << sIndentDesc;
+
+            std::istringstream xStream( pParameter->sDescription );
+            size_t uiCharCount = 0;
+            const size_t uiMaxCharCnt = sHeader.size( ) - sIndentDesc.size( );
+            for( std::string sWord; xStream >> sWord; )
+            {
+                if( uiCharCount + sWord.size( ) >= uiMaxCharCnt )
+                {
+                    uiCharCount = 0;
+                    std::cout << std::endl << sIndentDesc;
+                } // if
+                std::cout << sWord << " ";
+                uiCharCount += sWord.size( ) + 1;
+            } // for
+            std::cout << std::endl << std::endl;
+        } // for
+    } // for
+
+    std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
+    std::cout << "For more information visit: https://github.com/ITBE-Lab/ma" << std::endl;
+#if DEBUG_LEVEL > 0
+    std::cout << "DEBUG MODE" << std::endl;
+#endif
+} // function
+
 /**
  * main function
  * @todo order of parameters seems to matter.. fix that
@@ -144,171 +255,111 @@ int main( int argc, char* argv[] )
 {
     if( MA_VERSION != sLibMaVersion )
     {
-        std::cerr << "cmbMA verion \"" << MA_VERSION << "\" does not match libMA version \"" << sLibMaVersion << "\""
-                  << std::endl;
+        std::cerr << "Fatal error: cmbMA verion \"" << MA_VERSION << "\" does not match libMA version \""
+                  << sLibMaVersion << "\". Something went wrong during building/linking." << std::endl;
         return 1;
     } // if
-    Options options( "MA", "\t\t===== The Modular Aligner =====" );
-    options.add_options( )( "h,help", "Display the complete help screen" )(
-        "t,threads", "Number of threads",
-        value<unsigned int>( )->default_value( std::to_string( std::thread::hardware_concurrency( ) ) ), "arg     " );
+    ParameterSetManager xParameterManager;
+    xParameterManager.xGlobalParameterSet.bSAMOutputInReadsFolder->set( false );
+
+    // set the mode...
+    for( int iI = 2; iI < argc; iI += 2 )
+    {
+        std::string sOptionName = argv[ iI - 1 ];
+        std::string sOptionValue = argv[ iI ];
+        std::replace( sOptionValue.begin( ), sOptionValue.end( ), '_', ' ' );
+        if( sOptionName == "-m" || sOptionName == "--mode" )
+            xParameterManager.setSelected( sOptionValue );
+    } // for
 
     if( argc <= 1 )
     {
-        std::cout << "Invalid usage; you need to supply -x and -i at least!" << std::endl;
-        std::cout << sHelp << std::endl;
+        generateHelpMessage( xParameterManager );
         return 0;
     } // if
 
     try
     {
-        defaults::configureFast( );
-        for( int i = 0; i < argc - 1; i++ )
-            if( strcmp( argv[ i ], "-m" ) == 0 || strcmp( argv[ i ], "--mode" ) == 0 )
+        for( int iI = 1; iI < argc; iI++ )
+        {
+            std::string sOptionName = argv[ iI ];
+
+            if( sOptionName == "-m" || sOptionName == "--mode" ) // we did this already
             {
-                if( strcmp( argv[ i + 1 ], "acc" ) == 0 )
-                    defaults::configureAccurate( );
-                if( strcmp( argv[ i + 1 ], "fast" ) == 0 )
-                    defaults::configureFast( );
+                iI++; // also ignore the following argument
+                continue;
+            }// if
+
+            std::replace( sOptionName.begin( ), sOptionName.end( ), '_', ' ' );
+
+            if( iI + 1 < argc && argv[ iI + 1 ][ 0 ] != '-' )
+            {
+                std::string sOptionValue = argv[ iI ];
+                iI++; // have key value pair so next element is certainly no key
+
+                if( sOptionName[ 0 ] == '-' && sOptionName[ 1 ] != '-' && sOptionName.size( ) == 2 )
+                    xParameterManager.byShort( sOptionName[ 1 ] )->setByText( sOptionValue );
+
+                else if( sOptionName[ 0 ] == '-' && sOptionName[ 1 ] == '-' && sOptionName.size( ) > 2 )
+                    xParameterManager.byName( sOptionName.substr( 2, sOptionName.size( ) - 2 ) )
+                        ->setByText( sOptionValue );
+
+                else
+                    throw AnnotatedException(
+                        std::string( "unknown option type: " )
+                            .append( sOptionName )
+                            .append( ". Did you forget to add the '-' or '--' at the beginning?" ) );
             } // if
+            else // boolean flag option
+            {
+                if( sOptionName[ 0 ] == '-' && sOptionName[ 1 ] != '-' && sOptionName.size( ) == 2 )
+                {
+                    auto pX = std::dynamic_pointer_cast<AlignerParameter<bool>>(
+                        xParameterManager.byShort( sOptionName[ 1 ] ) );
 
-        options.add_options( "Alignment options (requires -a)" )( "i,in", "Input file(s) as (multi-)fasta(-q)",
-                                                                  value<std::vector<std::string>>( ), "args" )(
-            "o,out", "Output file as SAM", value<std::string>( )->default_value( "stdout" ) )(
-            "m,mode", "Pre-setting [fast/acc]", value<std::string>( )->default_value( defaults::sParameterSet ) )(
-            "s,seedSet", "Seeding strategy [SMEMs/maxSpanning]",
-            value<std::string>( )->default_value( defaults::sSeedSet ) )(
-            "n,reportN", "Report up to N alignments; 0: unlimited",
-            value<unsigned int>( )->default_value( std::to_string( defaults::uiReportN ) ) )(
-            "l,minLen", "Minimum seed length",
-            value<unsigned int>( )->default_value( std::to_string( defaults::uiMinLen ) ) )(
-            "giveUp", "Minimum SoC score (relative to query length)",
-            value<double>( )->default_value( std::to_string( defaults::fGiveUp ) ) )(
-            "maxTries", "Max num SoC",
-            value<unsigned int>( )->default_value( std::to_string( defaults::uiMaxTries ) ) )(
-            "minTries", "Min num SoC",
-            value<unsigned int>( )->default_value( std::to_string( defaults::uiMinTries ) ) )(
-            "minRefSize", "ref size switch",
-            value<unsigned long long>( )->default_value( std::to_string( defaults::uiGenomeSizeDisable ) ) )(
-            "d,noDP", "Disable DP" )( "Match", "DP match score.",
-                                      value<int>( )->default_value( std::to_string( defaults::iMatch ) ) )(
-            "MisMatch", "DP mismatch penalty.",
-            value<int>( )->default_value( std::to_string( defaults::iMissMatch ) ) )(
-            "Gap", "DP gap open penalty.", value<int>( )->default_value( std::to_string( defaults::iGap ) ) )(
-            "Extend", "DP gap extend penalty.", value<int>( )->default_value( std::to_string( defaults::iExtend ) ) )(
-            "Gap2", "DP gap open penalty.", value<int>( )->default_value( std::to_string( defaults::iGap2 ) ) )(
-            "Extend2", "DP gap extend penalty.", value<int>( )->default_value( std::to_string( defaults::iExtend2 ) ) )(
-            "x,idx", "Do FMD-index generation", value<std::string>( ) )( "genIndex", "Do FMD-index generation" )(
-            "SoCWidth", "SoC width", value<unsigned int>( )->default_value( std::to_string( defaults::uiSoCWidth ) ) )(
-            "disableHeuristics", "disable all heuristics",
-            value<bool>( )->default_value( defaults::bDisableHeuristics ? "true" : "false" ) )(
-            "noSecondary", "noSecondary", value<bool>( )->default_value( defaults::bNoSecondary ? "true" : "false" ) )(
-            "noSupplementary", "noSupplementary",
-            value<bool>( )->default_value( defaults::bNoSupplementary ? "true" : "false" ) )(
-            "maxDeltaDist", "", value<double>( )->default_value( std::to_string( defaults::dMaxDeltaDist ) ) )(
-            "minDeltaDist", "", value<uint64_t>( )->default_value( std::to_string( defaults::uiMinDeltaDist ) ) )(
-            "maxOverlapSupp", "",
-            value<double>( )->default_value( std::to_string( defaults::dMaxOverlapSupplementary ) ) );
+                    if( pX == nullptr )
+                        throw AnnotatedException( "Parameters need to be provided as key value pairs" );
+                    pX->set( true );
+                } // if
+                else if( sOptionName[ 0 ] == '-' && sOptionName[ 1 ] == '-' && sOptionName.size( ) > 2 )
+                {
+                    auto pX = std::dynamic_pointer_cast<AlignerParameter<bool>>(
+                        xParameterManager.byName( sOptionName.substr( 2, sOptionName.size( ) - 2 ) ) );
+                    if( pX == nullptr )
+                        throw AnnotatedException( "Parameters need to be provided as key value pairs" );
+                    pX->set( true );
+                } // else if
+                else
+                    throw AnnotatedException(
+                        std::string( "unknown option type: " )
+                            .append( sOptionName )
+                            .append( ". Did you forget to add the '-' or '--' at the beginning?" ) );
+            }
+        } // for
+        if( xParameterManager.xGlobalParameterSet.pbPrintHelpMessage->get( ) )
+            generateHelpMessage( xParameterManager );
+    } // try
+    catch( const AnnotatedException& ex )
+    {
+        std::cerr << "Error:\n" << ex.what( ) << std::endl;
+    } // catch
+    catch( std::runtime_error& ex )
+    {
+        std::cerr << "Error:\n" << ex.what( ) << std::endl;
+    } // catch
+    catch( std::exception& ex )
+    {
+        std::cerr << "Error:\n" << ex.what( ) << std::endl;
+    } // catch
+    catch( ... )
+    {
+        std::cerr << "Error:\n"
+                  << "unknown exception encountered" << std::endl;
+    } // catch
+#if 0
+    try
+    {
 
-        options.add_options( "Paired Reads options (requires either -U or -N)" )(
-            "p,Paired", "Enable paired alignment; Distance as normal distribution", value<std::vector<std::string>>( ),
-            "args" )( "paIsolate", "Penalty for unpaired alignments",
-                      value<double>( )->default_value( std::to_string( defaults::dUnpaired ) ),
-                      "arg    " )( "paMean", "Gap distance mean",
-                                   value<unsigned int>( )->default_value( std::to_string( defaults::uiMean ) ) )(
-            "paStd", "Gap distance standard deviation",
-            value<double>( )->default_value( std::to_string( defaults::fStd ) ) )(
-            "db_conninfo", "db_conninfo", value<std::string>( )->default_value( "" ) )(
-            "run_id", "run_id", value<int32_t>( )->default_value( "-1" ) );
-
-        auto result = options.parse( argc, argv );
-
-        if( result.count( "help" ) )
-        {
-            std::cout << sHelp << std::endl;
-            return 0;
-        } // if
-
-        auto uiT = result[ "threads" ].as<unsigned int>( );
-        defaults::bNormalDist = result.count( "Paired" ) > 0;
-        defaults::uiMean = result[ "paMean" ].as<unsigned int>( );
-        defaults::fStd = result[ "paStd" ].as<double>( );
-        defaults::dUnpaired = result[ "paIsolate" ].as<double>( );
-        // for some reason cxxopts cannot deal with float...
-        defaults::uiReportN = result[ "reportN" ].as<unsigned int>( );
-        defaults::sParameterSet = result[ "mode" ].as<std::string>( );
-        defaults::sSeedSet = result[ "seedSet" ].as<std::string>( );
-        defaults::uiMinLen = result[ "minLen" ].as<unsigned int>( );
-        defaults::uiSoCWidth = result[ "SoCWidth" ].as<unsigned int>( );
-        defaults::bDisableHeuristics = result[ "disableHeuristics" ].as<bool>( );
-        defaults::bNoSecondary = result[ "noSecondary" ].as<bool>( );
-        defaults::bNoSupplementary = result[ "noSupplementary" ].as<bool>( );
-        defaults::uiMinDeltaDist = result[ "minDeltaDist" ].as<uint64_t>( );
-        defaults::dMaxDeltaDist = result[ "maxDeltaDist" ].as<double>( );
-        defaults::dMaxOverlapSupplementary = result[ "maxOverlapSupp" ].as<double>( );
-        std::string sGenome;
-        if( result.count( "idx" ) > 0 )
-            sGenome = result[ "idx" ].as<std::string>( );
-        else
-        {
-            std::cerr << "error: --idx is compulsory" << std::endl;
-            return 1;
-        } // else if
-        std::vector<std::string> aIn;
-        if( result.count( "in" ) > 0 )
-            aIn = result[ "in" ].as<std::vector<std::string>>( );
-        else
-        {
-            std::cerr << "error: --in is compulsory" << std::endl;
-            return 1;
-        } // else if
-        if( aIn.size( ) != 1 && !( defaults::bNormalDist ) && result.count( "genIndex" ) == 0 )
-        {
-            std::cerr << "error: --in takes one argument in unpaired mode" << std::endl;
-            return 1;
-        } // if
-        else if( aIn.size( ) != 2 && ( defaults::bNormalDist ) && result.count( "genIndex" ) == 0 )
-        {
-            std::cerr << "error: --in takes two arguments in paired mode" << std::endl;
-            return 1;
-        } // else if
-        auto sOut = result[ "out" ].as<std::string>( );
-
-        // for some reason cxxopts cannot deal with float...
-        defaults::fGiveUp = (float)result[ "giveUp" ].as<double>( );
-        if( defaults::fGiveUp < 0 || defaults::fGiveUp > 1 )
-        {
-            std::cerr << "error: --giveUp <val>; with 0 <= <val> <= 1" << std::endl;
-            return 1;
-        } // else if
-        defaults::iMatch = result[ "Match" ].as<int>( );
-        if( defaults::iMatch == 0 )
-        {
-            std::cerr << "error: --Match must be larger than 0" << std::endl;
-            return 1;
-        } // else if
-        defaults::iExtend = result[ "Extend" ].as<int>( );
-        if( defaults::iExtend == 0 )
-        {
-            std::cerr << "error: --Extend must be larger than 0" << std::endl;
-            return 1;
-        } // else if
-        defaults::iExtend2 = result[ "Extend2" ].as<int>( );
-        defaults::iMissMatch = result[ "MisMatch" ].as<int>( );
-        if( defaults::iMissMatch == 0 )
-        {
-            std::cerr << "error: --MisMatch must be larger than 0" << std::endl;
-            return 1;
-        } // else if
-        defaults::iGap = result[ "Gap" ].as<int>( );
-        defaults::iGap2 = result[ "Gap2" ].as<int>( );
-        defaults::uiMaxTries = result[ "maxTries" ].as<unsigned int>( );
-        defaults::uiMinTries = result[ "minTries" ].as<unsigned int>( );
-        defaults::uiGenomeSizeDisable = result[ "minRefSize" ].as<unsigned long long>( );
-        std::string sBbOutput = result[ "db_conninfo" ].as<std::string>( );
-#ifdef WITH_POSTGRES
-        int32_t iRunId = result[ "run_id" ].as<int32_t>( );
-#endif
 
         if( result.count( "genIndex" ) )
         {
@@ -338,7 +389,6 @@ int main( int argc, char* argv[] )
  *
  */
 // setup the alignment input
-            ParameterSetManager xParameterManager;
 #if 1
             auto pPack = makePledge<Pack>( sGenome );
             auto pFMDIndex = makePledge<FMIndex>( sGenome );
@@ -444,5 +494,6 @@ int main( int argc, char* argv[] )
     {
         std::cerr << "unknown exception encountered" << std::endl;
     } // catch
+#endif
     return 0;
 } // main function

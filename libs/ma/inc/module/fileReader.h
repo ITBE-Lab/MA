@@ -67,7 +67,7 @@ class StdFileStream : public FileStream
     std::ifstream xStream;
 
   public:
-    StdFileStream( std::string sFilename ) : xStream( sFilename )
+    StdFileStream( fs::path sFilename ) : xStream( sFilename )
     {} // constructor
 
     bool eof( ) const
@@ -235,10 +235,10 @@ class GzFileStream : public FileStream
     char cBuff;
 
   public:
-    GzFileStream( std::string sFilename )
+    GzFileStream( fs::path sFilename )
     {
         // open the file in reading and binary mode
-        pFile = gzopen( sFilename.c_str( ), "rb" );
+        pFile = gzopen( sFilename.string( ).c_str( ), "rb" );
         if( pFile != nullptr )
             // fill internal buffer
             lastReadReturn = gzread( pFile, &cBuff, 1 );
@@ -313,8 +313,8 @@ class Reader
 }; // class
 
 
-class SingleFileReader: public Module<NucSeq, true>, public Reader
-{};// class
+class SingleFileReader : public Module<NucSeq, true>, public Reader
+{}; // class
 
 /**
  * @brief Reads Queries from a file.
@@ -332,17 +332,17 @@ class FileReader : public SingleFileReader
     /**
      * @brief creates a new FileReader.
      */
-    FileReader( std::string sFileName )
+    FileReader( fs::path sFileName )
     {
 #ifdef WITH_ZLIB
-        if( sFileName.size( ) > 3 && sFileName.substr( sFileName.size( ) - 3, 3 ) == ".gz" )
+        if( sFileName.extension( ).string( ) == ".gz" )
             pFile = std::make_shared<GzFileStream>( sFileName );
         else
 #endif
             pFile = std::make_shared<StdFileStream>( sFileName );
         if( !pFile->is_open( ) )
         {
-            throw AnnotatedException( "Unable to open file" + sFileName );
+            throw AnnotatedException( "Unable to open file" + sFileName.string( ) );
         } // if
         std::ifstream xFileEnd( sFileName, std::ifstream::ate | std::ifstream::binary );
         uiFileSize = xFileEnd.tellg( );
@@ -353,7 +353,7 @@ class FileReader : public SingleFileReader
     /**
      * @brief creates a new FileReader.
      */
-    FileReader( const ParameterSetManager& rParameters, std::string sFileName ) : FileReader( sFileName )
+    FileReader( const ParameterSetManager& rParameters, fs::path sFileName ) : FileReader( sFileName )
     {} // constructor
 
     /**
@@ -409,51 +409,53 @@ class FileReader : public SingleFileReader
 class FileListReader : public SingleFileReader
 {
   public:
-    std::vector<std::string> vsFileNames;
-    FileReader xFileReader;
-    size_t uiFileIndex = 0;
-
-    inline void openNextFile( )
-    {
-        uiFileIndex++;
-        if( uiFileIndex >= vsFileNames.size( ) )
-            this->setFinished( );
-        else
-            xFileReader = FileReader( vsFileNames[ uiFileIndex ] );
-    } // method
+    size_t uiFileIndex;
+    std::vector<fs::path> vsFileNames;
+    std::unique_ptr<FileReader> pFileReader;
 
     /**
      * @brief creates a new FileReader.
      */
-    FileListReader( std::vector<std::string> vsFileNames )
-        : vsFileNames( vsFileNames ), xFileReader( vsFileNames[ uiFileIndex ] )
+    FileListReader( const std::vector<fs::path>& vsFileNames )
+        : uiFileIndex( 0 ),
+          vsFileNames( vsFileNames ),
+          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
     {} // constructor
 
-    FileListReader( const ParameterSetManager& rParameters, std::vector<std::string> vsFileNames )
-        : vsFileNames( vsFileNames ), xFileReader( vsFileNames[ uiFileIndex ] )
+    FileListReader( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
+        : uiFileIndex( 0 ),
+          vsFileNames( vsFileNames ),
+          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
     {} // constructor
 
     std::shared_ptr<NucSeq> EXPORTED execute( )
     {
-        if( xFileReader.isFinished( ) )
-            openNextFile( );
-        return xFileReader.execute( );
+        auto pRet = pFileReader->execute( );
+        if( pFileReader->isFinished( ) )
+        {
+            uiFileIndex++;
+            if( uiFileIndex >= vsFileNames.size( ) )
+                this->setFinished( );
+            else
+                pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
+        } // if
+        return pRet;
     } // method
 
     // @override
     virtual bool requiresLock( ) const
     {
-        return xFileReader.requiresLock( );
+        return pFileReader->requiresLock( );
     } // function
 
     size_t getCurrPosInFile( ) const
     {
-        return xFileReader.getCurrPosInFile( );
+        return pFileReader->getCurrPosInFile( );
     } // function
 
     size_t getFileSize( ) const
     {
-        return xFileReader.getFileSize( );
+        return pFileReader->getFileSize( );
     } // function
 
     size_t getCurrFileIndex( ) const
@@ -482,11 +484,8 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     /**
      * @brief creates a new FileReader.
      */
-    PairedFileReader( const ParameterSetManager& rParameters,
-                      std::vector<std::string>
-                          vsFileName1,
-                      std::vector<std::string>
-                          vsFileName2 )
+    PairedFileReader(
+        const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
         : pF1( std::make_shared<FileListReader>( vsFileName1 ) ), pF2( std::make_shared<FileListReader>( vsFileName2 ) )
     {} // constructor
     /**

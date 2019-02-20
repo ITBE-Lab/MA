@@ -3,6 +3,7 @@
 #include "util/default_parameters.h"
 #include "util/exception.h"
 #include "util/exported.h"
+#include "util/support.h"
 
 #if defined( __GNUC__ ) && ( __GNUC__ < 8 )
 #include <experimental/filesystem>
@@ -73,6 +74,21 @@ class AlignerParameterBase
     {
         throw AnnotatedException( "Mirroring of AlignerParameterBase objects is prohibited." );
     } // method
+
+    virtual std::string type_name( ) const
+    {
+        return "unknown type";
+    } // method
+
+    virtual std::string asText( ) const
+    {
+        throw AnnotatedException( "AlignerParameterBase has go value" );
+    } // method
+
+    virtual void setByText( const std::string& sValueAsString )
+    {
+        throw AnnotatedException( "Cannot set value of AlignerParameterBase" );
+    } // method
 }; // class
 
 
@@ -107,7 +123,6 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     void set( VALUE_TYPE newValue )
     {
         /* Check the value. ( Error is indicated by exception )*/
-        std::cout << "CHECK PREDICATE" << std::endl;
         fPredicate( newValue );
 
         /* In the case of an exception this line is skipped !*/
@@ -115,7 +130,7 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     } // method
 
     /* Throws an exception if something goes wrong */
-    void setByText( const std::string& sValueAsString )
+    virtual void setByText( const std::string& sValueAsString )
     {
         VALUE_TYPE newValue = genericStringToValue<VALUE_TYPE>( sValueAsString );
         this->set( newValue );
@@ -143,8 +158,14 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
         // std::cout << "Mirror: " << sName << " from " << this->value << " to " << pOtherDerived->value << std::endl;
         this->value = pOtherDerived->value;
     } // method
-}; // class
 
+    virtual std::string type_name( ) const
+    {
+        return demangle( typeid( value ).name( ) );
+    } // method
+
+    virtual EXPORTED std::string asText( ) const;
+}; // class
 
 /* Parameter class for choices (list of different textual alternatives)
  */
@@ -179,14 +200,12 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     /* Get the corresponding internal string for selection */
     std::string get( void )
     {
-        std::cout << "Internal Setting:" << vChoices.at( uiSelection ).first << std::endl;
         return vChoices.at( uiSelection ).first;
     } // method
 
     /* Get the corresponding internal string for selection */
     const std::string get( void ) const
     {
-        std::cout << "Internal Setting:" << vChoices.at( uiSelection ).first << std::endl;
         return vChoices.at( uiSelection ).first;
     } // method
 
@@ -200,6 +219,25 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
         auto pOtherDerived =
             std::dynamic_pointer_cast<const AlignerParameter<AlignerParameterBase::ChoicesType>>( pOther );
         this->uiSelection = pOtherDerived->uiSelection;
+    } // method
+
+    virtual std::string type_name( ) const
+    {
+        std::string s;
+        for( auto xPair : vChoices )
+            s += xPair.first + "/";
+        s.pop_back( );
+        return s;
+    } // method
+
+    virtual void setByText( const std::string& sValueAsString )
+    {
+        this->set( stoi( sValueAsString ) );
+    } // method
+
+    virtual std::string asText( ) const
+    {
+        return this->get( );
     } // method
 }; // class
 
@@ -261,20 +299,35 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
         auto pOtherDerived = std::dynamic_pointer_cast<const AlignerParameter<fs::path>>( pOther );
         this->xPath = pOtherDerived->xPath;
     } // method
+
+    virtual std::string type_name( ) const
+    {
+        return "file_name";
+    } // method
+
+    virtual void setByText( const std::string& sValueAsString )
+    {
+        this->set( sValueAsString );
+    } // method
+
+    virtual std::string asText( ) const
+    {
+        return this->get( ).string( );
+    } // method
 }; // class
 
-class Presetting; // forward declaration required for AlignerParameterPointer
+class ParameterSetBase; // forward declaration required for AlignerParameterPointer
 
 template <typename VALUE_TYPE> class AlignerParameterPointer
 {
   private:
-    void do_register( Presetting* pPresetting );
+    void do_register( ParameterSetBase* pPresetting );
 
   public:
     std::shared_ptr<AlignerParameter<VALUE_TYPE>> pContent;
 
     template <typename... ARGUMENT_TYPES>
-    AlignerParameterPointer( Presetting* pPresetting, ARGUMENT_TYPES&&... arguments )
+    AlignerParameterPointer( ParameterSetBase* pPresetting, ARGUMENT_TYPES&&... arguments )
         : pContent( std::make_shared<AlignerParameter<VALUE_TYPE>>( arguments... ) )
     {
         do_register( pPresetting );
@@ -294,7 +347,7 @@ template <typename VALUE_TYPE> class AlignerParameterPointer
 /* Class for management of aligner parameter sets.
  * Idea: By using Reflections this code could be improved. (e.g. https://www.rttr.org/)
  */
-class Presetting
+class ParameterSetBase
 {
   public:
     // Reflection of all parameter
@@ -302,6 +355,72 @@ class Presetting
     std::map<char, std::shared_ptr<AlignerParameterBase>> xpParametersByShort;
     std::map<std::pair<size_t, std::string>, std::vector<std::shared_ptr<AlignerParameterBase>>> xpParametersByCategory;
 
+    /**
+     * Every parameter has to call this function from it's constructor.
+     * We use this in order to generate a map of all available parameters
+     */
+    void registerParameter( const std::shared_ptr<AlignerParameterBase> pParameter )
+    {
+        xpAllParameters.emplace( pParameter->sName, pParameter );
+        xpParametersByCategory[ pParameter->sCategory ].push_back( pParameter );
+        if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
+        {
+            auto xEmplaceRet = xpParametersByShort.emplace( pParameter->cShort, pParameter );
+            if( !xEmplaceRet.second ) // there is another parameter with this shorthand...
+                throw AnnotatedException( std::string( "Shorthand: " )
+                                              .append( std::to_string( pParameter->cShort ) )
+                                              .append( " used twice: 1) " )
+                                              .append( xEmplaceRet.first->second->sName )
+                                              .append( " 2)" )
+                                              .append( pParameter->sName ) );
+        }
+    } // method
+
+    bool hasName( const std::string& rParameterName ) const
+    {
+        return xpAllParameters.count( rParameterName ) > 0;
+    } // method
+
+    bool hasShort( const char cX ) const
+    {
+        return xpParametersByShort.count( cX ) > 0;
+    } // method
+
+    std::shared_ptr<AlignerParameterBase> byName( const std::string& rParameterName )
+    {
+        try
+        {
+            return xpAllParameters.at( rParameterName );
+        } // try
+        catch( std::out_of_range& )
+        {
+            throw AnnotatedException( std::string( "Could not find parameter: " ).append( rParameterName ) );
+        } // catch
+    } // method
+
+    std::shared_ptr<AlignerParameterBase> byShort( const char cX )
+    {
+        try
+        {
+            return xpParametersByShort.at( cX );
+        } // try
+        catch( std::out_of_range& )
+        {
+            throw AnnotatedException( "Could not find parameter: " + cX );
+        } // catch
+    } // method
+
+    /* Mirror the setting of one parameter-set into another */
+    void mirror( const ParameterSetBase& rxOtherSet )
+    {
+        for( auto& rxTup : xpAllParameters )
+            rxTup.second->mirror( rxOtherSet.xpAllParameters.at( rxTup.first ) );
+    } // method
+}; // class
+
+class Presetting : public ParameterSetBase
+{
+  public:
     AlignerParameterPointer<bool> xUsePairedReads; // If true, work with paired reads
     AlignerParameterPointer<int> xMatch; // score for a DP match (used in SoC width computation)
     AlignerParameterPointer<int> xMisMatch; // score for a DP match (used in SoC width computation)
@@ -366,7 +485,7 @@ class Presetting
     /* Constructor */
     Presetting( )
         : // sName( sName ), //
-          xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
+          xUsePairedReads( this, "Use Paired Reads", 'p', "If your reads occur as paired reads, activate this flag.",
                            PAIRED_PARAMETERS, false ),
           xMatch( this, "Match Score",
                   "Match score used in the context of Dynamic Programming and for SoC width computation.",
@@ -383,20 +502,20 @@ class Presetting
                         "results in penalty; [val] > 1 results in bonus.",
                         PAIRED_PARAMETERS, 1.25 ),
           xMeanPairedReadDistance(
-              this, "Mean distance of paired reads",
+              this, "Mean distance of paired reads", 'd',
               "Two reads can be paired if they are within mean +- (standard deviation)*3 distance from one another on "
               "the expected strands (depends on Use Mate Pair on/off) Used in the context of the computation of the "
               "mapping quality and for picking optimal alignment pairs.",
               PAIRED_PARAMETERS, 400 ),
           xStdPairedReadDistance(
-              this, "Standard deviation of paired reads",
+              this, "Standard deviation of paired reads", 'S',
               "<val> represents the standard deviation for the distance between paired reads. Used in the context of "
               "the computation of the mapping quality and for picking optimal alignment pairs.",
               PAIRED_PARAMETERS, 150 ),
-          xReportN( this, "Max. number of Reported alignments",
+          xReportN( this, "Max. number of Reported alignments", 'n',
                     "Do not output more than <val> alignments. 0 = no limit.", SAM_PARAMETERS, 0 ),
           xMaximalSeedAmbiguity( this, "Maximal ambiguity", "Maximal ambiguity of seeds.", SEEDING_PARAMETERS, 500 ),
-          xMinSeedLength( this, "Minimal Seed length", "Minimal seed length.", SEEDING_PARAMETERS, 16 ),
+          xMinSeedLength( this, "Minimal Seed length", 'l', "Minimal seed length.", SEEDING_PARAMETERS, 16 ),
           xMinAlignmentScore( this, "Minimal alignment score",
                               "Suppress the output of alignments with a score below val.", SAM_PARAMETERS, 75 ),
           xMinimalSeedAmbiguity( this, "Min ambiguity", "Stop the extension process if seeds are less ambiguous.",
@@ -405,11 +524,11 @@ class Presetting
                                 "Heuristic runtime optimization: For a given read R, let N be the number of seeds of "
                                 "size >= [val]. Discard R, if N < [length(R)] * [Seeding drop-off B].",
                                 SEEDING_PARAMETERS, 15 ),
-          xMaxNumSoC( this, "Maximal Number of SoC's", "Only consider the <val> best scored SoC's. 0 = no limit.",
+          xMaxNumSoC( this, "Maximal Number of SoC's", 'N', "Only consider the <val> best scored SoC's. 0 = no limit.",
                       SOC_PARAMETERS, 30 ),
           xMinNumSoC( this, "Min Number SoC’s",
-                      "Always consider the first <val> SoC's no matter the Heuristic optimizations.", SOC_PARAMETERS,
-                      1 ),
+                      'M', "Always consider the first <val> SoC's no matter the Heuristic optimizations.",
+                      SOC_PARAMETERS, 1 ),
           xSwitchQlen( this, "Harmonization Score dropoff - Minimal Query length",
                        "For reads of length >= [val]: Ignore all SoC's with harmonization scores lower than the "
                        "current maximal score. 0 = disabled.",
@@ -495,7 +614,8 @@ class Presetting
           xZDrop( this, "Z Drop", "If the DP score drops faster than <val> stop the extension process.", DP_PARAMETERS,
                   200 ),
 
-          xSeedingTechnique( this, "Seeding Technique", "Technique used for the initial seeding.", SEEDING_PARAMETERS,
+          xSeedingTechnique( this, "Seeding Technique", 's', "Technique used for the initial seeding.",
+                             SEEDING_PARAMETERS,
                              AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} )
     {
 
@@ -503,13 +623,6 @@ class Presetting
         xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
     } // constructor
-
-    /* Mirror the setting of one parameter-set into another */
-    void mirror( const Presetting& rxOtherSet )
-    {
-        for( auto& rxTup : xpAllParameters )
-            rxTup.second->mirror( rxOtherSet.xpAllParameters.at( rxTup.first ) );
-    } // method
 
     /* Named copy Constructor */
     Presetting( const Presetting& rxOtherSet, const std::string& sName ) : Presetting( )
@@ -522,48 +635,10 @@ class Presetting
     {
         return xUsePairedReads->value;
     } // method
-
-    /**
-     * Every parameter has to call this function from it's constructor.
-     * We use this in order to generate a map of all available parameters
-     */
-    void registerParameter( const std::shared_ptr<AlignerParameterBase> pParameter )
-    {
-        xpAllParameters.emplace( pParameter->sName, pParameter );
-        xpParametersByCategory[ pParameter->sCategory ].push_back( pParameter );
-        if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
-        {
-            auto xEmplaceRet = xpParametersByShort.emplace( pParameter->cShort, pParameter );
-            if( !xEmplaceRet.second ) // there is another parameter with this shorthand...
-                throw AnnotatedException( std::string( "Shorthand: " )
-                                              .append( std::to_string( pParameter->cShort ) )
-                                              .append( " used twice: 1) " )
-                                              .append( xEmplaceRet.first->second->sName )
-                                              .append( " 2)" )
-                                              .append( pParameter->sName ) );
-        }
-    } // method
-
-    // AlignerParameterBase* byName( const std::string& rParameterName )
-    //{
-    //    try
-    //    {
-    //        return xpAllParameters.at( rParameterName );
-    //    } // try
-    //    catch( std::out_of_range& )
-    //    {
-    //        throw AnnotatedException( std::string( "Could not find parameter: " ).append( rParameterName ) );
-    //    } // catch
-    //} // method
-    //
-    // AlignerParameterBase* byShort( const char cX )
-    //{
-    //    return xpParametersByShort.at( cX );
-    //} // method
 }; // class
 
 template <typename VALUE_TYPE> // @todo maybe this can be part of the constructor ?
-void AlignerParameterPointer<VALUE_TYPE>::do_register( Presetting* pPresetting )
+void AlignerParameterPointer<VALUE_TYPE>::do_register( ParameterSetBase* pPresetting )
 {
     if( pPresetting != nullptr )
         pPresetting->registerParameter( this->pContent );
@@ -572,7 +647,7 @@ void AlignerParameterPointer<VALUE_TYPE>::do_register( Presetting* pPresetting )
 /* Parameter which occur only once.
  * (Not sequencing technique / configuration related parameters)
  */
-class GeneralParameter
+class GeneralParameter : public ParameterSetBase
 {
   public:
     // FIXME: Set this to a standard path in the beginning (~home/ma/SAM)
@@ -580,20 +655,23 @@ class GeneralParameter
     AlignerParameterPointer<fs::path> xSAMOutputPath; // folder path
     AlignerParameterPointer<bool> pbUseMaxHardareConcurrency; // Exploit all cores
     AlignerParameterPointer<int> piNumberOfThreads; // selected number of threads
+    AlignerParameterPointer<bool> pbPrintHelpMessage; // Print the help message to stdout
 
     /* Constructor */
     GeneralParameter( )
-        : bSAMOutputInReadsFolder( nullptr, "SAM files in same folder as reads",
+        : bSAMOutputInReadsFolder( this, "SAM files in same folder as reads",
                                    "If set, the SAM files are written in the folder of the reads.",
                                    std::pair<size_t, std::string>( ), true ),
-          xSAMOutputPath( nullptr, "Folder (path) for SAM files", "All SAM-output will be written to this folder",
+          xSAMOutputPath( this, "Folder (path) for SAM files", 'o', "All SAM-output will be written to this folder",
                           std::pair<size_t, std::string>( ), fs::temp_directory_path( ) ),
-          pbUseMaxHardareConcurrency( nullptr, "Use all processor cores",
+          pbUseMaxHardareConcurrency( this, "Use all processor cores",
                                       "The number of threads used for aligning is chosen to be identical to the number "
                                       "of your processor cores.",
                                       std::pair<size_t, std::string>( ), true ),
-          piNumberOfThreads( nullptr, "Number of threads", "Number of threads used in the context of alignments.",
-                             std::pair<size_t, std::string>( ), 1 )
+          piNumberOfThreads( this, "Number of threads", "Number of threads used in the context of alignments.",
+                             std::pair<size_t, std::string>( ), 1 ),
+          pbPrintHelpMessage( this, "Print help to stdout", 'h', "Number of threads used in the context of alignments.",
+                              std::pair<size_t, std::string>( ), false )
 
     {
         xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };
@@ -605,15 +683,6 @@ class GeneralParameter
     {
         mirror( rxOtherSet );
     } // copy constructor
-
-    /* Mirror the setting of the other parameter-set into the current parameter-set */
-    void mirror( const GeneralParameter& rxOtherSet )
-    {
-        this->xSAMOutputPath->mirror( rxOtherSet.xSAMOutputPath.pContent );
-        this->bSAMOutputInReadsFolder->mirror( rxOtherSet.bSAMOutputInReadsFolder.pContent );
-        this->pbUseMaxHardareConcurrency->mirror( rxOtherSet.pbUseMaxHardareConcurrency.pContent );
-        this->piNumberOfThreads->mirror( rxOtherSet.piNumberOfThreads.pContent );
-    } // method
 }; // class
 
 
@@ -669,6 +738,24 @@ class ParameterSetManager
     const Presetting* getSelected( void ) const
     {
         return pSelectedParamSet;
+    } // method
+
+    std::shared_ptr<AlignerParameterBase> byName( const std::string& rParameterName )
+    {
+        if( xGlobalParameterSet.hasName( rParameterName ) )
+            return xGlobalParameterSet.byName( rParameterName );
+        if( this->getSelected( )->hasName( rParameterName ) )
+            return this->getSelected( )->byName( rParameterName );
+        throw AnnotatedException( std::string( "Could not find parameter: " ).append( rParameterName ) );
+    } // method
+
+    std::shared_ptr<AlignerParameterBase> byShort( const char cX )
+    {
+        if( xGlobalParameterSet.hasShort( cX ) )
+            return xGlobalParameterSet.byShort( cX );
+        if( this->getSelected( )->hasShort( cX ) )
+            return this->getSelected( )->byShort( cX );
+        throw AnnotatedException( "Could not find parameter: " + cX );
     } // method
 }; // class
 

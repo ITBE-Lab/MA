@@ -278,19 +278,27 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
 {
   public:
     const mwxConnector pxConnector; // connector for the current box sizer
+    const bool bMultiFileSelect;
+
   private:
     const std::string sFileDialogTitle; // "Open Reference file"
     const std::string sFilePattern; // "Reference files (*.maReference)|*.maReference|All Files|*"
-    std::function<void( const fs::path& )> fHandler;
+    std::function<void( const std::vector<fs::path>& )> fHandler;
 
     void onFolderButton( wxCommandEvent& WXUNUSED( event ) )
     {
         wxFileDialog openFileDialog( pxConnector.pxWindow, sFileDialogTitle, "", "", sFilePattern,
-                                     wxFD_OPEN | wxFD_FILE_MUST_EXIST );
+                                     wxFD_OPEN | wxFD_FILE_MUST_EXIST |
+                                         ( this->bMultiFileSelect ? wxFD_MULTIPLE : 0 ) );
         if( openFileDialog.ShowModal( ) == wxID_OK )
         {
             // Call handler to inform about new selection
-            fHandler( fs::path( std::string( openFileDialog.GetPath( ).c_str( ) ) ) );
+            std::vector<fs::path> vxRet;
+            wxArrayString xFilenames;
+            openFileDialog.GetPaths( xFilenames );
+            for( auto &rsPath : xFilenames )
+                vxRet.push_back( fs::path( std::string( rsPath.c_str() ) ) );
+            fHandler( vxRet );
         } // if
     } // method
 
@@ -298,19 +306,22 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
     void onClearButton( wxCommandEvent& WXUNUSED( event ) )
     {
         // Clear Button results in call of handler with empty string
-        fHandler( std::string( "" ) );
+        fHandler( std::vector<fs::path>{} );
     } // method
 
   public:
+    /* Primary Constructor */
     mwxFileSelectDeleteButtonSizer( const mwxConnector& pxConnector, // connector for BoxSizer
                                     const std::string& rsText, // text of the button group
                                     const std::string& rsFileDialogTitle,
                                     const std::string& rsFilePattern,
-                                    std::function<void( const fs::path& )> fHandler =
-                                        []( const fs::path& ) {}, // File Handler for Folder Button
+                                    const bool bMultiFileSelect = false,
+                                    std::function<void( const std::vector<fs::path>& )> fHandler =
+                                        []( const std::vector<fs::path>& ) {},
                                     bool bWithClearButton = true )
         : mwxBoxSizer( pxConnector, wxVERTICAL ),
           pxConnector( pxConnector ),
+          bMultiFileSelect( bMultiFileSelect ),
           sFileDialogTitle( rsFileDialogTitle ),
           sFilePattern( rsFilePattern ),
           fHandler( fHandler )
@@ -340,8 +351,10 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
                 pxClearButton->Show( bWithClearButton );
             } ); // addBoxSizer
 
-        fHandler( std::string( "" ) );
-    } // method
+        fHandler( std::vector<fs::path>{} );
+    } // constructor
+
+
 }; // class
 
 
@@ -503,25 +516,6 @@ class mwxPropertyNotebook : public wxNotebook
     } // method
 }; // class
 
-namespace prettyPrint
-{
-    template <typename VALUE_TYPE> std::string mwxProperty_to_string( const VALUE_TYPE& value )
-    {
-        return std::to_string( value );
-    } // function
-
-    template <> std::string mwxProperty_to_string<double> ( const double& value )
-    {
-        // Taken from: https://stackoverflow.com/questions/13686482/c11-stdto-stringdouble-no-trailing-zeros
-        std::string sText( std::to_string( value ) );
-        int iOffset = 1;
-        if( sText.find_last_not_of( '0' ) == sText.find( '.' ) )
-            iOffset = 0;
-        sText.erase( sText.find_last_not_of( '0' ) + iOffset, std::string::npos );
-        return sText;
-    } // function
-} // namespace
-
 /* Managed wxWidgets extension for property management.
  * FIXME: Extend pxFlexLayout in order to get deallocation problem solved.
  */
@@ -577,7 +571,7 @@ class mwxPropertyPanel : public wxPanel
         /* Update the value of the property */
         void update( void )
         {
-            pxTextCtrl->SetValue( prettyPrint::mwxProperty_to_string<VALUE_TYPE>( this->pxParameter->value ) );
+            pxTextCtrl->SetValue( this->pxParameter->asText( ) );
         } // method
 
         /* Handler is called whenever the user leaves the input field (the user ends property editing) */
@@ -608,9 +602,8 @@ class mwxPropertyPanel : public wxPanel
                              pxParameter // parameter reference
                          )
             : mwxProperty( pxHost, pxParameter->sName ),
-              pxTextCtrl( new wxTextCtrl( pxHost, wxID_ANY,
-                                          prettyPrint::mwxProperty_to_string<VALUE_TYPE>( pxParameter->value ),
-                                          wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER ) ),
+              pxTextCtrl( new wxTextCtrl( pxHost, wxID_ANY, pxParameter->asText( ), wxDefaultPosition, wxDefaultSize,
+                                          wxTE_PROCESS_ENTER ) ),
               pxParameter( pxParameter )
         {
             pxHost->pxFlexLayout->Add( pxTextCtrl, 0, wxALL, 5 );
@@ -621,10 +614,10 @@ class mwxPropertyPanel : public wxPanel
 
             /* Bind "focus leave" to the handler */
             this->pxTextCtrl->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
-                                            [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
+                                                  [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
             /* Make the enter key to behave like the tab key. */
             this->pxTextCtrl->wxEvtHandler::Bind( wxEVT_COMMAND_TEXT_ENTER,
-                                            [&]( wxCommandEvent& rxEvent ) { this->pxTextCtrl->Navigate( ); } );
+                                                  [&]( wxCommandEvent& rxEvent ) { this->pxTextCtrl->Navigate( ); } );
         } // constructor
 
         virtual void updateEnabledDisabledDispatch( void )
@@ -734,7 +727,7 @@ class mwxPropertyPanel : public wxPanel
             for( auto& sChoiceText : pxParameter->vChoices )
                 aChoices.Add( sChoiceText.second.c_str( ) );
             this->pxCombo = new wxComboBox( pxHost, wxID_ANY, aChoices[ pxParameter->uiSelection ], wxDefaultPosition,
-                                      wxDefaultSize, aChoices, wxCB_READONLY );
+                                            wxDefaultSize, aChoices, wxCB_READONLY );
             pxHost->pxFlexLayout->Add( pxCombo, 0, wxALL, 5 );
 
             // Description of the parameter is used as ToolTip-text
@@ -742,8 +735,8 @@ class mwxPropertyPanel : public wxPanel
             this->pxStaticText->SetToolTip( pxParameter->sDescription );
 
             // Bind handler that process changes
-           this->pxCombo->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
-                                         [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
+            this->pxCombo->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
+                                               [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
         } // constructor
 
         virtual void updateEnabledDisabledDispatch( void )
@@ -787,8 +780,8 @@ class mwxPropertyPanel : public wxPanel
             this->pxStaticText->SetToolTip( pxParameter->sDescription );
 
             // Bind handler that process changes
-            this->pxCheckBox->wxEvtHandler::Bind( wxEVT_CHECKBOX,
-                                            [this]( wxCommandEvent& rxEvent ) { this->commandHandler( rxEvent ); } );
+            this->pxCheckBox->wxEvtHandler::Bind(
+                wxEVT_CHECKBOX, [this]( wxCommandEvent& rxEvent ) { this->commandHandler( rxEvent ); } );
         } // constructor
 
         virtual void updateEnabledDisabledDispatch( void )
