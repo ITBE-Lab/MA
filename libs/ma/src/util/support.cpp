@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vector>
+#include <regex>
 
 #include "util/exception.h"
 #include "util/support.h"
@@ -36,6 +37,14 @@ bool EXPORTED fileExists( const std::string& rsFile )
 bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd )
 {
     return rsX.compare( rsX.length( ) - rsEnd.length( ), rsEnd.length( ), rsEnd ) == 0;
+} // function
+
+std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex )
+{
+    std::regex xRegex( sRegex );
+    std::vector<std::string> xVector{std::sregex_token_iterator( sSubject.begin( ), sSubject.end( ), xRegex, -1 ),
+                                     std::sregex_token_iterator( )};
+    return xVector;
 } // function
 
 void makeDir( const std::string& rsFile )

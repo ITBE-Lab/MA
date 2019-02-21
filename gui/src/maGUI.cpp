@@ -128,6 +128,7 @@ class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
                                [&]( wxWindow* pxHostWindow ) { // Content of Dialog
                                    auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
                                    pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
+                                   pxPropertyPanel->append( rxParameterSet.xStdPairedReadDistance.pContent );
 
                                    return pxPropertyPanel;
                                }, // lambda
@@ -508,7 +509,7 @@ class AlignFrame : public wxDialog
     double dPreviousPercentage = -1;
     int uiPreviousNumFile = -1;
     std::unique_ptr<std::thread> pWorker;
-    std::atomic<bool> bForceStop = false;
+    std::atomic<bool> bForceStop;
     bool bAlignmentDone = false;
     int iNumFiles = -1;
     bool bNumFilesEventQueued = false;
@@ -669,7 +670,8 @@ class AlignFrame : public wxDialog
 
     /* Task Frame; created by clicking the start button */
     AlignFrame( wxWindow* parent, const wxString& title )
-        : wxDialog( parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE )
+        : wxDialog( parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE ), 
+          bForceStop(false)
     {
         // Set frame icon and background color
         SetIcons( wxIcon( xIconMA_XPM ) );

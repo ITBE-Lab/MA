@@ -280,13 +280,11 @@ class ExecutionContext
     doAlign( std::function<bool( double dPercentageProgress, int iFileNum, int iNumFilesOverall )> fProgressCallBack =
                  []( double, int, int ) { return true; } )
     {
-        std::cout << "Do align started ..." << std::endl;
         // FIXME: Read correct value for uiConcurrency
         unsigned int uiConcurency = std::thread::hardware_concurrency( );
         if( !xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->get( ) )
         {
             uiConcurency = xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->get( );
-            std::cout << "Manually picked concurrency: " << uiConcurency << std::endl;
         } // if
 
         // For now, we build a computational graph for each call of doAlign
@@ -346,8 +344,6 @@ class ExecutionContext
             std::shared_ptr<SingleFileReader> pxFileReader;
             if( xReadsManager.hasPrimaryPath( ) )
             {
-                for( auto xPAth : xReadsManager.vsPrimaryQueryFullFileName )
-                    std::cout << xPAth << std::endl;
                 pxFileReader =
                     std::make_shared<FileListReader>( xParameterSetManager, xReadsManager.vsPrimaryQueryFullFileName );
             }
@@ -370,13 +366,14 @@ class ExecutionContext
 
         // Compute the actual alignments.
         // Sets the progress bar after each finished alignment.
-        BasePledge::simultaneousGet( aGraphSinks,
-                                     [&]( ) {
-                                         return fProgressCallBack( ( (double)pxReader->getCurrPosInFile( ) * 100 ) /
-                                                                       (double)pxReader->getFileSize( ),
-                                                                   pxReader->getCurrFileIndex( ),
-                                                                   pxReader->getNumFiles( ) );
-                                     } // lambda
+        BasePledge::simultaneousGet(
+            aGraphSinks,
+            [&]( ) {
+                int iI1 = (int)pxReader->getCurrFileIndex( );
+                int iI2 = (int)pxReader->getNumFiles( );
+                return fProgressCallBack(
+                    ( (double)pxReader->getCurrPosInFile( ) * 100 ) / (double)pxReader->getFileSize( ), iI1, iI2 );
+            } // lambda
         ); // function call
 
         // Destroy computational graph; release memory

@@ -12,8 +12,8 @@
 #define SUPPORT_H
 
 #include "util/debug.h"
-#include "util/system.h"
 #include "util/exported.h"
+#include "util/system.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <fstream>
@@ -170,5 +170,7 @@ template <class X> std::string type_name( )
 } // function
 
 bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd );
+
+std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex );
 
 #endif
