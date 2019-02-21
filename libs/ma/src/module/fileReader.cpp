@@ -205,8 +205,8 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
          * Print a warning if the fasta files have a different number of queries.
          */
         if( !pF1->isFinished( ) || !pF2->isFinished( ) )
-            std::cerr << "WARNING: Doing paired alignment with files containing different amounts of reads."
-                      << std::endl;
+            throw std::runtime_error(
+                "You cannot perform paired alignment with a different amount of primary queries and mate queries." );
         this->setFinished( );
     }
     if( ( *pRet )[ 0 ] == nullptr )
@@ -242,17 +242,17 @@ void exportFileReader( )
 #else
 void exportFileReader( py::module& rxPyModuleId )
 {
-    
-    //py::bind_vector<std::vector<fs::path>>(rxPyModuleId, "filePathVector");
+
+    // py::bind_vector<std::vector<fs::path>>(rxPyModuleId, "filePathVector");
     //// export the FileReader class
-    //exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
-    //exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
-//
-    //py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
+    // exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
+    // exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
+    //
+    // py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
     //    rxPyModuleId, "QueryVector", "docstr" );
-//
+    //
     //// export the PairedFileReader class
-    //exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId,
+    // exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId,
     //                                                                                    "PairedFileReader" );
 } // function
 #endif

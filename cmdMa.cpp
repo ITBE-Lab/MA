@@ -86,48 +86,67 @@ void generateHelpMessage( ParameterSetManager& rManager )
     // presettings
 
     std::cout << "Available presettings:" << std::endl;
-    std::string sOptions;
+    std::string sOptions = "'";
     for( auto& xPair : rManager.xParametersSets )
     {
         std::string sOut = xPair.first;
         std::replace( sOut.begin( ), sOut.end( ), ' ', '_' );
-        sOptions += sOut + "/";
-    }
+        sOptions += sOut + "', '";
+    } // for
     sOptions.pop_back( );
-    printOption( "Presetting",
-                 'p',
-                 sOptions,
-                 rManager.xParametersSets.begin( )->first,
-                 "Operation mode for MA. The selected mode will change the parameters. However, parameters you "
-                 "set manually will overwrite the presetting.",
-                 sIndentDesc );
+    sOptions.pop_back( );
+    sOptions.pop_back( );
+    std::cout << "Available presettings:" << std::endl;
+    printOption(
+        "Presetting",
+        'p',
+        "name",
+        rManager.xParametersSets.begin( )->first,
+        "Optimize aligner parameters for a selected sequencing technique. Available presettings are: " + sOptions + ".",
+        sIndentDesc );
 
     // general options
     std::cout << "General options: (these options are not affected by presettings)" << std::endl;
-    printOption( "genome", 'x', "path", "", "Path to the genome file. This option must always be set.", sIndentDesc );
     printOption(
-        "in",
-        'i',
-        "path",
+        "index",
+        'x',
+        "file_name",
         "",
-        "Path to the input file. For multiple files: provide comma seperated list. This option must always be set.",
+        "Filename of FMD-index. (A FMD-index can be generated via the --create_index option.) This option must be set.",
         sIndentDesc );
+    printOption( "in",
+                 'i',
+                 "file_name",
+                 "",
+                 "Filenames of Fasta/Fastq files containing reads. gz-compressed files are automatically decompressed. "
+                 "Multiple files can be specified by a comma separated list. At least one file name must be provided.",
+                 sIndentDesc );
     printOption( "mate_in",
                  'm',
-                 "path",
+                 "file_name",
                  "",
-                 "Path to the input file of mates. Automatically activates paired alignment mode. For multiple files: "
-                 "provide comma seperated list.",
+                 "Filenames of the mates in the case of paired reads. If this option is set, the aligner switches to "
+                 "paired mode automatically. The number of reads given as mates must match the accumulated "
+                 "number of reads provided via the 'in'-option.",
                  sIndentDesc );
-    for( auto xTup : rManager.xGlobalParameterSet.xpAllParameters )
+    printOption( "Create_Index",
+                 'X',
+                 "fasta_file_name,output_folder,index_name",
+                 "",
+                 "Generate a FMD-index for a Fasta file. 'fasta_file_name' has to be the file-path of the Fasta file "
+                 "holding the genome used for index creation. 'output_folder' is the folder-path of the location used "
+                 "for index storage. 'index_name' is the name used for identifying the new FMD-Index. In the context "
+                 "of alignments, the genome-name is used for FMD-index selection.",
+                 sIndentDesc );
+    for( auto xPair : rManager.xGlobalParameterSet.xpParametersByCategory )
     {
-        auto pParameter = xTup.second;
-        printOption( pParameter->sName,
-                     pParameter->cShort,
-                     pParameter->type_name( ),
-                     pParameter->asText( ),
-                     pParameter->sDescription,
-                     sIndentDesc );
+        for( auto pParameter : xPair.second )
+            printOption( pParameter->sName,
+                        pParameter->cShort,
+                        pParameter->type_name( ),
+                        pParameter->asText( ),
+                        pParameter->sDescription,
+                        sIndentDesc );
     } // for
 
     // other options
@@ -180,7 +199,7 @@ int main( int argc, char* argv[] )
         std::string sOptionName = argv[ iI - 1 ];
         std::string sOptionValue = argv[ iI ];
         std::replace( sOptionValue.begin( ), sOptionValue.end( ), '_', ' ' );
-        if( sOptionName == "-m" || sOptionName == "--mode" )
+        if( sOptionName == "-p" || sOptionName == "--Presetting" )
             xExecutionContext.xParameterSetManager.setSelected( sOptionValue );
     } // for
 
@@ -202,7 +221,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-x" || sOptionName == "--genome" )
+            if( sOptionName == "-x" || sOptionName == "--index" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xGenomeManager.loadGenome( sOptionValue + ".json" );
@@ -225,6 +244,21 @@ int main( int argc, char* argv[] )
                 xExecutionContext.xParameterSetManager.getSelected( )->xUsePairedReads->set( true );
                 iI++; // also ignore the following argument
                 continue;
+            } // if
+
+            if( sOptionName == "-X" || sOptionName == "--Create_Index" )
+            {
+                std::string sOptionValue = argv[ iI + 1 ];
+                auto vsStrings = split( sOptionValue, "," );
+                if( vsStrings.size( ) != 3 )
+                    throw std::runtime_error( "--Index needs exactly three parameters" );
+                xExecutionContext.xGenomeManager.makeIndexAndPackForGenome(
+                    fs::path( vsStrings[ 0 ] ), //
+                    fs::path( vsStrings[ 1 ] ), //
+                    vsStrings[ 2 ], //
+                    []( const std::string s ) { std::cout << s << std::endl; } // lambda
+                );
+                return 0;
             } // if
 
             std::replace( sOptionName.begin( ), sOptionName.end( ), '_', ' ' );

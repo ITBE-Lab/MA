@@ -206,12 +206,12 @@ class ReadsManager
 
     bool hasPrimaryPath( )
     {
-        return !vsPrimaryQueryFullFileName.empty( );
+        return !(this->vsPrimaryQueryFullFileName.empty( ));
     } // method
 
     bool hasMatePath( )
     {
-        return !vsMateQueryFullFileName.empty( );
+        return !(this->vsMateQueryFullFileName.empty( ));
     } // method
 }; // class
 
@@ -309,17 +309,15 @@ class ExecutionContext
                 new PairedFileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
 
 
-            if( xReadsManager.hasPrimaryPath( ) != xReadsManager.hasMatePath( ) )
+            if( this->xReadsManager.hasPrimaryPath( ) != this->xReadsManager.hasMatePath( ) )
                 throw AnnotatedException( "Cannot combine file and text input." );
 
             std::shared_ptr<PairedFileReader> pxPairedFileReader;
-            if( xReadsManager.hasPrimaryPath( ) && xReadsManager.hasMatePath( ) )
-            {
-                std::vector<fs::path> vA = xReadsManager.vsPrimaryQueryFullFileName;
-                std::vector<fs::path> vB = xReadsManager.vsMateQueryFullFileName;
-                pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager, vA, vB );
-            } // if
-            if( !xReadsManager.hasPrimaryPath( ) && !xReadsManager.hasMatePath( ) )
+            if( this->xReadsManager.hasPrimaryPath( ) && this->xReadsManager.hasMatePath( ) )
+                pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager,
+                                                                         xReadsManager.vsPrimaryQueryFullFileName,
+                                                                         xReadsManager.vsMateQueryFullFileName );
+            else
                 pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager,
                                                                          xReadsManager.fCallBackGetPrimaryQuery( ),
                                                                          xReadsManager.fCallBackGetMateyQuery( ) );

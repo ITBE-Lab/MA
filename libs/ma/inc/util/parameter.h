@@ -223,11 +223,12 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
 
     virtual std::string type_name( ) const
     {
-        std::string s;
-        for( auto xPair : vChoices )
-            s += xPair.first + "/";
-        s.pop_back( );
-        return s;
+        // std::string s;
+        // for( auto xPair : vChoices )
+        //    s += xPair.first + "/";
+        // s.pop_back( );
+        // return s;
+        return "name";
     } // method
 
     virtual void setByText( const std::string& sValueAsString )
@@ -429,8 +430,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xGap2; // @todo
     AlignerParameterPointer<int> xExtend2; // @todo
     AlignerParameterPointer<int> xPadding; // @todo
-    AlignerParameterPointer<int> xMinBandwidthGapFilling; // @todo
     AlignerParameterPointer<int> xBandwidthDPExtension; // @todo
+    AlignerParameterPointer<int> xMinBandwidthGapFilling; // @todo
     AlignerParameterPointer<int> xZDrop; // @todo
 
     // Paired reads options:
@@ -495,23 +496,35 @@ class Presetting : public ParameterSetBase
 
           // DP:
           xMatch( this, "Match Score",
-                  "Match score used in the context of Dynamic Programming and for SoC width computation.",
+                  "Match score. (Used in the context of Dynamic Programming and for SoC width computation.)",
                   DP_PARAMETERS, 2, checkPositiveValue ),
-          xMisMatch( this, "Mismatch Penalty", "Penalty for a Dynamic Programming mismatch", DP_PARAMETERS, 4,
-                     checkPositiveValue ),
-          xGap( this, "Gap penalty", "First penalty for a DP gap opening.", DP_PARAMETERS, 4 ),
-          xExtend( this, "Extend penalty", "First penalty for a DP gap extension.", DP_PARAMETERS, 2 ),
-          xGap2( this, "Second gap penalty", "Second penalty for a DP gap opening.", DP_PARAMETERS, 24 ),
-          xExtend2( this, "Second extend penalty", "Second penalty for a DP gap extension.", DP_PARAMETERS, 1 ),
+          xMisMatch( this, "Mismatch Penalty", "Penalty for mismatch. ", DP_PARAMETERS, 4, checkPositiveValue ),
+          xGap( this, "Gap penalty", "First penalty for gap opening. (Two piece affine gap costs)", DP_PARAMETERS, 4,
+                checkPositiveValue ),
+          xExtend( this, "Extend penalty", "First penalty for gap extension.  (Two piece affine gap costs)",
+                   DP_PARAMETERS, 2, checkPositiveValue ),
+          xGap2( this, "Second gap penalty", "Second penalty for gap opening. (Two piece affine gap costs)",
+                 DP_PARAMETERS, 24, checkPositiveValue ),
+          xExtend2( this, "Second extend penalty", "Second penalty for gap extension. (Two piece affine gap costs)",
+                    DP_PARAMETERS, 1, checkPositiveValue ),
           xPadding( this, "Padding",
-                    "Padding for DP extensions. Maximal area in front and back of the alignment that gets checked "
-                    "using DP extensions.",
-                    DP_PARAMETERS, 1000 ),
-          xMinBandwidthGapFilling( this, "Minimal bandwidth in gaps", "Minimal bandwidth for DP in gaps between seeds.",
-                                   DP_PARAMETERS, 20 ),
-          xBandwidthDPExtension( this, "Bandwidth for extensions", "Bandwidth for DP extensions.", DP_PARAMETERS, 512 ),
-          xZDrop( this, "Z Drop", "If the DP score drops faster than <val> stop the extension process.", DP_PARAMETERS,
-                  200 ),
+                    "If an alignment does not reach its read's endpoints, the missing parts can be computed via "
+                    "dynamic programming. If the length of the missing parts is smaller than 'Padding', dynamic "
+                    "programming is used to extend the alignment towards the endpoints of the read. Otherwise, the "
+                    "unaligned parts of the read are ignored and the alignment stays unextended.",
+                    DP_PARAMETERS, 1000, checkPositiveValue ),
+          xBandwidthDPExtension( this, "Bandwidth for extensions",
+                                 "Bandwidth used in the context of extending an alignment towards the endpoints of its "
+                                 "read. (See 'Padding')",
+                                 DP_PARAMETERS, 512, checkPositiveValue ),
+          xMinBandwidthGapFilling(
+              this, "Minimal bandwidth in gaps",
+              "Gaps between seeds are generally filled using dynamic programming. This option determines the minimal "
+              "bandwidth used in the context of bridging gaps. More details can be found in the MA-Handbook.",
+              DP_PARAMETERS, 20, checkPositiveValue ),
+          xZDrop( this, "Z Drop",
+                  "If the running score during dynamic programming drops faster than <val> stop the extension process.",
+                  DP_PARAMETERS, 200, checkPositiveValue ),
 
           // Paired Reads:
           xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
@@ -537,10 +550,19 @@ class Presetting : public ParameterSetBase
           xSeedingTechnique( this, "Seeding Technique", 's', "Technique used for the initial seeding.",
                              SEEDING_PARAMETERS,
                              AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
-          xMinSeedLength( this, "Minimal Seed length", 'l', "Minimal seed length.", SEEDING_PARAMETERS, 16 ),
-          xMinimalSeedAmbiguity( this, "Min ambiguity", "Stop the extension process if seeds are less ambiguous.",
-                                 SEEDING_PARAMETERS, 0 ),
-          xMaximalSeedAmbiguity( this, "Maximal ambiguity", "Maximal ambiguity of seeds.", SEEDING_PARAMETERS, 500 ),
+          xMinSeedLength( this, "Minimal Seed length", 'l',
+                          "All seeds with size smaller than 'minimal seed length' are discarded.", SEEDING_PARAMETERS,
+                          16 ),
+          xMinimalSeedAmbiguity(
+              this, "Min ambiguity",
+              "During the extension of seeds using the FMD-index: With increasing extension width, the number of "
+              "occurrences of corresponding seeds on the reference montonically decreases. Keep extending, while the "
+              "number of occurrences is higher than 'Min ambiguity'. (For details see the MA-Handbook.)",
+              SEEDING_PARAMETERS, 0 ),
+          xMaximalSeedAmbiguity(
+              this, "Maximal ambiguity",
+              "Discard seeds that occur more than 'Maximal ambiguity' time on the reference. Set to zero to disable.",
+              SEEDING_PARAMETERS, 500 ),
           xSkipAmbiguousSeeds( this, "Skip ambiguous seeds",
                                "Enabled: Discard all seeds that are more ambiguous than [max ambiguity]. Disabled: "
                                "sample [max ambiguity] random seeds from too ambiguous seeds.",
@@ -567,7 +589,7 @@ class Presetting : public ParameterSetBase
 
           // SAM
           xReportN( this, "Max. number of Reported alignments", 'n',
-                    "Do not output more than <val> alignments. 0 = no limit.", SAM_PARAMETERS, 0 ),
+                    "Do not output more than <val> alignments. Set to zero for unlimited output.", SAM_PARAMETERS, 0 ),
           xMinAlignmentScore( this, "Minimal alignment score",
                               "Suppress the output of alignments with a score below val.", SAM_PARAMETERS, 75 ),
           xNoSecondary( this, "Omit secondary alignments", "Suppress the output of secondary alignments.",
@@ -670,25 +692,28 @@ class GeneralParameter : public ParameterSetBase
     AlignerParameterPointer<bool> bSAMOutputInReadsFolder; // SAM Output in the same folder as the reads.
     AlignerParameterPointer<fs::path> xSAMOutputPath; // folder path
     AlignerParameterPointer<bool> pbUseMaxHardareConcurrency; // Exploit all cores
-    AlignerParameterPointer<bool> pbPrintHelpMessage; // Print the help message to stdout
     AlignerParameterPointer<int> piNumberOfThreads; // selected number of threads
+    AlignerParameterPointer<bool> pbPrintHelpMessage; // Print the help message to stdout
+
+    static const EXPORTED std::pair<size_t, std::string> GENERAL_PARAMETER;
 
     /* Constructor */
     GeneralParameter( )
         : bSAMOutputInReadsFolder( this, "SAM files in same folder as reads", 'O',
-                                   "If set, the SAM files are written in the folder of the reads.",
-                                   std::pair<size_t, std::string>( ), true ),
-          xSAMOutputPath( this, "Folder (path) for SAM files", 'o', "All SAM-output will be written to this folder",
-                          std::pair<size_t, std::string>( ), fs::temp_directory_path( ) ),
+                                   "If selected, SAM files are written to the folder of the reads.", GENERAL_PARAMETER,
+                                   true ),
+          xSAMOutputPath( this, "Folder for SAM files", 'o',
+                          "Folder for SAM output in the case that the output is not directed to the reads' folder.",
+                          GENERAL_PARAMETER, fs::temp_directory_path( ) ),
           pbUseMaxHardareConcurrency( this, "Use all processor cores",
-                                      "The number of threads used for aligning is chosen to be identical to the number "
-                                      "of your processor cores.",
-                                      std::pair<size_t, std::string>( ), true ),
-          pbPrintHelpMessage( this, "Print help to stdout", 'h', "Number of threads used in the context of alignments.",
-                              std::pair<size_t, std::string>( ), false ),
-          piNumberOfThreads( this, "Number of threads", "Number of threads used in the context of alignments.",
-                             std::pair<size_t, std::string>( ), 1 )
-
+                                      "Number of threads used for alignments is identical to the number "
+                                      "of processor cores.",
+                                      GENERAL_PARAMETER, true ),
+          piNumberOfThreads( this, "Number of threads",
+                             "Number of threads used in the context of alignments. This options is only available, if "
+                             "'use all processor cores' is off.",
+                             GENERAL_PARAMETER, 1 ),
+          pbPrintHelpMessage( this, "Help", 'h', "Prints this help text.", GENERAL_PARAMETER, false )
     {
         xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };
         piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };

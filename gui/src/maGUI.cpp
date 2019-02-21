@@ -570,7 +570,7 @@ class AlignFrame : public wxDialog
     void onWorkerGaugeUpdateOverallRange( wxCommandEvent& rxEvent )
     {
         iNumFiles = static_cast<int>( rxEvent.GetInt( ) );
-        pxGaugeOverall->SetRange(iNumFiles);
+        pxGaugeOverall->SetRange( iNumFiles );
     } // method
 
     /* Handler for printing from worker */
@@ -670,8 +670,8 @@ class AlignFrame : public wxDialog
 
     /* Task Frame; created by clicking the start button */
     AlignFrame( wxWindow* parent, const wxString& title )
-        : wxDialog( parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE ), 
-          bForceStop(false)
+        : wxDialog( parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE ),
+          bForceStop( false )
     {
         // Set frame icon and background color
         SetIcons( wxIcon( xIconMA_XPM ) );
@@ -882,21 +882,31 @@ class MA_MainFrame : public wxFrame
     } // method
 
     /* Handler query select/clear button pair */
-    void onQuerySelection( const std::vector<fs::path>& vsFileNames, wxTextCtrl* xTargetTextCtrl )
+    void onQuerySelection( const std::vector<fs::path>& vsFileNPaths, // file paths selected by file picker
+                           wxTextCtrl* xTargetTextCtrl,
+                           std::vector<fs::path>& rvOutputFilePaths )
     {
-        // FIXME: Add code for paired inputs
-        xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName = vsFileNames;
-        if( vsFileNames.empty( ) )
+
+        rvOutputFilePaths = vsFileNPaths;
+#if 0
+        std::cout << "rvOutputFileNames " << rvOutputFilePaths.size( ) << std::endl;
+        std::cout << "original query " << xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName.size( )
+                  << std::endl;
+        std::cout << "original mate " << xExecutionContext.xReadsManager.vsMateQueryFullFileName.size( ) << std::endl;
+        std::cout << "vsFileNames " << vsFileNPaths.size( ) << std::endl;
+        // std::cout << "==" << rvOutputFileNames == vsFileNames << std::endl;
+#endif
+        if( vsFileNPaths.empty( ) )
             xTargetTextCtrl->SetValue( "Type your query here or select a FASTA-file ..." );
         else
         {
             std::string sFileNames;
-            for( fs::path sFileName : vsFileNames )
+            for( fs::path sFileName : vsFileNPaths )
                 sFileNames.append( sFileName.string( ) ).append( "\n" );
             xTargetTextCtrl->SetValue( sFileNames );
         } // else
 
-        xTargetTextCtrl->SetEditable( vsFileNames.empty( ) );
+        xTargetTextCtrl->SetEditable( vsFileNPaths.empty( ) );
     } // method
 
 
@@ -1106,15 +1116,17 @@ class MA_MainFrame : public wxFrame
                     [this]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
                     {
                         // File Selection for Reads
-                        pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
-                                            pxBoxSizer.pxConnector, "Reads Selection", "Select Query File",
-                                            "FASTA(Q) "
-                                            "Files(*.fasta;*.fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*.fastq;*.fasta.gz;*."
-                                            "fastq.gz|All Files (*.*)|*.*",
-                                            true,
-                                            std::bind( &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
-                                                       this->xQueryTextCtrl ) ),
-                                        wxSizerFlags( 1 ) );
+                        pxBoxSizer.Add(
+                            new mwxFileSelectDeleteButtonSizer(
+                                pxBoxSizer.pxConnector, "Reads Selection", "Select Query File",
+                                "FASTA(Q) "
+                                "Files(*.fasta;*.fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*.fastq;*.fasta.gz;*."
+                                "fastq.gz|All Files (*.*)|*.*",
+                                true,
+                                std::bind( &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
+                                           this->xQueryTextCtrl,
+                                           std::ref( xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName ) ) ),
+                            wxSizerFlags( 1 ) );
 
                         // Paired Read Mates File Selection
                         pxBoxSizer.addBoxSizer( // vertical BoxSizer bSizer12
@@ -1128,16 +1140,19 @@ class MA_MainFrame : public wxFrame
                                     [this]( mwxBoxSizer& pxBoxSizer ) // Section with paired control elements
                                     {
                                         this->xMatesControlElements = &pxBoxSizer;
-                                        pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
-                                                            pxBoxSizer.pxConnector, "Mates Selection",
-                                                            "Open Query Mate file",
-                                                            "FASTA(Q) "
-                                                            "Files(*.fasta;*fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*."
-                                                            "fastq;*.fasta.gz;*.fastq.gz|All Files (*.*)|*.*",
-                                                            true,
-                                                            std::bind( &MA_MainFrame::onQuerySelection, this,
-                                                                       std::placeholders::_1, this->xMatesTextCtrl ) ),
-                                                        wxSizerFlags( 0 ) );
+                                        pxBoxSizer.Add(
+                                            new mwxFileSelectDeleteButtonSizer(
+                                                pxBoxSizer.pxConnector, "Mates Selection", "Open Query Mate file",
+                                                "FASTA(Q) "
+                                                "Files(*.fasta;*fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*."
+                                                "fastq;*.fasta.gz;*.fastq.gz|All Files (*.*)|*.*",
+                                                true,
+                                                std::bind(
+                                                    &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
+                                                    this->xMatesTextCtrl,
+                                                    std::ref(
+                                                        xExecutionContext.xReadsManager.vsMateQueryFullFileName ) ) ),
+                                            wxSizerFlags( 0 ) );
                                         pxBoxSizer.Add( 0, 0, 0, wxEXPAND | wxTOP, 5 ); // Vertical spacer
                                         pxBoxSizer.Add( new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
                                                                           wxT( "Paired Settings" ), wxDefaultPosition,
