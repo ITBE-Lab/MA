@@ -66,7 +66,7 @@ You should see the help screen of MA.
 In order to perform alignments you need to **precompute an index** of your reference genome first.
 This is done using following command:
 
-    ./maCMD --Create_Index <fasta_file_name,output_folder,index_name>
+    ./maCMD --Create_Index <fasta_file_name>,<output_folder>,<index_name>
 
 `<fasta_file_name>`: filepath (filename) of the Fasta file holding the genome used for index creation. \
 `<output_folder>`: folderpath (foldername) of the location used for index storage. \
@@ -75,7 +75,7 @@ the genome-name is used for FMD-index selection.
 
 Now you can **align** using the following command:
 
-    ./maCMD -x <filename_of_index> -i <fasta_in> -o <sam_out>
+    ./maCMD -x <index_name> -i <fasta_in> -o <sam_out>
 
 `<fasta_in>` is a FASTA or FASTQ file containing the queries.
 `<sam_out>` is the filename of the output file that shall be created.
