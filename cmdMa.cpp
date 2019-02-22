@@ -161,13 +161,22 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                              pParameter->sDescription,
                              sIndentDesc );
         } // for
-
-        std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
-        std::cout << "For more information visit: https://github.com/ITBE-Lab/ma" << std::endl;
-#if DEBUG_LEVEL > 0
-        std::cout << "DEBUG MODE" << std::endl;
-#endif
     } // if
+
+    std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
+    std::cout << "Compiled with following switches:";
+    if(bLibMaWithPython)
+        std::cout << " WITH_PYTHON";
+#ifdef WITH_POSTGRES
+    std::cout << " WITH_POSTGRES";
+#endif
+#ifdef WITH_ZLIB
+    std::cout << " WITH_ZLIB";
+#endif
+#if DEBUG_LEVEL > 0
+    std::cout << " DEBUG_MODE";
+#endif
+    std::cout << "\nFor more information visit: https://github.com/ITBE-Lab/ma" << std::endl;
 } // function
 
 
@@ -309,7 +318,10 @@ int main( int argc, char* argv[] )
             } // else
         } // for
         if( xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbPrintHelpMessage->get( ) )
+        {
             generateHelpMessage( xExecutionContext.xParameterSetManager );
+            return 0;
+        }// if
 
         std::pair<int, double> xPreviousProgress = std::make_pair( -1, 0 );
         std::cout << "starting alignment." << std::endl;

@@ -457,7 +457,7 @@ class FMIndexCreationWizard : public wxWizard
     /* Destructor */
     ~FMIndexCreationWizard( void )
     {
-        //std::cout << "Destructor FMIndexCreationWizard" << std::endl;
+        // std::cout << "Destructor FMIndexCreationWizard" << std::endl;
         // Before destroying the worker we must join the worker! (must of thread-class)
         if( pWorker )
             pWorker->join( );
@@ -725,7 +725,7 @@ class AlignFrame : public wxDialog
     {
         if( pWorker )
             pWorker->join( );
-        //std::cout << "Worker joined... " << std::endl;
+        // std::cout << "Worker joined... " << std::endl;
     } // destructor
 }; // wxFrame
 
@@ -743,9 +743,22 @@ class MA_MainFrame : public wxFrame
     /* Handler for menu Item 'About' */
     void onAbout( wxCommandEvent& WXUNUSED( event ) )
     {
-        wxMessageBox(
-            wxT( "MA - The Modular Aligner\nVersion: " MA_VERSION "\n\u00A9 Markus Schmidt and Arne Kutzner (2019)" ),
-            wxT( "About" ), wxICON_INFORMATION );
+        std::string sText = "MA - The Modular Aligner\nVersion: ";
+        sText.append( MA_VERSION );
+        sText.append( "\nCompiled with following switches:" );
+        if( bLibMaWithPython )
+            sText.append( " WITH_PYTHON" );
+#ifdef WITH_POSTGRES
+        sText.append( " WITH_POSTGRES" );
+#endif
+#ifdef WITH_ZLIB
+        sText.append( " WITH_ZLIB" );
+#endif
+#if DEBUG_LEVEL > 0
+        sText.append( " DEBUG_MODE" );
+#endif
+        sText.append( "\n\u00A9 Markus Schmidt and Arne Kutzner (2019)" );
+        wxMessageBox( sText.c_str() , wxT( "About" ), wxICON_INFORMATION );
     } // method
 
     /* Handler for the gear button */
@@ -830,7 +843,7 @@ class MA_MainFrame : public wxFrame
     void onParameterComboBox( wxCommandEvent&( event ) )
     {
         wxComboBox* pxComboBox = dynamic_cast<wxComboBox*>( event.GetEventObject( ) );
-        //std::cout << pxComboBox->GetSelection( ) << std::endl; // gives number of selection
+        // std::cout << pxComboBox->GetSelection( ) << std::endl; // gives number of selection
         std::string sSelected( pxComboBox->GetStringSelection( ) );
 
         xExecutionContext.xParameterSetManager.setSelected( sSelected );

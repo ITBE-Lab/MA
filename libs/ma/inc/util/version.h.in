@@ -6,6 +6,7 @@
 
 #define MA_VERSION "@MA_VERSION@"
 
-extern EXPORTED std::string sLibMaVersion;
+extern EXPORTED const std::string sLibMaVersion;
+extern EXPORTED const bool bLibMaWithPython;
 
 #endif

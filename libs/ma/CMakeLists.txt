@@ -83,7 +83,7 @@ else()
     message( "-- libMA: Version = ${MA_VERSION}" )
 endif()
 
-configure_file(
+configure_file( # @todo so far this only triggers during configure not at build time
   inc/util/version.h.in
   ${CMAKE_BINARY_DIR}/generated/version.h
 )
