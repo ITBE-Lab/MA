@@ -36,16 +36,16 @@ template <typename VALUE_TYPE> EXPORTED VALUE_TYPE genericStringToValue( const s
 // } // function
 
 /* Predicate that checks for positive value */
-static void checkPositiveValue( const int& iValue )
+static void checkPositiveValue( const int& iValue, const std::string& rsParameterName )
 {
     if( iValue < 0 )
-        throw std::out_of_range( "Positive values are allowed only." );
+        throw std::out_of_range( "Only positive values are allowed for the parameter " + rsParameterName + "." );
 } // static method
 
-static void checkPositiveDoubleValue( const double& dValue )
+static void checkPositiveDoubleValue( const double& dValue, const std::string& rsParameterName )
 {
     if( dValue < 0 )
-        throw std::out_of_range( "Positive values are allowed only." );
+        throw std::out_of_range( "Only positive values are allowed for the parameter " + rsParameterName + "." );
 } // static method
 
 
@@ -106,14 +106,14 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
   public:
     VALUE_TYPE value; // Current Value of parameter
     // Universal predicate
-    static void predicateAlwaysOK( const VALUE_TYPE& )
+    static void predicateAlwaysOK( const VALUE_TYPE&, const std::string& )
     {} // static method
-    std::function<void( const VALUE_TYPE& )> fPredicate;
+    std::function<void( const VALUE_TYPE&, const std::string& )> fPredicate;
 
     /* Constructor */
     AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
                       const std::pair<size_t, std::string>& sCategory, const VALUE_TYPE value, // initial value
-                      std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
+                      std::function<void( const VALUE_TYPE&, const std::string& )> fPredicate = predicateAlwaysOK )
         : AlignerParameterBase( sName, cShort, sDescription, sCategory ), value( value ), fPredicate( fPredicate )
     {} // constructor
 
@@ -121,7 +121,7 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     AlignerParameter( const std::string& sName, const std::string& sDescription,
                       const std::pair<size_t, std::string>& sCategory,
                       const VALUE_TYPE value, // initial value
-                      std::function<void( const VALUE_TYPE& )> fPredicate = predicateAlwaysOK )
+                      std::function<void( const VALUE_TYPE&, const std::string& )> fPredicate = predicateAlwaysOK )
         : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, sCategory, value, fPredicate )
     {} // constructor
 
@@ -129,17 +129,32 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     void set( VALUE_TYPE newValue )
     {
         /* Check the value. ( Error is indicated by exception )*/
-        fPredicate( newValue );
+        fPredicate( newValue, sName );
 
         /* In the case of an exception this line is skipped !*/
         this->value = newValue;
     } // method
 
+    virtual std::string type_name( ) const
+    {
+        return demangle( typeid( value ).name( ) );
+    } // method
+
     /* Throws an exception if something goes wrong */
     virtual void setByText( const std::string& sValueAsString )
     {
-        VALUE_TYPE newValue = genericStringToValue<VALUE_TYPE>( sValueAsString );
-        this->set( newValue );
+        try
+        {
+            VALUE_TYPE newValue = genericStringToValue<VALUE_TYPE>( sValueAsString );
+            this->set( newValue );
+        } // try
+        catch( ... )
+        {
+            throw std::runtime_error( std::string( "Only " )
+                                          .append( this->type_name() )
+                                          .append( std::string( " values are allowed for the parameter " ) )
+                                          .append( this->sName ) );
+        } // catch
     } // method
 
     VALUE_TYPE get( void )
@@ -163,11 +178,6 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
         auto pOtherDerived = std::dynamic_pointer_cast<const AlignerParameter<VALUE_TYPE>>( pOther );
         // std::cout << "Mirror: " << sName << " from " << this->value << " to " << pOtherDerived->value << std::endl;
         this->value = pOtherDerived->value;
-    } // method
-
-    virtual std::string type_name( ) const
-    {
-        return demangle( typeid( value ).name( ) );
     } // method
 
     virtual EXPORTED std::string asText( ) const;

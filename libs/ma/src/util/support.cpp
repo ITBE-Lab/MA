@@ -10,11 +10,11 @@
 
 #include <cerrno>
 #include <cstring>
+#include <regex>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vector>
-#include <regex>
 
 #include "util/exception.h"
 #include "util/support.h"
@@ -32,6 +32,13 @@ bool EXPORTED fileExists( const std::string& rsFile )
 {
     struct stat buffer;
     return ( stat( rsFile.c_str( ), &buffer ) == 0 );
+} // function
+
+bool EXPORTED is_number( const std::string& s )
+{
+    return !s.empty( ) &&
+           std::find_if( s.begin( ) + 1, s.end( ), []( char c ) { return !std::isdigit( c ); } ) == s.end( ) &&
+           ( std::isdigit( s[ 0 ] ) || s[ 0 ] == '-' );
 } // function
 
 bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd )

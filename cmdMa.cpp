@@ -105,21 +105,21 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
         sIndentDesc );
     // general options
     std::cout << "General options: (these options are not affected by presettings)" << std::endl;
-    printOption( "index",
+    printOption( "Index",
                  'x',
                  "file_name",
                  "",
                  "Filename of FMD-index. (A FMD-index can be generated via the --create_index option.) This option "
                  "must be set.",
                  sIndentDesc );
-    printOption( "in",
+    printOption( "In",
                  'i',
                  "file_name",
                  "",
                  "Filenames of Fasta/Fastq files containing reads. gz-compressed files are automatically decompressed. "
                  "Multiple files can be specified by a comma separated list. At least one file name must be provided.",
                  sIndentDesc );
-    printOption( "mate_in",
+    printOption( "Mate_In",
                  'm',
                  "file_name",
                  "",
@@ -222,7 +222,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-x" || sOptionName == "--index" )
+            if( sOptionName == "-x" || sOptionName == "--Index" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xGenomeManager.loadGenome( sOptionValue + ".json" );
@@ -230,7 +230,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-i" || sOptionName == "--in" )
+            if( sOptionName == "-i" || sOptionName == "--In" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -238,7 +238,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-m" || sOptionName == "--mate_in" )
+            if( sOptionName == "-m" || sOptionName == "--Mate_In" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsMateQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -263,8 +263,7 @@ int main( int argc, char* argv[] )
             } // if
 
             std::replace( sOptionName.begin( ), sOptionName.end( ), '_', ' ' );
-
-            if( iI + 1 < argc && argv[ iI + 1 ][ 0 ] != '-' )
+            if( iI + 1 < argc && ( argv[ iI + 1 ][ 0 ] != '-' || is_number( std::string( argv[ iI + 1 ] ) ) ) )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 iI++; // have key value pair so next element is certainly no key

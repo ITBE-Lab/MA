@@ -17,6 +17,7 @@
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <fstream>
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -90,6 +91,8 @@ void vRangeCheckAndThrowExclusive( const std::string& sText, const ParameterType
               ")" ) ); // runtime error
     } // if
 } // template function
+
+bool EXPORTED is_number(const std::string& s);
 
 /**
  * @brief Loop where the counter value is known during compiletime.
