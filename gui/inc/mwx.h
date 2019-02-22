@@ -51,7 +51,7 @@ class mwxMenu : public wxMenu
 
     virtual ~mwxMenu( )
     {
-        std::cout << "In ~mwxMenu()" << std::endl;
+        //std::cout << "In ~mwxMenu()" << std::endl;
     } // destructor
 
     /* All menu-items of the menu */
@@ -84,7 +84,7 @@ class mwxMenuBar : public wxMenuBar
 
     virtual ~mwxMenuBar( )
     {
-        std::cout << "In ~mwxMenuBar()" << std::endl;
+        //std::cout << "In ~mwxMenuBar()" << std::endl;
     } // destructor
 
     /* All menus of the menu-bar */
@@ -435,7 +435,7 @@ class mwxStaticBoxContext : public wxPanel
 
     virtual ~mwxStaticBoxContext( )
     {
-        std::cout << "In ~mwxStaticBoxContext()" << std::endl;
+        //std::cout << "In ~mwxStaticBoxContext()" << std::endl;
     } // destructor
 }; // class
 

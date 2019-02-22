@@ -457,7 +457,7 @@ class FMIndexCreationWizard : public wxWizard
     /* Destructor */
     ~FMIndexCreationWizard( void )
     {
-        std::cout << "Destructor FMIndexCreationWizard" << std::endl;
+        //std::cout << "Destructor FMIndexCreationWizard" << std::endl;
         // Before destroying the worker we must join the worker! (must of thread-class)
         if( pWorker )
             pWorker->join( );
@@ -725,7 +725,7 @@ class AlignFrame : public wxDialog
     {
         if( pWorker )
             pWorker->join( );
-        std::cout << "Worker joined... " << std::endl;
+        //std::cout << "Worker joined... " << std::endl;
     } // destructor
 }; // wxFrame
 
@@ -830,7 +830,7 @@ class MA_MainFrame : public wxFrame
     void onParameterComboBox( wxCommandEvent&( event ) )
     {
         wxComboBox* pxComboBox = dynamic_cast<wxComboBox*>( event.GetEventObject( ) );
-        std::cout << pxComboBox->GetSelection( ) << std::endl; // gives number of selection
+        //std::cout << pxComboBox->GetSelection( ) << std::endl; // gives number of selection
         std::string sSelected( pxComboBox->GetStringSelection( ) );
 
         xExecutionContext.xParameterSetManager.setSelected( sSelected );
@@ -888,14 +888,6 @@ class MA_MainFrame : public wxFrame
     {
 
         rvOutputFilePaths = vsFileNPaths;
-#if 0
-        std::cout << "rvOutputFileNames " << rvOutputFilePaths.size( ) << std::endl;
-        std::cout << "original query " << xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName.size( )
-                  << std::endl;
-        std::cout << "original mate " << xExecutionContext.xReadsManager.vsMateQueryFullFileName.size( ) << std::endl;
-        std::cout << "vsFileNames " << vsFileNPaths.size( ) << std::endl;
-        // std::cout << "==" << rvOutputFileNames == vsFileNames << std::endl;
-#endif
         if( vsFileNPaths.empty( ) )
             xTargetTextCtrl->SetValue( "Type your query here or select a FASTA-file ..." );
         else
@@ -1198,10 +1190,10 @@ class MA_MainFrame : public wxFrame
 bool MyApp::OnInit( )
 {
 #ifdef _MSC_VER
-    AllocConsole( );
-    freopen( "conin$", "r", stdin );
-    freopen( "conout$", "w", stdout );
-    freopen( "conout$", "w", stderr );
+    // AllocConsole( );
+    // freopen( "conin$", "r", stdin );
+    // freopen( "conout$", "w", stdout );
+    // freopen( "conout$", "w", stderr );
 #endif
     // call the base class initialization method, currently it only parses a
     // few common command-line options but it could be do more in the future

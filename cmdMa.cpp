@@ -76,7 +76,7 @@ void printOption( std::string sName,
     std::cout << std::endl << std::endl;
 } // function
 
-void generateHelpMessage( ParameterSetManager& rManager )
+void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
 {
     std::string sIndentDesc;
     for( size_t uiI = 0; uiI < sHeader.size( ) / 2; uiI++ )
@@ -96,7 +96,6 @@ void generateHelpMessage( ParameterSetManager& rManager )
     sOptions.pop_back( );
     sOptions.pop_back( );
     sOptions.pop_back( );
-    std::cout << "Available presettings:" << std::endl;
     printOption(
         "Presetting",
         'p',
@@ -104,16 +103,15 @@ void generateHelpMessage( ParameterSetManager& rManager )
         rManager.xParametersSets.begin( )->first,
         "Optimize aligner parameters for a selected sequencing technique. Available presettings are: " + sOptions + ".",
         sIndentDesc );
-
     // general options
     std::cout << "General options: (these options are not affected by presettings)" << std::endl;
-    printOption(
-        "index",
-        'x',
-        "file_name",
-        "",
-        "Filename of FMD-index. (A FMD-index can be generated via the --create_index option.) This option must be set.",
-        sIndentDesc );
+    printOption( "index",
+                 'x',
+                 "file_name",
+                 "",
+                 "Filename of FMD-index. (A FMD-index can be generated via the --create_index option.) This option "
+                 "must be set.",
+                 sIndentDesc );
     printOption( "in",
                  'i',
                  "file_name",
@@ -142,19 +140,6 @@ void generateHelpMessage( ParameterSetManager& rManager )
     {
         for( auto pParameter : xPair.second )
             printOption( pParameter->sName,
-                        pParameter->cShort,
-                        pParameter->type_name( ),
-                        pParameter->asText( ),
-                        pParameter->sDescription,
-                        sIndentDesc );
-    } // for
-
-    // other options
-    for( auto xPair : rManager.getSelected( )->xpParametersByCategory )
-    {
-        std::cout << xPair.first.second << " options:" << std::endl;
-        for( auto pParameter : xPair.second )
-            printOption( pParameter->sName,
                          pParameter->cShort,
                          pParameter->type_name( ),
                          pParameter->asText( ),
@@ -162,11 +147,27 @@ void generateHelpMessage( ParameterSetManager& rManager )
                          sIndentDesc );
     } // for
 
-    std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
-    std::cout << "For more information visit: https://github.com/ITBE-Lab/ma" << std::endl;
+    if( bFull )
+    {
+        // other options
+        for( auto xPair : rManager.getSelected( )->xpParametersByCategory )
+        {
+            std::cout << xPair.first.second << " options:" << std::endl;
+            for( auto pParameter : xPair.second )
+                printOption( pParameter->sName,
+                             pParameter->cShort,
+                             pParameter->type_name( ),
+                             pParameter->asText( ),
+                             pParameter->sDescription,
+                             sIndentDesc );
+        } // for
+
+        std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
+        std::cout << "For more information visit: https://github.com/ITBE-Lab/ma" << std::endl;
 #if DEBUG_LEVEL > 0
-    std::cout << "DEBUG MODE" << std::endl;
+        std::cout << "DEBUG MODE" << std::endl;
 #endif
+    } // if
 } // function
 
 
@@ -205,7 +206,7 @@ int main( int argc, char* argv[] )
 
     if( argc <= 1 )
     {
-        generateHelpMessage( xExecutionContext.xParameterSetManager );
+        generateHelpMessage( xExecutionContext.xParameterSetManager, false );
         return 0;
     } // if
 
@@ -253,8 +254,8 @@ int main( int argc, char* argv[] )
                 if( vsStrings.size( ) != 3 )
                     throw std::runtime_error( "--Index needs exactly three parameters" );
                 xExecutionContext.xGenomeManager.makeIndexAndPackForGenome(
-                    fs::path( vsStrings[ 0 ] ), //
                     fs::path( vsStrings[ 1 ] ), //
+                    fs::path( vsStrings[ 0 ] ), //
                     vsStrings[ 2 ], //
                     []( const std::string s ) { std::cout << s << std::endl; } // lambda
                 );

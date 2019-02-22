@@ -42,6 +42,12 @@ static void checkPositiveValue( const int& iValue )
         throw std::out_of_range( "Positive values are allowed only." );
 } // static method
 
+static void checkPositiveDoubleValue( const double& dValue )
+{
+    if( dValue < 0 )
+        throw std::out_of_range( "Positive values are allowed only." );
+} // static method
+
 
 /* Base class of all aligner parameter classes */
 class AlignerParameterBase
@@ -539,12 +545,12 @@ class Presetting : public ParameterSetBase
               this, "Standard deviation of paired reads", 'S',
               "<val> represents the standard deviation for the distance between paired reads. Used in the context of "
               "the computation of the mapping quality and for picking optimal alignment pairs.",
-              PAIRED_PARAMETERS, 150 ),
+              PAIRED_PARAMETERS, 150, checkPositiveDoubleValue ),
           xPairedBonus( this, "Score factor for paired reads",
                         "This factor is multiplied to the score of successfully paired reads. Used in the context of "
                         "the computation of the mapping quality and for picking optimal alignment pairs. [val] < 1 "
                         "results in penalty; [val] > 1 results in bonus.",
-                        PAIRED_PARAMETERS, 1.25 ),
+                        PAIRED_PARAMETERS, 1.25, checkPositiveDoubleValue ),
 
           // Seeding:
           xSeedingTechnique( this, "Seeding Technique", 's', "Technique used for the initial seeding.",
@@ -552,17 +558,17 @@ class Presetting : public ParameterSetBase
                              AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
           xMinSeedLength( this, "Minimal Seed length", 'l',
                           "All seeds with size smaller than 'minimal seed length' are discarded.", SEEDING_PARAMETERS,
-                          16 ),
+                          16, checkPositiveValue ),
           xMinimalSeedAmbiguity(
               this, "Min ambiguity",
               "During the extension of seeds using the FMD-index: With increasing extension width, the number of "
               "occurrences of corresponding seeds on the reference montonically decreases. Keep extending, while the "
               "number of occurrences is higher than 'Min ambiguity'. (For details see the MA-Handbook.)",
-              SEEDING_PARAMETERS, 0 ),
+              SEEDING_PARAMETERS, 0, checkPositiveValue ),
           xMaximalSeedAmbiguity(
               this, "Maximal ambiguity",
               "Discard seeds that occur more than 'Maximal ambiguity' time on the reference. Set to zero to disable.",
-              SEEDING_PARAMETERS, 500 ),
+              SEEDING_PARAMETERS, 100, checkPositiveValue ),
           xSkipAmbiguousSeeds( this, "Skip ambiguous seeds",
                                "Enabled: Discard all seeds that are more ambiguous than [max ambiguity]. Disabled: "
                                "sample [max ambiguity] random seeds from too ambiguous seeds.",
@@ -570,26 +576,27 @@ class Presetting : public ParameterSetBase
           xMinimalSeedSizeDrop( this, "Seeding drop-off A - Drop-off min seed size",
                                 "Heuristic runtime optimization: For a given read R, let N be the number of seeds of "
                                 "size >= [val]. Discard R, if N < [length(R)] * [Seeding drop-off B].",
-                                SEEDING_PARAMETERS, 15 ),
+                                SEEDING_PARAMETERS, 15, checkPositiveValue ),
           xRelMinSeedSizeAmount( this, "Seeding drop off B - Drop-off factor",
                                  "Heuristic runtime optimization: Factor for seed drop-off calculation. For more "
                                  "information see parameter [Seeding drop-off A]. ",
-                                 SEEDING_PARAMETERS, 0.005 ),
+                                 SEEDING_PARAMETERS, 0.005, checkPositiveDoubleValue ),
 
           // SoC:
           xMaxNumSoC( this, "Maximal Number of SoC's", 'N', "Only consider the <val> best scored SoC's. 0 = no limit.",
-                      SOC_PARAMETERS, 30 ),
+                      SOC_PARAMETERS, 30, checkPositiveValue ),
           xMinNumSoC( this, "Min Number SoC's", 'M',
-                      "Always consider the first <val> SoC's no matter the Heuristic optimizations.", SOC_PARAMETERS,
-                      1 ),
+                      "Always consider the first <val> SoC's no matter the Heuristic optimizations.", SOC_PARAMETERS, 1,
+                      checkPositiveValue ),
           xSoCWidth( this, "Fixed SoC Width",
                      "Set the SoC width to a fixed value. 0 = use the formula given in the paper. This parameter is "
                      "intended for debugging purposes.",
-                     SOC_PARAMETERS, 0 ),
+                     SOC_PARAMETERS, 0, checkPositiveValue ),
 
           // SAM
           xReportN( this, "Max. number of Reported alignments", 'n',
-                    "Do not output more than <val> alignments. Set to zero for unlimited output.", SAM_PARAMETERS, 0 ),
+                    "Do not output more than <val> alignments. Set to zero for unlimited output.", SAM_PARAMETERS, 0,
+                    checkPositiveValue ),
           xMinAlignmentScore( this, "Minimal alignment score",
                               "Suppress the output of alignments with a score below val.", SAM_PARAMETERS, 75 ),
           xNoSecondary( this, "Omit secondary alignments", "Suppress the output of secondary alignments.",
@@ -600,39 +607,40 @@ class Presetting : public ParameterSetBase
               this, "Maximal supplementary overlap",
               "An non-primary alignment A is considered supplementary, if less than val percent of A overlap with the "
               "primary alignment on the query. Otherwise A is considered secondary.",
-              SAM_PARAMETERS, 0.1 ),
+              SAM_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xMaxSupplementaryPerPrim( this, "Number Supplementary alignments",
                                     "Maximal Number of supplementary alignments per primary alignment.", SAM_PARAMETERS,
-                                    1 ),
+                                    1, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
                                       "Let x be the maximal encountered SoC score. Stop harmonizing SoC's if there is "
                                       "a SoC with a score lower than <val>*x.",
-                                      HEURISTIC_PARAMETERS, 0.1 ),
+                                      HEURISTIC_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xHarmScoreMin( this, "Minimal Harmonization Score",
-                         "Discard all harmonized SoC's with scores lower than <val>.", HEURISTIC_PARAMETERS, 18 ),
+                         "Discard all harmonized SoC's with scores lower than <val>.", HEURISTIC_PARAMETERS, 18,
+                         checkPositiveValue ),
           xHarmScoreMinRel( this, "Relative Minimal Harmonization Score",
                             "Discard all harmonized SoC's with scores lower than length(read)*<val>.",
-                            HEURISTIC_PARAMETERS, 0.002 ),
+                            HEURISTIC_PARAMETERS, 0.002, checkPositiveDoubleValue ),
           xScoreDiffTolerance(
               this, "Harmonization Drop-off A - Score difference",
               "Let x be the maximal encountered harmonization score. Stop harmonizing further SoC's if there are "
               "<Harmonization Drop-off B> SoC's with lower scores than x-<readlength>*<val> in a row.",
-              HEURISTIC_PARAMETERS, 0.0001 ),
+              HEURISTIC_PARAMETERS, 0.0001, checkPositiveDoubleValue ),
           xMaxScoreLookahead( this, "Harmonization Drop-off B - Lookahead", "See Harmonization Drop-off A.",
-                              HEURISTIC_PARAMETERS, 3 ),
+                              HEURISTIC_PARAMETERS, 3, checkPositiveValue ),
           xSwitchQlen( this, "Harmonization Score dropoff - Minimal Query length",
                        "For reads of length >= [val]: Ignore all SoC's with harmonization scores lower than the "
                        "current maximal score. 0 = disabled.",
-                       HEURISTIC_PARAMETERS, 800 ),
+                       HEURISTIC_PARAMETERS, 800, checkPositiveValue ),
           xMaxDeltaDist( this, "Artifact Filter A - Maximal Delta Distance",
                          "Filter seeds if the difference between the delta distance to it's predecessor and successor "
                          "is less then [val] percent (set to 1 to disable filter) and the delta distance to it's pre- "
                          "and successor is more than [Artifact Filter B] nt.",
-                         HEURISTIC_PARAMETERS, 0.1 ),
+                         HEURISTIC_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xMinDeltaDist( this, "Artifact Filter B - Minimal Delta Distance", "See Artifact Filter A",
-                         HEURISTIC_PARAMETERS, 16 ),
+                         HEURISTIC_PARAMETERS, 16, checkPositiveValue ),
           xDisableGapCostEstimationCutting( this, "Pick Local Seed Set A - Enabled",
                                             "<val> = true enables local seed set computiaion.", HEURISTIC_PARAMETERS,
                                             false ),
@@ -645,13 +653,14 @@ class Presetting : public ParameterSetBase
               "insertion/deletion.",
               HEURISTIC_PARAMETERS, true ),
           xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
-                      "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100 ),
+                      "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100,
+                      checkPositiveValue ),
           xMaxGapArea( this, "Maximal Gap Area", "Split alignments in harmonization if gap area is larger than <val>.",
-                       HEURISTIC_PARAMETERS, 10000 ),
+                       HEURISTIC_PARAMETERS, 10000, checkPositiveValue ),
           xGenomeSizeDisable( this, "Minimum Genome Size for Heuristics",
                               "Some heuristics can only be applied on long enough genomes. Disables: SoC score "
                               "Drop-off if the genome is shorter than <val>.",
-                              HEURISTIC_PARAMETERS, 10000000 ),
+                              HEURISTIC_PARAMETERS, 10000000, checkPositiveValue ),
           xDisableHeuristics( this, "Disable All Heuristics",
                               "Disables all runtime heuristics. (Intended for debugging.)", HEURISTIC_PARAMETERS,
                               false )
@@ -713,7 +722,7 @@ class GeneralParameter : public ParameterSetBase
                              "Number of threads used in the context of alignments. This options is only available, if "
                              "'use all processor cores' is off.",
                              GENERAL_PARAMETER, 1 ),
-          pbPrintHelpMessage( this, "Help", 'h', "Prints this help text.", GENERAL_PARAMETER, false )
+          pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
         xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };
         piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
@@ -742,9 +751,19 @@ class ParameterSetManager
 
     ParameterSetManager( )
     {
+        xParametersSets.emplace( "Default", Presetting( ) );
         xParametersSets.emplace( "Illumina", Presetting( ) );
+        xParametersSets[ "Illumina" ].xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina" ].xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina" ].xMaxNumSoC->set( 20 );
         xParametersSets.emplace( "Illumina Paired", Presetting( ) );
         xParametersSets[ "Illumina Paired" ].xUsePairedReads->set( true );
+        xParametersSets[ "Illumina Paired" ].xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina Paired" ].xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina Paired" ].xMaxNumSoC->set( 20 );
+        xParametersSets.emplace( "PacBio", Presetting( ) );
+        xParametersSets.emplace( "Nanopore", Presetting( ) );
+        xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
 
         // Initially select Illumina
         this->pSelectedParamSet = &( xParametersSets[ "Illumina" ] );

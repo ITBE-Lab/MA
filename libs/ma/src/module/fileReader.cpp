@@ -189,8 +189,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     else
         this->setFinished( );
     // if we reach this point we have read all content of the file
-    throw AnnotatedException( "Tried to read query past EoF: '" + std::to_string( pFile->peek( ) ) +
-                              "'\nIs your input really in FASTA format?" );
+    throw AnnotatedException( "Error while reading file.\nIs your input really in FASTA/Q format?" );
 } // function
 
 std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )

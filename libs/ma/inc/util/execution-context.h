@@ -232,7 +232,7 @@ class OutputManager
 
     {
         xKindsOfOutput.emplace( "SAM File", "unused" );
-        xKindsOfOutput.emplace( "SQLite Database", "unused" );
+        //xKindsOfOutput.emplace( "SQLite Database", "unused" );
     } // constructor
 
     /* Delivers date-time string for SAM-file naming */
