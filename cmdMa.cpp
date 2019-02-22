@@ -109,7 +109,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  'x',
                  "file_name",
                  "",
-                 "Filename of FMD-index. (A FMD-index can be generated via the --create_index option.) This option "
+                 "Filename of FMD-index. (A FMD-index can be generated via the --Create_Index option.) This option "
                  "must be set.",
                  sIndentDesc );
     printOption( "In",
