@@ -51,7 +51,7 @@ class mwxMenu : public wxMenu
 
     virtual ~mwxMenu( )
     {
-        //std::cout << "In ~mwxMenu()" << std::endl;
+        // std::cout << "In ~mwxMenu()" << std::endl;
     } // destructor
 
     /* All menu-items of the menu */
@@ -84,7 +84,7 @@ class mwxMenuBar : public wxMenuBar
 
     virtual ~mwxMenuBar( )
     {
-        //std::cout << "In ~mwxMenuBar()" << std::endl;
+        // std::cout << "In ~mwxMenuBar()" << std::endl;
     } // destructor
 
     /* All menus of the menu-bar */
@@ -230,6 +230,7 @@ class mwxOK_Cancel_Dialog : public wxDialog
                          std::function<wxWindow*( wxWindow* )>
                              fMakeContent, // called for creating the content of the dialog
                          const wxPoint& xPos = wxDefaultPosition, // position of the dialog
+                         const std::string& rsKOButtonLabel = "OK", // Label of OK Button
                          bool bDoFit = false, // adapt the size of the dialog to the size of its content
                          std::function<void( wxCommandEvent& )> OK_handler =
                              []( wxCommandEvent& ) {} ) // handler of OK button
@@ -253,7 +254,7 @@ class mwxOK_Cancel_Dialog : public wxDialog
         // Create two buttons that are horizontally unstretchable,
         // with an all-around border with a width of 10 and implicit top alignment
         // auto iOK_Button_ID = mxwExecutionContext::uniqueID( );
-        pxButtomSizer->Add( new wxButton( this, wxID_OK, "OK" ),
+        pxButtomSizer->Add( new wxButton( this, wxID_OK, rsKOButtonLabel ),
                             wxSizerFlags( 0 ).Align( wxALIGN_CENTER ).Border( wxALL, 5 ) );
 
         pxButtomSizer->Add( new wxButton( this, wxID_CANCEL, "Cancel" ),
@@ -296,8 +297,8 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
             std::vector<fs::path> vxRet;
             wxArrayString xFilenames;
             openFileDialog.GetPaths( xFilenames );
-            for( auto &rsPath : xFilenames )
-                vxRet.push_back( fs::path( std::string( rsPath.c_str() ) ) );
+            for( auto& rsPath : xFilenames )
+                vxRet.push_back( fs::path( std::string( rsPath.c_str( ) ) ) );
             fHandler( vxRet );
         } // if
     } // method
@@ -378,11 +379,45 @@ class mwxMapDrivenComboBox : public wxComboBox
         {
             xChoices.Add( rxKeyValue.first.c_str( ) );
         } // for
+        /*
+         * Define order so that 'Custom' is always last and 'Default' always first.
+         * Other strings are sorted alphabetically.
+         *
+         * Widgets documentation: CompareFunction is defined as a function taking two const wxString& parameters and
+         * returning an int value less than, equal to or greater than 0 if the first string is less than, equal to or
+         * greater than the second one.
+         *
+         */
+        xChoices.Sort( []( const wxString& rsA, const wxString& rsB ) {
+            if( rsA == rsB ) // strings are equal
+                return 0;
+            if( rsA == "Default" || rsB == "Custom" ) // sA is smaller than sB
+                return -1;
+            if( rsA == "Custom" || rsB == "Default" ) // sA is larger than sB
+                return 1;
+            if( rsA < rsB ) // determine which string is larger lexigraphically
+                return -1;
+            return 1;
+        } );
 
         this->Create( pxHost, wxID_ANY, xChoices[ 0 ], wxDefaultPosition, wxDefaultSize, xChoices, wxCB_READONLY );
         // Bind handler that process changes
         this->wxEvtHandler::Bind( wxEVT_COMBOBOX, handler );
     } // constructor
+
+    void setSelected( const std::string& rsSelection )
+    {
+        // try out all choices of combo box
+        for( size_t uiI = 0; uiI < xChoices.Count( ); uiI++ )
+            if( std::string( xChoices[ uiI ].c_str( ) ) == rsSelection )
+            {
+                this->SetSelection( uiI );
+                // return as soon as we find a matching choice
+                return;
+            } // if
+        // if none match throw exception
+        throw std::runtime_error( "Could not find " + rsSelection + " in combobox." );
+    } // method
 }; // class
 
 
@@ -435,7 +470,7 @@ class mwxStaticBoxContext : public wxPanel
 
     virtual ~mwxStaticBoxContext( )
     {
-        //std::cout << "In ~mwxStaticBoxContext()" << std::endl;
+        // std::cout << "In ~mwxStaticBoxContext()" << std::endl;
     } // destructor
 }; // class
 

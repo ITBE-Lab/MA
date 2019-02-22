@@ -81,6 +81,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
+        if(pRet->length() == 0)
+            throw std::runtime_error("found empty read: " + pRet->sName);
         return pRet;
     } // if
 #if WITH_QUALITY == 1
@@ -119,6 +121,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
+        if(pRet->length() == 0)
+            throw std::runtime_error("found empty read: " + pRet->sName);
         return pRet;
     } // if
 #else
@@ -179,6 +183,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
+        if(pRet->length() == 0)
+            throw std::runtime_error("found empty read: " + pRet->sName);
         return pRet;
     } // if
 #endif

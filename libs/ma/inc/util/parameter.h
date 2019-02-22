@@ -731,7 +731,7 @@ class GeneralParameter : public ParameterSetBase
           piNumberOfThreads( this, "Number of Threads",
                              "Number of threads used in the context of alignments. This options is only available, if "
                              "'use all processor cores' is off.",
-                             GENERAL_PARAMETER, 1 ),
+                             GENERAL_PARAMETER, 1, checkPositiveValue ),
           pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
         xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };
@@ -776,7 +776,7 @@ class ParameterSetManager
         xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
 
         // Initially select Illumina
-        this->pSelectedParamSet = &( xParametersSets[ "Illumina" ] );
+        this->pSelectedParamSet = &( xParametersSets[ "Default" ] );
     } // constructor
 
     Presetting& get( const std::string& sKey )

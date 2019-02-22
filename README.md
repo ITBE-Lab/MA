@@ -29,50 +29,36 @@ tailored data structures required. Highly efficient. Easy to implement (roughly 
 
 ## Python Integration
 
-> **Python Integration is an optional feature of MA.** By default MA is built without Python support.
+> **Python Integration is an optional feature of MA.** 
 
-The Python integration of MA is done via [Boost.Python](https://www.boost.org/ "Boost.Python"). 
-So, it is necessary to have a boost deployment with Python3 support. If there is Boost.Python
-support, then `make` can be called with `WITH_PYTHON=1`. The folder *MA* of the repository 
-contains a Python3 module `MA` that incorporates the aligner. The Python3 module relies on
-the shared library *libMA.so*. Alignments using the Python integration 
-can be done without a computational penalty, since Python is only responsible for an initial C++-module 
+MA is built with Python support, if cmake can locate a valid python installation (at least version 3.5).
+The Python integration of MA is done via [pybind11](https://github.com/pybind/pybind11 "pybind11"). 
+Alignments using the Python integration can be done without a computational penalty, 
+since Python is only responsible for an initial C++-module 
 coupling, while all actual computations are done within the C++-modules. The idea is similar 
 to the one used in the context of [TensorFlow](https://www.tensorflow.org "TensorFlow").
 
 ## Getting Started
 MA is currently still in an evaluation and testing process. Feedback about bugs is highly welcomed. 
 The below procedure was checked on a fresh *Debian 9.4 Stretch* with the following additional 
-packages installed: `git`, `make` and `build-essential`.
+packages installed: `git`, `cmake`, `make` and `build-essential`.
 ### Installation
- 
- Get the github clone and call make. (Available make switches are documented below):
+
+Get the github clone and use cmake (at least version 3.8) for building. On Unix-like platforms, this can be done via: 
 
     git clone https://github.com/ITBE-Lab/MA
     cd MA
+    mkdir build
+    cmake ..
     make
 
-Possible Makefile switches:
-
-- WITH_PYTHON=1\
-    MA compiles as a shared library, which can be imported in Python.
-    The MA executable is dynamically linked to the shared library, 
-    so the folder comprising the shared library must be added to LD_LIBRARY_PATH.
-    This options requires that $(BOOST_ROOT), $(PYTHON_INCLUDE) and $(PYTHON_LIB) are correctly set.
-    *Tested using boost 1.65.1 (with the Boost.Python library) and Python3.*
-
-- DEBUG=1\
-    Compiles MA without optimizations and with assertions enabled. Further, there are multiple 
-    self-checks during runtime. The debug mode is primarily for bug hunting.
-
-- NO_SSE=1\
-    Compiles MA without SIMD (sse4.1) instructions. This will result in much worse runtimes and 
-    should therefore only be enabled if the underlying hardware does not support sse4.1.
+On Microsoft Windows MA can be build via the cmake support of Microsoft Visual Studio 2017. \
+MA is available as command line tool and as graphical user interface application. The GUI version is build additionally to the comand line version, if cmake can find support for wxWidgets.
 
 ### First Steps ...
 Test your installation with:
 
-    ./ma -h
+    ./maCMD -h
 
 You should see the help screen of MA.
 
@@ -80,113 +66,310 @@ You should see the help screen of MA.
 In order to perform alignments you need to **precompute an index** of your reference genome first.
 This is done using following command:
 
-    ./ma --genIndex -i <filename_of_genome> -x <filename_of_index>
+    ./maCMD --Create_Index <fasta_file_name,output_folder,index_name>
 
-`<filename_of_genome>` is the path to a FASTA file containing the reference genome and 
-`<filename_of_index>` is the prefix that shall be used to store the index.
+`<fasta_file_name>`: filepath (filename) of the Fasta file holding the genome used for index creation. \
+`<output_folder>`: folderpath (foldername) of the location used for index storage. \
+`<index_name>`: name used for identifying the new FMD-Index. In the context of alignments,
+the genome-name is used for FMD-index selection.
 
 Now you can **align** using the following command:
 
-    ./ma -x <filename_of_index> -i <fasta_in> -o <sam_out>
+    ./maCMD -x <filename_of_index> -i <fasta_in> -o <sam_out>
 
 `<fasta_in>` is a FASTA or FASTQ file containing the queries.
 `<sam_out>` is the filename of the output file that shall be created.
-You can switch between **MA accurate** and **MA fast** by using the `-m acc` or 
-`-m fast` switch, respectively.
+
 
 ## MA options
 
 ```
-
-General options:
-    -h, --help                     Display the complete help screen
-        --genIndex                 Do FMD-index Generation. The -i and -x options specify the FASTA
-                                   file used for index generation and the index prefix, respectively.
-                                   If this option is not set, the aligner performs alignments. 
-
-Necessary arguments for alignments:
-    -x, --idx <prefix>             FMD-index used for alignments
-    -i, --in <fname>               FASTA or FASTAQ input files.
-
 Available presettings:
-     -m, --mode <str>              Operation mode for MA. (default is 'fast')
-                                   fast:
-                                       Best compromise between performance and accuracy.
-                                       Recommended for PacBio reads.
-                                   acc:
-                                       Better accuracy than in fast mode but worse runtimes.
-                                       Particularly effective for short reads.
+    -p, --Presetting <name> [Default]
+                                                   Optimize aligner parameters for a selected
+                                                   sequencing technique. Available presettings are:
+                                                   'Default', 'Illumina', 'Illumina_Paired',
+                                                   'Nanopore', 'PacBio'.
 
-Alignment options:
-    -o, --out <fname>              Filename used for SAM file output. Default output stream is
-                                   standard output.
-    -t, --threads <num>            Use <num> threads. On startup MA checks the hardware and chooses 
-                                   this value accordingly.
-    -d, --noDP                     Switch that disables the final Dynamic Programming.
-    -n, --reportN <num>            Report up to <num> alignments; 0 means unlimited.
-                                   Default is 1.
-    -s, --seedSet [SMEMs/maxSpan]  Selects between the two seeding strategies super maximal extend matches
-                                   'SMEMs' and maximally spanning seeds 'maxSpan'. 
-                                   Default is 'maxSpan'.
-    -l, --minLen <num>             Seeds must have a minimum length of <num> nucleotides.
-                                   Default is 16.
-        --Match <num>              Sets the match score to <num>; <num> > 0.
-                                   Default is 3. 
-        --MisMatch <num>           Sets the mismatch penalty to <num>; <num> > 0.
-                                   Default is 4.
-        --Gap <num>                Sets the costs for opening a gap to <num>; <num> >= 0.
-                                   Default is 6.
-        --Extend <num>             Sets the costs for extending a gap to <num>; <num> > 0.
-                                   Default is 1
+General options: (these options are not affected by presettings)
+    -x, --Index <file_name> []
+                                                   Filename of FMD-index. (A FMD-index can be
+                                                   generated via the --Create_Index option.) This
+                                                   option must be set.
 
-Paired Read options:
-    -p, --paUni                    Enable paired alignments and model the distance as uniform distribution.
-                                   If set --in shall be used as follows: --in <fname1> --in <fname2>.
-    -P, --paNorm                   Enable paired alignment and Model the distance as normal distribution.
-                                   If set --in shall be used as follows: --in <fname1> --in <fname2>.
-        --paIsolate <num>          Penalty for an unpaired read pair.
-                                   Default is 17.
-        --paMean <num>             Mean gap distance between read pairs.
-                                   Default is 400.
-        --paStd <num>              Standard deviation of gap distance between read pairs.
-                                   Default is 150.
+    -i, --In <file_name> []
+                                                   Filenames of Fasta/Fastq files containing reads.
+                                                   gz-compressed files are automatically decompressed.
+                                                   Multiple files can be specified by a comma
+                                                   separated list. At least one file name must be
+                                                   provided.
 
-Advanced options:
-        --giveUp <val>             Threshold with 0 <= <val> <= 1 used as give-up criteria.
-                                   SoC's with accumulative seed length smaller than 
-                                   'query_len * <val>' will be ignored.
-                                   Reducing this parameter will decrease runtime but allows
-                                   the aligner to discover more dissimilar matches.
-                                   Increasing this parameter will increase runtime but might cause
-                                   the aligner to miss the correct reference location.
-                                   Default is 0.002.
-        --maxTries <num>           Maximally <num> many SoC's are evaluated for a single alignment.
-                                   Generally the best alignment is found in the best scored SoC.
-                                   However, if the best alignment is from a very repetitive region,
-                                   we might have to inspect several SoC's to find the optimal one.
-                                   Default is 30.
-        --minTries <num>           At least <num> many SoC's are evaluated for a single alignment.
-                                   Default is 2.
-        --minRefSize <num>         If the reference is smaller than <num> nt we disable all heuristics.
-                                   Default is 10000000.
-        --minSecToPrimRatio <num>  Limit output of secondary alignments to alignments with: 
-                                   score-secondary-alignment >= <num> * score-primary-alignment.
-                                   Default is 0.25.
-        --maxOverlapSupp <num>     A secondary alignment becomes supplementary, if it overlaps less
-                                   than <num> percent with the primary alignment.
-                                   Default is 0.1.
-        --disableHeuristics        All performance optimizing heuristics are turned off.
+    -m, --Mate_In <file_name> []
+                                                   Filenames of the mates in the case of paired reads.
+                                                   If this option is set, the aligner switches to
+                                                   paired mode automatically. The number of reads
+                                                   given as mates must match the accumulated number of
+                                                   reads provided via the 'in'-option.
+
+    -X, --Create_Index <fasta_file_name,output_folder,index_name> []
+                                                   Generate a FMD-index for a Fasta file.
+                                                   'fasta_file_name' has to be the file-path of the
+                                                   Fasta file holding the genome used for index
+                                                   creation. 'output_folder' is the folder-path of the
+                                                   location used for index storage. 'index_name' is
+                                                   the name used for identifying the new FMD-Index. In
+                                                   the context of alignments, the genome-name is used
+                                                   for FMD-index selection.
+
+    -O, --SAM_Files_in_same_Folder_as_Reads <bool> [false]
+                                                   If selected, SAM files are written to the folder of
+                                                   the reads.
+
+    -o, --Folder_for_SAM_Files <file_name> [/tmp]
+                                                   Folder for SAM output in the case that the output
+                                                   is not directed to the reads' folder.
+
+    --Use_all_Processor_Cores <bool> [true]
+                                                   Number of threads used for alignments is identical
+                                                   to the number of processor cores.
+
+    --Number_of_Threads <int> [1]
+                                                   Number of threads used in the context of
+                                                   alignments. This options is only available, if 'use
+                                                   all processor cores' is off.
+
+    -h, --Help <bool> [true]
+                                                   Print the complete help text.
+
+Paired Reads options:
+    --Use_Paired_Reads <bool> [false]
+                                                   If your reads occur as paired reads, activate this
+                                                   flag.
+
+    -d, --Mean_Distance_of_Paired_Reads <double> [400]
+                                                   Two reads can be paired if they are within mean +-
+                                                   (standard deviation)*3 distance from one another on
+                                                   the expected strands (depends on Use Mate Pair
+                                                   on/off) Used in the context of the computation of
+                                                   the mapping quality and for picking optimal
+                                                   alignment pairs.
+
+    -S, --Standard_Deviation_of_Paired_Reads <double> [150]
+                                                   <val> represents the standard deviation for the
+                                                   distance between paired reads. Used in the context
+                                                   of the computation of the mapping quality and for
+                                                   picking optimal alignment pairs.
+
+    --Score_Factor_for_Paired_Reads <double> [1.25]
+                                                   This factor is multiplied to the score of
+                                                   successfully paired reads. Used in the context of
+                                                   the computation of the mapping quality and for
+                                                   picking optimal alignment pairs. [val] < 1 results
+                                                   in penalty; [val] > 1 results in bonus.
+
+Seeding options:
+    -s, --Seeding_Technique <name> [maxSpan]
+                                                   Technique used for the initial seeding. Available
+                                                   techniques are: maxSpan and SMEMs.
+
+    -l, --Minimal_Seed_Length <int> [16]
+                                                   All seeds with size smaller than 'minimal seed
+                                                   length' are discarded.
+
+    --Minimal_Ambiguity <int> [0]
+                                                   During the extension of seeds using the FMD-index:
+                                                   With increasing extension width, the number of
+                                                   occurrences of corresponding seeds on the reference
+                                                   montonically decreases. Keep extending, while the
+                                                   number of occurrences is higher than 'Minimal
+                                                   Ambiguity'. (For details see the MA-Handbook.)
+
+    --Maximal_Ambiguity <int> [100]
+                                                   Discard seeds that occur more than 'Maximal
+                                                   ambiguity' time on the reference. Set to zero to
+                                                   disable.
+
+    --Skip_Ambiguous_Seeds <bool> [false]
+                                                   Enabled: Discard all seeds that are more ambiguous
+                                                   than [Maximal Ambiguity]. Disabled: sample [Maximal
+                                                   Ambiguity] random seeds from too ambiguous seeds.
+
+    --Seeding_Drop-off_A_-_Minimal_Seed_Size <int> [15]
+                                                   Heuristic runtime optimization: For a given read R,
+                                                   let N be the number of seeds of size >= [val].
+                                                   Discard R, if N < [length(R)] * [Seeding drop-off
+                                                   B].
+
+    --Seeding_Drop-off_B_-_Factor <double> [0.005]
+                                                   Heuristic runtime optimization: Factor for seed
+                                                   drop-off calculation. For more information see
+                                                   parameter [Seeding drop-off A].
+
+Strip of Consideration options:
+    -N, --Maximal_Number_of_SoC's <int> [30]
+                                                   Only consider the <val> best scored SoC's. 0 = no
+                                                   limit.
+
+    -M, --Minimal_Number_of_SoC's <int> [1]
+                                                   Always consider the first <val> SoC's no matter the
+                                                   Heuristic optimizations.
+
+    --Fixed_SoC_Width <int> [0]
+                                                   Set the SoC width to a fixed value. 0 = use the
+                                                   formula given in the paper. This parameter is
+                                                   intended for debugging purposes.
+
+SAM Output options:
+    -n, --Maximal_Number_of_Reported_Alignments <int> [0]
+                                                   Do not output more than <val> alignments. Set to
+                                                   zero for unlimited output.
+
+    --Minimal_Alignment_Score <int> [75]
+                                                   Suppress the output of alignments with a score
+                                                   below val.
+
+    --Omit_Secondary_Alignments <bool> [false]
+                                                   Suppress the output of secondary alignments.
+
+    --Omit_Supplementary_Alignments <bool> [false]
+                                                   Suppress the output of supplementary alignments.
+
+    --Maximal_Supplementary_Overlap <double> [0.1]
+                                                   An non-primary alignment A is considered
+                                                   supplementary, if less than val percent of A
+                                                   overlap with the primary alignment on the query.
+                                                   Otherwise A is considered secondary.
+
+    --Number_Supplementary_Alignments <int> [1]
+                                                   Maximal Number of supplementary alignments per
+                                                   primary alignment.
+
+Heuristics options:
+    --SoC_Score_Drop-off <double> [0.1]
+                                                   Let x be the maximal encountered SoC score. Stop
+                                                   harmonizing SoC's if there is a SoC with a score
+                                                   lower than <val>*x.
+
+    --Minimal_Harmonization_Score <int> [18]
+                                                   Discard all harmonized SoC's with scores lower than
+                                                   <val>.
+
+    --Relative_Minimal_Harmonization_Score <double> [0.002]
+                                                   Discard all harmonized SoC's with scores lower than
+                                                   length(read)*<val>.
+
+    --Harmonization_Drop-off_A_-_Score_Difference <double> [0.0001]
+                                                   Let x be the maximal encountered harmonization
+                                                   score. Stop harmonizing further SoC's if there are
+                                                   <Harmonization Drop-off B> SoC's with lower scores
+                                                   than x-<readlength>*<val> in a row.
+
+    --Harmonization_Drop-off_B_-_Lookahead <int> [3]
+                                                   See Harmonization Drop-off A.
+
+    --Harmonization_Score_Drop-off_-_Minimal_Query_Length <int> [800]
+                                                   For reads of length >= [val]: Ignore all SoC's with
+                                                   harmonization scores lower than the current maximal
+                                                   score. 0 = disabled.
+
+    --Artifact_Filter_A_-_Maximal_Delta_Distance <double> [0.1]
+                                                   Filter seeds if the difference between the delta
+                                                   distance to it's predecessor and successor is less
+                                                   then [val] percent (set to 1 to disable filter) and
+                                                   the delta distance to it's pre- and successor is
+                                                   more than [Artifact Filter B] nt.
+
+    --Artifact_Filter_B_-_Minimal_Delta_Distance <int> [16]
+                                                   See Artifact Filter A
+
+    --Pick_Local_Seed_Set_A_-_Enabled <bool> [false]
+                                                   <val> = true enables local seed set computiaion.
+
+    --Pick_Local_Seed_Set_B_-_Optimistic_Gap_Estimation <bool> [true]
+                                                   After the harmonization MA checks weather it is
+                                                   possible to compute a positively scored alignment
+                                                   from the seed set. Gaps between seeds can be
+                                                   estimated in two ways: Optimistic [true]: Assume
+                                                   that the gap can be filled using merely matches and
+                                                   a single insertion/deletion. Pessimistic [false]:
+                                                   Assume that the gap can be filled using matches and
+                                                   mismatches that add up to a score of 0 and a single
+                                                   insertion/deletion.
+
+    --Pick_Local_Seed_Set_C_-_Maximal_Gap_Penalty <int> [100]
+                                                   Maximal Gap cost penalty during local seed set
+                                                   computiaion.
+
+    --Maximal_Gap_Area <int> [10000]
+                                                   Split alignments in harmonization if gap area is
+                                                   larger than <val>.
+
+    --Minimum_Genome_Size_for_Heuristics <int> [10000000]
+                                                   Some heuristics can only be applied on long enough
+                                                   genomes. Disables: SoC score Drop-off if the genome
+                                                   is shorter than <val>.
+
+    --Disable_All_Heuristics <bool> [false]
+                                                   Disables all runtime heuristics. (Intended for
+                                                   debugging.)
+
+Dynamic Programming options:
+    --Match_Score <int> [2]
+                                                   Match score. (Used in the context of Dynamic
+                                                   Programming and for SoC width computation.)
+
+    --Mismatch_Penalty <int> [4]
+                                                   Penalty for mismatch.
+
+    --Gap_penalty <int> [4]
+                                                   First penalty for gap opening. (Two piece affine
+                                                   gap costs)
+
+    --Extend_Penalty <int> [2]
+                                                   First penalty for gap extension. (Two piece affine
+                                                   gap costs)
+
+    --Second_Gap_Penalty <int> [24]
+                                                   Second penalty for gap opening. (Two piece affine
+                                                   gap costs)
+
+    --Second_Extend_Penalty <int> [1]
+                                                   Second penalty for gap extension. (Two piece affine
+                                                   gap costs)
+
+    --Padding <int> [1000]
+                                                   If an alignment does not reach its read's
+                                                   endpoints, the missing parts can be computed via
+                                                   dynamic programming. If the length of the missing
+                                                   parts is smaller than 'Padding', dynamic
+                                                   programming is used to extend the alignment towards
+                                                   the endpoints of the read. Otherwise, the unaligned
+                                                   parts of the read are ignored and the alignment
+                                                   stays unextended.
+
+    --Bandwidth_for_Extensions <int> [512]
+                                                   Bandwidth used in the context of extending an
+                                                   alignment towards the endpoints of its read. (See
+                                                   'Padding')
+
+    --Minimal_Bandwidth_in_Gaps <int> [20]
+                                                   Gaps between seeds are generally filled using
+                                                   dynamic programming. This option determines the
+                                                   minimal bandwidth used in the context of bridging
+                                                   gaps. More details can be found in the MA-Handbook.
+
+    --Z_Drop <int> [200]
+                                                   If the running score during dynamic programming
+                                                   drops faster than <val> stop the extension process.
+
 ```
 
 ## Thanks ...
 
 MA relies on the hard work of other projects. These are:
 
-- Dynamic programming with adaptive band: https://github.com/ocxtal/libgaba
 - Dynamic programming with static band: https://github.com/lh3/ksw2
-- Cmd line option parser: https://github.com/jarro2783/cxxopts
 - Parts of the code for FMD-index creation and extension were picked from https://github.com/lh3/bwa
-
 
 Many thanks to the creators and contributors of the above projects ...
 

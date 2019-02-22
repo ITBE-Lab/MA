@@ -102,7 +102,8 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
 
                                    return pxNotebook;
                                }, // lambda
-                               wxDefaultPosition )
+                               wxDefaultPosition,
+                               "Save as Custom" )
     {} // constructor
 
     /* Destructor */
@@ -134,6 +135,7 @@ class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
                                }, // lambda
 
                                wxDefaultPosition,
+                               "Save as Custom",
                                true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
@@ -164,6 +166,7 @@ class mwxGlobalSettingsDialog : public mwxOK_Cancel_Dialog
                                }, // lambda
 
                                wxDefaultPosition,
+                               "OK",
                                true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
@@ -195,6 +198,7 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
                                }, // lambda
 
                                wxDefaultPosition,
+                               "OK",
                                true ) // fit the size of the dialog to the size of its content
     {} // constructor
 }; // class
@@ -271,14 +275,25 @@ class FMIndexCreationWizard : public wxWizard
 
             // FM-Index creation happens in a separated thread
             pWorker = std::make_unique<std::thread>( [this]( ) {
-                xExecutionContext.xGenomeManager.makeIndexAndPackForGenome(
-                    sGenomeFolderPath( ), // Folder for genome storage
-                    sFastaFilePath( ), // Path to FASTA-file that contains genome
-                    std::string( pxTextCtrlIndexName->GetValue( ).c_str( ) ), // Title of genome
-                    [this]( const std::string& sMessage ) {
-                        queueStringMessage( wxEVT_WORKER_MESSAGE, sMessage );
-                    } // lambda
-                );
+                try
+                {
+                    xExecutionContext.xGenomeManager.makeIndexAndPackForGenome(
+                        sGenomeFolderPath( ), // Folder for genome storage
+                        sFastaFilePath( ), // Path to FASTA-file that contains genome
+                        std::string( pxTextCtrlIndexName->GetValue( ).c_str( ) ), // Title of genome
+                        [this]( const std::string& sMessage ) {
+                            queueStringMessage( wxEVT_WORKER_MESSAGE, sMessage );
+                        } // lambda
+                    );
+                } // try
+                catch( std::exception& rxException )
+                {
+                    wxMessageBox( std::string( rxException.what( ) ), "Exception", wxICON_ERROR );
+                } // catch
+                catch( ... )
+                {
+                    wxMessageBox( "unknown exception", "Exception", wxICON_ERROR );
+                } // catch
 
                 // Enable 'Finish' button
                 queueStringMessage( wxEVT_WORKER_COMPLETED, "" );
@@ -758,9 +773,10 @@ class MA_MainFrame : public wxFrame
         sText.append( " DEBUG_MODE" );
 #endif
         sText.append( "\n\u00A9 Markus Schmidt and Arne Kutzner (2019)" );
-        wxMessageBox( sText.c_str() , wxT( "About" ), wxICON_INFORMATION );
+        wxMessageBox( sText.c_str( ), wxT( "About" ), wxICON_INFORMATION );
     } // method
 
+    mwxMapDrivenComboBox* pxComboBoxAlignerSettings;
     /* Handler for the gear button */
     template <class SETTINGS_DIALOG_CLASS> void doSettingsDialog( wxCommandEvent& WXUNUSED( event ) )
     {
@@ -773,7 +789,10 @@ class MA_MainFrame : public wxFrame
         if( iReturnedChoice == wxID_OK )
         {
             // save the changed parameter into the selected parameter-set
-            pSelectedParamSet->mirror( xParameterSet );
+            // pSelectedParamSet->mirror( xParameterSet );
+            xExecutionContext.xParameterSetManager.xParametersSets.at( "Custom" ).mirror( xParameterSet );
+            xExecutionContext.xParameterSetManager.setSelected( "Custom" );
+            pxComboBoxAlignerSettings->setSelected( "Custom" );
         } // if
 
         xSettingsDialog->Destroy( );
@@ -924,6 +943,9 @@ class MA_MainFrame : public wxFrame
                    wxDefaultSize,
                    wxDEFAULT_FRAME_STYLE & ~( wxMAXIMIZE_BOX | wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP ) )
     {
+        // on startup: create custom parameter set from default parameter set (do this only for the GUI verison.)
+        xExecutionContext.xParameterSetManager.xParametersSets.emplace( "Custom", Presetting( ) );
+
         wxImage::AddHandler( new wxPNGHandler );
 
         // set icon, size and background color
@@ -975,11 +997,15 @@ class MA_MainFrame : public wxFrame
                         {
                             // Parameter selection combo
                             pxBoxSizer.Add(
-                                new mwxMapDrivenComboBox( //
+                                pxComboBoxAlignerSettings = new mwxMapDrivenComboBox( //
                                     pxBoxSizer.xConnector.pxWindow,
                                     xExecutionContext.xParameterSetManager.xParametersSets,
                                     std::bind( &MA_MainFrame::onParameterComboBox, this, std::placeholders::_1 ) ),
                                 0, wxTOP | wxBOTTOM | wxEXPAND, 5 );
+                            // Initialize combo box with the default setting:
+                            //@todo change parameter set manager so that it knows the name of the currently select
+                            //setting. then use this string for setSelected here...
+                            pxComboBoxAlignerSettings->setSelected( "Default" );
                             pxBoxSizer.Add( 0, 0, 0, wxBOTTOM, 5 ); // Vertical spacer
 
                             // Gear button for aligner parameter management
