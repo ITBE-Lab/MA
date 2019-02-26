@@ -480,6 +480,9 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xMDTag; // Output MD Tag
     AlignerParameterPointer<bool> xSVTag; // Output SV Tag
 
+    // SV caller options
+    AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
+
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
     AlignerParameterPointer<int> xHarmScoreMin; // Minimal Harmonization Score
@@ -495,9 +498,6 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxGapArea; //
     AlignerParameterPointer<int> xGenomeSizeDisable; //
     AlignerParameterPointer<bool> xDisableHeuristics; //
-
-    // SV caller options
-    AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
     
 
     static const EXPORTED std::pair<size_t, std::string> DP_PARAMETERS;
