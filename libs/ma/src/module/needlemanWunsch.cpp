@@ -894,7 +894,7 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
 
     ksw_simplified( (int)pQuery->length( ),
                     pQuery->pGetSequenceRef( ),
-                    pRef->length( ),
+                    (int)pRef->length( ),
                     pRef->pGetSequenceRef( ),
                     xParams,
                     -1,
