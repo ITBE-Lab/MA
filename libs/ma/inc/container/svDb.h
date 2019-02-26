@@ -374,7 +374,8 @@ class SoCDbWriter : public Module<Container, false, NucSeq, SoCPriorityQueue>
     size_t uiNumSoCsToRecord = 1; // @todo expose
 
   public:
-    SoCDbWriter( std::shared_ptr<SV_DB::SoCInserter> pInserter ) : pInserter( pInserter ), pMutex( new std::mutex )
+    SoCDbWriter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB::SoCInserter> pInserter )
+        : pInserter( pInserter ), pMutex( new std::mutex )
     {} // constructor
 
     std::shared_ptr<Container> execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<SoCPriorityQueue> pSoCQueue )
@@ -400,7 +401,7 @@ class NucSeqFromSql : public Module<NucSeq, true>
     std::vector<std::shared_ptr<NucSeq>> vSequences;
 
   public:
-    NucSeqFromSql( std::shared_ptr<SV_DB> pDb, std::string sSql )
+    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sSql )
     {
         CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xSql(
             *pDb->pDatabase, ( "SELECT read_table.sequence, read_table.id FROM read_table " + sSql ).c_str( ) );

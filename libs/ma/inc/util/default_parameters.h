@@ -10,12 +10,12 @@
 #include <string>
 
 #ifdef WITH_PYTHON
-    #ifdef BOOST_PYTHON
-        #include <boost/python.hpp>
-    #else
-        #include <pybind11/stl_bind.h>
-        namespace py = pybind11;
-    #endif
+#ifdef BOOST_PYTHON
+#include <boost/python.hpp>
+#else
+#include <pybind11/stl_bind.h>
+namespace py = pybind11;
+#endif
 #endif
 
 namespace libMA
@@ -29,12 +29,13 @@ extern EXPORTED int iGap;
 extern EXPORTED int iExtend;
 extern EXPORTED int iGap2;
 extern EXPORTED int iExtend2;
-extern EXPORTED size_t uiUnpaired;
-extern EXPORTED size_t uiMean;
+extern EXPORTED double dUnpaired; // @todo this should be a called paired bonus dPairedBonus
+extern EXPORTED size_t uiMean; // @todo this should be a double -> dMean
 extern EXPORTED double fStd;
 extern EXPORTED size_t uiReportN;
 extern EXPORTED size_t uiMaxAmbiguity;
 extern EXPORTED size_t uiMinLen;
+extern EXPORTED size_t uiMinAlignmentScore;
 extern EXPORTED size_t uiMinAmbiguity;
 extern EXPORTED size_t uiMinSeedSizeDrop;
 extern EXPORTED size_t uiMaxTries;
@@ -48,7 +49,6 @@ extern EXPORTED bool bFindMode;
 extern EXPORTED bool bOptimisticGapEstimation;
 extern EXPORTED bool bSkipLongBWTIntervals;
 extern EXPORTED bool bNormalDist;
-extern EXPORTED bool bUniformDist;
 extern EXPORTED float fGiveUp;
 extern EXPORTED float fRelMinSeedSizeAmount;
 extern EXPORTED float fScoreDiffTolerance;
@@ -60,7 +60,8 @@ extern EXPORTED std::string sParameterSet;
 extern EXPORTED std::string sSeedSet;
 extern EXPORTED size_t uiGenomeSizeDisable;
 extern EXPORTED bool bDisableHeuristics;
-extern EXPORTED float fMinSecScoreRatio;
+extern EXPORTED bool bNoSecondary;
+extern EXPORTED bool bNoSupplementary;
 extern EXPORTED double dMaxDeltaDist;
 extern EXPORTED uint64_t uiMinDeltaDist;
 extern EXPORTED double dMaxOverlapSupplementary;
@@ -78,12 +79,35 @@ inline void configureAccurate( )
 {
     sParameterSet = "acc";
     sSeedSet = "SMEMs";
+    // uiMaxAmbiguity = 10000 <- increases accuracy extremely
+    uiMaxAmbiguity = 10000;
+    uiMinLen = 14;
 } // function
 
 inline void configureFast( )
 {
     sParameterSet = "fast";
     sSeedSet = "maxSpan";
+} // function
+
+inline void setMinTries( size_t x )
+{
+    uiMinTries = x;
+} // function
+
+inline void setDisableHeuristics( bool x )
+{
+    bDisableHeuristics = x;
+} // function
+
+inline void setMaxTries( size_t x )
+{
+    uiMaxTries = x;
+} // function
+
+inline void setMinAlignmentScore( size_t x )
+{
+    uiMinAlignmentScore = x;
 } // function
 
 // inline void configurePacBio()

@@ -107,6 +107,7 @@ class SegmentVector : public Container
     TP_VEC vContent;
 
   public:
+    bool bSetMappingQualityToZero = false;
     typedef typename TP_VEC::value_type value_type;
     typedef typename TP_VEC::size_type size_type;
     typedef typename TP_VEC::difference_type difference_type;

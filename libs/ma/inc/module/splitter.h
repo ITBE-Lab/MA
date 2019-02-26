@@ -36,7 +36,7 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false,
      * @details
      * Needs information about the container type it shall lock.
      */
-    Lock( )
+    Lock( const ParameterSetManager& rParameters )
     {} // constructor
 
     virtual std::shared_ptr<TP_CONTAINER> EXPORTED execute( std::shared_ptr<TP_CONTAINER> pInput )
@@ -63,7 +63,8 @@ template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, true
      * @details
      * Takes the Lock it shall unlock as input.
      */
-    UnLock( std::shared_ptr<BasePledge> pLockPledge ) : pLockPledge( pLockPledge )
+    UnLock( const ParameterSetManager& rParameters, std::shared_ptr<BasePledge> pLockPledge )
+        : pLockPledge( pLockPledge )
     {} // constructor
 
     virtual std::shared_ptr<TP_CONTAINER> EXPORTED execute( std::shared_ptr<TP_CONTAINER> pIn )
@@ -86,6 +87,9 @@ template <typename TP_TUPLE, size_t IDX>
 class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, false, TP_TUPLE>
 {
   public:
+    TupleGet( const ParameterSetManager& rParameters )
+    {} // constructor
+
     virtual typename TP_TUPLE::value_type EXPORTED execute( std::shared_ptr<TP_TUPLE> pIn )
     {
         return ( *pIn )[ IDX ];

@@ -81,6 +81,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
+        if( pRet->length( ) == 0 )
+            throw std::runtime_error( "found empty read: " + pRet->sName );
         return pRet;
     } // if
 #if WITH_QUALITY == 1
@@ -119,6 +121,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
+        if( pRet->length( ) == 0 )
+            throw std::runtime_error( "found empty read: " + pRet->sName );
         return pRet;
     } // if
 #else
@@ -179,6 +183,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
+        if( pRet->length( ) == 0 )
+            throw std::runtime_error( "found empty read: " + pRet->sName );
         return pRet;
     } // if
 #endif
@@ -188,17 +194,27 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     else
         this->setFinished( );
     // if we reach this point we have read all content of the file
-    throw AnnotatedException( "Tried to read query past EoF: '" + sLine + "'" );
+    throw AnnotatedException(
+        "Error while reading file.\nIs your input really in FASTA/Q format?\nError occurred in file: " +
+        xFileName.string( ) );
 } // function
 
 std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
 {
     auto pRet = std::make_shared<TP_PAIRED_READS>( );
-    pRet->push_back( xF1.execute( ) );
-    pRet->push_back( xF2.execute( ) );
+    pRet->push_back( pF1->execute( ) );
+    pRet->push_back( pF2->execute( ) );
     // forward the finished flags...
-    if( xF1.isFinished( ) || xF2.isFinished( ) )
+    if( pF1->isFinished( ) || pF2->isFinished( ) )
+    {
+        /*
+         * Print a warning if the fasta files have a different number of queries.
+         */
+        if( !pF1->isFinished( ) || !pF2->isFinished( ) )
+            throw std::runtime_error(
+                "You cannot perform paired alignment with a different amount of primary queries and mate queries." );
         this->setFinished( );
+    }
     if( ( *pRet )[ 0 ] == nullptr )
         return nullptr;
     if( ( *pRet )[ 1 ] == nullptr )
@@ -213,6 +229,7 @@ void exportFileReader( )
 {
     // export the FileReader class
     exportModule<FileReader, std::string>( "FileReader" );
+    exportModule<FileListReader, std::vector<std::string>>( "FileListReader" );
 
     boost::python::
         class_<TP_PAIRED_READS, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<TP_PAIRED_READS>>(
@@ -226,18 +243,23 @@ void exportFileReader( )
              */
             .def( boost::python::vector_indexing_suite<TP_PAIRED_READS, true>( ) );
     // export the PairedFileReader class
-    exportModule<PairedFileReader, std::string, std::string>( "PairedFileReader" );
+    exportModule<PairedFileReader, std::vector<std::string>, std::vector<std::string>>( "PairedFileReader" );
 } // function
 #else
 void exportFileReader( py::module& rxPyModuleId )
 {
-    // export the FileReader class
-    exportModule<FileReader, std::string>( rxPyModuleId, "FileReader" );
 
-    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>( rxPyModuleId, "NucSeqContainerVector" );
-
-    // export the PairedFileReader class
-    exportModule<PairedFileReader, std::string, std::string>( rxPyModuleId, "PairedFileReader" );
+    // py::bind_vector<std::vector<fs::path>>(rxPyModuleId, "filePathVector");
+    //// export the FileReader class
+    // exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
+    // exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
+    //
+    // py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
+    //    rxPyModuleId, "QueryVector", "docstr" );
+    //
+    //// export the PairedFileReader class
+    // exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId,
+    //                                                                                    "PairedFileReader" );
 } // function
 #endif
 #endif

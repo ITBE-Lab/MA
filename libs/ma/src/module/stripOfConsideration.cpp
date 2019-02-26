@@ -38,6 +38,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
     // extract the seeds
     auto pSeeds = std::make_shared<Seeds>( );
     pSeeds->xStats.sName = pQuerySeq->sName;
+    pSeeds->xStats.bSetMappingQualityToZero = pSegments->bSetMappingQualityToZero;
     // rough estimate of how many seeds we will have
     // (trying to avoid multiple allocations)
     pSeeds->reserve( pSegments->size( ) * 3 );
@@ -169,21 +170,13 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 void exportStripOfConsideration( )
 {
     // export the StripOfConsideration class
-    exportModule<StripOfConsideration>( "StripOfConsideration", []( auto&& x ) {
-        x.def_readwrite( "max_ambiguity", &StripOfConsideration::uiMaxAmbiguity )
-            .def_readwrite( "min_score", &StripOfConsideration::fScoreMinimum )
-            .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
-    } );
+    exportModule<StripOfConsideration>( "StripOfConsideration" );
 } // function
 #else
 void exportStripOfConsideration( py::module& rxPyModuleId )
 {
     // export the StripOfConsideration class
-    exportModule<StripOfConsideration>( rxPyModuleId, "StripOfConsideration", []( auto&& x ) {
-        x.def_readwrite( "max_ambiguity", &StripOfConsideration::uiMaxAmbiguity )
-            .def_readwrite( "min_score", &StripOfConsideration::fScoreMinimum )
-            .def_readwrite( "skip_long_bwt_intervals", &StripOfConsideration::bSkipLongBWTIntervals );
-    } );
+    exportModule<StripOfConsideration>( rxPyModuleId, "StripOfConsideration" );
 } // function
 #endif
 #endif

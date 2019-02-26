@@ -11,10 +11,12 @@
 #include <cerrno>
 #include <cstring>
 #include <fstream>
+#include <regex>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vector>
+#include <cctype>
 
 #include "util/exception.h"
 #include "util/support.h"
@@ -32,6 +34,26 @@ bool EXPORTED fileExists( const std::string& rsFile )
 {
     std::ifstream fStream( rsFile.c_str( ) );
     return fStream.good( );
+} // function
+
+bool EXPORTED is_number( const std::string& s )
+{
+    return !s.empty( ) &&
+           std::find_if( s.begin( ) + 1, s.end( ), []( char c ) { return !std::isdigit( (int)c ); } ) == s.end( ) &&
+           ( std::isdigit( (int)s[ 0 ] ) || s[ 0 ] == '-' );
+} // function
+
+bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd )
+{
+    return rsX.compare( rsX.length( ) - rsEnd.length( ), rsEnd.length( ), rsEnd ) == 0;
+} // function
+
+std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex )
+{
+    std::regex xRegex( sRegex );
+    std::vector<std::string> xVector{std::sregex_token_iterator( sSubject.begin( ), sSubject.end( ), xRegex, -1 ),
+                                     std::sregex_token_iterator( )};
+    return xVector;
 } // function
 
 void makeDir( const std::string& rsFile )
@@ -74,4 +96,5 @@ std::string EXPORTED demangle( const char* name )
 {
     return std::string( name );
 } // function
+
 #endif

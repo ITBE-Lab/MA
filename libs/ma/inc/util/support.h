@@ -12,10 +12,12 @@
 #define SUPPORT_H
 
 #include "util/debug.h"
+#include "util/exported.h"
 #include "util/system.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <fstream>
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -31,8 +33,6 @@
 // SSE2
 #include <emmintrin.h>
 
-// under gnu EXPORTED is not needed to do anything
-#define EXPORTED
 #elif _MSC_VER
 /* Several data-type definitions of stdint.h not contained in the MSC compiler
  */
@@ -46,14 +46,6 @@ typedef unsigned __int16 uint16_t;
 typedef signed __int16 int16_t;
 
 typedef unsigned __int64 uint64_t;
-
-// under msc we need to export or import a function according to weather we are building the dll or
-// using it
-#ifdef EXPORT
-#define EXPORTED __declspec( dllexport )
-#else
-#define EXPORTED __declspec( dllimport )
-#endif
 #endif
 
 bool EXPORTED fileExists( const std::string& rsFile );
@@ -99,6 +91,8 @@ void vRangeCheckAndThrowExclusive( const std::string& sText, const ParameterType
               ")" ) ); // runtime error
     } // if
 } // template function
+
+bool EXPORTED is_number(const std::string& s);
 
 /**
  * @brief Loop where the counter value is known during compiletime.
@@ -159,7 +153,7 @@ template <template <size_t> class Func> struct TemplateLoop<0, Func>
     } // method
 }; // struct
 
-std::string EXPORTED demangle(const char* name);
+std::string EXPORTED demangle( const char* name );
 
 template <class X> std::string type_name( X* pType )
 {
@@ -177,5 +171,9 @@ template <class X> std::string type_name( )
 {
     return type_name<X>( nullptr );
 } // function
+
+bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd );
+
+std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex );
 
 #endif

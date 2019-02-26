@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project("MA Lib" VERSION 1.0.1 DESCRIPTION "Core library of MA")
+project("MA Lib" VERSION 1.1.0 DESCRIPTION "Core library of MA")
 
 # Look for boost
 # Info: https://feralchicken.wordpress.com/2013/12/07/boost-python-hello-world-example-using-cmake/
@@ -53,7 +53,7 @@ endif()
 
 # Get the latest abbreviated commit hash of the working branch
 execute_process(
-  COMMAND git rev-parse --short HEAD
+  COMMAND git log -1 --format=%h
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   OUTPUT_VARIABLE GIT_COMMIT_HASH
   RESULT_VARIABLE RESULT_COMMIT
@@ -83,7 +83,7 @@ else()
     message( "-- libMA: Version = ${MA_VERSION}" )
 endif()
 
-configure_file(
+configure_file( # @todo so far this only triggers during configure not at build time
   inc/util/version.h.in
   ${CMAKE_BINARY_DIR}/generated/version.h
 )

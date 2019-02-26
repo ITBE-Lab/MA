@@ -673,16 +673,17 @@ void exportPack( py::module& rxPyModuleId )
         .def_readonly( "unpacked_size_single_strand", &Pack::uiUnpackedSizeForwardStrand )
         .def( "contigNames", &Pack::contigNames )
         .def( "contigLengths", &Pack::contigLengths )
+        .def( "pos_to_rev_strand", &Pack::uiPositionToReverseStrand )
         .def( "contigStarts", &Pack::contigStarts );
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<Pack, Container>( );
 
     // required by contigNames
-    py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector" );
+    py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector", "docstr" );
 
     // required by contigLengths
-    py::bind_vector<std::vector<nucSeqIndex>>( rxPyModuleId, "nucSeqIndexVector" );
+    py::bind_vector<std::vector<nucSeqIndex>>( rxPyModuleId, "nucSeqIndexVector", "docstr" );
 } // function
 #endif
 #endif

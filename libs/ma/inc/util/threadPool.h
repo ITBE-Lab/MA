@@ -351,6 +351,7 @@ inline ThreadPool::~ThreadPool( )
     // this can be used to disable multithreading simply setting the pool to have 0 threads
     if( threads == 0 )
         return;
+
     {
         std::unique_lock<std::mutex> lock( queue_mutex );
         bStop = true;

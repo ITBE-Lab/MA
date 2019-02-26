@@ -47,7 +47,7 @@ void exportSplitter( py::module& rxPyModuleId )
     exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 1>>( rxPyModuleId, "GetSecondQuery" );
 
     py::bind_vector<std::vector<std::tuple<std::shared_ptr<NucSeq>, std::shared_ptr<SoCPriorityQueue>>>>(
-        rxPyModuleId, "SoCPriorityQueueVector" );
+        rxPyModuleId, "SoCPriorityQueueVector", "docstr" );
 
     exportModule<Collector<NucSeq, SoCPriorityQueue>>( rxPyModuleId, "NucSeqSoCCollector", []( auto&& x ) {
         x.def_readwrite( "collection", &Collector<NucSeq, SoCPriorityQueue>::vCollection );

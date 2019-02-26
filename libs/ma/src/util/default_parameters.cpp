@@ -10,12 +10,13 @@ int EXPORTED iGap = 4; // penalty for a DP gap opening (used in SoC width comput
 int EXPORTED iExtend = 2; // penalty for a DP gap extension (used in SoC width computation)
 int EXPORTED iGap2 = 24; // penalty for a DP gap opening (used in SoC width computation)
 int EXPORTED iExtend2 = 1; // penalty for a DP gap extension (used in SoC width computation)
-size_t EXPORTED uiUnpaired = 17; // penalty for unpaired reads
+double EXPORTED dUnpaired = 1.25; // penalty for unpaired reads
 size_t EXPORTED uiMean = 400; // mean distance for paired reads
 double EXPORTED fStd = 150; // standard deviation for distance of paired reads
 size_t EXPORTED uiReportN = 0; // report n alignments
-size_t EXPORTED uiMaxAmbiguity = 100; // maximal ambiguity of seeds
+size_t EXPORTED uiMaxAmbiguity = 500; // maximal ambiguity of seeds
 size_t EXPORTED uiMinLen = 16; // minimal seed length
+size_t EXPORTED uiMinAlignmentScore = 75; // minimal score for an alignment to be valid
 size_t EXPORTED uiMinAmbiguity = 0; // stop the extension process if seeds are less ambiguous
 // @todo we effectively disabled this parameter
 size_t EXPORTED uiMinSeedSizeDrop = 15; // minimum length for seeds to count towards the drop of
@@ -27,9 +28,8 @@ uint64_t EXPORTED uiMaxGapArea = 10000; // break alignments in harmonization if 
 uint64_t EXPORTED uiPadding = 1000; // padding for DP
 size_t EXPORTED uiSoCWidth = 0; // set a fixed SoC width; 0 = use the formula
 bool EXPORTED bOptimisticGapEstimation = true; // how to estimate gap costs in harmonization
-bool EXPORTED bSkipLongBWTIntervals = true; // pick samples from long SAintervals or skip them
+bool EXPORTED bSkipLongBWTIntervals = false; // pick samples from long SAintervals or skip them
 bool EXPORTED bNormalDist = false; // use normal distribution to model gaps between paired reads
-bool EXPORTED bUniformDist = false; // use normal distribution to model gaps between paired reads
 float EXPORTED fGiveUp = 0.002f; // do not store socs with score less than this * query len
 float EXPORTED fRelMinSeedSizeAmount = 0.005f; // minimum seed coverage to consider a query
 float EXPORTED fScoreDiffTolerance = 0.0001f; // break if the harm score falls faster than this
@@ -42,8 +42,8 @@ std::string EXPORTED sSeedSet; // name of the seed set that shall be computed
 // disable fGiveUp and fRelMinSeedSizeAmount for short genomes
 size_t EXPORTED uiGenomeSizeDisable = 10000000;
 bool EXPORTED bDisableHeuristics = false; // disable all heuristics in the harmonization
-// only output secondary alignments with a score larger than this * score of prim. alignment
-float EXPORTED fMinSecScoreRatio = .25;
+bool EXPORTED bNoSecondary = false; // do not output any secondary alignemnts
+bool EXPORTED bNoSupplementary = false; // do not output any supplementary alignemnts
 // can only be accessed by pacBio presetting at the moment...
 bool EXPORTED bDisableGapCostEstimationCutting =
     false; // do not remove seeds that are far away to generate alignments with positive score
@@ -90,6 +90,10 @@ void exportDefaults( py::module& rxPyModuleId )
     rxPyModuleId.def( "configureFast", &configureFast );
     rxPyModuleId.attr( "uiSVPenalty" ) = uiSVPenalty;
     rxPyModuleId.def( "configureAccurate", &configureAccurate );
+    rxPyModuleId.def("setMinTries", &setMinTries);
+    rxPyModuleId.def("setDisableHeuristics", &setDisableHeuristics);
+    rxPyModuleId.def("setMaxTries", &setMaxTries);
+    rxPyModuleId.def("setMinAlignmentScore", &setMinAlignmentScore);
 } // function
 #endif
 #endif

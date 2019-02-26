@@ -86,6 +86,10 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
+    const bool bNoSecondary;
+    const bool bNoSupplementary;
+    const bool bMDTag;
+    const bool bSVTag;
 
     /**
      * @brief creates a new FileWriter.
@@ -94,7 +98,12 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
      * Otherwise sFileName is used as the filename to write to.
      * The file will be truncated is it already exists.
      */
-    FileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer ) : pLock( new std::mutex )
+    FileWriter( const ParameterSetManager& rParameters, std::string sFileName, std::shared_ptr<Pack> pPackContainer )
+        : pLock( new std::mutex ),
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -113,8 +122,14 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
      * @details
      * Allows more control of the output by using a given OutStream.
      */
-    FileWriter( std::shared_ptr<OutStream> pOut, std::shared_ptr<Pack> pPackContainer )
-        : pOut( pOut ), pLock( new std::mutex )
+    FileWriter( const ParameterSetManager& rParameters, std::shared_ptr<OutStream> pOut,
+                std::shared_ptr<Pack> pPackContainer )
+        : pOut( pOut ),
+          pLock( new std::mutex ),
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         //*pOut << "@HD VN:1.5 SO:unknown\n";
         for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
@@ -144,6 +159,10 @@ class PairedFileWriter
     // holds a file ourstream if necessary
     std::shared_ptr<OutStream> pOut;
     std::shared_ptr<std::mutex> pLock;
+    const bool bNoSecondary;
+    const bool bNoSupplementary;
+    const bool bMDTag;
+    const bool bSVTag;
 
     /**
      * @brief creates a new FileWriter.
@@ -152,7 +171,13 @@ class PairedFileWriter
      * Otherwise sFileName is used as the filename to write to.
      * The file will be truncated is it already exists.
      */
-    PairedFileWriter( std::string sFileName, std::shared_ptr<Pack> pPackContainer ) : pLock( new std::mutex )
+    PairedFileWriter( const ParameterSetManager& rParameters, std::string sFileName,
+                      std::shared_ptr<Pack> pPackContainer )
+        : pLock( new std::mutex ),
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -171,8 +196,14 @@ class PairedFileWriter
      * @details
      * Allows more control of the output by using a given OutStream.
      */
-    PairedFileWriter( std::shared_ptr<OutStream> pOut, std::shared_ptr<Pack> pPackContainer )
-        : pOut( pOut ), pLock( new std::mutex )
+    PairedFileWriter( const ParameterSetManager& rParameters, std::shared_ptr<OutStream> pOut,
+                      std::shared_ptr<Pack> pPackContainer )
+        : pOut( pOut ),
+          pLock( new std::mutex ),
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         //*pOut << "@HD VN:1.5 SO:unknown\n";
         for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )

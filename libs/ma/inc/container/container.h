@@ -70,10 +70,6 @@ class Container
  * @brief A vector of containers, that itself is a Container
  * @details
  * This can be used to define a vector as input and output of Modules.
- * @note:
- * @todo this requires type checking! While the class holds a dummy container as type
- * it does not yet guarantee that all added containers are of the defined type.
- * Could be solved using a template but then how should python deal with this class
  * @ingroup container
  */
 template <class TP_CONTENT> class ContainerVector : public Container

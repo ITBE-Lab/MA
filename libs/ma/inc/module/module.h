@@ -8,6 +8,7 @@
 
 #include "container/container.h"
 #include "util/default_parameters.h"
+#include "util/parameter.h"
 #include "util/threadPool.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -273,9 +274,11 @@ class BasePledge
      * @details
      * If bLoop is true the threads will keep going until all volatile modules are dry
      * if numThreads is not specified numThreads will be set to the amount of pledges given.
+     * callback is called by one of the worker threads everytime the thread has finished one task.
+     * If callback returns false the threadspool is destroyed.
      */
     static inline void simultaneousGet( std::vector<std::shared_ptr<BasePledge>> vPledges,
-                                        std::function<void( )> callback = []( ) {},
+                                        std::function<bool( )> callback = []( ) { return true; },
                                         unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
@@ -297,14 +300,27 @@ class BasePledge
         //             break;
         //         } // if
 
+        std::mutex xExceptionMutex;
+        bool bExceptionSet = false;
+        AnnotatedException xExceptionFromThread("no exception thrown");
+
         {
+            /*
+             * This variable is volatile so that every thread has to load if from memory each loop.
+             * This way, if callback returns false thread 0 can set bContinue to false and all threads will stop after
+             * their next iteration.
+             */
+            volatile bool bContinue = true;
             // set up a threadpool
             ThreadPool xPool( numThreads );
+
+
             // enqueue a task that executes the comp. graph for each thread in the pool.
             for( std::shared_ptr<BasePledge> pPledge : vPledges )
             {
                 xPool.enqueue(
-                    [&callback]( size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
+                    [&callback, &bContinue, &xExceptionMutex, &xExceptionFromThread, &bExceptionSet, &xPool](
+                        size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
                         assert( pPledge != nullptr );
 
                         /*
@@ -330,30 +346,57 @@ class BasePledge
 
                                 // this callback function can be used to set a progress bar
                                 // for example.
-                                callback( );
+                                if( uiTid == 0 )
+                                    bContinue = callback( );
                             } // try
-                            catch( AnnotatedException e )
+                            catch( AnnotatedException& rxException )
                             {
-                                std::cerr << "Exception: " << e.what( ) << std::endl;
-                                DEBUG( return; ) // DEBUG
+                                std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
+                                if(bExceptionSet)
+                                    std::cerr << "Ignored exception: " << rxException.what( ) << std::endl;
+                                else
+                                {
+                                    bExceptionSet = true;
+                                    xExceptionFromThread = rxException;
+                                    bContinue = false;
+                                } // else
+                                return;
                             } // catch
-                            catch( const std::exception& e )
+                            catch( const std::exception& rxException )
                             {
-                                std::cerr << e.what( ) << '\n';
-                                DEBUG( return; ) // DEBUG
+                                std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
+                                if(bExceptionSet)
+                                    std::cerr << "Ignored exception: " << rxException.what( ) << std::endl;
+                                else
+                                {
+                                    bExceptionSet = true;
+                                    xExceptionFromThread = AnnotatedException( rxException.what() );
+                                    bContinue = false;
+                                } // else
+                                return;
                             } // catch
                             catch( ... )
                             {
-                                std::cerr << "unknown exception in simultaneous get" << '\n';
-                                DEBUG( return; ) // DEBUG
+                                std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
+                                if(bExceptionSet)
+                                    std::cerr << "Ignored unknown exception" << std::endl;
+                                else
+                                {
+                                    bExceptionSet = true;
+                                    xExceptionFromThread = AnnotatedException( "Unknown exception" );
+                                    bContinue = false;
+                                } // else
+                                return;
                             } // catch
-                        } while( bLoop );
+                        } while( bLoop && bContinue );
                         DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
                     }, // lambda
                     pPledge );
             } // for
             // wait for the pool to finish it's work
         } // scope xPool
+        if(bExceptionSet)
+            throw xExceptionFromThread;
     } // function
 }; // class
 
@@ -784,7 +827,7 @@ class PyPledgeVector : public Pledge<PyContainerVector>
 
     inline void simultaneousGetPy( unsigned int numThreads = 0 )
     {
-        BasePledge::simultaneousGet( vPledges, []( ) {}, numThreads );
+        BasePledge::simultaneousGet( vPledges, []( ) { return true; }, numThreads );
     } // method
 }; // class
 
@@ -895,15 +938,16 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
                                            ( std::string( "__" ) + sName ).c_str( ) ) // Python class name
     );
 
+    typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&> TP_TO_EXPORT;
     // Export MA-Module Class
-    py::class_<ModuleWrapperCppToPy<TP_MODULE>, // derived class
+    py::class_<TP_TO_EXPORT, // derived class
                PyModule<TP_MODULE::IS_VOLATILE>, // base class
-               std::shared_ptr<ModuleWrapperCppToPy<TP_MODULE>>> // reference holder
+               std::shared_ptr<TP_TO_EXPORT>> // reference holder
         ( xPyModuleId, sName.c_str( ) )
-            .def( py::init<>( ) )
-            .def_readonly( "cpp_module", &ModuleWrapperCppToPy<TP_MODULE>::xModule );
+            .def( py::init<const ParameterSetManager&>( ) )
+            .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
 
-    py::implicitly_convertible<ModuleWrapperCppToPy<TP_MODULE>, PyModule<TP_MODULE::IS_VOLATILE>>( );
+    py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
 } // function
 
 template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
@@ -913,12 +957,13 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
                        []( py::class_<TP_MODULE>&& ) {} // default lambda
 )
 {
-    typedef ModuleWrapperCppToPy<TP_MODULE, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...> TP_TO_EXPORT;
-    fExportMembers( py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__" ) + sName ).c_str(  ) ) );
+    typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>
+        TP_TO_EXPORT;
+    fExportMembers( py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__" ) + sName ).c_str( ) ) );
 
-    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>(
-        xPyModuleId, sName.c_str( ) )
-        .def( py::init<TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
+    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xPyModuleId,
+                                                                                               sName.c_str( ) )
+        .def( py::init<const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
         .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
     py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
 } // function

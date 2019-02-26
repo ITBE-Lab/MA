@@ -197,6 +197,15 @@ class Alignment : public Container
         return data[ k ].first;
     } // function
 
+    size_t getNumSeeds() const
+    {
+        size_t uiRet = 0;
+        for( std::pair<MatchType, nucSeqIndex> section : data )
+            if(section.first == MatchType::seed)
+                uiRet++;
+        return uiRet;
+    } // function
+
     /**
      * @returns the type of math for the given position i.
      * @brief Type of math at i.
@@ -275,7 +284,7 @@ class Alignment : public Container
         auto uiRet = rPack.posInSequence( uiBeginOnRef, uiEndOnRef );
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             uiRet += 1;
-        return uiRet;
+        return uiRet + 1;
     } // method
 
     std::string getQuerySequence( NucSeq& rQuery, Pack& rPack )

@@ -21,6 +21,7 @@ namespace libMA
  */
 class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, // out
                                   false, // not volatile
+                                  NucSeq, NucSeq, // Query 1 and 2
                                   ContainerVector<std::shared_ptr<Alignment>>, // alignments for first paired read
                                   ContainerVector<std::shared_ptr<Alignment>>, // alignments for second paired read
                                   Pack>
@@ -35,15 +36,17 @@ class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, /
      * between the paired seed we make an unpaired alignment.
      * The default value is taken from BWA-MEM as we use the same formula for pairing.
      */
-    size_t u = defaults::uiUnpaired;
-    ///@brief use normal distribution for the insert size
-    bool bNormalDist = defaults::bNormalDist;
-    ///@brief use uniform distribution for the insert size
-    bool bUniformDist = defaults::bUniformDist;
+    double u = defaults::dUnpaired;
     ///@brief the mean of the insert size
     size_t mean = defaults::uiMean;
     ///@brief the standard deviation of the insert size
     double std = defaults::fStd;
+
+    PairedReads( const ParameterSetManager& rParameters )
+        : u( rParameters.getSelected( )->xPairedBonus->get( ) ),
+          mean( (size_t) rParameters.getSelected( )->xMeanPairedReadDistance->get( ) ),
+          std( rParameters.getSelected( )->xStdPairedReadDistance->get( ) )
+    {} // constructor
 
     /**
      * @brief The probability for a insert size >= d.
@@ -54,7 +57,8 @@ class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, /
     double EXPORTED p( nucSeqIndex d ) const;
 
     std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-        EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pA,
+        EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
+                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pA,
                           std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pB,
                           std::shared_ptr<Pack> pPack );
 }; // class

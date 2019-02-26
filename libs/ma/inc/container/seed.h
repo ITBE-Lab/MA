@@ -159,6 +159,7 @@ class AlignmentStatistics
     unsigned int anchor_ambiguity;
     std::weak_ptr<Alignment> pOther;
     bool bFirst;
+    bool bSetMappingQualityToZero = false;
     std::string sName;
     nucSeqIndex uiInitialQueryBegin;
     nucSeqIndex uiInitialRefBegin;
@@ -178,21 +179,6 @@ class AlignmentStatistics
           uiInitialQueryEnd( 0 ),
           uiInitialRefEnd( 0 )
     {}
-
-    void operator=( const AlignmentStatistics& rOther )
-    {
-        index_of_strip = rOther.index_of_strip;
-        num_seeds_in_strip = rOther.num_seeds_in_strip;
-        anchor_size = rOther.anchor_size;
-        anchor_ambiguity = rOther.anchor_ambiguity;
-        pOther = rOther.pOther;
-        bFirst = rOther.bFirst;
-        sName = rOther.sName;
-        uiInitialQueryBegin = rOther.uiInitialQueryBegin;
-        uiInitialRefBegin = rOther.uiInitialRefBegin;
-        uiInitialQueryEnd = rOther.uiInitialQueryEnd;
-        uiInitialRefEnd = rOther.uiInitialRefEnd;
-    } // function
 }; // class
 
 class SVInfo

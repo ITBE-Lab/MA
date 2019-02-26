@@ -718,8 +718,8 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
 #else
         endRef += uiPadding;
 #endif
-        if( beginRef > endRef ) // check for overflow
-            endRef = pRefPack->uiUnpackedSizeForwardPlusReverse( );
+        if( endRef >= pRefPack->uiUnpackedSizeForwardPlusReverse( ) ) // check for overflow
+            endRef = pRefPack->uiUnpackedSizeForwardPlusReverse( ) - 1;
         endQuery = pQuery->length( );
         beginQuery = 0;
         if( pRefPack->uiSequenceIdForPositionOrRev( beginRef ) != iOldContig )
@@ -728,7 +728,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
             endRef = pRefPack->endOfSequenceWithIdOrReverse( iOldContig ) - 1;
 
 #if DEBUG_LEVEL > 0
-        if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) )
+        if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) )
         {
             std::cerr << "ERROR: produced bridging alignment:\n";
             std::cerr << beginRef << " - " << endRef << std::endl;
@@ -752,7 +752,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
             } // for
         } // if
 #endif
-        assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) );
+        assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) );
         assert( beginRef <= pSeeds->front( ).start_ref( ) );
     } // if
     assert( endQuery <= pQuery->length( ) );

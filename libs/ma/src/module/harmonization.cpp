@@ -425,8 +425,8 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
                        } // lambda
             ); // sort function call
 
-            DEBUG( pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
-                   pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
+            DEBUG( if(!pSeeds->empty()) pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
+                   if(!pSeeds->empty()) pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
 
             /*
              * sometimes we have one or less seeds remaining after the cupling:
@@ -799,46 +799,16 @@ std::shared_ptr<Seeds> HarmonizationSingle::execute( std::shared_ptr<Seeds> pPri
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportHarmonization( )
-{
-    exportModule<HarmonizationSingle>( "HarmonizationSingle", []( auto&& x ) {
-        x.def_readwrite( "optimistic_gap_estimation", &HarmonizationSingle::optimisticGapEstimation )
-            .def_readwrite( "min_coverage", &HarmonizationSingle::fMinimalQueryCoverage )
-            .def_readwrite( "tolerance", &HarmonizationSingle::fScoreTolerace )
-            .def_readwrite( "equal_score_lookahead", &HarmonizationSingle::uiMaxEqualScoreLookahead )
-            .def_readwrite( "diff_tolerance", &HarmonizationSingle::fScoreDiffTolerance )
-            .def_readwrite( "switch_q_len", &HarmonizationSingle::uiSwitchQLen )
-            .def_readwrite( "do_heuristics", &HarmonizationSingle::bDoHeuristics );
-    } );
-
-    exportModule<Harmonization>( "Harmonization", []( auto&& x ) {
-        x.def_readwrite( "single", &Harmonization::xSingle ).def_readwrite( "max_tries", &Harmonization::uiMaxTries );
-    } );
-    exportModule<SeedLumping>( "SeedLumping" );
-} // function
-#else
 void exportHarmonization( py::module& rxPyModuleId )
 {
-    exportModule<HarmonizationSingle>( rxPyModuleId, "HarmonizationSingle", []( auto&& x ) {
-        x.def_readwrite( "optimistic_gap_estimation", &HarmonizationSingle::optimisticGapEstimation )
-            .def_readwrite( "min_coverage", &HarmonizationSingle::fMinimalQueryCoverage )
-            .def_readwrite( "tolerance", &HarmonizationSingle::fScoreTolerace )
-            .def_readwrite( "equal_score_lookahead", &HarmonizationSingle::uiMaxEqualScoreLookahead )
-            .def_readwrite( "diff_tolerance", &HarmonizationSingle::fScoreDiffTolerance )
-            .def_readwrite( "switch_q_len", &HarmonizationSingle::uiSwitchQLen )
-            .def_readwrite( "do_heuristics", &HarmonizationSingle::bDoHeuristics )
-            .def_readwrite( "uiSVPenalty", &HarmonizationSingle::uiSVPenalty );
-    } );
+    exportModule<HarmonizationSingle>( rxPyModuleId, "HarmonizationSingle" );
 
-    exportModule<Harmonization>( rxPyModuleId, "Harmonization", []( auto&& x ) {
-        x.def_readwrite( "single", &Harmonization::xSingle ).def_readwrite( "max_tries", &Harmonization::uiMaxTries );
-    } );
     exportModule<SeedLumping>( rxPyModuleId, "SeedLumping" );
 
     py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,
-                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "SeedsVector" )
+                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "SeedsVector",
+                                                                                   "docstr" )
         .def( py::init<>( ) );
+    exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 } // function
-#endif
 #endif
