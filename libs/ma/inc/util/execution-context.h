@@ -239,7 +239,14 @@ class OutputManager
     std::string dateTimeString( void )
     {
         time_t xTime = time( 0 ); // get time now
+#ifdef _MSC_VER
+        #pragma warning(push)
+        #pragma warning(disable: 4996) // disable the unsave warning for localtime
+#endif
         tm* pLocalTimeNow = localtime( &xTime );
+#ifdef _MSC_VER
+        #pragma warning(pop)
+#endif
 
         char aBuffer[ 80 ];
         strftime( aBuffer, 80, "(%F)-(%H-%M-%S)", pLocalTimeNow );

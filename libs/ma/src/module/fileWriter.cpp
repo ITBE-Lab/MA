@@ -1,11 +1,110 @@
 /**
  * @file fileWriter.cpp
  * @author Markus Schmidt
+ * @todo this file contains duplicate code...
  */
 #include "module/fileWriter.h"
 
 using namespace libMA;
 
+std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
+                        const std::shared_ptr<Alignment>
+                            pAlignment,
+                        const std::shared_ptr<Pack>
+                            pPack,
+                        const bool bMDTag,
+                        const bool bSVTag )
+{
+    std::string sTag = "";
+    if( bMDTag )
+    {
+        sTag.append( "MD:Z:" );
+        nucSeqIndex uiQPos = pAlignment->uiBeginOnQuery;
+        nucSeqIndex uiRPos = pAlignment->uiBeginOnRef;
+        nucSeqIndex uiNumMatchesAndSeeds = 0;
+        for( std::pair<MatchType, nucSeqIndex> xTup : pAlignment->data )
+        {
+            /*
+             * If seeds are followed my matches or vice versa, we have to print the accumulated number.
+             * I.e a 5nt seed followed by 2 matches is NOT: 52 but rather 7....
+             * Therefore we accumulate the number of matches and seed in uiNumMatchesAndSeeds and print it
+             * once the next element is neither match nor seed.
+             */
+            if( ( xTup.first == MatchType::missmatch || xTup.first == MatchType::deletion ) &&
+                uiNumMatchesAndSeeds > 0 )
+            {
+                // append the number of seeds and matches
+                sTag.append( std::to_string( uiNumMatchesAndSeeds ) );
+                uiNumMatchesAndSeeds = 0;
+            } // if
+            switch( xTup.first )
+            {
+                case MatchType::match:
+                case MatchType::seed:
+                    // see comment above
+                    uiNumMatchesAndSeeds += xTup.second;
+                    uiRPos += xTup.second;
+                    uiQPos += xTup.second;
+                    break;
+                case MatchType::insertion:
+                    // this is simply ignored since it does not represent a loss of information...
+                    uiQPos += xTup.second;
+                    break;
+                case MatchType::missmatch:
+                    // append all missmatched nucleotides
+                    sTag.append( pPack->vExtract( uiRPos, uiRPos + xTup.second )->toString( ) );
+                    uiQPos += xTup.second;
+                    uiRPos += xTup.second;
+                    break;
+                case MatchType::deletion:
+                    // prefix for deletion
+                    sTag.append( "^" );
+                    // deleted sequence
+                    sTag.append( pPack->vExtract( uiRPos, uiRPos + xTup.second )->toString( ) );
+                    uiRPos += xTup.second;
+                    break;
+                default:
+                    throw std::runtime_error( "Invalid symbol in cigar!" );
+                    break;
+            } // switch
+        } // for
+        if( uiNumMatchesAndSeeds > 0 )
+            sTag.append( std::to_string( uiNumMatchesAndSeeds ) );
+    } // if
+    if( bSVTag )
+    {
+        /*
+         * @see https://github.com/fritzsedlazeck/Sniffles/issues/51#issuecomment-377471553
+         * "
+         * Hi Heng,
+         *
+         * The SV:i tag in the NGMLR output contains two bit flags:
+         *
+         * `0x1` indicates whether the reference sequence consists of mostly Ns up and/or downstream of the read
+         * alignment. Sniffles uses soft-clip information to improve detection of (large) insertions. As a consequence
+         * longer regions of Ns in the reference would cause false positives signals as the reads up/down stream of the
+         * Ns will all be soft-clipped at the same position of the reference. `0x1` helped to avoid that. `0x2` is set
+         * if > 95 % of the read base pairs were aligned in the particular alignment. Sniffles could compute that from
+         * the CIGAR string but since we had the SV tag already at that point we just added it. Don't know if Fritz is
+         * still using it.
+         *
+         * Hope that helps,
+         * Philipp
+         * "
+         * For 0x1 we check if either 80% of the 100 nt in front or behind the alignment are covered by a hole.
+         */
+        size_t uiTag = 0;
+        if( pPack->amountOfRegionCoveredByHole( pAlignment->uiBeginOnRef - 100, pAlignment->uiBeginOnRef ) > .8 ||
+            pPack->amountOfRegionCoveredByHole( pAlignment->uiEndOnRef, pAlignment->uiEndOnRef + 100 ) > .8 )
+            uiTag += 1;
+        if( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery >= pQuery->length( ) * 0.95 )
+            uiTag += 2;
+        sTag.append( "SV:i:" ).append( std::to_string( uiTag ) );
+    } // if
+    if( sTag.empty( ) )
+        return "";
+    return "\t" + sTag;
+} // function
 
 std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
                                                 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
@@ -65,6 +164,8 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         } // if
 #endif
 
+        std::string sTag = computeTag( pQuery, pAlignment, pPack, bMDTag, bSVTag );
+
         std::string sMapQual;
         if( std::isnan( pAlignment->fMappingQuality ) )
             sMapQual = "255";
@@ -91,10 +192,11 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // observed Template length
             "0\t" +
             // segment sequence
-            sSegment +
-            "\t"
+            sSegment + "\t" +
             // ASCII of Phred-scaled base Quality+33
-            + "*\n";
+            "*"
+            // Tag
+            + sTag + "\n";
     } // for
     // if we have not computed any alignment then we should still output the query as unaligned:
     if( pAlignments->size( ) == 0 )
@@ -220,6 +322,8 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             throw AnnotatedException( "Error: Tried to write wrong index to file" );
         } // if
 #endif
+        std::string sTag =
+            computeTag( pAlignment->xStats.bFirst ? pQuery1 : pQuery2, pAlignment, pPack, bMDTag, bSVTag );
 
         std::string sMapQual;
         if( std::isnan( pAlignment->fMappingQuality ) )
@@ -253,7 +357,9 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             // segment sequence
             sSegment + "\t" +
             // ASCII of Phred-scaled base Quality+33
-            "*\n";
+            "*"
+            // Tag
+            + sTag + "\n";
     } // for
     // if we have not computed any alignment then we should still output the query as unaligned:
     if( !bFirstQueryHasAlignment )

@@ -81,8 +81,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
-        if(pRet->length() == 0)
-            throw std::runtime_error("found empty read: " + pRet->sName);
+        if( pRet->length( ) == 0 )
+            throw std::runtime_error( "found empty read: " + pRet->sName );
         return pRet;
     } // if
 #if WITH_QUALITY == 1
@@ -121,8 +121,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
-        if(pRet->length() == 0)
-            throw std::runtime_error("found empty read: " + pRet->sName);
+        if( pRet->length( ) == 0 )
+            throw std::runtime_error( "found empty read: " + pRet->sName );
         return pRet;
     } // if
 #else
@@ -183,8 +183,8 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
-        if(pRet->length() == 0)
-            throw std::runtime_error("found empty read: " + pRet->sName);
+        if( pRet->length( ) == 0 )
+            throw std::runtime_error( "found empty read: " + pRet->sName );
         return pRet;
     } // if
 #endif
@@ -195,7 +195,9 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     else
         this->setFinished( );
     // if we reach this point we have read all content of the file
-    throw AnnotatedException( "Error while reading file.\nIs your input really in FASTA/Q format?" );
+    throw AnnotatedException(
+        "Error while reading file.\nIs your input really in FASTA/Q format?\nError occurred in file: " +
+        xFileName.string( ) );
 } // function
 
 std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )

@@ -477,22 +477,24 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xNoSupplementary; // Omit supplementary alignments
     AlignerParameterPointer<double> xMaxOverlapSupplementary; // Maximal supplementary overlap
     AlignerParameterPointer<int> xMaxSupplementaryPerPrim; // Number Supplementary alignments
+    AlignerParameterPointer<bool> xMDTag; // Output MD Tag
+    AlignerParameterPointer<bool> xSVTag; // Output SV Tag
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
     AlignerParameterPointer<int> xHarmScoreMin; // Minimal Harmonization Score
-    AlignerParameterPointer<double> xHarmScoreMinRel; // 
-    AlignerParameterPointer<double> xScoreDiffTolerance; // 
-    AlignerParameterPointer<int> xMaxScoreLookahead; // 
-    AlignerParameterPointer<int> xSwitchQlen; // 
-    AlignerParameterPointer<double> xMaxDeltaDist; // 
-    AlignerParameterPointer<int> xMinDeltaDist; // 
-    AlignerParameterPointer<bool> xDisableGapCostEstimationCutting; // 
-    AlignerParameterPointer<bool> xOptimisticGapCostEstimation; // 
-    AlignerParameterPointer<int> xSVPenalty; // 
-    AlignerParameterPointer<int> xMaxGapArea; // 
-    AlignerParameterPointer<int> xGenomeSizeDisable; // 
-    AlignerParameterPointer<bool> xDisableHeuristics; // 
+    AlignerParameterPointer<double> xHarmScoreMinRel; //
+    AlignerParameterPointer<double> xScoreDiffTolerance; //
+    AlignerParameterPointer<int> xMaxScoreLookahead; //
+    AlignerParameterPointer<int> xSwitchQlen; //
+    AlignerParameterPointer<double> xMaxDeltaDist; //
+    AlignerParameterPointer<int> xMinDeltaDist; //
+    AlignerParameterPointer<bool> xDisableGapCostEstimationCutting; //
+    AlignerParameterPointer<bool> xOptimisticGapCostEstimation; //
+    AlignerParameterPointer<int> xSVPenalty; //
+    AlignerParameterPointer<int> xMaxGapArea; //
+    AlignerParameterPointer<int> xGenomeSizeDisable; //
+    AlignerParameterPointer<bool> xDisableHeuristics; //
 
     static const EXPORTED std::pair<size_t, std::string> DP_PARAMETERS;
     static const EXPORTED std::pair<size_t, std::string> HEURISTIC_PARAMETERS;
@@ -621,6 +623,17 @@ class Presetting : public ParameterSetBase
           xMaxSupplementaryPerPrim( this, "Number Supplementary Alignments",
                                     "Maximal Number of supplementary alignments per primary alignment.", SAM_PARAMETERS,
                                     1, checkPositiveValue ),
+          xMDTag( this, "Output MD Tag",
+                  "Output the MD tag. The tag contains duplicate information, i.e. information that can be inferred "
+                  "from cigar and genome. However, some downstream tools require this tag since they do not have "
+                  "access to the genome themselves.",
+                  SAM_PARAMETERS, true ),
+          // @see https://github.com/fritzsedlazeck/Sniffles/issues/51#issuecomment-377471553
+          xSVTag( this, "Output SV Tag",
+                  "Output the SV tag, as used by SNIFFLES. `0x1` indicates whether the reference sequence consists of "
+                  "mostly Ns up and/or downstream of the read alignment. `0x2` is set if > 95 % of the read base pairs "
+                  "were aligned in the particular alignment.",
+                  SAM_PARAMETERS, true ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

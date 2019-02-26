@@ -324,6 +324,7 @@ class SingleFileReader : public Module<NucSeq, true>, public Reader
 class FileReader : public SingleFileReader
 {
   public:
+    const fs::path xFileName;
     std::shared_ptr<FileStream> pFile;
     size_t uiFileSize = 0;
     DEBUG( size_t uiNumLinesWithNs = 0; ) // DEBUG
@@ -332,7 +333,7 @@ class FileReader : public SingleFileReader
     /**
      * @brief creates a new FileReader.
      */
-    FileReader( fs::path sFileName )
+    FileReader( fs::path sFileName ) : xFileName( sFileName )
     {
 #ifdef WITH_ZLIB
         if( sFileName.extension( ).string( ) == ".gz" )
@@ -347,7 +348,7 @@ class FileReader : public SingleFileReader
         std::ifstream xFileEnd( sFileName, std::ifstream::ate | std::ifstream::binary );
         uiFileSize = xFileEnd.tellg( );
         if( uiFileSize == 0 )
-            std::cerr << "Warning: empty file: " << sFileName << std::endl;
+            this->setFinished( );
     } // constructor
 
     /**
@@ -359,12 +360,12 @@ class FileReader : public SingleFileReader
     /**
      * @brief creates a new FileReader.
      */
-    FileReader( const ParameterSetManager& rParameters, std::string& sString, size_t uiStringSize )
+    FileReader( const ParameterSetManager& rParameters, std::string& sString, size_t uiStringSize ) : xFileName( )
     {
         pFile = std::make_shared<StringStream>( sString );
         uiFileSize = uiStringSize;
         if( uiFileSize == 0 )
-            std::cerr << "Warning: empty query via stringstream." << std::endl;
+            throw AnnotatedException( "Got empty query via text input." );
     } // constructor
 
     ~FileReader( )
@@ -413,25 +414,10 @@ class FileListReader : public SingleFileReader
     std::vector<fs::path> vsFileNames;
     std::unique_ptr<FileReader> pFileReader;
 
-    /**
-     * @brief creates a new FileReader.
-     */
-    FileListReader( const std::vector<fs::path>& vsFileNames )
-        : uiFileIndex( 0 ),
-          vsFileNames( vsFileNames ),
-          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
-    {} // constructor
-
-    FileListReader( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
-        : uiFileIndex( 0 ),
-          vsFileNames( vsFileNames ),
-          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
-    {} // constructor
-
-    std::shared_ptr<NucSeq> EXPORTED execute( )
+  private:
+    void openNextFileWhileNecessary( )
     {
-        auto pRet = pFileReader->execute( );
-        if( pFileReader->isFinished( ) )
+        while( pFileReader->isFinished( ) && !this->isFinished( ) )
         {
             uiFileIndex++;
             if( uiFileIndex >= vsFileNames.size( ) )
@@ -439,6 +425,31 @@ class FileListReader : public SingleFileReader
             else
                 pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
         } // if
+    } // method
+  public:
+    /**
+     * @brief creates a new FileReader.
+     */
+    FileListReader( const std::vector<fs::path>& vsFileNames )
+        : uiFileIndex( 0 ),
+          vsFileNames( vsFileNames ),
+          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
+    {
+        openNextFileWhileNecessary();
+    } // constructor
+
+    FileListReader( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
+        : uiFileIndex( 0 ),
+          vsFileNames( vsFileNames ),
+          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
+    {
+        openNextFileWhileNecessary();
+    } // constructor
+
+    std::shared_ptr<NucSeq> EXPORTED execute( )
+    {
+        auto pRet = pFileReader->execute( );
+        openNextFileWhileNecessary();
         return pRet;
     } // method
 

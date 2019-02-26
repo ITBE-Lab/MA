@@ -88,6 +88,8 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
     std::shared_ptr<std::mutex> pLock;
     const bool bNoSecondary;
     const bool bNoSupplementary;
+    const bool bMDTag;
+    const bool bSVTag;
 
     /**
      * @brief creates a new FileWriter.
@@ -99,7 +101,9 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
     FileWriter( const ParameterSetManager& rParameters, std::string sFileName, std::shared_ptr<Pack> pPackContainer )
         : pLock( new std::mutex ),
           bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -123,7 +127,9 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
         : pOut( pOut ),
           pLock( new std::mutex ),
           bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         //*pOut << "@HD VN:1.5 SO:unknown\n";
         for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )
@@ -155,6 +161,8 @@ class PairedFileWriter
     std::shared_ptr<std::mutex> pLock;
     const bool bNoSecondary;
     const bool bNoSupplementary;
+    const bool bMDTag;
+    const bool bSVTag;
 
     /**
      * @brief creates a new FileWriter.
@@ -167,7 +175,9 @@ class PairedFileWriter
                       std::shared_ptr<Pack> pPackContainer )
         : pLock( new std::mutex ),
           bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         if( sFileName != "stdout" )
             pOut = std::shared_ptr<OutStream>( new FileOutStream( sFileName ) );
@@ -191,7 +201,9 @@ class PairedFileWriter
         : pOut( pOut ),
           pLock( new std::mutex ),
           bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
-          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) ),
+          bMDTag( rParameters.getSelected( )->xMDTag->get( ) ),
+          bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
     {
         //*pOut << "@HD VN:1.5 SO:unknown\n";
         for( auto& rSeqInPack : pPackContainer->xVectorOfSequenceDescriptors )

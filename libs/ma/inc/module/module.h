@@ -359,8 +359,8 @@ class BasePledge
                                     bExceptionSet = true;
                                     xExceptionFromThread = rxException;
                                     bContinue = false;
-                                    return;
                                 } // else
+                                return;
                             } // catch
                             catch( const std::exception& rxException )
                             {
@@ -372,8 +372,8 @@ class BasePledge
                                     bExceptionSet = true;
                                     xExceptionFromThread = AnnotatedException( rxException.what() );
                                     bContinue = false;
-                                    return;
                                 } // else
+                                return;
                             } // catch
                             catch( ... )
                             {
@@ -385,8 +385,8 @@ class BasePledge
                                     bExceptionSet = true;
                                     xExceptionFromThread = AnnotatedException( "Unknown exception" );
                                     bContinue = false;
-                                    return;
                                 } // else
+                                return;
                             } // catch
                         } while( bLoop && bContinue );
                         DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )

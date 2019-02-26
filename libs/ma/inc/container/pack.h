@@ -599,6 +599,28 @@ class Pack : public Container
         return std::shared_ptr<Container>( new Pack( ) );
     } // function
 
+    /**
+     * @brief compute the percentage of the interval [uiStart, uiEnd) that is covered by holes (Ns).
+     * @details
+     * This function assumes that no two holes overlap, which should be guaranteed by the pack.
+     */
+    inline double amountOfRegionCoveredByHole(uint64_t uiStart, uint64_t uiEnd) const
+    {
+        assert(uiStart < uiEnd);
+        uint64_t uiCovered = 0;
+
+        // check all holes
+        for( auto& rHole : xVectorOfHoleDescriptors )
+            // check if hole is overlapping
+            if(rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart)
+                // add the overlapping interval to covered
+                uiCovered += std::max(uiStart, rHole.offset) - std::min(uiEnd, rHole.offset + rHole.length);
+
+        assert(uiCovered <= uiEnd - uiStart);
+        // divide the overlapping interval by the total interval
+        return uiCovered / (double)(uiEnd - uiStart);
+    } // method
+
     /* Appends a single nucleotide sequence to the collection.
      * TO DO: uiOffsetDistance seems not be required any longer.
      */

@@ -53,7 +53,7 @@ Get the github clone and use cmake (at least version 3.8) for building. On Unix-
     cmake ..
     make
 
-On Microsoft Windows MA can be build via the cmake support of Microsoft Visual Studio 2017. \
+On Microsoft Windows, MA can be build via the cmake support of Microsoft Visual Studio 2017. \
 MA is available as command line tool and as graphical user interface application. The GUI version is build additionally to the comand line version, if cmake can find support for wxWidgets.
 
 ### First Steps ...
