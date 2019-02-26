@@ -18,10 +18,10 @@ std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
     std::string sTag = "";
     if( bMDTag )
     {
-        sTag.append( "MD:Z:" );
-        nucSeqIndex uiQPos = pAlignment->uiBeginOnQuery;
+        sTag.append( "\tMD:Z:" );
         nucSeqIndex uiRPos = pAlignment->uiBeginOnRef;
         nucSeqIndex uiNumMatchesAndSeeds = 0;
+        bool bLastWasDeletion = false;
         for( std::pair<MatchType, nucSeqIndex> xTup : pAlignment->data )
         {
             /*
@@ -37,23 +37,31 @@ std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
                 sTag.append( std::to_string( uiNumMatchesAndSeeds ) );
                 uiNumMatchesAndSeeds = 0;
             } // if
+            bool bFirst = !bLastWasDeletion;
+            bLastWasDeletion = false;
             switch( xTup.first )
             {
                 case MatchType::match:
                 case MatchType::seed:
                     // see comment above
                     uiNumMatchesAndSeeds += xTup.second;
+                    // update reference position
                     uiRPos += xTup.second;
-                    uiQPos += xTup.second;
                     break;
                 case MatchType::insertion:
                     // this is simply ignored since it does not represent a loss of information...
-                    uiQPos += xTup.second;
                     break;
                 case MatchType::missmatch:
-                    // append all missmatched nucleotides
-                    sTag.append( pPack->vExtract( uiRPos, uiRPos + xTup.second )->toString( ) );
-                    uiQPos += xTup.second;
+                    // append all missmatched nucleotides with zeros in between them.
+                    for(const char& rC : pPack->vExtract( uiRPos, uiRPos + xTup.second )->toString( ) )
+                    {
+                        if(bFirst == true)
+                            bFirst = false;
+                        else
+                            sTag.push_back('0');
+                        sTag.push_back(rC);
+                    }// for
+                    // update reference position
                     uiRPos += xTup.second;
                     break;
                 case MatchType::deletion:
@@ -61,7 +69,9 @@ std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
                     sTag.append( "^" );
                     // deleted sequence
                     sTag.append( pPack->vExtract( uiRPos, uiRPos + xTup.second )->toString( ) );
+                    // update reference position
                     uiRPos += xTup.second;
+                    bLastWasDeletion = true;
                     break;
                 default:
                     throw std::runtime_error( "Invalid symbol in cigar!" );
@@ -99,11 +109,9 @@ std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
             uiTag += 1;
         if( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery >= pQuery->length( ) * 0.95 )
             uiTag += 2;
-        sTag.append( "SV:i:" ).append( std::to_string( uiTag ) );
+        sTag.append( "\tSV:i:" ).append( std::to_string( uiTag ) );
     } // if
-    if( sTag.empty( ) )
-        return "";
-    return "\t" + sTag;
+    return sTag;
 } // function
 
 std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
