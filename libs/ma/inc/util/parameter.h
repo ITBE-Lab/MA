@@ -643,7 +643,7 @@ class Presetting : public ParameterSetBase
          // SV
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
                   "Maximal distance between the deltas of the closest two seeds in a cluster",
-                  SV_PARAMETERS, 200 ),
+                  SV_PARAMETERS, 200, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

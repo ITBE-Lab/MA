@@ -892,7 +892,7 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
     KswCppParam<5> xParams( defaults::iMatch, defaults::iMissMatch, defaults::iGap, defaults::iExtend, defaults::iGap2,
                             defaults::iExtend2 );
 
-    ksw_simplified( pQuery->length( ),
+    ksw_simplified( (int)pQuery->length( ),
                     pQuery->pGetSequenceRef( ),
                     pRef->length( ),
                     pRef->pGetSequenceRef( ),
@@ -951,9 +951,9 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
         pQuery->vReverse( );
         pRef->vReverse( );
     } // if
-    ksw_ext( pQuery->length( ),
+    ksw_ext( (int)pQuery->length( ),
              pQuery->pGetSequenceRef( ),
-             pRef->length( ),
+             (int)pRef->length( ),
              pRef->pGetSequenceRef( ),
              xParams,
              defaults::iBandwidthDPExtension,

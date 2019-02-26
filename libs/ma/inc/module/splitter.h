@@ -104,6 +104,10 @@ template <typename TP>
 class Splitter : public Module<TP, true, ContainerVector<std::shared_ptr<TP>>>
 {
   public:
+
+    Splitter( const ParameterSetManager& rParameters )
+    {} // constructor
+
     // @override
     virtual bool requiresLock( ) const
     {
@@ -135,8 +139,8 @@ template <typename... TP_VEC_CONTENT> class Collector : public Module<Container,
     std::vector<std::tuple<std::shared_ptr<TP_VEC_CONTENT>...>> vCollection;
     std::shared_ptr<std::mutex> pMutex;
 
-    Collector( ) : pMutex( new std::mutex )
-    {}
+    Collector( const ParameterSetManager& rParameters ) : pMutex( new std::mutex )
+    {} // constructor
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
     {

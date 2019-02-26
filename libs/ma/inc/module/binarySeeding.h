@@ -218,8 +218,12 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         assert( start >= 0 );
         assert( end < pQuerySeq->length( ) );
         // check so that we do not record the same interval twice
-        if(pSegmentVector->back().start() != start || pSegmentVector->back().end() != end)
-            pSegmentVector->emplace_back( start, end - start, ik.revComp( ) );
+        if(pSegmentVector->back().start() == start && pSegmentVector->back().end() == end)
+            // if we would record the same interval twice do not record the second one and return the
+            // covered area based on the first interval
+            return Interval<nucSeqIndex>(pSegmentVector->back( ).start( ), pSegmentVector->back( ).size( ));
+
+        pSegmentVector->emplace_back( start, end - start, ik.revComp( ) );
         assert( pSegmentVector->back( ).end( ) < pQuerySeq->length( ) );
 
         const auto& rPrevBack = ( *pSegmentVector )[ pSegmentVector->size( ) - 2 ];

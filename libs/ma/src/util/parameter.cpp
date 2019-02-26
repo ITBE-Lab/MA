@@ -74,6 +74,6 @@ const EXPORTED std::pair<size_t, std::string> Presetting::SOC_PARAMETERS =
 const EXPORTED std::pair<size_t, std::string> Presetting::PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
 const EXPORTED std::pair<size_t, std::string> Presetting::SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
 const EXPORTED std::pair<size_t, std::string> Presetting::SV_PARAMETERS =
-    std::make_pair( 4, "Structural Variants Caller" );
+    std::make_pair( 6, "Structural Variants Caller" );
 const EXPORTED std::pair<size_t, std::string> GeneralParameter::GENERAL_PARAMETER =
     std::make_pair( 0, "General Parameter" );
