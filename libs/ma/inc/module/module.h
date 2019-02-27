@@ -357,6 +357,7 @@ class BasePledge
                                 else
                                 {
                                     bExceptionSet = true;
+                                    std::cerr << "bExceptionSet has value " << bExceptionSet << std::endl;
                                     xExceptionFromThread = rxException;
                                     bContinue = false;
                                 } // else
@@ -395,8 +396,12 @@ class BasePledge
             } // for
             // wait for the pool to finish it's work
         } // scope xPool
+        
         if(bExceptionSet)
+        {
+            std::cerr << "Throw exception" << std::endl;
             throw xExceptionFromThread;
+        } // if
     } // function
 }; // class
 

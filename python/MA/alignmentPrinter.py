@@ -15,7 +15,7 @@ from .aligner import *
 # @ingroup module
 #
 class AlignmentPrinter(Module):
-    def __init__(self, nuc_per_line=80, check_for_errors_only=False):
+    def __init__(self, parameter_manager, nuc_per_line=80, check_for_errors_only=False):
         self.nuc_per_line = nuc_per_line
         self.check_for_errors_only = check_for_errors_only
 

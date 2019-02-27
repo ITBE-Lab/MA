@@ -314,7 +314,13 @@ class Reader
 
 
 class SingleFileReader : public Module<NucSeq, true>, public Reader
-{}; // class
+{
+  public:
+    virtual const std::string status( ) const
+    {
+        throw std::runtime_error( "This method must be overridden." );
+    } // method
+}; // class
 
 /**
  * @brief Reads Queries from a file.
@@ -405,6 +411,15 @@ class FileReader : public SingleFileReader
     {
         return 1;
     } // method
+
+    virtual const std::string status( ) const
+    {
+        return std::string( xFileName.string( ) )
+            .append( ":" )
+            .append( std::to_string( this->getCurrPosInFile( ) ) )
+            .append( "/" )
+            .append( std::to_string( this->getFileSize( ) ) );
+    } // method
 }; // class
 
 class FileListReader : public SingleFileReader
@@ -435,7 +450,7 @@ class FileListReader : public SingleFileReader
           vsFileNames( vsFileNames ),
           pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
     {
-        openNextFileWhileNecessary();
+        openNextFileWhileNecessary( );
     } // constructor
 
     FileListReader( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
@@ -443,13 +458,13 @@ class FileListReader : public SingleFileReader
           vsFileNames( vsFileNames ),
           pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
     {
-        openNextFileWhileNecessary();
+        openNextFileWhileNecessary( );
     } // constructor
 
     std::shared_ptr<NucSeq> EXPORTED execute( )
     {
         auto pRet = pFileReader->execute( );
-        openNextFileWhileNecessary();
+        openNextFileWhileNecessary( );
         return pRet;
     } // method
 
@@ -477,6 +492,15 @@ class FileListReader : public SingleFileReader
     size_t getNumFiles( ) const
     {
         return vsFileNames.size( );
+    } // method
+
+    virtual const std::string status( ) const
+    {
+        return std::string( std::to_string( this->getCurrFileIndex( ) ) )
+            .append( "/" )
+            .append( std::to_string( this->getNumFiles( ) ) )
+            .append( "::" )
+            .append( this->pFileReader->status( ) );
     } // method
 }; // class
 
@@ -533,6 +557,11 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     size_t getNumFiles( ) const
     {
         return pF1->getNumFiles( ) + pF2->getNumFiles( );
+    } // method
+
+    virtual const std::string status( ) const
+    {
+        return std::string( this->pF1->status( ) ).append( ";" ).append( this->pF2->status( ) );
     } // method
 }; // class
 

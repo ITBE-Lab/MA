@@ -1,22 +1,29 @@
 from .aligner import *
 from .alignmentPrinter import *
+from random import choice
 
 def test_aligner():
-    configureFast()
+    parameter_manager = ParameterSetManager()
+    parameter_manager.set_selected("PacBio")
 
+    # create a reference string
+    reference = ""
+    for _ in range(1000000):
+        reference += choice(['C', 'T', 'G'])
+
+    # create pack and fmd index from that string
     reference_pack = Pack()
-    reference_pack.load("C:\\Users\\Markus\\Desktop\\MAdata\\eColi")
-    reference_index = FMIndex()
-    reference_index.load("C:\\Users\\Markus\\Desktop\\MAdata\\eColi")
+    reference_pack.append("sequence name", "sequence description", NucSeq(reference))
+    reference_index = FMIndex(reference_pack)
 
-    query = reference_pack.extract_from_to(10000, 10200)
+    query = NucSeq(reference[100:125] + "A" + reference[126:150] + "A" + reference[151:175] + "A" + reference[176:200])
 
     # initialize modules
-    seeding_module = BinarySeeding()
-    soc_module = StripOfConsideration()
-    harm_module = Harmonization()
-    nw_module = NeedlemanWunsch()
-    printer_module = AlignmentPrinter()
+    seeding_module = BinarySeeding(parameter_manager)
+    soc_module = StripOfConsideration(parameter_manager)
+    harm_module = Harmonization(parameter_manager)
+    nw_module = NeedlemanWunsch(parameter_manager)
+    printer_module = AlignmentPrinter(parameter_manager)
 
     #execute modules
     seeds = seeding_module.execute(reference_index, query)
@@ -25,8 +32,11 @@ def test_aligner():
         print(seed.start, seed.start_ref, seed.size)
     socs = soc_module.execute(seeds, query, reference_pack, reference_index)
     harm_seeds = harm_module.execute(socs, query)
+    for i, seeds in enumerate(harm_seeds):
+        print("harmonization seed set ", i, ": (q,r,l):")
+        for seed in seeds:
+            print(seed.start, seed.start_ref, seed.size)
     alignments = nw_module.execute(harm_seeds, query, reference_pack)
-
     for index, alignment in enumerate(alignments):
         print("Alignment ", index, ":")
         printer_module.execute(alignment, query, reference_pack)

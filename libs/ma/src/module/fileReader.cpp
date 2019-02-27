@@ -205,6 +205,12 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
     auto pRet = std::make_shared<TP_PAIRED_READS>( );
     pRet->push_back( pF1->execute( ) );
     pRet->push_back( pF2->execute( ) );
+    if( pRet->front( )->sName != pRet->back( )->sName )
+        std::cerr << "WARNING aligning queries with different names." << std::endl;
+    if( pF1->getCurrFileIndex( ) != pF2->getCurrFileIndex( ) )
+        throw std::runtime_error(
+            "Cannot perfrom paired alignment on files with different amounts of reads. FileReader Status: " +
+            this->status( ) );
     // forward the finished flags...
     if( pF1->isFinished( ) || pF2->isFinished( ) )
     {
@@ -249,18 +255,18 @@ void exportFileReader( )
 #else
 void exportFileReader( py::module& rxPyModuleId )
 {
+    py::class_<fs::path>( rxPyModuleId, "path" ).def( py::init<std::string>( ) ).def( "__str__", &fs::path::string );
 
-    // py::bind_vector<std::vector<fs::path>>(rxPyModuleId, "filePathVector");
-    //// export the FileReader class
-    // exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
-    // exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
-    //
-    // py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
-    //    rxPyModuleId, "QueryVector", "docstr" );
-    //
-    //// export the PairedFileReader class
-    // exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId,
-    //                                                                                    "PairedFileReader" );
+    py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector", "docstr" );
+    // export the FileReader class
+    exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
+    exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
+
+    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
+        rxPyModuleId, "QueryVector", "docstr" );
+
+    // export the PairedFileReader class
+    exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId, "PairedFileReader" );
 } // function
 #endif
 #endif

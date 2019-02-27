@@ -383,6 +383,6 @@ class ExecutionContext
 
         // Destroy computational graph; release memory
         // @Markus: Is this really necessary?
-        aGraphSinks.clear( );
+        // aGraphSinks.clear( );
     } // method
 }; // class

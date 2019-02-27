@@ -26,6 +26,7 @@ from libMA import VolatileModule
 from libMA import configureAccurate
 from libMA import configureFast
 from libMA import NucSeq
+from libMA import ParameterSetManager
 import libMA
 
 

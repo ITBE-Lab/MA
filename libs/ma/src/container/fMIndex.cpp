@@ -408,9 +408,10 @@ void exportFM_index( )
 
 void exportFM_index( py::module& rxPyModuleId )
 {
-    exportInterval<t_bwtIndex>( rxPyModuleId, "t_bwtIndexInterval" );
     // export the SAInterval class
-    py::class_<SAInterval, Interval<t_bwtIndex>>( rxPyModuleId, "SAInterval" );
+    py::class_<SAInterval>( rxPyModuleId, "SAInterval" )
+        .def_readwrite( "size", &SAInterval::iSize )
+        .def_readwrite( "start", &SAInterval::iStart );
     // export the FM_index class
     py::class_<FMIndex, Container, std::shared_ptr<FMIndex>>( rxPyModuleId, "FMIndex" )
         .def( py::init<>( ) ) // default constructor

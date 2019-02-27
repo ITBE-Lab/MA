@@ -189,22 +189,7 @@ class AlignmentStatistics
           uiInitialRefBegin( 0 ),
           uiInitialQueryEnd( 0 ),
           uiInitialRefEnd( 0 )
-    {}
-
-    // void operator=( const AlignmentStatistics &rOther )
-    // {
-    //     index_of_strip = rOther.index_of_strip;
-    //     num_seeds_in_strip = rOther.num_seeds_in_strip;
-    //     anchor_size = rOther.anchor_size;
-    //     anchor_ambiguity = rOther.anchor_ambiguity;
-    //     pOther = rOther.pOther;
-    //     bFirst = rOther.bFirst;
-    //     sName = rOther.sName;
-    //     uiInitialQueryBegin = rOther.uiInitialQueryBegin;
-    //     uiInitialRefBegin = rOther.uiInitialRefBegin;
-    //     uiInitialQueryEnd = rOther.uiInitialQueryEnd;
-    //     uiInitialRefEnd = rOther.uiInitialRefEnd;
-    // } // function
+    {} // constructor
 }; // class
 
 class SVInfo
