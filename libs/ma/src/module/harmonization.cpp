@@ -718,12 +718,12 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
         ); // sort function call
         auto itHarmSet = pSeeds->begin( );
         auto itOrigSet = pSeedsIn->begin( );
-        while( true )
+        while( itOrigSet != pSeedsIn->end( ) )
         {
             // move harm it rightwards if necessary
             while( itHarmSet != pSeeds->end( ) && itOrigSet->start( ) > itHarmSet->end( ) )
                 itHarmSet++;
-            if( itOrigSet == pSeedsIn->end( ) || itHarmSet == pSeeds->end( ) )
+            if( itHarmSet == pSeeds->end( ) )
                 break;
             // check overlap
             if( itHarmSet->start( ) <= itOrigSet->end( ) && itHarmSet->end( ) >= itOrigSet->start( ) )

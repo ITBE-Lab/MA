@@ -614,7 +614,7 @@ class Pack : public Container
             // check if hole is overlapping
             if(rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart)
                 // add the overlapping interval to covered
-                uiCovered += std::max(uiStart, rHole.offset) - std::min(uiEnd, rHole.offset + rHole.length);
+                uiCovered += std::min(uiEnd, rHole.offset + rHole.length) - std::max(uiStart, rHole.offset);
 
         assert(uiCovered <= uiEnd - uiStart);
         // divide the overlapping interval by the total interval

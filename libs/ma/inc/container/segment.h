@@ -314,6 +314,7 @@ class SegmentVector : public Container
                 {
                     ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ( ulIndexOnRefSeq + rSegment.size( ) + 1 );
                     assert( uiPosOnQuery < uiQLen );
+                    assert( uiPosOnQuery + rSegment.size( ) <= uiQLen );
                     uiPosOnQuery = uiQLen - (uiPosOnQuery + rSegment.size( ));
                 } // if
                 assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );

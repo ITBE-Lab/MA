@@ -751,7 +751,7 @@ class GeneralParameter : public ParameterSetBase
                                       "Number of threads used for alignments is identical to the number "
                                       "of processor cores.",
                                       GENERAL_PARAMETER, true ),
-          piNumberOfThreads( this, "Number of Threads",
+          piNumberOfThreads( this, "Number of Threads", 't',
                              "Number of threads used in the context of alignments. This options is only available, if "
                              "'use all processor cores' is off.",
                              GENERAL_PARAMETER, 1, checkPositiveValue ),

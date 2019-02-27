@@ -165,7 +165,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
 
     std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
     std::cout << "Compiled with following switches:";
-    if(bLibMaWithPython)
+    if( bLibMaWithPython )
         std::cout << " WITH_PYTHON";
 #ifdef WITH_POSTGRES
     std::cout << " WITH_POSTGRES";
@@ -202,6 +202,9 @@ int main( int argc, char* argv[] )
     } // if
     ExecutionContext xExecutionContext;
     xExecutionContext.xParameterSetManager.xGlobalParameterSet.bSAMOutputInReadsFolder->set( false );
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->set( false );
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->set(
+        std::thread::hardware_concurrency( ) );
 
     // set the mode...
     for( int iI = 2; iI < argc; iI += 2 )
@@ -321,7 +324,7 @@ int main( int argc, char* argv[] )
         {
             generateHelpMessage( xExecutionContext.xParameterSetManager );
             return 0;
-        }// if
+        } // if
 
         std::pair<int, double> xPreviousProgress = std::make_pair( -1, 0 );
         std::cout << "starting alignment." << std::endl;

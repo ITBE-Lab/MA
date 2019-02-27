@@ -635,14 +635,24 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         pRet->xStats.sName = pQuery->sName;
         return pRet;
     } // if
-#if DEBUG_LEVEL >= 2
-    std::cout << "seedlist: (start_ref, end_ref; start_query, end_query)" << std::endl;
+#if DEBUG_LEVEL >= 0
+    std::cout << "Query length " << pQuery->length() << std::endl;
+    std::cout << "seedlist: (start_ref, end_ref; start_query, end_query, onForwardStrand)" << std::endl;
     for( Seed& rSeed : *pSeeds )
     {
         std::cout << rSeed.start_ref( ) << ", " << rSeed.end_ref( ) << "; " << rSeed.start( ) << ", " << rSeed.end( )
-                  << std::endl;
+                  << ", " << rSeed.bOnForwStrand << std::endl;
     } // for
 #endif
+
+    // flip all seeds on the reverse strand @todo
+    for( Seed& rxSeed : *pSeeds )
+        if( !rxSeed.bOnForwStrand )
+        {
+            rxSeed.uiPosOnReference =
+                pRefPack->uiUnpackedSizeForwardStrand * 2 - ( rxSeed.uiPosOnReference + rxSeed.size( ) + 1 );
+            rxSeed.iStart = pQuery->length( ) - (rxSeed.end( ) - 1);
+        } // if
 
     // Determine the query and reverence coverage of the seeds
 
@@ -663,7 +673,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         if( beginQuery > xSeed.end( ) )
             beginQuery = xSeed.start( );
         assert( xSeed.start( ) <= xSeed.end( ) );
-        assert( xSeed.end() <= pQuery->length() );
+        assert( xSeed.end( ) <= pQuery->length( ) );
     } // for
     DEBUG_2( std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl; ) // DEEBUG
 
