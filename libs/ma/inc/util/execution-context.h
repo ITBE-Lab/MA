@@ -206,12 +206,12 @@ class ReadsManager
 
     bool hasPrimaryPath( )
     {
-        return !(this->vsPrimaryQueryFullFileName.empty( ));
+        return !( this->vsPrimaryQueryFullFileName.empty( ) );
     } // method
 
     bool hasMatePath( )
     {
-        return !(this->vsMateQueryFullFileName.empty( ));
+        return !( this->vsMateQueryFullFileName.empty( ) );
     } // method
 }; // class
 
@@ -232,7 +232,7 @@ class OutputManager
 
     {
         xKindsOfOutput.emplace( "SAM File", "unused" );
-        //xKindsOfOutput.emplace( "SQLite Database", "unused" );
+        // xKindsOfOutput.emplace( "SQLite Database", "unused" );
     } // constructor
 
     /* Delivers date-time string for SAM-file naming */
@@ -240,12 +240,12 @@ class OutputManager
     {
         time_t xTime = time( 0 ); // get time now
 #ifdef _MSC_VER
-        #pragma warning(push)
-        #pragma warning(disable: 4996) // disable the unsave warning for localtime
+#pragma warning( push )
+#pragma warning( disable : 4996 ) // disable the unsave warning for localtime
 #endif
         tm* pLocalTimeNow = localtime( &xTime );
 #ifdef _MSC_VER
-        #pragma warning(pop)
+#pragma warning( pop )
 #endif
 
         char aBuffer[ 80 ];
@@ -285,9 +285,10 @@ class ExecutionContext
      */
     void
     doAlign( std::function<bool( double dPercentageProgress, int iFileNum, int iNumFilesOverall )> fProgressCallBack =
-                 []( double, int, int ) { return true; } )
+                 []( double, int, int ) { return true; },
+             std::function<void( const std::string& )> fCheckCallBack =
+                 []( const std::string& rS ) { std::cout << rS << std::endl; } )
     {
-        // FIXME: Read correct value for uiConcurrency
         unsigned int uiConcurency = std::thread::hardware_concurrency( );
         if( !xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->get( ) )
         {
@@ -329,6 +330,14 @@ class ExecutionContext
                                                                          xReadsManager.fCallBackGetPrimaryQuery( ),
                                                                          xReadsManager.fCallBackGetMateyQuery( ) );
             pxReader = pxPairedFileReader;
+
+            if( xParameterSetManager.getSelected( )->xPairedCheck->get( ) )
+            {
+                fCheckCallBack( "checking paired reads..." );
+                pxPairedFileReader->checkPaired( );
+                fCheckCallBack( "done checking paired reads" );
+            } // if
+
             auto pxPairedQueriesPledge = promiseMe( pxPairedFileReader );
             aGraphSinks = setUpCompGraphPaired( xParameterSetManager,
                                                 xGenomeManager.getPackPledge( ), // Pack
@@ -371,14 +380,14 @@ class ExecutionContext
 
         // Compute the actual alignments.
         // Sets the progress bar after each finished alignment.
-        BasePledge::simultaneousGet(
-            aGraphSinks,
-            [&]( ) {
-                int iI1 = (int)pxReader->getCurrFileIndex( );
-                int iI2 = (int)pxReader->getNumFiles( );
-                return fProgressCallBack(
-                    ( (double)pxReader->getCurrPosInFile( ) * 100 ) / (double)pxReader->getFileSize( ), iI1, iI2 );
-            } // lambda
+        BasePledge::simultaneousGet( aGraphSinks,
+                                     [&]( ) {
+                                         int iI1 = (int)pxReader->getCurrFileIndex( );
+                                         int iI2 = (int)pxReader->getNumFiles( );
+                                         return fProgressCallBack( ( (double)pxReader->getCurrPosInFile( ) * 100 ) /
+                                                                       (double)pxReader->getFileSize( ),
+                                                                   iI1, iI2 );
+                                     } // lambda
         ); // function call
 
         // Destroy computational graph; release memory

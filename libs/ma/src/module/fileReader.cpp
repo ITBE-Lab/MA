@@ -205,8 +205,6 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
     auto pRet = std::make_shared<TP_PAIRED_READS>( );
     pRet->push_back( pF1->execute( ) );
     pRet->push_back( pF2->execute( ) );
-    if( pRet->front( )->sName != pRet->back( )->sName )
-        std::cerr << "WARNING aligning queries with different names." << std::endl;
     if( pF1->getCurrFileIndex( ) != pF2->getCurrFileIndex( ) )
         throw std::runtime_error(
             "Cannot perfrom paired alignment on files with different amounts of reads. FileReader Status: " +
@@ -228,6 +226,28 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
         return nullptr;
     return pRet;
 } // function
+
+void PairedFileReader::checkPaired( )
+{
+    while( !pF1->isFinished( ) && !pF2->isFinished( ) )
+    {
+        auto pQ1 = pF1->execute( );
+        auto pQ2 = pF2->execute( );
+        // if( pQ1->sName != pQ2->sName )
+        //     throw std::runtime_error( "paired queries with different names: " + pQ1->sName + " != " + pQ2->sName +
+        //                               " FileReader Status:" + this->status( ) );
+        if( pF1->getCurrFileIndex( ) != pF2->getCurrFileIndex( ) )
+            throw std::runtime_error(
+                "Cannot perfrom paired alignment on files with different amounts of reads. FileReader Status: " +
+                this->status( ) );
+    } // while
+    if( !pF1->isFinished( ) || !pF2->isFinished( ) )
+        throw std::runtime_error(
+            "Cannot perfrom paired alignment on files with different amounts of reads. FileReader Status: " +
+            this->status( ) );
+    pF1->reset( );
+    pF2->reset( );
+} // method
 
 #ifdef WITH_PYTHON
 
@@ -255,7 +275,8 @@ void exportFileReader( )
 #else
 void exportFileReader( py::module& rxPyModuleId )
 {
-    py::class_<fs::path>( rxPyModuleId, "path" ).def( py::init<std::string>( ) ).def( "__str__", &fs::path::string );
+    py::class_<fs::path>( rxPyModuleId, "path" ).def( py::init<std::string>( ) );
+    //.def( "__str__", &fs::path::string );
 
     py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector", "docstr" );
     // export the FileReader class

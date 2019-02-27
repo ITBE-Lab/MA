@@ -320,6 +320,11 @@ class SingleFileReader : public Module<NucSeq, true>, public Reader
     {
         throw std::runtime_error( "This method must be overridden." );
     } // method
+
+    virtual void reset()
+    {
+        throw std::runtime_error( "This method must be overridden." );
+    } // method
 }; // class
 
 /**
@@ -420,6 +425,17 @@ class FileReader : public SingleFileReader
             .append( "/" )
             .append( std::to_string( this->getFileSize( ) ) );
     } // method
+
+    virtual void reset()
+    {
+        pFile->close( );
+#ifdef WITH_ZLIB
+        if( xFileName.extension( ).string( ) == ".gz" )
+            pFile = std::make_shared<GzFileStream>( xFileName );
+        else
+#endif
+            pFile = std::make_shared<StdFileStream>( xFileName );
+    } // method
 }; // class
 
 class FileListReader : public SingleFileReader
@@ -502,6 +518,12 @@ class FileListReader : public SingleFileReader
             .append( "::" )
             .append( this->pFileReader->status( ) );
     } // method
+
+    virtual void reset()
+    {
+        uiFileIndex = 0;
+        pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
+    } // method
 }; // class
 
 typedef ContainerVector<std::shared_ptr<NucSeq>> TP_PAIRED_READS;
@@ -516,12 +538,14 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     std::shared_ptr<SingleFileReader> pF1;
     std::shared_ptr<SingleFileReader> pF2;
 
+
     /**
      * @brief creates a new FileReader.
      */
     PairedFileReader(
         const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
-        : pF1( std::make_shared<FileListReader>( vsFileName1 ) ), pF2( std::make_shared<FileListReader>( vsFileName2 ) )
+        : pF1( std::make_shared<FileListReader>( vsFileName1 ) ),
+          pF2( std::make_shared<FileListReader>( vsFileName2 ) )
     {} // constructor
     /**
      * @brief creates a new FileReader.
@@ -530,6 +554,8 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
         : pF1( std::make_shared<FileReader>( rParameters, sQuery, sQuery.size( ) ) ),
           pF2( std::make_shared<FileReader>( rParameters, sMate, sMate.size( ) ) )
     {} // constructor
+
+    void EXPORTED checkPaired();
 
     std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
 

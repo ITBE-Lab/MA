@@ -561,6 +561,11 @@ class AlignFrame : public wxDialog
         return !bForceStop;
     } // method
 
+    void onCheckCallBack( const std::string& rS )
+    {
+        queueStringMessage( wxEVT_WORKER_MESSAGE, rS + "\n" );
+    } // method
+
     /* Handler for printing from worker */
     void onWorkerGaugeUpdate( wxCommandEvent& rxEvent )
     {
@@ -655,7 +660,8 @@ class AlignFrame : public wxDialog
             try
             {
                 xExecutionContext.doAlign( std::bind( &AlignFrame::onCallBack, this, std::placeholders::_1,
-                                                      std::placeholders::_2, std::placeholders::_3 ) );
+                                                      std::placeholders::_2, std::placeholders::_3 ),
+                                           std::bind( &AlignFrame::onCheckCallBack, this, std::placeholders::_1 ) );
 
                 if( !bForceStop )
                 { // Enable the OK button only if the alignment succeeded
