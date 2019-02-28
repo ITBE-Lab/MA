@@ -22,7 +22,7 @@ if( PythonLibs_FOUND )
 else()
     # Build the plain shared library without Python support
     message( "-- libMA: Build shared library without python support." )
-    add_library(MA SHARED ${MA_SRC} ) 
+    add_library( MA SHARED ${MA_SRC} )
 endif()
 
 # Activate __declspec(dllexport) for DLL export 
@@ -35,6 +35,13 @@ set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Set includes and library dependencies 
 target_include_directories(MA PUBLIC inc ../kswcpp/inc)
 target_link_libraries ( MA LINK_PUBLIC kswcpp CppSQLite3 )
+
+# and for each of your dependent executable/library targets:
+if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
+    # std::filesystem is still experimental and for linkage we need separated library
+    message( "-- libMA: Filesystem support for GCC below version 8" )
+    target_link_libraries( MA PUBLIC stdc++fs)
+endif()
 
 # if there is a zlib
 if( ZLIB_FOUND )
@@ -58,6 +65,7 @@ execute_process(
   OUTPUT_VARIABLE GIT_COMMIT_HASH
   RESULT_VARIABLE RESULT_COMMIT
   OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
 )
 
 # Check if there are any modified files
@@ -67,6 +75,7 @@ execute_process(
   OUTPUT_VARIABLE GIT_STATUS
   RESULT_VARIABLE RESULT_STATUS
   OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
 )
 
 if( "${GIT_STATUS}" STREQUAL "" )

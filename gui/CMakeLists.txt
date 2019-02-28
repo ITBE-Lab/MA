@@ -30,14 +30,8 @@ if(wxWidgets_FOUND)
 
 	# Build the MA executable itself
 	add_executable ( maGUI WIN32 MACOSX_BUNDLE ${SRC_FILES} )
-	# and for each of your dependent executable/library targets:
-	if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
-		# std::filesystem is still experimental and for linkage we need separated library
-		message( "MA-GUI: Filesystem support for GCC below version 8" )
-		target_link_libraries( maGUI MA ${wxWidgets_LIBRARIES} stdc++fs)
-	else()
-		target_link_libraries( maGUI MA ${wxWidgets_LIBRARIES} )
-	endif()
+
+	target_link_libraries( maGUI MA ${wxWidgets_LIBRARIES} )
 
 	# Local includes 
 	target_include_directories( maGUI PUBLIC inc )

@@ -189,7 +189,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     } // if
 #endif
     std::string sLine = "EoF";
-    if(!pFile->eof( ))
+    if( !pFile->eof( ) )
         pFile->safeGetLine( sLine );
     else
         this->setFinished( );
@@ -249,17 +249,16 @@ void exportFileReader( )
 void exportFileReader( py::module& rxPyModuleId )
 {
 
-    // py::bind_vector<std::vector<fs::path>>(rxPyModuleId, "filePathVector");
-    //// export the FileReader class
-    // exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
-    // exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
-    //
-    // py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
-    //    rxPyModuleId, "QueryVector", "docstr" );
-    //
-    //// export the PairedFileReader class
-    // exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId,
-    //                                                                                    "PairedFileReader" );
+    py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector" );
+    // export the FileReader class
+    exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
+    exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
+
+    py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
+        rxPyModuleId, "QueryVector", "docstr" );
+
+    // export the PairedFileReader class
+    exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId, "PairedFileReader" );
 } // function
 #endif
 #endif

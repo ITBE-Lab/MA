@@ -100,10 +100,3 @@ add_subdirectory ( gui )
 add_executable ( maCMD cmdMa.cpp )
 # Link cmdMA
 target_link_libraries ( maCMD PUBLIC MA Threads::Threads )
-
-# and for each of your dependent executable/library targets:
-if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
-    # std::filesystem is still experimental and for linkage we need separated library
-    message( "MA-GUI: Filesystem support for GCC below version 8" )
-    target_link_libraries( maCMD PUBLIC stdc++fs)
-endif()
