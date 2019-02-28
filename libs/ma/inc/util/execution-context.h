@@ -287,12 +287,7 @@ class ExecutionContext
     doAlign( std::function<bool( double dPercentageProgress, int iFileNum, int iNumFilesOverall )> fProgressCallBack =
                  []( double, int, int ) { return true; } )
     {
-        // FIXME: Read correct value for uiConcurrency
-        unsigned int uiConcurency = std::thread::hardware_concurrency( );
-        if( !xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->get( ) )
-        {
-            uiConcurency = xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->get( );
-        } // if
+        size_t uiConcurency = xParameterSetManager.xGlobalParameterSet.getNumThreads();
 
         // For now, we build a computational graph for each call of doAlign
         // Possible Improvement: Cache the graph ...
@@ -385,4 +380,11 @@ class ExecutionContext
         // @Markus: Is this really necessary?
         aGraphSinks.clear( );
     } // method
+
+    void doAlignCallbackLess()
+    {
+        this->doAlign();
+    } // method
 }; // class
+
+// exported in export.cpp

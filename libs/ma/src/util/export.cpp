@@ -3,10 +3,10 @@
  * @author Markus Schmidt
  */
 #include "util/export.h"
+#include "util/execution-context.h"
 #include "util/parameter.h"
 
 using namespace libMA;
-
 
 
 #ifdef WITH_PYTHON
@@ -43,7 +43,7 @@ BOOST_PYTHON_MODULE( libMA )
 #ifdef WITH_POSTGRES
     exportDBWriter( );
 #endif
-    exportSoCDbWriter();
+    exportSoCDbWriter( );
     exportSoC( );
     exportOtherSeeding( );
     defaults::exportDefaults( );
@@ -53,7 +53,11 @@ BOOST_PYTHON_MODULE( libMA )
 
 template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModuleId, std::string sName )
 {
-    py::class_<AlignerParameter<TP_VALUE>, AlignerParameterBase>( rxPyModuleId, sName.c_str( ) ) //
+    py::class_< //
+        AlignerParameter<TP_VALUE>, //
+        AlignerParameterBase, //
+        std::shared_ptr<AlignerParameter<TP_VALUE>> //
+        >( rxPyModuleId, sName.c_str( ) ) //
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
         .def( "get", &AlignerParameter<TP_VALUE>::get_py );
     py::implicitly_convertible<AlignerParameter<TP_VALUE>, AlignerParameterBase>( );
@@ -64,28 +68,53 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
  */
 void exportParameter( py::module& rxPyModuleId )
 {
-    py::class_<AlignerParameterBase>( rxPyModuleId, "AlignerParameterBase" ) //
+    py::class_<AlignerParameterBase, std::shared_ptr<AlignerParameterBase>>( rxPyModuleId, "AlignerParameterBase" ) //
+        .def( "mirror", &AlignerParameterBase::mirror ) //
         .def_readonly( "name", &AlignerParameterBase::sName ) //
         .def_readonly( "description", &AlignerParameterBase::sDescription );
 
     exportAlignerParameter<int>( rxPyModuleId, "AlignerParameterInt" );
     exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
     exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
-    // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterFilePath" ); @todo
+    // exportAlignerParameter<fs::path>( rxPyModuleId, "AlignerParameterFilePath" ); @todo
     // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" ); @todo
 
-    // Export Presetting Class
-    py::class_<Presetting>( rxPyModuleId, "Presetting" ) //
-        .def( py::init<>( ) ); //
-        //.def( "__setitem__", &Presetting::byName )
-        //.def( "__getitem__", &Presetting::byName );
+    //@todo cannot export Presetting while its not held by a shared pointer
+    // Export Presetting Class 
+    //py::class_<Presetting>( rxPyModuleId, "Presetting" ) //
+    //    .def( py::init<>( ) ) //
+    //    .def( "mirror", &Presetting::mirror ) //
+    //    .def( "by_name", &Presetting::byName ) //
+    //    .def( "by_short", &Presetting::byShort );
 
     // Export ParameterSetManager Class
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
         .def( py::init<>( ) ) //
-        .def( "get", &ParameterSetManager::get )
+        //.def( "get", &ParameterSetManager::get )
+        .def( "get_num_threads", &ParameterSetManager::getNumThreads )
         .def( "set_selected", &ParameterSetManager::setSelected )
-        .def( "get_selected", &ParameterSetManager::getSelected_py );
+        //.def( "get_selected", &ParameterSetManager::getSelected_py )
+        .def( "by_name", &ParameterSetManager::byName )
+        .def( "by_short", &ParameterSetManager::byShort );
+} // function
+
+void exportExecutionContext( py::module& rxPyModuleId )
+{
+    py::class_<GenomeManager>( rxPyModuleId, "GenomeManager" ) //
+        .def( "load_genome", &GenomeManager::loadGenome );
+    py::class_<ReadsManager>( rxPyModuleId, "ReadsManager" ) //
+        .def_readwrite( "primary_queries", &ReadsManager::vsPrimaryQueryFullFileName ) //
+        .def_readwrite( "mate_queries", &ReadsManager::vsMateQueryFullFileName );
+    py::class_<OutputManager>( rxPyModuleId, "OutputManager" );
+
+    py::class_<ExecutionContext>( rxPyModuleId, "ExecutionContext" ) //
+        .def( py::init<>( ) ) //
+        .def( "do_align", &ExecutionContext::doAlignCallbackLess ) //
+        // def_readonly required since xParameterSetManager is non-copyable
+        .def_readonly( "parameter_set_manager", &ExecutionContext::xParameterSetManager ) //
+        .def_readwrite( "genome_manager", &ExecutionContext::xGenomeManager ) //
+        .def_readwrite( "reads_manager", &ExecutionContext::xReadsManager ) //
+        .def_readwrite( "output_manager", &ExecutionContext::xOutputManager );
 } // function
 
 PYBIND11_MODULE( libMA, libMaModule )
@@ -116,6 +145,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportSoCDbWriter( libMaModule );
     exportSoC( libMaModule );
     exportOtherSeeding( libMaModule );
+    exportExecutionContext( libMaModule );
     defaults::exportDefaults( libMaModule );
 } // function
 

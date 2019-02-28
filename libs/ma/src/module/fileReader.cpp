@@ -255,7 +255,7 @@ void exportFileReader( py::module& rxPyModuleId )
     exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
 
     py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
-        rxPyModuleId, "QueryVector", "docstr" );
+        rxPyModuleId, "ContainerVectorNucSeq", "docstr" );
 
     // export the PairedFileReader class
     exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId, "PairedFileReader" );

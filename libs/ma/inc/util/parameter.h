@@ -19,6 +19,7 @@ namespace fs = std::filesystem;
 #include <string>
 #include <utility>
 #include <vector>
+#include <thread>
 
 /* Generic conversion of string to different value types.
  * (Specialized for some types)
@@ -766,6 +767,16 @@ class GeneralParameter : public ParameterSetBase
     {
         mirror( rxOtherSet );
     } // copy constructor
+
+    size_t getNumThreads() const
+    {
+        size_t uiConcurency = std::thread::hardware_concurrency( );
+        if( !this->pbUseMaxHardareConcurrency->get( ) )
+        {
+            uiConcurency = this->piNumberOfThreads->get( );
+        } // if
+        return uiConcurency;
+    } // method
 }; // class
 
 
@@ -801,6 +812,8 @@ class ParameterSetManager
         // Initially select Illumina
         this->pSelectedParamSet = &( xParametersSets[ "Default" ] );
     } // constructor
+
+    ParameterSetManager( const ParameterSetManager& ) = delete; // delete copy constructor
 
     Presetting& get( const std::string& sKey )
     {
@@ -850,6 +863,11 @@ class ParameterSetManager
             return this->getSelected( )->byShort( cX );
         throw AnnotatedException( "Could not find parameter: " + cX );
     } // method
+    
+    size_t getNumThreads() const
+    {
+        return xGlobalParameterSet.getNumThreads();
+    }
 }; // class
 
 
