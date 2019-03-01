@@ -3,6 +3,7 @@
 #include "util/export.h" // MA aligner interface
 #include "util/parameter.h"
 
+#undef snprintf // required under MSVC
 // Documentation: https://github.com/nlohmann/json
 #include "contrib/json/json.hpp" // FIXME: Move to different location
 
@@ -257,9 +258,9 @@ class OutputManager
     std::string SAMFullFileName( void )
     {
         // SAM filename generation according to parameter settings.
-        auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.bSAMOutputInReadsFolder->value
+        auto sFullFileName = ( this->pxParameterSetManager->pGlobalParameterSet->bSAMOutputInReadsFolder->value
                                    ? pxReadsManager->getReadsFolderPath( )
-                                   : pxParameterSetManager->xGlobalParameterSet.xSAMOutputPath->get( ) );
+                                   : pxParameterSetManager->pGlobalParameterSet->xSAMOutputPath->get( ) );
         ( ( ( sFullFileName /= pxReadsManager->getReadsFileNameStem( ) ) += '-' ) += this->dateTimeString( ) ) +=
             ".sam";
         return sFullFileName.string( );
@@ -287,7 +288,7 @@ class ExecutionContext
     doAlign( std::function<bool( double dPercentageProgress, int iFileNum, int iNumFilesOverall )> fProgressCallBack =
                  []( double, int, int ) { return true; } )
     {
-        size_t uiConcurency = xParameterSetManager.xGlobalParameterSet.getNumThreads();
+        size_t uiConcurency = xParameterSetManager.pGlobalParameterSet->getNumThreads();
 
         // For now, we build a computational graph for each call of doAlign
         // Possible Improvement: Cache the graph ...
@@ -330,7 +331,7 @@ class ExecutionContext
                                                 xGenomeManager.getFMDIndexPledge( ), // FMD index
                                                 pxPairedQueriesPledge, // (for paired reads we require two queries!)
                                                 pxPairedWriter, // Output writer module(output of alignments)
-                                                uiConcurency ); // Number of threads
+                                                (unsigned int)uiConcurency ); // Number of threads
         } // if
         else
         {
@@ -361,7 +362,7 @@ class ExecutionContext
                                           xGenomeManager.getFMDIndexPledge( ), // FMD index
                                           pxQueriesPledge, // Queries
                                           pxWriter, // Output writer module(output of alignments)
-                                          uiConcurency ); // Number of threads
+                                          (unsigned int)uiConcurency ); // Number of threads
         } // else
 
         // Compute the actual alignments.

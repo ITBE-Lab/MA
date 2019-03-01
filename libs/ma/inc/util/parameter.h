@@ -17,9 +17,9 @@ namespace fs = std::filesystem;
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
-#include <thread>
 
 /* Generic conversion of string to different value types.
  * (Specialized for some types)
@@ -499,7 +499,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxGapArea; //
     AlignerParameterPointer<int> xGenomeSizeDisable; //
     AlignerParameterPointer<bool> xDisableHeuristics; //
-    
+
 
     static const EXPORTED std::pair<size_t, std::string> DP_PARAMETERS;
     static const EXPORTED std::pair<size_t, std::string> HEURISTIC_PARAMETERS;
@@ -641,10 +641,10 @@ class Presetting : public ParameterSetBase
                   "were aligned in the particular alignment.",
                   SAM_PARAMETERS, true ),
 
-         // SV
+          // SV
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
-                  "Maximal distance between the deltas of the closest two seeds in a cluster",
-                  SV_PARAMETERS, 200, checkPositiveValue ),
+                                      "Maximal distance between the deltas of the closest two seeds in a cluster",
+                                      SV_PARAMETERS, 200, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -768,7 +768,7 @@ class GeneralParameter : public ParameterSetBase
         mirror( rxOtherSet );
     } // copy constructor
 
-    size_t getNumThreads() const
+    size_t getNumThreads( ) const
     {
         size_t uiConcurency = std::thread::hardware_concurrency( );
         if( !this->pbUseMaxHardareConcurrency->get( ) )
@@ -785,37 +785,37 @@ class ParameterSetManager
 {
   private:
     // Pointer to the currently selected parameter-set
-    Presetting* pSelectedParamSet = NULL;
+    std::shared_ptr<Presetting> pSelectedParamSet = NULL;
 
   public:
-    GeneralParameter xGlobalParameterSet;
+    std::shared_ptr<GeneralParameter> pGlobalParameterSet;
 
     // Presets for aligner configuration
-    std::map<std::string, Presetting> xParametersSets;
+    std::map<std::string, std::shared_ptr<Presetting>> xParametersSets;
 
-    ParameterSetManager( )
+    ParameterSetManager( ) : pGlobalParameterSet( std::make_shared<GeneralParameter>( ) )
     {
-        xParametersSets.emplace( "Default", Presetting( ) );
-        xParametersSets.emplace( "Illumina", Presetting( ) );
-        xParametersSets[ "Illumina" ].xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina" ].xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina" ].xMaxNumSoC->set( 20 );
-        xParametersSets.emplace( "Illumina Paired", Presetting( ) );
-        xParametersSets[ "Illumina Paired" ].xUsePairedReads->set( true );
-        xParametersSets[ "Illumina Paired" ].xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina Paired" ].xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina Paired" ].xMaxNumSoC->set( 20 );
-        xParametersSets.emplace( "PacBio", Presetting( ) );
-        xParametersSets.emplace( "Nanopore", Presetting( ) );
-        xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
+        xParametersSets.emplace( "Default", std::make_shared<Presetting>( ) );
+        xParametersSets.emplace( "Illumina", std::make_shared<Presetting>( ) );
+        xParametersSets[ "Illumina" ]->xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina" ]->xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina" ]->xMaxNumSoC->set( 20 );
+        xParametersSets.emplace( "Illumina Paired", std::make_shared<Presetting>( ) );
+        xParametersSets[ "Illumina Paired" ]->xUsePairedReads->set( true );
+        xParametersSets[ "Illumina Paired" ]->xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina Paired" ]->xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina Paired" ]->xMaxNumSoC->set( 20 );
+        xParametersSets.emplace( "PacBio", std::make_shared<Presetting>( ) );
+        xParametersSets.emplace( "Nanopore", std::make_shared<Presetting>( ) );
+        xParametersSets[ "Nanopore" ]->xSeedingTechnique->set( 1 );
 
         // Initially select Illumina
-        this->pSelectedParamSet = &( xParametersSets[ "Default" ] );
+        this->pSelectedParamSet = xParametersSets[ "Default" ];
     } // constructor
 
     ParameterSetManager( const ParameterSetManager& ) = delete; // delete copy constructor
 
-    Presetting& get( const std::string& sKey )
+    std::shared_ptr<Presetting> get( const std::string& sKey )
     {
         return xParametersSets[ sKey ];
     } // method
@@ -825,31 +825,31 @@ class ParameterSetManager
      */
     void setSelected( const std::string& sKey )
     {
-        this->pSelectedParamSet = &( xParametersSets[ sKey ] );
+        this->pSelectedParamSet = xParametersSets[ sKey ];
     } // method
 
     /* Delivers pointer to selected parameter-set */
-    Presetting* getSelected( void )
+    std::shared_ptr<Presetting> getSelected( void )
     {
         return pSelectedParamSet;
     } // method
 
     /** required for exporting get to python do not use in cpp code */
-    Presetting* getSelected_py( void )
+    std::shared_ptr<Presetting> getSelected_py( void )
     {
         return this->getSelected( );
     } // method
 
     /* Delivers pointer to selected parameter-set */
-    const Presetting* getSelected( void ) const
+    const std::shared_ptr<Presetting> getSelected( void ) const
     {
         return pSelectedParamSet;
     } // method
 
     std::shared_ptr<AlignerParameterBase> byName( const std::string& rParameterName )
     {
-        if( xGlobalParameterSet.hasName( rParameterName ) )
-            return xGlobalParameterSet.byName( rParameterName );
+        if( pGlobalParameterSet->hasName( rParameterName ) )
+            return pGlobalParameterSet->byName( rParameterName );
         if( this->getSelected( )->hasName( rParameterName ) )
             return this->getSelected( )->byName( rParameterName );
         throw AnnotatedException( std::string( "Could not find parameter: " ).append( rParameterName ) );
@@ -857,17 +857,22 @@ class ParameterSetManager
 
     std::shared_ptr<AlignerParameterBase> byShort( const char cX )
     {
-        if( xGlobalParameterSet.hasShort( cX ) )
-            return xGlobalParameterSet.byShort( cX );
+        if( pGlobalParameterSet->hasShort( cX ) )
+            return pGlobalParameterSet->byShort( cX );
         if( this->getSelected( )->hasShort( cX ) )
             return this->getSelected( )->byShort( cX );
         throw AnnotatedException( "Could not find parameter: " + cX );
     } // method
-    
-    size_t getNumThreads() const
+
+    size_t getNumThreads( ) const
     {
-        return xGlobalParameterSet.getNumThreads();
-    }
+        return pGlobalParameterSet->getNumThreads( );
+    } // method
+
+    void addSetting( const std::string& rsName )
+    {
+        xParametersSets.emplace( rsName, std::make_shared<Presetting>( ) );
+    } // method
 }; // class
 
 

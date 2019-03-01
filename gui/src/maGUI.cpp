@@ -780,7 +780,7 @@ class MA_MainFrame : public wxFrame
     /* Handler for the gear button */
     template <class SETTINGS_DIALOG_CLASS> void doSettingsDialog( wxCommandEvent& WXUNUSED( event ) )
     {
-        Presetting* pSelectedParamSet = xExecutionContext.xParameterSetManager.getSelected( );
+        std::shared_ptr<Presetting> pSelectedParamSet = xExecutionContext.xParameterSetManager.getSelected( );
 
         // Create a copy of the selected parameter-set for editing
         Presetting xParameterSet( *pSelectedParamSet, "" );
@@ -790,7 +790,7 @@ class MA_MainFrame : public wxFrame
         {
             // save the changed parameter into the selected parameter-set
             // pSelectedParamSet->mirror( xParameterSet );
-            xExecutionContext.xParameterSetManager.xParametersSets.at( "Custom" ).mirror( xParameterSet );
+            xExecutionContext.xParameterSetManager.xParametersSets.at( "Custom" )->mirror( xParameterSet );
             xExecutionContext.xParameterSetManager.setSelected( "Custom" );
             pxComboBoxAlignerSettings->setSelected( "Custom" );
         } // if
@@ -805,13 +805,13 @@ class MA_MainFrame : public wxFrame
     void doOptionsDialog( wxCommandEvent& WXUNUSED( event ) )
     {
         // Create a copy of the global parameter-set for editing
-        GeneralParameter xGeneralParameter( xExecutionContext.xParameterSetManager.xGlobalParameterSet );
+        GeneralParameter xGeneralParameter( *xExecutionContext.xParameterSetManager.pGlobalParameterSet );
         auto xSettingsDialog = new mwxGlobalSettingsDialog( this, xGeneralParameter );
         auto iReturnedChoice = xSettingsDialog->ShowModal( );
         if( iReturnedChoice == wxID_OK )
         {
             // save the changed parameter into the selected parameter-set
-            xExecutionContext.xParameterSetManager.xGlobalParameterSet.mirror( xGeneralParameter );
+            xExecutionContext.xParameterSetManager.pGlobalParameterSet->mirror( xGeneralParameter );
         } // if
 
         xSettingsDialog->Destroy( );
@@ -829,11 +829,11 @@ class MA_MainFrame : public wxFrame
     /* Handler for gear button of outputs settings */
     void onOutputGearButton( wxCommandEvent& WXUNUSED( event ) )
     {
-        GeneralParameter xGlobalParameterSet( xExecutionContext.xParameterSetManager.xGlobalParameterSet );
+        GeneralParameter xGlobalParameterSet( *xExecutionContext.xParameterSetManager.pGlobalParameterSet );
         mwxSAMSettingsDialog xSettingsDialog( nullptr, xGlobalParameterSet );
         if( xSettingsDialog.ShowModal( ) == wxID_OK )
         {
-            xExecutionContext.xParameterSetManager.xGlobalParameterSet.mirror( xGlobalParameterSet );
+            xExecutionContext.xParameterSetManager.pGlobalParameterSet->mirror( xGlobalParameterSet );
         } // if
     } // method
 
@@ -944,7 +944,7 @@ class MA_MainFrame : public wxFrame
                    wxDEFAULT_FRAME_STYLE & ~( wxMAXIMIZE_BOX | wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP ) )
     {
         // on startup: create custom parameter set from default parameter set (do this only for the GUI verison.)
-        xExecutionContext.xParameterSetManager.xParametersSets.emplace( "Custom", Presetting( ) );
+        xExecutionContext.xParameterSetManager.xParametersSets.emplace( "Custom", std::make_shared<Presetting>( ) );
 
         wxImage::AddHandler( new wxPNGHandler );
 

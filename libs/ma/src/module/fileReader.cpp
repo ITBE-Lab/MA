@@ -249,7 +249,7 @@ void exportFileReader( )
 void exportFileReader( py::module& rxPyModuleId )
 {
 
-    py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector" );
+    py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector", "docstr" );
     // export the FileReader class
     exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
     exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );

@@ -136,7 +136,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  "for index storage. 'index_name' is the name used for identifying the new FMD-Index. In the context "
                  "of alignments, the genome-name is used for FMD-index selection.",
                  sIndentDesc );
-    for( auto xPair : rManager.xGlobalParameterSet.xpParametersByCategory )
+    for( auto xPair : rManager.pGlobalParameterSet->xpParametersByCategory )
     {
         for( auto pParameter : xPair.second )
             printOption( pParameter->sName,
@@ -201,9 +201,9 @@ int main( int argc, char* argv[] )
         return 1;
     } // if
     ExecutionContext xExecutionContext;
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.bSAMOutputInReadsFolder->set( false );
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->set( false );
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->set(
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->bSAMOutputInReadsFolder->set( false );
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbUseMaxHardareConcurrency->set( false );
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->piNumberOfThreads->set(
         std::thread::hardware_concurrency( ) );
 
     // set the mode...
@@ -320,7 +320,7 @@ int main( int argc, char* argv[] )
                             .append( ". Did you forget to add the '-' or '--' at the beginning?" ) );
             } // else
         } // for
-        if( xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbPrintHelpMessage->get( ) )
+        if( xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbPrintHelpMessage->get( ) )
         {
             generateHelpMessage( xExecutionContext.xParameterSetManager );
             return 0;

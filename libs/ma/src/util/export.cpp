@@ -79,21 +79,29 @@ void exportParameter( py::module& rxPyModuleId )
     // exportAlignerParameter<fs::path>( rxPyModuleId, "AlignerParameterFilePath" ); @todo
     // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" ); @todo
 
-    //@todo cannot export Presetting while its not held by a shared pointer
-    // Export Presetting Class 
-    //py::class_<Presetting>( rxPyModuleId, "Presetting" ) //
-    //    .def( py::init<>( ) ) //
-    //    .def( "mirror", &Presetting::mirror ) //
-    //    .def( "by_name", &Presetting::byName ) //
-    //    .def( "by_short", &Presetting::byShort );
+    // Export Presetting Class
+    py::class_<Presetting, std::shared_ptr<Presetting>>( rxPyModuleId, "Presetting" ) //
+        .def( py::init<>( ) ) //
+        .def( "mirror", &Presetting::mirror ) //
+        .def( "by_name", &Presetting::byName ) //
+        .def( "by_short", &Presetting::byShort );
+
+    // Export Presetting Class
+    py::class_<GeneralParameter, std::shared_ptr<GeneralParameter>>( rxPyModuleId, "GeneralSettings" ) //
+        .def( py::init<>( ) ) //
+        .def( "mirror", &GeneralParameter::mirror ) //
+        .def( "by_name", &GeneralParameter::byName ) //
+        .def( "by_short", &GeneralParameter::byShort );
 
     // Export ParameterSetManager Class
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
         .def( py::init<>( ) ) //
-        //.def( "get", &ParameterSetManager::get )
+        .def_readwrite( "global_settings", &ParameterSetManager::pGlobalParameterSet ) //
+        .def( "get", &ParameterSetManager::get )
+        .def( "add_setting", &ParameterSetManager::addSetting )
         .def( "get_num_threads", &ParameterSetManager::getNumThreads )
         .def( "set_selected", &ParameterSetManager::setSelected )
-        //.def( "get_selected", &ParameterSetManager::getSelected_py )
+        .def( "get_selected", &ParameterSetManager::getSelected_py )
         .def( "by_name", &ParameterSetManager::byName )
         .def( "by_short", &ParameterSetManager::byShort );
 } // function
