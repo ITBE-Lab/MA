@@ -52,13 +52,25 @@ void printOption( std::string sName,
                   const std::string& sDescription,
                   const std::string& sIndentDesc )
 {
-    std::cout << sIndentOptions;
+    std::string sOptionHead = sIndentOptions;
     if( cShort != AlignerParameterBase::NO_SHORT_DEFINED )
-        std::cout << "-" << cShort << ", ";
+        sOptionHead.append( "-" ).append( std::to_string(cShort) ).append( ", " );
     std::replace( sName.begin( ), sName.end( ), ' ', '_' );
-    std::cout << "--" << sName << " <" << sTypeName << "> [";
-    std::cout << sDefaultVal << "]";
-    std::cout << std::endl << sIndentDesc;
+    sOptionHead.append("--");
+    sOptionHead.append(sName);
+    sOptionHead.append(" <");
+    sOptionHead.append(sTypeName);
+    sOptionHead.append("> [");
+    sOptionHead.append(sDefaultVal);
+    sOptionHead.append("]");
+    if(sOptionHead.size() < sIndentDesc.size() - 4)
+    {
+        std::cout << sOptionHead;
+        for(size_t i = sOptionHead.size(); i < sIndentDesc.size(); i++)
+            std::cout << " ";
+    }// if
+    else
+        std::cout << sOptionHead << std::endl << sIndentDesc;
 
     std::istringstream xStream( sDescription );
     size_t uiCharCount = 0;
@@ -201,7 +213,7 @@ int main( int argc, char* argv[] )
         return 1;
     } // if
     ExecutionContext xExecutionContext;
-    // change the way output works to a simple -o for the command line aligner. 
+    // change the way output works to a simple -o for the command line aligner.
     // Also disable Use Max Hardware concurrency parameter and set -t to max hardware_concurrency by default.
     xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection = 2;
     xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->set( false );
