@@ -974,6 +974,15 @@ class MA_MainFrame : public wxFrame
             .append( "C&reate Index\tF2", // Open
                      std::bind( &MA_MainFrame::onCreateIndexWizard, this, std::placeholders::_1 ) );
 
+        this->xMenuBar->push_back( "&Settings" )
+            .menu( ) // Genome Menu
+            .append( "A&ligner\tF4", // Settings -> Aligner
+                     std::bind( &MA_MainFrame::onSettingsGearButton, this, std::placeholders::_1 ) )
+            .append( "S&AM Output\tF5", // Settings -> SAM Output
+                     std::bind( &MA_MainFrame::onOutputGearButton, this, std::placeholders::_1 ) )
+            .append( "P&aired Reads\tF6", // Settings -> Paired Settings
+                     std::bind( &MA_MainFrame::onPairedGearButton, this, std::placeholders::_1 ) );
+
         this->xMenuBar->push_back( "&Help" )
             .menu( ) // Help Menu
             .append( "&About\tF1", std::bind( &MA_MainFrame::onAbout, this, std::placeholders::_1 ) );
