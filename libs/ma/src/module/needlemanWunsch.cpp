@@ -635,7 +635,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         pRet->xStats.sName = pQuery->sName;
         return pRet;
     } // if
-#if DEBUG_LEVEL >= 0
+#if DEBUG_LEVEL >= 2
     std::cout << "Query length " << pQuery->length() << std::endl;
     std::cout << "seedlist: (start_ref, end_ref; start_query, end_query, onForwardStrand)" << std::endl;
     for( Seed& rSeed : *pSeeds )

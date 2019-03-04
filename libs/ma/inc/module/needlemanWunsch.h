@@ -94,7 +94,6 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
             // if( !pSeeds->empty( ) )
             //    pRet->push_back( execute_one( pSeeds, pQuery, pRefPack, xMemoryManager ) );
         } // for
-        std::cout << "Computed " << pRet->size( ) << " alignments" << std::endl;
         // we need to move the best alignment to the first spot
         std::sort( pRet->begin( ), pRet->end( ),
                    []( std::shared_ptr<Alignment>& pA, std::shared_ptr<Alignment>& pB ) { return pA->larger( pB ); } );
