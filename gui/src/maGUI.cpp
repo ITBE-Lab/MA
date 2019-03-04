@@ -190,8 +190,10 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
                                "SAM Settings", // Title of Dialog
                                [&]( wxWindow* pxHostWindow ) { // Content of Dialog
                                    auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.bSAMOutputInReadsFolder.pContent )
+                                   pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
                                        .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
+                                       .append( rxGlobalParameterSet.xSAMOutputFileName.pContent,
+                                                "SAM File (*.sam)|*.sam" )
                                        .updateEnabledDisabled( );
 
                                    return pxPropertyPanel;
@@ -1019,7 +1021,7 @@ class MA_MainFrame : public wxFrame
                                 0, wxTOP | wxBOTTOM | wxEXPAND, 5 );
                             // Initialize combo box with the default setting:
                             //@todo change parameter set manager so that it knows the name of the currently select
-                            //setting. then use this string for setSelected here...
+                            // setting. then use this string for setSelected here...
                             pxComboBoxAlignerSettings->setSelected( "Default" );
                             pxBoxSizer.Add( 0, 0, 0, wxBOTTOM, 5 ); // Vertical spacer
 

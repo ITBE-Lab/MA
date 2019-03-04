@@ -714,6 +714,55 @@ class mwxPropertyPanel : public wxPanel
         } // method
     }; // inner class
 
+    /* Inner class describing text property */
+    class mwxFileProperty : public mwxProperty
+    {
+      public:
+        mwxPropertyPanel* pxHost; // keep host for file dialog creation
+        std::shared_ptr<AlignerParameter<fs::path>> pxParameter = nullptr; // pointer to parameter object
+        wxFilePickerCtrl* pxFilePickerCtrl; // File picker
+
+        /* Handler is called whenever the user leaves the input field (the user ends property editing) */
+        void handler( wxCommandEvent& rxEvent )
+        {
+            fs::path sFile( std::string( this->pxFilePickerCtrl->GetFileName( ).GetFullPath( ).c_str( ) ) );
+
+            // @todo Markus: here should be a check on wether the extension fo the selected/written file matches...
+            pxParameter->set( sFile );
+
+            pxHost->updateEnabledDisabled( );
+        } // method
+
+        /* Constructor for AlignerParameter */
+        mwxFileProperty( mwxPropertyPanel* pxHost, // parent of property
+                         std::shared_ptr<AlignerParameter<fs::path>>
+                             pxParameter, // parameter reference
+                         const std::string& rsSuffixWildcardString // allowed file suffixes
+                         )
+            : mwxProperty( pxHost, pxParameter->sName ),
+              pxHost( pxHost ),
+              pxParameter( pxParameter ),
+              pxFilePickerCtrl( new wxFilePickerCtrl( pxHost, wxID_ANY, pxParameter->get( ).string( ),
+                                                      wxT( "Select a file" ), rsSuffixWildcardString, wxDefaultPosition,
+                                                      wxDefaultSize, wxDIRP_DEFAULT_STYLE ) )
+        {
+            pxHost->pxFlexLayout->Add( pxFilePickerCtrl, 0, wxALL, 5 );
+
+            this->pxFilePickerCtrl->SetToolTip( pxParameter->sDescription );
+            this->pxStaticText->SetToolTip( pxParameter->sDescription );
+
+            // Bind "focus leave" to the handler
+            this->pxFilePickerCtrl->wxEvtHandler::Bind(
+                wxEVT_FILEPICKER_CHANGED, [this]( wxCommandEvent& rxEvent ) { this->handler( rxEvent ); } );
+        } // constructor
+
+        virtual void updateEnabledDisabledDispatch( void )
+        {
+            if( this->pxParameter )
+                updateEnabledDisabled( this->pxParameter->fEnabled( ), pxFilePickerCtrl );
+        } // method
+    }; // inner class
+
 
     /* Inner class describing choice property */
     class mwxChoiceProperty : public mwxProperty
@@ -730,7 +779,7 @@ class mwxPropertyPanel : public wxPanel
         } // method
 
         /* Handler is called whenever the user leaves the input field (the user ends property editing) */
-        void focusHandler( wxFocusEvent& rxEvent )
+        void selectionHandler( wxCommandEvent& rxEvent )
         {
             // Wrong input (out of range etc.) are reported via exceptions
             try
@@ -745,8 +794,9 @@ class mwxPropertyPanel : public wxPanel
             // From wxWidgets documentation:
             // The focus event handlers should almost invariably call
             // wxEvent::Skip() on their event argument to allow the default handling to take place.
-            rxEvent.Skip( );
+            // rxEvent.Skip( );
 
+            std::cout << "update" << std::endl;
             pxHost->updateEnabledDisabled( );
         } // method
 
@@ -770,8 +820,8 @@ class mwxPropertyPanel : public wxPanel
             this->pxStaticText->SetToolTip( pxParameter->sDescription );
 
             // Bind handler that process changes
-            this->pxCombo->wxEvtHandler::Bind( wxEVT_KILL_FOCUS,
-                                               [this]( wxFocusEvent& rxEvent ) { this->focusHandler( rxEvent ); } );
+            this->pxCombo->wxEvtHandler::Bind(
+                wxEVT_COMBOBOX, [this]( wxCommandEvent& rxEvent ) { this->selectionHandler( rxEvent ); } );
         } // constructor
 
         virtual void updateEnabledDisabledDispatch( void )
@@ -882,10 +932,19 @@ class mwxPropertyPanel : public wxPanel
         return *this;
     } // method
 
-    /* Add path (file-system) property */
-    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<fs::path>>& pParameter )
+    /*
+     * Add path/file (file-system) property
+     * if a path shall be selected: rsSuffixWildcardString must be empty
+     * if a file shall be selected: rsSuffixWildcardString must contain wildcard string as e.g.:
+     *      "XYZ files (*.xyz)|*.xyz"
+     */
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<fs::path>>& pParameter,
+                              const std::string& rsSuffixWildcardString = "" )
     { /* Add Property to vector*/
-        vProperties.emplace_back( std::make_shared<mwxFolderProperty>( this, pParameter ) );
+        if( rsSuffixWildcardString.empty( ) )
+            vProperties.emplace_back( std::make_shared<mwxFolderProperty>( this, pParameter ) );
+        else
+            vProperties.emplace_back( std::make_shared<mwxFileProperty>( this, pParameter, rsSuffixWildcardString ) );
 
         return *this;
     } // method

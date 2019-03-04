@@ -241,7 +241,7 @@ class OutputManager
         time_t xTime = time( 0 ); // get time now
 #ifdef _MSC_VER
 #pragma warning( push )
-#pragma warning( disable : 4996 ) // disable the unsave warning for localtime
+#pragma warning( disable : 4996 ) // disable the un-save warning for localtime
 #endif
         tm* pLocalTimeNow = localtime( &xTime );
 #ifdef _MSC_VER
@@ -256,8 +256,10 @@ class OutputManager
     /* Creates full path for SAM output */
     std::string SAMFullFileName( void )
     {
+        if( this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection == 2 )
+            return this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputFileName->get().string();
         // SAM filename generation according to parameter settings.
-        auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.bSAMOutputInReadsFolder->value
+        auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection == 0
                                    ? pxReadsManager->getReadsFolderPath( )
                                    : pxParameterSetManager->xGlobalParameterSet.xSAMOutputPath->get( ) );
         ( ( ( sFullFileName /= pxReadsManager->getReadsFileNameStem( ) ) += '-' ) += this->dateTimeString( ) ) +=

@@ -393,6 +393,25 @@ class ParameterSetBase
         }
     } // method
 
+    void unregisterParameter( std::shared_ptr<AlignerParameterBase> pParameter )
+    {
+        xpAllParameters.erase( pParameter->sName );
+        auto xIt1 = xpParametersByShort.begin( );
+        while( xIt1 != xpParametersByShort.end( ) )
+        {
+            if( xIt1->second == pParameter )
+                xpParametersByShort.erase( xIt1++ );
+            else
+                xIt1++;
+        } // while
+        for( auto& rPair : xpParametersByCategory )
+            rPair.second.erase( std::remove_if( rPair.second.begin( ), rPair.second.end( ),
+                                                [&pParameter]( const std::shared_ptr<AlignerParameterBase> pX ) {
+                                                    return ( pX == pParameter );
+                                                } ),
+                                rPair.second.end( ) );
+    } // method
+
     bool hasName( const std::string& rParameterName ) const
     {
         return xpAllParameters.count( rParameterName ) > 0;
@@ -724,9 +743,10 @@ void AlignerParameterPointer<VALUE_TYPE>::do_register( ParameterSetBase* pPreset
 class GeneralParameter : public ParameterSetBase
 {
   public:
-    // FIXME: Set this to a standard path in the beginning (~home/ma/SAM)
-    AlignerParameterPointer<bool> bSAMOutputInReadsFolder; // SAM Output in the same folder as the reads.
+    AlignerParameterPointer<AlignerParameterBase::ChoicesType>
+        xSAMOutputTypeChoice; // SAM Output in the same folder as the reads.
     AlignerParameterPointer<fs::path> xSAMOutputPath; // folder path
+    AlignerParameterPointer<fs::path> xSAMOutputFileName; // folder path
     AlignerParameterPointer<bool> pbUseMaxHardareConcurrency; // Exploit all cores
     AlignerParameterPointer<int> piNumberOfThreads; // selected number of threads
     AlignerParameterPointer<bool> pbPrintHelpMessage; // Print the help message to stdout
@@ -735,23 +755,27 @@ class GeneralParameter : public ParameterSetBase
 
     /* Constructor */
     GeneralParameter( )
-        : bSAMOutputInReadsFolder( this, "SAM Files in same Folder as Reads", 'O',
-                                   "If selected, SAM files are written to the folder of the reads.", GENERAL_PARAMETER,
-                                   true ),
-          xSAMOutputPath( this, "Folder for SAM Files", 'o',
+        : xSAMOutputTypeChoice( this, "SAM File output", "Select output type for sam file.", GENERAL_PARAMETER,
+                                AlignerParameterBase::ChoicesType{{"Read_Folder", "In Read Folder"},
+                                                                  {"Specified_Folder", "In Specified Folder"},
+                                                                  {"Specified_File", "As Specified File"}} ),
+          xSAMOutputPath( this, "Folder for SAM Files",
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
+          xSAMOutputFileName( this, "SAM File name", 'o', "Name of the SAM file alignments shall be written to.",
+                              GENERAL_PARAMETER, "ma_out.sam" ),
           pbUseMaxHardareConcurrency( this, "Use all Processor Cores",
                                       "Number of threads used for alignments is identical to the number "
                                       "of processor cores.",
                                       GENERAL_PARAMETER, true ),
-          piNumberOfThreads( this, "Number of Threads",
+          piNumberOfThreads( this, "Number of Threads", 't',
                              "Number of threads used in the context of alignments. This options is only available, if "
                              "'use all processor cores' is off.",
                              GENERAL_PARAMETER, 1, checkPositiveValue ),
           pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
-        xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };
+        xSAMOutputPath->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
+        xSAMOutputFileName->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
         piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
     } // constructor
 
