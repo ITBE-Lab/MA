@@ -439,6 +439,7 @@ class ParameterSetBase
 class Presetting : public ParameterSetBase
 {
   public:
+    const std::string sName;
     // DP options:
     AlignerParameterPointer<int> xMatch; // Match Score
     AlignerParameterPointer<int> xMisMatch; // Mismatch Penalty
@@ -515,8 +516,9 @@ class Presetting : public ParameterSetBase
     Presetting& operator=( Presetting&& other ) = default; // required for getting emplace with maps working
 
     /* Constructor */
-    Presetting( )
+    Presetting( const std::string sName )
         : //
+          sName( sName ),
           // DP:
           xMatch( this, "Match Score",
                   "Match score. (Used in the context of Dynamic Programming and for SoC width computation.)",
@@ -706,7 +708,7 @@ class Presetting : public ParameterSetBase
     } // constructor
 
     /* Named copy Constructor */
-    Presetting( const Presetting& rxOtherSet, const std::string& sName ) : Presetting( )
+    Presetting( const Presetting& rxOtherSet, const std::string& sName ) : Presetting( sName )
     {
         this->mirror( rxOtherSet );
     } // copy constructor
@@ -795,18 +797,18 @@ class ParameterSetManager
 
     ParameterSetManager( ) : pGlobalParameterSet( std::make_shared<GeneralParameter>( ) )
     {
-        xParametersSets.emplace( "Default", std::make_shared<Presetting>( ) );
-        xParametersSets.emplace( "Illumina", std::make_shared<Presetting>( ) );
+        xParametersSets.emplace( "Default", std::make_shared<Presetting>( "Default" ) );
+        xParametersSets.emplace( "Illumina", std::make_shared<Presetting>( "Illumina" ) );
         xParametersSets[ "Illumina" ]->xMaximalSeedAmbiguity->set( 500 );
         xParametersSets[ "Illumina" ]->xMinNumSoC->set( 10 );
         xParametersSets[ "Illumina" ]->xMaxNumSoC->set( 20 );
-        xParametersSets.emplace( "Illumina Paired", std::make_shared<Presetting>( ) );
+        xParametersSets.emplace( "Illumina Paired", std::make_shared<Presetting>( "Illumina Paired" ) );
         xParametersSets[ "Illumina Paired" ]->xUsePairedReads->set( true );
         xParametersSets[ "Illumina Paired" ]->xMaximalSeedAmbiguity->set( 500 );
         xParametersSets[ "Illumina Paired" ]->xMinNumSoC->set( 10 );
         xParametersSets[ "Illumina Paired" ]->xMaxNumSoC->set( 20 );
-        xParametersSets.emplace( "PacBio", std::make_shared<Presetting>( ) );
-        xParametersSets.emplace( "Nanopore", std::make_shared<Presetting>( ) );
+        xParametersSets.emplace( "PacBio", std::make_shared<Presetting>( "PacBio" ) );
+        xParametersSets.emplace( "Nanopore", std::make_shared<Presetting>( "Nanopore" ) );
         xParametersSets[ "Nanopore" ]->xSeedingTechnique->set( 1 );
 
         // Initially select Illumina
@@ -871,7 +873,7 @@ class ParameterSetManager
 
     void addSetting( const std::string& rsName )
     {
-        xParametersSets.emplace( rsName, std::make_shared<Presetting>( ) );
+        xParametersSets.emplace( rsName, std::make_shared<Presetting>( rsName ) );
     } // method
 }; // class
 

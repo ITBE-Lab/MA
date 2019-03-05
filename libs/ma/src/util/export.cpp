@@ -81,7 +81,8 @@ void exportParameter( py::module& rxPyModuleId )
 
     // Export Presetting Class
     py::class_<Presetting, std::shared_ptr<Presetting>>( rxPyModuleId, "Presetting" ) //
-        .def( py::init<>( ) ) //
+        .def( py::init<std::string>( ) ) //
+        .def_readonly( "name", &Presetting::sName )
         .def( "mirror", &Presetting::mirror ) //
         .def( "by_name", &Presetting::byName ) //
         .def( "by_short", &Presetting::byShort );

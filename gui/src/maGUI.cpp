@@ -943,8 +943,9 @@ class MA_MainFrame : public wxFrame
                    wxDefaultSize,
                    wxDEFAULT_FRAME_STYLE & ~( wxMAXIMIZE_BOX | wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP ) )
     {
-        // on startup: create custom parameter set from default parameter set (do this only for the GUI verison.)
-        xExecutionContext.xParameterSetManager.xParametersSets.emplace( "Custom", std::make_shared<Presetting>( ) );
+        // on startup: create custom parameter set from default parameter set (do this only for the GUI version.)
+        xExecutionContext.xParameterSetManager.xParametersSets.emplace( "Custom",
+                                                                        std::make_shared<Presetting>( "Custom" ) );
 
         wxImage::AddHandler( new wxPNGHandler );
 
@@ -1004,7 +1005,7 @@ class MA_MainFrame : public wxFrame
                                 0, wxTOP | wxBOTTOM | wxEXPAND, 5 );
                             // Initialize combo box with the default setting:
                             //@todo change parameter set manager so that it knows the name of the currently select
-                            //setting. then use this string for setSelected here...
+                            // setting. then use this string for setSelected here...
                             pxComboBoxAlignerSettings->setSelected( "Default" );
                             pxBoxSizer.Add( 0, 0, 0, wxBOTTOM, 5 ); // Vertical spacer
 
