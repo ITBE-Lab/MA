@@ -701,8 +701,11 @@ class Presetting : public ParameterSetBase
           xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
                       "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100,
                       checkPositiveValue ),
-          xMaxGapArea( this, "Maximal Gap Area", "Split alignments in harmonization if gap area is larger than <val>.",
-                       HEURISTIC_PARAMETERS, 10000, checkPositiveValue ),
+          xMaxGapArea(
+              this, "Maximal Gap Area",
+              "If the gap between seeds is larger than <val>, the dual extension process is used to fill the gap. Dual "
+              "extension is more expensive if the extension does not Z-drop. Otherwise it is more efficient.",
+              HEURISTIC_PARAMETERS, 10000, checkPositiveValue ),
           xGenomeSizeDisable( this, "Minimum Genome Size for Heuristics",
                               "Some heuristics can only be applied on long enough genomes. Disables: SoC score "
                               "Drop-off if the genome is shorter than <val>.",
@@ -813,6 +816,7 @@ class ParameterSetManager
         xParametersSets[ "Illumina Paired" ].xMinNumSoC->set( 10 );
         xParametersSets[ "Illumina Paired" ].xMaxNumSoC->set( 20 );
         xParametersSets.emplace( "PacBio", Presetting( ) );
+        xParametersSets[ "PacBio" ].xMaxGapArea->set( 20 );
         xParametersSets.emplace( "Nanopore", Presetting( ) );
         xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
 

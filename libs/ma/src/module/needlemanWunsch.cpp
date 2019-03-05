@@ -255,6 +255,16 @@ class MyPrinterMemory
 
 
 // banded global NW
+/**
+ * Fills the gap between two seeds as follows:
+ * From either seed a extension towards the center of the gap is performed.
+ * If the extensions overlap either on x or y axis:
+ *    both extensions are rolled back so that they end at the center of the originally overlapping interval.
+ *    Then the remeining gap on the other axis is filled using either a insertion or a deletion respectively.
+ *    If both extensions happen to meet up this just joins them as one would expect.
+ * If both extensions z-drop before they overlap:
+ *    The remaining gap between their ends is filled using a insertion and a deletion.
+ */
 void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
                                     nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
                                     std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager )
@@ -262,6 +272,7 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     Wrapper_ksw_extz_t ez_left;
     Wrapper_ksw_extz_t ez_right;
 
+    // perform both extensions
     ksw_ext( (int)( toQuery - fromQuery ), pQuery->pGetSequenceRef( ) + fromQuery, (int)( toRef - fromRef ),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_left.ez, // return value
@@ -286,7 +297,7 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
 
     nucSeqIndex qPos = fromQuery;
     nucSeqIndex rPos = fromRef;
-
+    // read out the cigar of the left extension...
     if( rPos != rCenter && qPos != qCenter )
         for( int i = 0; i < ez_left.ez->n_cigar; ++i )
         {

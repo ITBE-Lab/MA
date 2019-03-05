@@ -47,12 +47,17 @@ BOOST_PYTHON_MODULE( libMA )
 
 #else
 
+
+/*
+ * The exposing of the ParameterSetManager and it's components has been reworked in SV branch
+ * -> here only some quickfixes, so that python does not immedeately segfault if someone tries to use this...
+ */
+
 template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModuleId, std::string sName )
 {
-    py::class_<AlignerParameter<TP_VALUE>, AlignerParameterBase>( rxPyModuleId, sName.c_str( ) ) //
+    py::class_<AlignerParameter<TP_VALUE>, AlignerParameterBase, std::shared_ptr<AlignerParameter<TP_VALUE>>>( rxPyModuleId, sName.c_str( ) ) //
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
         .def( "get", &AlignerParameter<TP_VALUE>::get_py );
-    py::implicitly_convertible<AlignerParameter<TP_VALUE>, AlignerParameterBase>( );
 } // function
 
 /**
@@ -60,15 +65,15 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
  */
 void exportParameter( py::module& rxPyModuleId )
 {
-    py::class_<AlignerParameterBase>( rxPyModuleId, "AlignerParameterBase" ) //
+    py::class_<AlignerParameterBase, std::shared_ptr<AlignerParameterBase>>( rxPyModuleId, "AlignerParameterBase" ) //
         .def_readonly( "name", &AlignerParameterBase::sName ) //
         .def_readonly( "description", &AlignerParameterBase::sDescription );
 
     exportAlignerParameter<int>( rxPyModuleId, "AlignerParameterInt" );
     exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
     exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
-    // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterFilePath" ); @todo
-    // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" ); @todo
+    // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterFilePath" );
+    // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" );
 
     // Export Presetting Class
     py::class_<Presetting>( rxPyModuleId, "Presetting" ) //
@@ -80,8 +85,10 @@ void exportParameter( py::module& rxPyModuleId )
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
         .def( py::init<>( ) ) //
         .def( "get", &ParameterSetManager::get )
-        .def( "set_selected", &ParameterSetManager::setSelected )
-        .def( "get_selected", &ParameterSetManager::getSelected_py );
+        .def( "by_name", &ParameterSetManager::byName )
+        .def( "by_short", &ParameterSetManager::byShort )
+        .def( "set_selected", &ParameterSetManager::setSelected );
+        //.def( "get_selected", &ParameterSetManager::getSelected_py )
 } // function
 
 PYBIND11_MODULE( libMA, libMaModule )

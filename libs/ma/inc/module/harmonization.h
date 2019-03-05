@@ -137,7 +137,7 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 
     //const int64_t iMinSVDistance;
 
-    const nucSeqIndex uiMaxGapArea;
+    //const nucSeqIndex uiMaxGapArea;
 
     const size_t uiSVPenalty;
 
@@ -158,7 +158,6 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
         uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist->get( ) ),
         //dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
         //iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
-        uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
         uiSVPenalty( rParameters.getSelected( )->xSVPenalty->get( ) )
     {} // default constructor
 
