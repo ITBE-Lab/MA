@@ -744,7 +744,7 @@ class GeneralParameter : public ParameterSetBase
 
     /* Constructor */
     GeneralParameter( )
-        : bSAMOutputInReadsFolder( this, "SAM Files in same Folder as Reads", 'O',
+        : bSAMOutputInReadsFolder( this, "SAM Files in same Folder as Reads",
                                    "If selected, SAM files are written to the folder of the reads.", GENERAL_PARAMETER,
                                    true ),
           xSAMOutputPath( this, "Folder for SAM Files", 'o',
