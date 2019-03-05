@@ -54,7 +54,11 @@ void printOption( std::string sName,
 {
     std::string sOptionHead = sIndentOptions;
     if( cShort != AlignerParameterBase::NO_SHORT_DEFINED )
-        sOptionHead.append( "-" ).append( std::to_string(cShort) ).append( ", " );
+    {
+        sOptionHead.append( "-" );
+        sOptionHead.push_back( cShort );
+        sOptionHead.append( ", " );
+    } // if
     std::replace( sName.begin( ), sName.end( ), ' ', '_' );
     sOptionHead.append("--");
     sOptionHead.append(sName);
@@ -257,7 +261,9 @@ int main( int argc, char* argv[] )
             if( sOptionName == "-x" || sOptionName == "--Index" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
-                xExecutionContext.xGenomeManager.loadGenome( sOptionValue + ".json" );
+                const std::string s = xExecutionContext.xGenomeManager.loadGenome( sOptionValue );
+                if( !s.empty() )
+                    throw std::runtime_error( s );
                 iI++; // also ignore the following argument
                 continue;
             } // if
