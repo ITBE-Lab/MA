@@ -529,19 +529,16 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
     DEBUG_3( std::cout << "dynProg begin" << std::endl; )
     if( !bLocalBeginning && !bLocalEnd )
     {
-        ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
+#if 1
+        // do not actually compute through gaps that are larger than a set maximum
+        if( toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea )
+            ksw_dual_ext( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
+        else
+#endif
+            ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
         DEBUG_3( std::cout << "dynProg end" << std::endl; )
         return;
     } // if
-
-    // do not actually compute through gaps that are larger than a set maximum
-#if 1
-    if( toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea )
-    {
-        ksw_dual_ext( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
-        return;
-    } // if
-#endif
 
     DEBUG_3( std::cout << "sw1" << std::endl; )
 
