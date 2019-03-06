@@ -27,7 +27,8 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
             sCigar = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery ).append( "S" );
         else
-            sCigar = pAlignment->cigarString( *pPack );
+            sCigar = bOutputMInsteadOfXAndEqual ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
+                                                : pAlignment->cigarString( *pPack );
 
         uint32_t flag = pAlignment->getSamFlag( *pPack );
 
@@ -156,7 +157,8 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
             sCigar = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery ).append( "S" );
         else
-            sCigar = pAlignment->cigarString( *pPack );
+            sCigar = bOutputMInsteadOfXAndEqual ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
+                                                : pAlignment->cigarString( *pPack );
 
         uint32_t flag = pAlignment->getSamFlag( *pPack );
 

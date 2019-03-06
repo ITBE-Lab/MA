@@ -84,6 +84,7 @@ class TagGenerator
     // according to NGMLR's documentation this is it's behaviour; according to code though it's not...
     const bool bNMTagDoNOTCountIndels = false;
     const bool bASTag = true;
+    const bool bOutputMInsteadOfXAndEqual = true;
     const bool bXITag = true; // NGMLR SAM emulation
     const bool bXETag = true; // NGMLR SAM emulation
     const bool bXRTag = true; // NGMLR SAM emulation
@@ -209,7 +210,8 @@ class TagGenerator
         if( bNMTag )
         {
             // see function pAlignment->getNumDifferences
-            sTag.append( "\tNM:i:" ).append( std::to_string( pAlignment->getNumDifferences( pPack, bNMTagDoNOTCountIndels ) ) );
+            sTag.append( "\tNM:i:" )
+                .append( std::to_string( pAlignment->getNumDifferences( pPack, bNMTagDoNOTCountIndels ) ) );
         } // if
         if( bXITag )
         {
@@ -275,7 +277,10 @@ class TagGenerator
                 sSATag.append( pOtherAlignment->getContig( *pPack ) ).append( "," );
                 sSATag.append( std::to_string( pOtherAlignment->getSamPosition( *pPack ) ) ).append( "," );
                 sSATag.append( ( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) ? "-," : "+," ) );
-                sSATag.append( pOtherAlignment->cigarString( *pPack ) ).append( "," );
+                sSATag
+                    .append( bOutputMInsteadOfXAndEqual ? pOtherAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
+                                                        : pOtherAlignment->cigarString( *pPack ) )
+                    .append( "," );
 
                 std::string sMapQual;
                 if( std::isnan( pOtherAlignment->fMappingQuality ) )
@@ -303,13 +308,13 @@ class TagGenerator
                 .append( std::to_string( pAlignment->uiEndOnQuery ) );
         } // if
         // check if the total number of CIGAR operations is too large
-        if( bCGTag && pAlignment->data.size() >= uiMaxCigarLen )
+        if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
         {
             sTag.append( "\tCG:B:I" );
-            for(std::pair<MatchType, nucSeqIndex>& rPair : pAlignment->data)
+            for( std::pair<MatchType, nucSeqIndex>& rPair : pAlignment->data )
             {
                 uint32_t uiOperation = 0;
-                switch (rPair.first)
+                switch( rPair.first )
                 {
                     case MatchType::seed:
                     case MatchType::match:
@@ -329,8 +334,8 @@ class TagGenerator
                         break;
                 } // switch
 
-                uint32_t uiOut = (uint32_t) (rPair.second << 4) | uiOperation;
-                sTag.append(",").append(std::to_string(uiOut));
+                uint32_t uiOut = ( uint32_t )( rPair.second << 4 ) | uiOperation;
+                sTag.append( "," ).append( std::to_string( uiOut ) );
             } // for
         } // if
         return sTag;

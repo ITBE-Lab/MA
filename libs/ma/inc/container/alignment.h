@@ -336,6 +336,50 @@ class Alignment : public Container
         return sCigar;
     } // method
 
+    std::string cigarStringWithMInsteadOfXandEqual( Pack& rPack )
+    {
+        std::string sCigar = "";
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+            std::reverse( data.begin( ), data.end( ) );
+
+        size_t uiSequentialM = 0;
+        for( std::pair<MatchType, nucSeqIndex> section : data )
+        {
+            switch( section.first )
+            {
+                case MatchType::seed:
+                case MatchType::match:
+                case MatchType::missmatch:
+                    // add up sequential M's
+                    uiSequentialM += section.second;
+                    break;
+                case MatchType::insertion:
+                case MatchType::deletion:
+                    // output added up sequential M's
+                    if( uiSequentialM > 0 )
+                    {
+                        sCigar.append( std::to_string( uiSequentialM ) ).append( "M" );
+                        uiSequentialM = 0;
+                    } // if
+                    // output indel
+                    sCigar.append( std::to_string( section.second ) )
+                        .append( ( section.first == MatchType::insertion ) ? "I" : "D" );
+                    break;
+                default:
+                    std::cerr << "WARNING invalid cigar symbol" << std::endl;
+                    break;
+            } // switch
+        } // for
+
+        // don't forget potential last M!
+        if( uiSequentialM > 0 )
+            sCigar.append( std::to_string( uiSequentialM ) ).append( "M" );
+
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+            std::reverse( data.begin( ), data.end( ) );
+        return sCigar;
+    } // method
+
     uint32_t getSamFlag( Pack& rPack ) const
     {
         uint32_t uiRet = 0;
