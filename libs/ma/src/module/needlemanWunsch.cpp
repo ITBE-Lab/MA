@@ -430,10 +430,13 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     } // for
 
     // fill in the gap between the left and right extension
-    assert( rPosRight >= rPos );
-    pAlignment->append( MatchType::deletion, rPosRight - rPos );
+    /*
+     * Theory : sniffles requires the insertion to be before the deletion...
+     */
     assert( qPosRight >= qPos );
     pAlignment->append( MatchType::insertion, qPosRight - qPos );
+    assert( rPosRight >= rPos );
+    pAlignment->append( MatchType::deletion, rPosRight - rPos );
 
     // add the last cigar operation (it might have been partially unrolled...)
     if( xTypeLastUnrolledCigar == MatchType::match )
