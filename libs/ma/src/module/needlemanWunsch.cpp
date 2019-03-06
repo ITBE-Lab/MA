@@ -430,9 +430,6 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     } // for
 
     // fill in the gap between the left and right extension
-    /*
-     * Theory : sniffles requires the insertion to be before the deletion...
-     */
     assert( qPosRight >= qPos );
     pAlignment->append( MatchType::insertion, qPosRight - qPos );
     assert( rPosRight >= rPos );

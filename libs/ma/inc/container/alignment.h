@@ -281,6 +281,31 @@ class Alignment : public Container
         return uiNumDiff;
     } // method
 
+
+    /*
+     * sniffles requirement:
+     * if we fill a dual extend gap by brute force (due to z drop) the used insertion and deletion must always be in
+     * consistent order (among several reads).
+     * Therefore we need to check the strand of the alignment and adjust accordingly.
+     */
+    void invertSuccessiveInserionAndDeletion( )
+    {
+        // using -1 in loop therefore start at 1 instead of 0
+        for( size_t uiI = 1; uiI < this->data.size(); uiI++ )
+        {
+            if( ( this->data[ uiI - 1 ].first == MatchType::insertion &&
+                  this->data[ uiI ].first == MatchType::deletion ) ||
+                ( this->data[ uiI - 1 ].first == MatchType::deletion &&
+                  this->data[ uiI ].first == MatchType::insertion ) )
+            {
+                auto xTmp = this->data[ uiI ];
+                this->data[ uiI ] = this->data[ uiI - 1 ];
+                this->data[ uiI - 1 ] = xTmp;
+                uiI++; // increment uiI twice to skip one (so that we do not swap back and forth)
+            } // if
+        } // for
+    } // method
+
     /**
      * @returns the type of math for the given position i.
      * @brief Type of math at i.

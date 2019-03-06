@@ -93,6 +93,7 @@ class TagGenerator
     const bool bSATag = true; // NGMLR SAM emulation
     const bool bCGTag = true; // NGMLR SAM emulation
     const size_t uiMaxCigarLen = 0x10000; // NGMLR SAM emulation
+    const bool bForcedConsistentConsequtiveInsertionDeletionOrder = true; // NGMLR SAM emulation
 
     TagGenerator( const ParameterSetManager& rParameters )
         : bMDTag( rParameters.getSelected( )->xMDTag->get( ) ), bSVTag( rParameters.getSelected( )->xSVTag->get( ) )

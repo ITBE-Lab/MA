@@ -23,6 +23,12 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         if( bNoSupplementary && pAlignment->bSupplementary )
             continue;
 
+        if( bForcedConsistentConsequtiveInsertionDeletionOrder &&
+            pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+        {
+            pAlignment->invertSuccessiveInserionAndDeletion();
+        } // if
+
         std::string sCigar;
         if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
             sCigar = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery ).append( "S" );
@@ -148,6 +154,13 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             continue;
         if( bNoSupplementary && pAlignment->bSupplementary )
             continue;
+
+        if( bForcedConsistentConsequtiveInsertionDeletionOrder &&
+            pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+        {
+            pAlignment->invertSuccessiveInserionAndDeletion();
+        } // if
+
         if( pAlignment->xStats.bFirst )
             bFirstQueryHasAlignment = true;
         if( !pAlignment->xStats.bFirst )
