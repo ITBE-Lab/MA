@@ -128,8 +128,7 @@ class Alignment : public Container
      * @brief Creates an empty alignment,
      * where the interval of the reference that is used is already known.
      */
-    Alignment( nucSeqIndex uiBeginOnRef, nucSeqIndex uiBeginOnQuery, nucSeqIndex uiEndOnRef,
-               nucSeqIndex uiEndOnQuery )
+    Alignment( nucSeqIndex uiBeginOnRef, nucSeqIndex uiBeginOnQuery, nucSeqIndex uiEndOnRef, nucSeqIndex uiEndOnQuery )
         : data( ),
           uiLength( 0 ),
           uiBeginOnRef( uiBeginOnRef ),
@@ -141,13 +140,13 @@ class Alignment : public Container
           bSupplementary( false )
     {} // constructor
 
-    Alignment( const Alignment &rOther ) = delete;
+    Alignment( const Alignment& rOther ) = delete;
 
     inline std::string toString( ) const
     {
         std::string sRet = "Alignment Dump: ";
         constexpr char vTranslate[ 5 ] = {'S', '=', 'X', 'I', 'D'};
-        for( auto &tuple : data )
+        for( auto& tuple : data )
             sRet += vTranslate[ (unsigned int)tuple.first ] + std::to_string( tuple.second ) + " ";
         sRet += std::to_string( iScore );
         return sRet;
@@ -197,14 +196,90 @@ class Alignment : public Container
         return data[ k ].first;
     } // function
 
-    size_t getNumSeeds() const
+    /*
+     * @brief returns how many seeds are within the alignment
+     */
+    size_t getNumSeeds( ) const
     {
         size_t uiRet = 0;
         for( std::pair<MatchType, nucSeqIndex> section : data )
-            if(section.first == MatchType::seed)
+            if( section.first == MatchType::seed )
                 uiRet++;
         return uiRet;
     } // function
+
+    /*
+     * @brief returns how many nucleotides within this alignment are determined by seeds
+     */
+    size_t getNumBySeeds( ) const
+    {
+        size_t uiRet = 0;
+        for( std::pair<MatchType, nucSeqIndex> section : data )
+            if( section.first == MatchType::seed )
+                uiRet += section.second;
+        return uiRet;
+    } // function
+
+    /*
+     * @brief returns how many nucleotides within this alignment matches (or seeds)
+     */
+    size_t getNumMatches( ) const
+    {
+        size_t uiRet = 0;
+        for( std::pair<MatchType, nucSeqIndex> section : data )
+            if( section.first == MatchType::seed || section.first == MatchType::match )
+                uiRet += section.second;
+        return uiRet;
+    } // function
+
+    /*
+     * Essentially computes the NM tag of the SAM format
+     * NM:i:count Number of differences (mismatches plus inserted and deleted bases) between the sequence and
+     * reference, counting only (case-insensitive) A, C, G and T bases in sequence and reference as potential
+     * matches, with everything else being a mismatch. Note this means that ambiguity codes in both
+     * sequence and reference that match each other, such as ‘N’ in both, or compatible codes such as ‘A’ and
+     * ‘R’, are still counted as mismatches. The special sequence base ‘=’ will always be considered to be a
+     * match, even if the reference is ambiguous at that point. Alignment reference skips, padding, soft and
+     * hard clipping (‘N’, ‘P’, ‘S’ and ‘H’ CIGAR operations) do not count as mismatches, but insertions and
+     * deletions count as one mismatch per base.
+     * Note that historically this has been ill-defined and both data and tools exist that disagree with this
+     * definition.
+     *
+     * @note: According to NGMLR documentation, they do not count insertions and deletions
+     */
+    size_t getNumDifferences( const std::shared_ptr<Pack> pPack, const bool bNMTagDoNOTCountIndels ) const
+    {
+        NucSeq xRefSeqWithN;
+        pPack->vExtractSubsectionN( this->uiBeginOnRef, this->uiEndOnRef, xRefSeqWithN );
+        size_t uiNumDiff = 0;
+        size_t uiRPos = 0;
+        for( const std::pair<MatchType, nucSeqIndex>& rPair : this->data )
+        {
+            switch( rPair.first )
+            {
+                case MatchType::seed:
+                case MatchType::match:
+                    for( size_t uiI = 0; uiI < rPair.second; uiI++ )
+                        if( xRefSeqWithN[ uiI + uiRPos ] >= 4 ) // there is a N at this position
+                            uiNumDiff++;
+                    break;
+                case MatchType::insertion:
+                case MatchType::deletion:
+                    // if we do not want to count indels, bNMTagDoNOTCountIndels must be set to true.
+                    if( bNMTagDoNOTCountIndels )
+                        break;
+                case MatchType::missmatch:
+                    uiNumDiff += rPair.second;
+                    break;
+                default:
+                    throw std::runtime_error( "Should never reach default case in computeTag switch case." );
+                    break;
+            } // switch
+            if( rPair.first != MatchType::insertion )
+                uiRPos += rPair.second;
+        } // for
+        return uiNumDiff;
+    } // method
 
     /**
      * @returns the type of math for the given position i.
@@ -227,7 +302,7 @@ class Alignment : public Container
         return aRet;
     } // method
 
-    std::string cigarString( Pack &rPack )
+    std::string cigarString( Pack& rPack )
     {
         std::string sCigar = "";
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
@@ -261,7 +336,7 @@ class Alignment : public Container
         return sCigar;
     } // method
 
-    uint32_t getSamFlag( Pack &rPack ) const
+    uint32_t getSamFlag( Pack& rPack ) const
     {
         uint32_t uiRet = 0;
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
@@ -273,12 +348,12 @@ class Alignment : public Container
         return uiRet;
     } // method
 
-    std::string getContig( Pack &rPack ) const
+    std::string getContig( Pack& rPack ) const
     {
         return rPack.nameOfSequenceForPosition( uiBeginOnRef );
     } // method
 
-    nucSeqIndex getSamPosition( Pack &rPack ) const
+    nucSeqIndex getSamPosition( Pack& rPack ) const
     {
         std::string sRefName = getContig( rPack );
         auto uiRet = rPack.posInSequence( uiBeginOnRef, uiEndOnRef );
@@ -287,7 +362,7 @@ class Alignment : public Container
         return uiRet + 1;
     } // method
 
-    std::string getQuerySequence( NucSeq &rQuery, Pack &rPack )
+    std::string getQuerySequence( NucSeq& rQuery, Pack& rPack )
     {
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             return rQuery.fromToComplement( uiBeginOnQuery, uiEndOnQuery );
@@ -295,7 +370,7 @@ class Alignment : public Container
             return rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
     } // method
 
-    std::string getRevCompQuerySequence( NucSeq &rQuery, Pack &rPack )
+    std::string getRevCompQuerySequence( NucSeq& rQuery, Pack& rPack )
     {
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             return rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
@@ -327,7 +402,7 @@ class Alignment : public Container
      * alignment 2: ---###-------
      * 1 and 2 would have overlap 1/13
      */
-    inline double overlap( const Alignment &rOther ) const
+    inline double overlap( const Alignment& rOther ) const
     {
         // get the total area where overlaps are possible
         nucSeqIndex uiS = std::max( uiBeginOnQuery, rOther.uiBeginOnQuery );
@@ -377,15 +452,13 @@ class Alignment : public Container
 
             // compute the overlap
             nucSeqIndex uiS_inner = std::max( std::max( uiQpos, uiQposOther ), uiS );
-            nucSeqIndex uiE_inner =
-                std::min( std::min( uiQpos + uiQLen, uiQposOther + uiQLenOther ), uiE );
+            nucSeqIndex uiE_inner = std::min( std::min( uiQpos + uiQLen, uiQposOther + uiQLenOther ), uiE );
             nucSeqIndex uiCurrOverlap = 0;
             if( uiS_inner < uiE_inner )
                 uiCurrOverlap = uiE_inner - uiS_inner;
 
             // if the type of the match is not an insertion, add to the amount of overlap
-            if( data[ uiI ].first != MatchType::insertion &&
-                rOther.data[ uiIOther ].first != MatchType::insertion )
+            if( data[ uiI ].first != MatchType::insertion && rOther.data[ uiIOther ].first != MatchType::insertion )
                 uiOverlap += uiCurrOverlap;
 
             // move the correct index forward
@@ -403,15 +476,14 @@ class Alignment : public Container
 
         // divide by the size of the smaller alignment so that the returned overlap is in
         // percent
-        nucSeqIndex uiSize =
-            std::min( uiEndOnQuery - uiBeginOnQuery, rOther.uiEndOnQuery - rOther.uiBeginOnQuery );
+        nucSeqIndex uiSize = std::min( uiEndOnQuery - uiBeginOnQuery, rOther.uiEndOnQuery - rOther.uiBeginOnQuery );
         return uiOverlap / static_cast<double>( uiSize );
     } // mehtod
 
     /**
      * @brief appends another alignment
      */
-    void append( const Alignment &rOther )
+    void append( const Alignment& rOther )
     {
         for( auto xTuple : rOther.data )
             append( xTuple.first, xTuple.second );
@@ -436,8 +508,7 @@ class Alignment : public Container
         DEBUG( nucSeqIndex uiCheck = 0; for( auto xTup
                                              : data ) uiCheck += xTup.second;
                if( uiCheck != uiLength ) {
-                   std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength
-                             << std::endl;
+                   std::cout << "Alignment length check failed: " << uiCheck << " != " << uiLength << std::endl;
                    assert( false );
                } // if
                ) // DEBUG
@@ -466,7 +537,7 @@ class Alignment : public Container
         // the data.size() == 0 is to allow SW to set the score directly
         assert( data.size( ) == 0 || reCalcScore( ) == iScore );
         return iScore;
-    }
+    } // method
 
     /**
      * @brief the NMW score for this alignment
@@ -484,19 +555,7 @@ class Alignment : public Container
             if( at( i ) == MatchType::seed )
                 iCount++;
         return ( (float)iCount ) / (float)length( );
-    }
-
-    /*
-     * @brief returns how many nucleotides within this alignment are determined by seeds
-     */
-    unsigned int numBySeeds( ) const
-    {
-        unsigned int iCount = 0;
-        for( unsigned int i = 0; i < length( ); i++ )
-            if( at( i ) == MatchType::seed )
-                iCount++;
-        return iCount;
-    }
+    } // method
 
     /**
      * @brief for sorting alignment by their score
