@@ -497,8 +497,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xNoSupplementary; // Omit supplementary alignments
     AlignerParameterPointer<double> xMaxOverlapSupplementary; // Maximal supplementary overlap
     AlignerParameterPointer<int> xMaxSupplementaryPerPrim; // Number Supplementary alignments
-    AlignerParameterPointer<bool> xMDTag; // Output MD Tag
-    AlignerParameterPointer<bool> xSVTag; // Output SV Tag
+    AlignerParameterPointer<bool> xEmulateNgmlrTags; // Emulate NGMLR's tag output
+    AlignerParameterPointer<bool> xCGTag; // Output long CIGARS in CG tag
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -620,9 +620,11 @@ class Presetting : public ParameterSetBase
           // SoC:
           xMaxNumSoC( this, "Maximal Number of SoC's", 'N', "Only consider the <val> best scored SoC's. 0 = no limit.",
                       SOC_PARAMETERS, 30, checkPositiveValue ),
-          xMinNumSoC( this, "Minimal Number of SoC's", 'M',
-                      "Always consider the first <val> SoC's no matter the Heuristic optimizations.", SOC_PARAMETERS, 1,
-                      checkPositiveValue ),
+          xMinNumSoC(
+              this, "Minimal Number of SoC's", 'M',
+              "Always consider the first <val> SoC's no matter the Heuristic optimizations. Upping this "
+              "parameter might improve the output of supplementary alignments and therefore successive SV calling.",
+              SOC_PARAMETERS, 1, checkPositiveValue ),
           xSoCWidth( this, "Fixed SoC Width",
                      "Set the SoC width to a fixed value. 0 = use the formula given in the paper. This parameter is "
                      "intended for debugging purposes.",
@@ -646,17 +648,16 @@ class Presetting : public ParameterSetBase
           xMaxSupplementaryPerPrim( this, "Number Supplementary Alignments",
                                     "Maximal Number of supplementary alignments per primary alignment.", SAM_PARAMETERS,
                                     1, checkPositiveValue ),
-          xMDTag( this, "Output MD Tag",
-                  "Output the MD tag. The tag contains duplicate information, i.e. information that can be inferred "
-                  "from cigar and genome. However, some downstream tools require this tag since they do not have "
-                  "access to the genome themselves.",
-                  SAM_PARAMETERS, true ),
-          // @see https://github.com/fritzsedlazeck/Sniffles/issues/51#issuecomment-377471553
-          xSVTag( this, "Output SV Tag",
-                  "Output the SV tag, as used by SNIFFLES. `0x1` indicates whether the reference sequence consists of "
-                  "mostly Ns up and/or downstream of the read alignment. `0x2` is set if > 95 % of the read base pairs "
-                  "were aligned in the particular alignment.",
-                  SAM_PARAMETERS, true ),
+          xEmulateNgmlrTags( this, "Emulate NGMLR's tag output",
+                             "Output SAM tags as NGMLR would. Activate this if you want to use MA in combination with "
+                             "Sniffles. Enableing this will drastically increase the size of the output file.",
+                             SAM_PARAMETERS, false ),
+          xCGTag(
+              this, "Output long cigars in CG tag",
+              "Some software crashes if a cigar is too long. Enabeling this flag makes MA output that the entire "
+              "read was soft clipped in the regular cigar field if the cigar would exceed 65536 operations. The actual "
+              "cigar is then given in the CG:B:I tag as a comma seperated binary list.",
+              SAM_PARAMETERS, true ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -819,9 +820,14 @@ class ParameterSetManager
         xParametersSets[ "Illumina Paired" ].xMaxNumSoC->set( 20 );
 
         xParametersSets.emplace( "PacBio", Presetting( ) );
+        xParametersSets[ "PacBio" ].xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "PacBio" ].xMinNumSoC->set( 5 );
+
 
         xParametersSets.emplace( "Nanopore", Presetting( ) );
         xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
+        xParametersSets[ "Nanopore" ].xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "Nanopore" ].xMinNumSoC->set( 5 );
 
         // Initially select Illumina
         this->pSelectedParamSet = &( xParametersSets[ "Default" ] );

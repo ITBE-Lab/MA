@@ -78,25 +78,37 @@ class FileOutStream : public OutStream
 class TagGenerator
 {
   public:
-    const bool bMDTag;
+    const bool bMDTag; // NGMLR SAM emulation
     const bool bSVTag; // NGMLR SAM emulation
-    const bool bNMTag = true;
+    const bool bNMTag; // NGMLR SAM emulation
     // according to NGMLR's documentation this is it's behaviour; according to code though it's not...
     const bool bNMTagDoNOTCountIndels = false;
-    const bool bASTag = true;
-    const bool bOutputMInsteadOfXAndEqual = true;
-    const bool bXITag = true; // NGMLR SAM emulation
-    const bool bXETag = true; // NGMLR SAM emulation
-    const bool bXRTag = true; // NGMLR SAM emulation
-    const bool bQS_QETag = true; // NGMLR SAM emulation
-    const bool bCVTag = true; // NGMLR SAM emulation
-    const bool bSATag = true; // NGMLR SAM emulation
-    const bool bCGTag = true; // NGMLR SAM emulation
+    const bool bASTag;
+    const bool bOutputMInsteadOfXAndEqual;
+    const bool bXITag; // NGMLR SAM emulation
+    const bool bXETag; // NGMLR SAM emulation
+    const bool bXRTag; // NGMLR SAM emulation
+    const bool bQS_QETag; // NGMLR SAM emulation
+    const bool bCVTag; // NGMLR SAM emulation
+    const bool bSATag; // NGMLR SAM emulation
+    const bool bCGTag; // NGMLR SAM emulation
     const size_t uiMaxCigarLen = 0x10000; // NGMLR SAM emulation
-    const bool bForcedConsistentConsequtiveInsertionDeletionOrder = true; // NGMLR SAM emulation
+    const bool bForcedConsistentConsequtiveInsertionDeletionOrder; // NGMLR SAM emulation
 
     TagGenerator( const ParameterSetManager& rParameters )
-        : bMDTag( rParameters.getSelected( )->xMDTag->get( ) ), bSVTag( rParameters.getSelected( )->xSVTag->get( ) )
+        : bMDTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bSVTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bNMTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bASTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bOutputMInsteadOfXAndEqual( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bXITag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bXETag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bXRTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bQS_QETag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bCVTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bSATag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bCGTag( rParameters.getSelected( )->xCGTag->get( ) ),
+          bForcedConsistentConsequtiveInsertionDeletionOrder( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) )
     {} // constructor
 
     std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
