@@ -272,7 +272,7 @@ class TagGenerator
                     continue;
                 if( pOtherAlignment->bSecondary )
                     continue;
-                if( pOtherAlignment->xStats.bFirst == pAlignment->xStats.bFirst )
+                if( pOtherAlignment->xStats.bFirst != pAlignment->xStats.bFirst )
                     continue;
                 bFoundSupplementarySisters = true;
                 sSATag.append( pOtherAlignment->getContig( *pPack ) ).append( "," );

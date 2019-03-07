@@ -169,7 +169,7 @@ class AlignmentStatistics
     unsigned int anchor_size;
     unsigned int anchor_ambiguity;
     std::weak_ptr<Alignment> pOther;
-    bool bFirst;
+    bool bFirst; // for paired alignments: is the a alignment for the first mate read of the second one
     bool bSetMappingQualityToZero = false;
     std::string sName;
     nucSeqIndex uiInitialQueryBegin;
