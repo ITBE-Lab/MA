@@ -301,8 +301,7 @@ class BasePledge
         //         } // if
 
         std::mutex xExceptionMutex;
-        bool bExceptionSet = false;
-        AnnotatedException xExceptionFromThread("no exception thrown");
+        std::string sExceptionMessageFromWorker;
 
         {
             /*
@@ -310,16 +309,15 @@ class BasePledge
              * This way, if callback returns false thread 0 can set bContinue to false and all threads will stop after
              * their next iteration.
              */
-            volatile bool bContinue = true;
+            std::atomic_bool bContinue(true);
             // set up a threadpool
             ThreadPool xPool( numThreads );
-
 
             // enqueue a task that executes the comp. graph for each thread in the pool.
             for( std::shared_ptr<BasePledge> pPledge : vPledges )
             {
                 xPool.enqueue(
-                    [&callback, &bContinue, &xExceptionMutex, &xExceptionFromThread, &bExceptionSet, &xPool](
+                    [&callback, &bContinue, &xExceptionMutex, &sExceptionMessageFromWorker, &xPool](
                         size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
                         assert( pPledge != nullptr );
 
@@ -349,28 +347,16 @@ class BasePledge
                                 if( uiTid == 0 )
                                     bContinue = callback( );
                             } // try
-                            catch( AnnotatedException& rxException )
-                            {
-                                std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
-                                if(bExceptionSet)
-                                    std::cerr << "Ignored exception: " << rxException.what( ) << std::endl;
-                                else
-                                {
-                                    bExceptionSet = true;
-                                    xExceptionFromThread = rxException;
-                                    bContinue = false;
-                                } // else
-                                return;
-                            } // catch
                             catch( const std::exception& rxException )
                             {
                                 std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
-                                if(bExceptionSet)
-                                    std::cerr << "Ignored exception: " << rxException.what( ) << std::endl;
+                                if( !sExceptionMessageFromWorker.empty( ) )
+                                    std::cerr
+                                        << "Drop exception (different thread threw already): " << rxException.what( )
+                                        << std::endl;
                                 else
                                 {
-                                    bExceptionSet = true;
-                                    xExceptionFromThread = AnnotatedException( rxException.what() );
+                                    sExceptionMessageFromWorker = rxException.what( );
                                     bContinue = false;
                                 } // else
                                 return;
@@ -378,12 +364,12 @@ class BasePledge
                             catch( ... )
                             {
                                 std::lock_guard<std::mutex> xExceptionGuard( xExceptionMutex );
-                                if(bExceptionSet)
-                                    std::cerr << "Ignored unknown exception" << std::endl;
+                                if( !sExceptionMessageFromWorker.empty( ) )
+                                    std::cerr << "Drop unknown exception (different thread threw already)."
+                                              << std::endl;
                                 else
                                 {
-                                    bExceptionSet = true;
-                                    xExceptionFromThread = AnnotatedException( "Unknown exception" );
+                                    sExceptionMessageFromWorker = "Unknown exception";
                                     bContinue = false;
                                 } // else
                                 return;
@@ -395,8 +381,12 @@ class BasePledge
             } // for
             // wait for the pool to finish it's work
         } // scope xPool
-        if(bExceptionSet)
-            throw xExceptionFromThread;
+
+        if( !sExceptionMessageFromWorker.empty( ) )
+        {
+            std::cerr << "Throw exception" << std::endl;
+            throw std::runtime_error( sExceptionMessageFromWorker );
+        } // if
     } // function
 }; // class
 

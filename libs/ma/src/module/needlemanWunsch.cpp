@@ -255,6 +255,16 @@ class MyPrinterMemory
 
 
 // banded global NW
+/**
+ * Fills the gap between two seeds as follows:
+ * From either seed a extension towards the center of the gap is performed.
+ * If the extensions overlap either on x or y axis:
+ *    both extensions are rolled back so that they end at the center of the originally overlapping interval.
+ *    Then the remeining gap on the other axis is filled using either a insertion or a deletion respectively.
+ *    If both extensions happen to meet up this just joins them as one would expect.
+ * If both extensions z-drop before they overlap:
+ *    The remaining gap between their ends is filled using a insertion and a deletion.
+ */
 void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
                                     nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
                                     std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager )
@@ -262,6 +272,7 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     Wrapper_ksw_extz_t ez_left;
     Wrapper_ksw_extz_t ez_right;
 
+    // perform both extensions
     ksw_ext( (int)( toQuery - fromQuery ), pQuery->pGetSequenceRef( ) + fromQuery, (int)( toRef - fromRef ),
              pRef->pGetSequenceRef( ) + fromRef, xKswParameters, iBandwidthDPExtension, uiZDrop,
              ez_left.ez, // return value
@@ -286,7 +297,7 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
 
     nucSeqIndex qPos = fromQuery;
     nucSeqIndex rPos = fromRef;
-
+    // read out the cigar of the left extension...
     if( rPos != rCenter && qPos != qCenter )
         for( int i = 0; i < ez_left.ez->n_cigar; ++i )
         {
@@ -419,10 +430,10 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     } // for
 
     // fill in the gap between the left and right extension
-    assert( rPosRight >= rPos );
-    pAlignment->append( MatchType::deletion, rPosRight - rPos );
     assert( qPosRight >= qPos );
     pAlignment->append( MatchType::insertion, qPosRight - qPos );
+    assert( rPosRight >= rPos );
+    pAlignment->append( MatchType::deletion, rPosRight - rPos );
 
     // add the last cigar operation (it might have been partially unrolled...)
     if( xTypeLastUnrolledCigar == MatchType::match )
@@ -515,19 +526,16 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
         return;
     } // if
 
-    // do not actually compute through gaps that are larger than a set maximum
-#if 1
-    if( toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea )
-    {
-        ksw_dual_ext( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
-        return;
-    } // if
-#endif
-
     DEBUG_3( std::cout << "dynProg begin" << std::endl; )
     if( !bLocalBeginning && !bLocalEnd )
     {
-        ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
+#if 1
+        // do not actually compute through gaps that are larger than a set maximum
+        if( toQuery - fromQuery > uiMaxGapArea || toRef - fromRef > uiMaxGapArea )
+            ksw_dual_ext( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
+        else
+#endif
+            ksw( pQuery, pRef, fromQuery, toQuery, fromRef, toRef, pAlignment, rMemoryManager );
         DEBUG_3( std::cout << "dynProg end" << std::endl; )
         return;
     } // if

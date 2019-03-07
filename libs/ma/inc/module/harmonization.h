@@ -150,7 +150,7 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
 
     // const int64_t iMinSVDistance;
 
-    const nucSeqIndex uiMaxGapArea;
+    //const nucSeqIndex uiMaxGapArea;
 
     const size_t uiSVPenalty;
 

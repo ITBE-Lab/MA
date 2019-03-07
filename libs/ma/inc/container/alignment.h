@@ -197,14 +197,115 @@ class Alignment : public Container
         return data[ k ].first;
     } // function
 
-    size_t getNumSeeds() const
+    /*
+     * @brief returns how many seeds are within the alignment
+     */
+    size_t getNumSeeds( ) const
     {
         size_t uiRet = 0;
         for( std::pair<MatchType, nucSeqIndex> section : data )
-            if(section.first == MatchType::seed)
+            if( section.first == MatchType::seed )
                 uiRet++;
         return uiRet;
     } // function
+
+    /*
+     * @brief returns how many nucleotides within this alignment are determined by seeds
+     */
+    size_t getNumBySeeds( ) const
+    {
+        size_t uiRet = 0;
+        for( std::pair<MatchType, nucSeqIndex> section : data )
+            if( section.first == MatchType::seed )
+                uiRet += section.second;
+        return uiRet;
+    } // function
+
+    /*
+     * @brief returns how many nucleotides within this alignment matches (or seeds)
+     */
+    size_t getNumMatches( ) const
+    {
+        size_t uiRet = 0;
+        for( std::pair<MatchType, nucSeqIndex> section : data )
+            if( section.first == MatchType::seed || section.first == MatchType::match )
+                uiRet += section.second;
+        return uiRet;
+    } // function
+
+    /*
+     * Essentially computes the NM tag of the SAM format
+     * NM:i:count Number of differences (mismatches plus inserted and deleted bases) between the sequence and
+     * reference, counting only (case-insensitive) A, C, G and T bases in sequence and reference as potential
+     * matches, with everything else being a mismatch. Note this means that ambiguity codes in both
+     * sequence and reference that match each other, such as ‘N’ in both, or compatible codes such as ‘A’ and
+     * ‘R’, are still counted as mismatches. The special sequence base ‘=’ will always be considered to be a
+     * match, even if the reference is ambiguous at that point. Alignment reference skips, padding, soft and
+     * hard clipping (‘N’, ‘P’, ‘S’ and ‘H’ CIGAR operations) do not count as mismatches, but insertions and
+     * deletions count as one mismatch per base.
+     * Note that historically this has been ill-defined and both data and tools exist that disagree with this
+     * definition.
+     *
+     * @note: According to NGMLR documentation, they do not count insertions and deletions
+     */
+    size_t getNumDifferences( const std::shared_ptr<Pack> pPack, const bool bNMTagDoNOTCountIndels ) const
+    {
+        NucSeq xRefSeqWithN;
+        pPack->vExtractSubsectionN( this->uiBeginOnRef, this->uiEndOnRef, xRefSeqWithN );
+        size_t uiNumDiff = 0;
+        size_t uiRPos = 0;
+        for( const std::pair<MatchType, nucSeqIndex>& rPair : this->data )
+        {
+            switch( rPair.first )
+            {
+                case MatchType::seed:
+                case MatchType::match:
+                    for( size_t uiI = 0; uiI < rPair.second; uiI++ )
+                        if( xRefSeqWithN[ uiI + uiRPos ] >= 4 ) // there is a N at this position
+                            uiNumDiff++;
+                    break;
+                case MatchType::insertion:
+                case MatchType::deletion:
+                    // if we do not want to count indels, bNMTagDoNOTCountIndels must be set to true.
+                    if( bNMTagDoNOTCountIndels )
+                        break;
+                case MatchType::missmatch:
+                    uiNumDiff += rPair.second;
+                    break;
+                default:
+                    throw std::runtime_error( "Should never reach default case in computeTag switch case." );
+                    break;
+            } // switch
+            if( rPair.first != MatchType::insertion )
+                uiRPos += rPair.second;
+        } // for
+        return uiNumDiff;
+    } // method
+
+
+    /*
+     * sniffles requirement:
+     * if we fill a dual extend gap by brute force (due to z drop) the used insertion and deletion must always be in
+     * consistent order (among several reads).
+     * Therefore we need to check the strand of the alignment and adjust accordingly.
+     */
+    void invertSuccessiveInserionAndDeletion( )
+    {
+        // using -1 in loop therefore start at 1 instead of 0
+        for( size_t uiI = 1; uiI < this->data.size(); uiI++ )
+        {
+            if( ( this->data[ uiI - 1 ].first == MatchType::insertion &&
+                  this->data[ uiI ].first == MatchType::deletion ) ||
+                ( this->data[ uiI - 1 ].first == MatchType::deletion &&
+                  this->data[ uiI ].first == MatchType::insertion ) )
+            {
+                auto xTmp = this->data[ uiI ];
+                this->data[ uiI ] = this->data[ uiI - 1 ];
+                this->data[ uiI - 1 ] = xTmp;
+                uiI++; // increment uiI twice to skip one (so that we do not swap back and forth)
+            } // if
+        } // for
+    } // method
 
     /**
      * @returns the type of math for the given position i.
@@ -256,6 +357,50 @@ class Alignment : public Container
                     break;
             } // switch
         } // for
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+            std::reverse( data.begin( ), data.end( ) );
+        return sCigar;
+    } // method
+
+    std::string cigarStringWithMInsteadOfXandEqual( Pack& rPack )
+    {
+        std::string sCigar = "";
+        if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+            std::reverse( data.begin( ), data.end( ) );
+
+        size_t uiSequentialM = 0;
+        for( std::pair<MatchType, nucSeqIndex> section : data )
+        {
+            switch( section.first )
+            {
+                case MatchType::seed:
+                case MatchType::match:
+                case MatchType::missmatch:
+                    // add up sequential M's
+                    uiSequentialM += section.second;
+                    break;
+                case MatchType::insertion:
+                case MatchType::deletion:
+                    // output added up sequential M's
+                    if( uiSequentialM > 0 )
+                    {
+                        sCigar.append( std::to_string( uiSequentialM ) ).append( "M" );
+                        uiSequentialM = 0;
+                    } // if
+                    // output indel
+                    sCigar.append( std::to_string( section.second ) )
+                        .append( ( section.first == MatchType::insertion ) ? "I" : "D" );
+                    break;
+                default:
+                    std::cerr << "WARNING invalid cigar symbol" << std::endl;
+                    break;
+            } // switch
+        } // for
+
+        // don't forget potential last M!
+        if( uiSequentialM > 0 )
+            sCigar.append( std::to_string( uiSequentialM ) ).append( "M" );
+
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
             std::reverse( data.begin( ), data.end( ) );
         return sCigar;
@@ -474,7 +619,7 @@ class Alignment : public Container
         // the data.size() == 0 is to allow SW to set the score directly
         assert( data.size( ) == 0 || reCalcScore( ) == iScore );
         return iScore;
-    }
+    } // method
 
     /**
      * @brief the NMW score for this alignment
@@ -492,19 +637,7 @@ class Alignment : public Container
             if( at( i ) == MatchType::seed )
                 iCount++;
         return ( (float)iCount ) / (float)length( );
-    }
-
-    /*
-     * @brief returns how many nucleotides within this alignment are determined by seeds
-     */
-    unsigned int numBySeeds( ) const
-    {
-        unsigned int iCount = 0;
-        for( unsigned int i = 0; i < length( ); i++ )
-            if( at( i ) == MatchType::seed )
-                iCount++;
-        return iCount;
-    }
+    } // method
 
     /**
      * @brief for sorting alignment by their score

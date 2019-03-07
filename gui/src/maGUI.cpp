@@ -190,8 +190,10 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
                                "SAM Settings", // Title of Dialog
                                [&]( wxWindow* pxHostWindow ) { // Content of Dialog
                                    auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.bSAMOutputInReadsFolder.pContent )
+                                   pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
                                        .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
+                                       .append( rxGlobalParameterSet.xSAMOutputFileName.pContent,
+                                                "SAM File (*.sam)|*.sam" )
                                        .updateEnabledDisabled( );
 
                                    return pxPropertyPanel;
@@ -561,6 +563,11 @@ class AlignFrame : public wxDialog
         return !bForceStop;
     } // method
 
+    void onCheckCallBack( const std::string& rS )
+    {
+        queueStringMessage( wxEVT_WORKER_MESSAGE, rS + "\n" );
+    } // method
+
     /* Handler for printing from worker */
     void onWorkerGaugeUpdate( wxCommandEvent& rxEvent )
     {
@@ -655,7 +662,8 @@ class AlignFrame : public wxDialog
             try
             {
                 xExecutionContext.doAlign( std::bind( &AlignFrame::onCallBack, this, std::placeholders::_1,
-                                                      std::placeholders::_2, std::placeholders::_3 ) );
+                                                      std::placeholders::_2, std::placeholders::_3 ),
+                                           std::bind( &AlignFrame::onCheckCallBack, this, std::placeholders::_1 ) );
 
                 if( !bForceStop )
                 { // Enable the OK button only if the alignment succeeded
@@ -968,6 +976,15 @@ class MA_MainFrame : public wxFrame
             .menu( ) // Genome Menu
             .append( "C&reate Index\tF2", // Open
                      std::bind( &MA_MainFrame::onCreateIndexWizard, this, std::placeholders::_1 ) );
+
+        this->xMenuBar->push_back( "&Settings" )
+            .menu( ) // Genome Menu
+            .append( "A&ligner\tF4", // Settings -> Aligner
+                     std::bind( &MA_MainFrame::onSettingsGearButton, this, std::placeholders::_1 ) )
+            .append( "S&AM Output\tF5", // Settings -> SAM Output
+                     std::bind( &MA_MainFrame::onOutputGearButton, this, std::placeholders::_1 ) )
+            .append( "P&aired Reads\tF6", // Settings -> Paired Settings
+                     std::bind( &MA_MainFrame::onPairedGearButton, this, std::placeholders::_1 ) );
 
         this->xMenuBar->push_back( "&Help" )
             .menu( ) // Help Menu

@@ -201,14 +201,5 @@ template <typename T> void exportInterval( )
         .def_readwrite( "start", &Interval<T>::iStart )
         .def_readwrite( "size", &Interval<T>::iSize );
 } // function
-#else
-template <typename T> void exportInterval( py::module& rxPyModuleId, std::string sName )
-{
-    // export the Seed class
-    py::class_<Interval<T>>( rxPyModuleId, sName.c_str() )
-        .def( py::init<T, T>() )
-        .def_readwrite( "start", &Interval<T>::iStart )
-        .def_readwrite( "size", &Interval<T>::iSize );
-} // function
 #endif
 #endif

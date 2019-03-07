@@ -51,6 +51,12 @@ BOOST_PYTHON_MODULE( libMA )
 
 #else
 
+
+/*
+ * The exposing of the ParameterSetManager and it's components has been reworked in SV branch
+ * -> here only some quickfixes, so that python does not immedeately segfault if someone tries to use this...
+ */
+
 template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModuleId, std::string sName )
 {
     py::class_< //
@@ -60,7 +66,6 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
         >( rxPyModuleId, sName.c_str( ) ) //
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
         .def( "get", &AlignerParameter<TP_VALUE>::get_py );
-    py::implicitly_convertible<AlignerParameter<TP_VALUE>, AlignerParameterBase>( );
 } // function
 
 /**

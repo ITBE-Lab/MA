@@ -4,6 +4,7 @@
  */
 #include "module/harmonization.h"
 #include "module/stripOfConsideration.h"
+#include "util/pybind11.h"
 #if USE_RANSAC == 1
 #include "sample_consensus/test_ransac.h"
 #endif
@@ -425,8 +426,8 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
                        } // lambda
             ); // sort function call
 
-            DEBUG( if(!pSeeds->empty()) pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
-                   if(!pSeeds->empty()) pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
+            DEBUG( if( !pSeeds->empty( ) ) pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
+                   if( !pSeeds->empty( ) ) pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
 
             /*
              * sometimes we have one or less seeds remaining after the cupling:
@@ -810,5 +811,12 @@ void exportHarmonization( py::module& rxPyModuleId )
                                                                                    "docstr" )
         .def( py::init<>( ) );
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
+
+    py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,
+                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "ContainerVectorSeeds",
+                                                                                   "docstr" );
+
+    // tell boost python that pointers of these classes can be converted implicitly
+    py::implicitly_convertible<ContainerVector<std::shared_ptr<Seeds>>, Container>( );
 } // function
 #endif

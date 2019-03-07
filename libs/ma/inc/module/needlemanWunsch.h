@@ -62,12 +62,11 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
                           rParameters.getSelected( )->xExtend->get( ),
                           rParameters.getSelected( )->xGap2->get( ),
                           rParameters.getSelected( )->xExtend2->get( ) ),
-          uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get() ),
-          uiPadding( rParameters.getSelected( )->xPadding->get() ),
-          uiZDrop( rParameters.getSelected( )->xZDrop->get() ),
-          iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling->get() ),
-          iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get() )
-          {}; // default constructor
+          uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
+          uiPadding( rParameters.getSelected( )->xPadding->get( ) ),
+          uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
+          iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling->get( ) ),
+          iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get( ) ){}; // default constructor
 
 
     std::shared_ptr<Alignment> EXPORTED execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,

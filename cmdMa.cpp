@@ -52,13 +52,29 @@ void printOption( std::string sName,
                   const std::string& sDescription,
                   const std::string& sIndentDesc )
 {
-    std::cout << sIndentOptions;
+    std::string sOptionHead = sIndentOptions;
     if( cShort != AlignerParameterBase::NO_SHORT_DEFINED )
-        std::cout << "-" << cShort << ", ";
+    {
+        sOptionHead.append( "-" );
+        sOptionHead.push_back( cShort );
+        sOptionHead.append( ", " );
+    } // if
     std::replace( sName.begin( ), sName.end( ), ' ', '_' );
-    std::cout << "--" << sName << " <" << sTypeName << "> [";
-    std::cout << sDefaultVal << "]";
-    std::cout << std::endl << sIndentDesc;
+    sOptionHead.append("--");
+    sOptionHead.append(sName);
+    sOptionHead.append(" <");
+    sOptionHead.append(sTypeName);
+    sOptionHead.append("> [");
+    sOptionHead.append(sDefaultVal);
+    sOptionHead.append("]");
+    if(sOptionHead.size() < sIndentDesc.size() - 4)
+    {
+        std::cout << sOptionHead;
+        for(size_t i = sOptionHead.size(); i < sIndentDesc.size(); i++)
+            std::cout << " ";
+    }// if
+    else
+        std::cout << sOptionHead << std::endl << sIndentDesc;
 
     std::istringstream xStream( sDescription );
     size_t uiCharCount = 0;
@@ -201,10 +217,18 @@ int main( int argc, char* argv[] )
         return 1;
     } // if
     ExecutionContext xExecutionContext;
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->bSAMOutputInReadsFolder->set( false );
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbUseMaxHardareConcurrency->set( false );
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->piNumberOfThreads->set(
+    // change the way output works to a simple -o for the command line aligner.
+    // Also disable Use Max Hardware concurrency parameter and set -t to max hardware_concurrency by default.
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection = 2;
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->set( false );
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->set(
         std::thread::hardware_concurrency( ) );
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
+        xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputTypeChoice.pContent );
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
+        xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputPath.pContent );
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
+        xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency.pContent );
 
     // set the mode...
     for( int iI = 2; iI < argc; iI += 2 )
@@ -237,7 +261,9 @@ int main( int argc, char* argv[] )
             if( sOptionName == "-x" || sOptionName == "--Index" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
-                xExecutionContext.xGenomeManager.loadGenome( sOptionValue + ".json" );
+                const std::string s = xExecutionContext.xGenomeManager.loadGenome( sOptionValue );
+                if( !s.empty() )
+                    throw std::runtime_error( s );
                 iI++; // also ignore the following argument
                 continue;
             } // if

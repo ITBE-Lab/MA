@@ -394,6 +394,25 @@ class ParameterSetBase
         }
     } // method
 
+    void unregisterParameter( std::shared_ptr<AlignerParameterBase> pParameter )
+    {
+        xpAllParameters.erase( pParameter->sName );
+        auto xIt1 = xpParametersByShort.begin( );
+        while( xIt1 != xpParametersByShort.end( ) )
+        {
+            if( xIt1->second == pParameter )
+                xpParametersByShort.erase( xIt1++ );
+            else
+                xIt1++;
+        } // while
+        for( auto& rPair : xpParametersByCategory )
+            rPair.second.erase( std::remove_if( rPair.second.begin( ), rPair.second.end( ),
+                                                [&pParameter]( const std::shared_ptr<AlignerParameterBase> pX ) {
+                                                    return ( pX == pParameter );
+                                                } ),
+                                rPair.second.end( ) );
+    } // method
+
     bool hasName( const std::string& rParameterName ) const
     {
         return xpAllParameters.count( rParameterName ) > 0;
@@ -457,6 +476,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<double> xMeanPairedReadDistance; // Mean distance of paired reads
     AlignerParameterPointer<double> xStdPairedReadDistance; // Standard deviation of paired reads
     AlignerParameterPointer<double> xPairedBonus; // Score factor for paired reads
+    AlignerParameterPointer<bool> xPairedCheck; // Check paired reads
 
     // Seeding options:
     AlignerParameterPointer<AlignerParameterBase::ChoicesType> xSeedingTechnique; // Seeding Technique
@@ -479,8 +499,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xNoSupplementary; // Omit supplementary alignments
     AlignerParameterPointer<double> xMaxOverlapSupplementary; // Maximal supplementary overlap
     AlignerParameterPointer<int> xMaxSupplementaryPerPrim; // Number Supplementary alignments
-    AlignerParameterPointer<bool> xMDTag; // Output MD Tag
-    AlignerParameterPointer<bool> xSVTag; // Output SV Tag
+    AlignerParameterPointer<bool> xEmulateNgmlrTags; // Emulate NGMLR's tag output
+    AlignerParameterPointer<bool> xCGTag; // Output long CIGARS in CG tag
 
     // SV caller options
     AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
@@ -570,6 +590,9 @@ class Presetting : public ParameterSetBase
                         "the computation of the mapping quality and for picking optimal alignment pairs. [val] < 1 "
                         "results in penalty; [val] > 1 results in bonus.",
                         PAIRED_PARAMETERS, 1.25, checkPositiveDoubleValue ),
+          xPairedCheck( this, "Check for Consistency",
+                        "Check if both paired read files comprise the same number of reads. (Intended for debugging.)",
+                        PAIRED_PARAMETERS, false ),
 
           // Seeding:
           xSeedingTechnique( this, "Seeding Technique", 's',
@@ -605,9 +628,11 @@ class Presetting : public ParameterSetBase
           // SoC:
           xMaxNumSoC( this, "Maximal Number of SoC's", 'N', "Only consider the <val> best scored SoC's. 0 = no limit.",
                       SOC_PARAMETERS, 30, checkPositiveValue ),
-          xMinNumSoC( this, "Minimal Number of SoC's", 'M',
-                      "Always consider the first <val> SoC's no matter the Heuristic optimizations.", SOC_PARAMETERS, 1,
-                      checkPositiveValue ),
+          xMinNumSoC(
+              this, "Minimal Number of SoC's", 'M',
+              "Always consider the first <val> SoC's no matter the Heuristic optimizations. Upping this "
+              "parameter might improve the output of supplementary alignments and therefore successive SV calling.",
+              SOC_PARAMETERS, 1, checkPositiveValue ),
           xSoCWidth( this, "Fixed SoC Width",
                      "Set the SoC width to a fixed value. 0 = use the formula given in the paper. This parameter is "
                      "intended for debugging purposes.",
@@ -631,17 +656,16 @@ class Presetting : public ParameterSetBase
           xMaxSupplementaryPerPrim( this, "Number Supplementary Alignments",
                                     "Maximal Number of supplementary alignments per primary alignment.", SAM_PARAMETERS,
                                     1, checkPositiveValue ),
-          xMDTag( this, "Output MD Tag",
-                  "Output the MD tag. The tag contains duplicate information, i.e. information that can be inferred "
-                  "from cigar and genome. However, some downstream tools require this tag since they do not have "
-                  "access to the genome themselves.",
-                  SAM_PARAMETERS, true ),
-          // @see https://github.com/fritzsedlazeck/Sniffles/issues/51#issuecomment-377471553
-          xSVTag( this, "Output SV Tag",
-                  "Output the SV tag, as used by SNIFFLES. `0x1` indicates whether the reference sequence consists of "
-                  "mostly Ns up and/or downstream of the read alignment. `0x2` is set if > 95 % of the read base pairs "
-                  "were aligned in the particular alignment.",
-                  SAM_PARAMETERS, true ),
+          xEmulateNgmlrTags( this, "Emulate NGMLR's tag output",
+                             "Output SAM tags as NGMLR would. Activate this if you want to use MA in combination with "
+                             "Sniffles. Enableing this will drastically increase the size of the output file.",
+                             SAM_PARAMETERS, false ),
+          xCGTag(
+              this, "Output long cigars in CG tag",
+              "Some software crashes if a cigar is too long. Enabeling this flag makes MA output that the entire "
+              "read was soft clipped in the regular cigar field if the cigar would exceed 65536 operations. The actual "
+              "cigar is then given in the CG:B:I tag as a comma seperated binary list.",
+              SAM_PARAMETERS, true ),
 
           // SV
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
@@ -691,8 +715,11 @@ class Presetting : public ParameterSetBase
           xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
                       "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100,
                       checkPositiveValue ),
-          xMaxGapArea( this, "Maximal Gap Area", "Split alignments in harmonization if gap area is larger than <val>.",
-                       HEURISTIC_PARAMETERS, 10000, checkPositiveValue ),
+          xMaxGapArea( this, "Maximal Gap Size",
+                       "If the gap between seeds is larger than <val> on query or reference, the dual extension "
+                       "process is used to fill the gap. Dual extension is more expensive if the extension does not "
+                       "Z-drop, but more efficient otherwise.",
+                       HEURISTIC_PARAMETERS, 20, checkPositiveValue ),
           xGenomeSizeDisable( this, "Minimum Genome Size for Heuristics",
                               "Some heuristics can only be applied on long enough genomes. Disables: SoC score "
                               "Drop-off if the genome is shorter than <val>.",
@@ -733,9 +760,10 @@ void AlignerParameterPointer<VALUE_TYPE>::do_register( ParameterSetBase* pPreset
 class GeneralParameter : public ParameterSetBase
 {
   public:
-    // FIXME: Set this to a standard path in the beginning (~home/ma/SAM)
-    AlignerParameterPointer<bool> bSAMOutputInReadsFolder; // SAM Output in the same folder as the reads.
+    AlignerParameterPointer<AlignerParameterBase::ChoicesType>
+        xSAMOutputTypeChoice; // SAM Output in the same folder as the reads.
     AlignerParameterPointer<fs::path> xSAMOutputPath; // folder path
+    AlignerParameterPointer<fs::path> xSAMOutputFileName; // folder path
     AlignerParameterPointer<bool> pbUseMaxHardareConcurrency; // Exploit all cores
     AlignerParameterPointer<int> piNumberOfThreads; // selected number of threads
     AlignerParameterPointer<bool> pbPrintHelpMessage; // Print the help message to stdout
@@ -744,12 +772,15 @@ class GeneralParameter : public ParameterSetBase
 
     /* Constructor */
     GeneralParameter( )
-        : bSAMOutputInReadsFolder( this, "SAM Files in same Folder as Reads",
-                                   "If selected, SAM files are written to the folder of the reads.", GENERAL_PARAMETER,
-                                   true ),
-          xSAMOutputPath( this, "Folder for SAM Files", 'o',
+        : xSAMOutputTypeChoice( this, "SAM File output", "Select output type for sam file.", GENERAL_PARAMETER,
+                                AlignerParameterBase::ChoicesType{{"Read_Folder", "In Read Folder"},
+                                                                  {"Specified_Folder", "In Specified Folder"},
+                                                                  {"Specified_File", "As Specified File"}} ),
+          xSAMOutputPath( this, "Folder for SAM Files",
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
+          xSAMOutputFileName( this, "SAM File name", 'o', "Name of the SAM file alignments shall be written to.",
+                              GENERAL_PARAMETER, "ma_out.sam" ),
           pbUseMaxHardareConcurrency( this, "Use all Processor Cores",
                                       "Number of threads used for alignments is identical to the number "
                                       "of processor cores.",
@@ -760,7 +791,8 @@ class GeneralParameter : public ParameterSetBase
                              GENERAL_PARAMETER, 1, checkPositiveValue ),
           pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
-        xSAMOutputPath->fEnabled = [this]( void ) { return this->bSAMOutputInReadsFolder->get( ) == false; };
+        xSAMOutputPath->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
+        xSAMOutputFileName->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
         piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
     } // constructor
 
@@ -793,23 +825,32 @@ class ParameterSetManager
     std::shared_ptr<GeneralParameter> pGlobalParameterSet;
 
     // Presets for aligner configuration
-    std::map<std::string, std::shared_ptr<Presetting>> xParametersSets;
+    std::map<std::string, Presetting> xParametersSets;
 
-    ParameterSetManager( ) : pGlobalParameterSet( std::make_shared<GeneralParameter>( ) )
+    ParameterSetManager( )
     {
-        xParametersSets.emplace( "Default", std::make_shared<Presetting>( "Default" ) );
-        xParametersSets.emplace( "Illumina", std::make_shared<Presetting>( "Illumina" ) );
-        xParametersSets[ "Illumina" ]->xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina" ]->xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina" ]->xMaxNumSoC->set( 20 );
-        xParametersSets.emplace( "Illumina Paired", std::make_shared<Presetting>( "Illumina Paired" ) );
-        xParametersSets[ "Illumina Paired" ]->xUsePairedReads->set( true );
-        xParametersSets[ "Illumina Paired" ]->xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina Paired" ]->xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina Paired" ]->xMaxNumSoC->set( 20 );
-        xParametersSets.emplace( "PacBio", std::make_shared<Presetting>( "PacBio" ) );
-        xParametersSets.emplace( "Nanopore", std::make_shared<Presetting>( "Nanopore" ) );
-        xParametersSets[ "Nanopore" ]->xSeedingTechnique->set( 1 );
+        xParametersSets.emplace( "Default", Presetting( ) );
+
+        xParametersSets.emplace( "Illumina", Presetting( ) );
+        xParametersSets[ "Illumina" ].xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina" ].xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina" ].xMaxNumSoC->set( 20 );
+
+        xParametersSets.emplace( "Illumina Paired", Presetting( ) );
+        xParametersSets[ "Illumina Paired" ].xUsePairedReads->set( true );
+        xParametersSets[ "Illumina Paired" ].xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina Paired" ].xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina Paired" ].xMaxNumSoC->set( 20 );
+
+        xParametersSets.emplace( "PacBio", Presetting( ) );
+        xParametersSets[ "PacBio" ].xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "PacBio" ].xMinNumSoC->set( 5 );
+
+
+        xParametersSets.emplace( "Nanopore", Presetting( ) );
+        xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
+        xParametersSets[ "Nanopore" ].xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "Nanopore" ].xMinNumSoC->set( 5 );
 
         // Initially select Illumina
         this->pSelectedParamSet = xParametersSets[ "Default" ];

@@ -318,7 +318,18 @@ class Reader
 
 
 class SingleFileReader : public Module<NucSeq, true>, public Reader
-{}; // class
+{
+  public:
+    virtual const std::string status( ) const
+    {
+        throw std::runtime_error( "This method must be overridden." );
+    } // method
+
+    virtual void reset()
+    {
+        throw std::runtime_error( "This method must be overridden." );
+    } // method
+}; // class
 
 /**
  * @brief Reads Queries from a file.
@@ -408,6 +419,26 @@ class FileReader : public SingleFileReader
     {
         return 1;
     } // method
+
+    virtual const std::string status( ) const
+    {
+        return std::string( xFileName.string( ) )
+            .append( ":" )
+            .append( std::to_string( this->getCurrPosInFile( ) ) )
+            .append( "/" )
+            .append( std::to_string( this->getFileSize( ) ) );
+    } // method
+
+    virtual void reset()
+    {
+        pFile->close( );
+#ifdef WITH_ZLIB
+        if( xFileName.extension( ).string( ) == ".gz" )
+            pFile = std::make_shared<GzFileStream>( xFileName );
+        else
+#endif
+            pFile = std::make_shared<StdFileStream>( xFileName );
+    } // method
 }; // class
 
 class FileListReader : public SingleFileReader
@@ -438,7 +469,7 @@ class FileListReader : public SingleFileReader
           vsFileNames( vsFileNames ),
           pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
     {
-        openNextFileWhileNecessary();
+        openNextFileWhileNecessary( );
     } // constructor
 
     FileListReader( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
@@ -446,13 +477,13 @@ class FileListReader : public SingleFileReader
           vsFileNames( vsFileNames ),
           pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
     {
-        openNextFileWhileNecessary();
+        openNextFileWhileNecessary( );
     } // constructor
 
     std::shared_ptr<NucSeq> EXPORTED execute( )
     {
         auto pRet = pFileReader->execute( );
-        openNextFileWhileNecessary();
+        openNextFileWhileNecessary( );
         return pRet;
     } // method
 
@@ -481,6 +512,21 @@ class FileListReader : public SingleFileReader
     {
         return vsFileNames.size( );
     } // method
+
+    virtual const std::string status( ) const
+    {
+        return std::string( std::to_string( this->getCurrFileIndex( ) ) )
+            .append( "/" )
+            .append( std::to_string( this->getNumFiles( ) ) )
+            .append( "::" )
+            .append( this->pFileReader->status( ) );
+    } // method
+
+    virtual void reset()
+    {
+        uiFileIndex = 0;
+        pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
+    } // method
 }; // class
 
 typedef ContainerVector<std::shared_ptr<NucSeq>> TP_PAIRED_READS;
@@ -495,12 +541,14 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     std::shared_ptr<SingleFileReader> pF1;
     std::shared_ptr<SingleFileReader> pF2;
 
+
     /**
      * @brief creates a new FileReader.
      */
     PairedFileReader(
         const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
-        : pF1( std::make_shared<FileListReader>( vsFileName1 ) ), pF2( std::make_shared<FileListReader>( vsFileName2 ) )
+        : pF1( std::make_shared<FileListReader>( vsFileName1 ) ),
+          pF2( std::make_shared<FileListReader>( vsFileName2 ) )
     {} // constructor
     /**
      * @brief creates a new FileReader.
@@ -509,6 +557,8 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
         : pF1( std::make_shared<FileReader>( rParameters, sQuery, sQuery.size( ) ) ),
           pF2( std::make_shared<FileReader>( rParameters, sMate, sMate.size( ) ) )
     {} // constructor
+
+    void EXPORTED checkPaired();
 
     std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
 
@@ -536,6 +586,11 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     size_t getNumFiles( ) const
     {
         return pF1->getNumFiles( ) + pF2->getNumFiles( );
+    } // method
+
+    virtual const std::string status( ) const
+    {
+        return std::string( this->pF1->status( ) ).append( ";" ).append( this->pF2->status( ) );
     } // method
 }; // class
 
