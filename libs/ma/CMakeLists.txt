@@ -43,13 +43,6 @@ if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION 
     target_link_libraries( MA PUBLIC stdc++fs )
 endif()
 
-# and for each of your dependent executable/library targets:
-if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
-    # std::filesystem is still experimental and for linkage we need separated library
-    message( "-- libMA: Filesystem support for GCC below version 8" )
-    target_link_libraries( MA PUBLIC stdc++fs)
-endif()
-
 # if there is a zlib
 if( ZLIB_FOUND )
     # Activate code that relies on zlib by defining WITH_ZLIB
