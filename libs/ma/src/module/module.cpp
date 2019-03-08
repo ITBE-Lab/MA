@@ -12,9 +12,11 @@ void exportModuleClass( py::module& rxPyModuleId )
 {
     // module is an abstract class and should never be initialized
     py::class_<PyModule<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
-        .def( "execute", &PyModule<false>::execute );
+        .def( "execute", &PyModule<false>::execute )
+        .def( "is_finished", &PyModule<false>::isFinished );
     py::class_<PyModule<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId, "VolatileModule" )
-        .def( "execute", &PyModule<true>::execute );
+        .def( "execute", &PyModule<true>::execute )
+        .def( "is_finished", &PyModule<true>::isFinished );
 
     py::class_<BasePledge, std::shared_ptr<BasePledge>>( rxPyModuleId, "BasePledge" )
         .def( "is_finished", &BasePledge::isFinished );

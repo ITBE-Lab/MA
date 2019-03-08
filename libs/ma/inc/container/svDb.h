@@ -363,6 +363,16 @@ class SV_DB : public CppSQLite3DB, public Container
             return std::make_pair( ReadContex( xIdPair.first, pDB->pSocTable ),
                                    ReadContex( xIdPair.second, pDB->pSocTable ) );
         } // method
+
+        inline void insertRead( std::shared_ptr<NucSeq> pRead )
+        {
+            pDB->pReadTable->insertRead( uiSequencerId, pRead );
+        } // method
+
+        inline void insertPairedRead( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+        {
+            pDB->pReadTable->insertPairedRead( uiSequencerId, pReadA, pReadB );
+        } // method
     }; // class
 
 }; // class
