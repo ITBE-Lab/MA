@@ -827,7 +827,7 @@ class ParameterSetManager
     // Presets for aligner configuration
     std::map<std::string, std::shared_ptr<Presetting>> xParametersSets;
 
-    ParameterSetManager( )
+    ParameterSetManager( ) : pGlobalParameterSet( std::make_shared<GeneralParameter>( ) )
     {
         xParametersSets.emplace( "Default", std::make_shared<Presetting>( "Default" ) );
 
