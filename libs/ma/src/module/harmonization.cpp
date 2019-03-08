@@ -806,15 +806,12 @@ void exportHarmonization( py::module& rxPyModuleId )
 
     exportModule<SeedLumping>( rxPyModuleId, "SeedLumping" );
 
-    py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,
-                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "SeedsVector",
-                                                                                   "docstr" )
-        .def( py::init<>( ) );
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 
     py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,
                         std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "ContainerVectorSeeds",
-                                                                                   "docstr" );
+                                                                                   "docstr" )
+        .def( py::init<>( ) );
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<ContainerVector<std::shared_ptr<Seeds>>, Container>( );
