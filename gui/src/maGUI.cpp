@@ -16,24 +16,12 @@
 #include <thread> // STL
 #include <vector> // STL
 
-
-// For compilers that support precompilation, includes "wx/wx.h".
-#include "wx/wxprec.h"
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
-// for all others, include the necessary headers (this file is usually all you
-// need because it includes almost all "standard" wxWidgets headers)
-#ifndef WX_PRECOMP
-#include "wx/wx.h"
-#endif
-
-#include "mwx.h"
+// Include wxWidgets headers
+#include <wx/wx.h>
 /* Additional wxWidgets includes that are not part of wx.h already */
 #include <wx/artprov.h>
 #include <wx/bmpcbox.h>
+#include <wx/busyinfo.h> // used in the context of Drag and Drop
 #include <wx/event.h> // Bind
 #include <wx/filepicker.h>
 #include <wx/html/helpctrl.h>
@@ -41,6 +29,8 @@
 #include <wx/tglbtn.h>
 #include <wx/wizard.h>
 #include <wx/wrapsizer.h>
+/* Include MA wxWidgtes extensions */
+#include "mwx.h"
 
 /* Due to MSVC libMa should be included after the wxWidgets includes */
 #include "util/default_parameters.h"
@@ -58,8 +48,8 @@ ExecutionContext xExecutionContext;
 #include "IconMA.xpm" // defines xIconMA_XPM
 
 /* Global execution context for ID management.
+ * (Currently only used in the context of wxMenus)
  * Defined in mwx.h
- * TODO: Remove me
  */
 int mxwExecutionContext::iHighestID = wxID_HIGHEST + 30;
 
@@ -81,29 +71,30 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
     mwxSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                        Presetting& rxParameterSet // Parameter used for the dialog
                        )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "Parameter Settings", // Title of Dialog
-                               [&] //
-                               ( wxWindow * pxHostWindow ) //
-                               { // Content of Dialog
-                                   this->iValue = 0;
-                                   auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "Parameter Settings", // Title of Dialog
+              [&] //
+              ( wxWindow * pxHostWindow ) //
+              { // Content of Dialog
+                  this->iValue = 0;
+                  auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
 
-                                   for( auto xPair : rxParameterSet.xpParametersByCategory )
-                                   {
-                                       // xPair.first.second extracts the category name
-                                       auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
-                                       auto* pPanel = new mwxPropertyPanel(
-                                           pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
-                                       for( auto pParameter : xPair.second )
-                                           pPanel->append( pParameter );
-                                       pPanel->updateEnabledDisabled( );
-                                   } // for
+                  for( auto xPair : rxParameterSet.xpParametersByCategory )
+                  {
+                      // xPair.first.second extracts the category name
+                      auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
+                      auto* pPanel =
+                          new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
+                      for( auto pParameter : xPair.second )
+                          pPanel->append( pParameter );
+                      pPanel->updateEnabledDisabled( );
+                  } // for
 
-                                   return pxNotebook;
-                               }, // lambda
-                               wxDefaultPosition,
-                               "Save as Custom" )
+                  return pxNotebook;
+              }, // lambda
+              wxDefaultPosition,
+              "Save as Custom" )
     {} // constructor
 
     /* Destructor */
@@ -124,19 +115,20 @@ class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
     mwxPairedSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                              Presetting& rxParameterSet // Parameter used for the dialog
                              )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "Paired Reads Settings", // Title of Dialog
-                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
-                                   pxPropertyPanel->append( rxParameterSet.xStdPairedReadDistance.pContent );
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "Paired Reads Settings", // Title of Dialog
+              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                  pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
+                  pxPropertyPanel->append( rxParameterSet.xStdPairedReadDistance.pContent );
 
-                                   return pxPropertyPanel;
-                               }, // lambda
+                  return pxPropertyPanel;
+              }, // lambda
 
-                               wxDefaultPosition,
-                               "Save as Custom",
-                               true ) // fit the size of the dialog to the size of its content
+              wxDefaultPosition,
+              "Save as Custom",
+              true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
     /* Destructor */
@@ -155,19 +147,20 @@ class mwxGlobalSettingsDialog : public mwxOK_Cancel_Dialog
     mwxGlobalSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                              GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
                              )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "Global Settings", // Title of Dialog
-                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency.pContent )
-                                       .append( rxGlobalParameterSet.piNumberOfThreads.pContent )
-                                       .updateEnabledDisabled( );
-                                   return pxPropertyPanel;
-                               }, // lambda
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "Global Settings", // Title of Dialog
+              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                  pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency.pContent )
+                      .append( rxGlobalParameterSet.piNumberOfThreads.pContent )
+                      .updateEnabledDisabled( );
+                  return pxPropertyPanel;
+              }, // lambda
 
-                               wxDefaultPosition,
-                               "OK",
-                               true ) // fit the size of the dialog to the size of its content
+              wxDefaultPosition,
+              "OK",
+              true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
     /* Destructor */
@@ -186,22 +179,22 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
     mwxSAMSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                           GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
                           )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "SAM Settings", // Title of Dialog
-                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
-                                       .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
-                                       .append( rxGlobalParameterSet.xSAMOutputFileName.pContent,
-                                                "SAM File (*.sam)|*.sam" )
-                                       .updateEnabledDisabled( );
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "SAM Settings", // Title of Dialog
+              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                  pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
+                      .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
+                      .append( rxGlobalParameterSet.xSAMOutputFileName.pContent, "SAM File (*.sam)|*.sam" )
+                      .updateEnabledDisabled( );
 
-                                   return pxPropertyPanel;
-                               }, // lambda
+                  return pxPropertyPanel;
+              }, // lambda
 
-                               wxDefaultPosition,
-                               "OK",
-                               true ) // fit the size of the dialog to the size of its content
+              wxDefaultPosition,
+              "OK",
+              true ) // fit the size of the dialog to the size of its content
     {} // constructor
 }; // class
 
@@ -623,12 +616,13 @@ class AlignFrame : public wxDialog
     } // method
 
     /* Handler for CancelOK Button
-     * Excuted by the event loop.
+     * (Executed by event loop)
      */
     void onCancelOKButtonClicked( wxCommandEvent& rxEvent )
     {
         if( !this->bForceStop && !this->bAlignmentDone )
         {
+            // User requests forced stop of alignments computations.
             this->pxStopOKButton->Disable( );
             this->bForceStop = true;
             this->pxStopOKButton->SetLabel( "Continue" );
@@ -650,7 +644,7 @@ class AlignFrame : public wxDialog
         this->QueueEvent( pxEvent );
     } // method
 
-    // The wxWidgets ShowModal is not thread-safe.
+    /* ShowModal of wxWidgets is not thread-safe! */
     int ShowModal( void )
     {
         // create worker thread, which communicates via events
@@ -722,15 +716,13 @@ class AlignFrame : public wxDialog
                           new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL ),
                       0, wxBOTTOM | wxEXPAND | wxLEFT | wxRIGHT, 5 );
 
-
         pxSizer->Add( pxStopOKButton = new wxButton( this, wxID_OK, wxT( "Cancel" ) ), 0, wxALIGN_CENTER | wxALL, 5 );
         pxStopOKButton->Bind( wxEVT_BUTTON,
                               std::bind( &AlignFrame::onCancelOKButtonClicked, this, std::placeholders::_1 ) );
 
-
+        // Complete layout
         SetSizer( pxSizer );
         Layout( );
-        // pxStopOKButton->Disable( );
         Centre( wxBOTH );
 
         // Bind worker events
@@ -744,11 +736,11 @@ class AlignFrame : public wxDialog
         Bind( wxEVT_WORKER_ALIGNMENT_ERROR, std::bind( &AlignFrame::onWorkerError, this, std::placeholders::_1 ) );
     } // constructor
 
+    /* Destructor */
     ~AlignFrame( void )
     {
         if( pWorker )
             pWorker->join( );
-        // std::cout << "Worker joined... " << std::endl;
     } // destructor
 }; // wxFrame
 
@@ -758,6 +750,7 @@ class MA_MainFrame : public wxFrame
   private:
     mwxMenuBar* xMenuBar; // Deallocation by host-frame
 
+    /* True, if current settings request paired reads */
     bool inPairedMode( void )
     {
         return xExecutionContext.xParameterSetManager.getSelected( )->usesPairedReads( );
@@ -877,9 +870,10 @@ class MA_MainFrame : public wxFrame
         this->updateLayout( );
     } // method
 
+    // Text control that keeps the selected genome's name.
     wxTextCtrl* xGenomeNameTextCtrl;
 
-    /* Handler for genome selection button */
+    /* Handler for genome selection button. */
     void onGenomeSelection( const std::vector<fs::path>& rvsFileNames )
     {
         if( rvsFileNames.empty( ) )
@@ -889,10 +883,34 @@ class MA_MainFrame : public wxFrame
         {
             auto sError = xExecutionContext.xGenomeManager.loadGenome( rvsFileNames[ 0 ] );
             if( sError.empty( ) )
+            {
+                wxBusyCursor busyCursor;
+                // Scope based disabler
+                wxWindowDisabler disabler;
+                wxBusyInfo busyInfo(
+                    _( "Reading genome, wait please..." ) ); // Underscore triggers macro for translation
                 xGenomeNameTextCtrl->SetValue( xExecutionContext.xGenomeManager.getGenomeName( ) );
+            }
             else
                 wxMessageBox( "Genome loading failed with error:\n" + sError, "Genome loading failed", wxICON_ERROR );
         } // else
+    } // method
+
+    /* Drag and drop handler for genome selection.
+     * (Code is similar to handler for queries)
+     */
+    void OnDropGenomeJSON( wxDropFilesEvent& event )
+    {
+        if( event.GetNumberOfFiles( ) > 0 )
+        {
+            wxString* pxDroppedIterator = event.GetFiles( );
+            wxASSERT( pxDroppedIterator );
+            std::vector<fs::path> vsFilePaths;
+            // ToStdWstring guarantees working with 16 bit wide strings
+            vsFilePaths.push_back( pxDroppedIterator[ 0 ].ToStdWstring( ) );
+
+            onGenomeSelection( vsFilePaths );
+        } // if
     } // method
 
     wxTextCtrl* xQueryTextCtrl;
@@ -905,9 +923,7 @@ class MA_MainFrame : public wxFrame
 
         AlignFrame xAlignFrame( this, "Alignment" );
         xAlignFrame.InitDialog( );
-        if( xAlignFrame.ShowModal( ) == wxID_OK )
-        {
-        }
+        xAlignFrame.ShowModal( );
     } // method
 
     void onCreateIndexWizard( wxCommandEvent& WXUNUSED( event ) )
@@ -921,26 +937,66 @@ class MA_MainFrame : public wxFrame
         } // if
     } // method
 
-    /* Handler query select/clear button pair */
-    void onQuerySelection( const std::vector<fs::path>& vsFileNPaths, // file paths selected by file picker
-                           wxTextCtrl* xTargetTextCtrl,
-                           std::vector<fs::path>& rvOutputFilePaths )
+    /* Handler for query select/clear button pair */
+    void onQuerySelection( const std::vector<fs::path>& vsFilePaths, // file paths selected by file picker
+                           wxTextCtrl* xTargetTextCtrl ) // TextCtrl for display of selection
     {
-
-        rvOutputFilePaths = vsFileNPaths;
-        if( vsFileNPaths.empty( ) )
-            xTargetTextCtrl->SetValue( "Type your query here or select a FASTA-file ..." );
+        // Store the selected file-paths in reads-manager for backup.
+        if( xTargetTextCtrl == this->xQueryTextCtrl )
+            xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName = vsFilePaths;
+        else if( xTargetTextCtrl == this->xMatesTextCtrl )
+            xExecutionContext.xReadsManager.vsMateQueryFullFileName = vsFilePaths;
         else
-        {
-            std::string sFileNames;
-            for( fs::path sFileName : vsFileNPaths )
-                sFileNames.append( sFileName.string( ) ).append( "\n" );
+            throw std::runtime_error( "Internal error in onQuerySelection detected" );
+
+        // Empty vector implies that reads are directly inputed via TextCtrl.
+        if( vsFilePaths.empty( ) )
+            xTargetTextCtrl->SetValue( "Type your query here or select FASTA/FASTQ files.\n"
+                                       "(You can use 'drag and drop' for picking files.)" );
+        else
+        { // Work with 16 bit wide strings for internationalization
+            std::wstring sFileNames;
+            for( fs::path sFileName : vsFilePaths )
+                sFileNames.append( sFileName.wstring( ) ).append( L"\n" );
             xTargetTextCtrl->SetValue( sFileNames );
         } // else
 
-        xTargetTextCtrl->SetEditable( vsFileNPaths.empty( ) );
+        xTargetTextCtrl->SetEditable( vsFilePaths.empty( ) );
+        // xTargetTextCtrl->Enable( vsFilePaths.empty( ) );
     } // method
 
+
+    /* Drag and drop handler for queries
+     * Code template: https://forums.wxwidgets.org/viewtopic.php?t=34546
+     */
+    void OnDropFiles( wxDropFilesEvent& event )
+    {
+        if( event.GetNumberOfFiles( ) > 0 )
+        {
+            wxString* pxDroppedIterator = event.GetFiles( );
+            wxASSERT( pxDroppedIterator );
+
+            wxBusyCursor busyCursor;
+            // Scope based disabler
+            wxWindowDisabler disabler;
+            wxBusyInfo busyInfo( _( "Adding files, wait please..." ) ); // Underscore triggers macro for translation
+
+            std::vector<fs::path> vsFilePaths;
+
+            for( int i = 0; i < event.GetNumberOfFiles( ); i++ )
+            {
+                wxString name = pxDroppedIterator[ i ];
+                if( wxFileExists( name ) )
+                    // ToStdWstring guarantees working with 16 bit wide strings
+                    vsFilePaths.push_back( name.ToStdWstring( ) );
+            } // for
+
+            wxTextCtrl* pxTextCtrl = dynamic_cast<wxTextCtrl*>( event.GetEventObject( ) );
+            wxASSERT( pxTextCtrl );
+            onQuerySelection( vsFilePaths, // file paths selected by file picker
+                              pxTextCtrl ); // TextCtrl for display of selection
+        } // if
+    } // method
 
   public:
     MA_MainFrame( const wxString& title )
@@ -1019,7 +1075,7 @@ class MA_MainFrame : public wxFrame
                                     pxBoxSizer.xConnector.pxWindow,
                                     xExecutionContext.xParameterSetManager.xParametersSets,
                                     std::bind( &MA_MainFrame::onParameterComboBox, this, std::placeholders::_1 ) ),
-                                0, wxTOP | wxBOTTOM | wxEXPAND, 5 );
+                                0, wxALL | wxEXPAND, 5 );
                             // Initialize combo box with the default setting:
                             //@todo change parameter set manager so that it knows the name of the currently select
                             // setting. then use this string for setSelected here...
@@ -1031,14 +1087,13 @@ class MA_MainFrame : public wxFrame
                                 .Add( new mwxBitmapButton //
                                       ( pxBoxSizer.xConnector.pxWindow,
                                         wxBITMAP_PNG_FROM_DATA( GearButtonNormal ),
-                                        wxBITMAP_PNG_FROM_DATA( GearButtonSelected ),
                                         std::bind( &MA_MainFrame::onSettingsGearButton, this, std::placeholders::_1 ) ),
                                       0, wxALIGN_CENTER | wxTOP | wxRIGHT | wxLEFT, 5 );
                         } ); // addBoxSizer
 
                     // Output Selection
                     pxBoxSizer.addStaticBoxSizer( // vertical BoxSizer
-                        "Output Destination",
+                        "Output",
                         wxVERTICAL,
                         wxSizerFlags( 0 ).Expand( ).Border( wxRIGHT, 5 ),
                         [this]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
@@ -1046,7 +1101,7 @@ class MA_MainFrame : public wxFrame
                             pxBoxSizer.Add( new mwxMapDrivenComboBox( //
                                                 pxBoxSizer.xConnector.pxWindow,
                                                 xExecutionContext.xOutputManager.xKindsOfOutput ),
-                                            0, wxTOP | wxBOTTOM | wxEXPAND, 5 );
+                                            0, wxALL | wxEXPAND, 5 );
                             pxBoxSizer.Add( 0, 0, 0, wxBOTTOM, 5 ); // Vertical space
 
                             // Gear button for output parameter management
@@ -1054,31 +1109,34 @@ class MA_MainFrame : public wxFrame
                                 .Add( new mwxBitmapButton //
                                       ( pxBoxSizer.xConnector.pxWindow,
                                         wxBITMAP_PNG_FROM_DATA( GearButtonNormal ),
-                                        wxBITMAP_PNG_FROM_DATA( GearButtonSelected ),
                                         std::bind( &MA_MainFrame::onOutputGearButton, this, std::placeholders::_1 ) ),
                                       0, wxALIGN_CENTER | wxTOP | wxRIGHT | wxLEFT, 5 );
                         } ); // addBoxSizer
 
                     // Quickstart-Text
                     pxBoxSizer.addStaticBoxSizer(
-                        "Quickstart", wxVERTICAL,
+                        "Quickstart", wxHORIZONTAL,
                         wxSizerFlags( 2 ).Expand( ), //.Border( wxALL, 5 ),
                         [this]( mwxStaticBoxSizer& xStaticBoxSizer ) // BoxSizer content
                         {
-                            xStaticBoxSizer.Add(
-                                new wxTextCtrl( xStaticBoxSizer.xConnector.pxWindow, wxID_ANY,
-                                                wxT( "1. Choose 'Aligner Settings' according to the type of your "
-                                                     "reads. (Illumina etc.)\n"
-                                                     "2. Select format and location (folder) for the aligner output.\n"
-                                                     "3. Select your reference genome.\n"
-                                                     "        MA requires precomputed FMD-Indices for genomes.\n"
-                                                     "        FMD-Index creation for genomes in FASTA format can be "
-                                                     "done via the F2 key\n"
-                                                     "4. Specify your reads. Either via direct input or by selection "
-                                                     "of FASTA files." ),
-                                                wxDefaultPosition, wxDefaultSize,
-                                                wxHSCROLL | wxTE_MULTILINE | wxTE_READONLY | wxNO_BORDER ),
-                                1, wxEXPAND, 5 );
+                            // In order to get the scrollbar working, we first create the wxTextCtrl with empty text
+                            // and set the actual value later
+                            wxTextCtrl* pxTextCtrl = new wxTextCtrl(
+                                xStaticBoxSizer.xConnector.pxWindow, wxID_ANY, wxT( "" ), wxDefaultPosition,
+                                wxDefaultSize, wxHSCROLL | wxTE_MULTILINE | wxTE_READONLY | wxNO_BORDER );
+
+                            xStaticBoxSizer.Add( pxTextCtrl, 1, wxLEFT | wxEXPAND, 5 );
+                            pxTextCtrl->SetValue(
+                                wxT( "1. Choose 'Aligner Settings' according to the type of your "
+                                     "reads. (Illumina etc.)\n"
+                                     "2. Select format and location (folder) for the aligner output.\n"
+                                     "3. Select your reference genome.\n"
+                                     "        MA requires precomputed FMD-Indices for genomes.\n"
+                                     "        FMD-Index creation for genomes in FASTA format can be "
+                                     "done via the F2 key\n"
+                                     "4. Specify your reads. Either via direct input or by selection "
+                                     "of FASTA files.\n"
+                                     "5. Press red Start-Button (in the right-bottom corner)." ) );
                         } );
                 } ) // add horizontal BoxSizer
 
@@ -1101,15 +1159,22 @@ class MA_MainFrame : public wxFrame
                                                 pxBoxSizer.pxConnector.pxWindow, wxID_ANY, wxEmptyString,
                                                 wxDefaultPosition, wxDefaultSize, wxTE_READONLY ),
                                             0, wxEXPAND | wxALL, 5 );
+                            // Activate drag and drop for genome selection
+                            this->xGenomeNameTextCtrl->DragAcceptFiles( true );
+                            this->xGenomeNameTextCtrl->Connect(
+                                wxEVT_DROP_FILES, wxDropFilesEventHandler( MA_MainFrame::OnDropGenomeJSON ), NULL,
+                                this );
                         } ); // add vertical BoxSizer
 
                     // File Selector for genome selection
                     pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
-                                        pxBoxSizer.pxConnector, "Genome selection", "Select Reference Genome",
+                                        pxBoxSizer.pxConnector, "Genome Selection", "Select Reference Genome",
                                         "Genome descriptions (*.json)|*.json|All Files|*", false,
                                         std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ),
                                         false ), // no clear button
                                     wxSizerFlags( 0 ) );
+
+                    // Initialize genome selection
                     this->onGenomeSelection( std::vector<fs::path>( ) );
                 } // lambda
                 ) // add horizontal BoxSizer
@@ -1128,12 +1193,18 @@ class MA_MainFrame : public wxFrame
                         pxBoxSizer.Add( new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
                                                           wxT( "Query reads" ), wxDefaultPosition, wxDefaultSize, 0 ),
                                         0, wxTOP | wxLEFT, 5 );
+
+                        // TextCtrl for input of reads
                         this->xQueryTextCtrl =
                             new wxTextCtrl( pxBoxSizer.pxConnector.pxWindow, wxID_ANY, wxEmptyString, wxDefaultPosition,
                                             wxDefaultSize, wxHSCROLL | wxTE_MULTILINE );
+                        // Drag and Drop for reads
+                        this->xQueryTextCtrl->DragAcceptFiles( true );
+                        this->xQueryTextCtrl->Connect(
+                            wxEVT_DROP_FILES, wxDropFilesEventHandler( MA_MainFrame::OnDropFiles ), NULL, this );
                         pxBoxSizer.Add( this->xQueryTextCtrl, 1, wxALL | wxEXPAND, 5 );
 
-                        // Set callback for rReadManager
+                        // Set callback for xReadManager
                         xExecutionContext.xReadsManager.fCallBackGetPrimaryQuery = [this]( ) {
                             return std::string( this->xQueryTextCtrl->GetValue( ).c_str( ) );
                         }; // lambda
@@ -1143,9 +1214,14 @@ class MA_MainFrame : public wxFrame
                                               wxDefaultPosition, wxDefaultSize, 0 );
                         pxBoxSizer.Add( this->xMatesStaticText, 0, wxTOP | wxLEFT, 5 );
 
+                        // TextCtrl for input of mates
                         this->xMatesTextCtrl =
                             new wxTextCtrl( pxBoxSizer.pxConnector.pxWindow, wxID_ANY, wxEmptyString, wxDefaultPosition,
                                             wxDefaultSize, wxHSCROLL | wxTE_MULTILINE );
+                        // Drag and Drop for mates
+                        this->xMatesTextCtrl->DragAcceptFiles( true );
+                        this->xMatesTextCtrl->Connect(
+                            wxEVT_DROP_FILES, wxDropFilesEventHandler( MA_MainFrame::OnDropFiles ), NULL, this );
                         pxBoxSizer.Add( this->xMatesTextCtrl, 1, wxALL | wxEXPAND, 5 );
 
                         // Set callback for rReadManager
@@ -1165,17 +1241,15 @@ class MA_MainFrame : public wxFrame
                     [this]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
                     {
                         // File Selection for Reads
-                        pxBoxSizer.Add(
-                            new mwxFileSelectDeleteButtonSizer(
-                                pxBoxSizer.pxConnector, "Reads Selection", "Select Query File",
-                                "FASTA(Q) "
-                                "Files(*.fasta;*.fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*.fastq;*.fasta.gz;*."
-                                "fastq.gz|All Files (*.*)|*.*",
-                                true,
-                                std::bind( &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
-                                           this->xQueryTextCtrl,
-                                           std::ref( xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName ) ) ),
-                            wxSizerFlags( 1 ) );
+                        pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
+                                            pxBoxSizer.pxConnector, "Reads Selection", "Select Query File",
+                                            "FASTA(Q) "
+                                            "Files(*.fasta;*.fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*.fastq;*.fasta.gz;*."
+                                            "fastq.gz|All Files (*.*)|*.*",
+                                            true,
+                                            std::bind( &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
+                                                       this->xQueryTextCtrl ) ),
+                                        wxSizerFlags( 1 ) );
 
                         // Paired Read Mates File Selection
                         pxBoxSizer.addBoxSizer( // vertical BoxSizer bSizer12
@@ -1189,19 +1263,16 @@ class MA_MainFrame : public wxFrame
                                     [this]( mwxBoxSizer& pxBoxSizer ) // Section with paired control elements
                                     {
                                         this->xMatesControlElements = &pxBoxSizer;
-                                        pxBoxSizer.Add(
-                                            new mwxFileSelectDeleteButtonSizer(
-                                                pxBoxSizer.pxConnector, "Mates Selection", "Open Query Mate file",
-                                                "FASTA(Q) "
-                                                "Files(*.fasta;*fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*."
-                                                "fastq;*.fasta.gz;*.fastq.gz|All Files (*.*)|*.*",
-                                                true,
-                                                std::bind(
-                                                    &MA_MainFrame::onQuerySelection, this, std::placeholders::_1,
-                                                    this->xMatesTextCtrl,
-                                                    std::ref(
-                                                        xExecutionContext.xReadsManager.vsMateQueryFullFileName ) ) ),
-                                            wxSizerFlags( 0 ) );
+                                        pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
+                                                            pxBoxSizer.pxConnector, "Mates Selection",
+                                                            "Open Query Mate file",
+                                                            "FASTA(Q) "
+                                                            "Files(*.fasta;*fastq;*.fasta.gz;*.fastq.gz)|*.fasta;*."
+                                                            "fastq;*.fasta.gz;*.fastq.gz|All Files (*.*)|*.*",
+                                                            true,
+                                                            std::bind( &MA_MainFrame::onQuerySelection, this,
+                                                                       std::placeholders::_1, this->xMatesTextCtrl ) ),
+                                                        wxSizerFlags( 0 ) );
                                         pxBoxSizer.Add( 0, 0, 0, wxEXPAND | wxTOP, 5 ); // Vertical spacer
                                         pxBoxSizer.Add( new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
                                                                           wxT( "Paired Settings" ), wxDefaultPosition,
@@ -1211,20 +1282,25 @@ class MA_MainFrame : public wxFrame
                                         pxBoxSizer.Add(
                                             new mwxBitmapButton( pxBoxSizer.pxConnector.pxWindow,
                                                                  wxBITMAP_PNG_FROM_DATA( GearPairedButtonNormal ),
-                                                                 wxBITMAP_PNG_FROM_DATA( GearPairedButtonSelected ),
                                                                  std::bind( &MA_MainFrame::onPairedGearButton, this,
                                                                             std::placeholders::_1 ) ),
-                                            0, wxALIGN_CENTER_HORIZONTAL, 5 );
+                                            0, wxALIGN_LEFT | wxLEFT, 5 );
                                         pxBoxSizer.Show( false );
                                     } );
 
-                                // Start button
+                                // Start button incl. top text
+                                pxBoxSizer.Add( new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
+                                                                  wxT( "Start Aligner" ), wxDefaultPosition,
+                                                                  wxDefaultSize, 0 ),
+                                                0, wxALL | wxLEFT, 5 );
                                 pxBoxSizer.Add( new mwxBitmapButton(
                                                     pxBoxSizer.pxConnector.pxWindow,
                                                     wxBITMAP_PNG_FROM_DATA( StartButton ),
-                                                    wxBITMAP_PNG_FROM_DATA( StartButtonSelected ),
-                                                    std::bind( &MA_MainFrame::onStart, this, std::placeholders::_1 ) ),
-                                                0, wxALIGN_BOTTOM | wxALIGN_CENTER_HORIZONTAL, 5 );
+                                                    std::bind( &MA_MainFrame::onStart, this, std::placeholders::_1 ),
+                                                    wxDefaultPosition,
+                                                    130 // Set the button width by force 60 + 60 + 10
+                                                    ),
+                                                0, wxLEFT | wxALIGN_BOTTOM | wxALIGN_LEFT | wxBOTTOM, 5 );
                             } ); // addBoxSizer
                     } ); // add vertical BoxSizer
             } // lambda
