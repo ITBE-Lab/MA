@@ -701,8 +701,11 @@ class Presetting : public ParameterSetBase
           xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
                       "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100,
                       checkPositiveValue ),
-          xMaxGapArea( this, "Maximal Gap Area", "Split alignments in harmonization if gap area is larger than <val>.",
-                       HEURISTIC_PARAMETERS, 10000, checkPositiveValue ),
+          xMaxGapArea( this, "Maximal Gap Size",
+                       "If the gap between seeds is larger than <val> on query or reference, the dual extension "
+                       "process is used to fill the gap. Dual extension is more expensive if the extension does not "
+                       "Z-drop, but more efficient otherwise.",
+                       HEURISTIC_PARAMETERS, 20, checkPositiveValue ),
           xGenomeSizeDisable( this, "Minimum Genome Size for Heuristics",
                               "Some heuristics can only be applied on long enough genomes. Disables: SoC score "
                               "Drop-off if the genome is shorter than <val>.",
@@ -803,16 +806,20 @@ class ParameterSetManager
     ParameterSetManager( )
     {
         xParametersSets.emplace( "Default", Presetting( ) );
+
         xParametersSets.emplace( "Illumina", Presetting( ) );
         xParametersSets[ "Illumina" ].xMaximalSeedAmbiguity->set( 500 );
         xParametersSets[ "Illumina" ].xMinNumSoC->set( 10 );
         xParametersSets[ "Illumina" ].xMaxNumSoC->set( 20 );
+
         xParametersSets.emplace( "Illumina Paired", Presetting( ) );
         xParametersSets[ "Illumina Paired" ].xUsePairedReads->set( true );
         xParametersSets[ "Illumina Paired" ].xMaximalSeedAmbiguity->set( 500 );
         xParametersSets[ "Illumina Paired" ].xMinNumSoC->set( 10 );
         xParametersSets[ "Illumina Paired" ].xMaxNumSoC->set( 20 );
+
         xParametersSets.emplace( "PacBio", Presetting( ) );
+
         xParametersSets.emplace( "Nanopore", Presetting( ) );
         xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
 
