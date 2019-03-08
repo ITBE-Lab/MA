@@ -626,10 +626,10 @@ class Presetting : public ParameterSetBase
                                  SEEDING_PARAMETERS, 0.005, checkPositiveDoubleValue ),
 
           // SoC:
-          xMaxNumSoC( this, "Maximal Number of SoC's", 'N', "Only consider the <val> best scored SoC's. 0 = no limit.",
+          xMaxNumSoC( this, "Maximal Number of SoCs", 'N', "Only consider the <val> best scored SoC's. 0 = no limit.",
                       SOC_PARAMETERS, 30, checkPositiveValue ),
           xMinNumSoC(
-              this, "Minimal Number of SoC's", 'M',
+              this, "Minimal Number of SoCs", 'M',
               "Always consider the first <val> SoC's no matter the Heuristic optimizations. Upping this "
               "parameter might improve the output of supplementary alignments and therefore successive SV calling.",
               SOC_PARAMETERS, 1, checkPositiveValue ),
@@ -656,7 +656,7 @@ class Presetting : public ParameterSetBase
           xMaxSupplementaryPerPrim( this, "Number Supplementary Alignments",
                                     "Maximal Number of supplementary alignments per primary alignment.", SAM_PARAMETERS,
                                     1, checkPositiveValue ),
-          xEmulateNgmlrTags( this, "Emulate NGMLR's tag output",
+          xEmulateNgmlrTags( this, "Emulate NGMLRs tag output",
                              "Output SAM tags as NGMLR would. Activate this if you want to use MA in combination with "
                              "Sniffles. Enableing this will drastically increase the size of the output file.",
                              SAM_PARAMETERS, false ),
