@@ -1,4 +1,17 @@
+/////////////////////////////////////////////////////////////////////////////
+// Name:        mwx.h
+// Purpose:     MA wxWidgets Extensions
+// Author:      Arne Kutzner
+// Created:     01/01/2019
+// Copyright:   (c) Arne Kutzner, Markus Schmidt
+// Licence:		MIT
+/////////////////////////////////////////////////////////////////////////////
 #pragma once
+
+/* Chosen Icons are from:
+ * https://material.io/tools/icons/?icon=cancel&style=outline
+ * https://fontawesome.com/icons?d=gallery
+ */
 
 /* for all others, include the necessary headers (this file is usually all you
  * need because it includes almost all "standard" wxWidgets headers)
@@ -58,9 +71,10 @@ class mwxMenu : public wxMenu
     std::vector<mwxMenuItem> vChilds;
 
     /* Appends an item to the menu. */
-    mwxMenu& append( const std::string& sMenuItemText, // text of menu-item
-                     std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
-                     const std::string& sHelpText = "" ) // helper text for menu item
+    mwxMenu& append(
+        const std::string& sMenuItemText, // text of menu-item
+        std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
+        const std::string& sHelpText = "" ) // helper text for menu item
     {
         auto iItemID = mxwExecutionContext::uniqueID( );
         vChilds.emplace_back( mwxMenuItem( sMenuItemText ) );
@@ -203,16 +217,23 @@ class mwxBoxSizer : public wxBoxSizer
 class mwxBitmapButton : public wxBitmapButton
 {
   public:
-    /* Constructor */
-    mwxBitmapButton( wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
-                     const wxBitmap& rxBitmapNormal, // Bitmap unpressed
-                     const wxBitmap& rxBitmapPressed, // Bitmap for pressed button
-                     std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
-                     const wxPoint rxPos = wxDefaultPosition,
-                     const wxSize rxSize = wxDefaultSize )
-        : wxBitmapButton( pxHostWindow, wxID_ANY, rxBitmapNormal, rxPos, rxSize, wxNO_BORDER )
+    wxSize calculateSize( const wxBitmap& rxBitmapNormal, const int iWidthOverwrite )
     {
-        this->SetBitmapPressed( rxBitmapPressed );
+        // All bitmaps are expected to have an height of 35
+        int iWidth = std::max( 48, rxBitmapNormal.GetWidth( ) ) + 12;
+        int iHeight = std::max( 35, rxBitmapNormal.GetHeight( ) ) + 12;
+        return wxSize( std::max( iWidth, iWidthOverwrite ), iHeight );
+    } // method
+    /* Constructor */
+    mwxBitmapButton(
+        wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
+        const wxBitmap& rxBitmapNormal, // Bitmap unpressed
+        std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
+        const wxPoint rxPos = wxDefaultPosition,
+        const int iWidthOverwrite = 0 )
+        : wxBitmapButton( pxHostWindow, wxID_ANY, rxBitmapNormal, rxPos,
+                          calculateSize( rxBitmapNormal, iWidthOverwrite ) ) //, wxNO_BORDER )
+    {
         wxEvtHandler::Bind( wxEVT_BUTTON, handler, wxID_ANY );
     } // constructor
 }; // class
@@ -225,15 +246,15 @@ class mwxOK_Cancel_Dialog : public wxDialog
 {
   public:
     /* Constructor */
-    mwxOK_Cancel_Dialog( wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
-                         const wxString& sTitle, // title of the dialog
-                         std::function<wxWindow*( wxWindow* )>
-                             fMakeContent, // called for creating the content of the dialog
-                         const wxPoint& xPos = wxDefaultPosition, // position of the dialog
-                         const std::string& rsKOButtonLabel = "OK", // Label of OK Button
-                         bool bDoFit = false, // adapt the size of the dialog to the size of its content
-                         std::function<void( wxCommandEvent& )> OK_handler =
-                             []( wxCommandEvent& ) {} ) // handler of OK button
+    mwxOK_Cancel_Dialog(
+        wxWindow* pxHostWindow, // host window of box context (responsible for destruction)
+        const wxString& sTitle, // title of the dialog
+        std::function<wxWindow*( wxWindow* )>
+            fMakeContent, // called for creating the content of the dialog
+        const wxPoint& xPos = wxDefaultPosition, // position of the dialog
+        const std::string& rsKOButtonLabel = "OK", // Label of OK Button
+        bool bDoFit = false, // adapt the size of the dialog to the size of its content
+        std::function<void( wxCommandEvent& )> OK_handler = []( wxCommandEvent& ) {} ) // handler of OK button
 
         : wxDialog( pxHostWindow, wxID_ANY, sTitle, xPos, wxSize( 500, 400 ),
                     ( wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL ) /* ^ wxRESIZE_BORDER */ ^ wxMAXIMIZE_BOX ^
@@ -312,14 +333,14 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
 
   public:
     /* Primary Constructor */
-    mwxFileSelectDeleteButtonSizer( const mwxConnector& pxConnector, // connector for BoxSizer
-                                    const std::string& rsText, // text of the button group
-                                    const std::string& rsFileDialogTitle,
-                                    const std::string& rsFilePattern,
-                                    const bool bMultiFileSelect = false,
-                                    std::function<void( const std::vector<fs::path>& )> fHandler =
-                                        []( const std::vector<fs::path>& ) {},
-                                    bool bWithClearButton = true )
+    mwxFileSelectDeleteButtonSizer(
+        const mwxConnector& pxConnector, // connector for BoxSizer
+        const std::string& rsText, // text of the button group
+        const std::string& rsFileDialogTitle,
+        const std::string& rsFilePattern,
+        const bool bMultiFileSelect = false,
+        std::function<void( const std::vector<fs::path>& )> fHandler = []( const std::vector<fs::path>& ) {},
+        bool bWithClearButton = true )
         : mwxBoxSizer( pxConnector, wxVERTICAL ),
           pxConnector( pxConnector ),
           bMultiFileSelect( bMultiFileSelect ),
@@ -336,7 +357,6 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
             {
                 pxBoxSizer.Add( new mwxBitmapButton( pxBoxSizer.pxConnector.pxWindow,
                                                      wxBITMAP_PNG_FROM_DATA( FolderButtonNormal ),
-                                                     wxBITMAP_PNG_FROM_DATA( FolderButtonSelected ),
                                                      std::bind( &mwxFileSelectDeleteButtonSizer::onFolderButton, this,
                                                                 std::placeholders::_1 ) ),
                                 0, wxRESERVE_SPACE_EVEN_IF_HIDDEN | wxRIGHT | wxLEFT, 5 ); // GTK Bug Border 0
@@ -345,7 +365,6 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
                 pxBoxSizer.Add( pxClearButton =
                                     new mwxBitmapButton( pxBoxSizer.pxConnector.pxWindow,
                                                          wxBITMAP_PNG_FROM_DATA( DeleteButtonNormal ),
-                                                         wxBITMAP_PNG_FROM_DATA( DeleteButtonSelected ),
                                                          std::bind( &mwxFileSelectDeleteButtonSizer::onClearButton,
                                                                     this, std::placeholders::_1 ) ),
                                 0, wxRESERVE_SPACE_EVEN_IF_HIDDEN | wxRIGHT | wxLEFT, 5 ); // GTK Bug Border 0
@@ -370,9 +389,10 @@ class mwxMapDrivenComboBox : public wxComboBox
 
     // Constructor
     template <typename TYPE>
-    mwxMapDrivenComboBox( wxWindow* pxHost,
-                          const std::map<std::string, TYPE>& rxMap,
-                          std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {} ) // handler
+    mwxMapDrivenComboBox(
+        wxWindow* pxHost,
+        const std::map<std::string, TYPE>& rxMap,
+        std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {} ) // handler
         : wxComboBox( )
     {
         for( auto& rxKeyValue : rxMap )
