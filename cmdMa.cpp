@@ -219,16 +219,16 @@ int main( int argc, char* argv[] )
     ExecutionContext xExecutionContext;
     // change the way output works to a simple -o for the command line aligner.
     // Also disable Use Max Hardware concurrency parameter and set -t to max hardware_concurrency by default.
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection = 2;
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->set( false );
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->set(
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->xSAMOutputTypeChoice->uiSelection = 2;
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbUseMaxHardareConcurrency->set( false );
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->piNumberOfThreads->set(
         std::thread::hardware_concurrency( ) );
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
-        xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputTypeChoice.pContent );
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
-        xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputPath.pContent );
-    xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
-        xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency.pContent );
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
+        xExecutionContext.xParameterSetManager.pGlobalParameterSet->xSAMOutputTypeChoice.pContent );
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
+        xExecutionContext.xParameterSetManager.pGlobalParameterSet->xSAMOutputPath.pContent );
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
+        xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbUseMaxHardareConcurrency.pContent );
 
     // set the mode...
     for( int iI = 2; iI < argc; iI += 2 )

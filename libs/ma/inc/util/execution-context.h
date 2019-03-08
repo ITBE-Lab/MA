@@ -257,10 +257,10 @@ class OutputManager
     /* Creates full path for SAM output */
     std::string SAMFullFileName( void )
     {
-        if( this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection == 2 )
-            return this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputFileName->get().string();
+        if( this->pxParameterSetManager->pGlobalParameterSet->xSAMOutputTypeChoice->uiSelection == 2 )
+            return this->pxParameterSetManager->pGlobalParameterSet->xSAMOutputFileName->get().string();
         // SAM filename generation according to parameter settings.
-        auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection == 0
+        auto sFullFileName = ( this->pxParameterSetManager->pGlobalParameterSet->xSAMOutputTypeChoice->uiSelection == 0
                                    ? pxReadsManager->getReadsFolderPath( )
                                    : pxParameterSetManager->pGlobalParameterSet->xSAMOutputPath->get( ) );
         ( ( ( sFullFileName /= pxReadsManager->getReadsFileNameStem( ) ) += '-' ) += this->dateTimeString( ) ) +=

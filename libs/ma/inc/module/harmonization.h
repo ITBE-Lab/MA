@@ -172,7 +172,7 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
           uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist->get( ) ),
           // dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
           // iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
-          uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
+          // uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
           uiSVPenalty( rParameters.getSelected( )->xSVPenalty->get( ) ),
           uiMaxDeltaDistanceInCLuster( rParameters.getSelected( )->xMaxDeltaDistanceInCLuster->get( ) )
     {} // default constructor

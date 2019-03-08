@@ -825,32 +825,32 @@ class ParameterSetManager
     std::shared_ptr<GeneralParameter> pGlobalParameterSet;
 
     // Presets for aligner configuration
-    std::map<std::string, Presetting> xParametersSets;
+    std::map<std::string, std::shared_ptr<Presetting>> xParametersSets;
 
     ParameterSetManager( )
     {
-        xParametersSets.emplace( "Default", Presetting( ) );
+        xParametersSets.emplace( "Default", std::make_shared<Presetting>( "Default" ) );
 
-        xParametersSets.emplace( "Illumina", Presetting( ) );
-        xParametersSets[ "Illumina" ].xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina" ].xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina" ].xMaxNumSoC->set( 20 );
+        xParametersSets.emplace( "Illumina", std::make_shared<Presetting>( "Illumina" ) );
+        xParametersSets[ "Illumina" ]->xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina" ]->xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina" ]->xMaxNumSoC->set( 20 );
 
-        xParametersSets.emplace( "Illumina Paired", Presetting( ) );
-        xParametersSets[ "Illumina Paired" ].xUsePairedReads->set( true );
-        xParametersSets[ "Illumina Paired" ].xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina Paired" ].xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina Paired" ].xMaxNumSoC->set( 20 );
+        xParametersSets.emplace( "Illumina Paired", std::make_shared<Presetting>( "Illumina Paired" ) );
+        xParametersSets[ "Illumina Paired" ]->xUsePairedReads->set( true );
+        xParametersSets[ "Illumina Paired" ]->xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "Illumina Paired" ]->xMinNumSoC->set( 10 );
+        xParametersSets[ "Illumina Paired" ]->xMaxNumSoC->set( 20 );
 
-        xParametersSets.emplace( "PacBio", Presetting( ) );
-        xParametersSets[ "PacBio" ].xMaxSupplementaryPerPrim->set( 100 );
-        xParametersSets[ "PacBio" ].xMinNumSoC->set( 5 );
+        xParametersSets.emplace( "PacBio", std::make_shared<Presetting>( "PacBio" ) );
+        xParametersSets[ "PacBio" ]->xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "PacBio" ]->xMinNumSoC->set( 5 );
 
 
-        xParametersSets.emplace( "Nanopore", Presetting( ) );
-        xParametersSets[ "Nanopore" ].xSeedingTechnique->set( 1 );
-        xParametersSets[ "Nanopore" ].xMaxSupplementaryPerPrim->set( 100 );
-        xParametersSets[ "Nanopore" ].xMinNumSoC->set( 5 );
+        xParametersSets.emplace( "Nanopore", std::make_shared<Presetting>( "Nanopore" ) );
+        xParametersSets[ "Nanopore" ]->xSeedingTechnique->set( 1 );
+        xParametersSets[ "Nanopore" ]->xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "Nanopore" ]->xMinNumSoC->set( 5 );
 
         // Initially select Illumina
         this->pSelectedParamSet = xParametersSets[ "Default" ];
