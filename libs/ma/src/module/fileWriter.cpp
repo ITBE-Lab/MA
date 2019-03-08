@@ -26,7 +26,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         if( bForcedConsistentConsequtiveInsertionDeletionOrder &&
             pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
         {
-            pAlignment->invertSuccessiveInserionAndDeletion();
+            pAlignment->invertSuccessiveInserionAndDeletion( );
         } // if
 
         std::string sCigar;
@@ -158,7 +158,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         if( bForcedConsistentConsequtiveInsertionDeletionOrder &&
             pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
         {
-            pAlignment->invertSuccessiveInserionAndDeletion();
+            pAlignment->invertSuccessiveInserionAndDeletion( );
         } // if
 
         if( pAlignment->xStats.bFirst )
@@ -338,9 +338,14 @@ void exportFileWriter( py::module& rxPyModuleId )
 {
     // export the FileWriter class
     exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "FileWriter" );
+    exportModuleAlternateConstructor<FileWriter, std::shared_ptr<FileWriter>>( rxPyModuleId, "SyncFileWriter" );
 
     // export the PairedFileWriter class
     exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "PairedFileWriter" );
+    exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<FileWriter>>( rxPyModuleId,
+                                                                                     "SyncPairedFileWriter" );
+    exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<PairedFileWriter>>(
+        rxPyModuleId, "PairedSyncPairedFileWriter" );
 } // function
 #endif
 #endif

@@ -707,6 +707,35 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
     virtual ~CppSQLiteExtQueryStatement( )
     {} // destructor
 
+    class Iterator
+    {
+      private:
+        CppSQLite3Query xQuery;
+        /* Repeatedly used functor object for column value extraction. */
+        GetTupleElement xGetElementFunctor;
+
+      public:
+        Iterator( CppSQLite3Query xQuery ) : xQuery( xQuery ), xGetElementFunctor( xQuery )
+        {} // constructor
+
+        std::tuple<Types...> get( )
+        {
+            std::tuple<Types...> SingleResultRowAsTuple;
+            iterateOverTupleCurry2( xGetElementFunctor, SingleResultRowAsTuple );
+            return SingleResultRowAsTuple;
+        } // method
+
+        void next( )
+        {
+            xQuery.nextRow( );
+        } // method
+
+        bool eof( )
+        {
+            return xQuery.eof( );
+        } // method
+    }; // class
+
     /* ArgTypes are the types of the arguments of the query.
      * The class-types Types are the types of the columns of the returned table.
      * FIX ME: Use forwarding over here.
@@ -745,12 +774,17 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
     } // operator
 
     /* Creates a SQL-table (vector of tuples) as output.
-     * Types shouldn't comprise some const char *, because of ememory allocation problems
+     * Types shouldn't comprise some const char *, because of memory allocation problems
      */
     template <class... ArgTypes> std::unique_ptr<CppSQLite3IteratorTable<Types...>> exec( ArgTypes&&... args )
     {
         return rxDatabase.getTable( *this, std::forward<ArgTypes>( args )... );
     } // public method
+
+    template <class... ArgTypes> Iterator vExecuteAndReturnIterator( ArgTypes&&... args )
+    {
+        return Iterator( this->bindAndExecQuery( std::forward<ArgTypes>( args )... ) );
+    } // method
 
     /* Applies the given function to all rows of the table.
      * May throw an exception if something goes wrong.
@@ -978,7 +1012,6 @@ template <> std::string getSQLTypeName<double>( );
 template <> std::string getSQLTypeName<float>( );
 
 
-
 /* C++ wrapper/interface for a SQL-table.
  */
 template <typename... Types> class CppSQLiteExtBasicTable
@@ -1104,7 +1137,7 @@ template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLit
             } // try
             catch( CppSQLite3Exception& xException )
             {
-                if(xException.errorCode() == 19) // sqlite constraint failed
+                if( xException.errorCode( ) == 19 ) // sqlite constraint failed
                     throw xException;
                 /* Something went wrong, in most cases a timeout due to some lock.
                  * We try once again...

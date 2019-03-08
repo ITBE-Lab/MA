@@ -297,6 +297,7 @@ class SV_DB : public CppSQLite3DB, public Container
     std::shared_ptr<SoCTable> pSocTable;
 
     friend class NucSeqFromSql;
+    friend class PairedNucSeqFromSql;
 
   public:
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
@@ -398,29 +399,80 @@ class SoCDbWriter : public Module<Container, false, NucSeq, SoCPriorityQueue>
 
 class NucSeqFromSql : public Module<NucSeq, true>
 {
-    std::vector<std::shared_ptr<NucSeq>> vSequences;
+    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
 
   public:
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sSql )
+        : xTableIterator(
+              CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>(
+                  *pDb->pDatabase,
+                  ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE paired_read_id == -1" + sSql )
+                      .c_str( ) )
+                  .vExecuteAndReturnIterator( ) )
     {
-        CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xSql(
-            *pDb->pDatabase, ( "SELECT read_table.sequence, read_table.id FROM read_table " + sSql ).c_str( ) );
-        xSql.vExecuteAndForAllRowsUnpackedDo( [&]( const NucSeqSql& xNucSeq, const uint32_t& uiId ) {
-            vSequences.push_back( xNucSeq.pNucSeq );
-            vSequences.back( )->sName = std::to_string( uiId );
-        } // lambda
-        );
-        if( vSequences.empty( ) )
+        if( xTableIterator.eof( ) )
             setFinished( );
     } // constructor
 
     std::shared_ptr<NucSeq> execute( )
     {
-        if( vSequences.empty( ) )
+        if( xTableIterator.eof( ) )
             throw AnnotatedException( "No more NucSeq in NucSeqFromSql module" );
-        auto pRet = vSequences.back( );
-        vSequences.pop_back( );
-        if( vSequences.empty( ) )
+
+        auto xTup = xTableIterator.get( );
+        std::get<0>( xTup ).pNucSeq->sName = std::to_string( std::get<1>( xTup ) );
+        xTableIterator.next( );
+
+        if( xTableIterator.eof( ) )
+            setFinished( );
+        return std::get<0>( xTup ).pNucSeq;
+    } // method
+
+    // override
+    bool requiresLock( ) const
+    {
+        return true;
+    } // method
+}; // class
+
+class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq>>, true>
+{
+    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
+    const size_t uiNumReadsPerPair = 0;
+
+  public:
+    PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, size_t uiNumReadsPerPair,
+                         std::string sSql )
+        : xTableIterator( CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>(
+                              *pDb->pDatabase,
+                              ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE paired_read_id != -1" +
+                                sSql + " ORDER BY paired_read_id" )
+                                  .c_str( ) )
+                              .vExecuteAndReturnIterator( ) ),
+          uiNumReadsPerPair( uiNumReadsPerPair )
+    {
+        if( xTableIterator.eof( ) )
+            setFinished( );
+    } // constructor
+
+    std::shared_ptr<ContainerVector<std::shared_ptr<NucSeq>>> execute( )
+    {
+        if( xTableIterator.eof( ) )
+            throw AnnotatedException( "No more NucSeq in PairedNucSeqFromSql module" );
+
+        auto pRet = std::make_shared<ContainerVector<std::shared_ptr<NucSeq>>>( );
+
+        for( size_t uiI = 0; uiI < uiNumReadsPerPair; uiI++ )
+        {
+            if( uiI != 0 && xTableIterator.eof( ) )
+                throw AnnotatedException( "Missing mate for read with id " + pRet->back( )->sName );
+            auto xTup = xTableIterator.get( );
+            pRet->push_back( std::get<0>( xTup ).pNucSeq );
+            pRet->back( )->sName = std::to_string( std::get<1>( xTup ) ) + "_mate_nr_" + std::to_string( uiI + 1 );
+            xTableIterator.next( );
+        } // for
+
+        if( xTableIterator.eof( ) )
             setFinished( );
         return pRet;
     } // method

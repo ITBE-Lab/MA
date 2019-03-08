@@ -313,6 +313,18 @@ class NucSeqFromSql(libMA.NucSeqFromSql):
 
 
 ##
+# @brief The PairedNucSeqFromSql Module.
+# @ingroup module
+#
+class PairedNucSeqFromSql(libMA.PairedNucSeqFromSql):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(PairedNucSeqFromSql, self).execute(vec)
+
+
+##
 # @brief convert bytes to a NucSeq
 # @details
 # Usefull for converting reads stored as blob data in sqlite3 to NucSeq objects.

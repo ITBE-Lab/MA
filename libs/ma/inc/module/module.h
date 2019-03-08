@@ -309,7 +309,7 @@ class BasePledge
              * This way, if callback returns false thread 0 can set bContinue to false and all threads will stop after
              * their next iteration.
              */
-            std::atomic_bool bContinue(true);
+            std::atomic_bool bContinue( true );
             // set up a threadpool
             ThreadPool xPool( numThreads );
 
@@ -950,6 +950,21 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
     typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>
         TP_TO_EXPORT;
     fExportMembers( py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__" ) + sName ).c_str( ) ) );
+
+    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xPyModuleId,
+                                                                                               sName.c_str( ) )
+        .def( py::init<const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
+        .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
+    py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
+} // function
+
+template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
+void exportModuleAlternateConstructor( pybind11::module& xPyModuleId, // pybind module variable
+                                       const std::string&& sName // module name
+)
+{
+    typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>
+        TP_TO_EXPORT;
 
     py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xPyModuleId,
                                                                                                sName.c_str( ) )

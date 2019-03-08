@@ -416,6 +416,20 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
         *pOut << "@PG\tID:ma\tPN:ma\tVN:0.1.0\tCL:na\n";
     } // constructor
 
+    /**
+     * @brief creates a new PairedFileWriter.
+     * @details
+     * Synchronizes this file writer with pOther; they both write to the same file.
+     * The file writers synchronize writing themselves.
+     */
+    FileWriter( const ParameterSetManager& rParameters, std::shared_ptr<FileWriter> pOther )
+        : TagGenerator( rParameters ),
+          pOut( pOther->pOut ),
+          pLock( pOther->pLock ),
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
+    {} // constructor
+
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
                                                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
                                                              pAlignments,
@@ -486,6 +500,34 @@ class PairedFileWriter
         } // for
         *pOut << "@PG\tID:ma\tPN:ma\tVN:0.1.0\tCL:na\n";
     } // constructor
+
+    /**
+     * @brief creates a new PairedFileWriter.
+     * @details
+     * Synchronizes this file writer with pOther; they both write to the same file.
+     * The file writers synchronize writing themselves.
+     */
+    PairedFileWriter( const ParameterSetManager& rParameters, std::shared_ptr<FileWriter> pOther )
+        : TagGenerator( rParameters ),
+          pOut( pOther->pOut ),
+          pLock( pOther->pLock ),
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
+    {} // constructor
+
+    /**
+     * @brief creates a new PairedFileWriter.
+     * @details
+     * Synchronizes this file writer with pOther; they both write to the same file.
+     * The file writers synchronize writing themselves.
+     */
+    PairedFileWriter( const ParameterSetManager& rParameters, std::shared_ptr<PairedFileWriter> pOther )
+        : TagGenerator( rParameters ),
+          pOut( pOther->pOut ),
+          pLock( pOther->pLock ),
+          bNoSecondary( rParameters.getSelected( )->xNoSecondary->get( ) ),
+          bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
+    {} // constructor
 
     virtual std::shared_ptr<Container>
         EXPORTED execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
