@@ -80,7 +80,7 @@ void exportParameter( py::module& rxPyModuleId )
 
     exportAlignerParameter<int>( rxPyModuleId, "AlignerParameterInt" );
     exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
-    exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
+    exportAlignerParameter<double>( rxPyModuleId, "AlignerParameterDouble" );
     // exportAlignerParameter<fs::path>( rxPyModuleId, "AlignerParameterFilePath" ); @todo
     // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" ); @todo
 
