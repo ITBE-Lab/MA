@@ -296,6 +296,7 @@ CppSQLite3Query::CppSQLite3Query( )
 
 CppSQLite3Query::CppSQLite3Query( const CppSQLite3Query& rQuery )
 {
+    throw std::runtime_error("copying queries will cause trouble; dont't do it..."); // added by markus
     mpVM = rQuery.mpVM;
     // Only one object can own the VM
     const_cast<CppSQLite3Query&>( rQuery ).mpVM = 0;

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <CppSQLite3.h>
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -715,12 +716,26 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
         GetTupleElement xGetElementFunctor;
 
       public:
-        Iterator( CppSQLite3Query xQuery ) : xQuery( xQuery ), xGetElementFunctor( xQuery )
-        {} // constructor
+        template <class... ArgTypes>
+        Iterator( CppSQLiteExtQueryStatement& rQuery, ArgTypes&&... args )
+            : xQuery( rQuery.bindAndExecQuery( std::forward<ArgTypes>( args )... ) ), xGetElementFunctor( this->xQuery )
+        {
+            /* We check whether the number of columns is ok.
+             * (Types are the types of the columns of the result table)
+             */
+            if( xQuery.numFields( ) != ( sizeof...( Types ) ) )
+            {
+                throw CppSQLite3Exception( CPPSQLITE_ERROR,
+                                           "actual number of columns does not match number of types of template",
+                                           false // => DONT_DELETE_MSG
+                );
+            } // if
+        } // constructor
 
         std::tuple<Types...> get( )
         {
             std::tuple<Types...> SingleResultRowAsTuple;
+            assert( !xQuery.eof( ) );
             iterateOverTupleCurry2( xGetElementFunctor, SingleResultRowAsTuple );
             return SingleResultRowAsTuple;
         } // method
@@ -783,7 +798,7 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
 
     template <class... ArgTypes> Iterator vExecuteAndReturnIterator( ArgTypes&&... args )
     {
-        return Iterator( this->bindAndExecQuery( std::forward<ArgTypes>( args )... ) );
+        return Iterator( *this, args... );
     } // method
 
     /* Applies the given function to all rows of the table.

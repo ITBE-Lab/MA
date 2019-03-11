@@ -409,16 +409,17 @@ class SoCDbWriter : public Module<Container, false, NucSeq, SoCPriorityQueue>
 
 class NucSeqFromSql : public Module<NucSeq, true>
 {
+    std::shared_ptr<SV_DB> pDb;
+    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xQuery;
     CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
 
   public:
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sSql )
-        : xTableIterator(
-              CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>(
-                  *pDb->pDatabase,
-                  ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE paired_read_id == -1" + sSql )
-                      .c_str( ) )
-                  .vExecuteAndReturnIterator( ) )
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE paired_read_id == -1 " + sSql )
+                      .c_str( ) ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
     {
         if( xTableIterator.eof( ) )
             setFinished( );
@@ -447,18 +448,20 @@ class NucSeqFromSql : public Module<NucSeq, true>
 
 class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq>>, true>
 {
+    std::shared_ptr<SV_DB> pDb;
+    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xQuery;
     CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
     const size_t uiNumReadsPerPair = 0;
 
   public:
     PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, size_t uiNumReadsPerPair,
                          std::string sSql )
-        : xTableIterator( CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>(
-                              *pDb->pDatabase,
-                              ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE paired_read_id != -1" +
-                                sSql + " ORDER BY paired_read_id" )
-                                  .c_str( ) )
-                              .vExecuteAndReturnIterator( ) ),
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  ( "SELECT read_table.sequence, paired_read_id FROM read_table WHERE paired_read_id != -1 " + sSql +
+                    " ORDER BY paired_read_id" )
+                      .c_str( ) ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( ) ),
           uiNumReadsPerPair( uiNumReadsPerPair )
     {
         if( xTableIterator.eof( ) )
@@ -478,9 +481,12 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
                 throw AnnotatedException( "Missing mate for read with id " + pRet->back( )->sName );
             auto xTup = xTableIterator.get( );
             pRet->push_back( std::get<0>( xTup ).pNucSeq );
-            pRet->back( )->sName = std::to_string( std::get<1>( xTup ) ) + "_mate_nr_" + std::to_string( uiI + 1 );
+            pRet->back( )->sName = std::to_string( std::get<1>( xTup ) );
+            std::cout << pRet->back( )->sName << " ";
             xTableIterator.next( );
         } // for
+
+        std::cout << std::endl;
 
         if( xTableIterator.eof( ) )
             setFinished( );
