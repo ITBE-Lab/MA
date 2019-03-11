@@ -87,27 +87,23 @@ Now you can **align** using the following command:
 
 ```
 Available presettings:
-    -p, --Presetting <name> [Default]
-                                                   Optimize aligner parameters for a selected
+    -p, --Presetting <name> [Default]              Optimize aligner parameters for a selected
                                                    sequencing technique. Available presettings are:
                                                    'Default', 'Illumina', 'Illumina_Paired',
                                                    'Nanopore', 'PacBio'.
 
 General options: (these options are not affected by presettings)
-    -x, --Index <file_name> []
-                                                   Filename of FMD-index. (A FMD-index can be
+    -x, --Index <file_name> []                     Filename of FMD-index. (A FMD-index can be
                                                    generated via the --Create_Index option.) This
                                                    option must be set.
 
-    -i, --In <file_name> []
-                                                   Filenames of Fasta/Fastq files containing reads.
+    -i, --In <file_name> []                        Filenames of Fasta/Fastq files containing reads.
                                                    gz-compressed files are automatically decompressed.
                                                    Multiple files can be specified by a comma
                                                    separated list. At least one file name must be
                                                    provided.
 
-    -m, --Mate_In <file_name> []
-                                                   Filenames of the mates in the case of paired reads.
+    -m, --Mate_In <file_name> []                   Filenames of the mates in the case of paired reads.
                                                    If this option is set, the aligner switches to
                                                    paired mode automatically. The number of reads
                                                    given as mates must match the accumulated number of
@@ -123,29 +119,18 @@ General options: (these options are not affected by presettings)
                                                    the context of alignments, the genome-name is used
                                                    for FMD-index selection.
 
-    -O, --SAM_Files_in_same_Folder_as_Reads <bool> [false]
-                                                   If selected, SAM files are written to the folder of
-                                                   the reads.
+    -o, --SAM_File_name <file_name> [ma_out.sam]
+                                                   Name of the SAM file alignments shall be written
+                                                   to.
 
-    -o, --Folder_for_SAM_Files <file_name> [/tmp]
-                                                   Folder for SAM output in the case that the output
-                                                   is not directed to the reads' folder.
-
-    --Use_all_Processor_Cores <bool> [true]
-                                                   Number of threads used for alignments is identical
-                                                   to the number of processor cores.
-
-    --Number_of_Threads <int> [1]
-                                                   Number of threads used in the context of
+    -t, --Number_of_Threads <int> [4]              Number of threads used in the context of
                                                    alignments. This options is only available, if 'use
                                                    all processor cores' is off.
 
-    -h, --Help <bool> [true]
-                                                   Print the complete help text.
+    -h, --Help <bool> [true]                       Print the complete help text.
 
 Paired Reads options:
-    --Use_Paired_Reads <bool> [false]
-                                                   If your reads occur as paired reads, activate this
+    --Use_Paired_Reads <bool> [false]              If your reads occur as paired reads, activate this
                                                    flag.
 
     -d, --Mean_Distance_of_Paired_Reads <double> [400]
@@ -169,30 +154,28 @@ Paired Reads options:
                                                    picking optimal alignment pairs. [val] < 1 results
                                                    in penalty; [val] > 1 results in bonus.
 
+    --Check_for_Consistency <bool> [false]         Check if both paired read files comprise the same
+                                                   number of reads. (Intended for debugging.)
+
 Seeding options:
-    -s, --Seeding_Technique <name> [maxSpan]
-                                                   Technique used for the initial seeding. Available
+    -s, --Seeding_Technique <name> [maxSpan]       Technique used for the initial seeding. Available
                                                    techniques are: maxSpan and SMEMs.
 
-    -l, --Minimal_Seed_Length <int> [16]
-                                                   All seeds with size smaller than 'minimal seed
+    -l, --Minimal_Seed_Length <int> [16]           All seeds with size smaller than 'minimal seed
                                                    length' are discarded.
 
-    --Minimal_Ambiguity <int> [0]
-                                                   During the extension of seeds using the FMD-index:
+    --Minimal_Ambiguity <int> [0]                  During the extension of seeds using the FMD-index:
                                                    With increasing extension width, the number of
                                                    occurrences of corresponding seeds on the reference
                                                    montonically decreases. Keep extending, while the
                                                    number of occurrences is higher than 'Minimal
                                                    Ambiguity'. (For details see the MA-Handbook.)
 
-    --Maximal_Ambiguity <int> [100]
-                                                   Discard seeds that occur more than 'Maximal
+    --Maximal_Ambiguity <int> [100]                Discard seeds that occur more than 'Maximal
                                                    ambiguity' time on the reference. Set to zero to
                                                    disable.
 
-    --Skip_Ambiguous_Seeds <bool> [false]
-                                                   Enabled: Discard all seeds that are more ambiguous
+    --Skip_Ambiguous_Seeds <bool> [false]          Enabled: Discard all seeds that are more ambiguous
                                                    than [Maximal Ambiguity]. Disabled: sample [Maximal
                                                    Ambiguity] random seeds from too ambiguous seeds.
 
@@ -208,16 +191,15 @@ Seeding options:
                                                    parameter [Seeding drop-off A].
 
 Strip of Consideration options:
-    -N, --Maximal_Number_of_SoC's <int> [30]
-                                                   Only consider the <val> best scored SoC's. 0 = no
+    -N, --Maximal_Number_of_SoC's <int> [30]       Only consider the <val> best scored SoC's. 0 = no
                                                    limit.
 
-    -M, --Minimal_Number_of_SoC's <int> [1]
-                                                   Always consider the first <val> SoC's no matter the
-                                                   Heuristic optimizations.
+    -M, --Minimal_Number_of_SoC's <int> [1]        Always consider the first <val> SoC's no matter the
+                                                   Heuristic optimizations. Upping this parameter
+                                                   might improve the output of supplementary
+                                                   alignments and therefore successive SV calling.
 
-    --Fixed_SoC_Width <int> [0]
-                                                   Set the SoC width to a fixed value. 0 = use the
+    --Fixed_SoC_Width <int> [0]                    Set the SoC width to a fixed value. 0 = use the
                                                    formula given in the paper. This parameter is
                                                    intended for debugging purposes.
 
@@ -226,12 +208,10 @@ SAM Output options:
                                                    Do not output more than <val> alignments. Set to
                                                    zero for unlimited output.
 
-    --Minimal_Alignment_Score <int> [75]
-                                                   Suppress the output of alignments with a score
+    --Minimal_Alignment_Score <int> [75]           Suppress the output of alignments with a score
                                                    below val.
 
-    --Omit_Secondary_Alignments <bool> [false]
-                                                   Suppress the output of secondary alignments.
+    --Omit_Secondary_Alignments <bool> [false]     Suppress the output of secondary alignments.
 
     --Omit_Supplementary_Alignments <bool> [false]
                                                    Suppress the output of supplementary alignments.
@@ -246,14 +226,26 @@ SAM Output options:
                                                    Maximal Number of supplementary alignments per
                                                    primary alignment.
 
+    --Emulate_NGMLR's_tag_output <bool> [false]
+                                                   Output SAM tags as NGMLR would. Activate this if
+                                                   you want to use MA in combination with Sniffles.
+                                                   Enableing this will drastically increase the size
+                                                   of the output file.
+
+    --Output_long_cigars_in_CG_tag <bool> [true]
+                                                   Some software crashes if a cigar is too long.
+                                                   Enabeling this flag makes MA output that the entire
+                                                   read was soft clipped in the regular cigar field if
+                                                   the cigar would exceed 65536 operations. The actual
+                                                   cigar is then given in the CG:B:I tag as a comma
+                                                   seperated binary list.
+
 Heuristics options:
-    --SoC_Score_Drop-off <double> [0.1]
-                                                   Let x be the maximal encountered SoC score. Stop
+    --SoC_Score_Drop-off <double> [0.1]            Let x be the maximal encountered SoC score. Stop
                                                    harmonizing SoC's if there is a SoC with a score
                                                    lower than <val>*x.
 
-    --Minimal_Harmonization_Score <int> [18]
-                                                   Discard all harmonized SoC's with scores lower than
+    --Minimal_Harmonization_Score <int> [18]       Discard all harmonized SoC's with scores lower than
                                                    <val>.
 
     --Relative_Minimal_Harmonization_Score <double> [0.002]
@@ -285,7 +277,7 @@ Heuristics options:
                                                    See Artifact Filter A
 
     --Pick_Local_Seed_Set_A_-_Enabled <bool> [false]
-                                                   <val> = true enables local seed set computiaion.
+                                                   <val> = true enables local seed set computation.
 
     --Pick_Local_Seed_Set_B_-_Optimistic_Gap_Estimation <bool> [true]
                                                    After the harmonization MA checks weather it is
@@ -300,47 +292,41 @@ Heuristics options:
 
     --Pick_Local_Seed_Set_C_-_Maximal_Gap_Penalty <int> [100]
                                                    Maximal Gap cost penalty during local seed set
-                                                   computiaion.
+                                                   computation.
 
-    --Maximal_Gap_Area <int> [10000]
-                                                   Split alignments in harmonization if gap area is
-                                                   larger than <val>.
+    --Maximal_Gap_Size <int> [20]                  If the gap between seeds is larger than <val> on
+                                                   query or reference, the dual extension process is
+                                                   used to fill the gap. Dual extension is more
+                                                   expensive if the extension does not Z-drop, but
+                                                   more efficient otherwise.
 
     --Minimum_Genome_Size_for_Heuristics <int> [10000000]
                                                    Some heuristics can only be applied on long enough
                                                    genomes. Disables: SoC score Drop-off if the genome
                                                    is shorter than <val>.
 
-    --Disable_All_Heuristics <bool> [false]
-                                                   Disables all runtime heuristics. (Intended for
+    --Disable_All_Heuristics <bool> [false]        Disables all runtime heuristics. (Intended for
                                                    debugging.)
 
 Dynamic Programming options:
-    --Match_Score <int> [2]
-                                                   Match score. (Used in the context of Dynamic
+    --Match_Score <int> [2]                        Match score. (Used in the context of Dynamic
                                                    Programming and for SoC width computation.)
 
-    --Mismatch_Penalty <int> [4]
-                                                   Penalty for mismatch.
+    --Mismatch_Penalty <int> [4]                   Penalty for mismatch.
 
-    --Gap_penalty <int> [4]
-                                                   First penalty for gap opening. (Two piece affine
+    --Gap_penalty <int> [4]                        First penalty for gap opening. (Two piece affine
                                                    gap costs)
 
-    --Extend_Penalty <int> [2]
-                                                   First penalty for gap extension. (Two piece affine
+    --Extend_Penalty <int> [2]                     First penalty for gap extension. (Two piece affine
                                                    gap costs)
 
-    --Second_Gap_Penalty <int> [24]
-                                                   Second penalty for gap opening. (Two piece affine
+    --Second_Gap_Penalty <int> [24]                Second penalty for gap opening. (Two piece affine
                                                    gap costs)
 
-    --Second_Extend_Penalty <int> [1]
-                                                   Second penalty for gap extension. (Two piece affine
+    --Second_Extend_Penalty <int> [1]              Second penalty for gap extension. (Two piece affine
                                                    gap costs)
 
-    --Padding <int> [1000]
-                                                   If an alignment does not reach its read's
+    --Padding <int> [1000]                         If an alignment does not reach its read's
                                                    endpoints, the missing parts can be computed via
                                                    dynamic programming. If the length of the missing
                                                    parts is smaller than 'Padding', dynamic
@@ -349,21 +335,17 @@ Dynamic Programming options:
                                                    parts of the read are ignored and the alignment
                                                    stays unextended.
 
-    --Bandwidth_for_Extensions <int> [512]
-                                                   Bandwidth used in the context of extending an
+    --Bandwidth_for_Extensions <int> [512]         Bandwidth used in the context of extending an
                                                    alignment towards the endpoints of its read. (See
                                                    'Padding')
 
-    --Minimal_Bandwidth_in_Gaps <int> [20]
-                                                   Gaps between seeds are generally filled using
+    --Minimal_Bandwidth_in_Gaps <int> [20]         Gaps between seeds are generally filled using
                                                    dynamic programming. This option determines the
                                                    minimal bandwidth used in the context of bridging
                                                    gaps. More details can be found in the MA-Handbook.
 
-    --Z_Drop <int> [200]
-                                                   If the running score during dynamic programming
+    --Z_Drop <int> [200]                           If the running score during dynamic programming
                                                    drops faster than <val> stop the extension process.
-
 ```
 
 ## Thanks ...
