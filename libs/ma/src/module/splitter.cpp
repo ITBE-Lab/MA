@@ -11,21 +11,6 @@ using namespace libMA;
 #ifdef WITH_PYTHON
 #include "util/pybind11.h"
 
-#ifdef BOOST_PYTHON
-void exportSplitter( )
-{
-    // export the Lock class
-    exportModule<Lock<Container>>( "Lock" );
-
-    // export the UnLock class
-    exportModule<UnLock<Container>, std::shared_ptr<BasePledge>>( "UnLock" );
-
-
-    // export the TupleGet class
-    exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 0>>( "GetFirstQuery" );
-    exportModule<TupleGet<ContainerVector<std::shared_ptr<NucSeq>>, 1>>( "GetSecondQuery" );
-} // function
-#else
 void exportSplitter( py::module& rxPyModuleId )
 {
     // export the Lock class
@@ -38,7 +23,7 @@ void exportSplitter( py::module& rxPyModuleId )
     exportModule<Splitter<NucSeq>>( rxPyModuleId, "NucSeqSplitter" );
 
     // exported in fileReader.cpp
-    //py::bind_vector_ext<ContainerVector<std::shared_ptr<NucSeq>>, Container,
+    // py::bind_vector_ext<ContainerVector<std::shared_ptr<NucSeq>>, Container,
     //                    std::shared_ptr<ContainerVector<std::shared_ptr<NucSeq>>>>( rxPyModuleId,
     //                                                                                "NucSeqContainerVector" );
 
@@ -52,6 +37,11 @@ void exportSplitter( py::module& rxPyModuleId )
     exportModule<Collector<NucSeq, SoCPriorityQueue>>( rxPyModuleId, "NucSeqSoCCollector", []( auto&& x ) {
         x.def_readwrite( "collection", &Collector<NucSeq, SoCPriorityQueue>::vCollection );
     } );
+
+    exportModule<Collector<NucSeq, NucSeq, SoCPriorityQueue, SoCPriorityQueue>>(
+        rxPyModuleId, "PairedNucSeqSoCCollector", []( auto&& x ) {
+            x.def_readwrite( "collection",
+                             &Collector<NucSeq, NucSeq, SoCPriorityQueue, SoCPriorityQueue>::vCollection );
+        } );
 } // function
-#endif
 #endif

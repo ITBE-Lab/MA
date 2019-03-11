@@ -54,15 +54,13 @@ class SV_DB : public CppSQLite3DB, public Container
 
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int32_t, // sequencer id
                                                      std::string, // read name
-                                                     NucSeqSql, // read sequence
-                                                     int32_t // paired read id
+                                                     NucSeqSql // read sequence
                                                      >
         TP_READ_TABLE;
     class ReadTable : public TP_READ_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtQueryStatement<int32_t> xGetReadId;
-        CppSQLiteExtStatement xUpdateReadId;
         bool bDoDuplicateWarning = true;
 
       public:
@@ -72,11 +70,10 @@ class SV_DB : public CppSQLite3DB, public Container
                   *pDatabase, // the database where the table resides
                   "read_table", // name of the table in the database
                   // column definitions of the table
-                  std::vector<std::string>{"sequencer_id", "name", "sequence", "paired_read_id"},
+                  std::vector<std::string>{"sequencer_id", "name", "sequence"},
                   std::vector<std::string>{"read_name_sequencer_id_constraint UNIQUE (sequencer_id, name)"} ),
               pDatabase( pDatabase ),
-              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" ),
-              xUpdateReadId( *pDatabase, "UPDATE read_table SET paired_read_id = ? WHERE id = ?" )
+              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" )
         {} // default constructor
 
         ~ReadTable( )
@@ -91,7 +88,7 @@ class SV_DB : public CppSQLite3DB, public Container
             {
                 try
                 {
-                    xInsertRow( uiSequencerId, pRead->sName, NucSeqSql( pRead ), -1 );
+                    xInsertRow( uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
                     return xGetReadId.scalar( uiSequencerId, pRead->sName );
                 } // try
                 catch( CppSQLite3Exception& xException )
@@ -111,45 +108,67 @@ class SV_DB : public CppSQLite3DB, public Container
             throw AnnotatedException( "Could not insert read after 5 tries" );
         } // method
 
-        inline std::pair<int32_t, int32_t> insertPairedRead( int32_t uiSequencerId, //
-                                                             std::shared_ptr<NucSeq>
-                                                                 pReadA,
-                                                             std::shared_ptr<NucSeq>
-                                                                 pReadB )
+    }; // class
+
+
+    typedef CppSQLiteExtTable<int32_t, // read id
+                              int32_t, // sequencer id
+                              std::string, // read name
+                              NucSeqSql // read sequence
+                              >
+        TP_PAIRED_READ_TABLE;
+    class PairedReadTable : public TP_PAIRED_READ_TABLE
+    {
+        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+        bool bDoDuplicateWarning = true;
+
+      public:
+        // @todo (read_table.name, read_table.sequencer_id) should be UNIQUE
+        PairedReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_PAIRED_READ_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "paired_read_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"id", "sequencer_id", "name", "sequence"},
+                  false, // do not generate automatic primary key...
+                  std::vector<std::string>{"paired_read_name_sequencer_id_constraint UNIQUE (sequencer_id, name)",
+                                           "paired_read_table_key PRIMARY KEY (id)"} ),
+              pDatabase( pDatabase )
+        {} // default constructor
+
+        ~PairedReadTable( )
+        {
+            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
+                pDatabase->execDML( "CREATE INDEX paired_read_id_index ON paired_read_table (id)" );
+        } // deconstructor
+
+        inline void insertRead( int32_t uiId, int32_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
         {
             for( size_t i = 0; i < 5; i++ ) // at most do 5 tries
             {
                 try
                 {
-                    // insert both reads
-                    xInsertRow( uiSequencerId, pReadA->sName, NucSeqSql( pReadA ), -1 );
-                    int32_t uiReadAid = xGetReadId.scalar( uiSequencerId, pReadA->sName );
-                    xInsertRow( uiSequencerId, pReadB->sName, NucSeqSql( pReadB ), -1 );
-                    int32_t uiReadBid = xGetReadId.scalar( uiSequencerId, pReadB->sName );
-                    // update the paired read ids
-                    xUpdateReadId.bindAndExecute( uiReadAid, uiReadBid );
-                    xUpdateReadId.bindAndExecute( uiReadBid, uiReadAid );
-                    // return the id's
-                    return std::make_pair( uiReadAid, uiReadBid );
+                    xInsertRow( uiId, uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
+                    return; // if we reach here we have succesfully inserted the read; no need to repeat the loop
                 } // try
                 catch( CppSQLite3Exception& xException )
                 {
                     if( bDoDuplicateWarning )
                     {
+                        this->vDump(std::cout);
                         std::cerr << "WARNING: " << xException.errorMessage( ) << std::endl;
-                        std::cerr << "Does your data contain duplicate reads? Current read names: " << pReadA->sName
-                                  << ", " << pReadB->sName << std::endl;
-                        std::cerr << "Changing read names to: " << pReadA->sName + "_2, " << pReadB->sName + "_2"
+                        std::cerr << "Does your data contain duplicate reads? Current read name: " << pRead->sName
                                   << std::endl;
+                        std::cerr << "Changing read name to: " << pRead->sName + "_2" << std::endl;
                         std::cerr << "This warning is only displayed once" << std::endl;
                         bDoDuplicateWarning = false;
                     } // if
-                    pReadA->sName += "_2";
-                    pReadB->sName += "_2";
+                    pRead->sName += "_2";
                 } // catch
             } // for
-            throw AnnotatedException( "Could not insert reads after 5 tries" );
+            throw AnnotatedException( "Could not insert read after 5 tries" );
         } // method
+
     }; // class
 
 
@@ -294,6 +313,7 @@ class SV_DB : public CppSQLite3DB, public Container
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
     std::shared_ptr<ReadTable> pReadTable;
+    std::shared_ptr<PairedReadTable> pPairedReadTable;
     std::shared_ptr<SoCTable> pSocTable;
 
     friend class NucSeqFromSql;
@@ -304,6 +324,7 @@ class SV_DB : public CppSQLite3DB, public Container
         : pDatabase( new CppSQLiteDBExtended( "", sName, xMode ) ),
           pSequencerTable( new SequencerTable( pDatabase ) ),
           pReadTable( new ReadTable( pDatabase ) ),
+          pPairedReadTable( new PairedReadTable( pDatabase ) ),
           pSocTable( new SoCTable( pDatabase ) )
     {} // constructor
 
@@ -359,9 +380,10 @@ class SV_DB : public CppSQLite3DB, public Container
         inline std::pair<ReadContex, ReadContex> getPairedReadContext( //
             std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
         {
-            auto xIdPair = pDB->pReadTable->insertPairedRead( uiSequencerId, pReadA, pReadB );
-            return std::make_pair( ReadContex( xIdPair.first, pDB->pSocTable ),
-                                   ReadContex( xIdPair.second, pDB->pSocTable ) );
+            throw std::runtime_error( "unimplemented..." );
+            // auto xIdPair = pDB->pReadTable->insertPairedRead( uiSequencerId, pReadA, pReadB );
+            // return std::make_pair( ReadContex( xIdPair.first, pDB->pSocTable ),
+            //                       ReadContex( xIdPair.second, pDB->pSocTable ) );
         } // method
 
         inline void insertRead( std::shared_ptr<NucSeq> pRead )
@@ -371,7 +393,8 @@ class SV_DB : public CppSQLite3DB, public Container
 
         inline void insertPairedRead( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
         {
-            pDB->pReadTable->insertPairedRead( uiSequencerId, pReadA, pReadB );
+            pDB->pPairedReadTable->insertRead( pDB->pReadTable->insertRead( uiSequencerId, pReadA ), uiSequencerId,
+                                               pReadB );
         } // method
     }; // class
 
@@ -417,7 +440,9 @@ class NucSeqFromSql : public Module<NucSeq, true>
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sSql )
         : pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE paired_read_id == -1 " + sSql )
+                  ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE read_table.id NOT IN (SELECT "
+                    "paired_read_table.id FROM paired_read_table) " +
+                    sSql )
                       .c_str( ) ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
     {
@@ -449,20 +474,19 @@ class NucSeqFromSql : public Module<NucSeq, true>
 class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq>>, true>
 {
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xQuery;
-    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
-    const size_t uiNumReadsPerPair = 0;
+    CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t> xQuery;
+    CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t>::Iterator xTableIterator;
 
   public:
-    PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, size_t uiNumReadsPerPair,
-                         std::string sSql )
+    PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sSql )
         : pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  ( "SELECT read_table.sequence, paired_read_id FROM read_table WHERE paired_read_id != -1 " + sSql +
-                    " ORDER BY paired_read_id" )
+                  ( "SELECT read_table.sequence, paired_read_table.sequence, read_table.id FROM read_table INNER JOIN "
+                    "paired_read_table ON "
+                    "read_table.id = paired_read_table.id " +
+                    sSql )
                       .c_str( ) ),
-          xTableIterator( xQuery.vExecuteAndReturnIterator( ) ),
-          uiNumReadsPerPair( uiNumReadsPerPair )
+          xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
     {
         if( xTableIterator.eof( ) )
             setFinished( );
@@ -475,18 +499,12 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
 
         auto pRet = std::make_shared<ContainerVector<std::shared_ptr<NucSeq>>>( );
 
-        for( size_t uiI = 0; uiI < uiNumReadsPerPair; uiI++ )
-        {
-            if( uiI != 0 && xTableIterator.eof( ) )
-                throw AnnotatedException( "Missing mate for read with id " + pRet->back( )->sName );
-            auto xTup = xTableIterator.get( );
-            pRet->push_back( std::get<0>( xTup ).pNucSeq );
-            pRet->back( )->sName = std::to_string( std::get<1>( xTup ) );
-            std::cout << pRet->back( )->sName << " ";
-            xTableIterator.next( );
-        } // for
-
-        std::cout << std::endl;
+        auto xTup = xTableIterator.get( );
+        pRet->push_back( std::get<0>( xTup ).pNucSeq );
+        pRet->back( )->sName = std::to_string( std::get<2>( xTup ) );
+        pRet->push_back( std::get<1>( xTup ).pNucSeq );
+        pRet->back( )->sName = std::to_string( std::get<2>( xTup ) );
+        xTableIterator.next( );
 
         if( xTableIterator.eof( ) )
             setFinished( );

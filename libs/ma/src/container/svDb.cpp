@@ -39,7 +39,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 
     // export the NucSeqFromSql class
     exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>, std::string>( rxPyModuleId, "NucSeqFromSql" );
-    exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>, size_t, std::string>( rxPyModuleId,
+    exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>, std::string>( rxPyModuleId,
                                                                                     "PairedNucSeqFromSql" );
 } // function
 #endif
