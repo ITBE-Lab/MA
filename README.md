@@ -1,11 +1,11 @@
-
 # <img src="https://raw.githubusercontent.com/ITBE-Lab/MA/release/MA.png" align="center" width="90"> The Modular Aligner
 MA is a novel open source application for the efficient and accurate alignment of short and long reads of various sequencers. The approach has a highly modular architecture and everyone is invited to propose/integrate new modules. 
 The design aims at a smooth Python integration, while keeping the performance delivered by C++. So, the
 general idea is the coupling of several C++-modules via Python, where each module does a different 
 part of the alignment process. Good module combinations are finally coupled
 under the roof of a single C++ application.
-## Algorithmic Approaches
+
+## Algorithmic Approach
 Many aligners conceptually incorporate the following 3 stage approach:
 1. **Seeding**. Computation of perfect matches (or with few mismatches) using some form of indexing mechanism or hashing.
 2. **Coupling**. Identification of promising seed subsets that could lead to an optimal alignment. A 
@@ -27,24 +27,20 @@ while the seed harmonization purges contradicting
 seeds by relying on a virtual guide line. The highlights of these approaches are: No specially
 tailored data structures required. Highly efficient. Easy to implement (roughly 50 lines Pseudocode).
 
-## Python Integration
-
-> **Python Integration is an optional feature of MA.** 
-
-MA is built with Python support, if cmake can locate a valid python installation (at least version 3.5).
-The Python integration of MA is done via [pybind11](https://github.com/pybind/pybind11 "pybind11"). 
-Alignments using the Python integration can be done without a computational penalty, 
-since Python is only responsible for an initial C++-module 
-coupling, while all actual computations are done within the C++-modules. The idea is similar 
-to the one used in the context of [TensorFlow](https://www.tensorflow.org "TensorFlow").
 
 ## Getting Started
-MA is currently still in an evaluation and testing process. Feedback about bugs is highly welcomed. 
-The below procedure was checked on a fresh *Debian 9.4 Stretch* with the following additional 
-packages installed: `git`, `cmake`, `make` and `build-essential`.
-### Installation
 
-Get the github clone and use cmake (at least version 3.8) for building. On Unix-like platforms, this can be done via: 
+### Installer for MA on Windows 7/10 (64 bit)
+An **installer for MA on Windows 7/10 (64 bit)** is available
+[**here**](http://itbe.hanyang.ac.kr/research-articles/ma/ "MA for Windows 7/10 (64 bit)").\
+After installing MA, start the GUI and build an FMD-index using the menu entry 
+`Genome->Create Index` or the `F2` key.
+Then, follow the `Quickstart` description in the upper-right corner for computing alignments.
+
+### Installation on Linux (Debian and Ubuntu)
+The below procedure was checked on a fresh *Debian 9.4 Stretch* with the following additional 
+packages installed: `git`, `cmake`, `make` and `build-essential`.\
+Get the github clone and use cmake (at least version 3.8) for building. This can be done via: 
 
     git clone https://github.com/ITBE-Lab/MA
     cd MA
@@ -53,17 +49,20 @@ Get the github clone and use cmake (at least version 3.8) for building. On Unix-
     cmake ..
     make
 
-On Microsoft Windows, MA can be build via the cmake support of Microsoft Visual Studio 2017.
-MA is available as command line tool and as graphical user interface application. 
-The GUI version is build additionally to the comand line version, if cmake can find support for wxWidgets.
+### Compilation on Windows 7/10
+Get the github clone via:
 
-### First Steps ...
+    git clone https://github.com/ITBE-Lab/MA
+
+Then, MA can be build via the `cmake` support of Microsoft Visual Studio 2017.
+
+
+## First Steps with the command line version ...
 Test your installation with:
 
     ./maCMD -h
 
 You should see the help screen of MA.
-
 
 In order to perform alignments you need to **precompute an index** of your reference genome first.
 This is done using following command:
@@ -83,7 +82,29 @@ Now you can **align** using the following command:
 `<sam_out>` is the filename of the output file that shall be created.
 
 
-## MA options
+## Optional Features
+
+### Python Integration
+MA is built with Python support, if cmake can locate a valid python installation (at least version 3.5).
+The Python integration of MA is done via [pybind11](https://github.com/pybind/pybind11 "pybind11"). 
+Alignments using the Python integration can be done without a computational penalty, 
+since Python is only responsible for an initial C++-module 
+coupling, while all actual computations are done within the C++-modules. The idea is similar 
+to the one used in the context of [TensorFlow](https://www.tensorflow.org "TensorFlow").
+
+### zLib Support
+For getting zLib support cmake has to find the appropriate zLib libraries.
+On Debian/Ubuntu you have to run `apt-get install zlib1g-dev`.
+On Windows the libraries are available via the [zLib homepage](https://www.zlib.net/ "zLib homepage").
+
+### Graphical User Interface (GUI) Support via wxWidgets
+The GUI version is additionally build to the comand line version,
+if `cmake` can find support for [wxWidgets](https://www.wxwidgets.org/ "wxWidgets Homepage").
+On Debian/Ubuntu, wxWidgets can be installed via `apt-get install libwxgtk3.0-gtk3-dev`.
+On Windows wxWidgets must be downloaded from the [wxWidgets homepage](https://www.wxwidgets.org/ "wxWidgets Homepage").
+
+
+## MA Options
 
 ```
 Available presettings:
