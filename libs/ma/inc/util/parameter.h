@@ -689,7 +689,7 @@ class Presetting : public ParameterSetBase
           xMinDeltaDist( this, "Artifact Filter B - Minimal Delta Distance", "See Artifact Filter A",
                          HEURISTIC_PARAMETERS, 16, checkPositiveValue ),
           xDisableGapCostEstimationCutting( this, "Pick Local Seed Set A - Enabled",
-                                            "<val> = true enables local seed set computiaion.", HEURISTIC_PARAMETERS,
+                                            "<val> = true enables local seed set computation.", HEURISTIC_PARAMETERS,
                                             false ),
           xOptimisticGapCostEstimation(
               this, "Pick Local Seed Set B - Optimistic Gap Estimation",
@@ -700,7 +700,7 @@ class Presetting : public ParameterSetBase
               "insertion/deletion.",
               HEURISTIC_PARAMETERS, true ),
           xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
-                      "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100,
+                      "Maximal Gap cost penalty during local seed set computation.", HEURISTIC_PARAMETERS, 100,
                       checkPositiveValue ),
           xMaxGapArea( this, "Maximal Gap Size",
                        "If the gap between seeds is larger than <val> on query or reference, the dual extension "
