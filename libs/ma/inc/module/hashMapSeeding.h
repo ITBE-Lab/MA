@@ -28,22 +28,6 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
 
 }; // class
 
-/**
- * @brief 
- * @ingroup module
- * @details
- */
-class SeedLumping : public Module<Seeds, false, Seeds>
-{
-  public:
-
-    SeedLumping( const ParameterSetManager& rParameters )
-    {} // constructor
-
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds );
-
-}; // class
-
 } // namespace libMA
 
 #ifdef WITH_PYTHON

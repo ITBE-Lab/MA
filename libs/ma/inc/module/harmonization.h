@@ -150,7 +150,7 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
 
     // const int64_t iMinSVDistance;
 
-    //const nucSeqIndex uiMaxGapArea;
+    // const nucSeqIndex uiMaxGapArea;
 
     const size_t uiSVPenalty;
 
@@ -239,6 +239,19 @@ class SeedLumping : public Module<Seeds, false, Seeds>
     // overload
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
     {
+        std::sort( //
+            pIn->begin( ),
+            pIn->end( ),
+            []( const Seed& rA, const Seed& rB ) //
+            { //
+                if( rA.bOnForwStrand != rB.bOnForwStrand )
+                    return rA.bOnForwStrand;
+                if( rA.start_ref( ) - (int64_t)rA.start( ) != rB.start_ref( ) - (int64_t)rB.start( ) )
+                    return rA.start_ref( ) - (int64_t)rA.start( ) < rB.start_ref( ) - (int64_t)rB.start( );
+                return rA.start_ref( ) < rB.start_ref( );
+            } // lambda
+        ); // sort call
+
         auto pRet = std::make_shared<Seeds>( );
 
         int64_t iDelta = pIn->front( ).start_ref( ) - (int64_t)pIn->front( ).start( );
