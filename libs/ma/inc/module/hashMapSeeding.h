@@ -79,6 +79,8 @@ class ExtractFilledSeedSets
         EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCsIn, std::shared_ptr<NucSeq> pQuery,
                           std::shared_ptr<FMIndex> pFMIndex, std::shared_ptr<Pack> pPack )
     {
+        auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
+
         for( size_t uiNumTries = 0; uiNumTries < uiMaxTries && !pSoCsIn->empty( ); uiNumTries++ )
         {
             auto pAppend = std::make_shared<Seeds>( );
