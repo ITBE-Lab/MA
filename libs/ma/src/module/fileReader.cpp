@@ -250,28 +250,6 @@ void PairedFileReader::checkPaired( )
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportFileReader( )
-{
-    // export the FileReader class
-    exportModule<FileReader, std::string>( "FileReader" );
-    exportModule<FileListReader, std::vector<std::string>>( "FileListReader" );
-
-    boost::python::
-        class_<TP_PAIRED_READS, boost::noncopyable, boost::python::bases<Container>, std::shared_ptr<TP_PAIRED_READS>>(
-            "NucSeqContainerVector" )
-            /*
-             * true = noproxy this means that the content of
-             * the vector is already exposed by boost python.
-             * if this is kept as false, Container would be
-             * exposed a second time. the two Containers would
-             * be different and not inter castable.
-             */
-            .def( boost::python::vector_indexing_suite<TP_PAIRED_READS, true>( ) );
-    // export the PairedFileReader class
-    exportModule<PairedFileReader, std::vector<std::string>, std::vector<std::string>>( "PairedFileReader" );
-} // function
-#else
 void exportFileReader( py::module& rxPyModuleId )
 {
     py::class_<fs::path>( rxPyModuleId, "path" ).def( py::init<std::string>( ) );
@@ -288,5 +266,4 @@ void exportFileReader( py::module& rxPyModuleId )
     // export the PairedFileReader class
     exportModule<PairedFileReader, std::vector<fs::path>, std::vector<fs::path>>( rxPyModuleId, "PairedFileReader" );
 } // function
-#endif
 #endif

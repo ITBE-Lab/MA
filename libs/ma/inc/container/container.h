@@ -9,23 +9,16 @@
 
 #include "util/debug.h"
 #include "util/exception.h"
-#include "util/iterableConverter.h"
 #include "util/support.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
 #ifdef WITH_PYTHON
 
-
-#ifdef BOOST_PYTHON
-    #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#else
     #include <pybind11/stl_bind.h>
     namespace py = pybind11;
 #endif
 
-
-#endif
 /// @endcond
 
 #if DEBUG_LEVEL >= 1
@@ -274,11 +267,7 @@ class PyContainerVector : public ContainerVector<std::shared_ptr<Container>>
  * @ingroup export
  */
 
-#ifdef BOOST_PYTHON
-void exportContainer( );
-#else
 void exportContainer( py::module& rxPyModuleId );
-#endif
 #endif
 
 #endif

@@ -928,11 +928,7 @@ class FMIndex : public Container
  * @brief function called in order to export this @ref Module "module"
  * @ingroup export
  */
-#ifdef BOOST_PYTHON
-void exportFM_index( );
-#else
 void exportFM_index( py::module& rxPyModuleId );
-#endif
 #endif
 
 #endif

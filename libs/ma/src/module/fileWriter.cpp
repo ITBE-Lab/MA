@@ -323,17 +323,6 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
 } // function
 
 #ifdef WITH_PYTHON
-
-#ifdef BOOST_PYTHON
-void exportFileWriter( )
-{
-    // export the FileWriter class
-    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( "FileWriter" );
-
-    // export the PairedFileWriter class
-    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( "PairedFileWriter" );
-} // function
-#else
 void exportFileWriter( py::module& rxPyModuleId )
 {
     // export the FileWriter class
@@ -347,5 +336,4 @@ void exportFileWriter( py::module& rxPyModuleId )
     exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<PairedFileWriter>>(
         rxPyModuleId, "PairedSyncPairedFileWriter" );
 } // function
-#endif
 #endif

@@ -164,18 +164,9 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportPairedReads( )
-{
-    // export the PairedReads class
-    exportModule<PairedReads>( "PairedReads" );
-} // function
-#else
 void exportPairedReads( py::module& rxPyModuleId )
 {
     // export the PairedReads class
     exportModule<PairedReads>( rxPyModuleId, "PairedReads" );
 } // function
-#endif
-
 #endif

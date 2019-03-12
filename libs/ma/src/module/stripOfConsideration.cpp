@@ -166,17 +166,9 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportStripOfConsideration( )
-{
-    // export the StripOfConsideration class
-    exportModule<StripOfConsideration>( "StripOfConsideration" );
-} // function
-#else
 void exportStripOfConsideration( py::module& rxPyModuleId )
 {
     // export the StripOfConsideration class
     exportModule<StripOfConsideration>( rxPyModuleId, "StripOfConsideration" );
 } // function
-#endif
 #endif

@@ -171,17 +171,9 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> 
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportBinarySeeding( )
-{
-    // export the BinarySeeding class
-    exportModule<BinarySeeding>( "BinarySeeding" );
-} // function
-#else
 void exportBinarySeeding( py::module& rxPyModuleId )
 {
     // export the BinarySeeding class
     exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding" );
 } // function
-#endif
 #endif

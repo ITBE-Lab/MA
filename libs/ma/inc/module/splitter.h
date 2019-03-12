@@ -100,11 +100,9 @@ class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, fals
  * @brief Split a ContainerVector into its elements
  * @details
  */
-template <typename TP>
-class Splitter : public Module<TP, true, ContainerVector<std::shared_ptr<TP>>>
+template <typename TP> class Splitter : public Module<TP, true, ContainerVector<std::shared_ptr<TP>>>
 {
   public:
-
     Splitter( const ParameterSetManager& rParameters )
     {} // constructor
 
@@ -113,15 +111,15 @@ class Splitter : public Module<TP, true, ContainerVector<std::shared_ptr<TP>>>
     {
         return true;
     } // function
-    
+
     virtual typename std::shared_ptr<TP> EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
     {
-        if(pIn->empty())
+        if( pIn->empty( ) )
             // if we reach this point we have read all content vector
             throw AnnotatedException( "Tried to extract element from empty vector" );
-        auto pBack = pIn->back();
-        pIn->pop_back();
-        if(pIn->empty())
+        auto pBack = pIn->back( );
+        pIn->pop_back( );
+        if( pIn->empty( ) )
             this->setFinished( );
         return pBack;
     } // method
@@ -146,6 +144,23 @@ template <typename... TP_VEC_CONTENT> class Collector : public Module<Container,
     {
         std::lock_guard<std::mutex> xGuard( *pMutex );
         vCollection.push_back( std::make_tuple( pIn... ) );
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
+/**
+ * @brief Joins two ends of computational graphs
+ * @details
+ * always returns an empty container
+ */
+template <typename... TP_VEC_CONTENT> class Join : public Module<Container, false, TP_VEC_CONTENT...>
+{
+  public:
+    Join( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    virtual typename std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    {
         return std::make_shared<Container>( );
     } // method
 }; // class

@@ -379,33 +379,6 @@ void FMIndex::build_FMIndex( const Pack& rxSequenceCollection, // the pack for w
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportFM_index( )
-{
-    exportInterval<t_bwtIndex>( );
-    // export the SAInterval class
-    boost::python::class_<SAInterval, boost::python::bases<Interval<t_bwtIndex>>>( "SAInterval" );
-    // export the FM_index class
-    boost::python::class_<FMIndex, boost::python::bases<Container>, std::shared_ptr<FMIndex>>(
-        "FMIndex", "contains the BWT of a nucleotide sequence\n" )
-        .def( boost::python::init<std::shared_ptr<NucSeq>>( "arg1: self\n"
-                                                            "arg2: the NucSeq to create the BWT Index from\n" ) )
-        .def( boost::python::init<std::shared_ptr<Pack>>( "arg1: self\n"
-                                                          "arg2: the Pack to create the BWT Index from\n" ) )
-        .def( "load", &FMIndex::vLoadFMIndex )
-        .def( "exists", &FMIndex::packExistsOnFileSystem )
-        .staticmethod( "exists" )
-        .def( "store", &FMIndex::vStoreFMIndex )
-        .def( "bwt_sa", &FMIndex::bwt_sa )
-        .def( "get_ambiguity", &FMIndex::get_ambiguity )
-        .def( "test_sa_interval", &FMIndex::testSaInterval )
-        .def( "bwt_2occ4", &FMIndex::bwt_2occ4 );
-
-    // tell boost python that pointers of these classes can be converted implicitly
-    boost::python::implicitly_convertible<std::shared_ptr<FMIndex>, std::shared_ptr<Container>>( );
-} // function
-#else
-
 void exportFM_index( py::module& rxPyModuleId )
 {
     // export the SAInterval class
@@ -428,5 +401,4 @@ void exportFM_index( py::module& rxPyModuleId )
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<FMIndex, Container>( );
 } // function
-#endif
 #endif

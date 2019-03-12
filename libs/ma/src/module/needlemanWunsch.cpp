@@ -1139,17 +1139,6 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportNeedlemanWunsch( )
-{
-    // test ksw function
-    // DEBUG( boost::python::def( "testKsw", &testKsw ); ) // DEBUG
-    // boost::python::def( "run_ksw", &run_ksw );
-
-    // export the NeedlemanWunsch class
-    exportModule<NeedlemanWunsch>( "NeedlemanWunsch" );
-} // function
-#else
 void exportNeedlemanWunsch( py::module& rxPyModuleId )
 {
     // export the NeedlemanWunsch class
@@ -1158,5 +1147,4 @@ void exportNeedlemanWunsch( py::module& rxPyModuleId )
     rxPyModuleId.def( "runKsw", &runKsw );
     rxPyModuleId.def( "runKswExtend", &runKswExtend );
 } // function
-#endif
 #endif

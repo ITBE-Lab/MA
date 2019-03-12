@@ -78,13 +78,6 @@ uint64_t uiMaxDeltaDistanceInCLuster = 200;
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportDefaults( )
-{
-    boost::python::def( "configureFast", &configureFast );
-    boost::python::def( "configureAccurate", &configureAccurate );
-} // function
-#else
 void exportDefaults( py::module& rxPyModuleId )
 {
     rxPyModuleId.def( "configureFast", &configureFast );
@@ -95,7 +88,6 @@ void exportDefaults( py::module& rxPyModuleId )
     rxPyModuleId.def("setMaxTries", &setMaxTries);
     rxPyModuleId.def("setMinAlignmentScore", &setMinAlignmentScore);
 } // function
-#endif
 #endif
 }; // namespace defaults
 }; // namespace libMA

@@ -22,12 +22,8 @@
 #include <cmath>
 #include <string>
 #ifdef WITH_PYTHON
-    #ifdef BOOST_PYTHON
-        #include <boost/python.hpp>
-    #else
-        #include <pybind11/pybind11.h>
-        namespace py = pybind11;
-    #endif
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
 #endif
 /// @endcond
 
@@ -71,9 +67,5 @@ class AnnotatedException : public std::exception
  * @brief Boost-python export function.
  * @ingroup export
  */
-#ifdef BOOST_PYTHON
-void exportExceptions( );
-#else
 void exportExceptions( py::module& rxPyModuleId );
-#endif
 #endif

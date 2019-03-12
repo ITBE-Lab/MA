@@ -43,5 +43,12 @@ void exportSplitter( py::module& rxPyModuleId )
             x.def_readwrite( "collection",
                              &Collector<NucSeq, NucSeq, SoCPriorityQueue, SoCPriorityQueue>::vCollection );
         } );
+
+    exportModule<Collector<NucSeq, ContainerVector<std::shared_ptr<Seeds>>>>(
+        rxPyModuleId, "NucSeqSeedsCollector", []( auto&& x ) {
+            x.def_readwrite( "collection", &Collector<NucSeq, ContainerVector<std::shared_ptr<Seeds>>>::vCollection );
+        } );
+
+    exportModule<Join<Container, Container>>( rxPyModuleId, "ContainerJoin" );
 } // function
 #endif

@@ -134,17 +134,9 @@ std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::exe
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportMappingQuality( )
-{
-    // export the MappingQuality class
-    exportModule<MappingQuality>( "MappingQuality" );
-} // function
-#else
 void exportMappingQuality( py::module& rxPyModuleId )
 {
     // export the MappingQuality class
     exportModule<MappingQuality>( rxPyModuleId, "MappingQuality" );
 } // function
-#endif
 #endif

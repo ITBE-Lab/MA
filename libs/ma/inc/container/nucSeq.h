@@ -665,13 +665,5 @@ class NucSeqSql : public SQL_BLOB
 } // namespace libMA
 
 #ifdef WITH_PYTHON
-#ifdef BOOST_PYTHON
-/**
- * @brief export this @ref Module "modules" to boost python
- * @ingroup export
- */
-void exportNucSeq( );
-#else
 void exportNucSeq( py::module& rxPyModuleId );
-#endif
 #endif

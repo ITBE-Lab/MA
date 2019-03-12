@@ -11,48 +11,6 @@ using namespace libMA;
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-/**
- * @brief The boost-python main method.
- *
- * A main function that exposes all Containers and Modules to python
- * by calling the respective export*() functions.
- * The main method is generated using boost-python.
- */
-BOOST_PYTHON_MODULE( libMA )
-{
-    DEBUG_3( std::cout.setf( std::ios::unitbuf ); )
-    exportContainer( );
-    exportModuleClass( );
-    exportFM_index( );
-    exportNucSeq( );
-    exportBinarySeeding( );
-    exportPack( );
-    exportSegment( );
-    exportExceptions( );
-    exportSeed( );
-    exportAlignment( );
-    exportHarmonization( );
-    exportNeedlemanWunsch( );
-    exportStripOfConsideration( );
-    exportFileReader( );
-    exportFileWriter( );
-    exportMappingQuality( );
-    exportPairedReads( );
-    exportSplitter( );
-#ifdef WITH_POSTGRES
-    exportDBWriter( );
-#endif
-    exportSoCDbWriter( );
-    exportSoC( );
-    exportOtherSeeding( );
-    exportHashMapSeeding( );
-    defaults::exportDefaults( );
-} // function
-
-#else
-
-
 /*
  * The exposing of the ParameterSetManager and it's components has been reworked in SV branch
  * -> here only some quickfixes, so that python does not immedeately segfault if someone tries to use this...
@@ -161,10 +119,9 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportSoC( libMaModule );
     exportOtherSeeding( libMaModule );
     exportExecutionContext( libMaModule );
+    exportHashMapSeeding( libMaModule );
     defaults::exportDefaults( libMaModule );
 } // function
-
-#endif
 
 #endif
 
