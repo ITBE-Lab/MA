@@ -504,6 +504,7 @@ class Presetting : public ParameterSetBase
 
     // SV caller options
     AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
+    AlignerParameterPointer<int> xSecSeedSize; // maximal distance between clusters
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -671,6 +672,7 @@ class Presetting : public ParameterSetBase
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
                                       "Maximal distance between the deltas of the closest two seeds in a cluster",
                                       SV_PARAMETERS, 200, checkPositiveValue ),
+          xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 5, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -713,8 +715,8 @@ class Presetting : public ParameterSetBase
               "insertion/deletion.",
               HEURISTIC_PARAMETERS, true ),
           xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
-                      "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 100,
-                      checkPositiveValue ),
+                      "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 0,
+                      checkPositiveValue ), // for SV branch changed this 100 -> 0 (=infinite)
           xMaxGapArea( this, "Maximal Gap Size",
                        "If the gap between seeds is larger than <val> on query or reference, the dual extension "
                        "process is used to fill the gap. Dual extension is more expensive if the extension does not "

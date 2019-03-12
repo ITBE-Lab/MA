@@ -46,6 +46,7 @@ BOOST_PYTHON_MODULE( libMA )
     exportSoCDbWriter( );
     exportSoC( );
     exportOtherSeeding( );
+    exportHashMapSeeding( );
     defaults::exportDefaults( );
 } // function
 
