@@ -704,7 +704,7 @@ class Presetting : public ParameterSetBase
           xMinDeltaDist( this, "Artifact Filter B - Minimal Delta Distance", "See Artifact Filter A",
                          HEURISTIC_PARAMETERS, 16, checkPositiveValue ),
           xDisableGapCostEstimationCutting( this, "Pick Local Seed Set A - Enabled",
-                                            "<val> = true enables local seed set computiaion.", HEURISTIC_PARAMETERS,
+                                            "<val> = true enables local seed set computation.", HEURISTIC_PARAMETERS,
                                             false ),
           xOptimisticGapCostEstimation(
               this, "Pick Local Seed Set B - Optimistic Gap Estimation",
