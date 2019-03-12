@@ -183,7 +183,10 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
 
 }; // class
 
-
+/**
+ * @brief Extracts SoC from a priority queue and performs harmonization on all extracted SoC;s.
+ * @ingroup module
+ */
 class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
 {
   public:
@@ -230,6 +233,12 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 }; // class
 
 
+/**
+ * @brief Combines overlapping seeds
+ * @ingroup module
+ * @details
+ * Uses a n log(n) algorithm to combine overlapping seeds
+ */
 class SeedLumping : public Module<Seeds, false, Seeds>
 {
   public:
