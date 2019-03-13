@@ -96,6 +96,8 @@ std::string sCreateSQLInsertStatementText(
 
     sInsertionStatement.append( ")" );
 
+    DEBUG(std::cout << "SQL insert statement: " << sInsertionStatement << std::endl;)
+
     return sInsertionStatement;
 } // function
 
@@ -124,15 +126,18 @@ void CppSQLiteDBExtended::vCreateTable(
     for( const std::string& sConstraint : vConstraints )
     {
         sTableCreationStatement.append( ", " )
+            .append( "CONSTRAINT " )
             .append( sTableName )
             .append( "_constraint_" )
             .append( std::to_string( uiI ) )
-            .append( " CONSTRAINT " )
+            .append( " " )
             .append( sConstraint );
         uiI++;
     } // for
 
     sTableCreationStatement.append( ")" );
+
+    DEBUG(std::cout << "SQL table creation statement: " << sTableCreationStatement << std::endl;)
 
     /* Execute the table statement */
     // std::cout << sTableCreationStatement << std::endl;

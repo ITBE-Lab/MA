@@ -65,7 +65,8 @@ class SV_DB : public CppSQLite3DB, public Container
                              std::vector<std::string>{"sequencer_id", "name", "sequence"},
                              // constraints for table
                              std::vector<std::string>{"UNIQUE (sequencer_id, name)", //
-                                                      "FOREIGN KEY sequencer_id REFERENCES sequencer_table(id)"} ),
+                                                      "FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id)"
+                                                      } ),
               pDatabase( pDatabase )
         {} // default constructor
 
@@ -144,7 +145,7 @@ class SV_DB : public CppSQLite3DB, public Container
                             // column definitions of the table
                             std::vector<std::string>{"read_id", "soc_index", "soc_start", "soc_end", "soc_score"},
                             // constraints for table
-                            std::vector<std::string>{"FOREIGN KEY read_id REFERENCES read_table(id)"} ),
+                            std::vector<std::string>{"FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
               pDatabase( pDatabase )
         {} // default constructor
 
@@ -152,7 +153,7 @@ class SV_DB : public CppSQLite3DB, public Container
         {
             if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
             {
-                pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table soc_start" );
+                pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table (soc_start)" );
             } // if
         } // deconstructor
     }; // class
@@ -199,7 +200,7 @@ class SV_DB : public CppSQLite3DB, public Container
                   // column definitions of the table
                   std::vector<std::string>{"sv_caller_run_id", "start", "end", "desc"},
                   // constraints for table
-                  std::vector<std::string>{"FOREIGN KEY sv_caller_run_id REFERENCES sv_caller_run_table(id)"} ),
+                  std::vector<std::string>{"FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id)"} ),
               pDatabase( pDatabase )
         {} // default constructor
 
@@ -231,8 +232,8 @@ class SV_DB : public CppSQLite3DB, public Container
                   // column definitions of the table
                   std::vector<std::string>{"soc_line_from", "soc_line_to", "do_jump", "desc"},
                   // constraints for table
-                  std::vector<std::string>{"FOREIGN KEY soc_line_from REFERENCES sv_line_table(id)",
-                                           "FOREIGN KEY soc_line_to REFERENCES sv_line_table(id)"} ),
+                  std::vector<std::string>{"FOREIGN KEY (soc_line_from) REFERENCES sv_line_table(id)",
+                                           "FOREIGN KEY (soc_line_to) REFERENCES sv_line_table(id)"} ),
               pDatabase( pDatabase )
         {} // default constructor
     }; // class
@@ -443,13 +444,16 @@ class NucSeqFromSql : public Module<NucSeq, true>
     CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
 
   public:
-    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sSql )
+    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
         : pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  ( "SELECT read_table.sequence, read_table.id FROM read_table WHERE read_table.id NOT IN (SELECT "
-                    "paired_read_table.id FROM paired_read_table) " +
-                    sSql )
-                      .c_str( ) ),
+                  "SELECT read_table.sequence, read_table.id "
+                  "FROM read_table "
+                  "WHERE read_table.id NOT IN ( "
+                  "   SELECT paired_read_table.first_read FROM paired_read_table "
+                  "   UNION "
+                  "   SELECT paired_read_table.second_read FROM paired_read_table "
+                  ") " ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
     {
         if( xTableIterator.eof( ) )
@@ -480,18 +484,18 @@ class NucSeqFromSql : public Module<NucSeq, true>
 class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq>>, true>
 {
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t> xQuery;
-    CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t>::Iterator xTableIterator;
+    CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t, uint32_t> xQuery;
+    CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t, uint32_t>::Iterator xTableIterator;
 
   public:
-    PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sSql )
+    PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
         : pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  ( "SELECT read_table.sequence, paired_read_table.sequence, read_table.id FROM read_table INNER JOIN "
-                    "paired_read_table ON "
-                    "read_table.id = paired_read_table.id " +
-                    sSql )
-                      .c_str( ) ),
+                  "SELECT A.sequence, B.sequence, A.id, B.id "
+                  "FROM read_table A, read_table B "
+                  "INNER JOIN paired_read_table "
+                  "ON paired_read_table.first_read == A.id "
+                  "AND paired_read_table.second_read == B.id " ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
     {
         if( xTableIterator.eof( ) )
@@ -507,9 +511,11 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
 
         auto xTup = xTableIterator.get( );
         pRet->push_back( std::get<0>( xTup ).pNucSeq );
-        pRet->back( )->sName = std::to_string( std::get<2>( xTup ) );
+        // paired reads must have same name
+        pRet->back( )->sName = std::to_string( std::get<2>( xTup ) ) + "_" + std::to_string( std::get<3>( xTup ) );
         pRet->push_back( std::get<1>( xTup ).pNucSeq );
-        pRet->back( )->sName = std::to_string( std::get<2>( xTup ) );
+        // paired reads must have same name
+        pRet->back( )->sName = std::to_string( std::get<2>( xTup ) ) + "_" + std::to_string( std::get<3>( xTup ) );
         xTableIterator.next( );
 
         if( xTableIterator.eof( ) )

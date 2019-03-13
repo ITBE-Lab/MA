@@ -10,8 +10,8 @@ SV_DB::PairedReadTable::PairedReadTable(
                             std::vector<std::string>{"first_read", "second_read"},
                             false, // do not generate automatic primary key...
                             // constraints for table
-                            std::vector<std::string>{"FOREIGN KEY first_read REFERENCES read_table(id)", //
-                                                     "FOREIGN KEY second_read REFERENCES read_table(id)", //
+                            std::vector<std::string>{"FOREIGN KEY (first_read) REFERENCES read_table(id)", //
+                                                     "FOREIGN KEY (second_read) REFERENCES read_table(id)", //
                                                      "PRIMARY KEY (first_read, second_read)"} ),
       pDatabase( pDatabase ),
       pReadTable( pReadTable )
@@ -41,7 +41,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     exportModule<SoCDbWriter, std::shared_ptr<SV_DB::SoCInserter>>( rxPyModuleId, "SoCDbWriter" );
 
     // export the NucSeqFromSql class
-    exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>, std::string>( rxPyModuleId, "NucSeqFromSql" );
-    exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>, std::string>( rxPyModuleId, "PairedNucSeqFromSql" );
+    exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "NucSeqFromSql" );
+    exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "PairedNucSeqFromSql" );
 } // function
 #endif
