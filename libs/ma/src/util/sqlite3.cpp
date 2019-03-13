@@ -120,16 +120,22 @@ void CppSQLiteDBExtended::vCreateTable(
         sTableCreationStatement.append( xDatabaseColumns[ i ] ).append( ", " );
     sTableCreationStatement.append( xDatabaseColumns.back( ) );
 
-    for(const std::string& sConstraint : vConstraints )
+    size_t uiI = 0;
+    for( const std::string& sConstraint : vConstraints )
     {
-        sTableCreationStatement.append( ", " );
-        sTableCreationStatement.append("CONSTRAINT " + sConstraint);
+        sTableCreationStatement.append( ", " )
+            .append( sTableName )
+            .append( "_constraint_" )
+            .append( std::to_string( uiI ) )
+            .append( " CONSTRAINT " )
+            .append( sConstraint );
+        uiI++;
     } // for
 
     sTableCreationStatement.append( ")" );
 
     /* Execute the table statement */
-    //std::cout << sTableCreationStatement << std::endl;
+    // std::cout << sTableCreationStatement << std::endl;
     execDML( sTableCreationStatement.c_str( ) );
 } // method
 

@@ -505,6 +505,7 @@ class Presetting : public ParameterSetBase
     // SV caller options
     AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
     AlignerParameterPointer<int> xSecSeedSize; // maximal distance between clusters
+    AlignerParameterPointer<int> xPaddingReSeeding; // re seeding padding
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -672,7 +673,9 @@ class Presetting : public ParameterSetBase
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
                                       "Maximal distance between the deltas of the closest two seeds in a cluster",
                                       SV_PARAMETERS, 200, checkPositiveValue ),
-          xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 5, checkPositiveValue ),
+          xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 7, checkPositiveValue ),
+          xPaddingReSeeding( this, "re seeding padding", "padding for re seeding", SV_PARAMETERS, 0,
+                             checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

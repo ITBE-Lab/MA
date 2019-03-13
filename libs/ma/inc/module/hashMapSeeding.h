@@ -41,8 +41,12 @@ class ReSeeding : public Module<Seeds, false, Seeds, NucSeq, Pack>
   public:
     HashMapSeeding xHashMapSeeder;
     SeedLumping xLumper;
+    nucSeqIndex uiPadding;
 
-    ReSeeding( const ParameterSetManager& rParameters ) : xHashMapSeeder( rParameters ), xLumper( rParameters )
+    ReSeeding( const ParameterSetManager& rParameters )
+        : xHashMapSeeder( rParameters ),
+          xLumper( rParameters ),
+          uiPadding( rParameters.getSelected( )->xPaddingReSeeding->get( ) )
     {} // constructor
 
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,

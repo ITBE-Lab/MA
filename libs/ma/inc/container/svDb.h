@@ -17,25 +17,22 @@ namespace libMA
 class SV_DB : public CppSQLite3DB, public Container
 {
   private:
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // sequencer name
-                                                     std::string // parameter setting (for the moment merely the mode)
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string // sequencer name
                                                      >
         TP_SEQUENCER_TABLE;
     class SequencerTable : public TP_SEQUENCER_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-        CppSQLiteExtQueryStatement<int32_t> xGetSequencerId;
 
       public:
-        // @todo sequencer_table.name should be UNIQUE (this requires that CppSQLiteExtTable can deal with constrints)
         SequencerTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             : TP_SEQUENCER_TABLE( *pDatabase, // the database where the table resides
                                   "sequencer_table", // name of the table in the database
                                   // column definitions of the table
-                                  std::vector<std::string>{"name", "mode"},
-                                  std::vector<std::string>{"unique_sequencer_name_constraint UNIQUE (name)"} ),
-              pDatabase( pDatabase ),
-              xGetSequencerId( *pDatabase, "SELECT id FROM sequencer_table WHERE name = ?" )
+                                  std::vector<std::string>{"name"},
+                                  // constraints for table
+                                  std::vector<std::string>{"UNIQUE (name)"} ),
+              pDatabase( pDatabase )
         {} // default constructor
 
         ~SequencerTable( )
@@ -44,15 +41,13 @@ class SV_DB : public CppSQLite3DB, public Container
                 pDatabase->execDML( "CREATE INDEX sequencer_id_index ON sequencer_table (id)" );
         } // deconstructor
 
-        inline uint32_t insertSequencer( std::string& sSequencerName )
+        inline int64_t insertSequencer( std::string& sSequencerName )
         {
-            xInsertRow( sSequencerName, "not supported yet" );
-            return xGetSequencerId.scalar( sSequencerName );
+            return xInsertRow( sSequencerName );
         } // method
     }; // class
 
-
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int32_t, // sequencer id
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sequencer id (foreign key)
                                                      std::string, // read name
                                                      NucSeqSql // read sequence
                                                      >
@@ -60,20 +55,18 @@ class SV_DB : public CppSQLite3DB, public Container
     class ReadTable : public TP_READ_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-        CppSQLiteExtQueryStatement<int32_t> xGetReadId;
         bool bDoDuplicateWarning = true;
 
       public:
-        // @todo (read_table.name, read_table.sequencer_id) should be UNIQUE
         ReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_READ_TABLE(
-                  *pDatabase, // the database where the table resides
-                  "read_table", // name of the table in the database
-                  // column definitions of the table
-                  std::vector<std::string>{"sequencer_id", "name", "sequence"},
-                  std::vector<std::string>{"read_name_sequencer_id_constraint UNIQUE (sequencer_id, name)"} ),
-              pDatabase( pDatabase ),
-              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" )
+            : TP_READ_TABLE( *pDatabase, // the database where the table resides
+                             "read_table", // name of the table in the database
+                             // column definitions of the table
+                             std::vector<std::string>{"sequencer_id", "name", "sequence"},
+                             // constraints for table
+                             std::vector<std::string>{"UNIQUE (sequencer_id, name)", //
+                                                      "FOREIGN KEY sequencer_id REFERENCES sequencer_table(id)"} ),
+              pDatabase( pDatabase )
         {} // default constructor
 
         ~ReadTable( )
@@ -82,14 +75,13 @@ class SV_DB : public CppSQLite3DB, public Container
                 pDatabase->execDML( "CREATE INDEX read_id_index ON read_table (id)" );
         } // deconstructor
 
-        inline int32_t insertRead( int32_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
+        inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
         {
             for( size_t i = 0; i < 5; i++ ) // at most do 5 tries
             {
                 try
                 {
-                    xInsertRow( uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
-                    return xGetReadId.scalar( uiSequencerId, pRead->sName );
+                    return xInsertRow( uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
                 } // try
                 catch( CppSQLite3Exception& xException )
                 {
@@ -107,12 +99,10 @@ class SV_DB : public CppSQLite3DB, public Container
             } // for
             throw AnnotatedException( "Could not insert read after 5 tries" );
         } // method
-
     }; // class
 
-
-    typedef CppSQLiteExtTable<int32_t, // read id
-                              int32_t, // sequencer id
+    typedef CppSQLiteExtTable<int64_t, // id (foreign key, unique)
+                              int64_t, // sequencer id (foreign key)
                               std::string, // read name
                               NucSeqSql // read sequence
                               >
@@ -123,7 +113,6 @@ class SV_DB : public CppSQLite3DB, public Container
         bool bDoDuplicateWarning = true;
 
       public:
-        // @todo (read_table.name, read_table.sequencer_id) should be UNIQUE
         PairedReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             : TP_PAIRED_READ_TABLE(
                   *pDatabase, // the database where the table resides
@@ -131,8 +120,11 @@ class SV_DB : public CppSQLite3DB, public Container
                   // column definitions of the table
                   std::vector<std::string>{"id", "sequencer_id", "name", "sequence"},
                   false, // do not generate automatic primary key...
-                  std::vector<std::string>{"paired_read_name_sequencer_id_constraint UNIQUE (sequencer_id, name)",
-                                           "paired_read_table_key PRIMARY KEY (id)"} ),
+                  // constraints for table
+                  std::vector<std::string>{"UNIQUE (sequencer_id, name)", //
+                                           "UNIQUE (id)", //
+                                           "FOREIGN KEY id REFERENCES read_table(id)", //
+                                           "FOREIGN KEY sequencer_id REFERENCES sequencer_table(id)"} ),
               pDatabase( pDatabase )
         {} // default constructor
 
@@ -142,20 +134,19 @@ class SV_DB : public CppSQLite3DB, public Container
                 pDatabase->execDML( "CREATE INDEX paired_read_id_index ON paired_read_table (id)" );
         } // deconstructor
 
-        inline void insertRead( int32_t uiId, int32_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
+        inline int64_t insertRead( int64_t uiId, int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
         {
             for( size_t i = 0; i < 5; i++ ) // at most do 5 tries
             {
                 try
                 {
-                    xInsertRow( uiId, uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
-                    return; // if we reach here we have succesfully inserted the read; no need to repeat the loop
+                    return xInsertRow( uiId, uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
                 } // try
                 catch( CppSQLite3Exception& xException )
                 {
                     if( bDoDuplicateWarning )
                     {
-                        this->vDump(std::cout);
+                        this->vDump( std::cout );
                         std::cerr << "WARNING: " << xException.errorMessage( ) << std::endl;
                         std::cerr << "Does your data contain duplicate reads? Current read name: " << pRead->sName
                                   << std::endl;
@@ -168,15 +159,13 @@ class SV_DB : public CppSQLite3DB, public Container
             } // for
             throw AnnotatedException( "Could not insert read after 5 tries" );
         } // method
-
     }; // class
 
-
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int32_t, // read id
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // read id (foreign key)
+                                                     uint32_t, // soc index
                                                      uint32_t, // soc start
                                                      uint32_t, // soc end
-                                                     uint32_t, // soc score
-                                                     double // strand ratio
+                                                     uint32_t // soc score
                                                      >
         TP_SOC_TABLE;
     class SoCTable : public TP_SOC_TABLE
@@ -188,7 +177,9 @@ class SV_DB : public CppSQLite3DB, public Container
             : TP_SOC_TABLE( *pDatabase, // the database where the table resides
                             "soc_table", // name of the table in the database
                             // column definitions of the table
-                            std::vector<std::string>{"read_id", "soc_start", "soc_end", "soc_score", "strand_ratio"} ),
+                            std::vector<std::string>{"read_id", "soc_index", "soc_start", "soc_end", "soc_score"},
+                            // constraints for table
+                            std::vector<std::string>{"FOREIGN KEY read_id REFERENCES read_table(id)"} ),
               pDatabase( pDatabase )
         {} // default constructor
 
@@ -196,136 +187,113 @@ class SV_DB : public CppSQLite3DB, public Container
         {
             if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
             {
-                pDatabase->execDML( "CREATE INDEX soc_index ON soc_table (soc_start, soc_end)" );
+                pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table soc_start" );
             } // if
         } // deconstructor
     }; // class
 
-
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<uint32_t, // pos on reference
-                                                     uint32_t, // size
-                                                     int32_t, // associated SoC id
-                                                     std::string // state?
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // name
+                                                     std::string // desc
                                                      >
-        TP_SV_TABLE;
-    class DeletionTable : public TP_SV_TABLE
+        TP_SV_CALLER_RUN_TABLE;
+    class SvCallerRunTable : public TP_SV_CALLER_RUN_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
 
       public:
-        DeletionTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_SV_TABLE( *pDatabase, // the database where the table resides
-                           "deletion_table", // name of the table in the database
-                           // column definitions of the table
-                           std::vector<std::string>{"start_on_ref", "size", "soc_id", "state"} ),
+        SvCallerRunTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_SV_CALLER_RUN_TABLE( *pDatabase, // the database where the table resides
+                                      "sv_caller_run_table", // name of the table in the database
+                                      // column definitions of the table
+                                      std::vector<std::string>{"name", "desc"} ),
               pDatabase( pDatabase )
         {} // default constructor
 
-        ~DeletionTable( )
+        ~SvCallerRunTable( )
         {
-            // if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-            // {
-            //     pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table (soc_start)" );
-            //     pDatabase->execDML( "CREATE INDEX soc_end_index ON soc_table (soc_end)" );
-            // } // if
+            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
+                pDatabase->execDML( "CREATE INDEX sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
         } // deconstructor
     }; // class
 
-    class InsertionTable : public TP_SV_TABLE
-    {
-        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-
-      public:
-        InsertionTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_SV_TABLE( *pDatabase, // the database where the table resides
-                           "insertion_table", // name of the table in the database
-                           // column definitions of the table
-                           std::vector<std::string>{"pos_on_ref", "size", "soc_id", "state"} ),
-              pDatabase( pDatabase )
-        {} // default constructor
-
-        ~InsertionTable( )
-        {
-            // if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-            // {
-            //     pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table (soc_start)" );
-            //     pDatabase->execDML( "CREATE INDEX soc_end_index ON soc_table (soc_end)" );
-            // } // if
-        } // deconstructor
-    }; // class
-
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<uint32_t, // pos on reference
-                                                     int32_t, // associated SoC id
-                                                     std::string // state?
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_caller_run_id (foreign key)
+                                                     uint32_t, // start
+                                                     uint32_t, // end
+                                                     std::string // desc
                                                      >
-        TP_MUTATION_TABLE;
-    class MutationTable : public TP_MUTATION_TABLE
+        TP_SV_LINE_TABLE;
+    class SvLineTable : public TP_SV_LINE_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
 
       public:
-        MutationTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_MUTATION_TABLE( *pDatabase, // the database where the table resides
-                                 "mutation_table", // name of the table in the database
-                                 // column definitions of the table
-                                 std::vector<std::string>{"pos_on_ref", "soc_id", "state"} ),
+        SvLineTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_SV_LINE_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "sv_line_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"sv_caller_run_id", "start", "end", "desc"},
+                  // constraints for table
+                  std::vector<std::string>{"FOREIGN KEY sv_caller_run_id REFERENCES sv_caller_run_table(id)"} ),
               pDatabase( pDatabase )
         {} // default constructor
 
-        ~MutationTable( )
+        ~SvLineTable( )
         {
-            // if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-            // {
-            //     pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table (soc_start)" );
-            //     pDatabase->execDML( "CREATE INDEX soc_end_index ON soc_table (soc_end)" );
-            // } // if
+            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
+            {
+                pDatabase->execDML( "CREATE INDEX sv_line_table_id_index ON sv_line_table (id)" );
+                pDatabase->execDML( "CREATE INDEX sv_line_table_start_index ON sv_line_table (start)" );
+            } // if
         } // deconstructor
     }; // class
 
-    // // probably i wont use this
-    // typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int32_t, // associated SoC id
-    //                                                  std::string // bucket type
-    //                                                  >
-    //     TP_SV_BUCKET_TABLE;
-    // class SvBucketTable : public TP_SV_BUCKET_TABLE
-    // {
-    //     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-    //
-    //   public:
-    //     SvBucketTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-    //         : TP_SV_BUCKET_TABLE( *pDatabase, // the database where the table resides
-    //                        "sv_bucket_table", // name of the table in the database
-    //                        // column definitions of the table
-    //                        std::vector<std::string>{"soc_id", "bucket_type"} ),
-    //           pDatabase( pDatabase )
-    //     {} // default constructor
-    //
-    //     ~SvBucketTable( )
-    //     {
-    //         // if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-    //         // {
-    //         //     pDatabase->execDML( "CREATE INDEX soc_start_index ON soc_table (soc_start)" );
-    //         //     pDatabase->execDML( "CREATE INDEX soc_end_index ON soc_table (soc_end)" );
-    //         // } // if
-    //     } // deconstructor
-    // }; // class
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // soc_line_from (foreign key)
+                                                     int64_t, // soc_line_to (foreign key)
+                                                     bool, // do_jump
+                                                     std::string // desc
+                                                     >
+        TP_SV_LINE_CONNECTOR_TABLE;
+    class SvLineConnectorTable : public TP_SV_LINE_CONNECTOR_TABLE
+    {
+        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+
+      public:
+        SvLineConnectorTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_SV_LINE_CONNECTOR_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "sv_line_connector_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"soc_line_from", "soc_line_to", "do_jump", "desc"},
+                  // constraints for table
+                  std::vector<std::string>{"FOREIGN KEY soc_line_from REFERENCES sv_line_table(id)",
+                                           "FOREIGN KEY soc_line_to REFERENCES sv_line_table(id)"} ),
+              pDatabase( pDatabase )
+        {} // default constructor
+    }; // class
 
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
     std::shared_ptr<ReadTable> pReadTable;
     std::shared_ptr<PairedReadTable> pPairedReadTable;
     std::shared_ptr<SoCTable> pSocTable;
+    std::shared_ptr<SvCallerRunTable> pSvCallerRunTable;
+    std::shared_ptr<SvLineTable> pSvLineTable;
+    std::shared_ptr<SvLineConnectorTable> pSvLineConnectorTable;
 
     friend class NucSeqFromSql;
     friend class PairedNucSeqFromSql;
 
   public:
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
-        : pDatabase( new CppSQLiteDBExtended( "", sName, xMode ) ),
-          pSequencerTable( new SequencerTable( pDatabase ) ),
-          pReadTable( new ReadTable( pDatabase ) ),
-          pPairedReadTable( new PairedReadTable( pDatabase ) ),
-          pSocTable( new SoCTable( pDatabase ) )
+        : pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
+          pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
+          pReadTable( std::make_shared<ReadTable>( pDatabase ) ),
+          pPairedReadTable( std::make_shared<PairedReadTable>( pDatabase ) ),
+          pSocTable( std::make_shared<SoCTable>( pDatabase ) ),
+          pSvCallerRunTable( std::make_shared<SvCallerRunTable>( pDatabase ) ),
+          pSvLineTable( std::make_shared<SvLineTable>( pDatabase ) ),
+          pSvLineConnectorTable( std::make_shared<SvLineConnectorTable>( pDatabase ) )
     {} // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -334,32 +302,30 @@ class SV_DB : public CppSQLite3DB, public Container
     SV_DB( std::string sName, std::string sMode ) : SV_DB( sName, sMode == "create" ? eCREATE_DB : eOPEN_DB )
     {} // constructor
 
-    SV_DB( const SV_DB& rOther ) = delete; // delete copy constructor
-
     class SoCInserter
     {
       private:
         // this is here so that it gets destructed after the transaction context
         std::shared_ptr<SV_DB> pDB;
 
-        uint32_t uiSequencerId;
+        int64_t uiSequencerId;
         // must be first so that it is deconstructed first
         CppSQLiteExtImmediateTransactionContext xTransactionContext;
 
         class ReadContex
         {
           private:
-            uint32_t uiReadId;
+            int64_t uiReadId;
             std::shared_ptr<SoCTable> pSocTable;
 
           public:
-            ReadContex( uint32_t uiReadId, std::shared_ptr<SoCTable> pSocTable )
+            ReadContex( int64_t uiReadId, std::shared_ptr<SoCTable> pSocTable )
                 : uiReadId( uiReadId ), pSocTable( pSocTable )
             {} // constructor
 
-            inline void operator( )( uint32_t uiStart, uint32_t uiEnd, uint32_t uiScore, double dStrandRatio )
+            inline void operator( )( uint32_t uiIndex, uint32_t uiStart, uint32_t uiEnd, uint32_t uiScore )
             {
-                pSocTable->xInsertRow( uiReadId, uiStart, uiEnd, uiScore, dStrandRatio );
+                pSocTable->xInsertRow( uiReadId, uiIndex, uiStart, uiEnd, uiScore );
             } // method
         }; // class
 
@@ -377,13 +343,13 @@ class SV_DB : public CppSQLite3DB, public Container
             return ReadContex( pDB->pReadTable->insertRead( uiSequencerId, pRead ), pDB->pSocTable );
         } // method
 
-        inline std::pair<ReadContex, ReadContex> getPairedReadContext( //
-            std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+        inline std::pair<ReadContex, ReadContex>
+        getPairedReadContext( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
         {
-            throw std::runtime_error( "unimplemented..." );
-            // auto xIdPair = pDB->pReadTable->insertPairedRead( uiSequencerId, pReadA, pReadB );
-            // return std::make_pair( ReadContex( xIdPair.first, pDB->pSocTable ),
-            //                       ReadContex( xIdPair.second, pDB->pSocTable ) );
+            int64_t uiReadAID = pDB->pReadTable->insertRead( uiSequencerId, pReadA );
+            return std::make_pair(
+                ReadContex( uiReadAID, pDB->pSocTable ),
+                ReadContex( pDB->pPairedReadTable->insertRead( uiReadAID, uiSequencerId, pReadB ), pDB->pSocTable ) );
         } // method
 
         inline void insertRead( std::shared_ptr<NucSeq> pRead )
@@ -416,14 +382,59 @@ class SoCDbWriter : public Module<Container, false, NucSeq, SoCPriorityQueue>
     {
         std::lock_guard<std::mutex> xGuard( *pMutex );
         auto xInsertContext = pInserter->getReadContext( pQuery );
-        for( size_t uiI = 0; uiI < uiNumSoCsToRecord; uiI++ )
+        for( uint32_t uiI = 0; uiI < uiNumSoCsToRecord; uiI++ )
         {
             if( pSoCQueue->empty( ) )
                 break;
 
             auto xSoCTup = pSoCQueue->pop_info( );
-            xInsertContext( (uint32_t)std::get<0>( xSoCTup ), (uint32_t)std::get<1>( xSoCTup ), std::get<2>( xSoCTup ),
-                            std::get<3>( xSoCTup ) );
+            xInsertContext( uiI, (uint32_t)std::get<0>( xSoCTup ), (uint32_t)std::get<1>( xSoCTup ),
+                            std::get<2>( xSoCTup ) );
+        } // for
+
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
+class PairedSoCDbWriter : public Module<Container, false, NucSeq, NucSeq, SoCPriorityQueue, SoCPriorityQueue>
+{
+  private:
+    std::shared_ptr<SV_DB::SoCInserter> pInserter;
+    std::shared_ptr<std::mutex> pMutex;
+    size_t uiNumSoCsToRecord = 1; // @todo expose
+
+  public:
+    PairedSoCDbWriter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB::SoCInserter> pInserter )
+        : pInserter( pInserter ), pMutex( new std::mutex )
+    {} // constructor
+
+    std::shared_ptr<Container> execute( std::shared_ptr<NucSeq> pQueryA,
+                                        std::shared_ptr<SoCPriorityQueue>
+                                            pSoCQueueA,
+                                        std::shared_ptr<NucSeq>
+                                            pQueryB,
+                                        std::shared_ptr<SoCPriorityQueue>
+                                            pSoCQueueB )
+    {
+        std::lock_guard<std::mutex> xGuard( *pMutex );
+        auto txPairedInsertContext = pInserter->getPairedReadContext( pQueryA, pQueryB );
+        for( uint32_t uiI = 0; uiI < uiNumSoCsToRecord; uiI++ )
+        {
+            if( pSoCQueueA->empty( ) )
+                break;
+
+            auto xSoCTup = pSoCQueueA->pop_info( );
+            txPairedInsertContext.first( uiI, (uint32_t)std::get<0>( xSoCTup ), (uint32_t)std::get<1>( xSoCTup ),
+                                         std::get<2>( xSoCTup ) );
+        } // for
+        for( uint32_t uiI = 0; uiI < uiNumSoCsToRecord; uiI++ )
+        {
+            if( pSoCQueueB->empty( ) )
+                break;
+
+            auto xSoCTup = pSoCQueueB->pop_info( );
+            txPairedInsertContext.second( uiI, (uint32_t)std::get<0>( xSoCTup ), (uint32_t)std::get<1>( xSoCTup ),
+                                          std::get<2>( xSoCTup ) );
         } // for
 
         return std::make_shared<Container>( );

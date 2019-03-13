@@ -1105,6 +1105,8 @@ template <typename... Types> class CppSQLiteExtBasicTable
  */
 template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLiteExtStatement
 {
+    CppSQLiteDBExtended& rxDatabase;
+
   public:
     /* Constructor for insertion statement.
      */
@@ -1115,7 +1117,8 @@ template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLit
                                  )
         : CppSQLiteExtStatement( rxDatabase,
                                  sCreateSQLInsertStatementText( pcTableName, sizeof...( Types ), bFirstColumnAsNULL )
-                                     .c_str( ) ) // call superclass constructor
+                                     .c_str( ) ), // call superclass constructor
+          rxDatabase( rxDatabase )
     {
         // std::cout << "Create Insertion statement for table \"" << pcTableName << "\"" << std::endl;
     } // constructor
@@ -1126,9 +1129,11 @@ template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLit
     {} // destructor
 
     // void operator()( Types&& ... args )
-    /* FIX ME: Integrate some clean forwarding scheme.
+    /**
+     * returns the primary key of the inserted row... (if table has no primary key, the the rowid is returned)
+     * FIX ME: Integrate some clean forwarding scheme.
      */
-    void operator( )( const Types&... args ) // deprecated
+    int64_t operator( )( const Types&... args ) // deprecated
     {
         /* TO DO: Use meta-programming here
          */
@@ -1165,7 +1170,7 @@ template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLit
             /* The insertion statement could be successfully executed ...
              * We indicate the end of the transaction.
              */
-            return;
+            return static_cast<int64_t>( rxDatabase.lastRowId( ) );
         } // for
 
         /* If you come to this point the operation failed 10 times.

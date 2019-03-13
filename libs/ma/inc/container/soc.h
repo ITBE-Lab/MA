@@ -288,7 +288,7 @@ class SoCPriorityQueue : public Container
      * in order of their scores.
      * Pop removes and the best SoC and returns information about it's start end and score.
      */
-    inline std::tuple<nucSeqIndex, nucSeqIndex, uint32_t, double> pop_info( )
+    inline std::tuple<nucSeqIndex, nucSeqIndex, uint32_t> pop_info( )
     {
         DEBUG( assert( !empty( ) ); assert( bInPriorityMode ); ) // DEBUG
 
@@ -298,21 +298,12 @@ class SoCPriorityQueue : public Container
         nucSeqIndex uiStart = xCollect->start_ref( );
         nucSeqIndex uiEnd = (xCollectEnd-1)->end_ref( );
         uint32_t uiScore = (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
-        size_t uiForwSeeds = 0;
-        size_t uiSeedsTotal = 0;
-        while( xCollect != pSeeds->end( ) && xCollect != xCollectEnd )
-        {
-            if( xCollect->bOnForwStrand )
-                uiForwSeeds++;
-            uiSeedsTotal++;
-            xCollect++;
-        } // while
 
         // move to the next strip
         std::pop_heap( vMaxima.begin( ), vMaxima.end( ), heapOrder );
         vMaxima.pop_back( );
 
-        return std::make_tuple( uiStart, uiEnd, uiScore, uiForwSeeds / (double)uiSeedsTotal );
+        return std::make_tuple( uiStart, uiEnd, uiScore );
     } // method
 
     /**
