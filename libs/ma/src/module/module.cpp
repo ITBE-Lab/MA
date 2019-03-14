@@ -10,15 +10,20 @@ using namespace libMA;
 
 void exportModuleClass( py::module& rxPyModuleId )
 {
-    // module is an abstract class and should never be initialized
+    /*
+     * Module and VolatileModule can be extended by python and execute can be overloaded
+     * HOWEVER: the default constructor of Module and VolatileModule MUST be calles otherwise the programm segfaults
+     */
     py::class_<PyModule<false>, ModuleWrapperPyToCpp<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
         .def( py::init<>( ) ) // default constructor
         .def( "execute", &PyModule<false>::execute )
         .def( "is_finished", &PyModule<false>::isFinished );
+
     py::class_<PyModule<true>, ModuleWrapperPyToCpp<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId,
                                                                                              "VolatileModule" )
         .def( py::init<>( ) ) // default constructor
         .def( "execute", &PyModule<true>::execute )
+        .def( "set_finished", &PyModule<true>::setFinished )
         .def( "is_finished", &PyModule<true>::isFinished );
 
     py::class_<BasePledge, std::shared_ptr<BasePledge>>( rxPyModuleId, "BasePledge" )

@@ -348,6 +348,14 @@ class Seeds : public Container
         return pRet;
     } // method
 
+    inline void sortByRefPos( )
+    {
+        std::sort( vContent.begin( ),
+                   vContent.end( ),
+                   []( const Seed& rA, const Seed& rB ) { return rA.start_ref( ) < rB.start_ref( ); } // lambda
+        );
+    } // method
+
     inline std::shared_ptr<Seeds> splitOnStrands( nucSeqIndex uiReferenceLength, nucSeqIndex uiQueryLength )
     {
         std::cout << "Spliting " << vContent.size( ) << " seeds." << std::endl;

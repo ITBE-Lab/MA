@@ -67,16 +67,22 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
     Seed& rFirst = pSeeds->front( );
     if( xHashMapSeeder.uiSeedSize <= rFirst.start( ) )
     {
-        auto pAppend = xHashMapSeeder.execute(
-            std::make_shared<NucSeq>(
-                rFirst.bOnForwStrand
-                    ? pQuery->fromTo( 0, rFirst.start( ) )
-                    : pQuery->fromToComplement( pQuery->length( ) - rFirst.start( ), pQuery->length( ) ) ),
-            pPack->vExtract( uiPadding < rFirst.start_ref( ) ? rFirst.start_ref( ) - uiPadding : 0,
-                             rFirst.start_ref( ) ) );
+        auto pQ1 = std::make_shared<NucSeq>(
+            rFirst.bOnForwStrand
+                ? pQuery->fromTo( uiPadding < rFirst.start( ) ? rFirst.start( ) - uiPadding : 0, rFirst.start( ) )
+                : pQuery->fromToComplement(
+                      pQuery->length( ) - rFirst.start( ),
+                      std::min( pQuery->length( ), pQuery->length( ) - ( rFirst.start( ) - uiPadding ) ) ) );
+        auto pQ2 = pPack->vExtract( uiPadding < rFirst.start_ref( ) ? rFirst.start_ref( ) - uiPadding : 0,
+                                    rFirst.start_ref( ) );
+        assert(pQ1->length() <= uiPadding);
+        assert(pQ2->length() <= uiPadding);
+        auto pAppend = xHashMapSeeder.execute( pQ1, pQ2 );
         for( Seed& rSeed : *pAppend )
         {
             rSeed.bOnForwStrand = rFirst.bOnForwStrand;
+            if( rFirst.bOnForwStrand && uiPadding < rFirst.start( ) )
+                rSeed.iStart += rFirst.start( ) - uiPadding;
             rSeed.uiPosOnReference += uiPadding < rFirst.start_ref( ) ? rFirst.start_ref( ) - uiPadding : 0;
         } // for
         pCollection->append( pAppend );
@@ -86,12 +92,18 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
     Seed& rLast = pSeeds->back( );
     if( rLast.end_ref( ) + xHashMapSeeder.uiSeedSize <= pQuery->length( ) )
     {
-        auto pAppend = xHashMapSeeder.execute(
-            std::make_shared<NucSeq>( rLast.bOnForwStrand
-                                          ? pQuery->fromTo( rLast.end( ), pQuery->length( ) )
-                                          : pQuery->fromToComplement( 0, pQuery->length( ) - rLast.end( ) ) ),
-            pPack->vExtract( rLast.end_ref( ),
-                             std::min( rLast.end_ref( ) + uiPadding, pPack->uiStartOfReverseStrand( ) ) ) );
+        auto pQ1 = std::make_shared<NucSeq>(
+            rLast.bOnForwStrand
+                ? pQuery->fromTo( rLast.end( ), std::min( pQuery->length( ), rLast.end( ) + uiPadding ) )
+                : pQuery->fromToComplement( uiPadding < pQuery->length( ) - rLast.end( )
+                                                ? pQuery->length( ) - ( rLast.end( ) + uiPadding )
+                                                : 0,
+                                            pQuery->length( ) - rLast.end( ) ) );
+        auto pQ2 = pPack->vExtract( rLast.end_ref( ),
+                                    std::min( rLast.end_ref( ) + uiPadding, pPack->uiStartOfReverseStrand( ) ) );
+        assert(pQ1->length() <= uiPadding);
+        assert(pQ2->length() <= uiPadding);
+        auto pAppend = xHashMapSeeder.execute( pQ1, pQ2 );
         for( Seed& rSeed : *pAppend )
         {
             rSeed.bOnForwStrand = rLast.bOnForwStrand;

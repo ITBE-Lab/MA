@@ -47,7 +47,8 @@ void exportSeed( py::module& rxPyModuleId )
     py::bind_vector_ext<Seeds, Container, std::shared_ptr<Seeds>>( rxPyModuleId, "Seeds", "docstr" )
         .def( py::init<std::shared_ptr<Seeds>>( ) )
         .def( py::init<>( ) )
-        .def( "extractStrand", &Seeds::extractStrand);
+        .def( "extractStrand", &Seeds::extractStrand)
+        .def( "sort_by_ref_pos", &Seeds::sortByRefPos);
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<Seeds, Container>( );

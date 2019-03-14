@@ -674,7 +674,7 @@ class Presetting : public ParameterSetBase
                                       "Maximal distance between the deltas of the closest two seeds in a cluster",
                                       SV_PARAMETERS, 200, checkPositiveValue ),
           xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 7, checkPositiveValue ),
-          xPaddingReSeeding( this, "re seeding padding", "padding for re seeding", SV_PARAMETERS, 0,
+          xPaddingReSeeding( this, "re seeding padding", "padding for re seeding", SV_PARAMETERS, 100,
                              checkPositiveValue ),
 
           // Heuristic
