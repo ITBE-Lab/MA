@@ -734,6 +734,35 @@ template <class TP_CONTAINER, class... TP_ARGS> std::shared_ptr<Pledge<TP_CONTAI
 template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATILE, PyContainerVector>
 {}; // class
 
+#ifdef WITH_PYTHON
+/**
+ * @brief The module class that is exported to Python and allows python to define it's own modules.
+ * @details
+ * pybind11 calls this a trampoline class, since it redirects calls back to python.
+ * 
+ */
+template <bool IS_VOLATILE> class ModuleWrapperPyToCpp : public PyModule<IS_VOLATILE>
+{
+  public:
+    ModuleWrapperPyToCpp()
+    {} // default constructor
+    /**
+     * @brief Execute the implemented algorithm.
+     * @details
+     * This makes execute overridable by python
+     */
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<PyContainerVector> pArgs ) override
+    {
+        PYBIND11_OVERLOAD(
+            PYBIND11_TYPE(std::shared_ptr<Container>),
+            PYBIND11_TYPE(PyModule<IS_VOLATILE>),
+            execute,
+            pArgs
+        ); // PYBIND11_OVERLOAD
+    } // method
+}; // class
+#endif
+
 /**
  * @brief Input pledge for all python modules
  * @details

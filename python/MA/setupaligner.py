@@ -47,7 +47,7 @@ def test_aligner():
     print("[Test Successful]")
 
 
-def quick_align(parameter_set, pack, fm_index, queries=None, output = None, paired_queries=None, paired_output = None):
+def quick_align(parameter_set, pack, fm_index, queries=None, output=None, paired_queries=None, paired_output=None):
     fm_index_pledge = Pledge()
     fm_index_pledge.set(fm_index)
 

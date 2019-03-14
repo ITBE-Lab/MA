@@ -11,10 +11,13 @@ using namespace libMA;
 void exportModuleClass( py::module& rxPyModuleId )
 {
     // module is an abstract class and should never be initialized
-    py::class_<PyModule<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
+    py::class_<PyModule<false>, ModuleWrapperPyToCpp<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
+        .def( py::init<>( ) ) // default constructor
         .def( "execute", &PyModule<false>::execute )
         .def( "is_finished", &PyModule<false>::isFinished );
-    py::class_<PyModule<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId, "VolatileModule" )
+    py::class_<PyModule<true>, ModuleWrapperPyToCpp<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId,
+                                                                                             "VolatileModule" )
+        .def( py::init<>( ) ) // default constructor
         .def( "execute", &PyModule<true>::execute )
         .def( "is_finished", &PyModule<true>::isFinished );
 

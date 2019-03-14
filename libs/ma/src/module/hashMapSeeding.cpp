@@ -72,11 +72,12 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
                 rFirst.bOnForwStrand
                     ? pQuery->fromTo( 0, rFirst.start( ) )
                     : pQuery->fromToComplement( pQuery->length( ) - rFirst.start( ), pQuery->length( ) ) ),
-            pPack->vExtract( rFirst.start_ref( ) - rFirst.start( ) - uiPadding, rFirst.start_ref( ) ) );
+            pPack->vExtract( uiPadding < rFirst.start_ref( ) ? rFirst.start_ref( ) - uiPadding : 0,
+                             rFirst.start_ref( ) ) );
         for( Seed& rSeed : *pAppend )
         {
             rSeed.bOnForwStrand = rFirst.bOnForwStrand;
-            rSeed.uiPosOnReference += rFirst.start_ref( ) - rFirst.start( ) - uiPadding;
+            rSeed.uiPosOnReference += uiPadding < rFirst.start_ref( ) ? rFirst.start_ref( ) - uiPadding : 0;
         } // for
         pCollection->append( pAppend );
     } // if
@@ -89,7 +90,8 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
             std::make_shared<NucSeq>( rLast.bOnForwStrand
                                           ? pQuery->fromTo( rLast.end( ), pQuery->length( ) )
                                           : pQuery->fromToComplement( 0, pQuery->length( ) - rLast.end( ) ) ),
-            pPack->vExtract( rLast.end_ref( ), rLast.end_ref( ) + ( pQuery->length( ) - rLast.end( ) ) + uiPadding ) );
+            pPack->vExtract( rLast.end_ref( ),
+                             std::min( rLast.end_ref( ) + uiPadding, pPack->uiStartOfReverseStrand( ) ) ) );
         for( Seed& rSeed : *pAppend )
         {
             rSeed.bOnForwStrand = rLast.bOnForwStrand;
@@ -113,6 +115,8 @@ void exportHashMapSeeding( py::module& rxPyModuleId )
     exportModule<HashMapSeeding>( rxPyModuleId, "HashMapSeeding" );
     // export the ReSeeding class
     exportModule<ReSeeding>( rxPyModuleId, "ReSeeding" );
+    // export the FillSeedSet class
+    exportModule<FillSeedSet>( rxPyModuleId, "FillSeedSet" );
     // export the ExtractFilledSeedSets class
     exportModule<ExtractFilledSeedSets>( rxPyModuleId, "ExtractFilledSeedSets" );
 } // function

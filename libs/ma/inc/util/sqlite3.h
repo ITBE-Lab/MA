@@ -1099,6 +1099,20 @@ template <typename... Types> class CppSQLiteExtBasicTable
             vCreateTableInDB( xTypedDatabaseColumns, vConstraints );
         } // if
     } // constructor
+
+    void clearTable( )
+    {
+        CppSQLiteExtQueryStatement<int64_t>( rxDatabase, std::string( "DELETE FROM " ).append( sTableName ).c_str( ) )
+            .bindAndExecQuery<>( );
+    } // method
+
+    bool empty( )
+    {
+        int64_t iRes = CppSQLiteExtQueryStatement<int64_t>(
+                   rxDatabase, std::string( "SELECT count(*) FROM " ).append( sTableName ).c_str( ) )
+                   .scalar( );
+        return iRes == 0;
+    } // method
 }; // class
 
 /* SQL Insert statement as specialization of a general SQL statement.

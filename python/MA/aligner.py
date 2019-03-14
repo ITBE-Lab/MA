@@ -29,6 +29,7 @@ from libMA import NucSeq
 from libMA import SV_DB
 from libMA import VectorPledge
 from libMA import SoCInserter
+from libMA import ReadInserter
 from libMA import ParameterSetManager
 from libMA import ExecutionContext
 from libMA import ContainerVectorNucSeq

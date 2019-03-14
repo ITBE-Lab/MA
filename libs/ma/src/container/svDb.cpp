@@ -24,12 +24,17 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 
     // export the SoCInserter class
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
-        .def( py::init<std::string, std::string>( ) );
+        .def( py::init<std::string, std::string>( ) )
+        .def("clear_soc_table" , &SV_DB::clearSocTable)
+        .def("has_socs" , &SV_DB::hasSoCs);
     // export the SoCInserter class
-    py::class_<SV_DB::SoCInserter, std::shared_ptr<SV_DB::SoCInserter>>( rxPyModuleId, "SoCInserter" )
+    py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string>( ) )
-        .def( "insert_read", &SV_DB::SoCInserter::insertRead )
-        .def( "insert_paired_read", &SV_DB::SoCInserter::insertPairedRead );
+        .def( "insert_read", &SV_DB::ReadInserter::insertRead )
+        .def( "insert_paired_read", &SV_DB::ReadInserter::insertPairedRead );
+
+    py::class_<SV_DB::SoCInserter, std::shared_ptr<SV_DB::SoCInserter>>( rxPyModuleId, "SoCInserter" )
+        .def( py::init<std::shared_ptr<SV_DB>>( ) );
 
     // export the SvInserter class
     py::class_<SV_DB::SvInserter, std::shared_ptr<SV_DB::SvInserter>>( rxPyModuleId, "SvInserter" )
@@ -40,7 +45,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SoCDbWriter class
     exportModule<SoCDbWriter, std::shared_ptr<SV_DB::SoCInserter>>( rxPyModuleId, "SoCDbWriter" );
 
-    // export the NucSeqFromSql class
+    // export the NucSeqFromSql classes
+    exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
     exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "NucSeqFromSql" );
     exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "PairedNucSeqFromSql" );
 } // function

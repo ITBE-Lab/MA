@@ -141,6 +141,7 @@ class NucSeq : public Container
     static const EXPORTED unsigned char xNucleotideTranslationTable[ 256 ];
 
     std::string sName = "unknown";
+    int64_t iId = -1;
     DEBUG( size_t uiFromLine = 0; ) // DEBUG
 
 
