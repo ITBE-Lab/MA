@@ -23,6 +23,7 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
         AlignerParameterBase, //
         std::shared_ptr<AlignerParameter<TP_VALUE>> //
         >( rxPyModuleId, sName.c_str( ) ) //
+        .def( py::init<const std::string, const std::string, const size_t, const std::string, const TP_VALUE>() )
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
         .def( "get", &AlignerParameter<TP_VALUE>::get_py );
 } // function
@@ -43,20 +44,23 @@ void exportParameter( py::module& rxPyModuleId )
     // exportAlignerParameter<fs::path>( rxPyModuleId, "AlignerParameterFilePath" ); @todo
     // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" ); @todo
 
-    // Export Presetting Class
-    py::class_<Presetting, std::shared_ptr<Presetting>>( rxPyModuleId, "Presetting" ) //
-        .def( py::init<std::string>( ) ) //
-        .def_readonly( "name", &Presetting::sName )
-        .def( "mirror", &Presetting::mirror ) //
-        .def( "by_name", &Presetting::byName ) //
-        .def( "by_short", &Presetting::byShort );
+    // Export ParameterSetBase Class
+    py::class_<ParameterSetBase, std::shared_ptr<ParameterSetBase>>( rxPyModuleId, "ParameterSetBase" ) //
+        .def( "mirror", &ParameterSetBase::mirror ) //
+        .def( "registerParameter", &ParameterSetBase::registerParameter ) //
+        .def( "unregisterParameter", &ParameterSetBase::unregisterParameter ) //
+        .def( "by_name", &ParameterSetBase::byName ) //
+        .def( "by_short", &ParameterSetBase::byShort );
 
     // Export Presetting Class
-    py::class_<GeneralParameter, std::shared_ptr<GeneralParameter>>( rxPyModuleId, "GeneralSettings" ) //
-        .def( py::init<>( ) ) //
-        .def( "mirror", &GeneralParameter::mirror ) //
-        .def( "by_name", &GeneralParameter::byName ) //
-        .def( "by_short", &GeneralParameter::byShort );
+    py::class_<Presetting, ParameterSetBase, std::shared_ptr<Presetting>>( rxPyModuleId, "Presetting" ) //
+        .def( py::init<std::string>( ) ) //
+        .def_readonly( "name", &Presetting::sName );
+
+    // Export Presetting Class
+    py::class_<GeneralParameter, ParameterSetBase, std::shared_ptr<GeneralParameter>>( rxPyModuleId,
+                                                                                       "GeneralSettings" ) //
+        .def( py::init<>( ) );
 
     // Export ParameterSetManager Class
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
