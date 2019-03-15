@@ -47,8 +47,8 @@ void exportParameter( py::module& rxPyModuleId )
     // Export ParameterSetBase Class
     py::class_<ParameterSetBase, std::shared_ptr<ParameterSetBase>>( rxPyModuleId, "ParameterSetBase" ) //
         .def( "mirror", &ParameterSetBase::mirror ) //
-        .def( "registerParameter", &ParameterSetBase::registerParameter ) //
-        .def( "unregisterParameter", &ParameterSetBase::unregisterParameter ) //
+        .def( "register_parameter", &ParameterSetBase::registerParameter ) //
+        .def( "unregister_parameter", &ParameterSetBase::unregisterParameter ) //
         .def( "by_name", &ParameterSetBase::byName ) //
         .def( "by_short", &ParameterSetBase::byShort );
 
