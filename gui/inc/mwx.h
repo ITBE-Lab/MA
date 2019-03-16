@@ -816,7 +816,6 @@ class mwxPropertyPanel : public wxPanel
             // wxEvent::Skip() on their event argument to allow the default handling to take place.
             // rxEvent.Skip( );
 
-            std::cout << "update" << std::endl;
             pxHost->updateEnabledDisabled( );
         } // method
 
