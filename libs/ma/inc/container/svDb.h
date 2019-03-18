@@ -216,6 +216,39 @@ class SV_DB : public CppSQLite3DB, public Container
         } // deconstructor
     }; // class
 
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv line id (foreign key)
+                                                     int64_t, // read id (foreign key)
+                                                     uint32_t // read pos
+                                                     >
+        TP_SV_LINE_SUPPORT_TABLE;
+    class SvLineSupportTable : public TP_SV_LINE_SUPPORT_TABLE
+    {
+        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+
+      public:
+        SvLineSupportTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_SV_LINE_SUPPORT_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "sv_line_support_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"sv_line_id", "read_id", "read_pos"},
+                  // constraints for table
+                  std::vector<std::string>{"FOREIGN KEY (sv_line_id) REFERENCES sv_line_table(id)",
+                                           "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
+              pDatabase( pDatabase )
+        {} // default constructor
+
+        ~SvLineSupportTable( )
+        {
+            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
+            {
+                pDatabase->execDML( "CREATE INDEX sv_line_support_table_id_index ON sv_line_support_table (read_id)" );
+                pDatabase->execDML(
+                    "CREATE INDEX sv_line_support_table_start_index ON sv_line_support_table (sv_line_id)" );
+            } // if
+        } // deconstructor
+    }; // class
+
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // soc_line_from (foreign key)
                                                      int64_t, // soc_line_to (foreign key)
                                                      bool, // do_jump
@@ -248,6 +281,7 @@ class SV_DB : public CppSQLite3DB, public Container
     std::shared_ptr<SoCTable> pSocTable;
     std::shared_ptr<SvCallerRunTable> pSvCallerRunTable;
     std::shared_ptr<SvLineTable> pSvLineTable;
+    std::shared_ptr<SvLineSupportTable> pSvLineSupportTable;
     std::shared_ptr<SvLineConnectorTable> pSvLineConnectorTable;
 
     friend class NucSeqFromSql;
@@ -264,6 +298,7 @@ class SV_DB : public CppSQLite3DB, public Container
           pSocTable( std::make_shared<SoCTable>( pDatabase ) ),
           pSvCallerRunTable( std::make_shared<SvCallerRunTable>( pDatabase ) ),
           pSvLineTable( std::make_shared<SvLineTable>( pDatabase ) ),
+          pSvLineSupportTable( std::make_shared<SvLineSupportTable>( pDatabase ) ),
           pSvLineConnectorTable( std::make_shared<SvLineConnectorTable>( pDatabase ) )
     {} // constructor
 
@@ -340,8 +375,8 @@ class SV_DB : public CppSQLite3DB, public Container
             return ReadContex( pRead->iId, pDB->pSocTable );
         } // method
 
-        inline std::pair<ReadContex, ReadContex>
-        getPairedReadContext( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+        inline std::pair<ReadContex, ReadContex> getPairedReadContext( std::shared_ptr<NucSeq> pReadA,
+                                                                       std::shared_ptr<NucSeq> pReadB )
         {
             assert( pReadA->iId != -1 );
             assert( pReadB->iId != -1 );
@@ -360,6 +395,23 @@ class SV_DB : public CppSQLite3DB, public Container
         int64_t uiSvCallerRunId;
 
       public:
+        class LineContex
+        {
+          private:
+            int64_t iLineId;
+            std::shared_ptr<SvLineSupportTable> pSvLineSupp;
+
+          public:
+            LineContex( int64_t iLineId, std::shared_ptr<SvLineSupportTable> pSvLineSupp )
+                : iLineId( iLineId ), pSvLineSupp( pSvLineSupp )
+            {} // constructor
+
+            inline void insertSupport( int64_t iReadId, uint32_t uiPos )
+            {
+                pSvLineSupp->xInsertRow( iLineId, iReadId, uiPos );
+            } // method
+        }; // class
+
         SvInserter( std::shared_ptr<SV_DB> pDB, const std::string& rsSvCallerName, const std::string& rsSvCallerDesc )
             : pDB( pDB ),
               xTransactionContext( *pDB->pDatabase ),
@@ -368,16 +420,20 @@ class SV_DB : public CppSQLite3DB, public Container
 
         SvInserter( const SvInserter& ) = delete; // delete copy constructor
 
-        inline int64_t insertSvLine( nucSeqIndex uiStart, nucSeqIndex uiEnd, const std::string& rsDesc )
+        inline LineContex insertSvLine( nucSeqIndex uiStart, nucSeqIndex uiEnd, const std::string& rsDesc )
         {
             assert( uiStart <= uiEnd );
-            return pDB->pSvLineTable->xInsertRow( uiSvCallerRunId, (uint32_t)uiStart, (uint32_t)uiEnd, rsDesc );
+            return LineContex(
+                pDB->pSvLineTable->xInsertRow( uiSvCallerRunId, (uint32_t)uiStart, (uint32_t)uiEnd, rsDesc ),
+                pDB->pSvLineSupportTable );
         } // method
 
+#if 0
         inline void connectSvLines( int64_t iFrom, int64_t iTo, bool bJump, const std::string& rsDesc )
         {
             pDB->pSvLineConnectorTable->xInsertRow( iFrom, iTo, bJump, rsDesc );
         } // method
+#endif
     }; // class
 
     inline void clearSocTable( )
