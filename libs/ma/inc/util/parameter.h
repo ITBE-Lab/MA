@@ -128,7 +128,7 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
 
     /* Constructor */
     AlignerParameter( const std::string& sName, const std::string& sDescription, const size_t& uiCategoryIndex,
-                      const std::string& sCategoryName, const VALUE_TYPE valueK )
+                      const std::string& sCategoryName, const VALUE_TYPE value )
         : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, std::make_pair( uiCategoryIndex, sCategoryName ),
                             value )
     {} // constructor

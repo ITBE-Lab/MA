@@ -1,6 +1,7 @@
 /**
  * @file pack.cpp
  * @author Arne Kutzner
+ * @note @todo we should think about using the GZ stream here as well...
  */
 #include "container/pack.h"
 #include "container/nucSeq.h"
