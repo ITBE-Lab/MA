@@ -928,12 +928,12 @@ class MA_MainFrame : public wxFrame
     } // method
 
     wxTextCtrl* xQueryTextCtrl;
-    mwxBitmapButton* pxStartButton; 
+    mwxBitmapButton* pxStartButton;
 
     /* Handler for the start button */
     void onStart( wxCommandEvent& WXUNUSED( event ) )
     {
-        pxStartButton->SetBitmapLabel(wxBITMAP_PNG_FROM_DATA( StartButtonDesaturated ));
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButtonDesaturated ) );
         /*
          * Open the AlignFrame frame if either the settings gear wheel has been hit before,
          * Or if openSAMSettings returns true:
@@ -941,7 +941,7 @@ class MA_MainFrame : public wxFrame
          *
          * || does not evaluate openSAMSettings if bHasBeenOpenedOnce is true, therefore the side effect of opening the
          * dialog does not happen in this case.
-         * 
+         *
          * This logic is necessary, so that the start button color is reset in all cases.
          */
         if( mwxSAMSettingsDialog::bHasBeenOpenedOnce || openSAMSettings( ) )
@@ -952,12 +952,13 @@ class MA_MainFrame : public wxFrame
             AlignFrame xAlignFrame( this, "Alignment" );
             xAlignFrame.InitDialog( );
             xAlignFrame.ShowModal( );
-        }// if
-        pxStartButton->SetBitmapLabel(wxBITMAP_PNG_FROM_DATA( StartButton ));
+        } // if
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButton ) );
     } // method
 
     void createIndexWizard( void )
     {
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButtonDesaturated ) );
         FMIndexCreationWizard xWizard( this, wxID_ANY, "FM-Index Generation", wxBITMAP_PNG_FROM_DATA( WizardLabel ),
                                        wxDefaultPosition, wxDEFAULT_DIALOG_STYLE );
 
@@ -965,6 +966,7 @@ class MA_MainFrame : public wxFrame
         {
             // For debugging ...
         } // if
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButton ) );
     } // method
 
     void onCreateIndexWizard( wxCommandEvent& WXUNUSED( event ) )
@@ -1161,16 +1163,15 @@ class MA_MainFrame : public wxFrame
 
                             xStaticBoxSizer.Add( pxTextCtrl, 1, wxLEFT | wxEXPAND, 5 );
                             pxTextCtrl->SetValue(
-                                wxT( "1. Select the index of your reference genome.\n"
-                                     "        MA requires precomputed FMD-Indices for genomes.\n"
-                                     "        FMD-Index creation for genomes in FASTA format can be "
-                                     "done via the F2 key\n"
+                                wxT( "1. Create an index for your reference genome [F2]. "
+                                     "(Needs to be done once per genome, merely.) \n"
                                      "2. Choose 'Aligner Settings' according to the type of your "
                                      "reads. (Illumina etc.)\n"
                                      "3. Select format and location (folder) for the aligner output.\n"
-                                     "4. Specify your reads. Either via direct input or by selection "
+                                     "4. Select the index of your reference genome.\n"
+                                     "5. Specify your reads. Either via direct input or by selection "
                                      "of FASTA files.\n"
-                                     "5. Press red Start-Button (in the right-bottom corner)." ) );
+                                     "6. Press red Start-Button (in the right-bottom corner)." ) );
                         } );
                 } ) // add horizontal BoxSizer
 
@@ -1202,10 +1203,10 @@ class MA_MainFrame : public wxFrame
 
                     // File Selector for genome selection
                     pxBoxSizer.Add(
-                        (new mwxFileSelectDeleteButtonSizer(
-                            pxBoxSizer.pxConnector, "Index Selection", "Select Reference Genome Index",
-                            "Genome descriptions (*.json)|*.json|All Files|*", false,
-                            std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ), 1 ))
+                        ( new mwxFileSelectDeleteButtonSizer(
+                              pxBoxSizer.pxConnector, "Index Selection", "Select Reference Genome Index",
+                              "Genome descriptions (*.json)|*.json|All Files|*", false,
+                              std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ), 1 ) )
                             ->setClearHandler( [this]( ) { this->createIndexWizard( ); } ), // no clear button
                         wxSizerFlags( 0 ) );
 
