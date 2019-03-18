@@ -829,7 +829,7 @@ class MA_MainFrame : public wxFrame
     } // method
 
     /* opens outputs settings window; returns true if OK is hit false otherwise */
-    bool openSAMSettings()
+    bool openSAMSettings( )
     {
         GeneralParameter xGlobalParameterSet( xExecutionContext.xParameterSetManager.xGlobalParameterSet );
         mwxSAMSettingsDialog xSettingsDialog( nullptr, xGlobalParameterSet );
@@ -846,7 +846,7 @@ class MA_MainFrame : public wxFrame
     {
         // if the gear button is hit at least once we do not need to open SAM settings before starting the alignment.
         mwxSAMSettingsDialog::bHasBeenOpenedOnce = true;
-        openSAMSettings();
+        openSAMSettings( );
     } // method
 
     void onPairedGearButton( wxCommandEvent& event )
@@ -928,23 +928,35 @@ class MA_MainFrame : public wxFrame
     } // method
 
     wxTextCtrl* xQueryTextCtrl;
+    mwxBitmapButton* pxStartButton; 
 
     /* Handler for the start button */
     void onStart( wxCommandEvent& WXUNUSED( event ) )
     {
-        // if the user has not opened the SAM ouput dialog at least once force him to
-        if(!mwxSAMSettingsDialog::bHasBeenOpenedOnce)
-            if(!openSAMSettings()) return; // user requested to cancel the alignment...
+        pxStartButton->SetBitmapLabel(wxBITMAP_PNG_FROM_DATA( StartButtonDesaturated ));
+        /*
+         * Open the AlignFrame frame if either the settings gear wheel has been hit before,
+         * Or if openSAMSettings returns true:
+         *      openSAMSettings opens the sam settings dialog and returns wether Ok or cancel was hit.
+         *
+         * || does not evaluate openSAMSettings if bHasBeenOpenedOnce is true, therefore the side effect of opening the
+         * dialog does not happen in this case.
+         * 
+         * This logic is necessary, so that the start button color is reset in all cases.
+         */
+        if( mwxSAMSettingsDialog::bHasBeenOpenedOnce || openSAMSettings( ) )
+        {
+            // First ask execution environment if all data are available
+            // auto xAlignFrame = new AlignFrame( "Alignment" );
 
-        // First ask execution environment if all data are available
-        // auto xAlignFrame = new AlignFrame( "Alignment" );
-
-        AlignFrame xAlignFrame( this, "Alignment" );
-        xAlignFrame.InitDialog( );
-        xAlignFrame.ShowModal( );
+            AlignFrame xAlignFrame( this, "Alignment" );
+            xAlignFrame.InitDialog( );
+            xAlignFrame.ShowModal( );
+        }// if
+        pxStartButton->SetBitmapLabel(wxBITMAP_PNG_FROM_DATA( StartButton ));
     } // method
 
-    void onCreateIndexWizard( wxCommandEvent& WXUNUSED( event ) )
+    void createIndexWizard( void )
     {
         FMIndexCreationWizard xWizard( this, wxID_ANY, "FM-Index Generation", wxBITMAP_PNG_FROM_DATA( WizardLabel ),
                                        wxDefaultPosition, wxDEFAULT_DIALOG_STYLE );
@@ -953,6 +965,11 @@ class MA_MainFrame : public wxFrame
         {
             // For debugging ...
         } // if
+    } // method
+
+    void onCreateIndexWizard( wxCommandEvent& WXUNUSED( event ) )
+    {
+        createIndexWizard( );
     } // method
 
     /* Handler for query select/clear button pair */
@@ -1169,7 +1186,7 @@ class MA_MainFrame : public wxFrame
                         [this]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
                         {
                             pxBoxSizer.Add( new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
-                                                              wxT( "Reference genome index" ), wxDefaultPosition,
+                                                              wxT( "Reference genome" ), wxDefaultPosition,
                                                               wxDefaultSize, 0 ),
                                             0, wxLEFT | wxTOP, 5 );
                             pxBoxSizer.Add( this->xGenomeNameTextCtrl = new wxTextCtrl(
@@ -1184,12 +1201,13 @@ class MA_MainFrame : public wxFrame
                         } ); // add vertical BoxSizer
 
                     // File Selector for genome selection
-                    pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
-                                        pxBoxSizer.pxConnector, "Index Selection", "Select Reference Genome Index",
-                                        "Genome descriptions (*.json)|*.json|All Files|*", false,
-                                        std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ),
-                                        false ), // no clear button
-                                    wxSizerFlags( 0 ) );
+                    pxBoxSizer.Add(
+                        (new mwxFileSelectDeleteButtonSizer(
+                            pxBoxSizer.pxConnector, "Index Selection", "Select Reference Genome Index",
+                            "Genome descriptions (*.json)|*.json|All Files|*", false,
+                            std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ), 1 ))
+                            ->setClearHandler( [this]( ) { this->createIndexWizard( ); } ), // no clear button
+                        wxSizerFlags( 0 ) );
 
                     // Initialize genome selection
                     this->onGenomeSelection( std::vector<fs::path>( ) );
@@ -1310,7 +1328,7 @@ class MA_MainFrame : public wxFrame
                                                                   wxT( "Start Aligner" ), wxDefaultPosition,
                                                                   wxDefaultSize, 0 ),
                                                 0, wxALL | wxLEFT, 5 );
-                                pxBoxSizer.Add( new mwxBitmapButton(
+                                pxBoxSizer.Add( pxStartButton = new mwxBitmapButton(
                                                     pxBoxSizer.pxConnector.pxWindow,
                                                     wxBITMAP_PNG_FROM_DATA( StartButton ),
                                                     std::bind( &MA_MainFrame::onStart, this, std::placeholders::_1 ),
