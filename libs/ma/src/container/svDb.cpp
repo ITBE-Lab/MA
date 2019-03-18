@@ -26,6 +26,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
         .def("clear_soc_table" , &SV_DB::clearSocTable)
+        .def("clear_calls_table" , &SV_DB::clearCallsTable)
         .def("has_socs" , &SV_DB::hasSoCs);
     // export the SoCInserter class
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )

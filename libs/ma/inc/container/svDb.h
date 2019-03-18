@@ -441,6 +441,14 @@ class SV_DB : public CppSQLite3DB, public Container
         pSocTable->clearTable( );
     } // method
 
+    inline void clearCallsTable( )
+    {
+        pSvLineConnectorTable->clearTable( );
+        pSvLineSupportTable->clearTable( );
+        pSvLineTable->clearTable( );
+        pSvCallerRunTable->clearTable( );
+    } // method
+
     inline bool hasSoCs( )
     {
         return !pSocTable->empty( );
