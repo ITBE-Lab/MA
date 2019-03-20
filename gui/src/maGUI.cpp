@@ -835,7 +835,7 @@ class MA_MainFrame : public wxFrame
         mwxSAMSettingsDialog xSettingsDialog( nullptr, xGlobalParameterSet );
         if( xSettingsDialog.ShowModal( ) == wxID_OK )
         {
-            xExecutionContext.xParameterSetManager.xGlobalParameterSet.mirror( xGlobalParameterSet );
+            xExecutionContext.xParameterSetManager.pGlobalParameterSet->mirror( xGlobalParameterSet );
             return true;
         } // if
         return false;

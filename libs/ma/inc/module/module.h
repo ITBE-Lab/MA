@@ -751,7 +751,7 @@ template <bool IS_VOLATILE> class ModuleWrapperPyToCpp : public PyModule<IS_VOLA
      * @details
      * This makes execute overridable by python
      */
-    std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<PyContainerVector> pArgs ) override
+    std::shared_ptr<Container> execute( std::shared_ptr<PyContainerVector> pArgs ) override
     {
         PYBIND11_OVERLOAD(
             PYBIND11_TYPE(std::shared_ptr<Container>),
