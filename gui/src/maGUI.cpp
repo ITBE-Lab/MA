@@ -71,30 +71,29 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
     mwxSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                        Presetting& rxParameterSet // Parameter used for the dialog
                        )
-        : mwxOK_Cancel_Dialog(
-              pxHostWindow, // host ( responsible for destruction)
-              "Parameter Settings", // Title of Dialog
-              [&] //
-              ( wxWindow * pxHostWindow ) //
-              { // Content of Dialog
-                  this->iValue = 0;
-                  auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "Parameter Settings", // Title of Dialog
+                               [&] //
+                               ( wxWindow * pxHostWindow ) //
+                               { // Content of Dialog
+                                   this->iValue = 0;
+                                   auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
 
-                  for( auto xPair : rxParameterSet.xpParametersByCategory )
-                  {
-                      // xPair.first.second extracts the category name
-                      auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
-                      auto* pPanel =
-                          new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
-                      for( auto pParameter : xPair.second )
-                          pPanel->append( pParameter );
-                      pPanel->updateEnabledDisabled( );
-                  } // for
+                                   for( auto xPair : rxParameterSet.xpParametersByCategory )
+                                   {
+                                       // xPair.first.second extracts the category name
+                                       auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
+                                       auto* pPanel = new mwxPropertyPanel(
+                                           pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
+                                       for( auto pParameter : xPair.second )
+                                           pPanel->append( pParameter );
+                                       pPanel->updateEnabledDisabled( );
+                                   } // for
 
-                  return pxNotebook;
-              }, // lambda
-              wxDefaultPosition,
-              "Save as Custom" )
+                                   return pxNotebook;
+                               }, // lambda
+                               wxDefaultPosition,
+                               "Save as Custom" )
     {} // constructor
 
     /* Destructor */
@@ -115,20 +114,19 @@ class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
     mwxPairedSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                              Presetting& rxParameterSet // Parameter used for the dialog
                              )
-        : mwxOK_Cancel_Dialog(
-              pxHostWindow, // host ( responsible for destruction)
-              "Paired Reads Settings", // Title of Dialog
-              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                  pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
-                  pxPropertyPanel->append( rxParameterSet.xStdPairedReadDistance.pContent );
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "Paired Reads Settings", // Title of Dialog
+                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                                   pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
+                                   pxPropertyPanel->append( rxParameterSet.xStdPairedReadDistance.pContent );
 
-                  return pxPropertyPanel;
-              }, // lambda
+                                   return pxPropertyPanel;
+                               }, // lambda
 
-              wxDefaultPosition,
-              "Save as Custom",
-              true ) // fit the size of the dialog to the size of its content
+                               wxDefaultPosition,
+                               "Save as Custom",
+                               true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
     /* Destructor */
@@ -147,20 +145,19 @@ class mwxGlobalSettingsDialog : public mwxOK_Cancel_Dialog
     mwxGlobalSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                              GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
                              )
-        : mwxOK_Cancel_Dialog(
-              pxHostWindow, // host ( responsible for destruction)
-              "Global Settings", // Title of Dialog
-              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                  pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency.pContent )
-                      .append( rxGlobalParameterSet.piNumberOfThreads.pContent )
-                      .updateEnabledDisabled( );
-                  return pxPropertyPanel;
-              }, // lambda
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "Global Settings", // Title of Dialog
+                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                                   pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency.pContent )
+                                       .append( rxGlobalParameterSet.piNumberOfThreads.pContent )
+                                       .updateEnabledDisabled( );
+                                   return pxPropertyPanel;
+                               }, // lambda
 
-              wxDefaultPosition,
-              "OK",
-              true ) // fit the size of the dialog to the size of its content
+                               wxDefaultPosition,
+                               "OK",
+                               true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
     /* Destructor */
@@ -175,28 +172,31 @@ class mwxGlobalSettingsDialog : public mwxOK_Cancel_Dialog
 class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
 {
   public:
+    static bool bHasBeenOpenedOnce;
     /* Constructor */
     mwxSAMSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                           GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
                           )
-        : mwxOK_Cancel_Dialog(
-              pxHostWindow, // host ( responsible for destruction)
-              "SAM Settings", // Title of Dialog
-              [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                  pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
-                      .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
-                      .append( rxGlobalParameterSet.xSAMOutputFileName.pContent, "SAM File (*.sam)|*.sam" )
-                      .updateEnabledDisabled( );
+        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
+                               "SAM Settings", // Title of Dialog
+                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
+                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                                   pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
+                                       .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
+                                       .append( rxGlobalParameterSet.xSAMOutputFileName.pContent,
+                                                "SAM File (*.sam)|*.sam" )
+                                       .updateEnabledDisabled( );
 
-                  return pxPropertyPanel;
-              }, // lambda
+                                   return pxPropertyPanel;
+                               }, // lambda
 
-              wxDefaultPosition,
-              "OK",
-              true ) // fit the size of the dialog to the size of its content
+                               wxDefaultPosition,
+                               "OK",
+                               true ) // fit the size of the dialog to the size of its content
     {} // constructor
 }; // class
+
+bool mwxSAMSettingsDialog::bHasBeenOpenedOnce = false;
 
 WX_DEFINE_ARRAY_PTR( wxWizardPageSimple*, WizardPages );
 
@@ -399,7 +399,8 @@ class FMIndexCreationWizard : public wxWizard
         pxBoxSizerPage1->Add( pxTextCtrlIndexName = new wxTextCtrl( pxWizardPage1, wxID_ANY, wxEmptyString,
                                                                     wxDefaultPosition, wxDefaultSize, 0 ),
                               0, wxALL | wxEXPAND, 5 );
-        pxBoxSizerPage1->Add( new wxStaticText( pxWizardPage1, wxID_ANY, wxT( "3. Select a folder for Index storage" ),
+        pxBoxSizerPage1->Add( new wxStaticText( pxWizardPage1, wxID_ANY,
+                                                wxT( "3. Select a (existing) folder for Index storage" ),
                                                 wxDefaultPosition, wxDefaultSize, 0 ),
                               0, wxALL, 5 );
         pxBoxSizerPage1->Add( pxDirPickerIndexLocation =
@@ -827,15 +828,25 @@ class MA_MainFrame : public wxFrame
         this->doSettingsDialog<mwxSettingsDialog>( event );
     } // method
 
-    /* Handler for gear button of outputs settings */
-    void onOutputGearButton( wxCommandEvent& WXUNUSED( event ) )
+    /* opens outputs settings window; returns true if OK is hit false otherwise */
+    bool openSAMSettings( )
     {
         GeneralParameter xGlobalParameterSet( *xExecutionContext.xParameterSetManager.pGlobalParameterSet );
         mwxSAMSettingsDialog xSettingsDialog( nullptr, xGlobalParameterSet );
         if( xSettingsDialog.ShowModal( ) == wxID_OK )
         {
-            xExecutionContext.xParameterSetManager.pGlobalParameterSet->mirror( xGlobalParameterSet );
+            xExecutionContext.xParameterSetManager.xGlobalParameterSet.mirror( xGlobalParameterSet );
+            return true;
         } // if
+        return false;
+    } // method
+
+    /* Handler for gear button of outputs settings */
+    void onOutputGearButton( wxCommandEvent& WXUNUSED( event ) )
+    {
+        // if the gear button is hit at least once we do not need to open SAM settings before starting the alignment.
+        mwxSAMSettingsDialog::bHasBeenOpenedOnce = true;
+        openSAMSettings( );
     } // method
 
     void onPairedGearButton( wxCommandEvent& event )
@@ -868,6 +879,9 @@ class MA_MainFrame : public wxFrame
 
         xExecutionContext.xParameterSetManager.setSelected( sSelected );
         this->updateLayout( );
+
+        if( sSelected == "Custom" )
+            onSettingsGearButton( event );
     } // method
 
     // Text control that keeps the selected genome's name.
@@ -914,20 +928,37 @@ class MA_MainFrame : public wxFrame
     } // method
 
     wxTextCtrl* xQueryTextCtrl;
+    mwxBitmapButton* pxStartButton;
 
     /* Handler for the start button */
     void onStart( wxCommandEvent& WXUNUSED( event ) )
     {
-        // First ask execution environment if all data are available
-        // auto xAlignFrame = new AlignFrame( "Alignment" );
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButtonDesaturated ) );
+        /*
+         * Open the AlignFrame frame if either the settings gear wheel has been hit before,
+         * Or if openSAMSettings returns true:
+         *      openSAMSettings opens the sam settings dialog and returns wether Ok or cancel was hit.
+         *
+         * || does not evaluate openSAMSettings if bHasBeenOpenedOnce is true, therefore the side effect of opening the
+         * dialog does not happen in this case.
+         *
+         * This logic is necessary, so that the start button color is reset in all cases.
+         */
+        if( mwxSAMSettingsDialog::bHasBeenOpenedOnce || openSAMSettings( ) )
+        {
+            // First ask execution environment if all data are available
+            // auto xAlignFrame = new AlignFrame( "Alignment" );
 
-        AlignFrame xAlignFrame( this, "Alignment" );
-        xAlignFrame.InitDialog( );
-        xAlignFrame.ShowModal( );
+            AlignFrame xAlignFrame( this, "Alignment" );
+            xAlignFrame.InitDialog( );
+            xAlignFrame.ShowModal( );
+        } // if
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButton ) );
     } // method
 
-    void onCreateIndexWizard( wxCommandEvent& WXUNUSED( event ) )
+    void createIndexWizard( void )
     {
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButtonDesaturated ) );
         FMIndexCreationWizard xWizard( this, wxID_ANY, "FM-Index Generation", wxBITMAP_PNG_FROM_DATA( WizardLabel ),
                                        wxDefaultPosition, wxDEFAULT_DIALOG_STYLE );
 
@@ -935,6 +966,12 @@ class MA_MainFrame : public wxFrame
         {
             // For debugging ...
         } // if
+        pxStartButton->SetBitmapLabel( wxBITMAP_PNG_FROM_DATA( StartButton ) );
+    } // method
+
+    void onCreateIndexWizard( wxCommandEvent& WXUNUSED( event ) )
+    {
+        createIndexWizard( );
     } // method
 
     /* Handler for query select/clear button pair */
@@ -1005,7 +1042,7 @@ class MA_MainFrame : public wxFrame
                    title,
                    wxDefaultPosition,
                    wxDefaultSize,
-                   wxDEFAULT_FRAME_STYLE & ~( wxMAXIMIZE_BOX | wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP ) )
+                   wxDEFAULT_FRAME_STYLE & ~( wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP ) )
     {
         // on startup: create custom parameter set from default parameter set (do this only for the GUI version.)
         xExecutionContext.xParameterSetManager.xParametersSets.emplace( "Custom",
@@ -1127,16 +1164,15 @@ class MA_MainFrame : public wxFrame
 
                             xStaticBoxSizer.Add( pxTextCtrl, 1, wxLEFT | wxEXPAND, 5 );
                             pxTextCtrl->SetValue(
-                                wxT( "1. Choose 'Aligner Settings' according to the type of your "
+                                wxT( "1. Create an index for your reference genome [F2]. "
+                                     "(Needs to be done once per genome, merely.) \n"
+                                     "2. Choose 'Aligner Settings' according to the type of your "
                                      "reads. (Illumina etc.)\n"
-                                     "2. Select format and location (folder) for the aligner output.\n"
-                                     "3. Select your reference genome.\n"
-                                     "        MA requires precomputed FMD-Indices for genomes.\n"
-                                     "        FMD-Index creation for genomes in FASTA format can be "
-                                     "done via the F2 key\n"
-                                     "4. Specify your reads. Either via direct input or by selection "
+                                     "3. Select format and location (folder) for the aligner output.\n"
+                                     "4. Select the index of your reference genome.\n"
+                                     "5. Specify your reads. Either via direct input or by selection "
                                      "of FASTA files.\n"
-                                     "5. Press red Start-Button (in the right-bottom corner)." ) );
+                                     "6. Press red Start-Button (in the right-bottom corner)." ) );
                         } );
                 } ) // add horizontal BoxSizer
 
@@ -1167,12 +1203,13 @@ class MA_MainFrame : public wxFrame
                         } ); // add vertical BoxSizer
 
                     // File Selector for genome selection
-                    pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
-                                        pxBoxSizer.pxConnector, "Genome Selection", "Select Reference Genome",
-                                        "Genome descriptions (*.json)|*.json|All Files|*", false,
-                                        std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ),
-                                        false ), // no clear button
-                                    wxSizerFlags( 0 ) );
+                    pxBoxSizer.Add(
+                        ( new mwxFileSelectDeleteButtonSizer(
+                              pxBoxSizer.pxConnector, "Index Selection", "Select Reference Genome Index",
+                              "Genome descriptions (*.json)|*.json|All Files|*", false,
+                              std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ), 1 ) )
+                            ->setClearHandler( [this]( ) { this->createIndexWizard( ); } ), // no clear button
+                        wxSizerFlags( 0 ) );
 
                     // Initialize genome selection
                     this->onGenomeSelection( std::vector<fs::path>( ) );
@@ -1293,7 +1330,7 @@ class MA_MainFrame : public wxFrame
                                                                   wxT( "Start Aligner" ), wxDefaultPosition,
                                                                   wxDefaultSize, 0 ),
                                                 0, wxALL | wxLEFT, 5 );
-                                pxBoxSizer.Add( new mwxBitmapButton(
+                                pxBoxSizer.Add( pxStartButton = new mwxBitmapButton(
                                                     pxBoxSizer.pxConnector.pxWindow,
                                                     wxBITMAP_PNG_FROM_DATA( StartButton ),
                                                     std::bind( &MA_MainFrame::onStart, this, std::placeholders::_1 ),

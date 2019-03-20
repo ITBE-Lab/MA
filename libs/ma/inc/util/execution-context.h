@@ -138,7 +138,7 @@ class GenomeManager
     /* Delivers name of selected genome */
     std::string getGenomeName( void )
     {
-        return this->pxPackPledge ? this->sGenomeName : "No genome selected";
+        return this->pxPackPledge ? this->sGenomeName : "No index selected";
     } // method
 
     bool isReady( void )
