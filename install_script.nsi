@@ -67,7 +67,6 @@ SectionEnd
 
 Section -Post
   WriteUninstaller "$INSTDIR\uninstallMA.exe"
-  CreateShortCut "$SMPROGRAMS\MA\Uninstall.lnk" "$INSTDIR\uninstallMA.exe"
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\maGUI.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninstallMA.exe"
