@@ -233,15 +233,15 @@ class SV_DB : public CppSQLite3DB, public Container
                   // column definitions of the table
                   std::vector<std::string>{"sv_line_id", "pass", "desc"},
                   // constraints for table
-                  std::vector<std::string>{
-                      "FOREIGN KEY (sv_line_id) REFERENCES sv_line_table(id)"} ),
+                  std::vector<std::string>{"FOREIGN KEY (sv_line_id) REFERENCES sv_line_table(id)"} ),
               pDatabase( pDatabase )
         {} // default constructor
     }; // class
 
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv line id (foreign key)
                                                      int64_t, // read id (foreign key)
-                                                     uint32_t // read pos
+                                                     uint32_t, // read pos
+                                                     bool // on forward strand
                                                      >
         TP_SV_LINE_SUPPORT_TABLE;
     class SvLineSupportTable : public TP_SV_LINE_SUPPORT_TABLE
@@ -254,7 +254,7 @@ class SV_DB : public CppSQLite3DB, public Container
                   *pDatabase, // the database where the table resides
                   "sv_line_support_table", // name of the table in the database
                   // column definitions of the table
-                  std::vector<std::string>{"sv_line_id", "read_id", "read_pos"},
+                  std::vector<std::string>{"sv_line_id", "read_id", "read_pos", "on_forward_strand"},
                   // constraints for table
                   std::vector<std::string>{"FOREIGN KEY (sv_line_id) REFERENCES sv_line_table(id)",
                                            "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
@@ -275,6 +275,7 @@ class SV_DB : public CppSQLite3DB, public Container
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // soc_line_from (foreign key)
                                                      int64_t, // soc_line_to (foreign key)
                                                      bool, // do_jump
+                                                     bool, // switch strand
                                                      std::string // desc
                                                      >
         TP_SV_LINE_CONNECTOR_TABLE;
@@ -288,7 +289,7 @@ class SV_DB : public CppSQLite3DB, public Container
                   *pDatabase, // the database where the table resides
                   "sv_line_connector_table", // name of the table in the database
                   // column definitions of the table
-                  std::vector<std::string>{"soc_line_from", "soc_line_to", "do_jump", "desc"},
+                  std::vector<std::string>{"soc_line_from", "soc_line_to", "do_jump", "switch_strand", "desc"},
                   // constraints for table
                   std::vector<std::string>{"FOREIGN KEY (soc_line_from) REFERENCES sv_line_table(id)",
                                            "FOREIGN KEY (soc_line_to) REFERENCES sv_line_table(id)",
@@ -426,8 +427,8 @@ class SV_DB : public CppSQLite3DB, public Container
             return ReadContex( pRead->iId, pDB->pSocTable );
         } // method
 
-        inline std::pair<ReadContex, ReadContex>
-        getPairedReadContext( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+        inline std::pair<ReadContex, ReadContex> getPairedReadContext( std::shared_ptr<NucSeq> pReadA,
+                                                                       std::shared_ptr<NucSeq> pReadB )
         {
             assert( pReadA->iId != -1 );
             assert( pReadB->iId != -1 );
@@ -457,9 +458,9 @@ class SV_DB : public CppSQLite3DB, public Container
                 : iLineId( iLineId ), pSvLineSupp( pSvLineSupp )
             {} // constructor
 
-            inline void insertSupport( int64_t iReadId, uint32_t uiPos )
+            inline void insertSupport( int64_t iReadId, uint32_t uiPos, bool bOnForwardStrand )
             {
-                pSvLineSupp->xInsertRow( iLineId, iReadId, uiPos );
+                pSvLineSupp->xInsertRow( iLineId, iReadId, uiPos, bOnForwardStrand );
             } // method
         }; // class
 
@@ -514,11 +515,13 @@ class SoCDbWriter : public Module<Container, false, NucSeq, SoCPriorityQueue>
   private:
     std::shared_ptr<SV_DB::SoCInserter> pInserter;
     std::shared_ptr<std::mutex> pMutex;
-    size_t uiNumSoCsToRecord = 1; // @todo expose
+    size_t uiNumSoCsToRecord;
 
   public:
     SoCDbWriter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB::SoCInserter> pInserter )
-        : pInserter( pInserter ), pMutex( new std::mutex )
+        : pInserter( pInserter ),
+          pMutex( new std::mutex ),
+          uiNumSoCsToRecord( rParameters.getSelected( )->xNSoCs->get( ) )
     {} // constructor
 
     std::shared_ptr<Container> execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<SoCPriorityQueue> pSoCQueue )

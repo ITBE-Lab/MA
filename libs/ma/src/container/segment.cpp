@@ -11,7 +11,9 @@ using namespace libMA;
 void exportSegment( py::module& rxPyModuleId )
 {
     // export the SegmentVector class
-    py::class_<Segment, Container, std::shared_ptr<Segment>>( rxPyModuleId, "Segment" );
+    py::class_<Segment, Container, std::shared_ptr<Segment>>( rxPyModuleId, "Segment" )
+        .def( "start", &Segment::start_boost1 )
+        .def( "end", &Segment::end_boost1 );
 
     // export the SegmentVector class
     py::bind_vector_ext<SegmentVector, Container, std::shared_ptr<SegmentVector>>( rxPyModuleId, "SegmentVector",

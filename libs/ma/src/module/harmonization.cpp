@@ -701,7 +701,14 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
         pSeedsIn->erase( pSeedsIn->begin( ) + pSeedsIn->size( ) / 2 );
     else // in case we actually did the harmonization process
     {
-        // @todo make this more efficient?
+        /*
+         * What we do:
+         * We sort the original and the harmonized seed set
+         * We can then iterate over both seed sets and check which seeds occur in both.
+         * For all seeds that occur in both sets (they are copied) we set the size of the copy in the original set to 
+         * zero.
+         * The we delete all zero sized seeds...
+         */
         pShadows->clear( ); // @note the sorting will invalidate these iterators so clear them
         std::sort( pSeeds->begin( ), pSeeds->end( ),
                    []( const Seed& xA, const Seed& xB ) {
@@ -721,7 +728,7 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
         auto itOrigSet = pSeedsIn->begin( );
         while( itOrigSet != pSeedsIn->end( ) )
         {
-            // move harm it rightwards if necessary
+            // move harm iterator rightwards if necessary
             while( itHarmSet != pSeeds->end( ) && itOrigSet->start( ) > itHarmSet->end( ) )
                 itHarmSet++;
             if( itHarmSet == pSeeds->end( ) )

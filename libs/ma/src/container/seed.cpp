@@ -48,6 +48,7 @@ void exportSeed( py::module& rxPyModuleId )
         .def( py::init<std::shared_ptr<Seeds>>( ) )
         .def( py::init<>( ) )
         .def( "extractStrand", &Seeds::extractStrand)
+        .def( "extend", &Seeds::append)
         .def( "sort_by_ref_pos", &Seeds::sortByRefPos);
 
     // tell boost python that pointers of these classes can be converted implicitly
