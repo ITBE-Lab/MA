@@ -636,11 +636,6 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
 
     pSeeds->reserve( pShadows->size( ) );
 
-    // save all the seeds
-    for( auto& xT : *pShadows )
-        pSeeds->push_back( *std::get<0>( xT ) );
-    pSeeds->bConsistent = true;
-
     /*
      * sometimes we have one or less seeds remaining after the cupling:
      * in these cases we simply return the center seed (judging by the delta from SoCs)
@@ -651,14 +646,23 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
      * In most cases where this condition triggeres we have seeds that are roughly the
      * same length and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
      */
-    if( pSeeds->size( ) == 1 )
+    if( pShadows->size( ) == 1 )
     {
-        pSeeds->clear( );
         pSeeds->push_back( ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ] );
+        ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ].size(0); // mark for deletion
     } // if
-    assert( !pSeeds->empty( ) );
+    else
+    {
+        // save all the seeds
+        for( auto& xT : *pShadows )
+        {
+            pSeeds->push_back( *std::get<0>( xT ) ); // this creates a COPY (intentionally)
+            std::get<0>( xT )->size(0); // mark seed in original set for deletion after copying
+        } // for
+    }// else
+    pSeeds->bConsistent = true;
 
-#if DEBUG_LEVEL > 0
+#if 0 // DEBUG_LEVEL > 0 // broken due to changes around this...
     if( bRecord )
     {
         pSoCIn->vSoCs.push_back( std::make_shared<Seeds>( pSeedsIn ) );
@@ -696,53 +700,10 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
     } // if
 #endif
 
-    // we want to remove all harmonized seeds from the original seed set.
-    if( pSeeds->size( ) == 1 ) // in case we picked the center seed (read big comment above)
-        pSeedsIn->erase( pSeedsIn->begin( ) + pSeedsIn->size( ) / 2 );
-    else // in case we actually did the harmonization process
-    {
-        /*
-         * What we do:
-         * We sort the original and the harmonized seed set
-         * We can then iterate over both seed sets and check which seeds occur in both.
-         * For all seeds that occur in both sets (they are copied) we set the size of the copy in the original set to 
-         * zero.
-         * The we delete all zero sized seeds...
-         */
-        pShadows->clear( ); // @note the sorting will invalidate these iterators so clear them
-        std::sort( pSeeds->begin( ), pSeeds->end( ),
-                   []( const Seed& xA, const Seed& xB ) {
-                       if( xA.start( ) == xB.start( ) )
-                           return xA.size( ) > xB.size( );
-                       return xA.start( ) < xB.start( );
-                   } // lambda
-        ); // sort function call
-        std::sort( pSeedsIn->begin( ), pSeedsIn->end( ),
-                   []( const Seed& xA, const Seed& xB ) {
-                       if( xA.start( ) == xB.start( ) )
-                           return xA.size( ) > xB.size( );
-                       return xA.start( ) < xB.start( );
-                   } // lambda
-        ); // sort function call
-        auto itHarmSet = pSeeds->begin( );
-        auto itOrigSet = pSeedsIn->begin( );
-        while( itOrigSet != pSeedsIn->end( ) )
-        {
-            // move harm iterator rightwards if necessary
-            while( itHarmSet != pSeeds->end( ) && itOrigSet->start( ) > itHarmSet->end( ) )
-                itHarmSet++;
-            if( itHarmSet == pSeeds->end( ) )
-                break;
-            // check overlap
-            if( itHarmSet->start( ) <= itOrigSet->end( ) && itHarmSet->end( ) >= itOrigSet->start( ) )
-                itOrigSet->size( 0 ); // mark for deletion
-            itOrigSet++;
-        } // while
-        // remove all seeds that overlap a harmonized seeds on the query
-        pSeedsIn->erase(
-            std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
-            pSeedsIn->end( ) );
-    } // else
+    // remove all seeds marked for deletion
+    pSeedsIn->erase(
+        std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
+        pSeedsIn->end( ) );
 
     // seeds need to be sorted for the following steps
     std::sort( pSeeds->begin( ), pSeeds->end( ),
