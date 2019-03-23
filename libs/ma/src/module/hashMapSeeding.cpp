@@ -75,8 +75,8 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
                       std::min( pQuery->length( ), pQuery->length( ) - ( rFirst.start( ) - uiPadding ) ) ) );
         auto pQ2 = pPack->vExtract( uiPadding < rFirst.start_ref( ) ? rFirst.start_ref( ) - uiPadding : 0,
                                     rFirst.start_ref( ) );
-        assert(pQ1->length() <= uiPadding);
-        assert(pQ2->length() <= uiPadding);
+        assert( pQ1->length( ) <= uiPadding );
+        assert( pQ2->length( ) <= uiPadding );
         auto pAppend = xHashMapSeeder.execute( pQ1, pQ2 );
         for( Seed& rSeed : *pAppend )
         {
@@ -101,8 +101,8 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
                                             pQuery->length( ) - rLast.end( ) ) );
         auto pQ2 = pPack->vExtract( rLast.end_ref( ),
                                     std::min( rLast.end_ref( ) + uiPadding, pPack->uiStartOfReverseStrand( ) ) );
-        assert(pQ1->length() <= uiPadding);
-        assert(pQ2->length() <= uiPadding);
+        assert( pQ1->length( ) <= uiPadding );
+        assert( pQ2->length( ) <= uiPadding );
         auto pAppend = xHashMapSeeder.execute( pQ1, pQ2 );
         for( Seed& rSeed : *pAppend )
         {

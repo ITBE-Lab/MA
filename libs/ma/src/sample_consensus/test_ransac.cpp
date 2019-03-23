@@ -46,7 +46,7 @@ std::pair<double, double> run_ransac( const std::vector<double> &rvxValues,
 
     if( !bSuccessfulModel )
     {
-        DEBUG( std::cerr << "ransac failed to find ingroup" << std::endl; ) // DEBUG
+        DEBUG( if(rvxValues.size( ) > 20) std::cerr << "ransac failed to find ingroup" << std::endl; ) // DEBUG
         // return that no slope could be determined
         return std::make_pair( std::nan( "" ), std::nan( "" ) );
     } // if

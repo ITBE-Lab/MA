@@ -705,7 +705,8 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
         std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
         pSeedsIn->end( ) );
 
-    // seeds need to be sorted for the following steps
+    // seeds need to be sorted for the following steps 
+    // @todo this sort should be move to the beginning of the next moduel
     std::sort( pSeeds->begin( ), pSeeds->end( ),
                []( const Seed& xA, const Seed& xB ) {
                    if( xA.start_ref( ) == xB.start_ref( ) )

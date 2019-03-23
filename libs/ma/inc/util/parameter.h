@@ -684,8 +684,7 @@ class Presetting : public ParameterSetBase
           xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 10, checkPositiveValue ),
           xPaddingReSeeding( this, "re seeding padding", "padding for re seeding", SV_PARAMETERS, 100,
                              checkPositiveValue ),
-          xNSoCs( this, "Number of SoC's for SV calling", "@todo", SV_PARAMETERS, 3,
-                             checkPositiveValue ),
+          xNSoCs( this, "Number of SoC's for SV calling", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
