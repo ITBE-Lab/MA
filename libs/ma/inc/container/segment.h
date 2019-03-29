@@ -275,7 +275,7 @@ class SegmentVector : public Container
      * @details
      * Calls fDo for all recorded hits.
      * fDo shall return false to terminate the iteration.
-     * @Note pushBackBwtInterval records an interval of hits
+     * @note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
     void forEachSeed( FMIndex& rxFMIndex, // std::shared_ptr<FMIndex> pxFMIndex,
@@ -315,7 +315,7 @@ class SegmentVector : public Container
                     ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ( ulIndexOnRefSeq + rSegment.size( ) + 1 );
                     assert( uiPosOnQuery < uiQLen );
                     assert( uiPosOnQuery + rSegment.size( ) <= uiQLen );
-                    uiPosOnQuery = uiQLen - (uiPosOnQuery + rSegment.size( ));
+                    //uiPosOnQuery = uiQLen - (uiPosOnQuery + rSegment.size( ));
                 } // if
                 assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );
                 // call the given function
@@ -332,7 +332,7 @@ class SegmentVector : public Container
      * @details
      * Calls fDo for all recorded hits.
      * fDo shall return false to terminate the iteration.
-     * @Note pushBackBwtInterval records an interval of hits
+     * @note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
     void emplaceAllEachSeeds( FMIndex& rxFMIndex, nucSeqIndex uiQLen, size_t uiMAxAmbiguity, size_t uiMinLen,
