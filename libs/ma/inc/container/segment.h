@@ -312,10 +312,16 @@ class SegmentVector : public Container
                 bool bOnForw = ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2;
                 if( !bOnForw )
                 {
-                    ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ( ulIndexOnRefSeq + rSegment.size( ) + 1 );
+                    // mirror seed on the x coordinate (mirror axis is where forward and reverse strand meet)
+                    ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ulIndexOnRefSeq - 1;
+                    // mirror seed on the y coordinate (mirror axis is the center of the query
+                    // uiPosOnQuery = uiQLen - uiPosOnQuery - 1;
+
+                    // sanity checks...
                     assert( uiPosOnQuery < uiQLen );
-                    assert( uiPosOnQuery + rSegment.size( ) <= uiQLen );
-                    //uiPosOnQuery = uiQLen - (uiPosOnQuery + rSegment.size( ));
+                    //assert( uiPosOnQuery + rSegment.size( ) <= uiQLen );
+                    assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) );
+                    //assert( ulIndexOnRefSeq + rSegment.size( ) <= rxFMIndex.getRefSeqLength( ) );
                 } // if
                 assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );
                 // call the given function

@@ -123,7 +123,8 @@ class ExtractFilledSeedSets
 
         for( size_t uiNumTries = 0; uiNumTries < uiMaxTries && !pSoCsIn->empty( ); uiNumTries++ )
         {
-            auto pAppend = xFill.execute( pSoCsIn->pop( ), pQuery, pFMIndex, pPack );
+            // @todo this is a temp fix...
+            auto pAppend = pSoCsIn->pop( ); // xFill.execute( pSoCsIn->pop( ), pQuery, pFMIndex, pPack );
 
             if( !pAppend->empty( ) )
                 pSoCs->push_back( pAppend );
