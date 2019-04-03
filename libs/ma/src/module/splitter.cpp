@@ -4,6 +4,7 @@
  */
 #include "module/splitter.h"
 #include "container/soc.h"
+#include "container/segment.h"
 
 using namespace libMA;
 
@@ -36,6 +37,10 @@ void exportSplitter( py::module& rxPyModuleId )
 
     exportModule<Collector<NucSeq, SoCPriorityQueue>>( rxPyModuleId, "NucSeqSoCCollector", []( auto&& x ) {
         x.def_readwrite( "collection", &Collector<NucSeq, SoCPriorityQueue>::vCollection );
+    } );
+
+    exportModule<Collector<NucSeq, SegmentVector>>( rxPyModuleId, "NucSeqSegmentCollector", []( auto&& x ) {
+        x.def_readwrite( "collection", &Collector<NucSeq, SegmentVector>::vCollection );
     } );
 
     exportModule<Collector<NucSeq, NucSeq, SoCPriorityQueue, SoCPriorityQueue>>(
