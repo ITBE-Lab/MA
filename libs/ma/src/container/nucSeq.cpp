@@ -42,7 +42,8 @@ void exportNucSeq( py::module& rxPyModuleId )
         .def( "quality", &NucSeq::getQuality )
 #endif
         .def( "fastaq", &NucSeq::fastaq )
-        .def_readwrite( "name", &NucSeq::sName );
+        .def_readwrite( "name", &NucSeq::sName )
+        .def_readwrite( "id", &NucSeq::iId );
 
     // register return values of vectors of nucseqs
     py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" );
