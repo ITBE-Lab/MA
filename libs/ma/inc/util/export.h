@@ -154,6 +154,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/otherSeeding.h"
 #include "module/pairedReads.h"
 #include "module/splitter.h"
+#include "module/smallInversions.h"
 #include "module/stripOfConsideration.h"
 #include "util/default_parameters.h"
 

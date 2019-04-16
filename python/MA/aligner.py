@@ -261,3 +261,15 @@ class OtherSeeding(libMA.OtherSeeding):
         for arg in args:
             vec.append(arg)
         return super(OtherSeeding, self).execute(vec)
+
+
+##
+# @brief The SmallInversions Module.
+# @ingroup module
+#
+class SmallInversions(libMA.SmallInversions):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(SmallInversions, self).execute(vec)

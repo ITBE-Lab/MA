@@ -8,7 +8,6 @@
 using namespace libMA;
 
 
-
 #ifdef WITH_PYTHON
 
 #ifdef BOOST_PYTHON
@@ -55,7 +54,8 @@ BOOST_PYTHON_MODULE( libMA )
 
 template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModuleId, std::string sName )
 {
-    py::class_<AlignerParameter<TP_VALUE>, AlignerParameterBase, std::shared_ptr<AlignerParameter<TP_VALUE>>>( rxPyModuleId, sName.c_str( ) ) //
+    py::class_<AlignerParameter<TP_VALUE>, AlignerParameterBase, std::shared_ptr<AlignerParameter<TP_VALUE>>>(
+        rxPyModuleId, sName.c_str( ) ) //
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
         .def( "get", &AlignerParameter<TP_VALUE>::get_py );
 } // function
@@ -78,8 +78,8 @@ void exportParameter( py::module& rxPyModuleId )
     // Export Presetting Class
     py::class_<Presetting>( rxPyModuleId, "Presetting" ) //
         .def( py::init<>( ) ); //
-        //.def( "__setitem__", &Presetting::byName )
-        //.def( "__getitem__", &Presetting::byName );
+    //.def( "__setitem__", &Presetting::byName )
+    //.def( "__getitem__", &Presetting::byName );
 
     // Export ParameterSetManager Class
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
@@ -88,7 +88,7 @@ void exportParameter( py::module& rxPyModuleId )
         .def( "by_name", &ParameterSetManager::byName )
         .def( "by_short", &ParameterSetManager::byShort )
         .def( "set_selected", &ParameterSetManager::setSelected );
-        //.def( "get_selected", &ParameterSetManager::getSelected_py )
+    //.def( "get_selected", &ParameterSetManager::getSelected_py )
 } // function
 
 PYBIND11_MODULE( libMA, libMaModule )
@@ -113,6 +113,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportMappingQuality( libMaModule );
     exportPairedReads( libMaModule );
     exportSplitter( libMaModule );
+    exportSmallInversions( libMaModule );
 #ifdef WITH_POSTGRES
     exportDBWriter( libMaModule );
 #endif
@@ -144,6 +145,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
     auto pHarmonization = std::make_shared<Harmonization>( rParameters );
     auto pDP = std::make_shared<NeedlemanWunsch>( rParameters );
     auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
+    auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
@@ -155,9 +157,21 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
         auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery );
         auto pAlignments = promiseMe( pDP, pHarmonized, pQuery, pPack );
         auto pAlignmentsWQuality = promiseMe( pMappingQual, pQuery, pAlignments );
-        auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
-        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
-        aRet.push_back( pUnlockResult );
+        if( rParameters.getSelected( )->xSearchInversions->get( ) )
+        {
+            auto pAlignmentsWInv = promiseMe( pSmallInversions, pAlignmentsWQuality, pQuery, pPack );
+            auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWInv, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // if
+        else
+        {
+            auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // else
     } // for
     return aRet;
 } // function
@@ -182,6 +196,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const Para
     auto pHarmonization = std::make_shared<Harmonization>( rParameters );
     auto pDP = std::make_shared<NeedlemanWunsch>( rParameters );
     auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
+    auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
     auto pPairedReads = std::make_shared<PairedReads>( rParameters );
 
     // create the graph
@@ -201,12 +216,26 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const Para
         auto pAlignmentsB = promiseMe( pDP, pHarmonizedB, pQueryB, pPack );
         auto pAlignmentsWQualityA = promiseMe( pMappingQual, pQueryA, pAlignmentsA );
         auto pAlignmentsWQualityB = promiseMe( pMappingQual, pQueryB, pAlignmentsB );
-        auto pAlignmentsWQuality =
-            promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
-        auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
-        auto pUnlockResult =
-            promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
-        aRet.push_back( pUnlockResult );
+        if( rParameters.getSelected( )->xSearchInversions->get( ) )
+        {
+            auto pAlignmentsWInvA = promiseMe( pSmallInversions, pAlignmentsWQualityA, pQueryA, pPack );
+            auto pAlignmentsWInvB = promiseMe( pSmallInversions, pAlignmentsWQualityB, pQueryB, pPack );
+            auto pAlignmentsWQuality =
+                promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWInvA, pAlignmentsWInvB, pPack );
+            auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // if
+        else
+        {
+            auto pAlignmentsWQuality =
+                promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
+            auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // else
     } // for
     return aRet;
 } // function

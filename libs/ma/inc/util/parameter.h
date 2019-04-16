@@ -468,6 +468,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xBandwidthDPExtension; // Bandwidth for extensions
     AlignerParameterPointer<int> xMinBandwidthGapFilling; // Minimal bandwidth in gaps
     AlignerParameterPointer<int> xZDrop; // Z Drop
+    AlignerParameterPointer<int> xZDropInversion; // Z Drop for inversion detection
+    AlignerParameterPointer<bool> xSearchInversions; // Search fro small inversions using DP
 
     // Paired reads options:
     AlignerParameterPointer<bool> xUsePairedReads; // Use Paired Reads
@@ -562,6 +564,12 @@ class Presetting : public ParameterSetBase
           xZDrop( this, "Z Drop",
                   "If the running score during dynamic programming drops faster than <val> stop the extension process.",
                   DP_PARAMETERS, 200, checkPositiveValue ),
+          xZDropInversion( this, "Z Drop Inversions",
+                  "If the running score during dynamic programming drops faster than <val> a inversion is detected.",
+                  DP_PARAMETERS, 100, checkPositiveValue ),
+          xSearchInversions( this, "Detect Small Inversions",
+                  "Use DP to search for small inversions that do not contain any seeds.",
+                  DP_PARAMETERS, false ),
 
           // Paired Reads:
           xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
@@ -719,6 +727,7 @@ class Presetting : public ParameterSetBase
         xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
     } // constructor
 
     /* Named copy Constructor */
