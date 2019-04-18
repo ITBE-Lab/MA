@@ -58,13 +58,16 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
           iHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
           dHarmScoreMinRel( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ){}; // default constructor
 
-    inline void forAllDropPos( std::function<void( nucSeqIndex, nucSeqIndex )> fDo,
-                               std::shared_ptr<Alignment> pAlignment )
+    inline void forAllDropPos( std::function<std::pair<nucSeqIndex, nucSeqIndex>( nucSeqIndex, nucSeqIndex )> fDo,
+                               std::shared_ptr<Alignment>
+                                   pAlignment )
     {
         nucSeqIndex uiMaxScorePosQ = pAlignment->uiBeginOnQuery;
         nucSeqIndex uiPosQ = uiMaxScorePosQ;
         nucSeqIndex uiMaxScorePosR = pAlignment->uiBeginOnRef;
         nucSeqIndex uiPosR = uiMaxScorePosR;
+        nucSeqIndex uiInvEndQ = 0;
+        nucSeqIndex uiInvEndR = 0;
         int iMaxScore = std::numeric_limits<int>::min( );
         int iCurrScore = 0;
         for( std::pair<MatchType, nucSeqIndex> section : pAlignment->data )
@@ -78,7 +81,7 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
                     uiPosR += section.second;
                     break;
                 case MatchType::missmatch:
-                    iCurrScore += iMissMatch * section.second;
+                    iCurrScore -= iMissMatch * section.second;
                     uiPosQ += section.second;
                     uiPosR += section.second;
                     break;
@@ -100,10 +103,18 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
                 uiMaxScorePosQ = uiPosQ;
                 uiMaxScorePosR = uiPosR;
             } // if
-            size_t uiDiff = std::max( uiPosQ - uiMaxScorePosQ, uiPosR - uiMaxScorePosR );
-            int iZDropCurr = iMaxScore - iCurrScore - uiDiff * iExtend;
-            if( iZDropCurr >= (int)uiZDropInversion )
-                fDo( uiPosQ, uiPosR );
+            else if( uiPosQ >= uiInvEndQ && uiPosR >= uiInvEndR )
+            {
+                size_t uiDiff = std::max( uiPosQ - uiMaxScorePosQ, uiPosR - uiMaxScorePosR );
+                int iZDropCurr = iMaxScore - iCurrScore - uiDiff * iExtend;
+                if( iZDropCurr >= (int)uiZDropInversion )
+                {
+                    std::cout << "INVERSION: " << uiPosQ << ", " << uiPosR << std::endl;
+                    auto xInvEnd = fDo( uiPosQ, uiPosR );
+                    uiInvEndQ = xInvEnd.first;
+                    uiInvEndR = xInvEnd.second;
+                } // if
+            } // else
         } // for
     } // method
 
@@ -112,10 +123,18 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
                                                              AlignedMemoryManager& rMemoryManager )
     {
         Wrapper_ksw_extz_t ez;
-        kswcpp_dispatch( pQuery->length( ) - uiQFrom, pQuery->pxSequenceRef + uiQFrom, pRef->length( ),
-                         pRef->pxSequenceRef, xKswParameters, uiBandwidth, (int)uiZDrop, KSW_EZ_EXTZ_ONLY, ez.ez,
+        kswcpp_dispatch( pQuery->length( ) - uiQFrom, pQuery->pGetSequenceRef( ) + uiQFrom, pRef->length( ),
+                         pRef->pGetSequenceRef( ), xKswParameters, -1, -1, KSW_EZ_EXTZ_ONLY | KSW_EZ_RIGHT | KSW_EZ_REV_CIGAR, ez.ez,
                          rMemoryManager );
         auto pRet = std::make_shared<Alignment>( );
+
+        std::cout << pQuery->length( ) - uiQFrom << " | " << pRef->length( ) << " | " << uiBandwidth << std::endl;
+
+        // std::cout << "Query: " << uiQFrom << " " << pQuery->toString() << std::endl;
+        // std::cout << "Ref: " << pRef->toString() << std::endl;
+        std::cout << "len: " << ez.ez->n_cigar << std::endl;
+        std::cout << "score: " << ez.ez->score << std::endl;
+        std::cout << "zdropped: " << ez.ez->zdropped << std::endl;
 
         nucSeqIndex qPos = uiQFrom;
         nucSeqIndex rPos = 0;
@@ -160,35 +179,40 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
              std::shared_ptr<Pack> pRefPack )
     {
         AlignedMemoryManager xMemoryManager;
-        // holds the additionally computed alignments
-        ContainerVector<std::shared_ptr<Alignment>> vExtra;
-        auto pRevQuery = std::make_shared<NucSeq>( );
-        pRevQuery->vAppend( pQuery->pxSequenceRef, pQuery->length( ) );
+        // the container vector of alignments that is returned.
+        auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
+        // auto pRevQuery = std::make_shared<NucSeq>( );
+        // pRevQuery->vAppend( pQuery->pxSequenceRef, pQuery->length( ) );
+        // pRevQuery->vReverse();
 
         for( std::shared_ptr<Alignment> pAlignment : *pAlignments )
+        {
+            pRet->push_back( pAlignment );
             forAllDropPos( //
-                [&]( nucSeqIndex uiPosQ, nucSeqIndex uiPosR ) //
-                {
-                    bool bRevStrand = pRefPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef );
-                    auto uiRPos = pRefPack->uiPositionToReverseStrand( uiPosR );
-                    auto pInvAlignment = tryInversionExtension( pQuery->length( ) - uiPosQ,
-                                                                bRevStrand ? pQuery : pRevQuery,
-                                                                pRefPack->vExtract( uiRPos, uiRPos + uiPosQ ),
-                                                                xMemoryManager );
+                [&]( nucSeqIndex uiPosQ, nucSeqIndex uiPosR ) -> std::pair<nucSeqIndex, nucSeqIndex> {
+                    auto uiREnd = pRefPack->uiPositionToReverseStrand( uiPosR );
+                    auto pRef = pRefPack->vExtract( uiREnd - ( pQuery->length( ) - uiPosQ ) , uiREnd );
+                    pRef->vReverse();
+                    auto pInvAlignment =
+                        tryInversionExtension( uiPosQ,
+                                               pQuery,
+                                               pRef,
+                                               xMemoryManager );
                     pInvAlignment->uiBeginOnQuery += uiPosQ;
                     pInvAlignment->uiEndOnQuery += uiPosQ;
-                    pInvAlignment->uiBeginOnRef += uiRPos;
-                    pInvAlignment->uiEndOnRef += uiRPos;
+                    auto uiRStart = pRefPack->uiPositionToReverseStrand( uiPosR + pInvAlignment->uiEndOnRef );
+                    pInvAlignment->uiBeginOnRef = uiRStart;
+                    pInvAlignment->uiEndOnRef = uiREnd;
                     pInvAlignment->bSupplementary = true;
                     pInvAlignment->xStats = pAlignment->xStats;
                     pInvAlignment->fMappingQuality = 0;
                     if( bDisableHeuristics || pInvAlignment->score( ) > iHarmScoreMin * iMatch )
-                        vExtra.push_back( pInvAlignment );
+                        pRet->push_back( pInvAlignment );
+                    return std::make_pair( pInvAlignment->uiEndOnQuery, pInvAlignment->uiBeginOnRef );
                 }, // lambda
                 pAlignment );
-        for( std::shared_ptr<Alignment> pAlignment : vExtra )
-            pAlignments->push_back( pAlignment );
-        return pAlignments;
+        } // for
+        return pRet;
     } // function
 
 }; // class
