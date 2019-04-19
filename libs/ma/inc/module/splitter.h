@@ -96,6 +96,107 @@ class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, fals
     } // method
 }; // class
 
+/**
+ * @brief Split a ContainerVector into its elements
+ * @details
+ */
+template <typename TP> class Splitter : public Module<TP, true, ContainerVector<std::shared_ptr<TP>>>
+{
+  public:
+    Splitter( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    // @override
+    virtual bool requiresLock( ) const
+    {
+        return true;
+    } // function
+
+    virtual typename std::shared_ptr<TP> EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
+    {
+        if( pIn->empty( ) )
+            // if we reach this point we have read all content vector
+            throw AnnotatedException( "Tried to extract element from empty vector" );
+        auto pBack = pIn->back( );
+        pIn->pop_back( );
+        if( pIn->empty( ) )
+            this->setFinished( );
+        return pBack;
+    } // method
+}; // class
+
+/**
+ * @brief Split a ContainerVector into its elements
+ * @details
+ */
+template <typename TP> class StaticSplitter : public Module<TP, true>
+{
+  public:
+    std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn;
+    StaticSplitter( const ParameterSetManager& rParameters, std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
+        : pIn( pIn )
+    {} // constructor
+
+    // @override
+    virtual bool requiresLock( ) const
+    {
+        return true;
+    } // function
+
+    typename std::shared_ptr<TP> execute( void )
+    {
+        if( pIn->empty( ) )
+            // if we reach this point we have read all content vector
+            throw AnnotatedException( "Tried to extract element from empty vector" );
+        auto pBack = pIn->back( );
+        pIn->pop_back( );
+        if( pIn->empty( ) )
+            this->setFinished( );
+        return pBack;
+    } // method
+}; // class
+
+/**
+ * @brief Get a specific tuple element
+ * @details
+ * the tuple element must contain shared pointers of type TP_TUPLE::value_type
+ * the tuple must implement operator[].
+ */
+template <typename... TP_VEC_CONTENT> class Collector : public Module<Container, false, TP_VEC_CONTENT...>
+{
+  public:
+    std::vector<std::tuple<std::shared_ptr<TP_VEC_CONTENT>...>> vCollection;
+    std::shared_ptr<std::mutex> pMutex;
+
+    Collector( const ParameterSetManager& rParameters ) : pMutex( new std::mutex )
+    {} // constructor
+
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    {
+        std::lock_guard<std::mutex> xGuard( *pMutex );
+        vCollection.push_back( std::make_tuple( pIn... ) );
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
+/**
+ * @brief Joins two ends of computational graphs
+ * @details
+ * always returns an empty container
+ */
+template <typename... TP_VEC_CONTENT> class Join : public Module<Container, false, TP_VEC_CONTENT...>
+{
+  public:
+    Join( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    virtual typename std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    {
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON

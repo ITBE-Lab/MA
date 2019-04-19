@@ -65,12 +65,3 @@ template <> std::string AlignerParameter<std::string>::asText( ) const
     return this->get( );
 } // method
 
-
-const EXPORTED std::pair<size_t, std::string> Presetting::DP_PARAMETERS = std::make_pair( 5, "Dynamic Programming" );
-const EXPORTED std::pair<size_t, std::string> Presetting::HEURISTIC_PARAMETERS = std::make_pair( 4, "Heuristics" );
-const EXPORTED std::pair<size_t, std::string> Presetting::SEEDING_PARAMETERS = std::make_pair( 1, "Seeding" );
-const EXPORTED std::pair<size_t, std::string> Presetting::SOC_PARAMETERS =
-    std::make_pair( 2, "Strip of Consideration" );
-const EXPORTED std::pair<size_t, std::string> Presetting::PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
-const EXPORTED std::pair<size_t, std::string> Presetting::SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
-const EXPORTED std::pair<size_t, std::string> GeneralParameter::GENERAL_PARAMETER = std::make_pair( 0, "General Parameter" );

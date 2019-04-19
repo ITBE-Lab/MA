@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <bitset>
 #include <cassert>
+#include <cstdlib> // make std::abs unambigious
 #include <iostream>
 #include <string>
 #include <vector>
@@ -330,7 +331,7 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     assert( rPos <= rCenter );
     assert( qPos <= qCenter );
     // @todo why does this assertion trigger? -- i must understand something wrong about ksw...
-    //assert( qPos == qCenter || rPos == rCenter || ez_left.ez->zdropped == 1 ); 
+    // assert( qPos == qCenter || rPos == rCenter || ez_left.ez->zdropped == 1 );
     nucSeqIndex rPosRight = toRef - ez_right.ez->max_t - 1;
     nucSeqIndex qPosRight = toQuery - ez_right.ez->max_q - 1;
     uint32_t uiAmountNotUnrolled = 0;
@@ -402,19 +403,22 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
     } // for
 
     // fill in the gap between the left and right extension
-    nucSeqIndex uiMMPenalty = std::abs( (qPosRight - qPos) - (rPosRight - rPos) )*uiMissMatch;
-    size_t uiM = std::min( (qPosRight - qPos), (rPosRight - rPos) );
-    if(uiM > 0)
+    nucSeqIndex uiMMPenalty = ( qPosRight - qPos ) >= ( rPosRight - rPos )
+                                  ? ( qPosRight - qPos ) - ( rPosRight - rPos )
+                                  : ( rPosRight - rPos ) - ( qPosRight - qPos );
+    uiMMPenalty *= uiMissMatch;
+    size_t uiM = std::min( ( qPosRight - qPos ), ( rPosRight - rPos ) );
+    if( uiM > 0 )
         uiMMPenalty += xKswParameters.q + xKswParameters.e * uiM;
     nucSeqIndex uiGapPenalty = 0;
-    if(qPosRight - qPos > 0)
+    if( qPosRight - qPos > 0 )
         uiGapPenalty += xKswParameters.q + xKswParameters.e * qPosRight - qPos;
-    if(rPosRight - rPos > 0)
+    if( rPosRight - rPos > 0 )
         uiGapPenalty += xKswParameters.q + xKswParameters.e * rPosRight - rPos;
     // check if it is worth replacing either the insertion or the deletion (used to fill the gap)
     // by a walk along the diagonal...
     if( uiMMPenalty < uiGapPenalty )
-        while(qPos < qPosRight && rPos < rPosRight)
+        while( qPos < qPosRight && rPos < rPosRight )
         {
             if( ( *pQuery )[ qPos ] == ( *pRef )[ rPos ] )
                 pAlignment->append( MatchType::match );
@@ -422,7 +426,7 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
                 pAlignment->append( MatchType::missmatch );
             qPos++;
             rPos++;
-        }// while
+        } // while
     assert( qPosRight >= qPos );
     pAlignment->append( MatchType::insertion, qPosRight - qPos );
     assert( rPosRight >= rPos );
