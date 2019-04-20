@@ -22,7 +22,7 @@ int main( void )
     for(size_t i = 0; i < 100; i++)
     {
         auto pPack = std::make_shared<Pack>( );
-        for(size_t i = 0; i <= std::rand( ) % 5; i++)
+        for(size_t i = 0; i <= ((size_t)std::rand( ) % 5); i++)
             pPack->vAppendSequence( "chr1", "chr1-desc", *randomNucSeq( (uint8_t)(std::rand( ) % 30000) + 1 ) );
         auto pFmIndex = std::make_shared<FMIndex>( pPack );
 

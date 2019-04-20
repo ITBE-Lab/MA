@@ -35,7 +35,7 @@ int main( void )
     auto vGraphSinks = setUpCompGraph(
         xParameters, pPack, pFmIndex, promiseMe( std::make_shared<StaticSplitter<NucSeq>>( xParameters, pQueryVec ) ),
         std::make_shared<Collector<NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>>( xParameters ),
-        xParameters.xGlobalParameterSet.piNumberOfThreads->get( ) );
+        xParameters.pGlobalParameterSet->piNumberOfThreads->get( ) );
 
     BasePledge::simultaneousGet( vGraphSinks );
 

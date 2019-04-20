@@ -471,6 +471,7 @@ const std::pair<size_t, std::string> SOC_PARAMETERS =
 const std::pair<size_t, std::string> PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
 const std::pair<size_t, std::string> SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
 const std::pair<size_t, std::string> GENERAL_PARAMETER = std::make_pair( 0, "General Parameter" );
+const std::pair<size_t, std::string> SV_PARAMETERS = std::make_pair( 6, "SV Parameter" );
 
 
 class Presetting : public ParameterSetBase

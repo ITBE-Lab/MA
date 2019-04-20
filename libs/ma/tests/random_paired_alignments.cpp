@@ -41,7 +41,7 @@ int main( void )
         promiseMe(
             std::make_shared<StaticSplitter<ContainerVector<std::shared_ptr<NucSeq>>>>( xParameters, pQueryVec ) ),
         std::make_shared<Collector<NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>>( xParameters ),
-        xParameters.xGlobalParameterSet.piNumberOfThreads->get( ) );
+        xParameters.pGlobalParameterSet->piNumberOfThreads->get( ) );
 
     BasePledge::simultaneousGet( vGraphSinks );
 
