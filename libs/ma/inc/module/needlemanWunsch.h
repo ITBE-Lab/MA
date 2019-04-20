@@ -6,6 +6,8 @@
 #ifndef NEEDLEMAN_WUNSCH_H
 #define NEEDLEMAN_WUNSCH_H
 
+#define OLD_KSW ( 0 )
+
 #include "container/alignment.h"
 #include "kswcpp.h"
 #include "module/module.h"
@@ -13,6 +15,33 @@
 
 namespace libMA
 {
+// small wrapper that takes care of deallocation
+class Wrapper_ksw_extz_t
+{
+  public:
+#if OLD_KSW == 1
+    ksw_extz_t* ez;
+#else
+    kswcpp_extz_t* ez;
+#endif
+
+    Wrapper_ksw_extz_t( )
+    {
+#if OLD_KSW == 1
+        ez = new ksw_extz_t{}; // {} forces zero initialization
+#else
+        ez = new kswcpp_extz_t{}; // {} forces zero initialization
+#endif
+
+    } // default constructor
+
+    ~Wrapper_ksw_extz_t( )
+    {
+        free( ez->cigar ); // malloced in c code
+        delete ez; // allocated by new in cpp code
+    } // default constructor
+}; // class
+
 /**
  * @brief implements NMW
  * @details
@@ -42,6 +71,7 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
     const KswCppParam<5> xKswParameters;
     const nucSeqIndex uiMaxGapArea;
     const nucSeqIndex uiPadding;
+    const nucSeqIndex uiMissMatch;
     const size_t uiZDrop;
     /*
      * @details
@@ -64,6 +94,7 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
                           rParameters.getSelected( )->xExtend2->get( ) ),
           uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
           uiPadding( rParameters.getSelected( )->xPadding->get( ) ),
+          uiMissMatch( rParameters.getSelected( )->xMisMatch->get( ) ),
           uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
           iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling->get( ) ),
           iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get( ) ){}; // default constructor

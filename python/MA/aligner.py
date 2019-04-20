@@ -22,6 +22,7 @@ from libMA import Seed
 from libMA import SAInterval
 from libMA import FMIndex
 from libMA import Module
+from libMA import VectorPledge
 from libMA import VolatileModule
 from libMA import configureAccurate
 from libMA import configureFast
@@ -301,11 +302,34 @@ class SoCDbWriter(libMA.SoCDbWriter):
         return super(SoCDbWriter, self).execute(vec)
 
 
+# @brief The SmallInversions Module.
+# @ingroup module
+#
+class SmallInversions(libMA.SmallInversions):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(SmallInversions, self).execute(vec)
+
+
 ##
 # @brief The NucSeqFromSql Module.
 # @ingroup module
 #
 class NucSeqFromSql(libMA.NucSeqFromSql):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(NucSeqFromSql, self).execute(vec)
+
+
+##
+# @brief The AlignmentCollector Module.
+# @ingroup module
+#
+class AlignmentCollector(libMA.AlignmentCollector):
     def execute(self, *args):
         vec = libMA.ContainerVector()
         for arg in args:
@@ -323,6 +347,18 @@ class PairedNucSeqFromSql(libMA.PairedNucSeqFromSql):
         for arg in args:
             vec.append(arg)
         return super(PairedNucSeqFromSql, self).execute(vec)
+
+
+##
+# @brief The NucSeqSplitter Module.
+# @ingroup module
+#
+class NucSeqSplitter(libMA.NucSeqSplitter):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(NucSeqSplitter, self).execute(vec)
 
 
 ##

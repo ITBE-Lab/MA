@@ -339,9 +339,9 @@ class NucSeq : public Container
             vReserveMemory( this->uiSize + 1 );
         } // if
 
-        pxSequenceRef[ uiSize + 1 ] = xElement;
+        pxSequenceRef[ uiSize ] = xElement;
 #if WITH_QUALITY
-        pxQualityRef[ uiSize + 1 ] = xQuality;
+        pxQualityRef[ uiSize ] = xQuality;
 #endif
         uiSize++;
     } // method

@@ -462,6 +462,17 @@ class ParameterSetBase
     } // method
 }; // class
 
+
+const std::pair<size_t, std::string> DP_PARAMETERS = std::make_pair( 5, "Dynamic Programming" );
+const std::pair<size_t, std::string> HEURISTIC_PARAMETERS = std::make_pair( 4, "Heuristics" );
+const std::pair<size_t, std::string> SEEDING_PARAMETERS = std::make_pair( 1, "Seeding" );
+const std::pair<size_t, std::string> SOC_PARAMETERS =
+    std::make_pair( 2, "Strip of Consideration" );
+const std::pair<size_t, std::string> PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
+const std::pair<size_t, std::string> SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
+const std::pair<size_t, std::string> GENERAL_PARAMETER = std::make_pair( 0, "General Parameter" );
+
+
 class Presetting : public ParameterSetBase
 {
   public:
@@ -477,6 +488,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xBandwidthDPExtension; // Bandwidth for extensions
     AlignerParameterPointer<int> xMinBandwidthGapFilling; // Minimal bandwidth in gaps
     AlignerParameterPointer<int> xZDrop; // Z Drop
+    AlignerParameterPointer<bool> xSearchInversions; // Search fro small inversions using DP
+    AlignerParameterPointer<int> xZDropInversion; // Z Drop for inversion detection
 
     // Paired reads options:
     AlignerParameterPointer<bool> xUsePairedReads; // Use Paired Reads
@@ -531,15 +544,6 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xGenomeSizeDisable; //
     AlignerParameterPointer<bool> xDisableHeuristics; //
 
-
-    static const EXPORTED std::pair<size_t, std::string> DP_PARAMETERS;
-    static const EXPORTED std::pair<size_t, std::string> HEURISTIC_PARAMETERS;
-    static const EXPORTED std::pair<size_t, std::string> SEEDING_PARAMETERS;
-    static const EXPORTED std::pair<size_t, std::string> SOC_PARAMETERS;
-    static const EXPORTED std::pair<size_t, std::string> PAIRED_PARAMETERS;
-    static const EXPORTED std::pair<size_t, std::string> SAM_PARAMETERS;
-    static const EXPORTED std::pair<size_t, std::string> SV_PARAMETERS;
-
     /* Delete copy constructor */
     Presetting( const Presetting& rxOtherSet ) = delete;
     Presetting( Presetting&& other ) = default; // required for getting emplace with maps working
@@ -580,6 +584,13 @@ class Presetting : public ParameterSetBase
           xZDrop( this, "Z Drop",
                   "If the running score during dynamic programming drops faster than <val> stop the extension process.",
                   DP_PARAMETERS, 200, checkPositiveValue ),
+          xSearchInversions( this, "Detect Small Inversions",
+                             "Use DP to search for small inversions that do not contain any seeds.", DP_PARAMETERS,
+                             false ),
+          xZDropInversion(
+              this, "Z Drop Inversions",
+              "Check for an inversion if the running score during dynamic programming drops faster than <val>.",
+              DP_PARAMETERS, 100, checkPositiveValue ),
 
           // Paired Reads:
           xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
@@ -692,8 +703,9 @@ class Presetting : public ParameterSetBase
                                       "a SoC with a score lower than <val>*x.",
                                       HEURISTIC_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xHarmScoreMin( this, "Minimal Harmonization Score",
-                         "Discard all harmonized SoC's with scores lower than <val>.", HEURISTIC_PARAMETERS, 18,
-                         checkPositiveValue ),
+                         "Discard all harmonized SoC's with scores lower than <val>."
+                         "Only keep detected inversions with a score >= <val> * [Match Score].",
+                         HEURISTIC_PARAMETERS, 18, checkPositiveValue ),
           xHarmScoreMinRel( this, "Relative Minimal Harmonization Score",
                             "Discard all harmonized SoC's with scores lower than length(read)*<val>.",
                             HEURISTIC_PARAMETERS, 0.002, checkPositiveDoubleValue ),
@@ -746,6 +758,7 @@ class Presetting : public ParameterSetBase
         xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
     } // constructor
 
     /* Named copy Constructor */
@@ -781,8 +794,6 @@ class GeneralParameter : public ParameterSetBase
     AlignerParameterPointer<bool> pbUseMaxHardareConcurrency; // Exploit all cores
     AlignerParameterPointer<int> piNumberOfThreads; // selected number of threads
     AlignerParameterPointer<bool> pbPrintHelpMessage; // Print the help message to stdout
-
-    static const EXPORTED std::pair<size_t, std::string> GENERAL_PARAMETER;
 
     /* Constructor */
     GeneralParameter( )

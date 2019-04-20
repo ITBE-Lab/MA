@@ -77,7 +77,7 @@ template <class TP_CONTENT> class ContainerVector : public Container
     typedef typename TP_VEC::iterator iterator;
 
 
-    ContainerVector( std::initializer_list<std::shared_ptr<TP_CONTENT>> init ) : vContent( init )
+    ContainerVector( std::initializer_list<TP_CONTENT> init ) : vContent( init )
     {} // initializer list constructor
 
     template <class InputIt> ContainerVector( InputIt xBegin, InputIt xEnd ) : vContent( xBegin, xEnd )
@@ -86,13 +86,13 @@ template <class TP_CONTENT> class ContainerVector : public Container
     ContainerVector( ) : vContent( )
     {} // container vector
 
-    ContainerVector( std::shared_ptr<TP_CONTENT> contentType ) : vContent( )
+    ContainerVector( TP_CONTENT contentType ) : vContent( )
     {} // container vector
 
     ContainerVector( const std::shared_ptr<ContainerVector<TP_CONTENT>> pOther ) : vContent( pOther->vContent )
     {} // container vector
 
-    ContainerVector( std::shared_ptr<std::vector<std::shared_ptr<TP_CONTENT>>> pContent ) : vContent( *pContent )
+    ContainerVector( std::shared_ptr<std::vector<TP_CONTENT>> pContent ) : vContent( *pContent )
     {} // container vector
 
     ContainerVector( size_t numElements ) : vContent( numElements )
@@ -101,7 +101,7 @@ template <class TP_CONTENT> class ContainerVector : public Container
     // delete copy constructor
     ContainerVector( const ContainerVector& rOther ) = delete;
 
-    std::vector<std::shared_ptr<TP_CONTENT>> get( )
+    std::vector<TP_CONTENT> get( )
     {
         return vContent;
     } // function

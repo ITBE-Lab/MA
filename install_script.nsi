@@ -39,7 +39,7 @@
 ; MUI end ------
 
 Name "${PRODUCT_NAME}"
-OutFile "C:\Users\Markus\Desktop\Project-Markus\workspace\aligner\MA Installer - Release ${PRODUCT_VERSION}.exe"
+OutFile "C:\Users\Markus\Desktop\Project-Markus\workspace\aligner\MA-Installer-Release-${PRODUCT_VERSION}.exe"
 InstallDir "$PROGRAMFILES\MA"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show

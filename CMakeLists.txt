@@ -55,6 +55,13 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	endif()
 endif()
 
+# Testing with cmake
+# https://stackoverflow.com/questions/50468620/what-does-enable-testing-do-in-cmake
+option(ENABLE_TESTS "Enable tests" ON)
+if (${ENABLE_TESTS})
+    include(CTest)
+endif()
+
 # Add additional general compile flags
 # Note: Some flags are already preset by the generator depending on the build-type
 # TODO: use set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -foo" )
@@ -67,7 +74,8 @@ if( NOT MSVC )
 endif()
 
 # Look for Python
-find_package( PythonLibs 3.5 )
+set(requested_python_version 3.5)
+find_package( PythonLibs ${requested_python_version} )
 if( PythonLibs_FOUND )
 	message( "Found Python Libs")
 endif()

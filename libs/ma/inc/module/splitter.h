@@ -126,6 +126,37 @@ template <typename TP> class Splitter : public Module<TP, true, ContainerVector<
 }; // class
 
 /**
+ * @brief Split a ContainerVector into its elements
+ * @details
+ */
+template <typename TP> class StaticSplitter : public Module<TP, true>
+{
+  public:
+    std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn;
+    StaticSplitter( const ParameterSetManager& rParameters, std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
+        : pIn( pIn )
+    {} // constructor
+
+    // @override
+    virtual bool requiresLock( ) const
+    {
+        return true;
+    } // function
+
+    typename std::shared_ptr<TP> execute( void )
+    {
+        if( pIn->empty( ) )
+            // if we reach this point we have read all content vector
+            throw AnnotatedException( "Tried to extract element from empty vector" );
+        auto pBack = pIn->back( );
+        pIn->pop_back( );
+        if( pIn->empty( ) )
+            this->setFinished( );
+        return pBack;
+    } // method
+}; // class
+
+/**
  * @brief Get a specific tuple element
  * @details
  * the tuple element must contain shared pointers of type TP_TUPLE::value_type
@@ -140,7 +171,7 @@ template <typename... TP_VEC_CONTENT> class Collector : public Module<Container,
     Collector( const ParameterSetManager& rParameters ) : pMutex( new std::mutex )
     {} // constructor
 
-    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    virtual std::shared_ptr<Container> execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
     {
         std::lock_guard<std::mutex> xGuard( *pMutex );
         vCollection.push_back( std::make_tuple( pIn... ) );

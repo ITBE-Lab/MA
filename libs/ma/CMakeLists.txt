@@ -114,3 +114,37 @@ if( PythonLibs_FOUND )
         set_target_properties( MA PROPERTIES SUFFIX ".pyd" )
     endif()
 endif()
+
+# Integration of test-code, if requested
+if(BUILD_TESTING)
+    # add tests for all cpp files in the tests folder
+    # Get all .cpp files in the test folder
+    file(GLOB MA_CPP_TEST_SRC
+        "tests/*.cpp"
+    ) # file
+    foreach(file ${MA_CPP_TEST_SRC})
+        get_filename_component(test_name ${file} NAME)
+        message( "-- libMA: generating test " ${test_name} )
+        add_executable( ${test_name} ${file} )
+        target_link_libraries( ${test_name} PUBLIC MA Threads::Threads )
+        add_test( ${test_name} ${test_name} )
+    endforeach()
+
+    # add tests for all python files in the tests folder
+    if( PythonLibs_FOUND )
+        find_package(PythonInterp ${requested_python_version})
+        if(PythonInterp_FOUND)
+            # Get all .py files in the test folder
+            file(GLOB MA_PY_TEST_SRC
+                "tests/*.py"
+            ) # file
+            foreach(file ${MA_PY_TEST_SRC})
+                get_filename_component(test_name ${file} NAME)
+                message( "-- libMA: generating test " ${test_name} )
+                add_test(NAME ${test_name} COMMAND ${PYTHON_EXECUTABLE} ${file} )
+            endforeach()
+        else()
+            message("-- libMA: WARNING failed to generate python tests because no interpreter was found")
+        endif()
+    endif()
+endif()

@@ -5,6 +5,7 @@
 #include "module/splitter.h"
 #include "container/soc.h"
 #include "container/segment.h"
+#include "container/alignment.h"
 
 using namespace libMA;
 
@@ -55,5 +56,13 @@ void exportSplitter( py::module& rxPyModuleId )
         } );
 
     exportModule<Join<Container, Container>>( rxPyModuleId, "ContainerJoin" );
+    // export the Splitter<NucSeq> class
+    exportModule<Splitter<NucSeq>>( rxPyModuleId, "NucSeqSplitter" );
+
+    exportModule<Collector<NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>>(
+        rxPyModuleId, "AlignmentCollector", []( auto&& x ) {
+            x.def_readwrite( "collection",
+                             &Collector<NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>::vCollection );
+        } );
 } // function
 #endif

@@ -116,6 +116,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportMappingQuality( libMaModule );
     exportPairedReads( libMaModule );
     exportSplitter( libMaModule );
+    exportSmallInversions( libMaModule );
 #ifdef WITH_POSTGRES
     exportDBWriter( libMaModule );
 #endif
@@ -148,6 +149,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
     auto pHarmonization = std::make_shared<Harmonization>( rParameters );
     auto pDP = std::make_shared<NeedlemanWunsch>( rParameters );
     auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
+    auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
@@ -159,9 +161,21 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
         auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery, pFMDIndex );
         auto pAlignments = promiseMe( pDP, pHarmonized, pQuery, pPack );
         auto pAlignmentsWQuality = promiseMe( pMappingQual, pQuery, pAlignments );
-        auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
-        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
-        aRet.push_back( pUnlockResult );
+        if( rParameters.getSelected( )->xSearchInversions->get( ) )
+        {
+            auto pAlignmentsWInv = promiseMe( pSmallInversions, pAlignmentsWQuality, pQuery, pPack );
+            auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWInv, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // if
+        else
+        {
+            auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // else
     } // for
     return aRet;
 } // function
@@ -186,6 +200,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const Para
     auto pHarmonization = std::make_shared<Harmonization>( rParameters );
     auto pDP = std::make_shared<NeedlemanWunsch>( rParameters );
     auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
+    auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
     auto pPairedReads = std::make_shared<PairedReads>( rParameters );
 
     // create the graph
@@ -205,12 +220,26 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const Para
         auto pAlignmentsB = promiseMe( pDP, pHarmonizedB, pQueryB, pPack );
         auto pAlignmentsWQualityA = promiseMe( pMappingQual, pQueryA, pAlignmentsA );
         auto pAlignmentsWQualityB = promiseMe( pMappingQual, pQueryB, pAlignmentsB );
-        auto pAlignmentsWQuality =
-            promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
-        auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
-        auto pUnlockResult =
-            promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
-        aRet.push_back( pUnlockResult );
+        if( rParameters.getSelected( )->xSearchInversions->get( ) )
+        {
+            auto pAlignmentsWInvA = promiseMe( pSmallInversions, pAlignmentsWQualityA, pQueryA, pPack );
+            auto pAlignmentsWInvB = promiseMe( pSmallInversions, pAlignmentsWQualityB, pQueryB, pPack );
+            auto pAlignmentsWQuality =
+                promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWInvA, pAlignmentsWInvB, pPack );
+            auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // if
+        else
+        {
+            auto pAlignmentsWQuality =
+                promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
+            auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // else
     } // for
     return aRet;
 } // function

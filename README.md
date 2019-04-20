@@ -32,7 +32,7 @@ tailored data structures required. Highly efficient. Easy to implement (roughly 
 
 ### Installer for MA on Windows 7/10 (64 bit)
 An **installer for MA on Windows 7/10 (64 bit)** is available
-[**here**](http://itbe.hanyang.ac.kr/research-articles/ma/ "MA for Windows 7/10 (64 bit)").\
+[**here**](http://itbe.hanyang.ac.kr/software/ma/ "MA for Windows 7/10 (64 bit)").\
 After installing MA, start the GUI and build an FMD-index using the menu entry 
 `Genome->Create Index` or the `F2` key.
 Then, follow the `Quickstart` description in the upper-right corner for computing alignments.

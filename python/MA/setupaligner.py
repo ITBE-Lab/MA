@@ -60,6 +60,7 @@ def quick_align(parameter_set, pack, fm_index, queries=None, output=None, paired
     module_harm = Harmonization(parameter_set)
     module_dp = NeedlemanWunsch(parameter_set)
     module_mapping_qual = MappingQuality(parameter_set)
+    modlue_inv = SmallInversions(parameter_set)
 
     res = VectorPledge()
     if not queries is None:
@@ -69,14 +70,20 @@ def quick_align(parameter_set, pack, fm_index, queries=None, output=None, paired
             seeds = promise_me(module_seeding, fm_index_pledge, locked_query)
             socs = promise_me(module_soc, seeds, locked_query,
                               pack_pledge, fm_index_pledge)
-            harm = promise_me(module_harm, socs, locked_query, fm_index_pledge)
+            harm = promise_me(module_harm, socs, locked_query)
             alignments = promise_me(module_dp, harm, locked_query, pack_pledge)
             alignments_w_map_q = promise_me(
                 module_mapping_qual, locked_query, alignments)
+
+            if parameter_set.by_name("Detect Small Inversions").get():
+                alignments_w_map_q = promise_me(
+                    modlue_inv, alignments_w_map_q, locked_query, pack_pledge)
+
             empty = promise_me(output, locked_query,
                                alignments_w_map_q, pack_pledge)
             unlock = promise_me(UnLock(parameter_set, locked_query), empty)
             res.append(unlock)
+
     if not paired_queries is None:
         assert(not paired_output is None)
         module_paired = PairedReads(parameter_set)
@@ -107,6 +114,12 @@ def quick_align(parameter_set, pack, fm_index, queries=None, output=None, paired
                 module_dp, harm_mate, locked_query_mate, pack_pledge)
             alignments_w_map_q_mate = promise_me(
                 module_mapping_qual, locked_query_mate, alignments_mate)
+
+            if parameter_set.by_name("Detect Small Inversions").get():
+                alignments_w_map_q = promise_me(
+                    modlue_inv, alignments_w_map_q, locked_query, pack_pledge)
+                alignments_w_map_q_mate = promise_me(
+                    modlue_inv, alignments_w_map_q_mate, locked_query_mate, pack_pledge)
 
             # combine & output
             combined_alignments = promise_me(
