@@ -11,7 +11,7 @@ pack = Pack()
 pack.append("chr1", "chr1-desc", random_nuc_seq(65536))
 fm_index = FMIndex(pack)
 
-query_vec = QueryVector()
+query_vec = ContainerVectorNucSeq()
 for _ in range(1000):
     query_vec.append(random_nuc_seq(1000))
 for _ in range(100):

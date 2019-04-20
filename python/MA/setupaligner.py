@@ -70,7 +70,7 @@ def quick_align(parameter_set, pack, fm_index, queries=None, output=None, paired
             seeds = promise_me(module_seeding, fm_index_pledge, locked_query)
             socs = promise_me(module_soc, seeds, locked_query,
                               pack_pledge, fm_index_pledge)
-            harm = promise_me(module_harm, socs, locked_query)
+            harm = promise_me(module_harm, socs, locked_query, fm_index_pledge)
             alignments = promise_me(module_dp, harm, locked_query, pack_pledge)
             alignments_w_map_q = promise_me(
                 module_mapping_qual, locked_query, alignments)
