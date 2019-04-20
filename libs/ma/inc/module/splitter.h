@@ -171,7 +171,7 @@ template <typename... TP_VEC_CONTENT> class Collector : public Module<Container,
     Collector( const ParameterSetManager& rParameters ) : pMutex( new std::mutex )
     {} // constructor
 
-    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    virtual std::shared_ptr<Container> execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
     {
         std::lock_guard<std::mutex> xGuard( *pMutex );
         vCollection.push_back( std::make_tuple( pIn... ) );

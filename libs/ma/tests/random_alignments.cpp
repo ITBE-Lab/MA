@@ -6,14 +6,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#ifdef __GNUG__
-// why is this necessary on GCC @todo ?
-template <typename TP> std::string AlignerParameter<TP>::asText( ) const
-{
-    throw std::runtime_error("unimplemented");
-} // method
-#endif
-
 using namespace libMA;
 
 std::shared_ptr<NucSeq> randomNucSeq( size_t uiLen )
@@ -29,12 +21,13 @@ int main( void )
 {
     auto pPack = makePledge<Pack>( );
     pPack->get( )->vAppendSequence( "chr1", "chr1-desc", *randomNucSeq( 65536 ) );
-    // fm index creation acts wierd under GCC... O.o
     auto pFmIndex = makePledge<FMIndex>( pPack->get() );
 
     auto pQueryVec = std::make_shared<ContainerVector<std::shared_ptr<NucSeq>>>( );
     for( size_t i = 0; i < 1000; i++ )
         pQueryVec->push_back( randomNucSeq( 1000 ) );
+    for( size_t i = 0; i < 100; i++ )
+        pQueryVec->push_back( randomNucSeq( 10000 ) );
 
     ParameterSetManager xParameters;
     xParameters.getSelected()->xSearchInversions->set(true);

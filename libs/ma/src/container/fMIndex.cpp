@@ -117,7 +117,9 @@ bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shar
         // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every match
         // individually
         bwtint_t ulIndexOnRefSeq = bwt_sa( ulCurrPos );
-        if( !pPack->vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )->equal( *pQuerySeq ) )
+        int64_t iDummy;
+        if( !pPack->bridgingSubsection( ulIndexOnRefSeq, ulIndexOnRefSeq + +pQuerySeq->length( ), iDummy ) &&
+            !pPack->vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )->equal( *pQuerySeq ) )
             return false;
     } // for
 
@@ -129,8 +131,10 @@ bool FMIndex::test( const std::shared_ptr<Pack> pPack, unsigned int uiNumTest )
 {
     while( uiNumTest-- > 0 )
     {
+        int64_t iDummy;
         auto uiPos = std::rand( ) % pPack->uiUnpackedSizeForwardPlusReverse( );
-        if( !testSaInterval( pPack->vExtract( uiPos, uiPos + 10 ), pPack ) )
+        if( !pPack->bridgingSubsection( uiPos, uiPos + 10, iDummy ) &&
+            !testSaInterval( pPack->vExtract( uiPos, uiPos + 10 ), pPack ) )
             return false;
     } // while
     return true;
