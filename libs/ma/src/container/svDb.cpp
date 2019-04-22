@@ -34,20 +34,12 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "insert_read", &SV_DB::ReadInserter::insertRead )
         .def( "insert_paired_read", &SV_DB::ReadInserter::insertPairedRead );
 
-    py::class_<SV_DB::SoCInserter, std::shared_ptr<SV_DB::SoCInserter>>( rxPyModuleId, "SoCInserter" )
-        .def( py::init<std::shared_ptr<SV_DB>>( ) );
 
-
-    py::class_<SV_DB::SvInserter::LineContex>( rxPyModuleId, "SvInserterLineContext" )
-        .def("insert_support", &SV_DB::SvInserter::LineContex::insertSupport);
     // export the SvInserter class
     py::class_<SV_DB::SvInserter, std::shared_ptr<SV_DB::SvInserter>>( rxPyModuleId, "SvInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
         .def( "insert_sv_line", &SV_DB::SvInserter::insertSvLine );
         //.def( "connect_sv_lines", &SV_DB::SvInserter::connectSvLines );
-
-    // export the SoCDbWriter class
-    exportModule<SoCDbWriter, std::shared_ptr<SV_DB::SoCInserter>>( rxPyModuleId, "SoCDbWriter" );
 
     // export the NucSeqFromSql classes
     exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
