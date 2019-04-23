@@ -85,7 +85,7 @@ else()
 endif()
 
 if(NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
-    message( "-- libMA: WARNING cannot inferr verison from git (maybe git.exe is not in your environment path?)" )
+    message( "-- libMA: WARNING cannot infer verison from git (maybe git.exe is not in your environment path?)" )
     set(MA_VERSION "Unknown")
 else()
     set(MA_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")

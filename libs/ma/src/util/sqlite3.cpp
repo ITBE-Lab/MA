@@ -107,7 +107,8 @@ void CppSQLiteDBExtended::vCreateTable(
     const std::vector<std::string>& xDatabaseColumns, // The names of the database columns
     const char* sTableName, // Table name
     bool bInsertColumnIdAsPrimaryKey, // If we get a true here, then we insert a column id as primary key
-    const std::vector<std::string>& vConstraints )
+    const std::vector<std::string>& vConstraints,
+    const bool bWithoutRowId )
 {
     /* We drop the table in the case that it exists already. */
     execDML( std::string( "DROP TABLE IF EXISTS " ).append( sTableName ).c_str( ) );
@@ -136,6 +137,8 @@ void CppSQLiteDBExtended::vCreateTable(
     } // for
 
     sTableCreationStatement.append( ")" );
+    if(bWithoutRowId)
+        sTableCreationStatement.append(" WITHOUT ROWID");
 
     DEBUG(std::cout << "SQL table creation statement: " << sTableCreationStatement << std::endl;)
 

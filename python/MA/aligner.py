@@ -29,7 +29,6 @@ from libMA import configureFast
 from libMA import NucSeq
 from libMA import SV_DB
 from libMA import VectorPledge
-from libMA import SoCInserter
 from libMA import ReadInserter
 from libMA import ParameterSetManager
 from libMA import ExecutionContext
@@ -288,18 +287,6 @@ class OtherSeeding(libMA.OtherSeeding):
         for arg in args:
             vec.append(arg)
         return super(OtherSeeding, self).execute(vec)
-
-
-##
-# @brief The SoCDbWriter Module.
-# @ingroup module
-#
-class SoCDbWriter(libMA.SoCDbWriter):
-    def execute(self, *args):
-        vec = libMA.ContainerVector()
-        for arg in args:
-            vec.append(arg)
-        return super(SoCDbWriter, self).execute(vec)
 
 
 # @brief The SmallInversions Module.

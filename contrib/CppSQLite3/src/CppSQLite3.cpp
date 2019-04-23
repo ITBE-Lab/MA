@@ -1290,6 +1290,11 @@ void CppSQLite3DB::setBusyTimeout( int nMillisecs )
     sqlite3_busy_timeout( mpDB, mnBusyTimeoutMs );
 }
 
+void CppSQLite3DB::set_num_threads(const int iNumThreads)
+{
+    sqlite3_limit(mpDB, SQLITE_LIMIT_WORKER_THREADS, iNumThreads);
+}
+
 
 void CppSQLite3DB::checkDB( )
 {

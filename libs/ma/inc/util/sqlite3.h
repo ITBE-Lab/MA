@@ -526,7 +526,8 @@ class CppSQLiteDBExtended : public CppSQLite3DB
     void vCreateTable( const std::vector<std::string>& xDatabaseColumns, // The names of the database columns
                        const char* sTableName, // Database same
                        bool bInsertColumnIdAsPrimaryKey = true,
-                       const std::vector<std::string>& vConstraints = {} ); // method prototype
+                       const std::vector<std::string>& vConstraints = {},
+                       const bool bWithoutRowId = false ); // method prototype
 
     /* We query a result table.
      * The parameter types correspond to the types of the columns.
@@ -1040,19 +1041,22 @@ template <typename... Types> class CppSQLiteExtBasicTable
     /* If this value is true we have an automatic primary key generation.
      */
     bool bAutomaticPrimaryKeyColumn;
+    const bool bWithoutRowId;
 
     // rxDatabaseColumns = the names and type of the database columns.
     /* Create the table within the associated database.
      * May throw an exception if the process fails.
      */
     void vCreateTableInDB( const std::vector<std::string>& rxDatabaseColumns,
-                           const std::vector<std::string>& vConstraints )
+                           const std::vector<std::string>& vConstraints,
+                           const bool bWithoutRowId )
     {
         /* Forward the creation of the table to the database object.
          * Improvement: Create a second statement, where we infer the column types in SQL from the C++ datatypes, given
          * in Types.
          */
-        rxDatabase.vCreateTable( rxDatabaseColumns, sTableName.c_str( ), bAutomaticPrimaryKeyColumn, vConstraints );
+        rxDatabase.vCreateTable(
+            rxDatabaseColumns, sTableName.c_str( ), bAutomaticPrimaryKeyColumn, vConstraints, bWithoutRowId );
     } // method
 
 
@@ -1087,8 +1091,12 @@ template <typename... Types> class CppSQLiteExtBasicTable
         const std::string& rsTableName, // name of the table in the database
         const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
         bool bAutomaticPrimaryKeyColumn, // true == we build automatically a column for the primary key
-        const std::vector<std::string>& vConstraints = {} )
-        : rxDatabase( rxDatabase ), bAutomaticPrimaryKeyColumn( bAutomaticPrimaryKeyColumn ), sTableName( rsTableName )
+        const std::vector<std::string>& vConstraints = {},
+        const bool bWithoutRowId = false )
+        : rxDatabase( rxDatabase ),
+          bAutomaticPrimaryKeyColumn( bAutomaticPrimaryKeyColumn ),
+          bWithoutRowId( bWithoutRowId ),
+          sTableName( rsTableName )
     {
         if( rxDatabase.eDatabaseOpeningMode == eCREATE_DB )
         {
@@ -1096,7 +1104,7 @@ template <typename... Types> class CppSQLiteExtBasicTable
              */
             std::vector<std::string> xTypedDatabaseColumns( rxDatabaseColumns );
             InferTypes<sizeof...( Types ), Types...>::iterate( xTypedDatabaseColumns );
-            vCreateTableInDB( xTypedDatabaseColumns, vConstraints );
+            vCreateTableInDB( xTypedDatabaseColumns, vConstraints, bWithoutRowId );
         } // if
     } // constructor
 
@@ -1109,8 +1117,8 @@ template <typename... Types> class CppSQLiteExtBasicTable
     bool empty( )
     {
         int64_t iRes = CppSQLiteExtQueryStatement<int64_t>(
-                   rxDatabase, std::string( "SELECT count(*) FROM " ).append( sTableName ).c_str( ) )
-                   .scalar( );
+                           rxDatabase, std::string( "SELECT count(*) FROM " ).append( sTableName ).c_str( ) )
+                           .scalar( );
         return iRes == 0;
     } // method
 }; // class
@@ -1345,12 +1353,14 @@ template <typename... Types> class CppSQLiteExtTable : public CppSQLiteExtBasicT
                        const std::string& rsTableName, // name of the table in the database
                        const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
                        bool bAutomaticPrimaryKeyColumn, // true == we build automatically a column for the primary key
-                       const std::vector<std::string>& vConstraints = {} )
+                       const std::vector<std::string>& vConstraints = {},
+                       const bool bWithoutRowId = false )
         : CppSQLiteExtBasicTable<Types...>( rxDatabase,
                                             rsTableName,
                                             rxDatabaseColumns,
                                             bAutomaticPrimaryKeyColumn,
-                                            vConstraints ), // call superclass constructor
+                                            vConstraints,
+                                            bWithoutRowId ), // call superclass constructor
           xTableAccessMutex( ), // initialize the mutex for synchronizing table access in a concurrent environment
           xTableRowBuffer( ), // initialize the table row buffer
           xInsertRow( rxDatabase,
@@ -1422,9 +1432,60 @@ template <typename... Types> class CppSQLiteExtTableWithAutomaticPrimaryKey : pu
 #if _MSC_VER
           /* Visual C++ 2013 crashes with the below code
            */
-          CppSQLiteExtTable( rxDatabase, rsTableName, rxDatabaseColumns, true, vConstraints )
+          CppSQLiteExtTable( rxDatabase, rsTableName, rxDatabaseColumns, true, vConstraints, false )
 #else
-          CppSQLiteExtTable<Types...>( rxDatabase, rsTableName, rxDatabaseColumns, true, vConstraints )
+          CppSQLiteExtTable<Types...>( rxDatabase, rsTableName, rxDatabaseColumns, true, vConstraints, false )
+#endif
+    {} // constructor
+}; // class
+
+/* WARNING: WITHOUT ROWID optimization is only helpfull in very few scenarios
+ * read https://www.sqlite.org/withoutrowid.html before using this tabletype
+ */
+template <typename... Types> class CppSQLiteExtTableWithoutRowId : public CppSQLiteExtTable<Types...>
+{
+  public:
+    /* The argument function is called for all rows of the table, where the column-values are delivered as actual
+     * parameter values. If the argument is of type const char *&, the allocated memory of the string is available until
+     * the end of the function.
+     */
+    void vForAllTableRowsUnpackedDo( const std::function<void( Types... )>& function )
+    {
+        /* See http://stackoverflow.com/questions/5802077/strange-gcc-error-expected-primary-expression-before-token
+         */
+        this->template vForAllTableRowsUnpackedDoCore<Types...>( function );
+    } // method
+
+    /* Dumps the content of table alignments for debugging purposes.
+     * Dumps the content to a given stream.
+     */
+    void vDump( std::ostream& rxOutputStream )
+    {
+        /* See http://stackoverflow.com/questions/5802077/strange-gcc-error-expected-primary-expression-before-token
+         */
+#if _MSC_VER
+        /* Visual C++ 2013 crashes with the below code
+         */
+        vDumpCore<Types...>( rxOutputStream );
+#else
+        this->template vDumpCore<Types...>( rxOutputStream );
+#endif
+    } // method
+
+    /* Constructor for table without rowid.
+     */
+    CppSQLiteExtTableWithoutRowId(
+        CppSQLiteDBExtended& rxDatabase, // the database where the table resides
+        const std::string& rsTableName, // name of the table in the database
+        const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
+        const std::vector<std::string>& vConstraints = {} )
+        :
+#if _MSC_VER
+          /* Visual C++ 2013 crashes with the below code
+           */
+          CppSQLiteExtTable( rxDatabase, rsTableName, rxDatabaseColumns, false, vConstraints, true )
+#else
+          CppSQLiteExtTable<Types...>( rxDatabase, rsTableName, rxDatabaseColumns, false, vConstraints, true )
 #endif
     {} // constructor
 }; // class

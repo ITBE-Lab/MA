@@ -315,6 +315,8 @@ class CppSQLite3DB
         return SQLITE_VERSION;
     }
 
+    void set_num_threads(const int uiNumThreads);
+
   private:
     CppSQLite3DB( const CppSQLite3DB& db );
 

@@ -156,7 +156,8 @@ class SV_DB : public CppSQLite3DB, public Container
 
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_caller_run_id (foreign key)
                                                      int64_t, // read_id (foreign key)
-                                                     uint32_t, // sort_pos
+                                                     uint32_t, // sort_pos_start
+                                                     uint32_t, // sort_pos_end
                                                      uint32_t, // from
                                                      uint32_t, // to
                                                      uint32_t, // query_distance
@@ -173,8 +174,8 @@ class SV_DB : public CppSQLite3DB, public Container
                   *pDatabase, // the database where the table resides
                   "sv_jump_table", // name of the table in the database
                   // column definitions of the table
-                  std::vector<std::string>{"sv_caller_run_id", "read_id", "sort_pos", "from", "to", "query_distance",
-                                           "seed_orientation"},
+                  std::vector<std::string>{"sv_caller_run_id", "read_id", "sort_pos_start", "sort_pos_end", "from",
+                                           "to", "query_distance", "seed_orientation"},
                   // constraints for table
                   std::vector<std::string>{"FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id)",
                                            "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
@@ -185,7 +186,13 @@ class SV_DB : public CppSQLite3DB, public Container
         {
             if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
             {
-                pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index ON sv_jump_table (sort_pos)" );
+                // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
+                // index intended for the sweep over the start of all sv-rectangles
+                pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_start ON sv_jump_table"
+                                    "(sv_caller_run_id, sort_pos_start, from, to, query_distance, seed_orientation)" );
+                // index intended for the seep over the end of all sv-rectangles
+                pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_end ON sv_jump_table"
+                                    "(sv_caller_run_id, sort_pos_end, from, to, query_distance, seed_orientation)" );
             } // if
         } // deconstructor
     }; // class
@@ -256,22 +263,26 @@ class SV_DB : public CppSQLite3DB, public Container
         // must be after the DB so that it is deconstructed first
         CppSQLiteExtImmediateTransactionContext xTransactionContext;
 
-        int64_t uiSvCallerRunId;
-
       public:
+        const int64_t iSvCallerRunId;
+
         class ReadContex
         {
           private:
-            int64_t iReadId;
+            const int64_t iSvCallerRunId;
+            const int64_t iReadId;
+            std::shared_ptr<SvJumpTable> pSvJumpTable;
 
           public:
-            ReadContex( int64_t iReadId )
-                : iReadId( iReadId )
+            ReadContex( std::shared_ptr<SvJumpTable> pSvJumpTable, const int64_t iSvCallerRunId, const int64_t iReadId )
+                : iSvCallerRunId( iSvCallerRunId ), iReadId( iReadId )
             {} // constructor
 
             inline void insertJump( const SvJump& rJump )
             {
-                pSvLineSupp->xInsertRow( uiSvCallerRunId, iReadId, uiPos, bOnForwardStrand );
+                pSvJumpTable->xInsertRow( iSvCallerRunId, iReadId, (uint32_t)rJump.from_start( ),
+                                          (uint32_t)rJump.from_end( ), (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo,
+                                          (uint32_t)rJump.uiQueryDistance, (uint32_t)rJump.xSeedOrientation );
             } // method
         }; // class
 
@@ -280,15 +291,15 @@ class SV_DB : public CppSQLite3DB, public Container
                         const std::string& rsSvCallerDesc )
             : pDB( pDB ),
               xTransactionContext( *pDB->pDatabase ),
-              uiSvCallerRunId( pDB->pSvCallerRunTable->xInsertRow( rsSvCallerName, rsSvCallerDesc ) )
+              iSvCallerRunId( pDB->pSvCallerRunTable->xInsertRow( rsSvCallerName, rsSvCallerDesc ) )
         {} // constructor
 
         SvJumpInserter( const SvJumpInserter& ) = delete; // delete copy constructor
 
         inline ReadContex insertRead( std::shared_ptr<NucSeq> pRead )
         {
-            assert( uiStart <= uiEnd );
-            return ReadContex( pDB->pReadTable->insertRead( uiSvCallerRunId, pRead ), pDB->pSvLineSupportTable );
+            return ReadContex( pDB->pSvJumpTable, iSvCallerRunId,
+                               pDB->pReadTable->insertRead( iSvCallerRunId, pRead ) );
         } // method
 
     }; // class

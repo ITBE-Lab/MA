@@ -25,9 +25,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SoCInserter class
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
-        .def("clear_soc_table" , &SV_DB::clearSocTable)
-        .def("clear_calls_table" , &SV_DB::clearCallsTable)
-        .def("has_socs" , &SV_DB::hasSoCs);
+        .def("clear_calls_table" , &SV_DB::clearCallsTable);
     // export the SoCInserter class
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string>( ) )
@@ -36,10 +34,10 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 
 
     // export the SvInserter class
-    py::class_<SV_DB::SvInserter, std::shared_ptr<SV_DB::SvInserter>>( rxPyModuleId, "SvInserter" )
-        .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
-        .def( "insert_sv_line", &SV_DB::SvInserter::insertSvLine );
-        //.def( "connect_sv_lines", &SV_DB::SvInserter::connectSvLines );
+    //py::class_<SV_DB::SvInserter, std::shared_ptr<SV_DB::SvInserter>>( rxPyModuleId, "SvInserter" )
+    //    .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
+    //    .def( "insert_sv_line", &SV_DB::SvInserter::insertSvLine );
+    //    //.def( "connect_sv_lines", &SV_DB::SvInserter::connectSvLines );
 
     // export the NucSeqFromSql classes
     exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
