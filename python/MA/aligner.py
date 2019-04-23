@@ -30,7 +30,6 @@ from libMA import NucSeq
 from libMA import SV_DB
 from libMA import SvJumpInserter
 from libMA import SvJump
-from libMA import SeedOrientation
 from libMA import VectorPledge
 from libMA import ReadInserter
 from libMA import ParameterSetManager

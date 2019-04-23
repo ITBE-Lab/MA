@@ -8,7 +8,7 @@ void exportSVJump( py::module& rxPyModuleId )
 {
     // export the SvJump class
     py::class_<SvJump>( rxPyModuleId, "SvJump" )
-        .def( py::init<const Seed&, const Seed&>( ) )
+        .def( py::init<const Seed&, const Seed&, const bool>( ) )
         .def( "does_switch_strand", &SvJump::does_switch_strand )
         .def( "from_start", &SvJump::from_start )
         .def( "from_size", &SvJump::from_size )
@@ -17,15 +17,12 @@ void exportSVJump( py::module& rxPyModuleId )
         .def( "to_size", &SvJump::to_size )
         .def( "to_end", &SvJump::to_end )
         .def( "score", &SvJump::score )
-        .def_readonly( "query_distance", &SvJump::uiQueryDistance )
-        .def_readonly( "seed_orientation", &SvJump::xSeedOrientation )
+        .def( "query_distance", &SvJump::query_distance )
+        .def_readonly( "from_forward", &SvJump::bFromForward )
+        .def_readonly( "to_froward", &SvJump::bToForward )
+        .def_readonly( "from_seed_start", &SvJump::bFromSeedStart )
         .def_readonly( "from", &SvJump::uiFrom )
         .def_readonly( "to", &SvJump::uiTo );
 
-    py::enum_<SvJump::SeedOrientation>(rxPyModuleId, "SeedOrientation")
-        .value("forward_to_forward", SvJump::SeedOrientation::forwardToForward)
-        .value("reverse_to_reverse", SvJump::SeedOrientation::reverseToReverse)
-        .value("forward_to_reverse", SvJump::SeedOrientation::forwardToReverse)
-        .value("reverse_to_forward", SvJump::SeedOrientation::reverseToForward);
 } // function
 #endif

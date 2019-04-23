@@ -160,8 +160,11 @@ class SV_DB : public CppSQLite3DB, public Container
                                                      uint32_t, // sort_pos_end
                                                      uint32_t, // from
                                                      uint32_t, // to
-                                                     uint32_t, // query_distance
-                                                     uint32_t // seed_orientation
+                                                     uint32_t, // query_from
+                                                     uint32_t, // query_to
+                                                     bool, // from_forward @todo save space by compressing booleans?
+                                                     bool, // to_forward
+                                                     bool // from_seed_start
                                                      >
         TP_SV_JUMP_TABLE;
     class SvJumpTable : public TP_SV_JUMP_TABLE
@@ -175,7 +178,8 @@ class SV_DB : public CppSQLite3DB, public Container
                   "sv_jump_table", // name of the table in the database
                   // column definitions of the table
                   std::vector<std::string>{"sv_caller_run_id", "read_id", "sort_pos_start", "sort_pos_end", "from",
-                                           "to", "query_distance", "seed_orientation"},
+                                           "to", "query_from", "query_to", "from_forward", "to_forward",
+                                           "from_seed_start"},
                   // constraints for table
                   std::vector<std::string>{"FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id)",
                                            "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
@@ -189,10 +193,12 @@ class SV_DB : public CppSQLite3DB, public Container
                 // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
                 // index intended for the sweep over the start of all sv-rectangles
                 pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_start ON sv_jump_table"
-                                    "(sv_caller_run_id, sort_pos_start, from, to, query_distance, seed_orientation)" );
+                                    "(sv_caller_run_id, sort_pos_start, from, to, query_from, query_to, from_forward,"
+                                    " to_forward, from_seed_start)" );
                 // index intended for the seep over the end of all sv-rectangles
                 pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_end ON sv_jump_table"
-                                    "(sv_caller_run_id, sort_pos_end, from, to, query_distance, seed_orientation)" );
+                                    "(sv_caller_run_id, sort_pos_end, from, to, query_from, query_to, from_forward,"
+                                    " to_forward, from_seed_start)" );
             } // if
         } // deconstructor
     }; // class
@@ -283,7 +289,8 @@ class SV_DB : public CppSQLite3DB, public Container
             {
                 pSvJumpTable->xInsertRow( iSvCallerRunId, iReadId, (uint32_t)rJump.from_start( ),
                                           (uint32_t)rJump.from_end( ), (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo,
-                                          (uint32_t)rJump.uiQueryDistance, (uint32_t)rJump.xSeedOrientation );
+                                          (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo, rJump.bFromForward,
+                                          rJump.bToForward, rJump.bFromSeedStart );
             } // method
         }; // class
 
@@ -316,21 +323,21 @@ class SV_DB : public CppSQLite3DB, public Container
 class SortedSvJumpFromSql
 {
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t> xQueryStart;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t> xQueryEnd;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t>::Iterator xTableIteratorStart;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t>::Iterator xTableIteratorEnd;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool> xQueryStart;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool> xQueryEnd;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool>::Iterator xTableIteratorStart;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool>::Iterator xTableIteratorEnd;
 
   public:
     SortedSvJumpFromSql( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId )
         : pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
-                       "SELECT from, to, query_distance, seed_orientation "
+                       "SELECT from, to, query_from, query_to, from_forward, to_forward, from_seed_start "
                        "FROM sv_jump_table "
                        "WHERE sv_caller_run_id == ? "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
-                     "SELECT from, to, query_distance, seed_orientation "
+                     "SELECT from, to, query_from, query_to, from_forward, to_forward, from_seed_start "
                      "FROM sv_jump_table "
                      "WHERE sv_caller_run_id == ? "
                      "ORDER BY sort_pos_end" ),
@@ -354,8 +361,8 @@ class SortedSvJumpFromSql
 
         auto xTup = xTableIteratorStart.get( );
         xTableIteratorStart.next( );
-        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
-                       (SvJump::SeedOrientation)std::get<3>( xTup ) );
+        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                       std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ) );
     } // method
 
     SvJump getNextEnd( )
@@ -364,8 +371,8 @@ class SortedSvJumpFromSql
 
         auto xTup = xTableIteratorEnd.get( );
         xTableIteratorEnd.next( );
-        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
-                       (SvJump::SeedOrientation)std::get<3>( xTup ) );
+        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                       std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ) );
     } // method
 
 }; // class
