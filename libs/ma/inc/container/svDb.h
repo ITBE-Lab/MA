@@ -209,6 +209,7 @@ class SV_DB : public CppSQLite3DB, public Container
     friend class AllNucSeqFromSql;
     friend class PairedNucSeqFromSql;
     friend class PairedReadTable;
+    friend class SortedSvJumpFromSql;
 
   public:
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
@@ -308,6 +309,63 @@ class SV_DB : public CppSQLite3DB, public Container
     {
         pSvJumpTable->clearTable( );
         pSvCallerRunTable->clearTable( );
+    } // method
+
+}; // class
+
+class SortedSvJumpFromSql
+{
+    std::shared_ptr<SV_DB> pDb;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t> xQueryStart;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t> xQueryEnd;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t>::Iterator xTableIteratorStart;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t>::Iterator xTableIteratorEnd;
+
+  public:
+    SortedSvJumpFromSql( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId )
+        : pDb( pDb ),
+          xQueryStart( *pDb->pDatabase,
+                       "SELECT from, to, query_distance, seed_orientation "
+                       "FROM sv_jump_table "
+                       "WHERE sv_caller_run_id == ? "
+                       "ORDER BY sort_pos_start" ),
+          xQueryEnd( *pDb->pDatabase,
+                     "SELECT from, to, query_distance, seed_orientation "
+                     "FROM sv_jump_table "
+                     "WHERE sv_caller_run_id == ? "
+                     "ORDER BY sort_pos_end" ),
+          xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId ) ),
+          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId ) )
+    {} // constructor
+
+    bool hasNextStart( )
+    {
+        return !xTableIteratorStart.eof( );
+    } // method
+
+    bool hasNextEnd( )
+    {
+        return !xTableIteratorEnd.eof( );
+    } // method
+
+    SvJump getNextStart( )
+    {
+        assert( hasNextStart( ) );
+
+        auto xTup = xTableIteratorStart.get( );
+        xTableIteratorStart.next( );
+        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
+                       (SvJump::SeedOrientation)std::get<3>( xTup ) );
+    } // method
+
+    SvJump getNextEnd( )
+    {
+        assert( hasNextEnd( ) );
+
+        auto xTup = xTableIteratorEnd.get( );
+        xTableIteratorEnd.next( );
+        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
+                       (SvJump::SeedOrientation)std::get<3>( xTup ) );
     } // method
 
 }; // class

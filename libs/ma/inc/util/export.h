@@ -160,6 +160,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/stripOfConsideration.h"
 #include "util/default_parameters.h"
 #include "container/svDb.h"
+#include "container/svJump.h"
 
 namespace libMA
 {

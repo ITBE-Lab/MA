@@ -22,22 +22,26 @@ SV_DB::PairedReadTable::PairedReadTable(
 void exportSoCDbWriter( py::module& rxPyModuleId )
 {
 
-    // export the SoCInserter class
+    // export the SV_DB class
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
         .def("clear_calls_table" , &SV_DB::clearCallsTable);
-    // export the SoCInserter class
+
+    // export the ReadInserter class
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string>( ) )
         .def( "insert_read", &SV_DB::ReadInserter::insertRead )
         .def( "insert_paired_read", &SV_DB::ReadInserter::insertPairedRead );
 
+    // export the ReadContex class
+    py::class_<SV_DB::SvJumpInserter::ReadContex>( rxPyModuleId, "ReadContex" )
+        .def( "insertJump", &SV_DB::SvJumpInserter::ReadContex::insertJump );
 
-    // export the SvInserter class
-    //py::class_<SV_DB::SvInserter, std::shared_ptr<SV_DB::SvInserter>>( rxPyModuleId, "SvInserter" )
-    //    .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
-    //    .def( "insert_sv_line", &SV_DB::SvInserter::insertSvLine );
-    //    //.def( "connect_sv_lines", &SV_DB::SvInserter::connectSvLines );
+    // export the SvJumpInserter class
+    py::class_<SV_DB::SvJumpInserter, std::shared_ptr<SV_DB::SvJumpInserter>>( rxPyModuleId, "SvJumpInserter" )
+        .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
+        .def( "insertRead", &SV_DB::SvJumpInserter::insertRead )
+        .def_readonly( "sv_caller_run_id", &SV_DB::SvJumpInserter::iSvCallerRunId );
 
     // export the NucSeqFromSql classes
     exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );

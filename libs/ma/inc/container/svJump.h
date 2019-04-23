@@ -5,7 +5,7 @@
 namespace libMA
 {
 
-class SvJump
+class SvJump: public Container
 {
   public:
     enum SeedOrientation
@@ -34,14 +34,21 @@ class SvJump
                           : ( !rA.bOnForwStrand && rB.bOnForwStrand ? reverseToForward : reverseToReverse ) ) )
     {} // constructor
 
+    SvJump( const nucSeqIndex uiFrom,
+            const nucSeqIndex uiTo,
+            const nucSeqIndex uiQueryDistance,
+            const SeedOrientation xSeedOrientation )
+        : uiFrom( uiFrom ), uiTo( uiTo ), uiQueryDistance( uiQueryDistance ), xSeedOrientation( xSeedOrientation )
+    {} // constructor
+
     bool does_switch_strand( ) const
     {
-        return false;
+        return xSeedOrientation == forwardToReverse || xSeedOrientation == reverseToForward;
     } // method
 
     nucSeqIndex from_start( ) const
     {
-        return 0;
+        return uiFrom - 3;
     } // method
 
     nucSeqIndex from_size( ) const
@@ -76,3 +83,7 @@ class SvJump
 }; // class
 
 }; // namespace libMA
+
+#ifdef WITH_PYTHON
+void exportSVJump( py::module& rxPyModuleId );
+#endif

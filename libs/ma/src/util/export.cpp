@@ -120,6 +120,7 @@ PYBIND11_MODULE( libMA, libMaModule )
 #ifdef WITH_POSTGRES
     exportDBWriter( libMaModule );
 #endif
+    exportSVJump( libMaModule );
     exportSoCDbWriter( libMaModule );
     exportSoC( libMaModule );
     exportOtherSeeding( libMaModule );
