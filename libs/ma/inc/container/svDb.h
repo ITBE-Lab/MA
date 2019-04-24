@@ -278,13 +278,13 @@ class SV_DB : public CppSQLite3DB, public Container
         class ReadContex
         {
           private:
+            std::shared_ptr<SvJumpTable> pSvJumpTable;
             const int64_t iSvCallerRunId;
             const int64_t iReadId;
-            std::shared_ptr<SvJumpTable> pSvJumpTable;
 
           public:
             ReadContex( std::shared_ptr<SvJumpTable> pSvJumpTable, const int64_t iSvCallerRunId, const int64_t iReadId )
-                : iSvCallerRunId( iSvCallerRunId ), iReadId( iReadId )
+                : pSvJumpTable(pSvJumpTable), iSvCallerRunId( iSvCallerRunId ), iReadId( iReadId )
             {} // constructor
 
             inline void insertJump( const SvJump& rJump )
@@ -507,6 +507,35 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
         if( xTableIterator.eof( ) )
             setFinished( );
         return pRet;
+    } // method
+
+    // override
+    bool requiresLock( ) const
+    {
+        return true;
+    } // method
+}; // class
+
+class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
+{
+    std::shared_ptr<SV_DB> pDb;
+    SV_DB::SvJumpInserter xInserter;
+    std::mutex xMutex;
+
+  public:
+    SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sRunDesc )
+        : pDb( pDb ), xInserter( pDb, "MA-SV", sRunDesc )
+    {} // constructor
+
+    std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
+    {
+        std::lock_guard<std::mutex> xGuard( xMutex );
+
+        SV_DB::SvJumpInserter::ReadContex xReadContext = xInserter.insertRead( pRead );
+        for( SvJump& rJump : *pJumps )
+            xReadContext.insertJump( rJump );
+        return std::make_shared<Container>( );
+        // end of score for xGuard
     } // method
 
     // override

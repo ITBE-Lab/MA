@@ -126,6 +126,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportOtherSeeding( libMaModule );
     exportExecutionContext( libMaModule );
     exportHashMapSeeding( libMaModule );
+    exportSvJumpsFromSeeds( libMaModule );
     defaults::exportDefaults( libMaModule );
 } // function
 

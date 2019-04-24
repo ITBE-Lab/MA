@@ -363,6 +363,30 @@ class FillSeedSet(libMA.FillSeedSet):
 
 
 ##
+# @brief The SvDbInserter Module.
+# @ingroup module
+#
+class SvDbInserter(libMA.SvDbInserter):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(SvDbInserter, self).execute(vec)
+
+
+##
+# @brief The SvJumpsFromSeeds Module.
+# @ingroup module
+#
+class SvJumpsFromSeeds(libMA.SvJumpsFromSeeds):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(SvJumpsFromSeeds, self).execute(vec)
+
+
+##
 # @brief convert bytes to a NucSeq
 # @details
 # Usefull for converting reads stored as blob data in sqlite3 to NucSeq objects.

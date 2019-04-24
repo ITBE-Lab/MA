@@ -107,3 +107,10 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
 
     return pRet;
 } // method
+
+#ifdef WITH_PYTHON
+void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
+{
+    exportModule<SvJumpsFromSeeds>( rxPyModuleId, "SvJumpsFromSeeds" );
+} // function
+#endif
