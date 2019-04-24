@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project("MA Lib" VERSION 1.1.0 DESCRIPTION "Core library of MA")
+project("MA Lib" VERSION 1.1.1 DESCRIPTION "Core library of MA")
 
 # Look for boost
 # Info: https://feralchicken.wordpress.com/2013/12/07/boost-python-hello-world-example-using-cmake/
@@ -83,7 +83,7 @@ else()
 endif()
 
 if(NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
-    message( "-- libMA: WARNING cannot inferr verison from git (maybe git.exe is not in your environment path?)" )
+    message( "-- libMA: WARNING cannot infer verison from git (maybe git.exe is not in your environment path?)" )
     set(MA_VERSION "Unknown")
 else()
     set(MA_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")

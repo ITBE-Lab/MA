@@ -679,7 +679,7 @@ class Presetting : public ParameterSetBase
                                       "a SoC with a score lower than <val>*x.",
                                       HEURISTIC_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xHarmScoreMin( this, "Minimal Harmonization Score",
-                         "Discard all harmonized SoC's with scores lower than <val>."
+                         "Discard all harmonized SoC's with scores lower than <val>. "
                          "Only keep detected inversions with a score >= <val> * [Match Score].",
                          HEURISTIC_PARAMETERS, 18, checkPositiveValue ),
           xHarmScoreMinRel( this, "Relative Minimal Harmonization Score",

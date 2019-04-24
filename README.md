@@ -104,6 +104,18 @@ On Debian/Ubuntu, wxWidgets can be installed via `apt-get install libwxgtk3.0-gt
 On Windows wxWidgets must be downloaded from the [wxWidgets homepage](https://www.wxwidgets.org/ "wxWidgets Homepage").
 
 
+## Changelog:
+
+Version 1.1.1:
+
+* MA can now recognize short inversions too. A z-drop based heuristic is used as algorithmic 
+approach for inversion recognition. 
+Regions between seeds showing a z-drop are reverse complemented and realigned using DP. 
+If the DP-score is sufficiently high, the region is accepted as inversion and a supplementary alignment 
+is provided using the computed DP-path. Similar approaches are used by other aligners too.
+* Minor bug fixes.
+
+
 ## MA Options
 
 ```
@@ -144,7 +156,7 @@ General options: (these options are not affected by presettings)
                                                    Name of the SAM file alignments shall be written
                                                    to.
 
-    -t, --Number_of_Threads <int> [4]              Number of threads used in the context of
+    -t, --Number_of_Threads <int> [32]             Number of threads used in the context of
                                                    alignments. This options is only available, if 'use
                                                    all processor cores' is off.
 
@@ -267,7 +279,8 @@ Heuristics options:
                                                    lower than <val>*x.
 
     --Minimal_Harmonization_Score <int> [18]       Discard all harmonized SoC's with scores lower than
-                                                   <val>.
+                                                   <val>. Only keep detected inversions with a score >=
+                                                   <val> * [Match Score].
 
     --Relative_Minimal_Harmonization_Score <double> [0.002]
                                                    Discard all harmonized SoC's with scores lower than
@@ -367,6 +380,13 @@ Dynamic Programming options:
 
     --Z_Drop <int> [200]                           If the running score during dynamic programming
                                                    drops faster than <val> stop the extension process.
+
+    --Detect_Small_Inversions <bool> [false]       Use DP to search for small inversions that do not
+                                                   contain any seeds.
+
+    --Z_Drop_Inversions <int> [100]                Check for an inversion if the running score during
+                                                   dynamic programming drops faster than <val>.
+
 ```
 
 ## Thanks ...
