@@ -199,6 +199,16 @@ class SegmentVector : public Container
         return vContent.end( );
     } // method
 
+    inline TP_VEC::reverse_iterator rbegin( void ) noexcept
+    {
+        return vContent.rbegin( );
+    } // method
+
+    inline TP_VEC::reverse_iterator rend( void ) noexcept
+    {
+        return vContent.rend( );
+    } // method
+
     inline TP_VEC::const_iterator begin( void ) const noexcept
     {
         return vContent.begin( );
@@ -318,7 +328,7 @@ class SegmentVector : public Container
                     // uiPosOnQuery = uiQLen - uiPosOnQuery - 1;
 
                     // sanity checks...
-                    assert( uiPosOnQuery < uiQLen );
+                    //assert( uiPosOnQuery < uiQLen );
                     //assert( uiPosOnQuery + rSegment.size( ) <= uiQLen );
                     assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) );
                     //assert( ulIndexOnRefSeq + rSegment.size( ) <= rxFMIndex.getRefSeqLength( ) );
@@ -341,7 +351,8 @@ class SegmentVector : public Container
      * @note pushBackBwtInterval records an interval of hits
      */
     template <class FUNCTOR>
-    void emplaceAllEachSeeds( FMIndex& rxFMIndex, nucSeqIndex uiQLen, size_t uiMAxAmbiguity, size_t uiMinLen,
+    void emplaceAllEachSeeds( FMIndex& rxFMIndex, nucSeqIndex uiQLen, // <- uiQLen is unused for now
+                              size_t uiMAxAmbiguity, size_t uiMinLen,
                               Seeds& rvSeedVector,
                               FUNCTOR&& fDo // this function is called after each seed is emplaced
     )

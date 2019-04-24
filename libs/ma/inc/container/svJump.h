@@ -15,6 +15,15 @@ class SvJump : public Container
     static const nucSeqIndex uiSeedDirFuzziness = 3;
 
   public:
+    static bool validJump(const Seed& rA, const Seed& rB, const bool bFromSeedStart)
+    {
+        if(bFromSeedStart != !rB.bOnForwStrand) // cases (0,2) (0,3) (3,0) (3,1)
+            return true;
+        if(!rA.bOnForwStrand != bFromSeedStart && rB.bOnForwStrand) // cases (1,2) (2,1)
+            return true;
+        return false; 
+    } // method
+
     const nucSeqIndex uiFrom; // inclusive
     const nucSeqIndex uiTo; // inclusive
     const nucSeqIndex uiQueryFrom; // inclusive

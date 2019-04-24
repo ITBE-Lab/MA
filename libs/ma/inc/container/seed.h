@@ -411,6 +411,16 @@ class Seeds : public Container
         return vContent.end( );
     } // method
 
+    inline TP_VEC::reverse_iterator rbegin( void ) noexcept
+    {
+        return vContent.rbegin( );
+    } // method
+
+    inline TP_VEC::reverse_iterator rend( void ) noexcept
+    {
+        return vContent.rend( );
+    } // method
+
     inline TP_VEC::const_iterator begin( void ) const noexcept
     {
         return vContent.begin( );
