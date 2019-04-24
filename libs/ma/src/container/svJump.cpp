@@ -17,12 +17,14 @@ void exportSVJump( py::module& rxPyModuleId )
         .def( "to_size", &SvJump::to_size )
         .def( "to_end", &SvJump::to_end )
         .def( "score", &SvJump::score )
+        .def( "from_fuzziness_is_rightwards", &SvJump::from_fuzziness_is_rightwards )
+        .def( "to_fuzziness_is_downwards", &SvJump::to_fuzziness_is_downwards )
         .def( "query_distance", &SvJump::query_distance )
         .def_readonly( "from_forward", &SvJump::bFromForward )
         .def_readonly( "to_froward", &SvJump::bToForward )
         .def_readonly( "from_seed_start", &SvJump::bFromSeedStart )
-        .def_readonly( "from", &SvJump::uiFrom )
-        .def_readonly( "to", &SvJump::uiTo );
+        .def_readonly( "from_pos", &SvJump::uiFrom )
+        .def_readonly( "to_pos", &SvJump::uiTo );
 
 } // function
 #endif

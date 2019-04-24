@@ -35,12 +35,13 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 
     // export the ReadContex class
     py::class_<SV_DB::SvJumpInserter::ReadContex>( rxPyModuleId, "ReadContex" )
-        .def( "insertJump", &SV_DB::SvJumpInserter::ReadContex::insertJump );
+        .def( "insert_jump", &SV_DB::SvJumpInserter::ReadContex::insertJump );
 
     // export the SvJumpInserter class
     py::class_<SV_DB::SvJumpInserter, std::shared_ptr<SV_DB::SvJumpInserter>>( rxPyModuleId, "SvJumpInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
-        .def( "insertRead", &SV_DB::SvJumpInserter::insertRead )
+        .def( "insert_read", &SV_DB::SvJumpInserter::insertRead )
+        .def( "read_context", &SV_DB::SvJumpInserter::readContext )
         .def_readonly( "sv_caller_run_id", &SV_DB::SvJumpInserter::iSvCallerRunId );
 
     // export the NucSeqFromSql classes

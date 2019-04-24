@@ -158,8 +158,8 @@ class SV_DB : public CppSQLite3DB, public Container
                                                      int64_t, // read_id (foreign key)
                                                      uint32_t, // sort_pos_start
                                                      uint32_t, // sort_pos_end
-                                                     uint32_t, // from
-                                                     uint32_t, // to
+                                                     uint32_t, // from_pos
+                                                     uint32_t, // to_pos
                                                      uint32_t, // query_from
                                                      uint32_t, // query_to
                                                      bool, // from_forward @todo save space by compressing booleans?
@@ -177,8 +177,8 @@ class SV_DB : public CppSQLite3DB, public Container
                   *pDatabase, // the database where the table resides
                   "sv_jump_table", // name of the table in the database
                   // column definitions of the table
-                  std::vector<std::string>{"sv_caller_run_id", "read_id", "sort_pos_start", "sort_pos_end", "from",
-                                           "to", "query_from", "query_to", "from_forward", "to_forward",
+                  std::vector<std::string>{"sv_caller_run_id", "read_id", "sort_pos_start", "sort_pos_end", "from_pos",
+                                           "to_pos", "query_from", "query_to", "from_forward", "to_forward",
                                            "from_seed_start"},
                   // constraints for table
                   std::vector<std::string>{"FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id)",
@@ -192,13 +192,15 @@ class SV_DB : public CppSQLite3DB, public Container
             {
                 // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
                 // index intended for the sweep over the start of all sv-rectangles
-                pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_start ON sv_jump_table"
-                                    "(sv_caller_run_id, sort_pos_start, from, to, query_from, query_to, from_forward,"
-                                    " to_forward, from_seed_start)" );
-                // index intended for the seep over the end of all sv-rectangles
-                pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_end ON sv_jump_table"
-                                    "(sv_caller_run_id, sort_pos_end, from, to, query_from, query_to, from_forward,"
-                                    " to_forward, from_seed_start)" );
+                pDatabase->execDML(
+                    "CREATE INDEX sv_jump_table_sort_index_start ON sv_jump_table"
+                    "(sv_caller_run_id, sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
+                    " to_forward, from_seed_start)" );
+                // index intended for the sweep over the end of all sv-rectangles
+                pDatabase->execDML(
+                    "CREATE INDEX sv_jump_table_sort_index_end ON sv_jump_table"
+                    "(sv_caller_run_id, sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
+                    " to_forward, from_seed_start)" );
             } // if
         } // deconstructor
     }; // class
@@ -310,6 +312,11 @@ class SV_DB : public CppSQLite3DB, public Container
                                pDB->pReadTable->insertRead( iSvCallerRunId, pRead ) );
         } // method
 
+        inline ReadContex readContext( int64_t iReadId )
+        {
+            return ReadContex( pDB->pSvJumpTable, iSvCallerRunId, iReadId );
+        } // method
+
     }; // class
 
     inline void clearCallsTable( )
@@ -332,12 +339,12 @@ class SortedSvJumpFromSql
     SortedSvJumpFromSql( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId )
         : pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
-                       "SELECT from, to, query_from, query_to, from_forward, to_forward, from_seed_start "
+                       "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start "
                        "FROM sv_jump_table "
                        "WHERE sv_caller_run_id == ? "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
-                     "SELECT from, to, query_from, query_to, from_forward, to_forward, from_seed_start "
+                     "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start "
                      "FROM sv_jump_table "
                      "WHERE sv_caller_run_id == ? "
                      "ORDER BY sort_pos_end" ),
