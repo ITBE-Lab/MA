@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project("MA Lib" VERSION 1.1.0 DESCRIPTION "Core library of MA")
+project("MA Lib" VERSION 1.1.1 DESCRIPTION "Core library of MA")
 
 # Look for boost
 # Info: https://feralchicken.wordpress.com/2013/12/07/boost-python-hello-world-example-using-cmake/
