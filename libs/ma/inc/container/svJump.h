@@ -15,13 +15,13 @@ class SvJump : public Container
     static const nucSeqIndex uiSeedDirFuzziness = 3;
 
   public:
-    static bool validJump(const Seed& rA, const Seed& rB, const bool bFromSeedStart)
+    static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
     {
-        if(bFromSeedStart != !rB.bOnForwStrand) // cases (0,2) (0,3) (3,0) (3,1)
+        if( bFromSeedStart != !rB.bOnForwStrand ) // cases (0,2) (0,3) (3,0) (3,1)
             return true;
-        if(!rA.bOnForwStrand != bFromSeedStart && rB.bOnForwStrand) // cases (1,2) (2,1)
+        if( !rA.bOnForwStrand != bFromSeedStart && rB.bOnForwStrand ) // cases (1,2) (2,1)
             return true;
-        return false; 
+        return false;
     } // method
 
     const nucSeqIndex uiFrom; // inclusive
@@ -101,12 +101,17 @@ class SvJump : public Container
         return bToForward != bFromSeedStart;
     } // method
 
+    int64_t from_start_same_strand( ) const
+    {
+        if( from_fuzziness_is_rightwards( ) )
+            return ( (int64_t)uiFrom ) - ( (int64_t)uiSeedDirFuzziness );
+        return ( (int64_t)uiFrom ) - ( (int64_t)fuzziness( ) );
+    } // method
+
     int64_t from_start( ) const
     {
-        int64_t iAdd = does_switch_strand( ) ? std::numeric_limits<int64_t>::max( ) / (int64_t)2 : 0;
-        if( from_fuzziness_is_rightwards( ) )
-            return ((int64_t)uiFrom) - ((int64_t)uiSeedDirFuzziness) + iAdd;
-        return ((int64_t)uiFrom) - ((int64_t)fuzziness( )) + iAdd;
+        return from_start_same_strand( ) +
+               ( does_switch_strand( ) ? std::numeric_limits<int64_t>::max( ) / (int64_t)2 : 0 );
     } // method
 
     nucSeqIndex from_size( ) const

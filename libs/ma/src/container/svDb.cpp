@@ -26,6 +26,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
         .def( "clear_calls_table", &SV_DB::clearCallsTable )
+        .def( "set_num_threads", &SV_DB::setNumThreads )
+        .def( "create_indices", &SV_DB::createIndices )
         .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class

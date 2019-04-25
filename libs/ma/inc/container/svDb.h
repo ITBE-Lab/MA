@@ -15,7 +15,7 @@
 namespace libMA
 {
 
-class SV_DB : public CppSQLite3DB, public Container
+class SV_DB : public Container
 {
   private:
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string // sequencer name
@@ -36,11 +36,10 @@ class SV_DB : public CppSQLite3DB, public Container
               pDatabase( pDatabase )
         {} // default constructor
 
-        ~SequencerTable( )
+        inline void createIndices( )
         {
-            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-                pDatabase->execDML( "CREATE INDEX sequencer_id_index ON sequencer_table (id)" );
-        } // deconstructor
+            pDatabase->execDML( "CREATE INDEX sequencer_id_index ON sequencer_table (id)" );
+        } // method
 
         inline int64_t insertSequencer( std::string& sSequencerName )
         {
@@ -73,11 +72,10 @@ class SV_DB : public CppSQLite3DB, public Container
               xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" )
         {} // default constructor
 
-        ~ReadTable( )
+        inline void createIndices( )
         {
-            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-                pDatabase->execDML( "CREATE INDEX read_id_index ON read_table (id)" );
-        } // deconstructor
+            pDatabase->execDML( "CREATE INDEX read_id_index ON read_table (id)" );
+        } // method
 
         inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
         {
@@ -147,11 +145,10 @@ class SV_DB : public CppSQLite3DB, public Container
               pDatabase( pDatabase )
         {} // default constructor
 
-        ~SvCallerRunTable( )
+        inline void createIndices( )
         {
-            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-                pDatabase->execDML( "CREATE INDEX sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
-        } // deconstructor
+            pDatabase->execDML( "CREATE INDEX sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
+        } // method
     }; // class
 
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_caller_run_id (foreign key)
@@ -188,23 +185,19 @@ class SV_DB : public CppSQLite3DB, public Container
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_jump_table" )
         {} // default constructor
 
-        ~SvJumpTable( )
+        inline void createIndices( )
         {
-            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-            {
-                // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
-                // index intended for the sweep over the start of all sv-rectangles
-                pDatabase->execDML(
-                    "CREATE INDEX sv_jump_table_sort_index_start ON sv_jump_table"
-                    "(sv_caller_run_id, sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
-                    " to_forward, from_seed_start)" );
-                // index intended for the sweep over the end of all sv-rectangles
-                pDatabase->execDML(
-                    "CREATE INDEX sv_jump_table_sort_index_end ON sv_jump_table"
-                    "(sv_caller_run_id, sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
-                    " to_forward, from_seed_start)" );
-            } // if
-        } // deconstructor
+            // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
+            // index intended for the sweep over the start of all sv-rectangles
+            pDatabase->execDML(
+                "CREATE INDEX sv_jump_table_sort_index_start ON sv_jump_table"
+                "(sv_caller_run_id, sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
+                " to_forward, from_seed_start)" );
+            // index intended for the sweep over the end of all sv-rectangles
+            pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_end ON sv_jump_table"
+                                "(sv_caller_run_id, sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
+                                " to_forward, from_seed_start)" );
+        } // method
 
         inline uint32_t numJumps( )
         {
@@ -241,6 +234,19 @@ class SV_DB : public CppSQLite3DB, public Container
 
     SV_DB( std::string sName, std::string sMode ) : SV_DB( sName, sMode == "create" ? eCREATE_DB : eOPEN_DB )
     {} // constructor
+
+    inline void createIndices( )
+    {
+        pSequencerTable->createIndices( );
+        pReadTable->createIndices( );
+        pSvCallerRunTable->createIndices( );
+        pSvJumpTable->createIndices( );
+    } // method
+
+    inline void setNumThreads( size_t uiN )
+    {
+        pDatabase->set_num_threads( (int)uiN );
+    }
 
     class ReadInserter
     {
