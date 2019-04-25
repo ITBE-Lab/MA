@@ -49,7 +49,7 @@ class SvJump : public Container
     {
         assert( uiQueryFrom <= uiQueryTo );
         // necessary for mapping switch strand jumps rightwards
-        assert( uiFrom + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) / 2 ) );
+        assert( uiFrom * 2 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
     SvJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
@@ -103,10 +103,10 @@ class SvJump : public Container
 
     int64_t from_start( ) const
     {
-        int64_t iAdd = does_switch_strand( ) ? std::numeric_limits<int64_t>::max( ) / 2 : 0;
+        int64_t iAdd = does_switch_strand( ) ? std::numeric_limits<int64_t>::max( ) / (int64_t)2 : 0;
         if( from_fuzziness_is_rightwards( ) )
-            return uiFrom - (int64_t)uiSeedDirFuzziness + iAdd;
-        return uiFrom - (int64_t)fuzziness( ) + iAdd;
+            return ((int64_t)uiFrom) - ((int64_t)uiSeedDirFuzziness) + iAdd;
+        return ((int64_t)uiFrom) - ((int64_t)fuzziness( )) + iAdd;
     } // method
 
     nucSeqIndex from_size( ) const
@@ -114,9 +114,9 @@ class SvJump : public Container
         return fuzziness( ) + uiSeedDirFuzziness;
     } // method
 
-    nucSeqIndex from_end( ) const
+    int64_t from_end( ) const
     {
-        return from_start( ) + from_size( ) - 1;
+        return from_start( ) + (int64_t)from_size( ) - 1;
     } // method
 
     int64_t to_start( ) const

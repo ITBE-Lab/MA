@@ -927,7 +927,7 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
      */
     typedef typename std::tuple_element<0, std::tuple<Types...>>::type ScalarType;
 
-    /* Executes the current query, where the result is assumed to be a scalar.
+    /** Executes the current query, where the result is assumed to be a scalar.
      * Gets an function as argument, which is executed in the case that the query delivers a non-empty result.
      */
     template <class FunctorType, class... ArgTypes> void vScalar( FunctorType&& fFunction, ArgTypes&&... args )
@@ -940,7 +940,8 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
         } // if
     } // public method
 
-    /* TODO: Throw an exception, if something goes wrong.
+    /** Executes the current query, where the result is assumed to be a scalar. Returns the scalar.
+     * TODO: Throw an exception, if something goes wrong.
      * Check, whether there is some efficient way for implementing this method
      */
     template <class... ArgTypes> ScalarType scalar( ArgTypes&&... args )

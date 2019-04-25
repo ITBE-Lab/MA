@@ -35,6 +35,7 @@ from libMA import ReadInserter
 from libMA import ParameterSetManager
 from libMA import ExecutionContext
 from libMA import ContainerVectorNucSeq
+from libMA import SortedSvJumpFromSql
 import libMA
 
 

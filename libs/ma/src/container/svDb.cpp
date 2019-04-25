@@ -25,7 +25,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SV_DB class
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
-        .def("clear_calls_table" , &SV_DB::clearCallsTable);
+        .def( "clear_calls_table", &SV_DB::clearCallsTable )
+        .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
@@ -43,6 +44,15 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "insert_read", &SV_DB::SvJumpInserter::insertRead )
         .def( "read_context", &SV_DB::SvJumpInserter::readContext )
         .def_readonly( "sv_caller_run_id", &SV_DB::SvJumpInserter::iSvCallerRunId );
+
+    // export the SortedSvJumpFromSql class
+    py::class_<SortedSvJumpFromSql>( rxPyModuleId, "SortedSvJumpFromSql" )
+        .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
+        .def( "has_next_start", &SortedSvJumpFromSql::hasNextStart )
+        .def( "has_next_end", &SortedSvJumpFromSql::hasNextEnd )
+        .def( "next_start_is_smaller", &SortedSvJumpFromSql::nextStartIsSmaller )
+        .def( "get_next_start", &SortedSvJumpFromSql::getNextStart )
+        .def( "get_next_end", &SortedSvJumpFromSql::getNextEnd );
 
     // export the NucSeqFromSql classes
     exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
