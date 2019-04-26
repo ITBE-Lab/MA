@@ -83,7 +83,7 @@ class SvJump : public Container
 
     bool from_fuzziness_is_rightwards( ) const
     {
-        return bFromForward != bFromSeedStart;
+        return !does_switch_strand() || bFromForward == bFromSeedStart;
     } // method
 
     nucSeqIndex fuzziness( ) const
@@ -98,7 +98,7 @@ class SvJump : public Container
     // down == left
     bool to_fuzziness_is_downwards( ) const
     {
-        return bToForward != bFromSeedStart;
+        return !does_switch_strand() || bToForward == bFromSeedStart;
     } // method
 
     int64_t from_start_same_strand( ) const
@@ -127,8 +127,8 @@ class SvJump : public Container
     int64_t to_start( ) const
     {
         if( !to_fuzziness_is_downwards( ) )
-            return uiTo - (int64_t)uiSeedDirFuzziness;
-        return uiTo - (int64_t)fuzziness( );
+            return (int64_t)uiTo - (int64_t)uiSeedDirFuzziness;
+        return (int64_t)uiTo - (int64_t)fuzziness( );
     } // method
 
     nucSeqIndex to_size( ) const
@@ -136,7 +136,7 @@ class SvJump : public Container
         return fuzziness( ) + uiSeedDirFuzziness;
     } // method
 
-    nucSeqIndex to_end( ) const
+    int64_t to_end( ) const
     {
         return to_start( ) + to_size( ) - 1;
     } // method

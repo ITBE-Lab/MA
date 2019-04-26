@@ -36,6 +36,7 @@ template <typename TP_CONTENT> class CyclicSetWithNElements
  * @details
  * vSeedSizes determines the minimal sizes of seeds that shall be held, while the respective vSetSizes values
  * indicate how many seeds of that size or above shall be held.
+ * @note vSeedSizes must be given in DESCENDING order
  */
 class LastMatchingSeeds
 {
@@ -43,21 +44,23 @@ class LastMatchingSeeds
     std::vector<CyclicSetWithNElements<Seed>> vContent;
 
   public:
-    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {18, 30}, std::vector<size_t> vSetSizes = {2, 2} )
+    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {30, 0}, std::vector<size_t> vSetSizes = {2, 2} )
         : vSeedSizes( vSeedSizes )
     {
         assert( vSeedSizes.size( ) == vSetSizes.size( ) );
         vContent.reserve( vSeedSizes.size( ) );
         for( size_t uiI : vSetSizes )
             vContent.emplace_back( uiI );
+        for( size_t uiI = 1; uiI < vSeedSizes.size( ); uiI++ )
+            assert(vSeedSizes[ uiI - 1 ] > vSeedSizes[ uiI ]);
     } // constructor
 
     void insert( Seed& rSeed )
     {
-        for( size_t uiI = 1; uiI <= vSeedSizes.size( ); uiI++ )
-            if( vSeedSizes[ vSeedSizes.size( ) - uiI ] > rSeed.size( ) )
+        for( size_t uiI = 0; uiI < vSeedSizes.size( ); uiI++ )
+            if( rSeed.size( ) >= vSeedSizes[ uiI ] )
             {
-                vContent[ vContent.size( ) - uiI ].insert( rSeed );
+                vContent[ uiI ].insert( rSeed );
                 return;
             } // if
     } // method
