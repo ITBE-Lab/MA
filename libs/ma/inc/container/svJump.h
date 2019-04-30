@@ -1,5 +1,6 @@
 #pragma once
 
+#include "container/nucSeq.h"
 #include "container/seed.h"
 #include <cmath>
 
@@ -31,6 +32,7 @@ class SvJump : public Container
     const bool bFromForward;
     const bool bToForward;
     const bool bFromSeedStart;
+    int64_t iId;
 
     SvJump( const nucSeqIndex uiFrom,
             const nucSeqIndex uiTo,
@@ -38,14 +40,16 @@ class SvJump : public Container
             const nucSeqIndex uiQueryTo,
             const bool bFromForward,
             const bool bToForward,
-            const bool bFromSeedStart )
+            const bool bFromSeedStart,
+            int64_t iId = -1 /* -1 == no id obtained */ )
         : uiFrom( uiFrom ),
           uiTo( uiTo ),
           uiQueryFrom( uiQueryFrom ),
           uiQueryTo( uiQueryTo ),
           bFromForward( bFromForward ),
           bToForward( bToForward ),
-          bFromSeedStart( bFromSeedStart )
+          bFromSeedStart( bFromSeedStart ),
+          iId( iId )
     {
         assert( uiQueryFrom <= uiQueryTo );
         // necessary for mapping switch strand jumps rightwards
@@ -83,7 +87,7 @@ class SvJump : public Container
 
     bool from_fuzziness_is_rightwards( ) const
     {
-        return !does_switch_strand() || bFromForward == bFromSeedStart;
+        return !does_switch_strand( ) || bFromForward == bFromSeedStart;
     } // method
 
     nucSeqIndex fuzziness( ) const
@@ -98,7 +102,7 @@ class SvJump : public Container
     // down == left
     bool to_fuzziness_is_downwards( ) const
     {
-        return !does_switch_strand() || bToForward == bFromSeedStart;
+        return !does_switch_strand( ) || bToForward == bFromSeedStart;
     } // method
 
     int64_t from_start_same_strand( ) const
@@ -149,6 +153,86 @@ class SvJump : public Container
     double score( ) const // @todo really necessary ?
     {
         return 0.08 * std::log( query_distance( ) + 1.5 );
+    } // method
+}; // class
+
+class SvCall : public Container
+{
+  public:
+    nucSeqIndex uiFromStart;
+    nucSeqIndex uiToStart;
+    nucSeqIndex uiFromSize;
+    nucSeqIndex uiToSize;
+    bool bSwitchStrand;
+    std::vector<int64_t> vSupportingJumpIds;
+    int64_t iId;
+
+    // these can be empty
+    std::shared_ptr<NucSeq> pInsertedSequence;
+    std::vector<SvJump> vSupportingJumps;
+
+    SvCall( nucSeqIndex uiFromStart,
+            nucSeqIndex uiToStart,
+            nucSeqIndex uiFromSize,
+            nucSeqIndex uiToSize,
+            bool bSwitchStrand,
+            std::vector<int64_t> vSupportingJumpIds = {},
+            int64_t iId = -1 /* -1 == no id obtained */ )
+        : uiFromStart( uiFromStart ),
+          uiToStart( uiToStart ),
+          uiFromSize( uiFromSize ),
+          uiToSize( uiToSize ),
+          bSwitchStrand( bSwitchStrand ),
+          vSupportingJumpIds( vSupportingJumpIds ),
+          iId( iId )
+    {} // constructor
+
+    SvCall( const SvJump& rJump )
+        : SvCall( rJump.from_start_same_strand( ),
+                  rJump.to_start( ),
+                  rJump.from_size( ),
+                  rJump.to_size( ),
+                  rJump.does_switch_strand( ),
+                  std::vector<int64_t>{rJump.iId} )
+    {} // constructor
+
+    bool supportedJumpsLoaded( ) const
+    {
+        return vSupportingJumps.size( ) == vSupportingJumpIds.size( );
+    } // method
+
+    bool insertedSequenceComputed( ) const
+    {
+        return pInsertedSequence != nullptr;
+    } // method
+
+    bool hasId( ) const
+    {
+        return iId != -1;
+    } // method
+
+    /**
+     * joins two sv calls together,
+     * in order to do so, they cannot have an ID in the database or the pInsertedSequence computed!
+     */
+    void join( SvCall& rOther )
+    {
+        assert( this->bSwitchStrand == rOther.bSwitchStrand );
+        nucSeqIndex uiFromEnd =
+            std::max( this->uiFromStart + this->uiFromSize, rOther.uiFromStart + rOther.uiFromSize );
+        nucSeqIndex uiToEnd = std::max( this->uiToStart + this->uiToSize, rOther.uiToStart + rOther.uiToSize );
+        this->uiFromStart = std::min( this->uiFromStart, rOther.uiFromStart );
+        this->uiToStart = std::min( this->uiToStart, rOther.uiToStart );
+        this->uiFromSize = uiFromEnd - this->uiFromStart;
+        this->uiToSize = uiToEnd - this->uiToStart;
+        this->vSupportingJumpIds.insert(
+            this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ), rOther.vSupportingJumpIds.end( ) );
+        assert( !this->supportedJumpsLoaded( ));
+        assert( !rOther.supportedJumpsLoaded( ) );
+        assert( !this->insertedSequenceComputed( ) );
+        assert( !rOther.insertedSequenceComputed( ) );
+        assert( !this->hasId( ) );
+        assert( !rOther.hasId( ) );
     } // method
 }; // class
 

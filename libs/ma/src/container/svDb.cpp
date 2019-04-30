@@ -47,6 +47,15 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "read_context", &SV_DB::SvJumpInserter::readContext )
         .def_readonly( "sv_caller_run_id", &SV_DB::SvJumpInserter::iSvCallerRunId );
 
+    // export the ReadContex class
+    py::class_<SV_DB::SvCallInserter::CallContex>( rxPyModuleId, "CallContex" )
+        .def( "add_support", &SV_DB::SvCallInserter::CallContex::addSupport );
+
+    // export the SvJumpInserter class
+    py::class_<SV_DB::SvCallInserter, std::shared_ptr<SV_DB::SvCallInserter>>( rxPyModuleId, "SvCallInserter" )
+        .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
+        .def( "insert_call", &SV_DB::SvCallInserter::insertCall );
+
     // export the SortedSvJumpFromSql class
     py::class_<SortedSvJumpFromSql>( rxPyModuleId, "SortedSvJumpFromSql" )
         .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )

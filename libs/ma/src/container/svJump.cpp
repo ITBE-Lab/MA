@@ -25,7 +25,21 @@ void exportSVJump( py::module& rxPyModuleId )
         .def_readonly( "to_froward", &SvJump::bToForward )
         .def_readonly( "from_seed_start", &SvJump::bFromSeedStart )
         .def_readonly( "from_pos", &SvJump::uiFrom )
-        .def_readonly( "to_pos", &SvJump::uiTo );
+        .def_readonly( "to_pos", &SvJump::uiTo )
+        .def_readonly( "id", &SvJump::iId );
+
+    // export the SvCall class
+    py::class_<SvCall>( rxPyModuleId, "SvCall" )
+        .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool>( ) )
+        .def( py::init<const SvJump&>( ) )
+        .def( "join", &SvCall::join )
+        .def_readwrite( "from_start", &SvCall::uiFromStart )
+        .def_readwrite( "from_size", &SvCall::uiFromSize )
+        .def_readwrite( "to_start", &SvCall::uiToStart )
+        .def_readwrite( "to_size", &SvCall::uiToSize )
+        .def_readwrite( "switch_strand", &SvCall::bSwitchStrand )
+        .def_readwrite( "supporing_jump_ids", &SvCall::vSupportingJumpIds )
+        .def_readonly( "id", &SvCall::iId );
 
 } // function
 #endif
