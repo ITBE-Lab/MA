@@ -135,6 +135,7 @@ class SV_DB : public Container
     class SvCallerRunTable : public TP_SV_CALLER_RUN_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+        CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
 
       public:
         SvCallerRunTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -142,12 +143,24 @@ class SV_DB : public Container
                                       "sv_caller_run_table", // name of the table in the database
                                       // column definitions of the table
                                       std::vector<std::string>{"name", "desc"} ),
-              pDatabase( pDatabase )
+              pDatabase( pDatabase ),
+              xDeleteRun( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" )
         {} // default constructor
 
         inline void createIndices( )
         {
             pDatabase->execDML( "CREATE INDEX sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
+        } // method
+
+        inline void dropIndices( )
+        {
+            pDatabase->execDML( "DROP INDEX IF EXISTS sv_caller_run_table_id_index" );
+        } // method
+
+        inline void deleteRun( std::string& rS )
+        {
+            xDeleteRun.bindAndExecQuery<>( rS );
+            vDump( std::cout );
         } // method
     }; // class
 
@@ -168,6 +181,7 @@ class SV_DB : public Container
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySize;
+        CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
 
       public:
         SvJumpTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -179,10 +193,13 @@ class SV_DB : public Container
                                            "to_pos", "query_from", "query_to", "from_forward", "to_forward",
                                            "from_seed_start"},
                   // constraints for table
-                  std::vector<std::string>{"FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id)",
-                                           "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
+                  std::vector<std::string>{
+                      "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE",
+                      "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
               pDatabase( pDatabase ),
-              xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_jump_table" )
+              xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_jump_table" ),
+              xDeleteRun( *pDatabase, "DELETE FROM sv_jump_table WHERE sv_caller_run_id IN ( SELECT id FROM "
+                                      "sv_caller_run_table WHERE name == ?)" )
         {} // default constructor
 
         inline void createIndices( )
@@ -199,9 +216,21 @@ class SV_DB : public Container
                                 " to_forward, from_seed_start, id)" );
         } // method
 
+        inline void dropIndices( )
+        {
+            pDatabase->execDML( "DROP INDEX IF EXISTS sv_jump_table_sort_index_start" );
+            pDatabase->execDML( "DROP INDEX IF EXISTS sv_jump_table_sort_index_end" );
+        } // method
+
+
         inline uint32_t numJumps( )
         {
             return xQuerySize.scalar( );
+        } // method
+
+        inline void deleteRun( std::string& rS )
+        {
+            xDeleteRun.bindAndExecQuery<>( rS );
         } // method
     }; // class
 
@@ -218,6 +247,7 @@ class SV_DB : public Container
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySize;
+        CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
 
       public:
         SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -228,9 +258,12 @@ class SV_DB : public Container
                   std::vector<std::string>{"sv_caller_run_id", "from_pos", "to_pos", "from_size", "to_size",
                                            "switch_strand", "inserted_sequence"},
                   // constraints for table
-                  std::vector<std::string>{"FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id)"} ),
+                  std::vector<std::string>{
+                      "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE"} ),
               pDatabase( pDatabase ),
-              xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" )
+              xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
+              xDeleteRun( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
+                                      "sv_caller_run_table WHERE name == ?)" )
         {} // default constructor
 
         inline uint32_t numCalls( )
@@ -242,27 +275,46 @@ class SV_DB : public Container
         {
             return this->xInsertRow( uiSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
                                      (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
+                                     // NucSeqSql can deal with nullpointers
                                      NucSeqSql( rCall.pInsertedSequence ) );
+        } // method
+
+        inline void deleteRun( std::string& rS )
+        {
+            xDeleteRun.bindAndExecQuery<>( rS );
         } // method
     }; // class
 
-    typedef CppSQLiteExtTable<int64_t, // call_id
-                              int64_t // jump_id
+    typedef CppSQLiteExtTable<int64_t, // call_id (foreign key)
+                              int64_t // jump_id (foreign key)
                               >
         TP_SV_CALL_SUPPORT_TABLE;
     class SvCallSupportTable : public TP_SV_CALL_SUPPORT_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+        CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
 
       public:
         SvCallSupportTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_SV_CALL_SUPPORT_TABLE( *pDatabase, // the database where the table resides
-                                        "sv_call_support_table", // name of the table in the database
-                                        // column definitions of the table
-                                        std::vector<std::string>{"call_id", "jump_id"},
-                                        false ),
-              pDatabase( pDatabase )
+            : TP_SV_CALL_SUPPORT_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "sv_call_support_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"call_id", "jump_id"},
+                  false,
+                  // constraints for table
+                  std::vector<std::string>{"FOREIGN KEY (call_id) REFERENCES sv_call_table(id) ON DELETE CASCADE",
+                                           "FOREIGN KEY (jump_id) REFERENCES sv_jump_table(id) ON DELETE CASCADE"} ),
+              pDatabase( pDatabase ),
+              xDeleteRun( *pDatabase, "DELETE FROM sv_call_support_table WHERE call_id IN ( SELECT id FROM "
+                                      "sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
+                                      "sv_caller_run_table WHERE name == ?))" )
         {} // default constructor
+
+        inline void deleteRun( std::string& rS )
+        {
+            xDeleteRun.bindAndExecQuery<>( rS );
+        } // method
     }; // class
 
 
@@ -299,12 +351,22 @@ class SV_DB : public Container
     SV_DB( std::string sName, std::string sMode ) : SV_DB( sName, sMode == "create" ? eCREATE_DB : eOPEN_DB )
     {} // constructor
 
-    inline void createIndices( )
+    inline void createSequencerIndices( )
     {
         pSequencerTable->createIndices( );
         pReadTable->createIndices( );
+    } // method
+
+    inline void createCallerIndices( )
+    {
         pSvCallerRunTable->createIndices( );
         pSvJumpTable->createIndices( );
+    } // method
+
+    inline void dropCallerIndices( )
+    {
+        pSvCallerRunTable->dropIndices( );
+        pSvJumpTable->dropIndices( );
     } // method
 
     inline void setNumThreads( size_t uiN )
@@ -444,6 +506,14 @@ class SV_DB : public Container
         pSvCallTable->clearTable( );
         pSvJumpTable->clearTable( );
         pSvCallerRunTable->clearTable( );
+    } // method
+
+    inline void clearCallsTableForCaller( std::string& rS )
+    {
+        pSvCallSupportTable->deleteRun( rS );
+        pSvCallTable->deleteRun( rS );
+        pSvJumpTable->deleteRun( rS );
+        pSvCallerRunTable->deleteRun( rS );
     } // method
 
     inline uint32_t numJumps( )
@@ -673,17 +743,11 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
     {
         std::lock_guard<std::mutex> xGuard( xMutex );
 
-        SV_DB::SvJumpInserter::ReadContex xReadContext = xInserter.insertRead( pRead );
+        SV_DB::SvJumpInserter::ReadContex xReadContext = xInserter.readContext( pRead->iId );
         for( SvJump& rJump : *pJumps )
             xReadContext.insertJump( rJump ); // also updates the jump ids;
         return std::make_shared<Container>( );
         // end of score for xGuard
-    } // method
-
-    // override
-    bool requiresLock( ) const
-    {
-        return true;
     } // method
 }; // class
 

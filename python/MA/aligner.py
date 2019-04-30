@@ -29,6 +29,7 @@ from libMA import configureFast
 from libMA import NucSeq
 from libMA import SV_DB
 from libMA import SvJumpInserter
+from libMA import SvCallInserter
 from libMA import SvJump
 from libMA import SvCall
 from libMA import VectorPledge
@@ -37,6 +38,7 @@ from libMA import ParameterSetManager
 from libMA import ExecutionContext
 from libMA import ContainerVectorNucSeq
 from libMA import SortedSvJumpFromSql
+from libMA import AllNucSeqFromSql
 import libMA
 
 

@@ -26,8 +26,11 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
         .def( "clear_calls_table", &SV_DB::clearCallsTable )
+        .def( "clear_calls_table_for_caller", &SV_DB::clearCallsTableForCaller )
         .def( "set_num_threads", &SV_DB::setNumThreads )
-        .def( "create_indices", &SV_DB::createIndices )
+        .def( "create_caller_indices", &SV_DB::createCallerIndices )
+        .def( "drop_caller_indices", &SV_DB::dropCallerIndices )
+        .def( "create_sequencer_indices", &SV_DB::createSequencerIndices )
         .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class
@@ -69,6 +72,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
     exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "NucSeqFromSql" );
     exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "PairedNucSeqFromSql" );
-    exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>( rxPyModuleId, "SvDbInserter" );
+    exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>( rxPyModuleId, "SvDbInserter", []( auto&& x ) {
+        x.def_readonly( "jump_inserter", &SvDbInserter::xInserter );
+    } );
 } // function
 #endif

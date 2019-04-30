@@ -646,16 +646,22 @@ class NucSeqSql : public SQL_BLOB
 
     const unsigned char* toBlob( ) const
     {
+        if( pNucSeq == nullptr )
+            return nullptr;
         return (unsigned char*)pNucSeq->pxSequenceRef;
     } // method
 
     const size_t blobSize( ) const
     {
+        if( pNucSeq == nullptr )
+            return 0;
         return pNucSeq->uiSize;
     } // method
 
     void fromBlob( const unsigned char* ucBlob, const size_t uiSize )
     {
+        if( uiSize == 0 )
+            return;
         pNucSeq = std::make_shared<NucSeq>( );
         pNucSeq->vClear( );
         pNucSeq->vAppend( (const uint8_t*)ucBlob, uiSize );

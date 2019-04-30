@@ -196,6 +196,15 @@ class SvCall : public Container
                   std::vector<int64_t>{rJump.iId} )
     {} // constructor
 
+    SvCall( SvJump& rJump )
+        : SvCall( rJump.from_start_same_strand( ),
+                  rJump.to_start( ),
+                  rJump.from_size( ),
+                  rJump.to_size( ),
+                  rJump.does_switch_strand( ),
+                  std::vector<int64_t>{rJump.iId} )
+    {} // constructor
+
     bool supportedJumpsLoaded( ) const
     {
         return vSupportingJumps.size( ) == vSupportingJumpIds.size( );
