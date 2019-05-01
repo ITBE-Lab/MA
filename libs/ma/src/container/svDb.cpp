@@ -68,12 +68,26 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "get_next_start", &SortedSvJumpFromSql::getNextStart )
         .def( "get_next_end", &SortedSvJumpFromSql::getNextEnd );
 
+    // export the SvCallerRunsFromDb class
+    py::class_<SvCallerRunsFromDb>( rxPyModuleId, "SvCallerRunsFromDb" )
+        .def( py::init<std::shared_ptr<SV_DB>>( ) )
+        .def( "id", &SvCallerRunsFromDb::id )
+        .def( "name", &SvCallerRunsFromDb::name )
+        .def( "desc", &SvCallerRunsFromDb::desc )
+        .def( "eof", &SvCallerRunsFromDb::eof )
+        .def( "next", &SvCallerRunsFromDb::next );
+
+    // export the SvCallsFromDb class
+    py::class_<SvCallsFromDb>( rxPyModuleId, "SvCallsFromDb" )
+        .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
+        .def( "next", &SvCallsFromDb::next )
+        .def( "hasNext", &SvCallsFromDb::hasNext );
+
     // export the NucSeqFromSql classes
     exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
     exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "NucSeqFromSql" );
     exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "PairedNucSeqFromSql" );
-    exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>( rxPyModuleId, "SvDbInserter", []( auto&& x ) {
-        x.def_readonly( "jump_inserter", &SvDbInserter::xInserter );
-    } );
+    exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>(
+        rxPyModuleId, "SvDbInserter", []( auto&& x ) { x.def_readonly( "jump_inserter", &SvDbInserter::xInserter ); } );
 } // function
 #endif

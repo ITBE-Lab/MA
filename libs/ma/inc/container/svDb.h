@@ -332,6 +332,8 @@ class SV_DB : public Container
     friend class PairedNucSeqFromSql;
     friend class PairedReadTable;
     friend class SortedSvJumpFromSql;
+    friend class SvCallerRunsFromDb;
+    friend class SvCallsFromDb;
 
   public:
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
@@ -731,10 +733,11 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
 class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
     std::shared_ptr<SV_DB> pDb;
-    SV_DB::SvJumpInserter xInserter;
     std::mutex xMutex;
 
   public:
+    SV_DB::SvJumpInserter xInserter;
+
     SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sRunDesc )
         : pDb( pDb ), xInserter( pDb, "MA-SV", sRunDesc )
     {} // constructor
@@ -751,6 +754,102 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
     } // method
 }; // class
 
+
+class SvCallerRunsFromDb
+{
+    std::shared_ptr<SV_DB> pDb;
+    CppSQLiteExtQueryStatement<int64_t, std::string, std::string> xQuery;
+    CppSQLiteExtQueryStatement<int64_t, std::string, std::string>::Iterator xTableIterator;
+
+  public:
+    SvCallerRunsFromDb( std::shared_ptr<SV_DB> pDb )
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT id, name, desc "
+                  "FROM sv_caller_run_table " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
+    {} // constructor
+
+    int64_t id( )
+    {
+        return std::get<0>( xTableIterator.get( ) );
+    } // method
+
+    std::string name( )
+    {
+        return std::get<1>( xTableIterator.get( ) );
+    } // method
+
+    std::string desc( )
+    {
+        return std::get<2>( xTableIterator.get( ) );
+    } // method
+
+    void next( )
+    {
+        xTableIterator.next( );
+    } // method
+
+    bool eof( )
+    {
+        return xTableIterator.eof( );
+    } // method
+}; // class
+
+class SvCallsFromDb
+{
+    std::shared_ptr<SV_DB> pDb;
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql> xQuery;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport;
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql>::Iterator
+        xTableIterator;
+
+  public:
+    SvCallsFromDb( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence "
+                  "FROM sv_call_table "
+                  "WHERE sv_caller_run_id == ? " ),
+          xQuerySupport( *pDb->pDatabase,
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "sv_jump_table.id "
+                         "FROM sv_call_support_table "
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id == ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId ) )
+    {} // constructor
+
+    SvCall next( )
+    {
+        auto xTup = xTableIterator.get( );
+        SvCall xRet( std::get<1>( xTup ), // uiFromStart
+                     std::get<2>( xTup ), // uiToStart
+                     std::get<3>( xTup ), // uiFromSize
+                     std::get<4>( xTup ), // uiToSize
+                     std::get<5>( xTup ) // bSwitchStrand
+        );
+        xRet.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
+        xRet.iId = std::get<0>( xTup );
+        auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );
+        while( !xSupportIterator.eof( ) )
+        {
+            auto xTup = xSupportIterator.get( );
+            xRet.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
+            xRet.vSupportingJumps.emplace_back( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
+                                                std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
+                                                std::get<6>( xTup ), std::get<7>( xTup ) );
+            xSupportIterator.next( );
+        } // while
+        xTableIterator.next( );
+        return xRet;
+    } // method
+
+    bool hasNext( )
+    {
+        return !xTableIterator.eof( );
+    } // method
+}; // class
 
 }; // namespace libMA
 

@@ -39,6 +39,8 @@ from libMA import ExecutionContext
 from libMA import ContainerVectorNucSeq
 from libMA import SortedSvJumpFromSql
 from libMA import AllNucSeqFromSql
+from libMA import SvCallerRunsFromDb
+from libMA import SvCallsFromDb
 import libMA
 
 
