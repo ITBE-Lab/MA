@@ -7,6 +7,9 @@ cmake_minimum_required (VERSION 3.8)
 
 project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 
+if ( NOT "cxx_std_17" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+   message( FATAL_ERROR "Your compiler does not support C++17, which is required for compiling MA." )
+endif()
 
 # Collect all arguments of the CMake call (just for info purposes ...)
 get_cmake_property(CACHE_VARS CACHE_VARIABLES)
@@ -66,7 +69,8 @@ endif()
 # Note: Some flags are already preset by the generator depending on the build-type
 # TODO: use set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -foo" )
 if( NOT MSVC )
-	# Note: Adding "-Wextra" delivers more warnings 
+	# Note: Adding "-Wextra" delivers more warnings
+    # "-Werror" "-Wall" : All warnings enabled and warning are treated as errors
     add_compile_options( "-Werror" "-Wall" ) 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options( "-stdlib=libc++" )
