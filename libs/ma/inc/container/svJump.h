@@ -20,7 +20,9 @@ class SvJump : public Container
     {
         if( bFromSeedStart != !rB.bOnForwStrand ) // cases (0,2) (0,3) (3,0) (3,1)
             return true;
-        if( !rA.bOnForwStrand != bFromSeedStart && rB.bOnForwStrand ) // cases (1,2) (2,1)
+        if( !rA.bOnForwStrand && bFromSeedStart && rB.bOnForwStrand ) // case (1,2)
+            return true;
+        if( rA.bOnForwStrand && !bFromSeedStart && !rB.bOnForwStrand ) // case (2,1)
             return true;
         return false;
     } // method
