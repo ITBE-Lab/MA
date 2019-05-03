@@ -31,10 +31,11 @@ void exportSVJump( py::module& rxPyModuleId )
     // export the SvCall class
     py::bind_vector<std::vector<int64_t>>(rxPyModuleId, "int64_tVector", "docstr");
     py::class_<SvCall>( rxPyModuleId, "SvCall" )
-        .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool>( ) )
+        .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, double>( ) )
         .def( py::init<const SvJump&>( ) )
         .def( py::init<SvJump&>( ) )
         .def( "join", &SvCall::join )
+        .def_readwrite( "score", &SvCall::dScore )
         .def_readwrite( "from_start", &SvCall::uiFromStart )
         .def_readwrite( "from_size", &SvCall::uiFromSize )
         .def_readwrite( "to_start", &SvCall::uiToStart )

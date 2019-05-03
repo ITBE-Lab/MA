@@ -166,6 +166,7 @@ class SvCall : public Container
     nucSeqIndex uiFromSize;
     nucSeqIndex uiToSize;
     bool bSwitchStrand;
+    double dScore;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
 
@@ -178,6 +179,7 @@ class SvCall : public Container
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
             bool bSwitchStrand,
+            double dScore,
             std::vector<int64_t> vSupportingJumpIds = {},
             int64_t iId = -1 /* -1 == no id obtained */ )
         : uiFromStart( uiFromStart ),
@@ -185,27 +187,36 @@ class SvCall : public Container
           uiFromSize( uiFromSize ),
           uiToSize( uiToSize ),
           bSwitchStrand( bSwitchStrand ),
+          dScore( dScore ),
           vSupportingJumpIds( vSupportingJumpIds ),
           iId( iId )
     {} // constructor
 
-    SvCall( const SvJump& rJump )
+    SvCall( const SvJump& rJump, bool bRememberJump = false )
         : SvCall( rJump.from_start_same_strand( ),
                   rJump.to_start( ),
                   rJump.from_size( ),
                   rJump.to_size( ),
                   rJump.does_switch_strand( ),
+                  rJump.score( ),
                   std::vector<int64_t>{rJump.iId} )
-    {} // constructor
+    {
+        if(bRememberJump)
+            vSupportingJumps.push_back(rJump);
+    } // constructor
 
-    SvCall( SvJump& rJump )
+    SvCall( SvJump& rJump, bool bRememberJump = false )
         : SvCall( rJump.from_start_same_strand( ),
                   rJump.to_start( ),
                   rJump.from_size( ),
                   rJump.to_size( ),
                   rJump.does_switch_strand( ),
+                  rJump.score( ),
                   std::vector<int64_t>{rJump.iId} )
-    {} // constructor
+    {
+        if(bRememberJump)
+            vSupportingJumps.push_back(rJump);
+    } // constructor
 
     bool supportedJumpsLoaded( ) const
     {
@@ -238,7 +249,8 @@ class SvCall : public Container
         this->uiToSize = uiToEnd - this->uiToStart;
         this->vSupportingJumpIds.insert(
             this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ), rOther.vSupportingJumpIds.end( ) );
-        assert( !this->supportedJumpsLoaded( ));
+        this->dScore += rOther.dScore;
+        assert( !this->supportedJumpsLoaded( ) );
         assert( !rOther.supportedJumpsLoaded( ) );
         assert( !this->insertedSequenceComputed( ) );
         assert( !rOther.insertedSequenceComputed( ) );

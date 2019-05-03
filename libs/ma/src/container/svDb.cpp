@@ -25,6 +25,14 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SV_DB class
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
+        .def( "get_run_id", &SV_DB::getRunId )
+        .def( "get_call_area", &SV_DB::getCallArea )
+        .def( "get_num_overlaps_between_calls", &SV_DB::getNumOverlapsBetweenCalls )
+        .def( "get_num_calls", &SV_DB::getNumCalls )
+        .def( "get_run_name", &SV_DB::getRunName )
+        .def( "get_run_desc", &SV_DB::getRunDesc )
+        .def( "get_run_date", &SV_DB::getRunDate )
+        .def( "get_num_runs", &SV_DB::getNumRuns )
         .def( "clear_calls_table", &SV_DB::clearCallsTable )
         .def( "clear_calls_table_for_caller", &SV_DB::clearCallsTableForCaller )
         .def( "set_num_threads", &SV_DB::setNumThreads )
@@ -51,8 +59,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def_readonly( "sv_caller_run_id", &SV_DB::SvJumpInserter::iSvCallerRunId );
 
     // export the ReadContex class
-    py::class_<SV_DB::SvCallInserter::CallContex>( rxPyModuleId, "CallContex" )
-        .def( "add_support", &SV_DB::SvCallInserter::CallContex::addSupport );
+    //py::class_<SV_DB::SvCallInserter::CallContex>( rxPyModuleId, "CallContex" )
+    //    .def( "add_support", &SV_DB::SvCallInserter::CallContex::addSupport );
 
     // export the SvJumpInserter class
     py::class_<SV_DB::SvCallInserter, std::shared_ptr<SV_DB::SvCallInserter>>( rxPyModuleId, "SvCallInserter" )

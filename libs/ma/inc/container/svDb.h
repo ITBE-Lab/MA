@@ -11,6 +11,9 @@
 #include "module/module.h"
 #include "util/exception.h"
 #include "util/sqlite3.h"
+#include <chrono>
+#include <ctime>
+#include <iomanip>
 
 namespace libMA
 {
@@ -129,22 +132,29 @@ class SV_DB : public Container
     }; // class
 
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // name
-                                                     std::string // desc
+                                                     std::string, // desc
+                                                     int64_t // timestamp
                                                      >
         TP_SV_CALLER_RUN_TABLE;
     class SvCallerRunTable : public TP_SV_CALLER_RUN_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
+        CppSQLiteExtQueryStatement<int64_t> xGetRunId;
+        CppSQLiteExtQueryStatement<std::string, std::string, int64_t> xGetRunName;
+        CppSQLiteExtQueryStatement<uint32_t> xNumRuns;
 
       public:
         SvCallerRunTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             : TP_SV_CALLER_RUN_TABLE( *pDatabase, // the database where the table resides
                                       "sv_caller_run_table", // name of the table in the database
                                       // column definitions of the table
-                                      std::vector<std::string>{"name", "desc"} ),
+                                      std::vector<std::string>{"name", "desc", "time_stamp"} ),
               pDatabase( pDatabase ),
-              xDeleteRun( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" )
+              xDeleteRun( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" ),
+              xGetRunId( *pDatabase, "SELECT id FROM sv_caller_run_table WHERE name == ?" ),
+              xGetRunName( *pDatabase, "SELECT name, desc, time_stamp FROM sv_caller_run_table WHERE id == ?" ),
+              xNumRuns( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table" )
         {} // default constructor
 
         inline void createIndices( )
@@ -161,6 +171,45 @@ class SV_DB : public Container
         {
             xDeleteRun.bindAndExecQuery<>( rS );
             vDump( std::cout );
+        } // method
+
+        inline int64_t getRunId( std::string& rS )
+        {
+            return xGetRunId.scalar( rS );
+        } // method
+
+        inline std::string getRunName( int64_t iId )
+        {
+            return std::get<0>( xGetRunName.vExecuteAndReturnIterator( iId ).get( ) );
+        } // method
+
+        inline std::string getRunDesc( int64_t iId )
+        {
+            return std::get<1>( xGetRunName.vExecuteAndReturnIterator( iId ).get( ) );
+        } // method
+
+        inline std::string getRunDate( int64_t iId )
+        {
+            auto now_c = (std::time_t)std::get<2>( xGetRunName.vExecuteAndReturnIterator( iId ).get( ) );
+            std::stringstream ss;
+#ifdef _MSC_VER
+#pragma warning( suppress : 4996 ) // @todo find another way to do this
+            ss << std::put_time( std::localtime( &now_c ), "%c" );
+#else
+            ss << std::put_time( std::localtime( &now_c ), "%c" );
+#endif
+            return ss.str( );
+        } // method
+
+        inline uint32_t size( )
+        {
+            return xNumRuns.scalar( );
+        } // method
+
+        inline int64_t insertRun( std::string sName, std::string sDesc )
+        {
+            return this->xInsertRow(
+                sName, sDesc, (int64_t)std::chrono::system_clock::to_time_t( std::chrono::system_clock::now( ) ) );
         } // method
     }; // class
 
@@ -240,13 +289,17 @@ class SV_DB : public Container
                                                      uint32_t, // from_size
                                                      uint32_t, // to_size
                                                      bool, // switch_strand
-                                                     NucSeqSql // inserted_sequence
+                                                     NucSeqSql, // inserted_sequence
+                                                     double // score
                                                      >
         TP_SV_CALL_TABLE;
     class SvCallTable : public TP_SV_CALL_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySize;
+        CppSQLiteExtQueryStatement<uint32_t> xQuerySizeSpecific;
+        CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
+        CppSQLiteExtQueryStatement<int64_t> xCallArea;
         CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
 
       public:
@@ -256,12 +309,32 @@ class SV_DB : public Container
                   "sv_call_table", // name of the table in the database
                   // column definitions of the table
                   std::vector<std::string>{"sv_caller_run_id", "from_pos", "to_pos", "from_size", "to_size",
-                                           "switch_strand", "inserted_sequence"},
+                                           "switch_strand", "inserted_sequence", "score"},
                   // constraints for table
                   std::vector<std::string>{
                       "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE"} ),
               pDatabase( pDatabase ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
+              xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id == ? "
+                                              "AND score >= ?" ),
+              xNumOverlaps( *pDatabase,
+                            "SELECT COUNT(*) "
+                            "FROM sv_call_table AS outer "
+                            "WHERE sv_caller_run_id == ? "
+                            "AND score >= ? "
+                            "AND EXISTS ( "
+                            "   SELECT * "
+                            "   FROM sv_call_table AS inner "
+                            "   WHERE inner.sv_caller_run_id == ? "
+                            "   AND score >= ?"
+                            "   AND outer.from_pos <= inner.from_pos + inner.from_size "
+                            "   AND outer.from_pos + outer.from_size >= inner.from_pos "
+                            "   AND outer.to_pos <= inner.to_pos + inner.to_size "
+                            "   AND outer.to_pos + outer.to_size >= inner.to_pos "
+                            ")" ),
+              xCallArea( *pDatabase,
+                         "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "AND score >= ?" ),
               xDeleteRun( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
                                       "sv_caller_run_table WHERE name == ?)" )
         {} // default constructor
@@ -271,17 +344,35 @@ class SV_DB : public Container
             return xQuerySize.scalar( );
         } // method
 
-        inline int64_t insertCall( int64_t uiSvCallerRunId, SvCall& rCall )
+        inline uint32_t numCalls( int64_t iCallerRunId, double dMinScore )
         {
-            return this->xInsertRow( uiSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
+            return xQuerySizeSpecific.scalar( iCallerRunId, dMinScore );
+        } // method
+
+        inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
+        {
+            return this->xInsertRow( iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
                                      (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
                                      // NucSeqSql can deal with nullpointers
-                                     NucSeqSql( rCall.pInsertedSequence ) );
+                                     NucSeqSql( rCall.pInsertedSequence ), rCall.dScore );
         } // method
 
         inline void deleteRun( std::string& rS )
         {
             xDeleteRun.bindAndExecQuery<>( rS );
+        } // method
+
+        inline int64_t callArea( int64_t iCallerRunId, double dMinScore )
+        {
+            return xCallArea.scalar( iCallerRunId, dMinScore );
+        } // method
+
+        /**
+         * returns how many calls of run A are overlapped by a call in run B
+         */
+        inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore )
+        {
+            return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, dMinScore );
         } // method
     }; // class
 
@@ -374,7 +465,47 @@ class SV_DB : public Container
     inline void setNumThreads( size_t uiN )
     {
         pDatabase->set_num_threads( (int)uiN );
-    }
+    } // method
+
+    inline int64_t getRunId( std::string& rS )
+    {
+        return pSvCallerRunTable->getRunId( rS );
+    } // method
+
+    inline int64_t getCallArea( int64_t iCallerRunId, double dMinScore )
+    {
+        return pSvCallTable->callArea( iCallerRunId, dMinScore );
+    } // method
+
+    inline uint32_t getNumOverlapsBetweenCalls( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore )
+    {
+        return pSvCallTable->numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore );
+    } // method
+
+    inline uint32_t getNumCalls( int64_t iCallerRunId, double dMinScore )
+    {
+        return pSvCallTable->numCalls( iCallerRunId, dMinScore );
+    } // method
+
+    inline uint32_t getNumRuns( )
+    {
+        return pSvCallerRunTable->size( );
+    } // method
+
+    inline std::string getRunName( int64_t iId )
+    {
+        return pSvCallerRunTable->getRunName( iId );
+    } // method
+
+    inline std::string getRunDesc( int64_t iId )
+    {
+        return pSvCallerRunTable->getRunDesc( iId );
+    } // method
+
+    inline std::string getRunDate( int64_t iId )
+    {
+        return pSvCallerRunTable->getRunDate( iId );
+    } // method
 
     class ReadInserter
     {
@@ -444,7 +575,7 @@ class SV_DB : public Container
                         const std::string& rsSvCallerDesc )
             : pDB( pDB ),
               xTransactionContext( *pDB->pDatabase ),
-              iSvCallerRunId( pDB->pSvCallerRunTable->xInsertRow( rsSvCallerName, rsSvCallerDesc ) )
+              iSvCallerRunId( pDB->pSvCallerRunTable->insertRun( rsSvCallerName, rsSvCallerDesc ) )
         {} // constructor
 
         SvJumpInserter( const SvJumpInserter& ) = delete; // delete copy constructor
@@ -487,6 +618,11 @@ class SV_DB : public Container
             {
                 pSvCallSupportTable->xInsertRow( iCallId, rJump.iId );
             } // method
+
+            inline void addSupport( int64_t iId )
+            {
+                pSvCallSupportTable->xInsertRow( iCallId, iId );
+            } // method
         }; // class
 
         SvCallInserter( std::shared_ptr<SV_DB> pDB, const int64_t iSvCallerRunId )
@@ -495,9 +631,11 @@ class SV_DB : public Container
 
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
 
-        inline CallContex insertCall( SvCall& rCall )
+        inline void insertCall( SvCall& rCall )
         {
-            return CallContex( pDB->pSvCallSupportTable, pDB->pSvCallTable->insertCall( iSvCallerRunId, rCall ) );
+            CallContex xContext( pDB->pSvCallSupportTable, pDB->pSvCallTable->insertCall( iSvCallerRunId, rCall ) );
+            for( int64_t iId : rCall.vSupportingJumpIds )
+                xContext.addSupport( iId );
         } // method
 
     }; // class
@@ -799,16 +937,16 @@ class SvCallerRunsFromDb
 class SvCallsFromDb
 {
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql> xQuery;
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double> xQuery;
     CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport;
-    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql>::Iterator
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double>::Iterator
         xTableIterator;
 
   public:
     SvCallsFromDb( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
         : pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? " ),
           xQuerySupport( *pDb->pDatabase,
@@ -827,7 +965,8 @@ class SvCallsFromDb
                      std::get<2>( xTup ), // uiToStart
                      std::get<3>( xTup ), // uiFromSize
                      std::get<4>( xTup ), // uiToSize
-                     std::get<5>( xTup ) // bSwitchStrand
+                     std::get<5>( xTup ), // bSwitchStrand
+                     std::get<7>( xTup ) // dScore
         );
         xRet.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
         xRet.iId = std::get<0>( xTup );
