@@ -143,6 +143,7 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<int64_t> xGetRunId;
         CppSQLiteExtQueryStatement<std::string, std::string, int64_t> xGetRunName;
         CppSQLiteExtQueryStatement<uint32_t> xNumRuns;
+        CppSQLiteExtQueryStatement<uint32_t> xRunExists;
 
       public:
         SvCallerRunTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -154,7 +155,8 @@ class SV_DB : public Container
               xDeleteRun( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" ),
               xGetRunId( *pDatabase, "SELECT id FROM sv_caller_run_table WHERE name == ?" ),
               xGetRunName( *pDatabase, "SELECT name, desc, time_stamp FROM sv_caller_run_table WHERE id == ?" ),
-              xNumRuns( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table" )
+              xNumRuns( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table" ),
+              xRunExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id == ?" )
         {} // default constructor
 
         inline void createIndices( )
@@ -176,6 +178,11 @@ class SV_DB : public Container
         inline int64_t getRunId( std::string& rS )
         {
             return xGetRunId.scalar( rS );
+        } // method
+
+        inline bool runExists( int64_t iId )
+        {
+            return xRunExists.scalar( iId ) > 0;
         } // method
 
         inline std::string getRunName( int64_t iId )
@@ -327,10 +334,11 @@ class SV_DB : public Container
                             "   FROM sv_call_table AS inner "
                             "   WHERE inner.sv_caller_run_id == ? "
                             "   AND score >= ?"
-                            "   AND outer.from_pos <= inner.from_pos + inner.from_size "
-                            "   AND outer.from_pos + outer.from_size >= inner.from_pos "
-                            "   AND outer.to_pos <= inner.to_pos + inner.to_size "
-                            "   AND outer.to_pos + outer.to_size >= inner.to_pos "
+                            "   AND outer.from_pos <= inner.from_pos + inner.from_size + ? "
+                            "   AND outer.from_pos + outer.from_size + ? >= inner.from_pos "
+                            "   AND outer.to_pos <= inner.to_pos + inner.to_size + ? "
+                            "   AND outer.to_pos + outer.to_size + ? >= inner.to_pos "
+                            "   AND outer.switch_strand == inner.switch_strand "
                             ")" ),
               xCallArea( *pDatabase,
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
@@ -370,9 +378,11 @@ class SV_DB : public Container
         /**
          * returns how many calls of run A are overlapped by a call in run B
          */
-        inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore )
+        inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
+                                     int64_t iAllowedDist )
         {
-            return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, dMinScore );
+            return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, dMinScore, iAllowedDist, iAllowedDist,
+                                        iAllowedDist, iAllowedDist );
         } // method
     }; // class
 
@@ -477,9 +487,10 @@ class SV_DB : public Container
         return pSvCallTable->callArea( iCallerRunId, dMinScore );
     } // method
 
-    inline uint32_t getNumOverlapsBetweenCalls( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore )
+    inline uint32_t getNumOverlapsBetweenCalls( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
+                                                int64_t iAllowedDist )
     {
-        return pSvCallTable->numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore );
+        return pSvCallTable->numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iAllowedDist );
     } // method
 
     inline uint32_t getNumCalls( int64_t iCallerRunId, double dMinScore )
@@ -505,6 +516,11 @@ class SV_DB : public Container
     inline std::string getRunDate( int64_t iId )
     {
         return pSvCallerRunTable->getRunDate( iId );
+    } // method
+
+    inline bool runExists( int64_t iId )
+    {
+        return pSvCallerRunTable->runExists( iId );
     } // method
 
     class ReadInserter
