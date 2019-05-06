@@ -159,6 +159,11 @@ class SvJump : public Container
     {
         return 0.08 * std::log( query_distance( ) + 1.5 );
     } // method
+
+    int64_t insert_ratio( ) const
+    {
+        return (int64_t)(uiQueryTo - uiQueryFrom) - (int64_t)(uiTo - uiFrom);
+    } // method
 }; // class
 
 class SvCall : public Container
@@ -195,7 +200,7 @@ class SvCall : public Container
           iId( iId )
     {} // constructor
 
-    SvCall( const SvJump& rJump, bool bRememberJump = false )
+    SvCall( const SvJump& rJump, bool bRememberJump = true )
         : SvCall( rJump.from_start_same_strand( ),
                   rJump.to_start( ),
                   rJump.from_size( ),
@@ -208,7 +213,7 @@ class SvCall : public Container
             vSupportingJumps.push_back(rJump);
     } // constructor
 
-    SvCall( SvJump& rJump, bool bRememberJump = false )
+    SvCall( SvJump& rJump, bool bRememberJump = true )
         : SvCall( rJump.from_start_same_strand( ),
                   rJump.to_start( ),
                   rJump.from_size( ),
@@ -236,6 +241,23 @@ class SvCall : public Container
         return iId != -1;
     } // method
 
+    void clear_jumps()
+    {
+        vSupportingJumpIds.clear();
+        vSupportingJumps.clear();
+    } // method
+
+    SvJump& get_jump(size_t uiI)
+    {
+        return vSupportingJumps[uiI];
+    } // method
+
+    void add_jump(SvJump& rJmp)
+    {
+        vSupportingJumpIds.push_back(rJmp.iId);
+        vSupportingJumps.push_back(rJmp);
+    } // method
+
     /**
      * joins two sv calls together,
      * in order to do so, they cannot have an ID in the database or the pInsertedSequence computed!
@@ -253,8 +275,9 @@ class SvCall : public Container
         this->vSupportingJumpIds.insert(
             this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ), rOther.vSupportingJumpIds.end( ) );
         this->dScore += rOther.dScore;
-        assert( !this->supportedJumpsLoaded( ) );
-        assert( !rOther.supportedJumpsLoaded( ) );
+        for(SvJump& rJump : rOther.vSupportingJumps) // @todo this is inefficient...
+            this->vSupportingJumps.push_back(rJump);
+        assert( this->supportedJumpsLoaded( ) == rOther.supportedJumpsLoaded( ) );
         assert( !this->insertedSequenceComputed( ) );
         assert( !rOther.insertedSequenceComputed( ) );
         assert( !this->hasId( ) );
