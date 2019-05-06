@@ -103,10 +103,10 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     // walk over all seeds to compute
     LastMatchingSeeds xLastSeedsForward;
     for( Seed& rCurr : vSeeds )
-        helperSvJumpsFromSeedsExecute( xLastSeedsForward, rCurr, true, pRet );
+        helperSvJumpsFromSeedsExecute( xLastSeedsForward, rCurr, false, pRet );
     LastMatchingSeeds xLastSeedsReverse;
     for( auto itRevIt = vSeeds.rbegin( ); itRevIt != vSeeds.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( xLastSeedsForward, *itRevIt, false, pRet );
+        helperSvJumpsFromSeedsExecute( xLastSeedsForward, *itRevIt, true, pRet );
 
     return pRet;
 } // method

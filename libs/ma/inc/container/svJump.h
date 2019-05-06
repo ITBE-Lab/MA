@@ -18,7 +18,7 @@ class SvJump : public Container
   public:
     static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
     {
-        if( bFromSeedStart != !rB.bOnForwStrand ) // cases (0,2) (0,3) (3,0) (3,1)
+        if( bFromSeedStart != rB.bOnForwStrand ) // cases (0,2) (0,3) (3,0) (3,1)
             return true;
         if( !rA.bOnForwStrand && bFromSeedStart && rB.bOnForwStrand ) // case (1,2)
             return true;
@@ -35,6 +35,7 @@ class SvJump : public Container
     const bool bToForward;
     const bool bFromSeedStart;
     int64_t iId;
+    int64_t iReadId;
 
     SvJump( const nucSeqIndex uiFrom,
             const nucSeqIndex uiTo,
@@ -43,7 +44,8 @@ class SvJump : public Container
             const bool bFromForward,
             const bool bToForward,
             const bool bFromSeedStart,
-            int64_t iId = -1 /* -1 == no id obtained */ )
+            int64_t iId = -1, /* -1 == no id obtained */
+            int64_t iReadId = -1 /* -1 == no id obtained */ )
         : uiFrom( uiFrom ),
           uiTo( uiTo ),
           uiQueryFrom( uiQueryFrom ),
@@ -51,7 +53,8 @@ class SvJump : public Container
           bFromForward( bFromForward ),
           bToForward( bToForward ),
           bFromSeedStart( bFromSeedStart ),
-          iId( iId )
+          iId( iId ),
+          iReadId( iReadId )
     {
         assert( uiQueryFrom <= uiQueryTo );
         // necessary for mapping switch strand jumps rightwards
@@ -89,7 +92,7 @@ class SvJump : public Container
 
     bool from_fuzziness_is_rightwards( ) const
     {
-        return !does_switch_strand( ) || bFromForward == bFromSeedStart;
+        return !does_switch_strand( ) || bFromForward != bFromSeedStart;
     } // method
 
     nucSeqIndex fuzziness( ) const
@@ -104,7 +107,7 @@ class SvJump : public Container
     // down == left
     bool to_fuzziness_is_downwards( ) const
     {
-        return !does_switch_strand( ) || bToForward == bFromSeedStart;
+        return !does_switch_strand( ) || bToForward != bFromSeedStart;
     } // method
 
     int64_t from_start_same_strand( ) const
