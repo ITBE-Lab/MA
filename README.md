@@ -233,7 +233,7 @@ Seeding options:
                                                    parameter Seeding drop-off A.
 
 Strip of Consideration options:
-    -N, --Maximal_Number_of_SoCs <int> [30]        Consider the <val> best scored SoC's merely. 0 =
+    -N, --Maximal_Number_of_SoCs <int> [30]        Consider the <val> best scored SoCs merely. 0 =
                                                    Consider all SoCs.
 
     -M, --Minimal_Number_of_SoCs <int> [1]         Always consider the first <val> SoCs no matter the

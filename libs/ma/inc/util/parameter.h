@@ -498,8 +498,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<double> xRelMinSeedSizeAmount; // Seeding drop off B - Drop-off factor
 
     // SoC Options:
-    AlignerParameterPointer<int> xMaxNumSoC; // Maximal Number of SoC's
-    AlignerParameterPointer<int> xMinNumSoC; // Min Number SoC's
+    AlignerParameterPointer<int> xMaxNumSoC; // Maximal Number of SoCs
+    AlignerParameterPointer<int> xMinNumSoC; // Min Number SoCs
     AlignerParameterPointer<int> xSoCWidth; // Fixed SoC Width
 
     // SAM Options:
@@ -634,7 +634,7 @@ class Presetting : public ParameterSetBase
 
           // SoC:
           xMaxNumSoC( this, "Maximal Number of SoCs", 'N',
-                      "Consider the <val> best scored SoC's merely. 0 = Consider all SoCs.", SOC_PARAMETERS, 30,
+                      "Consider the <val> best scored SoCs merely. 0 = Consider all SoCs.", SOC_PARAMETERS, 30,
                       checkPositiveValue ),
           xMinNumSoC( this, "Minimal Number of SoCs", 'M',
                       "Always consider the first <val> SoCs no matter the Heuristic optimizations. Increasing this "
