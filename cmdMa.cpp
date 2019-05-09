@@ -133,7 +133,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  "file_name",
                  "",
                  "Filenames of Fasta/Fastq files containing reads. gz-compressed files are automatically decompressed. "
-                 "Multiple files can be specified by a comma separated list. At least one file name must be provided.",
+                 "Multiple files can be specified by a comma separated list. One file name must be provided at least.",
                  sIndentDesc );
     printOption( "Mate_In",
                  'm',
