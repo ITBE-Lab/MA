@@ -7,6 +7,16 @@ cmake_minimum_required (VERSION 3.8)
 
 project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 
+# optional features
+option(WITH_PYTHON "Build python integration of libMA." OFF)
+option(WITH_ZLIB "Build gz file readers using zlib." ON)
+option(WITH_GUI "Build maGUI" ON)
+
+# assert that the compiler knows c++17
+if ( NOT "cxx_std_17" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+   message( FATAL_ERROR "Your compiler does not support C++17, which is required for compiling MA. "
+                        "(Updating your compiler will likely fix this issue.)" )
+endif()
 
 # Collect all arguments of the CMake call (just for info purposes ...)
 get_cmake_property(CACHE_VARS CACHE_VARIABLES)
@@ -66,24 +76,29 @@ endif()
 # Note: Some flags are already preset by the generator depending on the build-type
 # TODO: use set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -foo" )
 if( NOT MSVC )
-	# Note: Adding "-Wextra" delivers more warnings 
+	# Note: Adding "-Wextra" delivers more warnings
+    # "-Werror" "-Wall" : All warnings enabled and warning are treated as errors
     add_compile_options( "-Werror" "-Wall" ) 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options( "-stdlib=libc++" )
     endif()
 endif()
 
-# Look for Python
-set(requested_python_version 3.5)
-find_package( PythonLibs ${requested_python_version} )
-if( PythonLibs_FOUND )
-	message( "Found Python Libs")
+if(WITH_PYTHON)
+    # Look for Python
+    set(requested_python_version 3.5)
+    find_package( PythonLibs ${requested_python_version} )
+    if( PythonLibs_FOUND )
+        message( "Found Python Libs")
+    endif()
 endif()
 
-# Look for zlib Note: ZLIB must be capitalized in order for it to work on debian
-find_package( ZLIB )
-if( ZLIB_FOUND )
-	message( "Found zlib" )
+if(WITH_ZLIB)
+    # Look for zlib
+    find_package( ZLIB )
+    if( ZLIB_FOUND )
+        message( "Found zlib" )
+    endif()
 endif()
 
 # Required for linking via libpthreads on UNIX systems
@@ -102,7 +117,9 @@ add_subdirectory ( contrib )
 # Build all required libraries
 add_subdirectory ( libs )
 # Build wxWidgets GUI
-add_subdirectory ( gui )
+if(WITH_GUI)
+    add_subdirectory ( gui )
+endif()
 
 # Build the MA executable itself
 add_executable ( maCMD cmdMa.cpp )
