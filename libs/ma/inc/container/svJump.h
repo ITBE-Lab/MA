@@ -3,6 +3,7 @@
 #include "container/nucSeq.h"
 #include "container/seed.h"
 #include <cmath>
+#include <limits>
 
 namespace libMA
 {
@@ -133,6 +134,11 @@ class SvJump : public Container
         return from_start( ) + (int64_t)from_size( ) - 1;
     } // method
 
+    bool to_known() const
+    {
+        return uiTo != std::numeric_limits<uint32_t>::max();
+    } // method
+
     int64_t to_start( ) const
     {
         if( !to_fuzziness_is_downwards( ) )
@@ -155,6 +161,11 @@ class SvJump : public Container
         return uiQueryTo - uiQueryFrom;
     } // method
 
+    nucSeqIndex ref_distance( ) const
+    {
+        return (nucSeqIndex)std::abs(uiTo - (int64_t)uiFrom);
+    } // method
+
     double score( ) const // @todo really necessary ?
     {
         return 0.08 * std::log( query_distance( ) + 1.5 );
@@ -162,7 +173,7 @@ class SvJump : public Container
 
     int64_t insert_ratio( ) const
     {
-        return (int64_t)(uiQueryTo - uiQueryFrom) - (int64_t)(uiTo - uiFrom);
+        return (int64_t)query_distance() - (int64_t)ref_distance();
     } // method
 }; // class
 
