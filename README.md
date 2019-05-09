@@ -97,11 +97,13 @@ Alignments using the Python integration can be done without a computational pena
 since Python is only responsible for an initial C++-module 
 coupling, while all actual computations are done within the C++-modules. The idea is similar 
 to the one used in the context of [TensorFlow](https://www.tensorflow.org "TensorFlow").
+The Python integration has to be enabled using `-DWITH_PYTHON=ON`.
 
 ### zLib Support
 For getting zLib support cmake has to find the appropriate zLib libraries.
 On Debian/Ubuntu you have to run `apt-get install zlib1g-dev`.
 On Windows the libraries are available via the [zLib homepage](https://www.zlib.net/ "zLib homepage").
+zLib support can be disabled using `-DWITH_ZLIB=OFF`.
 
 ### Graphical User Interface (GUI) Support via wxWidgets
 The GUI version is additionally build to the comand line version,
@@ -408,7 +410,8 @@ Many thanks to the creators and contributors of the above projects ...
 
 For citing MA, please use:
 
-Schmidt, M., Heese, K. & Kutzner, A. Accurate high throughput alignment via line sweep-based seed processing. Nature Communications 10, 1939, doi:10.1038/s41467-019-09977-2 (2019).
+Schmidt, M., Heese, K. & Kutzner, A. Accurate high throughput alignment via line sweep-based seed processing.
+Nature Communications 10, 1939, doi:10.1038/s41467-019-09977-2 (2019).
 
 ## Authors
 

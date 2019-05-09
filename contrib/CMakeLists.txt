@@ -6,7 +6,9 @@ cmake_minimum_required (VERSION 3.8)
 
 # Include contributed (external) projects.
 
-if( PythonLibs_FOUND )
-	message( "Include pybind11 ..." )
-	add_subdirectory (pybind11)
+if(WITH_PYTHON)
+    if( PythonLibs_FOUND )
+        message( "Include pybind11 ..." )
+        add_subdirectory (pybind11)
+    endif()
 endif()
