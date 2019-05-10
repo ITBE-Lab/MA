@@ -52,7 +52,7 @@ class LastMatchingSeeds
         for( size_t uiI : vSetSizes )
             vContent.emplace_back( uiI );
         for( size_t uiI = 1; uiI < vSeedSizes.size( ); uiI++ )
-            assert(vSeedSizes[ uiI - 1 ] > vSeedSizes[ uiI ]);
+            assert( vSeedSizes[ uiI - 1 ] > vSeedSizes[ uiI ] );
     } // constructor
 
     void insert( Seed& rSeed )
@@ -87,8 +87,12 @@ void helperSvJumpsFromSeedsExecute( LastMatchingSeeds& rLastSeeds, Seed& rCurr, 
 } // function
 
 std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_ptr<SegmentVector> pSegments,
-                                                                    std::shared_ptr<Pack> pRefSeq,
-                                                                    std::shared_ptr<FMIndex> pFM_index )
+                                                                    std::shared_ptr<Pack>
+                                                                        pRefSeq,
+                                                                    std::shared_ptr<FMIndex>
+                                                                        pFM_index,
+                                                                    std::shared_ptr<NucSeq>
+                                                                        pQuery )
 {
     auto pRet = std::make_shared<ContainerVector<SvJump>>( );
 
@@ -100,13 +104,21 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     vSeeds.reserve( pSegments->size( ) * 2 );
     pSegments->emplaceAllEachSeeds( *pFM_index, 0, 100, 18, vSeeds, []( ) { return true; } );
 
+    if( vSeeds.size( ) > 0 )
+    {
+        if( vSeeds.front( ).start( ) > 0 )
+            pRet->emplace_back( vSeeds.front( ), pQuery->length( ), true );
+        if( vSeeds.back( ).end( ) < pQuery->length( ) )
+            pRet->emplace_back( vSeeds.back( ), pQuery->length( ), false );
+    } // if
+
     // walk over all seeds to compute
     LastMatchingSeeds xLastSeedsForward;
     for( Seed& rCurr : vSeeds )
         helperSvJumpsFromSeedsExecute( xLastSeedsForward, rCurr, false, pRet );
     LastMatchingSeeds xLastSeedsReverse;
     for( auto itRevIt = vSeeds.rbegin( ); itRevIt != vSeeds.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( xLastSeedsForward, *itRevIt, true, pRet );
+        helperSvJumpsFromSeedsExecute( xLastSeedsReverse, *itRevIt, true, pRet );
 
     return pRet;
 } // method

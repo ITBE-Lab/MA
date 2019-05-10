@@ -19,7 +19,7 @@ class PerfectMatch;
 /**
  * @brief Computes Sv-Jumps from a given seed set
  */
-class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex>
+class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
   public:
     /**
@@ -30,7 +30,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
                                                                        std::shared_ptr<Pack> pRefSeq,
-                                                                       std::shared_ptr<FMIndex> pFM_index );
+                                                                       std::shared_ptr<FMIndex> pFM_index,
+                                                                       std::shared_ptr<NucSeq> pQuery );
 }; // class
 
 }; // namespace libMA
