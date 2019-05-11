@@ -106,9 +106,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
 
     if( vSeeds.size( ) > 0 )
     {
-        if( vSeeds.front( ).start( ) > 0 )
+        if( vSeeds.front( ).start( ) > 18 )
             pRet->emplace_back( vSeeds.front( ), pQuery->length( ), true );
-        if( vSeeds.back( ).end( ) < pQuery->length( ) )
+        if( vSeeds.back( ).end( ) + 18 < pQuery->length( ) )
             pRet->emplace_back( vSeeds.back( ), pQuery->length( ), false );
     } // if
 

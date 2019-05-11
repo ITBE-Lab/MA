@@ -150,14 +150,24 @@ class SvJump : public Container
     bool to_fuzziness_is_downwards( ) const
     {
         if( !from_known( ) )
-            return false;
-        if( !to_known( ) )
             return true;
+        if( !to_known( ) )
+            return false;
         return !does_switch_strand( ) || bToForward != bFromSeedStart;
+    } // method
+
+    nucSeqIndex query_distance( ) const
+    {
+        return uiQueryTo - uiQueryFrom;
     } // method
 
     int64_t from_start_same_strand( ) const
     {
+        if( !from_known( ) )
+            return ( (int64_t)uiTo ) - query_distance( ) + uiSeedDirFuzziness;
+        if( !to_known( ) )
+            return ( (int64_t)uiFrom ) - uiSeedDirFuzziness;
+
         if( from_fuzziness_is_rightwards( ) )
             return ( (int64_t)uiFrom ) - ( (int64_t)uiSeedDirFuzziness );
         return ( (int64_t)uiFrom ) - ( (int64_t)fuzziness( ) );
@@ -165,16 +175,15 @@ class SvJump : public Container
 
     int64_t from_start( ) const
     {
-        if( !from_known( ) )
-            return 0;
         return from_start_same_strand( ) +
                ( does_switch_strand( ) ? std::numeric_limits<int64_t>::max( ) / (int64_t)2 : 0 );
     } // method
 
     nucSeqIndex from_size( ) const
     {
-        if( !from_known( ) )
-            return 1;
+        if( !to_known( ) || !from_known( ) )
+            return query_distance( ) + uiSeedDirFuzziness;
+
         return fuzziness( ) + uiSeedDirFuzziness;
     } // method
 
@@ -185,28 +194,27 @@ class SvJump : public Container
 
     int64_t to_start( ) const
     {
+        if( !from_known( ) )
+            return ( (int64_t)uiTo ) - query_distance( ) + uiSeedDirFuzziness;
         if( !to_known( ) )
-            return 0;
+            return ( (int64_t)uiFrom ) - uiSeedDirFuzziness;
+
         if( !to_fuzziness_is_downwards( ) )
-            return (int64_t)uiTo - (int64_t)uiSeedDirFuzziness;
-        return (int64_t)uiTo - (int64_t)fuzziness( );
+            return ( (int64_t)uiTo ) - (int64_t)uiSeedDirFuzziness;
+        return ( (int64_t)uiTo ) - (int64_t)fuzziness( );
     } // method
 
     nucSeqIndex to_size( ) const
     {
-        if( !to_known( ) )
-            return 1;
+        if( !to_known( ) || !from_known( ) )
+            return 2; // @todo there is some bug which makes this necessary...
+
         return fuzziness( ) + uiSeedDirFuzziness;
     } // method
 
     int64_t to_end( ) const
     {
         return to_start( ) + to_size( ) - 1;
-    } // method
-
-    nucSeqIndex query_distance( ) const
-    {
-        return uiQueryTo - uiQueryFrom;
     } // method
 
     nucSeqIndex ref_distance( ) const
@@ -221,6 +229,8 @@ class SvJump : public Container
 
     int64_t insert_ratio( ) const
     {
+        if( !switch_strand_known( ) )
+            return std::numeric_limits<int64_t>::max( ) / 2;
         return (int64_t)query_distance( ) - (int64_t)ref_distance( );
     } // method
 }; // class
