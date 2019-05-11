@@ -137,15 +137,8 @@ class SvJump : public Container
         return !does_switch_strand( ) || bFromForward != bFromSeedStart;
     } // method
 
-    nucSeqIndex query_distance( ) const
-    {
-        return uiQueryTo - uiQueryFrom;
-    } // method
-
     nucSeqIndex fuzziness( ) const
     {
-        if( !from_known( ) || !to_known( ) )
-            return query_distance();
         return std::min( static_cast<nucSeqIndex>( 1 + std::pow( std::max( dist( uiFrom, uiTo ), //
                                                                            uiQueryTo - uiQueryFrom ), //
                                                                  1.5 ) //
@@ -157,30 +150,31 @@ class SvJump : public Container
     bool to_fuzziness_is_downwards( ) const
     {
         if( !from_known( ) )
-            return true;
-        if( !to_known( ) )
             return false;
+        if( !to_known( ) )
+            return true;
         return !does_switch_strand( ) || bToForward != bFromSeedStart;
     } // method
 
     int64_t from_start_same_strand( ) const
     {
-        int64_t iFrom = uiFrom;
-        if( !from_known( ) )
-            iFrom = uiTo;
         if( from_fuzziness_is_rightwards( ) )
-            return iFrom - ( (int64_t)uiSeedDirFuzziness );
-        return iFrom - ( (int64_t)fuzziness( ) );
+            return ( (int64_t)uiFrom ) - ( (int64_t)uiSeedDirFuzziness );
+        return ( (int64_t)uiFrom ) - ( (int64_t)fuzziness( ) );
     } // method
 
     int64_t from_start( ) const
     {
+        if( !from_known( ) )
+            return 0;
         return from_start_same_strand( ) +
                ( does_switch_strand( ) ? std::numeric_limits<int64_t>::max( ) / (int64_t)2 : 0 );
     } // method
 
     nucSeqIndex from_size( ) const
     {
+        if( !from_known( ) )
+            return 1;
         return fuzziness( ) + uiSeedDirFuzziness;
     } // method
 
@@ -191,22 +185,28 @@ class SvJump : public Container
 
     int64_t to_start( ) const
     {
-        int64_t iTo = uiTo;
         if( !to_known( ) )
-            iTo = uiFrom;
+            return 0;
         if( !to_fuzziness_is_downwards( ) )
-            return iTo - (int64_t)uiSeedDirFuzziness;
-        return iTo - (int64_t)fuzziness( );
+            return (int64_t)uiTo - (int64_t)uiSeedDirFuzziness;
+        return (int64_t)uiTo - (int64_t)fuzziness( );
     } // method
 
     nucSeqIndex to_size( ) const
     {
+        if( !to_known( ) )
+            return 1;
         return fuzziness( ) + uiSeedDirFuzziness;
     } // method
 
     int64_t to_end( ) const
     {
         return to_start( ) + to_size( ) - 1;
+    } // method
+
+    nucSeqIndex query_distance( ) const
+    {
+        return uiQueryTo - uiQueryFrom;
     } // method
 
     nucSeqIndex ref_distance( ) const
