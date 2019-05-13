@@ -308,6 +308,8 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
         CppSQLiteExtQueryStatement<int64_t> xCallArea;
         CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
+        CppSQLiteExtQueryStatement<int64_t> xNextCallForwardContext;
+        CppSQLiteExtQueryStatement<int64_t> xNextCallBackwardsContext;
 
       public:
         SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -344,7 +346,31 @@ class SV_DB : public Container
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
                          "AND score >= ?" ),
               xDeleteRun( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
-                                      "sv_caller_run_table WHERE name == ?)" )
+                                      "sv_caller_run_table WHERE name == ?)" ),
+              xNextCallForwardContext( *pDatabase,
+                                       "SELECT id, switch_strand, to_pos, to_size "
+                                       "FROM sv_call_table "
+                                       "WHERE sv_caller_run_id = ? "
+                                       "AND from_pos > ? "
+                                       "AND id NOT IN ( "
+                                       "  SELECT id_from "
+                                       "  FROM sv_call_order_table "
+                                       "  WHERE order_id = ? "
+                                       ") "
+                                       "ORDER BY from_pos ASC "
+                                       "LIMIT 1 " ),
+              xNextCallBackwardsContext( *pDatabase,
+                                         "SELECT id, switch_strand, from_pos, from_size "
+                                         "FROM sv_call_table "
+                                         "WHERE sv_caller_run_id = ? "
+                                         "AND to_pos + to_size < ? "
+                                         "AND id NOT IN ( "
+                                         "  SELECT id_from "
+                                         "  FROM sv_call_order_table "
+                                         "  WHERE order_id = ? "
+                                         ") "
+                                         "ORDER BY from_pos DESC "
+                                         "LIMIT 1 " )
         {} // default constructor
 
         inline uint32_t numCalls( )
@@ -384,6 +410,39 @@ class SV_DB : public Container
             return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, dMinScore, iAllowedDist, iAllowedDist,
                                         iAllowedDist, iAllowedDist );
         } // method
+
+        // returns call id, jump end position, next context
+        // @todo continue here
+        inline std::tuple<int64_t, uint32_t, bool> getNextCall( int64_t iCallerRun, int64_t iOrderId, uint32_t uiFrom,
+                                                                bool bForwardContext )
+        {
+            std::tuple<int64_t, uint32_t, bool> xRet;
+            if( bForwardContext )
+            {
+                auto vRet = xNextCallForwardContext.executeAndStoreInVector( iCallerRun, uiFrom, iOrderId );
+                if( vRet.size( ) > 0 )
+                {
+                    std::get<0>( xRet ) = std::get<0>( vRet[ 0 ] );
+                    std::get<1>( xRet ) = std::get<1>( vRet[ 0 ] )
+                                              ? std::get<2>( vRet[ 0 ] )
+                                              : std::get<2>( vRet[ 0 ] ) + std::get<3>( vRet[ 0 ] );
+                    std::get<2>( xRet ) = std::get<1>( vRet[ 0 ] );
+                } // if
+            } // if
+            else
+            {
+                auto vRet = xNextCallBackwardsContext.executeAndStoreInVector( iCallerRun, uiFrom, iOrderId );
+                if( vRet.size( ) > 0 )
+                {
+                    std::get<0>( xRet ) = std::get<0>( vRet[ 0 ] );
+                    std::get<1>( xRet ) = !std::get<1>( vRet[ 0 ] )
+                                              ? std::get<2>( vRet[ 0 ] )
+                                              : std::get<2>( vRet[ 0 ] ) + std::get<3>( vRet[ 0 ] );
+                    std::get<2>( xRet ) = !std::get<1>( vRet[ 0 ] );
+                } // if
+            } // else
+            return xRet;
+        } // method
     }; // class
 
     typedef CppSQLiteExtTable<int64_t, // call_id (foreign key)
@@ -418,6 +477,30 @@ class SV_DB : public Container
         } // method
     }; // class
 
+    typedef CppSQLiteExtTable<int64_t, // order_id
+                              int64_t, // id_from (foreign key)
+                              int64_t // id_to (foreign key)
+                              >
+        TP_SV_CALL_ORDER_TABLE;
+    class SvCallOrderTable : public TP_SV_CALL_ORDER_TABLE
+    {
+        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+
+      public:
+        SvCallOrderTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_SV_CALL_ORDER_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "sv_call_order_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"order_id", "id_from", "id_to"},
+                  false,
+                  // constraints for table
+                  std::vector<std::string>{"FOREIGN KEY (id_from) REFERENCES sv_call_table(id) ON DELETE CASCADE",
+                                           "FOREIGN KEY (id_to) REFERENCES sv_call_table(id) ON DELETE CASCADE"} ),
+              pDatabase( pDatabase )
+        {} // default constructor
+    }; // class
+
 
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
@@ -427,6 +510,7 @@ class SV_DB : public Container
     std::shared_ptr<SvJumpTable> pSvJumpTable;
     std::shared_ptr<SvCallTable> pSvCallTable;
     std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
+    std::shared_ptr<SvCallOrderTable> pSvCallOrderTable;
 
     friend class NucSeqFromSql;
     friend class AllNucSeqFromSql;
@@ -446,6 +530,7 @@ class SV_DB : public Container
           pSvJumpTable( std::make_shared<SvJumpTable>( pDatabase ) ),
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
+              pSvCallOrderTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
     {} // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -581,7 +666,7 @@ class SV_DB : public Container
                 if( rJump.iReadId == -1 ) // if there is no read id given yet add it
                     rJump.iReadId = iReadId;
                 else // otherwise assert it matches
-                    assert(rJump.iReadId == iReadId);
+                    assert( rJump.iReadId == iReadId );
 
                 if( rJump.does_switch_strand( ) )
                     assert( rJump.from_start( ) > std::numeric_limits<int64_t>::max( ) / 2 );
