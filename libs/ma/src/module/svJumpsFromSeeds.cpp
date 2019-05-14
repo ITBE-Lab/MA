@@ -61,8 +61,17 @@ class LastMatchingSeeds
             if( rSeed.size( ) >= vSeedSizes[ uiI ] )
             {
                 vContent[ uiI ].insert( rSeed );
-                return;
+                break;
             } // if
+    } // method
+
+    template <typename TP_IT> void fill( TP_IT itBegin, TP_IT itEnd )
+    {
+        while( itBegin != itEnd )
+        {
+            insert( *itBegin );
+            itBegin++;
+        } // while
     } // method
 
     template <typename TP_FUNCTOR> void forall( TP_FUNCTOR&& functor )
@@ -102,13 +111,13 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     Seeds vSeeds;
     // avoid multiple allocations (we can only guess the actual number of seeds here)
     vSeeds.reserve( pSegments->size( ) * 2 );
-    pSegments->emplaceAllEachSeeds( *pFM_index, 0, 100, 18, vSeeds, []( ) { return true; } );
+    pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, []( ) { return true; } );
 
-    if( vSeeds.size( ) > 0 )
+    if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
-        if( vSeeds.front( ).start( ) > 18 )
+        if( vSeeds.front( ).start( ) > uiMinDistDummy )
             pRet->emplace_back( vSeeds.front( ), pQuery->length( ), true );
-        if( vSeeds.back( ).end( ) + 18 < pQuery->length( ) )
+        if( vSeeds.back( ).end( ) + uiMinDistDummy < pQuery->length( ) )
             pRet->emplace_back( vSeeds.back( ), pQuery->length( ), false );
     } // if
 
@@ -123,9 +132,96 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     return pRet;
 } // method
 
+std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::shared_ptr<SegmentVector> pSegmentsA,
+                                                                          std::shared_ptr<SegmentVector>
+                                                                              pSegmentsB,
+                                                                          std::shared_ptr<Pack>
+                                                                              pRefSeq,
+                                                                          std::shared_ptr<FMIndex>
+                                                                              pFM_index,
+                                                                          std::shared_ptr<NucSeq>
+                                                                              pQueryA,
+                                                                          std::shared_ptr<NucSeq>
+                                                                              pQueryB )
+{
+    auto pRet = std::make_shared<ContainerVector<SvJump>>( );
+
+    // sort seeds by query position:
+    std::sort( pSegmentsA->begin( ), pSegmentsA->end( ),
+               []( const Segment& rA, const Segment& rB ) { return rA.start( ) < rB.start( ); } );
+    Seeds vSeedsA;
+    // avoid multiple allocations (we can only guess the actual number of seeds here)
+    vSeedsA.reserve( pSegmentsA->size( ) * 2 );
+    // emplace the seeds of the first query
+    pSegmentsA->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeedsA,
+                                     []( ) { return true; } );
+    // add the dummy jumps for the first query
+    if( vSeedsA.size( ) > 0 && bDoDummyJumps )
+    {
+        if( vSeedsA.front( ).start( ) > uiMinDistDummy )
+            pRet->emplace_back( vSeedsA.front( ), pQueryA->length( ), true );
+        if( vSeedsA.back( ).end( ) + uiMinDistDummy < pQueryA->length( ) )
+            pRet->emplace_back( vSeedsA.back( ), pQueryA->length( ), false );
+    } // if
+
+
+    std::sort( pSegmentsB->begin( ), pSegmentsB->end( ),
+               []( const Segment& rA, const Segment& rB ) { return rA.start( ) < rB.start( ); } );
+    Seeds vSeedsB;
+    // avoid multiple allocations (we can only guess the actual number of seeds here)
+    vSeedsB.reserve( pSegmentsB->size( ) * 2 );
+    // emplace the seeds of the second query
+    pSegmentsB->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeedsB,
+                                     []( ) { return true; } );
+    // add the dummy jumps for the second query
+    if( vSeedsB.size( ) > 0 && bDoDummyJumps )
+    {
+        if( vSeedsB.front( ).start( ) > uiMinDistDummy )
+            pRet->emplace_back( vSeedsB.front( ), pQueryB->length( ), true );
+        if( vSeedsB.back( ).end( ) + uiMinDistDummy < pQueryB->length( ) )
+            pRet->emplace_back( vSeedsB.back( ), pQueryB->length( ), false );
+    } // if
+
+    // @note @todo from here on everything is quite inefficient
+
+    // walk over all seeds to compute
+    LastMatchingSeeds xLastSeedsForwardA;
+    LastMatchingSeeds xLastSeedsForwardB;
+    // fill
+    xLastSeedsForwardA.fill( vSeedsB.begin( ), vSeedsB.end( ) );
+    xLastSeedsForwardB.fill( vSeedsA.begin( ), vSeedsA.end( ) );
+
+    LastMatchingSeeds xLastSeedsReverseA;
+    LastMatchingSeeds xLastSeedsReverseB;
+    // fill
+    xLastSeedsForwardA.fill( vSeedsB.rbegin( ), vSeedsB.rend( ) );
+    xLastSeedsForwardB.fill( vSeedsA.rbegin( ), vSeedsA.rend( ) );
+
+    // now adjust seeds positions using the paired read information.
+    for( Seed& rCurr : vSeedsA )
+        rCurr.iStart += uiPairedDist;
+    for( Seed& rCurr : vSeedsB )
+        rCurr.iStart += uiPairedDist;
+
+
+    for( Seed& rCurr : vSeedsA )
+        helperSvJumpsFromSeedsExecute( xLastSeedsForwardA, rCurr, false, pRet );
+    for( Seed& rCurr : vSeedsB )
+        helperSvJumpsFromSeedsExecute( xLastSeedsForwardB, rCurr, false, pRet );
+
+
+    for( auto itRevIt = vSeedsA.rbegin( ); itRevIt != vSeedsA.rend( ); itRevIt++ )
+        helperSvJumpsFromSeedsExecute( xLastSeedsReverseA, *itRevIt, true, pRet );
+    for( auto itRevIt = vSeedsB.rbegin( ); itRevIt != vSeedsB.rend( ); itRevIt++ )
+        helperSvJumpsFromSeedsExecute( xLastSeedsReverseB, *itRevIt, true, pRet );
+
+    return pRet;
+} // method
+
 #ifdef WITH_PYTHON
 void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
 {
     exportModule<SvJumpsFromSeeds>( rxPyModuleId, "SvJumpsFromSeeds" );
+    exportModule<SvJumpsFromSeedsPaired>( rxPyModuleId, "SvJumpsFromSeedsPaired" );
 } // function
 #endif

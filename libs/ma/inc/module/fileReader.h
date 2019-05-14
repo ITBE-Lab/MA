@@ -540,7 +540,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
   public:
     std::shared_ptr<SingleFileReader> pF1;
     std::shared_ptr<SingleFileReader> pF2;
-
+    const bool bRevCompMate;
 
     /**
      * @brief creates a new FileReader.
@@ -548,14 +548,17 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     PairedFileReader(
         const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
         : pF1( std::make_shared<FileListReader>( vsFileName1 ) ),
-          pF2( std::make_shared<FileListReader>( vsFileName2 ) )
+          pF2( std::make_shared<FileListReader>( vsFileName2 ) ),
+          bRevCompMate( rParameters.getSelected()->xRevCompPairedReadMates->get() )
     {} // constructor
+
     /**
      * @brief creates a new FileReader.
      */
     PairedFileReader( const ParameterSetManager& rParameters, std::string sQuery, std::string sMate )
         : pF1( std::make_shared<FileReader>( rParameters, sQuery, sQuery.size( ) ) ),
-          pF2( std::make_shared<FileReader>( rParameters, sMate, sMate.size( ) ) )
+          pF2( std::make_shared<FileReader>( rParameters, sMate, sMate.size( ) ) ),
+          bRevCompMate( rParameters.getSelected()->xRevCompPairedReadMates->get() )
     {} // constructor
 
     void EXPORTED checkPaired();

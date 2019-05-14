@@ -223,6 +223,12 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
         return nullptr;
     if( ( *pRet )[ 1 ] == nullptr )
         return nullptr;
+
+    if( bRevCompMate )
+    {
+        pRet->back( )->vReverse( );
+        pRet->back( )->vSwitchAllBasePairsToComplement( );
+    } // if
     return pRet;
 } // function
 

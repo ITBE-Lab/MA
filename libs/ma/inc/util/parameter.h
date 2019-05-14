@@ -466,8 +466,7 @@ class ParameterSetBase
 const std::pair<size_t, std::string> DP_PARAMETERS = std::make_pair( 5, "Dynamic Programming" );
 const std::pair<size_t, std::string> HEURISTIC_PARAMETERS = std::make_pair( 4, "Heuristics" );
 const std::pair<size_t, std::string> SEEDING_PARAMETERS = std::make_pair( 1, "Seeding" );
-const std::pair<size_t, std::string> SOC_PARAMETERS =
-    std::make_pair( 2, "Strip of Consideration" );
+const std::pair<size_t, std::string> SOC_PARAMETERS = std::make_pair( 2, "Strip of Consideration" );
 const std::pair<size_t, std::string> PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
 const std::pair<size_t, std::string> SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
 const std::pair<size_t, std::string> GENERAL_PARAMETER = std::make_pair( 0, "General Parameter" );
@@ -524,10 +523,18 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xCGTag; // Output long CIGARS in CG tag
 
     // SV caller options
+    // @todo depre start
     AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
     AlignerParameterPointer<int> xSecSeedSize; // maximal distance between clusters
     AlignerParameterPointer<int> xPaddingReSeeding; // re seeding padding
     AlignerParameterPointer<int> xNSoCs; // number of SoCs for SV analysis
+    // @todo depre end
+    AlignerParameterPointer<int> xMinSeedSizeSV; // minimal seed size for the sv caller
+    AlignerParameterPointer<int> xMaxAmbiguitySv; // max seed ambiguity for the sv caller
+    AlignerParameterPointer<bool> xDoDummyJumps; // compute dummy jumps for first & last seed of read
+    AlignerParameterPointer<int> xMinDistDummy; // minimal distance for seeds from read edge for dummy jumps
+    AlignerParameterPointer<bool> xRevCompPairedReadMates; // reverse complement all paried read mates
+    AlignerParameterPointer<bool> xDoMateJumps; // compute jumps between paired reads
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -697,6 +704,13 @@ class Presetting : public ParameterSetBase
           xPaddingReSeeding( this, "re seeding padding", "padding for re seeding", SV_PARAMETERS, 100,
                              checkPositiveValue ),
           xNSoCs( this, "Number of SoC's for SV calling", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
+          // new SV
+          xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
+          xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 100, checkPositiveValue ),
+          xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
+          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
+          xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
+          xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

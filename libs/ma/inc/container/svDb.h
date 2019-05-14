@@ -308,8 +308,8 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
         CppSQLiteExtQueryStatement<int64_t> xCallArea;
         CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
-        CppSQLiteExtQueryStatement<int64_t> xNextCallForwardContext;
-        CppSQLiteExtQueryStatement<int64_t> xNextCallBackwardsContext;
+        // CppSQLiteExtQueryStatement<int64_t> xNextCallForwardContext;
+        // CppSQLiteExtQueryStatement<int64_t> xNextCallBackwardsContext;
 
       public:
         SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -346,8 +346,9 @@ class SV_DB : public Container
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
                          "AND score >= ?" ),
               xDeleteRun( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
-                                      "sv_caller_run_table WHERE name == ?)" ),
-              xNextCallForwardContext( *pDatabase,
+                                      "sv_caller_run_table WHERE name == ?)" )
+#if 0
+              , xNextCallForwardContext( *pDatabase,
                                        "SELECT id, switch_strand, to_pos, to_size "
                                        "FROM sv_call_table "
                                        "WHERE sv_caller_run_id = ? "
@@ -371,6 +372,7 @@ class SV_DB : public Container
                                          ") "
                                          "ORDER BY from_pos DESC "
                                          "LIMIT 1 " )
+#endif
         {} // default constructor
 
         inline uint32_t numCalls( )
@@ -417,6 +419,7 @@ class SV_DB : public Container
                                                                 bool bForwardContext )
         {
             std::tuple<int64_t, uint32_t, bool> xRet;
+#if 0
             if( bForwardContext )
             {
                 auto vRet = xNextCallForwardContext.executeAndStoreInVector( iCallerRun, uiFrom, iOrderId );
@@ -441,6 +444,7 @@ class SV_DB : public Container
                     std::get<2>( xRet ) = !std::get<1>( vRet[ 0 ] );
                 } // if
             } // else
+#endif
             return xRet;
         } // method
     }; // class
@@ -510,7 +514,7 @@ class SV_DB : public Container
     std::shared_ptr<SvJumpTable> pSvJumpTable;
     std::shared_ptr<SvCallTable> pSvCallTable;
     std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
-    std::shared_ptr<SvCallOrderTable> pSvCallOrderTable;
+    // std::shared_ptr<SvCallOrderTable> pSvCallOrderTable;
 
     friend class NucSeqFromSql;
     friend class AllNucSeqFromSql;
@@ -530,7 +534,7 @@ class SV_DB : public Container
           pSvJumpTable( std::make_shared<SvJumpTable>( pDatabase ) ),
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
-              pSvCallOrderTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
+    //, pSvCallOrderTable( std::make_shared<SvCallOrderTable>( pDatabase ) )
     {} // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -937,6 +941,7 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
     std::shared_ptr<SV_DB> pDb;
     CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t, uint32_t> xQuery;
     CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t, uint32_t>::Iterator xTableIterator;
+    const bool bRevCompMate;
 
   public:
     PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
@@ -947,7 +952,8 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
                   "INNER JOIN paired_read_table "
                   "ON paired_read_table.first_read == A.id "
                   "AND paired_read_table.second_read == B.id " ),
-          xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
+          xTableIterator( xQuery.vExecuteAndReturnIterator( ) ),
+          bRevCompMate( rParameters.getSelected()->xRevCompPairedReadMates->get() )
     {
         if( xTableIterator.eof( ) )
             setFinished( );
@@ -965,6 +971,13 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
         pRet->back( )->iId = std::get<2>( xTup );
         pRet->push_back( std::get<1>( xTup ).pNucSeq );
         pRet->back( )->iId = std::get<3>( xTup );
+
+        if( bRevCompMate )
+        {
+            pRet->back( )->vReverse();
+            pRet->back( )->vSwitchAllBasePairsToComplement();
+        } // if
+
         xTableIterator.next( );
 
         if( xTableIterator.eof( ) )
