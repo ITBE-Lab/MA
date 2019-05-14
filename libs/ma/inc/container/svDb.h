@@ -953,7 +953,7 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
                   "ON paired_read_table.first_read == A.id "
                   "AND paired_read_table.second_read == B.id " ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( ) ),
-          bRevCompMate( rParameters.getSelected()->xRevCompPairedReadMates->get() )
+          bRevCompMate( rParameters.getSelected( )->xRevCompPairedReadMates->get( ) )
     {
         if( xTableIterator.eof( ) )
             setFinished( );
@@ -974,8 +974,8 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
 
         if( bRevCompMate )
         {
-            pRet->back( )->vReverse();
-            pRet->back( )->vSwitchAllBasePairsToComplement();
+            pRet->back( )->vReverse( );
+            pRet->back( )->vSwitchAllBasePairsToComplement( );
         } // if
 
         xTableIterator.next( );

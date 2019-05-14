@@ -17,12 +17,14 @@ void exportModuleClass( py::module& rxPyModuleId )
     py::class_<PyModule<false>, ModuleWrapperPyToCpp<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
         .def( py::init<>( ) ) // default constructor
         .def( "execute", &PyModule<false>::execute )
+        .def( "requires_lock", &PyModule<false>::requiresLock )
         .def( "is_finished", &PyModule<false>::isFinished );
 
     py::class_<PyModule<true>, ModuleWrapperPyToCpp<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId,
                                                                                              "VolatileModule" )
         .def( py::init<>( ) ) // default constructor
         .def( "execute", &PyModule<true>::execute )
+        .def( "requires_lock", &PyModule<true>::requiresLock )
         .def( "set_finished", &PyModule<true>::setFinished )
         .def( "is_finished", &PyModule<true>::isFinished );
 

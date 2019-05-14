@@ -22,6 +22,7 @@ namespace py = pybind11;
 #include <chrono>
 #include <ctime>
 #include <iostream>
+#include <thread>
 #include <typeinfo>
 /// @endcond
 
@@ -727,6 +728,51 @@ template <class TP_CONTAINER, class... TP_ARGS> std::shared_ptr<Pledge<TP_CONTAI
     return pRet;
 } // function
 
+/**
+ * @brief executes a volatile module over and over.
+ * @note cannot deal with modules that have an input at the moment.
+ */
+template <typename TP_MODULE, typename... TP_CONSTR_PARAMS>
+class Cyclic : public Module<typename TP_MODULE::TP_RETURN, true>
+{
+    const ParameterSetManager& rParameters;
+    std::tuple<TP_CONSTR_PARAMS...> tParams;
+    std::unique_ptr<TP_MODULE> pModule;
+
+    template <int... S> void resetHelper( seq<S...> )
+    {
+        pModule = std::make_unique<TP_MODULE>( rParameters, std::get<S>( tParams )... );
+        assert( !pModule->isFinished( ) );
+    } // method
+
+    void reset( )
+    {
+        resetHelper( typename gens<sizeof...( TP_CONSTR_PARAMS )>::type( ) );
+    } // method
+
+  public:
+    Cyclic( const ParameterSetManager& rParameters, TP_CONSTR_PARAMS... params )
+        : rParameters( rParameters ), tParams( params... )
+    {
+        static_assert( TP_MODULE::IS_VOLATILE == true, "can only declare Cyclic on volatile modules!" );
+        reset( );
+    } // constructor
+
+    std::shared_ptr<typename TP_MODULE::TP_RETURN> execute( )
+    {
+        auto pRet = pModule->execute( );
+        if( pModule->isFinished( ) )
+            reset( );
+        return pRet;
+    } // method
+
+    // override
+    bool requiresLock( ) const
+    {
+        return true;
+    } // method
+}; // class
+
 
 /**
  * @brief The module class that is exported to Python.
@@ -739,12 +785,12 @@ template <bool IS_VOLATILE> class PyModule : public Module<Container, IS_VOLATIL
  * @brief The module class that is exported to Python and allows python to define it's own modules.
  * @details
  * pybind11 calls this a trampoline class, since it redirects calls back to python.
- * 
+ *
  */
 template <bool IS_VOLATILE> class ModuleWrapperPyToCpp : public PyModule<IS_VOLATILE>
 {
   public:
-    ModuleWrapperPyToCpp()
+    ModuleWrapperPyToCpp( )
     {} // default constructor
     /**
      * @brief Execute the implemented algorithm.
@@ -753,12 +799,10 @@ template <bool IS_VOLATILE> class ModuleWrapperPyToCpp : public PyModule<IS_VOLA
      */
     std::shared_ptr<Container> execute( std::shared_ptr<PyContainerVector> pArgs ) override
     {
-        PYBIND11_OVERLOAD(
-            PYBIND11_TYPE(std::shared_ptr<Container>),
-            PYBIND11_TYPE(PyModule<IS_VOLATILE>),
-            execute,
-            pArgs
-        ); // PYBIND11_OVERLOAD
+        PYBIND11_OVERLOAD( PYBIND11_TYPE( std::shared_ptr<Container> ),
+                           PYBIND11_TYPE( PyModule<IS_VOLATILE> ),
+                           execute,
+                           pArgs ); // PYBIND11_OVERLOAD
     } // method
 }; // class
 #endif
@@ -963,12 +1007,50 @@ void exportModuleAlternateConstructor( pybind11::module& xPyModuleId, // pybind 
 
 #endif
 
+/*
+ * @brief for testing purposes
+ */
+class Test : public Module<Container, true>
+{
+    size_t uiNumIt = 5;
+    int iTest;
+    std::mutex xMutex;
+
+  public:
+    Test( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<Container> execute( )
+    {
+        int iTestCpy = std::rand( );
+        {
+            std::lock_guard<std::mutex> xGuard( xMutex );
+            iTest = iTestCpy;
+        } // scope of xGuard
+        std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+        {
+            std::lock_guard<std::mutex> xGuard( xMutex );
+            if( iTest != iTestCpy )
+                exit( EXIT_FAILURE );
+        } // scope of xGuard
+        uiNumIt--;
+        if( uiNumIt == 0 )
+            setFinished( );
+        return std::make_shared<Container>( );
+    } // method
+
+    // override
+    bool requiresLock( ) const
+    {
+        return true;
+    } // method
+}; // class
+
 } // namespace libMA
 
 
 #ifdef WITH_PYTHON
 void exportModuleClass( py::module& rxPyModuleId );
 #endif
-
 
 #endif

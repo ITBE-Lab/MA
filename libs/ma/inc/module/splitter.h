@@ -45,7 +45,6 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false,
         // locking in the container is done automatically by the pledge
         return pInput;
     } // method
-
 }; // class
 
 /**

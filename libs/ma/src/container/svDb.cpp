@@ -60,7 +60,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def_readonly( "sv_caller_run_id", &SV_DB::SvJumpInserter::iSvCallerRunId );
 
     // export the ReadContex class
-    //py::class_<SV_DB::SvCallInserter::CallContex>( rxPyModuleId, "CallContex" )
+    // py::class_<SV_DB::SvCallInserter::CallContex>( rxPyModuleId, "CallContex" )
     //    .def( "add_support", &SV_DB::SvCallInserter::CallContex::addSupport );
 
     // export the SvJumpInserter class
@@ -93,7 +93,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "hasNext", &SvCallsFromDb::hasNext );
 
     // export the NucSeqFromSql classes
-    exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
+    exportModule<Cyclic<AllNucSeqFromSql, std::shared_ptr<SV_DB>>, std::shared_ptr<SV_DB>>( rxPyModuleId,
+                                                                                            "AllNucSeqFromSql" );
     exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "NucSeqFromSql" );
     exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "PairedNucSeqFromSql" );
     exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>(
