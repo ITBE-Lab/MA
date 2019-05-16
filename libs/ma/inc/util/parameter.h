@@ -706,7 +706,7 @@ class Presetting : public ParameterSetBase
           xNSoCs( this, "Number of SoC's for SV calling", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           // new SV
           xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
-          xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 100, checkPositiveValue ),
+          xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 10000, checkPositiveValue ),
           xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
           xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),

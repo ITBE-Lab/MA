@@ -93,8 +93,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "hasNext", &SvCallsFromDb::hasNext );
 
     // export the NucSeqFromSql classes
-    exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId,
-                                                                                            "AllNucSeqFromSql" );
+    exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
     exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "NucSeqFromSql" );
     exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "PairedNucSeqFromSql" );
     exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>(

@@ -194,8 +194,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
     LastMatchingSeeds xLastSeedsReverseA;
     LastMatchingSeeds xLastSeedsReverseB;
     // fill
-    xLastSeedsForwardA.fill( vSeedsB.rbegin( ), vSeedsB.rend( ) );
-    xLastSeedsForwardB.fill( vSeedsA.rbegin( ), vSeedsA.rend( ) );
+    xLastSeedsReverseA.fill( vSeedsB.rbegin( ), vSeedsB.rend( ) );
+    xLastSeedsReverseB.fill( vSeedsA.rbegin( ), vSeedsA.rend( ) );
+
 
     // now adjust seeds positions using the paired read information.
     for( Seed& rCurr : vSeedsA )
