@@ -274,6 +274,10 @@ SAM Output options:
                                                    Enabling this flag will drastically increase the
                                                    size of the SAM output file.
 
+    --Use_M_in_CIGAR <bool> [false]                Disabled: Distinguish matches and mismatches in
+                                                   CIGARs using '=' and 'X' operations. Enabled: Use
+                                                   the 'M' operation in CIGARs.
+
     --Output_long_cigars_in_CG_tag <bool> [true]
                                                    Some programs crash, if cigars become too long. If
                                                    this flag is enabled, the CG:B:I tag is used for

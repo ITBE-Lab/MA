@@ -100,7 +100,8 @@ class TagGenerator
           bSVTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bNMTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bASTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
-          bOutputMInsteadOfXAndEqual( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bOutputMInsteadOfXAndEqual( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ||
+                                      rParameters.getSelected( )->xOutputMCigar->get( ) ),
           bXITag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bXETag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bXRTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),

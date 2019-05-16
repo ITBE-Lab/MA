@@ -510,6 +510,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<double> xMaxOverlapSupplementary; // Maximal supplementary overlap
     AlignerParameterPointer<int> xMaxSupplementaryPerPrim; // Number Supplementary alignments
     AlignerParameterPointer<bool> xEmulateNgmlrTags; // Emulate NGMLR's tag output
+    AlignerParameterPointer<bool> xOutputMCigar; // Output M symbol in cigar
     AlignerParameterPointer<bool> xCGTag; // Output long CIGARS in CG tag
 
     // Heuristic Options:
@@ -668,6 +669,10 @@ class Presetting : public ParameterSetBase
               "Output SAM tags as NGMLR would. Enable this flag if you want to use MA in combination with "
               "Sniffles. Enabling this flag will drastically increase the size of the SAM output file.",
               SAM_PARAMETERS, false ),
+          xOutputMCigar( this, "Use M in CIGAR",
+                         "Disabled: Distinguish matches and mismatches in CIGARs using '=' and 'X' operations. "
+                         "Enabled: Use the 'M' operation in CIGARs.",
+                         SAM_PARAMETERS, false ),
           xCGTag( this, "Output long cigars in CG tag",
                   "Some programs crash, if cigars become too long. If this flag is enabled, the CG:B:I tag is used for "
                   "the output of long cigars (cigars with more than 65536 operations).",
