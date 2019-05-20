@@ -6,6 +6,7 @@
 
 #include "container/container.h"
 #include "container/nucSeq.h"
+#include "container/pack.h"
 #include "container/soc.h"
 #include "container/svJump.h"
 #include "module/module.h"
@@ -290,6 +291,24 @@ class SV_DB : public Container
         } // method
     }; // class
 
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // regex
+                                                     uint32_t // state
+                                                     >
+        TP_SV_CALL_REG_EX_TABLE;
+    class SvCallRegExTable : public TP_SV_CALL_REG_EX_TABLE
+    {
+        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+
+      public:
+        SvCallRegExTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_SV_CALL_REG_EX_TABLE( *pDatabase, // the database where the table resides
+                                       "sv_call_reg_ex_table", // name of the table in the database
+                                       // column definitions of the table
+                                       std::vector<std::string>{"regex", "state"} ),
+              pDatabase( pDatabase )
+        {} // default constructor
+    }; // class
+
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_caller_run_id (foreign key)
                                                      uint32_t, // from_pos
                                                      uint32_t, // to_pos
@@ -297,19 +316,41 @@ class SV_DB : public Container
                                                      uint32_t, // to_size
                                                      bool, // switch_strand
                                                      NucSeqSql, // inserted_sequence
-                                                     double // score
+                                                     double, // score
+                                                     int64_t // regex_id
                                                      >
         TP_SV_CALL_TABLE;
     class SvCallTable : public TP_SV_CALL_TABLE
     {
+
+        typedef CppSQLiteExtTable<int64_t // call_id
+                                  >
+            TP_RECONSTRUCTION_TABLE;
+        class ReconstructionTable : public TP_RECONSTRUCTION_TABLE
+        {
+            std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+
+          public:
+            ReconstructionTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+                : TP_RECONSTRUCTION_TABLE( *pDatabase, // the database where the table resides
+                                           "reconstruction_table", // name of the table in the database
+                                           // column definitions of the table
+                                           std::vector<std::string>{"call_id"},
+                                           false ),
+                  pDatabase( pDatabase )
+            {} // default constructor
+
+        }; // class
+
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+        std::shared_ptr<ReconstructionTable> pReconstructionTable;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySize;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySizeSpecific;
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
         CppSQLiteExtQueryStatement<int64_t> xCallArea;
         CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
-        // CppSQLiteExtQueryStatement<int64_t> xNextCallForwardContext;
-        // CppSQLiteExtQueryStatement<int64_t> xNextCallBackwardsContext;
+        CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallForwardContext;
+        CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallBackwardContext;
 
       public:
         SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -318,11 +359,13 @@ class SV_DB : public Container
                   "sv_call_table", // name of the table in the database
                   // column definitions of the table
                   std::vector<std::string>{"sv_caller_run_id", "from_pos", "to_pos", "from_size", "to_size",
-                                           "switch_strand", "inserted_sequence", "score"},
+                                           "switch_strand", "inserted_sequence", "score", "regex_id"},
                   // constraints for table
                   std::vector<std::string>{
-                      "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE"} ),
+                      "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE",
+                      "FOREIGN KEY (regex_id) REFERENCES sv_call_reg_ex_table(id) ON DELETE SET NULL"} ),
               pDatabase( pDatabase ),
+              pReconstructionTable( std::make_shared<ReconstructionTable>( pDatabase ) ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
               xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id == ? "
                                               "AND score >= ?" ),
@@ -346,33 +389,30 @@ class SV_DB : public Container
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
                          "AND score >= ?" ),
               xDeleteRun( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
-                                      "sv_caller_run_table WHERE name == ?)" )
-#if 0
-              , xNextCallForwardContext( *pDatabase,
-                                       "SELECT id, switch_strand, to_pos, to_size "
-                                       "FROM sv_call_table "
-                                       "WHERE sv_caller_run_id = ? "
-                                       "AND from_pos > ? "
-                                       "AND id NOT IN ( "
-                                       "  SELECT id_from "
-                                       "  FROM sv_call_order_table "
-                                       "  WHERE order_id = ? "
-                                       ") "
-                                       "ORDER BY from_pos ASC "
-                                       "LIMIT 1 " ),
-              xNextCallBackwardsContext( *pDatabase,
-                                         "SELECT id, switch_strand, from_pos, from_size "
-                                         "FROM sv_call_table "
-                                         "WHERE sv_caller_run_id = ? "
-                                         "AND to_pos + to_size < ? "
-                                         "AND id NOT IN ( "
-                                         "  SELECT id_from "
-                                         "  FROM sv_call_order_table "
-                                         "  WHERE order_id = ? "
-                                         ") "
-                                         "ORDER BY from_pos DESC "
-                                         "LIMIT 1 " )
-#endif
+                                      "sv_caller_run_table WHERE name == ?)" ),
+              xNextCallForwardContext(
+                  *pDatabase,
+                  "SELECT id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
+                  "FROM sv_call_table "
+                  "WHERE sv_caller_run_id = ? "
+                  "AND from_pos >= ? "
+                  "AND id NOT IN ( "
+                  "  SELECT call_id "
+                  "  FROM reconstruction_table "
+                  ") "
+                  "ORDER BY from_pos ASC "
+                  "LIMIT 1 " ),
+              xNextCallBackwardContext( *pDatabase,
+                                        "SELECT id, switch_strand, from_pos, from_size, inserted_sequence, to_pos "
+                                        "FROM sv_call_table "
+                                        "WHERE sv_caller_run_id = ? "
+                                        "AND to_pos <= ? "
+                                        "AND id NOT IN ( "
+                                        "  SELECT call_id "
+                                        "  FROM reconstruction_table "
+                                        ") "
+                                        "ORDER BY to_pos DESC "
+                                        "LIMIT 1 " )
         {} // default constructor
 
         inline uint32_t numCalls( )
@@ -387,10 +427,13 @@ class SV_DB : public Container
 
         inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
         {
-            return this->xInsertRow( iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
-                                     (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
-                                     // NucSeqSql can deal with nullpointers
-                                     NucSeqSql( rCall.pInsertedSequence ), rCall.dScore );
+            int64_t iCallId =
+                this->xInsertRow( iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
+                                  (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
+                                  // NucSeqSql can deal with nullpointers
+                                  NucSeqSql( rCall.pInsertedSequence ), rCall.dScore, -1 );
+            rCall.iId = iCallId;
+            return iCallId;
         } // method
 
         inline void deleteRun( std::string& rS )
@@ -413,39 +456,108 @@ class SV_DB : public Container
                                         iAllowedDist, iAllowedDist );
         } // method
 
-        // returns call id, jump end position, next context
-        // @todo continue here
-        inline std::tuple<int64_t, uint32_t, bool> getNextCall( int64_t iCallerRun, int64_t iOrderId, uint32_t uiFrom,
-                                                                bool bForwardContext )
+        // returns call id, jump start pos, next context, next from position, jump end position
+        inline std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> getNextCall( int64_t iCallerRun, //
+                                                                                     uint32_t uiFrom, //
+                                                                                     bool bForwardContext )
         {
-            std::tuple<int64_t, uint32_t, bool> xRet;
-#if 0
+            std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> xRet;
+            std::get<0>( xRet ) = -1;
+            std::get<2>( xRet ) = bForwardContext; // does nothing...
             if( bForwardContext )
             {
-                auto vRet = xNextCallForwardContext.executeAndStoreInVector( iCallerRun, uiFrom, iOrderId );
-                if( vRet.size( ) > 0 )
+                auto itQ = xNextCallForwardContext.vExecuteAndReturnIterator( iCallerRun, uiFrom );
+                if( !itQ.eof( ) )
                 {
-                    std::get<0>( xRet ) = std::get<0>( vRet[ 0 ] );
-                    std::get<1>( xRet ) = std::get<1>( vRet[ 0 ] )
-                                              ? std::get<2>( vRet[ 0 ] )
-                                              : std::get<2>( vRet[ 0 ] ) + std::get<3>( vRet[ 0 ] );
-                    std::get<2>( xRet ) = std::get<1>( vRet[ 0 ] );
+                    auto xQ = itQ.get( );
+                    std::get<0>( xRet ) = std::get<0>( xQ );
+                    std::get<1>( xRet ) = std::get<5>( xQ );
+                    std::get<2>( xRet ) = !std::get<1>( xQ );
+                    std::get<3>( xRet ) = std::get<4>( xQ );
+                    std::get<4>( xRet ) = std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
                 } // if
             } // if
             else
             {
-                auto vRet = xNextCallBackwardsContext.executeAndStoreInVector( iCallerRun, uiFrom, iOrderId );
-                if( vRet.size( ) > 0 )
+                auto itQ = xNextCallBackwardContext.vExecuteAndReturnIterator( iCallerRun, uiFrom );
+                if( !itQ.eof( ) )
                 {
-                    std::get<0>( xRet ) = std::get<0>( vRet[ 0 ] );
-                    std::get<1>( xRet ) = !std::get<1>( vRet[ 0 ] )
-                                              ? std::get<2>( vRet[ 0 ] )
-                                              : std::get<2>( vRet[ 0 ] ) + std::get<3>( vRet[ 0 ] );
-                    std::get<2>( xRet ) = !std::get<1>( vRet[ 0 ] );
+                    auto xQ = itQ.get( );
+                    std::get<0>( xRet ) = std::get<0>( xQ );
+                    std::get<1>( xRet ) = std::get<5>( xQ );
+                    std::get<2>( xRet ) = std::get<1>( xQ );
+                    std::get<3>( xRet ) = std::get<4>( xQ );
+                    std::get<4>( xRet ) =
+                        !std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
                 } // if
             } // else
-#endif
             return xRet;
+        } // method
+
+        inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
+        {
+            // @todo at the moment this does not deal with jumped over sequences
+            auto pRet = std::make_shared<Pack>( );
+
+            NucSeq xCurrChrom;
+            uint32_t uiCurrPos = 0;
+            bool bForwContext = true;
+            while( true )
+            {
+                // get the next call
+                auto tNextCall = this->getNextCall( iCallerRun, uiCurrPos, bForwContext );
+                std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
+                          << " to: " << std::get<4>( tNextCall )
+                          << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << std::endl;
+                if( std::get<0>( tNextCall ) == -1 ) // if this was the last call
+                {
+                    pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                    pRet->vAppendSequence( "unnamed_contig", "no_description_given", xCurrChrom );
+                    xCurrChrom.vClear( );
+                    /*
+                     * for this we make use of the id system of contigs.
+                     * the n forwards contigs have the ids: x*2 | 0 <= x <= n
+                     * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
+                     */
+                    for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
+                         uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
+                         uiI += bForwContext ? 2 : -2 )
+                    {
+                        pRef->vExtractContig( uiI, xCurrChrom, true );
+                        pRet->vAppendSequence( "unnamed_contig", "no_description_given", xCurrChrom );
+                        xCurrChrom.vClear( );
+                    } // for
+                    break;
+                } // if
+
+                if( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                {
+                    pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                    pRet->vAppendSequence( "unnamed_contig", "no_description_given", xCurrChrom );
+                    xCurrChrom.vClear( );
+                    pRef->vExtractContext( std::get<1>( tNextCall ), xCurrChrom, true, !bForwContext );
+                } // if
+                else if( bForwContext )
+                    pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ), xCurrChrom, true );
+                else
+                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ),
+                                               pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ), //
+                                               xCurrChrom,
+                                               true );
+                if( std::get<3>( tNextCall ).pNucSeq != nullptr )
+                    xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
+                                        std::get<3>( tNextCall ).pNucSeq->length( ) );
+
+                // remember that we used this call
+                pReconstructionTable->xInsertRow( std::get<0>( tNextCall ) );
+                uiCurrPos = std::get<4>( tNextCall );
+                bForwContext = std::get<2>( tNextCall );
+            } // while
+
+            // clear up the temp table
+            pReconstructionTable->clearTable( );
+
+            return pRet;
         } // method
     }; // class
 
@@ -481,30 +593,6 @@ class SV_DB : public Container
         } // method
     }; // class
 
-    typedef CppSQLiteExtTable<int64_t, // order_id
-                              int64_t, // id_from (foreign key)
-                              int64_t // id_to (foreign key)
-                              >
-        TP_SV_CALL_ORDER_TABLE;
-    class SvCallOrderTable : public TP_SV_CALL_ORDER_TABLE
-    {
-        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-
-      public:
-        SvCallOrderTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_SV_CALL_ORDER_TABLE(
-                  *pDatabase, // the database where the table resides
-                  "sv_call_order_table", // name of the table in the database
-                  // column definitions of the table
-                  std::vector<std::string>{"order_id", "id_from", "id_to"},
-                  false,
-                  // constraints for table
-                  std::vector<std::string>{"FOREIGN KEY (id_from) REFERENCES sv_call_table(id) ON DELETE CASCADE",
-                                           "FOREIGN KEY (id_to) REFERENCES sv_call_table(id) ON DELETE CASCADE"} ),
-              pDatabase( pDatabase )
-        {} // default constructor
-    }; // class
-
 
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
@@ -512,9 +600,9 @@ class SV_DB : public Container
     std::shared_ptr<PairedReadTable> pPairedReadTable;
     std::shared_ptr<SvCallerRunTable> pSvCallerRunTable;
     std::shared_ptr<SvJumpTable> pSvJumpTable;
+    std::shared_ptr<SvCallRegExTable> pSvCallRegExTable;
     std::shared_ptr<SvCallTable> pSvCallTable;
     std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
-    // std::shared_ptr<SvCallOrderTable> pSvCallOrderTable;
 
     friend class NucSeqFromSql;
     friend class AllNucSeqFromSql;
@@ -532,9 +620,9 @@ class SV_DB : public Container
           pPairedReadTable( std::make_shared<PairedReadTable>( pDatabase, pReadTable ) ),
           pSvCallerRunTable( std::make_shared<SvCallerRunTable>( pDatabase ) ),
           pSvJumpTable( std::make_shared<SvJumpTable>( pDatabase ) ),
+          pSvCallRegExTable( std::make_shared<SvCallRegExTable>( pDatabase ) ),
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
-    //, pSvCallOrderTable( std::make_shared<SvCallOrderTable>( pDatabase ) )
     {} // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -610,6 +698,11 @@ class SV_DB : public Container
     inline bool runExists( int64_t iId )
     {
         return pSvCallerRunTable->runExists( iId );
+    } // method
+
+    inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
+    {
+        return pSvCallTable->reconstructSequencedGenome( pRef, iCallerRun );
     } // method
 
     class ReadInserter

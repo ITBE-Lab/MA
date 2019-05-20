@@ -52,6 +52,7 @@ void exportSVJump( py::module& rxPyModuleId )
         .def_readwrite( "to_size", &SvCall::uiToSize )
         .def_readwrite( "switch_strand", &SvCall::bSwitchStrand )
         .def_readwrite( "supporing_jump_ids", &SvCall::vSupportingJumpIds )
+        .def_readwrite( "inserted_sequence", &SvCall::pInsertedSequence )
         .def_readonly( "id", &SvCall::iId );
 
 } // function

@@ -126,6 +126,7 @@ class TagGenerator
             nucSeqIndex uiRPos = pAlignment->uiBeginOnRef;
             nucSeqIndex uiNumMatchesAndSeeds = 0;
             bool bLastWasDeletion = false;
+            throw std::runtime_error("@fixme coordinates of vExtract changed"); // 20.05.2019
             for( std::pair<MatchType, nucSeqIndex> xTup : pAlignment->data )
             {
                 /*

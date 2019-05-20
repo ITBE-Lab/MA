@@ -238,6 +238,63 @@ class SvJump : public Container
 class SvCall : public Container
 {
   public:
+    class Regex
+    {
+      public:
+        std::string sRegex;
+        uint32_t uiState;
+        int64_t iId;
+
+        std::string unrollSimplest( size_t uiS, size_t uiE )
+        {
+            std::string sRet = "";
+            for( size_t uiI = uiS; uiI < uiE; uiI++ )
+            {
+                if( sRegex[ uiI ] == '+' )
+                    continue; // ignore 1 to many loop symbols (e.i. print the symbol once...)
+                if( sRegex[ uiI ] == '|' )
+                    break; // if we are in a choice only output the first element
+                std::string sApp;
+                if( sRegex[ uiI ] == '(' )
+                {
+                    // search the end of the brackets:
+                    size_t uiC = 1;
+                    size_t uiJ = uiI + 1;
+                    while( uiC > 0 )
+                    {
+                        assert( uiJ < uiE );
+                        if( sRegex[ uiJ ] == '(' )
+                            uiC += 1;
+                        if( sRegex[ uiJ ] == ')' )
+                            uiC -= 1;
+                        uiJ++;
+                    } // while
+                    sApp = unrollSimplest( uiI + 1, uiJ );
+                    uiI = uiJ;
+                } // if
+                else
+                    sApp.push_back( sRegex[ uiI ] );
+                if( uiI + 1 < uiE && ( sRegex[ uiI + 1 ] == '*' || sRegex[ uiI + 1 ] == '?' ) )
+                    continue; // delete symbols of 0 to many loops and zero or one occurrences
+                sRet.append( sApp );
+            } // for
+            return sRet;
+        } // method
+
+        std::string unrollSimplest( )
+        {
+            return unrollSimplest( 0, sRegex.size( ) );
+        } // method
+
+        Regex( std::string sRegex, uint32_t uiState, int64_t iId = -1 /* -1 == no id obtained */ )
+            : sRegex( sRegex ), uiState( uiState ), iId( iId )
+        {}
+
+        Regex( int64_t iCallId ) : Regex( std::to_string( iCallId ).append( "+" ), 0 )
+        {}
+
+    }; // class
+
     nucSeqIndex uiFromStart;
     nucSeqIndex uiToStart;
     nucSeqIndex uiFromSize;
@@ -246,6 +303,7 @@ class SvCall : public Container
     double dScore;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
+    Regex xRegex;
 
     // these can be empty
     std::shared_ptr<NucSeq> pInsertedSequence;
@@ -258,7 +316,8 @@ class SvCall : public Container
             bool bSwitchStrand,
             double dScore,
             std::vector<int64_t> vSupportingJumpIds = {},
-            int64_t iId = -1 /* -1 == no id obtained */ )
+            int64_t iId = -1, /* -1 == no id obtained */
+            Regex xRegex = Regex( "", 0 ) )
         : uiFromStart( uiFromStart ),
           uiToStart( uiToStart ),
           uiFromSize( uiFromSize ),
@@ -266,7 +325,8 @@ class SvCall : public Container
           bSwitchStrand( bSwitchStrand ),
           dScore( dScore ),
           vSupportingJumpIds( vSupportingJumpIds ),
-          iId( iId )
+          iId( iId ),
+          xRegex( xRegex )
     {} // constructor
 
     SvCall( const SvJump& rJump, bool bRememberJump = true )
@@ -308,6 +368,24 @@ class SvCall : public Container
     bool hasId( ) const
     {
         return iId != -1;
+    } // method
+
+    Regex getDefaultRegex( )
+    {
+        assert( this->hasId( ) );
+        return Regex( this->iId );
+    } // method
+
+    bool hasRegex( ) const
+    {
+        return !xRegex.sRegex.empty( );
+    } // method
+
+    Regex getRegex( )
+    {
+        if( !hasRegex( ) )
+            return getDefaultRegex( );
+        return xRegex;
     } // method
 
     void clear_jumps( )

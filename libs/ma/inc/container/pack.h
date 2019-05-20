@@ -604,21 +604,21 @@ class Pack : public Container
      * @details
      * This function assumes that no two holes overlap, which should be guaranteed by the pack.
      */
-    inline double amountOfRegionCoveredByHole(uint64_t uiStart, uint64_t uiEnd) const
+    inline double amountOfRegionCoveredByHole( uint64_t uiStart, uint64_t uiEnd ) const
     {
-        assert(uiStart < uiEnd);
+        assert( uiStart < uiEnd );
         uint64_t uiCovered = 0;
 
         // check all holes
         for( auto& rHole : xVectorOfHoleDescriptors )
             // check if hole is overlapping
-            if(rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart)
+            if( rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart )
                 // add the overlapping interval to covered
-                uiCovered += std::min(uiEnd, rHole.offset + rHole.length) - std::max(uiStart, rHole.offset);
+                uiCovered += std::min( uiEnd, rHole.offset + rHole.length ) - std::max( uiStart, rHole.offset );
 
-        assert(uiCovered <= uiEnd - uiStart);
+        assert( uiCovered <= uiEnd - uiStart );
         // divide the overlapping interval by the total interval
-        return uiCovered / (double)(uiEnd - uiStart);
+        return uiCovered / (double)( uiEnd - uiStart );
     } // method
 
     /* Appends a single nucleotide sequence to the collection.
@@ -683,7 +683,8 @@ class Pack : public Container
                 { /* First N seen. We append a fresh record to vector of holes and initialize the
                    * record. We have to double the capacity if there is no space anymore.
                    */
-                    assert( uiSymbolCode == (unsigned int)'N' || uiSymbolCode == (unsigned int)'n' );
+                    assert( uiSymbolCode == (unsigned int)'N' || uiSymbolCode == (unsigned int)'n' ||
+                            uiSymbolCode == 4 );
                     xVectorOfHoleDescriptors.emplace_back( HoleDescriptor( uiOffsetDistance, // offset
                                                                            'N' // character
                                                                            ) ); // vector insertion
@@ -1088,6 +1089,17 @@ class Pack : public Container
         } // else
     } // method
 
+    /** Returns true if the section defined by both arguments has bridging properties.
+     * Returns false for a non-bridging section.
+     */
+    bool bridgingPositions( const uint64_t uiA, const uint64_t uiB ) const
+    {
+        // bridging forward reverse border
+        return bPositionIsOnReversStrand( uiA ) != bPositionIsOnReversStrand( uiB ) ||
+               // section crosses different sequences
+               uiSequenceIdForPositionOrRev( uiA ) != uiSequenceIdForPositionOrRev( uiB );
+    } // method
+
     /*
      * boost can't handle overloads
      * thus we create a un-overloaded function for it...
@@ -1203,7 +1215,7 @@ class Pack : public Container
 #endif
             int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
             int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
-            for( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
+            for( int64_t iPosition = iAbsoluteBegin - 1; iPosition >= iAbsoluteEnd; --iPosition )
             {
 #if CHECK_HOLE_DESC == 1
                 // move the (reversed) hole iterator forwards
@@ -1287,7 +1299,7 @@ class Pack : public Container
             auto itHolesDesc = xVectorOfHoleDescriptors.rbegin( );
             int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
             int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
-            for( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
+            for( int64_t iPosition = iAbsoluteBegin - 1; iPosition >= iAbsoluteEnd; --iPosition )
             {
                 // move the (reversed) hole iterator forwards
                 while( itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition )
@@ -1299,6 +1311,60 @@ class Pack : public Container
                     rxSequence[ uiSequenceIterator++ ] = 3 - getNucleotideOnPos( iPosition );
             } // for
         } // else
+    } // method
+
+    /**
+     * @brief Extracts a sequence (with N's) from the beginning of the respective chromosome till iPos
+     */
+    void vExtractUntil( const int64_t iPos, // end of extraction
+                        NucSeq& rxSequence, // receiver of the extraction process
+                        bool bAppend = false // deliver true, if you would like to append to
+                                             // an existing nucleotide sequence
+                        ) const
+    {
+        vExtractSubsectionN( startOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) ), iPos, rxSequence,
+                             bAppend );
+    } // method
+
+    /**
+     * @brief Extracts a sequence (with N's) from iPos till the end of the respective chromosome
+     */
+    void vExtractFrom( const int64_t iPos, // start of extraction
+                       NucSeq& rxSequence, // receiver of the extraction process
+                       bool bAppend = false // deliver true, if you would like to append to
+                                            // an existing nucleotide sequence
+                       ) const
+    {
+        vExtractSubsectionN( iPos, endOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) ), rxSequence,
+                             bAppend );
+    } // method
+
+    /**
+     * @brief Extracts a sequence (with N's) from/untill iPos depending on the context given
+     */
+    void vExtractContext( const int64_t iPos, // start/end of extraction
+                          NucSeq& rxSequence, // receiver of the extraction process
+                          bool bAppend, // deliver true, if you would like to append to
+                                        // an existing nucleotide sequence
+                          bool bForwardContext ) const
+    {
+        if( bForwardContext )
+            vExtractFrom( iPos, rxSequence, bAppend );
+        else
+            vExtractUntil( iPos, rxSequence, bAppend );
+    } // method
+
+    /**
+     * @brief Extracts a complete contig (with N's)
+     */
+    void vExtractContig( const int64_t iId, // contig id
+                         NucSeq& rxSequence, // receiver of the extraction process
+                         bool bAppend = false // deliver true, if you would like to append to
+                                              // an existing nucleotide sequence
+                         ) const
+    {
+        vExtractSubsectionN( startOfSequenceWithIdOrReverse( iId ), endOfSequenceWithIdOrReverse( iId ), rxSequence,
+                             bAppend );
     } // method
 
     /* Unpacks the complete collection (forward as well as revers strand) as a single sequence into
@@ -1320,6 +1386,16 @@ class Pack : public Container
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
         vExtractSubsection( 0, uiStartOfReverseStrand( ),
+                            *pRet ); // get the forward strand
+        return pRet;
+    } // method
+
+    /* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
+     */
+    std::shared_ptr<NucSeq> vColletionWithoutReverseStrandAsNucSeqWithN( ) const
+    {
+        std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
+        vExtractSubsectionN( 0, uiStartOfReverseStrand( ),
                             *pRet ); // get the forward strand
         return pRet;
     } // method
@@ -1391,6 +1467,11 @@ class Pack : public Container
             vRet.push_back( xContig.uiStartOffsetUnpacked );
         return vRet;
     } // method
+
+    size_t uiNumContigs( ) const
+    {
+        return xVectorOfSequenceDescriptors.size( );
+    }
     // end markus
 
     /* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.
