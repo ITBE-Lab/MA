@@ -165,7 +165,7 @@ class SV_DB : public Container
 
         inline void createIndices( )
         {
-            pDatabase->execDML( "CREATE INDEX sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
+            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
         } // method
 
         inline void dropIndices( )
@@ -176,7 +176,7 @@ class SV_DB : public Container
         inline void deleteRun( std::string& rS )
         {
             xDeleteRun.bindAndExecQuery<>( rS );
-            vDump( std::cout );
+            //vDump( std::cout );
         } // method
 
         inline int64_t getRunId( std::string& rS )
@@ -272,11 +272,11 @@ class SV_DB : public Container
             // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
             // index intended for the sweep over the start of all sv-rectangles
             pDatabase->execDML(
-                "CREATE INDEX sv_jump_table_sort_index_start ON sv_jump_table"
+                "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start ON sv_jump_table"
                 "(sv_caller_run_id, sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
                 " to_forward, from_seed_start, id, read_id)" );
             // index intended for the sweep over the end of all sv-rectangles
-            pDatabase->execDML( "CREATE INDEX sv_jump_table_sort_index_end ON sv_jump_table"
+            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end ON sv_jump_table"
                                 "(sv_caller_run_id, sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
                                 " to_forward, from_seed_start, id, read_id)" );
         } // method

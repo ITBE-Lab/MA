@@ -77,7 +77,7 @@ class StdFileStream : public FileStream
 
     ~StdFileStream( )
     {
-        DEBUG( std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
+        DEBUG( if( !eof( ) ) std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
     } // deconstrucotr
 
@@ -159,7 +159,7 @@ class StringStream : public FileStream
 
     ~StringStream( )
     {
-        DEBUG( std::cout << "StringStream read " << uiNumLinesRead << " lines in total." << std::endl;
+        DEBUG( if( !eof( ) )std::cout << "StringStream read " << uiNumLinesRead << " lines in total." << std::endl;
                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
     } // deconstrucotr
 
@@ -253,8 +253,8 @@ class GzFileStream : public FileStream
 
     ~GzFileStream( )
     {
-        DEBUG( std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
-                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
+        DEBUG( if( !eof( ) ) std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
+               if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
     } // deconstructor
 
     bool is_open( ) const
