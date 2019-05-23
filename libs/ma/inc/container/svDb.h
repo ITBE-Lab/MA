@@ -145,6 +145,7 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<std::string, std::string, int64_t> xGetRunName;
         CppSQLiteExtQueryStatement<uint32_t> xNumRuns;
         CppSQLiteExtQueryStatement<uint32_t> xRunExists;
+        CppSQLiteExtQueryStatement<uint32_t> xNameExists;
 
       public:
         SvCallerRunTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -154,10 +155,12 @@ class SV_DB : public Container
                                       std::vector<std::string>{"name", "desc", "time_stamp"} ),
               pDatabase( pDatabase ),
               xDeleteRun( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" ),
-              xGetRunId( *pDatabase, "SELECT id FROM sv_caller_run_table WHERE name == ?" ),
+              xGetRunId( *pDatabase,
+                         "SELECT id FROM sv_caller_run_table WHERE name == ? ORDER BY time_stamp ASC LIMIT 1" ),
               xGetRunName( *pDatabase, "SELECT name, desc, time_stamp FROM sv_caller_run_table WHERE id == ?" ),
               xNumRuns( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table" ),
-              xRunExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id == ?" )
+              xRunExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id == ?" ),
+              xNameExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE name == ?" )
         {} // default constructor
 
         inline void createIndices( )
@@ -184,6 +187,11 @@ class SV_DB : public Container
         inline bool runExists( int64_t iId )
         {
             return xRunExists.scalar( iId ) > 0;
+        } // method
+
+        inline bool nameExists( std::string sName )
+        {
+            return xNameExists.scalar( sName ) > 0;
         } // method
 
         inline std::string getRunName( int64_t iId )
@@ -506,9 +514,11 @@ class SV_DB : public Container
             {
                 // get the next call
                 auto tNextCall = this->getNextCall( iCallerRun, uiCurrPos, bForwContext );
+#if 0
                 std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
                           << " to: " << std::get<4>( tNextCall )
                           << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << std::endl;
+#endif
                 if( std::get<0>( tNextCall ) == -1 ) // if this was the last call
                 {
                     pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
@@ -540,8 +550,8 @@ class SV_DB : public Container
                 else if( bForwContext )
                     pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ), xCurrChrom, true );
                 else
-                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ),
-                                               pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ), //
+                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ) + 1,
+                                               pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
                                                xCurrChrom,
                                                true );
                 if( std::get<3>( tNextCall ).pNucSeq != nullptr )
@@ -698,6 +708,11 @@ class SV_DB : public Container
     inline bool runExists( int64_t iId )
     {
         return pSvCallerRunTable->runExists( iId );
+    } // method
+
+    inline bool nameExists( std::string sName )
+    {
+        return pSvCallerRunTable->nameExists( sName );
     } // method
 
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )

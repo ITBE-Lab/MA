@@ -569,6 +569,7 @@ void exportPack( py::module& rxPyModuleId )
         .def_readonly( "unpacked_size_single_strand", &Pack::uiUnpackedSizeForwardStrand )
         .def( "contigNames", &Pack::contigNames )
         .def( "contigLengths", &Pack::contigLengths )
+        .def( "contigSeqs", &Pack::contigSeqs )
         .def( "pos_to_rev_strand", &Pack::uiPositionToReverseStrand )
         .def( "contigStarts", &Pack::contigStarts );
 

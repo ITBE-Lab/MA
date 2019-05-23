@@ -1215,7 +1215,7 @@ class Pack : public Container
 #endif
             int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
             int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
-            for( int64_t iPosition = iAbsoluteBegin - 1; iPosition >= iAbsoluteEnd; --iPosition )
+            for( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
             {
 #if CHECK_HOLE_DESC == 1
                 // move the (reversed) hole iterator forwards
@@ -1299,7 +1299,7 @@ class Pack : public Container
             auto itHolesDesc = xVectorOfHoleDescriptors.rbegin( );
             int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
             int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
-            for( int64_t iPosition = iAbsoluteBegin - 1; iPosition >= iAbsoluteEnd; --iPosition )
+            for( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
             {
                 // move the (reversed) hole iterator forwards
                 while( itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition )
@@ -1444,14 +1444,6 @@ class Pack : public Container
         return vRet;
     } // method
 
-    std::vector<std::string> contigSeqs( ) const
-    {
-        std::vector<std::string> vRet;
-        for( auto xContig : xVectorOfSequenceDescriptors )
-            vRet.push_back( xContig.sName );
-        return vRet;
-    } // method
-
     std::vector<nucSeqIndex> contigLengths( ) const
     {
         std::vector<nucSeqIndex> vRet;
@@ -1472,6 +1464,18 @@ class Pack : public Container
     {
         return xVectorOfSequenceDescriptors.size( );
     }
+
+    std::vector<std::string> contigSeqs( ) const
+    {
+        std::vector<std::string> vRet;
+        NucSeq s;
+        for(size_t uiI = 0; uiI < uiNumContigs(); uiI++)
+        {
+            vExtractContig(uiI, s, false);
+            vRet.push_back( s.toString() );
+        } // for
+        return vRet;
+    } // method
     // end markus
 
     /* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.
