@@ -136,57 +136,68 @@ class SV_DB : public Container
                                                      std::string, // desc
                                                      int64_t // timestamp
                                                      >
-        TP_SV_CALLER_RUN_TABLE;
-    class SvCallerRunTable : public TP_SV_CALLER_RUN_TABLE
+        TP_NAME_DESC_TABLE;
+    class NameDescTable : public TP_NAME_DESC_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-        CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
-        CppSQLiteExtQueryStatement<int64_t> xGetRunId;
-        CppSQLiteExtQueryStatement<std::string, std::string, int64_t> xGetRunName;
-        CppSQLiteExtQueryStatement<uint32_t> xNumRuns;
-        CppSQLiteExtQueryStatement<uint32_t> xRunExists;
+        const std::string sTableName;
+        CppSQLiteExtQueryStatement<int64_t> xDelete;
+        CppSQLiteExtQueryStatement<int64_t> xGetId;
+        CppSQLiteExtQueryStatement<std::string, std::string, int64_t> xGetName;
+        CppSQLiteExtQueryStatement<uint32_t> xNum;
+        CppSQLiteExtQueryStatement<uint32_t> xExists;
         CppSQLiteExtQueryStatement<uint32_t> xNameExists;
+        CppSQLiteExtQueryStatement<int64_t> xNewestUnique;
 
       public:
-        SvCallerRunTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_SV_CALLER_RUN_TABLE( *pDatabase, // the database where the table resides
-                                      "sv_caller_run_table", // name of the table in the database
-                                      // column definitions of the table
-                                      std::vector<std::string>{"name", "desc", "time_stamp"} ),
+        NameDescTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase, const std::string sTableName )
+            : TP_NAME_DESC_TABLE( *pDatabase, // the database where the table resides
+                                  sTableName, // name of the table in the database
+                                  // column definitions of the table
+                                  std::vector<std::string>{"name", "desc", "time_stamp"} ),
               pDatabase( pDatabase ),
-              xDeleteRun( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" ),
-              xGetRunId( *pDatabase,
-                         "SELECT id FROM sv_caller_run_table WHERE name == ? ORDER BY time_stamp ASC LIMIT 1" ),
-              xGetRunName( *pDatabase, "SELECT name, desc, time_stamp FROM sv_caller_run_table WHERE id == ?" ),
-              xNumRuns( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table" ),
-              xRunExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id == ?" ),
-              xNameExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE name == ?" )
+              sTableName( sTableName ),
+              xDelete( *pDatabase, ( "DELETE FROM " + sTableName + " WHERE name == ?" ).c_str( ) ),
+              xGetId(
+                  *pDatabase,
+                  ( "SELECT id FROM " + sTableName + " WHERE name == ? ORDER BY time_stamp ASC LIMIT 1" ).c_str( ) ),
+              xGetName( *pDatabase,
+                        ( "SELECT name, desc, time_stamp FROM " + sTableName + " WHERE id == ?" ).c_str( ) ),
+              xNum( *pDatabase, ( "SELECT COUNT(*) FROM " + sTableName ).c_str( ) ),
+              xExists( *pDatabase, ( "SELECT COUNT(*) FROM " + sTableName + " WHERE id == ?" ).c_str( ) ),
+              xNameExists( *pDatabase, ( "SELECT COUNT(*) FROM " + sTableName + " WHERE name == ?" ).c_str( ) ),
+              xNewestUnique(
+                  *pDatabase,
+                  ( "SELECT id FROM " + sTableName + " AS outer WHERE ( SELECT COUNT(*) FROM " + sTableName +
+                    " AS inner WHERE inner.name = outer.name AND inner.time_stamp <= outer.time_stamp ) < ?" )
+                      .c_str( ) )
         {} // default constructor
 
         inline void createIndices( )
         {
-            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
+            pDatabase->execDML(
+                ( "CREATE INDEX IF NOT EXISTS " + sTableName + "_id_index ON " + sTableName + " (id)" ).c_str( ) );
         } // method
 
         inline void dropIndices( )
         {
-            pDatabase->execDML( "DROP INDEX IF EXISTS sv_caller_run_table_id_index" );
+            pDatabase->execDML( ( "DROP INDEX IF EXISTS " + sTableName + "_id_index" ).c_str( ) );
         } // method
 
-        inline void deleteRun( std::string& rS )
+        inline void deleteName( std::string& rS )
         {
-            xDeleteRun.bindAndExecQuery<>( rS );
-            //vDump( std::cout );
+            xDelete.bindAndExecQuery<>( rS );
+            // vDump( std::cout );
         } // method
 
-        inline int64_t getRunId( std::string& rS )
+        inline int64_t getId( std::string& rS )
         {
-            return xGetRunId.scalar( rS );
+            return xGetId.scalar( rS );
         } // method
 
-        inline bool runExists( int64_t iId )
+        inline bool exists( int64_t iId )
         {
-            return xRunExists.scalar( iId ) > 0;
+            return xExists.scalar( iId ) > 0;
         } // method
 
         inline bool nameExists( std::string sName )
@@ -194,19 +205,19 @@ class SV_DB : public Container
             return xNameExists.scalar( sName ) > 0;
         } // method
 
-        inline std::string getRunName( int64_t iId )
+        inline std::string getName( int64_t iId )
         {
-            return std::get<0>( xGetRunName.vExecuteAndReturnIterator( iId ).get( ) );
+            return std::get<0>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
         } // method
 
-        inline std::string getRunDesc( int64_t iId )
+        inline std::string getDesc( int64_t iId )
         {
-            return std::get<1>( xGetRunName.vExecuteAndReturnIterator( iId ).get( ) );
+            return std::get<1>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
         } // method
 
-        inline std::string getRunDate( int64_t iId )
+        inline std::string getDate( int64_t iId )
         {
-            auto now_c = (std::time_t)std::get<2>( xGetRunName.vExecuteAndReturnIterator( iId ).get( ) );
+            auto now_c = (std::time_t)std::get<2>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
             std::stringstream ss;
 #ifdef _MSC_VER
 #pragma warning( suppress : 4996 ) // @todo find another way to do this
@@ -219,17 +230,22 @@ class SV_DB : public Container
 
         inline uint32_t size( )
         {
-            return xNumRuns.scalar( );
+            return xNum.scalar( );
         } // method
 
-        inline int64_t insertRun( std::string sName, std::string sDesc )
+        inline int64_t insert( std::string sName, std::string sDesc )
         {
             return this->xInsertRow(
                 sName, sDesc, (int64_t)std::chrono::system_clock::to_time_t( std::chrono::system_clock::now( ) ) );
         } // method
+
+        inline std::vector<int64_t> getNewestUnique( uint32_t uiNum )
+        {
+            return xNewestUnique.executeAndStoreInVector<0>( uiNum );
+        } // method
     }; // class
 
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_caller_run_id (foreign key)
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_jump_run_id (foreign key)
                                                      int64_t, // read_id (foreign key)
                                                      int64_t, // sort_pos_start
                                                      int64_t, // sort_pos_end
@@ -250,34 +266,32 @@ class SV_DB : public Container
 
       public:
         SvJumpTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
-            : TP_SV_JUMP_TABLE(
-                  *pDatabase, // the database where the table resides
-                  "sv_jump_table", // name of the table in the database
-                  // column definitions of the table
-                  std::vector<std::string>{"sv_caller_run_id", "read_id", "sort_pos_start", "sort_pos_end", "from_pos",
-                                           "to_pos", "query_from", "query_to", "from_forward", "to_forward",
-                                           "from_seed_start"},
-                  // constraints for table
-                  std::vector<std::string>{
-                      "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE",
-                      "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
+            : TP_SV_JUMP_TABLE( *pDatabase, // the database where the table resides
+                                "sv_jump_table", // name of the table in the database
+                                // column definitions of the table
+                                std::vector<std::string>{"sv_jump_run_id", "read_id", "sort_pos_start", "sort_pos_end",
+                                                         "from_pos", "to_pos", "query_from", "query_to", "from_forward",
+                                                         "to_forward", "from_seed_start"},
+                                // constraints for table
+                                std::vector<std::string>{
+                                    "FOREIGN KEY (sv_jump_run_id) REFERENCES sv_jump_run_table(id) ON DELETE CASCADE",
+                                    "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
               pDatabase( pDatabase ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_jump_table" ),
-              xDeleteRun( *pDatabase, "DELETE FROM sv_jump_table WHERE sv_caller_run_id IN ( SELECT id FROM "
-                                      "sv_caller_run_table WHERE name == ?)" )
+              xDeleteRun( *pDatabase, "DELETE FROM sv_jump_table WHERE sv_jump_run_id IN ( SELECT id FROM "
+                                      "sv_jump_run_table WHERE name == ?)" )
         {} // default constructor
 
         inline void createIndices( )
         {
             // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
             // index intended for the sweep over the start of all sv-rectangles
-            pDatabase->execDML(
-                "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start ON sv_jump_table"
-                "(sv_caller_run_id, sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
-                " to_forward, from_seed_start, id, read_id)" );
+            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start ON sv_jump_table"
+                                "(sv_jump_run_id, sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
+                                " to_forward, from_seed_start, id, read_id)" );
             // index intended for the sweep over the end of all sv-rectangles
             pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end ON sv_jump_table"
-                                "(sv_caller_run_id, sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
+                                "(sv_jump_run_id, sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
                                 " to_forward, from_seed_start, id, read_id)" );
         } // method
 
@@ -608,8 +622,9 @@ class SV_DB : public Container
     std::shared_ptr<SequencerTable> pSequencerTable;
     std::shared_ptr<ReadTable> pReadTable;
     std::shared_ptr<PairedReadTable> pPairedReadTable;
-    std::shared_ptr<SvCallerRunTable> pSvCallerRunTable;
+    std::shared_ptr<NameDescTable> pSvJumpRunTable;
     std::shared_ptr<SvJumpTable> pSvJumpTable;
+    std::shared_ptr<NameDescTable> pSvCallerRunTable;
     std::shared_ptr<SvCallRegExTable> pSvCallRegExTable;
     std::shared_ptr<SvCallTable> pSvCallTable;
     std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
@@ -628,8 +643,9 @@ class SV_DB : public Container
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
           pReadTable( std::make_shared<ReadTable>( pDatabase ) ),
           pPairedReadTable( std::make_shared<PairedReadTable>( pDatabase, pReadTable ) ),
-          pSvCallerRunTable( std::make_shared<SvCallerRunTable>( pDatabase ) ),
+          pSvJumpRunTable( std::make_shared<NameDescTable>( pDatabase, "sv_jump_run_table" ) ),
           pSvJumpTable( std::make_shared<SvJumpTable>( pDatabase ) ),
+          pSvCallerRunTable( std::make_shared<NameDescTable>( pDatabase, "sv_caller_run_table" ) ),
           pSvCallRegExTable( std::make_shared<SvCallRegExTable>( pDatabase ) ),
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
@@ -650,12 +666,20 @@ class SV_DB : public Container
     inline void createCallerIndices( )
     {
         pSvCallerRunTable->createIndices( );
-        pSvJumpTable->createIndices( );
     } // method
 
     inline void dropCallerIndices( )
     {
         pSvCallerRunTable->dropIndices( );
+    } // method
+
+    inline void createJumpIndices( )
+    {
+        pSvJumpTable->createIndices( );
+    } // method
+
+    inline void dropJumpIndices( )
+    {
         pSvJumpTable->dropIndices( );
     } // method
 
@@ -666,7 +690,7 @@ class SV_DB : public Container
 
     inline int64_t getRunId( std::string& rS )
     {
-        return pSvCallerRunTable->getRunId( rS );
+        return pSvCallerRunTable->getId( rS );
     } // method
 
     inline int64_t getCallArea( int64_t iCallerRunId, double dMinScore )
@@ -692,22 +716,27 @@ class SV_DB : public Container
 
     inline std::string getRunName( int64_t iId )
     {
-        return pSvCallerRunTable->getRunName( iId );
+        return pSvCallerRunTable->getName( iId );
     } // method
 
     inline std::string getRunDesc( int64_t iId )
     {
-        return pSvCallerRunTable->getRunDesc( iId );
+        return pSvCallerRunTable->getDesc( iId );
     } // method
 
     inline std::string getRunDate( int64_t iId )
     {
-        return pSvCallerRunTable->getRunDate( iId );
+        return pSvCallerRunTable->getDate( iId );
     } // method
 
     inline bool runExists( int64_t iId )
     {
-        return pSvCallerRunTable->runExists( iId );
+        return pSvCallerRunTable->exists( iId );
+    } // method
+
+    inline std::vector<int64_t> getNewestUniqueRuns( uint32_t uiNum )
+    {
+        return pSvCallerRunTable->getNewestUnique( uiNum );
     } // method
 
     inline bool nameExists( std::string sName )
@@ -758,18 +787,18 @@ class SV_DB : public Container
         CppSQLiteExtImmediateTransactionContext xTransactionContext;
 
       public:
-        const int64_t iSvCallerRunId;
+        const int64_t iSvJumpRunId;
 
         class ReadContex
         {
           private:
             std::shared_ptr<SvJumpTable> pSvJumpTable;
-            const int64_t iSvCallerRunId;
+            const int64_t iSvJumpRunId;
             const int64_t iReadId;
 
           public:
-            ReadContex( std::shared_ptr<SvJumpTable> pSvJumpTable, const int64_t iSvCallerRunId, const int64_t iReadId )
-                : pSvJumpTable( pSvJumpTable ), iSvCallerRunId( iSvCallerRunId ), iReadId( iReadId )
+            ReadContex( std::shared_ptr<SvJumpTable> pSvJumpTable, const int64_t iSvJumpRunId, const int64_t iReadId )
+                : pSvJumpTable( pSvJumpTable ), iSvJumpRunId( iSvJumpRunId ), iReadId( iReadId )
             {} // constructor
 
             inline void insertJump( SvJump& rJump )
@@ -782,7 +811,7 @@ class SV_DB : public Container
 
                 if( rJump.does_switch_strand( ) )
                     assert( rJump.from_start( ) > std::numeric_limits<int64_t>::max( ) / 2 );
-                rJump.iId = pSvJumpTable->xInsertRow( iSvCallerRunId, rJump.iReadId, rJump.from_start( ),
+                rJump.iId = pSvJumpTable->xInsertRow( iSvJumpRunId, rJump.iReadId, rJump.from_start( ),
                                                       rJump.from_end( ), (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo,
                                                       (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
                                                       rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
@@ -794,20 +823,12 @@ class SV_DB : public Container
                         const std::string& rsSvCallerDesc )
             : pDB( pDB ),
               xTransactionContext( *pDB->pDatabase ),
-              iSvCallerRunId( pDB->pSvCallerRunTable->insertRun( rsSvCallerName, rsSvCallerDesc ) )
+              iSvJumpRunId( pDB->pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc ) )
         {} // constructor
-
-        SvJumpInserter( const SvJumpInserter& ) = delete; // delete copy constructor
-
-        inline ReadContex insertRead( std::shared_ptr<NucSeq> pRead )
-        {
-            return ReadContex( pDB->pSvJumpTable, iSvCallerRunId,
-                               pDB->pReadTable->insertRead( iSvCallerRunId, pRead ) );
-        } // method
 
         inline ReadContex readContext( int64_t iReadId )
         {
-            return ReadContex( pDB->pSvJumpTable, iSvCallerRunId, iReadId );
+            return ReadContex( pDB->pSvJumpTable, iSvJumpRunId, iReadId );
         } // method
 
     }; // class
@@ -848,6 +869,12 @@ class SV_DB : public Container
             : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvCallerRunId( iSvCallerRunId )
         {} // constructor
 
+        SvCallInserter( std::shared_ptr<SV_DB> pDB,
+                        const std::string& rsSvCallerName,
+                        const std::string& rsSvCallerDesc )
+            : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc ) )
+        {} // constructor
+
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
 
         inline void insertCall( SvCall& rCall )
@@ -872,7 +899,7 @@ class SV_DB : public Container
         pSvCallSupportTable->deleteRun( rS );
         pSvCallTable->deleteRun( rS );
         pSvJumpTable->deleteRun( rS );
-        pSvCallerRunTable->deleteRun( rS );
+        pSvCallerRunTable->deleteName( rS );
     } // method
 
     inline uint32_t numJumps( )
@@ -906,13 +933,13 @@ class SortedSvJumpFromSql
                        "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                        "sort_pos_start, id, read_id "
                        "FROM sv_jump_table "
-                       "WHERE sv_caller_run_id == ? "
+                       "WHERE sv_jump_run_id == ? "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
                      "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                      "sort_pos_end, id, read_id "
                      "FROM sv_jump_table "
-                     "WHERE sv_caller_run_id == ? "
+                     "WHERE sv_jump_run_id == ? "
                      "ORDER BY sort_pos_end" ),
           xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId ) ),
           xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId ) )

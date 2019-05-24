@@ -40,8 +40,11 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "set_num_threads", &SV_DB::setNumThreads )
         .def( "create_caller_indices", &SV_DB::createCallerIndices )
         .def( "drop_caller_indices", &SV_DB::dropCallerIndices )
+        .def( "create_jump_indices", &SV_DB::createJumpIndices )
+        .def( "drop_jump_indices", &SV_DB::dropJumpIndices )
         .def( "create_sequencer_indices", &SV_DB::createSequencerIndices )
         .def( "reconstruct_sequenced_genome", &SV_DB::reconstructSequencedGenome )
+        .def( "newest_unique_runs", &SV_DB::getNewestUniqueRuns )
         .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class
@@ -57,9 +60,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SvJumpInserter class
     py::class_<SV_DB::SvJumpInserter, std::shared_ptr<SV_DB::SvJumpInserter>>( rxPyModuleId, "SvJumpInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
-        .def( "insert_read", &SV_DB::SvJumpInserter::insertRead )
         .def( "read_context", &SV_DB::SvJumpInserter::readContext )
-        .def_readonly( "sv_caller_run_id", &SV_DB::SvJumpInserter::iSvCallerRunId );
+        .def_readonly( "sv_jump_run_id", &SV_DB::SvJumpInserter::iSvJumpRunId );
 
     // export the ReadContex class
     // py::class_<SV_DB::SvCallInserter::CallContex>( rxPyModuleId, "CallContex" )
@@ -68,6 +70,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SvJumpInserter class
     py::class_<SV_DB::SvCallInserter, std::shared_ptr<SV_DB::SvCallInserter>>( rxPyModuleId, "SvCallInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
+        .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
+        .def_readonly( "sv_caller_run_id", &SV_DB::SvCallInserter::iSvCallerRunId )
         .def( "insert_call", &SV_DB::SvCallInserter::insertCall );
 
     // export the SortedSvJumpFromSql class
