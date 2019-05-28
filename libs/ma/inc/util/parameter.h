@@ -672,7 +672,7 @@ class Presetting : public ParameterSetBase
           xOutputMCigar( this, "Use M in CIGAR",
                          "Disabled: Distinguish matches and mismatches in CIGARs using '=' and 'X' operations. "
                          "Enabled: Use the 'M' operation in CIGARs.",
-                         SAM_PARAMETERS, false ),
+                         SAM_PARAMETERS, true ),
           xCGTag( this, "Output long cigars in CG tag",
                   "Some programs crash, if cigars become too long. If this flag is enabled, the CG:B:I tag is used for "
                   "the output of long cigars (cigars with more than 65536 operations).",
