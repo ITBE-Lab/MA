@@ -58,7 +58,7 @@ class AlignerParameterBase
 
     const std::string sName; // Name of parameter
     const char cShort; // Shorthand character for parameter in command line interface.
-    const std::string sDescription; // Description of parameter
+    std::string sDescription; // Description of parameter
     const std::pair<size_t, std::string> sCategory; // Description of parameter
 
     /* Delete copy constructor */

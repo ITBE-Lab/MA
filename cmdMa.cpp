@@ -60,19 +60,19 @@ void printOption( std::string sName,
         sOptionHead.append( ", " );
     } // if
     std::replace( sName.begin( ), sName.end( ), ' ', '_' );
-    sOptionHead.append("--");
-    sOptionHead.append(sName);
-    sOptionHead.append(" <");
-    sOptionHead.append(sTypeName);
-    sOptionHead.append("> [");
-    sOptionHead.append(sDefaultVal);
-    sOptionHead.append("]");
-    if(sOptionHead.size() < sIndentDesc.size() - 4)
+    sOptionHead.append( "--" );
+    sOptionHead.append( sName );
+    sOptionHead.append( " <" );
+    sOptionHead.append( sTypeName );
+    sOptionHead.append( "> [" );
+    sOptionHead.append( sDefaultVal );
+    sOptionHead.append( "]" );
+    if( sOptionHead.size( ) < sIndentDesc.size( ) - 4 )
     {
         std::cout << sOptionHead;
-        for(size_t i = sOptionHead.size(); i < sIndentDesc.size(); i++)
+        for( size_t i = sOptionHead.size( ); i < sIndentDesc.size( ); i++ )
             std::cout << " ";
-    }// if
+    } // if
     else
         std::cout << sOptionHead << std::endl << sIndentDesc;
 
@@ -223,6 +223,9 @@ int main( int argc, char* argv[] )
     xExecutionContext.xParameterSetManager.xGlobalParameterSet.pbUseMaxHardareConcurrency->set( false );
     xExecutionContext.xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->set(
         std::thread::hardware_concurrency( ) );
+    // remove not with respect to pbUseMaxHardareConcurrency in description...
+    xExecutionContext.xParameterSetManager.xGlobalParameterSet.piNumberOfThreads->sDescription =
+        "Number of threads used in the context of alignments.";
     xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
         xExecutionContext.xParameterSetManager.xGlobalParameterSet.xSAMOutputTypeChoice.pContent );
     xExecutionContext.xParameterSetManager.xGlobalParameterSet.unregisterParameter(
@@ -262,7 +265,7 @@ int main( int argc, char* argv[] )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 const std::string s = xExecutionContext.xGenomeManager.loadGenome( sOptionValue );
-                if( !s.empty() )
+                if( !s.empty( ) )
                     throw std::runtime_error( s );
                 iI++; // also ignore the following argument
                 continue;

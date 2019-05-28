@@ -167,8 +167,7 @@ General options: (these options are not affected by presettings)
                                                    alignments.
 
     -t, --Number_of_Threads <int> [4]              Number of threads used in the context of
-                                                   alignments. This options is only available, if 'use
-                                                   all processor cores' is off.
+                                                   alignments.
 
     -h, --Help <bool> [true]                       Print the complete help text.
 
