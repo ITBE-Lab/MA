@@ -245,6 +245,129 @@ class SV_DB : public Container
         } // method
     }; // class
 
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // name
+                                                     std::string, // desc
+                                                     int64_t, // timestamp
+                                                     int64_t // sv_jump_run_id
+                                                     >
+        TP_SV_CALLER_RUN_TABLE;
+    class SvCallerRunTable : public TP_SV_CALLER_RUN_TABLE
+    {
+        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+        CppSQLiteExtQueryStatement<int64_t> xDelete;
+        CppSQLiteExtQueryStatement<int64_t> xGetId;
+        CppSQLiteExtQueryStatement<std::string, std::string, int64_t> xGetName;
+        CppSQLiteExtQueryStatement<uint32_t> xNum;
+        CppSQLiteExtQueryStatement<uint32_t> xExists;
+        CppSQLiteExtQueryStatement<uint32_t> xNameExists;
+        CppSQLiteExtQueryStatement<int64_t> xNewestUnique;
+        CppSQLiteExtStatement xInsertRow2;
+
+      public:
+        SvCallerRunTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_SV_CALLER_RUN_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "sv_caller_run_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"name", "desc", "time_stamp", "sv_jump_run_id"},
+                  // constraints for table
+                  std::vector<std::string>{"FOREIGN KEY (sv_jump_run_id) REFERENCES sequencer_table(id)"} ),
+              pDatabase( pDatabase ),
+              xDelete( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" ),
+              xGetId( *pDatabase,
+                      "SELECT id FROM sv_caller_run_table WHERE name == ? ORDER BY time_stamp ASC LIMIT 1" ),
+              xGetName( *pDatabase, "SELECT name, desc, time_stamp FROM sv_caller_run_table WHERE id == ?" ),
+              xNum( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table " ),
+              xExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id == ?" ),
+              xNameExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE name == ?" ),
+              xNewestUnique(
+                  *pDatabase,
+                  "SELECT id FROM sv_caller_run_table AS outer WHERE ( SELECT COUNT(*) FROM sv_caller_run_table AS "
+                  "inner WHERE inner.name = outer.name AND inner.time_stamp <= outer.time_stamp ) < ?" ),
+              xInsertRow2( *pDatabase,
+                           "INSERT INTO sv_caller_run_table (id, name, desc, time_stamp, sv_jump_run_id) "
+                           "VALUES (NULL, ?, ?, ?, NULL)" )
+        {} // default constructor
+
+        inline void createIndices( )
+        {
+            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
+        } // method
+
+        inline void dropIndices( )
+        {
+            pDatabase->execDML( "DROP INDEX IF EXISTS sv_caller_run_table_id_index" );
+        } // method
+
+        inline void deleteName( std::string& rS )
+        {
+            xDelete.bindAndExecQuery<>( rS );
+            // vDump( std::cout );
+        } // method
+
+        inline int64_t getId( std::string& rS )
+        {
+            return xGetId.scalar( rS );
+        } // method
+
+        inline bool exists( int64_t iId )
+        {
+            return xExists.scalar( iId ) > 0;
+        } // method
+
+        inline bool nameExists( std::string sName )
+        {
+            return xNameExists.scalar( sName ) > 0;
+        } // method
+
+        inline std::string getName( int64_t iId )
+        {
+            return std::get<0>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
+        } // method
+
+        inline std::string getDesc( int64_t iId )
+        {
+            return std::get<1>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
+        } // method
+
+        inline std::string getDate( int64_t iId )
+        {
+            auto now_c = (std::time_t)std::get<2>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
+            std::stringstream ss;
+#ifdef _MSC_VER
+#pragma warning( suppress : 4996 ) // @todo find another way to do this
+            ss << std::put_time( std::localtime( &now_c ), "%c" );
+#else
+            ss << std::put_time( std::localtime( &now_c ), "%c" );
+#endif
+            return ss.str( );
+        } // method
+
+        inline uint32_t size( )
+        {
+            return xNum.scalar( );
+        } // method
+
+        inline int64_t insert( std::string sName, std::string sDesc, int64_t uiJumpRunId )
+        {
+            if( uiJumpRunId < 0 )
+            {
+                this->xInsertRow2.bindAndExecute(
+                    sName, sDesc, (int64_t)std::chrono::system_clock::to_time_t( std::chrono::system_clock::now( ) ) );
+                // get the rowid = primary key of the inserted row
+                return static_cast<int64_t>( pDatabase->lastRowId( ) );
+            }
+            return this->xInsertRow( sName, sDesc,
+                                     (int64_t)std::chrono::system_clock::to_time_t( std::chrono::system_clock::now( ) ),
+                                     uiJumpRunId );
+        } // method
+
+        inline std::vector<int64_t> getNewestUnique( uint32_t uiNum )
+        {
+            return xNewestUnique.executeAndStoreInVector<0>( uiNum );
+        } // method
+    }; // class
+
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_jump_run_id (foreign key)
                                                      int64_t, // read_id (foreign key)
                                                      int64_t, // sort_pos_start
@@ -624,7 +747,7 @@ class SV_DB : public Container
     std::shared_ptr<PairedReadTable> pPairedReadTable;
     std::shared_ptr<NameDescTable> pSvJumpRunTable;
     std::shared_ptr<SvJumpTable> pSvJumpTable;
-    std::shared_ptr<NameDescTable> pSvCallerRunTable;
+    std::shared_ptr<SvCallerRunTable> pSvCallerRunTable;
     std::shared_ptr<SvCallRegExTable> pSvCallRegExTable;
     std::shared_ptr<SvCallTable> pSvCallTable;
     std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
@@ -645,7 +768,7 @@ class SV_DB : public Container
           pPairedReadTable( std::make_shared<PairedReadTable>( pDatabase, pReadTable ) ),
           pSvJumpRunTable( std::make_shared<NameDescTable>( pDatabase, "sv_jump_run_table" ) ),
           pSvJumpTable( std::make_shared<SvJumpTable>( pDatabase ) ),
-          pSvCallerRunTable( std::make_shared<NameDescTable>( pDatabase, "sv_caller_run_table" ) ),
+          pSvCallerRunTable( std::make_shared<SvCallerRunTable>( pDatabase ) ),
           pSvCallRegExTable( std::make_shared<SvCallRegExTable>( pDatabase ) ),
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
@@ -757,9 +880,9 @@ class SV_DB : public Container
         // must be after the DB so that it is deconstructed first
         CppSQLiteExtImmediateTransactionContext xTransactionContext;
 
+      public:
         int64_t uiSequencerId;
 
-      public:
         ReadInserter( std::shared_ptr<SV_DB> pDB, std::string sSequencerName )
             : pDB( pDB ),
               xTransactionContext( *pDB->pDatabase ),
@@ -871,8 +994,9 @@ class SV_DB : public Container
 
         SvCallInserter( std::shared_ptr<SV_DB> pDB,
                         const std::string& rsSvCallerName,
-                        const std::string& rsSvCallerDesc )
-            : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc ) )
+                        const std::string& rsSvCallerDesc,
+                        const int64_t uiJumpRunId )
+            : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
         {} // constructor
 
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
@@ -945,6 +1069,30 @@ class SortedSvJumpFromSql
           xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId ) )
     {} // constructor
 
+    SortedSvJumpFromSql( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId, uint32_t uiX, uint32_t uiY, uint32_t uiW,
+                         uint32_t uiH )
+        : pDb( pDb ),
+          xQueryStart( *pDb->pDatabase,
+                       "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                       "sort_pos_start, id, read_id "
+                       "FROM sv_jump_table "
+                       "WHERE sv_jump_run_id == ? "
+                       "AND from_pos >= ? "
+                       "AND to_pos >= ? "
+                       "AND from_pos <= ? "
+                       "AND to_pos <= ? "
+                       "ORDER BY sort_pos_start" ),
+          xQueryEnd( *pDb->pDatabase,
+                     "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                     "sort_pos_end, id, read_id "
+                     "FROM sv_jump_table "
+                     "WHERE sv_jump_run_id == ? "
+                     "ORDER BY sort_pos_end" ),
+          xTableIteratorStart(
+              xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId, uiX, uiY, uiX + uiW, uiY + uiH ) ),
+          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, uiX, uiY, uiX + uiW, uiY + uiH ) )
+    {} // constructor
+
     bool hasNextStart( )
     {
         return !xTableIteratorStart.eof( );
@@ -1004,6 +1152,18 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
             setFinished( );
     } // constructor
 
+    AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT read_table.sequence, read_table.id "
+                  "FROM read_table "
+                  "WHERE sequencer_id = ?" ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSequencerId ) )
+    {
+        if( xTableIterator.eof( ) )
+            setFinished( );
+    } // constructor
+
     std::shared_ptr<NucSeq> execute( )
     {
         if( xTableIterator.eof( ) )
@@ -1033,6 +1193,23 @@ class NucSeqFromSql : public Module<NucSeq, true>
     CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
 
   public:
+    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT read_table.sequence, read_table.id "
+                  "FROM read_table "
+                  "WHERE read_table.id NOT IN ( "
+                  "   SELECT paired_read_table.first_read FROM paired_read_table "
+                  "   UNION "
+                  "   SELECT paired_read_table.second_read FROM paired_read_table "
+                  ") "
+                  "AND sequencer_id = ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSequencerId ) )
+    {
+        if( xTableIterator.eof( ) )
+            setFinished( );
+    } // constructor
+
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
         : pDb( pDb ),
           xQuery( *pDb->pDatabase,
@@ -1079,6 +1256,22 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
     const bool bRevCompMate;
 
   public:
+    PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT A.sequence, B.sequence, A.id, B.id "
+                  "FROM read_table A, read_table B "
+                  "INNER JOIN paired_read_table "
+                  "ON paired_read_table.first_read == A.id "
+                  "AND paired_read_table.second_read == B.id "
+                  "AND A.sequencer_id = ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSequencerId ) ),
+          bRevCompMate( rParameters.getSelected( )->xRevCompPairedReadMates->get( ) )
+    {
+        if( xTableIterator.eof( ) )
+            setFinished( );
+    } // constructor
+
     PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
         : pDb( pDb ),
           xQuery( *pDb->pDatabase,

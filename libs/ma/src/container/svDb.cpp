@@ -51,6 +51,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string>( ) )
         .def( "insert_read", &SV_DB::ReadInserter::insertRead )
+        .def_readonly( "sequencer_id", &SV_DB::ReadInserter::uiSequencerId )
         .def( "insert_paired_read", &SV_DB::ReadInserter::insertPairedRead );
 
     // export the ReadContex class
@@ -70,7 +71,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SvJumpInserter class
     py::class_<SV_DB::SvCallInserter, std::shared_ptr<SV_DB::SvCallInserter>>( rxPyModuleId, "SvCallInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
-        .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
+        .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string, int64_t>( ) )
         .def_readonly( "sv_caller_run_id", &SV_DB::SvCallInserter::iSvCallerRunId )
         .def( "insert_call", &SV_DB::SvCallInserter::insertCall );
 
@@ -99,9 +100,9 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "hasNext", &SvCallsFromDb::hasNext );
 
     // export the NucSeqFromSql classes
-    exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "AllNucSeqFromSql" );
-    exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "NucSeqFromSql" );
-    exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>>( rxPyModuleId, "PairedNucSeqFromSql" );
+    exportModule<AllNucSeqFromSql, std::shared_ptr<SV_DB>, int64_t>( rxPyModuleId, "AllNucSeqFromSql" );
+    exportModule<NucSeqFromSql, std::shared_ptr<SV_DB>, int64_t>( rxPyModuleId, "NucSeqFromSql" );
+    exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>, int64_t>( rxPyModuleId, "PairedNucSeqFromSql" );
     exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>(
         rxPyModuleId, "SvDbInserter", []( auto&& x ) { x.def_readonly( "jump_inserter", &SvDbInserter::xInserter ); } );
 } // function
