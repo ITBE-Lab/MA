@@ -404,7 +404,7 @@ class mwxMapDrivenComboBox : public wxComboBox
             []( typename std::map<std::string, TYPE>::const_iterator xIt ) { return xIt->first; } )
         : wxComboBox( )
     {
-        for( std::map<std::string, TYPE>::const_iterator xIt = rxMap.begin( ); xIt != rxMap.end( ); ++xIt )
+        for( typename std::map<std::string, TYPE>::const_iterator xIt = rxMap.begin( ); xIt != rxMap.end( ); ++xIt )
         {
             xChoices.Add( fNameFromKeyValuePair( xIt ).c_str( ) ); // rxKeyValue.second->sName.c_str( )
         } // for

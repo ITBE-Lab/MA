@@ -226,6 +226,12 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
         return vChoices.at( uiSelection ).first;
     } // method
 
+    /* unoverloaded function for python */
+    std::string get_py( void )
+    {
+        return vChoices.at( uiSelection ).first;
+    } // method
+
     // void mirror( const AlignerParameter<AlignerParameterBase::ChoicesType>* pOther )
     // {
     //     this->uiSelection = pOther->uiSelection;
@@ -855,11 +861,13 @@ class ParameterSetManager
         xParametersSets.emplace( "default", Presetting( "Default" ) );
 
         xParametersSets.emplace( "illumina", Presetting( "Illumina" ) );
+        xParametersSets[ "illumina" ].xSeedingTechnique->set( 1 ); // use SMEMs
         xParametersSets[ "illumina" ].xMaximalSeedAmbiguity->set( 500 );
         xParametersSets[ "illumina" ].xMinNumSoC->set( 10 );
         xParametersSets[ "illumina" ].xMaxNumSoC->set( 20 );
 
         xParametersSets.emplace( "illuminapaired", Presetting( "Illumina Paired" ) );
+        xParametersSets[ "illuminapaired" ].xSeedingTechnique->set( 1 ); // use SMEMs
         xParametersSets[ "illuminapaired" ].xUsePairedReads->set( true );
         xParametersSets[ "illuminapaired" ].xMaximalSeedAmbiguity->set( 500 );
         xParametersSets[ "illuminapaired" ].xMinNumSoC->set( 10 );

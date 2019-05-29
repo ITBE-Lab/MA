@@ -74,6 +74,11 @@ void exportParameter( py::module& rxPyModuleId )
     exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
     // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterFilePath" );
     // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" );
+    
+    py::class_<AlignerParameter<AlignerParameterBase::ChoicesType>, AlignerParameterBase, std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>>(
+        rxPyModuleId, "AlignerParameterChoice" ) //
+        .def( "set", &AlignerParameter<AlignerParameterBase::ChoicesType>::set ) //
+        .def( "get", &AlignerParameter<AlignerParameterBase::ChoicesType>::get_py );
 
     // Export Presetting Class
     py::class_<Presetting>( rxPyModuleId, "Presetting" ) //

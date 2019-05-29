@@ -20,6 +20,11 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
                       std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments2,
                       std::shared_ptr<Pack> pPack )
 {
+    // set bFirst flag, so that alignments are associated with the correct reads
+    for( unsigned int i = 0; i < pAlignments1->size( ); i++ )
+        ( *pAlignments1 )[ i ]->xStats.bFirst = true;
+    for( unsigned int j = 0; j < pAlignments2->size( ); j++ )
+        ( *pAlignments2 )[ j ]->xStats.bFirst = false;
 
     // assert that we have at least one alignment for each mate.
     if( pAlignments1->size( ) == 0 )
@@ -30,9 +35,12 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
 #if 1
     // the indices of the best alignment pair
     std::vector<std::tuple<int64_t, bool, size_t, size_t>> vScores;
+
+    
     // try out all combinations
     // this assumes that not more than three or four alignments are reported
     // otherwise this here might be a serious bottleneck
+        
     for( unsigned int i = 0; i < pAlignments1->size( ); i++ )
     {
         std::shared_ptr<Alignment> pAlignment1 = ( *pAlignments1 )[ i ]; // dc
@@ -81,10 +89,10 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
     // set which read was first..
     size_t uiI1 = std::get<2>( vScores[ 0 ] );
     size_t uiI2 = std::get<3>( vScores[ 0 ] );
-    ( *pAlignments1 )[ uiI1 ]->xStats.bFirst = true;
-    ( *pAlignments2 )[ uiI2 ]->xStats.bFirst = false;
     ( *pAlignments1 )[ uiI1 ]->bSecondary = false;
     ( *pAlignments2 )[ uiI2 ]->bSecondary = false;
+    ( *pAlignments1 )[ uiI1 ]->bSupplementary = false;
+    ( *pAlignments2 )[ uiI2 ]->bSupplementary = false;
     ( *pAlignments1 )[ uiI1 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments2 )[ uiI2 ] );
     ( *pAlignments2 )[ uiI2 ]->xStats.pOther = std::weak_ptr<Alignment>( ( *pAlignments1 )[ uiI1 ] );
     if( std::get<1>( vScores[ 0 ] ) && vScores.size( ) > 1 )

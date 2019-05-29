@@ -457,7 +457,7 @@ class NucSeq : public Container
     {
         if( uxPosition >= uiSize )
         {
-            throw AnnotatedException( "Index out of range" );
+            throw AnnotatedException( "Index out of range (charAt)" );
         } // if
 
         return translateACGTCodeToCharacter( pxSequenceRef[ uxPosition ] );
@@ -470,7 +470,7 @@ class NucSeq : public Container
     {
         if( uxPosition >= uiSize )
         {
-            throw AnnotatedException( "Index out of range" );
+            throw AnnotatedException( "Index out of range (compCharAt)" );
         } // if
 
         return translateACGTCodeToCharacter( nucleotideComplement( pxSequenceRef[ uxPosition ] ) );

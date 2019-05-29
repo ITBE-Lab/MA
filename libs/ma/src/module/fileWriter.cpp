@@ -26,7 +26,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         if( bForcedConsistentConsequtiveInsertionDeletionOrder &&
             pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
         {
-            pAlignment->invertSuccessiveInserionAndDeletion();
+            pAlignment->invertSuccessiveInserionAndDeletion( );
         } // if
 
         std::string sCigar;
@@ -129,7 +129,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         std::lock_guard<std::mutex> xGuard( *pLock );
 
         // print alignment
-        // flushing will be done in the deconstructor
+        // flushing will be done in the outstream class
         *pOut << sCombined;
     } // if & scope xGuard
     return std::shared_ptr<Container>( new Container( ) );
@@ -158,7 +158,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         if( bForcedConsistentConsequtiveInsertionDeletionOrder &&
             pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
         {
-            pAlignment->invertSuccessiveInserionAndDeletion();
+            pAlignment->invertSuccessiveInserionAndDeletion( );
         } // if
 
         if( pAlignment->xStats.bFirst )
@@ -182,7 +182,9 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         std::string sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
         // paired
         flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
+        flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
         std::string sTlen = "0";
+        std::string sRefName = pAlignment->getContig( *pPack );
         if( pAlignment->xStats.pOther.lock( ) != nullptr )
         {
 
@@ -194,11 +196,14 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( std::llabs( d ) );
 
             // assert( pQuery2 != nullptr );
-            flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
             if( pPack->bPositionIsOnReversStrand( pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
                 flag |= NEXT_REVERSE_COMPLEMENTED;
 
             sContigOther = pAlignment->xStats.pOther.lock( )->getContig( *pPack );
+            // SAM file specification:
+            // This field is set as ‘*’ when the information is unavailable, and set as ‘=’ if RNEXT is identical RNAME
+            if( sContigOther == sRefName )
+                sContigOther = "=";
             sPosOther = std::to_string( pAlignment->xStats.pOther.lock( )->getSamPosition( *pPack ) );
 
 #if DEBUG_LEVEL > 0
@@ -215,7 +220,6 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             std::cerr << "[Info] read " << pQuery1->sName << " is unpaired." << std::endl;
 #endif
 
-        std::string sRefName = pAlignment->getContig( *pPack );
         // sam file format has 1-based indices bam 0-based...
         auto uiRefPos = pAlignment->getSamPosition( *pPack );
 
@@ -288,26 +292,48 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             + sTag + "\n";
     } // for
     // if we have not computed any alignment then we should still output the query as unaligned:
-    if( !bFirstQueryHasAlignment )
+    if( !bFirstQueryHasAlignment && !bSecondQueryHasAlignment )
     {
         sCombined +=
             // query name
             pQuery1->sName + "\t" +
             // alignment flag
-            std::to_string( SEGMENT_UNMAPPED | MULTIPLE_SEGMENTS_IN_TEMPLATE ) + "\t*\t0\t255\t*\t*\t0\t0\t" +
+            std::to_string( SEGMENT_UNMAPPED | MULTIPLE_SEGMENTS_IN_TEMPLATE | FIRST_IN_TEMPLATE |
+                            NEXT_SEGMENT_UNMAPPED ) +
+            "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
             pQuery1->toString( ) + "\t*\n";
-    } // if
-    // if we have not computed any alignment then we should still output the query as unaligned:
-    if( !bSecondQueryHasAlignment )
-    {
         sCombined +=
             // query name
             pQuery2->sName + "\t" +
             // alignment flag
-            std::to_string( SEGMENT_UNMAPPED | MULTIPLE_SEGMENTS_IN_TEMPLATE ) + "\t*\t0\t255\t*\t*\t0\t0\t" +
+            std::to_string( SEGMENT_UNMAPPED | MULTIPLE_SEGMENTS_IN_TEMPLATE | LAST_IN_TEMPLATE |
+                            NEXT_SEGMENT_UNMAPPED ) +
+            "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
             pQuery2->toString( ) + "\t*\n";
+    } // if
+    // if we have not computed an alignment for only one of the queries output the other one:
+    else if( !bFirstQueryHasAlignment || !bSecondQueryHasAlignment )
+    {
+        // both asserts are guaranteed due to bFirstQueryHasAlignment and bSecondQueryHasAlignment
+        assert( pAlignments->size( ) > 0 );
+        assert( ( *pAlignments )[ 0 ]->xStats.bFirst == ( !bFirstQueryHasAlignment ? false : true ) );
+
+        std::string sPosOther = std::to_string( ( *pAlignments )[ 0 ]->getSamPosition( *pPack ) );
+        std::string sContigOther = ( *pAlignments )[ 0 ]->getContig( *pPack );
+        sCombined +=
+            // query name
+            ( !bFirstQueryHasAlignment ? pQuery1->sName : pQuery2->sName ) + "\t" +
+            // alignment flag
+            std::to_string( SEGMENT_UNMAPPED | MULTIPLE_SEGMENTS_IN_TEMPLATE |
+                            ( !bFirstQueryHasAlignment ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE ) ) +
+            "\t" + sContigOther + "\t" + sPosOther +
+            "\t0" // outputing mapq0 because bwa mem does that as well...
+            "\t*\t=\t" +
+            sPosOther + "\t0\t" +
+            // segment sequence
+            ( !bFirstQueryHasAlignment ? pQuery1->toString( ) : pQuery2->toString( ) ) + "\t*\n";
     } // if
 
     if( sCombined.size( ) > 0 )
@@ -316,7 +342,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         std::lock_guard<std::mutex> xGuard( *pLock );
 
         // print alignment
-        // flushing will be done in the deconstructor
+        // flushing will be done in the the outstream class
         *pOut << sCombined;
     } // if & scope xGuard
     return std::shared_ptr<Container>( new Container( ) );
