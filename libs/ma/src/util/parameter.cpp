@@ -23,11 +23,15 @@ template <> EXPORTED float genericStringToValue<float>( const std::string& sStri
 
 template <> EXPORTED bool genericStringToValue<bool>( const std::string& sString )
 {
-    if( sString == "true" || sString == "TRUE")
+    std::string sTmp = sString;
+    std::locale loc;
+    for( std::string::size_type i = 0; i < sTmp.length( ); ++i )
+        sTmp[ i ] = std::tolower( sTmp[ i ], loc );
+    if( sTmp == "true" )
         return true;
-    if( sString == "false" || sString == "FALSE")
+    if( sTmp == "false" )
         return true;
-    throw std::runtime_error("Boolean flags accept no other values than 'true' and 'false'.");
+    throw std::runtime_error( "Boolean flags accept no other values than 'true' and 'false'." );
 } // function
 
 template <> EXPORTED std::string AlignerParameter<bool>::asText( ) const
@@ -68,4 +72,3 @@ template <> std::string AlignerParameter<std::string>::asText( ) const
 {
     return this->get( );
 } // method
-

@@ -1045,7 +1045,7 @@ class MA_MainFrame : public wxFrame
                    wxDEFAULT_FRAME_STYLE & ~( wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP ) )
     {
         // on startup: create custom parameter set from default parameter set (do this only for the GUI verison.)
-        xExecutionContext.xParameterSetManager.xParametersSets.emplace( "Custom", Presetting( ) );
+        xExecutionContext.xParameterSetManager.xParametersSets.emplace( "custom", Presetting( "Custom" ) );
 
         wxImage::AddHandler( new wxPNGHandler );
 
@@ -1110,7 +1110,10 @@ class MA_MainFrame : public wxFrame
                                 pxComboBoxAlignerSettings = new mwxMapDrivenComboBox( //
                                     pxBoxSizer.xConnector.pxWindow,
                                     xExecutionContext.xParameterSetManager.xParametersSets,
-                                    std::bind( &MA_MainFrame::onParameterComboBox, this, std::placeholders::_1 ) ),
+                                    std::bind( &MA_MainFrame::onParameterComboBox, this, std::placeholders::_1 ),
+                                    []( std::map<std::string, Presetting>::const_iterator xIt ) {
+                                        return xIt->second.sName;
+                                    } ),
                                 0, wxALL | wxEXPAND, 5 );
                             // Initialize combo box with the default setting:
                             //@todo change parameter set manager so that it knows the name of the currently select

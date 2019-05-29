@@ -105,7 +105,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
     std::string sOptions = "'";
     for( auto& xPair : rManager.xParametersSets )
     {
-        std::string sOut = xPair.first;
+        std::string sOut = xPair.second.sName;
         std::replace( sOut.begin( ), sOut.end( ), ' ', '_' );
         sOptions += sOut + "', '";
     } // for
@@ -238,8 +238,7 @@ int main( int argc, char* argv[] )
     {
         std::string sOptionName = argv[ iI - 1 ];
         std::string sOptionValue = argv[ iI ];
-        std::replace( sOptionValue.begin( ), sOptionValue.end( ), '_', ' ' );
-        if( sOptionName == "-p" || sOptionName == "--Presetting" )
+        if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName(sOptionName) == "--presetting" )
             xExecutionContext.xParameterSetManager.setSelected( sOptionValue );
     } // for
 
@@ -255,13 +254,14 @@ int main( int argc, char* argv[] )
         {
             std::string sOptionName = argv[ iI ];
 
-            if( sOptionName == "-p" || sOptionName == "--Presetting" ) // we did this already
+            // we did this already
+            if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName(sOptionName) == "--presetting" )
             {
                 iI++; // also ignore the following argument
                 continue;
             } // if
 
-            if( sOptionName == "-x" || sOptionName == "--Index" )
+            if( sOptionName == "-x" || ParameterSetBase::uniqueParameterName(sOptionName) == "--index" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 const std::string s = xExecutionContext.xGenomeManager.loadGenome( sOptionValue );
@@ -271,7 +271,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-i" || sOptionName == "--In" )
+            if( sOptionName == "-i" || ParameterSetBase::uniqueParameterName(sOptionName) == "--in" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -279,7 +279,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-m" || sOptionName == "--Mate_In" )
+            if( sOptionName == "-m" || ParameterSetBase::uniqueParameterName(sOptionName) == "--matein" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsMateQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -288,7 +288,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-X" || sOptionName == "--Create_Index" )
+            if( sOptionName == "-X" || ParameterSetBase::uniqueParameterName(sOptionName) == "--createindex" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 auto vsStrings = split( sOptionValue, "," );
@@ -303,7 +303,6 @@ int main( int argc, char* argv[] )
                 return 0;
             } // if
 
-            std::replace( sOptionName.begin( ), sOptionName.end( ), '_', ' ' );
             if( iI + 1 < argc && ( argv[ iI + 1 ][ 0 ] != '-' || is_number( std::string( argv[ iI + 1 ] ) ) ) )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
