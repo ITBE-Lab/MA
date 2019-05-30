@@ -32,6 +32,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "get_run_name", &SV_DB::getRunName )
         .def( "get_run_desc", &SV_DB::getRunDesc )
         .def( "get_run_date", &SV_DB::getRunDate )
+        .def( "get_run_jump_id", &SV_DB::getRunJumpId )
         .def( "get_num_runs", &SV_DB::getNumRuns )
         .def( "run_exists", &SV_DB::runExists )
         .def( "name_exists", &SV_DB::nameExists )
@@ -78,6 +79,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SortedSvJumpFromSql class
     py::class_<SortedSvJumpFromSql>( rxPyModuleId, "SortedSvJumpFromSql" )
         .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
+        .def( py::init<std::shared_ptr<SV_DB>, int64_t, uint32_t, uint32_t, uint32_t, uint32_t>( ) )
         .def( "has_next_start", &SortedSvJumpFromSql::hasNextStart )
         .def( "has_next_end", &SortedSvJumpFromSql::hasNextEnd )
         .def( "next_start_is_smaller", &SortedSvJumpFromSql::nextStartIsSmaller )
@@ -96,6 +98,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SvCallsFromDb class
     py::class_<SvCallsFromDb>( rxPyModuleId, "SvCallsFromDb" )
         .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
+        .def( py::init<std::shared_ptr<SV_DB>, int64_t, uint32_t, uint32_t, uint32_t, uint32_t>( ) )
         .def( "next", &SvCallsFromDb::next )
         .def( "hasNext", &SvCallsFromDb::hasNext );
 

@@ -6,8 +6,7 @@ db_name = tempfile.gettempdir() + "/.tmp.db"
 
 
 database = SV_DB(db_name, "create")
-caller_id = SvJumpInserter(database, "simulated sv", "the sv's that were simulated").sv_caller_run_id
-sv_inserter = SvCallInserter(database, caller_id)
+sv_inserter = SvCallInserter(database, "simulated sv", "the sv's that were simulated", -1)
 
 # insertion
 insertion = SvCall(0, 1, 1, 1, False, float('inf'))
@@ -33,7 +32,7 @@ reference = Pack()
 
 reference.append("chr1", "chr1-desc", NucSeq("ACGTACGNACGGCAT"))
 reference.append("chr2", "chr2-desc", NucSeq("GCGCG"))
-reconstr = database.reconstruct_sequenced_genome(reference, caller_id)
+reconstr = database.reconstruct_sequenced_genome(reference, sv_inserter.sv_caller_run_id)
 
 print(str(reconstr.extract_forward_strand_n())," ?= AGGGCACGCACGCCATGCGNG")
 print("contig lengths:")

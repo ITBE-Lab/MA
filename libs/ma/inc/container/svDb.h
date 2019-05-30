@@ -256,7 +256,7 @@ class SV_DB : public Container
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtQueryStatement<int64_t> xDelete;
         CppSQLiteExtQueryStatement<int64_t> xGetId;
-        CppSQLiteExtQueryStatement<std::string, std::string, int64_t> xGetName;
+        CppSQLiteExtQueryStatement<std::string, std::string, int64_t, int64_t> xGetName;
         CppSQLiteExtQueryStatement<uint32_t> xNum;
         CppSQLiteExtQueryStatement<uint32_t> xExists;
         CppSQLiteExtQueryStatement<uint32_t> xNameExists;
@@ -276,7 +276,8 @@ class SV_DB : public Container
               xDelete( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" ),
               xGetId( *pDatabase,
                       "SELECT id FROM sv_caller_run_table WHERE name == ? ORDER BY time_stamp ASC LIMIT 1" ),
-              xGetName( *pDatabase, "SELECT name, desc, time_stamp FROM sv_caller_run_table WHERE id == ?" ),
+              xGetName( *pDatabase,
+                        "SELECT name, desc, time_stamp, sv_jump_run_id FROM sv_caller_run_table WHERE id == ?" ),
               xNum( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table " ),
               xExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id == ?" ),
               xNameExists( *pDatabase, "SELECT COUNT(*) FROM sv_caller_run_table WHERE name == ?" ),
@@ -328,6 +329,11 @@ class SV_DB : public Container
         inline std::string getDesc( int64_t iId )
         {
             return std::get<1>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
+        } // method
+
+        inline int64_t getSvJumpRunId( int64_t iId )
+        {
+            return std::get<3>( xGetName.vExecuteAndReturnIterator( iId ).get( ) );
         } // method
 
         inline std::string getDate( int64_t iId )
@@ -847,6 +853,11 @@ class SV_DB : public Container
         return pSvCallerRunTable->getDesc( iId );
     } // method
 
+    inline int64_t getRunJumpId( int64_t iId )
+    {
+        return pSvCallerRunTable->getSvJumpRunId( iId );
+    } // method
+
     inline std::string getRunDate( int64_t iId )
     {
         return pSvCallerRunTable->getDate( iId );
@@ -1087,6 +1098,10 @@ class SortedSvJumpFromSql
                      "sort_pos_end, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
+                     "AND from_pos >= ? "
+                     "AND to_pos >= ? "
+                     "AND from_pos <= ? "
+                     "AND to_pos <= ? "
                      "ORDER BY sort_pos_end" ),
           xTableIteratorStart(
               xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId, uiX, uiY, uiX + uiW, uiY + uiH ) ),
@@ -1408,6 +1423,26 @@ class SvCallsFromDb
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId ) )
+    {} // constructor
+
+    SvCallsFromDb( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId, uint32_t uiX, uint32_t uiY, uint32_t uiW,
+                   uint32_t uiH )
+        : pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
+                  "FROM sv_call_table "
+                  "WHERE sv_caller_run_id == ? "
+                  "AND from_pos + from_size >= ? "
+                  "AND to_pos + to_size >= ? "
+                  "AND from_pos <= ? "
+                  "AND to_pos <= ? " ),
+          xQuerySupport( *pDb->pDatabase,
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "sv_jump_table.id "
+                         "FROM sv_call_support_table "
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id == ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH ) )
     {} // constructor
 
     SvCall next( )
