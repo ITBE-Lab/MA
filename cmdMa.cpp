@@ -60,19 +60,19 @@ void printOption( std::string sName,
         sOptionHead.append( ", " );
     } // if
     std::replace( sName.begin( ), sName.end( ), ' ', '_' );
-    sOptionHead.append("--");
-    sOptionHead.append(sName);
-    sOptionHead.append(" <");
-    sOptionHead.append(sTypeName);
-    sOptionHead.append("> [");
-    sOptionHead.append(sDefaultVal);
-    sOptionHead.append("]");
-    if(sOptionHead.size() < sIndentDesc.size() - 4)
+    sOptionHead.append( "--" );
+    sOptionHead.append( sName );
+    sOptionHead.append( " <" );
+    sOptionHead.append( sTypeName );
+    sOptionHead.append( "> [" );
+    sOptionHead.append( sDefaultVal );
+    sOptionHead.append( "]" );
+    if( sOptionHead.size( ) < sIndentDesc.size( ) - 4 )
     {
         std::cout << sOptionHead;
-        for(size_t i = sOptionHead.size(); i < sIndentDesc.size(); i++)
+        for( size_t i = sOptionHead.size( ); i < sIndentDesc.size( ); i++ )
             std::cout << " ";
-    }// if
+    } // if
     else
         std::cout << sOptionHead << std::endl << sIndentDesc;
 
@@ -105,7 +105,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
     std::string sOptions = "'";
     for( auto& xPair : rManager.xParametersSets )
     {
-        std::string sOut = xPair.first;
+        std::string sOut = xPair.second->sName;
         std::replace( sOut.begin( ), sOut.end( ), ' ', '_' );
         sOptions += sOut + "', '";
     } // for
@@ -133,7 +133,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  "file_name",
                  "",
                  "Filenames of Fasta/Fastq files containing reads. gz-compressed files are automatically decompressed. "
-                 "Multiple files can be specified by a comma separated list. At least one file name must be provided.",
+                 "Multiple files can be specified by a comma separated list. One file name must be provided at least.",
                  sIndentDesc );
     printOption( "Mate_In",
                  'm',
@@ -223,6 +223,9 @@ int main( int argc, char* argv[] )
     xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbUseMaxHardareConcurrency->set( false );
     xExecutionContext.xParameterSetManager.pGlobalParameterSet->piNumberOfThreads->set(
         std::thread::hardware_concurrency( ) );
+    // remove not with respect to pbUseMaxHardareConcurrency in description...
+    xExecutionContext.xParameterSetManager.pGlobalParameterSet->piNumberOfThreads->sDescription =
+        "Number of threads used in the context of alignments.";
     xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
         xExecutionContext.xParameterSetManager.pGlobalParameterSet->xSAMOutputTypeChoice.pContent );
     xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
@@ -235,8 +238,7 @@ int main( int argc, char* argv[] )
     {
         std::string sOptionName = argv[ iI - 1 ];
         std::string sOptionValue = argv[ iI ];
-        std::replace( sOptionValue.begin( ), sOptionValue.end( ), '_', ' ' );
-        if( sOptionName == "-p" || sOptionName == "--Presetting" )
+        if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName(sOptionName) == "--presetting" )
             xExecutionContext.xParameterSetManager.setSelected( sOptionValue );
     } // for
 
@@ -252,23 +254,24 @@ int main( int argc, char* argv[] )
         {
             std::string sOptionName = argv[ iI ];
 
-            if( sOptionName == "-p" || sOptionName == "--Presetting" ) // we did this already
+            // we did this already
+            if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName(sOptionName) == "--presetting" )
             {
                 iI++; // also ignore the following argument
                 continue;
             } // if
 
-            if( sOptionName == "-x" || sOptionName == "--Index" )
+            if( sOptionName == "-x" || ParameterSetBase::uniqueParameterName(sOptionName) == "--index" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 const std::string s = xExecutionContext.xGenomeManager.loadGenome( sOptionValue );
-                if( !s.empty() )
+                if( !s.empty( ) )
                     throw std::runtime_error( s );
                 iI++; // also ignore the following argument
                 continue;
             } // if
 
-            if( sOptionName == "-i" || sOptionName == "--In" )
+            if( sOptionName == "-i" || ParameterSetBase::uniqueParameterName(sOptionName) == "--in" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -276,7 +279,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-m" || sOptionName == "--Mate_In" )
+            if( sOptionName == "-m" || ParameterSetBase::uniqueParameterName(sOptionName) == "--matein" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsMateQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -285,7 +288,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-X" || sOptionName == "--Create_Index" )
+            if( sOptionName == "-X" || ParameterSetBase::uniqueParameterName(sOptionName) == "--createindex" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 auto vsStrings = split( sOptionValue, "," );
@@ -300,7 +303,6 @@ int main( int argc, char* argv[] )
                 return 0;
             } // if
 
-            std::replace( sOptionName.begin( ), sOptionName.end( ), '_', ' ' );
             if( iI + 1 < argc && ( argv[ iI + 1 ][ 0 ] != '-' || is_number( std::string( argv[ iI + 1 ] ) ) ) )
             {
                 std::string sOptionValue = argv[ iI + 1 ];

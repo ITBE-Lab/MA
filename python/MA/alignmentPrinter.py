@@ -39,7 +39,7 @@ class AlignmentPrinter(Module):
             ("secondary" if align.secondary else
              ("supplementary" if align.supplementary else "primary")),
             "reference: " + str(align.begin_on_ref) + " - " + str(
-                align.end_on_ref), 
+                align.end_on_ref) + " contig: " + input[2].name_of_sequence(align.begin_on_ref), 
             "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query),
             "Alignment length: " + str(len(align))
         ]

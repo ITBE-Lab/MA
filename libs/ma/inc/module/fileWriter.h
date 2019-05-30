@@ -34,14 +34,9 @@ class StdOutStream : public OutStream
   public:
     StdOutStream& operator<<( std::string s )
     {
-        std::cout << s;
+        std::cout << s << std::flush;
         return *this;
     } // function
-
-    ~StdOutStream( )
-    {
-        std::cout << std::flush; // do not forget to flush the outputstream
-    } // deconstructor
 }; // class
 
 /**
@@ -64,13 +59,12 @@ class FileOutStream : public OutStream
 
     ~FileOutStream( )
     {
-        file << std::flush; // do not forget to flush the outputstream
         file.close( );
     } // deconstructor
 
     FileOutStream& operator<<( std::string s )
     {
-        file << s;
+        file << s << std::flush;
         return *this;
     } // function
 }; // class
@@ -100,7 +94,8 @@ class TagGenerator
           bSVTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bNMTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bASTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
-          bOutputMInsteadOfXAndEqual( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bOutputMInsteadOfXAndEqual( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ||
+                                      rParameters.getSelected( )->xOutputMCigar->get( ) ),
           bXITag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bXETag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bXRTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),

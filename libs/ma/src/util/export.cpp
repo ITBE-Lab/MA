@@ -41,8 +41,12 @@ void exportParameter( py::module& rxPyModuleId )
     exportAlignerParameter<int>( rxPyModuleId, "AlignerParameterInt" );
     exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
     exportAlignerParameter<double>( rxPyModuleId, "AlignerParameterDouble" );
+    exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
+    py::class_<AlignerParameter<AlignerParameterBase::ChoicesType>, AlignerParameterBase, std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>>(
+        rxPyModuleId, "AlignerParameterChoice" ) //
+        .def( "set", &AlignerParameter<AlignerParameterBase::ChoicesType>::set ) //
+        .def( "get", &AlignerParameter<AlignerParameterBase::ChoicesType>::get_py );
     // exportAlignerParameter<fs::path>( rxPyModuleId, "AlignerParameterFilePath" ); @todo
-    // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterChoice" ); @todo
 
     // Export ParameterSetBase Class
     py::class_<ParameterSetBase, std::shared_ptr<ParameterSetBase>>( rxPyModuleId, "ParameterSetBase" ) //
@@ -51,6 +55,7 @@ void exportParameter( py::module& rxPyModuleId )
         .def( "unregister_parameter", &ParameterSetBase::unregisterParameter ) //
         .def( "by_name", &ParameterSetBase::byName ) //
         .def( "by_short", &ParameterSetBase::byShort );
+    
 
     // Export Presetting Class
     py::class_<Presetting, ParameterSetBase, std::shared_ptr<Presetting>>( rxPyModuleId, "Presetting" ) //

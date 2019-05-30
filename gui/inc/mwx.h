@@ -347,7 +347,7 @@ class mwxFileSelectDeleteButtonSizer : public mwxBoxSizer
           sFilePattern( rsFilePattern ),
           fHandler( fHandler )
     {
-        //const unsigned char* pIconBitmap = uiIconId == 0 ? DeleteButtonNormal_png : HammerIcon_png;
+        // const unsigned char* pIconBitmap = uiIconId == 0 ? DeleteButtonNormal_png : HammerIcon_png;
         Add( new wxStaticText( pxConnector.pxWindow, wxID_ANY, rsText, wxDefaultPosition, wxDefaultSize, 0 ), 0,
              wxALL | wxLEFT, 5 );
 
@@ -396,14 +396,17 @@ class mwxMapDrivenComboBox : public wxComboBox
 
     // Constructor
     template <typename TYPE>
-    mwxMapDrivenComboBox( wxWindow* pxHost,
-                          const std::map<std::string, TYPE>& rxMap,
-                          std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {} ) // handler
+    mwxMapDrivenComboBox(
+        wxWindow* pxHost,
+        const std::map<std::string, TYPE>& rxMap,
+        std::function<void( wxCommandEvent& )> handler = []( wxCommandEvent& ) {}, // handler
+        std::function<std::string( typename std::map<std::string, TYPE>::const_iterator )> fNameFromKeyValuePair =
+            []( typename std::map<std::string, TYPE>::const_iterator xIt ) { return xIt->first; } )
         : wxComboBox( )
     {
-        for( auto& rxKeyValue : rxMap )
+        for( typename std::map<std::string, TYPE>::const_iterator xIt = rxMap.begin( ); xIt != rxMap.end( ); ++xIt )
         {
-            xChoices.Add( rxKeyValue.first.c_str( ) );
+            xChoices.Add( fNameFromKeyValuePair( xIt ).c_str( ) ); // rxKeyValue.second->sName.c_str( )
         } // for
         /*
          * Define order so that 'Custom' is always last and 'Default' always first.

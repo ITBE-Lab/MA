@@ -14,6 +14,7 @@ namespace fs = std::filesystem;
 #endif
 
 #include <functional>
+#include <locale>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -59,7 +60,7 @@ class AlignerParameterBase
 
     const std::string sName; // Name of parameter
     const char cShort; // Shorthand character for parameter in command line interface.
-    const std::string sDescription; // Description of parameter
+    std::string sDescription; // Description of parameter
     const std::pair<size_t, std::string> sCategory; // Description of parameter
 
     /* Delete copy constructor */
@@ -233,6 +234,12 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
         return vChoices.at( uiSelection ).first;
     } // method
 
+    /* unoverloaded function for python */
+    std::string get_py( void )
+    {
+        return vChoices.at( uiSelection ).first;
+    } // method
+
     // void mirror( const AlignerParameter<AlignerParameterBase::ChoicesType>* pOther )
     // {
     //     this->uiSelection = pOther->uiSelection;
@@ -380,13 +387,25 @@ class ParameterSetBase
     std::map<char, std::shared_ptr<AlignerParameterBase>> xpParametersByShort;
     std::map<std::pair<size_t, std::string>, std::vector<std::shared_ptr<AlignerParameterBase>>> xpParametersByCategory;
 
+    static inline std::string uniqueParameterName( std::string sSearch )
+    {
+        std::locale loc;
+        for( std::string::size_type i = 0; i < sSearch.length( ); ++i )
+            sSearch[ i ] = std::tolower( sSearch[ i ], loc );
+        sSearch.erase(
+            std::remove_if( sSearch.begin( ), sSearch.end( ), []( const char cX ) { return cX == ' ' || cX == '_'; } ),
+            sSearch.end( ) );
+        return sSearch;
+    } // method
+
     /**
      * Every parameter has to call this function from it's constructor.
      * We use this in order to generate a map of all available parameters
      */
     void registerParameter( const std::shared_ptr<AlignerParameterBase> pParameter )
     {
-        xpAllParameters.emplace( pParameter->sName, pParameter );
+        xpAllParameters.emplace( uniqueParameterName( pParameter->sName ), pParameter );
+
         xpParametersByCategory[ pParameter->sCategory ].push_back( pParameter );
         if( pParameter->cShort != pParameter->NO_SHORT_DEFINED )
         {
@@ -403,7 +422,7 @@ class ParameterSetBase
 
     void unregisterParameter( std::shared_ptr<AlignerParameterBase> pParameter )
     {
-        xpAllParameters.erase( pParameter->sName );
+        xpAllParameters.erase( uniqueParameterName( pParameter->sName ) );
         auto xIt1 = xpParametersByShort.begin( );
         while( xIt1 != xpParametersByShort.end( ) )
         {
@@ -422,7 +441,7 @@ class ParameterSetBase
 
     bool hasName( const std::string& rParameterName ) const
     {
-        return xpAllParameters.count( rParameterName ) > 0;
+        return xpAllParameters.count( uniqueParameterName( rParameterName ) ) > 0;
     } // method
 
     bool hasShort( const char cX ) const
@@ -434,7 +453,7 @@ class ParameterSetBase
     {
         try
         {
-            return xpAllParameters.at( rParameterName );
+            return xpAllParameters.at( uniqueParameterName( rParameterName ) );
         } // try
         catch( std::out_of_range& )
         {
@@ -508,8 +527,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<double> xRelMinSeedSizeAmount; // Seeding drop off B - Drop-off factor
 
     // SoC Options:
-    AlignerParameterPointer<int> xMaxNumSoC; // Maximal Number of SoC's
-    AlignerParameterPointer<int> xMinNumSoC; // Min Number SoC's
+    AlignerParameterPointer<int> xMaxNumSoC; // Maximal Number of SoCs
+    AlignerParameterPointer<int> xMinNumSoC; // Min Number SoCs
     AlignerParameterPointer<int> xSoCWidth; // Fixed SoC Width
 
     // SAM Options:
@@ -520,6 +539,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<double> xMaxOverlapSupplementary; // Maximal supplementary overlap
     AlignerParameterPointer<int> xMaxSupplementaryPerPrim; // Number Supplementary alignments
     AlignerParameterPointer<bool> xEmulateNgmlrTags; // Emulate NGMLR's tag output
+    AlignerParameterPointer<bool> xOutputMCigar; // Output M symbol in cigar
     AlignerParameterPointer<bool> xCGTag; // Output long CIGARS in CG tag
 
     // SV caller options
@@ -580,44 +600,47 @@ class Presetting : public ParameterSetBase
                     "programming is used to extend the alignment towards the endpoints of the read. Otherwise, the "
                     "unaligned parts of the read are ignored and the alignment stays unextended.",
                     DP_PARAMETERS, 1000, checkPositiveValue ),
-          xBandwidthDPExtension( this, "Bandwidth for Extensions",
-                                 "Bandwidth used in the context of extending an alignment towards the endpoints of its "
-                                 "read. (See 'Padding')",
-                                 DP_PARAMETERS, 512, checkPositiveValue ),
-          xMinBandwidthGapFilling(
-              this, "Minimal Bandwidth in Gaps",
-              "Gaps between seeds are generally filled using dynamic programming. This option determines the minimal "
-              "bandwidth used in the context of bridging gaps. More details can be found in the MA-Handbook.",
-              DP_PARAMETERS, 20, checkPositiveValue ),
+          xBandwidthDPExtension(
+              this, "Bandwidth for Extensions",
+              "Bandwidth used in the context of the extension of an alignment towards the endpoints of its "
+              "read. (See 'Padding')",
+              DP_PARAMETERS, 512, checkPositiveValue ),
+          xMinBandwidthGapFilling( this, "Minimal Bandwidth in Gaps",
+                                   "Gaps between seeds are generally filled using dynamic programming. This option "
+                                   "determines the minimal "
+                                   "bandwidth used in the context of fillin gaps.",
+                                   DP_PARAMETERS, 20, checkPositiveValue ),
           xZDrop( this, "Z Drop",
                   "If the running score during dynamic programming drops faster than <val> stop the extension process.",
                   DP_PARAMETERS, 200, checkPositiveValue ),
           xSearchInversions( this, "Detect Small Inversions",
-                             "Use DP to search for small inversions that do not contain any seeds.", DP_PARAMETERS,
-                             false ),
+                             "Use dynamic programming to search for small inversions that do not contain any seeds. "
+                             "(Flag disabled = off)",
+                             DP_PARAMETERS, false ),
           xZDropInversion(
               this, "Z Drop Inversions",
-              "Check for an inversion if the running score during dynamic programming drops faster than <val>.",
+              "Check for an inversion, if the running score during dynamic programming drops faster than <val>.",
               DP_PARAMETERS, 100, checkPositiveValue ),
 
           // Paired Reads:
-          xUsePairedReads( this, "Use Paired Reads", "If your reads occur as paired reads, activate this flag.",
-                           PAIRED_PARAMETERS, false ),
-          xMeanPairedReadDistance(
-              this, "Mean Distance of Paired Reads", 'd',
-              "Two reads can be paired if they are within mean +- (standard deviation)*3 distance from one another on "
-              "the expected strands (depends on Use Mate Pair on/off) Used in the context of the computation of the "
-              "mapping quality and for picking optimal alignment pairs.",
-              PAIRED_PARAMETERS, 400 ),
-          xStdPairedReadDistance(
-              this, "Standard Deviation of Paired Reads", 'S',
-              "<val> represents the standard deviation for the distance between paired reads. Used in the context of "
-              "the computation of the mapping quality and for picking optimal alignment pairs.",
-              PAIRED_PARAMETERS, 150, checkPositiveDoubleValue ),
+          xUsePairedReads( this, "Use Paired Reads", "For paired reads set this flag to true.", PAIRED_PARAMETERS,
+                           false ),
+          xMeanPairedReadDistance( this, "Mean Distance of Paired Reads", 'd',
+                                   "Two reads can be paired, if they are within mean +- (standard deviation)*3 "
+                                   "distance from one another on "
+                                   "the expected strands (depends on Use Mate Pair on/off) Used in the context of "
+                                   "the computation of the "
+                                   "mapping quality and for picking optimal alignment pairs.",
+                                   PAIRED_PARAMETERS, 400 ),
+          xStdPairedReadDistance( this, "Standard Deviation of Paired Reads", 'S',
+                                  "<val> represents the standard deviation for the distance between paired reads. "
+                                  "Used in the context of "
+                                  "the computation of the mapping quality and for picking optimal alignment pairs.",
+                                  PAIRED_PARAMETERS, 150, checkPositiveDoubleValue ),
           xPairedBonus( this, "Score Factor for Paired Reads",
                         "This factor is multiplied to the score of successfully paired reads. Used in the context of "
-                        "the computation of the mapping quality and for picking optimal alignment pairs. [val] < 1 "
-                        "results in penalty; [val] > 1 results in bonus.",
+                        "the computation of the mapping quality and for picking optimal alignment pairs. <val> < 1 "
+                        "results in penalty; <val> > 1 results in bonus.",
                         PAIRED_PARAMETERS, 1.25, checkPositiveDoubleValue ),
           xPairedCheck( this, "Check for Consistency",
                         "Check if both paired read files comprise the same number of reads. (Intended for debugging.)",
@@ -634,37 +657,38 @@ class Presetting : public ParameterSetBase
           xMinimalSeedAmbiguity(
               this, "Minimal Ambiguity",
               "During the extension of seeds using the FMD-index: With increasing extension width, the number of "
-              "occurrences of corresponding seeds on the reference montonically decreases. Keep extending, while the "
-              "number of occurrences is higher than 'Minimal Ambiguity'. (For details see the MA-Handbook.)",
+              "occurrences of corresponding seeds on the reference monotonically decreases. Keep extending, while "
+              "the "
+              "number of occurrences is higher than 'Minimal Ambiguity'.",
               SEEDING_PARAMETERS, 0, checkPositiveValue ),
-          xMaximalSeedAmbiguity(
-              this, "Maximal Ambiguity",
-              "Discard seeds that occur more than 'Maximal ambiguity' time on the reference. Set to zero to disable.",
-              SEEDING_PARAMETERS, 100, checkPositiveValue ),
+          xMaximalSeedAmbiguity( this, "Maximal Ambiguity",
+                                 "Discard seeds that occur more than 'Maximal ambiguity' time on the reference. Set "
+                                 "this option to zero in order to disable it.",
+                                 SEEDING_PARAMETERS, 100, checkPositiveValue ),
           xSkipAmbiguousSeeds( this, "Skip Ambiguous Seeds",
-                               "Enabled: Discard all seeds that are more ambiguous than [Maximal Ambiguity]. Disabled: "
-                               "sample [Maximal Ambiguity] random seeds from too ambiguous seeds.",
+                               "Enabled: Discard all seeds that are more ambiguous than <Maximal Ambiguity>. Disabled: "
+                               "sample <Maximal Ambiguity> random seeds from too ambiguous seeds.",
                                SEEDING_PARAMETERS, false ),
           xMinimalSeedSizeDrop( this, "Seeding Drop-off A - Minimal Seed Size",
                                 "Heuristic runtime optimization: For a given read R, let N be the number of seeds of "
-                                "size >= [val]. Discard R, if N < [length(R)] * [Seeding drop-off B].",
+                                "size >= <val>. Discard R, if N < <length(R)> * <Seeding drop-off B>.",
                                 SEEDING_PARAMETERS, 15, checkPositiveValue ),
           xRelMinSeedSizeAmount( this, "Seeding Drop-off B - Factor",
                                  "Heuristic runtime optimization: Factor for seed drop-off calculation. For more "
-                                 "information see parameter [Seeding drop-off A]. ",
+                                 "information see the parameter Seeding drop-off A. ",
                                  SEEDING_PARAMETERS, 0.005, checkPositiveDoubleValue ),
 
           // SoC:
-          xMaxNumSoC( this, "Maximal Number of SoCs", 'N', "Only consider the <val> best scored SoC's. 0 = no limit.",
-                      SOC_PARAMETERS, 30, checkPositiveValue ),
-          xMinNumSoC(
-              this, "Minimal Number of SoCs", 'M',
-              "Always consider the first <val> SoC's no matter the Heuristic optimizations. Upping this "
-              "parameter might improve the output of supplementary alignments and therefore successive SV calling.",
-              SOC_PARAMETERS, 1, checkPositiveValue ),
+          xMaxNumSoC( this, "Maximal Number of SoCs", 'N',
+                      "Consider the <val> best scored SoCs merely. 0 = Consider all SoCs.", SOC_PARAMETERS, 30,
+                      checkPositiveValue ),
+          xMinNumSoC( this, "Minimal Number of SoCs", 'M',
+                      "Always consider the first <val> SoCs no matter the Heuristic optimizations. Increasing this "
+                      "parameter might improve the quality of supplementary alignments.",
+                      SOC_PARAMETERS, 1, checkPositiveValue ),
           xSoCWidth( this, "Fixed SoC Width",
-                     "Set the SoC width to a fixed value. 0 = use the formula given in the paper. This parameter is "
-                     "intended for debugging purposes.",
+                     "Set the SoC width to a fixed value. 0 = use the formula given in the paper. (for debugging "
+                     "purposes.)",
                      SOC_PARAMETERS, 0, checkPositiveValue ),
 
           // SAM
@@ -672,29 +696,32 @@ class Presetting : public ParameterSetBase
                     "Do not output more than <val> alignments. Set to zero for unlimited output.", SAM_PARAMETERS, 0,
                     checkPositiveValue ),
           xMinAlignmentScore( this, "Minimal Alignment Score",
-                              "Suppress the output of alignments with a score below val.", SAM_PARAMETERS, 75 ),
+                              "Suppress the output of alignments with a score below <val>.", SAM_PARAMETERS, 75 ),
           xNoSecondary( this, "Omit Secondary Alignments", "Suppress the output of secondary alignments.",
                         SAM_PARAMETERS, false ),
           xNoSupplementary( this, "Omit Supplementary Alignments", "Suppress the output of supplementary alignments.",
                             SAM_PARAMETERS, false ),
-          xMaxOverlapSupplementary(
-              this, "Maximal Supplementary Overlap",
-              "An non-primary alignment A is considered supplementary, if less than val percent of A overlap with the "
-              "primary alignment on the query. Otherwise A is considered secondary.",
-              SAM_PARAMETERS, 0.1, checkPositiveDoubleValue ),
+          xMaxOverlapSupplementary( this, "Maximal Supplementary Overlap",
+                                    "A non-primary alignment A is considered supplementary, if less than <val> "
+                                    "percent of A overlap with the "
+                                    "primary alignment on the query. Otherwise A is considered secondary.",
+                                    SAM_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xMaxSupplementaryPerPrim( this, "Number Supplementary Alignments",
                                     "Maximal Number of supplementary alignments per primary alignment.", SAM_PARAMETERS,
                                     1, checkPositiveValue ),
-          xEmulateNgmlrTags( this, "Emulate NGMLRs tag output",
-                             "Output SAM tags as NGMLR would. Activate this if you want to use MA in combination with "
-                             "Sniffles. Enableing this will drastically increase the size of the output file.",
-                             SAM_PARAMETERS, false ),
-          xCGTag(
-              this, "Output long cigars in CG tag",
-              "Some software crashes if a cigar is too long. Enabeling this flag makes MA output that the entire "
-              "read was soft clipped in the regular cigar field if the cigar would exceed 65536 operations. The actual "
-              "cigar is then given in the CG:B:I tag as a comma seperated binary list.",
-              SAM_PARAMETERS, true ),
+          xEmulateNgmlrTags(
+              this, "Emulate NGMLR's tag output",
+              "Output SAM tags as NGMLR would. Enable this flag if you want to use MA in combination with "
+              "Sniffles. Enabling this flag will drastically increase the size of the SAM output file.",
+              SAM_PARAMETERS, false ),
+          xOutputMCigar( this, "Use M in CIGAR",
+                         "Disabled: Distinguish matches and mismatches in CIGARs using '=' and 'X' operations. "
+                         "Enabled: Use the 'M' operation in CIGARs.",
+                         SAM_PARAMETERS, true ),
+          xCGTag( this, "Output long cigars in CG tag",
+                  "Some programs crash, if cigars become too long. If this flag is enabled, the CG:B:I tag is used for "
+                  "the output of long cigars (cigars with more than 65536 operations).",
+                  SAM_PARAMETERS, true ),
 
           // SV
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
@@ -714,60 +741,66 @@ class Presetting : public ParameterSetBase
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
-                                      "Let x be the maximal encountered SoC score. Stop harmonizing SoC's if there is "
-                                      "a SoC with a score lower than <val>*x.",
+                                      "Let x be the maximal encountered SoC score. Stop harmonizing SoCs if there is "
+                                      "a SoC with a score smaller than <val>*x.",
                                       HEURISTIC_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xHarmScoreMin( this, "Minimal Harmonization Score",
-                         "Discard all harmonized SoC's with scores lower than <val>. "
-                         "Only keep detected inversions with a score >= <val> * [Match Score].",
+                         "Discard all harmonized SoCs with scores smaller than <val>. "
+                         "Only keep detected inversions with a score >= <val> * <Match Score>.",
                          HEURISTIC_PARAMETERS, 18, checkPositiveValue ),
           xHarmScoreMinRel( this, "Relative Minimal Harmonization Score",
-                            "Discard all harmonized SoC's with scores lower than length(read)*<val>.",
+                            "Discard all harmonized SoCs with scores smaller than length(read)*<val>.",
                             HEURISTIC_PARAMETERS, 0.002, checkPositiveDoubleValue ),
           xScoreDiffTolerance(
               this, "Harmonization Drop-off A - Score Difference",
-              "Let x be the maximal encountered harmonization score. Stop harmonizing further SoC's if there are "
-              "<Harmonization Drop-off B> SoC's with lower scores than x-<readlength>*<val> in a row.",
+              "Let x be the maximal encountered harmonization score. Stop harmonizing further SoCs, if "
+              "<Harmonization "
+              "Drop-off B> many SoCs with scores below x - <readlength> * <val> occur consecutively.",
               HEURISTIC_PARAMETERS, 0.0001, checkPositiveDoubleValue ),
           xMaxScoreLookahead( this, "Harmonization Drop-off B - Lookahead", "See Harmonization Drop-off A.",
                               HEURISTIC_PARAMETERS, 3, checkPositiveValue ),
           xSwitchQlen( this, "Harmonization Score Drop-off - Minimal Query Length",
-                       "For reads of length >= [val]: Ignore all SoC's with harmonization scores lower than the "
+                       "For reads of length >= <val>: Ignore all SoCs with harmonization scores smaller than the "
                        "current maximal score. 0 = disabled.",
                        HEURISTIC_PARAMETERS, 800, checkPositiveValue ),
           xMaxDeltaDist( this, "Artifact Filter A - Maximal Delta Distance",
-                         "Filter seeds if the difference between the delta distance to it's predecessor and successor "
-                         "is less then [val] percent (set to 1 to disable filter) and the delta distance to it's pre- "
-                         "and successor is more than [Artifact Filter B] nt.",
+                         "Filter a seed, if the difference between the delta distance to its predecessor and successor "
+                         "is less then <val> percent (set to 1 to disable filter) and the delta distance to its pre- "
+                         "and successor is more than <Artifact Filter B> nt.",
                          HEURISTIC_PARAMETERS, 0.1, checkPositiveDoubleValue ),
           xMinDeltaDist( this, "Artifact Filter B - Minimal Delta Distance", "See Artifact Filter A",
                          HEURISTIC_PARAMETERS, 16, checkPositiveValue ),
-          xDisableGapCostEstimationCutting( this, "Pick Local Seed Set A - Enabled",
-                                            "<val> = true enables local seed set computation.", HEURISTIC_PARAMETERS,
-                                            false ),
+          xDisableGapCostEstimationCutting(
+              this, "Pick Local Seed Set A - Enabled",
+              "Enable this flag for local seed set computation. (See Pick_Local_Seed_Set_B)", HEURISTIC_PARAMETERS,
+              false ),
           xOptimisticGapCostEstimation(
               this, "Pick Local Seed Set B - Optimistic Gap Estimation",
-              "After the harmonization MA checks weather it is possible to compute a positively scored alignment from "
-              "the seed set. Gaps between seeds can be estimated in two ways: Optimistic [true]: Assume that the gap "
-              "can be filled using merely matches and a single insertion/deletion. Pessimistic [false]: Assume that "
+              "After the harmonization MA checks weather it is possible to compute a positively scored alignment "
+              "from "
+              "the seed set. Gaps between seeds can be estimated in two ways: Optimistic [true]: Assume that the "
+              "gap "
+              "can be filled using merely matches and a single insertion/deletion. Pessimistic [false]: Assume "
+              "that "
               "the gap can be filled using matches and mismatches that add up to a score of 0 and a single "
               "insertion/deletion.",
               HEURISTIC_PARAMETERS, true ),
           xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
-                      "Maximal Gap cost penalty during local seed set computiaion.", HEURISTIC_PARAMETERS, 0,
-                      checkPositiveValue ), // for SV branch changed this 100 -> 0 (=infinite)
-          xMaxGapArea( this, "Maximal Gap Size",
-                       "If the gap between seeds is larger than <val> on query or reference, the dual extension "
-                       "process is used to fill the gap. Dual extension is more expensive if the extension does not "
-                       "Z-drop, but more efficient otherwise.",
-                       HEURISTIC_PARAMETERS, 20, checkPositiveValue ),
+                      "Maximal gap cost penalty during local seed set computation.", HEURISTIC_PARAMETERS, 100,
+                      checkPositiveValue ),
+          xMaxGapArea(
+              this, "Maximal Gap Size",
+              "If the gap between seeds is larger than <val> on query or reference, a dual extension "
+              "process is used for filling the gap. Dual extension is more expensive, if the extension does not "
+              "Z-drop, but more efficient otherwise.",
+              HEURISTIC_PARAMETERS, 20, checkPositiveValue ),
           xGenomeSizeDisable( this, "Minimum Genome Size for Heuristics",
-                              "Some heuristics can only be applied on long enough genomes. Disables: SoC score "
-                              "Drop-off if the genome is shorter than <val>.",
+                              "Some heuristics can only be applied on genomes of sufficient size. The parameter "
+                              "disables the SoC score "
+                              "Drop-off, if the genome is shorter than <val>.",
                               HEURISTIC_PARAMETERS, 10000000, checkPositiveValue ),
           xDisableHeuristics( this, "Disable All Heuristics",
-                              "Disables all runtime heuristics. (Intended for debugging.)", HEURISTIC_PARAMETERS,
-                              false )
+                              "Disables all runtime heuristics. (For debugging purposes)", HEURISTIC_PARAMETERS, false )
     {
 
         xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
@@ -776,8 +809,11 @@ class Presetting : public ParameterSetBase
         xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
     } // constructor
 
+    Presetting( ) : Presetting( "Unnamed" )
+    {} // default constructor
+
     /* Named copy Constructor */
-    Presetting( const Presetting& rxOtherSet, const std::string& sName ) : Presetting( sName )
+    Presetting( const Presetting& rxOtherSet, const std::string& sName ) : Presetting( rxOtherSet.sName )
     {
         this->mirror( rxOtherSet );
     } // copy constructor
@@ -819,8 +855,9 @@ class GeneralParameter : public ParameterSetBase
           xSAMOutputPath( this, "Folder for SAM Files",
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
-          xSAMOutputFileName( this, "SAM File name", 'o', "Name of the SAM file alignments shall be written to.",
-                              GENERAL_PARAMETER, "ma_out.sam" ),
+          xSAMOutputFileName( this, "SAM File name", 'o',
+                              "Name of the SAM file that is used for the output of alignments.", GENERAL_PARAMETER,
+                              "ma_out.sam" ),
           pbUseMaxHardareConcurrency( this, "Use all Processor Cores",
                                       "Number of threads used for alignments is identical to the number "
                                       "of processor cores.",
@@ -869,46 +906,51 @@ class ParameterSetManager
 
     ParameterSetManager( ) : pGlobalParameterSet( std::make_shared<GeneralParameter>( ) )
     {
-        xParametersSets.emplace( "Default", std::make_shared<Presetting>( "Default" ) );
+        xParametersSets.emplace( "default", std::make_shared<Presetting>( "Default" ) );
 
-        xParametersSets.emplace( "Illumina", std::make_shared<Presetting>( "Illumina" ) );
-        xParametersSets[ "Illumina" ]->xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina" ]->xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina" ]->xMaxNumSoC->set( 20 );
+        xParametersSets.emplace( "illumina", std::make_shared<Presetting>( "Illumina" ) );
+        xParametersSets[ "illumina" ]->xSeedingTechnique->set( 1 ); // use SMEMs
+        xParametersSets[ "illumina" ]->xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "illumina" ]->xMinNumSoC->set( 10 );
+        xParametersSets[ "illumina" ]->xMaxNumSoC->set( 20 );
 
-        xParametersSets.emplace( "Illumina Paired", std::make_shared<Presetting>( "Illumina Paired" ) );
-        xParametersSets[ "Illumina Paired" ]->xUsePairedReads->set( true );
-        xParametersSets[ "Illumina Paired" ]->xMaximalSeedAmbiguity->set( 500 );
-        xParametersSets[ "Illumina Paired" ]->xMinNumSoC->set( 10 );
-        xParametersSets[ "Illumina Paired" ]->xMaxNumSoC->set( 20 );
+        xParametersSets.emplace( "illuminapaired", std::make_shared<Presetting>( "Illumina Paired" ) );
+        xParametersSets[ "illuminapaired" ]->xSeedingTechnique->set( 1 ); // use SMEMs
+        xParametersSets[ "illuminapaired" ]->xUsePairedReads->set( true );
+        xParametersSets[ "illuminapaired" ]->xMaximalSeedAmbiguity->set( 500 );
+        xParametersSets[ "illuminapaired" ]->xMinNumSoC->set( 10 );
+        xParametersSets[ "illuminapaired" ]->xMaxNumSoC->set( 20 );
 
-        xParametersSets.emplace( "PacBio", std::make_shared<Presetting>( "PacBio" ) );
-        xParametersSets[ "PacBio" ]->xMaxSupplementaryPerPrim->set( 100 );
-        xParametersSets[ "PacBio" ]->xMinNumSoC->set( 5 );
+        xParametersSets.emplace( "pacbio", std::make_shared<Presetting>( "PacBio" ) );
+        xParametersSets[ "pacbio" ]->xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "pacbio" ]->xMinNumSoC->set( 5 );
 
 
-        xParametersSets.emplace( "Nanopore", std::make_shared<Presetting>( "Nanopore" ) );
-        xParametersSets[ "Nanopore" ]->xSeedingTechnique->set( 1 );
-        xParametersSets[ "Nanopore" ]->xMaxSupplementaryPerPrim->set( 100 );
-        xParametersSets[ "Nanopore" ]->xMinNumSoC->set( 5 );
+        xParametersSets.emplace( "nanopore", std::make_shared<Presetting>( "Nanopore" ) );
+        xParametersSets[ "nanopore" ]->xSeedingTechnique->set( 1 );
+        xParametersSets[ "nanopore" ]->xMaxSupplementaryPerPrim->set( 100 );
+        xParametersSets[ "nanopore" ]->xMinNumSoC->set( 5 );
 
         // Initially select Illumina
-        this->pSelectedParamSet = xParametersSets[ "Default" ];
+        this->pSelectedParamSet = xParametersSets[ "default" ];
     } // constructor
 
     ParameterSetManager( const ParameterSetManager& ) = delete; // delete copy constructor
 
     std::shared_ptr<Presetting> get( const std::string& sKey )
     {
-        return xParametersSets[ sKey ];
+        if( xParametersSets.count( ParameterSetBase::uniqueParameterName( sKey ) ) == 0 )
+            throw std::runtime_error( "The presetting '" + sKey + "' can not be found." );
+        return xParametersSets[ ParameterSetBase::uniqueParameterName( sKey ) ];
     } // method
 
     /* Set selected parameter set by using a key.
-     * TODO: Check the key for existence.
      */
     void setSelected( const std::string& sKey )
     {
-        this->pSelectedParamSet = xParametersSets[ sKey ];
+        if( xParametersSets.count( ParameterSetBase::uniqueParameterName( sKey ) ) == 0 )
+            throw std::runtime_error( "The presetting '" + sKey + "' can not be found." );
+        this->pSelectedParamSet = xParametersSets[ ParameterSetBase::uniqueParameterName( sKey ) ];
     } // method
 
     /* Delivers pointer to selected parameter-set */
