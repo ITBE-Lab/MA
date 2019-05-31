@@ -13,20 +13,31 @@ template <typename TP_CONTENT> class CyclicSetWithNElements
 {
     std::vector<TP_CONTENT> vContent;
     size_t uiCurrPos;
+    size_t uiCurrSize;
 
   public:
-    CyclicSetWithNElements( size_t uiSize ) : vContent( uiSize ), uiCurrPos( 0 )
+    CyclicSetWithNElements( size_t uiSize ) : vContent( uiSize ), uiCurrPos( 0 ), uiCurrSize( 0 )
     {} // constructor
 
     void insert( TP_CONTENT& rEle )
     {
         vContent[ uiCurrPos % vContent.size( ) ] = rEle;
         uiCurrPos++;
+        if( uiCurrSize < vContent.size( ) )
+            uiCurrSize++;
+    } // method
+
+    void del( )
+    {
+        if( uiCurrSize == 0 )
+            return;
+        uiCurrPos++;
+        uiCurrSize--;
     } // method
 
     template <typename TP_FUNCTOR> void forall( TP_FUNCTOR&& functor )
     {
-        for( size_t uiI = 0; uiI < uiCurrPos && uiI < vContent.size( ); uiI++ )
+        for( size_t uiI = 0; uiI < uiCurrPos && uiI < uiCurrSize; uiI++ )
             functor( vContent[ uiI ] );
     } // method
 }; // class
@@ -36,7 +47,7 @@ template <typename TP_CONTENT> class CyclicSetWithNElements
  * @details
  * vSeedSizes determines the minimal sizes of seeds that shall be held, while the respective vSetSizes values
  * indicate how many seeds of that size or above shall be held.
- * @note vSeedSizes must be given in DESCENDING order
+ * @note vSeedSizes must be given in ASCENDING order
  */
 class LastMatchingSeeds
 {
@@ -44,7 +55,7 @@ class LastMatchingSeeds
     std::vector<CyclicSetWithNElements<Seed>> vContent;
 
   public:
-    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {30, 0}, std::vector<size_t> vSetSizes = {2, 2} )
+    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {0, 30}, std::vector<size_t> vSetSizes = {2, 2} )
         : vSeedSizes( vSeedSizes )
     {
         assert( vSeedSizes.size( ) == vSetSizes.size( ) );
@@ -52,17 +63,16 @@ class LastMatchingSeeds
         for( size_t uiI : vSetSizes )
             vContent.emplace_back( uiI );
         for( size_t uiI = 1; uiI < vSeedSizes.size( ); uiI++ )
-            assert( vSeedSizes[ uiI - 1 ] > vSeedSizes[ uiI ] );
+            assert( vSeedSizes[ uiI - 1 ] < vSeedSizes[ uiI ] );
     } // constructor
 
     void insert( Seed& rSeed )
     {
-        for( size_t uiI = 0; uiI < vSeedSizes.size( ); uiI++ )
-            if( rSeed.size( ) >= vSeedSizes[ uiI ] )
-            {
-                vContent[ uiI ].insert( rSeed );
-                break;
-            } // if
+        size_t uiI = 0;
+        for(; uiI < vSeedSizes.size( ) - 1 && rSeed.size( ) < vSeedSizes[ uiI + 1 ]; uiI++ )
+            vContent[ uiI ].del();
+
+        vContent[ uiI ].insert( rSeed );
     } // method
 
     template <typename TP_IT> void fill( TP_IT itBegin, TP_IT itEnd )
@@ -81,14 +91,14 @@ class LastMatchingSeeds
     } // method
 }; // class
 
-void helperSvJumpsFromSeedsExecute( LastMatchingSeeds& rLastSeeds, Seed& rCurr, bool bJumpFromStart,
-                                    std::shared_ptr<ContainerVector<SvJump>>& pRet )
+void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedSetting, LastMatchingSeeds& rLastSeeds,
+                                    Seed& rCurr, bool bJumpFromStart, std::shared_ptr<ContainerVector<SvJump>>& pRet )
 {
     // @todo filter segment here
     rLastSeeds.forall( [&]( Seed& rLast ) //
                        {
                            if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
-                               pRet->emplace_back( rLast, rCurr, bJumpFromStart );
+                               pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
                        } // lambda
     ); // forall function call
 
@@ -116,18 +126,18 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
         if( vSeeds.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( vSeeds.front( ), pQuery->length( ), true );
+            pRet->emplace_back( pSelectedSetting, vSeeds.front( ), pQuery->length( ), true );
         if( vSeeds.back( ).end( ) + uiMinDistDummy < pQuery->length( ) )
-            pRet->emplace_back( vSeeds.back( ), pQuery->length( ), false );
+            pRet->emplace_back( pSelectedSetting, vSeeds.back( ), pQuery->length( ), false );
     } // if
 
     // walk over all seeds to compute
     LastMatchingSeeds xLastSeedsForward;
     for( Seed& rCurr : vSeeds )
-        helperSvJumpsFromSeedsExecute( xLastSeedsForward, rCurr, false, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForward, rCurr, false, pRet );
     LastMatchingSeeds xLastSeedsReverse;
     for( auto itRevIt = vSeeds.rbegin( ); itRevIt != vSeeds.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( xLastSeedsReverse, *itRevIt, true, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverse, *itRevIt, true, pRet );
 
     return pRet;
 } // method
@@ -159,9 +169,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
     if( vSeedsA.size( ) > 0 && bDoDummyJumps )
     {
         if( vSeedsA.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( vSeedsA.front( ), pQueryA->length( ), true );
+            pRet->emplace_back( pSelectedSetting, vSeedsA.front( ), pQueryA->length( ), true );
         if( vSeedsA.back( ).end( ) + uiMinDistDummy < pQueryA->length( ) )
-            pRet->emplace_back( vSeedsA.back( ), pQueryA->length( ), false );
+            pRet->emplace_back( pSelectedSetting, vSeedsA.back( ), pQueryA->length( ), false );
     } // if
 
 
@@ -177,9 +187,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
     if( vSeedsB.size( ) > 0 && bDoDummyJumps )
     {
         if( vSeedsB.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( vSeedsB.front( ), pQueryB->length( ), true );
+            pRet->emplace_back( pSelectedSetting, vSeedsB.front( ), pQueryB->length( ), true );
         if( vSeedsB.back( ).end( ) + uiMinDistDummy < pQueryB->length( ) )
-            pRet->emplace_back( vSeedsB.back( ), pQueryB->length( ), false );
+            pRet->emplace_back( pSelectedSetting, vSeedsB.back( ), pQueryB->length( ), false );
     } // if
 
     // @note @todo from here on everything is quite inefficient
@@ -206,15 +216,15 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
 
 
     for( Seed& rCurr : vSeedsA )
-        helperSvJumpsFromSeedsExecute( xLastSeedsForwardA, rCurr, false, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardA, rCurr, false, pRet );
     for( Seed& rCurr : vSeedsB )
-        helperSvJumpsFromSeedsExecute( xLastSeedsForwardB, rCurr, false, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardB, rCurr, false, pRet );
 
 
     for( auto itRevIt = vSeedsA.rbegin( ); itRevIt != vSeedsA.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( xLastSeedsReverseA, *itRevIt, true, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseA, *itRevIt, true, pRet );
     for( auto itRevIt = vSeedsB.rbegin( ); itRevIt != vSeedsB.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( xLastSeedsReverseB, *itRevIt, true, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseB, *itRevIt, true, pRet );
 
     return pRet;
 } // method

@@ -2,6 +2,7 @@
 
 #include "container/nucSeq.h"
 #include "container/seed.h"
+#include "util/parameter.h"
 #include <cmath>
 #include <limits>
 
@@ -14,8 +15,12 @@ class SvJump : public Container
     {
         return uiA < uiB ? uiB - uiA : uiA - uiB;
     } // method
-    static const nucSeqIndex uiSeedDirFuzziness = 3;
-    static const nucSeqIndex uiSDFActivate = uiSeedDirFuzziness * 2;
+
+    const double s;
+    const double h;
+    const double m;
+    const nucSeqIndex uiSeedDirFuzziness;
+    const nucSeqIndex uiSDFActivate;
 
   public:
     static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
@@ -39,7 +44,9 @@ class SvJump : public Container
     int64_t iId;
     int64_t iReadId;
 
-    SvJump( const nucSeqIndex uiFrom,
+
+    SvJump( std::shared_ptr<Presetting> pSelectedSetting,
+            const nucSeqIndex uiFrom,
             const nucSeqIndex uiTo,
             const nucSeqIndex uiQueryFrom,
             const nucSeqIndex uiQueryTo,
@@ -48,7 +55,12 @@ class SvJump : public Container
             const bool bFromSeedStart,
             int64_t iId = -1, /* -1 == no id obtained */
             int64_t iReadId = -1 /* -1 == no id obtained */ )
-        : uiFrom( uiFrom ),
+        : s( pSelectedSetting->xJumpS->get( ) ),
+          h( pSelectedSetting->xJumpH->get( ) ),
+          m( pSelectedSetting->xJumpM->get( ) ),
+          uiSeedDirFuzziness( pSelectedSetting->xSeedDirFuzziness->get( ) ),
+          uiSDFActivate( uiSeedDirFuzziness * 2 ),
+          uiFrom( uiFrom ),
           uiTo( uiTo ),
           uiQueryFrom( uiQueryFrom ),
           uiQueryTo( uiQueryTo ),
@@ -63,32 +75,39 @@ class SvJump : public Container
         assert( uiFrom * 2 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
-    SvJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
-        : SvJump( /* uiFrom = */
-                  bFromSeedStart
-                      ? rA.start_ref( )
-                      : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
-                                           // @note rA's direction is mirrored on reference if rA is on rev comp strand
-                                           : rA.start_ref( ) - rA.size( ) + 1 ),
-                  /* uiTo = */
-                  !bFromSeedStart
-                      ? rB.start_ref( )
-                      : ( rB.bOnForwStrand ? rB.end_ref( ) - 1
-                                           // @note rB's direction is mirrored on reference if rB is on rev comp strand
-                                           : rB.start_ref( ) - rB.size( ) + 1 ),
-                  /* uiQueryFrom = */
-                  std::min( bFromSeedStart ? rA.start( ) : rA.end( ) - 1,
-                            !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
-                  /* uiQueryTo = */
-                  std::max( bFromSeedStart ? rA.start( ) : rA.end( ) - 1,
-                            !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
-                  /* bFromForward = */ rA.bOnForwStrand,
-                  /* bToForward = */ rB.bOnForwStrand,
-                  /* bFromSeedStart = */ bFromSeedStart )
+    SvJump( std::shared_ptr<Presetting> pSelectedSetting,
+            const Seed& rA,
+            const Seed& rB,
+            const bool bFromSeedStart )
+        : SvJump(
+              pSelectedSetting,
+              /* uiFrom = */
+              bFromSeedStart
+                  ? rA.start_ref( )
+                  : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
+                                       // @note rA's direction is mirrored on reference if rA is on rev comp strand
+                                       : rA.start_ref( ) - rA.size( ) + 1 ),
+              /* uiTo = */
+              !bFromSeedStart
+                  ? rB.start_ref( )
+                  : ( rB.bOnForwStrand ? rB.end_ref( ) - 1
+                                       // @note rB's direction is mirrored on reference if rB is on rev comp strand
+                                       : rB.start_ref( ) - rB.size( ) + 1 ),
+              /* uiQueryFrom = */
+              std::min( bFromSeedStart ? rA.start( ) : rA.end( ) - 1, !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
+              /* uiQueryTo = */
+              std::max( bFromSeedStart ? rA.start( ) : rA.end( ) - 1, !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
+              /* bFromForward = */ rA.bOnForwStrand,
+              /* bToForward = */ rB.bOnForwStrand,
+              /* bFromSeedStart = */ bFromSeedStart )
     {} // constructor
 
-    SvJump( const Seed& rA, const nucSeqIndex qLen, const bool bFromSeedStart )
-        : SvJump( /* uiFrom = */
+    SvJump( std::shared_ptr<Presetting> pSelectedSetting,
+            const Seed& rA,
+            const nucSeqIndex qLen,
+            const bool bFromSeedStart )
+        : SvJump( pSelectedSetting,
+                  /* uiFrom = */
                   bFromSeedStart
                       // if we jump to the start of the first seed we don't know where we are coming from
                       ? std::numeric_limits<uint32_t>::max( )
@@ -140,13 +159,10 @@ class SvJump : public Container
 
     nucSeqIndex fuzziness( ) const
     {
-        double s = 100;
-        double h = s*3;
-        double m = 5;
-        double x = std::max( dist( uiFrom, uiTo ), uiQueryTo - uiQueryFrom );
-        double t = (h - m) / (1.0 - m);
-        double a = (1.0 - t) / s;
-        return (nucSeqIndex)std::max(1.0, std::min(h, a*x+t));
+        double x = (double)std::max( dist( uiFrom, uiTo ), uiQueryTo - uiQueryFrom );
+        double t = ( h - m ) / ( 1.0 - m );
+        double a = ( 1.0 - t ) / s;
+        return (nucSeqIndex)std::max( (int64_t)1, (int64_t)std::min( h, a * x + t ) );
     } // method
 
     // down == left
@@ -197,7 +213,7 @@ class SvJump : public Container
 
     int64_t from_end( ) const
     {
-        return from_start( ) + (int64_t)from_size( ) - 1;
+        return from_start( ) + (int64_t)from_size( );
     } // method
 
     int64_t to_start( ) const
@@ -222,7 +238,7 @@ class SvJump : public Container
 
     int64_t to_end( ) const
     {
-        return to_start( ) + to_size( ) - 1;
+        return to_start( ) + to_size( );
     } // method
 
     nucSeqIndex ref_distance( ) const

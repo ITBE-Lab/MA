@@ -22,6 +22,7 @@ class PerfectMatch;
 class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
   public:
+    const std::shared_ptr<Presetting> pSelectedSetting;
     const size_t uiMinSeedSizeSV;
     const size_t uiMaxAmbiguitySv;
     const bool bDoDummyJumps;
@@ -31,10 +32,11 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * @brief Initialize a SvJumpsFromSeeds Module
      */
     SvJumpsFromSeeds( const ParameterSetManager& rParameters )
-        : uiMinSeedSizeSV( rParameters.getSelected( )->xMinSeedSizeSV->get( ) ),
-          uiMaxAmbiguitySv( rParameters.getSelected( )->xMaxAmbiguitySv->get( ) ),
-          bDoDummyJumps( rParameters.getSelected( )->xDoDummyJumps->get( ) ),
-          uiMinDistDummy( rParameters.getSelected( )->xMinDistDummy->get( ) )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
+          uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
+          bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
+          uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
@@ -53,6 +55,7 @@ class SvJumpsFromSeedsPaired
     : public Module<ContainerVector<SvJump>, false, SegmentVector, SegmentVector, Pack, FMIndex, NucSeq, NucSeq>
 {
   public:
+    const std::shared_ptr<Presetting> pSelectedSetting;
     const size_t uiMinSeedSizeSV;
     const size_t uiMaxAmbiguitySv;
     const bool bDoDummyJumps;
@@ -63,11 +66,12 @@ class SvJumpsFromSeedsPaired
      * @brief Initialize a SvJumpsFromSeedsPaired Module
      */
     SvJumpsFromSeedsPaired( const ParameterSetManager& rParameters )
-        : uiMinSeedSizeSV( rParameters.getSelected( )->xMinSeedSizeSV->get( ) ),
-          uiMaxAmbiguitySv( rParameters.getSelected( )->xMaxAmbiguitySv->get( ) ),
-          bDoDummyJumps( rParameters.getSelected( )->xDoDummyJumps->get( ) ),
-          uiMinDistDummy( rParameters.getSelected( )->xMinDistDummy->get( ) ),
-          uiPairedDist( (size_t)rParameters.getSelected( )->xMeanPairedReadDistance->get( ) )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
+          uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
+          bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
+          uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
+          uiPairedDist( (size_t)pSelectedSetting->xMeanPairedReadDistance->get( ) )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegmentsA,

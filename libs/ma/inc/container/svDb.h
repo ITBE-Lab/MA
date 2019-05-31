@@ -1051,6 +1051,7 @@ class SV_DB : public Container
 
 class SortedSvJumpFromSql
 {
+    const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_DB> pDb;
     CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, int64_t, int64_t>
         xQueryStart;
@@ -1062,8 +1063,9 @@ class SortedSvJumpFromSql
                                int64_t>::Iterator xTableIteratorEnd;
 
   public:
-    SortedSvJumpFromSql( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId )
-        : pDb( pDb ),
+    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
                        "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                        "sort_pos_start, id, read_id "
@@ -1080,9 +1082,10 @@ class SortedSvJumpFromSql
           xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId ) )
     {} // constructor
 
-    SortedSvJumpFromSql( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId, uint32_t uiX, uint32_t uiY, uint32_t uiW,
-                         uint32_t uiH )
-        : pDb( pDb ),
+    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId,
+                         uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
                        "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                        "sort_pos_start, id, read_id "
@@ -1131,9 +1134,9 @@ class SortedSvJumpFromSql
 
         auto xTup = xTableIteratorStart.get( );
         xTableIteratorStart.next( );
-        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                       std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<8>( xTup ),
-                       std::get<9>( xTup ) );
+        return SvJump( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
+                       std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
+                       std::get<8>( xTup ), std::get<9>( xTup ) );
     } // method
 
     SvJump getNextEnd( )
@@ -1142,9 +1145,9 @@ class SortedSvJumpFromSql
 
         auto xTup = xTableIteratorEnd.get( );
         xTableIteratorEnd.next( );
-        return SvJump( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                       std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<8>( xTup ),
-                       std::get<9>( xTup ) );
+        return SvJump( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
+                       std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
+                       std::get<8>( xTup ), std::get<9>( xTup ) );
     } // method
 
 }; // class
@@ -1403,6 +1406,7 @@ class SvCallerRunsFromDb
 
 class SvCallsFromDb
 {
+    const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_DB> pDb;
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double> xQuery;
     CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport;
@@ -1410,8 +1414,9 @@ class SvCallsFromDb
         xTableIterator;
 
   public:
-    SvCallsFromDb( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
-        : pDb( pDb ),
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
           xQuery( *pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
                   "FROM sv_call_table "
@@ -1425,9 +1430,10 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId ) )
     {} // constructor
 
-    SvCallsFromDb( std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId, uint32_t uiX, uint32_t uiY, uint32_t uiW,
-                   uint32_t uiH )
-        : pDb( pDb ),
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
+                   uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
           xQuery( *pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
                   "FROM sv_call_table "
@@ -1462,9 +1468,9 @@ class SvCallsFromDb
         {
             auto xTup = xSupportIterator.get( );
             xRet.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-            xRet.vSupportingJumps.emplace_back( std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
-                                                std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
-                                                std::get<6>( xTup ), std::get<7>( xTup ) );
+            xRet.vSupportingJumps.emplace_back( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ),
+                                                std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
+                                                std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
             xSupportIterator.next( );
         } // while
         xTableIterator.next( );
