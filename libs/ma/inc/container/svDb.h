@@ -169,7 +169,7 @@ class SV_DB : public Container
               xNewestUnique(
                   *pDatabase,
                   ( "SELECT id FROM " + sTableName + " AS outer WHERE ( SELECT COUNT(*) FROM " + sTableName +
-                    " AS inner WHERE inner.name = outer.name AND inner.time_stamp <= outer.time_stamp ) < ?" )
+                    " AS inner WHERE inner.name = outer.name AND inner.time_stamp >= outer.time_stamp ) < ?" )
                       .c_str( ) )
         {} // default constructor
 
@@ -284,7 +284,7 @@ class SV_DB : public Container
               xNewestUnique(
                   *pDatabase,
                   "SELECT id FROM sv_caller_run_table AS outer WHERE ( SELECT COUNT(*) FROM sv_caller_run_table AS "
-                  "inner WHERE inner.name = outer.name AND inner.time_stamp <= outer.time_stamp ) < ?" ),
+                  "inner WHERE inner.name = outer.name AND inner.time_stamp >= outer.time_stamp ) < ?" ),
               xInsertRow2( *pDatabase,
                            "INSERT INTO sv_caller_run_table (id, name, desc, time_stamp, sv_jump_run_id) "
                            "VALUES (NULL, ?, ?, ?, NULL)" )
@@ -1091,24 +1091,23 @@ class SortedSvJumpFromSql
                        "sort_pos_start, id, read_id "
                        "FROM sv_jump_table "
                        "WHERE sv_jump_run_id == ? "
-                       "AND from_pos >= ? "
-                       "AND to_pos >= ? "
-                       "AND from_pos <= ? "
-                       "AND to_pos <= ? "
+                       "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
+                       "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos == ? ) "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
                      "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                      "sort_pos_end, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
-                     "AND from_pos >= ? "
-                     "AND to_pos >= ? "
-                     "AND from_pos <= ? "
-                     "AND to_pos <= ? "
+                     "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
+                     "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos == ? ) "
                      "ORDER BY sort_pos_end" ),
-          xTableIteratorStart(
-              xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId, uiX, uiY, uiX + uiW, uiY + uiH ) ),
-          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, uiX, uiY, uiX + uiW, uiY + uiH ) )
+          xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator(
+              iSvCallerRunId, uiX, uiX + uiW, std::numeric_limits<uint32_t>::max( ), uiY, uiY + uiH,
+              std::numeric_limits<uint32_t>::max( ) ) ),
+          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, uiX, uiX + uiW,
+                                                                  std::numeric_limits<uint32_t>::max( ), uiY, uiY + uiH,
+                                                                  std::numeric_limits<uint32_t>::max( ) ) )
     {} // constructor
 
     bool hasNextStart( )
