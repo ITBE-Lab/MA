@@ -739,7 +739,7 @@ class Presetting : public ParameterSetBase
           xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
           xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 10000, checkPositiveValue ),
           xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
-          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
+          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
           xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 50 ),
