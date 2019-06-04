@@ -451,8 +451,6 @@ class SvCall : public Container
         assert( this->supportedJumpsLoaded( ) == rOther.supportedJumpsLoaded( ) );
         assert( !this->insertedSequenceComputed( ) );
         assert( !rOther.insertedSequenceComputed( ) );
-        assert( !this->hasId( ) );
-        assert( !rOther.hasId( ) );
     } // method
 }; // class
 

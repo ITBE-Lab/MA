@@ -1,4 +1,5 @@
 #include "container/svDb.h"
+#include "module/combineOverlappingCalls.h"
 
 using namespace libMA;
 
@@ -120,5 +121,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>, int64_t>( rxPyModuleId, "PairedNucSeqFromSql" );
     exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>(
         rxPyModuleId, "SvDbInserter", []( auto&& x ) { x.def_readonly( "jump_inserter", &SvDbInserter::xInserter ); } );
+
+    rxPyModuleId.def("combine_overlapping_calls", &combineOverlappingCalls);
 } // function
 #endif

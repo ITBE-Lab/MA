@@ -3,6 +3,7 @@
  * @details
  * The database interface for the structural variant caller
  */
+#pragma once
 
 #include "container/container.h"
 #include "container/nucSeq.h"
@@ -747,6 +748,7 @@ class SV_DB : public Container
     }; // class
 
 
+  public:
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
     std::shared_ptr<ReadTable> pReadTable;
@@ -758,15 +760,7 @@ class SV_DB : public Container
     std::shared_ptr<SvCallTable> pSvCallTable;
     std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
 
-    friend class NucSeqFromSql;
-    friend class AllNucSeqFromSql;
-    friend class PairedNucSeqFromSql;
-    friend class PairedReadTable;
-    friend class SortedSvJumpFromSql;
-    friend class SvCallerRunsFromDb;
-    friend class SvCallsFromDb;
 
-  public:
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
         : pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),

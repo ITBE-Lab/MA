@@ -371,7 +371,7 @@ class BasePledge
                                 return;
                             } // catch
                         } while( bLoop && bContinue );
-                        DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
+                        //DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
                     }, // lambda
                     pPledge );
             } // for
