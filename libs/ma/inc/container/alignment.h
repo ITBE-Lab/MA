@@ -452,6 +452,11 @@ class Alignment : public Container
         return sRet;
     } // method
 
+    std::string getQueryQuality( NucSeq& rQuery )
+    {
+        return rQuery.fromToQual( uiBeginOnQuery, uiEndOnQuery );
+    } // method
+
     std::string getRevCompQuerySequence( NucSeq& rQuery, Pack& rPack )
     {
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )

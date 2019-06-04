@@ -4,16 +4,30 @@
  */
 #include "module/fileReader.h"
 #include "util/pybind11.h"
+#include <cctype>
 
 using namespace libMA;
+
+bool validNuc( char c )
+{
+    for( char c2 : {'A', 'C', 'G', 'T', 'N', 'U', 'R', 'Y', 'K', 'K', 'M', 'S', 'W', 'B', 'D', 'H', 'V'} )
+        if( c2 == toupper( c ) )
+            return true;
+    return false;
+} // method
 
 size_t len( std::string& sLine )
 {
     size_t uiLineSize = sLine.length( );
-    while( uiLineSize > 0 && sLine[ uiLineSize - 1 ] != 'A' && sLine[ uiLineSize - 1 ] != 'C' &&
-           sLine[ uiLineSize - 1 ] != 'T' && sLine[ uiLineSize - 1 ] != 'G' && sLine[ uiLineSize - 1 ] != 'N' &&
-           sLine[ uiLineSize - 1 ] != 'a' && sLine[ uiLineSize - 1 ] != 'c' && sLine[ uiLineSize - 1 ] != 't' &&
-           sLine[ uiLineSize - 1 ] != 'g' && sLine[ uiLineSize - 1 ] != 'n' )
+    while( uiLineSize > 0 && !validNuc( sLine[ uiLineSize - 1 ] ) )
+        uiLineSize--;
+    return uiLineSize;
+} // function
+
+size_t lenq( std::string& sLine )
+{
+    size_t uiLineSize = sLine.length( );
+    while( uiLineSize > 0 && ( sLine[ uiLineSize - 1 ] == '\n' || sLine[ uiLineSize - 1 ] == '\r' ) )
         uiLineSize--;
     return uiLineSize;
 } // function
@@ -62,16 +76,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
                 } // if
             } // for
                    ) // DEBUG
-            size_t uiLineSize = len( sLine );
-#if WITH_QUALITY == 1
-            // uiLineSize uint8_t's with value 127
-            std::vector<uint8_t> xQuality( uiLineSize, 126 );
-#endif
-            pRet->vAppend( (const uint8_t*)sLine.c_str( ),
-#if WITH_QUALITY == 1
-                           xQuality.data( ),
-#endif
-                           uiLineSize );
+            pRet->vAppend( (const uint8_t*)sLine.c_str( ), len( sLine ) );
         } // while
         pRet->vTranslateToNumericFormUsingTable( pRet->xNucleotideTranslationTable, 0 );
 
@@ -87,37 +92,42 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     } // if
 #if WITH_QUALITY == 1
     // FASTAQ format
-    if( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) == '@' )
+    if( !pFile->eof( ) && pFile->peek( ) == '@' )
     {
+        pRet->addQuality( );
         std::string sLine;
         pFile->safeGetLine( sLine );
         if( sLine.size( ) == 0 )
-            throw AlignerException( "Invalid line in fasta" );
-        ;
+            throw AnnotatedException( "Invalid line in fasta" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
-        while( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) != '+' && pFile->peek( ) != ' ' )
+        while( !pFile->eof( ) && pFile->peek( ) != '+' && pFile->peek( ) != ' ' )
         {
             sLine = "";
             pFile->safeGetLine( sLine );
             if( sLine.size( ) == 0 )
                 continue;
             size_t uiLineSize = len( sLine );
-            std::vector<uint8_t> xQuality( uiLineSize, 126 ); // uiLineSize uint8_t's with value 127
-            pRet->vAppend( (const uint8_t*)sLine.c_str( ), xQuality.data( ), uiLineSize );
+            pRet->vAppend( (const uint8_t*)sLine.c_str( ), uiLineSize );
         } // while
         pRet->vTranslateToNumericFormUsingTable( pRet->xNucleotideTranslationTable, 0 );
+        pFile->safeGetLine( sLine );
         // quality
-        unsigned int uiPos = 0;
-        while( pFile->good( ) && !pFile->eof( ) && pFile->peek( ) != '@' )
+        if( sLine[ 0 ] == '+' )
         {
-            pFile->safeGetLine( sLine );
-            size_t uiLineSize = len( sLine );
-            for( size_t i = 0; i < uiLineSize; i++ )
-                pRet->quality( i + uiPos ) = (uint8_t)sLine[ i ];
-            uiPos += uiLineSize;
-        } // while
+            size_t uiPos = 0;
+            while( !pFile->eof( ) && ( pFile->peek( ) != '@' || uiPos == 0 ) )
+            {
+                pFile->safeGetLine( sLine );
+                if( sLine.size( ) == 0 )
+                    continue;
+                size_t uiLineSize = lenq( sLine );
+                for( size_t i = 0; i < uiLineSize; i++ )
+                    pRet->quality( i + uiPos ) = (uint8_t)sLine[ i ];
+                uiPos += uiLineSize;
+            } // while
+        }
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
