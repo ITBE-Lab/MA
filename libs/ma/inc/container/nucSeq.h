@@ -46,7 +46,7 @@ template <class T> void reverse( T word[], size_t length )
     } // for
 } // reverse
 
-#define WITH_QUALITY ( 0 )
+#define WITH_QUALITY ( 1 )
 
 /**
  * @brief Contains a genetic sequence made out of nucleotides (A, C, G, T).
@@ -59,18 +59,18 @@ class NucSeq : public Container
   public:
     /** The encapsulated sequence
      */
-    uint8_t* pxSequenceRef;
+    uint8_t* pxSequenceRef = nullptr;
 #if WITH_QUALITY
-    uint8_t* pxQualityRef;
+    uint8_t* pxQualityRef = nullptr;
 #endif
 
     /** Current size of the content of the encapsulated sequence
      */
-    size_t uiSize;
+    size_t uiSize = 0;
 
     /** Current size of the buffer.
      */
-    size_t uxCapacity;
+    size_t uxCapacity = 0;
 
 
     /** Resets all protected attributes to its initial values.
@@ -97,6 +97,13 @@ class NucSeq : public Container
         uxCapacity = 0;
     } // protected method
 
+#if WITH_QUALITY
+    bool bHasQuality( ) const
+    {
+        return pxQualityRef != nullptr;
+    } // method
+#endif
+
     /** Tries to allocate the requested amount of memory and throws an exception if this process
      * fails. uxRequestedSize is expressed in "number of requested elements.
      */
@@ -111,14 +118,16 @@ class NucSeq : public Container
          * http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
          */
         auto pxReallocRef = (uint8_t*)realloc( pxSequenceRef, uxRequestedSize * sizeof( uint8_t ) );
+        uint8_t* pxReallocRef2 = NULL;
 #if WITH_QUALITY
-        auto pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
+        if( bHasQuality( ) )
+            pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
 #endif
 
 
         if( pxReallocRef == NULL
 #if WITH_QUALITY
-            || pxReallocRef2 == NULL
+            || ( bHasQuality( ) && pxReallocRef2 == NULL )
 #endif
         )
         {
@@ -129,7 +138,8 @@ class NucSeq : public Container
 
         pxSequenceRef = pxReallocRef;
 #if WITH_QUALITY
-        pxQualityRef = pxReallocRef2;
+        if( bHasQuality( ) )
+            pxQualityRef = pxReallocRef2;
 #endif
         uxCapacity = uxRequestedSize;
     } // method
@@ -141,6 +151,36 @@ class NucSeq : public Container
 
     std::string sName = "unknown";
     DEBUG( size_t uiFromLine = 0; ) // DEBUG
+
+#if WITH_QUALITY
+    void addQuality( )
+    {
+        assert( uiSize == 0 );
+        size_t uxRequestedSize = 100;
+        /* TO DO: This should be a bit more sophisticated ...
+         */
+        kroundup32( uxRequestedSize );
+
+        /* We try to reserve the requested memory.
+         * See:
+         * http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
+         */
+        auto pxReallocRef = (uint8_t*)realloc( pxSequenceRef, uxRequestedSize * sizeof( uint8_t ) );
+        auto pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
+
+
+        if( pxReallocRef == NULL || pxReallocRef2 == NULL )
+        {
+            throw AnnotatedException(
+                ( std::string( "Memory Reallocation Failed for requested size " ) + std::to_string( uxRequestedSize ) )
+                    .c_str( ) );
+        } // if
+
+        pxSequenceRef = pxReallocRef;
+        pxQualityRef = pxReallocRef2;
+        uxCapacity = uxRequestedSize;
+    } // methdo
+#endif
 
     /** Default constructor
      */
@@ -157,6 +197,15 @@ class NucSeq : public Container
         vResetProtectedAttributes( );
         vAppend( rsInitialText.c_str( ) );
     } // constructor
+
+#if WITH_QUALITY
+    NucSeq( const std::string& rsInitialText, const uint8_t* pInitialQuality )
+    {
+        vResetProtectedAttributes( );
+        addQuality( );
+        vAppend( rsInitialText.c_str( ), pInitialQuality );
+    } // constructor
+#endif
 
     virtual ~NucSeq( )
     {
@@ -239,13 +288,13 @@ class NucSeq : public Container
     {
         assert( uiSubscript < uiSize );
         return pxQualityRef[ uiSubscript ];
-    } // method (set)
+    } // method
 
     inline uint8_t getQuality( size_t uiSubscript )
     {
         assert( uiSubscript < uiSize );
         return pxQualityRef[ uiSubscript ];
-    } // method (set)
+    } // method
 #endif
 
     /** Resizes the internal buffer of the sequence to the requested value.
@@ -286,20 +335,49 @@ class NucSeq : public Container
     inline void vReverse( )
     {
         reverse( pxSequenceRef, uiSize );
+
+#if WITH_QUALITY
+        if( bHasQuality( ) )
+            reverse( pxQualityRef, uiSize );
+#endif
     } // method
 
     inline void vReverse( size_t uiFrom, size_t uiTo )
     {
         reverse( pxSequenceRef + uiFrom, uiTo - uiFrom );
+#if WITH_QUALITY
+        if( bHasQuality( ) )
+            reverse( pxQualityRef + uiFrom, uiTo - uiFrom );
+#endif
     } // method
+
+#if WITH_QUALITY
+    /** WARNING: the inner string might not null-terminated after this operation.
+     */
+    inline NucSeq& vAppend( const uint8_t* pSequence, const uint8_t* pQuality, size_t uxNumberOfElements )
+    {
+        assert( bHasQuality( ) );
+        size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
+
+        if( uxCapacity < uxRequestedSize )
+        {
+            vReserveMemory( uxRequestedSize );
+        } // if
+
+        /** WARNING: If we work later with non 8-bit data we have to be careful here
+         */
+        memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof( uint8_t ) );
+        memcpy( this->pxQualityRef + uiSize, pQuality, uxNumberOfElements * sizeof( uint8_t ) );
+
+        uiSize = uxRequestedSize;
+
+        return *this;
+    } // method
+#endif
 
     /** WARNING: the inner string might not null-terminated after this operation.
      */
-    inline NucSeq& vAppend( const uint8_t* pSequence,
-#if WITH_QUALITY
-                            const uint8_t* pQuality,
-#endif
-                            size_t uxNumberOfElements )
+    inline NucSeq& vAppend( const uint8_t* pSequence, size_t uxNumberOfElements )
     {
         size_t uxRequestedSize = uxNumberOfElements + this->uiSize;
 
@@ -311,9 +389,6 @@ class NucSeq : public Container
         /** WARNING: If we work later with non 8-bit data we have to be careful here
          */
         memcpy( this->pxSequenceRef + uiSize, pSequence, uxNumberOfElements * sizeof( uint8_t ) );
-#if WITH_QUALITY
-        memcpy( this->pxQualityRef + uiSize, pQuality, uxNumberOfElements * sizeof( uint8_t ) );
-#endif
 
         uiSize = uxRequestedSize;
 
@@ -322,24 +397,36 @@ class NucSeq : public Container
 
     /** Push back of a single symbol.
      */
-    inline void push_back( const uint8_t xElement
-#if WITH_QUALITY
-                           ,
-                           const uint8_t xQuality
-#endif
-    )
+    inline void push_back( const uint8_t xElement )
     {
+#if WITH_QUALITY
+        assert( !bHasQuality( ) );
+#endif
         if( this->uiSize >= this->uxCapacity )
         {
             vReserveMemory( this->uiSize + 1 );
         } // if
 
         pxSequenceRef[ uiSize ] = xElement;
-#if WITH_QUALITY
-        pxQualityRef[ uiSize ] = xQuality;
-#endif
         uiSize++;
     } // method
+
+#if WITH_QUALITY
+    /** Push back of a single symbol.
+     */
+    inline void push_back( const uint8_t xElement, const uint8_t xQuality )
+    {
+        assert( bHasQuality( ) );
+        if( this->uiSize >= this->uxCapacity )
+        {
+            vReserveMemory( this->uiSize + 1 );
+        } // if
+
+        pxSequenceRef[ uiSize ] = xElement;
+        pxQualityRef[ uiSize ] = xQuality;
+        uiSize++;
+    } // method
+#endif
 
     /** Compares two sequences for equality
      */
@@ -347,7 +434,13 @@ class NucSeq : public Container
     {
         if( this->uiSize == rOtherSequence.uiSize )
         {
-            return memcmp( this->pxSequenceRef, rOtherSequence.pxSequenceRef, sizeof( uint8_t ) * uiSize ) == 0;
+            return memcmp( this->pxSequenceRef, rOtherSequence.pxSequenceRef, sizeof( uint8_t ) * uiSize ) == 0
+#if WITH_QUALITY
+                   && this->bHasQuality( ) == rOtherSequence.bHasQuality( ) &&
+                   ( !this->bHasQuality( ) ||
+                     memcmp( this->pxQualityRef, rOtherSequence.pxQualityRef, sizeof( uint8_t ) * uiSize ) == 0 )
+#endif
+                ;
         } // if
         return false;
     } // method
@@ -453,7 +546,7 @@ class NucSeq : public Container
     /** The symbol on some position in textual form.
      * We count starting from 0.
      */
-    inline char charAt(nucSeqIndex uxPosition )
+    inline char charAt( nucSeqIndex uxPosition )
     {
         if( uxPosition >= uiSize )
         {
@@ -475,26 +568,38 @@ class NucSeq : public Container
 
         return translateACGTCodeToCharacter( nucleotideComplement( pxSequenceRef[ uxPosition ] ) );
     } // method
+
     /** Appends a string containing nucleotides as text and automatically translates the symbols.
      */
     void vAppend( const char* pcString )
     {
         size_t uxSizeBeforeAppendOperation = this->uiSize;
 #if WITH_QUALITY
-        std::vector<uint8_t> xQuality( strlen( pcString ),
-                                       126 ); // strlen( pcString ) uint8_t's with value 1
+        assert( !bHasQuality( ) );
 #endif
 
         /* WARNING! char and uint8_t must have the same size or we get a serious problem here!
          */
-        vAppend( (const uint8_t*)pcString,
-#if WITH_QUALITY
-                 xQuality.data( ),
-#endif
-                 strlen( pcString ) );
+        vAppend( (const uint8_t*)pcString, strlen( pcString ) );
 
         vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
     } // method
+
+#if WITH_QUALITY
+    /** Appends a string containing nucleotides as text and automatically translates the symbols.
+     */
+    void vAppend( const char* pcString, const uint8_t* pQuality )
+    {
+        assert( bHasQuality( ) );
+        size_t uxSizeBeforeAppendOperation = this->uiSize;
+
+        /* WARNING! char and uint8_t must have the same size or we get a serious problem here!
+         */
+        vAppend( (const uint8_t*)pcString, pQuality, strlen( pcString ) );
+
+        vTranslateToNumericFormUsingTable( xNucleotideTranslationTable, uxSizeBeforeAppendOperation );
+    } // method
+#endif
 
     /** wrapper for boost
      */
@@ -520,23 +625,41 @@ class NucSeq : public Container
         return ret;
     } // function
 
-    std::string fromTo(nucSeqIndex uiStart, nucSeqIndex uiEnd )
+    std::string fromTo( nucSeqIndex uiStart, nucSeqIndex uiEnd )
     {
         std::string ret = "";
-        for(nucSeqIndex i = uiStart; i < uiEnd && i < length( ); i++ )
+        for( nucSeqIndex i = uiStart; i < uiEnd && i < length( ); i++ )
             ret += charAt( i );
         return ret;
     } // function
 
-#if WITH_QUALITY
-    std::string fromToQual(nucSeqIndex uiStart, nucSeqIndex uiEnd )
+    std::string fromToQual( nucSeqIndex uiStart, nucSeqIndex uiEnd )
     {
-        std::string ret = "";
-        for( unsigned int i = uiStart; i < uiEnd && i < length( ); i++ )
-            ret += (char)quality( i );
-        return ret;
-    } // function
+#if WITH_QUALITY
+        if( bHasQuality( ) )
+        {
+            std::string ret = "";
+            for( nucSeqIndex i = uiStart; i < uiEnd && i < length( ); i++ )
+                ret += (char)quality( i );
+            return ret;
+        } // if
 #endif
+        return "*";
+    } // function
+
+    std::string toQualString( )
+    {
+#if WITH_QUALITY
+        if( bHasQuality( ) )
+        {
+            std::string ret = "";
+            for( nucSeqIndex i = 0; i < length( ); i++ )
+                ret += (char)quality( i );
+            return ret;
+        } // if
+#endif
+        return "*";
+    } // function
 
     /* TO DO: Make the 5 a class constant!
      */
@@ -554,10 +677,13 @@ class NucSeq : public Container
             sRet += charAt( i );
         sRet += "\n";
 #if WITH_QUALITY
-        sRet += "+\n";
-        for( unsigned int i = 0; i < length( ); i++ )
-            sRet += (char)quality( i );
-        sRet += "\n";
+        if( bHasQuality( ) )
+        {
+            sRet += "+\n";
+            for( unsigned int i = 0; i < length( ); i++ )
+                sRet += (char)quality( i );
+            sRet += "\n";
+        } // if
 #endif
         return sRet;
     } // method
@@ -573,14 +699,17 @@ class NucSeq : public Container
         } // for
         sRet += "\n";
 #if WITH_QUALITY
-        sRet += "+";
-        for( unsigned int i = 0; i < length( ); i++ )
+        if( bHasQuality( ) )
         {
-            if( i % uiLineLength == 0 )
-                sRet += "\n";
-            sRet += (char)quality( i );
-        } // for
-        sRet += "\n";
+            sRet += "+";
+            for( unsigned int i = 0; i < length( ); i++ )
+            {
+                if( i % uiLineLength == 0 )
+                    sRet += "\n";
+                sRet += (char)quality( i );
+            } // for
+            sRet += "\n";
+        } // if
 #endif
         return sRet;
     } // method
