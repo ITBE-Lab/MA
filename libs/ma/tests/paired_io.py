@@ -27,8 +27,8 @@ for _ in range(100):
         qual2 += str(chr(random.randint(33, 126))) # random quality
 
     # write a fasta file
-    fasta_1_file_name = tempfile.gettempdir() + "/.tmp.1.fasta"
-    fasta_2_file_name = tempfile.gettempdir() + "/.tmp.2.fasta"
+    fasta_1_file_name = tempfile.gettempdir() + "/.tmp1.fasta"
+    fasta_2_file_name = tempfile.gettempdir() + "/.tmp2.fasta"
     sam_file_name = tempfile.gettempdir() + "/.tmp.p.sam"
     with open(fasta_1_file_name, "w") as out_file:
         out_file.write("@name desc\n")

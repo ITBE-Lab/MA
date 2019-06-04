@@ -5,7 +5,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl_bind.h>
-#include <pybind11/stl.h>
+//#include <pybind11/stl.h> <- @note NEVER INCLUDE THIS HERE IT LEADS TO SEGFAULTS WITHIN PYBIND
 
 NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 
