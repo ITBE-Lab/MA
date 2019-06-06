@@ -86,7 +86,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         else
             sMapQual = std::to_string( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ) );
 
-        assert(sTag.empty() || sTag[0] == '\t');
+        assert( sTag.empty( ) || sTag[ 0 ] == '\t' );
         sCombined +=
             // query name
             sName + "\t" +
@@ -122,7 +122,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // alignment flag
             std::to_string( SEGMENT_UNMAPPED ) + "\t*\t0\t255\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery->toString( ) + "\t" + pQuery->toQualString() + "\n";
+            pQuery->toString( ) + "\t" + pQuery->toQualString( ) + "\n";
     } // if
     if( sCombined.size( ) == 0 )
     {
@@ -130,10 +130,9 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // query name
             pQuery->sName + "\t" +
             // alignment flag
-            std::to_string( SEGMENT_UNMAPPED ) +
-            "\t*\t0\t0\t*\t*\t0\t0\t" +
+            std::to_string( SEGMENT_UNMAPPED ) + "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery->toString( ) + "\t" + pQuery->toQualString() + "\n";
+            pQuery->toString( ) + "\t" + pQuery->toQualString( ) + "\n";
     } // if
 
     { // scope xGuard
@@ -278,7 +277,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                 std::to_string( std::min( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ), 255 ) );
         }
 
-        assert(sTag.empty() || sTag[0] == '\t');
+        assert( sTag.empty( ) || sTag[ 0 ] == '\t' );
         sCombined +=
             // query name
             sName + "\t" +
@@ -316,7 +315,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                             NEXT_SEGMENT_UNMAPPED ) +
             "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery1->toString( ) + "\t" + pQuery1->toQualString() + "\n";
+            pQuery1->toString( ) + "\t" + pQuery1->toQualString( ) + "\n";
         sCombined +=
             // query name
             pQuery2->sName + "\t" +
@@ -325,7 +324,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                             NEXT_SEGMENT_UNMAPPED ) +
             "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery2->toString( ) + "\t" + pQuery2->toQualString() + "\n";
+            pQuery2->toString( ) + "\t" + pQuery2->toQualString( ) + "\n";
     } // if
     // if we have not computed an alignment for only one of the queries output the other one:
     else if( !bFirstQueryHasAlignment || !bSecondQueryHasAlignment )
@@ -347,7 +346,8 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
             "\t*\t=\t" +
             sPosOther + "\t0\t" +
             // segment sequence
-            ( !bFirstQueryHasAlignment ? pQuery1->toString( ) : pQuery2->toString( ) ) + "\t*\n";
+            ( !bFirstQueryHasAlignment ? pQuery1->toString( ) : pQuery2->toString( ) ) + "\t" +
+            ( !bFirstQueryHasAlignment ? pQuery1->toQualString( ) : pQuery2->toQualString( ) ) + "\n";
     } // if
 
     if( sCombined.size( ) > 0 )
