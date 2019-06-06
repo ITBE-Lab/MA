@@ -75,10 +75,7 @@ class SvJump : public Container
         assert( uiFrom * 2 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
-    SvJump( std::shared_ptr<Presetting> pSelectedSetting,
-            const Seed& rA,
-            const Seed& rB,
-            const bool bFromSeedStart )
+    SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const Seed& rB, const bool bFromSeedStart )
         : SvJump(
               pSelectedSetting,
               /* uiFrom = */
@@ -160,9 +157,8 @@ class SvJump : public Container
     nucSeqIndex fuzziness( ) const
     {
         double x = (double)std::max( dist( uiFrom, uiTo ), uiQueryTo - uiQueryFrom );
-        double t = ( h - m ) / ( 1.0 - m );
-        double a = ( 1.0 - t ) / s;
-        return (nucSeqIndex)std::max( (int64_t)1, (int64_t)std::min( h, a * x + t ) );
+        double h_min = 1;
+        return (nucSeqIndex)std::min( h, h_min + std::max( 0.0, x - s ) * m );
     } // method
 
     // down == left

@@ -1396,7 +1396,7 @@ class Pack : public Container
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
         vExtractSubsectionN( 0, uiStartOfReverseStrand( ),
-                            *pRet ); // get the forward strand
+                             *pRet ); // get the forward strand
         return pRet;
     } // method
 
@@ -1469,10 +1469,11 @@ class Pack : public Container
     {
         std::vector<std::string> vRet;
         NucSeq s;
-        for(size_t uiI = 0; uiI < uiNumContigs(); uiI++)
+        for( size_t uiI = 0; uiI < uiNumContigs( ); uiI++ )
         {
-            vExtractContig(uiI, s, false);
-            vRet.push_back( s.toString() );
+            // *2 since vExtractContig uses id system with forward and reverse contig ids...
+            vExtractContig( uiI*2, s, false );
+            vRet.push_back( s.toString( ) );
         } // for
         return vRet;
     } // method

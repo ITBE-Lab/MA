@@ -400,6 +400,7 @@ void exportFM_index( py::module& rxPyModuleId )
         .def( "bwt_sa", &FMIndex::bwt_sa )
         .def( "get_ambiguity", &FMIndex::get_ambiguity )
         .def( "test_sa_interval", &FMIndex::testSaInterval )
+        .def( "__len__", &FMIndex::getRefSeqLength )
         .def( "bwt_2occ4", &FMIndex::bwt_2occ4 );
 
     // tell boost python that pointers of these classes can be converted implicitly

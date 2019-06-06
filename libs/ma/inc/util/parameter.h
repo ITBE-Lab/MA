@@ -743,7 +743,7 @@ class Presetting : public ParameterSetBase
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
           xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 50 ),
-          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 250 ),
+          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 1 ),
           xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 1000 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
 

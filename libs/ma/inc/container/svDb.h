@@ -653,7 +653,7 @@ class SV_DB : public Container
 
             NucSeq xCurrChrom;
             uint32_t uiCurrPos = 0;
-            uint32_t uiContigCnt = 0;
+            uint32_t uiContigCnt = 1;
             bool bForwContext = true;
             while( true )
             {
@@ -664,7 +664,7 @@ class SV_DB : public Container
                           << " to: " << std::get<4>( tNextCall )
                           << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << std::endl;
 #endif
-                if( std::get<0>( tNextCall ) == -1 ) // if this was the last call
+                if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
                 {
                     pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
                     pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
@@ -677,7 +677,7 @@ class SV_DB : public Container
                      */
                     for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
                          uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
-                         uiI += bForwContext ? 2 : -2 )
+                         uiI += (bForwContext ? 2 : -2) )
                     {
                         pRef->vExtractContig( uiI, xCurrChrom, true );
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
