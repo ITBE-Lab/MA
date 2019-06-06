@@ -285,7 +285,8 @@ class SV_DB : public Container
               xNewestUnique(
                   *pDatabase,
                   "SELECT id FROM sv_caller_run_table AS outer WHERE ( SELECT COUNT(*) FROM sv_caller_run_table AS "
-                  "inner WHERE inner.name = outer.name AND inner.time_stamp >= outer.time_stamp ) < ?" ),
+                  "inner WHERE inner.name = outer.name AND inner.time_stamp >= outer.time_stamp ) < ? "
+                  "AND desc = ? " ),
               xInsertRow2( *pDatabase,
                            "INSERT INTO sv_caller_run_table (id, name, desc, time_stamp, sv_jump_run_id) "
                            "VALUES (NULL, ?, ?, ?, NULL)" )
@@ -369,9 +370,9 @@ class SV_DB : public Container
                                      uiJumpRunId );
         } // method
 
-        inline std::vector<int64_t> getNewestUnique( uint32_t uiNum )
+        inline std::vector<int64_t> getNewestUnique( uint32_t uiNum, std::string sDesc )
         {
-            return xNewestUnique.executeAndStoreInVector<0>( uiNum );
+            return xNewestUnique.executeAndStoreInVector<0>( uiNum, sDesc );
         } // method
     }; // class
 
@@ -866,9 +867,9 @@ class SV_DB : public Container
         return pSvCallerRunTable->exists( iId );
     } // method
 
-    inline std::vector<int64_t> getNewestUniqueRuns( uint32_t uiNum )
+    inline std::vector<int64_t> getNewestUniqueRuns( uint32_t uiNum, std::string sDesc )
     {
-        return pSvCallerRunTable->getNewestUnique( uiNum );
+        return pSvCallerRunTable->getNewestUnique( uiNum, sDesc );
     } // method
 
     inline bool nameExists( std::string sName )

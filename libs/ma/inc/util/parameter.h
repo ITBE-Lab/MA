@@ -742,9 +742,9 @@ class Presetting : public ParameterSetBase
           xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
-          xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 50 ),
-          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 1 ),
-          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 1000 ),
+          xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 150 ),
+          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
+          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 100 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
 
           // Heuristic
@@ -941,7 +941,8 @@ class ParameterSetManager
 
         xParametersSets.emplace( "sv-illumina", std::make_shared<Presetting>( "SV-Illumina" ) );
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
-        xParametersSets[ "sv-pacbio" ]->xJumpS->set( 500 );
+        xParametersSets[ "sv-pacbio" ]->xJumpS->set( 400 );
+        xParametersSets[ "sv-pacbio" ]->xJumpM->set( 0.25 );
         xParametersSets.emplace( "sv-ont", std::make_shared<Presetting>( "SV-ONT" ) );
         xParametersSets[ "sv-ont" ]->xJumpS->set( 1000 );
 
