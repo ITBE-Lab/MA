@@ -653,6 +653,7 @@ class SV_DB : public Container
 
             NucSeq xCurrChrom;
             uint32_t uiCurrPos = 0;
+            uint32_t uiContigCnt = 0;
             bool bForwContext = true;
             while( true )
             {
@@ -666,7 +667,8 @@ class SV_DB : public Container
                 if( std::get<0>( tNextCall ) == -1 ) // if this was the last call
                 {
                     pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
-                    pRet->vAppendSequence( "unnamed_contig", "no_description_given", xCurrChrom );
+                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
+                                           xCurrChrom );
                     xCurrChrom.vClear( );
                     /*
                      * for this we make use of the id system of contigs.
@@ -678,7 +680,8 @@ class SV_DB : public Container
                          uiI += bForwContext ? 2 : -2 )
                     {
                         pRef->vExtractContig( uiI, xCurrChrom, true );
-                        pRet->vAppendSequence( "unnamed_contig", "no_description_given", xCurrChrom );
+                        pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
+                                               "no_description_given", xCurrChrom );
                         xCurrChrom.vClear( );
                     } // for
                     break;
@@ -687,7 +690,8 @@ class SV_DB : public Container
                 if( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
                 {
                     pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
-                    pRet->vAppendSequence( "unnamed_contig", "no_description_given", xCurrChrom );
+                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
+                                           xCurrChrom );
                     xCurrChrom.vClear( );
                     pRef->vExtractContext( std::get<1>( tNextCall ), xCurrChrom, true, !bForwContext );
                 } // if

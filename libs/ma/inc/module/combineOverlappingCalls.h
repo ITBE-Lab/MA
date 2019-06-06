@@ -5,6 +5,8 @@ namespace libMA
 {
 void combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
 {
+
+
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double> xQuery(
         *pDb->pDatabase,
         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
@@ -22,10 +24,14 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
         "AND from_pos <= ? "
         "AND to_pos <= ? "
         "AND id != ? "
-        "AND switch_strand != ? " );
+        "AND switch_strand == ? " );
 
 
-    CppSQLiteExtQueryStatement<int64_t> xDelete( *pDb->pDatabase,
+    CppSQLiteExtQueryStatement<int64_t> xDelete1( *pDb->pDatabase,
+                                                 "DELETE "
+                                                 "FROM sv_call_support_table "
+                                                 "WHERE call_id == ? " );
+    CppSQLiteExtQueryStatement<int64_t> xDelete2( *pDb->pDatabase,
                                                  "DELETE "
                                                  "FROM sv_call_table "
                                                  "WHERE id == ? " );
@@ -38,6 +44,8 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
         "WHERE sv_call_support_table.call_id == ? " );
 
+
+    SV_DB::SvCallInserter xInserter(pDb, iSvCallerId); // also triggers transaction
     auto xIt = xQuery.vExecuteAndReturnIterator( iSvCallerId );
     while( !xIt.eof( ) )
     {
@@ -103,17 +111,21 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                 xPrim.join( xSec );
 
 
-                xDelete.bindAndExecQuery<>( xSec.iId );
+                xDelete1.bindAndExecQuery<>( xSec.iId );
+                xDelete2.bindAndExecQuery<>( xSec.iId );
 
                 xIt2.next( );
             } // while
-            xDelete.bindAndExecQuery<>( xPrim.iId );
+            xDelete1.bindAndExecQuery<>( xPrim.iId );
+            xDelete2.bindAndExecQuery<>( xPrim.iId );
             // @todo recompute smaller bounds
-            pDb->pSvCallTable->insertCall( iSvCallerId, xPrim );
+            xInserter.insertCall(xPrim);
         } // if
         xIt.next( );
 
     } // while
+
+    // end of scope for transaction context (via xInserter)
 
 } // function
 }; // namespace libMA

@@ -69,8 +69,8 @@ class LastMatchingSeeds
     void insert( Seed& rSeed )
     {
         size_t uiI = 0;
-        for(; uiI < vSeedSizes.size( ) - 1 && rSeed.size( ) < vSeedSizes[ uiI + 1 ]; uiI++ )
-            vContent[ uiI ].del();
+        for( ; uiI < vSeedSizes.size( ) - 1 && rSeed.size( ) < vSeedSizes[ uiI + 1 ]; uiI++ )
+            vContent[ uiI ].del( );
 
         vContent[ uiI ].insert( rSeed );
     } // method
@@ -94,11 +94,12 @@ class LastMatchingSeeds
 void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedSetting, LastMatchingSeeds& rLastSeeds,
                                     Seed& rCurr, bool bJumpFromStart, std::shared_ptr<ContainerVector<SvJump>>& pRet )
 {
-    // @todo filter segment here
     rLastSeeds.forall( [&]( Seed& rLast ) //
                        {
                            if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
+                           {
                                pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
+                           }
                        } // lambda
     ); // forall function call
 
@@ -121,7 +122,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     Seeds vSeeds;
     // avoid multiple allocations (we can only guess the actual number of seeds here)
     vSeeds.reserve( pSegments->size( ) * 2 );
-    pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, []( ) { return true; } );
+    pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, [&]( ) { return true; } );
 
     if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
