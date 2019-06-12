@@ -184,13 +184,13 @@ class SvJump : public Container
     int64_t from_start_same_strand( ) const
     {
         if( !from_known( ) )
-            return ( (int64_t)uiTo ) - query_distance( ) + getSeedDirFuzziness( );
+            return std::max( (int64_t)0, ( (int64_t)uiTo ) - (int64_t)query_distance( ) + getSeedDirFuzziness( ) );
         if( !to_known( ) )
-            return ( (int64_t)uiFrom ) - getSeedDirFuzziness( );
+            return std::max( (int64_t)0, ( (int64_t)uiFrom ) - getSeedDirFuzziness( ) );
 
         if( from_fuzziness_is_rightwards( ) )
-            return ( (int64_t)uiFrom ) - getSeedDirFuzziness( );
-        return ( (int64_t)uiFrom ) - ( (int64_t)fuzziness( ) );
+            return std::max( (int64_t)0, ( (int64_t)uiFrom ) - getSeedDirFuzziness( ) );
+        return std::max( (int64_t)0, ( (int64_t)uiFrom ) - ( (int64_t)fuzziness( ) ) );
     } // method
 
     int64_t from_start( ) const
@@ -215,13 +215,13 @@ class SvJump : public Container
     int64_t to_start( ) const
     {
         if( !from_known( ) )
-            return ( (int64_t)uiTo ) - query_distance( ) + getSeedDirFuzziness( );
+            return std::max( (int64_t)0, ( (int64_t)uiTo ) - (int64_t)query_distance( ) + getSeedDirFuzziness( ) );
         if( !to_known( ) )
-            return ( (int64_t)uiFrom ) - getSeedDirFuzziness( );
+            return std::max( (int64_t)0, ( (int64_t)uiFrom ) - getSeedDirFuzziness( ) );
 
         if( !to_fuzziness_is_downwards( ) )
-            return ( (int64_t)uiTo ) - (int64_t)getSeedDirFuzziness( );
-        return ( (int64_t)uiTo ) - (int64_t)fuzziness( );
+            return std::max( (int64_t)0, ( (int64_t)uiTo ) - (int64_t)getSeedDirFuzziness( ) );
+        return std::max( (int64_t)0, ( (int64_t)uiTo ) - (int64_t)fuzziness( ) );
     } // method
 
     nucSeqIndex to_size( ) const

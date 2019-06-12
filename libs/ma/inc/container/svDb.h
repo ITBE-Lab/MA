@@ -943,7 +943,7 @@ class SV_DB : public Container
                     assert( rJump.iReadId == iReadId );
 
                 if( rJump.does_switch_strand( ) )
-                    assert( rJump.from_start( ) > std::numeric_limits<int64_t>::max( ) / 2 );
+                    assert( rJump.from_start( ) >= std::numeric_limits<int64_t>::max( ) / 2 );
                 rJump.iId = pSvJumpTable->xInsertRow( iSvJumpRunId, rJump.iReadId, rJump.from_start( ),
                                                       rJump.from_end( ), (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo,
                                                       (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
