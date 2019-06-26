@@ -413,17 +413,26 @@ class SV_DB : public Container
                                       "sv_jump_run_table WHERE name == ?)" )
         {} // default constructor
 
-        inline void createIndices( )
+        inline void createIndices( int64_t uiRun )
         {
             // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
             // index intended for the sweep over the start of all sv-rectangles
-            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start ON sv_jump_table"
-                                "(sv_jump_run_id, sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
-                                " to_forward, from_seed_start, id, read_id)" );
+            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" +
+                                  std::to_string( uiRun ) +
+                                  " ON sv_jump_table"
+                                  "(sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
+                                  " to_forward, from_seed_start, id, read_id) "
+                                  "WHERE sv_jump_run_id == " +
+                                  std::to_string( uiRun ) )
+                                    .c_str( ) );
             // index intended for the sweep over the end of all sv-rectangles
-            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end ON sv_jump_table"
-                                "(sv_jump_run_id, sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
-                                " to_forward, from_seed_start, id, read_id)" );
+            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end_" + std::to_string( uiRun ) +
+                                  " ON sv_jump_table"
+                                  "(sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
+                                  " to_forward, from_seed_start, id, read_id) "
+                                  "WHERE sv_jump_run_id == " +
+                                  std::to_string( uiRun ) )
+                                    .c_str( ) );
         } // method
 
         inline void dropIndices( )
@@ -568,6 +577,19 @@ class SV_DB : public Container
                                         "LIMIT 1 " )
         {} // default constructor
 
+        inline void createPartialCallIndex( int64_t uiRunId )
+        {
+            // @todo replace this by
+            //      https://www.sqlite.org/rtree.html
+            // for more performance
+            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_call_table_call_index_for_run" +
+                                  std::to_string( uiRunId ) +
+                                  " ON sv_call_table (score) "
+                                  "WHERE sv_caller_run_id == " +
+                                  std::to_string( uiRunId ) )
+                                    .c_str( ) );
+        } // method
+
         inline uint32_t numCalls( )
         {
             return xQuerySize.scalar( );
@@ -678,7 +700,7 @@ class SV_DB : public Container
                      */
                     for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
                          uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
-                         uiI += (bForwContext ? 2 : -2) )
+                         uiI += ( bForwContext ? 2 : -2 ) )
                     {
                         pRef->vExtractContig( uiI, xCurrChrom, true );
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
@@ -801,9 +823,9 @@ class SV_DB : public Container
         pSvCallerRunTable->dropIndices( );
     } // method
 
-    inline void createJumpIndices( )
+    inline void createJumpIndices( int64_t uiRun )
     {
-        pSvJumpTable->createIndices( );
+        pSvJumpTable->createIndices( uiRun );
     } // method
 
     inline void dropJumpIndices( )
@@ -1010,6 +1032,11 @@ class SV_DB : public Container
         {} // constructor
 
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
+
+        ~SvCallInserter( )
+        {
+            pDB->pSvCallTable->createPartialCallIndex( iSvCallerRunId );
+        } // deconstructor
 
         inline void insertCall( SvCall& rCall )
         {
