@@ -384,6 +384,7 @@ class SV_DB : public Container
                                                      uint32_t, // to_pos
                                                      uint32_t, // query_from
                                                      uint32_t, // query_to
+                                                     uint32_t, // num_supporting_nt
                                                      bool, // from_forward @todo save space by compressing booleans?
                                                      bool, // to_forward
                                                      bool // from_seed_start
@@ -401,8 +402,9 @@ class SV_DB : public Container
                                 "sv_jump_table", // name of the table in the database
                                 // column definitions of the table
                                 std::vector<std::string>{"sv_jump_run_id", "read_id", "sort_pos_start", "sort_pos_end",
-                                                         "from_pos", "to_pos", "query_from", "query_to", "from_forward",
-                                                         "to_forward", "from_seed_start"},
+                                                         "from_pos", "to_pos", "query_from", "query_to",
+                                                         "num_supporting_nt", "from_forward", "to_forward",
+                                                         "from_seed_start"},
                                 // constraints for table
                                 std::vector<std::string>{
                                     "FOREIGN KEY (sv_jump_run_id) REFERENCES sv_jump_run_table(id) ON DELETE CASCADE",
@@ -417,22 +419,23 @@ class SV_DB : public Container
         {
             // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
             // index intended for the sweep over the start of all sv-rectangles
-            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" +
-                                  std::to_string( uiRun ) +
-                                  " ON sv_jump_table"
-                                  "(sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
-                                  " to_forward, from_seed_start, id, read_id) "
-                                  "WHERE sv_jump_run_id == " +
-                                  std::to_string( uiRun ) )
-                                    .c_str( ) );
+            pDatabase->execDML(
+                ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" + std::to_string( uiRun ) +
+                  " ON sv_jump_table"
+                  "(sort_pos_start, from_pos, to_pos, query_from, query_to, num_supporting_nt, from_forward,"
+                  " to_forward, from_seed_start, id, read_id) "
+                  "WHERE sv_jump_run_id == " +
+                  std::to_string( uiRun ) )
+                    .c_str( ) );
             // index intended for the sweep over the end of all sv-rectangles
-            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end_" + std::to_string( uiRun ) +
-                                  " ON sv_jump_table"
-                                  "(sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
-                                  " to_forward, from_seed_start, id, read_id) "
-                                  "WHERE sv_jump_run_id == " +
-                                  std::to_string( uiRun ) )
-                                    .c_str( ) );
+            pDatabase->execDML(
+                ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end_" + std::to_string( uiRun ) +
+                  " ON sv_jump_table"
+                  "(sort_pos_end, from_pos, to_pos, query_from, query_to, num_supporting_nt, from_forward,"
+                  " to_forward, from_seed_start, id, read_id) "
+                  "WHERE sv_jump_run_id == " +
+                  std::to_string( uiRun ) )
+                    .c_str( ) );
         } // method
 
         inline void dropIndices( )
@@ -511,6 +514,8 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
         CppSQLiteExtQueryStatement<int64_t> xCallArea;
         CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
+        CppSQLiteExtQueryStatement<double> xMaxScore;
+        CppSQLiteExtQueryStatement<double> xMinScore;
         CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallForwardContext;
         CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallBackwardContext;
 
@@ -552,6 +557,10 @@ class SV_DB : public Container
                          "AND score >= ?" ),
               xDeleteRun( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
                                       "sv_caller_run_table WHERE name == ?)" ),
+              xMaxScore( *pDatabase,
+                         "SELECT score FROM sv_call_table WHERE sv_caller_run_id == ? ORDER BY score DESC LIMIT 1 " ),
+              xMinScore( *pDatabase,
+                         "SELECT score FROM sv_call_table WHERE sv_caller_run_id == ? ORDER BY score ASC LIMIT 1 " ),
               xNextCallForwardContext(
                   *pDatabase,
                   "SELECT id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
@@ -619,6 +628,16 @@ class SV_DB : public Container
         inline int64_t callArea( int64_t iCallerRunId, double dMinScore )
         {
             return xCallArea.scalar( iCallerRunId, dMinScore );
+        } // method
+
+        inline double maxScore( int64_t iCallerRunId )
+        {
+            return xMaxScore.scalar( iCallerRunId );
+        } // method
+
+        inline double minScore( int64_t iCallerRunId )
+        {
+            return xMinScore.scalar( iCallerRunId );
         } // method
 
         /**
@@ -848,6 +867,16 @@ class SV_DB : public Container
         return pSvCallTable->callArea( iCallerRunId, dMinScore );
     } // method
 
+    inline double getMaxScore( int64_t iCallerRunId )
+    {
+        return pSvCallTable->maxScore( iCallerRunId );
+    } // method
+
+    inline double getMinScore( int64_t iCallerRunId )
+    {
+        return pSvCallTable->minScore( iCallerRunId );
+    } // method
+
     inline uint32_t getNumOverlapsBetweenCalls( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                                 int64_t iAllowedDist )
     {
@@ -966,10 +995,10 @@ class SV_DB : public Container
 
                 if( rJump.does_switch_strand( ) )
                     assert( rJump.from_start( ) >= std::numeric_limits<int64_t>::max( ) / 2 );
-                rJump.iId = pSvJumpTable->xInsertRow( iSvJumpRunId, rJump.iReadId, rJump.from_start( ),
-                                                      rJump.from_end( ), (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo,
-                                                      (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
-                                                      rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
+                rJump.iId = pSvJumpTable->xInsertRow(
+                    iSvJumpRunId, rJump.iReadId, rJump.from_start( ), rJump.from_end( ), (uint32_t)rJump.uiFrom,
+                    (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
+                    rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
             } // method
         }; // class
 
@@ -1079,13 +1108,15 @@ class SortedSvJumpFromSql
 {
     const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, int64_t, int64_t>
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
+                               int64_t>
         xQueryStart;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, int64_t, int64_t>
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
+                               int64_t>
         xQueryEnd;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, int64_t,
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
                                int64_t>::Iterator xTableIteratorStart;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, int64_t,
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
                                int64_t>::Iterator xTableIteratorEnd;
 
   public:
@@ -1094,13 +1125,13 @@ class SortedSvJumpFromSql
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
                        "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                       "sort_pos_start, id, read_id "
+                       "sort_pos_start, num_supporting_nt, id, read_id "
                        "FROM sv_jump_table "
                        "WHERE sv_jump_run_id == ? "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
                      "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                     "sort_pos_end, id, read_id "
+                     "sort_pos_end, num_supporting_nt, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
                      "ORDER BY sort_pos_end" ),
@@ -1114,7 +1145,7 @@ class SortedSvJumpFromSql
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
                        "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                       "sort_pos_start, id, read_id "
+                       "sort_pos_start, num_supporting_nt, id, read_id "
                        "FROM sv_jump_table "
                        "WHERE sv_jump_run_id == ? "
                        "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
@@ -1122,7 +1153,7 @@ class SortedSvJumpFromSql
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
                      "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                     "sort_pos_end, id, read_id "
+                     "sort_pos_end, num_supporting_nt, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
                      "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
@@ -1161,7 +1192,7 @@ class SortedSvJumpFromSql
         xTableIteratorStart.next( );
         return SvJump( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
                        std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                       std::get<8>( xTup ), std::get<9>( xTup ) );
+                       std::get<8>( xTup ), std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 
     SvJump getNextEnd( )
@@ -1172,7 +1203,7 @@ class SortedSvJumpFromSql
         xTableIteratorEnd.next( );
         return SvJump( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
                        std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                       std::get<8>( xTup ), std::get<9>( xTup ) );
+                       std::get<8>( xTup ), std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 
 }; // class
@@ -1434,7 +1465,8 @@ class SvCallsFromDb
     const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_DB> pDb;
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double> xQuery;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport;
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t>
+        xQuerySupport;
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double>::Iterator
         xTableIterator;
 
@@ -1448,7 +1480,7 @@ class SvCallsFromDb
                   "WHERE sv_caller_run_id == ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "sv_jump_table.id "
+                         "num_supporting_nt, sv_jump_table.id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -1469,7 +1501,7 @@ class SvCallsFromDb
                   "AND to_pos <= ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "sv_jump_table.id "
+                         "num_supporting_nt, sv_jump_table.id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -1495,7 +1527,8 @@ class SvCallsFromDb
             xRet.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
             xRet.vSupportingJumps.emplace_back( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ),
                                                 std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                                                std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
+                                                std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ),
+                                                std::get<8>( xTup ) );
             xSupportIterator.next( );
         } // while
         xTableIterator.next( );

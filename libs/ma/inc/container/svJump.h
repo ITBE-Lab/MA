@@ -25,6 +25,9 @@ class SvJump : public Container
   public:
     static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
     {
+        // do not create edges between seeds that are overlapping more than 3 nt on the query.
+        if( rA.end( ) > rB.start( ) + 3 && rB.end( ) > rA.start( ) + 3 )
+            return false;
         if( bFromSeedStart != rB.bOnForwStrand ) // cases (0,2) (0,3) (3,0) (3,1)
             return true;
         if( !rA.bOnForwStrand && bFromSeedStart && rB.bOnForwStrand ) // case (1,2)
@@ -41,6 +44,7 @@ class SvJump : public Container
     const bool bFromForward;
     const bool bToForward;
     const bool bFromSeedStart; // this should be call seed start or end of first seed
+    const nucSeqIndex uiNumSupportingNt;
     int64_t iId;
     int64_t iReadId;
 
@@ -53,6 +57,7 @@ class SvJump : public Container
             const bool bFromForward,
             const bool bToForward,
             const bool bFromSeedStart,
+            const nucSeqIndex uiNumSupportingNt,
             int64_t iId = -1, /* -1 == no id obtained */
             int64_t iReadId = -1 /* -1 == no id obtained */ )
         : s( pSelectedSetting->xJumpS->get( ) ),
@@ -67,6 +72,7 @@ class SvJump : public Container
           bFromForward( bFromForward ),
           bToForward( bToForward ),
           bFromSeedStart( bFromSeedStart ),
+          uiNumSupportingNt( uiNumSupportingNt ),
           iId( iId ),
           iReadId( iReadId )
     {
@@ -96,7 +102,8 @@ class SvJump : public Container
               std::max( bFromSeedStart ? rA.start( ) : rA.end( ) - 1, !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
-              /* bFromSeedStart = */ bFromSeedStart )
+              /* bFromSeedStart = */ bFromSeedStart,
+              /* uiNumSupportingNt = */ rA.size( ) + rB.size( ) )
     {} // constructor
 
     SvJump( std::shared_ptr<Presetting> pSelectedSetting,
@@ -122,7 +129,8 @@ class SvJump : public Container
                   !bFromSeedStart ? qLen : rA.start( ),
                   /* bFromForward = */ rA.bOnForwStrand,
                   /* bToForward = */ rA.bOnForwStrand,
-                  /* bFromSeedStart = */ bFromSeedStart )
+                  /* bFromSeedStart = */ bFromSeedStart,
+                  /* uiNumSupportingNt = */ rA.size( ) )
     {} // constructor
 
     bool does_switch_strand( ) const
@@ -242,9 +250,16 @@ class SvJump : public Container
         return uiTo < uiFrom ? uiFrom - uiTo : uiTo - uiFrom;
     } // method
 
-    double score( ) const // @todo really necessary ?
+    nucSeqIndex size( ) const
     {
-        return 0.08 * std::log( query_distance( ) + 1.5 );
+        if( !from_known( ) || !to_known( ) )
+            return std::numeric_limits<nucSeqIndex>::max( ) / (nucSeqIndex)2;
+        return std::max( query_distance( ), ref_distance( ) );
+    } // method
+
+    double score( ) const
+    {
+        return uiNumSupportingNt;
     } // method
 
     int64_t insert_ratio( ) const

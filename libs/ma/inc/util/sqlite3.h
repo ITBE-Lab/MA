@@ -941,12 +941,14 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
     } // public method
 
     /** Executes the current query, where the result is assumed to be a scalar. Returns the scalar.
-     * TODO: Throw an exception, if something goes wrong.
      * Check, whether there is some efficient way for implementing this method
      */
     template <class... ArgTypes> ScalarType scalar( ArgTypes&&... args )
     {
         auto pTableRef = exec( std::forward<ArgTypes>( args )... );
+
+        if( pTableRef->begin( ) == pTableRef->end( ) )
+            throw std::runtime_error( "EoF; no scalar value in query" );
 
         return std::get<0>( *( pTableRef->begin( ) ) );
     } // public method
@@ -1475,11 +1477,10 @@ template <typename... Types> class CppSQLiteExtTableWithoutRowId : public CppSQL
 
     /* Constructor for table without rowid.
      */
-    CppSQLiteExtTableWithoutRowId(
-        CppSQLiteDBExtended& rxDatabase, // the database where the table resides
-        const std::string& rsTableName, // name of the table in the database
-        const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
-        const std::vector<std::string>& vConstraints = {} )
+    CppSQLiteExtTableWithoutRowId( CppSQLiteDBExtended& rxDatabase, // the database where the table resides
+                                   const std::string& rsTableName, // name of the table in the database
+                                   const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
+                                   const std::vector<std::string>& vConstraints = {} )
         :
 #if _MSC_VER
           /* Visual C++ 2013 crashes with the below code

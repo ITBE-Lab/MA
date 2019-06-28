@@ -35,10 +35,17 @@ template <typename TP_CONTENT> class CyclicSetWithNElements
         uiCurrSize--;
     } // method
 
+    // if functor returns false iteration is canceled
     template <typename TP_FUNCTOR> void forall( TP_FUNCTOR&& functor )
     {
-        for( size_t uiI = 0; uiI < uiCurrPos && uiI < uiCurrSize; uiI++ )
-            functor( vContent[ uiI ] );
+        for( size_t uiI = 0; uiI < uiCurrSize; uiI++ )
+            if( !functor( vContent[ ( vContent.size( ) + uiCurrPos - ( 1 + uiI ) ) % vContent.size( ) ] ) )
+                return;
+    } // method
+
+    inline size_t size( ) const
+    {
+        return vContent.size( );
     } // method
 }; // class
 
@@ -51,17 +58,18 @@ template <typename TP_CONTENT> class CyclicSetWithNElements
  */
 class LastMatchingSeeds
 {
+    size_t uiFac = 2;
     std::vector<size_t> vSeedSizes;
     std::vector<CyclicSetWithNElements<Seed>> vContent;
 
   public:
-    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {0, 30}, std::vector<size_t> vSetSizes = {2, 2} )
+    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {0, 30}, std::vector<size_t> vSetSizes = {1, 1} )
         : vSeedSizes( vSeedSizes )
     {
         assert( vSeedSizes.size( ) == vSetSizes.size( ) );
         vContent.reserve( vSeedSizes.size( ) );
         for( size_t uiI : vSetSizes )
-            vContent.emplace_back( uiI );
+            vContent.emplace_back( uiI * uiFac );
         for( size_t uiI = 1; uiI < vSeedSizes.size( ); uiI++ )
             assert( vSeedSizes[ uiI - 1 ] < vSeedSizes[ uiI ] );
     } // constructor
@@ -84,22 +92,45 @@ class LastMatchingSeeds
         } // while
     } // method
 
+    /// functor shall return wether the seed was usable.
+    /// iteration will at most deliver the by vSetSizes given number of seeds
+    /// LastMatchingSeeds stores twice the by vSetSizes given number of seeds, so half of the seeds can be unusable
+    /// before LMS runs out.
     template <typename TP_FUNCTOR> void forall( TP_FUNCTOR&& functor )
     {
         for( CyclicSetWithNElements<Seed>& rX : vContent )
-            rX.forall( functor );
+        {
+            size_t uiToGo = rX.size( ) / uiFac;
+            rX.forall( [&]( Seed& rLast ) { //
+                if( functor( rLast ) )
+                    uiToGo--;
+                return uiToGo > 0;
+            } );
+        }
     } // method
 }; // class
 
 void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedSetting, LastMatchingSeeds& rLastSeeds,
-                                    Seed& rCurr, bool bJumpFromStart, std::shared_ptr<ContainerVector<SvJump>>& pRet )
+                                    Seed& rCurr, bool bJumpFromStart, std::shared_ptr<ContainerVector<SvJump>>& pRet,
+                                    std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
 {
     rLastSeeds.forall( [&]( Seed& rLast ) //
                        {
                            if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
                            {
                                pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
+                               if( pRet->back( ).size( ) < pSelectedSetting->xMaxSizeReseed->get( ) )
+                               {
+                                   pRet->pop_back( );
+                                   // trigger reseeding @todo
+                                   
+
+                                   Seed rLast2, rCurr2;
+                                   pRet->emplace_back( pSelectedSetting, rLast2, rCurr2, bJumpFromStart );
+                               } // if
+                               return true;
                            }
+                           return false;
                        } // lambda
     ); // forall function call
 
@@ -135,10 +166,10 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     // walk over all seeds to compute
     LastMatchingSeeds xLastSeedsForward;
     for( Seed& rCurr : vSeeds )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForward, rCurr, false, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForward, rCurr, false, pRet, pRefSeq, pQuery );
     LastMatchingSeeds xLastSeedsReverse;
     for( auto itRevIt = vSeeds.rbegin( ); itRevIt != vSeeds.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverse, *itRevIt, true, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverse, *itRevIt, true, pRet, pRefSeq, pQuery );
 
     return pRet;
 } // method
@@ -217,15 +248,15 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
 
 
     for( Seed& rCurr : vSeedsA )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardA, rCurr, false, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardA, rCurr, false, pRet, pRefSeq, pQueryA );
     for( Seed& rCurr : vSeedsB )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardB, rCurr, false, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardB, rCurr, false, pRet, pRefSeq, pQueryB );
 
 
     for( auto itRevIt = vSeedsA.rbegin( ); itRevIt != vSeedsA.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseA, *itRevIt, true, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseA, *itRevIt, true, pRet, pRefSeq, pQueryA );
     for( auto itRevIt = vSeedsB.rbegin( ); itRevIt != vSeedsB.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseB, *itRevIt, true, pRet );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseB, *itRevIt, true, pRet, pRefSeq, pQueryB );
 
     return pRet;
 } // method
