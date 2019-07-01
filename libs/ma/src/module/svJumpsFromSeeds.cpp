@@ -112,7 +112,8 @@ class LastMatchingSeeds
 
 void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedSetting, LastMatchingSeeds& rLastSeeds,
                                     Seed& rCurr, bool bJumpFromStart, std::shared_ptr<ContainerVector<SvJump>>& pRet,
-                                    std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
+                                    std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery,
+                                    AlignedMemoryManager& rMemoryManager )
 {
     rLastSeeds.forall( [&]( Seed& rLast ) //
                        {
@@ -121,11 +122,33 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                                pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
                                if( pRet->back( ).size( ) < pSelectedSetting->xMaxSizeReseed->get( ) )
                                {
-                                   pRet->pop_back( );
                                    // trigger reseeding @todo
-                                   
+                                   auto pAlignment = std::make_shared<Alignment>( rLast.start_ref( ), rLast.start( ) );
+                                   nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
+                                   nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;
+                                   nucSeqIndex uiRFrom = pRet->back( ).uiFrom;
+                                   nucSeqIndex uiRTo = pRet->back( ).uiTo;
+                                   pRet->pop_back( );
+                                   xNMWModule.ksw( pQuery, pRefSeq, uiQFrom, uiQTo, uiRFrom, uiRTo, pAlignment,
+                                                   rMemoryManager );
+                                   Seed rLast2 = rLast;
+                                   for(std::pair<MatchType, nucSeqIndex>& rPair : pAlignment->data)
+                                   {
+                                        case MatchType::match:
+                                            Seed rCurr(uiQFrom, rPair.second, uiRFrom, );
+                                        case MatchType::missmatch:
+                                            uiQFrom += rPair.second;
+                                            uiRFrom += rPair.second;
+                                            break;
+                                        case MatchType::insertion:
+                                            uiQFrom += rPair.second;
+                                        case MatchType::deletion:
+                                            uiRFrom += rPair.second;
+                                        default:
+                                            throw std::runtime_error( "Should never reach default case in computeTag switch case." );
+                                            break;
+                                   } // for
 
-                                   Seed rLast2, rCurr2;
                                    pRet->emplace_back( pSelectedSetting, rLast2, rCurr2, bJumpFromStart );
                                } // if
                                return true;
@@ -145,6 +168,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
                                                                     std::shared_ptr<NucSeq>
                                                                         pQuery )
 {
+    AlignedMemoryManager xMemoryManager;
     auto pRet = std::make_shared<ContainerVector<SvJump>>( );
 
     // sort seeds by query position:
@@ -166,10 +190,12 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     // walk over all seeds to compute
     LastMatchingSeeds xLastSeedsForward;
     for( Seed& rCurr : vSeeds )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForward, rCurr, false, pRet, pRefSeq, pQuery );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForward, rCurr, false, pRet, pRefSeq, pQuery,
+                                       xMemoryManager );
     LastMatchingSeeds xLastSeedsReverse;
     for( auto itRevIt = vSeeds.rbegin( ); itRevIt != vSeeds.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverse, *itRevIt, true, pRet, pRefSeq, pQuery );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverse, *itRevIt, true, pRet, pRefSeq, pQuery,
+                                       xMemoryManager );
 
     return pRet;
 } // method
@@ -186,6 +212,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
                                                                           std::shared_ptr<NucSeq>
                                                                               pQueryB )
 {
+    AlignedMemoryManager xMemoryManager;
     auto pRet = std::make_shared<ContainerVector<SvJump>>( );
 
     // sort seeds by query position:
@@ -248,15 +275,19 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
 
 
     for( Seed& rCurr : vSeedsA )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardA, rCurr, false, pRet, pRefSeq, pQueryA );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardA, rCurr, false, pRet, pRefSeq, pQueryA,
+                                       xMemoryManager );
     for( Seed& rCurr : vSeedsB )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardB, rCurr, false, pRet, pRefSeq, pQueryB );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardB, rCurr, false, pRet, pRefSeq, pQueryB,
+                                       xMemoryManager );
 
 
     for( auto itRevIt = vSeedsA.rbegin( ); itRevIt != vSeedsA.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseA, *itRevIt, true, pRet, pRefSeq, pQueryA );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseA, *itRevIt, true, pRet, pRefSeq, pQueryA,
+                                       xMemoryManager );
     for( auto itRevIt = vSeedsB.rbegin( ); itRevIt != vSeedsB.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseB, *itRevIt, true, pRet, pRefSeq, pQueryB );
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseB, *itRevIt, true, pRet, pRefSeq, pQueryB,
+                                       xMemoryManager );
 
     return pRet;
 } // method

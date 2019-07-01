@@ -64,10 +64,12 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
                        nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
                        std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager );
 
+  public:
     void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery, nucSeqIndex toQuery,
               nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment,
               AlignedMemoryManager& rMemoryManager );
 
+  private:
     const KswCppParam<5> xKswParameters;
     const nucSeqIndex uiMaxGapArea;
     const nucSeqIndex uiPadding;
@@ -114,7 +116,7 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
         for( auto pSeeds : *pSeedSets )
         {
             // if we have a seed set with an inversion we need to generate two alignments...
-            //if( !pSeeds->mainStrandIsForward( ) )
+            // if( !pSeeds->mainStrandIsForward( ) )
             //    pSeeds->mirror( pRefPack->uiStartOfReverseStrand( ), pQuery->length( ) );
             pRet->push_back( execute_one( pSeeds, pQuery, pRefPack, xMemoryManager ) );
 

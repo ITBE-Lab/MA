@@ -8,6 +8,7 @@
 #include "container/segment.h"
 #include "container/svJump.h"
 #include "module/module.h"
+#include "module/needlemanWunsch.h"
 
 namespace libMA
 {
@@ -61,6 +62,7 @@ class SvJumpsFromSeedsPaired
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
     const size_t uiPairedDist;
+    const NeedlemanWunsch xNMWModule;
 
     /**
      * @brief Initialize a SvJumpsFromSeedsPaired Module
@@ -71,7 +73,8 @@ class SvJumpsFromSeedsPaired
           uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
           bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
-          uiPairedDist( (size_t)pSelectedSetting->xMeanPairedReadDistance->get( ) )
+          uiPairedDist( (size_t)pSelectedSetting->xMeanPairedReadDistance->get( ) ),
+          xNMWModule( rParameters )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegmentsA,
