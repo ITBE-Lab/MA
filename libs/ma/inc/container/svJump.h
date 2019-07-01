@@ -259,7 +259,7 @@ class SvJump : public Container
 
     double score( ) const
     {
-        return uiNumSupportingNt;
+        return (double)uiNumSupportingNt;
     } // method
 
     int64_t insert_ratio( ) const

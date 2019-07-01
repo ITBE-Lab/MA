@@ -110,54 +110,96 @@ class LastMatchingSeeds
     } // method
 }; // class
 
+void helperSvJumpsFromSeedsExecuteOuter( const std::shared_ptr<Presetting> pSelectedSetting,
+                                         Seeds& rvSeeds, std::shared_ptr<ContainerVector<SvJump>>& pRet,
+                                         std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery,
+                                         HashMapSeeding& rHashMapSeeder, SeedLumping& rSeedLumper, bool bReseed=true );
+
 void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedSetting, LastMatchingSeeds& rLastSeeds,
                                     Seed& rCurr, bool bJumpFromStart, std::shared_ptr<ContainerVector<SvJump>>& pRet,
                                     std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery,
-                                    AlignedMemoryManager& rMemoryManager )
+                                    HashMapSeeding& rHashMapSeeder, SeedLumping& rSeedLumper, bool bReseed=true )
 {
-    rLastSeeds.forall( [&]( Seed& rLast ) //
-                       {
-                           if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
-                           {
-                               pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
-                               if( pRet->back( ).size( ) < pSelectedSetting->xMaxSizeReseed->get( ) )
-                               {
-                                   // trigger reseeding @todo
-                                   auto pAlignment = std::make_shared<Alignment>( rLast.start_ref( ), rLast.start( ) );
-                                   nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
-                                   nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;
-                                   nucSeqIndex uiRFrom = pRet->back( ).uiFrom;
-                                   nucSeqIndex uiRTo = pRet->back( ).uiTo;
-                                   pRet->pop_back( );
-                                   xNMWModule.ksw( pQuery, pRefSeq, uiQFrom, uiQTo, uiRFrom, uiRTo, pAlignment,
-                                                   rMemoryManager );
-                                   Seed rLast2 = rLast;
-                                   for(std::pair<MatchType, nucSeqIndex>& rPair : pAlignment->data)
-                                   {
-                                        case MatchType::match:
-                                            Seed rCurr(uiQFrom, rPair.second, uiRFrom, );
-                                        case MatchType::missmatch:
-                                            uiQFrom += rPair.second;
-                                            uiRFrom += rPair.second;
-                                            break;
-                                        case MatchType::insertion:
-                                            uiQFrom += rPair.second;
-                                        case MatchType::deletion:
-                                            uiRFrom += rPair.second;
-                                        default:
-                                            throw std::runtime_error( "Should never reach default case in computeTag switch case." );
-                                            break;
-                                   } // for
+    rLastSeeds.forall(
+        [&]( Seed& rLast ) //
+        {
+            if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
+            {
+                pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
+                if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) &&
+                    rLast.bOnForwStrand == rCurr.bOnForwStrand && bReseed ) // @todo make this work on inversions...
+                {
+                    // trigger reseeding @todo
+                    nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
+                    nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;
+                    if(uiQFrom > uiQTo)
+                    {
+                        nucSeqIndex uiT = uiQFrom;
+                        uiQFrom = uiQTo;
+                        uiQTo = uiT;
+                    } // if
+                    nucSeqIndex uiRFrom = pRet->back( ).uiFrom;
+                    nucSeqIndex uiRTo = pRet->back( ).uiTo;
+                    if(uiRFrom > uiRTo)
+                    {
+                        nucSeqIndex uiT = uiRFrom;
+                        uiRFrom = uiRTo;
+                        uiRTo = uiT;
+                    } // if
 
-                                   pRet->emplace_back( pSelectedSetting, rLast2, rCurr2, bJumpFromStart );
-                               } // if
-                               return true;
-                           }
-                           return false;
-                       } // lambda
+                    auto pSeeds = rHashMapSeeder.execute(
+                        std::make_shared<NucSeq>(
+                            rLast.bOnForwStrand
+                                ? pQuery->fromTo( uiQFrom, uiQTo )
+                                : pQuery->fromToComplement( pQuery->length( ) - uiQTo, pQuery->length( ) - uiQFrom ) ),
+                        pRefSeq->vExtract( uiRFrom, uiRTo ) );
+
+                    if( pSeeds->size( ) == 0 )
+                        return true;
+
+                    for( Seed& rSeed : *pSeeds )
+                    {
+                        rSeed.bOnForwStrand = rLast.bOnForwStrand;
+                        rSeed.uiPosOnReference += uiRFrom;
+                        rSeed.iStart += uiQFrom;
+                    } // for
+                    // turn k-mers into maximally extended seeds
+                    auto pLumped = rSeedLumper.execute( pSeeds );
+                    pLumped->push_back( rLast );
+                    pLumped->push_back( rCurr );
+
+                    // compute more precise jumps
+                    pRet->pop_back( ); // @note keep?
+                    // sort in order
+                    std::sort( pLumped->begin( ), pLumped->end( ),
+                               [&]( Seed& rA, Seed& rB ) { return rA.start( ) < rB.start( ); } );
+                    helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, *pLumped, pRet, pRefSeq, pQuery,
+                                                        rHashMapSeeder, rSeedLumper, false );
+
+                } // if
+                return true;
+            }
+            return false;
+        } // lambda
     ); // forall function call
 
     rLastSeeds.insert( rCurr );
+} // function
+
+void helperSvJumpsFromSeedsExecuteOuter( const std::shared_ptr<Presetting> pSelectedSetting,
+                                         Seeds& rvSeeds, std::shared_ptr<ContainerVector<SvJump>>& pRet,
+                                         std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery,
+                                         HashMapSeeding& rHashMapSeeder, SeedLumping& rSeedLumper, bool bReseed )
+{
+    // walk over all seeds to compute
+    LastMatchingSeeds xLastSeedsForward;
+    for( Seed& rCurr : rvSeeds )
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForward, rCurr, false, pRet, pRefSeq, pQuery,
+                                       rHashMapSeeder, rSeedLumper, bReseed );
+    LastMatchingSeeds xLastSeedsReverse;
+    for( auto itRevIt = rvSeeds.rbegin( ); itRevIt != rvSeeds.rend( ); itRevIt++ )
+        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverse, *itRevIt, true, pRet, pRefSeq, pQuery,
+                                       rHashMapSeeder, rSeedLumper, bReseed );
 } // function
 
 std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_ptr<SegmentVector> pSegments,
@@ -168,7 +210,6 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
                                                                     std::shared_ptr<NucSeq>
                                                                         pQuery )
 {
-    AlignedMemoryManager xMemoryManager;
     auto pRet = std::make_shared<ContainerVector<SvJump>>( );
 
     // sort seeds by query position:
@@ -187,16 +228,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
             pRet->emplace_back( pSelectedSetting, vSeeds.back( ), pQuery->length( ), false );
     } // if
 
-    // walk over all seeds to compute
-    LastMatchingSeeds xLastSeedsForward;
-    for( Seed& rCurr : vSeeds )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForward, rCurr, false, pRet, pRefSeq, pQuery,
-                                       xMemoryManager );
-    LastMatchingSeeds xLastSeedsReverse;
-    for( auto itRevIt = vSeeds.rbegin( ); itRevIt != vSeeds.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverse, *itRevIt, true, pRet, pRefSeq, pQuery,
-                                       xMemoryManager );
-
+    helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, vSeeds, pRet, pRefSeq, pQuery, xHashMapSeeder, xSeedLumper );
     return pRet;
 } // method
 
@@ -212,7 +244,6 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
                                                                           std::shared_ptr<NucSeq>
                                                                               pQueryB )
 {
-    AlignedMemoryManager xMemoryManager;
     auto pRet = std::make_shared<ContainerVector<SvJump>>( );
 
     // sort seeds by query position:
@@ -276,18 +307,18 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
 
     for( Seed& rCurr : vSeedsA )
         helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardA, rCurr, false, pRet, pRefSeq, pQueryA,
-                                       xMemoryManager );
+                                       xHashMapSeeder, xSeedLumper );
     for( Seed& rCurr : vSeedsB )
         helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardB, rCurr, false, pRet, pRefSeq, pQueryB,
-                                       xMemoryManager );
+                                       xHashMapSeeder, xSeedLumper );
 
 
     for( auto itRevIt = vSeedsA.rbegin( ); itRevIt != vSeedsA.rend( ); itRevIt++ )
         helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseA, *itRevIt, true, pRet, pRefSeq, pQueryA,
-                                       xMemoryManager );
+                                       xHashMapSeeder, xSeedLumper );
     for( auto itRevIt = vSeedsB.rbegin( ); itRevIt != vSeedsB.rend( ); itRevIt++ )
         helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseB, *itRevIt, true, pRet, pRefSeq, pQueryB,
-                                       xMemoryManager );
+                                       xHashMapSeeder, xSeedLumper );
 
     return pRet;
 } // method

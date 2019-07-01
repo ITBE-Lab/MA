@@ -8,7 +8,7 @@
 #include "container/segment.h"
 #include "container/svJump.h"
 #include "module/module.h"
-#include "module/needlemanWunsch.h"
+#include "module/hashMapSeeding.h"
 
 namespace libMA
 {
@@ -28,6 +28,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     const size_t uiMaxAmbiguitySv;
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
+    HashMapSeeding xHashMapSeeder;
+    SeedLumping xSeedLumper;
 
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
@@ -37,7 +39,9 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
           uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
           bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
-          uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) )
+          uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
+          xHashMapSeeder( rParameters ),
+          xSeedLumper( rParameters )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
@@ -62,7 +66,8 @@ class SvJumpsFromSeedsPaired
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
     const size_t uiPairedDist;
-    const NeedlemanWunsch xNMWModule;
+    HashMapSeeding xHashMapSeeder;
+    SeedLumping xSeedLumper;
 
     /**
      * @brief Initialize a SvJumpsFromSeedsPaired Module
@@ -74,7 +79,8 @@ class SvJumpsFromSeedsPaired
           bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
           uiPairedDist( (size_t)pSelectedSetting->xMeanPairedReadDistance->get( ) ),
-          xNMWModule( rParameters )
+          xHashMapSeeder( rParameters ),
+          xSeedLumper( rParameters )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegmentsA,

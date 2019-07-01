@@ -545,10 +545,10 @@ class Presetting : public ParameterSetBase
     // SV caller options
     // @todo depre start
     AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
-    AlignerParameterPointer<int> xSecSeedSize; // maximal distance between clusters
     AlignerParameterPointer<int> xPaddingReSeeding; // re seeding padding
     AlignerParameterPointer<int> xNSoCs; // number of SoCs for SV analysis
     // @todo depre end
+    AlignerParameterPointer<int> xSecSeedSize; // maximal distance between clusters
     AlignerParameterPointer<int> xMinSeedSizeSV; // minimal seed size for the sv caller
     AlignerParameterPointer<int> xMaxAmbiguitySv; // max seed ambiguity for the sv caller
     AlignerParameterPointer<bool> xDoDummyJumps; // compute dummy jumps for first & last seed of read
@@ -732,11 +732,11 @@ class Presetting : public ParameterSetBase
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
                                       "Maximal distance between the deltas of the closest two seeds in a cluster",
                                       SV_PARAMETERS, 200, checkPositiveValue ),
-          xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 10, checkPositiveValue ),
           xPaddingReSeeding( this, "re seeding padding", "padding for re seeding", SV_PARAMETERS, 100,
                              checkPositiveValue ),
           xNSoCs( this, "Number of SoC's for SV calling", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           // new SV
+          xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 10, checkPositiveValue ),
           xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
           xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 10000, checkPositiveValue ),
           xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
