@@ -54,6 +54,7 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
     std::vector<std::vector<std::vector<int>>> s;
     std::vector<std::vector<std::vector<char>>> dir;
 
+  public:
     void EXPORTED dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::shared_ptr<NucSeq> pRef,
                           const nucSeqIndex fromQuery, const nucSeqIndex toQuery, const nucSeqIndex fromRef,
                           const nucSeqIndex toRef,
@@ -64,7 +65,6 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
                        nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
                        std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager );
 
-  public:
     void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery, nucSeqIndex toQuery,
               nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment,
               AlignedMemoryManager& rMemoryManager );

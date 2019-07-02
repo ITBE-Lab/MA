@@ -9,6 +9,7 @@
 #include "container/svJump.h"
 #include "module/module.h"
 #include "module/hashMapSeeding.h"
+#include "module/needlemanWunsch.h"
 
 namespace libMA
 {
@@ -30,6 +31,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     const size_t uiMinDistDummy;
     HashMapSeeding xHashMapSeeder;
     SeedLumping xSeedLumper;
+    NeedlemanWunsch xNMWModule;
 
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
@@ -41,7 +43,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
           xHashMapSeeder( rParameters ),
-          xSeedLumper( rParameters )
+          xSeedLumper( rParameters ),
+          xNMWModule( rParameters )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
@@ -68,6 +71,7 @@ class SvJumpsFromSeedsPaired
     const size_t uiPairedDist;
     HashMapSeeding xHashMapSeeder;
     SeedLumping xSeedLumper;
+    NeedlemanWunsch xNMWModule;
 
     /**
      * @brief Initialize a SvJumpsFromSeedsPaired Module
@@ -80,7 +84,8 @@ class SvJumpsFromSeedsPaired
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
           uiPairedDist( (size_t)pSelectedSetting->xMeanPairedReadDistance->get( ) ),
           xHashMapSeeder( rParameters ),
-          xSeedLumper( rParameters )
+          xSeedLumper( rParameters ),
+          xNMWModule( rParameters )
     {} // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegmentsA,

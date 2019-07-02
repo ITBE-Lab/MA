@@ -575,8 +575,8 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
     nucSeqIndex rPos = fromRef;
     if( bReverse )
     {
-        rPos += toRef - ez.ez->max_t - 1;
-        qPos += toQuery - ez.ez->max_q - 1;
+        rPos = toRef - ez.ez->max_t - 1;
+        qPos = toQuery - ez.ez->max_q - 1;
     } // if
 
     for( int i = 0; i < ez.ez->n_cigar; ++i )
