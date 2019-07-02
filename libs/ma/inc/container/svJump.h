@@ -44,7 +44,7 @@ class SvJump : public Container
     const bool bFromForward;
     const bool bToForward;
     const bool bFromSeedStart; // this should be call seed start or end of first seed
-    const nucSeqIndex uiNumSupportingNt;
+    nucSeqIndex uiNumSupportingNt;
     int64_t iId;
     int64_t iReadId;
 

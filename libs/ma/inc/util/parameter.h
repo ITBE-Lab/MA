@@ -747,7 +747,7 @@ class Presetting : public ParameterSetBase
           xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
           xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 100 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
-          xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 200, checkPositiveValue ),
+          xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

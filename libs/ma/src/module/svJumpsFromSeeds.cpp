@@ -63,7 +63,7 @@ class LastMatchingSeeds
     std::vector<CyclicSetWithNElements<Seed>> vContent;
 
   public:
-    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {0, 30}, std::vector<size_t> vSetSizes = {1, 1} )
+    LastMatchingSeeds( std::vector<size_t> vSeedSizes = {0}, std::vector<size_t> vSetSizes = {1} )
         : vSeedSizes( vSeedSizes )
     {
         assert( vSeedSizes.size( ) == vSetSizes.size( ) );
@@ -129,7 +129,9 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                 if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) &&
                     rLast.bOnForwStrand == rCurr.bOnForwStrand && bReseed ) // @todo make this work on inversions...
                 {
+#if 1
                     // trigger reseeding @todo
+                    nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
                     nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
                     nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;
                     if(uiQFrom > uiQTo)
@@ -161,7 +163,10 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                     {
                         rSeed.bOnForwStrand = rLast.bOnForwStrand;
                         rSeed.uiPosOnReference += uiRFrom;
+                        if(!rLast.bOnForwStrand)
+                            rSeed.iStart = (uiQTo - uiQFrom) - rSeed.end() - 1;
                         rSeed.iStart += uiQFrom;
+                        assert(rSeed.end() < pQuery->length());
                     } // for
                     // turn k-mers into maximally extended seeds
                     auto pLumped = rSeedLumper.execute( pSeeds );
@@ -173,9 +178,14 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                     // sort in order
                     std::sort( pLumped->begin( ), pLumped->end( ),
                                [&]( Seed& rA, Seed& rB ) { return rA.start( ) < rB.start( ); } );
+                    size_t uiSize = pRet->size();
                     helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, *pLumped, pRet, pRefSeq, pQuery,
                                                         rHashMapSeeder, rSeedLumper, false );
-
+                    for(; uiSize < pRet->size(); uiSize++)
+                        (*pRet)[uiSize].uiNumSupportingNt = uiNumSupportingNt;
+#else
+                    // @todo try extension?
+#endif
                 } // if
                 return true;
             }
