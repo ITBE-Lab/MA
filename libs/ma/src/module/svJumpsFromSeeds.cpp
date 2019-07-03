@@ -190,9 +190,11 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                     for(; uiSize < pRet->size(); uiSize++)
                         (*pRet)[uiSize].uiNumSupportingNt = uiNumSupportingNt;
 #else
+                                   Seed xLast2 = rLast;
+                                   Seed xCurr2 = rCurr;
                                    auto pAlignment = std::make_shared<Alignment>( uiRFrom, uiQFrom );
                                    auto pExtrRef = pRefSeq->vExtract( uiRFrom, uiRTo + 1 );
-                                   if( !rLast.bOnForwStrand )
+                                   if( !xLast2.bOnForwStrand )
                                    {
                                        pExtrRef->vReverseAll( );
                                        pExtrRef->vSwitchAllBasePairsToComplement( );
@@ -223,19 +225,19 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                                        switch( pAlignment->data[ uiI ].first )
                                        {
                                            case MatchType::match:
-                                               rLast.iSize += pAlignment->data[ uiI ].second;
+                                               xLast2.iSize += pAlignment->data[ uiI ].second;
                                                break;
                                            case MatchType::missmatch:
-                                               rLast.iStart += pAlignment->data[ uiI ].second;
-                                               rLast.uiPosOnReference += pAlignment->data[ uiI ].second;
+                                               xLast2.iStart += pAlignment->data[ uiI ].second;
+                                               xLast2.uiPosOnReference += pAlignment->data[ uiI ].second;
                                                //@todo insert jump here
                                                break;
                                            case MatchType::insertion:
-                                               rLast.iStart += pAlignment->data[ uiI ].second;
+                                               xLast2.iStart += pAlignment->data[ uiI ].second;
                                                //@todo insert jump here
                                                break;
                                            case MatchType::deletion:
-                                               rLast.uiPosOnReference += pAlignment->data[ uiI ].second;
+                                               xLast2.uiPosOnReference += pAlignment->data[ uiI ].second;
                                                //@todo insert jump here
                                                break;
                                            default:
@@ -248,7 +250,7 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
 
                                    pAlignment = std::make_shared<Alignment>( uiRFrom, uiQFrom );
                                    pExtrRef = pRefSeq->vExtract( uiRFrom, uiRTo + 1 );
-                                   if( !rCurr.bOnForwStrand )
+                                   if( !xCurr2.bOnForwStrand )
                                    {
                                        pExtrRef->vReverseAll( );
                                        pExtrRef->vSwitchAllBasePairsToComplement( );
@@ -277,21 +279,21 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                                        switch( pAlignment->data[ uiI - 1 ].first )
                                        {
                                            case MatchType::match:
-                                               rCurr.iSize += pAlignment->data[ uiI - 1 ].second;
+                                               xCurr2.iSize += pAlignment->data[ uiI - 1 ].second;
 
                                                // @note no break intendend!
 
                                            case MatchType::missmatch:
-                                               rCurr.iStart -= pAlignment->data[ uiI - 1 ].second;
-                                               rCurr.uiPosOnReference -= pAlignment->data[ uiI - 1 ].second;
+                                               xCurr2.iStart -= pAlignment->data[ uiI - 1 ].second;
+                                               xCurr2.uiPosOnReference -= pAlignment->data[ uiI - 1 ].second;
                                                //@todo insert jump here
                                                break;
                                            case MatchType::insertion:
-                                               rCurr.iStart -= pAlignment->data[ uiI - 1 ].second;
+                                               xCurr2.iStart -= pAlignment->data[ uiI - 1 ].second;
                                                //@todo insert jump here
                                                break;
                                            case MatchType::deletion:
-                                               rCurr.uiPosOnReference -= pAlignment->data[ uiI - 1 ].second;
+                                               xCurr2.uiPosOnReference -= pAlignment->data[ uiI - 1 ].second;
                                                //@todo insert jump here
                                                break;
                                            default:
@@ -301,8 +303,8 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                                                break;
                                        } // switch
                                    } // for
-                                   if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
-                                       pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
+                                   if( SvJump::validJump( xLast2, xCurr2, bJumpFromStart ) )
+                                       pRet->emplace_back( pSelectedSetting, xLast2, xCurr2, bJumpFromStart );
 #endif
                                } // if
                                return true;
