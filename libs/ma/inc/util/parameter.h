@@ -943,12 +943,12 @@ class ParameterSetManager
 
         xParametersSets.emplace( "sv-illumina", std::make_shared<Presetting>( "SV-Illumina" ) );
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
-        xParametersSets[ "sv-pacbio" ]->xJumpS->set( 200 );
+        xParametersSets[ "sv-pacbio" ]->xJumpS->set( 250 );
         //xParametersSets[ "sv-pacbio" ]->xJumpM->set( 0.25 );
-        xParametersSets[ "sv-pacbio" ]->xMinDistDummy->set( 100 );
+        xParametersSets[ "sv-pacbio" ]->xMinDistDummy->set( 150 );
         xParametersSets.emplace( "sv-ont", std::make_shared<Presetting>( "SV-ONT" ) );
-        xParametersSets[ "sv-ont" ]->xJumpS->set( 1000 );
-        xParametersSets[ "sv-ont" ]->xMinDistDummy->set( 100 );
+        xParametersSets[ "sv-ont" ]->xJumpS->set( 350 );
+        xParametersSets[ "sv-ont" ]->xMinDistDummy->set( 200 );
 
         // Initially select Illumina
         this->pSelectedParamSet = xParametersSets[ "default" ];

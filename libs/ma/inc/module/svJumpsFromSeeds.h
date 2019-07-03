@@ -10,6 +10,7 @@
 #include "module/module.h"
 #include "module/hashMapSeeding.h"
 #include "module/needlemanWunsch.h"
+#include "module/binarySeeding.h"
 
 namespace libMA
 {
@@ -32,6 +33,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     HashMapSeeding xHashMapSeeder;
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNMWModule;
+    BinarySeeding xBinarySeeding;
 
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
@@ -44,8 +46,11 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
           xHashMapSeeder( rParameters ),
           xSeedLumper( rParameters ),
-          xNMWModule( rParameters )
-    {} // constructor
+          xNMWModule( rParameters ),
+          xBinarySeeding( rParameters )
+    {
+        xBinarySeeding.bDisableHeuristics = true;
+    } // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
                                                                        std::shared_ptr<Pack>
@@ -72,6 +77,7 @@ class SvJumpsFromSeedsPaired
     HashMapSeeding xHashMapSeeder;
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNMWModule;
+    BinarySeeding xBinarySeeding;
 
     /**
      * @brief Initialize a SvJumpsFromSeedsPaired Module
@@ -85,8 +91,11 @@ class SvJumpsFromSeedsPaired
           uiPairedDist( (size_t)pSelectedSetting->xMeanPairedReadDistance->get( ) ),
           xHashMapSeeder( rParameters ),
           xSeedLumper( rParameters ),
-          xNMWModule( rParameters )
-    {} // constructor
+          xNMWModule( rParameters ),
+          xBinarySeeding( rParameters )
+    {
+        xBinarySeeding.bDisableHeuristics = true;
+    } // constructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegmentsA,
                                                                        std::shared_ptr<SegmentVector>

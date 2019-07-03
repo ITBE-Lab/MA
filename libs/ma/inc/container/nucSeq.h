@@ -399,6 +399,19 @@ class NucSeq : public Container
         return *this;
     } // method
 
+    /** WARNING: the inner string might not null-terminated after this operation.
+     */
+    inline NucSeq& vAppend( NucSeq& rOther )
+    {
+#if WITH_QUALITY
+        assert( this->bHasQuality( ) == rOther.bHasQuality( ) );
+        if( rOther.bHasQuality( ) )
+            return this->vAppend( rOther.pxSequenceRef, rOther.pxQualityRef, rOther.length( ) );
+        else
+#endif
+            return this->vAppend( rOther.pxSequenceRef, rOther.length( ) );
+    } // method
+
     /** Push back of a single symbol.
      */
     inline void push_back( const uint8_t xElement )

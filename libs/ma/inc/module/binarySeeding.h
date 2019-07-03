@@ -33,7 +33,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
     ///
     const size_t uiMinSeedSizeDrop;
     const double fRelMinSeedSizeAmount;
-    const bool bDisableHeuristics;
+    bool bDisableHeuristics;
     /**
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
      */
@@ -73,6 +73,11 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         SAInterval ik( pFM_index->L2[ complement( q[ center ] ) ] + 1,
                        pFM_index->L2[ (int)q[ center ] ] + 1,
                        pFM_index->L2[ (int)q[ center ] + 1 ] - pFM_index->L2[ (int)q[ center ] ] );
+    
+        // if the symbol in the query does not exist on the reference we get an empty sa interval here.
+        if( ik.size( ) == 0 )
+            // return that we covered the interval
+            return Interval<nucSeqIndex>( center, 1 );
 
         /*
          * extend ik right, until there are no more matches
