@@ -119,6 +119,32 @@ class SAInterval : public Container, public Interval<t_bwtIndex>
 
 typedef unsigned char ubyte_t;
 
+
+class SuffixArrayInterface : public Container
+{
+  public:
+    virtual SAInterval EXPORTED extend_backward(
+        // current interval
+        const SAInterval& ik,
+        // the character to extend with
+        const uint8_t c );
+
+    virtual SAInterval init_interval(
+        // the character to init with
+        const uint8_t c )
+    {
+        throw std::runtime_error( "unimplemented!" );
+    } // method
+
+    virtual uint64_t getRefSeqLength( void ) const
+    {
+        throw std::runtime_error( "unimplemented!" );
+    } // method
+}; // class
+
+class SuffixArray : public SuffixArrayInterface
+{}; // class
+
 /**
  * @brief A Suffix array.
  * @details
@@ -126,7 +152,7 @@ typedef unsigned char ubyte_t;
  * The original data-structure was part of the BWA-code.
  * @ingroup container
  */
-class FMIndex : public Container
+class FMIndex : public SuffixArrayInterface
 {
   public:
     /* C(), cumulative counts (part of the FM index)
@@ -141,11 +167,11 @@ class FMIndex : public Container
 
     SAInterval EXPORTED getInterval( std::shared_ptr<NucSeq> pQuerySeq );
 
-	t_bwtIndex EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
+    t_bwtIndex EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
 
-    bool EXPORTED testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack );
+    bool EXPORTED testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const Pack& rPack );
 
-    bool EXPORTED test( const std::shared_ptr<Pack> pPack, unsigned int uiNumTest );
+    bool EXPORTED test( const Pack& rPack, unsigned int uiNumTest );
 
   protected:
     typedef int64_t bwtint_t;
@@ -699,11 +725,20 @@ class FMIndex : public Container
      * perform a backwards extension with the nucleotide c and the SAInterval ik
      * this also updates the position of the reverse complement interval
      */
-    SAInterval extend_backward(
+    SAInterval EXPORTED extend_backward(
         // current interval
         const SAInterval& ik,
         // the character to extend with
         const uint8_t c );
+
+    SAInterval init_interval(
+        // the character to init with
+        const uint8_t c )
+    {
+        return SAInterval( this->L2[ c ] + 1,
+                           this->L2[ (int)NucSeq::nucleotideComplement( c ) ] + 1,
+                           this->L2[ (int)c + 1 ] - this->L2[ (int)c ] );
+    } // method
 
     /** We keep the reference length private in order to avoid unexpected trouble.
      * Delivers the length of the reference (pack) that belongs to the current FM-index.
@@ -900,6 +935,12 @@ class FMIndex : public Container
         : FMIndex( ) // call the default constructor
     {
         build_FMIndex( rxSequenceCollection, uiAlgorithmSelection );
+        DEBUG( if( !test( rxSequenceCollection, 10000 ) ) // test 10000 sequences
+               {
+                   std::cerr << "WARNING: suffix array test failed" << std::endl;
+                   exit( 0 );
+               } // if
+        )
     } // constructor
 
     /* FM-Index constructor. Builds a FM index on foundation of a given sequence collection.
@@ -911,7 +952,7 @@ class FMIndex : public Container
         : FMIndex( ) // call the default constructor
     {
         build_FMIndex( *pxSequenceCollection, 2 );
-        DEBUG( if( !test( pxSequenceCollection, 10000 ) ) // test 10000 sequences
+        DEBUG( if( !test( *pxSequenceCollection, 10000 ) ) // test 10000 sequences
                {
                    std::cerr << "WARNING: suffix array test failed" << std::endl;
                    exit( 0 );

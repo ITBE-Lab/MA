@@ -23,7 +23,7 @@ class PerfectMatch;
  * Can use either the extension scheme by Li et Al. or ours.
  * @ingroup module
  */
-class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
+class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, NucSeq>
 {
   public:
     const bool bLrExtension;
@@ -49,7 +49,8 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
      * Returns an interval spanning the entire covered area.
      * Segments are saved in pSegmentVector.
      */
-    inline Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center, std::shared_ptr<FMIndex> pFM_index,
+    inline Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center,
+                                                             std::shared_ptr<SuffixArrayInterface> pFM_index,
                                                              std::shared_ptr<NucSeq> pQuerySeq,
                                                              std::shared_ptr<SegmentVector> pSegmentVector,
                                                              bool bFirst )
@@ -70,10 +71,8 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         // start I(q[x]) in T (start in BWT used for backward search) + 1,
         // because very first string in SA-array starts with $
         // size in T and T' is equal due to symmetry
-        SAInterval ik( pFM_index->L2[ complement( q[ center ] ) ] + 1,
-                       pFM_index->L2[ (int)q[ center ] ] + 1,
-                       pFM_index->L2[ (int)q[ center ] + 1 ] - pFM_index->L2[ (int)q[ center ] ] );
-    
+        SAInterval ik = pFM_index->init_interval( complement( q[ center ] ) );
+
         // if the symbol in the query does not exist on the reference we get an empty sa interval here.
         if( ik.size( ) == 0 )
             // return that we covered the interval
@@ -154,8 +153,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         // start I(q[x]) in T (start in BWT used for backward search) + 1,
         // because very first string in SA-array starts with $
         // size in T and T' is equal due to symmetry
-        ik = SAInterval( pFM_index->L2[ q[ center ] ] + 1, pFM_index->L2[ (int)complement( q[ center ] ) ] + 1,
-                         pFM_index->L2[ (int)q[ center ] + 1 ] - pFM_index->L2[ (int)q[ center ] ] );
+        ik = pFM_index->init_interval( q[ center ] );
         start = center;
         /*
          * extend ik left, until there are no more matches
@@ -223,10 +221,10 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         assert( start >= 0 );
         assert( end < pQuerySeq->length( ) );
         // check so that we do not record the same interval twice
-        if(pSegmentVector->back().start() == start && pSegmentVector->back().end() == end)
+        if( pSegmentVector->back( ).start( ) == start && pSegmentVector->back( ).end( ) == end )
             // if we would record the same interval twice do not record the second one and return the
             // covered area based on the first interval
-            return Interval<nucSeqIndex>(pSegmentVector->back( ).start( ), pSegmentVector->back( ).size( ));
+            return Interval<nucSeqIndex>( pSegmentVector->back( ).start( ), pSegmentVector->back( ).size( ) );
 
         pSegmentVector->emplace_back( start, end - start, ik.revComp( ) );
         assert( pSegmentVector->back( ).end( ) < pQuerySeq->length( ) );
@@ -254,7 +252,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
      * Returns an interval spanning the entire covered area.
      * Segments are saved in pSegmentVector.
      */
-    Interval<nucSeqIndex> smemExtension( nucSeqIndex center, std::shared_ptr<FMIndex> pFM_index,
+    Interval<nucSeqIndex> smemExtension( nucSeqIndex center, std::shared_ptr<SuffixArrayInterface> pFM_index,
                                          std::shared_ptr<NucSeq> pQuerySeq,
                                          std::shared_ptr<SegmentVector> pSegmentVector )
     {
@@ -278,9 +276,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         // start I(q[x]) in T (start in BWT used for backward search) + 1,
         // because very first string in SA-array starts with $
         // size in T and T' is equal due to symmetry
-        SAInterval ik( pFM_index->L2[ complement( q[ center ] ) ] + 1,
-                       pFM_index->L2[ (int)q[ center ] ] + 1,
-                       pFM_index->L2[ (int)q[ center ] + 1 ] - pFM_index->L2[ (int)q[ center ] ] );
+        SAInterval ik = pFM_index->init_interval( complement( q[ center ] ) );
 
         /*
          * forward extension first
@@ -455,7 +451,8 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
      * step with the first half, while queuing the second half as a task in the thread pool.
      */
     void procesInterval( Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
-                         std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq, size_t uiCnt );
+                         std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq,
+                         size_t uiCnt );
 
   public:
     /**
@@ -477,8 +474,8 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
           uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<SegmentVector>
-        EXPORTED execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
+    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<SuffixArrayInterface> pFM_index,
+                                                             std::shared_ptr<NucSeq> pQuerySeq );
 
 }; // class
 

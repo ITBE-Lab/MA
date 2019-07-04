@@ -157,13 +157,14 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
     auto pDP = std::make_shared<NeedlemanWunsch>( rParameters );
     auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
     auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
+    auto pCast = std::make_shared<Cast<SuffixArrayInterface, FMIndex>>( rParameters );
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
     for( unsigned int i = 0; i < uiThreads; i++ )
     {
         auto pQuery = promiseMe( pLock, pQueries );
-        auto pSeeds = promiseMe( pSeeding, pFMDIndex, pQuery );
+        auto pSeeds = promiseMe( pSeeding, promiseMe(pCast, pFMDIndex), pQuery );
         auto pSOCs = promiseMe( pSOC, pSeeds, pQuery, pPack, pFMDIndex );
         auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery, pFMDIndex );
         auto pAlignments = promiseMe( pDP, pHarmonized, pQuery, pPack );
@@ -209,6 +210,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const Para
     auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
     auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
     auto pPairedReads = std::make_shared<PairedReads>( rParameters );
+    auto pCast = std::make_shared<Cast<SuffixArrayInterface, FMIndex>>( rParameters );
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
@@ -217,8 +219,8 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const Para
         auto pQueryTuple = promiseMe( pLock, pQueries );
         auto pQueryA = promiseMe( pGetFirst, pQueryTuple );
         auto pQueryB = promiseMe( pGetSecond, pQueryTuple );
-        auto pSeedsA = promiseMe( pSeeding, pFMDIndex, pQueryA );
-        auto pSeedsB = promiseMe( pSeeding, pFMDIndex, pQueryB );
+        auto pSeedsA = promiseMe( pSeeding, promiseMe(pCast, pFMDIndex), pQueryA );
+        auto pSeedsB = promiseMe( pSeeding, promiseMe(pCast, pFMDIndex), pQueryB );
         auto pSOCsA = promiseMe( pSOC, pSeedsA, pQueryA, pPack, pFMDIndex );
         auto pSOCsB = promiseMe( pSOC, pSeedsB, pQueryB, pPack, pFMDIndex );
         auto pHarmonizedA = promiseMe( pHarmonization, pSOCsA, pQueryA, pFMDIndex );

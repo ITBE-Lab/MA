@@ -9,6 +9,15 @@ using namespace libMA;
 
 #define complement( x ) ( uint8_t ) NucSeq::nucleotideComplement( x )
 
+SAInterval SuffixArrayInterface::extend_backward(
+    // current interval
+    const SAInterval& ik,
+    // the character to extend with
+    const uint8_t c )
+{
+    throw std::runtime_error( "unimplemented!" );
+} // method
+
 SAInterval FMIndex::extend_backward(
     // current interval
     const SAInterval& ik,
@@ -109,7 +118,7 @@ t_bwtIndex FMIndex::get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq )
     return getInterval( pQuerySeq ).size( );
 } // function
 
-bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shared_ptr<Pack> pPack )
+bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const Pack& rPack )
 {
     SAInterval ik = getInterval( pQuerySeq );
     for( auto ulCurrPos = ik.start( ); ulCurrPos < ik.end( ); ulCurrPos++ )
@@ -118,8 +127,8 @@ bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shar
         // individually
         bwtint_t ulIndexOnRefSeq = bwt_sa( ulCurrPos );
         int64_t iDummy;
-        if( !pPack->bridgingSubsection( ulIndexOnRefSeq, ulIndexOnRefSeq + +pQuerySeq->length( ), iDummy ) &&
-            !pPack->vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )->equal( *pQuerySeq ) )
+        if( !rPack.bridgingSubsection( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ), iDummy ) &&
+            !rPack.vExtract( ulIndexOnRefSeq, ulIndexOnRefSeq + pQuerySeq->length( ) )->equal( *pQuerySeq ) )
             return false;
     } // for
 
@@ -127,14 +136,14 @@ bool FMIndex::testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const std::shar
 } // fuction
 
 
-bool FMIndex::test( const std::shared_ptr<Pack> pPack, unsigned int uiNumTest )
+bool FMIndex::test( const Pack& rPack, unsigned int uiNumTest )
 {
     while( uiNumTest-- > 0 )
     {
         int64_t iDummy;
-        auto uiPos = std::rand( ) % pPack->uiUnpackedSizeForwardPlusReverse( );
-        if( !pPack->bridgingSubsection( uiPos, uiPos + 10, iDummy ) &&
-            !testSaInterval( pPack->vExtract( uiPos, uiPos + 10 ), pPack ) )
+        auto uiPos = std::rand( ) % rPack.uiUnpackedSizeForwardPlusReverse( );
+        if( !rPack.bridgingSubsection( uiPos, uiPos + 10, iDummy ) &&
+            !testSaInterval( rPack.vExtract( uiPos, uiPos + 10 ), rPack ) )
             return false;
     } // while
     return true;
@@ -389,8 +398,12 @@ void exportFM_index( py::module& rxPyModuleId )
     py::class_<SAInterval>( rxPyModuleId, "SAInterval" )
         .def_readwrite( "size", &SAInterval::iSize )
         .def_readwrite( "start", &SAInterval::iStart );
+
+    py::class_<SuffixArrayInterface, Container, std::shared_ptr<SuffixArrayInterface>>( rxPyModuleId,
+                                                                                        "SuffixArrayInterface" );
+
     // export the FM_index class
-    py::class_<FMIndex, Container, std::shared_ptr<FMIndex>>( rxPyModuleId, "FMIndex" )
+    py::class_<FMIndex, SuffixArrayInterface, std::shared_ptr<FMIndex>>( rxPyModuleId, "FMIndex" )
         .def( py::init<>( ) ) // default constructor
         .def( py::init<std::shared_ptr<NucSeq>>( ) )
         .def( py::init<std::shared_ptr<Pack>>( ) )

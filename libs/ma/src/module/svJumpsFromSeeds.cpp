@@ -205,13 +205,12 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
 
                                    nucSeqIndex uiQToFromEnd = pQuery->uiSize - uiQTo;
                                    // create reference sequence
-                                   auto pRef = pRefSeq->vExtract( uiRFrom, uiRTo );
-                                   NucSeq xRefRevComp( *pRef );
-                                   xRefRevComp.vReverseAll( );
-                                   xRefRevComp.vSwitchAllBasePairsToComplement( );
-                                   pRef->vAppend( xRefRevComp );
+                                   Pack xRefSegment;
+                                   xRefSegment.vAppendSequence( "name", "comment",
+                                                                *pRefSeq->vExtract( uiRFrom, uiRTo ) );
                                    // create FM-Index for reference
-                                   auto pIndex = std::make_shared<FMIndex>( pRef ); // @todo this is terribly slow
+                                   auto pIndex =
+                                       std::make_shared<FMIndex>( xRefSegment ); // @todo this is terribly slow
                                    // adjust query start/end
                                    pQuery->pxSequenceRef += uiQFrom;
                                    pQuery->uiSize -= uiQToFromEnd + uiQFrom;
@@ -225,9 +224,23 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                                    pQuery->uiSize += uiQToFromEnd + uiQFrom;
 
                                    auto pSeeds = pSegments->extractSeeds( pIndex, 1, uiSeedSize, uiQTo - uiQFrom );
+
+                                   // remove bridging seeds
+                                   pSeeds->erase( std::remove_if( pSeeds->begin( ),
+                                                                  pSeeds->end( ),
+                                                                  [&xRefSegment]( Seed& rSeed ) {
+                                                                      return xRefSegment.bridgingPositions(
+                                                                          rSeed.start_ref( ), rSeed.end_ref( ) );
+                                                                  } ),
+                                                  pSeeds->end( ) );
+
                                    // seeds are misplaced, since i messed with reference -> fix that
                                    for( auto xSeed : *pSeeds )
+                                   {
                                        xSeed.uiPosOnReference += uiRFrom;
+                                       assert( xSeed.end_ref( ) <= pRefSeq->uiUnpackedSizeForwardStrand );
+                                       assert( xSeed.end( ) <= pQuery->length( ) );
+                                   } // for
                                    pSeeds->push_back( rLast );
                                    pSeeds->push_back( rCurr );
                                    std::sort( pSeeds->begin( ), pSeeds->end( ),

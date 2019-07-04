@@ -26,7 +26,7 @@ int main( void )
             pPack->vAppendSequence( "chr1", "chr1-desc", *randomNucSeq( (uint8_t)(std::rand( ) % 30000) + 1 ) );
         auto pFmIndex = std::make_shared<FMIndex>( pPack );
 
-        if(!pFmIndex->test(pPack, 1000))
+        if(!pFmIndex->test(*pPack, 1000))
             return EXIT_FAILURE;
     } // for
 

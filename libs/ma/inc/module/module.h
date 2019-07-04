@@ -371,7 +371,7 @@ class BasePledge
                                 return;
                             } // catch
                         } while( bLoop && bContinue );
-                        //DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
+                        // DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
                     }, // lambda
                     pPledge );
             } // for
@@ -773,6 +773,21 @@ class Cyclic : public Module<typename TP_MODULE::TP_RETURN, true>
     } // method
 }; // class
 
+/**
+ * @brief casts a container to a supertype
+ */
+template <typename TP_OUT, typename TP_IN> class Cast : public Module<TP_OUT, false, TP_IN>
+{
+
+  public:
+    Cast( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<TP_OUT> execute( std::shared_ptr<TP_IN> pContainer )
+    {
+        return std::static_pointer_cast<TP_OUT>( pContainer );
+    } // method
+}; // class
 
 /**
  * @brief The module class that is exported to Python.
