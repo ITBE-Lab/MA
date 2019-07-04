@@ -174,47 +174,9 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                     auto pQuery2 = std::make_shared<NucSeq>( pQuery->fromTo( uiQFrom, uiQTo ) );
                     auto pRef = pRefSeq->vExtract( uiRFrom, uiRTo );
                     auto pSeeds = rHashMapSeeder.execute( pQuery2, pRef );
-#if DEBUG_LEVEL >= 1 // validate seed correctness
-                    for( auto& rCurr : *pSeeds )
-                    {
-                        auto sQuery2 = pQuery2->fromTo( rCurr.start( ), rCurr.end( ) );
-                        auto sRef2 = pRef->fromTo( rCurr.start_ref( ), rCurr.end_ref( ) );
-                        if( !rCurr.bOnForwStrand )
-                        {
-                            auto pRef2 = std::make_shared<NucSeq>(
-                                pRef->fromTo( rCurr.start_ref( ) - rCurr.size( ) + 1, rCurr.start_ref( ) + 1 ) );
-                            pRef2->vReverseAll( );
-                            pRef2->vSwitchAllBasePairsToComplement( );
-                            sRef2 = pRef2->toString( );
-                        } // if
-                        if( sQuery2 != sRef2 )
-                            std::cerr << "(helperSvJumpsFromSeedsExecute) CRITICAL: " << sQuery2 << " != " << sRef2
-                                      << std::endl;
-                        assert( sQuery2 == sRef2 );
-                    } // for
-#endif
                     pRef->vReverseAll( );
                     pRef->vSwitchAllBasePairsToComplement( );
                     auto pSeeds2 = rHashMapSeeder.execute( pQuery2, pRef );
-#if DEBUG_LEVEL >= 1 // validate seed correctness
-                    for( auto& rCurr : *pSeeds2 )
-                    {
-                        auto sQuery2 = pQuery2->fromTo( rCurr.start( ), rCurr.end( ) );
-                        auto sRef2 = pRef->fromTo( rCurr.start_ref( ), rCurr.end_ref( ) );
-                        if( !rCurr.bOnForwStrand )
-                        {
-                            auto pRef2 = std::make_shared<NucSeq>(
-                                pRef->fromTo( rCurr.start_ref( ) - rCurr.size( ) + 1, rCurr.start_ref( ) + 1 ) );
-                            pRef2->vReverseAll( );
-                            pRef2->vSwitchAllBasePairsToComplement( );
-                            sRef2 = pRef2->toString( );
-                        } // if
-                        if( sQuery2 != sRef2 )
-                            std::cerr << "(helperSvJumpsFromSeedsExecute) CRITICAL: " << sQuery2 << " != " << sRef2
-                                      << std::endl;
-                        assert( sQuery2 == sRef2 );
-                    } // for
-#endif
 
 
                     // fix seed positions
@@ -224,28 +186,6 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                         rSeed.iStart += uiQFrom;
                         assert( rSeed.end( ) < pQuery->length( ) );
                     } // for
-#if DEBUG_LEVEL >= 1 // validate seed correctness
-                    for( auto& rCurr : *pSeeds )
-                    {
-                        auto sQuery2 = pQuery->fromTo( rCurr.start( ), rCurr.end( ) );
-                        if( !pRefSeq->bridgingSubsection( rCurr.start_ref( ), rCurr.size( ) ) )
-                        {
-                            auto sRef2 = pRefSeq->vExtract( rCurr.start_ref( ), rCurr.end_ref( ) )->toString( );
-                            if( !rCurr.bOnForwStrand )
-                            {
-                                auto pRef2 =
-                                    pRefSeq->vExtract( rCurr.start_ref( ) - rCurr.size( ) + 1, rCurr.start_ref( ) + 1 );
-                                pRef2->vReverseAll( );
-                                pRef2->vSwitchAllBasePairsToComplement( );
-                                sRef2 = pRef2->toString( );
-                            } // if
-                            if( sQuery2 != sRef2 )
-                                std::cerr << "(helperSvJumpsFromSeedsExecute) CRITICAL: " << sQuery2 << " != " << sRef2
-                                          << std::endl;
-                            assert( sQuery2 == sRef2 );
-                        }
-                    } // for
-#endif
                     for( Seed& rSeed : *pSeeds2 )
                     {
                         rSeed.bOnForwStrand = false;
@@ -255,28 +195,6 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                         rSeed.iStart += uiQFrom;
                         assert( rSeed.end( ) < pQuery->length( ) );
                     } // for
-#if DEBUG_LEVEL >= 1 // validate seed correctness
-                    for( auto& rCurr : *pSeeds2 )
-                    {
-                        auto sQuery2 = pQuery->fromTo( rCurr.start( ), rCurr.end( ) );
-                        if( !pRefSeq->bridgingSubsection( rCurr.start_ref( ), rCurr.size( ) ) )
-                        {
-                            auto sRef2 = pRefSeq->vExtract( rCurr.start_ref( ), rCurr.end_ref( ) )->toString( );
-                            if( !rCurr.bOnForwStrand )
-                            {
-                                auto pRef2 =
-                                    pRefSeq->vExtract( rCurr.start_ref( ) - rCurr.size( ) + 1, rCurr.start_ref( ) + 1 );
-                                pRef2->vReverseAll( );
-                                pRef2->vSwitchAllBasePairsToComplement( );
-                                sRef2 = pRef2->toString( );
-                            } // if
-                            if( sQuery2 != sRef2 )
-                                std::cerr << "(helperSvJumpsFromSeedsExecute) CRITICAL: " << sQuery2 << " != " << sRef2
-                                          << std::endl;
-                            assert( sQuery2 == sRef2 );
-                        }
-                    } // for
-#endif
                     // combine seeds
                     pSeeds->append( pSeeds2 );
 
@@ -286,52 +204,8 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                     // turn k-mers into maximally extended seeds (into max. spanning seeds even)
                     pSeeds->push_back( rLast );
                     pSeeds->push_back( rCurr );
-#if DEBUG_LEVEL >= 1 // validate seed correctness
-                    for( auto& rCurr : *pSeeds )
-                    {
-                        auto sQuery2 = pQuery->fromTo( rCurr.start( ), rCurr.end( ) );
-                        if( !pRefSeq->bridgingSubsection( rCurr.start_ref( ), rCurr.size( ) ) )
-                        {
-                            auto sRef2 = pRefSeq->vExtract( rCurr.start_ref( ), rCurr.end_ref( ) )->toString( );
-                            if( !rCurr.bOnForwStrand )
-                            {
-                                auto pRef2 =
-                                    pRefSeq->vExtract( rCurr.start_ref( ) - rCurr.size( ) + 1, rCurr.start_ref( ) + 1 );
-                                pRef2->vReverseAll( );
-                                pRef2->vSwitchAllBasePairsToComplement( );
-                                sRef2 = pRef2->toString( );
-                            } // if
-                            if( sQuery2 != sRef2 )
-                                std::cerr << "(helperSvJumpsFromSeedsExecute) CRITICAL: " << sQuery2 << " != " << sRef2
-                                          << std::endl;
-                            assert( sQuery2 == sRef2 );
-                        }
-                    } // for
-#endif
                     auto pLumped = rSeedLumper.execute( pSeeds );
 
-#if DEBUG_LEVEL >= 1 // validate seed correctness
-                    for( auto& rCurr : *pLumped )
-                    {
-                        auto sQuery2 = pQuery->fromTo( rCurr.start( ), rCurr.end( ) );
-                        if( !pRefSeq->bridgingSubsection( rCurr.start_ref( ), rCurr.size( ) ) )
-                        {
-                            auto sRef2 = pRefSeq->vExtract( rCurr.start_ref( ), rCurr.end_ref( ) )->toString( );
-                            if( !rCurr.bOnForwStrand )
-                            {
-                                auto pRef2 =
-                                    pRefSeq->vExtract( rCurr.start_ref( ) - rCurr.size( ) + 1, rCurr.start_ref( ) + 1 );
-                                pRef2->vReverseAll( );
-                                pRef2->vSwitchAllBasePairsToComplement( );
-                                sRef2 = pRef2->toString( );
-                            } // if
-                            if( sQuery2 != sRef2 )
-                                std::cerr << "(helperSvJumpsFromSeedsExecute) CRITICAL: " << sQuery2 << " != " << sRef2
-                                          << std::endl;
-                            assert( sQuery2 == sRef2 );
-                        }
-                    } // for
-#endif
                     // compute more precise jumps
                     pRet->pop_back( );
                     // sort in order
