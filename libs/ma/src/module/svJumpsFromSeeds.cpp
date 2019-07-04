@@ -130,11 +130,7 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
             if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
             {
                 pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
-                if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) &&
-#if 0
-                                   rLast.bOnForwStrand == rCurr.bOnForwStrand &&
-#endif
-                    bReseed )
+                if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
                 {
                     // trigger reseeding @todo
                     nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
@@ -155,7 +151,6 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                         uiRTo = uiT;
                     } // if
 
-#if 1
                     if( uiQTo - uiQFrom < rHashMapSeeder.uiSeedSize || uiRTo - uiRFrom < rHashMapSeeder.uiSeedSize )
                         return true;
 
@@ -205,172 +200,6 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                     // increase the support (score) for the new jumps
                     for( ; uiSize < pRet->size( ); uiSize++ )
                         ( *pRet )[ uiSize ].uiNumSupportingNt = uiNumSupportingNt;
-#elif 1
-                    // @note this creates invalid seeds...
-                    const nucSeqIndex uiSeedSize = 10;
-
-                    // if either query or ref are shorter than the min seed size we don't need to do all
-                    // that work; this is actually also required cause the binary seeding module crashes
-                    // for 0 length queries or 0 length fmd-indices.
-                    if( uiQTo - uiQFrom < uiSeedSize || uiRTo - uiRFrom < uiSeedSize )
-                    {
-                        pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
-                        return true;
-                    } // if
-
-                    // create reference sequence
-                    Pack xRefSegment;
-                    xRefSegment.vAppendSequence( "name", "comment", *pRefSeq->vExtract( uiRFrom, uiRTo ) );
-                    // create FM-Index for reference
-                    auto pIndex = std::make_shared<FMIndex>( xRefSegment ); // @todo this is terribly slow
-                    // adjust query start/end
-                    auto pQuery2 = std::make_shared<NucSeq>( pQuery->fromTo( uiQFrom, uiQTo ) );
-                    // get seeds
-                    auto pSegments = rBinarySeeding.execute( pIndex, pQuery2 );
-                    // segments are misplaced, since i messed with query -> fix that
-                    for( auto xSegment : *pSegments )
-                        xSegment.iStart += uiQFrom;
-
-                    auto pSeeds = pSegments->extractSeeds( pIndex, 1, uiSeedSize, uiQTo - uiQFrom );
-
-                    // remove bridging seeds
-                    pSeeds->erase( std::remove_if( pSeeds->begin( ),
-                                                   pSeeds->end( ),
-                                                   [&xRefSegment]( Seed& rSeed ) {
-                                                       return xRefSegment.bridgingPositions( rSeed.start_ref( ),
-                                                                                             rSeed.end_ref( ) );
-                                                   } ),
-                                   pSeeds->end( ) );
-
-                    // seeds are misplaced, since i messed with reference -> fix that
-                    for( auto xSeed : *pSeeds )
-                    {
-                        xSeed.uiPosOnReference += uiRFrom;
-                        assert( xSeed.end_ref( ) <= pRefSeq->uiUnpackedSizeForwardStrand );
-                        assert( xSeed.end( ) <= pQuery->length( ) );
-                    } // for
-                    pSeeds->push_back( rLast );
-                    pSeeds->push_back( rCurr );
-                    std::sort( pSeeds->begin( ), pSeeds->end( ),
-                               [&]( Seed& rA, Seed& rB ) { return rA.start( ) < rB.start( ); } );
-                    helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, *pSeeds, pRet, pRefSeq, pQuery,
-                                                        rHashMapSeeder, rSeedLumper, rMemoryManager, rNMWModule,
-                                                        rBinarySeeding, false );
-#else
-                    Seed xLast2 = rLast;
-                    Seed xCurr2 = rCurr;
-                    auto pAlignment = std::make_shared<Alignment>( uiRFrom, uiQFrom );
-                    auto pExtrRef = pRefSeq->vExtract( uiRFrom, uiRTo + 1 );
-                    if( !xLast2.bOnForwStrand )
-                    {
-                        pExtrRef->vReverseAll( );
-                        pExtrRef->vSwitchAllBasePairsToComplement( );
-                    } // if
-                    rNMWModule.dynPrg( pQuery, pExtrRef, uiQFrom, uiQTo, 0, uiRTo - uiRFrom, pAlignment, rMemoryManager,
-                                       false, true );
-                    const size_t uiMaxErrorsStart = 10;
-                    const size_t uiRecover = 7;
-                    size_t uiMaxErrors = uiMaxErrorsStart;
-                    size_t uiEnd = 0;
-                    for( size_t uiI = 0; uiI < pAlignment->data.size( ); uiI++ )
-                    {
-                        if( pAlignment->data[ uiI ].first == MatchType::match )
-                        {
-                            if( pAlignment->data[ uiI ].second >= uiRecover )
-                                uiMaxErrors = uiMaxErrorsStart;
-                            uiEnd = uiI + 1;
-                        } // if
-                        else
-                        {
-                            if( pAlignment->data[ uiI ].second > uiMaxErrors )
-                                break;
-                            uiMaxErrors -= pAlignment->data[ uiI ].second;
-                        } // else
-                    } // for
-                    for( size_t uiI = 0; uiI < uiEnd; uiI++ )
-                    {
-                        switch( pAlignment->data[ uiI ].first )
-                        {
-                            case MatchType::match:
-                                xLast2.iSize += pAlignment->data[ uiI ].second;
-                                break;
-                            case MatchType::missmatch:
-                                xLast2.iStart += pAlignment->data[ uiI ].second;
-                                xLast2.uiPosOnReference += pAlignment->data[ uiI ].second;
-                                //@todo insert jump here
-                                break;
-                            case MatchType::insertion:
-                                xLast2.iStart += pAlignment->data[ uiI ].second;
-                                //@todo insert jump here
-                                break;
-                            case MatchType::deletion:
-                                xLast2.uiPosOnReference += pAlignment->data[ uiI ].second;
-                                //@todo insert jump here
-                                break;
-                            default:
-                                throw std::runtime_error( "Should never reach default case in "
-                                                          "helperSvJumpsFromSeedsExecute switch case. (1)" );
-                                break;
-                        } // switch
-                    } // for
-
-                    pAlignment = std::make_shared<Alignment>( uiRFrom, uiQFrom );
-                    pExtrRef = pRefSeq->vExtract( uiRFrom, uiRTo + 1 );
-                    if( !xCurr2.bOnForwStrand )
-                    {
-                        pExtrRef->vReverseAll( );
-                        pExtrRef->vSwitchAllBasePairsToComplement( );
-                    } // if
-                    rNMWModule.dynPrg( pQuery, pExtrRef, uiQFrom, uiQTo, 0, uiRTo - uiRFrom, pAlignment, rMemoryManager,
-                                       true, false );
-                    uiMaxErrors = uiMaxErrorsStart;
-                    uiEnd = pAlignment->data.size( );
-                    for( size_t uiI = pAlignment->data.size( ); uiI > 0; uiI-- )
-                    {
-                        if( pAlignment->data[ uiI - 1 ].first == MatchType::match )
-                        {
-                            if( pAlignment->data[ uiI - 1 ].second >= uiRecover )
-                                uiMaxErrors = uiMaxErrorsStart;
-                            uiEnd = uiI;
-                        } // if
-                        else
-                        {
-                            if( pAlignment->data[ uiI - 1 ].second > uiMaxErrors )
-                                break;
-                            uiMaxErrors -= pAlignment->data[ uiI - 1 ].second;
-                        } // else
-                    } // for
-                    for( size_t uiI = pAlignment->data.size( ); uiI > uiEnd; uiI-- )
-                    {
-                        switch( pAlignment->data[ uiI - 1 ].first )
-                        {
-                            case MatchType::match:
-                                xCurr2.iSize += pAlignment->data[ uiI - 1 ].second;
-
-                                // @note no break intendend!
-
-                            case MatchType::missmatch:
-                                xCurr2.iStart -= pAlignment->data[ uiI - 1 ].second;
-                                xCurr2.uiPosOnReference -= pAlignment->data[ uiI - 1 ].second;
-                                //@todo insert jump here
-                                break;
-                            case MatchType::insertion:
-                                xCurr2.iStart -= pAlignment->data[ uiI - 1 ].second;
-                                //@todo insert jump here
-                                break;
-                            case MatchType::deletion:
-                                xCurr2.uiPosOnReference -= pAlignment->data[ uiI - 1 ].second;
-                                //@todo insert jump here
-                                break;
-                            default:
-                                throw std::runtime_error( "Should never reach default case in "
-                                                          "helperSvJumpsFromSeedsExecute switch case. (1)" );
-                                break;
-                        } // switch
-                    } // for
-                    if( SvJump::validJump( xLast2, xCurr2, bJumpFromStart ) )
-                        pRet->emplace_back( pSelectedSetting, xLast2, xCurr2, bJumpFromStart );
-#endif
                 } // if
                 return true;
             }

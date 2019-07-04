@@ -290,8 +290,6 @@ class SeedLumping : public Module<Seeds, false, Seeds>
         // get start and end of seed set
         if( pRet->size( ) > 0 )
         {
-#if 1 // 1 -> naive implementation 0 -> interval interval inclusion linesweep implementation
-
             std::sort( //
                 pRet->begin( ),
                 pRet->end( ),
@@ -307,31 +305,6 @@ class SeedLumping : public Module<Seeds, false, Seeds>
                 if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
                     pRet2->push_back( rSeed );
             return pRet2;
-#else
-            nucSeqIndex uiStart = pRet->front( ).start( );
-            nucSeqIndex uiEnd = 0;
-            for( Seed& rSeed : *pRet )
-            {
-                uiStart = std::min( rSeed.start( ), uiStart );
-                uiEnd = std::max( rSeed.end( ), uiEnd );
-            } // for
-            // create a vector that holds the maximal seed size for each query position
-            std::vector<nucSeqIndex> vL( uiEnd - uiStart );
-            for( Seed& rSeed : *pRet )
-                for( nucSeqIndex uiI = rSeed.start( ); uiI < rSeed.end( ); uiI++ )
-                    vL[ uiI - uiStart ] = std::max( vL[ uiI - uiStart ], rSeed.size( ) );
-            // erase all seeds that overlap with a longer seed
-            pRet->erase( std::remove_if( pRet->begin( ),
-                                         pRet->end( ),
-                                         [&vL, &uiStart]( Seed& rSeed ) {
-                                             for( nucSeqIndex uiI = rSeed.start( ); uiI < rSeed.end( ); uiI++ )
-                                                 if( vL[ uiI - uiStart ] <= rSeed.size( ) )
-                                                     return false;
-                                             return true;
-                                         } ),
-                         pRet->end( ) );
-            assert( pRet->size( ) > 0 );
-#endif
         } // if
         return pRet;
     } // method
