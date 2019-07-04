@@ -16,11 +16,11 @@ std::shared_ptr<Seeds> HashMapSeeding::execute( std::shared_ptr<NucSeq> pQ1, std
     std::unordered_multimap<std::string, size_t> xIndex;
 
     // insert seeds into index
-    for( size_t uiI = 0; uiI < pQ2->length( ); uiI += 1 )
+    for( size_t uiI = 0; uiI + this->uiSeedSize <= pQ2->length( ); uiI += 1 )
         xIndex.emplace( pQ2->fromTo( uiI, uiI + this->uiSeedSize ), uiI );
 
     auto pSeeds = std::make_shared<Seeds>( );
-    for( size_t uiI = 0; uiI < pQ1->length( ); uiI += 1 )
+    for( size_t uiI = 0; uiI + this->uiSeedSize <= pQ1->length( ); uiI += 1 )
     {
         auto tuiRange = xIndex.equal_range( pQ1->fromTo( uiI, uiI + this->uiSeedSize ) );
         for( auto xIt = tuiRange.first; xIt != tuiRange.second; ++xIt )
