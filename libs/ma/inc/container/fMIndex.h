@@ -143,7 +143,9 @@ class SuffixArrayInterface : public Container
 }; // class
 
 class SuffixArray : public SuffixArrayInterface
-{}; // class
+{
+    // oh this doesn't work...
+}; // class
 
 /**
  * @brief A Suffix array.
