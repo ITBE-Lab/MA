@@ -178,8 +178,9 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED
-    execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex );
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
+                                                     std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 
@@ -289,6 +290,24 @@ class SeedLumping : public Module<Seeds, false, Seeds>
         // get start and end of seed set
         if( pRet->size( ) > 0 )
         {
+#if 1 // 1 -> naive implementation 0 -> interval interval inclusion linesweep implementation
+
+            std::sort( //
+                pRet->begin( ),
+                pRet->end( ),
+                []( const Seed& rA, const Seed& rB ) //
+                { //
+                    if( rA.start( ) == rB.start( ) )
+                        return rA.end( ) > rB.end( );
+                    return rA.start( ) < rB.start( );
+                } // lambda
+            ); // sort call
+            auto pRet2 = std::make_shared<Seeds>( );
+            for( Seed& rSeed : *pRet )
+                if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
+                    pRet2->push_back( rSeed );
+            return pRet2;
+#else
             nucSeqIndex uiStart = pRet->front( ).start( );
             nucSeqIndex uiEnd = 0;
             for( Seed& rSeed : *pRet )
@@ -306,12 +325,13 @@ class SeedLumping : public Module<Seeds, false, Seeds>
                                          pRet->end( ),
                                          [&vL, &uiStart]( Seed& rSeed ) {
                                              for( nucSeqIndex uiI = rSeed.start( ); uiI < rSeed.end( ); uiI++ )
-                                                 if( vL[ uiI - uiStart ] > rSeed.size( ) )
-                                                     return true;
-                                             return false;
+                                                 if( vL[ uiI - uiStart ] <= rSeed.size( ) )
+                                                     return false;
+                                             return true;
                                          } ),
                          pRet->end( ) );
-            assert(pRet->size() > 0);
+            assert( pRet->size( ) > 0 );
+#endif
         } // if
         return pRet;
     } // method
