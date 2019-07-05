@@ -691,6 +691,7 @@ class SV_DB : public Container
         inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
         {
             // @todo at the moment this does not deal with jumped over sequences
+            // @todo at the moment this does not check the regex (?)
             auto pRet = std::make_shared<Pack>( );
 
             NucSeq xCurrChrom;

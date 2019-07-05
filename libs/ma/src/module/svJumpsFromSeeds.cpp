@@ -178,7 +178,6 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                     pRef->vSwitchAllBasePairsToComplement( );
                     auto pSeeds2 = rHashMapSeeder.execute( pQuery2, pRef );
 
-
                     // fix seed positions
                     for( Seed& rSeed : *pSeeds )
                     {

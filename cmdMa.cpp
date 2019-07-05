@@ -206,7 +206,6 @@ std::vector<fs::path> fsSplit( const std::string& sSubject, const std::string sR
 
 /**
  * main function
- * @todo order of parameters seems to matter.. fix that
  */
 int main( int argc, char* argv[] )
 {
