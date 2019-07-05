@@ -39,12 +39,9 @@ class SV_DB : public Container
                                   // constraints for table
                                   std::vector<std::string>{"UNIQUE (name)"} ),
               pDatabase( pDatabase )
-        {} // default constructor
-
-        inline void createIndices( )
         {
-            pDatabase->execDML( "CREATE INDEX sequencer_id_index ON sequencer_table (id)" );
-        } // method
+            // pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sequencer_id_index ON sequencer_table (id)" );
+        } // default constructor
 
         inline int64_t insertSequencer( std::string& sSequencerName )
         {
@@ -76,11 +73,6 @@ class SV_DB : public Container
               pDatabase( pDatabase ),
               xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" )
         {} // default constructor
-
-        inline void createIndices( )
-        {
-            pDatabase->execDML( "CREATE INDEX read_id_index ON read_table (id)" );
-        } // method
 
         inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
         {
@@ -173,17 +165,6 @@ class SV_DB : public Container
                     " AS inner WHERE inner.name = outer.name AND inner.time_stamp >= outer.time_stamp ) < ?" )
                       .c_str( ) )
         {} // default constructor
-
-        inline void createIndices( )
-        {
-            pDatabase->execDML(
-                ( "CREATE INDEX IF NOT EXISTS " + sTableName + "_id_index ON " + sTableName + " (id)" ).c_str( ) );
-        } // method
-
-        inline void dropIndices( )
-        {
-            pDatabase->execDML( ( "DROP INDEX IF EXISTS " + sTableName + "_id_index" ).c_str( ) );
-        } // method
 
         inline void deleteName( std::string& rS )
         {
@@ -291,16 +272,6 @@ class SV_DB : public Container
                            "INSERT INTO sv_caller_run_table (id, name, desc, time_stamp, sv_jump_run_id) "
                            "VALUES (NULL, ?, ?, ?, NULL)" )
         {} // default constructor
-
-        inline void createIndices( )
-        {
-            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_caller_run_table_id_index ON sv_caller_run_table (id)" );
-        } // method
-
-        inline void dropIndices( )
-        {
-            pDatabase->execDML( "DROP INDEX IF EXISTS sv_caller_run_table_id_index" );
-        } // method
 
         inline void deleteName( std::string& rS )
         {
@@ -438,13 +409,6 @@ class SV_DB : public Container
                     .c_str( ) );
         } // method
 
-        inline void dropIndices( )
-        {
-            pDatabase->execDML( "DROP INDEX IF EXISTS sv_jump_table_sort_index_start" );
-            pDatabase->execDML( "DROP INDEX IF EXISTS sv_jump_table_sort_index_end" );
-        } // method
-
-
         inline uint32_t numJumps( )
         {
             return xQuerySize.scalar( );
@@ -485,7 +449,7 @@ class SV_DB : public Container
                                                      int64_t // regex_id
                                                      >
         TP_SV_CALL_TABLE;
-    class SvCallTable : public TP_SV_CALL_TABLE
+    class SvCallTable : private TP_SV_CALL_TABLE
     {
 
         typedef CppSQLiteExtTable<int64_t // call_id
@@ -509,11 +473,42 @@ class SV_DB : public Container
 
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         std::shared_ptr<ReconstructionTable> pReconstructionTable;
+        class RTreeIndex
+        {
+          public:
+            RTreeIndex( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            {
+                // create a R*tree index
+                if( pDatabase->eDatabaseOpeningMode == eCREATE_DB ||
+                    pDatabase->execScalar( "SELECT COUNT(*) FROM sqlite_master "
+                                           "WHERE type='table' AND name='sv_call_r_tree'" ) == 0 )
+                {
+                    pDatabase->execDML( "CREATE VIRTUAL TABLE sv_call_r_tree USING rtree_i32( "
+                                        "       id, " // key from sv_call_table
+                                        "       run_id_a, run_id_b, " // run id -> has to be a dimension for it to work
+                                        "       minX, maxX, " // start & end of from positions
+                                        "       minY, maxY " // start & end of to positions
+                                        "   )" );
+
+                    if(pDatabase->eDatabaseOpeningMode != eCREATE_DB)
+                    {
+                        std::cout << "NOTE: loaded database without R*tree -> constructing index now..." << std::endl;
+                        // the R*Tree was missing so far -> we have to fill it using the sv_call_table
+                        pDatabase->execDML( 
+                                "INSERT INTO sv_call_r_tree (id, run_id_a, run_id_b, minX, maxX, minY, maxY) "
+                                "SELECT id, sv_caller_run_id, sv_caller_run_id, from_pos, from_pos + from_size, "
+                                "       to_pos, to_pos + to_size "
+                                "FROM sv_call_table" );
+                    } // if
+                } // if
+            } // constructor
+        }; // class
+        RTreeIndex xIndex; // merely required for calling the constructor
+        CppSQLiteExtInsertStatement<int64_t, int64_t, int64_t, uint32_t, uint32_t, uint32_t, uint32_t> xInsertRTree;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySize;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySizeSpecific;
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
         CppSQLiteExtQueryStatement<int64_t> xCallArea;
-        CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
         CppSQLiteExtQueryStatement<double> xMaxScore;
         CppSQLiteExtQueryStatement<double> xMinScore;
         CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallForwardContext;
@@ -533,6 +528,8 @@ class SV_DB : public Container
                       "FOREIGN KEY (regex_id) REFERENCES sv_call_reg_ex_table(id) ON DELETE SET NULL"} ),
               pDatabase( pDatabase ),
               pReconstructionTable( std::make_shared<ReconstructionTable>( pDatabase ) ),
+              xIndex( pDatabase ),
+              xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
               xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id == ? "
                                               "AND score >= ?" ),
@@ -543,61 +540,53 @@ class SV_DB : public Container
                             "AND score >= ? "
                             "AND EXISTS ( "
                             "   SELECT * "
-                            "   FROM sv_call_table AS inner "
-                            "   WHERE inner.sv_caller_run_id == ? "
-                            "   AND score >= ?"
-                            "   AND outer.from_pos <= inner.from_pos + inner.from_size + ? "
-                            "   AND outer.from_pos + outer.from_size + ? >= inner.from_pos "
-                            "   AND outer.to_pos <= inner.to_pos + inner.to_size + ? "
-                            "   AND outer.to_pos + outer.to_size + ? >= inner.to_pos "
+                            "   FROM sv_call_table AS inner, sv_call_r_tree "
+                            "   WHERE inner.id == sv_call_r_tree.id "
+                            "   AND sv_call_r_tree.run_id_a >= ? " // dim 1
+                            "   AND sv_call_r_tree.run_id_b <= ? " // dim 1
+                            "   AND inner.score >= ?"
+                            "   AND outer.from_pos - ? <= sv_call_r_tree.maxX " // dim 2
+                            "   AND outer.from_pos + outer.from_size + ? >= sv_call_r_tree.minX " // dim 2
+                            "   AND outer.to_pos - ? <= sv_call_r_tree.maxY " // dim 3
+                            "   AND outer.to_pos + outer.to_size + ? >= sv_call_r_tree.minY " // dim 3
                             "   AND outer.switch_strand == inner.switch_strand "
                             ")" ),
               xCallArea( *pDatabase,
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
                          "AND score >= ?" ),
-              xDeleteRun( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
-                                      "sv_caller_run_table WHERE name == ?)" ),
               xMaxScore( *pDatabase,
                          "SELECT score FROM sv_call_table WHERE sv_caller_run_id == ? ORDER BY score DESC LIMIT 1 " ),
               xMinScore( *pDatabase,
                          "SELECT score FROM sv_call_table WHERE sv_caller_run_id == ? ORDER BY score ASC LIMIT 1 " ),
               xNextCallForwardContext(
                   *pDatabase,
-                  "SELECT id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
-                  "FROM sv_call_table "
-                  "WHERE sv_caller_run_id = ? "
-                  "AND from_pos >= ? "
-                  "AND id NOT IN ( "
+                  "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
+                  "FROM sv_call_table, sv_call_r_tree "
+                  "WHERE sv_call_table.id == sv_call_r_tree.id "
+                  "AND sv_call_r_tree.run_id_a >= ? " // dim 1
+                  "AND sv_call_r_tree.run_id_b <= ? " // dim 1
+                  "AND sv_call_r_tree.minX >= ? " // dim 2
+                  "AND sv_call_r_tree.id NOT IN ( "
                   "  SELECT call_id "
                   "  FROM reconstruction_table "
                   ") "
-                  "ORDER BY from_pos ASC "
+                  "ORDER BY sv_call_r_tree.minX ASC "
                   "LIMIT 1 " ),
               xNextCallBackwardContext( *pDatabase,
-                                        "SELECT id, switch_strand, from_pos, from_size, inserted_sequence, to_pos "
-                                        "FROM sv_call_table "
-                                        "WHERE sv_caller_run_id = ? "
-                                        "AND to_pos <= ? "
-                                        "AND id NOT IN ( "
+                                        "SELECT sv_call_table.id, switch_strand, from_pos, from_size, "
+                                        "       inserted_sequence, to_pos "
+                                        "FROM sv_call_table, sv_call_r_tree "
+                                        "WHERE sv_call_table.id == sv_call_r_tree.id "
+                                        "AND sv_call_r_tree.run_id_a >= ? " // dim 1
+                                        "AND sv_call_r_tree.run_id_b <= ? " // dim 1
+                                        "AND sv_call_r_tree.minY <= ? " // dim 2
+                                        "AND sv_call_r_tree.id NOT IN ( "
                                         "  SELECT call_id "
                                         "  FROM reconstruction_table "
                                         ") "
-                                        "ORDER BY to_pos DESC "
+                                        "ORDER BY sv_call_r_tree.minY DESC "
                                         "LIMIT 1 " )
         {} // default constructor
-
-        inline void createPartialCallIndex( int64_t uiRunId )
-        {
-            // @todo replace this by
-            //      https://www.sqlite.org/rtree.html
-            // for more performance
-            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_call_table_call_index_for_run" +
-                                  std::to_string( uiRunId ) +
-                                  " ON sv_call_table (score) "
-                                  "WHERE sv_caller_run_id == " +
-                                  std::to_string( uiRunId ) )
-                                    .c_str( ) );
-        } // method
 
         inline uint32_t numCalls( )
         {
@@ -617,12 +606,10 @@ class SV_DB : public Container
                                   // NucSeqSql can deal with nullpointers
                                   NucSeqSql( rCall.pInsertedSequence ), rCall.dScore, -1 );
             rCall.iId = iCallId;
+            xInsertRTree( iCallId, iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
+                          (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
+                          (uint32_t)rCall.uiToStart + (uint32_t)rCall.uiToSize );
             return iCallId;
-        } // method
-
-        inline void deleteRun( std::string& rS )
-        {
-            xDeleteRun.bindAndExecQuery<>( rS );
         } // method
 
         inline int64_t callArea( int64_t iCallerRunId, double dMinScore )
@@ -646,8 +633,8 @@ class SV_DB : public Container
         inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                      int64_t iAllowedDist )
         {
-            return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, dMinScore, iAllowedDist, iAllowedDist,
-                                        iAllowedDist, iAllowedDist );
+            return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, iCallerRunIdB, dMinScore, iAllowedDist,
+                                        iAllowedDist, iAllowedDist, iAllowedDist );
         } // method
 
         // returns call id, jump start pos, next context, next from position, jump end position
@@ -660,7 +647,7 @@ class SV_DB : public Container
             std::get<2>( xRet ) = bForwardContext; // does nothing...
             if( bForwardContext )
             {
-                auto itQ = xNextCallForwardContext.vExecuteAndReturnIterator( iCallerRun, uiFrom );
+                auto itQ = xNextCallForwardContext.vExecuteAndReturnIterator( iCallerRun, iCallerRun, uiFrom );
                 if( !itQ.eof( ) )
                 {
                     auto xQ = itQ.get( );
@@ -673,7 +660,7 @@ class SV_DB : public Container
             } // if
             else
             {
-                auto itQ = xNextCallBackwardContext.vExecuteAndReturnIterator( iCallerRun, uiFrom );
+                auto itQ = xNextCallBackwardContext.vExecuteAndReturnIterator( iCallerRun, iCallerRun, uiFrom );
                 if( !itQ.eof( ) )
                 {
                     auto xQ = itQ.get( );
@@ -786,7 +773,10 @@ class SV_DB : public Container
               xDeleteRun( *pDatabase, "DELETE FROM sv_call_support_table WHERE call_id IN ( SELECT id FROM "
                                       "sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
                                       "sv_caller_run_table WHERE name == ?))" )
-        {} // default constructor
+        {
+            pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_call_support_index ON sv_call_support_table "
+                                "(call_id, jump_id)" );
+        } // default constructor
 
         inline void deleteRun( std::string& rS )
         {
@@ -827,30 +817,9 @@ class SV_DB : public Container
     SV_DB( std::string sName, std::string sMode ) : SV_DB( sName, sMode == "create" ? eCREATE_DB : eOPEN_DB )
     {} // constructor
 
-    inline void createSequencerIndices( )
-    {
-        pSequencerTable->createIndices( );
-        pReadTable->createIndices( );
-    } // method
-
-    inline void createCallerIndices( )
-    {
-        pSvCallerRunTable->createIndices( );
-    } // method
-
-    inline void dropCallerIndices( )
-    {
-        pSvCallerRunTable->dropIndices( );
-    } // method
-
     inline void createJumpIndices( int64_t uiRun )
     {
         pSvJumpTable->createIndices( uiRun );
-    } // method
-
-    inline void dropJumpIndices( )
-    {
-        pSvJumpTable->dropIndices( );
     } // method
 
     inline void setNumThreads( size_t uiN )
@@ -1063,11 +1032,6 @@ class SV_DB : public Container
 
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
 
-        ~SvCallInserter( )
-        {
-            pDB->pSvCallTable->createPartialCallIndex( iSvCallerRunId );
-        } // deconstructor
-
         inline void insertCall( SvCall& rCall )
         {
             CallContex xContext( pDB->pSvCallSupportTable, pDB->pSvCallTable->insertCall( iSvCallerRunId, rCall ) );
@@ -1076,22 +1040,6 @@ class SV_DB : public Container
         } // method
 
     }; // class
-
-    inline void clearCallsTable( )
-    {
-        pSvCallSupportTable->clearTable( );
-        pSvCallTable->clearTable( );
-        pSvJumpTable->clearTable( );
-        pSvCallerRunTable->clearTable( );
-    } // method
-
-    inline void clearCallsTableForCaller( std::string& rS )
-    {
-        pSvCallSupportTable->deleteRun( rS );
-        pSvCallTable->deleteRun( rS );
-        pSvJumpTable->deleteRun( rS );
-        pSvCallerRunTable->deleteName( rS );
-    } // method
 
     inline uint32_t numJumps( )
     {
