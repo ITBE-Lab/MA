@@ -253,7 +253,7 @@ class SV_DB : public Container
                   // column definitions of the table
                   std::vector<std::string>{"name", "desc", "time_stamp", "sv_jump_run_id"},
                   // constraints for table
-                  std::vector<std::string>{"FOREIGN KEY (sv_jump_run_id) REFERENCES sequencer_table(id)"} ),
+                  std::vector<std::string>{"FOREIGN KEY (sv_jump_run_id) REFERENCES sv_jump_run_table(id)"} ),
               pDatabase( pDatabase ),
               xDelete( *pDatabase, "DELETE FROM sv_caller_run_table WHERE name == ?" ),
               xGetId( *pDatabase,
@@ -490,6 +490,7 @@ class SV_DB : public Container
                                         "       minY, maxY " // start & end of to positions
                                         "   )" );
 
+                    // @todo the if is no longer required once all db's have been updated to use R*Trees
                     if(pDatabase->eDatabaseOpeningMode != eCREATE_DB)
                     {
                         std::cout << "NOTE: loaded database without R*tree -> constructing index now..." << std::endl;
