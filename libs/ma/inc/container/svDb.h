@@ -23,29 +23,50 @@ namespace libMA
 class SV_DB : public Container
 {
   private:
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string // sequencer name
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // sequencer name
+                                                     int64_t // num_generated_nt
                                                      >
         TP_SEQUENCER_TABLE;
     class SequencerTable : public TP_SEQUENCER_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+        CppSQLiteExtStatement xIncNt;
+        CppSQLiteExtQueryStatement<int64_t> xGetNumNt;
 
       public:
         SequencerTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             : TP_SEQUENCER_TABLE( *pDatabase, // the database where the table resides
                                   "sequencer_table", // name of the table in the database
                                   // column definitions of the table
-                                  std::vector<std::string>{"name"},
+                                  std::vector<std::string>{"name", "num_generated_nt"},
                                   // constraints for table
                                   std::vector<std::string>{"UNIQUE (name)"} ),
-              pDatabase( pDatabase )
+              pDatabase( pDatabase ),
+              xIncNt( *pDatabase,
+                      "UPDATE sequencer_table "
+                      "SET num_generated_nt = num_generated_nt + ? "
+                      "WHERE id == ? " ),
+              xGetNumNt( *pDatabase,
+                         "SELECT num_generated_nt "
+                         "FROM sequencer_table "
+                         "WHERE id == ? " )
         {
             // pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sequencer_id_index ON sequencer_table (id)" );
         } // default constructor
 
         inline int64_t insertSequencer( std::string& sSequencerName )
         {
-            return xInsertRow( sSequencerName );
+            return xInsertRow( sSequencerName, 0 );
+        } // method
+
+        inline void incrementNt( int64_t iId, int64_t iAmount )
+        {
+            xIncNt.bindAndExecute( iAmount, iId );
+        } // method
+
+        inline int64_t getNumNt( int64_t iId )
+        {
+            return xGetNumNt.scalar( iId );
         } // method
     }; // class
 
@@ -537,19 +558,19 @@ class SV_DB : public Container
               xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
               xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id == ? "
-                                              "AND supporting_nt / coverage >= ?" ),
+                                              "AND supporting_nt*1.0 / coverage >= ?" ),
               xNumOverlaps( *pDatabase,
                             "SELECT COUNT(*) "
                             "FROM sv_call_table AS outer "
                             "WHERE sv_caller_run_id == ? "
-                            "AND supporting_nt / coverage >= ? "
+                            "AND supporting_nt*1.0 >= ? * coverage "
                             "AND EXISTS ( "
                             "   SELECT * "
                             "   FROM sv_call_table AS inner, sv_call_r_tree "
                             "   WHERE inner.id == sv_call_r_tree.id "
                             "   AND sv_call_r_tree.run_id_a >= ? " // dim 1
                             "   AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                            "   AND inner.supporting_nt / inner.coverage >= ?"
+                            "   AND inner.supporting_nt*1.0 >= ? * inner.coverage "
                             "   AND outer.from_pos - ? <= sv_call_r_tree.maxX " // dim 2
                             "   AND outer.from_pos + outer.from_size + ? >= sv_call_r_tree.minX " // dim 2
                             "   AND outer.to_pos - ? <= sv_call_r_tree.maxY " // dim 3
@@ -558,13 +579,13 @@ class SV_DB : public Container
                             ")" ),
               xCallArea( *pDatabase,
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
-                         "AND supporting_nt / coverage >= ?" ),
+                         "AND supporting_nt*1.0 / coverage >= ?" ),
               xMaxScore( *pDatabase,
-                         "SELECT supporting_nt / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
-                         "ORDER BY supporting_nt / coverage DESC LIMIT 1 " ),
+                         "SELECT supporting_nt*1.0 / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "ORDER BY supporting_nt*1.0 / coverage DESC LIMIT 1 " ),
               xMinScore( *pDatabase,
-                         "SELECT supporting_nt / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
-                         "ORDER BY supporting_nt / coverage ASC LIMIT 1 " ),
+                         "SELECT supporting_nt*1.0 / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "ORDER BY supporting_nt*1.0 / coverage ASC LIMIT 1 " ),
               xNextCallForwardContext(
                   *pDatabase,
                   "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
@@ -808,8 +829,8 @@ class SV_DB : public Container
                                       "sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
                                       "sv_caller_run_table WHERE name == ?))" ),
               xDeleteCall( *pDatabase,
-                           "DELETE FROM sv_call_table "
-                           "WHERE id = ?; " )
+                           "DELETE FROM sv_call_support_table "
+                           "WHERE call_id = ? " )
         {
             pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_call_support_index ON sv_call_support_table "
                                 "(call_id, jump_id)" );
@@ -910,6 +931,11 @@ class SV_DB : public Container
         return pSvCallerRunTable->size( );
     } // method
 
+    inline int64_t getNumNts( int64_t iSequencerId )
+    {
+        return pSequencerTable->getNumNt( iSequencerId );
+    } // method
+
     inline std::string getRunName( int64_t iId )
     {
         return pSvCallerRunTable->getName( iId );
@@ -977,11 +1003,13 @@ class SV_DB : public Container
         inline void insertRead( std::shared_ptr<NucSeq> pRead )
         {
             pDB->pReadTable->insertRead( uiSequencerId, pRead );
+            pDB->pSequencerTable->incrementNt( uiSequencerId, pRead->length( ) );
         } // method
 
         inline void insertPairedRead( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
         {
             pDB->pPairedReadTable->insertRead( uiSequencerId, pReadA, pReadB );
+            pDB->pSequencerTable->incrementNt( uiSequencerId, pReadA->length( ) + pReadB->length( ) );
         } // method
     }; // class
 
@@ -1414,6 +1442,7 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
         SV_DB::SvJumpInserter::ReadContex xReadContext = xInserter.readContext( pRead->iId );
         for( SvJump& rJump : *pJumps )
             xReadContext.insertJump( rJump ); // also updates the jump ids;
+
         return std::make_shared<Container>( );
         // end of score for xGuard
     } // method

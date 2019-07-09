@@ -29,7 +29,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
         std::array<std::vector<Seed>, 2> avCoverageAnalysis;
         std::mutex xMutex;
 
-        SvCallWrapper( SvCall xCall ) : xCall( xCall )
+        SvCallWrapper( SvCall xCall ) : xCall( xCall ), avCoverageAnalysis(), xMutex()
         {} // constructor
 
         SvCallWrapper( SvCallWrapper& rOther ) = delete;
@@ -64,7 +64,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
                                      pQuery->iId, true, uiMaxDistance, uiAllowedOverlap ) )
                 uiNumFound += 1;
             if( this->checkInterval( this->xCall.uiToStart, this->xCall.uiToStart + this->xCall.uiToSize, rS,
-                                     pQuery->iId, true, uiMaxDistance, uiAllowedOverlap ) )
+                                     pQuery->iId, false, uiMaxDistance, uiAllowedOverlap ) )
                 uiNumFound += 1;
             // if this did neither overlap the start nor the end interval something is wrong wiht the compute_coverage
             // function below
@@ -187,7 +187,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
             [&]( Seed xS ) //
             { //
                 pIntervalTree->visit_overlapping(
-                    uiMaxDistance < xS.start_ref( ) ? 0 : xS.start_ref( ) - uiMaxDistance,
+                    uiMaxDistance > xS.start_ref( ) ? 0 : xS.start_ref( ) - uiMaxDistance,
                     xS.end_ref( ) + uiMaxDistance,
                     [&]( const interval_tree::Interval<nucSeqIndex, std::shared_ptr<SvCallWrapper>>& rInterval ) //
                     { //
