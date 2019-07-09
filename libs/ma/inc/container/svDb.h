@@ -445,7 +445,8 @@ class SV_DB : public Container
                                                      uint32_t, // to_size
                                                      bool, // switch_strand
                                                      NucSeqSql, // inserted_sequence
-                                                     double, // score
+                                                     uint32_t, // supporting_nt
+                                                     uint32_t, // coverage
                                                      int64_t // regex_id
                                                      >
         TP_SV_CALL_TABLE;
@@ -491,15 +492,15 @@ class SV_DB : public Container
                                         "   )" );
 
                     // @todo the if is no longer required once all db's have been updated to use R*Trees
-                    if(pDatabase->eDatabaseOpeningMode != eCREATE_DB)
+                    if( pDatabase->eDatabaseOpeningMode != eCREATE_DB )
                     {
                         std::cout << "NOTE: loaded database without R*tree -> constructing index now..." << std::endl;
                         // the R*Tree was missing so far -> we have to fill it using the sv_call_table
-                        pDatabase->execDML( 
-                                "INSERT INTO sv_call_r_tree (id, run_id_a, run_id_b, minX, maxX, minY, maxY) "
-                                "SELECT id, sv_caller_run_id, sv_caller_run_id, from_pos, from_pos + from_size, "
-                                "       to_pos, to_pos + to_size "
-                                "FROM sv_call_table" );
+                        pDatabase->execDML(
+                            "INSERT INTO sv_call_r_tree (id, run_id_a, run_id_b, minX, maxX, minY, maxY) "
+                            "SELECT id, sv_caller_run_id, sv_caller_run_id, from_pos, from_pos + from_size, "
+                            "       to_pos, to_pos + to_size "
+                            "FROM sv_call_table" );
                     } // if
                 } // if
             } // constructor
@@ -514,6 +515,8 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<double> xMinScore;
         CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallForwardContext;
         CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallBackwardContext;
+        CppSQLiteExtStatement xSetCoverageForCall;
+        CppSQLiteExtStatement xDeleteCall1, xDeleteCall2;
 
       public:
         SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -522,7 +525,8 @@ class SV_DB : public Container
                   "sv_call_table", // name of the table in the database
                   // column definitions of the table
                   std::vector<std::string>{"sv_caller_run_id", "from_pos", "to_pos", "from_size", "to_size",
-                                           "switch_strand", "inserted_sequence", "score", "regex_id"},
+                                           "switch_strand", "inserted_sequence", "supporting_nt", "coverage",
+                                           "regex_id"},
                   // constraints for table
                   std::vector<std::string>{
                       "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE",
@@ -533,19 +537,19 @@ class SV_DB : public Container
               xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
               xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id == ? "
-                                              "AND score >= ?" ),
+                                              "AND supporting_nt / coverage >= ?" ),
               xNumOverlaps( *pDatabase,
                             "SELECT COUNT(*) "
                             "FROM sv_call_table AS outer "
                             "WHERE sv_caller_run_id == ? "
-                            "AND score >= ? "
+                            "AND supporting_nt / coverage >= ? "
                             "AND EXISTS ( "
                             "   SELECT * "
                             "   FROM sv_call_table AS inner, sv_call_r_tree "
                             "   WHERE inner.id == sv_call_r_tree.id "
                             "   AND sv_call_r_tree.run_id_a >= ? " // dim 1
                             "   AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                            "   AND inner.score >= ?"
+                            "   AND inner.supporting_nt / inner.coverage >= ?"
                             "   AND outer.from_pos - ? <= sv_call_r_tree.maxX " // dim 2
                             "   AND outer.from_pos + outer.from_size + ? >= sv_call_r_tree.minX " // dim 2
                             "   AND outer.to_pos - ? <= sv_call_r_tree.maxY " // dim 3
@@ -554,11 +558,13 @@ class SV_DB : public Container
                             ")" ),
               xCallArea( *pDatabase,
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
-                         "AND score >= ?" ),
+                         "AND supporting_nt / coverage >= ?" ),
               xMaxScore( *pDatabase,
-                         "SELECT score FROM sv_call_table WHERE sv_caller_run_id == ? ORDER BY score DESC LIMIT 1 " ),
+                         "SELECT supporting_nt / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "ORDER BY supporting_nt / coverage DESC LIMIT 1 " ),
               xMinScore( *pDatabase,
-                         "SELECT score FROM sv_call_table WHERE sv_caller_run_id == ? ORDER BY score ASC LIMIT 1 " ),
+                         "SELECT supporting_nt / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "ORDER BY supporting_nt / coverage ASC LIMIT 1 " ),
               xNextCallForwardContext(
                   *pDatabase,
                   "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
@@ -586,7 +592,17 @@ class SV_DB : public Container
                                         "  FROM reconstruction_table "
                                         ") "
                                         "ORDER BY sv_call_r_tree.minY DESC "
-                                        "LIMIT 1 " )
+                                        "LIMIT 1 " ),
+              xSetCoverageForCall( *pDatabase,
+                                   "UPDATE sv_call_table "
+                                   "SET coverage = ? "
+                                   "WHERE id = ?" ),
+              xDeleteCall1( *pDatabase,
+                            "DELETE FROM sv_call_r_tree "
+                            "WHERE id = ?; " ),
+              xDeleteCall2( *pDatabase,
+                            "DELETE FROM sv_call_table "
+                            "WHERE id = ?; " )
         {} // default constructor
 
         inline uint32_t numCalls( )
@@ -599,13 +615,29 @@ class SV_DB : public Container
             return xQuerySizeSpecific.scalar( iCallerRunId, dMinScore );
         } // method
 
+        inline void updateCoverage( SvCall& rCall )
+        {
+            xSetCoverageForCall.bindAndExecute( rCall.uiCoverage, rCall.iId );
+        } // method
+
+        inline void deleteCall( int64_t iCallId )
+        {
+            xDeleteCall1.bindAndExecute( iCallId );
+            xDeleteCall2.bindAndExecute( iCallId );
+        } // method
+
+        inline void deleteCall( SvCall& rCall )
+        {
+            deleteCall( rCall.iId );
+        } // method
+
         inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
         {
             int64_t iCallId =
                 this->xInsertRow( iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
                                   (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
                                   // NucSeqSql can deal with nullpointers
-                                  NucSeqSql( rCall.pInsertedSequence ), rCall.dScore, -1 );
+                                  NucSeqSql( rCall.pInsertedSequence ), rCall.uiNumSuppNt, rCall.uiCoverage, -1 );
             rCall.iId = iCallId;
             xInsertRTree( iCallId, iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
                           (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
@@ -618,12 +650,12 @@ class SV_DB : public Container
             return xCallArea.scalar( iCallerRunId, dMinScore );
         } // method
 
-        inline double maxScore( int64_t iCallerRunId )
+        inline uint32_t maxScore( int64_t iCallerRunId )
         {
             return xMaxScore.scalar( iCallerRunId );
         } // method
 
-        inline double minScore( int64_t iCallerRunId )
+        inline uint32_t minScore( int64_t iCallerRunId )
         {
             return xMinScore.scalar( iCallerRunId );
         } // method
@@ -758,6 +790,7 @@ class SV_DB : public Container
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtQueryStatement<int64_t> xDeleteRun;
+        CppSQLiteExtStatement xDeleteCall;
 
       public:
         SvCallSupportTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -773,7 +806,10 @@ class SV_DB : public Container
               pDatabase( pDatabase ),
               xDeleteRun( *pDatabase, "DELETE FROM sv_call_support_table WHERE call_id IN ( SELECT id FROM "
                                       "sv_call_table WHERE sv_caller_run_id IN ( SELECT id FROM "
-                                      "sv_caller_run_table WHERE name == ?))" )
+                                      "sv_caller_run_table WHERE name == ?))" ),
+              xDeleteCall( *pDatabase,
+                           "DELETE FROM sv_call_table "
+                           "WHERE id = ?; " )
         {
             pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sv_call_support_index ON sv_call_support_table "
                                 "(call_id, jump_id)" );
@@ -782,6 +818,16 @@ class SV_DB : public Container
         inline void deleteRun( std::string& rS )
         {
             xDeleteRun.bindAndExecQuery<>( rS );
+        } // method
+
+        inline void deleteCall( int64_t iCallId )
+        {
+            xDeleteCall.bindAndExecute( iCallId );
+        } // method
+
+        inline void deleteCall( SvCall& rCall )
+        {
+            deleteCall( rCall.iId );
         } // method
     }; // class
 
@@ -902,6 +948,11 @@ class SV_DB : public Container
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
     {
         return pSvCallTable->reconstructSequencedGenome( pRef, iCallerRun );
+    } // method
+
+    inline void updateCoverage( SvCall& rCall )
+    {
+        pSvCallTable->updateCoverage( rCall );
     } // method
 
     class ReadInserter
@@ -1414,18 +1465,20 @@ class SvCallsFromDb
 {
     const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double> xQuery;
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t>
+        xQuery;
     CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t>
         xQuerySupport;
-    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double>::Iterator
-        xTableIterator;
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t,
+                               uint32_t>::Iterator xTableIterator;
 
   public:
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "       coverage "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? " ),
           xQuerySupport( *pDb->pDatabase,
@@ -1442,7 +1495,8 @@ class SvCallsFromDb
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "       coverage "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
                   "AND from_pos + from_size >= ? "
@@ -1466,8 +1520,9 @@ class SvCallsFromDb
                      std::get<3>( xTup ), // uiFromSize
                      std::get<4>( xTup ), // uiToSize
                      std::get<5>( xTup ), // bSwitchStrand
-                     std::get<7>( xTup ) // dScore
+                     std::get<7>( xTup ) // num_supporting_nt
         );
+        xRet.uiCoverage = std::get<8>( xTup );
         xRet.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
         xRet.iId = std::get<0>( xTup );
         auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );

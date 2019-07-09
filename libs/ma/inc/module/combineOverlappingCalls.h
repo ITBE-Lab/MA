@@ -7,16 +7,16 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
 {
 
 
-    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double> xQuery(
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
         *pDb->pDatabase,
-        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
+        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt "
         "FROM sv_call_table "
         "WHERE sv_caller_run_id == ? " );
 
 
-    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, double> xQuery2(
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
         *pDb->pDatabase,
-        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, score "
+        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt "
         "FROM sv_call_table "
         "WHERE sv_caller_run_id == ? "
         "AND from_pos + from_size >= ? "
@@ -25,16 +25,6 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
         "AND to_pos <= ? "
         "AND id != ? "
         "AND switch_strand == ? " );
-
-
-    CppSQLiteExtQueryStatement<int64_t> xDelete1( *pDb->pDatabase,
-                                                 "DELETE "
-                                                 "FROM sv_call_support_table "
-                                                 "WHERE call_id == ? " );
-    CppSQLiteExtQueryStatement<int64_t> xDelete2( *pDb->pDatabase,
-                                                 "DELETE "
-                                                 "FROM sv_call_table "
-                                                 "WHERE id == ? " );
 
     CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
         *pDb->pDatabase,
@@ -69,7 +59,7 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                           std::get<3>( xTup ), // uiFromSize
                           std::get<4>( xTup ), // uiToSize
                           std::get<5>( xTup ), // bSwitchStrand
-                          std::get<7>( xTup ) // dScore
+                          std::get<7>( xTup ) // supporting_nt
             );
             xPrim.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
             xPrim.iId = std::get<0>( xTup );
@@ -92,7 +82,7 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                              std::get<3>( xTup2 ), // uiFromSize
                              std::get<4>( xTup2 ), // uiToSize
                              std::get<5>( xTup2 ), // bSwitchStrand
-                             std::get<7>( xTup2 ) // dScore
+                             std::get<7>( xTup2 ) // supporting_nt
                 );
                 xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
                 xSec.iId = std::get<0>( xTup2 );
@@ -110,14 +100,14 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
 
                 xPrim.join( xSec );
 
-
-                xDelete1.bindAndExecQuery<>( xSec.iId );
-                xDelete2.bindAndExecQuery<>( xSec.iId );
+                pDb->pSvCallSupportTable->deleteCall(xSec);
+                pDb->pSvCallTable->deleteCall(xSec);
 
                 xIt2.next( );
             } // while
-            xDelete1.bindAndExecQuery<>( xPrim.iId );
-            xDelete2.bindAndExecQuery<>( xPrim.iId );
+
+            pDb->pSvCallSupportTable->deleteCall(xPrim);
+            pDb->pSvCallTable->deleteCall(xPrim);
             // @todo recompute smaller bounds
             xInserter.insertCall(xPrim);
         } // if

@@ -43,6 +43,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "create_jump_indices", &SV_DB::createJumpIndices )
         .def( "reconstruct_sequenced_genome", &SV_DB::reconstructSequencedGenome )
         .def( "newest_unique_runs", &SV_DB::getNewestUniqueRuns )
+        .def( "update_coverage", &SV_DB::updateCoverage )
         .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class

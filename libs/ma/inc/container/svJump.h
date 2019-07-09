@@ -257,7 +257,7 @@ class SvJump : public Container
         return std::max( query_distance( ), ref_distance( ) );
     } // method
 
-    double score( ) const
+    uint32_t numSupportingNt( ) const
     {
         return (double)uiNumSupportingNt;
     } // method
@@ -335,7 +335,8 @@ class SvCall : public Container
     nucSeqIndex uiFromSize;
     nucSeqIndex uiToSize;
     bool bSwitchStrand;
-    double dScore;
+    uint32_t uiNumSuppNt;
+    uint32_t uiCoverage;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
     Regex xRegex;
@@ -349,7 +350,7 @@ class SvCall : public Container
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
             bool bSwitchStrand,
-            double dScore,
+            uint32_t uiNumSuppNt,
             std::vector<int64_t> vSupportingJumpIds = {},
             int64_t iId = -1, /* -1 == no id obtained */
             Regex xRegex = Regex( "", 0 ) )
@@ -358,7 +359,8 @@ class SvCall : public Container
           uiFromSize( uiFromSize ),
           uiToSize( uiToSize ),
           bSwitchStrand( bSwitchStrand ),
-          dScore( dScore ),
+          uiNumSuppNt( uiNumSuppNt ),
+          uiCoverage( 1 ),
           vSupportingJumpIds( vSupportingJumpIds ),
           iId( iId ),
           xRegex( xRegex )
@@ -370,7 +372,7 @@ class SvCall : public Container
                   rJump.from_size( ),
                   rJump.to_size( ),
                   rJump.does_switch_strand( ),
-                  rJump.score( ),
+                  rJump.numSupportingNt( ),
                   std::vector<int64_t>{rJump.iId} )
     {
         if( bRememberJump )
@@ -383,7 +385,7 @@ class SvCall : public Container
                   rJump.from_size( ),
                   rJump.to_size( ),
                   rJump.does_switch_strand( ),
-                  rJump.score( ),
+                  rJump.numSupportingNt( ),
                   std::vector<int64_t>{rJump.iId} )
     {
         if( bRememberJump )
@@ -456,7 +458,8 @@ class SvCall : public Container
         this->uiToSize = uiToEnd - this->uiToStart;
         this->vSupportingJumpIds.insert(
             this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ), rOther.vSupportingJumpIds.end( ) );
-        this->dScore += rOther.dScore;
+        this->uiNumSuppNt += rOther.uiNumSuppNt;
+        this->uiCoverage = std::max(rOther.uiCoverage, this->uiCoverage);
         for( SvJump& rJump : rOther.vSupportingJumps ) // @todo this is inefficient...
             this->vSupportingJumps.push_back( rJump );
         assert( this->supportedJumpsLoaded( ) == rOther.supportedJumpsLoaded( ) );

@@ -96,7 +96,7 @@ std::string sCreateSQLInsertStatementText(
 
     sInsertionStatement.append( ")" );
 
-    DEBUG(std::cout << "SQL insert statement: " << sInsertionStatement << std::endl;)
+    //DEBUG(std::cout << "SQL insert statement: " << sInsertionStatement << std::endl;)
 
     return sInsertionStatement;
 } // function
@@ -140,7 +140,7 @@ void CppSQLiteDBExtended::vCreateTable(
     if(bWithoutRowId)
         sTableCreationStatement.append(" WITHOUT ROWID");
 
-    DEBUG(std::cout << "SQL table creation statement: " << sTableCreationStatement << std::endl;)
+    //DEBUG(std::cout << "SQL table creation statement: " << sTableCreationStatement << std::endl;)
 
     /* Execute the table statement */
     // std::cout << sTableCreationStatement << std::endl;
