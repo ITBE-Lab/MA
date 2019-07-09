@@ -159,6 +159,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/smallInversions.h"
 #include "module/stripOfConsideration.h"
 #include "module/svJumpsFromSeeds.h"
+#include "module/computeCoverage.h"
 #include "util/default_parameters.h"
 #include "container/svDb.h"
 #include "container/svJump.h"

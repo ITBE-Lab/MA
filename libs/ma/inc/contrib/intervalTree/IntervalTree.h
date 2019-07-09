@@ -1,6 +1,8 @@
 #ifndef __INTERVAL_TREE_H
 #define __INTERVAL_TREE_H
 
+#define USE_INTERVAL_TREE_NAMESPACE
+
 #include <vector>
 #include <algorithm>
 #include <iostream>

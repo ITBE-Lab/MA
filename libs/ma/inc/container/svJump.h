@@ -259,7 +259,7 @@ class SvJump : public Container
 
     uint32_t numSupportingNt( ) const
     {
-        return (double)uiNumSupportingNt;
+        return uiNumSupportingNt;
     } // method
 
     int64_t insert_ratio( ) const

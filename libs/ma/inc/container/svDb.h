@@ -650,12 +650,12 @@ class SV_DB : public Container
             return xCallArea.scalar( iCallerRunId, dMinScore );
         } // method
 
-        inline uint32_t maxScore( int64_t iCallerRunId )
+        inline double maxScore( int64_t iCallerRunId )
         {
             return xMaxScore.scalar( iCallerRunId );
         } // method
 
-        inline uint32_t minScore( int64_t iCallerRunId )
+        inline double minScore( int64_t iCallerRunId )
         {
             return xMinScore.scalar( iCallerRunId );
         } // method
