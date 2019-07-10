@@ -149,7 +149,6 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                 pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
                 if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
                 {
-                    // trigger reseeding @todo
                     nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
                     nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
                     nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;

@@ -366,6 +366,18 @@ class SvCall : public Container
           xRegex( xRegex )
     {} // constructor
 
+    SvCall( nucSeqIndex uiFromStart,
+            nucSeqIndex uiToStart,
+            nucSeqIndex uiFromSize,
+            nucSeqIndex uiToSize,
+            bool bSwitchStrand,
+            uint32_t uiNumSuppNt,
+            uint32_t uiCoverage )
+        : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bSwitchStrand, uiNumSuppNt )
+    {
+        this->uiCoverage = uiCoverage;
+    } // constructor
+
     SvCall( const SvJump& rJump, bool bRememberJump = true )
         : SvCall( rJump.from_start_same_strand( ),
                   rJump.to_start( ),
@@ -459,7 +471,7 @@ class SvCall : public Container
         this->vSupportingJumpIds.insert(
             this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ), rOther.vSupportingJumpIds.end( ) );
         this->uiNumSuppNt += rOther.uiNumSuppNt;
-        this->uiCoverage = std::max(rOther.uiCoverage, this->uiCoverage);
+        this->uiCoverage = std::max( rOther.uiCoverage, this->uiCoverage );
         for( SvJump& rJump : rOther.vSupportingJumps ) // @todo this is inefficient...
             this->vSupportingJumps.push_back( rJump );
         assert( this->supportedJumpsLoaded( ) == rOther.supportedJumpsLoaded( ) );

@@ -29,7 +29,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
         std::array<std::vector<Seed>, 2> avCoverageAnalysis;
         std::mutex xMutex;
 
-        SvCallWrapper( SvCall xCall ) : xCall( xCall ), avCoverageAnalysis(), xMutex()
+        SvCallWrapper( SvCall xCall ) : xCall( xCall ), avCoverageAnalysis( ), xMutex( )
         {} // constructor
 
         SvCallWrapper( SvCallWrapper& rOther ) = delete;
@@ -44,12 +44,11 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
             bool bIsLeft = rS.start_ref( ) + uiAllowedOverlap < uiStart;
             bool bIsRight = rS.end_ref( ) > uiEnd + uiAllowedOverlap;
 
-            if( bIsLeft && bIsRight )
-            {
-                // this seed contradicts the SV... now what?
-            } // if
-            else
-                avCoverageAnalysis[ bIsFrom ? 0 : 1 ].push_back( rS );
+
+            if( bIsLeft )
+                avCoverageAnalysis[ xCall.bSwitchStrand && !bIsFrom ? 1 : 0 ].push_back( rS );
+            if( bIsRight )
+                avCoverageAnalysis[ xCall.bSwitchStrand && !bIsFrom ? 0 : 1 ].push_back( rS );
 
             return true;
         } // method
@@ -119,9 +118,10 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
 
                     std::sort( vCoverageList.begin( ), vCoverageList.end( ) );
                     size_t uiIdx2 = 0;
-                    while( uiCoverageSum > vCoverageList[ uiIdx2 ].second * 2 )
+                    while( uiIdx2 + 1 < vCoverageList.size( ) && uiCoverageSum > vCoverageList[ uiIdx2 ].second * 2 )
                         uiCoverageSum -= vCoverageList[ uiIdx2++ ].second * 2;
 
+                    assert( vCoverageList[ uiIdx2 ].first < 1000 );
                     if( vCoverageList[ uiIdx2 ].first > xCall.uiCoverage )
                         xCall.uiCoverage = (uint32_t)vCoverageList[ uiIdx2 ].first;
                 } // if

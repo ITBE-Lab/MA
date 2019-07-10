@@ -3,9 +3,9 @@
  * @author Markus Schmidt
  */
 #include "module/splitter.h"
-#include "container/soc.h"
-#include "container/segment.h"
 #include "container/alignment.h"
+#include "container/segment.h"
+#include "container/soc.h"
 
 using namespace libMA;
 
@@ -40,6 +40,8 @@ void exportSplitter( py::module& rxPyModuleId )
         x.def_readwrite( "collection", &Collector<NucSeq, SoCPriorityQueue>::vCollection );
     } );
 
+    py::bind_vector<std::vector<std::tuple<std::shared_ptr<NucSeq>, std::shared_ptr<SegmentVector>>>>(
+        rxPyModuleId, "NucSeqSegmentVector", "docstr" );
     exportModule<Collector<NucSeq, SegmentVector>>( rxPyModuleId, "NucSeqSegmentCollector", []( auto&& x ) {
         x.def_readwrite( "collection", &Collector<NucSeq, SegmentVector>::vCollection );
     } );

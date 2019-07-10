@@ -558,7 +558,7 @@ class SV_DB : public Container
               xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
               xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id == ? "
-                                              "AND supporting_nt*1.0 / coverage >= ?" ),
+                                              "AND supporting_nt*1.0 >= ? * coverage" ),
               xNumOverlaps( *pDatabase,
                             "SELECT COUNT(*) "
                             "FROM sv_call_table AS outer "
@@ -579,7 +579,7 @@ class SV_DB : public Container
                             ")" ),
               xCallArea( *pDatabase,
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
-                         "AND supporting_nt*1.0 / coverage >= ?" ),
+                         "AND supporting_nt*1.0 >= ? * coverage" ),
               xMaxScore( *pDatabase,
                          "SELECT supporting_nt*1.0 / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
                          "ORDER BY supporting_nt*1.0 / coverage DESC LIMIT 1 " ),
