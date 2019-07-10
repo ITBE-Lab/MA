@@ -56,7 +56,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
         inline void addSeed( Seed& rS, std::shared_ptr<NucSeq> pQuery, const size_t uiMaxDistance,
                              const size_t uiAllowedOverlap )
         {
-            std::lock_guard<std::mutex> xGuard( xMutex );
+            std::lock_guard<std::mutex> xGuard( xMutex ); 
             size_t uiNumFound = 0;
 
             if( this->checkInterval( this->xCall.uiFromStart, this->xCall.uiFromStart + this->xCall.uiFromSize, rS,
