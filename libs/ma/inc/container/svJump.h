@@ -257,7 +257,7 @@ class SvJump : public Container
         return std::max( query_distance( ), ref_distance( ) );
     } // method
 
-    uint32_t numSupportingNt( ) const
+    nucSeqIndex numSupportingNt( ) const
     {
         return uiNumSupportingNt;
     } // method
@@ -335,8 +335,8 @@ class SvCall : public Container
     nucSeqIndex uiFromSize;
     nucSeqIndex uiToSize;
     bool bSwitchStrand;
-    uint32_t uiNumSuppNt;
-    uint32_t uiCoverage;
+    nucSeqIndex uiNumSuppNt;
+    nucSeqIndex uiCoverage;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
     Regex xRegex;
@@ -350,7 +350,7 @@ class SvCall : public Container
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
             bool bSwitchStrand,
-            uint32_t uiNumSuppNt,
+            nucSeqIndex uiNumSuppNt,
             std::vector<int64_t> vSupportingJumpIds = {},
             int64_t iId = -1, /* -1 == no id obtained */
             Regex xRegex = Regex( "", 0 ) )
@@ -371,7 +371,7 @@ class SvCall : public Container
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
             bool bSwitchStrand,
-            uint32_t uiNumSuppNt,
+            nucSeqIndex uiNumSuppNt,
             uint32_t uiCoverage )
         : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bSwitchStrand, uiNumSuppNt )
     {

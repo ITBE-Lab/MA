@@ -28,8 +28,8 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
     const unsigned int uiMaxAmbiguity;
     ///
     const size_t uiMinSeedSize;
-    const static size_t uiMaxDistance = 50;
-    const size_t uiAllowedOverlap = 3;
+    static const size_t uiMaxDistance = 25;
+    static const size_t uiAllowedOverlap = 3;
 
     class SvCallWrapper
     {
@@ -82,6 +82,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
         inline nucSeqIndex dist_in_area( nucSeqIndex uiFrom, nucSeqIndex uiTo, size_t uiIdx )
         {
             assert( uiTo >= uiFrom );
+            //std::cout << uiFrom << " " << uiTo;
             switch( uiIdx )
             {
                 case 0:
@@ -116,7 +117,8 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
                     assert( false );
                     break;
             } // switch
-            if( uiTo >= uiFrom )
+            //std::cout << "-> " << uiFrom << " " << uiTo << std::endl;
+            if( uiFrom >= uiTo )
                 return 0;
 
             return uiTo - uiFrom;
@@ -135,7 +137,17 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
             std::vector<Seed>::iterator itStart = avCoverageAnalysis[ uiIdx ].begin( );
             std::vector<Seed>::iterator itEnd = avCoverageAnalysis[ uiIdx ].begin( );
             size_t uiCoverageCnt = 0;
-            nucSeqIndex uiLastPos = itStart->start_ref( );
+            nucSeqIndex uiLastPos = ComputeCoverage::uiMaxDistance < xCall.uiFromStart
+                                     ? xCall.uiFromStart - ComputeCoverage::uiMaxDistance
+                                     : 0;
+            if(uiIdx == 1)
+                uiLastPos = ComputeCoverage::uiMaxDistance < xCall.uiToStart
+                                     ? xCall.uiToStart - ComputeCoverage::uiMaxDistance
+                                     : 0;
+            else if(uiIdx == 2)
+                uiLastPos = xCall.uiFromStart;
+            else if(uiIdx == 3)
+                uiLastPos = xCall.uiToStart;
 
             while( itStart != avCoverageAnalysis[ uiIdx ].end( ) || itEnd != avCoverageAnalysis[ uiIdx ].end( ) )
             {

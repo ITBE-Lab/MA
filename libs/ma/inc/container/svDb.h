@@ -638,7 +638,7 @@ class SV_DB : public Container
 
         inline void updateCoverage( SvCall& rCall )
         {
-            xSetCoverageForCall.bindAndExecute( rCall.uiCoverage, rCall.iId );
+            xSetCoverageForCall.bindAndExecute( (uint32_t)rCall.uiCoverage, rCall.iId );
         } // method
 
         inline void deleteCall( int64_t iCallId )
@@ -654,11 +654,11 @@ class SV_DB : public Container
 
         inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
         {
-            int64_t iCallId =
-                this->xInsertRow( iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
-                                  (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
-                                  // NucSeqSql can deal with nullpointers
-                                  NucSeqSql( rCall.pInsertedSequence ), rCall.uiNumSuppNt, rCall.uiCoverage, -1 );
+            int64_t iCallId = this->xInsertRow(
+                iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart, (uint32_t)rCall.uiFromSize,
+                (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
+                // NucSeqSql can deal with nullpointers
+                NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppNt, (uint32_t)rCall.uiCoverage, -1 );
             rCall.iId = iCallId;
             xInsertRTree( iCallId, iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
                           (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
