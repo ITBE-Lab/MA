@@ -146,7 +146,7 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
         {
             if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
             {
-                pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart );
+                pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart, pQuery->iId );
                 if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
                 {
                     nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
@@ -274,9 +274,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
         if( vSeeds.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, vSeeds.front( ), pQuery->length( ), true );
+            pRet->emplace_back( pSelectedSetting, vSeeds.front( ), pQuery->length( ), true, pQuery->iId );
         if( vSeeds.back( ).end( ) + uiMinDistDummy < pQuery->length( ) )
-            pRet->emplace_back( pSelectedSetting, vSeeds.back( ), pQuery->length( ), false );
+            pRet->emplace_back( pSelectedSetting, vSeeds.back( ), pQuery->length( ), false, pQuery->iId );
     } // if
 
     helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, vSeeds, pRet, pRefSeq, pQuery, xHashMapSeeder, xSeedLumper,
@@ -312,9 +312,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
     if( vSeedsA.size( ) > 0 && bDoDummyJumps )
     {
         if( vSeedsA.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, vSeedsA.front( ), pQueryA->length( ), true );
+            pRet->emplace_back( pSelectedSetting, vSeedsA.front( ), pQueryA->length( ), true, pQueryA->iId );
         if( vSeedsA.back( ).end( ) + uiMinDistDummy < pQueryA->length( ) )
-            pRet->emplace_back( pSelectedSetting, vSeedsA.back( ), pQueryA->length( ), false );
+            pRet->emplace_back( pSelectedSetting, vSeedsA.back( ), pQueryA->length( ), false, pQueryA->iId );
     } // if
 
 
@@ -330,9 +330,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::s
     if( vSeedsB.size( ) > 0 && bDoDummyJumps )
     {
         if( vSeedsB.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, vSeedsB.front( ), pQueryB->length( ), true );
+            pRet->emplace_back( pSelectedSetting, vSeedsB.front( ), pQueryB->length( ), true, pQueryB->iId );
         if( vSeedsB.back( ).end( ) + uiMinDistDummy < pQueryB->length( ) )
-            pRet->emplace_back( pSelectedSetting, vSeedsB.back( ), pQueryB->length( ), false );
+            pRet->emplace_back( pSelectedSetting, vSeedsB.back( ), pQueryB->length( ), false, pQueryB->iId );
     } // if
 
     // @note @todo from here on everything is quite inefficient

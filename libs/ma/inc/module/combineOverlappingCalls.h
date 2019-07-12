@@ -14,14 +14,17 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
 
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
         *pDb->pDatabase,
-        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt "
-        "FROM sv_call_table "
-        "WHERE sv_caller_run_id == ? "
-        "AND from_pos + from_size >= ? "
-        "AND to_pos + to_size >= ? "
-        "AND from_pos <= ? "
-        "AND to_pos <= ? "
-        "AND id != ? "
+        "SELECT sv_call_r_tree.id, from_pos, to_pos, from_size, to_size, switch_strand, "
+        "       inserted_sequence, supporting_nt "
+        "FROM sv_call_table, sv_call_r_tree "
+        "WHERE sv_call_table.id == sv_call_r_tree.id "
+        "AND sv_call_r_tree.run_id_a >= ? " // dim 1
+        "AND sv_call_r_tree.run_id_b <= ? " // dim 1
+        "AND sv_call_r_tree.maxX >= ? " // dim 2
+        "AND sv_call_r_tree.minX <= ? " // dim 2
+        "AND sv_call_r_tree.maxY >= ? " // dim 3
+        "AND sv_call_r_tree.minY <= ? " // dim 3
+        "AND sv_call_r_tree.id != ? "
         "AND switch_strand == ? " );
 
     CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
@@ -33,17 +36,19 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
         "WHERE sv_call_support_table.call_id == ? " );
 
 
-    SV_DB::SvCallInserter xInserter(pDb, iSvCallerId); // also triggers transaction
+    SV_DB::SvCallInserter xInserter( pDb, iSvCallerId ); // also triggers transaction
     auto xIt = xQuery.vExecuteAndReturnIterator( iSvCallerId );
+    // iterate over all calls
     while( !xIt.eof( ) )
     {
         auto xTup = xIt.get( );
 
+        // get all overlapping calls
         auto xIt2 =
-            xQuery2.vExecuteAndReturnIterator( iSvCallerId,
+            xQuery2.vExecuteAndReturnIterator( iSvCallerId, iSvCallerId,
                                                std::get<1>( xTup ), // from_pos
-                                               std::get<2>( xTup ), // to_pos
                                                std::get<1>( xTup ) + std::get<3>( xTup ), // from_pos + from_size
+                                               std::get<2>( xTup ), // to_pos
                                                std::get<2>( xTup ) + std::get<4>( xTup ), // to_pos + to_size
                                                std::get<0>( xTup ), // id
                                                std::get<5>( xTup ) // bSwitchStrand
@@ -62,6 +67,7 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
             xPrim.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
             xPrim.iId = std::get<0>( xTup );
             auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );
+            nucSeqIndex uiPrimInsertSizeAvg = 0;
             while( !xSupportIterator.eof( ) )
             {
                 auto xTup = xSupportIterator.get( );
@@ -70,8 +76,13 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                                                      std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
                                                      std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
                                                      std::get<7>( xTup ) );
+                uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( ).query_distance( );
                 xSupportIterator.next( );
             } // while
+            uiPrimInsertSizeAvg /= xPrim.vSupportingJumps.size( );
+
+            bool bActuallyJoinedTwoClusters = false;
+
             while( !xIt2.eof( ) )
             {
                 auto xTup2 = xIt2.get( );
@@ -85,6 +96,7 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                 xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
                 xSec.iId = std::get<0>( xTup2 );
                 auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup2 ) ) );
+                nucSeqIndex uiSecInsertSizeAvg = 0;
                 while( !xSupportIterator.eof( ) )
                 {
                     auto xTup = xSupportIterator.get( );
@@ -93,21 +105,36 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                                                         std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
                                                         std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
                                                         std::get<7>( xTup ) );
+                    uiSecInsertSizeAvg += xSec.vSupportingJumps.back( ).query_distance( );
                     xSupportIterator.next( );
                 } // while
+                uiSecInsertSizeAvg /= xSec.vSupportingJumps.size( );
 
-                xPrim.join( xSec );
+                nucSeqIndex uiMaxInsertSizeDiff = 150;
+                // make sure that the average insert size of the clusters is no more different than uiMaxInsertSizeDiff
+                // this must be done since there could be two different sequences for the same edge, in that case
+                // we should evaluate those sequences independently.
+                if( uiPrimInsertSizeAvg + uiMaxInsertSizeDiff >= uiSecInsertSizeAvg &&
+                    uiSecInsertSizeAvg + uiMaxInsertSizeDiff >= uiPrimInsertSizeAvg )
+                {
+                    xPrim.join( xSec );
 
-                pDb->pSvCallSupportTable->deleteCall(xSec);
-                pDb->pSvCallTable->deleteCall(xSec);
+                    pDb->pSvCallSupportTable->deleteCall( xSec );
+                    pDb->pSvCallTable->deleteCall( xSec );
+                    bActuallyJoinedTwoClusters = true;
+                } // if
 
                 xIt2.next( );
             } // while
 
-            pDb->pSvCallSupportTable->deleteCall(xPrim);
-            pDb->pSvCallTable->deleteCall(xPrim);
-            // @todo recompute smaller bounds
-            xInserter.insertCall(xPrim);
+            // only replace the primary cluster if we actually made changes
+            if( bActuallyJoinedTwoClusters )
+            {
+                pDb->pSvCallSupportTable->deleteCall( xPrim );
+                pDb->pSvCallTable->deleteCall( xPrim );
+                // @todo recompute smaller bounds
+                xInserter.insertCall( xPrim );
+            } // if
         } // if
         xIt.next( );
 

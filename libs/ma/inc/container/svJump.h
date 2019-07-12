@@ -81,7 +81,8 @@ class SvJump : public Container
         assert( uiFrom * 2 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
-    SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const Seed& rB, const bool bFromSeedStart )
+    SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const Seed& rB, const bool bFromSeedStart,
+            int64_t iReadId )
         : SvJump(
               pSelectedSetting,
               /* uiFrom = */
@@ -103,13 +104,13 @@ class SvJump : public Container
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
               /* bFromSeedStart = */ bFromSeedStart,
-              /* uiNumSupportingNt = */ rA.size( ) + rB.size( ) )
+              /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
+              /* iID */ -1,
+              /* iReadId */ iReadId )
     {} // constructor
 
-    SvJump( std::shared_ptr<Presetting> pSelectedSetting,
-            const Seed& rA,
-            const nucSeqIndex qLen,
-            const bool bFromSeedStart )
+    SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const nucSeqIndex qLen,
+            const bool bFromSeedStart, int64_t iReadId )
         : SvJump( pSelectedSetting,
                   /* uiFrom = */
                   bFromSeedStart
@@ -130,7 +131,9 @@ class SvJump : public Container
                   /* bFromForward = */ rA.bOnForwStrand,
                   /* bToForward = */ rA.bOnForwStrand,
                   /* bFromSeedStart = */ bFromSeedStart,
-                  /* uiNumSupportingNt = */ rA.size( ) )
+                  /* uiNumSupportingNt = */ rA.size( ),
+                  /* iID */ -1,
+                  /* iReadId */ iReadId )
     {} // constructor
 
     bool does_switch_strand( ) const
@@ -468,8 +471,8 @@ class SvCall : public Container
         this->uiToStart = std::min( this->uiToStart, rOther.uiToStart );
         this->uiFromSize = uiFromEnd - this->uiFromStart;
         this->uiToSize = uiToEnd - this->uiToStart;
-        this->vSupportingJumpIds.insert(
-            this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ), rOther.vSupportingJumpIds.end( ) );
+        this->vSupportingJumpIds.insert( this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ),
+                                         rOther.vSupportingJumpIds.end( ) );
         this->uiNumSuppNt += rOther.uiNumSuppNt;
         this->uiCoverage = std::max( rOther.uiCoverage, this->uiCoverage );
         for( SvJump& rJump : rOther.vSupportingJumps ) // @todo this is inefficient...
