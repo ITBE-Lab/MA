@@ -209,7 +209,6 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
                 while( uiIdx2 + 1 < vCoverageList.size( ) && uiCoverageSum > vCoverageList[ uiIdx2 ].second * 2 )
                     uiCoverageSum -= vCoverageList[ uiIdx2++ ].second * 2;
 
-                assert( vCoverageList[ uiIdx2 ].first < 1000 );
                 if( vCoverageList[ uiIdx2 ].first > xCall.uiCoverage )
                     xCall.uiCoverage = (uint32_t)vCoverageList[ uiIdx2 ].first;
             } // for

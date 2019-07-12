@@ -45,6 +45,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "reconstruct_sequenced_genome", &SV_DB::reconstructSequencedGenome )
         .def( "newest_unique_runs", &SV_DB::getNewestUniqueRuns )
         .def( "update_coverage", &SV_DB::updateCoverage )
+        .def( "filter_short_edges_with_low_support", &SV_DB::filterShortEdgesWithLowSupport )
         .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class

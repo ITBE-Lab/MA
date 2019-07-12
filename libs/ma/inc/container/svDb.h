@@ -885,6 +885,53 @@ class SV_DB : public Container
     SV_DB( std::string sName, std::string sMode ) : SV_DB( sName, sMode == "create" ? eCREATE_DB : eOPEN_DB )
     {} // constructor
 
+    inline int64_t filterShortEdgesWithLowSupport( int64_t uiRun, nucSeqIndex uiMaxSuppNt, nucSeqIndex uiMaxSVSize )
+    {
+        CppSQLiteExtStatement( *pDatabase,
+                               // create temporary table
+                               "CREATE TEMP TABLE calls_to_delete (call_id INTEGER PRIMARY KEY) WITHOUT ROWID; " )
+            .bindAndExecute( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // fill table with al call ids from calls that
+                               // are from the specified run
+                               // are supported by less than x nt
+                               // have a jump distance on the reference lower than y
+                               // have a insert size lower than y
+                               "INSERT INTO calls_to_delete (call_id) "
+                               "SELECT id "
+                               "FROM sv_call_table "
+                               "WHERE sv_caller_run_id == ? "
+                               "AND supporting_nt < ? "
+                               "AND ABS(to_pos - from_pos) < ? "
+                               "AND ( "
+                               "         SELECT AVG(ABS(query_to - query_from)) "
+                               "         FROM sv_jump_table, sv_call_support_table "
+                               "         WHERE sv_call_support_table.call_id == sv_call_table.id "
+                               "         AND sv_call_support_table.jump_id == sv_jump_table.id "
+                               "    ) < ? " )
+            .bindAndExecute( uiRun, (int64_t)uiMaxSuppNt, (int64_t)uiMaxSVSize, (int64_t)uiMaxSVSize );
+
+        CppSQLiteExtStatement( *pDatabase,
+                               // delete all entries mathing the stored call ids from the call support table
+                               "DELETE FROM sv_call_support_table "
+                               "WHERE call_id IN (SELECT call_id FROM calls_to_delete) " )
+            .bindAndExecute( );
+        int64_t iRet = CppSQLiteExtQueryStatement<int64_t>( *pDatabase,
+                               // delete all calls mathing the stored call ids from the actual call table
+                               "SELECT COUNT(*) FROM calls_to_delete " )
+            .scalar( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // delete all calls mathing the stored call ids from the actual call table
+                               "DELETE FROM sv_call_table "
+                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
+            .bindAndExecute( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // drop the temp table
+                               "DROP TABLE calls_to_delete " )
+            .bindAndExecute( );
+        return iRet;
+    } // method
+
     inline void createJumpIndices( int64_t uiRun )
     {
         pSvJumpTable->createIndices( uiRun );

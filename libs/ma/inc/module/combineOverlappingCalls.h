@@ -9,7 +9,8 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
         *pDb->pDatabase,
         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt "
         "FROM sv_call_table "
-        "WHERE sv_caller_run_id == ? " );
+        "WHERE sv_caller_run_id == ? "
+        "ORDER BY id " );
 
 
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
@@ -24,7 +25,7 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
         "AND sv_call_r_tree.minX <= ? " // dim 2
         "AND sv_call_r_tree.maxY >= ? " // dim 3
         "AND sv_call_r_tree.minY <= ? " // dim 3
-        "AND sv_call_r_tree.id != ? "
+        "AND sv_call_r_tree.id > ? "
         "AND switch_strand == ? " );
 
     CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
@@ -38,6 +39,7 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
 
     SV_DB::SvCallInserter xInserter( pDb, iSvCallerId ); // also triggers transaction
     auto xIt = xQuery.vExecuteAndReturnIterator( iSvCallerId );
+    std::set<int64_t> sToDelete;
     // iterate over all calls
     while( !xIt.eof( ) )
     {
@@ -95,33 +97,35 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                 );
                 xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
                 xSec.iId = std::get<0>( xTup2 );
-                auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup2 ) ) );
-                nucSeqIndex uiSecInsertSizeAvg = 0;
-                while( !xSupportIterator.eof( ) )
+                if( sToDelete.count( xSec.iId ) == 0 )
                 {
-                    auto xTup = xSupportIterator.get( );
-                    xSec.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                    xSec.vSupportingJumps.emplace_back( rParameters.getSelected( ), std::get<0>( xTup ),
-                                                        std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                                                        std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                                                        std::get<7>( xTup ) );
-                    uiSecInsertSizeAvg += xSec.vSupportingJumps.back( ).query_distance( );
-                    xSupportIterator.next( );
-                } // while
-                uiSecInsertSizeAvg /= xSec.vSupportingJumps.size( );
+                    auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup2 ) ) );
+                    nucSeqIndex uiSecInsertSizeAvg = 0;
+                    while( !xSupportIterator.eof( ) )
+                    {
+                        auto xTup = xSupportIterator.get( );
+                        xSec.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
+                        xSec.vSupportingJumps.emplace_back(
+                            rParameters.getSelected( ), std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
+                            std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
+                            std::get<7>( xTup ) );
+                        uiSecInsertSizeAvg += xSec.vSupportingJumps.back( ).query_distance( );
+                        xSupportIterator.next( );
+                    } // while
+                    uiSecInsertSizeAvg /= xSec.vSupportingJumps.size( );
 
-                nucSeqIndex uiMaxInsertSizeDiff = 150;
-                // make sure that the average insert size of the clusters is no more different than uiMaxInsertSizeDiff
-                // this must be done since there could be two different sequences for the same edge, in that case
-                // we should evaluate those sequences independently.
-                if( uiPrimInsertSizeAvg + uiMaxInsertSizeDiff >= uiSecInsertSizeAvg &&
-                    uiSecInsertSizeAvg + uiMaxInsertSizeDiff >= uiPrimInsertSizeAvg )
-                {
-                    xPrim.join( xSec );
+                    nucSeqIndex uiMaxInsertSizeDiff = 150;
+                    // make sure that the average insert size of the clusters is no more different than
+                    // uiMaxInsertSizeDiff this must be done since there could be two different sequences for the same
+                    // edge, in that case we should evaluate those sequences independently.
+                    if( uiPrimInsertSizeAvg + uiMaxInsertSizeDiff >= uiSecInsertSizeAvg &&
+                        uiSecInsertSizeAvg + uiMaxInsertSizeDiff >= uiPrimInsertSizeAvg )
+                    {
+                        xPrim.join( xSec );
 
-                    pDb->pSvCallSupportTable->deleteCall( xSec );
-                    pDb->pSvCallTable->deleteCall( xSec );
-                    bActuallyJoinedTwoClusters = true;
+                        sToDelete.insert( xSec.iId );
+                        bActuallyJoinedTwoClusters = true;
+                    } // if
                 } // if
 
                 xIt2.next( );
@@ -130,8 +134,7 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
             // only replace the primary cluster if we actually made changes
             if( bActuallyJoinedTwoClusters )
             {
-                pDb->pSvCallSupportTable->deleteCall( xPrim );
-                pDb->pSvCallTable->deleteCall( xPrim );
+                sToDelete.insert( xPrim.iId );
                 // @todo recompute smaller bounds
                 xInserter.insertCall( xPrim );
             } // if
@@ -140,6 +143,11 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
 
     } // while
 
+    for( int64_t iI : sToDelete )
+    {
+        pDb->pSvCallSupportTable->deleteCall( iI );
+        pDb->pSvCallTable->deleteCall( iI );
+    } // iI
     // end of scope for transaction context (via xInserter)
 
 } // function
