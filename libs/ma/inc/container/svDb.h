@@ -892,7 +892,7 @@ class SV_DB : public Container
                                "CREATE TEMP TABLE calls_to_delete (call_id INTEGER PRIMARY KEY) WITHOUT ROWID; " )
             .bindAndExecute( );
         CppSQLiteExtStatement( *pDatabase,
-                               // fill table with al call ids from calls that
+                               // fill table with all call ids from calls that
                                // are from the specified run
                                // are supported by less than x nt
                                // have a jump distance on the reference lower than y
@@ -911,15 +911,54 @@ class SV_DB : public Container
                                "    ) < ? " )
             .bindAndExecute( uiRun, (int64_t)uiMaxSuppNt, (int64_t)uiMaxSVSize, (int64_t)uiMaxSVSize );
 
+        int64_t iRet = CppSQLiteExtQueryStatement<int64_t>(
+                           *pDatabase,
+                           // delete all calls mathing the stored call ids from the actual call table
+                           "SELECT COUNT(*) FROM calls_to_delete " )
+                           .scalar( );
         CppSQLiteExtStatement( *pDatabase,
                                // delete all entries mathing the stored call ids from the call support table
                                "DELETE FROM sv_call_support_table "
                                "WHERE call_id IN (SELECT call_id FROM calls_to_delete) " )
             .bindAndExecute( );
-        int64_t iRet = CppSQLiteExtQueryStatement<int64_t>( *pDatabase,
+        CppSQLiteExtStatement( *pDatabase,
                                // delete all calls mathing the stored call ids from the actual call table
-                               "SELECT COUNT(*) FROM calls_to_delete " )
-            .scalar( );
+                               "DELETE FROM sv_call_table "
+                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
+            .bindAndExecute( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // drop the temp table
+                               "DROP TABLE calls_to_delete " )
+            .bindAndExecute( );
+        return iRet;
+    } // method
+
+    inline int64_t filterFuzzyCalls( int64_t uiRun, nucSeqIndex uiMaxFuzziness )
+    {
+        CppSQLiteExtStatement( *pDatabase,
+                               // create temporary table
+                               "CREATE TEMP TABLE calls_to_delete (call_id INTEGER PRIMARY KEY) WITHOUT ROWID; " )
+            .bindAndExecute( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // fill table with all call ids from calls that
+                               // are larger than uiMaxFuzziness in x or y dimension
+                               "INSERT INTO calls_to_delete (call_id) "
+                               "SELECT id "
+                               "FROM sv_call_table "
+                               "WHERE sv_caller_run_id == ? "
+                               "AND ( from_size > ? OR to_size > ? ) " )
+            .bindAndExecute( uiRun, (int64_t)uiMaxFuzziness, (int64_t)uiMaxFuzziness );
+
+        int64_t iRet = CppSQLiteExtQueryStatement<int64_t>(
+                           *pDatabase,
+                           // delete all calls mathing the stored call ids from the actual call table
+                           "SELECT COUNT(*) FROM calls_to_delete " )
+                           .scalar( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // delete all entries mathing the stored call ids from the call support table
+                               "DELETE FROM sv_call_support_table "
+                               "WHERE call_id IN (SELECT call_id FROM calls_to_delete) " )
+            .bindAndExecute( );
         CppSQLiteExtStatement( *pDatabase,
                                // delete all calls mathing the stored call ids from the actual call table
                                "DELETE FROM sv_call_table "

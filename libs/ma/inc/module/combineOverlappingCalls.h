@@ -3,7 +3,8 @@
 #include "container/svDb.h"
 namespace libMA
 {
-void combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
+size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb,
+                                int64_t iSvCallerId )
 {
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
         *pDb->pDatabase,
@@ -38,67 +39,75 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
 
 
     SV_DB::SvCallInserter xInserter( pDb, iSvCallerId ); // also triggers transaction
-    auto xIt = xQuery.vExecuteAndReturnIterator( iSvCallerId );
-    std::set<int64_t> sToDelete;
+    auto vQuery1Res = xQuery.executeAndStoreAllInVector( iSvCallerId );
+
+    size_t uiRet = 0;
     // iterate over all calls
-    while( !xIt.eof( ) )
+
+    std::set<int64_t> sDeleted;
+    for( auto& xTup : vQuery1Res )
     {
-        auto xTup = xIt.get( );
+        if( sDeleted.find( std::get<0>( xTup ) ) != sDeleted.end( ) )
+            continue;
 
-        // get all overlapping calls
-        auto xIt2 =
-            xQuery2.vExecuteAndReturnIterator( iSvCallerId, iSvCallerId,
-                                               std::get<1>( xTup ), // from_pos
-                                               std::get<1>( xTup ) + std::get<3>( xTup ), // from_pos + from_size
-                                               std::get<2>( xTup ), // to_pos
-                                               std::get<2>( xTup ) + std::get<4>( xTup ), // to_pos + to_size
-                                               std::get<0>( xTup ), // id
-                                               std::get<5>( xTup ) // bSwitchStrand
-            );
-
-        if( !xIt2.eof( ) )
+        SvCall xPrim( std::get<1>( xTup ), // uiFromStart
+                      std::get<2>( xTup ), // uiToStart
+                      std::get<3>( xTup ), // uiFromSize
+                      std::get<4>( xTup ), // uiToSize
+                      std::get<5>( xTup ), // bSwitchStrand
+                      std::get<7>( xTup ) // supporting_nt
+        );
+        std::vector<int64_t> vToDel;
         {
-
-            SvCall xPrim( std::get<1>( xTup ), // uiFromStart
-                          std::get<2>( xTup ), // uiToStart
-                          std::get<3>( xTup ), // uiFromSize
-                          std::get<4>( xTup ), // uiToSize
-                          std::get<5>( xTup ), // bSwitchStrand
-                          std::get<7>( xTup ) // supporting_nt
-            );
-            xPrim.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
-            xPrim.iId = std::get<0>( xTup );
-            auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );
-            nucSeqIndex uiPrimInsertSizeAvg = 0;
-            while( !xSupportIterator.eof( ) )
-            {
-                auto xTup = xSupportIterator.get( );
-                xPrim.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                xPrim.vSupportingJumps.emplace_back( rParameters.getSelected( ), std::get<0>( xTup ),
-                                                     std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                                                     std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                                                     std::get<7>( xTup ) );
-                uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( ).query_distance( );
-                xSupportIterator.next( );
-            } // while
-            uiPrimInsertSizeAvg /= xPrim.vSupportingJumps.size( );
-
-            bool bActuallyJoinedTwoClusters = false;
-
-            while( !xIt2.eof( ) )
-            {
-                auto xTup2 = xIt2.get( );
-                SvCall xSec( std::get<1>( xTup2 ), // uiFromStart
-                             std::get<2>( xTup2 ), // uiToStart
-                             std::get<3>( xTup2 ), // uiFromSize
-                             std::get<4>( xTup2 ), // uiToSize
-                             std::get<5>( xTup2 ), // bSwitchStrand
-                             std::get<7>( xTup2 ) // supporting_nt
+            // get all overlapping calls
+            auto xIt2 =
+                xQuery2.vExecuteAndReturnIterator( iSvCallerId, iSvCallerId,
+                                                   std::get<1>( xTup ), // from_pos
+                                                   std::get<1>( xTup ) + std::get<3>( xTup ), // from_pos + from_size
+                                                   std::get<2>( xTup ), // to_pos
+                                                   std::get<2>( xTup ) + std::get<4>( xTup ), // to_pos + to_size
+                                                   std::get<0>( xTup ), // id
+                                                   std::get<5>( xTup ) // bSwitchStrand
                 );
-                xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
-                xSec.iId = std::get<0>( xTup2 );
-                if( sToDelete.count( xSec.iId ) == 0 )
+
+            if( !xIt2.eof( ) )
+            {
+
+                xPrim.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
+                xPrim.iId = std::get<0>( xTup );
+                auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );
+                nucSeqIndex uiPrimInsertSizeAvg = 0;
+                while( !xSupportIterator.eof( ) )
                 {
+                    auto xTup = xSupportIterator.get( );
+                    xPrim.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
+                    xPrim.vSupportingJumps.emplace_back( rParameters.getSelected( ), std::get<0>( xTup ),
+                                                         std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                                                         std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
+                                                         std::get<7>( xTup ) );
+                    uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( ).query_distance( );
+                    xSupportIterator.next( );
+                } // while
+                uiPrimInsertSizeAvg /= xPrim.vSupportingJumps.size( );
+
+
+                while( !xIt2.eof( ) )
+                {
+                    auto xTup2 = xIt2.get( );
+                    xIt2.next( );
+
+                    if( sDeleted.find( std::get<0>( xTup2 ) ) != sDeleted.end( ) )
+                        continue;
+
+                    SvCall xSec( std::get<1>( xTup2 ), // uiFromStart
+                                 std::get<2>( xTup2 ), // uiToStart
+                                 std::get<3>( xTup2 ), // uiFromSize
+                                 std::get<4>( xTup2 ), // uiToSize
+                                 std::get<5>( xTup2 ), // bSwitchStrand
+                                 std::get<7>( xTup2 ) // supporting_nt
+                    );
+                    xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
+                    xSec.iId = std::get<0>( xTup2 );
                     auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup2 ) ) );
                     nucSeqIndex uiSecInsertSizeAvg = 0;
                     while( !xSupportIterator.eof( ) )
@@ -123,31 +132,31 @@ void combineOverlappingCalls( const ParameterSetManager& rParameters, std::share
                     {
                         xPrim.join( xSec );
 
-                        sToDelete.insert( xSec.iId );
-                        bActuallyJoinedTwoClusters = true;
+                        vToDel.push_back( xSec.iId );
                     } // if
-                } // if
-
-                xIt2.next( );
-            } // while
-
-            // only replace the primary cluster if we actually made changes
-            if( bActuallyJoinedTwoClusters )
-            {
-                sToDelete.insert( xPrim.iId );
-                // @todo recompute smaller bounds
-                xInserter.insertCall( xPrim );
+                } // while
             } // if
+        } // scope for xIt2
+
+        // only replace the primary cluster if we actually made changes
+        if( vToDel.size( ) > 0 )
+        {
+            for( int64_t iId : vToDel )
+            {
+                pDb->pSvCallSupportTable->deleteCall( iId );
+                pDb->pSvCallTable->deleteCall( iId );
+                sDeleted.insert( iId );
+                uiRet++;
+            } // for
+            pDb->pSvCallSupportTable->deleteCall( xPrim );
+            pDb->pSvCallTable->deleteCall( xPrim );
+            // @todo recompute smaller bounds
+            xInserter.insertCall( xPrim );
         } // if
-        xIt.next( );
 
     } // while
 
-    for( int64_t iI : sToDelete )
-    {
-        pDb->pSvCallSupportTable->deleteCall( iI );
-        pDb->pSvCallTable->deleteCall( iI );
-    } // iI
+    return uiRet;
     // end of scope for transaction context (via xInserter)
 
 } // function

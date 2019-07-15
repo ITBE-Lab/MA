@@ -893,6 +893,28 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
         return xReturnedVector;
     } // template method
 
+    /* Maps one column of query into vector. */
+    template <class... ArgTypes>
+    std::vector<typename std::tuple<Types...>>
+    executeAndStoreAllInVector( ArgTypes&&... args )
+    { /* Returned vector that receives column of table
+       */
+        //// using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
+
+        std::vector<typename std::tuple<Types...>> xReturnedVector;
+
+        /* Iterate over all table rows
+         */
+        vExecuteAndForAllRowsDo(
+            [&xReturnedVector]( const std::tuple<Types...>& rxRowAsTuple ) {
+                xReturnedVector.push_back( rxRowAsTuple );
+            }, // lambda
+            std::forward<ArgTypes>( args )... // arguments of the query
+        ); // method call
+
+        return xReturnedVector;
+    } // template method
+
     /* Maps one column of query into set. */
     template <size_t N, class... ArgTypes>
     std::set<typename std::tuple_element<N, std::tuple<Types...>>::type> executeAndStoreInSet( ArgTypes&&... args )
