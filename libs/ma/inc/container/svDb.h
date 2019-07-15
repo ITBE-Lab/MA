@@ -550,42 +550,42 @@ class SV_DB : public Container
                                               "AND sv_call_r_tree.run_id_a >= ? " // dim 1
                                               "AND sv_call_r_tree.run_id_b <= ? " // dim 1
                                               "AND supporting_nt*1.0 >= ? * coverage" ),
-#if 0 // 1 -> use index twice; 0 -> use index once ( this is faster; probably the query planner messes up :/ )
               xNumOverlaps( *pDatabase,
-                            "SELECT COUNT(DISTINCT inner.id) "
-                            "FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
-                            "INNER JOIN (sv_call_table AS inner, sv_call_r_tree AS idx_inner) ON ("
-                            "   inner.id == idx_inner.id "
-                            "   AND idx_inner.run_id_a >= ? " // dim 1
-                            "   AND idx_inner.run_id_b <= ? " // dim 1
-                            "   AND inner.supporting_nt*1.0 >= ? * inner.coverage "
-                            "   AND outer.from_pos - ? <= idx_inner.maxX " // dim 2
-                            "   AND outer.from_pos + outer.from_size + ? >= idx_inner.minX " // dim 2
-                            "   AND outer.to_pos - ? <= idx_inner.maxY " // dim 3
-                            "   AND outer.to_pos + outer.to_size + ? >= idx_inner.minY " // dim 3
-                            "   AND outer.switch_strand == inner.switch_strand ) "
-                            "WHERE outer.id == idx_outer.id "
-                            "AND idx_outer.run_id_a >= ? " // dim 1
-                            "AND idx_outer.run_id_b <= ? " // dim 1
-                            ),
-#else
-              xNumOverlaps( *pDatabase,
-                            "SELECT COUNT(DISTINCT inner.id) "
-                            "FROM sv_call_table AS outer "
-                            "INNER JOIN (sv_call_table AS inner, sv_call_r_tree AS idx_inner) ON ("
-                            "   inner.id == idx_inner.id "
-                            "   AND idx_inner.run_id_a >= ? " // dim 1
-                            "   AND idx_inner.run_id_b <= ? " // dim 1
-                            "   AND inner.supporting_nt*1.0 >= ? * inner.coverage "
-                            "   AND outer.from_pos - ? <= idx_inner.maxX " // dim 2
-                            "   AND outer.from_pos + outer.from_size + ? >= idx_inner.minX " // dim 2
-                            "   AND outer.to_pos - ? <= idx_inner.maxY " // dim 3
-                            "   AND outer.to_pos + outer.to_size + ? >= idx_inner.minY " // dim 3
-                            "   AND outer.switch_strand == inner.switch_strand ) "
-                            "WHERE outer.sv_caller_run_id == ? "
-                            "AND outer.sv_caller_run_id == ? " // repeat, so that parameters match to above
-                            ),
-#endif
+                            // each inner call can overlap an outer call at most once
+                            "SELECT COUNT(*) "
+                            "FROM sv_call_table AS inner, sv_call_r_tree AS idx_inner "
+                            "WHERE inner.id == idx_inner.id "
+                            "AND idx_inner.run_id_a >= ? " // dim 1
+                            "AND idx_inner.run_id_b <= ? " // dim 1
+                            "AND inner.supporting_nt*1.0 >= ? * inner.coverage "
+                            // make sure that inner overlaps the outer:
+                            "AND EXISTS( "
+                            "   SELECT * "
+                            "   FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
+                            "   WHERE outer.id == idx_outer.id "
+                            "   AND idx_outer.run_id_a >= ? " // dim 1
+                            "   AND idx_outer.run_id_b <= ? " // dim 1
+                            "   AND outer.minX - ? <= idx_inner.maxX " // dim 2
+                            "   AND outer.maxX + ? >= idx_inner.minX " // dim 2
+                            "   AND outer.minY - ? <= idx_inner.maxY " // dim 3
+                            "   AND outer.maxY + ? >= idx_inner.minY " // dim 3
+                            "   AND outer.switch_strand == inner.switch_strand "
+                            ") "
+                            // make sure that the inner does not overlap with any other call with higher score
+                            "AND NOT EXISTS( "
+                            "   SELECT * "
+                            "   FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
+                            "   WHERE inner2.id == idx_inner2.id "
+                            "   AND idx_inner2.id != idx_inner.id "
+                            "   AND inner2.supporting_nt * inner.coverage >= inner.supporting_nt * inner2.coverage "
+                            "   AND idx_inner.run_id_b >= idx_inner2.run_id_a " // dim 1
+                            "   AND idx_inner.run_id_a <= idx_inner2.run_id_b " // dim 1
+                            "   AND idx_inner.minX + ? <= idx_inner2.maxX " // dim 2
+                            "   AND idx_inner.maxX >= idx_inner2.minX + ? " // dim 2
+                            "   AND idx_inner.minY + ? <= idx_inner2.maxY " // dim 3
+                            "   AND idx_inner.maxY >= idx_inner2.minY + ? " // dim 3
+                            "   LIMIT 1 "
+                            ") " ),
               xCallArea( *pDatabase,
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table, sv_call_r_tree "
                          "WHERE sv_call_table.id == sv_call_r_tree.id "
@@ -705,8 +705,9 @@ class SV_DB : public Container
         inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                      int64_t iAllowedDist )
         {
-            return xNumOverlaps.scalar( iCallerRunIdB, iCallerRunIdB, dMinScore, iAllowedDist, iAllowedDist,
-                                        iAllowedDist, iAllowedDist, iCallerRunIdA, iCallerRunIdA );
+            return xNumOverlaps.scalar( iCallerRunIdA, iCallerRunIdA, dMinScore, iCallerRunIdB, iCallerRunIdB,
+                                        iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist,
+                                        iAllowedDist, iAllowedDist, iAllowedDist );
         } // method
 
         // returns call id, jump start pos, next context, next from position, jump end position

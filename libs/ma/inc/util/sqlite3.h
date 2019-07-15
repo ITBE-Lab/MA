@@ -606,9 +606,6 @@ sCreateSQLInsertStatementText( const char* pcTableName, const unsigned int uiNum
 class CppSQLiteExtStatementParent : public CppSQLite3Statement
 {
   protected:
-#if DEBUG_LEVEL > 0
-    std::string sStatementText;
-#endif
     /* Disallow copying an CppSQLiteExtStatementParent.
      * Copying of statements might have strange effects.
      */
@@ -641,6 +638,10 @@ class CppSQLiteExtStatementParent : public CppSQLite3Statement
     } // variadic method
 
   public:
+#if DEBUG_LEVEL > 0
+    std::string sStatementText;
+#endif
+
     /* ArgTypes are the types of the arguments of the query.
      * Return value is the number of rows changed by the statement.
      */
@@ -999,7 +1000,7 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
 
     template <typename... ArgTypes> void bindAndExplain( const ArgTypes&... args )
     {
-        std::cout << "Statement: " << sStatementText << std::endl;
+        std::cout << "Statement: " << STATEMENT::sStatementText << std::endl;
         std::cout << "selectid\torder\tfrom\tdetail" << std::endl;
         std::cout << "--------\t-----\t----\t------" << std::endl;
         xExplainQueryPlan.vExecuteAndForAllRowsDo(
@@ -1031,7 +1032,7 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
 class CppSQLiteExtStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>
 {
   public:
-    using CppSQLiteExtDebugWrapper::CppSQLiteExtDebugWrapper; // use constructor of superclass
+    using CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>::CppSQLiteExtDebugWrapper; // use constructor of superclass
 
 #ifdef SQL_VERBOSE
 #if DEBUG_LEVEL > 0
@@ -1055,7 +1056,7 @@ template <class... Types>
 class CppSQLiteExtQueryStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtQueryStatementParent<Types...>>
 {
   public:
-    using CppSQLiteExtDebugWrapper::CppSQLiteExtDebugWrapper; // use constructor of superclass
+    using CppSQLiteExtDebugWrapper<CppSQLiteExtQueryStatementParent<Types...>>::CppSQLiteExtDebugWrapper; // use constructor of superclass
 
 #ifdef SQL_VERBOSE
 #if DEBUG_LEVEL > 0
