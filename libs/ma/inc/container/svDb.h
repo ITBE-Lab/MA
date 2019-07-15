@@ -501,28 +501,16 @@ class SV_DB : public Container
             RTreeIndex( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             {
                 // create a R*tree index
-                if( pDatabase->eDatabaseOpeningMode == eCREATE_DB ||
-                    pDatabase->execScalar( "SELECT COUNT(*) FROM sqlite_master "
-                                           "WHERE type='table' AND name='sv_call_r_tree'" ) == 0 )
+                if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
                 {
+                    /* We drop the table in the case that it exists already. */
+                    pDatabase->execDML( "DROP TABLE IF EXISTS sv_call_r_tree" );
                     pDatabase->execDML( "CREATE VIRTUAL TABLE sv_call_r_tree USING rtree_i32( "
                                         "       id, " // key from sv_call_table
                                         "       run_id_a, run_id_b, " // run id -> has to be a dimension for it to work
                                         "       minX, maxX, " // start & end of from positions
                                         "       minY, maxY " // start & end of to positions
                                         "   )" );
-
-                    // @todo the if is no longer required once all db's have been updated to use R*Trees
-                    if( pDatabase->eDatabaseOpeningMode != eCREATE_DB )
-                    {
-                        std::cout << "NOTE: loaded database without R*tree -> constructing index now..." << std::endl;
-                        // the R*Tree was missing so far -> we have to fill it using the sv_call_table
-                        pDatabase->execDML(
-                            "INSERT INTO sv_call_r_tree (id, run_id_a, run_id_b, minX, maxX, minY, maxY) "
-                            "SELECT id, sv_caller_run_id, sv_caller_run_id, from_pos, from_pos + from_size, "
-                            "       to_pos, to_pos + to_size "
-                            "FROM sv_call_table" );
-                    } // if
                 } // if
             } // constructor
         }; // class
@@ -557,34 +545,64 @@ class SV_DB : public Container
               xIndex( pDatabase ),
               xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
-              xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id == ? "
+              xQuerySizeSpecific( *pDatabase, "SELECT COUNT(*) FROM sv_call_table, sv_call_r_tree "
+                                              "WHERE sv_call_table.id == sv_call_r_tree.id "
+                                              "AND sv_call_r_tree.run_id_a >= ? " // dim 1
+                                              "AND sv_call_r_tree.run_id_b <= ? " // dim 1
                                               "AND supporting_nt*1.0 >= ? * coverage" ),
+#if 0 // 1 -> use index twice; 0 -> use index once ( this is faster; probably the query planner messes up :/ )
               xNumOverlaps( *pDatabase,
-                            "SELECT COUNT(*) "
-                            "FROM sv_call_table AS outer "
-                            "WHERE sv_caller_run_id == ? "
-                            "AND supporting_nt*1.0 >= ? * coverage "
-                            "AND EXISTS ( "
-                            "   SELECT * "
-                            "   FROM sv_call_table AS inner, sv_call_r_tree "
-                            "   WHERE inner.id == sv_call_r_tree.id "
-                            "   AND sv_call_r_tree.run_id_a >= ? " // dim 1
-                            "   AND sv_call_r_tree.run_id_b <= ? " // dim 1
+                            "SELECT COUNT(DISTINCT inner.id) "
+                            "FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
+                            "INNER JOIN (sv_call_table AS inner, sv_call_r_tree AS idx_inner) ON ("
+                            "   inner.id == idx_inner.id "
+                            "   AND idx_inner.run_id_a >= ? " // dim 1
+                            "   AND idx_inner.run_id_b <= ? " // dim 1
                             "   AND inner.supporting_nt*1.0 >= ? * inner.coverage "
-                            "   AND outer.from_pos - ? <= sv_call_r_tree.maxX " // dim 2
-                            "   AND outer.from_pos + outer.from_size + ? >= sv_call_r_tree.minX " // dim 2
-                            "   AND outer.to_pos - ? <= sv_call_r_tree.maxY " // dim 3
-                            "   AND outer.to_pos + outer.to_size + ? >= sv_call_r_tree.minY " // dim 3
-                            "   AND outer.switch_strand == inner.switch_strand "
-                            ")" ),
+                            "   AND outer.from_pos - ? <= idx_inner.maxX " // dim 2
+                            "   AND outer.from_pos + outer.from_size + ? >= idx_inner.minX " // dim 2
+                            "   AND outer.to_pos - ? <= idx_inner.maxY " // dim 3
+                            "   AND outer.to_pos + outer.to_size + ? >= idx_inner.minY " // dim 3
+                            "   AND outer.switch_strand == inner.switch_strand ) "
+                            "WHERE outer.id == idx_outer.id "
+                            "AND idx_outer.run_id_a >= ? " // dim 1
+                            "AND idx_outer.run_id_b <= ? " // dim 1
+                            ),
+#else
+              xNumOverlaps( *pDatabase,
+                            "SELECT COUNT(DISTINCT inner.id) "
+                            "FROM sv_call_table AS outer "
+                            "INNER JOIN (sv_call_table AS inner, sv_call_r_tree AS idx_inner) ON ("
+                            "   inner.id == idx_inner.id "
+                            "   AND idx_inner.run_id_a >= ? " // dim 1
+                            "   AND idx_inner.run_id_b <= ? " // dim 1
+                            "   AND inner.supporting_nt*1.0 >= ? * inner.coverage "
+                            "   AND outer.from_pos - ? <= idx_inner.maxX " // dim 2
+                            "   AND outer.from_pos + outer.from_size + ? >= idx_inner.minX " // dim 2
+                            "   AND outer.to_pos - ? <= idx_inner.maxY " // dim 3
+                            "   AND outer.to_pos + outer.to_size + ? >= idx_inner.minY " // dim 3
+                            "   AND outer.switch_strand == inner.switch_strand ) "
+                            "WHERE outer.sv_caller_run_id == ? "
+                            "AND outer.sv_caller_run_id == ? " // repeat, so that parameters match to above
+                            ),
+#endif
               xCallArea( *pDatabase,
-                         "SELECT SUM( from_size * to_size ) FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "SELECT SUM( from_size * to_size ) FROM sv_call_table, sv_call_r_tree "
+                         "WHERE sv_call_table.id == sv_call_r_tree.id "
+                         "AND sv_call_r_tree.run_id_a >= ? " // dim 1
+                         "AND sv_call_r_tree.run_id_b <= ? " // dim 1
                          "AND supporting_nt*1.0 >= ? * coverage" ),
               xMaxScore( *pDatabase,
-                         "SELECT supporting_nt*1.0 / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "SELECT supporting_nt*1.0 / coverage FROM sv_call_table, sv_call_r_tree "
+                         "WHERE sv_call_table.id == sv_call_r_tree.id "
+                         "AND sv_call_r_tree.run_id_a >= ? " // dim 1
+                         "AND sv_call_r_tree.run_id_b <= ? " // dim 1
                          "ORDER BY supporting_nt*1.0 / coverage DESC LIMIT 1 " ),
               xMinScore( *pDatabase,
-                         "SELECT supporting_nt*1.0 / coverage FROM sv_call_table WHERE sv_caller_run_id == ? "
+                         "SELECT supporting_nt*1.0 / coverage FROM sv_call_table, sv_call_r_tree "
+                         "WHERE sv_call_table.id == sv_call_r_tree.id "
+                         "AND sv_call_r_tree.run_id_a >= ? " // dim 1
+                         "AND sv_call_r_tree.run_id_b <= ? " // dim 1
                          "ORDER BY supporting_nt*1.0 / coverage ASC LIMIT 1 " ),
               xNextCallForwardContext(
                   *pDatabase,
@@ -620,10 +638,10 @@ class SV_DB : public Container
                                    "WHERE id = ?" ),
               xDeleteCall1( *pDatabase,
                             "DELETE FROM sv_call_r_tree "
-                            "WHERE id = ?; " ),
+                            "WHERE id = ? " ),
               xDeleteCall2( *pDatabase,
                             "DELETE FROM sv_call_table "
-                            "WHERE id = ?; " )
+                            "WHERE id = ? " )
         {} // default constructor
 
         inline uint32_t numCalls( )
@@ -633,7 +651,7 @@ class SV_DB : public Container
 
         inline uint32_t numCalls( int64_t iCallerRunId, double dMinScore )
         {
-            return xQuerySizeSpecific.scalar( iCallerRunId, dMinScore );
+            return xQuerySizeSpecific.scalar( iCallerRunId, iCallerRunId, dMinScore );
         } // method
 
         inline void updateCoverage( SvCall& rCall )
@@ -668,17 +686,17 @@ class SV_DB : public Container
 
         inline int64_t callArea( int64_t iCallerRunId, double dMinScore )
         {
-            return xCallArea.scalar( iCallerRunId, dMinScore );
+            return xCallArea.scalar( iCallerRunId, iCallerRunId, dMinScore );
         } // method
 
         inline double maxScore( int64_t iCallerRunId )
         {
-            return xMaxScore.scalar( iCallerRunId );
+            return xMaxScore.scalar( iCallerRunId, iCallerRunId );
         } // method
 
         inline double minScore( int64_t iCallerRunId )
         {
-            return xMinScore.scalar( iCallerRunId );
+            return xMinScore.scalar( iCallerRunId, iCallerRunId );
         } // method
 
         /**
@@ -687,8 +705,8 @@ class SV_DB : public Container
         inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                      int64_t iAllowedDist )
         {
-            return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, iCallerRunIdB, dMinScore, iAllowedDist,
-                                        iAllowedDist, iAllowedDist, iAllowedDist );
+            return xNumOverlaps.scalar( iCallerRunIdB, iCallerRunIdB, dMinScore, iAllowedDist, iAllowedDist,
+                                        iAllowedDist, iAllowedDist, iCallerRunIdA, iCallerRunIdA );
         } // method
 
         // returns call id, jump start pos, next context, next from position, jump end position

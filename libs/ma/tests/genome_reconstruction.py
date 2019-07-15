@@ -9,24 +9,24 @@ database = SV_DB(db_name, "create")
 sv_inserter = SvCallInserter(database, "simulated sv", "the sv's that were simulated", -1)
 
 # insertion
-insertion = SvCall(0, 1, 1, 1, False, float('inf'))
+insertion = SvCall(0, 1, 1, 1, False, 1000)
 insertion.inserted_sequence = NucSeq("GGG")
 sv_inserter.insert_call(insertion)                                # 1
 
 # deletion 2-4
-sv_inserter.insert_call(SvCall(1, 4, 1, 1, False, float('inf')))  # 2
+sv_inserter.insert_call(SvCall(1, 4, 1, 1, False, 1000))  # 2
 
 # translocation between chromosomes
-sv_inserter.insert_call(SvCall(4, 16, 1, 1, False, float('inf'))) # 3
-sv_inserter.insert_call(SvCall(18, 8, 1, 1, False, float('inf'))) # 4
+sv_inserter.insert_call(SvCall(4, 16, 1, 1, False, 1000)) # 3
+sv_inserter.insert_call(SvCall(18, 8, 1, 1, False, 1000)) # 4
 
 # inversion
-sv_inserter.insert_call(SvCall(9, 12, 1, 1, True, float('inf')))  # 5
-sv_inserter.insert_call(SvCall(13, 10, 1, 1, True, float('inf'))) # 6
+sv_inserter.insert_call(SvCall(9, 12, 1, 1, True, 1000))  # 5
+sv_inserter.insert_call(SvCall(13, 10, 1, 1, True, 1000)) # 6
 
 # translocation (continued)
-sv_inserter.insert_call(SvCall(15, 5, 1, 1, False, float('inf'))) # 7
-sv_inserter.insert_call(SvCall(7, 19, 1, 1, False, float('inf'))) # 8
+sv_inserter.insert_call(SvCall(15, 5, 1, 1, False, 1000)) # 7
+sv_inserter.insert_call(SvCall(7, 19, 1, 1, False, 1000)) # 8
 
 reference = Pack()
 

@@ -15,12 +15,13 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "util/debug.h"
 
 /* Forward declaration of class for SQL statements
  */
-class CppSQLiteExtStatement;
+class CppSQLiteExtStatementParent;
 
-template <class... Types> class CppSQLiteExtQueryStatement;
+template <class... Types> class CppSQLiteExtQueryStatementParent;
 
 template <class... Types> struct SQLQueryTemplateString;
 
@@ -442,8 +443,8 @@ class CppSQLiteDBExtended : public CppSQLite3DB
      * We have to work with unique pointers over here, because the members of the type CppSQLiteExtStatement are unknown
      * over here.
      */
-    std::unique_ptr<CppSQLiteExtStatement> xStatementBeginTransaction = nullptr;
-    std::unique_ptr<CppSQLiteExtStatement> xStatementEndTransaction = nullptr;
+    std::unique_ptr<CppSQLiteExtStatementParent> xStatementBeginTransaction = nullptr;
+    std::unique_ptr<CppSQLiteExtStatementParent> xStatementEndTransaction = nullptr;
 
     /* Externally defined method that initialized the above attributes.
      */
@@ -561,8 +562,8 @@ class CppSQLiteDBExtended : public CppSQLite3DB
      * If pResultTableRef is not a null-pointer the query works in an append-mode
      */
     template <class... Types, class... ArgTypes>
-    std::unique_ptr<CppSQLite3IteratorTable<Types...>> getTable( CppSQLiteExtQueryStatement<Types...>&& rCompiledQuery,
-                                                                 ArgTypes&&... args )
+    std::unique_ptr<CppSQLite3IteratorTable<Types...>>
+    getTable( CppSQLiteExtQueryStatementParent<Types...>&& rCompiledQuery, ArgTypes&&... args )
     {
         /* We bind all arguments and execute the statement.
          * This process can fail and throw an exception.
@@ -575,8 +576,8 @@ class CppSQLiteDBExtended : public CppSQLite3DB
      * (pre-complied, but with l-value reference instead of r-value reference)
      */
     template <class... Types, class... ArgTypes>
-    std::unique_ptr<CppSQLite3IteratorTable<Types...>> getTable( CppSQLiteExtQueryStatement<Types...>& rCompiledQuery,
-                                                                 ArgTypes&&... args )
+    std::unique_ptr<CppSQLite3IteratorTable<Types...>>
+    getTable( CppSQLiteExtQueryStatementParent<Types...>& rCompiledQuery, ArgTypes&&... args )
     {
         return getTable( std::move( rCompiledQuery ), std::forward<ArgTypes>( args )... );
     } // public method
@@ -602,13 +603,16 @@ sCreateSQLInsertStatementText( const char* pcTableName, const unsigned int uiNum
 /* Be warned: After the database object has been gone don't use the insert anymore.
  * Design flaw: ALthough the database has been gone the insert object can still survive. :-((
  */
-class CppSQLiteExtStatement : public CppSQLite3Statement
+class CppSQLiteExtStatementParent : public CppSQLite3Statement
 {
   protected:
-    /* Disallow copying an CppSQLiteExtStatement.
+#if DEBUG_LEVEL > 0
+    std::string sStatementText;
+#endif
+    /* Disallow copying an CppSQLiteExtStatementParent.
      * Copying of statements might have strange effects.
      */
-    CppSQLiteExtStatement( const CppSQLiteExtStatement& ) = delete;
+    CppSQLiteExtStatementParent( const CppSQLiteExtStatementParent& ) = delete;
 
     /* Base-case of the binding of arguments. */
     template <int N> void bindArguments( )
@@ -671,7 +675,10 @@ class CppSQLiteExtStatement : public CppSQLite3Statement
         throw CppSQLite3Exception( 1, "Database operation failed after 2 tries.", false );
     } // operator
 
-    CppSQLiteExtStatement( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
+    CppSQLiteExtStatementParent( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
+#if DEBUG_LEVEL > 0
+        : sStatementText( pcStatementText )
+#endif
     { /* We compile the statement by using the database object.
        * tricky use of the assignment operator defined in the base class. (hmm... C++)
        */
@@ -680,7 +687,7 @@ class CppSQLiteExtStatement : public CppSQLite3Statement
 
     /* Virtual destructor for inheritance purposes.
      */
-    virtual ~CppSQLiteExtStatement( )
+    virtual ~CppSQLiteExtStatementParent( )
     {} // destructor
 }; // class
 
@@ -688,7 +695,7 @@ class CppSQLiteExtStatement : public CppSQLite3Statement
 /* SQL Query statement as specialization of a general SQL statement.
  * ...Types are the types of the columns of the returned table.
  */
-template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExtStatement
+template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQLiteExtStatementParent
 {
   private:
     /* FIXME: It would be more secure to use a shared pointer over here. */
@@ -696,17 +703,17 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
 
   public:
     /* Constructor, where we get the SQL-statement from some query template. */
-    // CppSQLiteExtQueryStatement<Types...>( CppSQLiteDBExtended& rxDatabase,
+    // CppSQLiteExtQueryStatementParent<Types...>( CppSQLiteDBExtended& rxDatabase,
     //                                       const SQLQueryTemplateString<Types...>& rSQLQueryTemplate )
-    //     : rxDatabase( rxDatabase ), CppSQLiteExtStatement( rxDatabase, rSQLQueryTemplate.pcText )
+    //     : rxDatabase( rxDatabase ), CppSQLiteExtStatementParent( rxDatabase, rSQLQueryTemplate.pcText )
     // {} // constructor
 
     /* Constructor, where we get the SQL-statement directly as const string. */
-    CppSQLiteExtQueryStatement<Types...>( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
-        : CppSQLiteExtStatement( rxDatabase, pcStatementText ), rxDatabase( rxDatabase )
+    CppSQLiteExtQueryStatementParent<Types...>( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
+        : CppSQLiteExtStatementParent( rxDatabase, pcStatementText ), rxDatabase( rxDatabase )
     {} // constructor
 
-    virtual ~CppSQLiteExtQueryStatement( )
+    virtual ~CppSQLiteExtQueryStatementParent( )
     {} // destructor
 
     class Iterator
@@ -718,7 +725,7 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
 
       public:
         template <class... ArgTypes>
-        Iterator( CppSQLiteExtQueryStatement& rQuery, ArgTypes&&... args )
+        Iterator( CppSQLiteExtQueryStatementParent& rQuery, ArgTypes&&... args )
             : xQuery( rQuery.bindAndExecQuery( std::forward<ArgTypes>( args )... ) ), xGetElementFunctor( this->xQuery )
         {
             /* We check whether the number of columns is ok.
@@ -895,8 +902,7 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
 
     /* Maps one column of query into vector. */
     template <class... ArgTypes>
-    std::vector<typename std::tuple<Types...>>
-    executeAndStoreAllInVector( ArgTypes&&... args )
+    std::vector<typename std::tuple<Types...>> executeAndStoreAllInVector( ArgTypes&&... args )
     { /* Returned vector that receives column of table
        */
         //// using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
@@ -976,6 +982,98 @@ template <class... Types> class CppSQLiteExtQueryStatement : public CppSQLiteExt
     } // public method
 }; // class
 
+
+/**
+ * @brief This class is no more than a wrapper around CppSQLiteExtStatementParent
+ * @details
+ * It is necessary, so that we can run EXPLAIN QUERY PLAN in debug mode.
+ * Look at CppSQLiteExtStatementParent for all relevant method definitions & implementations
+ */
+template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
+{
+  public:
+#if DEBUG_LEVEL > 0
+    /* In debug mode we create the ability to look at the output of the sqlite query planner:
+     */
+    CppSQLiteExtQueryStatementParent<int64_t, int64_t, int64_t, std::string> xExplainQueryPlan;
+
+    template <typename... ArgTypes> void bindAndExplain( const ArgTypes&... args )
+    {
+        std::cout << "Statement: " << sStatementText << std::endl;
+        std::cout << "selectid\torder\tfrom\tdetail" << std::endl;
+        std::cout << "--------\t-----\t----\t------" << std::endl;
+        xExplainQueryPlan.vExecuteAndForAllRowsDo(
+            []( auto xTuple ) {
+                /* print result to std::cout */
+                std::cout << std::get<0>( xTuple ) << "\t" << std::get<1>( xTuple ) << "\t" << std::get<2>( xTuple )
+                          << "\t" << std::get<3>( xTuple ) << "\t" << std::endl;
+            },
+            args... );
+        std::cout << std::endl;
+
+    } // method
+#endif
+
+    CppSQLiteExtDebugWrapper( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
+        : STATEMENT( rxDatabase, pcStatementText )
+#if DEBUG_LEVEL > 0
+          ,
+          xExplainQueryPlan( rxDatabase, std::string( "EXPLAIN QUERY PLAN " ).append( pcStatementText ).c_str( ) )
+#endif
+    {} // constructor
+
+    /* Virtual destructor for inheritance purposes.
+     */
+    virtual ~CppSQLiteExtDebugWrapper( )
+    {} // destructor
+}; // class
+
+class CppSQLiteExtStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>
+{
+  public:
+    using CppSQLiteExtDebugWrapper::CppSQLiteExtDebugWrapper; // use constructor of superclass
+
+#ifdef SQL_VERBOSE
+#if DEBUG_LEVEL > 0
+    /* @brief see CppSQLiteExtStatementParent::bindAndExecute
+     */
+    template <typename... ArgTypes> int bindAndExecute( const ArgTypes&... args )
+    {
+        bindAndExplain( args... );
+        return CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>::bindAndExecute( args... );
+    } // method
+#endif
+#endif
+
+    /* Virtual destructor for inheritance purposes.
+     */
+    virtual ~CppSQLiteExtStatement( )
+    {} // destructor
+}; // class
+
+template <class... Types>
+class CppSQLiteExtQueryStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtQueryStatementParent<Types...>>
+{
+  public:
+    using CppSQLiteExtDebugWrapper::CppSQLiteExtDebugWrapper; // use constructor of superclass
+
+#ifdef SQL_VERBOSE
+#if DEBUG_LEVEL > 0
+    /* @brief see CppSQLiteExtQueryStatementParent::bindAndExecute
+     */
+    template <typename... ArgTypes> int bindAndExecute( const ArgTypes&... args )
+    {
+        bindAndExplain( args... );
+        return CppSQLiteExtDebugWrapper<CppSQLiteExtQueryStatementParent<Types...>>::bindAndExecute( args... );
+    } // method
+#endif
+#endif
+
+    /* Virtual destructor for inheritance purposes.
+     */
+    virtual ~CppSQLiteExtQueryStatement( )
+    {} // destructor
+}; // class
 
 template <class... Types> struct SQLQueryTemplateString
 {
