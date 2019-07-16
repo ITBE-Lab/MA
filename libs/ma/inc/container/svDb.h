@@ -1011,6 +1011,11 @@ class SV_DB : public Container
             .bindAndExecute( );
         CppSQLiteExtStatement( *pDatabase,
                                // delete all calls mathing the stored call ids from the actual call table
+                               "DELETE FROM sv_call_r_tree "
+                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
+            .bindAndExecute( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // delete all calls mathing the stored call ids from the actual call table
                                "DELETE FROM sv_call_table "
                                "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
             .bindAndExecute( );
@@ -1046,6 +1051,11 @@ class SV_DB : public Container
                                // delete all entries mathing the stored call ids from the call support table
                                "DELETE FROM sv_call_support_table "
                                "WHERE call_id IN (SELECT call_id FROM calls_to_delete) " )
+            .bindAndExecute( );
+        CppSQLiteExtStatement( *pDatabase,
+                               // delete all calls mathing the stored call ids from the actual call table
+                               "DELETE FROM sv_call_r_tree "
+                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
             .bindAndExecute( );
         CppSQLiteExtStatement( *pDatabase,
                                // delete all calls mathing the stored call ids from the actual call table
