@@ -30,7 +30,7 @@ endif()
 target_compile_definitions( MA PRIVATE EXPORT )
 
 # Be verbose with sql queries (in debug mode)
-target_compile_definitions( MA PUBLIC SQL_VERBOSE )
+# target_compile_definitions( MA PUBLIC SQL_VERBOSE )
 
 # CMake will add the -fPIC for compilation with GCC
 set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)

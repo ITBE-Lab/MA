@@ -148,10 +148,8 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                 sDeleted.insert( iId );
                 uiRet++;
             } // for
-            pDb->pSvCallSupportTable->deleteCall( xPrim );
-            pDb->pSvCallTable->deleteCall( xPrim );
             // @todo recompute smaller bounds
-            xInserter.insertCall( xPrim );
+            xInserter.updateCall( xPrim );
         } // if
 
     } // while

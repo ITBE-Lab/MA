@@ -527,6 +527,7 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallBackwardContext;
         CppSQLiteExtStatement xSetCoverageForCall;
         CppSQLiteExtStatement xDeleteCall1, xDeleteCall2;
+        CppSQLiteExtStatement xUpdateCall, xUpdateRTree;
 
       public:
         SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -660,13 +661,33 @@ class SV_DB : public Container
               xSetCoverageForCall( *pDatabase,
                                    "UPDATE sv_call_table "
                                    "SET coverage = ? "
-                                   "WHERE id = ?" ),
+                                   "WHERE id == ?" ),
               xDeleteCall1( *pDatabase,
                             "DELETE FROM sv_call_r_tree "
-                            "WHERE id = ? " ),
+                            "WHERE id == ? " ),
               xDeleteCall2( *pDatabase,
                             "DELETE FROM sv_call_table "
-                            "WHERE id = ? " )
+                            "WHERE id == ? " ),
+              xUpdateCall( *pDatabase,
+                           "UPDATE sv_call_table "
+                           "SET from_pos = ?, "
+                           "    to_pos = ?, "
+                           "    from_size = ?, "
+                           "    to_size = ?, "
+                           "    switch_strand = ?, "
+                           "    inserted_sequence = ?, "
+                           "    supporting_nt = ?, "
+                           "    coverage = ? "
+                           "WHERE id == ? " ),
+              xUpdateRTree( *pDatabase,
+                            "UPDATE sv_call_r_tree "
+                            "SET run_id_a = ?, "
+                            "    run_id_b = ?, "
+                            "    minX = ?, "
+                            "    maxX = ?, "
+                            "    minY = ?, "
+                            "    maxY = ? "
+                            "WHERE id == ? " )
         {} // default constructor
 
         inline uint32_t numCalls( )
@@ -707,6 +728,20 @@ class SV_DB : public Container
                           (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
                           (uint32_t)rCall.uiToStart + (uint32_t)rCall.uiToSize );
             return iCallId;
+        } // method
+
+        inline int64_t updateCall( int64_t iSvCallerRunId, SvCall& rCall )
+        {
+            xUpdateCall.bindAndExecute( (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
+                                        (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
+                                        // NucSeqSql can deal with nullpointers
+                                        NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppNt,
+                                        (uint32_t)rCall.uiCoverage, rCall.iId );
+            xUpdateRTree.bindAndExecute( iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
+                                         (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize,
+                                         (uint32_t)rCall.uiToStart,
+                                         (uint32_t)rCall.uiToStart + (uint32_t)rCall.uiToSize, rCall.iId );
+            return rCall.iId;
         } // method
 
         inline int64_t callArea( int64_t iCallerRunId, double dMinScore )
@@ -1241,6 +1276,11 @@ class SV_DB : public Container
             {
                 pSvCallSupportTable->xInsertRow( iCallId, iId );
             } // method
+
+            inline void remSupport( )
+            {
+                pSvCallSupportTable->deleteCall( iCallId );
+            } // method
         }; // class
 
         SvCallInserter( std::shared_ptr<SV_DB> pDB, const int64_t iSvCallerRunId )
@@ -1259,6 +1299,16 @@ class SV_DB : public Container
         inline void insertCall( SvCall& rCall )
         {
             CallContex xContext( pDB->pSvCallSupportTable, pDB->pSvCallTable->insertCall( iSvCallerRunId, rCall ) );
+            for( int64_t iId : rCall.vSupportingJumpIds )
+                xContext.addSupport( iId );
+        } // method
+
+        inline void updateCall( SvCall& rCall )
+        {
+            CallContex xContext( pDB->pSvCallSupportTable, pDB->pSvCallTable->updateCall( iSvCallerRunId, rCall ) );
+            // remove the link between jumps and this call
+            xContext.remSupport( );
+            // reinsert the link (no need to compare old and new set this way)
             for( int64_t iId : rCall.vSupportingJumpIds )
                 xContext.addSupport( iId );
         } // method

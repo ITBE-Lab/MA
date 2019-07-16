@@ -997,9 +997,14 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
     /* In debug mode we create the ability to look at the output of the sqlite query planner:
      */
     CppSQLiteExtQueryStatementParent<int64_t, int64_t, int64_t, std::string> xExplainQueryPlan;
+    bool bExplained = false;
 
     template <typename... ArgTypes> void bindAndExplain( const ArgTypes&... args )
     {
+        if(bExplained)
+            return;
+        bExplained = true;
+
         std::cout << "Statement: " << STATEMENT::sStatementText << std::endl;
         std::cout << "selectid\torder\tfrom\tdetail" << std::endl;
         std::cout << "--------\t-----\t----\t------" << std::endl;
@@ -1011,7 +1016,6 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
             },
             args... );
         std::cout << std::endl;
-
     } // method
 #endif
 
