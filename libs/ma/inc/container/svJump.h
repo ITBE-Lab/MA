@@ -16,7 +16,7 @@ class SvJump : public Container
         return uiA < uiB ? uiB - uiA : uiA - uiB;
     } // method
 
-    const double s;
+    const double s, s_neg;
     const double h;
     const double m;
     const nucSeqIndex uiSeedDirFuzziness;
@@ -61,6 +61,7 @@ class SvJump : public Container
             int64_t iId = -1, /* -1 == no id obtained */
             int64_t iReadId = -1 /* -1 == no id obtained */ )
         : s( pSelectedSetting->xJumpS->get( ) ),
+          s_neg( pSelectedSetting->xJumpSNeg->get( ) ),
           h( pSelectedSetting->xJumpH->get( ) ),
           m( pSelectedSetting->xJumpM->get( ) ),
           uiSeedDirFuzziness( pSelectedSetting->xSeedDirFuzziness->get( ) ),
@@ -169,7 +170,9 @@ class SvJump : public Container
     {
         double x = (double)std::max( dist( uiFrom, uiTo ), uiQueryTo - uiQueryFrom );
         double h_min = 1;
-        return (nucSeqIndex)std::min( h, h_min + std::max( 0.0, x - s ) * m );
+        return (nucSeqIndex)std::min(
+            h, h_min + std::max( 0.0, x - ( uiTo >= uiFrom || uiQueryTo - uiQueryFrom >= uiFrom - uiTo ? s : s_neg ) ) *
+                           m );
     } // method
 
     // down == left

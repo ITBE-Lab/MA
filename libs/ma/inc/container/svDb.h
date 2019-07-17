@@ -519,6 +519,7 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<uint32_t> xQuerySize;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySizeSpecific;
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
+        CppSQLiteExtQueryStatement<double> xBlurOnOverlaps;
         CppSQLiteExtQueryStatement<uint32_t> xNumInvalidCalls;
         CppSQLiteExtQueryStatement<int64_t> xCallArea;
         CppSQLiteExtQueryStatement<double> xMaxScore;
@@ -574,7 +575,7 @@ class SV_DB : public Container
                             "   AND outer.switch_strand == inner.switch_strand "
                             "   LIMIT 1 "
                             ") "
-                            // make sure that the inner does not overlap with any other call with higher score
+                            // make sure that inner does not overlap with any other call with higher score
                             "AND NOT EXISTS( "
                             "   SELECT * "
                             "   FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
@@ -589,6 +590,50 @@ class SV_DB : public Container
                             "   AND idx_inner.maxY + ? >= idx_inner2.minY " // dim 3
                             "   LIMIT 1 "
                             ") " ),
+              xBlurOnOverlaps( *pDatabase,
+                               // each inner call can overlap an outer call at most once
+                               "SELECT AVG(distance) "
+                               "FROM sv_call_table AS inner, sv_call_r_tree AS idx_inner "
+                               "WHERE inner.id == idx_inner.id "
+                               "AND idx_inner.run_id_a >= ? " // dim 1
+                               "AND idx_inner.run_id_b <= ? " // dim 1
+                               "AND inner.supporting_nt*1.0 >= ? * inner.coverage "
+                               // make sure that inner overlaps the outer:
+                               "AND EXISTS( "
+                               // we select the minimal distance between the inner and outer call
+                               // since they are rectangles we need to find the distance between the outer edges
+                               // in both dimensions and then add the distances (using manhatten distance here)
+                               // if one inner call coveres two outer calls we average (this should never happen because
+                               // outer calls are 1x1nt in size)
+                               "   SELECT "
+                               "            MAX( 0, idx_inner.minX - idx_outer.maxX, idx_outer.minX - idx_inner.maxX) "
+                               "          + MAX( 0, idx_inner.minY - idx_outer.maxY, idx_outer.minY - idx_inner.maxY) "
+                               "      AS distance "
+                               "   FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
+                               "   WHERE outer.id == idx_outer.id "
+                               "   AND idx_outer.run_id_a >= ? " // dim 1
+                               "   AND idx_outer.run_id_b <= ? " // dim 1
+                               "   AND idx_outer.minX - ? <= idx_inner.maxX " // dim 2
+                               "   AND idx_outer.maxX + ? >= idx_inner.minX " // dim 2
+                               "   AND idx_outer.minY - ? <= idx_inner.maxY " // dim 3
+                               "   AND idx_outer.maxY + ? >= idx_inner.minY " // dim 3
+                               "   AND outer.switch_strand == inner.switch_strand "
+                               ") "
+                               // make sure that inner does not overlap with any other call with higher score
+                               "AND NOT EXISTS( "
+                               "   SELECT * "
+                               "   FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
+                               "   WHERE inner2.id == idx_inner2.id "
+                               "   AND idx_inner2.id != idx_inner.id "
+                               "   AND inner2.supporting_nt * inner.coverage >= inner.supporting_nt * inner2.coverage "
+                               "   AND idx_inner.run_id_b >= idx_inner2.run_id_a " // dim 1
+                               "   AND idx_inner.run_id_a <= idx_inner2.run_id_b " // dim 1
+                               "   AND idx_inner.minX - ? <= idx_inner2.maxX " // dim 2
+                               "   AND idx_inner.maxX + ? >= idx_inner2.minX " // dim 2
+                               "   AND idx_inner.minY - ? <= idx_inner2.maxY " // dim 3
+                               "   AND idx_inner.maxY + ? >= idx_inner2.minY " // dim 3
+                               "   LIMIT 1 "
+                               ") " ),
               xNumInvalidCalls( *pDatabase,
                                 // each inner call can overlap an outer call at most once
                                 "SELECT COUNT(*) "
@@ -768,6 +813,17 @@ class SV_DB : public Container
             return xNumOverlaps.scalar( iCallerRunIdB, iCallerRunIdB, dMinScore, iCallerRunIdA, iCallerRunIdA,
                                         iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist,
                                         iAllowedDist, iAllowedDist, iAllowedDist );
+        } // method
+
+        /**
+         * returns the average distance of class from the overlapped (due to fuzziness) SV
+         */
+        inline uint32_t blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
+                                        int64_t iAllowedDist )
+        {
+            return xBlurOnOverlaps.scalar( iCallerRunIdB, iCallerRunIdB, dMinScore, iCallerRunIdA, iCallerRunIdA,
+                                           iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist,
+                                           iAllowedDist, iAllowedDist, iAllowedDist );
         } // method
 
         /**
@@ -1103,6 +1159,12 @@ class SV_DB : public Container
                                                 int64_t iAllowedDist )
     {
         return pSvCallTable->numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iAllowedDist );
+    } // method
+
+    inline uint32_t getBlurOnOverlapsBetweenCalls( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
+                                                   int64_t iAllowedDist )
+    {
+        return pSvCallTable->blurOnOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iAllowedDist );
     } // method
 
     inline uint32_t getNumInvalidCalls( int64_t iCallerRunIdA, double dMinScore, int64_t iAllowedDist )

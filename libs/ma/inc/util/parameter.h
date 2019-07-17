@@ -556,6 +556,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xRevCompPairedReadMates; // reverse complement all paried read mates
     AlignerParameterPointer<bool> xDoMateJumps; // compute jumps between paired reads
     AlignerParameterPointer<double> xJumpS; // s parameter for fuzziness of jumps
+    AlignerParameterPointer<double> xJumpSNeg; // s parameter for fuzziness of jumps in negative direciton
     AlignerParameterPointer<double> xJumpM; // m parameter for fuzziness of jumps
     AlignerParameterPointer<double> xJumpH; // h parameter for fuzziness of jumps
     AlignerParameterPointer<int> xSeedDirFuzziness; // m parameter for fuzziness of jumps
@@ -744,6 +745,7 @@ class Presetting : public ParameterSetBase
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
           xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 150 ),
+          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 50 ),
           xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
           xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 100 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
@@ -942,12 +944,18 @@ class ParameterSetManager
         xParametersSets[ "nanopore" ]->xMinNumSoC->set( 5 );
 
         xParametersSets.emplace( "sv-illumina", std::make_shared<Presetting>( "SV-Illumina" ) );
+
+
+        // xParametersSets[ "sv-illumina" ]->xMinSeedSizeSV->set( 16 ); @todo does this help or no ?
+
+
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
-        xParametersSets[ "sv-pacbio" ]->xJumpS->set( 150 );
-        //xParametersSets[ "sv-pacbio" ]->xJumpM->set( 0.25 );
+        //xParametersSets[ "sv-pacbio" ]->xJumpS->set( 150 ); <- this is currently the default value anyways
+        // xParametersSets[ "sv-pacbio" ]->xJumpM->set( 0.25 );
         xParametersSets[ "sv-pacbio" ]->xMinDistDummy->set( 200 );
         xParametersSets.emplace( "sv-ont", std::make_shared<Presetting>( "SV-ONT" ) );
         xParametersSets[ "sv-ont" ]->xJumpS->set( 250 );
+        xParametersSets[ "sv-ont" ]->xJumpSNeg->set( 100 );
         xParametersSets[ "sv-ont" ]->xMinDistDummy->set( 300 );
 
         // Initially select Illumina
