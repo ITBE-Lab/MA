@@ -13,6 +13,7 @@
 #include "module/module.h"
 #include "util/exception.h"
 #include "util/sqlite3.h"
+#include "util/system.h"
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -474,6 +475,7 @@ class SV_DB : public Container
     class SvCallTable : private TP_SV_CALL_TABLE
     {
 
+#if 0
         typedef CppSQLiteExtTable<int64_t // call_id
                                   >
             TP_RECONSTRUCTION_TABLE;
@@ -489,12 +491,16 @@ class SV_DB : public Container
                                            std::vector<std::string>{"call_id"},
                                            false ),
                   pDatabase( pDatabase )
-            {} // default constructor
+            {
+                pDatabase->execDML( "CREATE INDEX IF NOT EXISTS reconstruction_table_index "
+                                    "ON reconstruction_table (call_id) " );
+            } // default constructor
 
         }; // class
+#endif
 
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-        std::shared_ptr<ReconstructionTable> pReconstructionTable;
+        // std::shared_ptr<ReconstructionTable> pReconstructionTable;
         class RTreeIndex
         {
           public:
@@ -544,7 +550,7 @@ class SV_DB : public Container
                       "FOREIGN KEY (sv_caller_run_id) REFERENCES sv_caller_run_table(id) ON DELETE CASCADE",
                       "FOREIGN KEY (regex_id) REFERENCES sv_call_reg_ex_table(id) ON DELETE SET NULL"} ),
               pDatabase( pDatabase ),
-              pReconstructionTable( std::make_shared<ReconstructionTable>( pDatabase ) ),
+              // pReconstructionTable( std::make_shared<ReconstructionTable>( pDatabase ) ),
               xIndex( pDatabase ),
               xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
               xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
@@ -675,30 +681,32 @@ class SV_DB : public Container
               xNextCallForwardContext(
                   *pDatabase,
                   "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
-                  "FROM sv_call_table, sv_call_r_tree "
-                  "WHERE sv_call_table.id == sv_call_r_tree.id "
-                  "AND sv_call_r_tree.run_id_a >= ? " // dim 1
-                  "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                  "AND sv_call_r_tree.minX >= ? " // dim 2
-                  "AND sv_call_r_tree.id NOT IN ( "
-                  "  SELECT call_id "
+                  "FROM sv_call_table "
+                  "WHERE sv_call_table.sv_caller_run_id == ? " // dim 1
+                  "AND sv_call_table.from_pos >= ? " // dim 2
+#if 0
+                  "AND NOT EXISTS ( "
+                  "  SELECT * "
                   "  FROM reconstruction_table "
+                  "  WHERE sv_call_table.id == reconstruction_table.call_id "
                   ") "
-                  "ORDER BY sv_call_r_tree.minX ASC "
+#endif
+                  "ORDER BY sv_call_table.from_pos ASC "
                   "LIMIT 1 " ),
               xNextCallBackwardContext( *pDatabase,
                                         "SELECT sv_call_table.id, switch_strand, from_pos, from_size, "
                                         "       inserted_sequence, to_pos "
-                                        "FROM sv_call_table, sv_call_r_tree "
-                                        "WHERE sv_call_table.id == sv_call_r_tree.id "
-                                        "AND sv_call_r_tree.run_id_a >= ? " // dim 1
-                                        "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                                        "AND sv_call_r_tree.minY <= ? " // dim 2
-                                        "AND sv_call_r_tree.id NOT IN ( "
-                                        "  SELECT call_id "
+                                        "FROM sv_call_table "
+                                        "WHERE sv_call_table.sv_caller_run_id == ? " // dim 1
+                                        "AND sv_call_table.to_pos <= ? " // dim 2
+#if 0
+                                        "AND NOT EXISTS ( "
+                                        "  SELECT * "
                                         "  FROM reconstruction_table "
+                                        "  WHERE sv_call_table.id == reconstruction_table.call_id "
                                         ") "
-                                        "ORDER BY sv_call_r_tree.minY DESC "
+#endif
+                                        "ORDER BY sv_call_table.to_pos DESC "
                                         "LIMIT 1 " ),
               xSetCoverageForCall( *pDatabase,
                                    "UPDATE sv_call_table "
@@ -815,8 +823,8 @@ class SV_DB : public Container
         /**
          * returns the average distance of class from the overlapped (due to fuzziness) SV
          */
-        inline uint32_t blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
-                                        int64_t iAllowedDist )
+        inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
+                                      int64_t iAllowedDist )
         {
             return xBlurOnOverlaps.scalar( iCallerRunIdA, iCallerRunIdA, iAllowedDist, iAllowedDist, iAllowedDist,
                                            iAllowedDist, iCallerRunIdB, iCallerRunIdB, dMinScore, iAllowedDist,
@@ -842,7 +850,7 @@ class SV_DB : public Container
             std::get<2>( xRet ) = bForwardContext; // does nothing...
             if( bForwardContext )
             {
-                auto itQ = xNextCallForwardContext.vExecuteAndReturnIterator( iCallerRun, iCallerRun, uiFrom );
+                auto itQ = xNextCallForwardContext.vExecuteAndReturnIterator( iCallerRun, uiFrom );
                 if( !itQ.eof( ) )
                 {
                     auto xQ = itQ.get( );
@@ -855,7 +863,7 @@ class SV_DB : public Container
             } // if
             else
             {
-                auto itQ = xNextCallBackwardContext.vExecuteAndReturnIterator( iCallerRun, iCallerRun, uiFrom );
+                auto itQ = xNextCallBackwardContext.vExecuteAndReturnIterator( iCallerRun, uiFrom );
                 if( !itQ.eof( ) )
                 {
                     auto xQ = itQ.get( );
@@ -872,9 +880,30 @@ class SV_DB : public Container
 
         inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
         {
+            {
+                CppSQLiteExtStatement( *pDatabase,
+                                       ( "CREATE INDEX tmp_reconstruct_seq_index_1_" + std::to_string( iCallerRun ) +
+                                         " ON sv_call_table (from_pos, id, switch_strand, to_pos, to_size, "
+                                         "                  inserted_sequence, from_pos + from_size) "
+                                         "WHERE sv_caller_run_id == " +
+                                         std::to_string( iCallerRun ) )
+                                           .c_str( ) )
+                    .execDML( );
+                CppSQLiteExtStatement( *pDatabase,
+                                       ( "CREATE INDEX tmp_reconstruct_seq_index_2_" + std::to_string( iCallerRun ) +
+                                         " ON sv_call_table (to_pos, id, switch_strand, from_pos, from_size, "
+                                         "                  inserted_sequence) "
+                                         "WHERE sv_caller_run_id == " +
+                                         std::to_string( iCallerRun ) )
+                                           .c_str( ) )
+                    .execDML( );
+            } // scope for CppSQLiteExtStatement
+
             // @todo at the moment this does not deal with jumped over sequences
             // @todo at the moment this does not check the regex (?)
             auto pRet = std::make_shared<Pack>( );
+
+            std::set<int64_t> xVisitedCalls;
 
             NucSeq xCurrChrom;
             uint32_t uiCurrPos = 0;
@@ -883,7 +912,23 @@ class SV_DB : public Container
             while( true )
             {
                 // get the next call
-                auto tNextCall = this->getNextCall( iCallerRun, uiCurrPos, bForwContext );
+                std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> tNextCall;
+                uint32_t uiIntermediatePos = uiCurrPos;
+                do
+                {
+                    // search for the next call that we have not visited yet...
+                    metaMeasureAndLogDuration<false>( "SQL", [&]( ) {
+                        tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext );
+                    } );
+                    if( std::get<0>( tNextCall ) == -1 || // there is no next call
+                        // we have not visited the next call
+                        xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
+                        break;
+                    // we have visited the next call and need to search again
+
+                    // @todo this is extremely inefficient (if we have cylces in our graph wich we do not at the moment)
+                    uiIntermediatePos += bForwContext ? 1 : -1;
+                } while( true );
 #if 0
                 std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
                           << " to: " << std::get<4>( tNextCall )
@@ -891,54 +936,63 @@ class SV_DB : public Container
 #endif
                 if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
                 {
-                    pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
-                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
-                                           xCurrChrom );
-                    xCurrChrom.vClear( );
-                    /*
-                     * for this we make use of the id system of contigs.
-                     * the n forwards contigs have the ids: x*2 | 0 <= x <= n
-                     * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
-                     */
-                    for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
-                         uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
-                         uiI += ( bForwContext ? 2 : -2 ) )
-                    {
-                        pRef->vExtractContig( uiI, xCurrChrom, true );
+                    metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
+                        pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
                                                "no_description_given", xCurrChrom );
                         xCurrChrom.vClear( );
-                    } // for
+                        /*
+                         * for this we make use of the id system of contigs.
+                         * the n forwards contigs have the ids: x*2 | 0 <= x <= n
+                         * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
+                         */
+                        for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
+                             uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
+                             uiI += ( bForwContext ? 2 : -2 ) )
+                        {
+                            pRef->vExtractContig( uiI, xCurrChrom, true );
+                            pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
+                                                   "no_description_given", xCurrChrom );
+                            xCurrChrom.vClear( );
+                        } // for
+                    } );
                     break;
                 } // if
 
-                if( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
-                {
-                    pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
-                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
-                                           xCurrChrom );
-                    xCurrChrom.vClear( );
-                    pRef->vExtractContext( std::get<1>( tNextCall ), xCurrChrom, true, !bForwContext );
-                } // if
-                else if( bForwContext )
-                    pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ), xCurrChrom, true );
-                else
-                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ) + 1,
-                                               pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
-                                               xCurrChrom,
-                                               true );
-                if( std::get<3>( tNextCall ).pNucSeq != nullptr )
-                    xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
-                                        std::get<3>( tNextCall ).pNucSeq->length( ) );
+                metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
+                    if( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                    {
+                        pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                        pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
+                                               "no_description_given", xCurrChrom );
+                        xCurrChrom.vClear( );
+                        pRef->vExtractContext( std::get<1>( tNextCall ), xCurrChrom, true, !bForwContext );
+                    } // if
+                    else if( bForwContext )
+                        pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ), xCurrChrom, true );
+                    else
+                        pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ) + 1,
+                                                   pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
+                                                   xCurrChrom,
+                                                   true );
+                    if( std::get<3>( tNextCall ).pNucSeq != nullptr )
+                        xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
+                                            std::get<3>( tNextCall ).pNucSeq->length( ) );
 
-                // remember that we used this call
-                pReconstructionTable->xInsertRow( std::get<0>( tNextCall ) );
-                uiCurrPos = std::get<4>( tNextCall );
-                bForwContext = std::get<2>( tNextCall );
+                    metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
+                        // remember that we used this call
+                        // pReconstructionTable->xInsertRow( std::get<0>( tNextCall ) );
+                        xVisitedCalls.insert( std::get<0>( tNextCall ) );
+                        bForwContext = std::get<2>( tNextCall );
+                        uiCurrPos = std::get<4>( tNextCall );
+                    } );
+                } );
             } // while
 
             // clear up the temp table
-            pReconstructionTable->clearTable( );
+            // pReconstructionTable->clearTable( );
+            // CppSQLiteExtStatement( *pDatabase, "DROP INDEX tmp_reconstruct_seq_index_1 " ).execDML( );
+            // CppSQLiteExtStatement( *pDatabase, "DROP INDEX tmp_reconstruct_seq_index_2 " ).execDML( );
 
             return pRet;
         } // method
@@ -1158,8 +1212,8 @@ class SV_DB : public Container
         return pSvCallTable->numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iAllowedDist );
     } // method
 
-    inline uint32_t getBlurOnOverlapsBetweenCalls( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
-                                                   int64_t iAllowedDist )
+    inline double getBlurOnOverlapsBetweenCalls( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
+                                                 int64_t iAllowedDist )
     {
         return pSvCallTable->blurOnOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iAllowedDist );
     } // method

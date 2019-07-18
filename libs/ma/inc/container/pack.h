@@ -629,110 +629,113 @@ class Pack : public Container
                           const NucSeq& rxSequence // sequence itself (The sequence will be copied
                                                    // and is not referred after method termination.)
     )
-    { /* Skip empty sequences, because they may become troublemaker, particularly if the occur on
-       * tail positions.
-       */
-        if( rxSequence.empty( ) )
-        {
-            std::cerr << "Skip Sequence " << rsName << " because it is empty." << std::endl;
-            return;
-        } // if
-
-        /* The initial offset of the current sequence, if we see all nucleotides as some contiguous
-         * sequence.
-         */
-        uint64_t uiOffsetDistance = xVectorOfSequenceDescriptors.empty( )
-                                        ? 0
-                                        : xVectorOfSequenceDescriptors.back( ).uiStartOffsetUnpacked +
-                                              xVectorOfSequenceDescriptors.back( ).uiLengthUnpacked;
-
-        assert( uiOffsetDistance == uiUnpackedSizeForwardStrand );
-        DEBUG( auto uiInitialUnpackedSize = uiUnpackedSizeForwardStrand; ) // DEBUG
-
-        /* TO DO: Put this into the vector of sequence descriptions.
-         */
-        SequenceInPack xPackedSequenceDescriptor(
-            rsName, // name of the embedded sequence
-            rsComment, // comments for the sequence
-            uiOffsetDistance, // offset (number of nucleotides from begin) of the embedded sequence
-            rxSequence.length( ) // length of the sequence
-        ); // struct construction
-
-        unsigned int uiPreviousSymbolCode = 0;
-
-        /* We iterate over the fresh sequence.
-         */
-        for( size_t i = 0; i < rxSequence.length( ); i++ )
-        {
-            unsigned int uiSymbolCode = rxSequence[ i ];
-
-            /* seq->seq.s[i] is our current symbol.
-             * For holes we have some special list, that has to be maintained.
+    {
+        metaMeasureAndLogDuration<false>( "vAppendSequence", [&]( ) {
+            /* Skip empty sequences, because they may become troublemaker, particularly if the occur on
+             * tail positions.
              */
-            if( uiSymbolCode >= 4 )
-            { /* Found something like N.
-               */
-                if( uiPreviousSymbolCode == uiSymbolCode )
-                { /* We see the same symbol once again. => Contiguous hole(N).
-                   * We increase the size of the current hole in the list of holes. (*q brings us to
-                   * the current hole record.)
+            if( rxSequence.empty( ) )
+            {
+                std::cerr << "Skip Sequence " << rsName << " because it is empty." << std::endl;
+                return;
+            } // if
+
+            /* The initial offset of the current sequence, if we see all nucleotides as some contiguous
+             * sequence.
+             */
+            uint64_t uiOffsetDistance = xVectorOfSequenceDescriptors.empty( )
+                                            ? 0
+                                            : xVectorOfSequenceDescriptors.back( ).uiStartOffsetUnpacked +
+                                                  xVectorOfSequenceDescriptors.back( ).uiLengthUnpacked;
+
+            assert( uiOffsetDistance == uiUnpackedSizeForwardStrand );
+            DEBUG( auto uiInitialUnpackedSize = uiUnpackedSizeForwardStrand; ) // DEBUG
+
+            /* TO DO: Put this into the vector of sequence descriptions.
+             */
+            SequenceInPack xPackedSequenceDescriptor(
+                rsName, // name of the embedded sequence
+                rsComment, // comments for the sequence
+                uiOffsetDistance, // offset (number of nucleotides from begin) of the embedded sequence
+                rxSequence.length( ) // length of the sequence
+            ); // struct construction
+
+            unsigned int uiPreviousSymbolCode = 0;
+
+            /* We iterate over the fresh sequence.
+             */
+            for( size_t i = 0; i < rxSequence.length( ); i++ )
+            {
+                unsigned int uiSymbolCode = rxSequence[ i ];
+
+                /* seq->seq.s[i] is our current symbol.
+                 * For holes we have some special list, that has to be maintained.
+                 */
+                if( uiSymbolCode >= 4 )
+                { /* Found something like N.
                    */
-                    xVectorOfHoleDescriptors.back( ).length += 1;
+                    if( uiPreviousSymbolCode == uiSymbolCode )
+                    { /* We see the same symbol once again. => Contiguous hole(N).
+                       * We increase the size of the current hole in the list of holes. (*q brings us to
+                       * the current hole record.)
+                       */
+                        xVectorOfHoleDescriptors.back( ).length += 1;
+                    } // if
+                    else
+                    { /* First N seen. We append a fresh record to vector of holes and initialize the
+                       * record. We have to double the capacity if there is no space anymore.
+                       */
+                        assert( uiSymbolCode == (unsigned int)'N' || uiSymbolCode == (unsigned int)'n' ||
+                                uiSymbolCode == 4 );
+                        xVectorOfHoleDescriptors.emplace_back( HoleDescriptor( uiOffsetDistance, // offset
+                                                                               'N' // character
+                                                                               ) ); // vector insertion
+
+                        /* Our current sequence has one hole more ..
+                         */
+                        xPackedSequenceDescriptor.uiNumberOfHoles += 1;
+                    } // else
+                } // if
+                uiPreviousSymbolCode = uiSymbolCode;
+
+                /* We create random characters, for N's.
+                 * Create random number and map the last 2 bits.
+                 */
+                if( uiSymbolCode >= 4 )
+                {
+                    uiSymbolCode = rand( ) & (int)3;
+                } // if
+
+                /* Fill the buffer - Put the fresh symbol c into the buffer
+                 */
+                /* Maps code into the pack and increments the size of the pack.
+                 * ( _set_pac divides bns->i64PacSize by 4 combined with the trick of mapping the last 2
+                 * bits )
+                 */
+                unsigned char uiShift = ( ( ~(uiUnpackedSizeForwardStrand)&3 ) << 1 );
+                if( uiShift == 6 )
+                { /* Fresh element required.
+                   */
+                    xPackedNucSeqs.emplace_back( uiSymbolCode << uiShift );
                 } // if
                 else
-                { /* First N seen. We append a fresh record to vector of holes and initialize the
-                   * record. We have to double the capacity if there is no space anymore.
+                { /* We insert our base pair by shifting into the last vector element.
                    */
-                    assert( uiSymbolCode == (unsigned int)'N' || uiSymbolCode == (unsigned int)'n' ||
-                            uiSymbolCode == 4 );
-                    xVectorOfHoleDescriptors.emplace_back( HoleDescriptor( uiOffsetDistance, // offset
-                                                                           'N' // character
-                                                                           ) ); // vector insertion
-
-                    /* Our current sequence has one hole more ..
-                     */
-                    xPackedSequenceDescriptor.uiNumberOfHoles += 1;
+                    xPackedNucSeqs.back( ) |= ( uiSymbolCode << uiShift );
                 } // else
-            } // if
-            uiPreviousSymbolCode = uiSymbolCode;
 
-            /* We create random characters, for N's.
-             * Create random number and map the last 2 bits.
+                uiUnpackedSizeForwardStrand++;
+                uiOffsetDistance++;
+            } // for
+
+            /* Finally we store the descriptor in the collection vector.
              */
-            if( uiSymbolCode >= 4 )
-            {
-                uiSymbolCode = rand( ) & (int)3;
-            } // if
+            xVectorOfSequenceDescriptors.emplace_back( xPackedSequenceDescriptor );
 
-            /* Fill the buffer - Put the fresh symbol c into the buffer
-             */
-            /* Maps code into the pack and increments the size of the pack.
-             * ( _set_pac divides bns->i64PacSize by 4 combined with the trick of mapping the last 2
-             * bits )
-             */
-            unsigned char uiShift = ( ( ~(uiUnpackedSizeForwardStrand)&3 ) << 1 );
-            if( uiShift == 6 )
-            { /* Fresh element required.
-               */
-                xPackedNucSeqs.emplace_back( uiSymbolCode << uiShift );
-            } // if
-            else
-            { /* We insert our base pair by shifting into the last vector element.
-               */
-                xPackedNucSeqs.back( ) |= ( uiSymbolCode << uiShift );
-            } // else
-
-            uiUnpackedSizeForwardStrand++;
-            uiOffsetDistance++;
-        } // for
-
-        /* Finally we store the descriptor in the collection vector.
-         */
-        xVectorOfSequenceDescriptors.emplace_back( xPackedSequenceDescriptor );
-
-        assert( xPackedSequenceDescriptor.uiLengthUnpacked > 0 );
-        assert( xPackedSequenceDescriptor.uiLengthUnpacked == rxSequence.length( ) );
-        assert( uiUnpackedSizeForwardStrand == uiInitialUnpackedSize + rxSequence.length( ) );
+            assert( xPackedSequenceDescriptor.uiLengthUnpacked > 0 );
+            assert( xPackedSequenceDescriptor.uiLengthUnpacked == rxSequence.length( ) );
+            assert( uiUnpackedSizeForwardStrand == uiInitialUnpackedSize + rxSequence.length( ) );
+        } );
     } // method
 
     /*
@@ -1238,79 +1241,88 @@ class Pack : public Container
                                                    // an existing nucleotide sequence
                               ) const
     {
-        /* Do range-check for begin and end of extraction.
-         */
-        vRangeCheckAndThrowExclusive( "(vExtractSubsection)", static_cast<int64_t>( 0 ), iBegin,
-                                      static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse( ) ) );
-        vRangeCheckAndThrowInclusive( "(vExtractSubsection)", static_cast<int64_t>( 0 ), iEnd,
-                                      static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse( ) ) );
+        metaMeasureAndLogDuration<false>( "vExtractSubsectionN", [&]( ) {
+            /* Do range-check for begin and end of extraction.
+             */
+            vRangeCheckAndThrowExclusive( "(vExtractSubsectionN)", static_cast<int64_t>( 0 ), iBegin,
+                                          static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse( ) ) );
+            vRangeCheckAndThrowInclusive( "(vExtractSubsectionN)", static_cast<int64_t>( 0 ), iEnd,
+                                          static_cast<int64_t>( uiUnpackedSizeForwardPlusReverse( ) ) );
 
-        /* Check whether both sequence belong to the same strand.
-         */
-        if( bPositionIsOnReversStrand( iBegin ) != bPositionIsOnReversStrand( iEnd - 1 ) )
-        {
-            throw std::runtime_error( "(vExtractSubsection) Try to extract bridging sequence. This is impossible." );
-        } // if
-
-        if( !( iBegin <= iEnd ) )
-        { /* In the case of begin not smaller than end, we give up and throw an exception.
-           */
-            throw std::runtime_error( "(vExtractSubsection) Try to extract with begin greater than end." );
-        } // if
-
-        /* Prepare sequence
-         */
-        if( !bAppend )
-        {
-            rxSequence.vClear( );
-        } // if
-
-        /* Compute absolute positions. (Forward strand positions)
-         */
-        const bool bExtractAsOnReverseStrand = bPositionIsOnReversStrand( iBegin );
-
-        /* Prepare extraction process by initializing a iterator and resizing the sequence
-         */
-        uint64_t uiSequenceIterator = bAppend ? rxSequence.length( ) : 0;
-        rxSequence.resize( bAppend ? rxSequence.length( ) + ( iEnd - iBegin ) : iEnd - iBegin );
-
-
-        if( !bExtractAsOnReverseStrand )
-        { /* Extract as forward strand.
-           */
-            const auto itEnd = xVectorOfHoleDescriptors.end( );
-            auto itHolesDesc = xVectorOfHoleDescriptors.begin( );
-            for( auto iPosition = iBegin; iPosition < iEnd; ++iPosition )
+            /* Check whether both sequence belong to the same strand.
+             */
+            if( bPositionIsOnReversStrand( iBegin ) != bPositionIsOnReversStrand( iEnd - 1 ) )
             {
-                // move the hole iterator forwards
-                while( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition )
-                    itHolesDesc++;
-                // append an N if we are currently within a hole
-                if( itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition )
-                    rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
-                else // otherwise get the correct nucleotide
-                    rxSequence[ uiSequenceIterator++ ] = getNucleotideOnPos( iPosition );
-            } // for
-        } // if
-        else
-        { /* Extract as reverse strand. (begin is now bigger than end)
-           */
-            const auto itEnd = xVectorOfHoleDescriptors.rend( );
-            auto itHolesDesc = xVectorOfHoleDescriptors.rbegin( );
-            int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
-            int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
-            for( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
+                throw std::runtime_error(
+                    "(vExtractSubsectionN) Try to extract bridging sequence. This is impossible." );
+            } // if
+
+            if( !( iBegin <= iEnd ) )
+            { /* In the case of begin not smaller than end, we give up and throw an exception.
+               */
+                throw std::runtime_error( "(vExtractSubsectionN) Try to extract with begin greater than end." );
+            } // if
+
+            /* Prepare sequence
+             */
+            if( !bAppend )
             {
-                // move the (reversed) hole iterator forwards
-                while( itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition )
-                    itHolesDesc++;
-                // append an N if we are currently within a hole
-                if( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition )
-                    rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
-                else // otherwise get the correct nucleotide
-                    rxSequence[ uiSequenceIterator++ ] = 3 - getNucleotideOnPos( iPosition );
-            } // for
-        } // else
+                rxSequence.vClear( );
+            } // if
+
+            /* Compute absolute positions. (Forward strand positions)
+             */
+            const bool bExtractAsOnReverseStrand = bPositionIsOnReversStrand( iBegin );
+
+            /* Prepare extraction process by initializing a iterator and resizing the sequence
+             */
+            uint64_t uiSequenceIterator = bAppend ? rxSequence.length( ) : 0;
+            rxSequence.resize( bAppend ? rxSequence.length( ) + ( iEnd - iBegin ) : iEnd - iBegin );
+
+
+            if( !bExtractAsOnReverseStrand )
+            { /* Extract as forward strand.
+               */
+                const auto itEnd = xVectorOfHoleDescriptors.end( );
+                auto itHolesDesc = std::lower_bound( xVectorOfHoleDescriptors.begin( ), xVectorOfHoleDescriptors.end( ),
+                                                     (uint64_t)iBegin,
+                                                     []( const libMA::Pack::HoleDescriptor& rX, uint64_t iPosition ) {
+                                                         return rX.offset + rX.length <= iPosition;
+                                                     } );
+                for( auto iPosition = iBegin; iPosition < iEnd; ++iPosition )
+                {
+                    // move the hole iterator forwards
+                    while( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length <= (uint64_t)iPosition )
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if( itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition )
+                        rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[ uiSequenceIterator++ ] = getNucleotideOnPos( iPosition );
+                } // for
+            } // if
+            else
+            { /* Extract as reverse strand. (begin is now bigger than end)
+               */
+                int64_t iAbsoluteBegin = iAbsolutePosition( iBegin );
+                int64_t iAbsoluteEnd = iAbsolutePosition( iEnd );
+                const auto itEnd = xVectorOfHoleDescriptors.rend( );
+                auto itHolesDesc = std::lower_bound(
+                    xVectorOfHoleDescriptors.rbegin( ), xVectorOfHoleDescriptors.rend( ), (uint64_t)iAbsoluteBegin,
+                    []( const libMA::Pack::HoleDescriptor& rX, uint64_t iPosition ) { return rX.offset > iPosition; } );
+                for( int64_t iPosition = iAbsoluteBegin; iPosition > iAbsoluteEnd; --iPosition )
+                {
+                    // move the (reversed) hole iterator forwards
+                    while( itHolesDesc != itEnd && itHolesDesc->offset > (uint64_t)iPosition )
+                        itHolesDesc++;
+                    // append an N if we are currently within a hole
+                    if( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition )
+                        rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
+                    else // otherwise get the correct nucleotide
+                        rxSequence[ uiSequenceIterator++ ] = 3 - getNucleotideOnPos( iPosition );
+                } // for
+            } // else
+        } );
     } // method
 
     /**
@@ -1348,6 +1360,7 @@ class Pack : public Container
                                         // an existing nucleotide sequence
                           bool bForwardContext ) const
     {
+
         if( bForwardContext )
             vExtractFrom( iPos, rxSequence, bAppend );
         else
@@ -1472,7 +1485,7 @@ class Pack : public Container
         for( size_t uiI = 0; uiI < uiNumContigs( ); uiI++ )
         {
             // *2 since vExtractContig uses id system with forward and reverse contig ids...
-            vExtractContig( uiI*2, s, false );
+            vExtractContig( uiI * 2, s, false );
             vRet.push_back( s.toString( ) );
         } // for
         return vRet;
