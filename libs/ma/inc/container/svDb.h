@@ -525,7 +525,6 @@ class SV_DB : public Container
         CppSQLiteExtQueryStatement<uint32_t> xQuerySize;
         CppSQLiteExtQueryStatement<uint32_t> xQuerySizeSpecific;
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlaps;
-        CppSQLiteExtQueryStatement<double> xBlurOnOverlaps;
         CppSQLiteExtQueryStatement<uint32_t> xNumInvalidCalls;
         CppSQLiteExtQueryStatement<int64_t> xCallArea;
         CppSQLiteExtQueryStatement<double> xMaxScore;
@@ -596,47 +595,6 @@ class SV_DB : public Container
                             "   AND idx_inner.maxY + ? >= idx_inner2.minY " // dim 3
                             "   LIMIT 1 "
                             ") " ),
-              xBlurOnOverlaps( *pDatabase,
-                               // each inner call can overlap an outer call at most once
-                               "SELECT AVG ( "
-                               "           MAX( 0, idx_inner.minX - idx_outer.maxX, idx_outer.minX - idx_inner.maxX) "
-                               "         + MAX( 0, idx_inner.minY - idx_outer.maxY, idx_outer.minY - idx_inner.maxY) )"
-                               "FROM sv_call_table AS inner, sv_call_r_tree AS idx_inner "
-                               "INNER JOIN sv_call_table AS outer, sv_call_r_tree AS idx_outer "
-                               "ON ("
-                               // we select the minimal distance between the inner and outer call
-                               // since they are rectangles we need to find the distance between the outer edges
-                               // in both dimensions and then add the distances (using manhatten distance here)
-                               // if one inner call coveres two outer calls we average (this should never happen because
-                               // outer calls are 1x1nt in size)
-                               "        outer.id == idx_outer.id "
-                               "    AND idx_outer.run_id_a >= ? " // dim 1
-                               "    AND idx_outer.run_id_b <= ? " // dim 1
-                               "    AND idx_outer.minX - ? <= idx_inner.maxX " // dim 2
-                               "    AND idx_outer.maxX + ? >= idx_inner.minX " // dim 2
-                               "    AND idx_outer.minY - ? <= idx_inner.maxY " // dim 3
-                               "    AND idx_outer.maxY + ? >= idx_inner.minY " // dim 3
-                               "    AND outer.switch_strand == inner.switch_strand "
-                               "  ) "
-                               "WHERE inner.id == idx_inner.id "
-                               "AND idx_inner.run_id_a >= ? " // dim 1
-                               "AND idx_inner.run_id_b <= ? " // dim 1
-                               "AND inner.supporting_nt*1.0 >= ? * inner.coverage "
-                               // make sure that inner does not overlap with any other call with higher score
-                               "AND NOT EXISTS( "
-                               "   SELECT * "
-                               "   FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
-                               "   WHERE inner2.id == idx_inner2.id "
-                               "   AND idx_inner2.id != idx_inner.id "
-                               "   AND inner2.supporting_nt * inner.coverage >= inner.supporting_nt * inner2.coverage "
-                               "   AND idx_inner.run_id_b >= idx_inner2.run_id_a " // dim 1
-                               "   AND idx_inner.run_id_a <= idx_inner2.run_id_b " // dim 1
-                               "   AND idx_inner.minX - ? <= idx_inner2.maxX " // dim 2
-                               "   AND idx_inner.maxX + ? >= idx_inner2.minX " // dim 2
-                               "   AND idx_inner.minY - ? <= idx_inner2.maxY " // dim 3
-                               "   AND idx_inner.maxY + ? >= idx_inner2.minY " // dim 3
-                               "   LIMIT 1 "
-                               ") " ),
               xNumInvalidCalls( *pDatabase,
                                 // each inner call can overlap an outer call at most once
                                 "SELECT COUNT(*) "
@@ -826,9 +784,17 @@ class SV_DB : public Container
         inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                       int64_t iAllowedDist )
         {
-            return xBlurOnOverlaps.scalar( iCallerRunIdA, iCallerRunIdA, iAllowedDist, iAllowedDist, iAllowedDist,
-                                           iAllowedDist, iCallerRunIdB, iCallerRunIdB, dMinScore, iAllowedDist,
-                                           iAllowedDist, iAllowedDist, iAllowedDist );
+            uint32_t uiSum = 0;
+            uint32_t uiCount = 0;
+            for( int64_t iI = 0; iI <= iAllowedDist; iI++ )
+            {
+                uint32_t uiAmount =
+                    xNumOverlaps.scalar( iCallerRunIdB, iCallerRunIdB, dMinScore, iCallerRunIdA, iCallerRunIdA, iI, iI,
+                                         iI, iI, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist );
+                uiSum += uiAmount * iI;
+                uiCount += uiAmount;
+            } // for
+            return uiSum / (double)uiCount;
         } // method
 
         /**
@@ -882,7 +848,8 @@ class SV_DB : public Container
         {
             {
                 CppSQLiteExtStatement( *pDatabase,
-                                       ( "CREATE INDEX tmp_reconstruct_seq_index_1_" + std::to_string( iCallerRun ) +
+                                       ( "CREATE INDEX IF NOT EXISTS tmp_reconstruct_seq_index_1_" +
+                                         std::to_string( iCallerRun ) +
                                          " ON sv_call_table (from_pos, id, switch_strand, to_pos, to_size, "
                                          "                  inserted_sequence, from_pos + from_size) "
                                          "WHERE sv_caller_run_id == " +
@@ -890,7 +857,8 @@ class SV_DB : public Container
                                            .c_str( ) )
                     .execDML( );
                 CppSQLiteExtStatement( *pDatabase,
-                                       ( "CREATE INDEX tmp_reconstruct_seq_index_2_" + std::to_string( iCallerRun ) +
+                                       ( "CREATE INDEX IF NOT EXISTS tmp_reconstruct_seq_index_2_" +
+                                         std::to_string( iCallerRun ) +
                                          " ON sv_call_table (to_pos, id, switch_strand, from_pos, from_size, "
                                          "                  inserted_sequence) "
                                          "WHERE sv_caller_run_id == " +
@@ -921,7 +889,7 @@ class SV_DB : public Container
                         tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext );
                     } );
                     if( std::get<0>( tNextCall ) == -1 || // there is no next call
-                        // we have not visited the next call
+                                                          // we have not visited the next call
                         xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
                         break;
                     // we have visited the next call and need to search again
@@ -991,6 +959,9 @@ class SV_DB : public Container
 
             // clear up the temp table
             // pReconstructionTable->clearTable( );
+            // @todo hmm eventually the extra indices should be cleared up?
+            //       however, these do only exist for call sets where we reconstruct the genome
+            //       i.e. the ground truth data set
             // CppSQLiteExtStatement( *pDatabase, "DROP INDEX tmp_reconstruct_seq_index_1 " ).execDML( );
             // CppSQLiteExtStatement( *pDatabase, "DROP INDEX tmp_reconstruct_seq_index_2 " ).execDML( );
 
