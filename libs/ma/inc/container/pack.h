@@ -1328,43 +1328,45 @@ class Pack : public Container
     /**
      * @brief Extracts a sequence (with N's) from the beginning of the respective chromosome till iPos
      */
-    void vExtractUntil( const int64_t iPos, // end of extraction
-                        NucSeq& rxSequence, // receiver of the extraction process
-                        bool bAppend = false // deliver true, if you would like to append to
-                                             // an existing nucleotide sequence
-                        ) const
+    uint64_t vExtractUntil( const int64_t iPos, // end of extraction
+                            NucSeq& rxSequence, // receiver of the extraction process
+                            bool bAppend = false // deliver true, if you would like to append to
+                                                 // an existing nucleotide sequence
+                            ) const
     {
         vExtractSubsectionN( startOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) ), iPos, rxSequence,
                              bAppend );
+        return startOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) );
     } // method
 
     /**
      * @brief Extracts a sequence (with N's) from iPos till the end of the respective chromosome
      */
-    void vExtractFrom( const int64_t iPos, // start of extraction
-                       NucSeq& rxSequence, // receiver of the extraction process
-                       bool bAppend = false // deliver true, if you would like to append to
-                                            // an existing nucleotide sequence
-                       ) const
+    uint64_t vExtractFrom( const int64_t iPos, // start of extraction
+                           NucSeq& rxSequence, // receiver of the extraction process
+                           bool bAppend = false // deliver true, if you would like to append to
+                                                // an existing nucleotide sequence
+                           ) const
     {
         vExtractSubsectionN( iPos, endOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) ), rxSequence,
                              bAppend );
+        return endOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) );
     } // method
 
     /**
      * @brief Extracts a sequence (with N's) from/untill iPos depending on the context given
      */
-    void vExtractContext( const int64_t iPos, // start/end of extraction
-                          NucSeq& rxSequence, // receiver of the extraction process
-                          bool bAppend, // deliver true, if you would like to append to
-                                        // an existing nucleotide sequence
-                          bool bForwardContext ) const
+    uint64_t vExtractContext( const int64_t iPos, // start/end of extraction
+                              NucSeq& rxSequence, // receiver of the extraction process
+                              bool bAppend, // deliver true, if you would like to append to
+                                            // an existing nucleotide sequence
+                              bool bForwardContext ) const
     {
 
         if( bForwardContext )
-            vExtractFrom( iPos, rxSequence, bAppend );
+            return vExtractFrom( iPos, rxSequence, bAppend );
         else
-            vExtractUntil( iPos, rxSequence, bAppend );
+            return vExtractUntil( iPos, rxSequence, bAppend );
     } // method
 
     /**

@@ -128,10 +128,25 @@ class SV_DB : public Container
                         pDb->pContigCovTable->incrementNt( iSequencerId, uiI, vNumNts[ uiI ] );
             } // deconstructor
 
-            inline void insert( Seeds& rSeeds )
+            /// @brief seeds need to be sorted by query pos
+            inline void insert( Seeds& rSeeds, nucSeqIndex uiQlen )
             {
-                for( auto xSeed : rSeeds )
-                    vNumNts[ pPack->uiSequenceIdForPosition( xSeed.start_ref( ) ) ] += xSeed.size( );
+                for( size_t uiI = 0; uiI < rSeeds.size( ); uiI++ )
+                {
+                    int64_t iSize = rSeeds[ uiI ].size( );
+
+                    if( uiI == 0 )
+                        iSize += rSeeds[ uiI ].start( );
+                    else if( rSeeds[ uiI ].start( ) < rSeeds[ uiI - 1 ].end( ) )
+                        iSize += ( rSeeds[ uiI - 1 ].end( ) - rSeeds[ uiI ].start( ) ) / 2;
+
+                    if( uiI + 1 == rSeeds.size( ) )
+                        iSize += uiQlen - rSeeds[ uiI ].end( );
+                    else if( rSeeds[ uiI ].end( ) < rSeeds[ uiI + 1 ].start( ) )
+                        iSize += ( rSeeds[ uiI + 1 ].start( ) - rSeeds[ uiI ].end( ) ) / 2;
+
+                    vNumNts[ pPack->uiSequenceIdForPosition( rSeeds[ uiI ].start_ref( ) ) ] += iSize;
+                } // for
             } // method
         }; // class
     }; // class
@@ -993,15 +1008,15 @@ class SV_DB : public Container
                 } // if
 
                 metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
-                    if( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                    while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
                     {
-                        pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                        uiCurrPos = (uint32_t)pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
                                                "no_description_given", xCurrChrom );
                         xCurrChrom.vClear( );
-                        pRef->vExtractContext( std::get<1>( tNextCall ), xCurrChrom, true, !bForwContext );
+                        //uiCurrPos += bForwContext ? 1 : -1;
                     } // if
-                    else if( bForwContext )
+                    if( bForwContext )
                         pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ), xCurrChrom, true );
                     else
                         pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ) + 1,

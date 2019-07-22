@@ -271,7 +271,8 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     vSeeds.reserve( pSegments->size( ) * 2 );
     pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, [&]( ) { return true; } );
 
-    SV_DB::ContigCovTable::CovInserter( iSequencerId, pRefSeq, pDb ).insert( vSeeds );
+    // seeds need to be sorted by query pos
+    SV_DB::ContigCovTable::CovInserter( iSequencerId, pRefSeq, pDb ).insert( vSeeds, pQuery->length() );
 
     if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
