@@ -23,52 +23,117 @@ namespace libMA
 
 class SV_DB : public Container
 {
-  private:
-    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // sequencer name
-                                                     int64_t // num_generated_nt
+  public:
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string // sequencer name
                                                      >
         TP_SEQUENCER_TABLE;
     class SequencerTable : public TP_SEQUENCER_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-        CppSQLiteExtStatement xIncNt;
-        CppSQLiteExtQueryStatement<int64_t> xGetNumNt;
 
       public:
         SequencerTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             : TP_SEQUENCER_TABLE( *pDatabase, // the database where the table resides
                                   "sequencer_table", // name of the table in the database
                                   // column definitions of the table
-                                  std::vector<std::string>{"name", "num_generated_nt"},
+                                  std::vector<std::string>{"name"},
                                   // constraints for table
                                   std::vector<std::string>{"UNIQUE (name)"} ),
-              pDatabase( pDatabase ),
-              xIncNt( *pDatabase,
-                      "UPDATE sequencer_table "
-                      "SET num_generated_nt = num_generated_nt + ? "
-                      "WHERE id == ? " ),
-              xGetNumNt( *pDatabase,
-                         "SELECT num_generated_nt "
-                         "FROM sequencer_table "
-                         "WHERE id == ? " )
+              pDatabase( pDatabase )
         {
             // pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sequencer_id_index ON sequencer_table (id)" );
         } // default constructor
 
         inline int64_t insertSequencer( std::string& sSequencerName )
         {
-            return xInsertRow( sSequencerName, 0 );
+            return xInsertRow( sSequencerName );
+        } // method
+    }; // class
+
+    typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sequencer_id
+                                                     int64_t, // contig_nr
+                                                     int64_t // num_generated_nt
+                                                     >
+        TP_CONTIG_COV_TABLE;
+    class ContigCovTable : public TP_CONTIG_COV_TABLE
+    {
+        std::shared_ptr<CppSQLiteDBExtended> pDatabase;
+        CppSQLiteExtStatement xIncNt;
+        CppSQLiteExtQueryStatement<int64_t> xGetNumNt;
+        std::mutex xMutex;
+
+      public:
+        ContigCovTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
+            : TP_CONTIG_COV_TABLE(
+                  *pDatabase, // the database where the table resides
+                  "contig_cov_table", // name of the table in the database
+                  // column definitions of the table
+                  std::vector<std::string>{"sequencer_id", "contig_nr", "num_generated_nt"},
+                  // constraints for table
+                  std::vector<std::string>{"UNIQUE (sequencer_id, contig_nr)",
+                                           "FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id)"} ),
+              pDatabase( pDatabase ),
+              xIncNt( *pDatabase,
+                      "UPDATE contig_cov_table "
+                      "SET num_generated_nt = num_generated_nt + ? "
+                      "WHERE sequencer_id == ? "
+                      "AND contig_nr == ? " ),
+              xGetNumNt( *pDatabase,
+                         "SELECT num_generated_nt "
+                         "FROM contig_cov_table "
+                         "WHERE sequencer_id == ? "
+                         "ORDER BY contig_nr " )
+        {
+            // pDatabase->execDML( "CREATE INDEX IF NOT EXISTS sequencer_id_index ON sequencer_table (id)" );
+        } // default constructor
+
+        inline int64_t insert( int64_t iSequencerId, int64_t iContigId )
+        {
+            return xInsertRow( iSequencerId, iContigId, 0 );
         } // method
 
-        inline void incrementNt( int64_t iId, int64_t iAmount )
+        inline void insert( int64_t iSequencerId, std::shared_ptr<Pack> pPack )
         {
-            xIncNt.bindAndExecute( iAmount, iId );
+            for( size_t uiI = 0; uiI < pPack->uiNumContigs( ); uiI++ )
+                insert( iSequencerId, uiI );
         } // method
 
-        inline int64_t getNumNt( int64_t iId )
+        inline void incrementNt( int64_t iSequencerId, int64_t iContigId, int64_t iAmount )
         {
-            return xGetNumNt.scalar( iId );
+            xIncNt.bindAndExecute( iAmount, iSequencerId, iContigId );
         } // method
+
+        inline std::vector<int64_t> getNumNt( int64_t iSequencerId )
+        {
+            return xGetNumNt.executeAndStoreInVector<0>( iSequencerId );
+        } // method
+
+        class CovInserter
+        {
+          public:
+            int64_t iSequencerId;
+            std::shared_ptr<SV_DB> pDb;
+            std::shared_ptr<Pack> pPack;
+            std::vector<int64_t> vNumNts;
+
+            CovInserter( int64_t iSequencerId, std::shared_ptr<Pack> pPack, std::shared_ptr<SV_DB> pDb )
+                : iSequencerId( iSequencerId ), pDb( pDb ), pPack( pPack ), vNumNts( pPack->uiNumContigs( ) )
+            {} // constructor
+
+            ~CovInserter( )
+            {
+                std::lock_guard<std::mutex> xGuard( pDb->pContigCovTable->xMutex );
+                for( size_t uiI = 0; uiI < vNumNts.size( ); uiI++ )
+                    if( vNumNts[ uiI ] > 0 )
+                        pDb->pContigCovTable->incrementNt( iSequencerId, uiI, vNumNts[ uiI ] );
+            } // deconstructor
+
+            inline void insert( Seeds& rSeeds )
+            {
+                for( auto xSeed : rSeeds )
+                    vNumNts[ pPack->uiSequenceIdForPosition( xSeed.start_ref( ) ) ] += xSeed.size( );
+            } // method
+        }; // class
     }; // class
 
     typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sequencer id (foreign key)
@@ -784,8 +849,8 @@ class SV_DB : public Container
         inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                       int64_t iAllowedDist )
         {
-            uint32_t uiSum = 0;
-            uint32_t uiCount = 0;
+            int64_t uiSum = 0;
+            int64_t uiCount = 0;
             for( int64_t iI = 0; iI <= iAllowedDist; iI++ )
             {
                 uint32_t uiAmount =
@@ -1022,6 +1087,7 @@ class SV_DB : public Container
   public:
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
+    std::shared_ptr<ContigCovTable> pContigCovTable;
     std::shared_ptr<ReadTable> pReadTable;
     std::shared_ptr<PairedReadTable> pPairedReadTable;
     std::shared_ptr<NameDescTable> pSvJumpRunTable;
@@ -1035,6 +1101,7 @@ class SV_DB : public Container
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
         : pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
+          pContigCovTable( std::make_shared<ContigCovTable>( pDatabase ) ),
           pReadTable( std::make_shared<ReadTable>( pDatabase ) ),
           pPairedReadTable( std::make_shared<PairedReadTable>( pDatabase, pReadTable ) ),
           pSvJumpRunTable( std::make_shared<NameDescTable>( pDatabase, "sv_jump_run_table" ) ),
@@ -1204,9 +1271,9 @@ class SV_DB : public Container
         return pSvCallerRunTable->size( );
     } // method
 
-    inline int64_t getNumNts( int64_t iSequencerId )
+    inline std::vector<int64_t> getNumNts( int64_t iSequencerId )
     {
-        return pSequencerTable->getNumNt( iSequencerId );
+        return pContigCovTable->getNumNt( iSequencerId );
     } // method
 
     inline std::string getRunName( int64_t iId )
@@ -1265,24 +1332,24 @@ class SV_DB : public Container
       public:
         int64_t uiSequencerId;
 
-        ReadInserter( std::shared_ptr<SV_DB> pDB, std::string sSequencerName )
+        ReadInserter( std::shared_ptr<SV_DB> pDB, std::string sSequencerName, std::shared_ptr<Pack> pPack )
             : pDB( pDB ),
               xTransactionContext( *pDB->pDatabase ),
               uiSequencerId( pDB->pSequencerTable->insertSequencer( sSequencerName ) )
-        {} // constructor
+        {
+            pDB->pContigCovTable->insert( uiSequencerId, pPack );
+        } // constructor
 
         ReadInserter( const ReadInserter& rOther ) = delete; // delete copy constructor
 
         inline void insertRead( std::shared_ptr<NucSeq> pRead )
         {
             pDB->pReadTable->insertRead( uiSequencerId, pRead );
-            pDB->pSequencerTable->incrementNt( uiSequencerId, pRead->length( ) );
         } // method
 
         inline void insertPairedRead( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
         {
             pDB->pPairedReadTable->insertRead( uiSequencerId, pReadA, pReadB );
-            pDB->pSequencerTable->incrementNt( uiSequencerId, pReadA->length( ) + pReadB->length( ) );
         } // method
     }; // class
 

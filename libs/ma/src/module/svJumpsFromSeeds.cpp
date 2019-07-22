@@ -271,6 +271,8 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     vSeeds.reserve( pSegments->size( ) * 2 );
     pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, [&]( ) { return true; } );
 
+    SV_DB::ContigCovTable::CovInserter( iSequencerId, pRefSeq, pDb ).insert( vSeeds );
+
     if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
         if( vSeeds.front( ).start( ) > uiMinDistDummy )
@@ -284,102 +286,10 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     return pRet;
 } // method
 
-std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeedsPaired::execute( std::shared_ptr<SegmentVector> pSegmentsA,
-                                                                          std::shared_ptr<SegmentVector>
-                                                                              pSegmentsB,
-                                                                          std::shared_ptr<Pack>
-                                                                              pRefSeq,
-                                                                          std::shared_ptr<FMIndex>
-                                                                              pFM_index,
-                                                                          std::shared_ptr<NucSeq>
-                                                                              pQueryA,
-                                                                          std::shared_ptr<NucSeq>
-                                                                              pQueryB )
-{
-    AlignedMemoryManager xMemoryManager;
-    auto pRet = std::make_shared<ContainerVector<SvJump>>( );
-
-    // sort seeds by query position:
-    std::sort( pSegmentsA->begin( ), pSegmentsA->end( ),
-               []( const Segment& rA, const Segment& rB ) { return rA.start( ) < rB.start( ); } );
-    Seeds vSeedsA;
-    // avoid multiple allocations (we can only guess the actual number of seeds here)
-    vSeedsA.reserve( pSegmentsA->size( ) * 2 );
-    // emplace the seeds of the first query
-    pSegmentsA->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeedsA,
-                                     []( ) { return true; } );
-    // add the dummy jumps for the first query
-    if( vSeedsA.size( ) > 0 && bDoDummyJumps )
-    {
-        if( vSeedsA.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, vSeedsA.front( ), pQueryA->length( ), true, pQueryA->iId );
-        if( vSeedsA.back( ).end( ) + uiMinDistDummy < pQueryA->length( ) )
-            pRet->emplace_back( pSelectedSetting, vSeedsA.back( ), pQueryA->length( ), false, pQueryA->iId );
-    } // if
-
-
-    std::sort( pSegmentsB->begin( ), pSegmentsB->end( ),
-               []( const Segment& rA, const Segment& rB ) { return rA.start( ) < rB.start( ); } );
-    Seeds vSeedsB;
-    // avoid multiple allocations (we can only guess the actual number of seeds here)
-    vSeedsB.reserve( pSegmentsB->size( ) * 2 );
-    // emplace the seeds of the second query
-    pSegmentsB->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeedsB,
-                                     []( ) { return true; } );
-    // add the dummy jumps for the second query
-    if( vSeedsB.size( ) > 0 && bDoDummyJumps )
-    {
-        if( vSeedsB.front( ).start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, vSeedsB.front( ), pQueryB->length( ), true, pQueryB->iId );
-        if( vSeedsB.back( ).end( ) + uiMinDistDummy < pQueryB->length( ) )
-            pRet->emplace_back( pSelectedSetting, vSeedsB.back( ), pQueryB->length( ), false, pQueryB->iId );
-    } // if
-
-    // @note @todo from here on everything is quite inefficient
-
-    // walk over all seeds to compute
-    LastMatchingSeeds xLastSeedsForwardA;
-    LastMatchingSeeds xLastSeedsForwardB;
-    // fill
-    xLastSeedsForwardA.fill( vSeedsB.begin( ), vSeedsB.end( ) );
-    xLastSeedsForwardB.fill( vSeedsA.begin( ), vSeedsA.end( ) );
-
-    LastMatchingSeeds xLastSeedsReverseA;
-    LastMatchingSeeds xLastSeedsReverseB;
-    // fill
-    xLastSeedsReverseA.fill( vSeedsB.rbegin( ), vSeedsB.rend( ) );
-    xLastSeedsReverseB.fill( vSeedsA.rbegin( ), vSeedsA.rend( ) );
-
-
-    // now adjust seeds positions using the paired read information.
-    for( Seed& rCurr : vSeedsA )
-        rCurr.iStart += uiPairedDist;
-    for( Seed& rCurr : vSeedsB )
-        rCurr.iStart += uiPairedDist;
-
-
-    for( Seed& rCurr : vSeedsA )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardA, rCurr, false, pRet, pRefSeq, pQueryA,
-                                       xHashMapSeeder, xSeedLumper, xMemoryManager, xNMWModule, xBinarySeeding );
-    for( Seed& rCurr : vSeedsB )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsForwardB, rCurr, false, pRet, pRefSeq, pQueryB,
-                                       xHashMapSeeder, xSeedLumper, xMemoryManager, xNMWModule, xBinarySeeding );
-
-
-    for( auto itRevIt = vSeedsA.rbegin( ); itRevIt != vSeedsA.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseA, *itRevIt, true, pRet, pRefSeq, pQueryA,
-                                       xHashMapSeeder, xSeedLumper, xMemoryManager, xNMWModule, xBinarySeeding );
-    for( auto itRevIt = vSeedsB.rbegin( ); itRevIt != vSeedsB.rend( ); itRevIt++ )
-        helperSvJumpsFromSeedsExecute( pSelectedSetting, xLastSeedsReverseB, *itRevIt, true, pRet, pRefSeq, pQueryB,
-                                       xHashMapSeeder, xSeedLumper, xMemoryManager, xNMWModule, xBinarySeeding );
-
-    return pRet;
-} // method
 
 #ifdef WITH_PYTHON
 void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
 {
-    exportModule<SvJumpsFromSeeds>( rxPyModuleId, "SvJumpsFromSeeds" );
-    exportModule<SvJumpsFromSeedsPaired>( rxPyModuleId, "SvJumpsFromSeedsPaired" );
+    exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>>( rxPyModuleId, "SvJumpsFromSeeds" );
 } // function
 #endif

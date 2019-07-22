@@ -5,12 +5,13 @@
  */
 #pragma once
 
+#include "container/svDb.h"
 #include "container/segment.h"
 #include "container/svJump.h"
-#include "module/module.h"
-#include "module/hashMapSeeding.h"
-#include "module/needlemanWunsch.h"
 #include "module/binarySeeding.h"
+#include "module/hashMapSeeding.h"
+#include "module/module.h"
+#include "module/needlemanWunsch.h"
 
 namespace libMA
 {
@@ -21,6 +22,7 @@ class PerfectMatch;
 
 /**
  * @brief Computes Sv-Jumps from a given seed set
+ * @note WARNING: DO USE EACH INSTANCE OF THIS MODULE ONLY ONCE IN THE COMPUTATIONAL GRAPH
  */
 class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
@@ -34,11 +36,13 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNMWModule;
     BinarySeeding xBinarySeeding;
+    int64_t iSequencerId;
+    std::shared_ptr<SV_DB> pDb;
 
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
      */
-    SvJumpsFromSeeds( const ParameterSetManager& rParameters )
+    SvJumpsFromSeeds( const ParameterSetManager& rParameters, int64_t iSequencerId, std::shared_ptr<SV_DB> pDb )
         : pSelectedSetting( rParameters.getSelected( ) ),
           uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
           uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
@@ -47,7 +51,9 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           xHashMapSeeder( rParameters ),
           xSeedLumper( rParameters ),
           xNMWModule( rParameters ),
-          xBinarySeeding( rParameters )
+          xBinarySeeding( rParameters ),
+          iSequencerId( iSequencerId ),
+          pDb( pDb )
     {
         xBinarySeeding.bDisableHeuristics = true;
     } // constructor
@@ -57,55 +63,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                                                            pRefSeq,
                                                                        std::shared_ptr<FMIndex>
                                                                            pFM_index,
-                                                                       std::shared_ptr<NucSeq>
-                                                                           pQuery );
-}; // class
-
-/**
- * @brief Computes Sv-Jumps from a given seed set (paired)
- */
-class SvJumpsFromSeedsPaired
-    : public Module<ContainerVector<SvJump>, false, SegmentVector, SegmentVector, Pack, FMIndex, NucSeq, NucSeq>
-{
-  public:
-    const std::shared_ptr<Presetting> pSelectedSetting;
-    const size_t uiMinSeedSizeSV;
-    const size_t uiMaxAmbiguitySv;
-    const bool bDoDummyJumps;
-    const size_t uiMinDistDummy;
-    const size_t uiPairedDist;
-    HashMapSeeding xHashMapSeeder;
-    SeedLumping xSeedLumper;
-    NeedlemanWunsch xNMWModule;
-    BinarySeeding xBinarySeeding;
-
-    /**
-     * @brief Initialize a SvJumpsFromSeedsPaired Module
-     */
-    SvJumpsFromSeedsPaired( const ParameterSetManager& rParameters )
-        : pSelectedSetting( rParameters.getSelected( ) ),
-          uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
-          uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
-          bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
-          uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
-          uiPairedDist( (size_t)pSelectedSetting->xMeanPairedReadDistance->get( ) ),
-          xHashMapSeeder( rParameters ),
-          xSeedLumper( rParameters ),
-          xNMWModule( rParameters ),
-          xBinarySeeding( rParameters )
-    {
-        xBinarySeeding.bDisableHeuristics = true;
-    } // constructor
-
-    virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegmentsA,
-                                                                       std::shared_ptr<SegmentVector>
-                                                                           pSegmentsB,
-                                                                       std::shared_ptr<Pack>
-                                                                           pRefSeq,
-                                                                       std::shared_ptr<FMIndex>
-                                                                           pFM_index,
-                                                                       std::shared_ptr<NucSeq>
-                                                                           pQueryA,
                                                                        std::shared_ptr<NucSeq>
                                                                            pQuery );
 }; // class

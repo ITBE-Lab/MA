@@ -53,7 +53,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 
     // export the ReadInserter class
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
-        .def( py::init<std::shared_ptr<SV_DB>, std::string>( ) )
+        .def( py::init<std::shared_ptr<SV_DB>, std::string, std::shared_ptr<Pack>>( ) )
         .def( "insert_read", &SV_DB::ReadInserter::insertRead )
         .def_readonly( "sequencer_id", &SV_DB::ReadInserter::uiSequencerId )
         .def( "insert_paired_read", &SV_DB::ReadInserter::insertPairedRead );

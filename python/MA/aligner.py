@@ -41,7 +41,6 @@ from libMA import SortedSvJumpFromSql
 from libMA import AllNucSeqFromSql
 from libMA import SvCallerRunsFromDb
 from libMA import SvCallsFromDb
-from libMA import SvJumpsFromSeedsPaired
 import libMA
 
 
