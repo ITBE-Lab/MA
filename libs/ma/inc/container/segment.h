@@ -86,6 +86,33 @@ class Segment : public Container, public Interval<nucSeqIndex>
         return *this;
     } // operator
 
+    template <class FUNCTOR> bool forEachSeed( FMIndex& rxFMIndex, FUNCTOR&& fDo, t_bwtIndex uiEveryNth = 1 ) const
+    {
+        // iterate over the interval in the BWT
+        for( auto ulCurrPos = this->saInterval( ).start( ); ulCurrPos < this->saInterval( ).end( );
+             ulCurrPos += uiEveryNth )
+        {
+            // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every
+            // match individually
+            nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa( ulCurrPos );
+            nucSeqIndex uiPosOnQuery = this->start( );
+            bool bOnForw = ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2;
+            if( !bOnForw )
+            {
+                // mirror seed on the x coordinate (mirror axis is where forward and reverse strand meet)
+                ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ulIndexOnRefSeq - 1;
+                assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) );
+            } // if
+            assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );
+            // call the given function
+            Seed xSeed( uiPosOnQuery, this->size( ) + 1, ulIndexOnRefSeq, (unsigned int)this->saInterval( ).size( ),
+                            bOnForw );
+            if( !fDo( xSeed ) )
+                return false;
+        } // for
+        return true;
+    } // method
+
 }; // class ( Segment )
 
 
@@ -311,34 +338,8 @@ class SegmentVector : public Container
                 uiJumpBy = rSegment.saInterval( ).size( ) / uiMAxAmbiguity;
             } // if
 
-            // iterate over the interval in the BWT
-            for( auto ulCurrPos = rSegment.saInterval( ).start( ); ulCurrPos < rSegment.saInterval( ).end( );
-                 ulCurrPos += uiJumpBy )
-            {
-                // calculate the referenceIndex using pxUsedFmIndex->bwt_sa() and call fDo for every
-                // match individually
-                nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa( ulCurrPos );
-                nucSeqIndex uiPosOnQuery = rSegment.start( );
-                bool bOnForw = ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2;
-                if( !bOnForw )
-                {
-                    // mirror seed on the x coordinate (mirror axis is where forward and reverse strand meet)
-                    ulIndexOnRefSeq = rxFMIndex.getRefSeqLength( ) - ulIndexOnRefSeq - 1;
-                    // mirror seed on the y coordinate (mirror axis is the center of the query
-                    // uiPosOnQuery = uiQLen - uiPosOnQuery - 1;
-
-                    // sanity checks...
-                    //assert( uiPosOnQuery < uiQLen );
-                    //assert( uiPosOnQuery + rSegment.size( ) <= uiQLen );
-                    assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) );
-                    //assert( ulIndexOnRefSeq + rSegment.size( ) <= rxFMIndex.getRefSeqLength( ) );
-                } // if
-                assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );
-                // call the given function
-                if( !fDo( Seed( uiPosOnQuery, rSegment.size( ) + 1, ulIndexOnRefSeq,
-                                (unsigned int)rSegment.saInterval( ).size( ), bOnForw ) ) )
-                    return;
-            } // for
+            if( !rSegment.forEachSeed( rxFMIndex, [&]( Seed& rSeed ) { return fDo( rSeed ); }, uiJumpBy ) )
+                return;
         } // for
     } // function
 
@@ -357,7 +358,7 @@ class SegmentVector : public Container
                               FUNCTOR&& fDo // this function is called after each seed is emplaced
     )
     {
-        forEachSeed( rxFMIndex, uiQLen, uiMAxAmbiguity, uiMinLen, true, [&]( Seed&& rS ) {
+        forEachSeed( rxFMIndex, uiQLen, uiMAxAmbiguity, uiMinLen, true, [&]( Seed& rS ) {
             rvSeedVector.push_back( rS );
             return fDo( );
         } );

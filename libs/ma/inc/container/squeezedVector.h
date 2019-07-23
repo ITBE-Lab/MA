@@ -1,5 +1,5 @@
 #pragma once
-#if 0
+
 namespace libMA
 {
 /**
@@ -156,10 +156,4 @@ template <class TP_CONTENT> class SqueezedVector
 #endif
 }; // class
 
-inline void sweep_sv_jumps()
-{
-
-} // method
-
 }; // namespace libMA
-#endif

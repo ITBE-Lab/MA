@@ -1006,8 +1006,8 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
         bExplained = true;
 
         std::cout << "Statement: " << STATEMENT::sStatementText << std::endl;
-        std::cout << "selectid\torder\tfrom\tdetail" << std::endl;
-        std::cout << "--------\t-----\t----\t------" << std::endl;
+        std::cout << "id\tpId\t?\tdetail" << std::endl;
+        std::cout << "--\t---\t-\t------" << std::endl;
         xExplainQueryPlan.vExecuteAndForAllRowsDo(
             []( auto xTuple ) {
                 /* print result to std::cout */

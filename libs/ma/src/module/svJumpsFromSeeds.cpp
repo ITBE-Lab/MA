@@ -252,6 +252,7 @@ void helperSvJumpsFromSeedsExecuteOuter( const std::shared_ptr<Presetting> pSele
     } // if
 } // function
 
+
 std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_ptr<SegmentVector> pSegments,
                                                                     std::shared_ptr<Pack>
                                                                         pRefSeq,
@@ -269,10 +270,49 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     Seeds vSeeds;
     // avoid multiple allocations (we can only guess the actual number of seeds here)
     vSeeds.reserve( pSegments->size( ) * 2 );
-    pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, [&]( ) { return true; } );
+
+    // filter ambiguous segments
+    std::vector<Segment*> vTemp;
+    int64_t iLastUniqueRefPos = 0;
+    for( Segment& rSegment : *pSegments )
+    {
+        if( rSegment.saInterval( ).size( ) == 1 )
+            rSegment.forEachSeed( *pFM_index, [&]( Seed& rS ) {
+                // deal with vTemp
+                int64_t iCurrUniqueRefPos = (int64_t)rS.start_ref( );
+                Seed xBest;
+                int64_t iMinDist = -1;
+                for( Segment* pSeg : vTemp )
+                    pSeg->forEachSeed( *pFM_index, [&]( Seed& rS ) {
+                        int64_t iStart = (int64_t)rS.start_ref( );
+                        int64_t iEnd = (int64_t)rS.end_ref( );
+                        int64_t iDist = std::min(
+                            std::min( std::abs( iStart - iCurrUniqueRefPos ), std::abs( iEnd - iLastUniqueRefPos ) ),
+                            std::min( std::abs( iStart - iCurrUniqueRefPos ), std::abs( iEnd - iLastUniqueRefPos ) ) );
+                        if( iMinDist == -1 || iDist < iMinDist )
+                        {
+                            xBest = rS;
+                            iMinDist = iDist;
+                        } // if
+                        return true;
+                    } );
+                vSeeds.push_back( xBest );
+                vTemp.clear( );
+
+                iLastUniqueRefPos = (int64_t)rS.end_ref( );
+                vSeeds.push_back( rS );
+                return true;
+            } );
+        else
+            vTemp.push_back( &rSegment );
+    } // for
+
+    // pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, [&]( ) { return true; }
+    // );
+
 
     // seeds need to be sorted by query pos
-    SV_DB::ContigCovTable::CovInserter( iSequencerId, pRefSeq, pDb ).insert( vSeeds, pQuery->length() );
+    SV_DB::ContigCovTable::CovInserter( iSequencerId, pRefSeq, pDb ).insert( vSeeds, pQuery->length( ) );
 
     if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
