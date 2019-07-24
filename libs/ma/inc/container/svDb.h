@@ -108,6 +108,17 @@ class SV_DB : public Container
             return xGetNumNt.executeAndStoreInVector<0>( iSequencerId );
         } // method
 
+        inline std::vector<double> getEstimatedCoverageList( int64_t iSequencerId, std::shared_ptr<Pack> pPack )
+        {
+            std::vector<double> vRet;
+            auto vNumNt = this->getNumNt( iSequencerId );
+            assert( vNumNt.size( ) == pPack->uiNumContigs( ) );
+            vRet.reserve( vNumNt.size( ) );
+            for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
+                vRet.push_back( vNumNt[ uiI ] / (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked );
+            return vRet;
+        } // method
+
         class CovInserter
         {
           public:
@@ -842,7 +853,7 @@ class SV_DB : public Container
         inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                      int64_t iAllowedDist )
         {
-            uint32_t uiNumCalls = numCalls(iCallerRunIdA, 0) * 3;
+            uint32_t uiNumCalls = numCalls( iCallerRunIdA, 0 ) * 3;
             uint32_t uiRet = 0;
             xNumOverlaps.vExecuteAndForAllRowsUnpackedDo(
                 [&]( int64_t iId, double dScore, uint32_t uiFromStart, uint32_t uiFromSize, uint32_t uiToStart,
@@ -878,7 +889,7 @@ class SV_DB : public Container
             int64_t uiCount = 0;
             for( int64_t iI = 0; iI <= iAllowedDist; iI++ )
             {
-                uint32_t uiAmount = numOverlaps(iCallerRunIdA, iCallerRunIdB, dMinScore, iI);
+                uint32_t uiAmount = numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iI );
                 uiSum += uiAmount * iI;
                 uiCount += uiAmount;
             } // for
@@ -895,11 +906,11 @@ class SV_DB : public Container
                 [&]( int64_t iId, double dScore, uint32_t uiFromStart, uint32_t uiFromSize, uint32_t uiToStart,
                      uint32_t uiToSize, bool bSwitchStrand ) {
                     if( xNumOverlapsHelper2
-                             .vExecuteAndReturnIterator( iCallerRunIdA, dScore, uiFromStart - iAllowedDist,
-                                                         uiFromStart + uiFromSize + iAllowedDist,
-                                                         uiToStart - iAllowedDist, uiToStart + uiToSize + iAllowedDist,
-                                                         bSwitchStrand )
-                             .eof( ) )
+                            .vExecuteAndReturnIterator( iCallerRunIdA, dScore, uiFromStart - iAllowedDist,
+                                                        uiFromStart + uiFromSize + iAllowedDist,
+                                                        uiToStart - iAllowedDist, uiToStart + uiToSize + iAllowedDist,
+                                                        bSwitchStrand )
+                            .eof( ) )
                         return;
                     uiRet += 1;
                 },
@@ -1600,6 +1611,30 @@ class SortedSvJumpFromSql
                                                                   std::numeric_limits<uint32_t>::max( ) ) )
     {} // constructor
 
+    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId,
+                         uint32_t uiX, uint32_t uiW )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
+          xQueryStart( *pDb->pDatabase,
+                       "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                       "sort_pos_start, num_supporting_nt, id, read_id "
+                       "FROM sv_jump_table "
+                       "WHERE sv_jump_run_id == ? "
+                       "AND ( (from_pos >= ? AND from_pos <= ?) OR (from_pos == ? AND to_pos >= ? AND to_pos <= ?) ) "
+                       "ORDER BY sort_pos_start" ),
+          xQueryEnd( *pDb->pDatabase,
+                     "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                     "sort_pos_end, num_supporting_nt, id, read_id "
+                     "FROM sv_jump_table "
+                     "WHERE sv_jump_run_id == ? "
+                     "AND ( (from_pos >= ? AND from_pos <= ?) OR (from_pos == ? AND to_pos >= ? AND to_pos <= ?) ) "
+                     "ORDER BY sort_pos_end" ),
+          xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator(
+              iSvCallerRunId, uiX, uiX + uiW, std::numeric_limits<uint32_t>::max( ), uiX, uiX + uiW ) ),
+          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator(
+              iSvCallerRunId, uiX, uiX + uiW, std::numeric_limits<uint32_t>::max( ), uiX, uiX + uiW ) )
+    {} // constructor
+
     bool hasNextStart( )
     {
         return !xTableIteratorStart.eof( );
@@ -1612,31 +1647,37 @@ class SortedSvJumpFromSql
 
     bool nextStartIsSmaller( )
     {
+        if( !hasNextStart( ) )
+            return false;
+        if( !hasNextEnd( ) )
+            return true;
         auto xStartTup = xTableIteratorStart.get( );
         auto xEndTup = xTableIteratorEnd.get( );
         return std::get<7>( xStartTup ) <= std::get<7>( xEndTup );
     } // method
 
-    SvJump getNextStart( )
+    std::shared_ptr<SvJump> getNextStart( )
     {
         assert( hasNextStart( ) );
 
         auto xTup = xTableIteratorStart.get( );
         xTableIteratorStart.next( );
-        return SvJump( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
-                       std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                       std::get<8>( xTup ), std::get<9>( xTup ), std::get<10>( xTup ) );
+        return std::make_shared<SvJump>( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ),
+                                         std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
+                                         std::get<5>( xTup ), std::get<6>( xTup ), std::get<8>( xTup ),
+                                         std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 
-    SvJump getNextEnd( )
+    std::shared_ptr<SvJump> getNextEnd( )
     {
         assert( hasNextEnd( ) );
 
         auto xTup = xTableIteratorEnd.get( );
         xTableIteratorEnd.next( );
-        return SvJump( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
-                       std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                       std::get<8>( xTup ), std::get<9>( xTup ), std::get<10>( xTup ) );
+        return std::make_shared<SvJump>( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ),
+                                         std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
+                                         std::get<5>( xTup ), std::get<6>( xTup ), std::get<8>( xTup ),
+                                         std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 
 }; // class
@@ -1963,10 +2004,10 @@ class SvCallsFromDb
         {
             auto xTup = xSupportIterator.get( );
             xRet.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-            xRet.vSupportingJumps.emplace_back( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ),
-                                                std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                                                std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ),
-                                                std::get<8>( xTup ) );
+            xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
+                pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ),
+                std::get<8>( xTup ) ) );
             xSupportIterator.next( );
         } // while
         xTableIterator.next( );

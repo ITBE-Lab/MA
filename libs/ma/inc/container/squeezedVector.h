@@ -1,5 +1,8 @@
 #pragma once
 
+#include "util/support.h"
+#include <vector>
+
 namespace libMA
 {
 /**
@@ -49,9 +52,9 @@ template <class TP_CONTENT> class SqueezedVector
         iY -= iX;
 
         // check if we are above or below logical zero
-        if( iY > uiCenterStripUp )
+        if( iY > (int64_t)uiCenterStripUp )
             iY = ( iY - uiCenterStripUp ) / uiSqueezeFactor + uiCenterStripUp;
-        else if( iY < -uiCenterStripUp )
+        else if( iY < -((int64_t)uiCenterStripUp) )
             iY = ( iY + uiCenterStripDown ) / uiSqueezeFactor - uiCenterStripDown;
         // else
         //  no further transformation needed since we are in the non-squeezed part of the vector

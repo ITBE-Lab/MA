@@ -81,11 +81,11 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                 {
                     auto xTup = xSupportIterator.get( );
                     xPrim.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                    xPrim.vSupportingJumps.emplace_back( rParameters.getSelected( ), std::get<0>( xTup ),
-                                                         std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                                                         std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                                                         std::get<7>( xTup ) );
-                    uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( ).query_distance( );
+                    xPrim.vSupportingJumps.push_back(
+                        std::make_shared<SvJump>( rParameters.getSelected( ), std::get<0>( xTup ), std::get<1>( xTup ),
+                                                  std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
+                                                  std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) ) );
+                    uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( )->query_distance( );
                     xSupportIterator.next( );
                 } // while
                 uiPrimInsertSizeAvg /= xPrim.vSupportingJumps.size( );
@@ -114,11 +114,11 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                     {
                         auto xTup = xSupportIterator.get( );
                         xSec.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                        xSec.vSupportingJumps.emplace_back(
+                        xSec.vSupportingJumps.push_back( std::make_shared<SvJump>(
                             rParameters.getSelected( ), std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
                             std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                            std::get<7>( xTup ) );
-                        uiSecInsertSizeAvg += xSec.vSupportingJumps.back( ).query_distance( );
+                            std::get<7>( xTup ) ) );
+                        uiSecInsertSizeAvg += xSec.vSupportingJumps.back( )->query_distance( );
                         xSupportIterator.next( );
                     } // while
                     uiSecInsertSizeAvg /= xSec.vSupportingJumps.size( );

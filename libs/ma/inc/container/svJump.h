@@ -48,7 +48,6 @@ class SvJump : public Container
     int64_t iId;
     int64_t iReadId;
 
-
     SvJump( std::shared_ptr<Presetting> pSelectedSetting,
             const nucSeqIndex uiFrom,
             const nucSeqIndex uiTo,
@@ -251,6 +250,11 @@ class SvJump : public Container
         return to_start( ) + to_size( );
     } // method
 
+    int64_t sweep_end( ) const
+    {
+        return this->switch_strand_known( ) ? to_end( ) - 1 : to_start( ) + from_size( );
+    } // method
+
     nucSeqIndex ref_distance( ) const
     {
         return uiTo < uiFrom ? uiFrom - uiTo : uiTo - uiFrom;
@@ -346,10 +350,15 @@ class SvCall : public Container
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
     Regex xRegex;
+    size_t uiOpenEdges = 0;
+    std::vector<nucSeqIndex> vLeft;
+    std::vector<nucSeqIndex> vRight;
+    std::vector<nucSeqIndex> vUp;
+    std::vector<nucSeqIndex> vDown;
 
     // these can be empty
     std::shared_ptr<NucSeq> pInsertedSequence;
-    std::vector<SvJump> vSupportingJumps;
+    std::vector<std::shared_ptr<SvJump>> vSupportingJumps;
 
     SvCall( nucSeqIndex uiFromStart,
             nucSeqIndex uiToStart,
@@ -384,30 +393,51 @@ class SvCall : public Container
         this->uiCoverage = uiCoverage;
     } // constructor
 
-    SvCall( const SvJump& rJump, bool bRememberJump = true )
-        : SvCall( rJump.from_start_same_strand( ),
-                  rJump.to_start( ),
-                  rJump.from_size( ),
-                  rJump.to_size( ),
-                  rJump.does_switch_strand( ),
-                  rJump.numSupportingNt( ),
-                  std::vector<int64_t>{rJump.iId} )
+    SvCall( std::shared_ptr<SvJump>& pJump, bool bRememberJump = true )
+        : SvCall( pJump->from_start_same_strand( ),
+                  pJump->to_start( ),
+                  pJump->from_size( ),
+                  pJump->to_size( ),
+                  pJump->does_switch_strand( ),
+                  pJump->numSupportingNt( ),
+                  std::vector<int64_t>{pJump->iId} )
     {
         if( bRememberJump )
-            vSupportingJumps.push_back( rJump );
-    } // constructor
-
-    SvCall( SvJump& rJump, bool bRememberJump = true )
-        : SvCall( rJump.from_start_same_strand( ),
-                  rJump.to_start( ),
-                  rJump.from_size( ),
-                  rJump.to_size( ),
-                  rJump.does_switch_strand( ),
-                  rJump.numSupportingNt( ),
-                  std::vector<int64_t>{rJump.iId} )
-    {
-        if( bRememberJump )
-            vSupportingJumps.push_back( rJump );
+            vSupportingJumps.push_back( pJump );
+        nucSeqIndex uiF = pJump->uiFrom;
+        nucSeqIndex uiT = pJump->uiTo;
+        if( !pJump->from_known( ) )
+            uiF = uiT;
+        else if( !pJump->to_known( ) )
+            uiT = uiF;
+        nucSeqIndex uiDelToInsRatio = 1; // @todo check if 1 is a well enough approximation
+        if( pJump->from_fuzziness_is_rightwards( ) )
+        {
+            this->vLeft.push_back( uiF );
+            this->vRight.push_back( uiF + std::min( pJump->ref_distance( ) / uiDelToInsRatio,
+                                                    pJump->query_distance( ) * uiDelToInsRatio ) );
+        } // if
+        else
+        {
+            this->vRight.push_back( uiF );
+            nucSeqIndex uiX =
+                std::min( pJump->ref_distance( ) / uiDelToInsRatio, pJump->query_distance( ) * uiDelToInsRatio );
+            this->vLeft.push_back( uiF > uiX ? uiF - uiX : 0 );
+        } // else
+        if( pJump->to_fuzziness_is_downwards( ) )
+        {
+            this->vUp.push_back( uiT );
+            nucSeqIndex uiX =
+                std::min( pJump->ref_distance( ) / uiDelToInsRatio, pJump->query_distance( ) * uiDelToInsRatio );
+            this->vDown.push_back( uiT > uiX ? uiT - uiX : 0 );
+        } // if
+        else
+        {
+            this->vDown.push_back( uiT );
+            this->vUp.push_back( uiT + std::min( pJump->ref_distance( ) / uiDelToInsRatio,
+                                                 pJump->query_distance( ) * uiDelToInsRatio ) );
+        } // else
+        uiOpenEdges = 1;
     } // constructor
 
     bool supportedJumpsLoaded( ) const
@@ -449,15 +479,70 @@ class SvCall : public Container
         vSupportingJumps.clear( );
     } // method
 
-    SvJump& get_jump( size_t uiI )
+    std::shared_ptr<SvJump> get_jump( size_t uiI )
     {
         return vSupportingJumps[ uiI ];
     } // method
 
-    void add_jump( SvJump& rJmp )
+    void add_jump( std::shared_ptr<SvJump> pJmp )
     {
-        vSupportingJumpIds.push_back( rJmp.iId );
-        vSupportingJumps.push_back( rJmp );
+        vSupportingJumpIds.push_back( pJmp->iId );
+        vSupportingJumps.push_back( pJmp );
+    } // method
+
+    inline size_t estimateCoverage( )
+    {
+        return vSupportingJumpIds.size( );
+    } // method
+
+    static const size_t uiT = 5;
+    static const nucSeqIndex uiT2 = 5;
+    inline nucSeqIndex right( )
+    {
+        std::sort( vRight.begin( ), vRight.end( ) );
+        return vRight[ vRight.size( ) / uiT ] + uiT2;
+    } // method
+
+    inline nucSeqIndex left( )
+    {
+        std::sort( vLeft.begin( ), vLeft.end( ) );
+        nucSeqIndex uiX = vLeft[ vLeft.size( ) - vLeft.size( ) / uiT ];
+        return uiX > uiT2 ? uiX - uiT2 : 0;
+    } // method
+    inline nucSeqIndex up( )
+    {
+        std::sort( vUp.begin( ), vUp.end( ) );
+        return vUp[ vUp.size( ) / uiT ] + uiT2;
+    } // method
+
+    inline nucSeqIndex down( )
+    {
+        std::sort( vDown.begin( ), vDown.end( ) );
+        nucSeqIndex uiX = vDown[ vDown.size( ) - vDown.size( ) / uiT ];
+        return uiX > uiT2 ? uiX - uiT2 : 0;
+    } // method
+
+    inline void reEstimateClusterSize( )
+    {
+        nucSeqIndex uiRight = this->right( );
+        nucSeqIndex uiUp = this->up( );
+        this->uiFromStart = this->left( );
+        this->uiToStart = this->down( );
+        // make sure we never have a call smaller than 10x10:
+        if( uiRight < 10 + this->uiFromStart )
+        {
+            this->uiFromStart = ( this->uiFromStart + uiRight ) / 2;
+            this->uiFromSize = 10;
+        } // if
+        else
+            this->uiFromSize = uiRight - uiFromStart;
+        if( uiUp < 10 + this->uiToStart )
+        {
+            this->uiToStart = ( this->uiToStart + uiUp ) / 2;
+            this->uiToSize = 10;
+        } // if
+        else
+            this->uiToSize = uiUp - uiToStart;
     } // method
 
     /**
@@ -478,11 +563,17 @@ class SvCall : public Container
                                          rOther.vSupportingJumpIds.end( ) );
         this->uiNumSuppNt += rOther.uiNumSuppNt;
         this->uiCoverage = std::max( rOther.uiCoverage, this->uiCoverage );
-        for( SvJump& rJump : rOther.vSupportingJumps ) // @todo this is inefficient...
-            this->vSupportingJumps.push_back( rJump );
+        this->vSupportingJumps.insert( this->vSupportingJumps.end( ), rOther.vSupportingJumps.begin( ),
+                                       rOther.vSupportingJumps.end( ) );
+        this->uiOpenEdges += rOther.uiOpenEdges;
         assert( this->supportedJumpsLoaded( ) == rOther.supportedJumpsLoaded( ) );
         assert( !this->insertedSequenceComputed( ) );
         assert( !rOther.insertedSequenceComputed( ) );
+
+        this->vLeft.insert( this->vLeft.end( ), rOther.vLeft.begin( ), rOther.vLeft.end( ) );
+        this->vRight.insert( this->vRight.end( ), rOther.vRight.begin( ), rOther.vRight.end( ) );
+        this->vUp.insert( this->vUp.end( ), rOther.vUp.begin( ), rOther.vUp.end( ) );
+        this->vDown.insert( this->vDown.end( ), rOther.vDown.begin( ), rOther.vDown.end( ) );
     } // method
 }; // class
 

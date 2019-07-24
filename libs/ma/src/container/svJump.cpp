@@ -7,7 +7,7 @@ using namespace libMA;
 void exportSVJump( py::module& rxPyModuleId )
 {
     // export the SvJump class
-    py::class_<SvJump>( rxPyModuleId, "SvJump" )
+    py::class_<SvJump, std::shared_ptr<SvJump>>( rxPyModuleId, "SvJump" )
         .def( py::init<std::shared_ptr<Presetting>, const Seed&, const Seed&, const bool, int64_t>( ) )
         .def( py::init<std::shared_ptr<Presetting>, const Seed&, nucSeqIndex, const bool, int64_t>( ) )
         .def( "does_switch_strand", &SvJump::does_switch_strand )
@@ -40,8 +40,7 @@ void exportSVJump( py::module& rxPyModuleId )
     py::class_<SvCall>( rxPyModuleId, "SvCall" )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, uint32_t>( ) )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, uint32_t, uint32_t>( ) )
-        .def( py::init<const SvJump&>( ) )
-        .def( py::init<SvJump&>( ) )
+        .def( py::init<std::shared_ptr<SvJump>>( ) )
         .def( "join", &SvCall::join )
         .def( "clear_jumps", &SvCall::clear_jumps )
         .def( "add_jump", &SvCall::add_jump )

@@ -134,6 +134,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportSvJumpsFromSeeds( libMaModule );
     defaults::exportDefaults( libMaModule );
     exportComputeCoverage( libMaModule );
+    exportSweepSvJump( libMaModule );
 } // function
 
 #endif
