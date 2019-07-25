@@ -1612,7 +1612,7 @@ class SortedSvJumpFromSql
     {} // constructor
 
     SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId,
-                         uint32_t uiX, uint32_t uiW )
+                         int64_t iX, int64_t iW )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
@@ -1620,19 +1620,19 @@ class SortedSvJumpFromSql
                        "sort_pos_start, num_supporting_nt, id, read_id "
                        "FROM sv_jump_table "
                        "WHERE sv_jump_run_id == ? "
-                       "AND ( (from_pos >= ? AND from_pos <= ?) OR (from_pos == ? AND to_pos >= ? AND to_pos <= ?) ) "
+                       "AND sort_pos_end >= ? "
+                       "AND sort_pos_start <= ? "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
                      "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                      "sort_pos_end, num_supporting_nt, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
-                     "AND ( (from_pos >= ? AND from_pos <= ?) OR (from_pos == ? AND to_pos >= ? AND to_pos <= ?) ) "
+                     "AND sort_pos_end >= ? "
+                     "AND sort_pos_start <= ? "
                      "ORDER BY sort_pos_end" ),
-          xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator(
-              iSvCallerRunId, uiX, uiX + uiW, std::numeric_limits<uint32_t>::max( ), uiX, uiX + uiW ) ),
-          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator(
-              iSvCallerRunId, uiX, uiX + uiW, std::numeric_limits<uint32_t>::max( ), uiX, uiX + uiW ) )
+          xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId, iX, iX + iW ) ),
+          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, iX, iX + iW ) )
     {} // constructor
 
     bool hasNextStart( )

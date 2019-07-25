@@ -11,10 +11,11 @@
 namespace libMA
 {
 
-class GenomeSection : public Container, public Interval<nucSeqIndex>
+class GenomeSection : public Container, public Interval<int64_t>
 {
-    using Interval<nucSeqIndex>::Interval;
+    using Interval<int64_t>::Interval;
 }; // class
+
 /**
  * @brief generates evenly spaced intervals over the length of the given pack
  * @details used for parallel implementation of the complete bipartite subgraph (CBSG) sweep.
@@ -23,24 +24,34 @@ class GenomeSection : public Container, public Interval<nucSeqIndex>
 class GenomeSectionFactory : public Module<GenomeSection, true>
 {
   public:
-    nucSeqIndex uiRefSize;
-    nucSeqIndex uiSectionSize;
-    nucSeqIndex uiCurrStart;
+    int64_t iRefSize;
+    int64_t iSectionSize;
+    int64_t iCurrStart;
     /**
      * @brief
      * @details
      */
     GenomeSectionFactory( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pPack )
-        : uiRefSize( pPack->uiStartOfReverseStrand( ) ),
-          uiSectionSize( uiRefSize / ( rParameters.getNumThreads( ) * 100 ) ),
-          uiCurrStart( 0 )
+        : iRefSize( (int64_t)pPack->uiStartOfReverseStrand( ) ),
+          // compute the number of genome sections so that there are 100 sections for each thread
+          // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
+          // otherwise we do so much extra work with re overlapping part between sections,
+          // that parallel execution is not worth it.
+          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)10000 ) ),
+          iCurrStart( 0 )
     {} // constructor
 
     virtual std::shared_ptr<GenomeSection> EXPORTED execute( )
     {
-        auto pRet = std::make_shared<GenomeSection>( uiCurrStart, uiSectionSize );
-        uiCurrStart += uiSectionSize;
-        if( uiCurrStart >= uiRefSize )
+        std::shared_ptr<GenomeSection> pRet;
+        if( iCurrStart < iRefSize ) // forward strand
+            pRet = std::make_shared<GenomeSection>( (int64_t)iCurrStart, (int64_t)iSectionSize );
+        else // reverse strand
+            pRet = std::make_shared<GenomeSection>(
+                iCurrStart - iRefSize + std::numeric_limits<int64_t>::max( ) / (int64_t)2, (int64_t)iSectionSize );
+
+        iCurrStart += iSectionSize;
+        if( iCurrStart >= iRefSize * 2 )
             setFinished( );
         return pRet;
     } // method
@@ -54,6 +65,33 @@ class CompleteBipartiteSubgraphClusterVector : public Container
 }; // class
 
 /**
+ * @brief saves all computed clusters in the database
+ * @details
+ */
+class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
+{
+  public:
+    SV_DB::SvCallInserter xInserter;
+    std::mutex xLock;
+    /**
+     * @brief
+     * @details
+     */
+    SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDB, std::string rsSvCallerName,
+                std::string rsSvCallerDesc, int64_t uiJumpRunId )
+        : xInserter( pDB, rsSvCallerName, rsSvCallerDesc, uiJumpRunId )
+    {} // constructor
+
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
+    {
+        std::lock_guard<std::mutex> xGuard( xLock );
+        for( auto pCall : pVec->vContent )
+            xInserter.insertCall( *pCall );
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
+/**
  * @brief
  * @details
  */
@@ -64,7 +102,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
     std::shared_ptr<SV_DB> pSvDb;
     std::shared_ptr<Pack> pPack;
     int64_t iSvCallerRunId;
-    nucSeqIndex uiMaxFuzziness;
+    int64_t iMaxFuzziness;
     nucSeqIndex uiGenomeSize;
     size_t uiSqueezeFactor;
     size_t uiCenterStripUp;
@@ -83,7 +121,8 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
           iSvCallerRunId( iSvCallerRunId ),
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
           // max of both limits)
-          uiMaxFuzziness( (nucSeqIndex)rParameters.getSelected( )->xJumpH->get( ) ),
+          // also this should be the maximal cluster width not the maximal CBSG width
+          iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( ) ),
           uiGenomeSize( pPack->uiStartOfReverseStrand( ) ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
@@ -96,26 +135,39 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
         EXPORTED execute( std::shared_ptr<GenomeSection> pSection )
     {
         SortedSvJumpFromSql xEdges(
-            rParameters, pSvDb, iSvCallerRunId, (uint32_t)pSection->iStart,
+            rParameters, pSvDb, iSvCallerRunId, pSection->iStart,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
-            ( uint32_t )( pSection->iSize + uiMaxFuzziness ) );
+            pSection->iSize + iMaxFuzziness );
+
+        nucSeqIndex uiForwStrandEnd = (nucSeqIndex)pSection->end( );
+        if( pSection->iStart >= std::numeric_limits<int64_t>::max( ) / (int64_t)2 )
+            uiForwStrandEnd = ( nucSeqIndex )( pSection->end( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
 
         SqueezedVector<std::shared_ptr<SvCall>> xPointerVec( uiGenomeSize, uiSqueezeFactor, uiCenterStripUp,
                                                              uiCenterStripDown );
 
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
 
+#if DEBUG_LEVEL > 0
+        std::set<int64_t> xVisitedStart;
+        std::vector<std::shared_ptr<SvCall>> xActiveClusters;
+#endif
+
         while( xEdges.hasNextStart( ) || xEdges.hasNextEnd( ) )
         {
             if( xEdges.nextStartIsSmaller( ) )
             {
-                auto pNewCluster = std::make_shared<SvCall>( xEdges.getNextStart( ) );
+                auto pEdge = xEdges.getNextStart( );
+#if DEBUG_LEVEL > 0
+                xVisitedStart.insert( pEdge->iId );
+#endif
+                auto pNewCluster = std::make_shared<SvCall>( pEdge );
 
-                size_t uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
-                                                                pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
-                size_t uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize - 1,
-                                                              pNewCluster->uiToStart );
+                size_t uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize - 1,
+                                                                pNewCluster->uiToStart );
+                size_t uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
+                                                              pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
                 assert( uiEnd >= uiStart );
 
                 // join with all covered clusters; make sure that we don't join the same cluster twice
@@ -124,15 +176,23 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                     if( xPointerVec.get( )[ uiI ] != nullptr && pLastJoined != xPointerVec.get( )[ uiI ] )
                     {
                         pLastJoined = xPointerVec.get( )[ uiI ];
+#if DEBUG_LEVEL > 0
+                        xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
+                                                               []( auto pX ) { return pX == pLastJoined; } ),
+                                               xActiveClusters.end( ) );
+#endif
                         pNewCluster->join( *pLastJoined );
                     } // if
 
+#if DEBUG_LEVEL > 0
+                xActiveClusters.push_back( pNewCluster );
+#endif
                 // depending on which clusters we joined with the dimensions might have changed
                 // -> update uiStart & uiEnd
-                uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
-                                                         pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
-                uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize - 1,
-                                                       pNewCluster->uiToStart );
+                uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize - 1,
+                                                         pNewCluster->uiToStart );
+                uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
+                                                       pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
                 assert( uiEnd >= uiStart );
                 // redirect all covered pointers to the new cluster
                 for( size_t uiI = uiStart; uiI <= uiEnd; uiI++ )
@@ -141,21 +201,31 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             else
             {
                 auto pEndJump = xEdges.getNextEnd( );
+#if DEBUG_LEVEL > 0
+                assert( xVisitedStart.count( pEndJump->iId ) != 0 );
+#endif
                 // find the correct cluster for this edge
                 auto pCluster =
                     xPointerVec
-                        .get( )[ xPointerVec.to_physical_coord( pEndJump->from_start( ), pEndJump->to_end( ) - 1 ) ];
+                        .get( )[ xPointerVec.to_physical_coord( pEndJump->from_end( ) - 1, pEndJump->to_start( ) ) ];
                 assert( pCluster != nullptr );
                 pCluster->uiOpenEdges--;
                 // check if we want to save the cluster
-                if( pCluster->uiOpenEdges == 0 && pCluster->uiFromStart < pSection->end( ) )
+                if( pCluster->uiOpenEdges == 0 && pCluster->uiFromStart <= uiForwStrandEnd )
                 {
-                    size_t uiStart = xPointerVec.to_physical_coord( pCluster->uiFromStart,
-                                                                    pCluster->uiToStart + pCluster->uiToSize - 1 );
-                    size_t uiEnd = xPointerVec.to_physical_coord( pCluster->uiFromStart + pCluster->uiFromSize - 1,
-                                                                  pCluster->uiToStart );
+                    size_t uiStart = xPointerVec.to_physical_coord( pCluster->uiFromStart + pCluster->uiFromSize - 1,
+                                                                    pCluster->uiToStart );
+                    size_t uiEnd = xPointerVec.to_physical_coord( pCluster->uiFromStart,
+                                                                  pCluster->uiToStart + pCluster->uiToSize - 1 );
+                    assert( uiEnd >= uiStart );
                     for( size_t uiI = uiStart; uiI <= uiEnd; uiI++ )
                         xPointerVec.get( )[ uiI ] = nullptr;
+
+#if DEBUG_LEVEL > 0
+                    xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
+                                                           []( auto pX ) { return pX == pCluster; } ),
+                                           xActiveClusters.end( ) );
+#endif
 
                     double estimatedCoverage =
                         std::min( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCluster->uiFromStart ) ],
@@ -169,7 +239,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
         // make sure that there is no open cluster that is within the range of this sweep
         // (this might happen if uiMaxFuzziness is not large enough...)
         for( auto pCluster : xPointerVec.get( ) )
-            assert( pCluster == nullptr || pCluster->uiFromStart < pSection->end( ) );
+            assert( pCluster == nullptr || pCluster->uiFromStart > uiForwStrandEnd );
 
         return pRet;
     } // method
@@ -272,9 +342,9 @@ class ExactCompleteBipartiteSubgraphSweep
                 // insert the newly computed cluster into the pointer vector and counter vector
                 uiIdx = xSquashedY[ pNewCluster->uiToStart ];
                 size_t uiEnd2 = xSquashedY[ pNewCluster->uiToStart + pNewCluster->uiToSize - 1 ];
-                while( uiIdx < uiEnd )
+                while( uiIdx <= uiEnd2 )
                 {
-                    if( uiIdx >= uiStart && uiIdx <= uiEnd )
+                    if( uiStart <= uiIdx && uiIdx <= uiEnd )
                     {
                         vSweepVec[ uiIdx ].second++;
                         vSweepVec[ uiIdx ].first = pNewCluster;
@@ -292,6 +362,7 @@ class ExactCompleteBipartiteSubgraphSweep
                 size_t uiStart = xSquashedY[ vEdgesEnd[ uiJ ]->to_start( ) ];
                 size_t uiEnd = xSquashedY[ vEdgesEnd[ uiJ ]->sweep_end( ) ];
                 auto pCurrCluster = vSweepVec[ uiStart ].first;
+                assert( pCurrCluster != nullptr );
                 pCurrCluster->uiOpenEdges -= 1;
                 // check if that closes the cluster
                 if( pCurrCluster->uiOpenEdges == 0 )

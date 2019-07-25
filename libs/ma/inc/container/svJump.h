@@ -393,7 +393,7 @@ class SvCall : public Container
         this->uiCoverage = uiCoverage;
     } // constructor
 
-    SvCall( std::shared_ptr<SvJump>& pJump, bool bRememberJump = true )
+    SvCall( std::shared_ptr<SvJump> pJump, bool bRememberJump = true )
         : SvCall( pJump->from_start_same_strand( ),
                   pJump->to_start( ),
                   pJump->from_size( ),
