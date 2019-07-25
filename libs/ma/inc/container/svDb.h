@@ -1159,7 +1159,7 @@ class SV_DB : public Container
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
     {
-        //this->setNumThreads(32); // @todo do this via a parameter
+        this->setNumThreads(32); // @todo do this via a parameter
     } // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )

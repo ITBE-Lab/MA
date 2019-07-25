@@ -505,8 +505,8 @@ class SvCall : public Container
 
     inline nucSeqIndex left( )
     {
-        std::sort( vLeft.begin( ), vLeft.end( ) );
-        nucSeqIndex uiX = vLeft[ vLeft.size( ) - vLeft.size( ) / uiT ];
+        std::sort( vLeft.begin( ), vLeft.end( ), []( nucSeqIndex uiA, nucSeqIndex uiB ) { return uiA > uiB; } );
+        nucSeqIndex uiX = vLeft[ vLeft.size( ) / uiT ];
         return uiX > uiT2 ? uiX - uiT2 : 0;
     } // method
     inline nucSeqIndex up( )
@@ -517,8 +517,8 @@ class SvCall : public Container
 
     inline nucSeqIndex down( )
     {
-        std::sort( vDown.begin( ), vDown.end( ) );
-        nucSeqIndex uiX = vDown[ vDown.size( ) - vDown.size( ) / uiT ];
+        std::sort( vDown.begin( ), vDown.end( ), []( nucSeqIndex uiA, nucSeqIndex uiB ) { return uiA > uiB; } );
+        nucSeqIndex uiX = vDown[ vDown.size( ) / uiT ];
         return uiX > uiT2 ? uiX - uiT2 : 0;
     } // method
 
@@ -531,14 +531,14 @@ class SvCall : public Container
         // make sure we never have a call smaller than 10x10:
         if( uiRight < 10 + this->uiFromStart )
         {
-            this->uiFromStart = ( this->uiFromStart + uiRight ) / 2;
+            this->uiFromStart = this->uiFromStart / 2 + uiRight / 2;
             this->uiFromSize = 10;
         } // if
         else
             this->uiFromSize = uiRight - uiFromStart;
         if( uiUp < 10 + this->uiToStart )
         {
-            this->uiToStart = ( this->uiToStart + uiUp ) / 2;
+            this->uiToStart = this->uiToStart / 2 + uiUp / 2;
             this->uiToSize = 10;
         } // if
         else

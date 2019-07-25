@@ -25,7 +25,11 @@ void exportSweepSvJump( py::module& rxPyModuleId )
         .def_readwrite( "content", &CompleteBipartiteSubgraphClusterVector::vContent );
 
     exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( rxPyModuleId, "GenomeSectionFactory" );
-    exportModule<SvCallSink, std::shared_ptr<SV_DB>, std::string, std::string, int64_t>( rxPyModuleId, "SvCallSink" );
+    exportModule<SvCallSink, std::shared_ptr<SV_DB>, std::string, std::string, int64_t>(
+        rxPyModuleId, "SvCallSink", []( auto&& x ) {
+            x.def_readwrite( "call_inserter", &SvCallSink::pInserter );
+        } );
+
 
     exportModule<CompleteBipartiteSubgraphSweep, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t>(
         rxPyModuleId, "CompleteBipartiteSubgraphSweep" );

@@ -14,10 +14,10 @@ template <class TP_CONTENT> class SqueezedVector
 {
   public:
     typedef std::vector<TP_CONTENT> TP_VEC;
-    size_t uiNumElements;
-    size_t uiSqueezeFactor;
-    size_t uiCenterStripUp;
-    size_t uiCenterStripDown;
+    int64_t iNumElements;
+    int64_t iSqueezeFactor;
+    int64_t iCenterStripUp;
+    int64_t iCenterStripDown;
     TP_VEC vContent; // the actual container that holds the content
 
     typedef typename TP_VEC::value_type value_type;
@@ -28,22 +28,22 @@ template <class TP_CONTENT> class SqueezedVector
 
     inline size_t physical_size_upper_squeezed_section( ) const
     {
-        if( uiNumElements > uiCenterStripUp )
-            return ( 1 + uiNumElements - uiCenterStripUp ) / uiSqueezeFactor;
+        if( iNumElements > iCenterStripUp )
+            return ( 1 + iNumElements - iCenterStripUp ) / iSqueezeFactor;
         return 0;
     } // method
 
     inline size_t physical_size_lower_squeezed_section( ) const
     {
-        if( uiNumElements > uiCenterStripDown )
-            return ( 1 + uiNumElements - uiCenterStripDown ) / uiSqueezeFactor;
+        if( iNumElements > iCenterStripDown )
+            return ( 1 + iNumElements - iCenterStripDown ) / iSqueezeFactor;
         return 0;
     } // method
 
     inline size_t physical_size( ) const
     {
-        return physical_size_upper_squeezed_section( ) + physical_size_lower_squeezed_section( ) + uiCenterStripUp +
-               uiCenterStripDown + 1;
+        return physical_size_upper_squeezed_section( ) + physical_size_lower_squeezed_section( ) + iCenterStripUp +
+               iCenterStripDown + 1;
     } // method
 
     inline size_t to_physical_coord( int64_t iX, int64_t iY ) const
@@ -52,24 +52,26 @@ template <class TP_CONTENT> class SqueezedVector
         iY -= iX;
 
         // check if we are above or below logical zero
-        if( iY > (int64_t)uiCenterStripUp )
-            iY = ( iY - uiCenterStripUp ) / uiSqueezeFactor + uiCenterStripUp;
-        else if( iY < -((int64_t)uiCenterStripUp) )
-            iY = ( iY + uiCenterStripDown ) / uiSqueezeFactor - uiCenterStripDown;
+        if( iY > iCenterStripUp )
+            iY = ( iY - iCenterStripUp ) / iSqueezeFactor + iCenterStripUp;
+        else if( iY < -( iCenterStripUp ) )
+            iY = ( iY + iCenterStripDown ) / iSqueezeFactor - iCenterStripDown;
         // else
         //  no further transformation needed since we are in the non-squeezed part of the vector
 
         // move the logically negative part upwards so that the start of the coordinate system is zero
-        iY += uiCenterStripDown + physical_size_lower_squeezed_section( );
+        iY += iCenterStripDown + (int64_t)physical_size_lower_squeezed_section( );
+
+        assert( (size_t)iY < vContent.size( ) );
 
         return (size_t)iY;
     } // method
 
     SqueezedVector( size_t uiNumElements, size_t uiSqueezeFactor, size_t uiCenterStripUp, size_t uiCenterStripDown )
-        : uiNumElements( uiNumElements ),
-          uiSqueezeFactor( uiSqueezeFactor ),
-          uiCenterStripUp( uiCenterStripUp ),
-          uiCenterStripDown( uiCenterStripDown ),
+        : iNumElements( (int64_t)uiNumElements ),
+          iSqueezeFactor( (int64_t)uiSqueezeFactor ),
+          iCenterStripUp( (int64_t)uiCenterStripUp ),
+          iCenterStripDown( (int64_t)uiCenterStripDown ),
           vContent( this->physical_size( ) )
     {} // container vector
 

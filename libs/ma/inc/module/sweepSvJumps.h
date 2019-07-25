@@ -43,6 +43,9 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
 
     virtual std::shared_ptr<GenomeSection> EXPORTED execute( )
     {
+        setFinished( );
+        return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
+
         std::shared_ptr<GenomeSection> pRet;
         if( iCurrStart < iRefSize ) // forward strand
             pRet = std::make_shared<GenomeSection>( (int64_t)iCurrStart, (int64_t)iSectionSize );
@@ -71,7 +74,7 @@ class CompleteBipartiteSubgraphClusterVector : public Container
 class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
-    SV_DB::SvCallInserter xInserter;
+    std::shared_ptr<SV_DB::SvCallInserter> pInserter;
     std::mutex xLock;
     /**
      * @brief
@@ -79,14 +82,14 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
      */
     SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDB, std::string rsSvCallerName,
                 std::string rsSvCallerDesc, int64_t uiJumpRunId )
-        : xInserter( pDB, rsSvCallerName, rsSvCallerDesc, uiJumpRunId )
+        : pInserter( std::make_shared<SV_DB::SvCallInserter>( pDB, rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
     {} // constructor
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
     {
         std::lock_guard<std::mutex> xGuard( xLock );
         for( auto pCall : pVec->vContent )
-            xInserter.insertCall( *pCall );
+            pInserter->insertCall( *pCall );
         return std::make_shared<Container>( );
     } // method
 }; // class
@@ -168,6 +171,10 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                                 pNewCluster->uiToStart );
                 size_t uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
                                                               pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
+                // set the clusters y coodinate to the physical coords (we won't use the actual coords anyways)
+                // this is necessary, since we need to work with these coords when joining clusters
+                pNewCluster->uiToStart = uiStart;
+                pNewCluster->uiToSize = uiEnd - uiStart;
                 assert( uiEnd >= uiStart );
 
                 // join with all covered clusters; make sure that we don't join the same cluster twice
@@ -177,6 +184,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                     {
                         pLastJoined = xPointerVec.get( )[ uiI ];
 #if DEBUG_LEVEL > 0
+                        assert( pLastJoined->uiOpenEdges > 0 );
                         xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
                                                                [&]( auto pX ) { return pX == pLastJoined; } ),
                                                xActiveClusters.end( ) );
@@ -187,16 +195,18 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 #if DEBUG_LEVEL > 0
                 xActiveClusters.push_back( pNewCluster );
 #endif
-                // depending on which clusters we joined with the dimensions might have changed
-                // -> update uiStart & uiEnd
-                uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize - 1,
-                                                         pNewCluster->uiToStart );
-                uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
-                                                       pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
-                assert( uiEnd >= uiStart );
                 // redirect all covered pointers to the new cluster
-                for( size_t uiI = uiStart; uiI <= uiEnd; uiI++ )
+                for( size_t uiI = pNewCluster->uiToStart; uiI <= pNewCluster->uiToStart + pNewCluster->uiToSize; uiI++ )
+                {
+#if DEBUG_LEVEL > 0
+                    if( xPointerVec.get( )[ uiI ] != nullptr )
+                        for( int64_t iId : xPointerVec.get( )[ uiI ]->vSupportingJumpIds )
+                            assert( std::find( pNewCluster->vSupportingJumpIds.begin( ),
+                                               pNewCluster->vSupportingJumpIds.end( ),
+                                               iId ) != pNewCluster->vSupportingJumpIds.end( ) );
+#endif
                     xPointerVec.get( )[ uiI ] = pNewCluster;
+                } // for
             } // if
             else
             {
@@ -205,20 +215,16 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                 assert( xVisitedStart.count( pEndJump->iId ) != 0 );
 #endif
                 // find the correct cluster for this edge
-                auto pCluster =
-                    xPointerVec
-                        .get( )[ xPointerVec.to_physical_coord( pEndJump->from_end( ) - 1, pEndJump->to_start( ) ) ];
+                auto pCluster = xPointerVec.get( )[ xPointerVec.to_physical_coord(
+                    pEndJump->from_start_same_strand( ) + pEndJump->from_size( ) - 1, pEndJump->to_start( ) ) ];
                 assert( pCluster != nullptr );
+                assert( std::find( pCluster->vSupportingJumpIds.begin( ), pCluster->vSupportingJumpIds.end( ),
+                                   pEndJump->iId ) != pCluster->vSupportingJumpIds.end( ) );
                 pCluster->uiOpenEdges--;
                 // check if we want to save the cluster
-                if( pCluster->uiOpenEdges == 0 && pCluster->uiFromStart <= uiForwStrandEnd )
+                if( pCluster->uiOpenEdges == 0 )
                 {
-                    size_t uiStart = xPointerVec.to_physical_coord( pCluster->uiFromStart + pCluster->uiFromSize - 1,
-                                                                    pCluster->uiToStart );
-                    size_t uiEnd = xPointerVec.to_physical_coord( pCluster->uiFromStart,
-                                                                  pCluster->uiToStart + pCluster->uiToSize - 1 );
-                    assert( uiEnd >= uiStart );
-                    for( size_t uiI = uiStart; uiI <= uiEnd; uiI++ )
+                    for( size_t uiI = pCluster->uiToStart; uiI <= pCluster->uiToStart + pCluster->uiToSize; uiI++ )
                         xPointerVec.get( )[ uiI ] = nullptr;
 
 #if DEBUG_LEVEL > 0
@@ -226,20 +232,25 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                            [&]( auto pX ) { return pX == pCluster; } ),
                                            xActiveClusters.end( ) );
 #endif
-
-                    double estimatedCoverage =
-                        std::min( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCluster->uiFromStart ) ],
-                                  vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCluster->uiToStart ) ] );
-                    if( pCluster->estimateCoverage( ) >= std::max( dEstimateCoverageFactor * estimatedCoverage, 2.0 ) )
-                        pRet->vContent.push_back( pCluster );
+                    if( pCluster->uiFromStart <= uiForwStrandEnd )
+                    {
+                        double estimatedCoverage =
+                            std::min( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCluster->uiFromStart ) ],
+                                      vEstimatedCoverageList[ pPack->uiSequenceIdForPosition(
+                                          pCluster->vSupportingJumps[ 0 ]->to_start( ) ) ] );
+                        if( pCluster->estimateCoverage( ) >=
+                            std::max( dEstimateCoverageFactor * estimatedCoverage, 2.0 ) )
+                            pRet->vContent.push_back( pCluster );
+                    } // if
                 } // if
             } // else
         } // while
 
-        // make sure that there is no open cluster that is within the range of this sweep
-        // (this might happen if uiMaxFuzziness is not large enough...)
+#if DEBUG_LEVEL > 0
+        // make sure that there is no open cluster left
         for( auto pCluster : xPointerVec.get( ) )
-            assert( pCluster == nullptr || pCluster->uiFromStart > uiForwStrandEnd );
+            assert( pCluster == nullptr );
+#endif
 
         return pRet;
     } // method
