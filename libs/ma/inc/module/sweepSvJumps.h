@@ -178,7 +178,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                         pLastJoined = xPointerVec.get( )[ uiI ];
 #if DEBUG_LEVEL > 0
                         xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                               []( auto pX ) { return pX == pLastJoined; } ),
+                                                               [&]( auto pX ) { return pX == pLastJoined; } ),
                                                xActiveClusters.end( ) );
 #endif
                         pNewCluster->join( *pLastJoined );
@@ -223,7 +223,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 
 #if DEBUG_LEVEL > 0
                     xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                           []( auto pX ) { return pX == pCluster; } ),
+                                                           [&]( auto pX ) { return pX == pCluster; } ),
                                            xActiveClusters.end( ) );
 #endif
 
