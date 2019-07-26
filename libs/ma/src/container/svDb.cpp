@@ -57,6 +57,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( py::init<std::shared_ptr<SV_DB>, std::string, std::shared_ptr<Pack>>( ) )
         .def( "insert_read", &SV_DB::ReadInserter::insertRead )
         .def_readonly( "sequencer_id", &SV_DB::ReadInserter::uiSequencerId )
+        .def( "insert_fasta_files", &SV_DB::ReadInserter::insertFastaFiles )
+        .def( "insert_paired_fasta_files", &SV_DB::ReadInserter::insertPairedFastaFiles )
         .def( "insert_paired_read", &SV_DB::ReadInserter::insertPairedRead );
 
     // export the ReadContex class

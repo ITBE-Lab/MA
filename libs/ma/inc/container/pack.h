@@ -908,6 +908,17 @@ class Pack : public Container
         return ( iSequenceId >= 0 ) ? xVectorOfSequenceDescriptors[ iSequenceId ].sName.c_str( ) : "*";
     } // method
 
+    /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver
+     * "*".) FIX ME: This is design flaw from the original BWA code.
+     */
+    inline int64_t uiSequenceIdForName( std::string sName ) const
+    {
+        for( int64_t iId = 0; iId < (int64_t)xVectorOfSequenceDescriptors.size( ); iId++ )
+            if( xVectorOfSequenceDescriptors[ iId ].sName == sName )
+                return iId;
+        return -1;
+    } // method
+
     /* Returns true if given position belongs to reverse strand
      */
     inline bool bPositionIsOnReversStrand( uint64_t uiPosition ) const

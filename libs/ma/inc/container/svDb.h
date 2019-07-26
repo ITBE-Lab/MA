@@ -11,6 +11,7 @@
 #include "container/soc.h"
 #include "container/svJump.h"
 #include "module/module.h"
+#include "module/fileReader.h"
 #include "util/exception.h"
 #include "util/sqlite3.h"
 #include "util/system.h"
@@ -181,35 +182,14 @@ class SV_DB : public Container
                              // column definitions of the table
                              std::vector<std::string>{"sequencer_id", "name", "sequence"},
                              // constraints for table
-                             std::vector<std::string>{"UNIQUE (sequencer_id, name)", //
-                                                      "FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id)"} ),
+                             std::vector<std::string>{"FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id)"} ),
               pDatabase( pDatabase ),
               xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" )
         {} // default constructor
 
         inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
         {
-            for( size_t i = 0; i < 5; i++ ) // at most do 5 tries
-            {
-                try
-                {
-                    return xInsertRow( uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
-                } // try
-                catch( CppSQLite3Exception& xException )
-                {
-                    if( bDoDuplicateWarning )
-                    {
-                        std::cerr << "WARNING: " << xException.errorMessage( ) << std::endl;
-                        std::cerr << "Does your data contain duplicate reads? Current read name: " << pRead->sName
-                                  << std::endl;
-                        std::cerr << "Changing read name to: " << pRead->sName + "_2" << std::endl;
-                        std::cerr << "This warning is only displayed once" << std::endl;
-                        bDoDuplicateWarning = false;
-                    } // if
-                    pRead->sName += "_2";
-                } // catch
-            } // for
-            throw AnnotatedException( "Could not insert read after 5 tries" );
+            return xInsertRow( uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
         } // method
     }; // class
 
@@ -1159,7 +1139,7 @@ class SV_DB : public Container
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
     {
-        this->setNumThreads(32); // @todo do this via a parameter
+        this->setNumThreads( 32 ); // @todo do this via a parameter
     } // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -1406,6 +1386,64 @@ class SV_DB : public Container
         inline void insertPairedRead( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
         {
             pDB->pPairedReadTable->insertRead( uiSequencerId, pReadA, pReadB );
+        } // method
+
+        inline void insertFastaFiles( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
+        {
+            FileListReader xReader( rParameters, vsFileNames );
+            {
+                ThreadPool xPool( 4 );
+                std::mutex xReadLock, xWriteLock;
+
+                xPool.enqueue(
+                    []( size_t uiTid, FileListReader* pReader, ReadInserter* pInserter, std::mutex* pReadLock,
+                        std::mutex* pWriteLock ) {
+                        while( !pReader->isFinished( ) )
+                        {
+                            std::shared_ptr<NucSeq> pRead;
+                            {
+                                std::lock_guard<std::mutex> xGuard( *pReadLock );
+                                pRead = pReader->execute( );
+                            } // scope for xGuard
+                            {
+                                std::lock_guard<std::mutex> xGuard( *pWriteLock );
+                                pInserter->insertRead( pRead );
+                            } // scope for xGuard
+                        } // while
+                        return 0;
+                    },
+                    &xReader, this, &xReadLock, &xWriteLock );
+            } // scope for thread pool
+        } // method
+
+        inline void insertPairedFastaFiles( const ParameterSetManager& rParameters,
+                                            const std::vector<fs::path>& vsFileNames1,
+                                            const std::vector<fs::path>& vsFileNames2 )
+        {
+            PairedFileReader xReader( rParameters, vsFileNames1, vsFileNames2 );
+            {
+                ThreadPool xPool( 4 );
+                std::mutex xReadLock, xWriteLock;
+
+                xPool.enqueue(
+                    []( size_t uiTid, PairedFileReader* pReader, ReadInserter* pInserter, std::mutex* pReadLock,
+                        std::mutex* pWriteLock ) {
+                        while( !pReader->isFinished( ) )
+                        {
+                            std::shared_ptr<TP_PAIRED_READS> pvReads;
+                            {
+                                std::lock_guard<std::mutex> xGuard( *pReadLock );
+                                pvReads = pReader->execute( );
+                            } // scope for xGuard
+                            {
+                                std::lock_guard<std::mutex> xGuard( *pWriteLock );
+                                pInserter->insertPairedRead( ( *pvReads )[ 0 ], ( *pvReads )[ 1 ] );
+                            } // scope for xGuard
+                        } // while
+                        return 0;
+                    },
+                    &xReader, this, &xReadLock, &xWriteLock );
+            } // scope for thread pool
         } // method
     }; // class
 

@@ -4,6 +4,10 @@ cmake_minimum_required(VERSION 3.8)
 project("sqlite3" VERSION 3.25.3 DESCRIPTION "C sqlite library")
 
 add_definitions( -DSQLITE_ENABLE_RTREE ) # Include R-Trees for range queries
+# increase the default page size for insert performance
+# https://www.sqlite.org/pragma.html#pragma_page_size
+# https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
+add_definitions( -DSQLITE_DEFAULT_PAGE_SIZE=65536 )
 
 # Uncomment this to allow users to create special tables with a built-in full-text index
 # add_definitions( -DSQLITE_ENABLE_FTS4 )
