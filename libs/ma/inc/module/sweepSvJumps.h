@@ -37,26 +37,31 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
           // otherwise we do so much extra work with re overlapping part between sections,
           // that parallel execution is not worth it.
-          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)10000 ) ),
+          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)100000 ) ),
           iCurrStart( 0 )
     {} // constructor
 
     virtual std::shared_ptr<GenomeSection> EXPORTED execute( )
     {
-        setFinished( );
-        return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
+        // setFinished( );
+        // return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
 
         std::shared_ptr<GenomeSection> pRet;
-        if( iCurrStart < iRefSize ) // forward strand
-            pRet = std::make_shared<GenomeSection>( (int64_t)iCurrStart, (int64_t)iSectionSize );
+        if( iCurrStart % 2 == 0 ) // forward strand
+            pRet = std::make_shared<GenomeSection>( ( iCurrStart / 2 ) * iSectionSize, iSectionSize );
         else // reverse strand
             pRet = std::make_shared<GenomeSection>(
-                iCurrStart - iRefSize + std::numeric_limits<int64_t>::max( ) / (int64_t)2, (int64_t)iSectionSize );
+                ( iCurrStart / 2 ) * iSectionSize + std::numeric_limits<int64_t>::max( ) / (int64_t)2, iSectionSize );
 
-        iCurrStart += iSectionSize;
-        if( iCurrStart >= iRefSize * 2 )
+        iCurrStart++;
+        if( ( iCurrStart / 2 ) * iSectionSize >= iRefSize )
             setFinished( );
         return pRet;
+    } // method
+
+    virtual bool requiresLock( ) const
+    {
+        return true;
     } // method
 }; // class
 
@@ -138,14 +143,19 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
         EXPORTED execute( std::shared_ptr<GenomeSection> pSection )
     {
         SortedSvJumpFromSql xEdges(
-            rParameters, pSvDb, iSvCallerRunId, pSection->iStart,
+            rParameters, pSvDb, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
-            pSection->iSize + iMaxFuzziness );
+            pSection->iStart > iMaxFuzziness ? pSection->iStart - iMaxFuzziness : 0,
+            pSection->iSize + iMaxFuzziness * 5 );
 
+        nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
         nucSeqIndex uiForwStrandEnd = (nucSeqIndex)pSection->end( );
         if( pSection->iStart >= std::numeric_limits<int64_t>::max( ) / (int64_t)2 )
+        {
+            uiForwStrandStart = ( nucSeqIndex )( pSection->start() - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
             uiForwStrandEnd = ( nucSeqIndex )( pSection->end( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
+        } // if
 
         SqueezedVector<std::shared_ptr<SvCall>> xPointerVec( uiGenomeSize, uiSqueezeFactor, uiCenterStripUp,
                                                              uiCenterStripDown );
@@ -232,7 +242,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                            [&]( auto pX ) { return pX == pCluster; } ),
                                            xActiveClusters.end( ) );
 #endif
-                    if( pCluster->uiFromStart <= uiForwStrandEnd )
+                    if( pCluster->uiFromStart < uiForwStrandEnd && pCluster->uiFromStart >= uiForwStrandStart )
                     {
                         double estimatedCoverage =
                             std::min( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCluster->uiFromStart ) ],
