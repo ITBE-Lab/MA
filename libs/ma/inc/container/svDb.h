@@ -61,7 +61,6 @@ class SV_DB : public Container
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtStatement xIncNt;
         CppSQLiteExtQueryStatement<int64_t> xGetNumNt;
-        std::mutex xMutex;
 
       public:
         ContigCovTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -134,7 +133,7 @@ class SV_DB : public Container
 
             ~CovInserter( )
             {
-                std::lock_guard<std::mutex> xGuard( pDb->pContigCovTable->xMutex );
+                std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
                 for( size_t uiI = 0; uiI < vNumNts.size( ); uiI++ )
                     if( vNumNts[ uiI ] > 0 )
                         pDb->pContigCovTable->incrementNt( iSequencerId, uiI, vNumNts[ uiI ] );
@@ -145,18 +144,22 @@ class SV_DB : public Container
             {
                 for( size_t uiI = 0; uiI < rSeeds.size( ); uiI++ )
                 {
+                    // size of this seed
                     int64_t iSize = rSeeds[ uiI ].size( );
 
+                    // add gap to previous seed or start of query
                     if( uiI == 0 )
                         iSize += rSeeds[ uiI ].start( );
                     else if( rSeeds[ uiI ].start( ) < rSeeds[ uiI - 1 ].end( ) )
                         iSize += ( rSeeds[ uiI - 1 ].end( ) - rSeeds[ uiI ].start( ) ) / 2;
 
+                    // add gap to next seed or end of query
                     if( uiI + 1 == rSeeds.size( ) )
                         iSize += uiQlen - rSeeds[ uiI ].end( );
                     else if( rSeeds[ uiI ].end( ) < rSeeds[ uiI + 1 ].start( ) )
                         iSize += ( rSeeds[ uiI + 1 ].start( ) - rSeeds[ uiI ].end( ) ) / 2;
 
+                    // increase the count
                     vNumNts[ pPack->uiSequenceIdForPosition( rSeeds[ uiI ].start_ref( ) ) ] += iSize;
                 } // for
             } // method
@@ -1114,6 +1117,7 @@ class SV_DB : public Container
 
   public:
     const std::string sName;
+    std::shared_ptr<std::mutex> pWriteLock;
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
     std::shared_ptr<ContigCovTable> pContigCovTable;
@@ -1131,6 +1135,7 @@ class SV_DB : public Container
      */
     SV_DB( SV_DB& rOther )
         : sName( rOther.sName ),
+          pWriteLock( rOther.pWriteLock ),
           pDatabase( std::make_shared<CppSQLiteDBExtended>( "", rOther.sName, eOPEN_DB ) ),
           pSequencerTable( rOther.pSequencerTable ),
           pContigCovTable( rOther.pContigCovTable ),
@@ -1150,6 +1155,7 @@ class SV_DB : public Container
 
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
         : sName( sName ),
+          pWriteLock( std::make_shared<std::mutex>() ),
           pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
           pContigCovTable( std::make_shared<ContigCovTable>( pDatabase ) ),
@@ -1564,17 +1570,14 @@ class SV_DB : public Container
         }; // class
 
         SvCallInserter( std::shared_ptr<SV_DB> pDB, const int64_t iSvCallerRunId )
-            : pDB( pDB ),
-              xTransactionContext( *pDB->pDatabase ),
-              iSvCallerRunId( iSvCallerRunId )
+            : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvCallerRunId( iSvCallerRunId )
         {} // constructor
 
         SvCallInserter( std::shared_ptr<SV_DB> pDB,
                         const std::string& rsSvCallerName,
                         const std::string& rsSvCallerDesc,
                         const int64_t uiJumpRunId )
-            : SvCallInserter( pDB,
-                              pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
+            : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
         {} // constructor
 
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
@@ -1768,13 +1771,15 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
             setFinished( );
     } // constructor
 
-    AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
+    AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId,
+                      size_t uiRes, size_t uiModulo )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
           xQuery( *this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
                   "FROM read_table "
-                  "WHERE sequencer_id = ?" ),
-          xTableIterator( xQuery.vExecuteAndReturnIterator( iSequencerId ) )
+                  "WHERE sequencer_id = ? "
+                  "AND read_table.id % ? == ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSequencerId, uiModulo, uiRes ) )
     {
         if( xTableIterator.eof( ) )
             setFinished( );
@@ -1793,12 +1798,6 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
         if( xTableIterator.eof( ) )
             setFinished( );
         return std::get<0>( xTup ).pNucSeq;
-    } // method
-
-    // override
-    bool requiresLock( ) const
-    {
-        return true;
     } // method
 }; // class
 
@@ -1939,18 +1938,17 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
 class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
     std::shared_ptr<SV_DB> pDb;
-    std::mutex xMutex;
 
   public:
     SV_DB::SvJumpInserter xInserter;
 
     SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sRunDesc )
-        : pDb( std::make_shared<SV_DB>( *pDb ) ), xInserter( this->pDb, "MA-SV", sRunDesc )
+        : pDb( pDb ), xInserter( this->pDb, "MA-SV", sRunDesc )
     {} // constructor
 
     std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
-        std::lock_guard<std::mutex> xGuard( xMutex );
+        std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
 
         SV_DB::SvJumpInserter::ReadContex xReadContext = xInserter.readContext( pRead->iId );
         for( SvJump& rJump : *pJumps )

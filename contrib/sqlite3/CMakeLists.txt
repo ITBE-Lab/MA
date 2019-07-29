@@ -21,7 +21,7 @@ add_library(sqlite3 STATIC
 	src/sqlite3.c
 )
 
-# set multithreadmode for sqlite
+# set multithreadmode for sqlite @todo disable all threadsafety in release mode?!?!?
 message( "Sqlite3 is compiled using SQLITE_THREADSAFE=2:" )
 message( "\tMulti-thread. In this mode, SQLite can be safely used by multiple threads provided " )
 message( "\tthat no single database connection is used simultaneously in two or more threads." )
