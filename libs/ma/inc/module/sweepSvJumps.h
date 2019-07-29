@@ -37,7 +37,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
           // otherwise we do so much extra work with re overlapping part between sections,
           // that parallel execution is not worth it.
-          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)100000 ) ),
+          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)500000 ) ),
           iCurrStart( 0 )
     {} // constructor
 
@@ -79,7 +79,8 @@ class CompleteBipartiteSubgraphClusterVector : public Container
 class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
-    std::shared_ptr<SV_DB::SvCallInserter> pInserter;
+    std::shared_ptr<SV_DB> pDB;
+    int64_t iRunId;
     std::mutex xLock;
     /**
      * @brief
@@ -87,16 +88,19 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
      */
     SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDB, std::string rsSvCallerName,
                 std::string rsSvCallerDesc, int64_t uiJumpRunId )
-        : pInserter( std::make_shared<SV_DB::SvCallInserter>( pDB, rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
+        : pDB( pDB ), iRunId( pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
     {} // constructor
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
     {
         std::lock_guard<std::mutex> xGuard( xLock );
-        for( auto pCall : pVec->vContent )
-            pInserter->insertCall( *pCall );
+        {
+            auto pInserter = std::make_shared<SV_DB::SvCallInserter>( pDB, iRunId );
+            for( auto pCall : pVec->vContent )
+                pInserter->insertCall( *pCall );
+        } // scope for pInserter (transaction)
         return std::make_shared<Container>( );
-    } // method
+    } // method & scope for xGuard
 }; // class
 
 /**
@@ -124,7 +128,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
     CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
                                     std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId )
         : rParameters( rParameters ),
-          pSvDb( pSvDb ),
+          pSvDb( std::make_shared<SV_DB>( *pSvDb ) ),
           pPack( pPack ),
           iSvCallerRunId( iSvCallerRunId ),
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
@@ -142,6 +146,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
         EXPORTED execute( std::shared_ptr<GenomeSection> pSection )
     {
+        //std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
         SortedSvJumpFromSql xEdges(
             rParameters, pSvDb, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
@@ -149,11 +154,13 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             pSection->iStart > iMaxFuzziness ? pSection->iStart - iMaxFuzziness : 0,
             pSection->iSize + iMaxFuzziness * 5 );
 
+        //std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
         nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
         nucSeqIndex uiForwStrandEnd = (nucSeqIndex)pSection->end( );
         if( pSection->iStart >= std::numeric_limits<int64_t>::max( ) / (int64_t)2 )
         {
-            uiForwStrandStart = ( nucSeqIndex )( pSection->start() - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
+            uiForwStrandStart =
+                ( nucSeqIndex )( pSection->start( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
             uiForwStrandEnd = ( nucSeqIndex )( pSection->end( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
         } // if
 
@@ -255,6 +262,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                 } // if
             } // else
         } // while
+        //std::cout << "done (" << pSection->iStart << ")" << std::endl;
 
 #if DEBUG_LEVEL > 0
         // make sure that there is no open cluster left

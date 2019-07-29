@@ -27,7 +27,7 @@ void exportSweepSvJump( py::module& rxPyModuleId )
     exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( rxPyModuleId, "GenomeSectionFactory" );
     exportModule<SvCallSink, std::shared_ptr<SV_DB>, std::string, std::string, int64_t>(
         rxPyModuleId, "SvCallSink", []( auto&& x ) {
-            x.def_readwrite( "call_inserter", &SvCallSink::pInserter );
+            x.def_readwrite( "run_id", &SvCallSink::iRunId );
         } );
 
 

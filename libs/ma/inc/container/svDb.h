@@ -10,8 +10,8 @@
 #include "container/pack.h"
 #include "container/soc.h"
 #include "container/svJump.h"
-#include "module/module.h"
 #include "module/fileReader.h"
+#include "module/module.h"
 #include "util/exception.h"
 #include "util/sqlite3.h"
 #include "util/system.h"
@@ -1113,6 +1113,7 @@ class SV_DB : public Container
 
 
   public:
+    const std::string sName;
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
     std::shared_ptr<ContigCovTable> pContigCovTable;
@@ -1125,9 +1126,31 @@ class SV_DB : public Container
     std::shared_ptr<SvCallTable> pSvCallTable;
     std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
 
+    /**
+     * @brief open a new database connection; with shared metadata (table pointers are shared)
+     */
+    SV_DB( SV_DB& rOther )
+        : sName( rOther.sName ),
+          pDatabase( std::make_shared<CppSQLiteDBExtended>( "", rOther.sName, eOPEN_DB ) ),
+          pSequencerTable( rOther.pSequencerTable ),
+          pContigCovTable( rOther.pContigCovTable ),
+          pReadTable( rOther.pReadTable ),
+          pPairedReadTable( rOther.pPairedReadTable ),
+          pSvJumpRunTable( rOther.pSvJumpRunTable ),
+          pSvJumpTable( rOther.pSvJumpTable ),
+          pSvCallerRunTable( rOther.pSvCallerRunTable ),
+          pSvCallRegExTable( rOther.pSvCallRegExTable ),
+          pSvCallTable( rOther.pSvCallTable ),
+          pSvCallSupportTable( rOther.pSvCallSupportTable )
+    {
+        this->setNumThreads( 32 ); // @todo do this via a parameter
+        pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
+        pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
+    } // constructor
 
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
-        : pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
+        : sName( sName ),
+          pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
           pContigCovTable( std::make_shared<ContigCovTable>( pDatabase ) ),
           pReadTable( std::make_shared<ReadTable>( pDatabase ) ),
@@ -1140,6 +1163,8 @@ class SV_DB : public Container
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
     {
         this->setNumThreads( 32 ); // @todo do this via a parameter
+        pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
+        pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
     } // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -1539,14 +1564,17 @@ class SV_DB : public Container
         }; // class
 
         SvCallInserter( std::shared_ptr<SV_DB> pDB, const int64_t iSvCallerRunId )
-            : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvCallerRunId( iSvCallerRunId )
+            : pDB( pDB ),
+              xTransactionContext( *pDB->pDatabase ),
+              iSvCallerRunId( iSvCallerRunId )
         {} // constructor
 
         SvCallInserter( std::shared_ptr<SV_DB> pDB,
                         const std::string& rsSvCallerName,
                         const std::string& rsSvCallerDesc,
                         const int64_t uiJumpRunId )
-            : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
+            : SvCallInserter( pDB,
+                              pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
         {} // constructor
 
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
@@ -1730,8 +1758,8 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
 
   public:
     AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
-        : pDb( pDb ),
-          xQuery( *pDb->pDatabase,
+        : pDb( std::make_shared<SV_DB>( *pDb ) ),
+          xQuery( *this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
                   "FROM read_table " ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
@@ -1741,8 +1769,8 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
     } // constructor
 
     AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
-        : pDb( pDb ),
-          xQuery( *pDb->pDatabase,
+        : pDb( std::make_shared<SV_DB>( *pDb ) ),
+          xQuery( *this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
                   "FROM read_table "
                   "WHERE sequencer_id = ?" ),
@@ -1782,8 +1810,8 @@ class NucSeqFromSql : public Module<NucSeq, true>
 
   public:
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
-        : pDb( pDb ),
-          xQuery( *pDb->pDatabase,
+        : pDb( std::make_shared<SV_DB>( *pDb ) ),
+          xQuery( *this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
                   "FROM read_table "
                   "WHERE read_table.id NOT IN ( "
@@ -1799,8 +1827,8 @@ class NucSeqFromSql : public Module<NucSeq, true>
     } // constructor
 
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
-        : pDb( pDb ),
-          xQuery( *pDb->pDatabase,
+        : pDb( std::make_shared<SV_DB>( *pDb ) ),
+          xQuery( *this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
                   "FROM read_table "
                   "WHERE read_table.id NOT IN ( "
@@ -1845,8 +1873,8 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
 
   public:
     PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
-        : pDb( pDb ),
-          xQuery( *pDb->pDatabase,
+        : pDb( std::make_shared<SV_DB>( *pDb ) ),
+          xQuery( *this->pDb->pDatabase,
                   "SELECT A.sequence, B.sequence, A.id, B.id "
                   "FROM read_table A, read_table B "
                   "INNER JOIN paired_read_table "
@@ -1861,8 +1889,8 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
     } // constructor
 
     PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
-        : pDb( pDb ),
-          xQuery( *pDb->pDatabase,
+        : pDb( std::make_shared<SV_DB>( *pDb ) ),
+          xQuery( *this->pDb->pDatabase,
                   "SELECT A.sequence, B.sequence, A.id, B.id "
                   "FROM read_table A, read_table B "
                   "INNER JOIN paired_read_table "
@@ -1917,7 +1945,7 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
     SV_DB::SvJumpInserter xInserter;
 
     SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sRunDesc )
-        : pDb( pDb ), xInserter( pDb, "MA-SV", sRunDesc )
+        : pDb( std::make_shared<SV_DB>( *pDb ) ), xInserter( this->pDb, "MA-SV", sRunDesc )
     {} // constructor
 
     std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )

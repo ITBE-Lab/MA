@@ -21,10 +21,11 @@ add_library(sqlite3 STATIC
 	src/sqlite3.c
 )
 
-if( CMAKE_BUILD_TYPE STREQUAL "Release" )
-    message( "Sqlite3 is compiled using SQLITE_THREADSAFE=0" )
-    add_definitions( -DSQLITE_THREADSAFE=0 )
-endif()
+# set multithreadmode for sqlite
+message( "Sqlite3 is compiled using SQLITE_THREADSAFE=2:" )
+message( "\tMulti-thread. In this mode, SQLite can be safely used by multiple threads provided " )
+message( "\tthat no single database connection is used simultaneously in two or more threads." )
+add_definitions( -DSQLITE_THREADSAFE=2 )
 
 # cmake will add the -fPIC for compilation with GCC
 set_property( TARGET sqlite3 PROPERTY POSITION_INDEPENDENT_CODE ON )
