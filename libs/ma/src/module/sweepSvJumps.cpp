@@ -26,13 +26,15 @@ void exportSweepSvJump( py::module& rxPyModuleId )
 
     exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( rxPyModuleId, "GenomeSectionFactory" );
     exportModule<SvCallSink, std::shared_ptr<SV_DB>, std::string, std::string, int64_t>(
-        rxPyModuleId, "SvCallSink", []( auto&& x ) {
-            x.def_readwrite( "run_id", &SvCallSink::iRunId );
-        } );
+        rxPyModuleId, "SvCallSink", []( auto&& x ) { x.def_readwrite( "run_id", &SvCallSink::iRunId ); } );
 
 
     exportModule<CompleteBipartiteSubgraphSweep, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t>(
-        rxPyModuleId, "CompleteBipartiteSubgraphSweep" );
+        rxPyModuleId, "CompleteBipartiteSubgraphSweep", []( auto&& x ) {
+            x.def_readonly( "time_init", &CompleteBipartiteSubgraphSweep::dInit )
+                .def_readonly( "time_complete_while", &CompleteBipartiteSubgraphSweep::dOuterWhile )
+                .def_readonly( "time_inner_while", &CompleteBipartiteSubgraphSweep::dInnerWhile );
+        } );
 
     exportModule<ExactCompleteBipartiteSubgraphSweep, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t>(
         rxPyModuleId, "ExactCompleteBipartiteSubgraphSweep" );

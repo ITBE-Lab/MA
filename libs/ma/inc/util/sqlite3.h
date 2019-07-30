@@ -1,5 +1,5 @@
 /* This file is part of MA.
- * Authors: Markus Schmidt and Arns Kutzner
+ * Authors: Markus Schmidt and Arne Kutzner
  * Created: Oct. 2018
  * MIT License
  * @file sqlite3.h

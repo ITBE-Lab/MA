@@ -8,6 +8,8 @@
 #include "container/svDb.h"
 #include "module/module.h"
 
+#define ADDITIONAL_DEBUG 0
+
 namespace libMA
 {
 
@@ -121,6 +123,12 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
     size_t uiCenterStripDown;
     double dEstimateCoverageFactor;
     std::vector<double> vEstimatedCoverageList;
+
+    // record the times each step takes
+    double dInit = 0;
+    double dOuterWhile = 0;
+    double dInnerWhile = 0;
+
     /**
      * @brief
      * @details
@@ -146,6 +154,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
         EXPORTED execute( std::shared_ptr<GenomeSection> pSection )
     {
+        auto xInitStart = std::chrono::high_resolution_clock::now( );
         //std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
         SortedSvJumpFromSql xEdges(
             rParameters, pSvDb, iSvCallerRunId,
@@ -169,17 +178,22 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
 
-#if DEBUG_LEVEL > 0
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
         std::set<int64_t> xVisitedStart;
         std::vector<std::shared_ptr<SvCall>> xActiveClusters;
 #endif
+        auto xInitEnd = std::chrono::high_resolution_clock::now( );
+        std::chrono::duration<double> xDiffInit = xInitEnd - xInitStart;
+        dInit += xDiffInit.count();
 
+        auto xLoopStart = std::chrono::high_resolution_clock::now( );
         while( xEdges.hasNextStart( ) || xEdges.hasNextEnd( ) )
         {
             if( xEdges.nextStartIsSmaller( ) )
             {
                 auto pEdge = xEdges.getNextStart( );
-#if DEBUG_LEVEL > 0
+                auto xInnerStart = std::chrono::high_resolution_clock::now( );
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                 xVisitedStart.insert( pEdge->iId );
 #endif
                 auto pNewCluster = std::make_shared<SvCall>( pEdge );
@@ -200,7 +214,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                     if( xPointerVec.get( )[ uiI ] != nullptr && pLastJoined != xPointerVec.get( )[ uiI ] )
                     {
                         pLastJoined = xPointerVec.get( )[ uiI ];
-#if DEBUG_LEVEL > 0
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                         assert( pLastJoined->uiOpenEdges > 0 );
                         xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
                                                                [&]( auto pX ) { return pX == pLastJoined; } ),
@@ -209,13 +223,13 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                         pNewCluster->join( *pLastJoined );
                     } // if
 
-#if DEBUG_LEVEL > 0
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                 xActiveClusters.push_back( pNewCluster );
 #endif
                 // redirect all covered pointers to the new cluster
                 for( size_t uiI = pNewCluster->uiToStart; uiI <= pNewCluster->uiToStart + pNewCluster->uiToSize; uiI++ )
                 {
-#if DEBUG_LEVEL > 0
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                     if( xPointerVec.get( )[ uiI ] != nullptr )
                         for( int64_t iId : xPointerVec.get( )[ uiI ]->vSupportingJumpIds )
                             assert( std::find( pNewCluster->vSupportingJumpIds.begin( ),
@@ -224,11 +238,15 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 #endif
                     xPointerVec.get( )[ uiI ] = pNewCluster;
                 } // for
+                auto xInnerEnd = std::chrono::high_resolution_clock::now( );
+                std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
+                dInnerWhile += xDiffInner.count();
             } // if
             else
             {
                 auto pEndJump = xEdges.getNextEnd( );
-#if DEBUG_LEVEL > 0
+                auto xInnerStart = std::chrono::high_resolution_clock::now( );
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                 assert( xVisitedStart.count( pEndJump->iId ) != 0 );
 #endif
                 // find the correct cluster for this edge
@@ -244,7 +262,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                     for( size_t uiI = pCluster->uiToStart; uiI <= pCluster->uiToStart + pCluster->uiToSize; uiI++ )
                         xPointerVec.get( )[ uiI ] = nullptr;
 
-#if DEBUG_LEVEL > 0
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                     xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
                                                            [&]( auto pX ) { return pX == pCluster; } ),
                                            xActiveClusters.end( ) );
@@ -260,11 +278,17 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                             pRet->vContent.push_back( pCluster );
                     } // if
                 } // if
+                auto xInnerEnd = std::chrono::high_resolution_clock::now( );
+                std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
+                dInnerWhile += xDiffInner.count();
             } // else
         } // while
         //std::cout << "done (" << pSection->iStart << ")" << std::endl;
+        auto xLoopEnd = std::chrono::high_resolution_clock::now( );
+        std::chrono::duration<double> xDiffLoop = xLoopEnd - xLoopStart;
+        dOuterWhile += xDiffLoop.count();
 
-#if DEBUG_LEVEL > 0
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
         // make sure that there is no open cluster left
         for( auto pCluster : xPointerVec.get( ) )
             assert( pCluster == nullptr );
