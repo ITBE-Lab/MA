@@ -54,7 +54,7 @@ template <class TP_CONTENT> class SqueezedVector
         // check if we are above or below logical zero
         if( iY > iCenterStripUp )
             iY = ( iY - iCenterStripUp ) / iSqueezeFactor + iCenterStripUp;
-        else if( iY < -( iCenterStripUp ) )
+        else if( iY < -( iCenterStripDown ) )
             iY = ( iY + iCenterStripDown ) / iSqueezeFactor - iCenterStripDown;
         // else
         //  no further transformation needed since we are in the non-squeezed part of the vector

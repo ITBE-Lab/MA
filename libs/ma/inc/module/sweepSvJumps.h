@@ -188,11 +188,11 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                                 pNewCluster->uiToStart );
                 size_t uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
                                                               pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
+                assert( uiEnd >= uiStart );
                 // set the clusters y coodinate to the physical coords (we won't use the actual coords anyways)
                 // this is necessary, since we need to work with these coords when joining clusters
                 pNewCluster->uiToStart = uiStart;
                 pNewCluster->uiToSize = uiEnd - uiStart;
-                assert( uiEnd >= uiStart );
 
                 // join with all covered clusters; make sure that we don't join the same cluster twice
                 std::shared_ptr<SvCall> pLastJoined;

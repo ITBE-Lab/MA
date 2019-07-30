@@ -168,6 +168,7 @@ class SvJump : public Container
     nucSeqIndex fuzziness( ) const
     {
         double x = (double)std::max( dist( uiFrom, uiTo ), uiQueryTo - uiQueryFrom );
+        assert(x >= 0);
         double h_min = 1;
         return (nucSeqIndex)std::min(
             h, h_min + std::max( 0.0, x - ( uiTo >= uiFrom || uiQueryTo - uiQueryFrom >= uiFrom - uiTo ? s : s_neg ) ) *
