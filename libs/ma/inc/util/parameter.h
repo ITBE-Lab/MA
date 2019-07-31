@@ -561,6 +561,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<double> xJumpH; // h parameter for fuzziness of jumps
     AlignerParameterPointer<int> xSeedDirFuzziness; // m parameter for fuzziness of jumps
     AlignerParameterPointer<int> xMaxSizeReseed; // minimal edge size for which we reseed
+    AlignerParameterPointer<int> xMinSizeEdge; // minimal edge size for which we keep the edge (runtime improvement)
     AlignerParameterPointer<int> xMaxFuzzinessFilter; // maximal fuzziness for sv calls
 
     // Heuristic Options:
@@ -751,6 +752,7 @@ class Presetting : public ParameterSetBase
           xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 100 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
+          xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
 
           // Heuristic

@@ -248,6 +248,8 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
 
     ~ComputeCoverage( )
     {
+        // update everything in a transaction
+        CppSQLiteExtImmediateTransactionContext xTransactionContext(*pDb->pDatabase );
         for( std::shared_ptr<SvCallWrapper> pWrap : vCalls )
         {
             pWrap->compute_coverage( );

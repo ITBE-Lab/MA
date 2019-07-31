@@ -486,23 +486,23 @@ class SV_DB : public Container
         {
             // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
             // index intended for the sweep over the start of all sv-rectangles
-            pDatabase->execDML(
-                ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" + std::to_string( uiRun ) +
-                  " ON sv_jump_table"
-                  "(sort_pos_start, from_pos, to_pos, query_from, query_to, num_supporting_nt, from_forward,"
-                  " to_forward, from_seed_start, id, read_id) "
-                  "WHERE sv_jump_run_id == " +
-                  std::to_string( uiRun ) )
-                    .c_str( ) );
+            // interestingly sv_jump_run_id nneds to be part of the index even if it's in the condition...
+            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" +
+                                  std::to_string( uiRun ) +
+                                  " ON sv_jump_table"
+                                  "(sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
+                                  " to_forward, from_seed_start, num_supporting_nt, id, read_id, sv_jump_run_id) "
+                                  "WHERE sv_jump_run_id == " +
+                                  std::to_string( uiRun ) )
+                                    .c_str( ) );
             // index intended for the sweep over the end of all sv-rectangles
-            pDatabase->execDML(
-                ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end_" + std::to_string( uiRun ) +
-                  " ON sv_jump_table"
-                  "(sort_pos_end, from_pos, to_pos, query_from, query_to, num_supporting_nt, from_forward,"
-                  " to_forward, from_seed_start, id, read_id) "
-                  "WHERE sv_jump_run_id == " +
-                  std::to_string( uiRun ) )
-                    .c_str( ) );
+            pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end_" + std::to_string( uiRun ) +
+                                  " ON sv_jump_table"
+                                  "(sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
+                                  " to_forward, from_seed_start, num_supporting_nt, id, read_id, sv_jump_run_id) "
+                                  "WHERE sv_jump_run_id == " +
+                                  std::to_string( uiRun ) )
+                                    .c_str( ) );
         } // method
 
         inline uint32_t numJumps( )
@@ -1155,7 +1155,7 @@ class SV_DB : public Container
 
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
         : sName( sName ),
-          pWriteLock( std::make_shared<std::mutex>() ),
+          pWriteLock( std::make_shared<std::mutex>( ) ),
           pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
           pContigCovTable( std::make_shared<ContigCovTable>( pDatabase ) ),
@@ -1502,7 +1502,7 @@ class SV_DB : public Container
 
             inline void insertJump( SvJump& rJump )
             {
-                // make shure the read id mathes the read context
+                // make sure the read id matches the read context
                 if( rJump.iReadId == -1 ) // if there is no read id given yet add it
                     rJump.iReadId = iReadId;
                 else // otherwise assert it matches
@@ -1582,12 +1582,6 @@ class SV_DB : public Container
 
         SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
 
-        ~SvCallInserter( )
-        {
-            // create the score index for this dataset
-            pDB->pSvCallTable->addScoreIndex( iSvCallerRunId );
-        } // deconstructor
-
         inline void insertCall( SvCall& rCall )
         {
             CallContex xContext( pDB->pSvCallSupportTable, pDB->pSvCallTable->insertCall( iSvCallerRunId, rCall ) );
@@ -1619,19 +1613,20 @@ class SV_DB : public Container
 
 }; // class
 
+// @todo does buffering in vector increase the speed here?
 class SortedSvJumpFromSql
 {
     const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t,
                                int64_t>
         xQueryStart;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t,
                                int64_t>
         xQueryEnd;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t,
                                int64_t>::Iterator xTableIteratorStart;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t, uint32_t, int64_t,
+    CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t,
                                int64_t>::Iterator xTableIteratorEnd;
 
   public:
@@ -1639,14 +1634,14 @@ class SortedSvJumpFromSql
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
-                       "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                       "sort_pos_start, num_supporting_nt, id, read_id "
+                       "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+                       "       from_seed_start, num_supporting_nt, id, read_id "
                        "FROM sv_jump_table "
                        "WHERE sv_jump_run_id == ? "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
-                     "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                     "sort_pos_end, num_supporting_nt, id, read_id "
+                     "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+                     "       from_seed_start, num_supporting_nt, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
                      "ORDER BY sort_pos_end" ),
@@ -1659,16 +1654,16 @@ class SortedSvJumpFromSql
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
-                       "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                       "sort_pos_start, num_supporting_nt, id, read_id "
+                       "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+                       "       from_seed_start, num_supporting_nt, id, read_id "
                        "FROM sv_jump_table "
                        "WHERE sv_jump_run_id == ? "
                        "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
                        "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos == ? ) "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
-                     "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                     "sort_pos_end, num_supporting_nt, id, read_id "
+                     "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+                     "       from_seed_start, num_supporting_nt, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
                      "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
@@ -1687,24 +1682,33 @@ class SortedSvJumpFromSql
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
-                       "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                       "sort_pos_start, num_supporting_nt, id, read_id "
+                       "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+                       "       from_seed_start, num_supporting_nt, id, read_id "
                        "FROM sv_jump_table "
                        "WHERE sv_jump_run_id == ? "
-                       "AND sort_pos_end >= ? "
+                       "AND sort_pos_start >= ? "
                        "AND sort_pos_start <= ? "
                        "ORDER BY sort_pos_start" ),
           xQueryEnd( *pDb->pDatabase,
-                     "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                     "sort_pos_end, num_supporting_nt, id, read_id "
+                     "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+                     "      from_seed_start, num_supporting_nt, id, read_id "
                      "FROM sv_jump_table "
                      "WHERE sv_jump_run_id == ? "
                      "AND sort_pos_end >= ? "
-                     "AND sort_pos_start <= ? "
+                     "AND sort_pos_end <= ? "
                      "ORDER BY sort_pos_end" ),
           xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId, iX, iX + iW ) ),
           xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, iX, iX + iW ) )
-    {} // constructor
+    {
+#if DEBUG_LEVEL > 0
+#if 0
+        std::cout << "SortedSvJumpFromSql::xQueryStart" << std::endl;
+        xQueryStart.bindAndExplain( iSvCallerRunId, iX, iX + iW );
+        std::cout << "SortedSvJumpFromSql::xQueryEnd" << std::endl;
+        xQueryEnd.bindAndExplain( iSvCallerRunId, iX, iX + iW );
+#endif
+#endif
+    } // constructor
 
     bool hasNextStart( )
     {
@@ -1724,7 +1728,7 @@ class SortedSvJumpFromSql
             return true;
         auto xStartTup = xTableIteratorStart.get( );
         auto xEndTup = xTableIteratorEnd.get( );
-        return std::get<7>( xStartTup ) <= std::get<7>( xEndTup );
+        return std::get<0>( xStartTup ) <= std::get<0>( xEndTup );
     } // method
 
     std::shared_ptr<SvJump> getNextStart( )
@@ -1733,9 +1737,9 @@ class SortedSvJumpFromSql
 
         auto xTup = xTableIteratorStart.get( );
         xTableIteratorStart.next( );
-        return std::make_shared<SvJump>( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ),
-                                         std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                                         std::get<5>( xTup ), std::get<6>( xTup ), std::get<8>( xTup ),
+        return std::make_shared<SvJump>( pSelectedSetting, std::get<1>( xTup ), std::get<2>( xTup ),
+                                         std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
+                                         std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
                                          std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 
@@ -1745,19 +1749,37 @@ class SortedSvJumpFromSql
 
         auto xTup = xTableIteratorEnd.get( );
         xTableIteratorEnd.next( );
-        return std::make_shared<SvJump>( pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ),
-                                         std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                                         std::get<5>( xTup ), std::get<6>( xTup ), std::get<8>( xTup ),
+        return std::make_shared<SvJump>( pSelectedSetting, std::get<1>( xTup ), std::get<2>( xTup ),
+                                         std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
+                                         std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
                                          std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 
 }; // class
 
+// @todo this does not make the process sufficiently parallel
 class AllNucSeqFromSql : public Module<NucSeq, true>
 {
+    /// this wrapper is required so that the iterator is never copied
+    class InteratorHolder
+    {
+      public:
+        CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xIterator;
+
+        InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>& xQuery, int64_t iSequencerId, uint32_t uiRes,
+                         uint32_t uiModulo )
+            : xIterator( xQuery.vExecuteAndReturnIterator( iSequencerId, uiModulo, uiRes ) )
+        {} // constructor
+        InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>& xQuery )
+            : xIterator( xQuery.vExecuteAndReturnIterator( ) )
+        {} // constructor
+    }; // class
     std::shared_ptr<SV_DB> pDb;
     CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xQuery;
-    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
+    std::shared_ptr<InteratorHolder> pTableIterator;
+    int64_t iSequencerId;
+    uint32_t uiRes;
+    uint32_t uiModulo;
 
   public:
     AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
@@ -1765,11 +1787,10 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
           xQuery( *this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
                   "FROM read_table " ),
-          xTableIterator( xQuery.vExecuteAndReturnIterator( ) )
-    {
-        if( xTableIterator.eof( ) )
-            setFinished( );
-    } // constructor
+          iSequencerId( -1 ),
+          uiRes( 0 ),
+          uiModulo( 0 )
+    {} // constructor
 
     AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId,
                       size_t uiRes, size_t uiModulo )
@@ -1779,23 +1800,34 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
                   "FROM read_table "
                   "WHERE sequencer_id = ? "
                   "AND read_table.id % ? == ? " ),
-          xTableIterator( xQuery.vExecuteAndReturnIterator( iSequencerId, uiModulo, uiRes ) )
+          iSequencerId( iSequencerId ),
+          uiRes( (uint32_t)uiModulo ),
+          uiModulo( (uint32_t)uiRes )
     {
-        if( xTableIterator.eof( ) )
-            setFinished( );
+#if DEBUG_LEVEL > 0
+#if 0
+        std::cout << "AllNucSeqFromSql::xQuery" << std::endl;
+        xQuery.bindAndExplain( iSequencerId, uiModulo, uiRes );
+#endif
+#endif
     } // constructor
 
     std::shared_ptr<NucSeq> execute( )
     {
-        if( xTableIterator.eof( ) )
+        if( pTableIterator == nullptr && iSequencerId != -1 )
+            pTableIterator = std::make_unique<InteratorHolder>( xQuery, iSequencerId, uiModulo, uiRes );
+        else if( pTableIterator == nullptr && iSequencerId == -1 )
+            pTableIterator = std::make_unique<InteratorHolder>( xQuery );
+
+        if( pTableIterator->xIterator.eof( ) )
             throw AnnotatedException( "No more NucSeq in NucSeqFromSql module" );
 
-        auto xTup = xTableIterator.get( );
+        auto xTup = pTableIterator->xIterator.get( );
         // std::get<0>( xTup ).pNucSeq->sName = std::to_string( std::get<1>( xTup ) );
         std::get<0>( xTup ).pNucSeq->iId = std::get<1>( xTup );
-        xTableIterator.next( );
+        pTableIterator->xIterator.next( );
 
-        if( xTableIterator.eof( ) )
+        if( pTableIterator->xIterator.eof( ) )
             setFinished( );
         return std::get<0>( xTup ).pNucSeq;
     } // method
@@ -1940,6 +1972,7 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
     std::shared_ptr<SV_DB> pDb;
 
   public:
+    // this creates a transaction
     SV_DB::SvJumpInserter xInserter;
 
     SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sRunDesc )
@@ -2073,7 +2106,7 @@ class SvCallsFromDb
             xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
                 pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
                 std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ),
-                std::get<8>( xTup ) ) );
+                std::get<8>( xTup ), xRet.iId ) );
             xSupportIterator.next( );
         } // while
         xTableIterator.next( );

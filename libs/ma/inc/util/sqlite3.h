@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "util/debug.h"
 #include <CppSQLite3.h>
 #include <cassert>
 #include <iostream>
@@ -15,7 +16,6 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "util/debug.h"
 
 /* Forward declaration of class for SQL statements
  */
@@ -1001,7 +1001,7 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
 
     template <typename... ArgTypes> void bindAndExplain( const ArgTypes&... args )
     {
-        if(bExplained)
+        if( bExplained )
             return;
         bExplained = true;
 
@@ -1036,7 +1036,8 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
 class CppSQLiteExtStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>
 {
   public:
-    using CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>::CppSQLiteExtDebugWrapper; // use constructor of superclass
+    using CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>::CppSQLiteExtDebugWrapper; // use constructor of
+                                                                                           // superclass
 
 #ifdef SQL_VERBOSE
 #if DEBUG_LEVEL > 0
@@ -1060,7 +1061,8 @@ template <class... Types>
 class CppSQLiteExtQueryStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtQueryStatementParent<Types...>>
 {
   public:
-    using CppSQLiteExtDebugWrapper<CppSQLiteExtQueryStatementParent<Types...>>::CppSQLiteExtDebugWrapper; // use constructor of superclass
+    using CppSQLiteExtDebugWrapper<
+        CppSQLiteExtQueryStatementParent<Types...>>::CppSQLiteExtDebugWrapper; // use constructor of superclass
 
 #ifdef SQL_VERBOSE
 #if DEBUG_LEVEL > 0
@@ -1111,7 +1113,9 @@ class CppSQLiteExtImmediateTransactionContext
      */
     CppSQLiteExtImmediateTransactionContext( CppSQLiteDBExtended& rxDatabase ) : rxDatabase( rxDatabase )
     {
-        // std::cout << "Begin transaction" << std::endl;
+#if DEBUG_LEVEL > 0
+        std::cout << "Begin transaction" << std::endl;
+#endif
         rxDatabase.xStatementBeginTransaction->execDML( );
     } // constructor
 
@@ -1119,7 +1123,9 @@ class CppSQLiteExtImmediateTransactionContext
      */
     ~CppSQLiteExtImmediateTransactionContext( )
     {
-        // std::cout << "End transaction" << std::endl;
+#if DEBUG_LEVEL > 0
+        std::cout << "End transaction" << std::endl;
+#endif
         rxDatabase.xStatementEndTransaction->execDML( );
     } // destructor
 }; // class CppSQLiteExtImmediateTransactionContext

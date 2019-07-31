@@ -39,7 +39,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
           // otherwise we do so much extra work with re overlapping part between sections,
           // that parallel execution is not worth it.
-          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)500000 ) ),
+          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 10 ), (int64_t)500000 ) ),
           iCurrStart( 0 )
     {} // constructor
 
@@ -160,8 +160,8 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             rParameters, pSvDb, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
-            pSection->iStart > iMaxFuzziness ? pSection->iStart - iMaxFuzziness : 0,
-            pSection->iSize + iMaxFuzziness * 5 );
+            pSection->iStart > iMaxFuzziness*2 ? pSection->iStart - iMaxFuzziness*2 : 0,
+            pSection->iSize + iMaxFuzziness * 4 );
 
         //std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
         nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
@@ -192,6 +192,9 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             if( xEdges.nextStartIsSmaller( ) )
             {
                 auto pEdge = xEdges.getNextStart( );
+                // edge actually outside of considered area
+                if(pEdge->from_end() > pSection->end( ) + iMaxFuzziness * 2)
+                    continue;
                 auto xInnerStart = std::chrono::high_resolution_clock::now( );
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                 xVisitedStart.insert( pEdge->iId );
@@ -245,6 +248,9 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             else
             {
                 auto pEndJump = xEdges.getNextEnd( );
+                // edge actually outside of considered area
+                if(pEndJump->from_start() + iMaxFuzziness * 2 < pSection->start( ))
+                    continue;
                 auto xInnerStart = std::chrono::high_resolution_clock::now( );
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                 assert( xVisitedStart.count( pEndJump->iId ) != 0 );

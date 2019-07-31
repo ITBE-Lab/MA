@@ -147,7 +147,9 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
             if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
             {
                 pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart, pQuery->iId );
-                if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
+                if ( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMinSizeEdge->get( ) )
+                    pRet->pop_back();
+                else if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
                 {
                     nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
                     nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
