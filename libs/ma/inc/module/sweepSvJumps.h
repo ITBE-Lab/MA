@@ -160,8 +160,8 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             rParameters, pSvDb, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
-            pSection->iStart > iMaxFuzziness*2 ? pSection->iStart - iMaxFuzziness*2 : 0,
-            pSection->iSize + iMaxFuzziness * 4 );
+            pSection->start( ) > iMaxFuzziness*2 ? pSection->start( ) - iMaxFuzziness*2 : 0,
+            pSection->end( ) + iMaxFuzziness * 2 );
 
         //std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
         nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
@@ -435,8 +435,12 @@ class ExactCompleteBipartiteSubgraphSweep
                             xNewJumps[ pJump->iReadId ] = pJump;
                     } // for
                     pCurrCluster->vSupportingJumps.clear( );
+                    pCurrCluster->vSupportingJumpIds.clear( );
                     for( auto& xTup : xNewJumps )
+                    {
                         pCurrCluster->vSupportingJumps.push_back( xTup.second );
+                        pCurrCluster->vSupportingJumpIds.push_back( xTup.first );
+                    }
 
                     // check if the cluster still fulfills the required criteria
                     double estimatedCoverage =

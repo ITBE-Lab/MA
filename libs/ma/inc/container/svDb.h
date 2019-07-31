@@ -1678,7 +1678,7 @@ class SortedSvJumpFromSql
     {} // constructor
 
     SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId,
-                         int64_t iX, int64_t iW )
+                         int64_t iS, int64_t iE )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
@@ -1697,9 +1697,10 @@ class SortedSvJumpFromSql
                      "AND sort_pos_end >= ? "
                      "AND sort_pos_end <= ? "
                      "ORDER BY sort_pos_end" ),
-          xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId, iX, iX + iW ) ),
-          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, iX, iX + iW ) )
+          xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator( iSvCallerRunId, iS, iE ) ),
+          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, iS, iE ) )
     {
+        assert( iE >= iS );
 #if DEBUG_LEVEL > 0
 #if 0
         std::cout << "SortedSvJumpFromSql::xQueryStart" << std::endl;
@@ -2105,8 +2106,8 @@ class SvCallsFromDb
             xRet.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
             xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
                 pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ),
-                std::get<8>( xTup ), xRet.iId ) );
+                std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
+                xRet.iId ) );
             xSupportIterator.next( );
         } // while
         xTableIterator.next( );
