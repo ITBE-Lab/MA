@@ -397,7 +397,7 @@ void exportFM_index( py::module& rxPyModuleId )
     // export the SAInterval class
     py::class_<SAInterval>( rxPyModuleId, "SAInterval" )
         .def_readwrite( "size", &SAInterval::iSize )
-        .def_readwrite( "start", &SAInterval::iStart );
+        .def_readwrite( "start", &SAInterval::iStart )
         .def( "rev_comp", &SAInterval::revComp );
 
     py::class_<SuffixArrayInterface, Container, std::shared_ptr<SuffixArrayInterface>>( rxPyModuleId,
