@@ -39,7 +39,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
           // otherwise we do so much extra work with re overlapping part between sections,
           // that parallel execution is not worth it.
-          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 10 ), (int64_t)500000 ) ),
+          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 10 ), (int64_t)5000000 ) ),
           iCurrStart( 0 )
     {} // constructor
 
@@ -142,7 +142,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
           // max of both limits)
           // also this should be the maximal cluster width not the maximal CBSG width
-          iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( ) ),
+          iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( )*10 ),
           uiGenomeSize( pPack->uiStartOfReverseStrand( ) ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
@@ -160,8 +160,8 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             rParameters, pSvDb, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
-            pSection->start( ) > iMaxFuzziness*2 ? pSection->start( ) - iMaxFuzziness*2 : 0,
-            pSection->end( ) + iMaxFuzziness * 2 );
+            pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,
+            pSection->end( ) + iMaxFuzziness );
 
         //std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
         nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
@@ -193,7 +193,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             {
                 auto pEdge = xEdges.getNextStart( );
                 // edge actually outside of considered area
-                if(pEdge->from_end() > pSection->end( ) + iMaxFuzziness * 2)
+                if(pEdge->from_end() > pSection->end( ) + iMaxFuzziness)
                     continue;
                 auto xInnerStart = std::chrono::high_resolution_clock::now( );
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
@@ -249,7 +249,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             {
                 auto pEndJump = xEdges.getNextEnd( );
                 // edge actually outside of considered area
-                if(pEndJump->from_start() + iMaxFuzziness * 2 < pSection->start( ))
+                if(pEndJump->from_start() + iMaxFuzziness < pSection->start( ))
                     continue;
                 auto xInnerStart = std::chrono::high_resolution_clock::now( );
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
@@ -321,11 +321,16 @@ class ExactCompleteBipartiteSubgraphSweep
      * @details
      */
     ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
-                                         std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId )
+                                         std::shared_ptr<Pack> pPack, int64_t iSequencerId )
         : pPack( pPack ),
           dEstimateCoverageFactor( 0.1 ),
-          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSvCallerRunId, pPack ) )
-    {} // constructor
+          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSequencerId, pPack ) )
+    {
+        //std::cout << "EstimatedCoverage:" << std::endl;
+        //std::cout << "contig\tcoverage" << std::endl;
+        //for(size_t uiI = 0; uiI < vEstimatedCoverageList.size(); uiI++)
+        //    std::cout << uiI << "\t" << vEstimatedCoverageList[uiI] << std::endl;
+    } // constructor
 
     inline void exact_sweep( std::vector<std::shared_ptr<SvJump>>& rvEdges, size_t uiStart, size_t uiEnd,
                              std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pRet )

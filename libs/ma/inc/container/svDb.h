@@ -114,8 +114,11 @@ class SV_DB : public Container
             auto vNumNt = this->getNumNt( iSequencerId );
             assert( vNumNt.size( ) == pPack->uiNumContigs( ) );
             vRet.reserve( vNumNt.size( ) );
+            //for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
+            //    std::cout << vNumNt[ uiI ] << ", ";
+            //std::cout << std::endl;
             for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
-                vRet.push_back( vNumNt[ uiI ] / (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked );
+                vRet.push_back( vNumNt[ uiI ] / ((double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked) );
             return vRet;
         } // method
 
@@ -640,8 +643,7 @@ class SV_DB : public Container
                             "FROM sv_call_table "
                             "WHERE sv_caller_run_id = ? "
                             "AND supporting_nt*1.0/coverage >= ? "
-                            "ORDER BY supporting_nt*1.0/coverage DESC "
-                            "LIMIT ? " ),
+                            "ORDER BY supporting_nt*1.0/coverage DESC " ),
               xNumOverlapsHelper1( *pDatabase,
                                    // make sure that inner overlaps the outer:
                                    "SELECT outer.id "
@@ -836,7 +838,7 @@ class SV_DB : public Container
         inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                      int64_t iAllowedDist )
         {
-            uint32_t uiNumCalls = numCalls( iCallerRunIdA, 0 ) * 3;
+            //uint32_t uiNumCalls = numCalls( iCallerRunIdA, 0 ) * 3;
             uint32_t uiRet = 0;
             xNumOverlaps.vExecuteAndForAllRowsUnpackedDo(
                 [&]( int64_t iId, double dScore, uint32_t uiFromStart, uint32_t uiFromSize, uint32_t uiToStart,
@@ -857,7 +859,7 @@ class SV_DB : public Container
                         return;
                     uiRet += 1;
                 },
-                iCallerRunIdB, dMinScore, uiNumCalls );
+                iCallerRunIdB, dMinScore );
 
             return uiRet;
         } // method
@@ -1778,6 +1780,7 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
                          uint32_t uiModulo )
             : xIterator( xQuery.vExecuteAndReturnIterator( iSequencerId, uiModulo, uiRes ) )
         {} // constructor
+
         InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>& xQuery )
             : xIterator( xQuery.vExecuteAndReturnIterator( ) )
         {} // constructor
@@ -1806,11 +1809,11 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
           xQuery( *this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
                   "FROM read_table "
-                  "WHERE sequencer_id = ? "
+                  "WHERE sequencer_id == ? "
                   "AND read_table.id % ? == ? " ),
           iSequencerId( iSequencerId ),
-          uiRes( (uint32_t)uiModulo ),
-          uiModulo( (uint32_t)uiRes )
+          uiRes( (uint32_t)uiRes ),
+          uiModulo( (uint32_t)uiModulo )
     {
 #if DEBUG_LEVEL > 0
 #if 0
@@ -1823,8 +1826,8 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
     std::shared_ptr<NucSeq> execute( )
     {
         if( pTableIterator == nullptr && iSequencerId != -1 )
-            pTableIterator = std::make_unique<InteratorHolder>( xQuery, iSequencerId, uiModulo, uiRes );
-        else if( pTableIterator == nullptr && iSequencerId == -1 )
+            pTableIterator = std::make_unique<InteratorHolder>( xQuery, iSequencerId, uiRes, uiModulo );
+        else if( pTableIterator == nullptr )
             pTableIterator = std::make_unique<InteratorHolder>( xQuery );
 
         if( pTableIterator->xIterator.eof( ) )

@@ -398,6 +398,7 @@ void exportFM_index( py::module& rxPyModuleId )
     py::class_<SAInterval>( rxPyModuleId, "SAInterval" )
         .def_readwrite( "size", &SAInterval::iSize )
         .def_readwrite( "start", &SAInterval::iStart );
+        .def( "rev_comp", &SAInterval::revComp );
 
     py::class_<SuffixArrayInterface, Container, std::shared_ptr<SuffixArrayInterface>>( rxPyModuleId,
                                                                                         "SuffixArrayInterface" );
@@ -410,6 +411,8 @@ void exportFM_index( py::module& rxPyModuleId )
         .def( "load", &FMIndex::vLoadFMIndex )
         .def_static( "exists", &FMIndex::packExistsOnFileSystem )
         .def( "store", &FMIndex::vStoreFMIndex )
+        .def( "init_interval", &FMIndex::init_interval )
+        .def( "extend_backward", &FMIndex::extend_backward )
         .def( "bwt_sa", &FMIndex::bwt_sa )
         .def( "get_ambiguity", &FMIndex::get_ambiguity )
         .def( "test_sa_interval", &FMIndex::testSaInterval )
