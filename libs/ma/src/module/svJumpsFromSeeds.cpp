@@ -147,8 +147,8 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
             if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
             {
                 pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart, pQuery->iId );
-                if ( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMinSizeEdge->get( ) )
-                    pRet->pop_back();
+                if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMinSizeEdge->get( ) )
+                    pRet->pop_back( );
                 else if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
                 {
                     nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
@@ -276,7 +276,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     // filter ambiguous segments -> 1; don't -> 0
 #if 1
     std::vector<Segment*> vTemp;
-    int64_t iLastUniqueRefPos = 0;
+    int64_t iLastUniqueRefPos = -1;
     for( Segment& rSegment : *pSegments )
     {
         if( rSegment.size( ) < uiMinSeedSizeSV )
@@ -293,9 +293,12 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
                     pSeg->forEachSeed( *pFM_index, [&]( Seed& rS ) {
                         int64_t iStart = (int64_t)rS.start_ref( );
                         int64_t iEnd = (int64_t)rS.end_ref( );
-                        int64_t iDist = std::min(
-                            std::min( std::abs( iStart - iCurrUniqueRefPos ), std::abs( iEnd - iLastUniqueRefPos ) ),
-                            std::min( std::abs( iStart - iCurrUniqueRefPos ), std::abs( iEnd - iLastUniqueRefPos ) ) );
+                        int64_t iDist =
+                            std::min( std::abs( iStart - iCurrUniqueRefPos ), std::abs( iEnd - iCurrUniqueRefPos ) );
+                        // if the segment is not the first segment this triggers
+                        if( iLastUniqueRefPos != -1 )
+                            iDist = std::min( iDist, std::min( std::abs( iEnd - iLastUniqueRefPos ),
+                                                               std::abs( iStart - iLastUniqueRefPos ) ) );
                         if( iMinDist == -1 || iDist < iMinDist )
                         {
                             xBest = rS;
@@ -314,6 +317,25 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
             } ); // forEachSeed function call \ if
         else
             vTemp.push_back( &rSegment );
+    } // for
+    // seeds at the end
+    for( Segment* pSeg : vTemp )
+    {
+        Seed xBest;
+        int64_t iMinDist = -1;
+        pSeg->forEachSeed( *pFM_index, [&]( Seed& rS ) {
+            int64_t iStart = (int64_t)rS.start_ref( );
+            int64_t iEnd = (int64_t)rS.end_ref( );
+            int64_t iDist = std::min( std::abs( iEnd - iLastUniqueRefPos ), std::abs( iStart - iLastUniqueRefPos ) );
+            if( iMinDist == -1 || iDist < iMinDist )
+            {
+                xBest = rS;
+                iMinDist = iDist;
+            } // if
+            return true;
+        } ); // forEachSeed function call
+        assert( iMinDist != -1 );
+        vSeeds.push_back( xBest );
     } // for
 #else
     pSegments->emplaceAllEachSeeds( *pFM_index, 0, uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds, [&]( ) { return true; } );

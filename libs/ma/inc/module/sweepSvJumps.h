@@ -439,8 +439,8 @@ class ExactCompleteBipartiteSubgraphSweep
                     for( auto& xTup : xNewJumps )
                     {
                         pCurrCluster->vSupportingJumps.push_back( xTup.second );
-                        pCurrCluster->vSupportingJumpIds.push_back( xTup.first );
-                    }
+                        pCurrCluster->vSupportingJumpIds.push_back( xTup.second->iId );
+                    } // for
 
                     // check if the cluster still fulfills the required criteria
                     double estimatedCoverage =

@@ -1023,15 +1023,21 @@ class SV_DB : public Container
                     break;
                 } // if
 
+                // we reach this point if there are more calls, so tNextCall is set properly here
                 metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
+                    // if the next call is in a different chromosome
                     while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
                     {
+                        // extract the remaining chromosome into xCurrChrom
                         uiCurrPos = (uint32_t)pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                        // append xCurrChrom to the pack
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
                                                "no_description_given", xCurrChrom );
+                        // clear xCurrChrom
                         xCurrChrom.vClear( );
-                        // uiCurrPos += bForwContext ? 1 : -1;
+                        // if the next call is several chromosomes over this loops keeps going
                     } // if
+                    // the call is in the current chromosome / we have appended all skipped chromosomes
                     if( bForwContext )
                         pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ), xCurrChrom, true );
                     else
@@ -1039,6 +1045,7 @@ class SV_DB : public Container
                                                    pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
                                                    xCurrChrom,
                                                    true );
+                    // append the skipped over sequence
                     if( std::get<3>( tNextCall ).pNucSeq != nullptr )
                         xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
                                             std::get<3>( tNextCall ).pNucSeq->length( ) );
