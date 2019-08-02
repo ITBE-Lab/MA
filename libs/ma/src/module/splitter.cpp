@@ -3,9 +3,6 @@
  * @author Markus Schmidt
  */
 #include "module/splitter.h"
-#include "container/alignment.h"
-#include "container/segment.h"
-#include "container/soc.h"
 
 using namespace libMA;
 
@@ -63,6 +60,12 @@ void exportSplitter( py::module& rxPyModuleId )
         rxPyModuleId, "AlignmentCollector", []( auto&& x ) {
             x.def_readwrite( "collection",
                              &Collector<NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>::vCollection );
+        } );
+
+    exportModule<FilterSeedsByArea, nucSeqIndex, nucSeqIndex>( rxPyModuleId, "FilterSeedsByArea" );
+    exportModule<VectorCollector<Seeds>>(
+        rxPyModuleId, "SeedsCollector", []( auto&& x ) {
+            x.def_readwrite( "collection", &VectorCollector<Seeds>::pCollection );
         } );
 } // function
 #endif

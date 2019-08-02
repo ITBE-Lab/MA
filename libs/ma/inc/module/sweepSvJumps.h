@@ -142,7 +142,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
           // max of both limits)
           // also this should be the maximal cluster width not the maximal CBSG width
-          iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( )*10 ),
+          iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( ) * 10 ),
           uiGenomeSize( pPack->uiStartOfReverseStrand( ) ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
@@ -155,7 +155,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
         EXPORTED execute( std::shared_ptr<GenomeSection> pSection )
     {
         auto xInitStart = std::chrono::high_resolution_clock::now( );
-        //std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
+        // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
         SortedSvJumpFromSql xEdges(
             rParameters, pSvDb, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
@@ -163,7 +163,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,
             pSection->end( ) + iMaxFuzziness );
 
-        //std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
+        // std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
         nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
         nucSeqIndex uiForwStrandEnd = (nucSeqIndex)pSection->end( );
         if( pSection->iStart >= std::numeric_limits<int64_t>::max( ) / (int64_t)2 )
@@ -184,7 +184,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 #endif
         auto xInitEnd = std::chrono::high_resolution_clock::now( );
         std::chrono::duration<double> xDiffInit = xInitEnd - xInitStart;
-        dInit += xDiffInit.count();
+        dInit += xDiffInit.count( );
 
         auto xLoopStart = std::chrono::high_resolution_clock::now( );
         while( xEdges.hasNextStart( ) || xEdges.hasNextEnd( ) )
@@ -193,7 +193,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
             {
                 auto pEdge = xEdges.getNextStart( );
                 // edge actually outside of considered area
-                if(pEdge->from_end() > pSection->end( ) + iMaxFuzziness)
+                if( pEdge->from_end( ) > pSection->end( ) + iMaxFuzziness )
                     continue;
                 auto xInnerStart = std::chrono::high_resolution_clock::now( );
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
@@ -243,13 +243,13 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                 } // for
                 auto xInnerEnd = std::chrono::high_resolution_clock::now( );
                 std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
-                dInnerWhile += xDiffInner.count();
+                dInnerWhile += xDiffInner.count( );
             } // if
             else
             {
                 auto pEndJump = xEdges.getNextEnd( );
                 // edge actually outside of considered area
-                if(pEndJump->from_start() + iMaxFuzziness < pSection->start( ))
+                if( pEndJump->from_start( ) + iMaxFuzziness < pSection->start( ) )
                     continue;
                 auto xInnerStart = std::chrono::high_resolution_clock::now( );
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
@@ -286,13 +286,13 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                 } // if
                 auto xInnerEnd = std::chrono::high_resolution_clock::now( );
                 std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
-                dInnerWhile += xDiffInner.count();
+                dInnerWhile += xDiffInner.count( );
             } // else
         } // while
-        //std::cout << "done (" << pSection->iStart << ")" << std::endl;
+        // std::cout << "done (" << pSection->iStart << ")" << std::endl;
         auto xLoopEnd = std::chrono::high_resolution_clock::now( );
         std::chrono::duration<double> xDiffLoop = xLoopEnd - xLoopStart;
-        dOuterWhile += xDiffLoop.count();
+        dOuterWhile += xDiffLoop.count( );
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
         // make sure that there is no open cluster left
@@ -326,9 +326,9 @@ class ExactCompleteBipartiteSubgraphSweep
           dEstimateCoverageFactor( 0.1 ),
           vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSequencerId, pPack ) )
     {
-        //std::cout << "EstimatedCoverage:" << std::endl;
-        //std::cout << "contig\tcoverage" << std::endl;
-        //for(size_t uiI = 0; uiI < vEstimatedCoverageList.size(); uiI++)
+        // std::cout << "EstimatedCoverage:" << std::endl;
+        // std::cout << "contig\tcoverage" << std::endl;
+        // for(size_t uiI = 0; uiI < vEstimatedCoverageList.size(); uiI++)
         //    std::cout << uiI << "\t" << vEstimatedCoverageList[uiI] << std::endl;
     } // constructor
 

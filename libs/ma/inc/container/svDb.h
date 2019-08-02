@@ -61,6 +61,7 @@ class SV_DB : public Container
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
         CppSQLiteExtStatement xIncNt;
         CppSQLiteExtQueryStatement<int64_t> xGetNumNt;
+        bool bPrintedCovList = false;
 
       public:
         ContigCovTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -114,11 +115,23 @@ class SV_DB : public Container
             auto vNumNt = this->getNumNt( iSequencerId );
             assert( vNumNt.size( ) == pPack->uiNumContigs( ) );
             vRet.reserve( vNumNt.size( ) );
-            //for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
-            //    std::cout << vNumNt[ uiI ] << ", ";
-            //std::cout << std::endl;
+            if(!bPrintedCovList)
+            {
+                std::cout << "estimated coverage per contig (showing >= 3x):" << std::endl;
+                std::cout << "contig_id\tcoverage\tnum_nt" << std::endl;
+                for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
+                    if( vNumNt[ uiI ] / (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked >= 3 )
+                        std::cout << uiI << "\t"
+                                << ( (int)10 * vNumNt[ uiI ] /
+                                    (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked ) /
+                                        10.0
+                                << "x\t" << vNumNt[ uiI ] << std::endl;
+                std::cout << std::endl;
+                bPrintedCovList = true;
+            } // if
             for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
-                vRet.push_back( vNumNt[ uiI ] / ((double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked) );
+                vRet.push_back( vNumNt[ uiI ] /
+                                ( (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked ) );
             return vRet;
         } // method
 
@@ -150,6 +163,7 @@ class SV_DB : public Container
                     // size of this seed
                     int64_t iSize = rSeeds[ uiI ].size( );
 
+#if 1 // 1 -> add gap in between seeds to estimation / 0 -> don't
                     // add gap to previous seed or start of query
                     if( uiI == 0 )
                         iSize += rSeeds[ uiI ].start( );
@@ -161,6 +175,7 @@ class SV_DB : public Container
                         iSize += uiQlen - rSeeds[ uiI ].end( );
                     else if( rSeeds[ uiI ].end( ) < rSeeds[ uiI + 1 ].start( ) )
                         iSize += ( rSeeds[ uiI + 1 ].start( ) - rSeeds[ uiI ].end( ) ) / 2;
+#endif
 
                     // increase the count
                     vNumNts[ pPack->uiSequenceIdForPosition( rSeeds[ uiI ].start_ref( ) ) ] += iSize;
@@ -838,7 +853,7 @@ class SV_DB : public Container
         inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                      int64_t iAllowedDist )
         {
-            //uint32_t uiNumCalls = numCalls( iCallerRunIdA, 0 ) * 3;
+            // uint32_t uiNumCalls = numCalls( iCallerRunIdA, 0 ) * 3;
             uint32_t uiRet = 0;
             xNumOverlaps.vExecuteAndForAllRowsUnpackedDo(
                 [&]( int64_t iId, double dScore, uint32_t uiFromStart, uint32_t uiFromSize, uint32_t uiToStart,
@@ -1160,6 +1175,9 @@ class SV_DB : public Container
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
+        //https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
+        pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
+        pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
     } // constructor
 
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
@@ -1180,6 +1198,9 @@ class SV_DB : public Container
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
+        //https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
+        pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
+        pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
     } // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -1774,19 +1795,23 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
     class InteratorHolder
     {
       public:
-        CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xIterator;
+        CppSQLiteExtQueryStatement<NucSeqSql, int64_t>::Iterator xIterator;
 
-        InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>& xQuery, int64_t iSequencerId, uint32_t uiRes,
+        InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, int64_t>& xQuery, int64_t iSequencerId, uint32_t uiRes,
                          uint32_t uiModulo )
             : xIterator( xQuery.vExecuteAndReturnIterator( iSequencerId, uiModulo, uiRes ) )
         {} // constructor
 
-        InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>& xQuery )
+        InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, int64_t>& xQuery, int64_t iSequencerId )
+            : xIterator( xQuery.vExecuteAndReturnIterator( iSequencerId ) )
+        {} // constructor
+
+        InteratorHolder( CppSQLiteExtQueryStatement<NucSeqSql, int64_t>& xQuery )
             : xIterator( xQuery.vExecuteAndReturnIterator( ) )
         {} // constructor
     }; // class
     std::shared_ptr<SV_DB> pDb;
-    CppSQLiteExtQueryStatement<NucSeqSql, uint32_t> xQuery;
+    CppSQLiteExtQueryStatement<NucSeqSql, int64_t> xQuery;
     std::shared_ptr<InteratorHolder> pTableIterator;
     int64_t iSequencerId;
     uint32_t uiRes;
@@ -1807,10 +1832,13 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
                       size_t uiRes, size_t uiModulo )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
           xQuery( *this->pDb->pDatabase,
-                  "SELECT read_table.sequence, read_table.id "
-                  "FROM read_table "
-                  "WHERE sequencer_id == ? "
-                  "AND read_table.id % ? == ? " ),
+                  ( uiModulo != 1 ? "SELECT read_table.sequence, read_table.id "
+                                    "FROM read_table "
+                                    "WHERE sequencer_id == ? "
+                                    "AND read_table.id % ? == ? "
+                                  : "SELECT read_table.sequence, read_table.id "
+                                    "FROM read_table "
+                                    "WHERE sequencer_id == ? " ) ),
           iSequencerId( iSequencerId ),
           uiRes( (uint32_t)uiRes ),
           uiModulo( (uint32_t)uiModulo )
@@ -1825,8 +1853,10 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
 
     std::shared_ptr<NucSeq> execute( )
     {
-        if( pTableIterator == nullptr && iSequencerId != -1 )
+        if( pTableIterator == nullptr && iSequencerId != -1 && uiModulo != 1 )
             pTableIterator = std::make_unique<InteratorHolder>( xQuery, iSequencerId, uiRes, uiModulo );
+        else if( pTableIterator == nullptr && iSequencerId != -1 )
+            pTableIterator = std::make_unique<InteratorHolder>( xQuery, iSequencerId );
         else if( pTableIterator == nullptr )
             pTableIterator = std::make_unique<InteratorHolder>( xQuery );
 

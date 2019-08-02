@@ -27,6 +27,7 @@ void exportSeed( py::module& rxPyModuleId )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, bool>() )
         .def_readwrite( "start", &Seed::iStart )
         .def_readwrite( "size", &Seed::iSize )
+        .def_readwrite( "delta", &Seed::uiDelta )
         .def_readwrite( "start_ref", &Seed::uiPosOnReference )
         .def_readwrite( "on_forward_strand", &Seed::bOnForwStrand )
         .def( "__eq__", &Seed::operator==);

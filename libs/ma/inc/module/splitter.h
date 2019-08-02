@@ -8,7 +8,10 @@
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
+#include "container/alignment.h"
 #include "container/nucSeq.h"
+#include "container/segment.h"
+#include "container/soc.h"
 #include "module/module.h"
 #include <fstream>
 #include <mutex>
@@ -179,6 +182,31 @@ template <typename... TP_VEC_CONTENT> class Collector : public Module<Container,
 }; // class
 
 /**
+ * @brief Get a specific tuple element
+ * @details
+ * the tuple element must contain shared pointers of type TP_TUPLE::value_type
+ * the tuple must implement operator[].
+ */
+template <typename TP_VEC> class VectorCollector : public Module<Container, false, TP_VEC>
+{
+  public:
+    std::shared_ptr<TP_VEC> pCollection;
+    std::shared_ptr<std::mutex> pMutex;
+
+    VectorCollector( const ParameterSetManager& rParameters )
+        : pCollection( std::make_shared<TP_VEC>( ) ), pMutex( new std::mutex )
+    {} // constructor
+
+    virtual std::shared_ptr<Container> execute( std::shared_ptr<TP_VEC> pIn )
+    {
+        std::lock_guard<std::mutex> xGuard( *pMutex );
+        for( auto& xEle : *pIn )
+            pCollection->push_back( xEle );
+        return std::make_shared<Container>( );
+    } // method
+}; // class
+
+/**
  * @brief Joins two ends of computational graphs
  * @details
  * always returns an empty container
@@ -192,6 +220,42 @@ template <typename... TP_VEC_CONTENT> class Join : public Module<Container, fals
     virtual typename std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
     {
         return std::make_shared<Container>( );
+    } // method
+}; // class
+
+
+/**
+ * @brief Split a ContainerVector into its elements
+ * @details @note saves read id in uiDelta of seeds... bad code ...
+ */
+class FilterSeedsByArea : public Module<Seeds, false, SegmentVector, FMIndex, NucSeq>
+{
+  public:
+    nucSeqIndex uiStart;
+    nucSeqIndex uiSize;
+    nucSeqIndex uiMaxAmbiguity;
+    nucSeqIndex uiSeedSize;
+
+    FilterSeedsByArea( const ParameterSetManager& rParameters, nucSeqIndex uiStart, nucSeqIndex uiSize )
+        : uiStart( uiStart ),
+          uiSize( uiSize ),
+          uiMaxAmbiguity( rParameters.getSelected( )->xMaxAmbiguitySv->get( ) ),
+          uiSeedSize( rParameters.getSelected( )->xMinSeedSizeSV->get( ) )
+    {} // constructor
+
+    typename std::shared_ptr<Seeds>
+    execute( std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<FMIndex> pFmIndex, std::shared_ptr<NucSeq> pQuery )
+    {
+        std::shared_ptr<Seeds> pRet = std::make_shared<Seeds>( );
+        pSegments->forEachSeed( *pFmIndex, pQuery->length(), uiMaxAmbiguity, uiSeedSize, true,
+                                [&]( Seed& s ) {
+                                    s.uiDelta = (nucSeqIndex)pQuery->iId;
+                                    if( s.start_ref( ) <= uiStart + uiSize && s.end_ref( ) >= uiStart )
+                                        pRet->push_back( s );
+                                    return true;
+                                } // lambda
+        ); // for each
+        return pRet;
     } // method
 }; // class
 

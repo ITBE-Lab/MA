@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "container/svDb.h"
 #include "container/segment.h"
+#include "container/svDb.h"
 #include "container/svJump.h"
 #include "module/binarySeeding.h"
 #include "module/hashMapSeeding.h"
@@ -39,6 +39,10 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     int64_t iSequencerId;
     std::shared_ptr<SV_DB> pDb;
 
+    std::mutex xLock;
+    size_t uiNumSeedsEliminatedAmbiguityFilter = 0;
+    size_t uiNumSeedsKeptAmbiguityFilter = 0;
+
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
      */
@@ -57,6 +61,17 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     {
         xBinarySeeding.bDisableHeuristics = true;
     } // constructor
+
+    ~SvJumpsFromSeeds( )
+    {
+        size_t uiTotal = uiNumSeedsKeptAmbiguityFilter + uiNumSeedsEliminatedAmbiguityFilter;
+        if( uiTotal > 0 )
+            std::cout << "~SvJumpsFromSeeds: ambiguity filter kept and eliminated " << uiNumSeedsKeptAmbiguityFilter
+                      << " and " << uiNumSeedsEliminatedAmbiguityFilter << " seeds respectively. " << std::endl
+                      << "\tThats " << ( (int)1000 * uiNumSeedsKeptAmbiguityFilter / uiTotal ) / 10.0 << "% and "
+                      << ( (int)1000 * uiNumSeedsEliminatedAmbiguityFilter / uiTotal ) / 10.0 << "% respectively."
+                      << std::endl;
+    } // destructor
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
                                                                        std::shared_ptr<Pack>

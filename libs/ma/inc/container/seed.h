@@ -461,6 +461,7 @@ class Seeds : public Container
         vContent.clear( );
     } // method
 }; // class
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON
