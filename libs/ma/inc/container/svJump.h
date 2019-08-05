@@ -168,7 +168,7 @@ class SvJump : public Container
     nucSeqIndex fuzziness( ) const
     {
         double x = (double)std::max( dist( uiFrom, uiTo ), uiQueryTo - uiQueryFrom );
-        assert(x >= 0);
+        assert( x >= 0 );
         double h_min = 1;
         return (nucSeqIndex)std::min(
             h, h_min + std::max( 0.0, x - ( uiTo >= uiFrom || uiQueryTo - uiQueryFrom >= uiFrom - uiTo ? s : s_neg ) ) *
@@ -405,6 +405,20 @@ class SvCall : public Container
     {
         if( bRememberJump )
             vSupportingJumps.push_back( pJump );
+        addJumpToEstimateClusterSize( pJump );
+        uiOpenEdges = 1;
+    } // constructor
+
+    inline void resetEstimateClusterSize()
+    {
+        vLeft.clear();
+        vRight.clear();
+        vUp.clear();
+        vDown.clear();
+    } // method
+
+    inline void addJumpToEstimateClusterSize( std::shared_ptr<SvJump> pJump )
+    {
         nucSeqIndex uiF = pJump->uiFrom;
         nucSeqIndex uiT = pJump->uiTo;
         if( !pJump->from_known( ) )
@@ -438,8 +452,7 @@ class SvCall : public Container
             this->vUp.push_back( uiT + std::min( pJump->ref_distance( ) / uiDelToInsRatio,
                                                  pJump->query_distance( ) * uiDelToInsRatio ) );
         } // else
-        uiOpenEdges = 1;
-    } // constructor
+    } // method
 
     bool supportedJumpsLoaded( ) const
     {
@@ -546,15 +559,15 @@ class SvCall : public Container
             this->uiToSize = uiUp - uiToStart;
     } // method
 
-    inline nucSeqIndex size() const
+    inline nucSeqIndex size( ) const
     {
         assert( this->supportedJumpsLoaded( ) );
         nucSeqIndex uiRefSize = uiFromStart > uiToStart ? uiFromStart - uiToStart : uiToStart - uiFromStart;
 
         nucSeqIndex uiQuerySize = 0;
-        for(auto pJump : vSupportingJumps)
+        for( auto pJump : vSupportingJumps )
             uiQuerySize += std::max( pJump->query_distance( ), pJump->ref_distance( ) );
-        uiQuerySize /= vSupportingJumps.size();
+        uiQuerySize /= vSupportingJumps.size( );
 
         return uiRefSize > uiQuerySize ? uiRefSize : uiQuerySize;
     } // method

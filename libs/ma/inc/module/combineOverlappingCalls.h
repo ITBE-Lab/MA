@@ -57,6 +57,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                       std::get<5>( xTup ), // bSwitchStrand
                       std::get<7>( xTup ) // supporting_nt
         );
+
         std::vector<int64_t> vToDel;
         {
             // get all overlapping calls
@@ -81,10 +82,12 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                 {
                     auto xTup = xSupportIterator.get( );
                     xPrim.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                    xPrim.vSupportingJumps.push_back(
+                    auto pNewJump =
                         std::make_shared<SvJump>( rParameters.getSelected( ), std::get<0>( xTup ), std::get<1>( xTup ),
                                                   std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                                                  std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) ) );
+                                                  std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
+                    xPrim.vSupportingJumps.push_back( pNewJump );
+                    xPrim.addJumpToEstimateClusterSize( pNewJump );
                     uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( )->query_distance( );
                     xSupportIterator.next( );
                 } // while
@@ -114,10 +117,12 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                     {
                         auto xTup = xSupportIterator.get( );
                         xSec.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                        xSec.vSupportingJumps.push_back( std::make_shared<SvJump>(
+                        auto pNewJump = std::make_shared<SvJump>(
                             rParameters.getSelected( ), std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
                             std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                            std::get<7>( xTup ) ) );
+                            std::get<7>( xTup ) );
+                        xSec.vSupportingJumps.push_back( pNewJump );
+                        xSec.addJumpToEstimateClusterSize( pNewJump );
                         uiSecInsertSizeAvg += xSec.vSupportingJumps.back( )->query_distance( );
                         xSupportIterator.next( );
                     } // while
@@ -148,7 +153,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                 sDeleted.insert( iId );
                 uiRet++;
             } // for
-            // @todo recompute smaller bounds
+            xPrim.reEstimateClusterSize();
             xInserter.updateCall( xPrim );
         } // if
 
