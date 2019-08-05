@@ -1319,6 +1319,11 @@ class SV_DB : public Container
         return pSvCallerRunTable->nameExists( sName );
     } // method
 
+    inline int64_t insertSvCallerRun( std::string rsSvCallerName, std::string rsSvCallerDesc, int64_t uiJumpRunId )
+    {
+        return pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId );
+    }
+
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
     {
         return pSvCallTable->reconstructSequencedGenome( pRef, iCallerRun );

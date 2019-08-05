@@ -106,6 +106,49 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
 }; // class
 
 /**
+ * @brief saves all computed clusters in the database
+ * @details buffers the calls in a vector before
+ * @note in a parallel computational graph: use multiple instances of this module
+ */
+class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
+{
+  public:
+    std::shared_ptr<SV_DB> pDB;
+    int64_t iRunId;
+    std::vector<std::shared_ptr<CompleteBipartiteSubgraphClusterVector>> vContent;
+    /**
+     * @brief
+     * @details
+     */
+    BufferedSvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDB, int64_t iRunId )
+        : pDB( pDB ), iRunId( iRunId )
+    {} // constructor
+
+    inline void commit()
+    {
+        if(vContent.size() == 0)
+            return;
+        // creates transaction
+        auto pInserter = std::make_shared<SV_DB::SvCallInserter>( pDB, iRunId );
+        for( auto pVec : vContent )
+            for( auto pCall : pVec->vContent )
+                pInserter->insertCall( *pCall );
+        vContent.clear();
+    } // method
+
+    ~BufferedSvCallSink( )
+    {
+        commit();
+    } // scope for pInserter (transaction)
+
+    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
+    {
+        vContent.push_back( pVec );
+        return std::make_shared<Container>( );
+    } // method & scope for xGuard
+}; // class
+
+/**
  * @brief
  * @details
  */

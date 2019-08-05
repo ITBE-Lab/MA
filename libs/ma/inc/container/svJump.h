@@ -241,7 +241,7 @@ class SvJump : public Container
     nucSeqIndex to_size( ) const
     {
         if( !to_known( ) || !from_known( ) )
-            return 2; // @todo there is some bug which makes this necessary...
+            return 1;
 
         return fuzziness( ) + getSeedDirFuzziness( );
     } // method
