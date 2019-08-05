@@ -526,6 +526,64 @@ class ExactCompleteBipartiteSubgraphSweep
     } // method
 }; // class
 
+/**
+ * @brief filters out short calls with low support
+ * @details
+ * Due to the high concentration of noise along the diagonal of the adjacency matrix we get a lot of false positives
+ * here. This module filters such calls based on the amount of Nt's that support the individual calls.
+ */
+class FilterLowSupportShortCalls
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
+{
+  public:
+    nucSeqIndex uiMaxSuppNt;
+    nucSeqIndex uiMaxSVSize;
+    FilterLowSupportShortCalls( const ParameterSetManager& rParameters )
+        : uiMaxSuppNt( rParameters.getSelected( )->xMaxSuppNtShortCallFilter->get( ) ),
+          uiMaxSVSize( rParameters.getSelected( )->xMaxCallSizeShortCallFilter->get( ) )
+    {} // constructor
+
+    std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
+    {
+        auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
+        for( auto pCall : pCalls->vContent )
+            // if the call is supported by enough NT's or large enough we keep it
+            if( pCall->uiNumSuppNt > uiMaxSuppNt || pCall->size( ) > uiMaxSVSize )
+                pRet->vContent.push_back( pCall );
+        return pRet;
+    } // method
+}; // class
+
+/**
+ * @brief filters out fuzzy calls
+ * @details
+ * Observation: the seed pair clusters resulting false positive calls are generally way more spread out with
+ * respect to the seed positions on the reference. This causes the statistical cluster size estimation to be very
+ * conservative and output a very large cluster. We can use this behaviour to implement a simple filter that eliminates
+ * a bunch of false positives.
+ */
+class FilterFuzzyCalls
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
+{
+  public:
+    nucSeqIndex uiMaxFuzziness;
+    FilterFuzzyCalls( const ParameterSetManager& rParameters )
+        : uiMaxFuzziness( rParameters.getSelected( )->xMaxFuzzinessFilter->get( ) )
+    {} // constructor
+
+    std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
+    {
+        auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
+        for( auto pCall : pCalls->vContent )
+            // if the call is presice enough we keep it
+            if( pCall->uiFromSize <= uiMaxFuzziness && pCall->uiToSize <= uiMaxFuzziness )
+                pRet->vContent.push_back( pCall );
+        return pRet;
+    } // method
+}; // class
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON

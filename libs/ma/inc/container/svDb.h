@@ -115,17 +115,21 @@ class SV_DB : public Container
             auto vNumNt = this->getNumNt( iSequencerId );
             assert( vNumNt.size( ) == pPack->uiNumContigs( ) );
             vRet.reserve( vNumNt.size( ) );
-            if(!bPrintedCovList)
+            if( !bPrintedCovList )
             {
+                int64_t iTotal = 0;
+                for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
+                    iTotal += vNumNt[ uiI ];
                 std::cout << "estimated coverage per contig (showing >= 3x):" << std::endl;
-                std::cout << "contig_id\tcoverage\tnum_nt" << std::endl;
+                std::cout << "contig_id\tcoverage\tnum_nt\t%" << std::endl;
                 for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
                     if( vNumNt[ uiI ] / (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked >= 3 )
                         std::cout << uiI << "\t"
-                                << ( (int)10 * vNumNt[ uiI ] /
-                                    (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked ) /
-                                        10.0
-                                << "x\t" << vNumNt[ uiI ] << std::endl;
+                                  << ( (int)10 * vNumNt[ uiI ] /
+                                       (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked ) /
+                                         10.0
+                                  << "x\t" << vNumNt[ uiI ] << "\t" << ( 100 * vNumNt[ uiI ] ) / iTotal << "%"
+                                  << std::endl;
                 std::cout << std::endl;
                 bPrintedCovList = true;
             } // if
@@ -164,7 +168,7 @@ class SV_DB : public Container
                     int64_t iSize = rSeeds[ uiI ].size( );
 
 #if 1 // 1 -> add gap in between seeds to estimation / 0 -> don't
-                    // add gap to previous seed or start of query
+      // add gap to previous seed or start of query
                     if( uiI == 0 )
                         iSize += rSeeds[ uiI ].start( );
                     else if( rSeeds[ uiI ].start( ) < rSeeds[ uiI - 1 ].end( ) )
@@ -1175,9 +1179,9 @@ class SV_DB : public Container
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
-        //https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
-        pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-        pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
+        // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
+        // pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
+        // pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
     } // constructor
 
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
@@ -1198,9 +1202,12 @@ class SV_DB : public Container
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
-        //https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
-        pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-        pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
+        if( xMode == eCREATE_DB )
+        {
+            // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
+            pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
+            pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
+        }
     } // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB )
@@ -1208,102 +1215,6 @@ class SV_DB : public Container
 
     SV_DB( std::string sName, std::string sMode ) : SV_DB( sName, sMode == "create" ? eCREATE_DB : eOPEN_DB )
     {} // constructor
-
-    inline int64_t filterShortEdgesWithLowSupport( int64_t uiRun, nucSeqIndex uiMaxSuppNt, nucSeqIndex uiMaxSVSize )
-    {
-        CppSQLiteExtStatement( *pDatabase,
-                               // create temporary table
-                               "CREATE TEMP TABLE calls_to_delete (call_id INTEGER PRIMARY KEY) WITHOUT ROWID; " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // fill table with all call ids from calls that
-                               // are from the specified run
-                               // are supported by less than x nt
-                               // have a jump distance on the reference lower than y
-                               // have a insert size lower than y
-                               "INSERT INTO calls_to_delete (call_id) "
-                               "SELECT id "
-                               "FROM sv_call_table "
-                               "WHERE sv_caller_run_id == ? "
-                               "AND supporting_nt < ? "
-                               "AND ABS(to_pos - from_pos) < ? "
-                               "AND ( "
-                               "         SELECT AVG(ABS(query_to - query_from)) "
-                               "         FROM sv_jump_table, sv_call_support_table "
-                               "         WHERE sv_call_support_table.call_id == sv_call_table.id "
-                               "         AND sv_call_support_table.jump_id == sv_jump_table.id "
-                               "    ) < ? " )
-            .bindAndExecute( uiRun, (int64_t)uiMaxSuppNt, (int64_t)uiMaxSVSize, (int64_t)uiMaxSVSize );
-
-        int64_t iRet = CppSQLiteExtQueryStatement<int64_t>(
-                           *pDatabase,
-                           // delete all calls mathing the stored call ids from the actual call table
-                           "SELECT COUNT(*) FROM calls_to_delete " )
-                           .scalar( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // delete all entries mathing the stored call ids from the call support table
-                               "DELETE FROM sv_call_support_table "
-                               "WHERE call_id IN (SELECT call_id FROM calls_to_delete) " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // delete all calls mathing the stored call ids from the actual call table
-                               "DELETE FROM sv_call_r_tree "
-                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // delete all calls mathing the stored call ids from the actual call table
-                               "DELETE FROM sv_call_table "
-                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // drop the temp table
-                               "DROP TABLE calls_to_delete " )
-            .bindAndExecute( );
-        return iRet;
-    } // method
-
-    inline int64_t filterFuzzyCalls( int64_t uiRun, nucSeqIndex uiMaxFuzziness )
-    {
-        CppSQLiteExtStatement( *pDatabase,
-                               // create temporary table
-                               "CREATE TEMP TABLE calls_to_delete (call_id INTEGER PRIMARY KEY) WITHOUT ROWID; " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // fill table with all call ids from calls that
-                               // are larger than uiMaxFuzziness in x or y dimension
-                               "INSERT INTO calls_to_delete (call_id) "
-                               "SELECT id "
-                               "FROM sv_call_table "
-                               "WHERE sv_caller_run_id == ? "
-                               "AND ( from_size > ? OR to_size > ? ) " )
-            .bindAndExecute( uiRun, (int64_t)uiMaxFuzziness, (int64_t)uiMaxFuzziness );
-
-        int64_t iRet = CppSQLiteExtQueryStatement<int64_t>(
-                           *pDatabase,
-                           // delete all calls mathing the stored call ids from the actual call table
-                           "SELECT COUNT(*) FROM calls_to_delete " )
-                           .scalar( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // delete all entries mathing the stored call ids from the call support table
-                               "DELETE FROM sv_call_support_table "
-                               "WHERE call_id IN (SELECT call_id FROM calls_to_delete) " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // delete all calls mathing the stored call ids from the actual call table
-                               "DELETE FROM sv_call_r_tree "
-                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // delete all calls mathing the stored call ids from the actual call table
-                               "DELETE FROM sv_call_table "
-                               "WHERE id IN (SELECT call_id FROM calls_to_delete) " )
-            .bindAndExecute( );
-        CppSQLiteExtStatement( *pDatabase,
-                               // drop the temp table
-                               "DROP TABLE calls_to_delete " )
-            .bindAndExecute( );
-        return iRet;
-    } // method
 
     inline void createJumpIndices( int64_t uiRun )
     {

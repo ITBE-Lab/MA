@@ -563,6 +563,8 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxSizeReseed; // minimal edge size for which we reseed
     AlignerParameterPointer<int> xMinSizeEdge; // minimal edge size for which we keep the edge (runtime improvement)
     AlignerParameterPointer<int> xMaxFuzzinessFilter; // maximal fuzziness for sv calls
+    AlignerParameterPointer<int> xMaxSuppNtShortCallFilter; // maximal number of nt for short call low support filter
+    AlignerParameterPointer<int> xMaxCallSizeShortCallFilter; // maximal call size for short call low support filter
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -754,6 +756,8 @@ class Presetting : public ParameterSetBase
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
           xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
+          xMaxSuppNtShortCallFilter( this, "MAx Supp Nt", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
+          xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

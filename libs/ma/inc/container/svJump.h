@@ -546,6 +546,19 @@ class SvCall : public Container
             this->uiToSize = uiUp - uiToStart;
     } // method
 
+    inline nucSeqIndex size() const
+    {
+        assert( this->supportedJumpsLoaded( ) );
+        nucSeqIndex uiRefSize = uiFromStart > uiToStart ? uiFromStart - uiToStart : uiToStart - uiFromStart;
+
+        nucSeqIndex uiQuerySize = 0;
+        for(auto pJump : vSupportingJumps)
+            uiQuerySize += std::max( pJump->query_distance( ), pJump->ref_distance( ) );
+        uiQuerySize /= vSupportingJumps.size();
+
+        return uiRefSize > uiQuerySize ? uiRefSize : uiQuerySize;
+    } // method
+
     /**
      * joins two sv calls together,
      * in order to do so, they cannot have an ID in the database or the pInsertedSequence computed!
