@@ -661,8 +661,7 @@ class SV_DB : public Container
                             "       switch_strand "
                             "FROM sv_call_table "
                             "WHERE sv_caller_run_id = ? "
-                            "AND supporting_nt*1.0/coverage >= ? "
-                            "ORDER BY supporting_nt*1.0/coverage DESC " ),
+                            "AND supporting_nt*1.0/coverage >= ? " ),
               xNumOverlapsHelper1( *pDatabase,
                                    // make sure that inner overlaps the outer:
                                    "SELECT outer.id "
@@ -689,6 +688,7 @@ class SV_DB : public Container
                                    "AND idx_inner2.minX <= ? " // dim 2
                                    "AND idx_inner2.maxY >= ? " // dim 3
                                    "AND idx_inner2.minY <= ? " // dim 3
+                                   "AND inner2.switch_strand == ? "
                                    "LIMIT 1 " ),
               xCallArea( *pDatabase,
                          "SELECT SUM( from_size * to_size ) FROM sv_call_table, sv_call_r_tree "
@@ -859,26 +859,32 @@ class SV_DB : public Container
         {
             // uint32_t uiNumCalls = numCalls( iCallerRunIdA, 0 ) * 3;
             uint32_t uiRet = 0;
-            xNumOverlaps.vExecuteAndForAllRowsUnpackedDo(
-                [&]( int64_t iId, double dScore, uint32_t uiFromStart, uint32_t uiFromSize, uint32_t uiToStart,
-                     uint32_t uiToSize, bool bSwitchStrand ) {
-                    if( xNumOverlapsHelper1
-                            .vExecuteAndReturnIterator( iCallerRunIdA, iCallerRunIdA, uiFromStart - iAllowedDist,
-                                                        uiFromStart + uiFromSize + iAllowedDist,
-                                                        uiToStart - iAllowedDist, uiToStart + uiToSize + iAllowedDist,
-                                                        bSwitchStrand )
-                            .eof( ) )
-                        return;
-                    if( !xNumOverlapsHelper2
-                             .vExecuteAndReturnIterator( iCallerRunIdB, dScore, uiFromStart - iAllowedDist,
-                                                         uiFromStart + uiFromSize + iAllowedDist,
-                                                         uiToStart - iAllowedDist, uiToStart + uiToSize + iAllowedDist,
-                                                         bSwitchStrand )
-                             .eof( ) )
-                        return;
-                    uiRet += 1;
-                },
-                iCallerRunIdB, dMinScore );
+            auto vResults = xNumOverlaps.executeAndStoreAllInVector( iCallerRunIdB, dMinScore );
+            for( auto xTup : vResults )
+            {
+                int64_t iId = std::get<0>( xTup );
+                double dScore = std::get<1>( xTup );
+                uint32_t uiFromStart = std::get<2>( xTup );
+                uint32_t uiFromSize = std::get<3>( xTup );
+                uint32_t uiToStart = std::get<4>( xTup );
+                uint32_t uiToSize = std::get<5>( xTup );
+                bool bSwitchStrand = std::get<6>( xTup );
+
+                if( xNumOverlapsHelper1
+                        .vExecuteAndReturnIterator( iCallerRunIdA, iCallerRunIdA, uiFromStart - iAllowedDist,
+                                                    uiFromStart + uiFromSize + iAllowedDist, uiToStart - iAllowedDist,
+                                                    uiToStart + uiToSize + iAllowedDist, bSwitchStrand )
+                        .eof( ) )
+                    continue;
+                if( !xNumOverlapsHelper2
+                         .vExecuteAndReturnIterator( iId, dScore, iCallerRunIdB, iCallerRunIdB,
+                                                     uiFromStart - iAllowedDist,
+                                                     uiFromStart + uiFromSize + iAllowedDist, uiToStart - iAllowedDist,
+                                                     uiToStart + uiToSize + iAllowedDist, bSwitchStrand )
+                         .eof( ) )
+                    continue;
+                uiRet += 1;
+            } // for
 
             return uiRet;
         } // method
@@ -1324,6 +1330,11 @@ class SV_DB : public Container
         return pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId );
     }
 
+    inline int64_t insertSvJumpRun( std::string rsSvCallerName, std::string rsSvCallerDesc )
+    {
+        return pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc );
+    }
+
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
     {
         return pSvCallTable->reconstructSequencedGenome( pRef, iCallerRun );
@@ -1462,6 +1473,10 @@ class SV_DB : public Container
                     (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
             } // method
         }; // class
+
+        SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId )
+            : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvJumpRunId( iSvJumpRunId )
+        {} // constructor
 
         SvJumpInserter( std::shared_ptr<SV_DB> pDB,
                         const std::string& rsSvCallerName,
@@ -1949,6 +1964,46 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
     } // method
 }; // class
 
+class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
+{
+    std::shared_ptr<SV_DB> pDb;
+    int64_t iSvJumpRunId;
+
+  public:
+    std::vector<std::pair<std::shared_ptr<ContainerVector<SvJump>>, int64_t>> vBuffer;
+    // this creates a transaction
+
+    BufferedSvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvJumpRunId )
+        : pDb( pDb ), iSvJumpRunId( iSvJumpRunId )
+    {} // constructor
+
+    inline void commit( )
+    {
+        if( vBuffer.size( ) == 0 )
+            return;
+        SV_DB::SvJumpInserter xInserter( pDb, iSvJumpRunId );
+        std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
+        for( auto xPair : vBuffer )
+        {
+            SV_DB::SvJumpInserter::ReadContex xReadContext = xInserter.readContext( xPair.second );
+            for( SvJump& rJump : *xPair.first )
+                xReadContext.insertJump( rJump ); // also updates the jump ids;
+        } // for
+    } // method
+
+    ~BufferedSvDbInserter( )
+    {
+        commit( );
+    } // destructor
+
+    std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
+    {
+        vBuffer.emplace_back( pJumps, pRead->iId );
+        return std::make_shared<Container>( );
+        // end of score for xGuard
+    } // method
+}; // class
+
 
 class SvCallerRunsFromDb
 {
@@ -1997,7 +2052,7 @@ class SvCallsFromDb
     std::shared_ptr<SV_DB> pDb;
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t>
         xQuery;
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t>
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t>
         xQuerySupport;
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t,
                                uint32_t>::Iterator xTableIterator;
@@ -2013,11 +2068,29 @@ class SvCallsFromDb
                   "WHERE sv_caller_run_id == ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "num_supporting_nt, sv_jump_table.id "
+                         "num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId ) )
+    {} // constructor
+
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId, double dMinScore )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "       coverage "
+                  "FROM sv_call_table "
+                  "WHERE sv_caller_run_id == ? "
+                  "AND (supporting_nt*1.0)/coverage >= ? " ),
+          xQuerySupport( *pDb->pDatabase,
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "FROM sv_call_support_table "
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id == ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, dMinScore ) )
     {} // constructor
 
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
@@ -2035,7 +2108,7 @@ class SvCallsFromDb
                   "AND to_pos <= ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "num_supporting_nt, sv_jump_table.id "
+                         "num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -2063,7 +2136,7 @@ class SvCallsFromDb
             xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
                 pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
                 std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
-                xRet.iId ) );
+                std::get<9>( xTup ) ) );
             xSupportIterator.next( );
         } // while
         xTableIterator.next( );

@@ -83,7 +83,6 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
   public:
     std::shared_ptr<SV_DB> pDB;
     int64_t iRunId;
-    std::mutex xLock;
     /**
      * @brief
      * @details
@@ -95,8 +94,8 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
     {
-        std::lock_guard<std::mutex> xGuard( xLock );
         {
+            std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
             auto pInserter = std::make_shared<SV_DB::SvCallInserter>( pDB, iRunId );
             for( auto pCall : pVec->vContent )
                 pInserter->insertCall( *pCall );
@@ -124,21 +123,22 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
         : pDB( pDB ), iRunId( iRunId )
     {} // constructor
 
-    inline void commit()
+    inline void commit( )
     {
-        if(vContent.size() == 0)
+        if( vContent.size( ) == 0 )
             return;
+        std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
         // creates transaction
         auto pInserter = std::make_shared<SV_DB::SvCallInserter>( pDB, iRunId );
         for( auto pVec : vContent )
             for( auto pCall : pVec->vContent )
                 pInserter->insertCall( *pCall );
-        vContent.clear();
+        vContent.clear( );
     } // method
 
     ~BufferedSvCallSink( )
     {
-        commit();
+        commit( );
     } // scope for pInserter (transaction)
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
@@ -474,21 +474,27 @@ class ExactCompleteBipartiteSubgraphSweep
                 // check if that closes the cluster
                 if( pCurrCluster->uiOpenEdges == 0 )
                 {
+#if 1
                     // remove jumps with equal read id's
-                    std::map<int64_t, std::shared_ptr<SvJump>> xNewJumps;
+                    std::set<std::shared_ptr<SvJump>,
+                             std::function<bool( std::shared_ptr<SvJump>, std::shared_ptr<SvJump> )>>
+                    xNewJumps( []( std::shared_ptr<SvJump> pA, std::shared_ptr<SvJump> pB ) -> bool {
+                        return pA->iReadId < pB->iReadId;
+                    } ); // std::set constructor call
+                    std::sort( pCurrCluster->vSupportingJumps.begin( ), pCurrCluster->vSupportingJumps.end( ),
+                               []( std::shared_ptr<SvJump> pA, std::shared_ptr<SvJump> pB ) {
+                                   return pA->query_distance( ) < pB->query_distance( );
+                               } );
                     for( auto pJump : pCurrCluster->vSupportingJumps )
-                    {
-                        if( xNewJumps.count( pJump->iReadId ) == 0 ||
-                            pJump->query_distance( ) < xNewJumps[ pJump->iReadId ]->query_distance( ) )
-                            xNewJumps[ pJump->iReadId ] = pJump;
-                    } // for
+                        xNewJumps.insert( pJump );
                     pCurrCluster->vSupportingJumps.clear( );
                     pCurrCluster->vSupportingJumpIds.clear( );
                     for( auto& xTup : xNewJumps )
                     {
-                        pCurrCluster->vSupportingJumps.push_back( xTup.second );
-                        pCurrCluster->vSupportingJumpIds.push_back( xTup.second->iId );
+                        pCurrCluster->vSupportingJumps.push_back( xTup );
+                        pCurrCluster->vSupportingJumpIds.push_back( xTup->iId );
                     } // for
+#endif
 
                     // check if the cluster still fulfills the required criteria
                     double estimatedCoverage =

@@ -49,6 +49,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "newest_unique_runs", &SV_DB::getNewestUniqueRuns )
         .def( "update_coverage", &SV_DB::updateCoverage )
         .def( "insert_sv_caller_run", &SV_DB::insertSvCallerRun )
+        .def( "insert_sv_jump_run", &SV_DB::insertSvJumpRun )
         .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class
@@ -109,6 +110,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SvCallsFromDb class
     py::class_<SvCallsFromDb>( rxPyModuleId, "SvCallsFromDb" )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t>( ) )
+        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, double>( ) )
         .def( py::init<const ParameterSetManager&,
                        std::shared_ptr<SV_DB>,
                        int64_t,
@@ -125,6 +127,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     exportModule<PairedNucSeqFromSql, std::shared_ptr<SV_DB>, int64_t>( rxPyModuleId, "PairedNucSeqFromSql" );
     exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>(
         rxPyModuleId, "SvDbInserter", []( auto&& x ) { x.def_readonly( "jump_inserter", &SvDbInserter::xInserter ); } );
+    exportModule<BufferedSvDbInserter, std::shared_ptr<SV_DB>, int64_t>(
+        rxPyModuleId, "BufferedSvDbInserter", []( auto&& x ) { x.def( "commit", &BufferedSvDbInserter::commit ); } );
 
     rxPyModuleId.def("combine_overlapping_calls", &combineOverlappingCalls);
 } // function
