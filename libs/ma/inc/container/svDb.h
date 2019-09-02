@@ -207,9 +207,9 @@ class SV_DB : public Container
                              // column definitions of the table
                              std::vector<std::string>{"sequencer_id", "name", "sequence"},
                              // constraints for table
-                             std::vector<std::string>{"FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id)"} ),
+                             std::vector<std::string>{"FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id) "} ),
               pDatabase( pDatabase ),
-              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ?" )
+              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id == ? AND name == ? " )
         {} // default constructor
 
         inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
@@ -2075,7 +2075,8 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId ) )
     {} // constructor
 
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId, double dMinScore )
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
+                   double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,

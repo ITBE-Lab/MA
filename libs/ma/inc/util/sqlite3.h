@@ -976,7 +976,7 @@ template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQL
     {
         auto pTableRef = exec( std::forward<ArgTypes>( args )... );
 
-        if( pTableRef->begin( ) == pTableRef->end( ) )
+        if( pTableRef->size() == 0 )
             throw std::runtime_error( "EoF; no scalar value in query" );
 
         return std::get<0>( *( pTableRef->begin( ) ) );

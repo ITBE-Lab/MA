@@ -135,6 +135,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     defaults::exportDefaults( libMaModule );
     exportComputeCoverage( libMaModule );
     exportSweepSvJump( libMaModule );
+    exportConnectorPatternFilter( libMaModule );
 } // function
 
 #endif
