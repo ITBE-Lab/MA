@@ -144,85 +144,83 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
     rLastSeeds.forall(
         [&]( Seed& rLast ) //
         {
-            if( SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
+            if( !SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
+                return false;
+            pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart, pQuery->iId );
+            /* if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMinSizeEdge->get( ) )
+                pRet->pop_back( );
+            else*/
+            if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
             {
-                pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart, pQuery->iId );
-                /* if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMinSizeEdge->get( ) )
-                    pRet->pop_back( );
-                else*/
-                if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
+                nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
+                nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
+                nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;
+                if( uiQFrom > uiQTo )
                 {
-                    nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
-                    nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
-                    nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;
-                    if( uiQFrom > uiQTo )
-                    {
-                        nucSeqIndex uiT = uiQFrom;
-                        uiQFrom = uiQTo;
-                        uiQTo = uiT;
-                    } // if
-                    nucSeqIndex uiRFrom = pRet->back( ).uiFrom;
-                    nucSeqIndex uiRTo = pRet->back( ).uiTo;
-                    if( uiRFrom > uiRTo )
-                    {
-                        nucSeqIndex uiT = uiRFrom;
-                        uiRFrom = uiRTo;
-                        uiRTo = uiT;
-                    } // if
-
-                    if( uiQTo - uiQFrom < rHashMapSeeder.uiSeedSize || uiRTo - uiRFrom < rHashMapSeeder.uiSeedSize )
-                        return true;
-
-                    auto pQuery2 = std::make_shared<NucSeq>( pQuery->fromTo( uiQFrom, uiQTo ) );
-                    auto pRef = pRefSeq->vExtract( uiRFrom, uiRTo );
-                    auto pSeeds = rHashMapSeeder.execute( pQuery2, pRef );
-                    pRef->vReverseAll( );
-                    pRef->vSwitchAllBasePairsToComplement( );
-                    auto pSeeds2 = rHashMapSeeder.execute( pQuery2, pRef );
-
-                    // fix seed positions
-                    for( Seed& rSeed : *pSeeds )
-                    {
-                        rSeed.uiPosOnReference += uiRFrom;
-                        rSeed.iStart += uiQFrom;
-                        assert( rSeed.end( ) < pQuery->length( ) );
-                    } // for
-                    for( Seed& rSeed : *pSeeds2 )
-                    {
-                        rSeed.bOnForwStrand = false;
-                        // undo reversion of reference
-                        rSeed.uiPosOnReference = ( uiRTo - uiRFrom ) - rSeed.uiPosOnReference - 1;
-                        rSeed.uiPosOnReference += uiRFrom;
-                        rSeed.iStart += uiQFrom;
-                        assert( rSeed.end( ) < pQuery->length( ) );
-                    } // for
-                    // combine seeds
-                    pSeeds->append( pSeeds2 );
-
-                    if( pSeeds->size( ) == 0 )
-                        return true;
-
-                    // turn k-mers into maximally extended seeds (into max. spanning seeds even)
-                    pSeeds->push_back( rLast );
-                    pSeeds->push_back( rCurr );
-                    auto pLumped = rSeedLumper.execute( pSeeds );
-
-                    // compute more precise jumps
-                    pRet->pop_back( );
-                    // sort in order
-                    std::sort( pLumped->begin( ), pLumped->end( ),
-                               [&]( Seed& rA, Seed& rB ) { return rA.start( ) < rB.start( ); } );
-                    size_t uiSize = pRet->size( );
-                    helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, *pLumped, pRet, pRefSeq, pQuery,
-                                                        rHashMapSeeder, rSeedLumper, rMemoryManager, rNMWModule,
-                                                        rBinarySeeding, false, bJumpFromStart, !bJumpFromStart );
-                    // increase the support (score) for the new jumps
-                    for( ; uiSize < pRet->size( ); uiSize++ )
-                        ( *pRet )[ uiSize ].uiNumSupportingNt = uiNumSupportingNt;
+                    nucSeqIndex uiT = uiQFrom;
+                    uiQFrom = uiQTo;
+                    uiQTo = uiT;
                 } // if
-                return true;
-            }
-            return false;
+                nucSeqIndex uiRFrom = pRet->back( ).uiFrom;
+                nucSeqIndex uiRTo = pRet->back( ).uiTo;
+                if( uiRFrom > uiRTo )
+                {
+                    nucSeqIndex uiT = uiRFrom;
+                    uiRFrom = uiRTo;
+                    uiRTo = uiT;
+                } // if
+
+                if( uiQTo - uiQFrom < rHashMapSeeder.uiSeedSize || uiRTo - uiRFrom < rHashMapSeeder.uiSeedSize )
+                    return true;
+
+                auto pQuery2 = std::make_shared<NucSeq>( pQuery->fromTo( uiQFrom, uiQTo ) );
+                auto pRef = pRefSeq->vExtract( uiRFrom, uiRTo );
+                auto pSeeds = rHashMapSeeder.execute( pQuery2, pRef );
+                pRef->vReverseAll( );
+                pRef->vSwitchAllBasePairsToComplement( );
+                auto pSeeds2 = rHashMapSeeder.execute( pQuery2, pRef );
+
+                // fix seed positions
+                for( Seed& rSeed : *pSeeds )
+                {
+                    rSeed.uiPosOnReference += uiRFrom;
+                    rSeed.iStart += uiQFrom;
+                    assert( rSeed.end( ) < pQuery->length( ) );
+                } // for
+                for( Seed& rSeed : *pSeeds2 )
+                {
+                    rSeed.bOnForwStrand = false;
+                    // undo reversion of reference
+                    rSeed.uiPosOnReference = ( uiRTo - uiRFrom ) - rSeed.uiPosOnReference - 1;
+                    rSeed.uiPosOnReference += uiRFrom;
+                    rSeed.iStart += uiQFrom;
+                    assert( rSeed.end( ) < pQuery->length( ) );
+                } // for
+                // combine seeds
+                pSeeds->append( pSeeds2 );
+
+                if( pSeeds->size( ) == 0 )
+                    return true;
+
+                // turn k-mers into maximally extended seeds (into max. spanning seeds even)
+                pSeeds->push_back( rLast );
+                pSeeds->push_back( rCurr );
+                auto pLumped = rSeedLumper.execute( pSeeds );
+
+                // compute more precise jumps
+                pRet->pop_back( );
+                // sort in order
+                std::sort( pLumped->begin( ), pLumped->end( ),
+                           [&]( Seed& rA, Seed& rB ) { return rA.start( ) < rB.start( ); } );
+                size_t uiSize = pRet->size( );
+                helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, *pLumped, pRet, pRefSeq, pQuery, rHashMapSeeder,
+                                                    rSeedLumper, rMemoryManager, rNMWModule, rBinarySeeding, false,
+                                                    bJumpFromStart, !bJumpFromStart );
+                // increase the support (score) for the new jumps
+                for( ; uiSize < pRet->size( ); uiSize++ )
+                    ( *pRet )[ uiSize ].uiNumSupportingNt = uiNumSupportingNt;
+            } // if
+            return true;
         } // lambda
     ); // forall function call
 
@@ -298,7 +296,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
                         int64_t iDist = std::abs( iStart - iCurrUniqueRefPos );
                         // if the segment is not the first segment this triggers
                         if( iLastUniqueRefPos != -1 )
-                            iDist = std::min( iDist, std::abs( iStart - iLastUniqueRefPos ) ) ;
+                            iDist = std::min( iDist, std::abs( iStart - iLastUniqueRefPos ) );
                         if( iMinDist == -1 || iDist < iMinDist )
                         {
                             xBest = rS;
@@ -338,9 +336,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     } // for
 
     {
-        std::lock_guard<std::mutex> xGuard(xLock);
-        uiNumSeedsEliminatedAmbiguityFilter += uiNumSeedsTotal - vSeeds.size();
-        uiNumSeedsKeptAmbiguityFilter += vSeeds.size();
+        std::lock_guard<std::mutex> xGuard( xLock );
+        uiNumSeedsEliminatedAmbiguityFilter += uiNumSeedsTotal - vSeeds.size( );
+        uiNumSeedsKeptAmbiguityFilter += vSeeds.size( );
     } // scope xGuard
 
 #else
@@ -349,7 +347,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
 #endif
 
     // this auto locks using the DB; seeds need to be sorted by query position
-    SV_DB::ContigCovTable::CovInserter( iSequencerId, pRefSeq, pDb ).insert( vSeeds, pQuery->length( ) );
+    xCoverageInserter.insert( vSeeds, pQuery->length( ) );
 
     if( vSeeds.size( ) > 0 && bDoDummyJumps )
     {
@@ -368,6 +366,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
 #ifdef WITH_PYTHON
 void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
 {
-    exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>>( rxPyModuleId, "SvJumpsFromSeeds" );
+    exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>>(
+        rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) { x.def( "commit", &SvJumpsFromSeeds::commit ); } );
 } // function
 #endif

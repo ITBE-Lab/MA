@@ -43,10 +43,13 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     size_t uiNumSeedsEliminatedAmbiguityFilter = 0;
     size_t uiNumSeedsKeptAmbiguityFilter = 0;
 
+    SV_DB::ContigCovTable::CovInserter xCoverageInserter;
+
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
      */
-    SvJumpsFromSeeds( const ParameterSetManager& rParameters, int64_t iSequencerId, std::shared_ptr<SV_DB> pDb )
+    SvJumpsFromSeeds( const ParameterSetManager& rParameters, int64_t iSequencerId, std::shared_ptr<SV_DB> pDb,
+                      std::shared_ptr<Pack> pRefSeq )
         : pSelectedSetting( rParameters.getSelected( ) ),
           uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
           uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
@@ -57,7 +60,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           xNMWModule( rParameters ),
           xBinarySeeding( rParameters ),
           iSequencerId( iSequencerId ),
-          pDb( pDb )
+          pDb( pDb ),
+          xCoverageInserter( iSequencerId, pRefSeq, pDb )
     {
         xBinarySeeding.bDisableHeuristics = true;
     } // constructor
@@ -80,6 +84,11 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                                                            pFM_index,
                                                                        std::shared_ptr<NucSeq>
                                                                            pQuery );
+
+    void commit()
+    {
+        xCoverageInserter.commit();
+    } // method
 }; // class
 
 }; // namespace libMA

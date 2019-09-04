@@ -146,17 +146,26 @@ class SV_DB : public Container
             std::shared_ptr<SV_DB> pDb;
             std::shared_ptr<Pack> pPack;
             std::vector<int64_t> vNumNts;
+            std::mutex xLock;
 
             CovInserter( int64_t iSequencerId, std::shared_ptr<Pack> pPack, std::shared_ptr<SV_DB> pDb )
                 : iSequencerId( iSequencerId ), pDb( pDb ), pPack( pPack ), vNumNts( pPack->uiNumContigs( ) )
             {} // constructor
 
-            ~CovInserter( )
+            void commit( )
             {
                 std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
                 for( size_t uiI = 0; uiI < vNumNts.size( ); uiI++ )
                     if( vNumNts[ uiI ] > 0 )
+                    {
                         pDb->pContigCovTable->incrementNt( iSequencerId, uiI, vNumNts[ uiI ] );
+                        vNumNts[ uiI ] = 0;
+                    } // if
+            } // function
+
+            ~CovInserter( )
+            {
+                commit( );
             } // deconstructor
 
             /// @brief seeds need to be sorted by query pos
@@ -182,7 +191,11 @@ class SV_DB : public Container
 #endif
 
                     // increase the count
-                    vNumNts[ pPack->uiSequenceIdForPosition( rSeeds[ uiI ].start_ref( ) ) ] += iSize;
+                    size_t uiIdx = pPack->uiSequenceIdForPosition( rSeeds[ uiI ].start_ref( ) );
+                    {
+                        std::lock_guard<std::mutex> xGuard( xLock );
+                        vNumNts[ uiIdx ] += iSize;
+                    } // scope for xGuard
                 } // for
             } // method
         }; // class
@@ -200,6 +213,7 @@ class SV_DB : public Container
 
       public:
         CppSQLiteExtQueryStatement<int32_t> xGetReadId;
+        CppSQLiteExtQueryStatement<NucSeqSql> xGetRead;
 
         ReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
             : TP_READ_TABLE( *pDatabase, // the database where the table resides
@@ -209,12 +223,20 @@ class SV_DB : public Container
                              // constraints for table
                              std::vector<std::string>{"FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id) "} ),
               pDatabase( pDatabase ),
-              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id == ? AND name == ? " )
+              xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id == ? AND name == ? " ),
+              xGetRead( *pDatabase, "SELECT sequence FROM read_table WHERE id == ? " )
         {} // default constructor
 
         inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
         {
             return xInsertRow( uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
+        } // method
+
+        inline std::shared_ptr<NucSeq> getRead( int64_t iId )
+        {
+            auto xRes = xGetRead.scalar( iId );
+            xRes.pNucSeq->iId = iId;
+            return xRes.pNucSeq;
         } // method
     }; // class
 
@@ -1345,6 +1367,11 @@ class SV_DB : public Container
         pSvCallTable->updateCoverage( rCall );
     } // method
 
+    inline std::shared_ptr<NucSeq> getRead( int64_t iId )
+    {
+        return pReadTable->getRead( iId );
+    } // method
+
     class ReadInserter
     {
       private:
@@ -1989,6 +2016,8 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
             for( SvJump& rJump : *xPair.first )
                 xReadContext.insertJump( rJump ); // also updates the jump ids;
         } // for
+        vBuffer.clear( );
+        // end of scope for lock guard
     } // method
 
     ~BufferedSvDbInserter( )
@@ -2000,7 +2029,6 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     {
         vBuffer.emplace_back( pJumps, pRead->iId );
         return std::make_shared<Container>( );
-        // end of score for xGuard
     } // method
 }; // class
 

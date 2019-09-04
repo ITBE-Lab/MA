@@ -50,6 +50,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "update_coverage", &SV_DB::updateCoverage )
         .def( "insert_sv_caller_run", &SV_DB::insertSvCallerRun )
         .def( "insert_sv_jump_run", &SV_DB::insertSvJumpRun )
+        .def( "get_read", &SV_DB::getRead )
         .def( "num_jumps", &SV_DB::numJumps );
 
     // export the ReadInserter class
