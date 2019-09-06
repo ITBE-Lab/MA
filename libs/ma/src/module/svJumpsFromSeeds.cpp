@@ -109,7 +109,93 @@ class LastMatchingSeeds
         }
     } // method
 }; // class
+#if 0
+void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFromStart )
+{
+    pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart, pQuery->iId );
+    /* if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMinSizeEdge->get( ) )
+        pRet->pop_back( );
+    else*/
+    if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
+    {
+        nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
+        nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
+        nucSeqIndex uiQTo = pRet->back( ).uiQueryTo;
+        if( uiQFrom > uiQTo )
+        {
+            nucSeqIndex uiT = uiQFrom;
+            uiQFrom = uiQTo;
+            uiQTo = uiT;
+        } // if
+        nucSeqIndex uiRFrom = pRet->back( ).uiFrom;
+        nucSeqIndex uiRTo = pRet->back( ).uiTo;
+        if( uiRFrom > uiRTo )
+        {
+            nucSeqIndex uiT = uiRFrom;
+            uiRFrom = uiRTo;
+            uiRTo = uiT;
+        } // if
 
+        if( uiQTo - uiQFrom < xHashMapSeeder.uiSeedSize || uiRTo - uiRFrom < xHashMapSeeder.uiSeedSize )
+            return true;
+
+        auto pQuery2 = std::make_shared<NucSeq>( pQuery->fromTo( uiQFrom, uiQTo ) );
+        auto pRef = pRefSeq->vExtract( uiRFrom, uiRTo );
+        auto pSeeds = xHashMapSeeder.execute( pQuery2, pRef );
+        pRef->vReverseAll( );
+        pRef->vSwitchAllBasePairsToComplement( );
+        auto pSeeds2 = xHashMapSeeder.execute( pQuery2, pRef );
+
+        // fix seed positions
+        for( Seed& rSeed : *pSeeds )
+        {
+            rSeed.uiPosOnReference += uiRFrom;
+            rSeed.iStart += uiQFrom;
+            assert( rSeed.end( ) < pQuery->length( ) );
+        } // for
+        for( Seed& rSeed : *pSeeds2 )
+        {
+            rSeed.bOnForwStrand = false;
+            // undo reversion of reference
+            rSeed.uiPosOnReference = ( uiRTo - uiRFrom ) - rSeed.uiPosOnReference - 1;
+            rSeed.uiPosOnReference += uiRFrom;
+            rSeed.iStart += uiQFrom;
+            assert( rSeed.end( ) < pQuery->length( ) );
+        } // for
+        // combine seeds
+        pSeeds->append( pSeeds2 );
+
+        if( pSeeds->size( ) == 0 )
+            return true;
+
+        // turn k-mers into maximally extended seeds (into max. spanning seeds even)
+        pSeeds->push_back( rLast );
+        pSeeds->push_back( rCurr );
+        auto pLumped = xSeedLumper.execute( pSeeds );
+
+        // compute more precise jumps
+        pRet->pop_back( );
+        // sort in order
+        std::sort( pLumped->begin( ), pLumped->end( ),
+                   [&]( Seed& rA, Seed& rB ) { return rA.start( ) < rB.start( ); } );
+        size_t uiSize = pRet->size( );
+
+        if( bJumpFromStart )
+            for( size_t uiI = 1; uiI < pLumped->size( ); uiI++ )
+                else if( SvJump::validJump( ( *pLumped )[ uiI ], ( *pLumped )[ uiI - 1 ], true ) ) pRet->emplace_back(
+                    pSelectedSetting, ( *pLumped )[ uiI ], ( *pLumped )[ uiI - 1 ], true, pQuery->iId );
+        if( !bJumpFromStart )
+            for( size_t uiI = 1; uiI < pLumped->size( ); uiI++ )
+                if( SvJump::validJump( ( *pLumped )[ uiI - 1 ], ( *pLumped )[ uiI ], false ) )
+                    pRet->emplace_back( pSelectedSetting, ( *pLumped )[ uiI - 1 ], ( *pLumped )[ uiI ], false,
+                                        pQuery->iId );
+
+        // increase the support (score) for the new jumps
+        for( ; uiSize < pRet->size( ); uiSize++ )
+            ( *pRet )[ uiSize ].uiNumSupportingNt = uiNumSupportingNt;
+    } // if
+} // method
+#endif
 void helperSvJumpsFromSeedsExecuteOuter( const std::shared_ptr<Presetting> pSelectedSetting, Seeds& rvSeeds,
                                          std::shared_ptr<ContainerVector<SvJump>>& pRet, std::shared_ptr<Pack> pRefSeq,
                                          std::shared_ptr<NucSeq> pQuery, HashMapSeeding& rHashMapSeeder,
@@ -139,7 +225,7 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
         if( sQuery2 != sRef2 )
             std::cerr << "(helperSvJumpsFromSeedsExecute) CRITICAL: " << sQuery2 << " != " << sRef2 << std::endl;
         assert( sQuery2 == sRef2 );
-    }
+    } // if
 #endif
     rLastSeeds.forall(
         [&]( Seed& rLast ) //
@@ -341,7 +427,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
         uiNumSeedsKeptAmbiguityFilter += vSeeds.size( );
     } // scope xGuard
 
-#else
+#elif 1
     pSegments->emplaceAllEachSeeds( *pFM_index, pQuery->length( ), uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds,
                                     [&]( ) { return true; } );
 #endif
@@ -358,7 +444,9 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     } // if
 
     helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, vSeeds, pRet, pRefSeq, pQuery, xHashMapSeeder, xSeedLumper,
-                                        xMemoryManager, xNMWModule, xBinarySeeding );
+                                       xMemoryManager, xNMWModule, xBinarySeeding );
+
+
     return pRet;
 } // method
 

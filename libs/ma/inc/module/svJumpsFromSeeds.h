@@ -77,6 +77,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                       << std::endl;
     } // destructor
 
+    //void reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFromStart );
+
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
                                                                        std::shared_ptr<Pack>
                                                                            pRefSeq,
