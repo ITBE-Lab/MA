@@ -23,18 +23,11 @@ class SvJump : public Container
     const nucSeqIndex uiSDFActivate;
 
   public:
-    static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart, const nucSeqIndex uiMinSeedSize )
+    static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
     {
-        // if the non overlapping parts of seeds is smaller than the minimal seed size: filter out
-        // @fixme if there is a deletion in a repetitive element this filter might prevent us from detecting that sv
-        if( rA.end( ) > rB.start( ) && rB.end( ) > rA.start( ) )
-        {
-            auto uiOverlapStart = std::max( rA.start( ), rB.start( ) );
-            auto uiOverlapEnd = std::min( rA.end( ), rB.end( ) );
-            auto uiOverlapSize = uiOverlapEnd - uiOverlapStart;
-            if(rA.size() <= uiOverlapSize + uiMinSeedSize || rB.size() <= uiOverlapSize + uiMinSeedSize )
-                return false;
-        } // if
+        // do not create edges between seeds that are overlapping more than 3 nt on the query.
+        //if( rA.end( ) > rB.start( ) + 3 && rB.end( ) > rA.start( ) + 3 )
+        //    return false;
         if( bFromSeedStart != rB.bOnForwStrand ) // cases (0,2) (0,3) (3,0) (3,1)
             return true;
         if( !rA.bOnForwStrand && bFromSeedStart && rB.bOnForwStrand ) // case (1,2)
