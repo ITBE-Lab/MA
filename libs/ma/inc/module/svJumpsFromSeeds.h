@@ -77,7 +77,11 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                       << std::endl;
     } // destructor
 
-    //void reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFromStart );
+    void reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFromStart, std::shared_ptr<NucSeq> pQuery,
+                            std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet );
+
+    void pickSeedsForEdge( Seeds& rSeeds, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
+                           std::shared_ptr<ContainerVector<SvJump>>& pRet );
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
                                                                        std::shared_ptr<Pack>
@@ -87,9 +91,9 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                                                        std::shared_ptr<NucSeq>
                                                                            pQuery );
 
-    void commit()
+    void commit( )
     {
-        xCoverageInserter.commit();
+        xCoverageInserter.commit( );
     } // method
 }; // class
 

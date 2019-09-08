@@ -33,10 +33,15 @@ void exportSVJump( py::module& rxPyModuleId )
         .def_readonly( "from_pos", &SvJump::uiFrom )
         .def_readonly( "to_pos", &SvJump::uiTo )
         .def_readonly( "id", &SvJump::iId )
-        .def_readonly( "read_id", &SvJump::iReadId );
+        .def_readonly( "read_id", &SvJump::iReadId )
+#if DEBUG_LEVEL > 0
+        .def_readonly( "seed_a_id", &SvJump::uiSeedAId )
+        .def_readonly( "seed_b_id", &SvJump::uiSeedBId )
+#endif
+        ;
 
     // export the SvCall class
-    py::bind_vector<std::vector<int64_t>>(rxPyModuleId, "int64_tVector", "docstr");
+    py::bind_vector<std::vector<int64_t>>( rxPyModuleId, "int64_tVector", "docstr" );
     py::class_<SvCall>( rxPyModuleId, "SvCall" )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, uint32_t>( ) )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, uint32_t, uint32_t>( ) )

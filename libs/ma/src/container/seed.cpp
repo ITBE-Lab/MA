@@ -30,6 +30,9 @@ void exportSeed( py::module& rxPyModuleId )
         .def_readwrite( "delta", &Seed::uiDelta )
         .def_readwrite( "start_ref", &Seed::uiPosOnReference )
         .def_readwrite( "on_forward_strand", &Seed::bOnForwStrand )
+#if DEBUG_LEVEL > 0
+        .def_readwrite( "id", &Seed::uiId )
+#endif
         .def( "__eq__", &Seed::operator==);
 
     py::class_<AlignmentStatistics>( rxPyModuleId, "AlignmentStatistics" )

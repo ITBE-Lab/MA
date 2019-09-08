@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/svJumpsFromSeeds.h"
+#include <cmath>
 
 using namespace libMA;
 
@@ -109,14 +110,18 @@ class LastMatchingSeeds
         }
     } // method
 }; // class
-#if 0
-void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFromStart )
+
+void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFromStart, std::shared_ptr<NucSeq> pQuery,
+                                          std::shared_ptr<Pack> pRefSeq,
+                                          std::shared_ptr<ContainerVector<SvJump>>& pRet )
 {
+    if( !SvJump::validJump( rLast, rCurr, bJumpFromStart ) )
+        return;
     pRet->emplace_back( pSelectedSetting, rLast, rCurr, bJumpFromStart, pQuery->iId );
     /* if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMinSizeEdge->get( ) )
         pRet->pop_back( );
     else*/
-    if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) && bReseed )
+    if( pRet->back( ).size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) )
     {
         nucSeqIndex uiNumSupportingNt = pRet->back( ).uiNumSupportingNt;
         nucSeqIndex uiQFrom = pRet->back( ).uiQueryFrom;
@@ -137,7 +142,7 @@ void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFr
         } // if
 
         if( uiQTo - uiQFrom < xHashMapSeeder.uiSeedSize || uiRTo - uiRFrom < xHashMapSeeder.uiSeedSize )
-            return true;
+            return;
 
         auto pQuery2 = std::make_shared<NucSeq>( pQuery->fromTo( uiQFrom, uiQTo ) );
         auto pRef = pRefSeq->vExtract( uiRFrom, uiRTo );
@@ -166,7 +171,7 @@ void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFr
         pSeeds->append( pSeeds2 );
 
         if( pSeeds->size( ) == 0 )
-            return true;
+            return;
 
         // turn k-mers into maximally extended seeds (into max. spanning seeds even)
         pSeeds->push_back( rLast );
@@ -182,8 +187,9 @@ void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFr
 
         if( bJumpFromStart )
             for( size_t uiI = 1; uiI < pLumped->size( ); uiI++ )
-                else if( SvJump::validJump( ( *pLumped )[ uiI ], ( *pLumped )[ uiI - 1 ], true ) ) pRet->emplace_back(
-                    pSelectedSetting, ( *pLumped )[ uiI ], ( *pLumped )[ uiI - 1 ], true, pQuery->iId );
+                if( SvJump::validJump( ( *pLumped )[ uiI ], ( *pLumped )[ uiI - 1 ], true ) )
+                    pRet->emplace_back( pSelectedSetting, ( *pLumped )[ uiI ], ( *pLumped )[ uiI - 1 ], true,
+                                        pQuery->iId );
         if( !bJumpFromStart )
             for( size_t uiI = 1; uiI < pLumped->size( ); uiI++ )
                 if( SvJump::validJump( ( *pLumped )[ uiI - 1 ], ( *pLumped )[ uiI ], false ) )
@@ -195,7 +201,81 @@ void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFr
             ( *pRet )[ uiSize ].uiNumSupportingNt = uiNumSupportingNt;
     } // if
 } // method
-#endif
+
+
+void SvJumpsFromSeeds::pickSeedsForEdge( Seeds& rSeeds, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
+                                         std::shared_ptr<ContainerVector<SvJump>>& pRet )
+{
+    for( size_t uiI = 0; uiI < rSeeds.size( ); uiI++ )
+    {
+        if( uiI < rSeeds.size( ) - 1 )
+        {
+            size_t uiBest = uiI + 1;
+            double dMaxScore = 0;
+            for( size_t uiJ = uiBest; uiJ < rSeeds.size( ); uiJ++ )
+                if( SvJump::validJump( rSeeds[ uiI ], rSeeds[ uiJ ], false ) )
+                {
+                    double dDist = std::abs( ( (double)rSeeds[ uiJ ].start_ref( ) ) -
+                                             ( (double)rSeeds[ uiI ].bOnForwStrand
+                                                   ? rSeeds[ uiI ].end_ref( ) - 1
+                                                   // @note rSeeds[ uiI ] direction is mirrored on reference if
+                                                   // rSeeds[ uiI ] is on rev comp strand
+                                                   : rSeeds[ uiI ].start_ref( ) - rSeeds[ uiI ].size( ) + 1 ) );
+                    double dScore = rSeeds[ uiJ ].size( ) / std::log10( dDist );
+                    //std::cout << uiI << " -> " << uiJ << ": " << dScore << " (" << dDist << ")" << std::endl;
+                    if( dScore > dMaxScore )
+                    {
+                        dMaxScore = dScore;
+                        uiBest = uiJ;
+                    } // if
+                    // if the uiI seed un seed uiJ do not overlap stop checking for the next seeds
+                    // if( ( rSeeds[ uiI ].end( ) <= rSeeds[ uiJ ].start( ) ||
+                    //      rSeeds[ uiJ ].end( ) <= rSeeds[ uiI ].start( ) ) &&
+                    //    uiJ + 1 < rSeeds.size( ) && rSeeds[ uiJ ].start( ) != rSeeds[ uiJ + 1 ].start( ) )
+                    //    break;
+                } // if
+
+            if( SvJump::validJump( rSeeds[ uiI ], rSeeds[ uiBest ], false ) )
+            {
+                ////std::cout << "selected: " << uiI << " -> " << uiBest << std::endl;
+                reseedAndMakeEdge( rSeeds[ uiI ], rSeeds[ uiBest ], false, pQuery, pRefSeq, pRet );
+            } // if
+        } // if
+        if( uiI > 0 )
+        {
+            size_t uiBest = uiI - 1;
+            double dMaxScore = 0;
+            for( int64_t iJ = uiBest; iJ >= 0; iJ-- )
+                if( SvJump::validJump( rSeeds[ uiI ], rSeeds[ iJ ], true ) )
+                {
+                    double dDist = std::abs( ( (double)rSeeds[ uiI ].start_ref( ) ) -
+                                             ( (double)rSeeds[ iJ ].bOnForwStrand
+                                                   ? rSeeds[ iJ ].end_ref( ) - 1
+                                                   // @note rSeeds[ iJ ] direction is mirrored on reference if
+                                                   // rSeeds[ iJ ] is on rev comp strand
+                                                   : rSeeds[ iJ ].start_ref( ) - rSeeds[ iJ ].size( ) + 1 ) );
+                    double dScore = rSeeds[ iJ ].size( ) / std::log10( dDist );
+                    //std::cout << uiI << " <- " << iJ << ": " << dScore << " (" << dDist << ")" << std::endl;
+                    if( dScore > dMaxScore )
+                    {
+                        dMaxScore = dScore;
+                        uiBest = (size_t)iJ;
+                    } // if
+                    // if the uiI seed un seed uiJ do not overlap stop checking for the next seeds
+                    // if( ( rSeeds[ uiI ].end( ) <= rSeeds[ iJ ].start( ) ||
+                    //      rSeeds[ iJ ].end( ) <= rSeeds[ uiI ].start( ) ) &&
+                    //    iJ > 0 && rSeeds[ iJ ].end( ) != rSeeds[ iJ - 1 ].end( ) )
+                    //    break;
+                } // if
+            if( SvJump::validJump( rSeeds[ uiI ], rSeeds[ uiBest ], true ) )
+            {
+                //std::cout << "selected: " << uiI << " <- " << uiBest << std::endl;
+                reseedAndMakeEdge( rSeeds[ uiI ], rSeeds[ uiBest ], true, pQuery, pRefSeq, pRet );
+            } // if
+        } // if
+    } // for
+} // method
+
 void helperSvJumpsFromSeedsExecuteOuter( const std::shared_ptr<Presetting> pSelectedSetting, Seeds& rvSeeds,
                                          std::shared_ptr<ContainerVector<SvJump>>& pRet, std::shared_ptr<Pack> pRefSeq,
                                          std::shared_ptr<NucSeq> pQuery, HashMapSeeding& rHashMapSeeder,
@@ -359,7 +439,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     vSeeds.reserve( pSegments->size( ) * 2 );
 
     // filter ambiguous segments -> 1; don't -> 0
-#if 1
+#if 0
     std::vector<Segment*> vTemp;
     size_t uiNumSeedsTotal = 0;
     int64_t iLastUniqueRefPos = -1;
@@ -427,7 +507,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
         uiNumSeedsKeptAmbiguityFilter += vSeeds.size( );
     } // scope xGuard
 
-#elif 1
+#else
     pSegments->emplaceAllEachSeeds( *pFM_index, pQuery->length( ), uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds,
                                     [&]( ) { return true; } );
 #endif
@@ -443,9 +523,21 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
             pRet->emplace_back( pSelectedSetting, vSeeds.back( ), pQuery->length( ), false, pQuery->iId );
     } // if
 
-    helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, vSeeds, pRet, pRefSeq, pQuery, xHashMapSeeder, xSeedLumper,
-                                       xMemoryManager, xNMWModule, xBinarySeeding );
+#if DEBUG_LEVEL > 0
+    //std::cout << "Seeds:" << std::endl;
+    //size_t uiI = 0;
+    //for( auto xSeed : vSeeds )
+    //{
+    //    xSeed.uiId = uiI;
+    //    std::cout << uiI++ << ": " << xSeed.start( ) << ", " << xSeed.start_ref( ) << ", " << xSeed.size( ) << ", "
+    //              << ( xSeed.bOnForwStrand ? "frow" : "rev" ) << std::endl;
+    //} // for
+#endif
 
+    // helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, vSeeds, pRet, pRefSeq, pQuery, xHashMapSeeder, xSeedLumper,
+    //                                     xMemoryManager, xNMWModule, xBinarySeeding );
+    //std::cout << "Edges:" << std::endl;
+    pickSeedsForEdge( vSeeds, pQuery, pRefSeq, pRet );
 
     return pRet;
 } // method

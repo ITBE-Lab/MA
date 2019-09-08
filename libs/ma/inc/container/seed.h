@@ -36,6 +36,10 @@ class Seed : public Container, public Interval<nucSeqIndex>
     bool bOnForwStrand;
     nucSeqIndex uiDelta = 0;
 
+#if DEBUG_LEVEL > 0
+    size_t uiId = 0;
+#endif
+
     /**
      * @brief Creates a new Seed.
      */

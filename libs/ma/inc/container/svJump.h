@@ -25,9 +25,9 @@ class SvJump : public Container
   public:
     static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
     {
-        // do not create edges between seeds that are overlapping more than 3 nt on the query.
-        //if( rA.end( ) > rB.start( ) + 3 && rB.end( ) > rA.start( ) + 3 )
-        //    return false;
+        // do not create edges between seeds that are overlapping more than 5 nt on the query.
+        if( rA.end( ) > rB.start( ) + 5 && rB.end( ) > rA.start( ) + 5 )
+            return false;
         if( bFromSeedStart != rB.bOnForwStrand ) // cases (0,2) (0,3) (3,0) (3,1)
             return true;
         if( !rA.bOnForwStrand && bFromSeedStart && rB.bOnForwStrand ) // case (1,2)
@@ -47,6 +47,11 @@ class SvJump : public Container
     nucSeqIndex uiNumSupportingNt;
     int64_t iId;
     int64_t iReadId;
+
+
+#if DEBUG_LEVEL > 0
+    size_t uiSeedAId, uiSeedBId;
+#endif
 
     SvJump( std::shared_ptr<Presetting> pSelectedSetting,
             const nucSeqIndex uiFrom,
@@ -106,7 +111,12 @@ class SvJump : public Container
               /* bFromSeedStart = */ bFromSeedStart,
               /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
               /* iID */ -1,
-              /* iReadId */ iReadId )
+              /* iReadId */ iReadId
+#if DEBUG_LEVEL > 0
+              ,
+              uiSeedAId( rA.uiId ), uiSeedBId( rB.uiId )
+#endif
+          )
     {} // constructor
 
     SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const nucSeqIndex qLen,
@@ -133,7 +143,12 @@ class SvJump : public Container
                   /* bFromSeedStart = */ bFromSeedStart,
                   /* uiNumSupportingNt = */ rA.size( ),
                   /* iID */ -1,
-                  /* iReadId */ iReadId )
+                  /* iReadId */ iReadId
+#if DEBUG_LEVEL > 0
+                  ,
+                  uiSeedAId( rA.uiId ), uiSeedBId( rA.uiId )
+#endif
+          )
     {} // constructor
 
     bool does_switch_strand( ) const
