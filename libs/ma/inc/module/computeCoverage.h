@@ -82,7 +82,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
         inline nucSeqIndex dist_in_area( nucSeqIndex uiFrom, nucSeqIndex uiTo, size_t uiIdx )
         {
             assert( uiTo >= uiFrom );
-            //std::cout << uiFrom << " " << uiTo;
+            // std::cout << uiFrom << " " << uiTo;
             switch( uiIdx )
             {
                 case 0:
@@ -117,7 +117,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
                     assert( false );
                     break;
             } // switch
-            //std::cout << "-> " << uiFrom << " " << uiTo << std::endl;
+            // std::cout << "-> " << uiFrom << " " << uiTo << std::endl;
             if( uiFrom >= uiTo )
                 return 0;
 
@@ -138,15 +138,15 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
             std::vector<Seed>::iterator itEnd = avCoverageAnalysis[ uiIdx ].begin( );
             size_t uiCoverageCnt = 0;
             nucSeqIndex uiLastPos = ComputeCoverage::uiMaxDistance < xCall.uiFromStart
-                                     ? xCall.uiFromStart - ComputeCoverage::uiMaxDistance
-                                     : 0;
-            if(uiIdx == 1)
+                                        ? xCall.uiFromStart - ComputeCoverage::uiMaxDistance
+                                        : 0;
+            if( uiIdx == 1 )
                 uiLastPos = ComputeCoverage::uiMaxDistance < xCall.uiToStart
-                                     ? xCall.uiToStart - ComputeCoverage::uiMaxDistance
-                                     : 0;
-            else if(uiIdx == 2)
+                                ? xCall.uiToStart - ComputeCoverage::uiMaxDistance
+                                : 0;
+            else if( uiIdx == 2 )
                 uiLastPos = xCall.uiFromStart;
-            else if(uiIdx == 3)
+            else if( uiIdx == 3 )
                 uiLastPos = xCall.uiToStart;
 
             while( itStart != avCoverageAnalysis[ uiIdx ].end( ) || itEnd != avCoverageAnalysis[ uiIdx ].end( ) )
@@ -156,7 +156,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
                     if( itStart->start_ref( ) > uiLastPos )
                     {
                         nucSeqIndex uiLength = dist_in_area( uiLastPos, itStart->start_ref( ), uiIdx );
-                        if(uiLength > 0)
+                        if( uiLength > 0 )
                         {
                             vCoverageList.emplace_back( uiCoverageCnt, uiLength );
                             uiCoverageSum += uiLength;
@@ -171,7 +171,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
                     if( itEnd->end_ref( ) > uiLastPos )
                     {
                         nucSeqIndex uiLength = dist_in_area( uiLastPos, itEnd->end_ref( ), uiIdx );
-                        if(uiLength > 0)
+                        if( uiLength > 0 )
                         {
                             vCoverageList.emplace_back( uiCoverageCnt, uiLength );
                             uiCoverageSum += uiLength;
@@ -187,7 +187,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
 
         inline void compute_coverage( )
         {
-            xCall.uiCoverage = 1;
+            xCall.uiCoverage = 10; // @todo here is the key!!!!
 
             for( size_t uiIdx : {0, 2} )
             {
@@ -217,6 +217,8 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
 
     std::shared_ptr<interval_tree::IntervalTree<nucSeqIndex, std::shared_ptr<SvCallWrapper>>> pIntervalTree;
     std::vector<std::shared_ptr<SvCallWrapper>> vCalls;
+    std::vector<double> vEstimatedCoverageList;
+    std::shared_ptr<Pack> pPack;
 
     /**
      * @brief Initialize a BinarySeeding Module
@@ -228,10 +230,12 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
      * for short queries.
      */
     ComputeCoverage( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iCallerId,
-                     int64_t iSequencerId )
+                     int64_t iSequencerId, std::shared_ptr<Pack> pPack )
         : pDb( pDb ),
           uiMaxAmbiguity( rParameters.getSelected( )->xMaxAmbiguitySv->get( ) ),
-          uiMinSeedSize( rParameters.getSelected( )->xMinSeedSizeSV->get( ) )
+          uiMinSeedSize( rParameters.getSelected( )->xMinSeedSizeSV->get( ) ),
+          vEstimatedCoverageList( pDb->pContigCovTable->getEstimatedCoverageList( iSequencerId, pPack ) ),
+          pPack( pPack )
     {
         SvCallsFromDb xCallGetter( rParameters, pDb, iCallerId );
         std::vector<interval_tree::Interval<nucSeqIndex, std::shared_ptr<SvCallWrapper>>> vIntervalVec;
@@ -249,7 +253,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
     ~ComputeCoverage( )
     {
         // update everything in a transaction
-        CppSQLiteExtImmediateTransactionContext xTransactionContext(*pDb->pDatabase );
+        CppSQLiteExtImmediateTransactionContext xTransactionContext( *pDb->pDatabase );
         for( std::shared_ptr<SvCallWrapper> pWrap : vCalls )
         {
             pWrap->compute_coverage( );

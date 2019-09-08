@@ -12,6 +12,7 @@ using namespace libMA;
 void exportComputeCoverage( py::module& rxPyModuleId )
 {
     // export the ComputeCoverage class
-    exportModule<ComputeCoverage,std::shared_ptr<SV_DB>, int64_t, int64_t>( rxPyModuleId, "ComputeCoverage" );
+    exportModule<ComputeCoverage, std::shared_ptr<SV_DB>, int64_t, int64_t, std::shared_ptr<Pack>>( rxPyModuleId,
+                                                                                                    "ComputeCoverage" );
 } // function
 #endif

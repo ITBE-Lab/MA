@@ -633,6 +633,42 @@ class FilterFuzzyCalls
     } // method
 }; // class
 
+/**
+ * @brief filters out calls that have a low coverage
+ * @details
+ * Observation: Many false positives in repetitive genomes are from calls that receive a high score due to one side
+ * of the call having low coverage; Further all proper calls must be from an area that is actually sequenced to an
+ * area that is actually sequenced;
+ * Solution: Remove all calls with a coverage significantly lower than the coverage of the involved chromosomes.
+ * @note: this filter is maybe not necessary since we could replace the sweep with it...
+ */
+class FilterLowCoverageCalls
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
+{
+  public:
+    std::vector<double> vEstimatedCoverageList;
+    FilterLowCoverageCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
+                            std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId )
+        : vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSvCallerRunId, pPack ) )
+    {} // constructor
+
+    std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pPack )
+    {
+        auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
+        for( auto pCall : pCalls->vContent )
+        {
+            double dMaxCoverage =
+                std::max( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCall->uiFromStart ) ],
+                          vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCall->uiToStart ) ] );
+            if( pCall->uiCoverage >= dMaxCoverage / 2 )
+                pRet->vContent.push_back( pCall );
+        } // for
+          // if the call has enough coverage we keep it
+        return pRet;
+    } // method
+}; // class
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON
