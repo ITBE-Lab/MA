@@ -123,7 +123,8 @@ class SV_DB : public Container
                 std::cout << "estimated coverage per contig (showing >= 3x):" << std::endl;
                 std::cout << "contig_id\tcoverage\tnum_nt\t%" << std::endl;
                 for( size_t uiI = 0; uiI < vNumNt.size( ); uiI++ )
-                    if( vNumNt[ uiI ] / (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked >= 3 )
+                    if( vNumNt[ uiI ] / (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked >= 3 &&
+                        100 * vNumNt[ uiI ] >= iTotal )
                         std::cout << uiI << "\t"
                                   << ( (int)10 * vNumNt[ uiI ] /
                                        (double)pPack->xVectorOfSequenceDescriptors[ uiI ].uiLengthUnpacked ) /

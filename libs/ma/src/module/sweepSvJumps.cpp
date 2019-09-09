@@ -41,6 +41,7 @@ void exportSweepSvJump( py::module& rxPyModuleId )
     exportModule<ExactCompleteBipartiteSubgraphSweep, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t>(
         rxPyModuleId, "ExactCompleteBipartiteSubgraphSweep" );
     exportModule<FilterLowSupportShortCalls>( rxPyModuleId, "FilterLowSupportShortCalls" );
+    exportModule<FilterDiagonalLineCalls>( rxPyModuleId, "FilterDiagonalLineCalls" );
     exportModule<FilterLowCoverageCalls, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t>(
         rxPyModuleId, "FilterLowCoverageCalls" );
     exportModule<FilterFuzzyCalls>( rxPyModuleId, "FilterFuzzyCalls" );

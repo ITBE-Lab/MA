@@ -185,9 +185,13 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
             } // while
         } // method
 
-        inline void compute_coverage( )
+        inline void compute_coverage( std::vector<double>& vEstimatedCoverageList, std::shared_ptr<Pack> pPack )
         {
-            xCall.uiCoverage = 10; // @todo here is the key!!!!
+            double dMaxCoverage =
+                std::max( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( xCall.uiFromStart ) ],
+                          vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( xCall.uiToStart ) ] );
+
+            xCall.uiCoverage = std::max( ( nucSeqIndex )( dMaxCoverage / 10 ), (nucSeqIndex)3 );
 
             for( size_t uiIdx : {0, 2} )
             {
@@ -256,7 +260,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
         CppSQLiteExtImmediateTransactionContext xTransactionContext( *pDb->pDatabase );
         for( std::shared_ptr<SvCallWrapper> pWrap : vCalls )
         {
-            pWrap->compute_coverage( );
+            pWrap->compute_coverage( vEstimatedCoverageList, pPack );
             pDb->updateCoverage( pWrap->xCall );
         } // for
     } // deconstructor

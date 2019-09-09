@@ -7,6 +7,7 @@
 #include "container/squeezedVector.h"
 #include "container/svDb.h"
 #include "module/module.h"
+#include <cmath>
 
 #define ADDITIONAL_DEBUG 0
 
@@ -629,6 +630,66 @@ class FilterFuzzyCalls
             // if the call is presice enough we keep it
             if( pCall->uiFromSize <= uiMaxFuzziness && pCall->uiToSize <= uiMaxFuzziness )
                 pRet->vContent.push_back( pCall );
+        return pRet;
+    } // method
+}; // class
+
+/**
+ * @brief filters out calls that are on a diagonal line
+ * @details
+ * Observation: some false positive calls resolt from jumps that lie on a 45 degree diagonal (bottom left to top right)
+ * line. These calls create a small fuzziness so they are not detected by the filter before.
+ * Solution:
+ * measure the standard deviation of the distance on both 45 degree diagonals (bottom left to top right &
+ * bottom right to top left). If the bottom left to top right diagonal shows a high distacne and the other one does
+ * not filter out the call. Do this via the delta positions of jumps.
+ * (see Thoughts 06.ppt type 1)
+ */
+class FilterDiagonalLineCalls
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
+{
+  public:
+    int64_t iFilterDiagonalLineCallsA;
+    int64_t iFilterDiagonalLineCallsB;
+    FilterDiagonalLineCalls( const ParameterSetManager& rParameters )
+        : iFilterDiagonalLineCallsA( 300 ), iFilterDiagonalLineCallsB( 50 )
+    {} // constructor
+
+    inline int64_t getStd( std::vector<int64_t>& vX )
+    {
+        std::sort( vX.begin( ), vX.end( ) );
+
+        int64_t iMean;
+        if( vX.size( ) % 2 == 1 )
+            iMean = vX[ vX.size( ) / 2 ];
+        else
+            iMean = ( vX[ vX.size( ) / 2 - 1 ] + vX[ vX.size( ) / 2 ] ) / 2;
+        int64_t iSquaredDiff = 0;
+        for( int64_t iI : vX )
+            iSquaredDiff += ( iMean - iI ) * ( iMean - iI );
+        return (int64_t)std::sqrt( iSquaredDiff / vX.size( ) );
+    } // method
+
+    std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
+    {
+        auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
+        for( auto pCall : pCalls->vContent )
+        {
+            std::vector<int64_t> vDiagonalA, vDiagonalB;
+            for( auto pJump : pCall->vSupportingJumps )
+            {
+                int64_t iX = pJump->uiFrom;
+                int64_t iY = pJump->uiTo;
+                vDiagonalA.push_back( iY - iX );
+                vDiagonalB.push_back( iY + iX );
+            } // for
+            int64_t iStdA, iStdB;
+            iStdA = getStd( vDiagonalA );
+            iStdB = getStd( vDiagonalB );
+            if( iStdA > iFilterDiagonalLineCallsB || iStdB < iFilterDiagonalLineCallsA )
+                pRet->vContent.push_back( pCall );
+        } // for
         return pRet;
     } // method
 }; // class
