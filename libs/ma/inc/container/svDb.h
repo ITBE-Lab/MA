@@ -59,7 +59,7 @@ class SV_DB : public Container
     class ContigCovTable : public TP_CONTIG_COV_TABLE
     {
         std::shared_ptr<CppSQLiteDBExtended> pDatabase;
-        CppSQLiteExtStatement xIncNt;
+        CppSQLiteExtStatement xIncNt, xResetNt;
         CppSQLiteExtQueryStatement<int64_t> xGetNumNt;
         bool bPrintedCovList = false;
 
@@ -79,6 +79,10 @@ class SV_DB : public Container
                       "SET num_generated_nt = num_generated_nt + ? "
                       "WHERE sequencer_id == ? "
                       "AND contig_nr == ? " ),
+              xResetNt( *pDatabase,
+                        "UPDATE contig_cov_table "
+                        "SET num_generated_nt = 0 "
+                        "WHERE sequencer_id == ? " ),
               xGetNumNt( *pDatabase,
                          "SELECT num_generated_nt "
                          "FROM contig_cov_table "
@@ -102,6 +106,11 @@ class SV_DB : public Container
         inline void incrementNt( int64_t iSequencerId, int64_t iContigId, int64_t iAmount )
         {
             xIncNt.bindAndExecute( iAmount, iSequencerId, iContigId );
+        } // method
+
+        inline void resetCount( int64_t iSequencerId )
+        {
+            xResetNt.bindAndExecute( iSequencerId );
         } // method
 
         inline std::vector<int64_t> getNumNt( int64_t iSequencerId )
@@ -151,7 +160,9 @@ class SV_DB : public Container
 
             CovInserter( int64_t iSequencerId, std::shared_ptr<Pack> pPack, std::shared_ptr<SV_DB> pDb )
                 : iSequencerId( iSequencerId ), pDb( pDb ), pPack( pPack ), vNumNts( pPack->uiNumContigs( ) )
-            {} // constructor
+            {
+                pDb->pContigCovTable->resetCount( iSequencerId );
+            } // constructor
 
             void commit( )
             {
@@ -2102,6 +2113,60 @@ class SvCallsFromDb
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId ) )
+    {} // constructor
+
+    // fetch overlapping or non overlapping calls:
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerIdA,
+                   int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
+          xQuery(
+              *pDb->pDatabase,
+              ( std::string(
+                    "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                    "       coverage "
+                    "FROM sv_call_table AS inner "
+                    "WHERE sv_caller_run_id == ? "
+                    "AND " ) +
+                ( bOverlapping ? "" : "NOT " ) +
+                // make sure that inner overlaps the outer:
+                "EXISTS( "
+                "     SELECT outer.id "
+                "     FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
+                "     WHERE outer.id == idx_outer.id "
+                "     AND idx_outer.run_id_b >= ? " // dim 1
+                "     AND idx_outer.run_id_a <= ? " // dim 1
+                "     AND idx_outer.maxX >= inner.from_pos - ? " // dim 2
+                "     AND idx_outer.minX <= inner.from_pos + inner.from_size + ? " // dim 2
+                "     AND idx_outer.maxY >= inner.to_pos - ? " // dim 3
+                "     AND idx_outer.minY <= inner.to_pos + inner.to_size + ? " // dim 3
+                "     AND outer.switch_strand == inner.switch_strand "
+                ") "
+                // make sure that inner does not overlap with any other call with higher score
+                "AND NOT EXISTS( "
+                "     SELECT inner2.id "
+                "     FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
+                "     WHERE inner2.id == idx_inner2.id "
+                "     AND idx_inner2.id != inner.id "
+                "     AND (inner2.supporting_nt*1.0)/inner2.coverage >= (inner.supporting_nt*1.0)/inner.coverage "
+                "     AND idx_inner2.run_id_b >= inner.id " // dim 1
+                "     AND idx_inner2.run_id_a <= inner.id " // dim 1
+                "     AND idx_inner2.maxX >= inner.from_pos - ? " // dim 2
+                "     AND idx_inner2.minX <= inner.from_pos + inner.from_size + ? " // dim 2
+                "     AND idx_inner2.maxY >= inner.to_pos - ? " // dim 3
+                "     AND idx_inner2.minY <= inner.to_pos + inner.to_size + ? " // dim 3
+                "     AND inner2.switch_strand == inner.switch_strand "
+                ") " )
+                  .c_str( ) ),
+          xQuerySupport( *pDb->pDatabase,
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "FROM sv_call_support_table "
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id == ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerIdA, iSvCallerIdB, iSvCallerIdB, iAllowedDist,
+                                                            iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist,
+                                                            iAllowedDist, iAllowedDist, iAllowedDist ) )
     {} // constructor
 
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,

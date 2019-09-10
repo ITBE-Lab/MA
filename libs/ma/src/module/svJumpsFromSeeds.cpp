@@ -439,7 +439,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     vSeeds.reserve( pSegments->size( ) * 2 );
 
     // filter ambiguous segments -> 1; don't -> 0
-#if 0
+#if 1
     std::vector<Segment*> vTemp;
     size_t uiNumSeedsTotal = 0;
     int64_t iLastUniqueRefPos = -1;
@@ -534,10 +534,10 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
     //} // for
 #endif
 
-    // helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, vSeeds, pRet, pRefSeq, pQuery, xHashMapSeeder, xSeedLumper,
-    //                                     xMemoryManager, xNMWModule, xBinarySeeding );
+    helperSvJumpsFromSeedsExecuteOuter( pSelectedSetting, vSeeds, pRet, pRefSeq, pQuery, xHashMapSeeder, xSeedLumper,
+                                        xMemoryManager, xNMWModule, xBinarySeeding );
     //std::cout << "Edges:" << std::endl;
-    pickSeedsForEdge( vSeeds, pQuery, pRefSeq, pRet );
+    //pickSeedsForEdge( vSeeds, pQuery, pRefSeq, pRet );
 
     return pRet;
 } // method

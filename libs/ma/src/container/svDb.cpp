@@ -112,6 +112,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     py::class_<SvCallsFromDb>( rxPyModuleId, "SvCallsFromDb" )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t>( ) )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, double>( ) )
+        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, int64_t, bool, int64_t>( ) )
         .def( py::init<const ParameterSetManager&,
                        std::shared_ptr<SV_DB>,
                        int64_t,

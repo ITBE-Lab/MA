@@ -191,7 +191,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
           uiCenterStripDown( 1000 ),
-          dEstimateCoverageFactor( 0.1 ),
+          dEstimateCoverageFactor( 0.01 ),
           vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSvCallerRunId, pPack ) )
     {} // constructor
 
@@ -367,7 +367,7 @@ class ExactCompleteBipartiteSubgraphSweep
     ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
                                          std::shared_ptr<Pack> pPack, int64_t iSequencerId )
         : pPack( pPack ),
-          dEstimateCoverageFactor( 0.1 ),
+          dEstimateCoverageFactor( 0.01 ),
           vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSequencerId, pPack ) )
     {
         // std::cout << "EstimatedCoverage:" << std::endl;
@@ -649,10 +649,9 @@ class FilterDiagonalLineCalls
     : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
-    int64_t iFilterDiagonalLineCallsA;
-    int64_t iFilterDiagonalLineCallsB;
+    int64_t iFilterDiagonalLineCalls;
     FilterDiagonalLineCalls( const ParameterSetManager& rParameters )
-        : iFilterDiagonalLineCallsA( 300 ), iFilterDiagonalLineCallsB( 50 )
+        : iFilterDiagonalLineCalls( 300 )
     {} // constructor
 
     inline int64_t getStd( std::vector<int64_t>& vX )
@@ -667,7 +666,7 @@ class FilterDiagonalLineCalls
         int64_t iSquaredDiff = 0;
         for( int64_t iI : vX )
             iSquaredDiff += ( iMean - iI ) * ( iMean - iI );
-        return (int64_t)std::sqrt( iSquaredDiff / vX.size( ) );
+        return iSquaredDiff / vX.size( );
     } // method
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
@@ -686,8 +685,8 @@ class FilterDiagonalLineCalls
             } // for
             int64_t iStdA, iStdB;
             iStdA = getStd( vDiagonalA );
-            iStdB = getStd( vDiagonalB );
-            if( iStdA > iFilterDiagonalLineCallsB || iStdB < iFilterDiagonalLineCallsA )
+            iStdB = std::max(getStd( vDiagonalB ), 1);
+            if( iStdA / iStdB < iFilterDiagonalLineCalls )
                 pRet->vContent.push_back( pCall );
         } // for
         return pRet;
