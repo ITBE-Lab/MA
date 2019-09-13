@@ -78,7 +78,10 @@ endif()
 if( NOT MSVC )
 	# Note: Adding "-Wextra" delivers more warnings
     # "-Werror" "-Wall" : All warnings enabled and warning are treated as errors
-    add_compile_options( "-Werror" "-Wall" ) 
+    add_compile_options( "-Wall" )
+    if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
+        #add_compile_options( "-Werror" )
+    endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options( "-stdlib=libc++" )
     endif()

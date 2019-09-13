@@ -34,10 +34,6 @@ void exportSVJump( py::module& rxPyModuleId )
         .def_readonly( "to_pos", &SvJump::uiTo )
         .def_readonly( "id", &SvJump::iId )
         .def_readonly( "read_id", &SvJump::iReadId )
-#if DEBUG_LEVEL > 0
-        .def_readonly( "seed_a_id", &SvJump::uiSeedAId )
-        .def_readonly( "seed_b_id", &SvJump::uiSeedBId )
-#endif
         ;
 
     // export the SvCall class

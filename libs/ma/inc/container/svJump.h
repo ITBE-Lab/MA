@@ -49,9 +49,6 @@ class SvJump : public Container
     int64_t iReadId;
 
 
-#if DEBUG_LEVEL > 0
-    size_t uiSeedAId, uiSeedBId;
-#endif
 
     SvJump( std::shared_ptr<Presetting> pSelectedSetting,
             const nucSeqIndex uiFrom,
@@ -112,10 +109,6 @@ class SvJump : public Container
               /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
               /* iID */ -1,
               /* iReadId */ iReadId
-#if DEBUG_LEVEL > 0
-              ,
-              uiSeedAId( rA.uiId ), uiSeedBId( rB.uiId )
-#endif
           )
     {} // constructor
 
@@ -144,10 +137,6 @@ class SvJump : public Container
                   /* uiNumSupportingNt = */ rA.size( ),
                   /* iID */ -1,
                   /* iReadId */ iReadId
-#if DEBUG_LEVEL > 0
-                  ,
-                  uiSeedAId( rA.uiId ), uiSeedBId( rA.uiId )
-#endif
           )
     {} // constructor
 

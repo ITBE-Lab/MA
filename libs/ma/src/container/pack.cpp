@@ -574,6 +574,7 @@ void exportPack( py::module& rxPyModuleId )
         .def( "contigNames", &Pack::contigNames )
         .def( "contigLengths", &Pack::contigLengths )
         .def( "contigSeqs", &Pack::contigSeqs )
+        .def( "contigNucSeqs", &Pack::contigNucSeqs )
         .def( "pos_to_rev_strand", &Pack::uiPositionToReverseStrand )
         .def( "contigStarts", &Pack::contigStarts );
 

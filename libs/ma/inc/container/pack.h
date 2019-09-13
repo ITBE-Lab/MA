@@ -1510,6 +1510,18 @@ class Pack : public Container
         } // for
         return vRet;
     } // method
+
+    std::vector<std::shared_ptr<NucSeq>> contigNucSeqs( ) const
+    {
+        std::vector<std::shared_ptr<NucSeq>> vRet;
+        for( size_t uiI = 0; uiI < uiNumContigs( ); uiI++ )
+        {
+            // *2 since vExtractContig uses id system with forward and reverse contig ids...
+            vRet.push_back( std::make_shared<NucSeq>() );
+            vExtractContig( uiI * 2, *vRet.back(), false );
+        } // for
+        return vRet;
+    } // method
     // end markus
 
     /* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.

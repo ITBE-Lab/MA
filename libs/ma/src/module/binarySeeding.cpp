@@ -45,7 +45,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
         // performs extension and records any found seeds
         // here we use bLrExtension to choose the extension scheme
         if( bLrExtension )
-            xAreaCovered = maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector, uiCnt == 0 );
+            xAreaCovered =
+                maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector, uiCnt == 0 );
         else
             xAreaCovered = smemExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector );
 
@@ -174,6 +175,9 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
 void exportBinarySeeding( py::module& rxPyModuleId )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding" );
+    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding",
+                                 []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
+
+    py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "VectorOfSeeds", "docstr" );
 } // function
 #endif
