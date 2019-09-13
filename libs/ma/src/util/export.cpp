@@ -136,6 +136,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportComputeCoverage( libMaModule );
     exportSweepSvJump( libMaModule );
     exportConnectorPatternFilter( libMaModule );
+    exportMinimizerIndex( libMaModule );
 } // function
 
 #endif

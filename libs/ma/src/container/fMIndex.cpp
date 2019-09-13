@@ -392,6 +392,17 @@ void FMIndex::build_FMIndex( const Pack& rxSequenceCollection, // the pack for w
 
 #ifdef WITH_PYTHON
 
+/**
+ * @brief function used for time measuring in python code
+ */
+void create_fmd_index(std::string sGenome, std::string sIndexPrefix)
+{
+    auto pPack = std::make_shared<Pack>();
+    pPack->vLoadCollection(sGenome);
+    FMIndex xFMDIndex( pPack );
+    xFMDIndex.vStoreFMIndex( sIndexPrefix.c_str( ) );
+} // method
+
 void exportFM_index( py::module& rxPyModuleId )
 {
     // export the SAInterval class
@@ -421,5 +432,7 @@ void exportFM_index( py::module& rxPyModuleId )
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<FMIndex, Container>( );
+    
+    rxPyModuleId.def("create_fmd_index", &create_fmd_index);
 } // function
 #endif

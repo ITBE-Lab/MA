@@ -165,6 +165,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "util/default_parameters.h"
 #include "container/svDb.h"
 #include "container/svJump.h"
+#include "container/minimizer_index.h"
 
 namespace libMA
 {

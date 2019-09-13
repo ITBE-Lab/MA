@@ -482,6 +482,7 @@ class ParameterSetBase
 }; // class
 
 
+const std::pair<size_t, std::string> MINIMIZER_PARAMETERS = std::make_pair( 7, "Minimizer" );
 const std::pair<size_t, std::string> DP_PARAMETERS = std::make_pair( 5, "Dynamic Programming" );
 const std::pair<size_t, std::string> HEURISTIC_PARAMETERS = std::make_pair( 4, "Heuristics" );
 const std::pair<size_t, std::string> SEEDING_PARAMETERS = std::make_pair( 1, "Seeding" );
@@ -581,6 +582,14 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxGapArea; //
     AlignerParameterPointer<int> xGenomeSizeDisable; //
     AlignerParameterPointer<bool> xDisableHeuristics; //
+
+    // Minimizer parameters:
+    AlignerParameterPointer<short> xMinimizerK;
+    AlignerParameterPointer<short> xMinimizerW;
+    AlignerParameterPointer<short> xMinimizerFlag;
+    AlignerParameterPointer<short> xMinimizerBucketBits;
+    AlignerParameterPointer<int> xMinimizerMiniBatchSize;
+    AlignerParameterPointer<uint64_t> xMinimizerBatchSize;
 
     /* Delete copy constructor */
     Presetting( const Presetting& rxOtherSet ) = delete;
@@ -820,9 +829,15 @@ class Presetting : public ParameterSetBase
                               "Drop-off, if the genome is shorter than <val>.",
                               HEURISTIC_PARAMETERS, 10000000, checkPositiveValue ),
           xDisableHeuristics( this, "Disable All Heuristics",
-                              "Disables all runtime heuristics. (For debugging purposes)", HEURISTIC_PARAMETERS, false )
+                              "Disables all runtime heuristics. (For debugging purposes)", HEURISTIC_PARAMETERS,
+                              false ),
+          xMinimizerK( this, "Minimizers - k", "@todo", MINIMIZER_PARAMETERS, 15 ),
+          xMinimizerW( this, "Minimizers - w", "@todo", MINIMIZER_PARAMETERS, 10 ),
+          xMinimizerFlag( this, "Minimizers - flag", "@todo", MINIMIZER_PARAMETERS, 0 ),
+          xMinimizerBucketBits( this, "Minimizers - bucket_bits", "@todo", MINIMIZER_PARAMETERS, 14 ),
+          xMinimizerMiniBatchSize( this, "Minimizers - mini_batch_size", "@todo", MINIMIZER_PARAMETERS, 50000000 ),
+          xMinimizerBatchSize( this, "Minimizers - batch_size", "@todo", MINIMIZER_PARAMETERS, 4000000000ULL )
     {
-
         xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };

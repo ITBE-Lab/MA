@@ -900,6 +900,13 @@ class Pack : public Container
         return 0;
     } // method
 
+    /* Start of in sequence with id on forward strand.
+     */
+    uint64_t lengthOfSequenceWithId( int64_t iSequenceId ) const
+    {
+        return xVectorOfSequenceDescriptors[iSequenceId].uiLengthUnpacked;
+    } // method
+
     /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver
      * "*".) FIX ME: This is design flaw from the original BWA code.
      */
