@@ -14,6 +14,7 @@ add_library(minimizerscpp STATIC
 	src/sketch.c
 	src/map.c
 	src/sdust.c
+	src/kalloc.c
 )
 
 # cmake will add the -fPIC for compilation with GCC

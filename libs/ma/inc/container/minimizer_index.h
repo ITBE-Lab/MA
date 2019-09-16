@@ -76,6 +76,27 @@ class Index
         opt->pe_bonus = 33;
     }
 
+    void mm_mapopt_update( mm_mapopt_t* opt, const mm_idx_t* mi )
+    {
+        if( ( opt->flag & MM_F_SPLICE_FOR ) || ( opt->flag & MM_F_SPLICE_REV ) )
+            opt->flag |= MM_F_SPLICE;
+        if( opt->mid_occ <= 0 )
+            opt->mid_occ = mm_idx_cal_max_occ( mi, opt->mid_occ_frac );
+        if( opt->mid_occ < opt->min_mid_occ )
+            opt->mid_occ = opt->min_mid_occ;
+        // if( mm_verbose >= 3 )
+        //    fprintf( stderr, "[M::%s::%.3f*%.2f] mid_occ = %d\n", __func__, realtime( ) - mm_realtime0,
+        //             cputime( ) / ( realtime( ) - mm_realtime0 ), opt->mid_occ );
+    } // method
+
+    void initOptions( )
+    {
+        mm_mapopt_init( &xMapOpt );
+        xMapOpt.flag |= MM_F_CIGAR; // perform alignment
+        // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
+        mm_mapopt_update( &xMapOpt, pData );
+    } // method
+
   public:
     /**
      * @brief Opens in Index if index filename is given or creates index if fasta(q) file is given
@@ -94,15 +115,15 @@ class Index
         pData = mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) );
         if( ( xOptions.flag & MM_F_CIGAR ) && ( pData->flag & MM_I_NO_SEQ ) )
             throw std::runtime_error( "the prebuilt index doesn't contain sequences" );
+        initOptions();
 #if DEBUG_LEVEL > 0
         mm_idx_stat( pData );
 #endif
-        mm_mapopt_init( &xMapOpt );
         // make sure that there are no multipart indices
         assert( mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) ) == 0 );
     } // constructor
 
-    Index( const ParameterSetManager& rParameters, std::vector<std::shared_ptr<libMA::NucSeq>> vContigs,
+    Index( const ParameterSetManager& rParameters, std::vector<std::string> vContigs,
            std::vector<std::string> vContigsNames )
         : xOptions{.k = rParameters.getSelected( )->xMinimizerK->get( ),
                    .w = rParameters.getSelected( )->xMinimizerW->get( ),
@@ -113,13 +134,16 @@ class Index
     {
         std::vector<const char*> seq;
         std::vector<const char*> name;
-        for( auto pContig : vContigs )
-            seq.push_back( (const char*)pContig->pxSequenceRef );
-        for( auto sName : vContigsNames )
-            name.push_back( sName.c_str( ) );
+        for( auto& sContig : vContigs )
+            seq.push_back( sContig.data( ) );
+        for( auto& sName : vContigsNames )
+            name.push_back( sName.data( ) );
 
         pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits, vContigs.size( ),
                             &seq[ 0 ], &name[ 0 ] );
+        initOptions();
+        mm_idx_stat( pData );
+        std::cout << "max Occ:" << xMapOpt.mid_occ << std::endl;
     } // constructor
 
     ~Index( )
@@ -129,6 +153,7 @@ class Index
 
     void dump( std::string sIndexName )
     {
+        mm_idx_stat( pData );
         auto* fp_out = fopen( sIndexName.c_str( ), "wb" );
         if( fp_out == 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
@@ -137,16 +162,20 @@ class Index
     } // method
 
 
-    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
-        int64_t n_a;
+        int64_t n_a = 0;
+
+        size_t uiNumSeeds = 0;
 
         mm_tbuf_t* tbuf = mm_tbuf_init( );
-        for( auto pQuery : vQueries )
+        for( auto& sQuery : vQueries )
         {
-            const char* seqs = (const char*)&pQuery->pxSequenceRef;
-            mm128_t* a = collect_seeds( pData, 1, (const int*)&pQuery->uiSize, &seqs, tbuf, &xMapOpt, 0, &n_a );
+            const char* sSeq = sQuery.c_str( );
+            const int iSize = sQuery.size( );
+            // const char* seqs = (const char*)&pQuery->pxSequenceRef;
+            mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a );
             if( a != NULL )
             {
                 vRet.push_back( std::make_shared<libMA::Seeds>( ) );
@@ -157,12 +186,16 @@ class Index
                     if( uiI + 1 < n_a && a[ uiI ].x << 1 >> 33 != a[ uiI + 1 ].x << 1 >> 33 )
                         vRet.push_back( std::make_shared<libMA::Seeds>( ) );
                 }
-                free( a );
+                kfree( tbuf->km, a );
+                // std::cout << n_a << std::endl;
+                uiNumSeeds += vRet.back( )->size( );
             }
             else if( n_a > 0 )
                 throw std::runtime_error( "minimizer vector is empty" );
-        }
+        } // for
         mm_tbuf_destroy( tbuf );
+
+        std::cout << "uiNumSeeds: " << uiNumSeeds << std::endl;
 
         return vRet;
     }

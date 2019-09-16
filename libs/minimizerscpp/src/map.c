@@ -92,6 +92,7 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
         uint32_t q_pos = (uint32_t)p->y, q_span = p->x & 0xff;
         int t;
         cr = mm_idx_get( mi, p->x >> 8, &t );
+        //fprintf(stdout, "t: %d max_occ: %d\n", t, max_occ);
         if( t >= max_occ )
         {
             int en = ( q_pos >> 1 ) + 1, st = en - q_span;
@@ -105,6 +106,7 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
         }
         else
         {
+            //fprintf(stdout, "found entry\n");
             mm_match_t* q = &m[ n_m++ ];
             q->q_pos = q_pos, q->q_span = q_span, q->cr = cr, q->n = t, q->seg_id = p->y >> 32;
             q->is_tandem = 0;
@@ -296,12 +298,15 @@ mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const 
     if( qlen_sum == 0 || n_segs <= 0 || n_segs > MM_MAX_SEG )
     {
         *n_a = -1;
+        fprintf(stderr, "%d %d\n", qlen_sum, n_segs);
         return NULL;
     } // if
+    //fprintf(stderr, "qlen_sum = %d\n", qlen_sum);
 
     mm128_t* a;
 
     collect_minimizers( b->km, opt, mi, n_segs, qlens, seqs, &mv );
+    //fprintf(stderr, "n=%lu m=%lu\n", mv.n, mv.m);
     if( opt->flag & MM_F_HEAP_SORT )
         a = collect_seed_hits_heap( b->km, opt, opt->mid_occ, mi, qname, &mv, qlen_sum, n_a, &rep_len, &n_mini_pos,
                                     &mini_pos );
@@ -309,7 +314,8 @@ mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const 
         a = collect_seed_hits( b->km, opt, opt->mid_occ, mi, qname, &mv, qlen_sum, n_a, &rep_len, &n_mini_pos,
                                &mini_pos );
 #if 0
-    fprintf( stderr, "RS\t%d\n", rep_len );
+    if(rep_len != 0)
+        fprintf( stderr, "RS\t%d\n", rep_len );
     for( i = 0; i < *n_a; ++i )
         fprintf( stderr, "SD\t%s\t%d\t%c\t%d\t%d\t%d\n", mi->seq[ a[ i ].x << 1 >> 33 ].name, (int32_t)a[ i ].x,
                  "+-"[ a[ i ].x >> 63 ], (int32_t)a[ i ].y, ( int32_t )( a[ i ].y >> 32 & 0xff ),
@@ -317,5 +323,7 @@ mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const 
                      ? 0
                      : ( (int32_t)a[ i ].y - (int32_t)a[ i - 1 ].y ) - ( (int32_t)a[ i ].x - (int32_t)a[ i - 1 ].x ) );
 #endif
+	kfree(b->km, mv.a);
+	kfree(b->km, mini_pos);
     return a;
 }

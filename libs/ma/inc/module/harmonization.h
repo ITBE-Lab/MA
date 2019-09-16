@@ -248,6 +248,8 @@ class SeedLumping : public Module<Seeds, false, Seeds>
     // overload
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
     {
+        if( pIn->size( ) == 0 )
+            return std::make_shared<Seeds>( );
         /*
          * currently seeds on the reverse strand are pointing to the top left instead of the top right.
          * The following algorithm requires all seeds to point to the top right
@@ -326,6 +328,14 @@ class SeedLumping : public Module<Seeds, false, Seeds>
             if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
                 pRet2->push_back( rSeed );
         return pRet2;
+    } // method
+
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> lump( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
+    {
+        std::vector<std::shared_ptr<libMA::Seeds>> vRet;
+        for( auto pSeeds : vIn )
+            vRet.push_back( execute( pSeeds ) );
+        return vRet;
     } // method
 }; // class
 

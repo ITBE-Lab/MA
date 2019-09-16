@@ -40,7 +40,7 @@ mm_idx_t *mm_idx_init(int w, int k, int b, int flag)
 	mi = (mm_idx_t*)calloc(1, sizeof(mm_idx_t));
 	mi->w = w, mi->k = k, mi->b = b, mi->flag = flag;
 	mi->B = (mm_idx_bucket_t*)calloc(1<<b, sizeof(mm_idx_bucket_t));
-	//if (!(mm_dbg_flag & 1)) mi->km = km_init(); -> markus: replaced kalloc with malloc
+	if (!(mm_dbg_flag & 1)) mi->km = km_init();
 	return mi;
 }
 

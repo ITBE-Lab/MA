@@ -649,7 +649,7 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
     if( pShadows->size( ) == 1 )
     {
         pSeeds->push_back( ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ] );
-        ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ].size(0); // mark for deletion
+        ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ].size( 0 ); // mark for deletion
     } // if
     else
     {
@@ -657,9 +657,9 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
         for( auto& xT : *pShadows )
         {
             pSeeds->push_back( *std::get<0>( xT ) ); // this creates a COPY (intentionally)
-            std::get<0>( xT )->size(0); // mark seed in original set for deletion after copying
+            std::get<0>( xT )->size( 0 ); // mark seed in original set for deletion after copying
         } // for
-    }// else
+    } // else
     pSeeds->bConsistent = true;
 
 #if 0 // DEBUG_LEVEL > 0 // broken due to changes around this...
@@ -701,11 +701,10 @@ std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_
 #endif
 
     // remove all seeds marked for deletion
-    pSeedsIn->erase(
-        std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
-        pSeedsIn->end( ) );
+    pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
+                     pSeedsIn->end( ) );
 
-    // seeds need to be sorted for the following steps 
+    // seeds need to be sorted for the following steps
     // @todo this sort should be move to the beginning of the next moduel
     std::sort( pSeeds->begin( ), pSeeds->end( ),
                []( const Seed& xA, const Seed& xB ) {
@@ -773,7 +772,7 @@ void exportHarmonization( py::module& rxPyModuleId )
 {
     exportModule<HarmonizationSingle>( rxPyModuleId, "HarmonizationSingle" );
 
-    exportModule<SeedLumping>( rxPyModuleId, "SeedLumping" );
+    exportModule<SeedLumping>( rxPyModuleId, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
 
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 

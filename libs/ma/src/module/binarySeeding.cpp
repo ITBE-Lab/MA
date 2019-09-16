@@ -177,7 +177,5 @@ void exportBinarySeeding( py::module& rxPyModuleId )
     // export the BinarySeeding class
     exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding",
                                  []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
-
-    py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "VectorOfSeeds", "docstr" );
 } // function
 #endif
