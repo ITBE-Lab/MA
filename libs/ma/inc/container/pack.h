@@ -222,7 +222,7 @@ class Pack : public Container
        */
         xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
     } // inline method
-
+  public:
     /* Get the value at position uiPosition in the unpacked sequence.
      * Works only for the virtual forward strand.
      */
@@ -231,7 +231,7 @@ class Pack : public Container
        */
         return xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] >> ( ( ~uiPosition & 3UL ) << 1 ) & 3;
     } // inline method
-
+  private:
     /* Method can throw exception if I/O operation fails.
      * Writes the isolated content of the pack-vector to the file-system.
      */
@@ -452,6 +452,7 @@ class Pack : public Container
 
     /* WARNING! Never do this for some already used (filled) sequence collection.
     
+
 
 
 
@@ -904,7 +905,7 @@ class Pack : public Container
      */
     uint64_t lengthOfSequenceWithId( int64_t iSequenceId ) const
     {
-        return xVectorOfSequenceDescriptors[iSequenceId].uiLengthUnpacked;
+        return xVectorOfSequenceDescriptors[ iSequenceId ].uiLengthUnpacked;
     } // method
 
     /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver
@@ -1517,8 +1518,8 @@ class Pack : public Container
         for( size_t uiI = 0; uiI < uiNumContigs( ); uiI++ )
         {
             // *2 since vExtractContig uses id system with forward and reverse contig ids...
-            vRet.push_back( std::make_shared<NucSeq>() );
-            vExtractContig( uiI * 2, *vRet.back(), false );
+            vRet.push_back( std::make_shared<NucSeq>( ) );
+            vExtractContig( uiI * 2, *vRet.back( ), false );
         } // for
         return vRet;
     } // method

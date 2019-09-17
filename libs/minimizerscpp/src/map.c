@@ -76,6 +76,9 @@ typedef struct
     const uint64_t* cr;
 } mm_match_t;
 
+size_t uiXSkipped = 0;
+size_t uiXRetrived = 0;
+
 static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_idx_t* mi, const mm128_v* mv,
                                     int64_t* n_a, int* rep_len, int* n_mini_pos, uint64_t** mini_pos )
 {
@@ -95,6 +98,8 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
         //fprintf(stdout, "t: %d max_occ: %d\n", t, max_occ);
         if( t >= max_occ )
         {
+            uiXSkipped += t;
+            //fprintf(stdout, "XXXX\n");
             int en = ( q_pos >> 1 ) + 1, st = en - q_span;
             if( st > rep_en )
             {
@@ -106,6 +111,7 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
         }
         else
         {
+            uiXRetrived+=t;
             //fprintf(stdout, "found entry\n");
             mm_match_t* q = &m[ n_m++ ];
             q->q_pos = q_pos, q->q_span = q_span, q->cr = cr, q->n = t, q->seg_id = p->y >> 32;
@@ -129,6 +135,7 @@ static inline int skip_seed( int flag, uint64_t r, const mm_match_t* q, const ch
     *is_self = 0;
     if( qname && ( flag & ( MM_F_NO_DIAG | MM_F_NO_DUAL ) ) )
     {
+        //fprintf(stdout, "markus liegt falsch\n");
         const mm_idx_seq_t* s = &mi->seq[ r >> 32 ];
         int cmp;
         cmp = strcmp( qname, s->name );
@@ -144,6 +151,7 @@ static inline int skip_seed( int flag, uint64_t r, const mm_match_t* q, const ch
     }
     if( flag & ( MM_F_FOR_ONLY | MM_F_REV_ONLY ) )
     {
+        //fprintf(stdout, "markus liegt falsch\n");
         if( ( r & 1 ) == ( q->q_pos & 1 ) )
         { // forward strand
             if( flag & MM_F_REV_ONLY )
@@ -247,7 +255,7 @@ static mm128_t* collect_seed_hits( void* km, const mm_mapopt_t* opt, int max_occ
     mm_match_t* m;
     mm128_t* a;
     m = collect_matches( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
-    a = (mm128_t*)kmalloc( km, *n_a * sizeof( mm128_t ) );
+    a = (mm128_t*)kmalloc( km, *n_a * sizeof( mm128_t ) ); // result vector holding seeds
     for( i = 0, *n_a = 0; i < n_m; ++i )
     {
         mm_match_t* q = &m[ i ];
@@ -278,7 +286,7 @@ static mm128_t* collect_seed_hits( void* km, const mm_mapopt_t* opt, int max_occ
         }
     }
     kfree( km, m );
-    radix_sort_128x( a, a + ( *n_a ) );
+    //radix_sort_128x( a, a + ( *n_a ) ); // sorting the result vector
     return a;
 }
 

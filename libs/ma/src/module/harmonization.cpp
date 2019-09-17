@@ -773,6 +773,8 @@ void exportHarmonization( py::module& rxPyModuleId )
     exportModule<HarmonizationSingle>( rxPyModuleId, "HarmonizationSingle" );
 
     exportModule<SeedLumping>( rxPyModuleId, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
+    exportModule<SeedExtender>( rxPyModuleId, "SeedExtender",
+                                []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
 
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 

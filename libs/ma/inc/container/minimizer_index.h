@@ -8,6 +8,9 @@
 
 #pragma once
 
+extern size_t uiXSkipped;
+extern size_t uiXRetrived;
+
 namespace minimizer
 {
 /**
@@ -92,7 +95,7 @@ class Index
     void initOptions( )
     {
         mm_mapopt_init( &xMapOpt );
-        xMapOpt.flag |= MM_F_CIGAR; // perform alignment
+        xMapOpt.flag |= MM_F_CIGAR; // | MM_F_HEAP_SORT; // perform alignment
         // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
         mm_mapopt_update( &xMapOpt, pData );
     } // method
@@ -115,12 +118,13 @@ class Index
         pData = mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) );
         if( ( xOptions.flag & MM_F_CIGAR ) && ( pData->flag & MM_I_NO_SEQ ) )
             throw std::runtime_error( "the prebuilt index doesn't contain sequences" );
-        initOptions();
+        initOptions( );
 #if DEBUG_LEVEL > 0
         mm_idx_stat( pData );
 #endif
         // make sure that there are no multipart indices
-        assert( mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) ) == 0 );
+        if( mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) ) != 0 )
+            throw std::runtime_error( "index comes in multiple parts" );
     } // constructor
 
     Index( const ParameterSetManager& rParameters, std::vector<std::string> vContigs,
@@ -141,7 +145,7 @@ class Index
 
         pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits, vContigs.size( ),
                             &seq[ 0 ], &name[ 0 ] );
-        initOptions();
+        initOptions( );
         mm_idx_stat( pData );
         std::cout << "max Occ:" << xMapOpt.mid_occ << std::endl;
     } // constructor
@@ -161,30 +165,35 @@ class Index
         fclose( fp_out );
     } // method
 
-
     std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         int64_t n_a = 0;
+
+        uiXSkipped = 0;
+        uiXRetrived = 0;
 
         size_t uiNumSeeds = 0;
 
         mm_tbuf_t* tbuf = mm_tbuf_init( );
         for( auto& sQuery : vQueries )
         {
+            vRet.push_back( std::make_shared<libMA::Seeds>( ) );
             const char* sSeq = sQuery.c_str( );
             const int iSize = sQuery.size( );
             // const char* seqs = (const char*)&pQuery->pxSequenceRef;
             mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a );
             if( a != NULL )
             {
-                vRet.push_back( std::make_shared<libMA::Seeds>( ) );
                 for( int64_t uiI = 0; uiI < n_a; uiI++ )
                 {
-                    vRet.back( )->emplace_back( (int32_t)a[ uiI ].x, (libMA::nucSeqIndex)xOptions.k,
-                                                (int32_t)a[ uiI ].y, ( ( a[ uiI ].x >> 63 ) == 0 ? true : false ) );
-                    if( uiI + 1 < n_a && a[ uiI ].x << 1 >> 33 != a[ uiI + 1 ].x << 1 >> 33 )
-                        vRet.push_back( std::make_shared<libMA::Seeds>( ) );
+                    vRet.back( )->emplace_back(
+                        (int32_t)a[ uiI ].y, /**/
+                        (libMA::nucSeqIndex)xOptions.k,
+                        (int32_t)a[ uiI ].x, /*reference position is encoded in the lower 32 bits of x*/
+                        ( ( a[ uiI ].x >> 63 ) == 0 ? true : false ) );
+                    // if( uiI + 1 < n_a && a[ uiI ].x << 1 >> 33 != a[ uiI + 1 ].x << 1 >> 33 )
+                    //    vRet.push_back( std::make_shared<libMA::Seeds>( ) );
                 }
                 kfree( tbuf->km, a );
                 // std::cout << n_a << std::endl;
@@ -195,7 +204,8 @@ class Index
         } // for
         mm_tbuf_destroy( tbuf );
 
-        std::cout << "uiNumSeeds: " << uiNumSeeds << std::endl;
+        std::cout << "uiNumSeeds: " << uiNumSeeds << " uiXSkipped: " << uiXSkipped << " uiXRetrived: " << uiXRetrived
+                  << " %: " << uiXSkipped / (double)( uiXSkipped + uiXRetrived ) << std::endl;
 
         return vRet;
     }
