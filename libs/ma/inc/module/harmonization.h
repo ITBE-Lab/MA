@@ -9,6 +9,7 @@
 #include "container/segment.h"
 #include "container/soc.h"
 #include "module/module.h"
+#include <unordered_map>
 
 //#define PRINT_BREAK_CRITERIA(x) x
 #define PRINT_BREAK_CRITERIA( x )
@@ -243,9 +244,12 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
 class SeedLumping : public Module<Seeds, false, Seeds>
 {
   public:
+    const bool bReduceToMaxSpan = false;
+
     SeedLumping( const ParameterSetManager& rParameters )
     {} // default constructor
 
+#if 1
     // overload
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
     {
@@ -312,24 +316,105 @@ class SeedLumping : public Module<Seeds, false, Seeds>
             if( !rSeed.bOnForwStrand )
                 rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
 
-        // only keep seeds that are not overlapping with longer seeds on query
-        std::sort( //
-            pRet->begin( ),
-            pRet->end( ),
-            []( const Seed& rA, const Seed& rB ) //
-            { //
-                if( rA.start( ) == rB.start( ) )
-                    return rA.end( ) > rB.end( );
-                return rA.start( ) < rB.start( );
-            } // lambda
-        ); // sort call
-        auto pRet2 = std::make_shared<Seeds>( );
-        pRet2->reserve( pRet->size( ) );
-        for( Seed& rSeed : *pRet )
-            if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
-                pRet2->push_back( rSeed );
-        return pRet2;
+        if( bReduceToMaxSpan )
+        {
+            // only keep seeds that are not overlapping with longer seeds on query
+            std::sort( //
+                pRet->begin( ),
+                pRet->end( ),
+                []( const Seed& rA, const Seed& rB ) //
+                { //
+                    if( rA.start( ) == rB.start( ) )
+                        return rA.end( ) > rB.end( );
+                    return rA.start( ) < rB.start( );
+                } // lambda
+            ); // sort call
+            auto pRet2 = std::make_shared<Seeds>( );
+            pRet2->reserve( pRet->size( ) );
+            for( Seed& rSeed : *pRet )
+                if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
+                    pRet2->push_back( rSeed );
+            return pRet2;
+        } // if
+        return pRet;
     } // method
+#else
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
+    {
+        if( pIn->size( ) == 0 )
+            return std::make_shared<Seeds>( );
+        /*
+         * currently seeds on the reverse strand are pointing to the top left instead of the top right.
+         * The following algorithm requires all seeds to point to the top right
+         * therefore we mirror the reverse strand seeds to the reverse complement strand (and back once were done)
+         *
+         * We do not need to know the actual size of the reference in order to do that
+         * we can just use the maximal possible reference size.
+         */
+        const nucSeqIndex uiMaxRefSize = std::numeric_limits<nucSeqIndex>::max( ) / 2 - 10;
+        for( Seed& rSeed : *pIn )
+            if( !rSeed.bOnForwStrand )
+                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
+        std::unordered_map<int64_t, std::vector<Seed>> xHashTable;
+        for( Seed& rSeed : *pIn )
+            xHashTable[ rSeed.start_ref( ) - (int64_t)rSeed.start( ) ].push_back( rSeed );
+
+        auto pRet = std::make_shared<Seeds>( );
+        pRet->reserve( pIn->size( ) );
+        for( std::pair<const int64_t, std::vector<Seed>>& rPair : xHashTable )
+        {
+            std::vector<Seed>& rSeeds = rPair.second;
+            std::sort( rSeeds.begin( ), //
+                       rSeeds.end( ),
+                       []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
+            for( Seed& rSeed : rSeeds )
+            {
+                if( rSeed.start( ) <= pRet->back( ).end( ) )
+                {
+                    if( rSeed.end( ) > pRet->back( ).end( ) )
+                        pRet->back( ).iSize = rSeed.end( ) - pRet->back( ).start( );
+                    assert( pRet->back( ).end( ) == rSeed.end( ) );
+                    assert( pRet->back( ).end_ref( ) == rSeed.end_ref( ) );
+                } // if
+                else
+                    pRet->push_back( rSeed );
+            } // for
+        } // for
+
+        // see note on top (mirror result seeds back)
+        for( Seed& rSeed : *pRet )
+            if( !rSeed.bOnForwStrand )
+                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
+        // see note on top (mirror input seeds back; we don't want to destroy the input maybe someone will keep using
+        // it)
+        for( Seed& rSeed : *pIn )
+            if( !rSeed.bOnForwStrand )
+                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
+
+        if( bReduceToMaxSpan )
+        {
+            // only keep seeds that are not overlapping with longer seeds on query
+            std::sort( //
+                pRet->begin( ),
+                pRet->end( ),
+                []( const Seed& rA, const Seed& rB ) //
+                { //
+                    if( rA.start( ) == rB.start( ) )
+                        return rA.end( ) > rB.end( );
+                    return rA.start( ) < rB.start( );
+                } // lambda
+            ); // sort call
+            auto pRet2 = std::make_shared<Seeds>( );
+            pRet2->reserve( pRet->size( ) );
+            for( Seed& rSeed : *pRet )
+                if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
+                    pRet2->push_back( rSeed );
+            return pRet2;
+        } // if
+        return pRet;
+    } // method
+#endif
 
     virtual std::vector<std::shared_ptr<libMA::Seeds>> lump( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
     {
@@ -339,6 +424,7 @@ class SeedLumping : public Module<Seeds, false, Seeds>
         return vRet;
     } // method
 }; // class
+
 
 #if 1
 /**
@@ -380,11 +466,13 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
     } // method
 
     virtual std::vector<std::shared_ptr<libMA::Seeds>> extend( std::vector<std::shared_ptr<libMA::Seeds>> vIn,
-                                                               std::vector<std::shared_ptr<NucSeq>> vQueries,
-                                                               std::shared_ptr<Pack> pRef )
+                                                               std::vector<std::shared_ptr<NucSeq>>
+                                                                   vQueries,
+                                                               std::shared_ptr<Pack>
+                                                                   pRef )
     {
-        if(vIn.size() != vQueries.size())
-            throw std::runtime_error("vIn and vQueries have different lenghts");
+        if( vIn.size( ) != vQueries.size( ) )
+            throw std::runtime_error( "vIn and vQueries have different lenghts" );
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
             vRet.push_back( execute( vIn[ uiI ], vQueries[ uiI ], pRef ) );
