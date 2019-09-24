@@ -613,13 +613,28 @@ class Pack : public Container
         // check all holes
         for( auto& rHole : xVectorOfHoleDescriptors )
             // check if hole is overlapping
-            if( rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart )
+            if( rHole.offset <= uiEnd && rHole.offset + rHole.length > uiStart )
                 // add the overlapping interval to covered
                 uiCovered += std::min( uiEnd, rHole.offset + rHole.length ) - std::max( uiStart, rHole.offset );
 
         assert( uiCovered <= uiEnd - uiStart );
         // divide the overlapping interval by the total interval
         return uiCovered / (double)( uiEnd - uiStart );
+    } // method
+
+    /**
+     * @brief prints wether the nucleotide is in a hole
+     */
+    inline double isHole( uint64_t uiX ) const
+    {
+        // check all holes
+        for( auto& rHole : xVectorOfHoleDescriptors )
+            // check if hole is overlapping
+            if( rHole.offset <= uiX && rHole.offset + rHole.length > uiX )
+                // add the overlapping interval to covered
+                return true;
+
+        return false;
     } // method
 
     /* Appends a single nucleotide sequence to the collection.

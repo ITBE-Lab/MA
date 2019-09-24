@@ -19,6 +19,9 @@ namespace libMA
 ///@brief any index on the query or reference nucleotide sequence is given in this datatype
 typedef uint64_t nucSeqIndex;
 
+class Pack;
+class NucSeq;
+
 /**
  * @brief A seed.
  * @details
@@ -464,6 +467,64 @@ class Seeds : public Container
     {
         vContent.clear( );
     } // method
+
+
+    /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
+    std::tuple<size_t, size_t, size_t> compareSeedSets( std::shared_ptr<Seeds> pOther )
+    {
+        std::tuple<size_t, size_t, size_t> xRet;
+
+        std::sort( vContent.begin( ), vContent.end( ), []( const Seed& rA, const Seed& rB ) {
+            if( rA.start( ) != rB.start( ) )
+                return rA.start( ) < rB.start( );
+            if( rA.size( ) != rB.size( ) )
+                return rA.size( ) < rB.size( );
+            return rA.start_ref( ) < rB.start_ref( );
+        } );
+
+        std::sort( pOther->vContent.begin( ), pOther->vContent.end( ), []( const Seed& rA, const Seed& rB ) {
+            if( rA.start( ) != rB.start( ) )
+                return rA.start( ) < rB.start( );
+            if( rA.size( ) != rB.size( ) )
+                return rA.size( ) < rB.size( );
+            return rA.start_ref( ) < rB.start_ref( );
+        } );
+
+        size_t uiI = 0;
+        size_t uiJ = 0;
+        while( uiI < vContent.size( ) && uiJ < pOther->size( ) )
+        {
+            if( vContent[ uiI ].start( ) == pOther->vContent[ uiJ ].start( ) &&
+                vContent[ uiI ].size( ) == pOther->vContent[ uiJ ].size( ) &&
+                vContent[ uiI ].start_ref( ) == pOther->vContent[ uiJ ].start_ref( ) )
+            {
+                uiI++;
+                uiJ++;
+                std::get<1>( xRet ) += 1;
+            } // if
+            else if( vContent[ uiI ].start( ) < pOther->vContent[ uiJ ].start( ) ||
+                     ( vContent[ uiI ].start( ) == pOther->vContent[ uiJ ].start( ) &&
+                       ( vContent[ uiI ].size( ) < pOther->vContent[ uiJ ].size( ) ||
+                         ( vContent[ uiI ].size( ) == pOther->vContent[ uiJ ].size( ) &&
+                           vContent[ uiI ].start_ref( ) < pOther->vContent[ uiJ ].start_ref( ) ) ) ) )
+            {
+                uiI++;
+                std::get<0>( xRet ) += 1;
+            } // if
+            else
+            {
+                uiJ++;
+                std::get<2>( xRet ) += 1;
+            } // if
+        } // while
+
+        std::get<0>( xRet ) += vContent.size( ) - uiI;
+        std::get<2>( xRet ) += pOther->size( ) - uiJ;
+
+        return xRet;
+    } // method
+
+    void confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended );
 }; // class
 
 } // namespace libMA
