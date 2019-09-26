@@ -1,4 +1,5 @@
 #include "container/nucSeq.h"
+#include "container/pack.h"
 #include "container/segment.h"
 #include "util/parameter.h"
 #ifndef __cplusplus
@@ -165,7 +166,8 @@ class Index
         fclose( fp_out );
     } // method
 
-    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries )
+    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries,
+                                                     std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         int64_t n_a = 0;
@@ -185,55 +187,40 @@ class Index
             mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a );
             if( a != NULL )
             {
-/*
-
-static inline int32_t get_for_qpos(int32_t qlen, const mm128_t *a)
-{
-	int32_t x = (int32_t)a->y;
-	int32_t q_span = a->y>>32 & 0xff;
-	if (a->x>>63)
-		x = qlen - 1 - (x + 1 - q_span); // revert the position to the forward strand of query
-	return x;
-}
-
-*/
-
-
                 for( int64_t uiI = 0; uiI < n_a; uiI++ )
                 {
                     if( ( a[ uiI ].x >> 63 ) == 0 )
                     {
-                        //std::cout << "q_span: " << ( int32_t )( a[ uiI ].y >> 32 ) << std::endl;
-                        //fprintf( stderr, "SD\t%d\t%c\t%d\t%d\t%d\n", (int32_t)a[ uiI ].x, "+-"[ a[ uiI ].x >> 63 ],
+                        // std::cout << "q_span: " << ( int32_t )( a[ uiI ].y >> 32 ) << std::endl;
+                        // fprintf( stderr, "SD\t%d\t%c\t%d\t%d\t%d\n", (int32_t)a[ uiI ].x, "+-"[ a[ uiI ].x >> 63 ],
                         //         (int32_t)a[ uiI ].y, ( int32_t )( a[ uiI ].y >> 32 & 0xff ),
                         //         uiI == 0 ? 0
                         //                  : ( (int32_t)a[ uiI ].y - (int32_t)a[ uiI - 1 ].y ) -
                         //                        ( (int32_t)a[ uiI ].x - (int32_t)a[ uiI - 1 ].x ) );
                         uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
-                        assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
-                        assert( (int32_t)a[ uiI ].x >= (int32_t)uiQSpan );
+                        //assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
+                        //assert( (int32_t)a[ uiI ].x + 1 >= (int32_t)uiQSpan );
                         vRet.back( )->emplace_back(
                             /* minimap uses 1-based index i use 0-based indices...
                                a[ uiI ].y = last base of minimizer */
                             ( (int32_t)a[ uiI ].y ) + 1 - uiQSpan,
                             uiQSpan,
                             /* reference position is encoded in the lower 32 bits of x */
-                            ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan,
+                            ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan +
+                                pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
                             true // minimap code : "+-"[a[i].x>>63]
                         );
                     } // if
                     else
                     {
                         uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
-                        assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
-                        assert( (int32_t)a[ uiI ].x >= (int32_t)uiQSpan );
                         vRet.back( )->emplace_back(
                             /* minimap uses 1-based index i use 0-based indices...
                                a[ uiI ].y = last base of minimizer */
-                            ( (int32_t)a[ uiI ].y ) + 1 - uiQSpan,
+                            sQuery.length( ) - 1 - ( (int32_t)a[ uiI ].y ),
                             uiQSpan,
                             /* reference position is encoded in the lower 32 bits of x */
-                            ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan,
+                            (int32_t)a[ uiI ].x + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
                             false // minimap code : "+-"[a[i].x>>63]
                         );
                     } // else

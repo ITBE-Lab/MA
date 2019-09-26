@@ -38,6 +38,8 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
      */
     const nucSeqIndex uiMinGenomeSize;
+    /// used in seed function...
+    const size_t uiMinSeedSize;
 
     /**
      * @brief The simplified extension scheme presented in our Paper.
@@ -474,7 +476,8 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
           uiMinSeedSizeDrop( rParameters.getSelected( )->xMinimalSeedSizeDrop->get( ) ),
           fRelMinSeedSizeAmount( rParameters.getSelected( )->xRelMinSeedSizeAmount->get( ) ),
           bDisableHeuristics( rParameters.getSelected( )->xDisableHeuristics->get( ) ),
-          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) )
+          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) ),
+          uiMinSeedSize( rParameters.getSelected( )->xMinSeedLength->get( ) )
     {} // constructor
 
     virtual std::shared_ptr<SegmentVector>
@@ -486,7 +489,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
     {
         std::vector<std::shared_ptr<Seeds>> vRet;
         for( auto pQuery : vQueries )
-            vRet.push_back( execute( pFM_index, pQuery )->extractSeeds( pFM_index, 100, 15, pQuery->length( ), true ) );
+            vRet.push_back( execute( pFM_index, pQuery )->extractSeeds( pFM_index, uiMaxAmbiguity, uiMinSeedSize, pQuery->length( ), true ) );
         return vRet;
     } // method
 }; // class

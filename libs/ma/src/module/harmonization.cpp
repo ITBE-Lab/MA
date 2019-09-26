@@ -775,6 +775,8 @@ void exportHarmonization( py::module& rxPyModuleId )
     exportModule<SeedLumping>( rxPyModuleId, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
     exportModule<SeedExtender>( rxPyModuleId, "SeedExtender",
                                 []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
+    exportModule<MaxExtendedToSMEM>( rxPyModuleId, "MaxExtendedToSMEM",
+                                []( auto&& x ) { x.def( "filter", &MaxExtendedToSMEM::filter ); } );
 
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 

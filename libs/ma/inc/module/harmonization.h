@@ -179,9 +179,8 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
-                                                     std::shared_ptr<NucSeq> pQuery,
-                                                     std::shared_ptr<FMIndex> pFMIndex );
+    virtual std::shared_ptr<Seeds> EXPORTED
+    execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 
@@ -444,22 +443,39 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
         for( auto& rSeed : *pSeeds )
         {
             size_t uiForw = 1;
-            while( uiForw <= rSeed.start( ) && //
-                   uiForw <= rSeed.start_ref( ) && //
-                   pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
-                       pRef->getNucleotideOnPos( rSeed.start_ref( ) - uiForw ) )
-                uiForw++;
+            if( rSeed.bOnForwStrand )
+                while( uiForw <= rSeed.start( ) && //
+                       uiForw <= rSeed.start_ref( ) && //
+                       pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
+                           pRef->getNucleotideOnPos( rSeed.start_ref( ) - uiForw ) )
+                    uiForw++;
+            else
+                while( uiForw <= rSeed.start( ) && //
+                       uiForw + rSeed.start_ref( ) < pRef->uiUnpackedSizeForwardStrand && //
+                       pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
+                           3 - pRef->getNucleotideOnPos( rSeed.start_ref( ) + uiForw ) )
+                    uiForw++;
             uiForw--; // uiForward is one too high after loop
             rSeed.iSize += uiForw;
             rSeed.iStart -= uiForw;
-            rSeed.uiPosOnReference -= uiForw;
+            if( rSeed.bOnForwStrand )
+                rSeed.uiPosOnReference -= uiForw;
+            else
+                rSeed.uiPosOnReference += uiForw;
 
             size_t uiBackw = 0;
-            while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
-                   uiBackw + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand && //
-                   pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
-                       pRef->getNucleotideOnPos( rSeed.end_ref( ) + uiBackw ) )
-                uiBackw++;
+            if( rSeed.bOnForwStrand )
+                while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
+                       uiBackw + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand && //
+                       pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
+                           pRef->getNucleotideOnPos( rSeed.end_ref( ) + uiBackw ) )
+                    uiBackw++;
+            else
+                while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
+                       rSeed.start_ref( ) >= uiBackw + rSeed.size( ) && //
+                       pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
+                           3 - pRef->getNucleotideOnPos( rSeed.start_ref( ) - rSeed.size( ) - uiBackw ) )
+                    uiBackw++;
             rSeed.iSize += uiBackw;
         } // for
         return pSeeds;
@@ -476,6 +492,62 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
             vRet.push_back( execute( vIn[ uiI ], vQueries[ uiI ], pRef ) );
+        return vRet;
+    } // method
+}; // class
+#endif
+
+
+#if 1
+/**
+ * @brief Filters a set of maximally extended seeds down to SMEMs
+ * @ingroup module
+ */
+class MaxExtendedToSMEM : public Module<Seeds, false, Seeds>
+{
+  public:
+    MaxExtendedToSMEM( const ParameterSetManager& rParameters )
+    {} // default constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    {
+        std::sort( //
+            pSeeds->begin( ),
+            pSeeds->end( ),
+            []( const Seed& rA, const Seed& rB ) //
+            { //
+                if( rA.start( ) == rB.start( ) )
+                {
+                    if(rA.size( ) == rB.size( ))
+                        return rA.start_ref( ) < rB.start_ref( );
+                    return rA.size( ) > rB.size( );
+                } // if
+                return rA.start( ) < rB.start( );
+            } // lambda
+        ); // sort call
+
+        nucSeqIndex uiMaxSeenPos = 0;
+
+        auto pRet = std::make_shared<Seeds>( );
+
+        for( auto& rSeed : *pSeeds )
+        {
+            if( rSeed.end( ) > uiMaxSeenPos )
+                pRet->push_back( rSeed );
+            // allow seeds that have exactly the same query interval, but filter out duplicates here
+            else if( rSeed.end( ) == uiMaxSeenPos && rSeed.start( ) == pRet->back().start() && rSeed.start_ref( ) != pRet->back().start_ref() )
+                pRet->push_back( rSeed );
+            uiMaxSeenPos = std::max( rSeed.end( ), uiMaxSeenPos );
+        } // for
+        return pRet;
+    } // method
+
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> filter( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
+    {
+        std::vector<std::shared_ptr<libMA::Seeds>> vRet;
+        for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
+            vRet.push_back( execute( vIn[ uiI ] ) );
         return vRet;
     } // method
 }; // class

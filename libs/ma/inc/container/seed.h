@@ -12,6 +12,7 @@
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
 #include <list>
+#include <csignal>
 /// @endcond
 
 namespace libMA
@@ -468,7 +469,6 @@ class Seeds : public Container
         vContent.clear( );
     } // method
 
-
     /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
     std::tuple<size_t, size_t, size_t> compareSeedSets( std::shared_ptr<Seeds> pOther )
     {
@@ -508,6 +508,7 @@ class Seeds : public Container
                          ( vContent[ uiI ].size( ) == pOther->vContent[ uiJ ].size( ) &&
                            vContent[ uiI ].start_ref( ) < pOther->vContent[ uiJ ].start_ref( ) ) ) ) )
             {
+                //std::raise(SIGINT);
                 uiI++;
                 std::get<0>( xRet ) += 1;
             } // if
