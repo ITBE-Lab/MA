@@ -8,7 +8,9 @@
 
 #include "container/segment.h"
 #include "container/soc.h"
+#include "contrib/intervalTree/IntervalTree.h"
 #include "module/module.h"
+#include <algorithm>
 #include <unordered_map>
 
 //#define PRINT_BREAK_CRITERIA(x) x
@@ -507,7 +509,7 @@ class MaxExtendedToSMEM : public Module<Seeds, false, Seeds>
 {
   public:
     MaxExtendedToSMEM( const ParameterSetManager& rParameters )
-    {} // default constructor
+    {} // constructor
 
     // overload
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
@@ -519,7 +521,7 @@ class MaxExtendedToSMEM : public Module<Seeds, false, Seeds>
             { //
                 if( rA.start( ) == rB.start( ) )
                 {
-                    if(rA.size( ) == rB.size( ))
+                    if( rA.size( ) == rB.size( ) )
                         return rA.start_ref( ) < rB.start_ref( );
                     return rA.size( ) > rB.size( );
                 } // if
@@ -536,10 +538,99 @@ class MaxExtendedToSMEM : public Module<Seeds, false, Seeds>
             if( rSeed.end( ) > uiMaxSeenPos )
                 pRet->push_back( rSeed );
             // allow seeds that have exactly the same query interval, but filter out duplicates here
-            else if( rSeed.end( ) == uiMaxSeenPos && rSeed.start( ) == pRet->back().start() && rSeed.start_ref( ) != pRet->back().start_ref() )
+            else if( rSeed.end( ) == uiMaxSeenPos && rSeed.start( ) == pRet->back( ).start( ) &&
+                     rSeed.start_ref( ) != pRet->back( ).start_ref( ) )
                 pRet->push_back( rSeed );
             uiMaxSeenPos = std::max( rSeed.end( ), uiMaxSeenPos );
         } // for
+        return pRet;
+    } // method
+
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> filter( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
+    {
+        std::vector<std::shared_ptr<libMA::Seeds>> vRet;
+        for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
+            vRet.push_back( execute( vIn[ uiI ] ) );
+        return vRet;
+    } // method
+}; // class
+#endif
+
+
+#if 1
+/**
+ * @brief Filters a set of maximally extended seeds down to MaxSpanning
+ * @ingroup module
+ */
+class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
+{
+    struct SeedSmallerComp
+    {
+        bool operator( )( const Seed* pA, const Seed* pB )
+        {
+            if(pA->size() != pB->size())
+                return pA->size() > pB->size();
+            return pA->start() > pB->start();
+        } // operator
+    }; // struct
+
+  public:
+    MaxExtendedToMaxSpanning( const ParameterSetManager& rParameters )
+    {} // default constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    {
+
+        interval_tree::IntervalTree<nucSeqIndex, Seed*>::interval_vector vIntervals;
+        std::vector<nucSeqIndex> vStartVec;
+        for( auto& rSeed : *pSeeds )
+        {
+            vIntervals.emplace_back( rSeed.start( ), rSeed.end( ) - 1, &rSeed );
+            vStartVec.push_back( rSeed.start( ) );
+        } // for
+        interval_tree::IntervalTree<nucSeqIndex, Seed*> xTree( std::move( vIntervals ) );
+        std::sort( vStartVec.begin( ), vStartVec.end( ) );
+
+        auto pRet = std::make_shared<Seeds>( );
+
+        nucSeqIndex uiX = 0;
+
+        while( true )
+        {
+            std::vector<Seed*> vOverlaps;
+            xTree.visit_overlapping( uiX, uiX,
+                                     [&]( const interval_tree::IntervalTree<nucSeqIndex, Seed*>::interval& rInterval ) {
+                                         vOverlaps.push_back( rInterval.value );
+                                     } ); // visit_overlapping call
+            if( vOverlaps.size( ) == 0 )
+            {
+                // check for non overlapping seed to the right
+                auto pIt = std::lower_bound( vStartVec.begin( ), vStartVec.end( ), uiX );
+
+                if( pIt == vStartVec.end( ) ) // we still have not found any intervals...
+                    break;
+                else // we are not at the end of the query yet; there is just a gap between seeds
+                    uiX = *pIt; // jump to the end of this gap
+                // from here the loop will just repeat so we will use the visit_overlapping call from above
+                // to fill vOverlaps instead of rewriting the same code here...
+            } // if
+            else
+            {
+                std::make_heap(vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp() );
+                pRet->push_back( *vOverlaps.front() );
+                uiX = vOverlaps.front()->end( );
+                // pop heap
+                std::pop_heap (vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp() ); vOverlaps.pop_back();
+                while(vOverlaps.size() > 0 && vOverlaps.front()->size( ) == pRet->back().size() )
+                {
+                    pRet->push_back( *vOverlaps.front() );
+                    // pop heap
+                    std::pop_heap (vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp() ); vOverlaps.pop_back();
+                } // while
+            } // else
+        } // while
+
         return pRet;
     } // method
 

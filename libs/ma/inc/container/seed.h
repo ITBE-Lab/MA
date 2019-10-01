@@ -11,8 +11,8 @@
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
-#include <list>
 #include <csignal>
+#include <list>
 /// @endcond
 
 namespace libMA
@@ -470,9 +470,11 @@ class Seeds : public Container
     } // method
 
     /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
-    std::tuple<size_t, size_t, size_t> compareSeedSets( std::shared_ptr<Seeds> pOther )
+    std::tuple<std::shared_ptr<Seeds>, std::shared_ptr<Seeds>, std::shared_ptr<Seeds>>
+    splitSeedSets( std::shared_ptr<Seeds> pOther )
     {
-        std::tuple<size_t, size_t, size_t> xRet;
+        auto xRet =
+            std::make_tuple( std::make_shared<Seeds>( ), std::make_shared<Seeds>( ), std::make_shared<Seeds>( ) );
 
         std::sort( vContent.begin( ), vContent.end( ), []( const Seed& rA, const Seed& rB ) {
             if( rA.start( ) != rB.start( ) )
@@ -498,9 +500,9 @@ class Seeds : public Container
                 vContent[ uiI ].size( ) == pOther->vContent[ uiJ ].size( ) &&
                 vContent[ uiI ].start_ref( ) == pOther->vContent[ uiJ ].start_ref( ) )
             {
+                std::get<1>( xRet )->push_back( vContent[ uiI ] );
                 uiI++;
                 uiJ++;
-                std::get<1>( xRet ) += 1;
             } // if
             else if( vContent[ uiI ].start( ) < pOther->vContent[ uiJ ].start( ) ||
                      ( vContent[ uiI ].start( ) == pOther->vContent[ uiJ ].start( ) &&
@@ -508,21 +510,33 @@ class Seeds : public Container
                          ( vContent[ uiI ].size( ) == pOther->vContent[ uiJ ].size( ) &&
                            vContent[ uiI ].start_ref( ) < pOther->vContent[ uiJ ].start_ref( ) ) ) ) )
             {
-                //std::raise(SIGINT);
+                // std::raise(SIGINT);
+                std::get<0>( xRet )->push_back( vContent[ uiI ] );
                 uiI++;
-                std::get<0>( xRet ) += 1;
             } // if
             else
             {
+                std::get<2>( xRet )->push_back( pOther->vContent[ uiJ ] );
                 uiJ++;
-                std::get<2>( xRet ) += 1;
             } // if
         } // while
 
-        std::get<0>( xRet ) += vContent.size( ) - uiI;
-        std::get<2>( xRet ) += pOther->size( ) - uiJ;
+        while( uiI < vContent.size( ) )
+            std::get<0>( xRet )->push_back( vContent[ uiI++ ] );
+        while( uiJ < pOther->size( ) )
+            std::get<2>( xRet )->push_back( pOther->vContent[ uiJ++ ] );
 
         return xRet;
+    } // method
+
+
+    /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
+    std::tuple<size_t, size_t, size_t> compareSeedSets( std::shared_ptr<Seeds> pOther )
+    {
+        auto xTemp = splitSeedSets( pOther );
+
+        return std::make_tuple( std::get<0>( xTemp )->size( ), std::get<1>( xTemp )->size( ),
+                                std::get<2>( xTemp )->size( ) );
     } // method
 
     void confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended );

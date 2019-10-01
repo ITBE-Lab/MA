@@ -27,12 +27,18 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
     {
         std::shared_ptr<NucSeq> pRefSec = std::make_shared<NucSeq>( );
         if( rSeed.bOnForwStrand )
+        {
+            if( pRef->bridgingPositions( rSeed.start_ref( ), rSeed.end_ref( ) ) )
+                continue;
             pRef->vExtractSubsectionN( rSeed.start_ref( ), rSeed.end_ref( ), *pRefSec );
+        } // if
         else
         {
-            pRef->vExtractSubsectionN( rSeed.start_ref( ) - rSeed.size() + 1, rSeed.start_ref( ) + 1, *pRefSec );
-            pRefSec->vReverseAll();
-            pRefSec->vSwitchAllBasePairsToComplement();
+            if( pRef->bridgingPositions( rSeed.start_ref( ) - rSeed.size( ) + 1, rSeed.start_ref( ) + 1 ) )
+                continue;
+            pRef->vExtractSubsectionN( rSeed.start_ref( ) - rSeed.size( ) + 1, rSeed.start_ref( ) + 1, *pRefSec );
+            pRefSec->vReverseAll( );
+            pRefSec->vSwitchAllBasePairsToComplement( );
         }
         // pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( rSeed.end_ref( ) ),
         //                           pRef->uiPositionToReverseStrand( rSeed.start_ref( ) ),
@@ -44,11 +50,11 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
         auto uiX = rSeed.start_ref( ) + 1;
         if( uiX < pRef->uiUnpackedSizeForwardStrand && !rSeed.bOnForwStrand )
             uiBefore = pRef->isHole( uiX ) ? 4 : 3 - pRef->getNucleotideOnPos( uiX );
-    
+
         uint8_t uiAfter = 4;
         if( rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand && rSeed.bOnForwStrand )
             uiAfter = pRef->isHole( rSeed.end_ref( ) ) ? 4 : pRef->getNucleotideOnPos( rSeed.end_ref( ) );
-        uiX = rSeed.start_ref( ) - rSeed.size() + 1;
+        uiX = rSeed.start_ref( ) - rSeed.size( ) + 1;
         if( uiX > 0 && !rSeed.bOnForwStrand )
             uiAfter = pRef->isHole( uiX - 1 ) ? 4 : 3 - pRef->getNucleotideOnPos( uiX - 1 );
 
@@ -126,6 +132,7 @@ void exportSeed( py::module& rxPyModuleId )
         .def( "extractStrand", &Seeds::extractStrand )
         .def( "extend", &Seeds::append )
         .def( "compare_seed_sets", &Seeds::compareSeedSets )
+        .def( "split_seed_sets", &Seeds::splitSeedSets )
         .def( "confirm_seed_positions", &Seeds::confirmSeedPositions )
         .def( "sort_by_ref_pos", &Seeds::sortByRefPos );
 
