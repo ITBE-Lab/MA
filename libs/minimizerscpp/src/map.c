@@ -78,7 +78,10 @@ typedef struct
 
 size_t uiXSkipped = 0;
 size_t uiXRetrived = 0;
-
+/**
+ *
+ * @param rep_len returns the number of nucleotides that are not covered by minimizers
+ */
 static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_idx_t* mi, const mm128_v* mv,
                                     int64_t* n_a, int* rep_len, int* n_mini_pos, uint64_t** mini_pos )
 {
@@ -99,11 +102,11 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
         uint32_t q_pos = (uint32_t)p->y, q_span = p->x & 0xff;
         int t;
         cr = mm_idx_get( mi, p->x >> 8, &t );
-        //fprintf(stdout, "t: %d max_occ: %d\n", t, max_occ);
+        // fprintf(stdout, "t: %d max_occ: %d\n", t, max_occ);
         if( t >= max_occ )
         {
             uiXSkipped += t;
-            //fprintf(stdout, "XXXX\n");
+            // fprintf(stdout, "XXXX\n");
             int end = ( q_pos >> 1 ) + 1;
             int start = end - q_span;
             if( start > rep_en )
@@ -117,8 +120,8 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
         }
         else
         {
-            uiXRetrived+=t;
-            //fprintf(stdout, "found entry\n");
+            uiXRetrived += t;
+            // fprintf(stdout, "found entry\n");
             mm_match_t* q = &m[ n_m++ ];
             q->q_pos = q_pos, q->q_span = q_span, q->cr = cr, q->n = t, q->seg_id = p->y >> 32;
             q->is_tandem = 0;
@@ -135,13 +138,138 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
     return m;
 }
 
+#define SWAP( x, y )                                                                                                   \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        typeof( x ) t = x;                                                                                             \
+        x = y;                                                                                                         \
+        y = t;                                                                                                         \
+    } while( 0 )
+
+/**
+ *
+ * @param rep_len returns the number of nucleotides that are not covered by minimizers
+ */
+static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max_occ, const mm_idx_t* mi,
+                                                    const mm128_v* mv, int64_t* n_a, int* rep_len, int* n_mini_pos,
+                                                    uint64_t** mini_pos )
+{
+    int max_rep_len = mi->k + mi->w;
+    int rep_st = 0;
+    int rep_en = 0;
+    mm_match_t* m;
+    *n_mini_pos = 0;
+    *mini_pos = (uint64_t*)kmalloc( km, mv->n * sizeof( uint64_t ) );
+    m = (mm_match_t*)kmalloc( km, mv->n * sizeof( mm_match_t ) );
+
+    *rep_len = 0;
+    int n_m = 0;
+    *n_a = 0;
+
+    int best_t = 0;
+    const uint64_t* best_cr = NULL;
+    size_t best_i = 0;
+
+    for( size_t j = 0; j < mv->n; ++j )
+    {
+        // so that we can overwrite i without affecting the current loop position
+        size_t i = j;
+        const uint64_t* cr;
+        mm128_t* p = &mv->a[ i ];
+        uint32_t q_pos = (uint32_t)p->y, q_span = p->x & 0xff;
+        int t;
+        cr = mm_idx_get( mi, p->x >> 8, &t );
+        // if the minimizer is too ambiguous
+        if( t >= max_occ )
+        {
+            // get the end of the current minimizer
+            int end = ( q_pos >> 1 ) + 1;
+            // get the start of the current minimizer
+            int start = end - q_span;
+            // if we are starting a new hole on the query
+            // (hole := region without seeds due to ambiguity)
+            if( start > rep_en )
+            {
+                if( rep_en > rep_st )
+                    *rep_len += rep_en - rep_st;
+                // set the start and end of the hole
+                rep_st = start;
+                rep_en = end;
+
+                // since this is the first seed of the hole set this as the best skipped seed
+                best_i = i;
+                best_cr = cr;
+                best_t = t;
+
+                // do not extract seeds for this minimizer
+                continue;
+            }
+            // if we are extending a hole
+            else
+            {
+                // adjust the end of the hole
+                rep_en = end;
+
+
+                // if the hole has become longer than allowed
+                if( start - rep_st > max_rep_len )
+                {
+                    // extract the best minimizer in the hole
+                    SWAP( i, best_i );
+                    SWAP( cr, best_cr );
+                    SWAP( t, best_t );
+                    p = &mv->a[ i ];
+                    q_pos = (uint32_t)p->y, q_span = p->x & 0xff;
+
+                    // increment rep_len by the length of the gap before the best minimizer in the hole
+                    int rep_en_curr = ( q_pos >> 1 ) + 1 - q_span;
+                    if( rep_en_curr > rep_st )
+                        *rep_len += rep_en_curr - rep_st;
+                    // set the start of the hole to the currently extracted minimizer
+                    rep_st = ( q_pos >> 1 ) + 1 - q_span;
+                    // NO continue: do extract the current minimizer (overwritten with the best minimizer in the hole)
+                } // if
+                // the hole is not too long yet...
+                else
+                {
+                    // if the current minimizer is the best one we have seen within this hole
+                    if( t < best_t )
+                    {
+                        // remember this minimizer
+                        best_i = i;
+                        best_cr = cr;
+                        best_t = t;
+                    } // if
+                    // don't extract the current minimizer
+                    continue;
+                } // if
+            } // else
+        } // if
+
+        // fprintf(stdout, "found entry\n");
+        mm_match_t* q = &m[ n_m++ ];
+        q->q_pos = q_pos, q->q_span = q_span, q->cr = cr, q->n = t, q->seg_id = p->y >> 32;
+        q->is_tandem = 0;
+        if( i > 0 && p->x >> 8 == mv->a[ i - 1 ].x >> 8 )
+            q->is_tandem = 1;
+        if( i < mv->n - 1 && p->x >> 8 == mv->a[ i + 1 ].x >> 8 )
+            q->is_tandem = 1;
+        *n_a += q->n;
+        ( *mini_pos )[ ( *n_mini_pos )++ ] = (uint64_t)q_span << 32 | q_pos >> 1;
+    }
+    if( rep_en > rep_st )
+        *rep_len += rep_en - rep_st;
+    *_n_m = n_m;
+    return m;
+}
+
 static inline int skip_seed( int flag, uint64_t r, const mm_match_t* q, const char* qname, int qlen, const mm_idx_t* mi,
                              int* is_self )
 {
     *is_self = 0;
     if( qname && ( flag & ( MM_F_NO_DIAG | MM_F_NO_DUAL ) ) )
     {
-        //fprintf(stdout, "markus liegt falsch\n");
+        // fprintf(stdout, "markus liegt falsch\n");
         const mm_idx_seq_t* s = &mi->seq[ r >> 32 ];
         int cmp;
         cmp = strcmp( qname, s->name );
@@ -157,7 +285,7 @@ static inline int skip_seed( int flag, uint64_t r, const mm_match_t* q, const ch
     }
     if( flag & ( MM_F_FOR_ONLY | MM_F_REV_ONLY ) )
     {
-        //fprintf(stdout, "markus liegt falsch\n");
+        // fprintf(stdout, "markus liegt falsch\n");
         if( ( r & 1 ) == ( q->q_pos & 1 ) )
         { // forward strand
             if( flag & MM_F_REV_ONLY )
@@ -181,7 +309,7 @@ static mm128_t* collect_seed_hits_heap( void* km, const mm_mapopt_t* opt, int ma
     mm_match_t* m;
     mm128_t *a, *heap;
 
-    m = collect_matches( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
+    m = collect_matches_adaptive_filter( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
 
     heap = (mm128_t*)kmalloc( km, n_m * sizeof( mm128_t ) );
     a = (mm128_t*)kmalloc( km, *n_a * sizeof( mm128_t ) );
@@ -260,7 +388,7 @@ static mm128_t* collect_seed_hits( void* km, const mm_mapopt_t* opt, int max_occ
     int i, n_m;
     mm_match_t* m;
     mm128_t* a;
-    m = collect_matches( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
+    m = collect_matches_adaptive_filter( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
     a = (mm128_t*)kmalloc( km, *n_a * sizeof( mm128_t ) ); // result vector holding seeds
     for( i = 0, *n_a = 0; i < n_m; ++i )
     {
@@ -292,7 +420,7 @@ static mm128_t* collect_seed_hits( void* km, const mm_mapopt_t* opt, int max_occ
         }
     }
     kfree( km, m );
-    //radix_sort_128x( a, a + ( *n_a ) ); // sorting the result vector
+    // radix_sort_128x( a, a + ( *n_a ) ); // sorting the result vector
     return a;
 }
 
@@ -312,15 +440,15 @@ mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const 
     if( qlen_sum == 0 || n_segs <= 0 || n_segs > MM_MAX_SEG )
     {
         *n_a = -1;
-        fprintf(stderr, "%d %d\n", qlen_sum, n_segs);
+        fprintf( stderr, "%d %d\n", qlen_sum, n_segs );
         return NULL;
     } // if
-    //fprintf(stderr, "qlen_sum = %d\n", qlen_sum);
+    // fprintf(stderr, "qlen_sum = %d\n", qlen_sum);
 
     mm128_t* a;
 
     collect_minimizers( b->km, opt, mi, n_segs, qlens, seqs, &mv );
-    //fprintf(stderr, "n=%lu m=%lu\n", mv.n, mv.m);
+    // fprintf(stderr, "n=%lu m=%lu\n", mv.n, mv.m);
     if( opt->flag & MM_F_HEAP_SORT )
         a = collect_seed_hits_heap( b->km, opt, opt->mid_occ, mi, qname, &mv, qlen_sum, n_a, &rep_len, &n_mini_pos,
                                     &mini_pos );
@@ -337,7 +465,7 @@ mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const 
                      ? 0
                      : ( (int32_t)a[ i ].y - (int32_t)a[ i - 1 ].y ) - ( (int32_t)a[ i ].x - (int32_t)a[ i - 1 ].x ) );
 #endif
-	kfree(b->km, mv.a);
-	kfree(b->km, mini_pos);
+    kfree( b->km, mv.a );
+    kfree( b->km, mini_pos );
     return a;
 }
