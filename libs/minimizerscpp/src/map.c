@@ -82,13 +82,17 @@ size_t uiXRetrived = 0;
 static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_idx_t* mi, const mm128_v* mv,
                                     int64_t* n_a, int* rep_len, int* n_mini_pos, uint64_t** mini_pos )
 {
-    int rep_st = 0, rep_en = 0, n_m;
-    size_t i;
+    int rep_st = 0;
+    int rep_en = 0;
     mm_match_t* m;
     *n_mini_pos = 0;
     *mini_pos = (uint64_t*)kmalloc( km, mv->n * sizeof( uint64_t ) );
     m = (mm_match_t*)kmalloc( km, mv->n * sizeof( mm_match_t ) );
-    for( i = 0, n_m = 0, *rep_len = 0, *n_a = 0; i < mv->n; ++i )
+
+    *rep_len = 0;
+    int n_m = 0;
+    *n_a = 0;
+    for( size_t i = 0; i < mv->n; ++i )
     {
         const uint64_t* cr;
         mm128_t* p = &mv->a[ i ];
@@ -100,14 +104,16 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
         {
             uiXSkipped += t;
             //fprintf(stdout, "XXXX\n");
-            int en = ( q_pos >> 1 ) + 1, st = en - q_span;
-            if( st > rep_en )
+            int end = ( q_pos >> 1 ) + 1;
+            int start = end - q_span;
+            if( start > rep_en )
             {
                 *rep_len += rep_en - rep_st;
-                rep_st = st, rep_en = en;
+                rep_st = start;
+                rep_en = end;
             }
             else
-                rep_en = en;
+                rep_en = end;
         }
         else
         {

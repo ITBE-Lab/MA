@@ -360,8 +360,26 @@ class Seeds : public Container
     {
         std::sort( vContent.begin( ),
                    vContent.end( ),
-                   []( const Seed& rA, const Seed& rB ) { return rA.start_ref( ) < rB.start_ref( ); } // lambda
+                   []( const Seed& rA, const Seed& rB ) {
+                       if( rA.start_ref( ) != rB.start_ref( ) )
+                           return rA.start_ref( ) < rB.start_ref( );
+                       return rA.size( ) > rB.size( );
+                   } // lambda
         );
+    } // method
+
+    inline void sortByQPos( )
+    {
+        for( size_t uiI = 1; uiI < vContent.size( ); uiI++ )
+            if( vContent[ uiI - 1 ].start( ) > vContent[ uiI ].start( ) ) // check if not sorted
+            {
+                // if not sorted then sort...
+                std::sort( vContent.begin( ),
+                           vContent.end( ),
+                           []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } // lambda
+                ); // std::sort call
+                return;
+            } // if
     } // method
 
     inline std::shared_ptr<Seeds> splitOnStrands( nucSeqIndex uiReferenceLength, nucSeqIndex uiQueryLength )

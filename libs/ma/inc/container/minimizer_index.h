@@ -84,10 +84,11 @@ class Index
     {
         if( ( opt->flag & MM_F_SPLICE_FOR ) || ( opt->flag & MM_F_SPLICE_REV ) )
             opt->flag |= MM_F_SPLICE;
-        if( opt->mid_occ <= 0 )
-            opt->mid_occ = mm_idx_cal_max_occ( mi, opt->mid_occ_frac );
-        if( opt->mid_occ < opt->min_mid_occ )
-            opt->mid_occ = opt->min_mid_occ;
+        //if( opt->mid_occ <= 0 )
+        //    opt->mid_occ = mm_idx_cal_max_occ( mi, opt->mid_occ_frac );
+        //if( opt->mid_occ < opt->min_mid_occ )
+        //    opt->mid_occ = opt->min_mid_occ;
+        opt->mid_occ = 1000; //200;
         // if( mm_verbose >= 3 )
         //    fprintf( stderr, "[M::%s::%.3f*%.2f] mid_occ = %d\n", __func__, realtime( ) - mm_realtime0,
         //             cputime( ) / ( realtime( ) - mm_realtime0 ), opt->mid_occ );

@@ -134,7 +134,8 @@ void exportSeed( py::module& rxPyModuleId )
         .def( "compare_seed_sets", &Seeds::compareSeedSets )
         .def( "split_seed_sets", &Seeds::splitSeedSets )
         .def( "confirm_seed_positions", &Seeds::confirmSeedPositions )
-        .def( "sort_by_ref_pos", &Seeds::sortByRefPos );
+        .def( "sort_by_ref_pos", &Seeds::sortByRefPos )
+        .def( "sort_by_q_pos", &Seeds::sortByQPos );
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<Seeds, Container>( );

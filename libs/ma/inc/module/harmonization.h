@@ -434,6 +434,7 @@ class SeedLumping : public Module<Seeds, false, Seeds>
  */
 class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
 {
+
   public:
     SeedExtender( const ParameterSetManager& rParameters )
     {} // default constructor
@@ -556,6 +557,36 @@ class MaxExtendedToSMEM : public Module<Seeds, false, Seeds>
 }; // class
 #endif
 
+/**
+ * @brief Filters a set of maximally extended seeds down to SMEMs
+ * @ingroup module
+ */
+class MinLength : public Module<Seeds, false, Seeds>
+{
+    size_t uiMinLen;
+
+  public:
+    MinLength( const ParameterSetManager& rParameters, size_t uiMinLen ) : uiMinLen( uiMinLen )
+    {} // constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    {
+        pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
+                                    [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
+                    pSeeds->end( ) );
+        return pSeeds;
+    } // method
+
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> filter( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
+    {
+        std::vector<std::shared_ptr<libMA::Seeds>> vRet;
+        for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
+            vRet.push_back( execute( vIn[ uiI ] ) );
+        return vRet;
+    } // method
+}; // class
+
 
 #if 1
 /**
@@ -568,9 +599,11 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
     {
         bool operator( )( const Seed* pA, const Seed* pB )
         {
-            if(pA->size() != pB->size())
-                return pA->size() > pB->size();
-            return pA->start() > pB->start();
+            if( pA->size( ) != pB->size( ) )
+                return pA->size( ) < pB->size( );
+            if( pA->start( ) != pB->start( ) )
+                return pA->start( ) < pB->start( );
+            return pA->start_ref( ) < pB->start_ref( );
         } // operator
     }; // struct
 
@@ -617,16 +650,19 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
             } // if
             else
             {
-                std::make_heap(vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp() );
-                pRet->push_back( *vOverlaps.front() );
-                uiX = vOverlaps.front()->end( );
-                // pop heap
-                std::pop_heap (vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp() ); vOverlaps.pop_back();
-                while(vOverlaps.size() > 0 && vOverlaps.front()->size( ) == pRet->back().size() )
+                std::make_heap( vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp( ) );
+                pRet->push_back( *vOverlaps.front( ) );
+                uiX = vOverlaps.front( )->end( );
+                // next two lines: pop heap
+                std::pop_heap( vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp( ) );
+                vOverlaps.pop_back( );
+                while( vOverlaps.size( ) > 0 && vOverlaps.front( )->size( ) == pRet->back( ).size( ) )
                 {
-                    pRet->push_back( *vOverlaps.front() );
-                    // pop heap
-                    std::pop_heap (vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp() ); vOverlaps.pop_back();
+                    if( pRet->back( ).start_ref( ) != vOverlaps.front( )->start_ref( ) )
+                        pRet->push_back( *vOverlaps.front( ) );
+                    // next two lines: pop heap
+                    std::pop_heap( vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp( ) );
+                    vOverlaps.pop_back( );
                 } // while
             } // else
         } // while

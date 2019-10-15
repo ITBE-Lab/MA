@@ -779,6 +779,8 @@ void exportHarmonization( py::module& rxPyModuleId )
                                 []( auto&& x ) { x.def( "filter", &MaxExtendedToSMEM::filter ); } );
     exportModule<MaxExtendedToMaxSpanning>( rxPyModuleId, "MaxExtendedToMaxSpanning",
                                 []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
+    exportModule<MinLength, size_t>( rxPyModuleId, "MinLength",
+                                []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
 
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 
