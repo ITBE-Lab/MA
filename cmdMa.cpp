@@ -298,7 +298,7 @@ int main( int argc, char* argv[] )
                     fs::path( vsStrings[ 1 ] ), //
                     fs::path( vsStrings[ 0 ] ), //
                     vsStrings[ 2 ], //
-                    []( const std::string s ) { std::cout << s << std::endl; } // lambda
+                    []( const std::string s ) { std::cerr << s << std::endl; } // lambda
                 );
                 return 0;
             } // if
@@ -355,7 +355,7 @@ int main( int argc, char* argv[] )
         } // if
 
         std::pair<int, double> xPreviousProgress = std::make_pair( -1, 0 );
-        std::cout << "starting alignment." << std::endl;
+        std::cerr << "starting alignment." << std::endl;
         xExecutionContext.doAlign( [&] //
                                    ( double dProgress, int iCurrFile, int iFilesTotal ) //
                                    {

@@ -818,8 +818,9 @@ class GeneralParameter : public ParameterSetBase
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
           xSAMOutputFileName( this, "SAM File name", 'o',
-                              "Name of the SAM file that is used for the output of alignments.", GENERAL_PARAMETER,
-                              "ma_out.sam" ),
+                              "Name of the SAM file that is used for the output of alignments. Use /dev/stdout "
+                              "for printing to stdout.",
+                              GENERAL_PARAMETER, "ma_out.sam" ),
           pbUseMaxHardareConcurrency( this, "Use all Processor Cores",
                                       "Number of threads used for alignments is identical to the number "
                                       "of processor cores.",

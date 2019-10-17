@@ -65,7 +65,7 @@ int main_threadpool( )
     // for ( auto &value : results )
     //    BOOST_LOG_TRIVIAL( trace ) << "*** See result for " << value.get();
 
-    std::cout << std::endl;
+    // std::cout << std::endl;
 
     return 0;
 }
