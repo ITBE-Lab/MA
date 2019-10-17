@@ -138,14 +138,6 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
     return m;
 }
 
-#define SWAP( x, y )                                                                                                   \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        typeof( x ) t = x;                                                                                             \
-        x = y;                                                                                                         \
-        y = t;                                                                                                         \
-    } while( 0 )
-
 /**
  *
  * @param rep_len returns the number of nucleotides that are not covered by minimizers
@@ -155,8 +147,8 @@ static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max
                                                     uint64_t** mini_pos )
 {
     int max_rep_len = mi->k + mi->w;
-    int rep_st = 0;
-    int rep_en = 0;
+    int rep_st = -1;
+    int rep_en = -1;
     mm_match_t* m;
     *n_mini_pos = 0;
     *mini_pos = (uint64_t*)kmalloc( km, mv->n * sizeof( uint64_t ) );
@@ -179,6 +171,9 @@ static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max
         uint32_t q_pos = (uint32_t)p->y, q_span = p->x & 0xff;
         int t;
         cr = mm_idx_get( mi, p->x >> 8, &t );
+        if(t == 0)
+            continue;
+        assert( cr != NULL );
         // if the minimizer is too ambiguous
         if( t >= max_occ )
         {
@@ -202,6 +197,7 @@ static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max
                 best_t = t;
 
                 // do not extract seeds for this minimizer
+                // fprintf( stdout, "a\n" );
                 continue;
             }
             // if we are extending a hole
@@ -209,15 +205,40 @@ static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max
             {
                 // adjust the end of the hole
                 rep_en = end;
-
+                //fprintf( stdout, "e\n" );
 
                 // if the hole has become longer than allowed
                 if( start - rep_st > max_rep_len )
                 {
                     // extract the best minimizer in the hole
-                    SWAP( i, best_i );
-                    SWAP( cr, best_cr );
-                    SWAP( t, best_t );
+                    assert( best_i < j );
+                    i = best_i;
+                    cr = best_cr;
+                    t = best_t;
+                    if(t == 0)
+                        continue;
+
+                    // find the best minimizer after the extracted one:
+                    best_t = 0;
+                    for( size_t k = i + 1; k <= j; ++k )
+                    {
+                        const uint64_t* cr;
+                        mm128_t* p = &mv->a[ k ];
+                        int t;
+                        cr = mm_idx_get( mi, p->x >> 8, &t );
+                        if(t == 0)
+                            continue;
+                        assert( cr != NULL );
+                        if( best_t == 0 || t < best_t )
+                        {
+                            // remember this minimizer
+                            best_i = k;
+                            best_cr = cr;
+                            best_t = t;
+                        } // if
+                    } // for
+
+                    assert( cr != NULL );
                     p = &mv->a[ i ];
                     q_pos = (uint32_t)p->y, q_span = p->x & 0xff;
 
@@ -225,9 +246,10 @@ static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max
                     int rep_en_curr = ( q_pos >> 1 ) + 1 - q_span;
                     if( rep_en_curr > rep_st )
                         *rep_len += rep_en_curr - rep_st;
-                    // set the start of the hole to the currently extracted minimizer
-                    rep_st = ( q_pos >> 1 ) + 1 - q_span;
+                    // set the start of the hole to the end of currently extracted minimizer
+                    rep_st = ( q_pos >> 1 ) + 1;
                     // NO continue: do extract the current minimizer (overwritten with the best minimizer in the hole)
+                    //fprintf( stdout, "d\n" );
                 } // if
                 // the hole is not too long yet...
                 else
@@ -239,24 +261,32 @@ static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max
                         best_i = i;
                         best_cr = cr;
                         best_t = t;
+                        //fprintf( stdout, "c\n" );
                     } // if
                     // don't extract the current minimizer
+                    //fprintf( stdout, "b\n" );
                     continue;
                 } // if
             } // else
         } // if
+        // else
+        //   fprintf( stdout, "f\n" );
 
-        // fprintf(stdout, "found entry\n");
-        mm_match_t* q = &m[ n_m++ ];
-        q->q_pos = q_pos, q->q_span = q_span, q->cr = cr, q->n = t, q->seg_id = p->y >> 32;
-        q->is_tandem = 0;
-        if( i > 0 && p->x >> 8 == mv->a[ i - 1 ].x >> 8 )
-            q->is_tandem = 1;
-        if( i < mv->n - 1 && p->x >> 8 == mv->a[ i + 1 ].x >> 8 )
-            q->is_tandem = 1;
-        *n_a += q->n;
-        ( *mini_pos )[ ( *n_mini_pos )++ ] = (uint64_t)q_span << 32 | q_pos >> 1;
-    }
+        if( t > 0 )
+        {
+            assert( cr != NULL );
+
+            mm_match_t* q = &m[ n_m++ ];
+            q->q_pos = q_pos, q->q_span = q_span, q->cr = cr, q->n = t, q->seg_id = p->y >> 32;
+            q->is_tandem = 0;
+            if( i > 0 && p->x >> 8 == mv->a[ i - 1 ].x >> 8 )
+                q->is_tandem = 1;
+            if( i < mv->n - 1 && p->x >> 8 == mv->a[ i + 1 ].x >> 8 )
+                q->is_tandem = 1;
+            *n_a += q->n;
+            ( *mini_pos )[ ( *n_mini_pos )++ ] = (uint64_t)q_span << 32 | q_pos >> 1;
+        } // if
+    } // for
     if( rep_en > rep_st )
         *rep_len += rep_en - rep_st;
     *_n_m = n_m;
