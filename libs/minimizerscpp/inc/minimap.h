@@ -79,12 +79,14 @@ typedef struct
 } mm_idx_t;
 
 // indexing and mapping options
-typedef struct
+struct mm_idxopt_t
 {
     short k, w, flag, bucket_bits;
     int mini_batch_size;
     uint64_t batch_size;
-} mm_idxopt_t;
+
+
+};
 
 typedef struct
 {
@@ -99,13 +101,13 @@ typedef struct
     int min_cnt; // min number of minimizers on each chain
     int min_chain_score; // min chaining score
 
-    float mask_level;
-    float pri_ratio;
-    int best_n; // top best_n chains are subjected to DP alignment
+    // float mask_level;
+    // float pri_ratio;
+    // int best_n; // top best_n chains are subjected to DP alignment
 
-    int max_join_long, max_join_short;
-    int min_join_flank_sc;
-    float min_join_flank_ratio;
+    // int max_join_long, max_join_short;
+    // int min_join_flank_sc;
+    // float min_join_flank_ratio;
 
     int a, b, q, e, q2, e2; // matching score, mismatch, gap-open and gap-ext penalties
     int sc_ambi; // score when one or both bases are "N"

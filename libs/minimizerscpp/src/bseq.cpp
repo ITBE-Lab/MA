@@ -121,6 +121,7 @@ mm_bseq1_t *mm_bseq_read(mm_bseq_file_t *fp, int chunk_size, int with_qual, int 
 	return mm_bseq_read2(fp, chunk_size, with_qual, 0, n_);
 }
 
+#if 0
 mm_bseq1_t *mm_bseq_read_frag2(int n_fp, mm_bseq_file_t **fp, int chunk_size, int with_qual, int with_comment, int *n_)
 {
 	int i;
@@ -155,6 +156,7 @@ mm_bseq1_t *mm_bseq_read_frag(int n_fp, mm_bseq_file_t **fp, int chunk_size, int
 {
 	return mm_bseq_read_frag2(n_fp, fp, chunk_size, with_qual, 0, n_);
 }
+#endif
 
 int mm_bseq_eof(mm_bseq_file_t *fp)
 {

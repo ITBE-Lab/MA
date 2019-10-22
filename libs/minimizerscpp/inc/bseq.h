@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
 
 struct mm_bseq_file_s;
 typedef struct mm_bseq_file_s mm_bseq_file_t;
@@ -57,8 +57,8 @@ static inline void mm_revcomp_bseq(mm_bseq1_t *s)
 			t = s->qual[l - i - 1], s->qual[l - i - 1] = s->qual[i], s->qual[i] = t;
 }
 
-#ifdef __cplusplus
-}
-#endif
+// #ifdef __cplusplus
+// }
+// #endif
 
 #endif

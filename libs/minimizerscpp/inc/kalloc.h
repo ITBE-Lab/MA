@@ -3,9 +3,9 @@
 
 #include <stddef.h> /* for size_t */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
 
 typedef struct {
 	size_t capacity, available, n_blocks, n_cores, largest;
@@ -20,8 +20,8 @@ void *km_init(void);
 void km_destroy(void *km);
 void km_stat(const void *_km, km_stat_t *s);
 
-#ifdef __cplusplus
-}
-#endif
+// #ifdef __cplusplus
+// }
+// #endif
 
 #endif
