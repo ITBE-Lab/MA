@@ -59,13 +59,13 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
             // enqueue procesInterval() for a new interval that spans from uiStart to
             // where the extension stopped
             procesInterval(
-                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) - 1 ),
+                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) ),
                 pSegmentVector, pFM_index, pQuerySeq, uiCnt + 1 );
         } // if
         // if the extension did not fully cover until uiEnd:
         if( xAreaToCover.end( ) > xAreaCovered.end( ) + 1 )
         {
-            xAreaToCover.set( xAreaCovered.end( ) + 1, xAreaToCover.end( ) - xAreaCovered.end( ) - 1 );
+            xAreaToCover.set( xAreaCovered.end( ), xAreaToCover.end( ) - xAreaCovered.end( ) );
             // REPLACED by while loop
             // enqueue procesInterval() for a new interval that spans from where the extension
             // stopped to uiEnd

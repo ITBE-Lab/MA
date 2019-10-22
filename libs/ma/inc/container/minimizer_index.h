@@ -1,4 +1,5 @@
 #include "container/nucSeq.h"
+#include "container/pack.h"
 #include "container/segment.h"
 #include "util/parameter.h"
 #ifndef __cplusplus
@@ -83,10 +84,11 @@ class Index
     {
         if( ( opt->flag & MM_F_SPLICE_FOR ) || ( opt->flag & MM_F_SPLICE_REV ) )
             opt->flag |= MM_F_SPLICE;
-        if( opt->mid_occ <= 0 )
-            opt->mid_occ = mm_idx_cal_max_occ( mi, opt->mid_occ_frac );
-        if( opt->mid_occ < opt->min_mid_occ )
-            opt->mid_occ = opt->min_mid_occ;
+        //if( opt->mid_occ <= 0 )
+        //    opt->mid_occ = mm_idx_cal_max_occ( mi, opt->mid_occ_frac );
+        //if( opt->mid_occ < opt->min_mid_occ )
+        //    opt->mid_occ = opt->min_mid_occ;
+        opt->mid_occ = 200;
         // if( mm_verbose >= 3 )
         //    fprintf( stderr, "[M::%s::%.3f*%.2f] mid_occ = %d\n", __func__, realtime( ) - mm_realtime0,
         //             cputime( ) / ( realtime( ) - mm_realtime0 ), opt->mid_occ );
@@ -180,7 +182,8 @@ class Index
         fclose( fp_out );
     } // method
 
-    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries )
+    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries,
+                                                     std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         int64_t n_a = 0;
@@ -202,13 +205,41 @@ class Index
             {
                 for( int64_t uiI = 0; uiI < n_a; uiI++ )
                 {
-                    vRet.back( )->emplace_back(
-                        (int32_t)a[ uiI ].y, /**/
-                        (libMA::nucSeqIndex)xOptions.k,
-                        (int32_t)a[ uiI ].x, /*reference position is encoded in the lower 32 bits of x*/
-                        ( ( a[ uiI ].x >> 63 ) == 0 ? true : false ) );
-                    // if( uiI + 1 < n_a && a[ uiI ].x << 1 >> 33 != a[ uiI + 1 ].x << 1 >> 33 )
-                    //    vRet.push_back( std::make_shared<libMA::Seeds>( ) );
+                    if( ( a[ uiI ].x >> 63 ) == 0 )
+                    {
+                        // std::cout << "q_span: " << ( int32_t )( a[ uiI ].y >> 32 ) << std::endl;
+                        // fprintf( stderr, "SD\t%d\t%c\t%d\t%d\t%d\n", (int32_t)a[ uiI ].x, "+-"[ a[ uiI ].x >> 63 ],
+                        //         (int32_t)a[ uiI ].y, ( int32_t )( a[ uiI ].y >> 32 & 0xff ),
+                        //         uiI == 0 ? 0
+                        //                  : ( (int32_t)a[ uiI ].y - (int32_t)a[ uiI - 1 ].y ) -
+                        //                        ( (int32_t)a[ uiI ].x - (int32_t)a[ uiI - 1 ].x ) );
+                        uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
+                        //assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
+                        //assert( (int32_t)a[ uiI ].x + 1 >= (int32_t)uiQSpan );
+                        vRet.back( )->emplace_back(
+                            /* minimap uses 1-based index i use 0-based indices...
+                               a[ uiI ].y = last base of minimizer */
+                            ( (int32_t)a[ uiI ].y ) + 1 - uiQSpan,
+                            uiQSpan,
+                            /* reference position is encoded in the lower 32 bits of x */
+                            ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan +
+                                pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
+                            true // minimap code : "+-"[a[i].x>>63]
+                        );
+                    } // if
+                    else
+                    {
+                        uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
+                        vRet.back( )->emplace_back(
+                            /* minimap uses 1-based index i use 0-based indices...
+                               a[ uiI ].y = last base of minimizer */
+                            sQuery.length( ) - 1 - ( (int32_t)a[ uiI ].y ),
+                            uiQSpan,
+                            /* reference position is encoded in the lower 32 bits of x */
+                            (int32_t)a[ uiI ].x + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
+                            false // minimap code : "+-"[a[i].x>>63]
+                        );
+                    } // else
                 }
                 kfree( tbuf->km, a );
                 // std::cout << n_a << std::endl;
