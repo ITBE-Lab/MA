@@ -7,6 +7,7 @@
 #ifdef USE_STL
 #include <condition_variable>
 #include <mutex>
+#include <vector>
 #include <thread>
 #else
 #include <pthread.h>

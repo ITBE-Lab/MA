@@ -6,13 +6,15 @@
 #ifndef __cplusplus
 #define __cplusplus TRUE
 #endif
+#ifdef WITH_ZLIB
+#include "minimap.h"
+#endif
 
 #pragma once
 
 namespace minimizer
 {
 #ifdef WITH_ZLIB
-#include "minimap.h"
 /**
  * @brief cpp wrapper for the minimap index
  * @details

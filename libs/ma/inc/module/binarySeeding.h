@@ -485,11 +485,13 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
 
 
     std::vector<std::shared_ptr<Seeds>> seed( std::shared_ptr<FMIndex> pFM_index,
-                                                      std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+                                              std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
     {
         std::vector<std::shared_ptr<Seeds>> vRet;
         for( auto pQuery : vQueries )
-            vRet.push_back( execute( pFM_index, pQuery )->extractSeeds( pFM_index, uiMaxAmbiguity, uiMinSeedSize, pQuery->length( ), true ) );
+            vRet.push_back( execute( pFM_index, pQuery )
+                                ->extractSeeds( pFM_index, uiMaxAmbiguity, (unsigned int)uiMinSeedSize,
+                                                (libMA::nucSeqIndex)pQuery->length( ), true ) );
         return vRet;
     } // method
 }; // class

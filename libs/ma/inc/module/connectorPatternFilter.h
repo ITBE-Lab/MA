@@ -75,7 +75,7 @@ class ConnectorPatternFilter
 
             {
                 Wrapper_ksw_extz_t ez;
-                kswcpp_dispatch( pNucSeqLeft->length( ), pNucSeqLeft->pxSequenceRef, pNucSeqDown->length( ),
+                kswcpp_dispatch( (int)pNucSeqLeft->length( ), pNucSeqLeft->pxSequenceRef, (int)pNucSeqDown->length( ),
                                  pNucSeqDown->pxSequenceRef, xKswParameters, 100, (int)uiZDrop, KSW_EZ_EXTZ_ONLY, ez.ez,
                                  xMemoryManager );
                 if( ez.ez->score > 0 )
@@ -83,7 +83,7 @@ class ConnectorPatternFilter
             } // scope for ez
             {
                 Wrapper_ksw_extz_t ez;
-                kswcpp_dispatch( pNucSeqRight->length( ), pNucSeqRight->pxSequenceRef, pNucSeqUp->length( ),
+                kswcpp_dispatch( (int)pNucSeqRight->length( ), pNucSeqRight->pxSequenceRef, (int)pNucSeqUp->length( ),
                                  pNucSeqUp->pxSequenceRef, xKswParameters, 100, (int)uiZDrop, KSW_EZ_EXTZ_ONLY, ez.ez,
                                  xMemoryManager );
                 if( ez.ez->score > 0 )
@@ -111,7 +111,7 @@ class ConnectorPatternFilter
 
                 {
                     Wrapper_ksw_extz_t ez;
-                    kswcpp_dispatch( pNucSeqLeft->length( ), pNucSeqLeft->pxSequenceRef, pNucSeqUp->length( ),
+                    kswcpp_dispatch( (int)pNucSeqLeft->length( ), pNucSeqLeft->pxSequenceRef, (int)pNucSeqUp->length( ),
                                      pNucSeqUp->pxSequenceRef, xKswParameters, 100, (int)uiZDrop, KSW_EZ_EXTZ_ONLY,
                                      ez.ez, xMemoryManager );
                     if( ez.ez->score > 0 )
@@ -119,9 +119,9 @@ class ConnectorPatternFilter
                 } // scope for ez
                 {
                     Wrapper_ksw_extz_t ez;
-                    kswcpp_dispatch( pNucSeqRight->length( ), pNucSeqRight->pxSequenceRef, pNucSeqDown->length( ),
-                                     pNucSeqDown->pxSequenceRef, xKswParameters, 100, (int)uiZDrop, KSW_EZ_EXTZ_ONLY,
-                                     ez.ez, xMemoryManager );
+                    kswcpp_dispatch( (int)pNucSeqRight->length( ), pNucSeqRight->pxSequenceRef,
+                                     (int)pNucSeqDown->length( ), pNucSeqDown->pxSequenceRef, xKswParameters, 100,
+                                     (int)uiZDrop, KSW_EZ_EXTZ_ONLY, ez.ez, xMemoryManager );
                     if( ez.ez->score > 0 )
                         iReadScore += ez.ez->score;
                 } // scope for ez
