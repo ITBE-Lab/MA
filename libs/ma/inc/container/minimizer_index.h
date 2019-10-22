@@ -56,14 +56,14 @@ class Index
         opt->max_gap_ref = -1;
         opt->max_chain_skip = 25;
 
-        opt->mask_level = 0.5f;
-        opt->pri_ratio = 0.8f;
-        opt->best_n = 5;
+        // opt->mask_level = 0.5f;
+        // opt->pri_ratio = 0.8f;
+        // opt->best_n = 5;
 
-        opt->max_join_long = 20000;
-        opt->max_join_short = 2000;
-        opt->min_join_flank_sc = 1000;
-        opt->min_join_flank_ratio = 0.5f;
+        // opt->max_join_long = 20000;
+        // opt->max_join_short = 2000;
+        // opt->min_join_flank_sc = 1000;
+        // opt->min_join_flank_ratio = 0.5f;
 
         opt->a = 2, opt->b = 4, opt->q = 4, opt->e = 2, opt->q2 = 24, opt->e2 = 1;
         opt->sc_ambi = 1;
@@ -105,14 +105,21 @@ class Index
      * @brief Opens in Index if index filename is given or creates index if fasta(q) file is given
      */
     Index( const ParameterSetManager& rParameters, std::string sIndexName )
-        : xOptions{.k = rParameters.getSelected( )->xMinimizerK->get( ),
-                   .w = rParameters.getSelected( )->xMinimizerW->get( ),
-                   .flag = rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   .bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   .mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   .batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+        // : xOptions{.k = rParameters.getSelected( )->xMinimizerK->get( ),
+        //            .w = rParameters.getSelected( )->xMinimizerW->get( ),
+        //            .flag = rParameters.getSelected( )->xMinimizerFlag->get( ),
+        //            .bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( ),
+        //            .mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
+        //            .batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
-        IndexReader xIndexReader( sIndexName, &xOptions, NULL );
+		this->xOptions.k = rParameters.getSelected()->xMinimizerK->get();
+		this->xOptions.w = rParameters.getSelected()->xMinimizerW->get();
+		this->xOptions.flag = rParameters.getSelected()->xMinimizerFlag->get();
+		this->xOptions.bucket_bits = rParameters.getSelected()->xMinimizerBucketBits->get();
+		this->xOptions.mini_batch_size = rParameters.getSelected()->xMinimizerMiniBatchSize->get();
+		this->xOptions.batch_size = rParameters.getSelected()->xMinimizerBatchSize->get();
+		
+		IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
         pData = mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) );
@@ -129,14 +136,22 @@ class Index
 
     Index( const ParameterSetManager& rParameters, std::vector<std::string> vContigs,
            std::vector<std::string> vContigsNames )
-        : xOptions{.k = rParameters.getSelected( )->xMinimizerK->get( ),
-                   .w = rParameters.getSelected( )->xMinimizerW->get( ),
-                   .flag = rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   .bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   .mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   .batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+        // : xOptions{.k = rParameters.getSelected( )->xMinimizerK->get( ),
+        //            .w = rParameters.getSelected( )->xMinimizerW->get( ),
+        //            .flag = rParameters.getSelected( )->xMinimizerFlag->get( ),
+        //            .bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( ),
+        //            .mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
+        //            .batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
-        std::vector<const char*> seq;
+		xOptions.k = rParameters.getSelected()->xMinimizerK->get();
+		xOptions.w = rParameters.getSelected()->xMinimizerW->get();
+		xOptions.flag = rParameters.getSelected()->xMinimizerFlag->get();
+		xOptions.bucket_bits = rParameters.getSelected()->xMinimizerBucketBits->get();
+		xOptions.mini_batch_size = rParameters.getSelected()->xMinimizerMiniBatchSize->get();
+		xOptions.batch_size = rParameters.getSelected()->xMinimizerBatchSize->get();
+		
+		
+		std::vector<const char*> seq;
         std::vector<const char*> name;
         for( auto& sContig : vContigs )
             seq.push_back( sContig.data( ) );
