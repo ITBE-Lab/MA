@@ -1,3 +1,4 @@
+
 #include "container/nucSeq.h"
 #include "container/pack.h"
 #include "container/segment.h"
@@ -5,12 +6,13 @@
 #ifndef __cplusplus
 #define __cplusplus TRUE
 #endif
-#include "minimap.h"
 
 #pragma once
 
 namespace minimizer
 {
+#ifdef WITH_ZLIB
+#include "minimap.h"
 /**
  * @brief cpp wrapper for the minimap index
  * @details
@@ -249,7 +251,9 @@ class Index
     }
 }; // class
 
+#endif
 } // namespace minimizer
+
 
 #ifdef WITH_PYTHON
 void exportMinimizerIndex( py::module& rxPyModuleId );

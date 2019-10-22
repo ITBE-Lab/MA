@@ -16,8 +16,10 @@ endif()
 add_subdirectory (kswcpp)
 set( CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_BACKUP} )
 
-message( "Include libminimizerscpp ..." )
-add_subdirectory (minimizerscpp)
+if( ZLIB_FOUND )
+    message( "Include libminimizerscpp ..." )
+    add_subdirectory (minimizerscpp)
+endif()
 
 # Include the core library of MA
 message( "Include libMA ..." )
