@@ -9,9 +9,6 @@
 
 #pragma once
 
-extern size_t uiXSkipped;
-extern size_t uiXRetrived;
-
 namespace minimizer
 {
 /**
@@ -107,12 +104,12 @@ class Index
      * @brief Opens in Index if index filename is given or creates index if fasta(q) file is given
      */
     Index( const ParameterSetManager& rParameters, std::string sIndexName )
-        : xOptions{.k = rParameters.getSelected( )->xMinimizerK->get( ),
-                   .w = rParameters.getSelected( )->xMinimizerW->get( ),
-                   .flag = rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   .bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   .mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   .batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+        : xOptions{/* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
+                   /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
+                   /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
+                   /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
+                   /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
+                   /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
         IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
@@ -131,12 +128,12 @@ class Index
 
     Index( const ParameterSetManager& rParameters, std::vector<std::string> vContigs,
            std::vector<std::string> vContigsNames )
-        : xOptions{.k = rParameters.getSelected( )->xMinimizerK->get( ),
-                   .w = rParameters.getSelected( )->xMinimizerW->get( ),
-                   .flag = rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   .bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   .mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   .batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+        : xOptions{/* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
+                   /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
+                   /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
+                   /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
+                   /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
+                   /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
         std::vector<const char*> seq;
         std::vector<const char*> name;
@@ -172,9 +169,6 @@ class Index
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         int64_t n_a = 0;
-
-        uiXSkipped = 0;
-        uiXRetrived = 0;
 
         size_t uiNumSeeds = 0;
 
@@ -235,8 +229,6 @@ class Index
         } // for
         mm_tbuf_destroy( tbuf );
 
-        std::cout << "uiNumSeeds: " << uiNumSeeds << " uiXSkipped: " << uiXSkipped << " uiXRetrived: " << uiXRetrived
-                  << " %: " << uiXSkipped / (double)( uiXSkipped + uiXRetrived ) << std::endl;
 
         return vRet;
     }
