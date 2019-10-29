@@ -309,7 +309,7 @@ class BasePledge
              * This way, if callback returns false thread 0 can set bContinue to false and all threads will stop after
              * their next iteration.
              */
-            std::atomic_bool bContinue(true);
+            std::atomic_bool bContinue( true );
             // set up a threadpool
             ThreadPool xPool( numThreads );
 

@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "container/seed.h"
+#include "container/pack.h"
 #include "util/default_parameters.h"
 #include "util/pybind11.h"
 using namespace libMA;
@@ -17,6 +18,97 @@ extern int libMA::defaults::iGap;
 extern int libMA::defaults::iExtend;
 extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
+
+void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended )
+{
+    static const char chars[ 5 ] = {'A', 'C', 'G', 'T', 'N'};
+    size_t uiI = 0;
+    for( auto& rSeed : vContent )
+    {
+        std::shared_ptr<NucSeq> pRefSec = std::make_shared<NucSeq>( );
+        if( pRef->bridgingPositions( rSeed.start_ref( ), rSeed.end_ref( ) ) )
+            continue;
+        pRef->vExtractSubsectionN( rSeed.start_ref( ), rSeed.end_ref( ), *pRefSec );
+        // pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( rSeed.end_ref( ) ),
+        //                           pRef->uiPositionToReverseStrand( rSeed.start_ref( ) ),
+        //                           *pRefSec );
+        uint8_t uiBefore = 4;
+        if( rSeed.start_ref( ) > 0 && rSeed.start_ref( ) < pRef->uiUnpackedSizeForwardStrand )
+            uiBefore = pRef->isHole( rSeed.start_ref( ) - 1 ) ? 4 : pRef->getNucleotideOnPos( rSeed.start_ref( ) - 1 );
+        else if( pRef->iAbsolutePosition( rSeed.start_ref( ) ) + 1 < (int64_t)pRef->uiUnpackedSizeForwardStrand )
+            uiBefore = pRef->isHole( pRef->iAbsolutePosition( rSeed.start_ref( ) ) + 1 )
+                           ? 4
+                           : pRef->getNucleotideOnPos( pRef->iAbsolutePosition( rSeed.start_ref( ) ) + 1 );
+
+        uint8_t uiAfter = 4;
+        if( rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand )
+            uiAfter = pRef->isHole( rSeed.end_ref( ) ) ? 4 : pRef->getNucleotideOnPos( rSeed.end_ref( ) );
+        else if( pRef->iAbsolutePosition( rSeed.end_ref( ) ) >  0)
+            uiBefore = pRef->isHole( pRef->iAbsolutePosition( rSeed.end_ref( ) ) - 1 )
+                           ? 4
+                           : pRef->getNucleotideOnPos( pRef->iAbsolutePosition( rSeed.end_ref( ) ) - 1 );
+
+        bool bFailed = false;
+        for( size_t uiI = 0; uiI < rSeed.size( ); uiI++ )
+            if( pQuery->pxSequenceRef[ rSeed.start( ) + uiI ] != pRefSec->pxSequenceRef[ uiI ] )
+                bFailed = true;
+        if( bIsMaxExtended && rSeed.start( ) > 0 && rSeed.start_ref( ) > 0 &&
+            pQuery->pxSequenceRef[ rSeed.start( ) - 1 ] == uiBefore )
+            bFailed = true;
+        if( bIsMaxExtended && rSeed.end( ) < pQuery->length( ) &&
+            rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 &&
+            pQuery->pxSequenceRef[ rSeed.end( ) ] == uiAfter )
+            bFailed = true;
+        if( bFailed )
+        {
+            if(rSeed.start_ref( ) > pRef->uiUnpackedSizeForwardStrand)
+                continue;
+            std::cout << "Seed: (number " << uiI << ")" << std::endl;
+            std::cout << "(q,r,l): " << rSeed.start( ) << ", " << rSeed.start_ref( ) << ", " << rSeed.size( )
+                      << std::endl;
+            std::cout << "q_len " << pQuery->length( ) << " ref_len " << pRef->uiUnpackedSizeForwardStrand << std::endl;
+            std::cout << "Query:" << std::endl;
+            if( rSeed.start( ) > 1 )
+                std::cout << chars[ pQuery->pxSequenceRef[ rSeed.start( ) - 2 ] ];
+            else
+                std::cout << " ";
+            if( rSeed.start( ) > 0 )
+                std::cout << chars[ pQuery->pxSequenceRef[ rSeed.start( ) - 1 ] ] << " ";
+            else
+                std::cout << "  ";
+            for( nucSeqIndex uiI = rSeed.start( ); uiI < rSeed.end( ); uiI++ )
+                std::cout << chars[ pQuery->pxSequenceRef[ uiI ] ];
+            if( rSeed.end( ) < pQuery->length( ) )
+                std::cout << " " << chars[ pQuery->pxSequenceRef[ rSeed.end( ) ] ];
+            if( rSeed.end( ) + 1 < pQuery->length( ) )
+                std::cout << chars[ pQuery->pxSequenceRef[ rSeed.end( ) + 1 ] ];
+            std::cout << std::endl;
+            std::cout << "Ref:" << std::endl;
+            if( rSeed.start_ref( ) > 1 )
+                std::cout << chars[ pRef->isHole( rSeed.start_ref( ) - 2 )
+                                        ? 4
+                                        : pRef->getNucleotideOnPos( rSeed.start_ref( ) - 2 ) ];
+            else
+                std::cout << " ";
+            if( rSeed.start_ref( ) > 0 )
+                std::cout << chars[ uiBefore ] << " ";
+            else
+                std::cout << "  ";
+            for( nucSeqIndex uiI = 0; uiI < rSeed.size( ); uiI++ )
+                std::cout << chars[ pRefSec->pxSequenceRef[ uiI ] ];
+            if( rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 )
+                std::cout << " " << chars[ uiAfter ];
+            if( rSeed.end_ref( ) + 1 < pRef->uiUnpackedSizeForwardStrand * 2 )
+                std::cout
+                    << chars[ pRef->isHole( rSeed.end_ref( ) + 1 ) ? 4
+                                                                   : pRef->getNucleotideOnPos( rSeed.end_ref( ) + 1 ) ];
+            std::cout << std::endl;
+
+            throw std::runtime_error( "computed wrong seed!" );
+        } // if
+        uiI++;
+    } // for
+} // method
 
 #ifdef WITH_PYTHON
 
@@ -43,18 +135,19 @@ void exportSeed( )
         .def_readwrite( "initial_r_end", &AlignmentStatistics::uiInitialRefEnd );
 
     // export the Seeds class
-    boost::python::class_<Seeds, boost::python::bases<Container>, boost::python::bases<std::list<Seed>>,
-                          std::shared_ptr<Seeds>>( "Seeds" )
-        .def( boost::python::init<std::shared_ptr<Seeds>>( ) )
-        .def( boost::python::vector_indexing_suite<Seeds,
-                                                   /*
-                                                    *    true = noproxy this means that the content of
-                                                    * the vector is already exposed by boost python.
-                                                    *    if this is kept as false, Container would be
-                                                    * exposed a second time. the two Containers would
-                                                    * be different and not inter castable.
-                                                    */
-                                                   true>( ) );
+    boost::python::
+        class_<Seeds, boost::python::bases<Container>, boost::python::bases<std::list<Seed>>, std::shared_ptr<Seeds>>(
+            "Seeds" )
+            .def( boost::python::init<std::shared_ptr<Seeds>>( ) )
+            .def( boost::python::vector_indexing_suite<Seeds,
+                                                       /*
+                                                        *    true = noproxy this means that the content of
+                                                        * the vector is already exposed by boost python.
+                                                        *    if this is kept as false, Container would be
+                                                        * exposed a second time. the two Containers would
+                                                        * be different and not inter castable.
+                                                        */
+                                                       true>( ) );
 
     // make vectors of container-pointers a thing
     IterableConverter( ).from_python<Seeds>( );
@@ -87,7 +180,12 @@ void exportSeed( py::module& rxPyModuleId )
     // export the Seeds class
     py::bind_vector_ext<Seeds, Container, std::shared_ptr<Seeds>>( rxPyModuleId, "Seeds", "docstr" )
         .def( py::init<std::shared_ptr<Seeds>>( ) )
-        .def( py::init<>( ) );
+        .def( py::init<>( ) )
+        .def( "compare_seed_sets", &Seeds::compareSeedSets )
+        .def( "split_seed_sets", &Seeds::splitSeedSets )
+        .def( "confirm_seed_positions", &Seeds::confirmSeedPositions )
+        .def( "sort_by_ref_pos", &Seeds::sortByRefPos )
+        .def( "sort_by_q_pos", &Seeds::sortByQPos );
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<Seeds, Container>( );

@@ -321,9 +321,19 @@ class SingleFileReader : public Module<NucSeq, true>, public Reader
         throw std::runtime_error( "This method must be overridden." );
     } // method
 
-    virtual void reset()
+    virtual void reset( )
     {
         throw std::runtime_error( "This method must be overridden." );
+    } // method
+
+    std::vector<std::shared_ptr<NucSeq>> read_all( )
+    {
+        std::vector<std::shared_ptr<NucSeq>> vRet;
+
+        while( !isFinished( ) )
+            vRet.push_back( execute( ) );
+
+        return vRet;
     } // method
 }; // class
 
@@ -426,7 +436,7 @@ class FileReader : public SingleFileReader
             .append( std::to_string( this->getFileSize( ) ) );
     } // method
 
-    virtual void reset()
+    virtual void reset( )
     {
         pFile->close( );
 #ifdef WITH_ZLIB
@@ -519,7 +529,7 @@ class FileListReader : public SingleFileReader
             .append( this->pFileReader->status( ) );
     } // method
 
-    virtual void reset()
+    virtual void reset( )
     {
         uiFileIndex = 0;
         pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
@@ -544,8 +554,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
      */
     PairedFileReader(
         const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
-        : pF1( std::make_shared<FileListReader>( vsFileName1 ) ),
-          pF2( std::make_shared<FileListReader>( vsFileName2 ) )
+        : pF1( std::make_shared<FileListReader>( vsFileName1 ) ), pF2( std::make_shared<FileListReader>( vsFileName2 ) )
     {} // constructor
     /**
      * @brief creates a new FileReader.
@@ -555,7 +564,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
           pF2( std::make_shared<FileReader>( rParameters, sMate, sMate.size( ) ) )
     {} // constructor
 
-    void EXPORTED checkPaired();
+    void EXPORTED checkPaired( );
 
     std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
 

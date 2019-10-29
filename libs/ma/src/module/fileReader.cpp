@@ -291,7 +291,8 @@ void exportFileReader( py::module& rxPyModuleId )
     py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector", "docstr" );
     // export the FileReader class
     exportModule<FileReader, fs::path>( rxPyModuleId, "FileReader" );
-    exportModule<FileListReader, std::vector<fs::path>>( rxPyModuleId, "FileListReader" );
+    exportModule<FileListReader, std::vector<fs::path>>(
+        rxPyModuleId, "FileListReader", []( auto&& x ) { x.def( "read_all", &FileListReader::read_all ); } );
 
     py::bind_vector_ext<TP_PAIRED_READS, Container, std::shared_ptr<TP_PAIRED_READS>>(
         rxPyModuleId, "QueryVector", "docstr" );

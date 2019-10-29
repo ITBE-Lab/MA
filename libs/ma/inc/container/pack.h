@@ -223,6 +223,7 @@ class Pack : public Container
         xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
     } // inline method
 
+  public:
     /* Get the value at position uiPosition in the unpacked sequence.
      * Works only for the virtual forward strand.
      */
@@ -232,6 +233,7 @@ class Pack : public Container
         return xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] >> ( ( ~uiPosition & 3UL ) << 1 ) & 3;
     } // inline method
 
+  private:
     /* Method can throw exception if I/O operation fails.
      * Writes the isolated content of the pack-vector to the file-system.
      */
@@ -451,12 +453,6 @@ class Pack : public Container
     } // method
 
     /* WARNING! Never do this for some already used (filled) sequence collection.
-    
-
-
-
-
-
     * Throws an exception, if something goes wrong.
     * Deserialization of the vector for hole descriptors.
     */
@@ -604,21 +600,35 @@ class Pack : public Container
      * @details
      * This function assumes that no two holes overlap, which should be guaranteed by the pack.
      */
-    inline double amountOfRegionCoveredByHole(uint64_t uiStart, uint64_t uiEnd) const
+    inline double amountOfRegionCoveredByHole( uint64_t uiStart, uint64_t uiEnd ) const
     {
-        assert(uiStart < uiEnd);
+        assert( uiStart < uiEnd );
         uint64_t uiCovered = 0;
 
         // check all holes
         for( auto& rHole : xVectorOfHoleDescriptors )
             // check if hole is overlapping
-            if(rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart)
+            if( rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart )
                 // add the overlapping interval to covered
-                uiCovered += std::min(uiEnd, rHole.offset + rHole.length) - std::max(uiStart, rHole.offset);
+                uiCovered += std::min( uiEnd, rHole.offset + rHole.length ) - std::max( uiStart, rHole.offset );
 
-        assert(uiCovered <= uiEnd - uiStart);
+        assert( uiCovered <= uiEnd - uiStart );
         // divide the overlapping interval by the total interval
-        return uiCovered / (double)(uiEnd - uiStart);
+        return uiCovered / (double)( uiEnd - uiStart );
+    } // method
+
+    /**
+     * @brief prints wether the nucleotide is in a hole
+     */
+    inline double isHole( uint64_t uiX ) const
+    {
+        // check all holes
+        for( auto& rHole : xVectorOfHoleDescriptors )
+            // check if hole is overlapping
+            if( rHole.offset <= uiX && rHole.offset + rHole.length > uiX )
+                // add the overlapping interval to covered
+                return true;
+        return false;
     } // method
 
     /* Appends a single nucleotide sequence to the collection.
@@ -890,6 +900,13 @@ class Pack : public Container
         return 0;
     } // method
 
+    /* Start of in sequence with id on forward strand.
+     */
+    uint64_t lengthOfSequenceWithId( int64_t iSequenceId ) const
+    {
+        return xVectorOfSequenceDescriptors[ iSequenceId ].uiLengthUnpacked;
+    } // method
+
     /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver
      * "*".) FIX ME: This is design flaw from the original BWA code.
      */
@@ -1019,6 +1036,17 @@ class Pack : public Container
         {
             return false;
         } // else
+    } // method
+
+    /** Returns true if the section defined by both arguments has bridging properties.
+     * Returns false for a non-bridging section.
+     */
+    bool bridgingPositions( const uint64_t uiA, const uint64_t uiB ) const
+    {
+        // bridging forward reverse border
+        return bPositionIsOnReversStrand( uiA ) != bPositionIsOnReversStrand( uiB ) ||
+               // section crosses different sequences
+               uiSequenceIdForPositionOrRev( uiA ) != uiSequenceIdForPositionOrRev( uiB );
     } // method
 
     /*
@@ -1294,6 +1322,19 @@ class Pack : public Container
         } // else
     } // method
 
+    /**
+     * @brief Extracts a complete contig (with N's)
+     */
+    void vExtractContig( const int64_t iId, // contig id
+                         NucSeq& rxSequence, // receiver of the extraction process
+                         bool bAppend = false // deliver true, if you would like to append to
+                                              // an existing nucleotide sequence
+                         ) const
+    {
+        vExtractSubsectionN( startOfSequenceWithIdOrReverse( iId ), endOfSequenceWithIdOrReverse( iId ), rxSequence,
+                             bAppend );
+    } // method
+
     /* Unpacks the complete collection (forward as well as revers strand) as a single sequence into
      * rxSequence.
      */
@@ -1384,7 +1425,23 @@ class Pack : public Container
             vRet.push_back( xContig.uiStartOffsetUnpacked );
         return vRet;
     } // method
-    // end markus
+
+    size_t uiNumContigs( ) const
+    {
+        return xVectorOfSequenceDescriptors.size( );
+    }
+
+    std::vector<std::shared_ptr<NucSeq>> contigNucSeqs( ) const
+    {
+        std::vector<std::shared_ptr<NucSeq>> vRet;
+        for( size_t uiI = 0; uiI < uiNumContigs( ); uiI++ )
+        {
+            // *2 since vExtractContig uses id system with forward and reverse contig ids...
+            vRet.push_back( std::make_shared<NucSeq>( ) );
+            vExtractContig( uiI * 2, *vRet.back( ), false );
+        } // for
+        return vRet;
+    } // method
 
     /* Align iBegin and iEnd, so that they span only over the sequence indicated by middle.
      * If riBegin and riEnd are already with the sequence indicated by middle we do not change their

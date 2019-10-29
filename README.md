@@ -43,10 +43,9 @@ packages installed: `git`, `cmake`, `make` and `build-essential`.\
 Get the github clone and use cmake (at least version 3.8) for building. This can be done via: 
 
     git clone https://github.com/ITBE-Lab/MA
-    cd MA
     mkdir build
     cd build
-    cmake ..
+    cmake ../MA/
     make
 
 ### Bioconda

@@ -45,7 +45,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
         // performs extension and records any found seeds
         // here we use bLrExtension to choose the extension scheme
         if( bLrExtension )
-            xAreaCovered = maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector, uiCnt == 0 );
+            xAreaCovered =
+                maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector, uiCnt == 0 );
         else
             xAreaCovered = smemExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector );
 
@@ -58,13 +59,13 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
             // enqueue procesInterval() for a new interval that spans from uiStart to
             // where the extension stopped
             procesInterval(
-                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) - 1 ),
+                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) ),
                 pSegmentVector, pFM_index, pQuerySeq, uiCnt + 1 );
         } // if
         // if the extension did not fully cover until uiEnd:
         if( xAreaToCover.end( ) > xAreaCovered.end( ) + 1 )
         {
-            xAreaToCover.set( xAreaCovered.end( ) + 1, xAreaToCover.end( ) - xAreaCovered.end( ) - 1 );
+            xAreaToCover.set( xAreaCovered.end( ), xAreaToCover.end( ) - xAreaCovered.end( ) );
             // REPLACED by while loop
             // enqueue procesInterval() for a new interval that spans from where the extension
             // stopped to uiEnd
@@ -81,8 +82,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index,
-                                                       std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector>
+BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
@@ -175,7 +176,8 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> 
 void exportBinarySeeding( )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( "BinarySeeding" );
+    exportModule<BinarySeeding>( "BinarySeeding", []]( auto&& x ) {
+        x.def( "seed", &BinarySeeding::seed ); } );
 } // function
 #else
 void exportBinarySeeding( py::module& rxPyModuleId )

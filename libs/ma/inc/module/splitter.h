@@ -190,7 +190,7 @@ template <typename... TP_VEC_CONTENT> class Join : public Module<Container, fals
     Join( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual typename std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    virtual typename std::shared_ptr<Container> execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
     {
         return std::make_shared<Container>( );
     } // method

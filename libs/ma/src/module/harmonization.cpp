@@ -600,6 +600,16 @@ void exportHarmonization( )
 #else
 void exportHarmonization( py::module& rxPyModuleId )
 {
+    exportModule<SeedLumping>( rxPyModuleId, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
+    exportModule<SeedExtender>( rxPyModuleId, "SeedExtender",
+                                []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
+    exportModule<MaxExtendedToSMEM>( rxPyModuleId, "MaxExtendedToSMEM",
+                                     []( auto&& x ) { x.def( "filter", &MaxExtendedToSMEM::filter ); } );
+    exportModule<MaxExtendedToMaxSpanning>( rxPyModuleId, "MaxExtendedToMaxSpanning",
+                                            []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
+    exportModule<MinLength, size_t>( rxPyModuleId, "MinLength",
+                                     []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
+
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 
     py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,

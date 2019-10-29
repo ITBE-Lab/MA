@@ -32,6 +32,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
     const unsigned int uiMaxAmbiguity;
     ///
     const size_t uiMinSeedSizeDrop;
+    const size_t uiMinSeedSize;
     const double fRelMinSeedSizeAmount;
     const bool bDisableHeuristics;
     /**
@@ -73,6 +74,10 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         SAInterval ik( pFM_index->L2[ complement( q[ center ] ) ] + 1,
                        pFM_index->L2[ (int)q[ center ] ] + 1,
                        pFM_index->L2[ (int)q[ center ] + 1 ] - pFM_index->L2[ (int)q[ center ] ] );
+        // if the symbol in the query does not exist on the reference we get an empty sa interval here.
+        if( ik.size( ) == 0 )
+            // return that we covered the interval
+            return Interval<nucSeqIndex>( center, 1 );
 
         /*
          * extend ik right, until there are no more matches
@@ -138,7 +143,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
             } // for
         } // if
         assert( start >= 0 );
-        assert( end < pQuerySeq->length( ) );
+        assert( end <= pQuerySeq->length( ) );
         pSegmentVector->emplace_back( start, end - start, ik );
         assert( pSegmentVector->back( ).end( ) < pQuerySeq->length( ) );
         DEBUG_3( std::cout << "--other way--" << std::endl; )
@@ -217,6 +222,12 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         // std::shared_ptr<Segment> pLeftRight(new Segment(start,end-start,ik.revComp()));
         assert( start >= 0 );
         assert( end < pQuerySeq->length( ) );
+        // check so that we do not record the same interval twice
+        if( pSegmentVector->back( ).start( ) == start && pSegmentVector->back( ).end( ) == end )
+            // if we would record the same interval twice do not record the second one and return the
+            // covered area based on the first interval
+            return Interval<nucSeqIndex>( pSegmentVector->back( ).start( ), pSegmentVector->back( ).size( ) );
+
         pSegmentVector->emplace_back( start, end - start, ik.revComp( ) );
         assert( pSegmentVector->back( ).end( ) < pQuerySeq->length( ) );
 
@@ -461,6 +472,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
           uiMinAmbiguity( rParameters.getSelected( )->xMinimalSeedAmbiguity->get( ) ),
           uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
           uiMinSeedSizeDrop( rParameters.getSelected( )->xMinimalSeedSizeDrop->get( ) ),
+          uiMinSeedSize( rParameters.getSelected( )->xMinSeedLength->get( ) ),
           fRelMinSeedSizeAmount( rParameters.getSelected( )->xRelMinSeedSizeAmount->get( ) ),
           bDisableHeuristics( rParameters.getSelected( )->xDisableHeuristics->get( ) ),
           uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) )
@@ -469,6 +481,15 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
     virtual std::shared_ptr<SegmentVector>
         EXPORTED execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
 
+    std::vector<std::shared_ptr<Seeds>> seed( std::shared_ptr<FMIndex> pFM_index,
+                                              std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    {
+        std::vector<std::shared_ptr<Seeds>> vRet;
+        for( auto pQuery : vQueries )
+            vRet.push_back( execute( pFM_index, pQuery )
+                                ->extractSeeds( pFM_index, uiMaxAmbiguity, (unsigned int)uiMinSeedSize, true ) );
+        return vRet;
+    } // method
 }; // class
 
 } // namespace libMA

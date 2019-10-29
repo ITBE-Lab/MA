@@ -70,6 +70,7 @@ void exportParameter( py::module& rxPyModuleId )
         .def_readonly( "description", &AlignerParameterBase::sDescription );
 
     exportAlignerParameter<int>( rxPyModuleId, "AlignerParameterInt" );
+    exportAlignerParameter<short>( rxPyModuleId, "AlignerParameterShort" );
     exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
     exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
     // exportAlignerParameter<?>(rxPyModuleId, "AlignerParameterFilePath" );
@@ -125,6 +126,10 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportSoC( libMaModule );
     exportOtherSeeding( libMaModule );
     defaults::exportDefaults( libMaModule );
+#ifdef WITH_ZLIB
+    exportMinimizerIndex( libMaModule );
+    exportMinimizerSeeding( libMaModule );
+#endif
 } // function
 
 #endif

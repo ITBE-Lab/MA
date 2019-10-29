@@ -21,6 +21,8 @@ namespace libMA
 ///@brief any index on the query or reference nucleotide sequence is given in this datatype
 typedef uint64_t nucSeqIndex;
 
+class Pack;
+class NucSeq;
 /**
  * @brief A seed.
  * @details
@@ -45,25 +47,22 @@ class Seed : public Container, public Interval<nucSeqIndex>
     /**
      * @brief Creates a new Seed.
      */
-    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength,
-          const nucSeqIndex uiPosOnReference )
+    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength, const nucSeqIndex uiPosOnReference )
         : Interval( uiPosOnQuery, uiLength ), uiPosOnReference( uiPosOnReference ), uiAmbiguity( 0 )
     {} // constructor
 
     /**
      * @brief Creates a new Seed.
      */
-    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength,
-          const nucSeqIndex uiPosOnReference, const unsigned int uiAmbiguity )
-        : Interval( uiPosOnQuery, uiLength ),
-          uiPosOnReference( uiPosOnReference ),
-          uiAmbiguity( uiAmbiguity )
+    Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength, const nucSeqIndex uiPosOnReference,
+          const unsigned int uiAmbiguity )
+        : Interval( uiPosOnQuery, uiLength ), uiPosOnReference( uiPosOnReference ), uiAmbiguity( uiAmbiguity )
     {} // constructor
 
     /**
      * @brief Copys from a Seed.
      */
-    Seed( const Seed &rOther )
+    Seed( const Seed& rOther )
         : Interval( rOther ),
           uiPosOnReference( rOther.uiPosOnReference ),
           uiAmbiguity( rOther.uiAmbiguity )
@@ -112,7 +111,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
     /**
      * @brief Copys from another Seed.
      */
-    inline Seed &operator=( const Seed &rxOther )
+    inline Seed& operator=( const Seed& rxOther )
     {
         Interval::operator=( rxOther );
         uiPosOnReference = rxOther.uiPosOnReference;
@@ -130,13 +129,13 @@ class Seed : public Container, public Interval<nucSeqIndex>
      * @brief compares two Seeds.
      * @returns true if start and size are equal, false otherwise.
      */
-    inline bool operator==( const Seed &rxOther )
+    inline bool operator==( const Seed& rxOther )
     {
         return Interval::operator==( rxOther ) && uiPosOnReference == rxOther.uiPosOnReference;
     } // operator
 
     // overload
-    inline bool canCast( const std::shared_ptr<Container> &c ) const
+    inline bool canCast( const std::shared_ptr<Container>& c ) const
     {
         return std::dynamic_pointer_cast<Seed>( c ) != nullptr;
     } // function
@@ -261,11 +260,44 @@ class Seeds : public Container
         return std::shared_ptr<Container>( new Seeds( ) );
     } // method
 
+    /**
+     * @brief sorts by reference position (asc) and for equal reference pos by size (desc)
+     */
+    inline void sortByRefPos( )
+    {
+        std::sort( vContent.begin( ),
+                   vContent.end( ),
+                   []( const Seed& rA, const Seed& rB ) {
+                       if( rA.start_ref( ) != rB.start_ref( ) )
+                           return rA.start_ref( ) < rB.start_ref( );
+                       return rA.size( ) > rB.size( );
+                   } // lambda
+        );
+    } // method
+
+    /**
+     * @brief sorts by query position (asc)
+     * @details checks wether the vector is already sorted
+     */
+    inline void sortByQPos( )
+    {
+        for( size_t uiI = 1; uiI < vContent.size( ); uiI++ )
+            if( vContent[ uiI - 1 ].start( ) > vContent[ uiI ].start( ) ) // check if not sorted
+            {
+                // if not sorted then sort...
+                std::sort( vContent.begin( ),
+                           vContent.end( ),
+                           []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } // lambda
+                ); // std::sort call
+                return;
+            } // if
+    } // method
+
     /// @brief returns the sum off all scores within the list
     inline nucSeqIndex getScore( ) const
     {
         nucSeqIndex iRet = 0;
-        for( const Seed &rS : *this )
+        for( const Seed& rS : *this )
             iRet += rS.getValue( );
         return iRet;
     } // function
@@ -273,7 +305,7 @@ class Seeds : public Container
     /// @brief append another seed set
     inline void append( const std::shared_ptr<Seeds> pOther )
     {
-        for( Seed &rS : pOther->vContent )
+        for( Seed& rS : pOther->vContent )
             push_back( rS );
     } // method
 
@@ -287,18 +319,18 @@ class Seeds : public Container
     } // method
 
     // setter
-    inline value_type &operator[]( size_type uiI )
+    inline value_type& operator[]( size_type uiI )
     {
         return vContent[ uiI ];
     } // operator
 
     // getter
-    inline const value_type &operator[]( size_type uiI ) const
+    inline const value_type& operator[]( size_type uiI ) const
     {
         return vContent[ uiI ];
     } // operator
 
-    inline void push_back( const value_type &value )
+    inline void push_back( const value_type& value )
     {
         vContent.push_back( value );
     } // method
@@ -308,7 +340,7 @@ class Seeds : public Container
         vContent.pop_back( );
     } // method
 
-    template <class... Args> inline void emplace_back( Args &&... args )
+    template <class... Args> inline void emplace_back( Args&&... args )
     {
         vContent.emplace_back( args... );
     } // method
@@ -323,22 +355,22 @@ class Seeds : public Container
         return vContent.empty( );
     } // method
 
-    inline value_type &front( void )
+    inline value_type& front( void )
     {
         return vContent.front( );
     } // method
 
-    inline value_type &back( void )
+    inline value_type& back( void )
     {
         return vContent.back( );
     } // method
 
-    inline const value_type &front( void ) const
+    inline const value_type& front( void ) const
     {
         return vContent.front( );
     } // method
 
-    inline const value_type &back( void ) const
+    inline const value_type& back( void ) const
     {
         return vContent.back( );
     } // method
@@ -373,13 +405,12 @@ class Seeds : public Container
         vContent.erase( first, last );
     } // method
 
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const value_type &value )
+    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, const value_type& value )
     {
         return vContent.insert( pos, value );
     } // method
 
-    template <class InputIt>
-    inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
+    template <class InputIt> inline TP_VEC::iterator insert( TP_VEC::const_iterator pos, InputIt first, InputIt last )
     {
         return vContent.insert( pos, first, last );
     } // method
@@ -393,6 +424,79 @@ class Seeds : public Container
     {
         vContent.clear( );
     } // method
+
+    /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
+    std::tuple<std::shared_ptr<Seeds>, std::shared_ptr<Seeds>, std::shared_ptr<Seeds>>
+    splitSeedSets( std::shared_ptr<Seeds> pOther )
+    {
+        auto xRet =
+            std::make_tuple( std::make_shared<Seeds>( ), std::make_shared<Seeds>( ), std::make_shared<Seeds>( ) );
+
+        std::sort( vContent.begin( ), vContent.end( ), []( const Seed& rA, const Seed& rB ) {
+            if( rA.start( ) != rB.start( ) )
+                return rA.start( ) < rB.start( );
+            if( rA.size( ) != rB.size( ) )
+                return rA.size( ) < rB.size( );
+            return rA.start_ref( ) < rB.start_ref( );
+        } );
+
+        std::sort( pOther->vContent.begin( ), pOther->vContent.end( ), []( const Seed& rA, const Seed& rB ) {
+            if( rA.start( ) != rB.start( ) )
+                return rA.start( ) < rB.start( );
+            if( rA.size( ) != rB.size( ) )
+                return rA.size( ) < rB.size( );
+            return rA.start_ref( ) < rB.start_ref( );
+        } );
+
+        size_t uiI = 0;
+        size_t uiJ = 0;
+        while( uiI < vContent.size( ) && uiJ < pOther->size( ) )
+        {
+            if( vContent[ uiI ].start( ) == pOther->vContent[ uiJ ].start( ) &&
+                vContent[ uiI ].size( ) == pOther->vContent[ uiJ ].size( ) &&
+                vContent[ uiI ].start_ref( ) == pOther->vContent[ uiJ ].start_ref( ) )
+            {
+                std::get<1>( xRet )->push_back( vContent[ uiI ] );
+                uiI++;
+                uiJ++;
+            } // if
+            else if( vContent[ uiI ].start( ) < pOther->vContent[ uiJ ].start( ) ||
+                     ( vContent[ uiI ].start( ) == pOther->vContent[ uiJ ].start( ) &&
+                       ( vContent[ uiI ].size( ) < pOther->vContent[ uiJ ].size( ) ||
+                         ( vContent[ uiI ].size( ) == pOther->vContent[ uiJ ].size( ) &&
+                           vContent[ uiI ].start_ref( ) < pOther->vContent[ uiJ ].start_ref( ) ) ) ) )
+            {
+                // std::raise(SIGINT);
+                std::get<0>( xRet )->push_back( vContent[ uiI ] );
+                uiI++;
+            } // if
+            else
+            {
+                std::get<2>( xRet )->push_back( pOther->vContent[ uiJ ] );
+                uiJ++;
+            } // if
+        } // while
+
+        while( uiI < vContent.size( ) )
+            std::get<0>( xRet )->push_back( vContent[ uiI++ ] );
+        while( uiJ < pOther->size( ) )
+            std::get<2>( xRet )->push_back( pOther->vContent[ uiJ++ ] );
+
+        return xRet;
+    } // method
+
+
+    /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
+    std::tuple<size_t, size_t, size_t> compareSeedSets( std::shared_ptr<Seeds> pOther )
+    {
+        auto xTemp = splitSeedSets( pOther );
+
+        return std::make_tuple( std::get<0>( xTemp )->size( ), std::get<1>( xTemp )->size( ),
+                                std::get<2>( xTemp )->size( ) );
+    } // method
+
+    void EXPORTED confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef,
+                                        bool bIsMaxExtended );
 }; // class
 } // namespace libMA
 

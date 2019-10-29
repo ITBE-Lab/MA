@@ -73,12 +73,13 @@ if (${ENABLE_TESTS})
 endif()
 
 # Add additional general compile flags
-# Note: Some flags are already preset by the generator depending on the build-type
-# TODO: use set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -foo" )
 if( NOT MSVC )
 	# Note: Adding "-Wextra" delivers more warnings
     # "-Werror" "-Wall" : All warnings enabled and warning are treated as errors
-    add_compile_options( "-Werror" "-Wall" ) 
+    add_compile_options( "-Wall" )
+    if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
+        add_compile_options( "-Werror" )
+    endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options( "-stdlib=libc++" )
     endif()
