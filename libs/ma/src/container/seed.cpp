@@ -33,20 +33,15 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
         //                           pRef->uiPositionToReverseStrand( rSeed.start_ref( ) ),
         //                           *pRefSec );
         uint8_t uiBefore = 4;
-        if( rSeed.start_ref( ) > 0 && rSeed.start_ref( ) < pRef->uiUnpackedSizeForwardStrand )
-            uiBefore = pRef->isHole( rSeed.start_ref( ) - 1 ) ? 4 : pRef->getNucleotideOnPos( rSeed.start_ref( ) - 1 );
-        else if( pRef->iAbsolutePosition( rSeed.end_ref( ) ) < (int64_t)pRef->uiUnpackedSizeForwardStrand )
-            uiBefore = pRef->isHole( pRef->iAbsolutePosition( rSeed.end_ref( ) ) )
+        if( rSeed.start_ref( ) > 0 )
+            uiBefore = pRef->isHole( pRef->iAbsolutePosition( rSeed.start_ref( ) - 1 ) )
                            ? 4
-                           : pRef->vExtract( rSeed.end_ref( ) );
+                           : pRef->vExtract( rSeed.start_ref( ) - 1 );
 
         uint8_t uiAfter = 4;
-        if( rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand )
-            uiAfter = pRef->isHole( rSeed.end_ref( ) ) ? 4 : pRef->getNucleotideOnPos( rSeed.end_ref( ) );
-        else if( pRef->iAbsolutePosition( rSeed.start_ref( ) ) > 0 )
-            uiBefore = pRef->isHole( pRef->iAbsolutePosition( rSeed.start_ref( ) + 1 ) )
-                           ? 4
-                           : pRef->vExtract( rSeed.start_ref( ) + 1 );
+        if( rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 )
+            uiAfter =
+                pRef->isHole( pRef->iAbsolutePosition( rSeed.end_ref( ) ) ) ? 4 : pRef->vExtract( rSeed.end_ref( ) );
 
         bool bFailed = false;
         for( size_t uiI = 0; uiI < rSeed.size( ); uiI++ )
@@ -84,9 +79,9 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
             std::cout << std::endl;
             std::cout << "Ref:" << std::endl;
             if( rSeed.start_ref( ) > 1 )
-                std::cout << chars[ pRef->isHole( rSeed.start_ref( ) - 2 )
+                std::cout << chars[ pRef->isHole( pRef->iAbsolutePosition( rSeed.start_ref( ) - 2 ) )
                                         ? 4
-                                        : pRef->getNucleotideOnPos( rSeed.start_ref( ) - 2 ) ];
+                                        : pRef->vExtract( rSeed.start_ref( ) - 2 ) ];
             else
                 std::cout << " ";
             if( rSeed.start_ref( ) > 0 )
@@ -98,9 +93,9 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
             if( rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 )
                 std::cout << " " << chars[ uiAfter ];
             if( rSeed.end_ref( ) + 1 < pRef->uiUnpackedSizeForwardStrand * 2 )
-                std::cout
-                    << chars[ pRef->isHole( rSeed.end_ref( ) + 1 ) ? 4
-                                                                   : pRef->getNucleotideOnPos( rSeed.end_ref( ) + 1 ) ];
+                std::cout << chars[ pRef->isHole( pRef->iAbsolutePosition( rSeed.end_ref( ) + 1 ) )
+                                        ? 4
+                                        : pRef->vExtract( rSeed.end_ref( ) + 1 ) ];
             std::cout << std::endl;
             if( rSeed.start_ref( ) >= 2 && rSeed.end_ref( ) + 2 <= pRef->uiUnpackedSizeForwardStrand * 2 )
             {

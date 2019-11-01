@@ -1058,7 +1058,7 @@ class Pack : public Container
     int64_t uiSequenceIdForPositionOrRev( uint64_t uiPosition ) const
     {
         if( bPositionIsOnReversStrand( uiPosition ) )
-            return uiSequenceIdForPosition( uiPositionToReverseStrand( uiPosition ) ) * 2 + 1;
+            return uiSequenceIdForPosition( uiPositionToReverseStrand( uiPosition - 1 ) ) * 2 + 1;
         return uiSequenceIdForPosition( uiPosition ) * 2;
     } // function
 

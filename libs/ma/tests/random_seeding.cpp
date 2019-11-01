@@ -6,16 +6,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#if _MSC_VER
-
-// @todo the template class Join does nut work with msvc
-int main( void )
-{
-    return EXIT_SUCCESS;
-} /// main function
-
-#elif __GNUC__
-
 using namespace libMA;
 
 std::shared_ptr<NucSeq> randomNucSeq( size_t uiLen )
@@ -36,7 +26,7 @@ class SegVecChecker : public Module<Container, false, SegmentVector, NucSeq, Pac
     virtual std::shared_ptr<Container> execute( std::shared_ptr<SegmentVector> pIn, std::shared_ptr<NucSeq> pQuery,
                                                 std::shared_ptr<Pack> pRef, std::shared_ptr<FMIndex> pFmIndex )
     {
-        //pIn->extractSeeds( pFmIndex, 1000, 16 )->confirmSeedPositions( pQuery, pRef, true );
+        pIn->extractSeeds( pFmIndex, 1000, 5 )->confirmSeedPositions( pQuery, pRef, true );
         return std::make_shared<Container>( );
     } // method
 }; // class
@@ -145,5 +135,3 @@ int main( void )
 
     return EXIT_SUCCESS;
 } /// main function
-
-#endif

@@ -97,7 +97,7 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
      * @details
      * Expects the given containers to have the correct types.
      */
-    virtual std::shared_ptr<TP_RETURN> EXPORTED execute( std::shared_ptr<TP_ARGUMENTS>... args )
+    virtual std::shared_ptr<TP_RETURN> execute( std::shared_ptr<TP_ARGUMENTS>... args )
     {
         std::string sArgNames;
         auto rTup = std::make_tuple( args... );
@@ -120,7 +120,7 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
     } // method
 
   public:
-    virtual std::shared_ptr<TP_RETURN> EXPORTED executeTup( const TP_TUPLE_ARGS& tParams )
+    virtual std::shared_ptr<TP_RETURN> executeTup( const TP_TUPLE_ARGS& tParams )
     {
         /*
          * gens is used to gereate a list of integers: 0, 1, 2, 3

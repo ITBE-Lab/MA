@@ -299,25 +299,22 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
     {
         for( auto& rSeed : *pSeeds )
         {
-            size_t uiAdjust = 0;
-            if( rSeed.start_ref( ) >= pRef->uiUnpackedSizeForwardStrand )
-                uiAdjust += 1;
+            // start of seed is inclusive
             size_t uiForw = 1;
             while( uiForw <= rSeed.start( ) && //
-                   uiForw <= rSeed.start_ref( ) + uiAdjust && //
-                   pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
-                       pRef->vExtract( rSeed.start_ref( ) + uiAdjust - uiForw ) )
+                   uiForw <= rSeed.start_ref( ) && //
+                   pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] == pRef->vExtract( rSeed.start_ref( ) - uiForw ) )
                 uiForw++;
             uiForw--; // uiForward is one too high after loop
             rSeed.iSize += uiForw;
             rSeed.iStart -= uiForw;
             rSeed.uiPosOnReference -= uiForw;
 
+            // end of seed is exclusive
             size_t uiBackw = 0;
             while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
-                   uiBackw + uiAdjust + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 && //
-                   pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
-                       pRef->vExtract( rSeed.end_ref( ) + uiBackw + uiAdjust ) )
+                   uiBackw + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 && //
+                   pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] == pRef->vExtract( rSeed.end_ref( ) + uiBackw ) )
                 uiBackw++;
             rSeed.iSize += uiBackw;
         } // for
