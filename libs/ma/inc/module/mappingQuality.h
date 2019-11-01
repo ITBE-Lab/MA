@@ -43,7 +43,7 @@ class MappingQuality : public Module<ContainerVector<std::shared_ptr<Alignment>>
 
 #ifdef WITH_PYTHON
 /**
- * @brief export the MappingQuality @ref Module "module" to python.
+ * @brief export the MappingQuality @ref libMA::Module "module" to python.
  * @ingroup export
  */
 #ifdef WITH_BOOST

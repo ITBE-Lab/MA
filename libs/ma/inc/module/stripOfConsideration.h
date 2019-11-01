@@ -164,7 +164,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
 
 #ifdef WITH_PYTHON
 /**
- * @brief export the bucketing @ref Module "module" to python.
+ * @brief export the bucketing @ref libMA::Module "module" to python.
  * @ingroup export
  */
 #ifdef WITH_BOOST

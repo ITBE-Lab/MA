@@ -172,18 +172,10 @@ BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucS
 
 #ifdef WITH_PYTHON
 
-#ifdef BOOST_PYTHON
-void exportBinarySeeding( )
-{
-    // export the BinarySeeding class
-    exportModule<BinarySeeding>( "BinarySeeding", []]( auto&& x ) {
-        x.def( "seed", &BinarySeeding::seed ); } );
-} // function
-#else
 void exportBinarySeeding( py::module& rxPyModuleId )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding" );
+    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding", []( auto&& x ) {
+        x.def( "seed", &BinarySeeding::seed ); } );
 } // function
-#endif
 #endif

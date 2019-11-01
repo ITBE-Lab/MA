@@ -36,7 +36,7 @@ class SegVecChecker : public Module<Container, false, SegmentVector, NucSeq, Pac
     virtual std::shared_ptr<Container> execute( std::shared_ptr<SegmentVector> pIn, std::shared_ptr<NucSeq> pQuery,
                                                 std::shared_ptr<Pack> pRef, std::shared_ptr<FMIndex> pFmIndex )
     {
-        pIn->extractSeeds( pFmIndex, 1000, 16 )->confirmSeedPositions( pQuery, pRef, true );
+        //pIn->extractSeeds( pFmIndex, 1000, 16 )->confirmSeedPositions( pQuery, pRef, true );
         return std::make_shared<Container>( );
     } // method
 }; // class
@@ -45,13 +45,14 @@ class SegVecChecker : public Module<Container, false, SegmentVector, NucSeq, Pac
 class SeedsChecker : public Module<Container, false, Seeds, NucSeq, Pack, FMIndex>
 {
   public:
-    SeedsChecker( const ParameterSetManager& rParameters )
+    bool bMaxExt;
+    SeedsChecker( const ParameterSetManager& rParameters, bool bMaxExt ) : bMaxExt( bMaxExt )
     {} // constructor
 
     virtual std::shared_ptr<Container> execute( std::shared_ptr<Seeds> pIn, std::shared_ptr<NucSeq> pQuery,
                                                 std::shared_ptr<Pack> pRef, std::shared_ptr<FMIndex> pFmIndex )
     {
-        pIn->confirmSeedPositions( pQuery, pRef, false );
+        pIn->confirmSeedPositions( pQuery, pRef, bMaxExt );
         return std::make_shared<Container>( );
     } // method
 }; // class
@@ -60,7 +61,7 @@ class SeedsChecker : public Module<Container, false, Seeds, NucSeq, Pack, FMInde
 template class Join<Container, Container
 #ifdef WITH_ZLIB
                     ,
-                    Container
+                    Container, Container
 #endif
                     >;
 
@@ -85,12 +86,21 @@ int main( void )
     auto pFMDIndexSeeding2 = std::make_shared<BinarySeeding>( xParameters );
     auto pChecker = std::make_shared<SegVecChecker>( xParameters );
 #ifdef WITH_ZLIB
+    xParameters.getSelected( )->xMinimizerW->set( 4 );
+    xParameters.getSelected( )->xMinimizerK->set( 5 );
     auto pMMIndex =
         makePledge<minimizer::Index>( xParameters, pPack->get( )->contigSeqs( ), pPack->get( )->contigNames( ) );
     auto pMMISeeding = std::make_shared<MinimizerSeeding>( xParameters );
-    auto pChecker2 = std::make_shared<SeedsChecker>( xParameters );
+    auto pChecker2 = std::make_shared<SeedsChecker>( xParameters, false );
+    auto pChecker3 = std::make_shared<SeedsChecker>( xParameters, true );
+    auto pMMIExtender = std::make_shared<SeedExtender>( xParameters );
 #endif
-    auto pJoin = std::make_shared<Join<Container, Container, Container>>( xParameters );
+    auto pJoin = std::make_shared<Join<Container, Container
+#ifdef WITH_ZLIB
+                                       ,
+                                       Container, Container
+#endif
+                                       >>( xParameters );
 
     auto pQueries = promiseMe( std::make_shared<StaticSplitter<NucSeq>>( xParameters, pQueryVec ) );
 
@@ -112,13 +122,16 @@ int main( void )
         // check the minimizers
         auto pSeeds3 = promiseMe( pMMISeeding, pMMIndex, pQuery, pPack );
         auto pEmpty3 = promiseMe( pChecker2, pSeeds3, pQuery, pPack, pFmIndex );
+
+        auto pSeeds4 = promiseMe( pMMIExtender, pSeeds3, pQuery, pPack );
+        auto pEmpty4 = promiseMe( pChecker3, pSeeds4, pQuery, pPack, pFmIndex );
 #endif
 
         // wait for both tasks to be completed
         auto pJoined = promiseMe( pJoin, pEmpty, pEmpty2
 #ifdef WITH_ZLIB
                                   ,
-                                  pEmpty3
+                                  pEmpty3, pEmpty4
 #endif
         );
         // unlock the query once completed

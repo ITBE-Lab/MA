@@ -37,7 +37,7 @@ namespace libMA
 {
 
 /**
- * @defgroup container
+ * @defgroup container Container
  * @brief All classes containing data elements.
  * @details
  * All classes that store data should inherit from Container.

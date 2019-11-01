@@ -98,6 +98,7 @@ bool EXPORTED is_number(const std::string& s);
  * @brief Loop where the counter value is known during compiletime.
  * @details
  * Example Usage:
+ * @code
  *   template <size_t IDX> struct Exec
  *   {
  *       bool operator( )( int& x )
@@ -117,6 +118,7 @@ bool EXPORTED is_number(const std::string& s);
  *          std::cout << "false" << std::endl;
  *      return 0;
  *   } // function
+ * @endcode
  * Prints:
  * 10
  * 10

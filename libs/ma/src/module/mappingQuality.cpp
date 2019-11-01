@@ -1,5 +1,5 @@
 /**
- * @file mappinQuality.cpp
+ * @file mappingQuality.cpp
  * @author Markus Schmidt
  */
 #include "module/mappingQuality.h"

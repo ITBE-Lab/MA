@@ -309,7 +309,7 @@ class Seeds : public Container
             push_back( rS );
     } // method
 
-    /// @briefreturn wether this seed set is larger according to getScore()
+    /// @brief return wether this seed set is larger according to getScore()
     inline bool larger( const std::shared_ptr<Container> pOther ) const
     {
         const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>( pOther );

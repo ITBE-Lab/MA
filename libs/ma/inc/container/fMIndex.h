@@ -80,7 +80,7 @@ class SAInterval : public Container, public Interval<t_bwtIndex>
      * @details
      * A SAInterval is the same size as the interval for the reverse complement sequence.
      * This fact can be used to implement forward extension.
-     * @Note This only works when combined with FMD-indices.
+     * @note This only works when combined with FMD-indices.
      */
     SAInterval revComp( ) const
     {
@@ -925,7 +925,7 @@ class FMIndex : public Container
 
 #ifdef WITH_PYTHON
 /**
- * @brief function called in order to export this @ref Module "module"
+ * @brief function called in order to export this @ref libMA::Module "module"
  * @ingroup export
  */
 #ifdef BOOST_PYTHON

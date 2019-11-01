@@ -40,8 +40,8 @@ typedef unsigned char ubyte_t;
 
 /**
  * @brief Constructs the suffix array of a given string.
- * @param T[0..n-1] The input string.
- * @param SA[0..n] The output array of suffixes.
+ * @param T [0..n-1] The input string.
+ * @param SA [0..n] The output array of suffixes.
  * @param n The length of the given string.
  * @return 0 if no error occurred
  */
@@ -49,7 +49,7 @@ int EXPORTED is_sa( const ubyte_t *T, int *SA, int n );
 
 /**
  * @brief Constructs the burrows-wheeler transformed string of a given string.
- * @param T[0..n-1] The input string.
+ * @param T [0..n-1] The input string.
  * @param n The length of the given string.
  * @return The primary index if no error occurred, -1 or -2 otherwise.
  */

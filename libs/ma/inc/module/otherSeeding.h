@@ -50,7 +50,7 @@ class OtherSeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
 
 #ifdef WITH_PYTHON
 /**
- * @brief exports the Segmentation @ref Module "module" to python.
+ * @brief exports the Segmentation @ref libMA::Module "module" to python.
  * @ingroup export
  */
 #ifdef WITH_BOOST

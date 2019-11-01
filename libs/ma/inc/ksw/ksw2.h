@@ -67,11 +67,14 @@ extern "C"
      * @param tlen      target length
      * @param target    target sequence with 0 <= target[i] < m
      * @param m         number of residue types
+     * @param q         
+     * @param e         
+     * @param q2        
+     * @param e2        
      * @param mat       m*m scoring mattrix in one-dimension array
-     * @param gapo      gap open penalty; a gap of length l cost "-(gapo+l*gape)"
-     * @param gape      gap extension penalty
      * @param w         band width (<0 to disable)
      * @param zdrop     off-diagonal drop-off to stop extension (positive; <0 to disable)
+     * @param end_bonus score bonus if end is reached
      * @param flag      flag (see KSW_EZ_* macros)
      * @param ez        (out) scores and cigar
      */

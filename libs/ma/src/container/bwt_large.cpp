@@ -1,5 +1,5 @@
 /**
- * @file btw_large.cpp
+ * @file bwt_large.cpp
  * @author Arne Kutzner
  */
 /*

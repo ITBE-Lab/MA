@@ -1,6 +1,6 @@
 /**
  * @file harmonization.h
- * @brief Implements the harmonization @ref Module "module"
+ * @brief Implements the harmonization @ref libMA::Module "module"
  * @author Markus Schmidt
  */
 #ifndef LINESWEEP_H
@@ -299,11 +299,14 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
     {
         for( auto& rSeed : *pSeeds )
         {
+            size_t uiAdjust = 0;
+            if( rSeed.start_ref( ) >= pRef->uiUnpackedSizeForwardStrand )
+                uiAdjust += 1;
             size_t uiForw = 1;
             while( uiForw <= rSeed.start( ) && //
-                   uiForw <= rSeed.start_ref( ) && //
+                   uiForw <= rSeed.start_ref( ) + uiAdjust && //
                    pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
-                       pRef->getNucleotideOnPos( rSeed.start_ref( ) - uiForw ) )
+                       pRef->vExtract( rSeed.start_ref( ) + uiAdjust - uiForw ) )
                 uiForw++;
             uiForw--; // uiForward is one too high after loop
             rSeed.iSize += uiForw;
@@ -312,9 +315,9 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
 
             size_t uiBackw = 0;
             while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
-                   uiBackw + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand && //
+                   uiBackw + uiAdjust + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 && //
                    pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
-                       pRef->getNucleotideOnPos( rSeed.end_ref( ) + uiBackw ) )
+                       pRef->vExtract( rSeed.end_ref( ) + uiBackw + uiAdjust ) )
                 uiBackw++;
             rSeed.iSize += uiBackw;
         } // for
@@ -520,7 +523,7 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
 
 #ifdef WITH_PYTHON
 /**
- * @brief Exposes the Harmonization @ref Module "module" to boost python.
+ * @brief Exposes the Harmonization @ref libMA::Module "module" to boost python.
  * @ingroup export
  */
 #ifdef WITH_BOOSt

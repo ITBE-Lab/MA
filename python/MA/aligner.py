@@ -2,11 +2,9 @@
 # @package MA
 # @brief The Python part of the library is within this package
 # @package MA.aligner
-# @brief Implements @ref MA.aligner.Module "Module" and
-# @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
+# @brief Implements @ref libMA::Module "Module".
 # @file aligner.py
-# @brief Implements @ref MA.aligner.Module "Module" and
-# @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
+# @brief Implements @ref libMA::Module "Module" 
 # @author Markus Schmidt
 #
 
@@ -50,7 +48,7 @@ def promise_me(module, *args):
 # @details
 #
 # @ingroup container
-#
+# @code
 # class NucSeq(libMA.NucSeq):
 #     ##
 #     # @brief enable slicing a NucSeq
@@ -63,6 +61,7 @@ def promise_me(module, *args):
 #             return ret
 #         else:
 #             return super(NucSeq, self).__getitem__(val)
+# @endcode
 
 ##
 # @brief python wrapper for BinarySeeding

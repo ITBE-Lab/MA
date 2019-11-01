@@ -453,9 +453,9 @@ class Pack : public Container
     } // method
 
     /* WARNING! Never do this for some already used (filled) sequence collection.
-    * Throws an exception, if something goes wrong.
-    * Deserialization of the vector for hole descriptors.
-    */
+     * Throws an exception, if something goes wrong.
+     * Deserialization of the vector for hole descriptors.
+     */
     void vLoadHoleDescriptorVector( const char* pcFileNamePrefix )
     {
         size_t uiExpectedSequenceDescriptorVectorSize = 0;
@@ -626,7 +626,6 @@ class Pack : public Container
         for( auto& rHole : xVectorOfHoleDescriptors )
             // check if hole is overlapping
             if( rHole.offset <= uiX && rHole.offset + rHole.length > uiX )
-                // add the overlapping interval to covered
                 return true;
         return false;
     } // method
@@ -1359,6 +1358,18 @@ class Pack : public Container
     } // method
 
 
+    /* Get the value at position uiPosition in the unpacked sequence.
+     * Works only for the virtual forward strand.
+     */
+    inline uint8_t vExtract( const int64_t uiPosition ) const
+    {
+        if( bPositionIsOnReversStrand( uiPosition ) )
+            return NucSeq::nucleotideComplement( getNucleotideOnPos( uiPositionToReverseStrand( uiPosition ) ) );
+        else
+            return getNucleotideOnPos( uiPosition );
+    } // inline method
+
+
     /* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
      */
     std::shared_ptr<NucSeq> vExtract( const int64_t iBegin, // begin of extraction
@@ -1405,8 +1416,12 @@ class Pack : public Container
     std::vector<std::string> contigSeqs( ) const
     {
         std::vector<std::string> vRet;
-        for( auto xContig : xVectorOfSequenceDescriptors )
-            vRet.push_back( xContig.sName );
+        for( size_t uiI = 0; uiI < uiNumContigs( ); uiI++ )
+        {
+            NucSeq xNucSeq;
+            vExtractContig( uiI * 2, xNucSeq, false );
+            vRet.push_back( xNucSeq.toString( ) );
+        } // for
         return vRet;
     } // method
 

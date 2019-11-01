@@ -1,8 +1,8 @@
 
+#include "container/container.h"
 #include "container/nucSeq.h"
 #include "container/pack.h"
 #include "container/segment.h"
-#include "container/container.h"
 #include "util/parameter.h"
 #ifndef __cplusplus
 #define __cplusplus TRUE
@@ -133,13 +133,6 @@ class Index : public libMA::Container
                    /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
                    /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
-        this->xOptions.k = rParameters.getSelected( )->xMinimizerK->get( );
-        this->xOptions.w = rParameters.getSelected( )->xMinimizerW->get( );
-        this->xOptions.flag = rParameters.getSelected( )->xMinimizerFlag->get( );
-        this->xOptions.bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( );
-        this->xOptions.mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( );
-        this->xOptions.batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( );
-
         IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
@@ -164,14 +157,6 @@ class Index : public libMA::Container
                    /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
                    /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
-        xOptions.k = rParameters.getSelected( )->xMinimizerK->get( );
-        xOptions.w = rParameters.getSelected( )->xMinimizerW->get( );
-        xOptions.flag = rParameters.getSelected( )->xMinimizerFlag->get( );
-        xOptions.bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( );
-        xOptions.mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( );
-        xOptions.batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( );
-
-
         std::vector<const char*> seq;
         std::vector<const char*> name;
         for( auto& sContig : vContigs )
@@ -232,10 +217,10 @@ class Index : public libMA::Container
                         uiQSpan,
                         /* reference position is encoded in the lower 32 bits of x */
                         ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
-                        true // minimap code : "+-"[a[i].x>>63]
+                        1 // @todo get ambiguity from within the index
                     );
                 } // if
-                else
+                else // @todo old version does not have flag for forward/reverse strand
                 {
                     uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
                     pRet->emplace_back(
@@ -244,8 +229,9 @@ class Index : public libMA::Container
                         sQuery.length( ) - 1 - ( (int32_t)a[ uiI ].y ),
                         uiQSpan,
                         /* reference position is encoded in the lower 32 bits of x */
-                        (int32_t)a[ uiI ].x + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
-                        false // minimap code : "+-"[a[i].x>>63]
+                        pPack->uiPositionToReverseStrand( (int32_t)a[ uiI ].x +
+                                                          pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ) ),
+                        1 // @todo get ambiguity from within the index
                     );
                 } // else
             } // for
@@ -257,8 +243,8 @@ class Index : public libMA::Container
         return pRet;
     } // method
 
-    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries,
-                                                     std::shared_ptr<libMA::Pack> pPack )
+    std::vector<std::shared_ptr<libMA::Seeds>>
+    seed( std::vector<std::string> vQueries, std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
 

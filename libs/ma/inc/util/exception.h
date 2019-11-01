@@ -8,7 +8,7 @@
  */
 
 /**
- * @defgroup exception
+ * @defgroup exception Exception
  * @brief several classes that deal with exceptions within the cpp code.
  * @details
  * Annotated_exception provides a way for printing the specific error.
@@ -65,6 +65,10 @@ class AnnotatedException : public std::exception
         return sText.c_str( );
     } // method
 };
+
+/**
+ * @}
+ */
 
 #ifdef WITH_PYTHON
 /**
