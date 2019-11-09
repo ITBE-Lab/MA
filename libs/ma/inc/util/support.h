@@ -86,7 +86,7 @@ void vRangeCheckAndThrowExclusive( const std::string& sText, const ParameterType
     if( xVal < xRangeMin || xVal >= xRangeMax )
     {
         throw std::runtime_error(
-            ( ( ( ( ( ( ( std::string( sText ) += "Out of range for value : " ) += std::to_string( xVal ) ) +=
+            ( ( ( ( ( ( ( std::string( sText ) += " Out of range for value : " ) += std::to_string( xVal ) ) +=
                       " range : [ " ) += std::to_string( xRangeMin ) ) += ".." ) += std::to_string( xRangeMax ) ) +=
               ")" ) ); // runtime error
     } // if

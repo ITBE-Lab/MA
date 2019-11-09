@@ -276,6 +276,7 @@ class FMIndexCreationWizard : public wxWizard
                         sGenomeFolderPath( ), // Folder for genome storage
                         sFastaFilePath( ), // Path to FASTA-file that contains genome
                         std::string( pxTextCtrlIndexName->GetValue( ).c_str( ) ), // Title of genome
+                        xExecutionContext.xParameterSetManager, // parameter set for mm-index
                         [this]( const std::string& sMessage ) {
                             queueStringMessage( wxEVT_WORKER_MESSAGE, sMessage );
                         } // lambda
@@ -792,8 +793,8 @@ class MA_MainFrame : public wxFrame
         {
             // save the changed parameter into the selected parameter-set
             // pSelectedParamSet->mirror( xParameterSet );
-            xExecutionContext.xParameterSetManager.xParametersSets.at( "Custom" ).mirror( xParameterSet );
-            xExecutionContext.xParameterSetManager.setSelected( "Custom" );
+            xExecutionContext.xParameterSetManager.xParametersSets.at( "custom" ).mirror( xParameterSet );
+            xExecutionContext.xParameterSetManager.setSelected( "custom" );
             pxComboBoxAlignerSettings->setSelected( "Custom" );
         } // if
 
@@ -895,7 +896,8 @@ class MA_MainFrame : public wxFrame
             xGenomeNameTextCtrl->SetValue( xExecutionContext.xGenomeManager.getGenomeName( ) );
         else
         {
-            auto sError = xExecutionContext.xGenomeManager.loadGenome( rvsFileNames[ 0 ] );
+            auto sError = xExecutionContext.xGenomeManager.loadGenome( xExecutionContext.xParameterSetManager,
+                                                                       rvsFileNames[ 0 ] );
             if( sError.empty( ) )
             {
                 wxBusyCursor busyCursor;

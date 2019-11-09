@@ -521,7 +521,8 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
         for( const auto& rSeed : *pSeeds )
         {
             for( auto uiX = rSeed.start( ); uiX < rSeed.end( ); uiX++ )
-                vQCoverage[ uiX ] = true;
+                if( uiX >= 0 && uiX < pQuery->length( ) )
+                    vQCoverage[ uiX ] = true;
         } // for
         pSoCIn->vExtractOrder.back( ).second = uiCurrHarmScore;
 
@@ -600,7 +601,8 @@ void exportHarmonization( )
 #else
 void exportHarmonization( py::module& rxPyModuleId )
 {
-    exportModule<SeedLumping>( rxPyModuleId, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
+    exportModule<SeedLumping<false>>( rxPyModuleId, "SeedLumping",
+                                      []( auto&& x ) { x.def( "lump", &SeedLumping<false>::lump ); } );
     exportModule<SeedExtender>( rxPyModuleId, "SeedExtender",
                                 []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
     exportModule<MaxExtendedToSMEM>( rxPyModuleId, "MaxExtendedToSMEM",

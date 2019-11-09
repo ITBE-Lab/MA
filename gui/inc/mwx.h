@@ -952,6 +952,22 @@ class mwxPropertyPanel : public wxPanel
         return *this;
     } // method
 
+    /* Add value property */
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<short>>& pParameter )
+    { /* Add Property to vector*/
+        vProperties.emplace_back( std::make_shared<mwxTextProperty<short>>( this, pParameter ) );
+
+        return *this;
+    } // method
+
+    /* Add value property */
+    mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<uint64_t>>& pParameter )
+    { /* Add Property to vector*/
+        vProperties.emplace_back( std::make_shared<mwxTextProperty<uint64_t>>( this, pParameter ) );
+
+        return *this;
+    } // method
+
     /* Add choices property */
     mwxPropertyPanel& append( std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>& pParameter )
     { /* Add Property to vector*/
@@ -993,6 +1009,16 @@ class mwxPropertyPanel : public wxPanel
         } // scope
         {
             auto pCasted = std::dynamic_pointer_cast<AlignerParameter<bool>>( pParameter );
+            if( pCasted != nullptr )
+                return append( pCasted );
+        } // scope
+        {
+            auto pCasted = std::dynamic_pointer_cast<AlignerParameter<short>>( pParameter );
+            if( pCasted != nullptr )
+                return append( pCasted );
+        } // scope
+        {
+            auto pCasted = std::dynamic_pointer_cast<AlignerParameter<uint64_t>>( pParameter );
             if( pCasted != nullptr )
                 return append( pCasted );
         } // scope

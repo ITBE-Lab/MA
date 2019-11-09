@@ -90,7 +90,7 @@ class AlignerParameterBase
 
     virtual std::string asText( ) const
     {
-        throw AnnotatedException( "AlignerParameterBase has go value" );
+        throw AnnotatedException( "AlignerParameterBase has no value" );
     } // method
 
     virtual void setByText( const std::string& sValueAsString )
@@ -257,6 +257,12 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
 
     virtual void setByText( const std::string& sValueAsString )
     {
+        for( size_t i = 0; i < vChoices.size( ); i++ )
+            if( vChoices[ i ].first == sValueAsString )
+            {
+                this->set( (unsigned int)i );
+                return;
+            } // if
         this->set( stoi( sValueAsString ) );
     } // method
 
@@ -551,6 +557,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xGenomeSizeDisable; //
     AlignerParameterPointer<bool> xDisableHeuristics; //
 
+#ifdef WITH_ZLIB
     // Minimizer parameters:
     AlignerParameterPointer<short> xMinimizerK; // minimizer size
     AlignerParameterPointer<short> xMinimizerW; // minimizers window
@@ -558,6 +565,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<short> xMinimizerBucketBits; // ?
     AlignerParameterPointer<int> xMinimizerMiniBatchSize; // ?
     AlignerParameterPointer<uint64_t> xMinimizerBatchSize; // ?
+#endif
 
     /* Delete copy constructor */
     Presetting( const Presetting& rxOtherSet ) = delete;
@@ -637,7 +645,14 @@ class Presetting : public ParameterSetBase
           xSeedingTechnique( this, "Seeding Technique", 's',
                              "Technique used for the initial seeding. Available techniques are: maxSpan and SMEMs.",
                              SEEDING_PARAMETERS,
-                             AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
+                             AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"},
+                                                               {"SMEMs", "SMEMs"}
+#ifdef WITH_ZLIB
+                                                               ,
+                                                               { "mini",
+                                                                 "Minimizers" }
+#endif
+                             } ),
           xMinSeedLength( this, "Minimal Seed Length", 'l',
                           "All seeds with size smaller than 'minimal seed length' are discarded.", SEEDING_PARAMETERS,
                           16, checkPositiveValue ),
@@ -771,15 +786,17 @@ class Presetting : public ParameterSetBase
                               "Drop-off, if the genome is shorter than <val>.",
                               HEURISTIC_PARAMETERS, 10000000, checkPositiveValue ),
           xDisableHeuristics( this, "Disable All Heuristics",
-                              "Disables all runtime heuristics. (For debugging purposes)", HEURISTIC_PARAMETERS,
-                              false ),
+                              "Disables all runtime heuristics. (For debugging purposes)", HEURISTIC_PARAMETERS, false )
+#ifdef WITH_ZLIB
           // Minimizers
-          xMinimizerK( this, "Minimizers - k", "Minimizers size", MINIMIZER_PARAMETERS, 15 ),
-          xMinimizerW( this, "Minimizers - w", "Minimizer window size", MINIMIZER_PARAMETERS, 10 ),
+          ,
+          xMinimizerK( this, "Minimizers - k", 'k', "Minimizers size", MINIMIZER_PARAMETERS, 15 ),
+          xMinimizerW( this, "Minimizers - w", 'w', "Minimizer window size", MINIMIZER_PARAMETERS, 10 ),
           xMinimizerFlag( this, "Minimizers - flag", "@todo", MINIMIZER_PARAMETERS, 0 ),
           xMinimizerBucketBits( this, "Minimizers - bucket_bits", "@todo", MINIMIZER_PARAMETERS, 14 ),
           xMinimizerMiniBatchSize( this, "Minimizers - mini_batch_size", "@todo", MINIMIZER_PARAMETERS, 50000000 ),
           xMinimizerBatchSize( this, "Minimizers - batch_size", "@todo", MINIMIZER_PARAMETERS, 4000000000ULL )
+#endif
     {
 
         xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };

@@ -1,5 +1,6 @@
 #include <iomanip> // for std::setw
 
+#include "container/minimizer_index.h"
 #include "util/export.h" // MA aligner interface
 #include "util/parameter.h"
 
@@ -15,6 +16,9 @@ class GenomeManager
   public:
     typedef decltype( makePledge<Pack>( std::string( ) ) ) PackPledgeType;
     typedef decltype( makePledge<FMIndex>( std::string( ) ) ) FMDIndexPledgeType;
+#ifdef WITH_ZLIB
+    typedef decltype( makePledge<minimizer::Index>( std::string( ) ) ) MMIndexPledgeType;
+#endif
 
   private:
     // Genome-prefix initially empty (equal to no genome selected)
@@ -25,6 +29,10 @@ class GenomeManager
     PackPledgeType pxPackPledge;
     // shared pointer to FMD-index (pledge)
     FMDIndexPledgeType pxFMDIndexPledge;
+#ifdef WITH_ZLIB
+    // shared pointer to MM-index (pledge)
+    MMIndexPledgeType pxMMIndexPledge;
+#endif
 
   public:
     /* Constructor */
@@ -51,10 +59,23 @@ class GenomeManager
             throw std::runtime_error( "Genome undetermined (Missing FMD-Index)." );
     } // method
 
+#ifdef WITH_ZLIB
+    /* Getter for FMD-Index pledge */
+    MMIndexPledgeType getMMIndexPledge( void )
+    {
+        if( this->pxMMIndexPledge )
+            return this->pxMMIndexPledge;
+        else
+            // Avoid null-pointer problems and throw exception
+            throw std::runtime_error( "Genome undetermined (Missing MM-Index)." );
+    } // method
+#endif
+
     /* Loads genome using info given in JSON-file
      * Returns empty string if loading went well
      */
-    std::string loadGenome( const fs::path& rsJsonFilePath ) // folder containing json, pack and fmd-index
+    std::string loadGenome( ParameterSetManager& rParameterManager,
+                            const fs::path& rsJsonFilePath ) // folder containing json, pack and fmd-index
     {
         // read a JSON file
         try
@@ -76,7 +97,12 @@ class GenomeManager
 
             // Get pledges for pack and FMD-index
             this->pxPackPledge = makePledge<Pack>( sPackPrefix );
-            this->pxFMDIndexPledge = makePledge<FMIndex>( sPackPrefix );
+#ifdef WITH_ZLIB
+            if( rParameterManager.getSelected( )->xSeedingTechnique->get( ) == "mini" )
+                this->pxMMIndexPledge = makePledge<minimizer::Index>( rParameterManager, sPackPrefix + ".mmi" );
+            else
+#endif
+                this->pxFMDIndexPledge = makePledge<FMIndex>( sPackPrefix );
             // (DEBUG) auto xDummyGenome = this->pxPackPledge->get( );
             // (DEBUG) xDummyGenome->printHoles( );
         } // try
@@ -105,6 +131,7 @@ class GenomeManager
     void makeIndexAndPackForGenome( const fs::path& rsGenomeFolderPath, // Folder for genome storage
                                     const fs::path& rsFastaFilePath, // Path to FASTA-file that contains genome
                                     const std::string& rsGenomeTitle, // Name of genome
+                                    ParameterSetManager& rParameterManager,
                                     std::function<void( const std::string& )> // Feedback to the caller
                                         fCallBack )
     {
@@ -119,11 +146,24 @@ class GenomeManager
         pxPack->vAppendFASTA( rsFastaFilePath.string( ) );
         pxPack->vStoreCollection( sGenomeFullPathPrefix.string( ) );
 
-        // Create and store FMD index
-        fCallBack( "Compute FMD-index...\nImportant note: This may take long time.\n" );
-        FMIndex xFMDIndex( pxPack );
-        fCallBack( "Write FMD-Index to file system.\n" );
-        xFMDIndex.vStoreFMIndex( sGenomeFullPathPrefix.string( ).c_str( ) );
+#ifdef WITH_ZLIB
+        if( rParameterManager.getSelected( )->xSeedingTechnique->get( ) == "mini" )
+        {
+            // Create and store Minimizer index
+            fCallBack( "Compute Minimizer index...\n" );
+            minimizer::Index xMMindex( rParameterManager, pxPack->contigSeqs( ), pxPack->contigNames( ) );
+            fCallBack( "Write MM-Index to file system.\n" );
+            xMMindex.dump( sGenomeFullPathPrefix.string( ) + ".mmi" );
+        } // if
+        else
+#endif
+        {
+            // Create and store FMD index
+            fCallBack( "Compute FMD-index...\nImportant note: This may take long time.\n" );
+            FMIndex xFMDIndex( pxPack );
+            fCallBack( "Write FMD-Index to file system.\n" );
+            xFMDIndex.vStoreFMIndex( sGenomeFullPathPrefix.string( ).c_str( ) );
+        } // else
 
         // Create JSON genome info
         fCallBack( "Create JSON info.\n" );
@@ -257,7 +297,7 @@ class OutputManager
     std::string SAMFullFileName( void )
     {
         if( this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection == 2 )
-            return this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputFileName->get().string();
+            return this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputFileName->get( ).string( );
         // SAM filename generation according to parameter settings.
         auto sFullFileName = ( this->pxParameterSetManager->xGlobalParameterSet.xSAMOutputTypeChoice->uiSelection == 0
                                    ? pxReadsManager->getReadsFolderPath( )
@@ -372,12 +412,22 @@ class ExecutionContext
 
             pxReader = pxFileReader;
             auto pxQueriesPledge = promiseMe( pxFileReader );
-            aGraphSinks = setUpCompGraph( xParameterSetManager,
-                                          xGenomeManager.getPackPledge( ), // Pack
-                                          xGenomeManager.getFMDIndexPledge( ), // FMD index
-                                          pxQueriesPledge, // Queries
-                                          pxWriter, // Output writer module(output of alignments)
-                                          uiConcurency ); // Number of threads
+#ifdef WITH_ZLIB
+            if( xParameterSetManager.getSelected( )->xSeedingTechnique->get( ) == "mini" )
+                aGraphSinks = setUpCompGraph( xParameterSetManager,
+                                              xGenomeManager.getPackPledge( ), // Pack
+                                              xGenomeManager.getMMIndexPledge( ), // FMD index
+                                              pxQueriesPledge, // Queries
+                                              pxWriter, // Output writer module(output of alignments)
+                                              uiConcurency ); // Number of threads
+            else
+#endif
+                aGraphSinks = setUpCompGraph( xParameterSetManager,
+                                              xGenomeManager.getPackPledge( ), // Pack
+                                              xGenomeManager.getFMDIndexPledge( ), // FMD index
+                                              pxQueriesPledge, // Queries
+                                              pxWriter, // Output writer module(output of alignments)
+                                              uiConcurency ); // Number of threads
         } // else
 
         // Compute the actual alignments.

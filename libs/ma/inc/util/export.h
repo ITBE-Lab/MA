@@ -176,6 +176,19 @@ std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( const Paramete
                                                                       pWriter,
                                                                   unsigned int uiThreads );
 
+#ifdef WITH_ZLIB
+std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( const ParameterSetManager& rParameters,
+                                                                  std::shared_ptr<Pledge<Pack>>
+                                                                      pPack,
+                                                                  std::shared_ptr<Pledge<minimizer::Index>>
+                                                                      pFMDIndex,
+                                                                  std::shared_ptr<Pledge<NucSeq, true>>
+                                                                      pQueries,
+                                                                  std::shared_ptr<TP_WRITER>
+                                                                      pWriter,
+                                                                  unsigned int uiThreads );
+#endif
+
 std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraphPaired( const ParameterSetManager& rParameters,
                                                                         std::shared_ptr<Pledge<Pack>>
                                                                             pPack,

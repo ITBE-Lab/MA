@@ -173,7 +173,10 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
  * @ingroup module
  * @details
  * Uses a n log(n) algorithm to combine overlapping seeds
+ * Use false for IS_SORTED if in doubt.
+ * IS_SORTED = true will skip the sorting step
  */
+template <bool IS_SORTED>
 class SeedLumping : public Module<Seeds, false, Seeds>
 {
   public:
@@ -191,16 +194,17 @@ class SeedLumping : public Module<Seeds, false, Seeds>
         if( pIn->size( ) == 0 )
             return std::make_shared<Seeds>( );
 
-        std::sort( //
-            pIn->begin( ),
-            pIn->end( ),
-            []( const Seed& rA, const Seed& rB ) //
-            { //
-                if( rA.start_ref( ) - (int64_t)rA.start( ) != rB.start_ref( ) - (int64_t)rB.start( ) )
-                    return rA.start_ref( ) - (int64_t)rA.start( ) < rB.start_ref( ) - (int64_t)rB.start( );
-                return rA.start( ) < rB.start( );
-            } // lambda
-        ); // sort call
+        if(!IS_SORTED)
+            std::sort( //
+                pIn->begin( ),
+                pIn->end( ),
+                []( const Seed& rA, const Seed& rB ) //
+                { //
+                    if( rA.start_ref( ) - (int64_t)rA.start( ) != rB.start_ref( ) - (int64_t)rB.start( ) )
+                        return rA.start_ref( ) - (int64_t)rA.start( ) < rB.start_ref( ) - (int64_t)rB.start( );
+                    return rA.start( ) < rB.start( );
+                } // lambda
+            ); // sort call
 
         auto pRet = std::make_shared<Seeds>( );
         pRet->reserve( pIn->size( ) );

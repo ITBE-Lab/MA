@@ -554,8 +554,10 @@ void NeedlemanWunsch::dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::s
 
     Wrapper_ksw_extz_t ez;
 
-    assert( toQuery < pQuery->length( ) );
-    assert( toRef < pRef->length( ) );
+    if( toRef >= pRef->length( ) )
+        throw std::runtime_error( "alignment past end of reference" );
+    if( toQuery >= pQuery->length( ) )
+        throw std::runtime_error( "alignment past end of query" );
     if( bReverse )
     {
         pQuery->vReverse( fromQuery, toQuery );
@@ -627,7 +629,6 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
                                                          std::shared_ptr<Pack> pRefPack,
                                                          AlignedMemoryManager& rMemoryManager )
 {
-
     if( pSeeds == nullptr )
         return std::shared_ptr<Alignment>( new Alignment( ) );
 
@@ -671,12 +672,12 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
     } // for
     DEBUG_2( std::cout << beginRef << ", " << endRef << "; " << beginQuery << ", " << endQuery << std::endl; ) // DEEBUG
 
-    if( beginRef >= endRef || pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) )
+    if( beginRef >= endRef || pRefPack->bridgingSubsection_depre( beginRef, endRef - beginRef + 1 ) )
     {
 #if 0
         // sometimes we can save the situation by making the last seed smaller...
-        int64_t iContig = pRefPack->uiSequenceIdForPositionOrRev(pSeeds->back().start_ref());
-        if( iContig == pRefPack->uiSequenceIdForPositionOrRev(beginRef) )
+        int64_t iContig = pRefPack->uiSequenceIdForPositionOrRev_depre(pSeeds->back().start_ref());
+        if( iContig == pRefPack->uiSequenceIdForPositionOrRev_depre(beginRef) )
         {
             pSeeds->back().size( 
                 pRefPack->endOfSequenceWithIdOrReverse(iContig) - pSeeds->back().start_ref() - 1
@@ -725,7 +726,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
 
     // here we have enough query coverage to attemt to fill in the gaps merely
     DEBUG_2( std::cout << "filling in gaps" << std::endl; )
-    assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef + 1 ) );
+    assert( !pRefPack->bridgingSubsection_depre( beginRef, endRef - beginRef + 1 ) );
 
     std::shared_ptr<Alignment> pRet;
 
@@ -733,7 +734,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
 
     if( !bLocal )
     {
-        int64_t iOldContig = pRefPack->uiSequenceIdForPositionOrRev( beginRef );
+        int64_t iOldContig = pRefPack->uiSequenceIdForPositionOrRev_depre( beginRef );
 #if PADDING_W_Q == 1
         beginRef -= uiPadding + beginQuery;
 #else
@@ -750,9 +751,9 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
             endRef = pRefPack->uiUnpackedSizeForwardPlusReverse( ) - 1;
         endQuery = pQuery->length( );
         beginQuery = 0;
-        if( pRefPack->uiSequenceIdForPositionOrRev( beginRef ) != iOldContig )
+        if( pRefPack->uiSequenceIdForPositionOrRev_depre( beginRef ) != iOldContig )
             beginRef = pRefPack->startOfSequenceWithIdOrReverse( iOldContig );
-        if( pRefPack->uiSequenceIdForPositionOrRev( endRef ) != iOldContig )
+        if( pRefPack->uiSequenceIdForPositionOrRev_depre( endRef ) != iOldContig )
             endRef = pRefPack->endOfSequenceWithIdOrReverse( iOldContig ) - 1;
 
 #if DEBUG_LEVEL > 0
@@ -778,6 +779,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
                     starts[ i ] >= (nucSeqIndex)pRefPack->iAbsolutePosition( endRef ) )
                     break;
             } // for
+            throw std::runtime_error( "exception" );
         } // if
 #endif
         assert( !pRefPack->bridgingSubsection( beginRef, endRef - beginRef ) );

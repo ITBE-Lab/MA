@@ -9,15 +9,12 @@
 #include "container/segment.h"
 #include "container/soc.h"
 #include "module/module.h"
+#include "module/harmonization.h"
 #include <cmath>
 
 namespace libMA
 {
-/**
- * @brief Used to quickly find areas with high density of @ref Seed "seeds".
- * @ingroup module
- */
-class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVector, NucSeq, Pack, FMIndex>
+class StripOfConsiderationBase
 {
   public:
     /// @brief Maximum ambiguity for a seed to be considered.
@@ -61,6 +58,25 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
         return ( iMatch * uiQueryLength - iGap ) / iExtend;
     } // function
 
+    StripOfConsiderationBase( const ParameterSetManager& rParameters )
+        : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
+          uiMinLen( rParameters.getSelected( )->xMinSeedLength->get( ) ),
+          fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ),
+          uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
+          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) ),
+          uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) ),
+          bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds->get( ) )
+    {} // default constructor
+}; // class
+
+/**
+ * @brief Used to quickly find areas with high density of @ref Seed "seeds".
+ * @ingroup module
+ */
+class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVector, NucSeq, Pack, FMIndex>,
+                             StripOfConsiderationBase
+{
+  public:
     template <class FUNCTOR>
     inline void forEachNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
                                         FUNCTOR&& fDo, // std::function<void(const Seed &rxS)> fDo,
@@ -140,14 +156,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
     } // method
 
   public:
-    StripOfConsideration( const ParameterSetManager& rParameters ) 
-        : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
-          uiMinLen( rParameters.getSelected( )->xMinSeedLength->get( ) ),
-          fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ),
-          uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
-          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) ),
-          uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) ),
-          bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds->get( ) )
+    StripOfConsideration( const ParameterSetManager& rParameters ) : StripOfConsiderationBase( rParameters )
     {} // default constructor
 
     virtual std::shared_ptr<SoCPriorityQueue> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
@@ -159,6 +168,21 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
                                                                     pFM_index );
 }; // class
 
+class MinimizerStripOfConsideration : public Module<SoCPriorityQueue, false, Seeds, NucSeq, Pack>,
+                                      StripOfConsiderationBase
+{
+  public:
+    SeedLumping<true> xLumper;
+    SeedExtender xExtender;
+
+    MinimizerStripOfConsideration( const ParameterSetManager& rParameters )
+        : StripOfConsiderationBase( rParameters ), xLumper( rParameters ), xExtender( rParameters )
+    {} // constructor
+
+    virtual std::shared_ptr<SoCPriorityQueue> EXPORTED execute( std::shared_ptr<Seeds> pSeeds,
+                                                                std::shared_ptr<NucSeq> pQuerySeq,
+                                                                std::shared_ptr<Pack> pPack );
+}; // class
 
 } // namespace libMA
 

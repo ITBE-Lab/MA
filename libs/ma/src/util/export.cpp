@@ -186,6 +186,57 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
     return aRet;
 } // function
 
+#ifdef WITH_ZLIB
+std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterSetManager& rParameters,
+                                                                std::shared_ptr<Pledge<Pack>>
+                                                                    pPack,
+                                                                std::shared_ptr<Pledge<minimizer::Index>>
+                                                                    pIndex,
+                                                                std::shared_ptr<Pledge<NucSeq, true>>
+                                                                    pQueries,
+                                                                std::shared_ptr<TP_WRITER>
+                                                                    pWriter,
+                                                                unsigned int uiThreads )
+{
+    // set up the modules
+    auto pLock = std::make_shared<Lock<NucSeq>>( rParameters );
+    auto pSeeding = std::make_shared<MinimizerSeeding>( rParameters );
+    auto pSOC = std::make_shared<MinimizerStripOfConsideration>( rParameters );
+    auto pHarmonization = std::make_shared<Harmonization>( rParameters );
+    auto pDP = std::make_shared<NeedlemanWunsch>( rParameters );
+    auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
+    auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
+
+    // create the graph
+    std::vector<std::shared_ptr<BasePledge>> aRet;
+    for( unsigned int i = 0; i < uiThreads; i++ )
+    {
+        auto pQuery = promiseMe( pLock, pQueries );
+        auto pSeeds = promiseMe( pSeeding, pIndex, pQuery, pPack );
+        auto pSOCs = promiseMe( pSOC, pSeeds, pQuery, pPack );
+        auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery );
+        auto pAlignments = promiseMe( pDP, pHarmonized, pQuery, pPack );
+        auto pAlignmentsWQuality = promiseMe( pMappingQual, pQuery, pAlignments );
+        if( rParameters.getSelected( )->xSearchInversions->get( ) )
+        {
+            auto pAlignmentsWInv = promiseMe( pSmallInversions, pAlignmentsWQuality, pQuery, pPack );
+            auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWInv, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // if
+        else
+        {
+            auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
+            auto pUnlockResult =
+                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+            aRet.push_back( pUnlockResult );
+        } // else
+    } // for
+    return aRet;
+} // function
+#endif
+
 std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
                                                                       std::shared_ptr<Pledge<Pack>>
                                                                           pPack,

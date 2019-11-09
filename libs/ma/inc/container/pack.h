@@ -692,7 +692,7 @@ class Pack : public Container
                 { /* First N seen. We append a fresh record to vector of holes and initialize the
                    * record. We have to double the capacity if there is no space anymore.
                    */
-                    assert( uiSymbolCode == (unsigned int)'N' || uiSymbolCode == (unsigned int)'n' );
+                    // assert( uiSymbolCode == (unsigned int)'N' || uiSymbolCode == (unsigned int)'n' );
                     xVectorOfHoleDescriptors.emplace_back( HoleDescriptor( uiOffsetDistance, // offset
                                                                            'N' // character
                                                                            ) ); // vector insertion
@@ -1045,10 +1045,25 @@ class Pack : public Container
         // bridging forward reverse border
         return bPositionIsOnReversStrand( uiA ) != bPositionIsOnReversStrand( uiB ) ||
                // section crosses different sequences
-               uiSequenceIdForPositionOrRev( uiA ) != uiSequenceIdForPositionOrRev( uiB );
+               uiSequenceIdForPositionOrRev_depre( uiA ) != uiSequenceIdForPositionOrRev_depre( uiB );
     } // method
 
-    /*
+    /**
+     * Return a sequence id including the reverse complement.
+     * this is done by multiplying the id's by 2
+     * an even number is on the forward strand
+     * an odd on the reverse
+     * in order to get the initial id do floor(id/2)
+     * @note deprecated due to error for positions on rev strand
+     */
+    int64_t uiSequenceIdForPositionOrRev_depre( uint64_t uiPosition ) const
+    {
+        if( bPositionIsOnReversStrand( uiPosition ) )
+            return uiSequenceIdForPosition( uiPositionToReverseStrand( uiPosition - 1 ) ) * 2 + 1;
+        return uiSequenceIdForPosition( uiPosition ) * 2;
+    } // function
+
+    /**
      * Return a sequence id including the reverse complement.
      * this is done by multiplying the id's by 2
      * an even number is on the forward strand
@@ -1058,13 +1073,13 @@ class Pack : public Container
     int64_t uiSequenceIdForPositionOrRev( uint64_t uiPosition ) const
     {
         if( bPositionIsOnReversStrand( uiPosition ) )
-            return uiSequenceIdForPosition( uiPositionToReverseStrand( uiPosition - 1 ) ) * 2 + 1;
+            return uiSequenceIdForPosition( uiPositionToReverseStrand( uiPosition ) ) * 2 + 1;
         return uiSequenceIdForPosition( uiPosition ) * 2;
     } // function
 
     /*
-     * @see uiSequenceIdForPositionOrRev
-     * only use with ids from uiSequenceIdForPositionOrRev
+     * @see uiSequenceIdForPositionOrRev_depre
+     * only use with ids from uiSequenceIdForPositionOrRev_depre
      */
     uint64_t endOfSequenceWithIdOrReverse( int64_t iSequenceId ) const
     {
@@ -1108,6 +1123,27 @@ class Pack : public Container
         } // else
     } // method
 
+    /** Returns true if the section defined by both arguments has bridging properties.
+     * Returns false for a non-bridging section.
+     * @note deprecated due to error for positions on rev strand
+     */
+    bool bridgingSubsection_depre( const uint64_t uiBegin, const uint64_t uiSize ) const
+    {
+        assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse( ) );
+        if( uiSize > 0 )
+        {
+            int64_t riSequenceId = uiSequenceIdForPositionOrRev_depre( uiBegin );
+            // bridging forward reverse border
+            return ( bPositionIsOnReversStrand( uiBegin ) != bPositionIsOnReversStrand( ( uiBegin + uiSize ) - 1 ) ) ||
+                   ( riSequenceId != uiSequenceIdForPositionOrRev_depre( ( uiBegin + uiSize ) -
+                                                                         1 ) ); // section crosses different sequences
+        } // if
+        else
+        {
+            return false;
+        } // else
+    } // method
+
     /*
      * boost can't handle overloads
      * thus we create a un-overloaded function for it...
@@ -1126,7 +1162,7 @@ class Pack : public Container
     {
         DEBUG( assert( bridgingSubsection( uiBegin, uiSize ) ); uint64_t uiSizeOriginal = uiSize; )
         assert( uiBegin + uiSize < uiUnpackedSizeForwardPlusReverse( ) );
-        int64_t startId = uiSequenceIdForPositionOrRev( uiBegin );
+        int64_t startId = uiSequenceIdForPositionOrRev_depre( uiBegin );
 
         uint64_t uiSplit = endOfSequenceWithIdOrReverse( startId );
         assert( uiBegin <= uiSplit );
