@@ -28,8 +28,10 @@ class SoCOrder
   public:
     /// @brief Stores the accumulative seed length.
     nucSeqIndex uiAccumulativeLength = 0;
+#if AMBIGUITY == ( 1 )
     /// @brief Stores the accumulative seed ambiguity.
     unsigned int uiSeedAmbiguity = 0;
+#endif
     /// @brief Stores the amount of seeds in the SoC. (Currently not used for the Score.)
     unsigned int uiSeedAmount = 0;
 
@@ -40,7 +42,9 @@ class SoCOrder
      */
     inline void operator+=( const Seed &rS )
     {
+#if AMBIGUITY == ( 1 )
         uiSeedAmbiguity += rS.uiAmbiguity;
+#endif
         uiSeedAmount++;
         uiAccumulativeLength += rS.getValue( );
     } // operator
@@ -55,8 +59,10 @@ class SoCOrder
      */
     inline void operator-=( const Seed &rS )
     {
+#if AMBIGUITY == ( 1 )
         assert( uiSeedAmbiguity >= rS.uiAmbiguity );
         uiSeedAmbiguity -= rS.uiAmbiguity;
+#endif
         assert( uiAccumulativeLength >= rS.getValue( ) );
         uiAccumulativeLength -= rS.getValue( );
         uiSeedAmount--;
@@ -70,8 +76,10 @@ class SoCOrder
      */
     inline bool operator<( const SoCOrder &rOther ) const
     {
+#if AMBIGUITY == ( 1 )
         if( uiAccumulativeLength == rOther.uiAccumulativeLength )
             return uiSeedAmbiguity > rOther.uiSeedAmbiguity;
+#endif
         return uiAccumulativeLength < rOther.uiAccumulativeLength;
     } // operator
 
@@ -84,7 +92,9 @@ class SoCOrder
     inline void operator=( const SoCOrder &rOther )
     {
         uiAccumulativeLength = rOther.uiAccumulativeLength;
+#if AMBIGUITY == ( 1 )
         uiSeedAmbiguity = rOther.uiSeedAmbiguity;
+#endif
     } // operator
 }; // class
 
@@ -170,24 +180,6 @@ class SoCPriorityQueue : public Container
     {
         return vMaxima.size( );
     }
-
-    // overload
-    inline bool canCast( const std::shared_ptr<Container> &c ) const
-    {
-        return std::dynamic_pointer_cast<SoCPriorityQueue>( c ) != nullptr;
-    } // function
-
-    // overload
-    inline std::string getTypeName( ) const
-    {
-        return "SoCPriorityQueue";
-    } // function
-
-    // overload
-    inline std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new SoCPriorityQueue( ) );
-    } // function
 
     /// @brief Returns weather the queue is empty (usable in either state).
     inline bool empty( ) const

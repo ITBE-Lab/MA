@@ -54,6 +54,7 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	# Set the debug level 
 	message( "Set debug level to 1" )
 	add_definitions( "-DDEBUG_LEVEL=1" )
+	# add_definitions( "-DNDEBUG=1" ) # disable asserts
 	if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
 		# In the debuf mode the code comprises unsed variables.
 		# Corresponding warning will be switched off.

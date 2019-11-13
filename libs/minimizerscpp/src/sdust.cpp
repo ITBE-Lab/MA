@@ -18,7 +18,12 @@ typedef struct {
 typedef kvec_t(perf_intv_t) perf_intv_v;
 typedef kvec_t(uint64_t) uint64_v;
 
+#ifdef WIN32
+#pragma warning(push)
+#pragma warning(disable:4334 4244)
 KDQ_INIT(int)
+#pragma warning(pop)
+#endif
 
 #if defined(_NO_NT4_TBL) || defined(_SDUST_MAIN)
 unsigned char seq_nt4_table[256] = {
@@ -101,7 +106,7 @@ static inline void save_masked_regions(void *km, uint64_v *res, perf_intv_v *P, 
 			saved = 1, res->a[res->n - 1] = (uint64_t)s<<32 | (f > p->finish? f : p->finish);
 	}
 	if (!saved) kv_push(uint64_t, km, *res, (uint64_t)p->start<<32|p->finish);
-	for (i = P->n - 1; i >= 0 && P->a[i].start < start; --i); // remove perfect intervals that have falled out of the window
+	for (i = (int)P->n - 1; i >= 0 && P->a[i].start < start; --i); // remove perfect intervals that have falled out of the window
 	P->n = i + 1;
 }
 
@@ -112,7 +117,7 @@ static void find_perfect(void *km, perf_intv_v *P, const kdq_t(int) *w, int T, i
 	for (i = (long)kdq_size(w) - L - 1; i >= 0; --i) {
 		int j, t = kdq_at(w, i), new_r, new_l;
 		r += c[t]++;
-		new_r = r, new_l = kdq_size(w) - i - 1;
+		new_r = r, new_l = (int)kdq_size(w) - i - 1;
 		if (new_r * 10 > T * new_l) {
 			for (j = 0; j < (int)P->n && P->a[j].start >= i + start; ++j) { // find insertion position
 				perf_intv_t *p = &P->a[j];
@@ -124,7 +129,7 @@ static void find_perfect(void *km, perf_intv_v *P, const kdq_t(int) *w, int T, i
 				if (P->n == P->m) kv_resize(perf_intv_t, km, *P, P->n + 1);
 				memmove(&P->a[j+1], &P->a[j], (P->n - j) * sizeof(perf_intv_t)); // make room
 				++P->n;
-				P->a[j].start = i + start, P->a[j].finish = kdq_size(w) + (SD_WLEN - 1) + start;
+				P->a[j].start = i + start, P->a[j].finish = (int)kdq_size(w) + (SD_WLEN - 1) + start;
 				P->a[j].r = new_r, P->a[j].l = new_l;
 			}
 		}
@@ -141,7 +146,7 @@ const uint64_t *sdust_core(const uint8_t *seq, int l_seq, int T, int W, int *n, 
 	buf->w->front = buf->w->count = 0;
 	memset(cv, 0, SD_WTOT * sizeof(int));
 	memset(cw, 0, SD_WTOT * sizeof(int));
-	if (l_seq < 0) l_seq = strlen((const char*)seq);
+	if (l_seq < 0) l_seq = (int)strlen((const char*)seq);
 	for (i = l = t = 0; i <= l_seq; ++i) {
 		int b = i < l_seq? seq_nt4_table[seq[i]] : 4;
 		if (b < 4) { // an A/C/G/T base
@@ -159,7 +164,7 @@ const uint64_t *sdust_core(const uint8_t *seq, int l_seq, int T, int W, int *n, 
 			l = t = 0;
 		}
 	}
-	*n = buf->res.n;
+	*n = (int)buf->res.n;
 	return buf->res.a;
 }
 

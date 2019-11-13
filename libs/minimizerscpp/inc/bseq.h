@@ -31,7 +31,7 @@ extern unsigned char seq_comp_table[256];
 static inline int mm_qname_len(const char *s)
 {
 	int l;
-	l = strlen(s);
+	l = (int)strlen(s);
 	return l >= 3 && s[l-1] >= '0' && s[l-1] <= '9' && s[l-2] == '/'? l - 2 : l;
 }
 

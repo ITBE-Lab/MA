@@ -5,6 +5,7 @@
  */
 
 #include "module/stripOfConsideration.h"
+#include "util/radix_sort.h"
 #include "util/system.h"
 using namespace libMA;
 
@@ -154,6 +155,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 
 } // function
 
+#define NUM_BITS_FOR_QUERY 27
 std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute( std::shared_ptr<Seeds> pSeeds,
                                                                           std::shared_ptr<NucSeq> pQuerySeq,
                                                                           std::shared_ptr<Pack> pPack )
@@ -171,6 +173,7 @@ std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute( std::s
      */
     const nucSeqIndex uiStripSize = this->getStripSize( uiQLen, iMatch, iExtend, iGap );
 
+#if 0 || DELTA_CACHE == ( 0 )
     // sort the seeds according to their initial positions
     std::sort( pSeeds->begin( ), pSeeds->end( ),
                [&]( const Seed& rA, const Seed& rB ) {
@@ -179,10 +182,17 @@ std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute( std::s
                    return rA.start( ) < rB.start( );
                } // lambda
     ); // sort function call
+#else
+    for( auto& rS : *pSeeds )
+        rS.uiDelta = ( getPositionForBucketing( uiQLen, rS ) << NUM_BITS_FOR_QUERY ) |
+                     ( rS.start( ) & bitmask<nucSeqIndex>( NUM_BITS_FOR_QUERY ) );
+    radix_sort<8>( &pSeeds->front( ), &pSeeds->front( ) + pSeeds->size( ),
+                   []( const Seed& rSeed ) { return rSeed.uiDelta; } );
+#endif
 
     // combine seeds
-    auto pSeeds2 = xLumper.execute(pSeeds);
-    auto pSeeds3 = xExtender.execute(pSeeds2, pQuerySeq, pPack);
+    auto pSeeds2 = xLumper.execute( pSeeds );
+    auto pSeeds3 = xExtender.execute( pSeeds2, pQuerySeq, pPack );
 
     // positions to remember the maxima
     auto pSoCs = std::make_shared<SoCPriorityQueue>( pSeeds3 );
@@ -195,7 +205,7 @@ std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute( std::s
     {
         // move xStripEnd forwards while it is closer to xStripStart than uiStripSize
         while( xStripEnd != pSeeds3->end( ) && getPositionForBucketing( uiQLen, *xStripStart ) + uiStripSize >=
-                                                  getPositionForBucketing( uiQLen, *xStripEnd ) )
+                                                   getPositionForBucketing( uiQLen, *xStripEnd ) )
         {
             // remember the additional score
             xCurrScore += *xStripEnd;

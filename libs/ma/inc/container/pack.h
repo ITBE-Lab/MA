@@ -576,25 +576,6 @@ class Pack : public Container
         this->vLoadCollection( sFileName );
     } // constructor
 
-
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<Pack>( c ) != nullptr;
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "Pack";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Pack( ) );
-    } // function
-
     /**
      * @brief compute the percentage of the interval [uiStart, uiEnd) that is covered by holes (Ns).
      * @details

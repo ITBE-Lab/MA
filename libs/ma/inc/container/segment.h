@@ -47,25 +47,6 @@ class Segment : public Container, public Interval<nucSeqIndex>
     Segment( const Segment& other ) : Interval( other ), xSaInterval( other.xSaInterval )
     {} // copy constructor
 
-
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<Segment>( c ) != nullptr;
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "Segment";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Segment( ) );
-    } // function
-
     /**
      * @brief The bwt interval within.
      * @returns the bwt interval within.
@@ -252,24 +233,6 @@ class SegmentVector : public Container
         );
     } // method
 
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<SegmentVector>( c ) != nullptr;
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "SegmentVector";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<SegmentVector>( new SegmentVector( ) );
-    } // function
-
     /**
      * @brief Extracts all seeds from the tree.
      * @details
@@ -309,8 +272,13 @@ class SegmentVector : public Container
                 // match individually
                 nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa( ulCurrPos );
                 // call the given function
-                if( !fDo( Seed( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq,
-                                (unsigned int)rSegment.saInterval( ).size( ) ) ) )
+                if( !fDo( Seed( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq
+#if AMBIGUITY == ( 1 )
+                                ,
+                                (unsigned int)rSegment.saInterval( ).size( )
+#endif
+
+                                    ) ) )
                     return;
             } // for
         } // for
@@ -354,8 +322,12 @@ class SegmentVector : public Container
                 // match individually
                 nucSeqIndex ulIndexOnRefSeq = rxFMIndex.bwt_sa( ulCurrPos );
                 // call the given function
-                rvSeedVector.emplace_back( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq,
-                                           (unsigned int)rSegment.saInterval( ).size( ) );
+                rvSeedVector.emplace_back( rSegment.start( ), rSegment.size( ) + 1, ulIndexOnRefSeq
+#if AMBIGUITY == ( 1 )
+                                           ,
+                                           (unsigned int)rSegment.saInterval( ).size( )
+#endif
+                );
                 if( !fDo( ) )
                     return;
             } // for

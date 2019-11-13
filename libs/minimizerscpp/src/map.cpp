@@ -59,13 +59,16 @@ static void collect_minimizers( void* km, const mm_mapopt_t* opt, const mm_idx_t
         for( j = n; j < mv->n; ++j )
             mv->a[ j ].y += sum << 1;
         if( opt->sdust_thres > 0 ) // mask low-complexity minimizers
-            mv->n = n + mm_dust_minier( km, mv->n - n, mv->a + n, qlens[ i ], seqs[ i ], opt->sdust_thres );
-        sum += qlens[ i ], n = mv->n;
+            mv->n = n + mm_dust_minier( km, (int)mv->n - n, mv->a + n, qlens[ i ], seqs[ i ], opt->sdust_thres );
+        sum += qlens[ i ], n = (int)mv->n;
     }
 }
 
 #include "ksort.h"
 #define heap_lt( a, b ) ( ( a ).x > ( b ).x )
+#ifdef WIN32
+#pragma warning(suppress: 5033)
+#endif
 KSORT_INIT( heap, mm128_t, heap_lt )
 
 typedef struct

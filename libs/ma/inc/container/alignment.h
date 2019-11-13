@@ -152,24 +152,6 @@ class Alignment : public Container
         return sRet;
     }
 
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<Alignment>( c ) != nullptr;
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "Alignment";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Alignment( ) );
-    } // function
-
     int64_t EXPORTED reCalcScore( ) const;
 
     /**
@@ -636,11 +618,8 @@ class Alignment : public Container
      * @details
      * When multiple alignments are created we use this function to sort them.
      */
-    bool larger( const std::shared_ptr<Container> pOther ) const
+    bool larger( const std::shared_ptr<Alignment> pAlign ) const
     {
-        const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>( pOther );
-        if( pAlign == nullptr )
-            return false;
         size_t uiA = 0;
         size_t uiB = 0;
         if( pAlign->bSecondary )

@@ -6,6 +6,10 @@
 #include "bseq.h"
 #include "kvec.h"
 #include "kseq.h"
+
+#ifdef WIN32
+#pragma warning(suppress: 4003)
+#endif
 KSEQ_INIT2(, gzFile, gzread)
 
 unsigned char seq_comp_table[256] = {
@@ -39,7 +43,7 @@ mm_bseq_file_t *mm_bseq_open(const char *fn)
 {
 	mm_bseq_file_t *fp;
 	gzFile f;
-	f = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
+	f = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(_fileno(stdin), "r");
 	if (f == 0) return 0;
 	fp = (mm_bseq_file_t*)calloc(1, sizeof(mm_bseq_file_t));
 	fp->fp = f;
@@ -107,7 +111,7 @@ mm_bseq1_t *mm_bseq_read3(mm_bseq_file_t *fp, int chunk_size, int with_qual, int
 			break;
 		}
 	}
-	*n_ = a.n;
+	*n_ = (int)a.n;
 	return a.a;
 }
 

@@ -57,6 +57,7 @@ template class Join<Container, Container
 
 int main( void )
 {
+    std::cout << "Seed Data Size:" << sizeof( libMA::Seed ) << std::endl;
     auto pPack = makePledge<Pack>( );
     pPack->get( )->vAppendSequence( "chr1", "chr1-desc", *randomNucSeq( 65536 ) );
     auto pFmIndex = makePledge<FMIndex>( pPack->get( ) );

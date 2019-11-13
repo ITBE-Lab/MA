@@ -136,7 +136,7 @@ class Index : public libMA::Container
         IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
-        pData = mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) );
+        pData = mm_idx_reader_read( xIndexReader.idx_rdr, (int)rParameters.getNumThreads( ) );
         if( ( xOptions.flag & MM_F_CIGAR ) && ( pData->flag & MM_I_NO_SEQ ) )
             throw std::runtime_error( "the prebuilt index doesn't contain sequences" );
         initOptions( );
@@ -144,7 +144,7 @@ class Index : public libMA::Container
         mm_idx_stat( pData );
 #endif
         // make sure that there are no multipart indices
-        if( mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) ) != 0 )
+        if( mm_idx_reader_read( xIndexReader.idx_rdr, (int)rParameters.getNumThreads( ) ) != 0 )
             throw std::runtime_error( "index comes in multiple parts" );
     } // constructor
 
@@ -164,8 +164,8 @@ class Index : public libMA::Container
         for( auto& sName : vContigsNames )
             name.push_back( sName.data( ) );
 
-        pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits, vContigs.size( ),
-                            &seq[ 0 ], &name[ 0 ] );
+        pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits,
+                            (int)vContigs.size( ), &seq[ 0 ], &name[ 0 ] );
         initOptions( );
         mm_idx_stat( pData );
         std::cout << "max Occ:" << xMapOpt.mid_occ << std::endl;
@@ -179,8 +179,9 @@ class Index : public libMA::Container
     void dump( std::string sIndexName )
     {
         mm_idx_stat( pData );
-        auto* fp_out = fopen( sIndexName.c_str( ), "wb" );
-        if( fp_out == 0 )
+        FILE *fp_out;
+        errno_t err = fopen_s( &fp_out, sIndexName.c_str( ), "wb" );
+        if( err != 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
         mm_idx_dump( fp_out, pData );
         fclose( fp_out );
@@ -190,7 +191,7 @@ class Index : public libMA::Container
     {
         auto pRet = std::make_shared<libMA::Seeds>( );
         const char* sSeq = sQuery.c_str( );
-        const int iSize = sQuery.size( );
+        const int iSize = (int)sQuery.size( );
         int64_t n_a = 0;
         mm_tbuf_t* tbuf = mm_tbuf_init( );
         // const char* seqs = (const char*)&pQuery->pxSequenceRef;
@@ -216,8 +217,11 @@ class Index : public libMA::Container
                         ( (int32_t)a[ uiI ].y ) + 1 - uiQSpan,
                         uiQSpan,
                         /* reference position is encoded in the lower 32 bits of x */
-                        ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
+                        ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 )
+#if AMBIGUITY == ( 1 )
+                            ,
                         1 // @todo get ambiguity from within the index
+#endif
                     );
                 } // if
                 else // @todo old version does not have flag for forward/reverse strand
@@ -230,8 +234,11 @@ class Index : public libMA::Container
                         uiQSpan,
                         /* reference position is encoded in the lower 32 bits of x */
                         pPack->uiPositionToReverseStrand( (int32_t)a[ uiI ].x +
-                                                          pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ) ),
+                                                          pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ) )
+#if AMBIGUITY == ( 1 )
+                            ,
                         1 // @todo get ambiguity from within the index
+#endif
                     );
                 } // else
             } // for

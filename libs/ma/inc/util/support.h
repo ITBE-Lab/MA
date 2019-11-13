@@ -25,6 +25,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <vector>
+#include <climits>
 /// @endcond
 
 #ifdef __GNUC__
@@ -177,5 +178,15 @@ template <class X> std::string type_name( )
 bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd );
 
 std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex );
+
+template <typename R>
+static constexpr R bitmask(unsigned int const onecount)
+{
+//  return (onecount != 0)
+//      ? (static_cast<R>(-1) >> ((sizeof(R) * CHAR_BIT) - onecount))
+//      : 0;
+    return static_cast<R>(-(onecount != 0))
+        & (static_cast<R>(-1) >> ((sizeof(R) * CHAR_BIT) - onecount));
+}
 
 #endif

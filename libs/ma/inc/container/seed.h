@@ -15,6 +15,7 @@
 
 #define DELTA_CACHE ( 1 )
 #define CONTIG_ID_CACHE ( 0 )
+#define AMBIGUITY ( 0 )
 
 namespace libMA
 {
@@ -36,7 +37,9 @@ class Seed : public Container, public Interval<nucSeqIndex>
   public:
     ///@brief the beginning of the match on the reference
     nucSeqIndex uiPosOnReference;
-    unsigned int uiAmbiguity;
+#if AMBIGUITY == ( 1 )
+    unsigned int uiAmbiguity = 0;
+#endif
 #if DELTA_CACHE == ( 1 )
     nucSeqIndex uiDelta = 0;
 #endif
@@ -48,9 +51,10 @@ class Seed : public Container, public Interval<nucSeqIndex>
      * @brief Creates a new Seed.
      */
     Seed( const nucSeqIndex uiPosOnQuery, const nucSeqIndex uiLength, const nucSeqIndex uiPosOnReference )
-        : Interval( uiPosOnQuery, uiLength ), uiPosOnReference( uiPosOnReference ), uiAmbiguity( 0 )
+        : Interval( uiPosOnQuery, uiLength ), uiPosOnReference( uiPosOnReference )
     {} // constructor
 
+#if AMBIGUITY == ( 1 )
     /**
      * @brief Creates a new Seed.
      */
@@ -58,14 +62,18 @@ class Seed : public Container, public Interval<nucSeqIndex>
           const unsigned int uiAmbiguity )
         : Interval( uiPosOnQuery, uiLength ), uiPosOnReference( uiPosOnReference ), uiAmbiguity( uiAmbiguity )
     {} // constructor
+#endif
 
     /**
      * @brief Copys from a Seed.
      */
     Seed( const Seed& rOther )
         : Interval( rOther ),
-          uiPosOnReference( rOther.uiPosOnReference ),
+          uiPosOnReference( rOther.uiPosOnReference )
+#if AMBIGUITY == ( 1 )
+          ,
           uiAmbiguity( rOther.uiAmbiguity )
+#endif
 #if DELTA_CACHE == ( 1 )
           ,
           uiDelta( rOther.uiDelta )
@@ -80,7 +88,11 @@ class Seed : public Container, public Interval<nucSeqIndex>
      * @brief Default Constructor.
      */
     Seed( ) : Interval( )
-    {} // default constructor
+    {
+#if DEBUG_LEVEL == 0
+        //static_assert( sizeof( Seed ) == 32, "" );
+#endif
+    } // default constructor
 
     /**
      * @brief Returns the beginning of the seed on the reference.
@@ -115,7 +127,9 @@ class Seed : public Container, public Interval<nucSeqIndex>
     {
         Interval::operator=( rxOther );
         uiPosOnReference = rxOther.uiPosOnReference;
+#if AMBIGUITY == ( 1 )
         uiAmbiguity = rxOther.uiAmbiguity;
+#endif
 #if DELTA_CACHE == ( 1 )
         uiDelta = rxOther.uiDelta;
 #endif
@@ -134,25 +148,15 @@ class Seed : public Container, public Interval<nucSeqIndex>
         return Interval::operator==( rxOther ) && uiPosOnReference == rxOther.uiPosOnReference;
     } // operator
 
-    // overload
-    inline bool canCast( const std::shared_ptr<Container>& c ) const
-    {
-        return std::dynamic_pointer_cast<Seed>( c ) != nullptr;
-    } // function
-
-    // overload
-    inline std::string getTypeName( ) const
-    {
-        return "Seed";
-    } // function
-
-    // overload
-    inline std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Seed( ) );
-    } // function
-
 }; // class
+
+#if 0
+    template<int s> struct Wow;
+    struct foo {
+        int a,b;
+    };
+    Wow<sizeof(Seed)> wow;
+#endif
 
 class Alignment;
 /**
@@ -242,24 +246,6 @@ class Seeds : public Container
     Seeds( size_t numElements ) : vContent( numElements )
     {} // constructor
 
-    // overload
-    inline bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<Seeds>( c ) != nullptr;
-    } // method
-
-    // overload
-    inline std::string getTypeName( ) const
-    {
-        return "Seeds";
-    } // method
-
-    // overload
-    inline std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new Seeds( ) );
-    } // method
-
     /**
      * @brief sorts by reference position (asc) and for equal reference pos by size (desc)
      */
@@ -307,15 +293,6 @@ class Seeds : public Container
     {
         for( Seed& rS : pOther->vContent )
             push_back( rS );
-    } // method
-
-    /// @brief return wether this seed set is larger according to getScore()
-    inline bool larger( const std::shared_ptr<Container> pOther ) const
-    {
-        const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>( pOther );
-        if( pSeeds == nullptr )
-            return true;
-        return getScore( ) > pSeeds->getScore( );
     } // method
 
     // setter

@@ -133,7 +133,7 @@ void mm_err_puts(const char *str)
 
 void mm_err_fwrite(const void *p, size_t size, size_t nitems, FILE *fp)
 {
-	int ret;
+	size_t ret;
 	ret = fwrite(p, size, nitems, fp);
 	if (ret == EOF) {
 		fprintf(stderr, "[ERROR] failed to write data\n");
@@ -143,7 +143,7 @@ void mm_err_fwrite(const void *p, size_t size, size_t nitems, FILE *fp)
 
 void mm_err_fread(void *p, size_t size, size_t nitems, FILE *fp)
 {
-	int ret;
+	size_t ret;
 	ret = fread(p, size, nitems, fp);
 	if (ret == EOF) {
 		fprintf(stderr, "[ERROR] failed to read data\n");
@@ -159,4 +159,7 @@ KRADIX_SORT_INIT(128x, mm128_t, sort_key_128x, 8)
 #define sort_key_64(x) (x)
 KRADIX_SORT_INIT(64, uint64_t, sort_key_64, 8)
 
+#ifdef WIN32
+#pragma warning(suppress: 5033)
+#endif
 KSORT_INIT_GENERIC(uint32_t)

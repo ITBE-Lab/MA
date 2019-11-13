@@ -17,6 +17,10 @@
 
 #define idx_hash(a) ((a)>>1)
 #define idx_eq(a, b) ((a)>>1 == (b)>>1)
+
+#ifdef WIN32
+#pragma warning(suppress: 4244)
+#endif
 KHASH_INIT(idx, uint64_t, uint64_t, 1, idx_hash, idx_eq)
 typedef khash_t(idx) idxhash_t;
 
@@ -39,6 +43,10 @@ mm_idx_t *mm_idx_init(int w, int k, int b, int flag)
 	if (w < 1) w = 1;
 	mi = (mm_idx_t*)calloc(1, sizeof(mm_idx_t));
 	mi->w = w, mi->k = k, mi->b = b, mi->flag = flag;
+    
+    #ifdef WIN32
+    #pragma warning(suppress: 4334)
+    #endif
 	mi->B = (mm_idx_bucket_t*)calloc(1<<b, sizeof(mm_idx_bucket_t));
 	if (!(mm_dbg_flag & 1)) mi->km = km_init();
 	return mi;
@@ -158,7 +166,8 @@ int32_t mm_idx_cal_max_occ(const mm_idx_t *mi, float f)
 			n += kh_size((idxhash_t*)mi->B[i].h);
 	
 	a = (uint32_t*)malloc(n * 4); // n is now computed ...
-	for (i = n = 0; i < 1<<mi->b; ++i) {
+    n = 0;
+	for (i = 0; i < 1<<mi->b; ++i) {
 		idxhash_t *h = (idxhash_t*)mi->B[i].h;
 		if (h == 0) continue;
 		for (k = 0; k < kh_end(h); ++k) {
@@ -298,14 +307,15 @@ static void *worker_pipeline(void *shared, int step, void *in)
 				mm_idx_seq_t *seq = &p->mi->seq[p->mi->n_seq];
 				uint32_t j;
 				if (!(p->mi->flag & MM_I_NO_NAME)) {
-					seq->name = (char*)kmalloc(p->mi->km, strlen(s->seq[i].name) + 1);
-					strcpy(seq->name, s->seq[i].name);
+                    size_t l = strlen(s->seq[i].name) + 1;
+					seq->name = (char*)kmalloc(p->mi->km, l);
+					strcpy_s(seq->name, l, s->seq[i].name);
 				} else seq->name = 0;
 				seq->len = s->seq[i].l_seq;
 				seq->offset = p->sum_len;
 				// copy the sequence
 				if (!(p->mi->flag & MM_I_NO_SEQ)) {
-					for (j = 0; j < seq->len; ++j) { // TODO: this is not the fastest way, but let's first see if speed matters here
+					for (j = 0; j < seq->len; ++j) { // @todo: this is not the fastest way, but let's first see if speed matters here
 						uint64_t o = p->sum_len + j;
 						int c = seq_nt4_table[(uint8_t)s->seq[i].seq[j]];
 						mm_seq4_set(p->mi->S, o, c);
@@ -331,7 +341,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
 		return s;
     } else if (step == 2) { // dispatch sketch to buckets
         step_t *s = (step_t*)in;
-		mm_idx_add(p->mi, s->a.n, s->a.a);
+		mm_idx_add(p->mi, (int)s->a.n, s->a.a);
 		kfree(0, s->a.a); free(s);
 	}
     return 0;
@@ -342,7 +352,7 @@ mm_idx_t *mm_idx_gen(mm_bseq_file_t *fp, int w, int k, int b, int flag, int mini
 	pipeline_t pl;
 	if (fp == 0 || mm_bseq_eof(fp)) return 0;
 	memset(&pl, 0, sizeof(pipeline_t));
-	pl.mini_batch_size = (uint64_t)mini_batch_size < batch_size? mini_batch_size : batch_size;
+	pl.mini_batch_size = (int)((uint64_t)mini_batch_size < batch_size? mini_batch_size : batch_size);
 	pl.batch_size = batch_size;
 	pl.fp = fp;
 	pl.mi = mm_idx_init(w, k, b, flag);
@@ -394,13 +404,14 @@ mm_idx_t *mm_idx_str(int w, int k, int is_hpc, int bucket_bits, int n, const cha
 		uint32_t j;
 		if (name && name[i]) {
 			int absent;
-			p->name = (char*)kmalloc(mi->km, strlen(name[i]) + 1);
-			strcpy(p->name, name[i]);
+            size_t l = strlen(name[i]) + 1;
+			p->name = (char*)kmalloc(mi->km, l);
+			strcpy_s(p->name, l, name[i]);
 			kh_put(str, h, p->name, &absent);
 			assert(absent);
 		}
 		p->offset = sum_len;
-		p->len = strlen(s);
+		p->len = (uint32_t)strlen(s);
 		for (j = 0; j < p->len; ++j) {
 			int c = seq_nt4_table[(uint8_t)s[j]];
 			uint64_t o = sum_len + j;
@@ -410,7 +421,7 @@ mm_idx_t *mm_idx_str(int w, int k, int is_hpc, int bucket_bits, int n, const cha
 		if (p->len > 0) {
 			a.n = 0;
 			mm_sketch(0, s, p->len, w, k, i, is_hpc, &a);
-			mm_idx_add(mi, a.n, a.a);
+			mm_idx_add(mi, (int)a.n, a.a);
 		}
 	}
 	free(a.a);
@@ -432,7 +443,7 @@ void mm_idx_dump(FILE *fp, const mm_idx_t *mi)
 	fwrite(x, 4, 5, fp);
 	for (i = 0; i < mi->n_seq; ++i) {
 		if (mi->seq[i].name) {
-			uint8_t l = strlen(mi->seq[i].name);
+			uint8_t l = (uint8_t)strlen(mi->seq[i].name);
 			fwrite(&l, 1, 1, fp);
 			fwrite(mi->seq[i].name, 1, l, fp);
 		} else {
@@ -523,8 +534,12 @@ int64_t mm_idx_is_idx(const char *fn)
 	int64_t ret, off_end;
 	char magic[4];
 
-	if (strcmp(fn, "-") == 0) return 0; // read from pipe; not an index
-	fd = open(fn, O_RDONLY);
+	if (strcmp(fn, "-") == 0) return 0; // read from pipe; not an index.
+    
+#ifdef WIN32
+    #pragma warning(suppress: 4996)
+#endif
+	fd = _open(fn, O_RDONLY);
 	if (fd < 0) return -1; // error
 #ifdef WIN32
 	if ((off_end = _lseeki64(fd, 0, SEEK_END)) >= 4) {
@@ -533,11 +548,11 @@ int64_t mm_idx_is_idx(const char *fn)
 	if ((off_end = lseek(fd, 0, SEEK_END)) >= 4) {
 		lseek(fd, 0, SEEK_SET);
 #endif // WIN32
-		ret = read(fd, magic, 4);
+		ret = _read(fd, magic, 4);
 		if (ret == 4 && strncmp(magic, MM_IDX_MAGIC, 4) == 0)
 			is_idx = 1;
 	}
-	close(fd);
+	_close(fd);
 	return is_idx? off_end : 0;
 }
 
@@ -548,14 +563,14 @@ mm_idx_reader_t *mm_idx_reader_open(const char *fn, const mm_idxopt_t *opt, cons
 	is_idx = mm_idx_is_idx(fn);
 	if (is_idx < 0) return 0; // failed to open the index
 	r = (mm_idx_reader_t*)calloc(1, sizeof(mm_idx_reader_t));
-	r->is_idx = is_idx;
+	r->is_idx = (int)is_idx;
 	if (opt) r->opt = *opt;
 	else assert(0);
 	if (r->is_idx) {
-		r->fp.idx = fopen(fn, "rb");
+		fopen_s(&r->fp.idx, fn, "rb");
 		r->idx_size = is_idx;
 	} else r->fp.seq = mm_bseq_open(fn);
-	if (fn_out) r->fp_out = fopen(fn_out, "wb");
+	if (fn_out) fopen_s(&r->fp_out, fn_out, "wb");
 	return r;
 }
 
@@ -583,7 +598,7 @@ mm_idx_t *mm_idx_reader_read(mm_idx_reader_t *r, int n_threads)
 	return mi;
 }
 
-int mm_idx_reader_eof(const mm_idx_reader_t *r) // TODO: in extremely rare cases, mm_bseq_eof() might not work
+int mm_idx_reader_eof(const mm_idx_reader_t *r) // @todo: in extremely rare cases, mm_bseq_eof() might not work
 {
 	return r->is_idx? (feof(r->fp.idx) || ftell(r->fp.idx) == r->idx_size) : mm_bseq_eof(r->fp.seq);
 }

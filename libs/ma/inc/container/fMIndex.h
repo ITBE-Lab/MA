@@ -57,24 +57,6 @@ class SAInterval : public Container, public Interval<t_bwtIndex>
     SAInterval( const SAInterval& other ) : Interval( other ), startOfComplement( other.startOfComplement )
     {} // copy constructor
 
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<SAInterval>( c ) != nullptr;
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "SAInterval";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new SAInterval( ) );
-    } // function
-
     /**
      * @brief Switch to the respective reverse complement.
      * @details
@@ -842,24 +824,6 @@ class FMIndex : public Container
 
         return sErrorText == "";
     } // method
-
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<FMIndex>( c ) != nullptr;
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "FMIndex";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new FMIndex( ) );
-    } // function
 
     /* Default constructor. (Initializes the fix count-table)
      */

@@ -22,7 +22,7 @@ if( ZLIB_FOUND )
     # Activate code that relies on zlib by defining WITH_ZLIB
     target_compile_definitions( minimizerscpp PUBLIC WITH_ZLIB )
     # Add include directories of zlib
-    target_include_directories(minimizerscpp PUBLIC ${ZLIB_INCLUDE_DIRS})
+    target_include_directories( minimizerscpp SYSTEM PUBLIC ${ZLIB_INCLUDE_DIRS})
     # link to the zlib libraries
     target_link_libraries ( minimizerscpp LINK_PUBLIC ${ZLIB_LIBRARIES} )
 else()

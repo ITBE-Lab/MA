@@ -445,24 +445,6 @@ class NucSeq : public Container
         return false;
     } // method
 
-    // overload
-    bool canCast( std::shared_ptr<Container> c ) const
-    {
-        return std::dynamic_pointer_cast<NucSeq>( c ) != nullptr;
-    } // function
-
-    // overload
-    std::string getTypeName( ) const
-    {
-        return "NucSeq";
-    } // function
-
-    // overload
-    std::shared_ptr<Container> getType( ) const
-    {
-        return std::shared_ptr<Container>( new NucSeq( ) );
-    } // function
-
     /** Delivers the complement of a single nucleotide.
      */
     static inline char nucleotideComplement( char iNucleotide )
