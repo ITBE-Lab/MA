@@ -18,9 +18,6 @@
 #define idx_hash(a) ((a)>>1)
 #define idx_eq(a, b) ((a)>>1 == (b)>>1)
 
-#ifdef WIN32
-#pragma warning(suppress: 4244)
-#endif
 KHASH_INIT(idx, uint64_t, uint64_t, 1, idx_hash, idx_eq)
 typedef khash_t(idx) idxhash_t;
 
@@ -43,10 +40,7 @@ mm_idx_t *mm_idx_init(int w, int k, int b, int flag)
 	if (w < 1) w = 1;
 	mi = (mm_idx_t*)calloc(1, sizeof(mm_idx_t));
 	mi->w = w, mi->k = k, mi->b = b, mi->flag = flag;
-    
-    #ifdef WIN32
-    #pragma warning(suppress: 4334)
-    #endif
+
 	mi->B = (mm_idx_bucket_t*)calloc(1<<b, sizeof(mm_idx_bucket_t));
 	if (!(mm_dbg_flag & 1)) mi->km = km_init();
 	return mi;
@@ -307,9 +301,8 @@ static void *worker_pipeline(void *shared, int step, void *in)
 				mm_idx_seq_t *seq = &p->mi->seq[p->mi->n_seq];
 				uint32_t j;
 				if (!(p->mi->flag & MM_I_NO_NAME)) {
-                    size_t l = strlen(s->seq[i].name) + 1;
-					seq->name = (char*)kmalloc(p->mi->km, l);
-					strcpy_s(seq->name, l, s->seq[i].name);
+					seq->name = (char*)kmalloc(p->mi->km, strlen(s->seq[i].name) + 1);
+					strcpy(seq->name, s->seq[i].name);
 				} else seq->name = 0;
 				seq->len = s->seq[i].l_seq;
 				seq->offset = p->sum_len;
@@ -404,9 +397,8 @@ mm_idx_t *mm_idx_str(int w, int k, int is_hpc, int bucket_bits, int n, const cha
 		uint32_t j;
 		if (name && name[i]) {
 			int absent;
-            size_t l = strlen(name[i]) + 1;
-			p->name = (char*)kmalloc(mi->km, l);
-			strcpy_s(p->name, l, name[i]);
+			p->name = (char*)kmalloc(mi->km, strlen(name[i]) + 1);
+			strcpy(p->name, name[i]);
 			kh_put(str, h, p->name, &absent);
 			assert(absent);
 		}
@@ -473,6 +465,16 @@ void mm_idx_dump(FILE *fp, const mm_idx_t *mi)
 		fwrite(mi->S, 4, (sum_len + 7) / 8, fp);
 	fflush(fp);
 }
+int mm_idx_dump_c_str(const char* cIndexName, const mm_idx_t *mi)
+{
+    mm_idx_stat( mi );
+    FILE *fp_out = fopen( cIndexName, "wb" );
+    if( fp_out == 0 )
+        return 1;
+    mm_idx_dump( fp_out, mi );
+    fclose( fp_out );
+    return 0;
+} // method
 
 mm_idx_t *mm_idx_load(FILE *fp)
 {
@@ -535,11 +537,7 @@ int64_t mm_idx_is_idx(const char *fn)
 	char magic[4];
 
 	if (strcmp(fn, "-") == 0) return 0; // read from pipe; not an index.
-    
-#ifdef WIN32
-    #pragma warning(suppress: 4996)
-#endif
-	fd = _open(fn, O_RDONLY);
+	fd = open(fn, O_RDONLY);
 	if (fd < 0) return -1; // error
 #ifdef WIN32
 	if ((off_end = _lseeki64(fd, 0, SEEK_END)) >= 4) {
@@ -548,11 +546,11 @@ int64_t mm_idx_is_idx(const char *fn)
 	if ((off_end = lseek(fd, 0, SEEK_END)) >= 4) {
 		lseek(fd, 0, SEEK_SET);
 #endif // WIN32
-		ret = _read(fd, magic, 4);
+		ret = read(fd, magic, 4);
 		if (ret == 4 && strncmp(magic, MM_IDX_MAGIC, 4) == 0)
 			is_idx = 1;
 	}
-	_close(fd);
+	close(fd);
 	return is_idx? off_end : 0;
 }
 
@@ -567,10 +565,10 @@ mm_idx_reader_t *mm_idx_reader_open(const char *fn, const mm_idxopt_t *opt, cons
 	if (opt) r->opt = *opt;
 	else assert(0);
 	if (r->is_idx) {
-		fopen_s(&r->fp.idx, fn, "rb");
+		r->fp.idx = fopen(fn, "rb");
 		r->idx_size = is_idx;
 	} else r->fp.seq = mm_bseq_open(fn);
-	if (fn_out) fopen_s(&r->fp_out, fn_out, "wb");
+	if (fn_out) r->fp_out = fopen(fn_out, "wb");
 	return r;
 }
 

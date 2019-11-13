@@ -216,6 +216,7 @@ mm_idx_t* mm_idx_load( FILE* fp );
  * @param mi         minimap2 index
  */
 void mm_idx_dump( FILE* fp, const mm_idx_t* mi );
+int mm_idx_dump_c_str( const char* cIndexName, const mm_idx_t* mi );
 
 /**
  * Create an index from strings in memory

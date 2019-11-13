@@ -65,23 +65,19 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 #if MEASURE_DURATIONS == ( 1 )
     pSegments->fSorting += metaMeasureDuration( [&]( ) {
 #endif
-                               // sort the seeds according to their initial positions
-                               std::sort( pSeeds->begin( ), pSeeds->end( ),
-                                          [&]( const Seed& a, const Seed& b ) {
+
 #if DELTA_CACHE == ( 1 )
-#if CONTIG_ID_CACHE == ( 1 )
-                                              if( a.uiContigId == b.uiContigId )
-#endif
-                                                  return a.uiDelta < b.uiDelta;
-#if CONTIG_ID_CACHE == ( 1 )
-                                              else
-                                                  return a.uiContigId < b.uiContigId;
-#endif
+    // delta values already set by emplaceAllNonBridgingSeed
+    radix_sort<8>( &pSeeds->front( ), &pSeeds->front( ) + pSeeds->size( ),
+                    []( const Seed& rSeed ) { return rSeed.uiDelta; } );
 #else
+    // sort the seeds according to their initial positions
+    std::sort( pSeeds->begin( ), pSeeds->end( ),
+               [&]( const Seed& a, const Seed& b ) {
                    return getPositionForBucketing( uiQLen, a ) < getPositionForBucketing( uiQLen, b );
+               } // lambda
+    ); // sort function call
 #endif
-                                          } // lambda
-                               ); // sort function call
 
 
 #if MEASURE_DURATIONS == ( 1 )
@@ -155,10 +151,8 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 
 } // function
 
-#define NUM_BITS_FOR_QUERY 27
-std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute( std::shared_ptr<Seeds> pSeeds,
-                                                                          std::shared_ptr<NucSeq> pQuerySeq,
-                                                                          std::shared_ptr<Pack> pPack )
+std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute(
+    std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack )
 {
     // make sure that we return at least an SoC set
     if( pSeeds->empty( ) )
@@ -184,8 +178,7 @@ std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute( std::s
     ); // sort function call
 #else
     for( auto& rS : *pSeeds )
-        rS.uiDelta = ( getPositionForBucketing( uiQLen, rS ) << NUM_BITS_FOR_QUERY ) |
-                     ( rS.start( ) & bitmask<nucSeqIndex>( NUM_BITS_FOR_QUERY ) );
+        rS.uiDelta = getPositionForBucketing( uiQLen, rS );
     radix_sort<8>( &pSeeds->front( ), &pSeeds->front( ) + pSeeds->size( ),
                    []( const Seed& rSeed ) { return rSeed.uiDelta; } );
 #endif

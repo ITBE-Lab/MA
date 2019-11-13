@@ -29,6 +29,11 @@ else()
     message( FATAL_ERROR "-- libminimizerscpp: zlib is required." )
 endif()
 
+if(MSVC)
+  # minimizerscpp code is not warnings free under msvc...
+  target_compile_options( minimizerscpp PRIVATE /W0)
+endif()
+
 # cmake will add the -fPIC for compilation with GCC
 set_property( TARGET minimizerscpp PROPERTY POSITION_INDEPENDENT_CODE ON)
 

@@ -178,13 +178,8 @@ class Index : public libMA::Container
 
     void dump( std::string sIndexName )
     {
-        mm_idx_stat( pData );
-        FILE *fp_out;
-        errno_t err = fopen_s( &fp_out, sIndexName.c_str( ), "wb" );
-        if( err != 0 )
+        if( mm_idx_dump_c_str( sIndexName.c_str(), pData ) != 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
-        mm_idx_dump( fp_out, pData );
-        fclose( fp_out );
     } // method
 
     std::shared_ptr<libMA::Seeds> seed_one( std::string& sQuery, std::shared_ptr<libMA::Pack> pPack )

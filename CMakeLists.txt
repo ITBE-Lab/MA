@@ -34,6 +34,21 @@ foreach(CACHE_VAR ${CACHE_VARS})
   endif()
 endforeach()
 
+# apparently some cmake installations (e.g. on centos) leave cxx flags empty...
+# this would cause compile errors in release adn relwithdebug mode since DNDEBUG is not set
+if ("${CMAKE_CXX_FLAGS_RELEASE}" STREQUAL "")
+    message(WARNING "CMAKE_CXX_FLAGS_RELEASE is empty; automatically setting it to some default values...")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+endif()
+if ("${CMAKE_CXX_FLAGS_DEBUG}" STREQUAL "")
+    message(WARNING "CMAKE_CXX_FLAGS_DEBUG is empty; automatically setting it to some default values...")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g")
+endif()
+if ("${CMAKE_CXX_FLAGS_RELWITHDEBINFO}" STREQUAL "")
+    message(WARNING "CMAKE_CXX_FLAGS_RELWITHDEBINFO is empty; automatically setting it to some default values...")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
+endif()
+
 # Print info about the current call/environment of CMake
 message("// CMAKE_ARGS: ${CMAKE_ARGS}")
 message("// CMAKE_BUILD_TYPE = \"${CMAKE_BUILD_TYPE}\"")

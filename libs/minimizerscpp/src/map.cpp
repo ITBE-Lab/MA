@@ -66,9 +66,7 @@ static void collect_minimizers( void* km, const mm_mapopt_t* opt, const mm_idx_t
 
 #include "ksort.h"
 #define heap_lt( a, b ) ( ( a ).x > ( b ).x )
-#ifdef WIN32
-#pragma warning(suppress: 5033)
-#endif
+
 KSORT_INIT( heap, mm128_t, heap_lt )
 
 typedef struct

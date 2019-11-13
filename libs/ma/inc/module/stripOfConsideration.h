@@ -8,8 +8,8 @@
 
 #include "container/segment.h"
 #include "container/soc.h"
-#include "module/module.h"
 #include "module/harmonization.h"
+#include "module/module.h"
 #include <cmath>
 
 namespace libMA
@@ -45,9 +45,11 @@ class StripOfConsiderationBase
      */
     const bool bSkipLongBWTIntervals;
 
+#define NUM_BITS_FOR_QUERY 27
     inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed& xS )
     {
-        return xS.start_ref( ) + ( uiQueryLength - xS.start( ) );
+        return ( ( xS.start_ref( ) + ( uiQueryLength - xS.start( ) ) ) << NUM_BITS_FOR_QUERY ) |
+               ( xS.start( ) & bitmask<nucSeqIndex>( NUM_BITS_FOR_QUERY ) );
     } // function
 
     inline nucSeqIndex getStripSize( nucSeqIndex uiQueryLength, int iMatch, int iExtend, int iGap ) const
@@ -141,6 +143,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
                         rS.uiDelta = getPositionForBucketing( uiQLen, rS );
                     }// else
 #endif
+
 #elif DELTA_CACHE == ( 1 )
                                                 rvSeedVector.back( ).uiDelta =
                                                     getPositionForBucketing( uiQLen, rvSeedVector.back( ) );
@@ -179,9 +182,8 @@ class MinimizerStripOfConsideration : public Module<SoCPriorityQueue, false, See
         : StripOfConsiderationBase( rParameters ), xLumper( rParameters ), xExtender( rParameters )
     {} // constructor
 
-    virtual std::shared_ptr<SoCPriorityQueue> EXPORTED execute( std::shared_ptr<Seeds> pSeeds,
-                                                                std::shared_ptr<NucSeq> pQuerySeq,
-                                                                std::shared_ptr<Pack> pPack );
+    virtual std::shared_ptr<SoCPriorityQueue> EXPORTED
+    execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pPack );
 }; // class
 
 } // namespace libMA

@@ -7,9 +7,7 @@
 #include "kvec.h"
 #include "kseq.h"
 
-#ifdef WIN32
-#pragma warning(suppress: 4003)
-#endif
+
 KSEQ_INIT2(, gzFile, gzread)
 
 unsigned char seq_comp_table[256] = {
@@ -43,7 +41,7 @@ mm_bseq_file_t *mm_bseq_open(const char *fn)
 {
 	mm_bseq_file_t *fp;
 	gzFile f;
-	f = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(_fileno(stdin), "r");
+	f = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
 	if (f == 0) return 0;
 	fp = (mm_bseq_file_t*)calloc(1, sizeof(mm_bseq_file_t));
 	fp->fp = f;

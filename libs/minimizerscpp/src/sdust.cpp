@@ -18,12 +18,7 @@ typedef struct {
 typedef kvec_t(perf_intv_t) perf_intv_v;
 typedef kvec_t(uint64_t) uint64_v;
 
-#ifdef WIN32
-#pragma warning(push)
-#pragma warning(disable:4334 4244)
 KDQ_INIT(int)
-#pragma warning(pop)
-#endif
 
 #if defined(_NO_NT4_TBL) || defined(_SDUST_MAIN)
 unsigned char seq_nt4_table[256] = {

@@ -32,7 +32,7 @@ class NucSeq;
  * @note the overloaded functions of Interval refer to the Interval on the query.
  * @ingroup container
  */
-class Seed : public Container, public Interval<nucSeqIndex>
+class Seed : public Interval<nucSeqIndex>
 {
   public:
     ///@brief the beginning of the match on the reference
@@ -90,7 +90,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
     Seed( ) : Interval( )
     {
 #if DEBUG_LEVEL == 0
-        //static_assert( sizeof( Seed ) == 32, "" );
+        static_assert( sizeof( Seed ) == 32, "" );
 #endif
     } // default constructor
 
@@ -151,11 +151,8 @@ class Seed : public Container, public Interval<nucSeqIndex>
 }; // class
 
 #if 0
-    template<int s> struct Wow;
-    struct foo {
-        int a,b;
-    };
-    Wow<sizeof(Seed)> wow;
+    template<int s> struct CheckSizeOfSeeds;
+    CheckSizeOfSeeds<sizeof(Seed)> xCheckSizeOfSeeds;
 #endif
 
 class Alignment;
