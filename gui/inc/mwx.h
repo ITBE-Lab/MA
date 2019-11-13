@@ -559,12 +559,14 @@ class mwxScrolledStatixBoxesContext : public wxPanel
     } // method
 }; // class
 
+class mwxPropertyPanel;
 
 /* Property notebook consisting of several property panels (pages) */
 class mwxPropertyNotebook : public wxNotebook
 {
   public:
     std::vector<mwxScrolledStatixBoxesContext*> vPages; // each page is a scrolled static boxes context
+    std::vector<mwxPropertyPanel*> vpPropertyPanels;
 
     /* Constructor */
     mwxPropertyNotebook( wxWindow* pxHostWindow ) // host window of the notebook
@@ -578,6 +580,9 @@ class mwxPropertyNotebook : public wxNotebook
         this->AddPage( vPages.back( ), sPageTitle.c_str( ), vPages.size( ) == 1 ? true : false );
         return vPages.back( );
     } // method
+
+    void addParameter(
+        std::pair<const std::pair<size_t, std::string>, std::vector<std::shared_ptr<AlignerParameterBase>>>& rPair );
 }; // class
 
 /* Managed wxWidgets extension for property management.
@@ -1055,3 +1060,15 @@ class mwxPropertyPanel : public wxPanel
         } // for
     } // method
 }; // class
+
+void mwxPropertyNotebook::addParameter(
+    std::pair<const std::pair<size_t, std::string>, std::vector<std::shared_ptr<AlignerParameterBase>>>& rPair )
+{
+    // rPair.first.second extracts the category name
+    auto* pxScrolledStatixBoxesContext = this->addPage( rPair.first.second );
+    auto* pPanel = new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
+    for( auto pParameter : rPair.second )
+        pPanel->append( pParameter );
+    pPanel->updateEnabledDisabled( );
+    vpPropertyPanels.push_back( pPanel );
+} // method

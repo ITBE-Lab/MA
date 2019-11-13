@@ -121,17 +121,29 @@ class Index : public libMA::Container
         mm_mapopt_update( &xMapOpt, pData );
     } // method
 
+    // clang-format off
+    Index( const ParameterSetManager& rParameters ) //
+        : xOptions{ /* .k = */ (short)rParameters.getSelected( )->xMinimizerK->get( ),
+                    /* .w = */ (short)rParameters.getSelected( )->xMinimizerW->get( ),
+#if HIDE_MMI_PARAMETERS == 0
+                    /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
+                    /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
+                    /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
+                    /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+#else
+                    /* .flag = */ 0,
+                    /* .bucket_bits = */ 14,
+                    /* .mini_batch_size = */ 50000000,
+                    /* .batch_size = */ 4000000000ULL}
+#endif
+    {} // default constructor
+    // clang-format on
+
   public:
     /**
      * @brief Opens in Index if index filename is given or creates index if fasta(q) file is given
      */
-    Index( const ParameterSetManager& rParameters, std::string sIndexName )
-        : xOptions{/* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
-                   /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
-                   /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+    Index( const ParameterSetManager& rParameters, std::string sIndexName ) : Index( rParameters )
     {
         IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
@@ -150,12 +162,7 @@ class Index : public libMA::Container
 
     Index( const ParameterSetManager& rParameters, std::vector<std::string> vContigs,
            std::vector<std::string> vContigsNames )
-        : xOptions{/* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
-                   /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
-                   /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+        : Index( rParameters )
     {
         std::vector<const char*> seq;
         std::vector<const char*> name;
@@ -178,7 +185,7 @@ class Index : public libMA::Container
 
     void dump( std::string sIndexName )
     {
-        if( mm_idx_dump_c_str( sIndexName.c_str(), pData ) != 0 )
+        if( mm_idx_dump_c_str( sIndexName.c_str( ), pData ) != 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
     } // method
 

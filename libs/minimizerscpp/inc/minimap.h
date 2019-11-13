@@ -84,8 +84,6 @@ struct mm_idxopt_t
     short k, w, flag, bucket_bits;
     int mini_batch_size;
     uint64_t batch_size;
-
-
 };
 
 typedef struct

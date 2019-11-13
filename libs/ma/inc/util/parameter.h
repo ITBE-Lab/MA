@@ -559,12 +559,15 @@ class Presetting : public ParameterSetBase
 
 #ifdef WITH_ZLIB
     // Minimizer parameters:
-    AlignerParameterPointer<short> xMinimizerK; // minimizer size
-    AlignerParameterPointer<short> xMinimizerW; // minimizers window
+    AlignerParameterPointer<int> xMinimizerK; // minimizer size
+    AlignerParameterPointer<int> xMinimizerW; // minimizers window
+#define HIDE_MMI_PARAMETERS ( 1 )
+#if HIDE_MMI_PARAMETERS == 0
     AlignerParameterPointer<short> xMinimizerFlag; // ?
     AlignerParameterPointer<short> xMinimizerBucketBits; // ?
     AlignerParameterPointer<int> xMinimizerMiniBatchSize; // ?
     AlignerParameterPointer<uint64_t> xMinimizerBatchSize; // ?
+#endif
 #endif
 
     /* Delete copy constructor */
@@ -790,19 +793,33 @@ class Presetting : public ParameterSetBase
 #ifdef WITH_ZLIB
           // Minimizers
           ,
-          xMinimizerK( this, "Minimizers - k", 'k', "Minimizers size", MINIMIZER_PARAMETERS, 15 ),
-          xMinimizerW( this, "Minimizers - w", 'w', "Minimizer window size", MINIMIZER_PARAMETERS, 10 ),
+          xMinimizerK(
+              this, "Minimizer Size", 'k',
+              "Compute Minimizers with a size of <val>nt. A Minimizer index is built for the specific k and w chosen "
+              "during index generation; To change the minimizer size or window size, a separate index has to be built. "
+              "'Seeding Technique' has to be set to minimizers in order to use this.",
+              MINIMIZER_PARAMETERS, 15 ),
+          xMinimizerW( this, "Minimizer Window Size", 'w',
+                       "Compute Minimizers using a window of <val>nt. Two consecutive minimizers can be at most w-k nt "
+                       "apart. See 'Minimizer Size' for further information.",
+                       MINIMIZER_PARAMETERS, 10 )
+#if HIDE_MMI_PARAMETERS == 0
+          ,
           xMinimizerFlag( this, "Minimizers - flag", "@todo", MINIMIZER_PARAMETERS, 0 ),
           xMinimizerBucketBits( this, "Minimizers - bucket_bits", "@todo", MINIMIZER_PARAMETERS, 14 ),
           xMinimizerMiniBatchSize( this, "Minimizers - mini_batch_size", "@todo", MINIMIZER_PARAMETERS, 50000000 ),
           xMinimizerBatchSize( this, "Minimizers - batch_size", "@todo", MINIMIZER_PARAMETERS, 4000000000ULL )
 #endif
+#endif
     {
-
         xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
         xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
+#ifdef WITH_ZLIB
+        xMinimizerK->fEnabled = [this]( void ) { return this->xSeedingTechnique->get( ) == "mini"; };
+        xMinimizerW->fEnabled = [this]( void ) { return this->xSeedingTechnique->get( ) == "mini"; };
+#endif
     } // constructor
 
     Presetting( ) : Presetting( "Unnamed" )

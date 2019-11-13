@@ -122,7 +122,7 @@ void rs_sort( TP_ELE* pVecBeg, TP_ELE* pVecEnd, unsigned int uiStartBit, FUN&& r
 
 // Example TP_ELE : uint64_t
 //    fExtractKey : [](uint64_t v){return v;} // delivers the key for an instance
-template <unsigned int BITS_PER_COL = 8, unsigned int RADIX_SORT_MIN_SIZE = 32, typename TP_ELE, typename FUNCTOR>
+template <unsigned int BITS_PER_COL = 8, unsigned int RADIX_SORT_MIN_SIZE = 64, typename TP_ELE, typename FUNCTOR>
 void radix_sort( TP_ELE* pBegin, TP_ELE* pEnd, FUNCTOR&& fExtractKey )
 {
     if( pEnd - pBegin <= RADIX_SORT_MIN_SIZE )

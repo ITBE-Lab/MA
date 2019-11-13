@@ -129,7 +129,7 @@ is provided using the computed DP-path. Similar approaches are used by other ali
 ```
 ========================================= The Modular Aligner =========================================
 Available presettings:
-    -p, --Presetting <name> [Default]              Optimize aligner parameters for a selected
+    -p, --Presetting <name> [default]              Optimize aligner parameters for a selected
                                                    sequencing technique. Available presettings are:
                                                    'Default', 'Illumina', 'Illumina_Paired',
                                                    'Nanopore', 'PacBio'.
@@ -163,9 +163,9 @@ General options: (these options are not affected by presettings)
 
     -o, --SAM_File_name <file_name> [ma_out.sam]
                                                    Name of the SAM file that is used for the output of
-                                                   alignments.
+                                                   alignments. Use /dev/stdout for printing to stdout.
 
-    -t, --Number_of_Threads <int> [4]              Number of threads used in the context of
+    -t, --Number_of_Threads <int>                  Number of threads used in the context of
                                                    alignments.
 
     -h, --Help <bool> [true]                       Print the complete help text.
@@ -272,7 +272,7 @@ SAM Output options:
                                                    Enabling this flag will drastically increase the
                                                    size of the SAM output file.
 
-    --Use_M_in_CIGAR <bool> [false]                Disabled: Distinguish matches and mismatches in
+    --Use_M_in_CIGAR <bool> [true]                 Disabled: Distinguish matches and mismatches in
                                                    CIGARs using '=' and 'X' operations. Enabled: Use
                                                    the 'M' operation in CIGARs.
 
@@ -398,6 +398,18 @@ Dynamic Programming options:
 
     --Z_Drop_Inversions <int> [100]                Check for an inversion, if the running score during
                                                    dynamic programming drops faster than <val>.
+
+Minimizer options:
+    -k, --Minimizer_Size <int> [15]                Compute Minimizers with a size of <val>nt. A
+                                                   Minimizer index is built for the specific k and w
+                                                   chosen during index generation; To change the
+                                                   minimizer size or window size, a separate index has
+                                                   to be built. 'Seeding Technique' has to be set to
+                                                   minimizers in order to use this.
+
+    -w, --Minimizer_Window_Size <int> [10]         Compute Minimizers using a window of <val>nt. Two
+                                                   consecutive minimizers can be at most w-k nt apart.
+                                                   See 'Minimizer Size' for further information.
 ```
 
 ## Thanks ...
@@ -406,6 +418,7 @@ MA relies on the hard work of other projects. These are:
 
 - Dynamic programming with static band: https://github.com/lh3/ksw2
 - Parts of the code for FMD-index creation and extension were picked from https://github.com/lh3/bwa
+- The code for the Minimizer-index creation was picked from https://github.com/lh3/minimap2
 
 Many thanks to the creators and contributors of the above projects ...
 

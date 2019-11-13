@@ -80,15 +80,13 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
                                    auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
 
                                    for( auto xPair : rxParameterSet.xpParametersByCategory )
-                                   {
-                                       // xPair.first.second extracts the category name
-                                       auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
-                                       auto* pPanel = new mwxPropertyPanel(
-                                           pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
-                                       for( auto pParameter : xPair.second )
-                                           pPanel->append( pParameter );
-                                       pPanel->updateEnabledDisabled( );
-                                   } // for
+                                       pxNotebook->addParameter( xPair );
+
+                                   pxNotebook->wxEvtHandler::Bind(
+                                       wxEVT_NOTEBOOK_PAGE_CHANGED, [pxNotebook]( wxCommandEvent& rxEvent ) {
+                                           for( auto* pPanel : pxNotebook->vpPropertyPanels )
+                                               pPanel->updateEnabledDisabled( );
+                                       } );
 
                                    return pxNotebook;
                                }, // lambda
