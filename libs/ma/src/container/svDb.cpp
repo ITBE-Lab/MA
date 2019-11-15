@@ -4,8 +4,8 @@
 
 using namespace libMA;
 
-SV_DB::PairedReadTable::PairedReadTable(
-    std::shared_ptr<CppSQLiteDBExtended> pDatabase, std::shared_ptr<ReadTable> pReadTable )
+SV_DB::PairedReadTable::PairedReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase,
+                                         std::shared_ptr<ReadTable> pReadTable )
     : TP_PAIRED_READ_TABLE( *pDatabase, // the database where the table resides
                             "paired_read_table", // name of the table in the database
                             // column definitions of the table
@@ -19,18 +19,22 @@ SV_DB::PairedReadTable::PairedReadTable(
       pReadTable( pReadTable )
 {} // default constructor
 
-std::vector<int> getCallOverview(std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> pPack)
+std::vector<int> getCallOverview( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
+                                  double dMinScore )
 {
-    std::vector<int> vRet(pPack->uiNumContigs() * pPack->uiNumContigs(), 0);
-    CppSQLiteExtQueryStatement<uint32_t, uint32_t>
-        xQuery( *pDb->pDatabase,
-                  "SELECT from_pos, to_pos "
-                  "FROM sv_call_table " );
-    xQuery.vExecuteAndForAllRowsUnpackedDo([&](uint32_t uiX, uint32_t uiY){
-        size_t uiI = pPack->uiSequenceIdForPosition(uiX);
-        size_t uiJ = pPack->uiSequenceIdForPosition(uiY);
-        vRet[uiI + uiJ * pPack->uiNumContigs()] += 1;
-    });
+    std::vector<int> vRet( pPack->uiNumContigs( ) * pPack->uiNumContigs( ), 0 );
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t> xQuery( *pDb->pDatabase,
+                                                           "SELECT from_pos, to_pos "
+                                                           "FROM sv_call_table "
+                                                           "WHERE sv_caller_run_id = ? "
+                                                           "AND (supporting_nt*1.0)/coverage >= ? " );
+    xQuery.vExecuteAndForAllRowsUnpackedDo(
+        [&]( uint32_t uiX, uint32_t uiY ) {
+            size_t uiI = pPack->uiSequenceIdForPosition( uiX );
+            size_t uiJ = pPack->uiSequenceIdForPosition( uiY );
+            vRet[ uiI + uiJ * pPack->uiNumContigs( ) ] += 1;
+        },
+        iRunId, dMinScore );
     return vRet;
 } // function
 
@@ -69,7 +73,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "get_read", &SV_DB::getRead )
         .def( "num_jumps", &SV_DB::numJumps );
 
-    rxPyModuleId.def("get_call_overview", &getCallOverview);
+    rxPyModuleId.def( "get_call_overview", &getCallOverview );
 
     // export the ReadInserter class
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
@@ -104,12 +108,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SortedSvJumpFromSql class
     py::class_<SortedSvJumpFromSql>( rxPyModuleId, "SortedSvJumpFromSql" )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&,
-                       std::shared_ptr<SV_DB>,
-                       int64_t,
-                       uint32_t,
-                       uint32_t,
-                       uint32_t,
+        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, uint32_t, uint32_t, uint32_t,
                        uint32_t>( ) )
         .def( "has_next_start", &SortedSvJumpFromSql::hasNextStart )
         .def( "has_next_end", &SortedSvJumpFromSql::hasNextEnd )
@@ -131,13 +130,10 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t>( ) )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, double>( ) )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, int64_t, bool, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&,
-                       std::shared_ptr<SV_DB>,
-                       int64_t,
-                       uint32_t,
-                       uint32_t,
-                       uint32_t,
+        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, uint32_t, uint32_t, uint32_t,
                        uint32_t>( ) )
+        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, uint32_t, uint32_t, uint32_t,
+                       uint32_t, double>( ) )
         .def( "next", &SvCallsFromDb::next )
         .def( "hasNext", &SvCallsFromDb::hasNext );
 
@@ -150,6 +146,6 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     exportModule<BufferedSvDbInserter, std::shared_ptr<SV_DB>, int64_t>(
         rxPyModuleId, "BufferedSvDbInserter", []( auto&& x ) { x.def( "commit", &BufferedSvDbInserter::commit ); } );
 
-    rxPyModuleId.def("combine_overlapping_calls", &combineOverlappingCalls);
+    rxPyModuleId.def( "combine_overlapping_calls", &combineOverlappingCalls );
 } // function
 #endif

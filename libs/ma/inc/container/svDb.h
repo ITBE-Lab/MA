@@ -2210,6 +2210,29 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH ) )
     {} // constructor
 
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
+                   uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH, double dMinScore )
+        : pSelectedSetting( rParameters.getSelected( ) ),
+          pDb( pDb ),
+          xQuery( *pDb->pDatabase,
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "       coverage "
+                  "FROM sv_call_table "
+                  "WHERE sv_caller_run_id == ? "
+                  "AND from_pos + from_size >= ? "
+                  "AND to_pos + to_size >= ? "
+                  "AND from_pos <= ? "
+                  "AND to_pos <= ? "
+                  "AND (supporting_nt*1.0)/coverage >= ? " ),
+          xQuerySupport( *pDb->pDatabase,
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "FROM sv_call_support_table "
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id == ? " ),
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH, dMinScore ) )
+    {} // constructor
+
     SvCall next( )
     {
         auto xTup = xTableIterator.get( );
