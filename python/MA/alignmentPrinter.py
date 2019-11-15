@@ -31,6 +31,8 @@ class AlignmentPrinter(Module):
             return
         ref = input[2].extract_from_to(align.begin_on_ref, align.end_on_ref)
 
+        contig_name = input[2].name_of_sequence(align.begin_on_ref)
+        contig_start = input[2].start_of_sequence(contig_name)
         lines = [
             "score: " + str(align.get_score()) + " cigar_length: " + str(
                 len(align)) + " soc_index: " + str(align.stats.index_of_strip)
@@ -38,8 +40,8 @@ class AlignmentPrinter(Module):
             "query_name: " + str(align.stats.name) + " state: " +
             ("secondary" if align.secondary else
              ("supplementary" if align.supplementary else "primary")),
-            "reference: " + str(align.begin_on_ref) + " - " + str(
-                align.end_on_ref) + " contig: " + input[2].name_of_sequence(align.begin_on_ref), 
+            "reference: " + str(align.begin_on_ref - contig_start) + " - " + str(
+                align.end_on_ref - contig_start) + " contig: " + contig_name, 
             "query: " + str(align.begin_on_query) + " - " + str(align.end_on_query),
             "Alignment length: " + str(len(align))
         ]

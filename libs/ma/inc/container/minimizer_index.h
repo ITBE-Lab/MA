@@ -147,7 +147,7 @@ class Index : public libMA::Container
     {
         IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
-            throw std::runtime_error( "failed to open file" + sIndexName );
+            throw std::runtime_error( "failed to open file" + sIndexName ); //@todo this does not seem to work...
         pData = mm_idx_reader_read( xIndexReader.idx_rdr, (int)rParameters.getNumThreads( ) );
         if( ( xOptions.flag & MM_F_CIGAR ) && ( pData->flag & MM_I_NO_SEQ ) )
             throw std::runtime_error( "the prebuilt index doesn't contain sequences" );

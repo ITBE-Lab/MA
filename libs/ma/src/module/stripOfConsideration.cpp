@@ -236,6 +236,7 @@ void exportStripOfConsideration( py::module& rxPyModuleId )
 {
     // export the StripOfConsideration class
     exportModule<StripOfConsideration>( rxPyModuleId, "StripOfConsideration" );
+    exportModule<MinimizerStripOfConsideration>( rxPyModuleId, "MinimizerStripOfConsideration" );
 } // function
 
 #endif
