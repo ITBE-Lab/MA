@@ -50,7 +50,7 @@ class SvJump : public Container
 
 
 #if DEBUG_LEVEL > 0
-    size_t uiSeedAId, uiSeedBId;
+    size_t uiSeedAId = 0, uiSeedBId = 0;
 #endif
 
     SvJump( std::shared_ptr<Presetting> pSelectedSetting,
@@ -112,12 +112,13 @@ class SvJump : public Container
               /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
               /* iID */ -1,
               /* iReadId */ iReadId
-#if DEBUG_LEVEL > 0
-              ,
-              uiSeedAId( rA.uiId ), uiSeedBId( rB.uiId )
-#endif
           )
-    {} // constructor
+    {
+#if DEBUG_LEVEL > 0
+        uiSeedAId = rA.uiId;
+        uiSeedBId = rB.uiId;
+#endif
+    } // constructor
 
     SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const nucSeqIndex qLen,
             const bool bFromSeedStart, int64_t iReadId )
@@ -144,12 +145,13 @@ class SvJump : public Container
                   /* uiNumSupportingNt = */ rA.size( ),
                   /* iID */ -1,
                   /* iReadId */ iReadId
-#if DEBUG_LEVEL > 0
-                  ,
-                  uiSeedAId( rA.uiId ), uiSeedBId( rA.uiId )
-#endif
           )
-    {} // constructor
+    {
+#if DEBUG_LEVEL > 0
+        uiSeedAId = rA.uiId;
+        uiSeedBId = rA.uiId;
+#endif
+    } // constructor
 
     bool does_switch_strand( ) const
     {
