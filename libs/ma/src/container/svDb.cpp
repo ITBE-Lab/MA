@@ -1,5 +1,6 @@
 #include "container/svDb.h"
 #include "module/combineOverlappingCalls.h"
+#include <pybind11/stl.h>
 
 using namespace libMA;
 
@@ -17,6 +18,21 @@ SV_DB::PairedReadTable::PairedReadTable(
       pDatabase( pDatabase ),
       pReadTable( pReadTable )
 {} // default constructor
+
+std::vector<int> getCallOverview(std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> pPack)
+{
+    std::vector<int> vRet(pPack->uiNumContigs() * pPack->uiNumContigs(), 0);
+    CppSQLiteExtQueryStatement<uint32_t, uint32_t>
+        xQuery( *pDb->pDatabase,
+                  "SELECT from_pos, to_pos "
+                  "FROM sv_call_table " );
+    xQuery.vExecuteAndForAllRowsUnpackedDo([&](uint32_t uiX, uint32_t uiY){
+        size_t uiI = pPack->uiSequenceIdForPosition(uiX);
+        size_t uiJ = pPack->uiSequenceIdForPosition(uiY);
+        vRet[uiI + uiJ * pPack->uiNumContigs()] += 1;
+    });
+    return vRet;
+} // function
 
 #ifdef WITH_PYTHON
 
@@ -52,6 +68,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "insert_sv_jump_run", &SV_DB::insertSvJumpRun )
         .def( "get_read", &SV_DB::getRead )
         .def( "num_jumps", &SV_DB::numJumps );
+
+    rxPyModuleId.def("get_call_overview", &getCallOverview);
 
     // export the ReadInserter class
     py::class_<SV_DB::ReadInserter, std::shared_ptr<SV_DB::ReadInserter>>( rxPyModuleId, "ReadInserter" )
