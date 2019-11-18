@@ -2211,7 +2211,7 @@ class SvCallsFromDb
     {} // constructor
 
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
-                   uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH, double dMinScore )
+                   int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
@@ -2230,7 +2230,7 @@ class SvCallsFromDb
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
-          xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH, dMinScore ) )
+          xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, iX, iY, iX + iW, iY + iH, dMinScore ) )
     {} // constructor
 
     SvCall next( )
