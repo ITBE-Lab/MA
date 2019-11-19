@@ -1,6 +1,5 @@
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import FuncTickFormatter, TapTool, OpenURL
-from bokeh.models.tools import HoverTool
 from MA import *
 import math
 
@@ -47,24 +46,8 @@ def format(rgb):
         return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
                                                clamp(int(blue * 255)))
 
-def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score, max_num_ele, dataset_name):
-    plot = figure(
-            x_range=(xs, xe),
-            y_range=(ys, ye),
-            width=900,
-            height=900,
-            tools=[
-                "pan", "wheel_zoom",
-                "box_zoom", "save",
-                "tap"
-            ],
-            active_drag="pan",
-            active_scroll="wheel_zoom"
-        )
-    hover1 = HoverTool(tooltips=[("from:", "@f"), ("to:", "@t"), ("num calls:", "@i")], names = ['hover1'])
-    hover2 = HoverTool(tooltips="@i", names = ['hover2'])
-    plot.add_tools(hover1)
-    plot.add_tools(hover2)
+def render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score, max_num_ele, dataset_name, 
+                  active_tools):
     plot.quad(left=0, bottom=0, right=pack.unpacked_size_single_strand, top=pack.unpacked_size_single_strand, 
               fill_alpha=0, line_color="black", line_width=3)
     lengths = pack.contigLengths()
@@ -147,45 +130,53 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
             "w": [],
             "y": [],
             "h": [],
-            "i": []
+            "n": [],
+            "c": [],
+            "r": [],
+            "s": []
         }
         accepted_plus_data = {
             "x": [],
             "y": [],
-            "i": []
+            "n": [],
+            "c": [],
+            "r": [],
+            "s": []
         }
         ground_plus_data = {
             "x": [],
             "y": [],
-            "i": []
+            "n": [],
+            "c": [],
+            "r": [],
+            "s": []
         }
         calls_from_db = SvCallsFromDb(params, sv_db, run_id, int(xs - w), int(ys - h), w*3, h*3, min_score)
         while calls_from_db.hasNext():
             def score(jump):
                 if jump.coverage == 0:
-                    return ""
-                return " score: " + str(jump.num_supp_nt / jump.coverage)
+                    return None
+                return str(jump.num_supp_nt / jump.coverage)
             jump = calls_from_db.next()
             if jump.num_supp_nt > min_score * jump.coverage:
                 if jump.from_size == 1 and jump.to_size == 1:
                     accepted_plus_data["x"].append(jump.from_start)
                     accepted_plus_data["y"].append(jump.to_start)
-                    accepted_plus_data["i"].append(" suppNt: " + str(jump.num_supp_nt) + " cov: " +
-                                                    str(jump.coverage) + " #reads: " +
-                                                    str(len(jump.supporing_jump_ids)) + score(jump))
                 else:
                     accepted_boxes_data["x"].append(jump.from_start - 0.5)
                     accepted_boxes_data["y"].append(jump.to_start - 0.5)
                     accepted_boxes_data["w"].append(jump.from_start + jump.from_size + 1)
                     accepted_boxes_data["h"].append(jump.to_start + jump.to_size + 1)
-                    accepted_boxes_data["i"].append(" suppNt: " + str(jump.num_supp_nt) + " cov: " +
-                                                    str(jump.coverage) + " #reads: " +
-                                                    str(len(jump.supporing_jump_ids)) + score(jump))
+                    accepted_boxes_data["n"].append(jump.num_supp_nt)
+                    accepted_boxes_data["c"].append(jump.coverage)
+                    accepted_boxes_data["r"].append(len(jump.supporing_jump_ids))
+                    accepted_boxes_data["s"].append(score(jump))
                     accepted_plus_data["x"].append(jump.from_start)
                     accepted_plus_data["y"].append(jump.to_start)
-                    accepted_plus_data["i"].append(" suppNt: " + str(jump.num_supp_nt) + " cov: " +
-                                                    str(jump.coverage) + " #reads: " +
-                                                    str(len(jump.supporing_jump_ids)) + score(jump))
+                accepted_plus_data["n"].append(jump.num_supp_nt)
+                accepted_plus_data["c"].append(jump.coverage)
+                accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
+                accepted_plus_data["s"].append(score(jump))
         calls_from_db = SvCallsFromDb(params, sv_db, ground_truth_id, int(xs - w), int(ys - h), w*3, h*3, min_score)
         while calls_from_db.hasNext():
             def score(jump):
@@ -197,9 +188,10 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
                 if jump.from_size == 1 and jump.to_size == 1:
                     ground_plus_data["x"].append(jump.from_start)
                     ground_plus_data["y"].append(jump.to_start)
-                    ground_plus_data["i"].append(" suppNt: " + str(jump.num_supp_nt) + " cov: " +
-                                                    str(jump.coverage) + " #reads: " +
-                                                    str(len(jump.supporing_jump_ids)) + score(jump))
+                    ground_plus_data["n"].append(jump.num_supp_nt)
+                    ground_plus_data["c"].append(jump.coverage)
+                    ground_plus_data["r"].append(len(jump.supporing_jump_ids))
+                    ground_plus_data["s"].append(score(jump))
                 else:
                     print("ground truth with fuzziness?!?!")
         
@@ -218,7 +210,9 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
                     "w": [],
                     "h": [],
                     "a": [],
-                    "i": []
+                    "n": [],
+                    "r": [],
+                    "q": []
                 })
             sweeper = SortedSvJumpFromSql(params, sv_db, sv_db.get_run_jump_id(run_id), int(xs - w), int(ys - h),
                                           w*3, h*3)
@@ -241,8 +235,9 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
                 out_dicts[idx]["w"].append( jump.from_start_same_strand() + jump.from_size() + 1 )
                 out_dicts[idx]["h"].append( jump.to_start() + jump.to_size() + 1 )
                 out_dicts[idx]["a"].append( jump.num_supp_nt() / 1000 )
-                out_dicts[idx]["i"].append( "SuppNt: " + str(jump.num_supp_nt()) + " read_id: " + str(jump.read_id) + \
-                                            " q_len: " + str(jump.query_distance()) )
+                out_dicts[idx]["n"].append(jump.num_supp_nt())
+                out_dicts[idx]["r"].append(jump.read_id)
+                out_dicts[idx]["q"].append(jump.query_distance())
                 
                 f = jump.from_pos
                 t = jump.to_pos
@@ -266,13 +261,13 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
                         patch["y"].extend([t + .5, t - 2.5, t + .5, float("NaN")])
                 
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="orange", line_color="orange", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover2")
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover3")
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="blue", line_color="blue", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[1]), name="hover2")
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[1]), name="hover3")
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="grey", line_color="grey", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[2]), name="hover2")
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[2]), name="hover3")
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="yellow", line_color="yellow", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover2")
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover3")
             plot.patch(x="x", y="y", line_width=1, color="black", source=ColumnDataSource(patch))
             rendered_everything = True
         # the sv - boxes
@@ -283,4 +278,4 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
         plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
                source=ColumnDataSource(accepted_plus_data), name="hover2")
 
-    return plot, rendered_everything
+    return rendered_everything
