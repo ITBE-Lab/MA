@@ -1,5 +1,6 @@
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import FuncTickFormatter, TapTool, OpenURL
+from bokeh.models.tools import HoverTool
 from MA import *
 import math
 
@@ -46,21 +47,24 @@ def format(rgb):
         return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
                                                clamp(int(blue * 255)))
 
-def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score, max_num_ele):
+def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score, max_num_ele, dataset_name):
     plot = figure(
             x_range=(xs, xe),
             y_range=(ys, ye),
             width=900,
             height=900,
-            tooltips=[("from:", "@f"), ("to:", "@t"), ("num calls:", "@i")],
             tools=[
                 "pan", "wheel_zoom",
                 "box_zoom", "save",
-                "reset", "hover", "tap"
+                "tap"
             ],
             active_drag="pan",
             active_scroll="wheel_zoom"
         )
+    hover1 = HoverTool(tooltips=[("from:", "@f"), ("to:", "@t"), ("num calls:", "@i")], names = ['hover1'])
+    hover2 = HoverTool(tooltips="@i", names = ['hover2'])
+    plot.add_tools(hover1)
+    plot.add_tools(hover2)
     plot.quad(left=0, bottom=0, right=pack.unpacked_size_single_strand, top=pack.unpacked_size_single_strand, 
               fill_alpha=0, line_color="black", line_width=3)
     lengths = pack.contigLengths()
@@ -125,10 +129,12 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
             cds["f"].append(names[rect.i])
             cds["t"].append(names[rect.j])
             cds["i"].append(str(rect.c))
-        plot.quad(left="x", bottom="y", right="w", top="h", color="c", line_width=0, source=ColumnDataSource(cds))
+        plot.quad(left="x", bottom="y", right="w", top="h", color="c", line_width=0, source=ColumnDataSource(cds),
+                  name="hover1")
 
         url = "http://localhost:5006/bokeh_server?xs=@x&ys=@y&xe=@w&ye=@h&run_id=" + str(run_id) + \
-            "&min_score=" + str(min_score) + "&ground_truth_id=" + str(ground_truth_id)
+            "&min_score=" + str(min_score) + "&ground_truth_id=" + str(ground_truth_id) + "&dataset_name=" + \
+            dataset_name
         taptool = plot.select(type=TapTool)
         taptool.callback = OpenURL(url=url, same_tab=True)
 
@@ -260,21 +266,21 @@ def render_region(xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_scor
                         patch["y"].extend([t + .5, t - 2.5, t + .5, float("NaN")])
                 
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="orange", line_color="orange", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[0]))
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover2")
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="blue", line_color="blue", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[1]))
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[1]), name="hover2")
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="grey", line_color="grey", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[2]))
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[2]), name="hover2")
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="yellow", line_color="yellow", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[3]))
+                      fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover2")
             plot.patch(x="x", y="y", line_width=1, color="black", source=ColumnDataSource(patch))
             rendered_everything = True
         # the sv - boxes
         plot.quad(left="x", bottom="y", right="w", top="h", line_color="magenta", line_width=3, fill_alpha=0,
-                  source=ColumnDataSource(accepted_boxes_data))
+                  source=ColumnDataSource(accepted_boxes_data), name="hover2")
         plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="green",
-               source=ColumnDataSource(ground_plus_data))
+               source=ColumnDataSource(ground_plus_data), name="hover2")
         plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
-               source=ColumnDataSource(accepted_plus_data))
+               source=ColumnDataSource(accepted_plus_data), name="hover2")
 
     return plot, rendered_everything

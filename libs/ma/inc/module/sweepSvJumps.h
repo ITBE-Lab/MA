@@ -576,6 +576,36 @@ class ExactCompleteBipartiteSubgraphSweep
     } // method
 }; // class
 
+#define ANALYZE_FILTERS ( 1 )
+
+class AbstractFilter
+{
+  public:
+#if ANALYZE_FILTERS
+    std::string sName;
+    size_t uiFilterKept = 0;
+    size_t uiFilterTotal = 0;
+    std::mutex xLock;
+#endif
+    AbstractFilter( std::string sName )
+#if ANALYZE_FILTERS
+        : sName( sName )
+#endif
+    {} // constructor
+#if ANALYZE_FILTERS
+
+    ~AbstractFilter( )
+    {
+        if( uiFilterTotal > 0 )
+            std::cout << "~" << sName << ": filter kept and eliminated " << uiFilterKept << " and "
+                      << uiFilterTotal - uiFilterKept << " elements respectiveley.\n\tThat's "
+                      << ( (int)( 1000.0 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% and "
+                      << 100.0 - ( (int)( 1000.0 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% respectiveley."
+                      << std::endl;
+    } // deconstructor
+#endif
+}; // class
+
 /**
  * @brief filters out short calls with low support
  * @details
@@ -583,13 +613,16 @@ class ExactCompleteBipartiteSubgraphSweep
  * here. This module filters such calls based on the amount of Nt's that support the individual calls.
  */
 class FilterLowSupportShortCalls
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>,
+      public AbstractFilter
 {
   public:
     nucSeqIndex uiMaxSuppNt;
     nucSeqIndex uiMaxSVSize;
+
     FilterLowSupportShortCalls( const ParameterSetManager& rParameters )
-        : uiMaxSuppNt( rParameters.getSelected( )->xMaxSuppNtShortCallFilter->get( ) ),
+        : AbstractFilter( "FilterLowSupportShortCalls" ),
+          uiMaxSuppNt( rParameters.getSelected( )->xMaxSuppNtShortCallFilter->get( ) ),
           uiMaxSVSize( rParameters.getSelected( )->xMaxCallSizeShortCallFilter->get( ) )
     {} // constructor
 
@@ -601,8 +634,14 @@ class FilterLowSupportShortCalls
             // if the call is supported by enough NT's or large enough we keep it
             if( pCall->uiNumSuppNt > uiMaxSuppNt || pCall->size( ) > uiMaxSVSize )
                 pRet->vContent.push_back( pCall );
+#if ANALYZE_FILTERS
+        std::lock_guard<std::mutex> xGuard( xLock );
+        uiFilterTotal += pCalls->vContent.size( );
+        uiFilterKept += pRet->vContent.size( );
+#endif
         return pRet;
     } // method
+
 }; // class
 
 /**
@@ -614,12 +653,14 @@ class FilterLowSupportShortCalls
  * a bunch of false positives.
  */
 class FilterFuzzyCalls
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>,
+      public AbstractFilter
 {
   public:
     nucSeqIndex uiMaxFuzziness;
     FilterFuzzyCalls( const ParameterSetManager& rParameters )
-        : uiMaxFuzziness( rParameters.getSelected( )->xMaxFuzzinessFilter->get( ) )
+        : AbstractFilter( "FilterFuzzyCalls" ),
+          uiMaxFuzziness( rParameters.getSelected( )->xMaxFuzzinessFilter->get( ) )
     {} // constructor
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
@@ -630,6 +671,11 @@ class FilterFuzzyCalls
             // if the call is presice enough we keep it
             if( pCall->uiFromSize <= uiMaxFuzziness && pCall->uiToSize <= uiMaxFuzziness )
                 pRet->vContent.push_back( pCall );
+#if ANALYZE_FILTERS
+        std::lock_guard<std::mutex> xGuard( xLock );
+        uiFilterTotal += pCalls->vContent.size( );
+        uiFilterKept += pRet->vContent.size( );
+#endif
         return pRet;
     } // method
 }; // class
@@ -637,8 +683,8 @@ class FilterFuzzyCalls
 /**
  * @brief filters out calls that are on a diagonal line
  * @details
- * Observation: some false positive calls resolt from jumps that lie on a 45 degree diagonal (bottom left to top right)
- * line. These calls create a small fuzziness so they are not detected by the filter before.
+ * Observation: some false positive calls result from jumps that lie on a 45 degree diagonal (bottom left to top right)
+ * line. These calls create a small fuzziness so they are not detected by FilterFuzzyCalls.
  * Solution:
  * measure the standard deviation of the distance on both 45 degree diagonals (bottom left to top right &
  * bottom right to top left). If the bottom left to top right diagonal shows a high distacne and the other one does
@@ -646,11 +692,13 @@ class FilterFuzzyCalls
  * (see Thoughts 06.ppt type 1)
  */
 class FilterDiagonalLineCalls
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>,
+      public AbstractFilter
 {
   public:
     int64_t iFilterDiagonalLineCalls;
-    FilterDiagonalLineCalls( const ParameterSetManager& rParameters ) : iFilterDiagonalLineCalls( 300 )
+    FilterDiagonalLineCalls( const ParameterSetManager& rParameters )
+        : AbstractFilter( "FilterDiagonalLineCalls" ), iFilterDiagonalLineCalls( 300 )
     {} // constructor
 
     inline int64_t getStd( std::vector<int64_t>& vX )
@@ -688,6 +736,11 @@ class FilterDiagonalLineCalls
             if( iStdA / iStdB < iFilterDiagonalLineCalls )
                 pRet->vContent.push_back( pCall );
         } // for
+#if ANALYZE_FILTERS
+        std::lock_guard<std::mutex> xGuard( xLock );
+        uiFilterTotal += pCalls->vContent.size( );
+        uiFilterKept += pRet->vContent.size( );
+#endif
         return pRet;
     } // method
 }; // class
@@ -702,13 +755,15 @@ class FilterDiagonalLineCalls
  * @note: this filter is maybe not necessary since we could replace the sweep with it...
  */
 class FilterLowCoverageCalls
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>,
+      public AbstractFilter
 {
   public:
     std::vector<double> vEstimatedCoverageList;
     FilterLowCoverageCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
                             std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId )
-        : vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSvCallerRunId, pPack ) )
+        : AbstractFilter( "FilterLowCoverageCalls" ),
+          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSvCallerRunId, pPack ) )
     {} // constructor
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
@@ -723,7 +778,12 @@ class FilterLowCoverageCalls
             if( pCall->uiCoverage >= dMaxCoverage / 2 )
                 pRet->vContent.push_back( pCall );
         } // for
-          // if the call has enough coverage we keep it
+#if ANALYZE_FILTERS
+        std::lock_guard<std::mutex> xGuard( xLock );
+        uiFilterTotal += pCalls->vContent.size( );
+        uiFilterKept += pRet->vContent.size( );
+#endif
+        // if the call has enough coverage we keep it
         return pRet;
     } // method
 }; // class

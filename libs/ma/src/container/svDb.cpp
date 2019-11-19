@@ -211,7 +211,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SortedSvJumpFromSql class
     py::class_<SortedSvJumpFromSql>( rxPyModuleId, "SortedSvJumpFromSql" )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, uint32_t, uint32_t, uint32_t,
+        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, int64_t, int64_t, uint32_t,
                        uint32_t>( ) )
         .def( "has_next_start", &SortedSvJumpFromSql::hasNextStart )
         .def( "has_next_end", &SortedSvJumpFromSql::hasNextEnd )

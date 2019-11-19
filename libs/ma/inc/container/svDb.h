@@ -1650,7 +1650,7 @@ class SortedSvJumpFromSql
     {} // constructor
 
     SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerRunId,
-                         uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
+                         int64_t iX, int64_t iY, uint32_t uiW, uint32_t uiH )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQueryStart( *pDb->pDatabase,
@@ -1670,10 +1670,10 @@ class SortedSvJumpFromSql
                      "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos == ? ) "
                      "ORDER BY sort_pos_end" ),
           xTableIteratorStart( xQueryStart.vExecuteAndReturnIterator(
-              iSvCallerRunId, uiX, uiX + uiW, std::numeric_limits<uint32_t>::max( ), uiY, uiY + uiH,
+              iSvCallerRunId, iX, iX + uiW, std::numeric_limits<uint32_t>::max( ), iY, iY + uiH,
               std::numeric_limits<uint32_t>::max( ) ) ),
-          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, uiX, uiX + uiW,
-                                                                  std::numeric_limits<uint32_t>::max( ), uiY, uiY + uiH,
+          xTableIteratorEnd( xQueryEnd.vExecuteAndReturnIterator( iSvCallerRunId, iX, iX + uiW,
+                                                                  std::numeric_limits<uint32_t>::max( ), iY, iY + uiH,
                                                                   std::numeric_limits<uint32_t>::max( ) ) )
     {} // constructor
 

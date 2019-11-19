@@ -10,6 +10,9 @@ namespace libMA
 {
 /**
  * @brief filters SV calls out that occur due to ambiguities on the reference
+ * @details
+ * Uses DP to check if the reference before and after the breakpoints matches better to itself than the reads to it.
+ * If so it discards the SV.
  */
 class ConnectorPatternFilter
     : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>

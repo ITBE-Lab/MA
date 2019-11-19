@@ -440,6 +440,16 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
 
     // filter ambiguous segments -> 1; don't -> 0
 #if 1
+    /**
+     * This filters segments that occur multiple times on the reference:
+     * For each of those segments extract all seeds.
+     * Then pick the one seed that is closest, on the reference, to:
+     *  - either the last (on query) unique seed
+     *  - or the next (on query) unique seed
+     * This drastically reduces the number of seeds.
+     * Further, it shall help dealing with ambiguous regions by eliminating all but the seeds most likely to fit
+     * into a chain of seeds
+     */
     std::vector<Segment*> vTemp;
     size_t uiNumSeedsTotal = 0;
     int64_t iLastUniqueRefPos = -1;
