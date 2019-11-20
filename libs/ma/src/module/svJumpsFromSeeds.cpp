@@ -419,6 +419,17 @@ void helperSvJumpsFromSeedsExecuteOuter( const std::shared_ptr<Presetting> pSele
     } // if
 } // function
 
+void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
+                            std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet )
+{
+    //returns a (reference pos, query pos, width [on reference], height [on query])
+    auto xTuple = getPositionsForSeeds(rLast, rNext, pQuery->length());
+    nucSeqIndex uiR = std::get<0>(xTuple);
+    nucSeqIndex uiQ = std::get<1>(xTuple);
+    nucSeqIndex uiW = std::get<2>(xTuple);
+    nucSeqIndex uiH = std::get<3>(xTuple);
+    if()
+} // function
 
 std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_ptr<SegmentVector> pSegments,
                                                                     std::shared_ptr<Pack>
