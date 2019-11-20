@@ -45,7 +45,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
         // performs extension and records any found seeds
         // here we use bLrExtension to choose the extension scheme
         if( bLrExtension )
-            xAreaCovered = maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector, uiCnt == 0 );
+            xAreaCovered =
+                maximallySpanningExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector, uiCnt == 0 );
         else
             xAreaCovered = smemExtension( xAreaToCover.center( ), pFM_index, pQuerySeq, pSegmentVector );
 
@@ -58,13 +59,13 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
             // enqueue procesInterval() for a new interval that spans from uiStart to
             // where the extension stopped
             procesInterval(
-                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) - 1 ),
+                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) ),
                 pSegmentVector, pFM_index, pQuerySeq, uiCnt + 1 );
         } // if
         // if the extension did not fully cover until uiEnd:
         if( xAreaToCover.end( ) > xAreaCovered.end( ) + 1 )
         {
-            xAreaToCover.set( xAreaCovered.end( ) + 1, xAreaToCover.end( ) - xAreaCovered.end( ) - 1 );
+            xAreaToCover.set( xAreaCovered.end( ), xAreaToCover.end( ) - xAreaCovered.end( ) );
             // REPLACED by while loop
             // enqueue procesInterval() for a new interval that spans from where the extension
             // stopped to uiEnd
@@ -174,6 +175,7 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
 void exportBinarySeeding( py::module& rxPyModuleId )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding" );
+    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding",
+                                 []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
 } // function
 #endif

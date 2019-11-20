@@ -39,6 +39,7 @@ void exportParameter( py::module& rxPyModuleId )
         .def_readonly( "description", &AlignerParameterBase::sDescription );
 
     exportAlignerParameter<int>( rxPyModuleId, "AlignerParameterInt" );
+    exportAlignerParameter<short>( rxPyModuleId, "AlignerParameterShort" );
     exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
     exportAlignerParameter<double>( rxPyModuleId, "AlignerParameterDouble" );
     exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
@@ -136,6 +137,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportComputeCoverage( libMaModule );
     exportSweepSvJump( libMaModule );
     exportConnectorPatternFilter( libMaModule );
+    exportMinimizerIndex( libMaModule );
 } // function
 
 #endif

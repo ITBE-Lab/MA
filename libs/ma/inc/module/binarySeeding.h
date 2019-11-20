@@ -38,6 +38,8 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
      */
     const nucSeqIndex uiMinGenomeSize;
+    /// used in seed function...
+    const size_t uiMinSeedSize;
 
     /**
      * @brief The simplified extension scheme presented in our Paper.
@@ -50,9 +52,12 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
      * Segments are saved in pSegmentVector.
      */
     inline Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center,
-                                                             std::shared_ptr<SuffixArrayInterface> pFM_index,
-                                                             std::shared_ptr<NucSeq> pQuerySeq,
-                                                             std::shared_ptr<SegmentVector> pSegmentVector,
+                                                             std::shared_ptr<SuffixArrayInterface>
+                                                                 pFM_index,
+                                                             std::shared_ptr<NucSeq>
+                                                                 pQuerySeq,
+                                                             std::shared_ptr<SegmentVector>
+                                                                 pSegmentVector,
                                                              bool bFirst )
     {
         //+ const size_t uiTempExtLen = 20;
@@ -471,12 +476,24 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
           uiMinSeedSizeDrop( rParameters.getSelected( )->xMinimalSeedSizeDrop->get( ) ),
           fRelMinSeedSizeAmount( rParameters.getSelected( )->xRelMinSeedSizeAmount->get( ) ),
           bDisableHeuristics( rParameters.getSelected( )->xDisableHeuristics->get( ) ),
-          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) )
+          uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) ),
+          uiMinSeedSize( rParameters.getSelected( )->xMinSeedLength->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<SuffixArrayInterface> pFM_index,
-                                                             std::shared_ptr<NucSeq> pQuerySeq );
+    virtual std::shared_ptr<SegmentVector>
+        EXPORTED execute( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
 
+
+    std::vector<std::shared_ptr<Seeds>> seed( std::shared_ptr<FMIndex> pFM_index,
+                                              std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    {
+        std::vector<std::shared_ptr<Seeds>> vRet;
+        for( auto pQuery : vQueries )
+            vRet.push_back( execute( pFM_index, pQuery )
+                                ->extractSeeds( pFM_index, uiMaxAmbiguity, (unsigned int)uiMinSeedSize,
+                                                (libMA::nucSeqIndex)pQuery->length( ), true ) );
+        return vRet;
+    } // method
 }; // class
 
 } // namespace libMA

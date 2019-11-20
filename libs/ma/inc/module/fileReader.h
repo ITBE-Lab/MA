@@ -83,7 +83,7 @@ class StdFileStream : public FileStream
 
     bool is_open( ) const
     {
-        return xStream.is_open();
+        return xStream.is_open( );
     } // method
 
     void close( )
@@ -159,7 +159,7 @@ class StringStream : public FileStream
 
     ~StringStream( )
     {
-        DEBUG( if( !eof( ) )std::cout << "StringStream read " << uiNumLinesRead << " lines in total." << std::endl;
+        DEBUG( if( !eof( ) ) std::cout << "StringStream read " << uiNumLinesRead << " lines in total." << std::endl;
                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
     } // deconstrucotr
 
@@ -243,7 +243,7 @@ class GzFileStream : public FileStream
             // fill internal buffer
             lastReadReturn = gzread( pFile, &cBuff, 1 );
         else
-            lastReadReturn = -1; //if the file could net be opened set error immediately
+            lastReadReturn = -1; // if the file could net be opened set error immediately
     } // constructor
 
     bool eof( ) const
@@ -325,7 +325,7 @@ class SingleFileReader : public Module<NucSeq, true>, public Reader
         throw std::runtime_error( "This method must be overridden." );
     } // method
 
-    virtual void reset()
+    virtual void reset( )
     {
         throw std::runtime_error( "This method must be overridden." );
     } // method
@@ -429,7 +429,7 @@ class FileReader : public SingleFileReader
             .append( std::to_string( this->getFileSize( ) ) );
     } // method
 
-    virtual void reset()
+    virtual void reset( )
     {
         pFile->close( );
 #ifdef WITH_ZLIB
@@ -487,6 +487,16 @@ class FileListReader : public SingleFileReader
         return pRet;
     } // method
 
+    std::vector<std::shared_ptr<NucSeq>> read_all( )
+    {
+        std::vector<std::shared_ptr<NucSeq>> vRet;
+
+        while( !isFinished( ) )
+            vRet.push_back( execute( ) );
+
+        return vRet;
+    } // method
+
     // @override
     virtual bool requiresLock( ) const
     {
@@ -522,7 +532,7 @@ class FileListReader : public SingleFileReader
             .append( this->pFileReader->status( ) );
     } // method
 
-    virtual void reset()
+    virtual void reset( )
     {
         uiFileIndex = 0;
         pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
@@ -549,7 +559,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
         const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
         : pF1( std::make_shared<FileListReader>( vsFileName1 ) ),
           pF2( std::make_shared<FileListReader>( vsFileName2 ) ),
-          bRevCompMate( rParameters.getSelected()->xRevCompPairedReadMates->get() )
+          bRevCompMate( rParameters.getSelected( )->xRevCompPairedReadMates->get( ) )
     {} // constructor
 
     /**
@@ -558,10 +568,10 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     PairedFileReader( const ParameterSetManager& rParameters, std::string sQuery, std::string sMate )
         : pF1( std::make_shared<FileReader>( rParameters, sQuery, sQuery.size( ) ) ),
           pF2( std::make_shared<FileReader>( rParameters, sMate, sMate.size( ) ) ),
-          bRevCompMate( rParameters.getSelected()->xRevCompPairedReadMates->get() )
+          bRevCompMate( rParameters.getSelected( )->xRevCompPairedReadMates->get( ) )
     {} // constructor
 
-    void EXPORTED checkPaired();
+    void EXPORTED checkPaired( );
 
     std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
 

@@ -8,7 +8,7 @@ cmake_minimum_required (VERSION 3.8)
 project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 
 # optional features
-option(WITH_PYTHON "Build python integration of libMA." OFF)
+option(WITH_PYTHON "Build python integration of libMA." ON)
 option(WITH_ZLIB "Build gz file readers using zlib." ON)
 option(WITH_GUI "Build maGUI" ON)
 
@@ -78,7 +78,10 @@ endif()
 if( NOT MSVC )
 	# Note: Adding "-Wextra" delivers more warnings
     # "-Werror" "-Wall" : All warnings enabled and warning are treated as errors
-    add_compile_options( "-Werror" "-Wall" ) 
+    add_compile_options( "-Wall" )
+    if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
+        #add_compile_options( "-Werror" )
+    endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options( "-stdlib=libc++" )
     endif()

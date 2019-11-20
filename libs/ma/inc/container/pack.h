@@ -222,7 +222,7 @@ class Pack : public Container
        */
         xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
     } // inline method
-
+  public:
     /* Get the value at position uiPosition in the unpacked sequence.
      * Works only for the virtual forward strand.
      */
@@ -231,7 +231,7 @@ class Pack : public Container
        */
         return xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] >> ( ( ~uiPosition & 3UL ) << 1 ) & 3;
     } // inline method
-
+  private:
     /* Method can throw exception if I/O operation fails.
      * Writes the isolated content of the pack-vector to the file-system.
      */
@@ -457,6 +457,7 @@ class Pack : public Container
 
 
 
+
     * Throws an exception, if something goes wrong.
     * Deserialization of the vector for hole descriptors.
     */
@@ -612,13 +613,28 @@ class Pack : public Container
         // check all holes
         for( auto& rHole : xVectorOfHoleDescriptors )
             // check if hole is overlapping
-            if( rHole.offset < uiEnd && rHole.offset + rHole.length > uiStart )
+            if( rHole.offset <= uiEnd && rHole.offset + rHole.length > uiStart )
                 // add the overlapping interval to covered
                 uiCovered += std::min( uiEnd, rHole.offset + rHole.length ) - std::max( uiStart, rHole.offset );
 
         assert( uiCovered <= uiEnd - uiStart );
         // divide the overlapping interval by the total interval
         return uiCovered / (double)( uiEnd - uiStart );
+    } // method
+
+    /**
+     * @brief prints wether the nucleotide is in a hole
+     */
+    inline double isHole( uint64_t uiX ) const
+    {
+        // check all holes
+        for( auto& rHole : xVectorOfHoleDescriptors )
+            // check if hole is overlapping
+            if( rHole.offset <= uiX && rHole.offset + rHole.length > uiX )
+                // add the overlapping interval to covered
+                return true;
+
+        return false;
     } // method
 
     /* Appends a single nucleotide sequence to the collection.
@@ -898,6 +914,13 @@ class Pack : public Container
             if( seq.sName.compare( name ) == 0 )
                 return seq.uiLengthUnpacked;
         return 0;
+    } // method
+
+    /* Start of in sequence with id on forward strand.
+     */
+    uint64_t lengthOfSequenceWithId( int64_t iSequenceId ) const
+    {
+        return xVectorOfSequenceDescriptors[ iSequenceId ].uiLengthUnpacked;
     } // method
 
     /* For unaligned sequences we can have request the sequence id -1. (In this case we deliver
@@ -1500,6 +1523,18 @@ class Pack : public Container
             // *2 since vExtractContig uses id system with forward and reverse contig ids...
             vExtractContig( uiI * 2, s, false );
             vRet.push_back( s.toString( ) );
+        } // for
+        return vRet;
+    } // method
+
+    std::vector<std::shared_ptr<NucSeq>> contigNucSeqs( ) const
+    {
+        std::vector<std::shared_ptr<NucSeq>> vRet;
+        for( size_t uiI = 0; uiI < uiNumContigs( ); uiI++ )
+        {
+            // *2 since vExtractContig uses id system with forward and reverse contig ids...
+            vRet.push_back( std::make_shared<NucSeq>( ) );
+            vExtractContig( uiI * 2, *vRet.back( ), false );
         } // for
         return vRet;
     } // method

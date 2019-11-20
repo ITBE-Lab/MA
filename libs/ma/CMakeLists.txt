@@ -38,6 +38,9 @@ set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Set includes and library dependencies 
 target_include_directories(MA PUBLIC inc ../kswcpp/inc)
 target_link_libraries ( MA LINK_PUBLIC kswcpp CppSQLite3 )
+if( ZLIB_FOUND )
+    target_link_libraries ( MA LINK_PUBLIC minimizerscpp )
+endif()
 
 # and for each of your dependent executable/library targets:
 if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )

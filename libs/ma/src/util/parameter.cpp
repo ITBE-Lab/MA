@@ -21,6 +21,16 @@ template <> EXPORTED float genericStringToValue<float>( const std::string& sStri
     return (float)stod( sString );
 } // function
 
+template <> EXPORTED short genericStringToValue<short>( const std::string& sString )
+{
+    return (short)stoi ( sString );
+} // function
+
+template <> EXPORTED uint64_t genericStringToValue<uint64_t>( const std::string& sString )
+{
+    return (uint64_t)stoull ( sString );
+} // function
+
 template <> EXPORTED bool genericStringToValue<bool>( const std::string& sString )
 {
     std::string sTmp = sString;
@@ -64,6 +74,16 @@ template <> EXPORTED std::string AlignerParameter<float>::asText( ) const
 } // method
 
 template <> std::string AlignerParameter<int>::asText( ) const
+{
+    return std::to_string( this->get( ) );
+} // method
+
+template <> std::string AlignerParameter<short>::asText( ) const
+{
+    return std::to_string( this->get( ) );
+} // method
+
+template <> std::string AlignerParameter<uint64_t>::asText( ) const
 {
     return std::to_string( this->get( ) );
 } // method

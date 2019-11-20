@@ -4,21 +4,26 @@
  */
 #include "module/hashMapSeeding.h"
 #include <limits>
-#include <unordered_map>
 
 using namespace libMA;
 
 using namespace libMA::defaults;
 
 
-std::shared_ptr<Seeds> HashMapSeeding::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
+std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( std::shared_ptr<NucSeq> pQ2 )
 {
     std::unordered_multimap<std::string, size_t> xIndex;
 
     // insert seeds into index
     for( size_t uiI = 0; uiI + this->uiSeedSize <= pQ2->length( ); uiI += 1 )
         xIndex.emplace( pQ2->fromTo( uiI, uiI + this->uiSeedSize ), uiI );
+    return xIndex;
+} // method
 
+
+std::shared_ptr<Seeds>
+HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex, std::shared_ptr<NucSeq> pQ1 )
+{
     auto pSeeds = std::make_shared<Seeds>( );
     for( size_t uiI = 0; uiI + this->uiSeedSize <= pQ1->length( ); uiI += 1 )
     {
@@ -28,6 +33,11 @@ std::shared_ptr<Seeds> HashMapSeeding::execute( std::shared_ptr<NucSeq> pQ1, std
     } // for
 
     return pSeeds;
+} // method
+
+std::shared_ptr<Seeds> HashMapSeeding::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
+{
+    return getSeeds( getIndex( pQ2 ), pQ1 );
 } // function
 
 std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
@@ -123,8 +133,13 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
 #ifdef WITH_PYTHON
 void exportHashMapSeeding( py::module& rxPyModuleId )
 {
+    py::class_<std::unordered_multimap<std::string, size_t>>( rxPyModuleId, "K-MerIndex" );
     // export the HashMapSeeding class
-    exportModule<HashMapSeeding>( rxPyModuleId, "HashMapSeeding" );
+    exportModule<HashMapSeeding>( rxPyModuleId, "HashMapSeeding", []( auto&& x ) {
+        x.def( "getIndex", &HashMapSeeding::getIndex ) //
+            .def( "getSeeds", &HashMapSeeding::getSeeds ) //
+            .def( "getAllSeeds", &HashMapSeeding::getAllSeeds );
+    } );
     // export the ReSeeding class
     exportModule<ReSeeding>( rxPyModuleId, "ReSeeding" );
     // export the FillSeedSet class

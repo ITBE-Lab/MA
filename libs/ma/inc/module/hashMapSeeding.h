@@ -8,6 +8,7 @@
 #include "container/alignment.h"
 #include "module/harmonization.h"
 #include "module/module.h"
+#include <unordered_map>
 
 namespace libMA
 {
@@ -27,8 +28,21 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
         : uiSeedSize( rParameters.getSelected( )->xSecSeedSize->get( ) )
     {} // constructor
 
+    virtual std::unordered_multimap<std::string, size_t> getIndex( std::shared_ptr<NucSeq> pQ1 );
+    virtual std::shared_ptr<Seeds> getSeeds( std::unordered_multimap<std::string, size_t> xIndex, //
+                                             std::shared_ptr<NucSeq>
+                                                 pQ1 );
+
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 );
 
+    virtual std::vector<std::shared_ptr<libMA::Seeds>>
+    getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex, std::vector<std::shared_ptr<NucSeq>> vIn )
+    {
+        std::vector<std::shared_ptr<libMA::Seeds>> vRet;
+        for( auto pNucSeq : vIn )
+            vRet.push_back( getSeeds( xIndex, pNucSeq ) );
+        return vRet;
+    } // method
 }; // class
 
 /**

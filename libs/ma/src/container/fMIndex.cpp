@@ -392,6 +392,7 @@ void FMIndex::build_FMIndex( const Pack& rxSequenceCollection, // the pack for w
 
 #ifdef WITH_PYTHON
 
+
 void exportFM_index( py::module& rxPyModuleId )
 {
     // export the SAInterval class
