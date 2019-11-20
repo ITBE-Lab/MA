@@ -171,8 +171,8 @@ def render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, mi
                     accepted_boxes_data["c"].append(jump.coverage)
                     accepted_boxes_data["r"].append(len(jump.supporing_jump_ids))
                     accepted_boxes_data["s"].append(score(jump))
-                    accepted_plus_data["x"].append(jump.from_start)
-                    accepted_plus_data["y"].append(jump.to_start)
+                    accepted_plus_data["x"].append(jump.from_start + jump.from_size/2)
+                    accepted_plus_data["y"].append(jump.to_start + jump.to_size/2)
                 accepted_plus_data["n"].append(jump.num_supp_nt)
                 accepted_plus_data["c"].append(jump.coverage)
                 accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
@@ -186,8 +186,8 @@ def render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, mi
             jump = calls_from_db.next()
             if jump.num_supp_nt > min_score * jump.coverage:
                 if jump.from_size == 1 and jump.to_size == 1:
-                    ground_plus_data["x"].append(jump.from_start)
-                    ground_plus_data["y"].append(jump.to_start)
+                    ground_plus_data["x"].append(jump.from_start + jump.from_size/2)
+                    ground_plus_data["y"].append(jump.to_start + jump.to_size/2)
                     ground_plus_data["n"].append(jump.num_supp_nt)
                     ground_plus_data["c"].append(jump.coverage)
                     ground_plus_data["r"].append(len(jump.supporing_jump_ids))

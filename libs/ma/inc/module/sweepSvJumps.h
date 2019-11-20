@@ -599,8 +599,8 @@ class AbstractFilter
         if( uiFilterTotal > 0 )
             std::cout << "~" << sName << ": filter kept and eliminated " << uiFilterKept << " and "
                       << uiFilterTotal - uiFilterKept << " elements respectiveley.\n\tThat's "
-                      << ( (int)( 1000.0 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% and "
-                      << 100.0 - ( (int)( 1000.0 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% respectiveley."
+                      << ( ( 1000 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% and "
+                      << 100.0 - ( ( 1000* uiFilterKept ) / uiFilterTotal ) / 10.0 << "% respectiveley."
                       << std::endl;
     } // deconstructor
 #endif

@@ -72,8 +72,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
         if( uiTotal > 0 )
             std::cout << "~SvJumpsFromSeeds: ambiguity filter kept and eliminated " << uiNumSeedsKeptAmbiguityFilter
                       << " and " << uiNumSeedsEliminatedAmbiguityFilter << " seeds respectively. " << std::endl
-                      << "\tThats " << ( (int)1000 * uiNumSeedsKeptAmbiguityFilter / uiTotal ) / 10.0 << "% and "
-                      << ( (int)1000 * uiNumSeedsEliminatedAmbiguityFilter / uiTotal ) / 10.0 << "% respectively."
+                      << "\tThats " << ( 1000 * uiNumSeedsKeptAmbiguityFilter / uiTotal ) / 10.0 << "% and "
+                      << ( 1000 * uiNumSeedsEliminatedAmbiguityFilter / uiTotal ) / 10.0 << "% respectively."
                       << std::endl;
     } // destructor
 
