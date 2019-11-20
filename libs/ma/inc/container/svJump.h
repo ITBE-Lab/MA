@@ -16,6 +16,7 @@ class SvJump : public Container
         return uiA < uiB ? uiB - uiA : uiA - uiB;
     } // method
 
+    // @todo this should not be here....
     const double s, s_neg;
     const double h;
     const double m;

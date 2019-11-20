@@ -10,26 +10,27 @@ using namespace libMA;
 using namespace libMA::defaults;
 
 
-std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( std::shared_ptr<NucSeq> pQ2 )
+std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( std::shared_ptr<NucSeq> pQ2,
+                                                                       nucSeqIndex uiSeedSize )
 {
     std::unordered_multimap<std::string, size_t> xIndex;
 
     // insert seeds into index
-    for( size_t uiI = 0; uiI + this->uiSeedSize <= pQ2->length( ); uiI += 1 )
-        xIndex.emplace( pQ2->fromTo( uiI, uiI + this->uiSeedSize ), uiI );
+    for( size_t uiI = 0; uiI + uiSeedSize <= pQ2->length( ); uiI += 1 )
+        xIndex.emplace( pQ2->fromTo( uiI, uiI + uiSeedSize ), uiI );
     return xIndex;
 } // method
 
 
-std::shared_ptr<Seeds>
-HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex, std::shared_ptr<NucSeq> pQ1 )
+std::shared_ptr<Seeds> HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex,
+                                                 std::shared_ptr<NucSeq> pQ1, nucSeqIndex uiSeedSize )
 {
     auto pSeeds = std::make_shared<Seeds>( );
-    for( size_t uiI = 0; uiI + this->uiSeedSize <= pQ1->length( ); uiI += 1 )
+    for( size_t uiI = 0; uiI + uiSeedSize <= pQ1->length( ); uiI += 1 )
     {
-        auto tuiRange = xIndex.equal_range( pQ1->fromTo( uiI, uiI + this->uiSeedSize ) );
+        auto tuiRange = xIndex.equal_range( pQ1->fromTo( uiI, uiI + uiSeedSize ) );
         for( auto xIt = tuiRange.first; xIt != tuiRange.second; ++xIt )
-            pSeeds->emplace_back( uiI, this->uiSeedSize, xIt->second, true );
+            pSeeds->emplace_back( uiI, uiSeedSize, xIt->second, true );
     } // for
 
     return pSeeds;
@@ -37,9 +38,11 @@ HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex, s
 
 std::shared_ptr<Seeds> HashMapSeeding::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
 {
-    return getSeeds( getIndex( pQ2 ), pQ1 );
+    nucSeqIndex uiSeedSize = getSeedSize( pQ1->length( ), pQ2->length( ) );
+    return getSeeds( getIndex( pQ2, uiSeedSize ), pQ1, uiSeedSize );
 } // function
 
+#if 0
 std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
                                            std::shared_ptr<Pack> pPack )
 {
@@ -129,6 +132,7 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
     // lump everything
     return xLumper.execute( pCollection );
 } // function
+#endif
 
 #ifdef WITH_PYTHON
 void exportHashMapSeeding( py::module& rxPyModuleId )
@@ -140,11 +144,13 @@ void exportHashMapSeeding( py::module& rxPyModuleId )
             .def( "getSeeds", &HashMapSeeding::getSeeds ) //
             .def( "getAllSeeds", &HashMapSeeding::getAllSeeds );
     } );
+#if 0
     // export the ReSeeding class
     exportModule<ReSeeding>( rxPyModuleId, "ReSeeding" );
     // export the FillSeedSet class
     exportModule<FillSeedSet>( rxPyModuleId, "FillSeedSet" );
     // export the ExtractFilledSeedSets class
     exportModule<ExtractFilledSeedSets>( rxPyModuleId, "ExtractFilledSeedSets" );
+#endif
 } // function
 #endif

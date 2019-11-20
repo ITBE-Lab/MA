@@ -22,29 +22,38 @@ namespace libMA
 class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
 {
   public:
-    const size_t uiSeedSize;
-
     HashMapSeeding( const ParameterSetManager& rParameters )
-        : uiSeedSize( rParameters.getSelected( )->xSecSeedSize->get( ) )
     {} // constructor
 
-    virtual std::unordered_multimap<std::string, size_t> getIndex( std::shared_ptr<NucSeq> pQ1 );
-    virtual std::shared_ptr<Seeds> getSeeds( std::unordered_multimap<std::string, size_t> xIndex, //
-                                             std::shared_ptr<NucSeq>
-                                                 pQ1 );
+    virtual nucSeqIndex getSeedSize( nucSeqIndex uiL1, nucSeqIndex uiL2 )
+    {
+        nucSeqIndex uiX = std::min( uiL1, uiL2 );
+        return std::max( (nucSeqIndex)1, (nucSeqIndex)std::sqrt( uiX ) );
+    } // method
+
+    virtual nucSeqIndex minSeedSize()
+    {
+        return 3;
+    } // method
+
+    virtual std::unordered_multimap<std::string, size_t> getIndex( std::shared_ptr<NucSeq> pQ1,
+                                                                   nucSeqIndex uiSeedSize );
+    virtual std::shared_ptr<Seeds> getSeeds( std::unordered_multimap<std::string, size_t> xIndex,
+                                             std::shared_ptr<NucSeq> pQ1, nucSeqIndex uiSeedSize );
 
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 );
 
-    virtual std::vector<std::shared_ptr<libMA::Seeds>>
-    getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex, std::vector<std::shared_ptr<NucSeq>> vIn )
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex,
+                                                                    std::vector<std::shared_ptr<NucSeq>> vIn )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         for( auto pNucSeq : vIn )
-            vRet.push_back( getSeeds( xIndex, pNucSeq ) );
+            vRet.push_back( getSeeds( xIndex, pNucSeq, xIndex.begin( )->first.size( ) ) );
         return vRet;
     } // method
 }; // class
 
+#if 0
 /**
  * @brief fills in shorter seeds within gaps between seeds
  * @ingroup module
@@ -146,6 +155,7 @@ class ExtractFilledSeedSets
         return pSoCs;
     } // method
 }; // class
+#endif
 
 } // namespace libMA
 

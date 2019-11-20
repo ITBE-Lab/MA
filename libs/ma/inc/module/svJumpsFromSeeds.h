@@ -27,6 +27,7 @@ class PerfectMatch;
 class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
   public:
+    // @todo this should not be here...
     const std::shared_ptr<Presetting> pSelectedSetting;
     const size_t uiMinSeedSizeSV;
     const size_t uiMaxAmbiguitySv;
@@ -65,7 +66,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           pDb( pDb ),
           xCoverageInserter( iSequencerId, pRefSeq, pDb )
     {
-        xBinarySeeding.bDisableHeuristics = true;
     } // constructor
 
     ~SvJumpsFromSeeds( )
@@ -79,12 +79,17 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                       << std::endl;
     } // destructor
 
+
     /**
      * @details
      * shall return a rectange (reference pos, query pos, width [on reference], height [on query])
      */
-    std::tuple<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex> getPositionsForSeeds( Seed& rLast, Seed& rNext,
-                                                                                         nucSeqIndex uiQSize );
+    Rectangle<nucSeqIndex>& getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQSize );
+
+    void computeSeeds( Rectangle<nucSeqIndex> xArea, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
+                       std::shared_ptr<Seeds> rvRet );
+    std::shared_ptr<Seeds> computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
+                                         std::shared_ptr<Pack> pRefSeq );
 
     void makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
                                         std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet );

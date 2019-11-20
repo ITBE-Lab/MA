@@ -190,3 +190,14 @@ template <typename T> class Interval
         return iStart == rxOther.iStart && iSize == rxOther.iSize;
     } // operator
 }; // class
+
+template <typename T> class Rectangle
+{
+  public:
+    Interval<T> xXAxis, xYAxis;
+    /**
+     * @brief Creates a new Rectangle.
+     */
+    Rectangle( T iStartX, T iStartY, T iSizeX, T iSizeY ) : xXAxis( iStartX, iSizeX ), xYAxis( iStartY, iSizeY )
+    {} // constructor
+}; // class

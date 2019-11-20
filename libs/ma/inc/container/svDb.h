@@ -188,7 +188,7 @@ class SV_DB : public Container
                     // size of this seed
                     int64_t iSize = rSeeds[ uiI ].size( );
 
-#if 1 // 1 -> add gap in between seeds to estimation / 0 -> don't
+#if 0 // 1 -> add gap in between seeds to estimation / 0 -> don't
       // add gap to previous seed or start of query
                     if( uiI == 0 )
                         iSize += rSeeds[ uiI ].start( );
