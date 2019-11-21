@@ -161,11 +161,14 @@ class SV_DB : public Container
             CovInserter( int64_t iSequencerId, std::shared_ptr<Pack> pPack, std::shared_ptr<SV_DB> pDb )
                 : iSequencerId( iSequencerId ), pDb( pDb ), pPack( pPack ), vNumNts( pPack->uiNumContigs( ) )
             {
-                pDb->pContigCovTable->resetCount( iSequencerId );
+                if(iSequencerId != -1)
+                    pDb->pContigCovTable->resetCount( iSequencerId );
             } // constructor
 
             void commit( )
             {
+                if(iSequencerId == -1)
+                    return;
                 std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
                 for( size_t uiI = 0; uiI < vNumNts.size( ); uiI++ )
                     if( vNumNts[ uiI ] > 0 )
@@ -183,6 +186,8 @@ class SV_DB : public Container
             /// @brief seeds need to be sorted by query pos
             inline void insert( Seeds& rSeeds, nucSeqIndex uiQlen )
             {
+                if(iSequencerId == -1)
+                    return;
                 for( size_t uiI = 0; uiI < rSeeds.size( ); uiI++ )
                 {
                     // size of this seed
@@ -1384,6 +1389,32 @@ class SV_DB : public Container
         return pReadTable->getRead( iId );
     } // method
 
+    inline void deleteRun( int64_t uiCallerId )
+    {
+        CppSQLiteExtImmediateTransactionContext xTransactionContext(*pDatabase);
+        // delete rows that can be found easily
+        CppSQLiteExtStatement( *pDatabase, "DELETE FROM sv_caller_run_table WHERE id == ?" )
+            .bindAndExecute( uiCallerId );
+        CppSQLiteExtStatement( *pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id == ?" )
+            .bindAndExecute( uiCallerId );
+        CppSQLiteExtStatement(
+            *pDatabase, "DELETE FROM sv_call_r_tree WHERE run_id_a == ? " )
+            .bindAndExecute( uiCallerId );
+
+        // vacuum up dangeling objects -> compile sqlite with outher switches so this is not needed anymore (@todo)
+        CppSQLiteExtStatement( *pDatabase,
+                               "DELETE FROM sv_call_support_table WHERE call_id NOT IN (SELECT call_id FROM "
+                               "sv_call_table)" )
+            .bindAndExecute( );
+        CppSQLiteExtStatement(
+            *pDatabase,
+            "DELETE FROM sv_jump_run_table WHERE id NOT IN (SELECT sv_jump_run_id FROM sv_caller_run_table)" )
+            .bindAndExecute( );
+        CppSQLiteExtStatement(
+            *pDatabase, "DELETE FROM sv_jump_table WHERE sv_jump_run_id NOT IN (SELECT id FROM sv_jump_run_table)" )
+            .bindAndExecute( );
+    } // method
+
     class ReadInserter
     {
       private:
@@ -2210,8 +2241,8 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH ) )
     {} // constructor
 
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
-                   int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore )
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId, int64_t iX,
+                   int64_t iY, int64_t iW, int64_t iH, double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,

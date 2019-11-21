@@ -1,8 +1,7 @@
-from render_genome_overview import render_overview
 from render_region import render_region
 import os.path
 import json
-from bokeh.layouts import column, row
+from bokeh.layouts import column, row, gridplot
 from bokeh.models import Button, Slider
 from bokeh.plotting import figure, curdoc
 from bokeh.models.callbacks import CustomJS
@@ -47,7 +46,6 @@ ground_truth_id = args_get("ground_truth_id", int, -1)
 min_score = args_get("min_score", float, 0)
 max_elements = args_get("max_elements", int, 2000)
 active_tools = args_get("active_tools", None, b"pan.wheel_zoom.tap.hover1,hover2,hover3").decode().split(".")
-print(active_tools)
 
 def text_to_none(text):
     if text == "None":
@@ -68,15 +66,38 @@ plot = figure(
             active_scroll=text_to_none(active_tools[1]),
             active_tap=text_to_none(active_tools[2])
         )
+plot.axis.visible = False
+l_plot = figure(
+            width=40,
+            height=900,
+            y_range=plot.y_range,
+            tools=["ypan", "ywheel_zoom", "tap"]
+        )
+l_plot.axis.visible = False
+#l_plot.toolbar.visible = False
+l_plot.grid.visible = False
+
+d_plot = figure(
+            width=900,
+            height=40,
+            x_range=plot.x_range,
+            tools=["xpan", "xwheel_zoom", "tap"]
+        )
+d_plot.axis.visible = False
+d_plot.grid.visible = False
+#d_plot.toolbar.visible = False
+
 hover1 = HoverTool(tooltips=[("from", "@f"), ("to", "@t"), ("#calls", "@i")], names=['hover1'],
                    name="Hover heatmap")
 hover2 = HoverTool(tooltips=[("supp. nt", "@n"), ("coverage", "@c"), ("#reads", "@r"), ("score", "@s")],
                    names=['hover2'], name="Hover calls")
 hover3 = HoverTool(tooltips=[("supp. nt", "@n"), ("read id", "@r"), ("|query|:", "@q")],
                    names=['hover3'], name="Hover jumps")
+hover4 = HoverTool(tooltips="@i", names=['hover4'], name="Hover simple")
 plot.add_tools(hover1)
 plot.add_tools(hover2)
 plot.add_tools(hover3)
+plot.add_tools(hover4)
 
 plot.tools[0].name = "pan"
 plot.tools[1].name = "box_zoom"
@@ -86,6 +107,7 @@ plot.tools[4].name = "save"
 plot.tools[5].name = "hover1"
 plot.tools[6].name = "hover2"
 plot.tools[7].name = "hover3"
+plot.tools[8].name = "hover4"
 
 l = []
 for x in active_tools[3].split(","):
@@ -95,6 +117,8 @@ for x in active_tools[3].split(","):
         l.append(hover2)
     if(x == "hover3"):
         l.append(hover3)
+    if(x == "hover4"):
+        l.append(hover4)
 plot.toolbar.active_inspect = l
 
 redered_everything = True
@@ -117,14 +141,19 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
 
     sv_db = SV_DB("/MAdata/sv_datasets/" + dataset_name + "/svs.db", "open")
 
-    redered_everything = render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score,
-                                             max_elements, dataset_name, active_tools)
+    redered_everything = render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id,
+                                        min_score, max_elements, dataset_name, active_tools, 
+                                        json_info_file["reference_path"] + "/ma/genome")
+else:
+    xe = 0
+    ye = 0
 
 # reset button
 reset_button = Button(label="Reset")
 reset_button.js_on_event(ButtonClick, CustomJS(code="""
     document.location.href = document.location.href.split("?")[0];
 """))
+
 
 def make_js_callback(condition):
     return CustomJS(args=dict(xr=plot.x_range, yr=plot.y_range, xs=xs, xe=xe, ys=ys, ye=ye,
@@ -148,7 +177,7 @@ def make_js_callback(condition):
                 if(plot.toolbar.tools[3].active)
                     active_tap = "tap";
                 var active_inspect = "";
-                for(var x = 5; x < 8; x++)
+                for(var x = 5; x < 9; x++)
                     if(plot.toolbar.tools[x].active)
                         active_inspect += "," + plot.toolbar.tools[x].name;
 
@@ -172,6 +201,14 @@ def make_js_callback(condition):
                 document.location.href = s;
             } // if or scope
         """)
+
+# reset button
+delete_button = Button(label="Delete Dataset")
+delete_button.js_on_event(ButtonClick, make_js_callback("""
+        s = document.location.href.split("bokeh_server")
+        //alert(s);
+        document.location.href = s[0] + "delete_run" + s[1];
+    """))
 
 # callback if area changed too much
 plot.y_range.js_on_change('start', make_js_callback("""
@@ -231,5 +268,8 @@ file_input.js_on_change("value", make_js_callback("""
     """))
 
 # render this document
-curdoc().add_root(row(plot, column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
-                                   max_elements_slider, reset_button)))
+curdoc().add_root(row(
+                        gridplot([[l_plot, plot], [None, d_plot]]),
+                        column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
+                                   max_elements_slider, reset_button, delete_button)
+                        ))

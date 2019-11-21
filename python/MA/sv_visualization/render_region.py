@@ -46,25 +46,25 @@ def format(rgb):
         return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
                                                clamp(int(blue * 255)))
 
-def render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score, max_num_ele, dataset_name, 
-                  active_tools):
+def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score, max_num_ele,
+                  dataset_name, active_tools, index_prefix):
     plot.quad(left=0, bottom=0, right=pack.unpacked_size_single_strand, top=pack.unpacked_size_single_strand, 
               fill_alpha=0, line_color="black", line_width=3)
     lengths = pack.contigLengths()
     names = pack.contigNames()
-    plot.axis.formatter = FuncTickFormatter(
-        args={"lengths":[x for x in lengths], "names":[x for x in names]}, 
-        code="""
-                var i = 0;
-                while(tick > lengths[i])
-                {
-                    tick -= lengths[i];
-                    i += 1;
-                    if(i >= lengths.length)
-                        return tick + " - " + names[lengths.length-1];
-                }
-                return tick + " - " + names[i];
-            """)
+    #plot.axis.formatter = FuncTickFormatter(
+    #    args={"lengths":[x for x in lengths], "names":[x for x in names]}, 
+    #    code="""
+    #            var i = 0;
+    #            while(tick > lengths[i])
+    #            {
+    #                tick -= lengths[i];
+    #                i += 1;
+    #                if(i >= lengths.length)
+    #                    return tick + " - " + names[lengths.length-1];
+    #            }
+    #            return tick + " - " + names[i];
+    #        """)
     if not sv_db.run_exists(run_id):
         return plot, True
     
@@ -198,6 +198,7 @@ def render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, mi
         num_jumps = libMA.get_num_jumps_in_area(sv_db, pack, sv_db.get_run_jump_id(run_id), int(xs - w), int(ys - h),
                                                 w*3, h*3)
         if num_jumps < max_num_ele:
+            read_ids = set()
             out_dicts = []
             patch = {
                     "x": [],
@@ -235,10 +236,11 @@ def render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, mi
                 out_dicts[idx]["w"].append( jump.from_start_same_strand() + jump.from_size() + 1 )
                 out_dicts[idx]["h"].append( jump.to_start() + jump.to_size() + 1 )
                 out_dicts[idx]["a"].append( jump.num_supp_nt() / 1000 )
-                out_dicts[idx]["n"].append(jump.num_supp_nt())
-                out_dicts[idx]["r"].append(jump.read_id)
-                out_dicts[idx]["q"].append(jump.query_distance())
-                
+                out_dicts[idx]["n"].append( jump.num_supp_nt() )
+                out_dicts[idx]["r"].append( jump.read_id )
+                out_dicts[idx]["q"].append( jump.query_distance() )
+                read_ids.add( jump.read_id )
+
                 f = jump.from_pos
                 t = jump.to_pos
                 if not jump.from_known():
@@ -269,7 +271,54 @@ def render_region(plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, mi
             plot.quad(left="x", bottom="y", right="w", top="h", fill_color="yellow", line_color="yellow", line_width=3,
                       fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover3")
             plot.patch(x="x", y="y", line_width=1, color="black", source=ColumnDataSource(patch))
-            rendered_everything = True
+            if len(read_ids) < max_num_ele:
+                params = libMA.ParameterSetManager()
+                seeder = BinarySeeding(params)
+                jumps_from_seeds = libMA.SvJumpsFromSeeds(params, -1, sv_db, pack)
+                fm_index = FMIndex()
+                fm_index.load(index_prefix)
+                for read_id in read_ids:
+                    read = sv_db.get_read(read_id)
+                    segments = seeder.execute(fm_index, read)
+                    seeds = libMA.Seeds()
+                    jumps_from_seeds.cpp_module.execute_helper(segments, pack, fm_index, read, seeds)
+                    for seed in seeds:
+                        print(seed.start)
+                        # @todo continue here...
+
+                num_nt = w*3+h*3
+                if num_nt < max_num_ele:
+                    l_plot_nucs = {"y":[], "c":[], "i":[]}
+                    def append_nuc_type(dict_, nuc):
+                        if nuc == "A" or nuc =="a":
+                            dict_["c"].append("blue")
+                            dict_["i"].append("A")
+                        elif nuc == "C" or nuc =="c":
+                            dict_["c"].append("red")
+                            dict_["i"].append("C")
+                        elif nuc == "G" or nuc =="g":
+                            dict_["c"].append("green")
+                            dict_["i"].append("G")
+                        elif nuc == "T" or nuc =="t":
+                            dict_["c"].append("yellow")
+                            dict_["i"].append("T")
+                        else:
+                            dict_["c"].append("grey")
+                            dict_["i"].append(nuc)
+                    nuc_seq = pack.extract_from_to(int(ys - h), int(ye + h + 1))
+                    for y_add, nuc in enumerate(str(nuc_seq)):
+                        l_plot_nucs["y"].append(int(ys - h) + y_add + 0.5)
+                        append_nuc_type(l_plot_nucs, nuc)
+                    l_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
+                              source=ColumnDataSource(l_plot_nucs), name="hover4")
+                    d_plot_nucs = {"x":[], "c":[], "i":[]}
+                    nuc_seq = pack.extract_from_to(int(xs - w), int(xe + w + 1))
+                    for x_add, nuc in enumerate(str(nuc_seq)):
+                        d_plot_nucs["x"].append(int(xs - w) + x_add + 0.5)
+                        append_nuc_type(d_plot_nucs, nuc)
+                    d_plot.rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
+                              source=ColumnDataSource(d_plot_nucs), name="hover4")
+                    rendered_everything = True
         # the sv - boxes
         plot.quad(left="x", bottom="y", right="w", top="h", line_color="magenta", line_width=3, fill_alpha=0,
                   source=ColumnDataSource(accepted_boxes_data), name="hover2")

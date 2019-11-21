@@ -360,12 +360,13 @@ class NucSeqSplitter(libMA.NucSeqSplitter):
 # @brief The FillSeedSet Module.
 # @ingroup module
 #
-class FillSeedSet(libMA.FillSeedSet):
-    def execute(self, *args):
-        vec = libMA.ContainerVector()
-        for arg in args:
-            vec.append(arg)
-        return super(FillSeedSet, self).execute(vec)
+if hasattr(libMA, "FillSeedSet"):
+    class FillSeedSet(libMA.FillSeedSet):
+        def execute(self, *args):
+            vec = libMA.ContainerVector()
+            for arg in args:
+                vec.append(arg)
+            return super(FillSeedSet, self).execute(vec)
 
 
 ##

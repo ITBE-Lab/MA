@@ -28,12 +28,12 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
     virtual nucSeqIndex getSeedSize( nucSeqIndex uiL1, nucSeqIndex uiL2 )
     {
         nucSeqIndex uiX = std::min( uiL1, uiL2 );
-        return std::max( (nucSeqIndex)1, (nucSeqIndex)std::sqrt( uiX ) );
+        return std::min(std::max( (nucSeqIndex)3, (nucSeqIndex)std::sqrt( uiX )*2 ), (nucSeqIndex)19);
     } // method
 
     virtual nucSeqIndex minSeedSize()
     {
-        return 3;
+        return 6;
     } // method
 
     virtual std::unordered_multimap<std::string, size_t> getIndex( std::shared_ptr<NucSeq> pQ1,

@@ -138,6 +138,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     // export the SV_DB class
     py::class_<SV_DB, std::shared_ptr<SV_DB>>( rxPyModuleId, "SV_DB" ) //
         .def( py::init<std::string, std::string>( ) )
+        .def( "delete_run", &SV_DB::deleteRun )
         .def( "get_run_id", &SV_DB::getRunId )
         .def( "get_call_area", &SV_DB::getCallArea )
         .def( "get_num_overlaps_between_calls", &SV_DB::getNumOverlapsBetweenCalls )
