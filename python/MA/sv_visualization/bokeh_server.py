@@ -2,12 +2,14 @@ from render_region import render_region
 import os.path
 import json
 from bokeh.layouts import column, row, grid
-from bokeh.models import Button, Slider
+from bokeh.models import Button, Slider, FuncTickFormatter
 from bokeh.plotting import figure, curdoc
 from bokeh.models.callbacks import CustomJS
 from bokeh.events import ButtonClick
 from bokeh.models.widgets import Dropdown, TextInput
 from bokeh.models.tools import HoverTool
+from bokeh.models.tickers import FixedTicker
+from bokeh.models.axes import LinearAxis
 from MA import *
 import math
 
@@ -99,6 +101,15 @@ l2_plot.xaxis.major_label_orientation = math.pi/2
 l2_plot.yaxis.axis_label = "Reference Position"
 l2_plot.xaxis.axis_label = "Read Id"
 
+# Remove default axis
+#l2_plot.xaxis.visible = False
+# Add custom axis
+# ticker = FixedTicker()
+# ticker.ticks = [1,2,3]
+# xaxis = LinearAxis(ticker=ticker)
+# l2_plot.add_layout(xaxis, 'below')
+# xaxis.formatter = FuncTickFormatter(code="return Math.floor(tick);")
+
 d2_plot = figure(
             width=900,
             height=300,
@@ -110,6 +121,7 @@ d2_plot = figure(
         )
 d2_plot.xaxis.axis_label = "Reference Position"
 d2_plot.yaxis.axis_label = "Read Id"
+
 
 hover1 = HoverTool(tooltips=[("from", "@f"), ("to", "@t"), ("#calls", "@i")], names=['hover1'],
                    name="Hover heatmap")

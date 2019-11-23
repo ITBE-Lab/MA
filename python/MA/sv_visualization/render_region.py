@@ -1,7 +1,6 @@
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet
 from bokeh.models.callbacks import CustomJS
-from bokeh.transform import dodge
 from MA import *
 import math
 
@@ -293,47 +292,62 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     "r": [],
                     "idx": [],
                     "c": [],
-                    "f": [],
-                    "d": []
+                    "f": []
                 }
+                read_id_n_cols = []
                 for read_id in read_ids:
                     read = sv_db.get_read(read_id)
                     segments = seeder.execute(fm_index, read)
                     seeds = libMA.Seeds()
                     jumps_from_seeds.cpp_module.execute_helper(segments, pack, fm_index, read, seeds)
-                    for idx, seed in enumerate(sorted([x for x in seeds], key=lambda x: x.start)):
-                        read_dict["r_id"].append(str(read_id))
+                    end_column = []
+                    seeds_n_idx = list(enumerate(sorted([x for x in seeds], key=lambda x: x.start)))
+                    for idx, seed in sorted(seeds_n_idx, key=lambda x: x[1].start_ref):
                         if seed.on_forward_strand:
                             read_dict["center"].append(seed.start_ref + seed.size/2)
                             read_dict["c"].append("green")
                             read_dict["r"].append(seed.start_ref)
+                            curr_end = seed.start_ref + seed.size + 3
+                            curr_start = seed.start_ref
                         else:
                             read_dict["center"].append(seed.start_ref - seed.size/2 + 1)
                             read_dict["c"].append("purple")
                             read_dict["r"].append(seed.start_ref - seed.size + 1)
+                            curr_end = seed.start_ref + 3
+                            curr_start = seed.start_ref - seed.size
+                        curr_column = 0
+                        while curr_column < len(end_column):
+                            if curr_start > end_column[curr_column]:
+                                break
+                            else:
+                                curr_column += 1
+                        if curr_column >= len(end_column):
+                            read_id_n_cols.append( (read_id, curr_column) )
+                            end_column.append(0)
+                        end_column[curr_column] = curr_end
+                        read_dict["r_id"].append( (str(read_id), str(curr_column)) )
                         read_dict["size"].append(seed.size)
                         read_dict["q"].append(seed.start)
                         read_dict["idx"].append(idx)
-                        read_dict["d"].append(0)
                         read_dict["f"].append(seed.on_forward_strand)
                 if len(read_dict["c"]) < max_num_ele:
-                    sorted_r_ids = [str(x) for x in sorted(list(read_ids), reverse=True)]
+                    sorted_r_ids = [(str(x), str(y)) for x, y in sorted(read_id_n_cols, reverse=True)]
                     l_plot[1].x_range.factors = sorted_r_ids
                     l_plot[1].x_range.bounds = "auto"
                     d_plot[1].y_range.factors = sorted_r_ids
                     d_plot[1].y_range.bounds = "auto"
                     read_source = ColumnDataSource(read_dict)
-                    l_plot[1].rect(x="r_id", y="center", width=1, height="size", fill_color="c",
-                                line_width=0, source=read_source, name="hover5")
-                    labels = LabelSet(x='r_id', y='center', text='idx', source=read_source,
-                                    render_mode='canvas', text_align="center", text_baseline="middle",
-                                    text_color="white")
+                    l_plot[1].rect(x='r_id', y="center", width=1, height="size",
+                                    fill_color="c", line_width=0, source=read_source, name="hover5")
+                    labels = LabelSet(x='r_id', y='center', text='idx',
+                                    source=read_source, render_mode='canvas', text_align="center",
+                                    text_baseline="middle", text_color="white")
                     l_plot[1].add_layout(labels)
-                    d_plot[1].rect(y="r_id", x="center", height=1, width="size", fill_color="c", line_width=0,
-                                source=read_source, name="hover5")
-                    labels = LabelSet(x='center', y='r_id', text='idx', source=read_source,
-                                    render_mode='canvas', text_align="center", text_baseline="middle",
-                                    text_color="white")
+                    d_plot[1].rect(y='r_id', x="center", height=1, width="size",
+                                  fill_color="c", line_width=0, source=read_source, name="hover5")
+                    labels = LabelSet(x='center', y='r_id', text='idx',
+                                    source=read_source, render_mode='canvas', text_align="center",
+                                    text_baseline="middle", text_color="white")
                     d_plot[1].add_layout(labels)
 
                     num_nt = w*3+h*3
@@ -369,7 +383,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         d_plot[0].rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
                                 source=ColumnDataSource(d_plot_nucs), name="hover4")
 
-                        # the tapping callback
+                        # the tapping callback on jumps
                         plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
                                                                    read_source=read_source),
                                                          code="""
@@ -382,7 +396,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                                 src.data.y[idx] <= cb_obj.y && src.data.h[idx] >= cb_obj.y)
                             {
                                 for(var j = 0; j < read_source.data.r_id.length; j++)
-                                    if(read_source.data.r_id[j] == src.data.r[idx].toString() &&
+                                    if(read_source.data.r_id[j][0] == src.data.r[idx].toString() &&
                                         (   read_source.data.r[j] == src.data.f[idx] || 
                                             read_source.data.r[j] == src.data.t[idx] || 
                                             read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] || 
@@ -402,6 +416,70 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
                     read_source.change.emit();
                                 """))
+                        # the tapping callback on seeds
+                        code = """
+                    for(var i = 0; i < srcs.length; i++)
+                    {
+                        src = srcs[i];
+                        for(var idx = 0; idx < src.data.a.length; idx++)
+                            src.data.c[idx] = "black"; //@todo contine here by adding: src.data.c
+                    }
+                    for(var read_id in range._mapping)
+                    {
+                        for(var col in range._mapping[read_id].mapping)
+                        {
+                            pos = range._mapping[read_id].mapping[col].value;
+                            if(Math.abs(pos - cb_obj.y) <= 0.5)
+                            {
+                                for(var j = 0; j < read_source.data.r_id.length; j++)
+                                {
+                                    if(read_source.data.r_id[j][0] == read_id &&
+                                       Math.abs(read_source.data.center[j] - cb_obj.x) <= read_source.data.size[j]/2)
+                                    {
+                                        console.log(read_id + " " + read_source.data.idx[j]);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return;
+                    for(var i = 0; i < srcs.length; i++)
+                    {
+                        src = srcs[i];
+                        for(var idx = 0; idx < src.data.a.length; idx++)
+                        {
+                            if(src.data.x[idx] <= cb_obj.x && src.data.w[idx] >= cb_obj.x &&
+                                src.data.y[idx] <= cb_obj.y && src.data.h[idx] >= cb_obj.y)
+                            {
+                                for(var j = 0; j < read_source.data.r_id.length; j++)
+                                    if(read_source.data.r_id[j][0] == src.data.r[idx].toString() &&
+                                        (   read_source.data.r[j] == src.data.f[idx] || 
+                                            read_source.data.r[j] == src.data.t[idx] || 
+                                            read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] || 
+                                            read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
+                                        )
+                                            )
+                                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                                    else
+                                        read_source.data.c[j] = read_source.data.f[j] ? "lightgreen" :
+                                                                                        "#c995c9";
+                                read_source.change.emit();
+                                return;
+                            }
+                        }
+                    }
+                    for(var j = 0; j < read_source.data.r_id.length; j++)
+                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                    read_source.change.emit();
+                        """
+                        l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
+                                                                        read_source=read_source),
+                                                              code=code))
+                        d_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
+                                                                        read_source=read_source,
+                                                                        range=d_plot[1].y_range),
+                                                              code=code))
 
                         rendered_everything = True
         # the sv - boxes
