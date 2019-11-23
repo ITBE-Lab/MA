@@ -1,7 +1,7 @@
 from render_region import render_region
 import os.path
 import json
-from bokeh.layouts import column, row, gridplot
+from bokeh.layouts import column, row, grid
 from bokeh.models import Button, Slider
 from bokeh.plotting import figure, curdoc
 from bokeh.models.callbacks import CustomJS
@@ -9,6 +9,7 @@ from bokeh.events import ButtonClick
 from bokeh.models.widgets import Dropdown, TextInput
 from bokeh.models.tools import HoverTool
 from MA import *
+import math
 
 def _decode(o):
     if isinstance(o, str):
@@ -45,7 +46,7 @@ run_id = args_get("run_id", int, -1)
 ground_truth_id = args_get("ground_truth_id", int, -1)
 min_score = args_get("min_score", float, 0)
 max_elements = args_get("max_elements", int, 2000)
-active_tools = args_get("active_tools", None, b"pan.wheel_zoom.tap.hover1,hover2,hover3").decode().split(".")
+active_tools = args_get("active_tools", None, b"pan.wheel_zoom.hover1,hover2,hover3,hover4").decode().split(".")
 
 def text_to_none(text):
     if text == "None":
@@ -59,39 +60,62 @@ plot = figure(
             height=900,
             tools=[
                 "pan", "box_zoom", 
-                "wheel_zoom", "save",
-                "tap"
+                "wheel_zoom", "save"
             ],
             active_drag=text_to_none(active_tools[0]),
-            active_scroll=text_to_none(active_tools[1]),
-            active_tap=text_to_none(active_tools[2])
+            active_scroll=text_to_none(active_tools[1])
         )
 plot.axis.visible = False
 l_plot = figure(
             width=40,
             height=900,
             y_range=plot.y_range,
-            tools=["ypan", "ywheel_zoom", "tap"]
+            tools=["ypan"],
+            toolbar_location=None
         )
 l_plot.axis.visible = False
-#l_plot.toolbar.visible = False
 l_plot.grid.visible = False
 
 d_plot = figure(
             width=900,
             height=40,
             x_range=plot.x_range,
-            tools=["xpan", "xwheel_zoom", "tap"]
+            tools=["xpan"],
+            toolbar_location=None
         )
 d_plot.axis.visible = False
 d_plot.grid.visible = False
-#d_plot.toolbar.visible = False
+
+l2_plot = figure(
+            width=300,
+            height=900,
+            y_range=plot.y_range,
+            x_range=list(),
+            tools=["xpan", "xwheel_zoom"],
+            active_scroll="xwheel_zoom",
+            toolbar_location=None
+        )
+l2_plot.xaxis.major_label_orientation = math.pi/2
+l2_plot.yaxis.axis_label = "Reference Position"
+l2_plot.xaxis.axis_label = "Read Id"
+
+d2_plot = figure(
+            width=900,
+            height=300,
+            x_range=plot.x_range,
+            y_range=l2_plot.x_range,
+            tools=["ypan", "ywheel_zoom"],
+            active_scroll="ywheel_zoom",
+            toolbar_location=None
+        )
+d2_plot.xaxis.axis_label = "Reference Position"
+d2_plot.yaxis.axis_label = "Read Id"
 
 hover1 = HoverTool(tooltips=[("from", "@f"), ("to", "@t"), ("#calls", "@i")], names=['hover1'],
                    name="Hover heatmap")
 hover2 = HoverTool(tooltips=[("supp. nt", "@n"), ("coverage", "@c"), ("#reads", "@r"), ("score", "@s")],
                    names=['hover2'], name="Hover calls")
-hover3 = HoverTool(tooltips=[("supp. nt", "@n"), ("read id", "@r"), ("|query|:", "@q")],
+hover3 = HoverTool(tooltips=[("supp. nt", "@n"), ("read id", "@r"), ("|query|", "@q"), ("from", "@f"), ("to", "@t")],
                    names=['hover3'], name="Hover jumps")
 hover4 = HoverTool(tooltips="@i", names=['hover4'], name="Hover simple")
 plot.add_tools(hover1)
@@ -102,15 +126,14 @@ plot.add_tools(hover4)
 plot.tools[0].name = "pan"
 plot.tools[1].name = "box_zoom"
 plot.tools[2].name = "wheel_zoom"
-plot.tools[3].name = "tap"
-plot.tools[4].name = "save"
-plot.tools[5].name = "hover1"
-plot.tools[6].name = "hover2"
-plot.tools[7].name = "hover3"
-plot.tools[8].name = "hover4"
+plot.tools[3].name = "save"
+plot.tools[4].name = "hover1"
+plot.tools[5].name = "hover2"
+plot.tools[6].name = "hover3"
+plot.tools[7].name = "hover4"
 
 l = []
-for x in active_tools[3].split(","):
+for x in active_tools[2].split(","):
     if(x == "hover1"):
         l.append(hover1)
     if(x == "hover2"):
@@ -120,6 +143,11 @@ for x in active_tools[3].split(","):
     if(x == "hover4"):
         l.append(hover4)
 plot.toolbar.active_inspect = l
+
+hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q", "@q"), ("r", "@r"), ("l", "@size"), ("index", "@idx")],
+                   names=['hover5'], name="Hover reads")
+l2_plot.add_tools(hover5)
+d2_plot.add_tools(hover5)
 
 redered_everything = True
 
@@ -141,8 +169,8 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
 
     sv_db = SV_DB("/MAdata/sv_datasets/" + dataset_name + "/svs.db", "open")
 
-    redered_everything = render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id,
-                                        min_score, max_elements, dataset_name, active_tools, 
+    redered_everything = render_region(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye, pack, sv_db, run_id,
+                                        ground_truth_id, min_score, max_elements, dataset_name, active_tools,
                                         json_info_file["reference_path"] + "/ma/genome")
 else:
     xe = 0
@@ -173,15 +201,12 @@ def make_js_callback(condition):
                 var active_scroll = "None";
                 if(plot.toolbar.tools[2].active)
                     active_scroll = "wheel_zoom";
-                var active_tap = "tap"; // hmm the active does not work...?
-                if(plot.toolbar.tools[3].active)
-                    active_tap = "tap";
                 var active_inspect = "";
-                for(var x = 5; x < 9; x++)
+                for(var x = 4; x < 8; x++)
                     if(plot.toolbar.tools[x].active)
                         active_inspect += "," + plot.toolbar.tools[x].name;
 
-                var active_tools = active_drag + "." + active_scroll + "." + active_tap + "." + active_inspect;
+                var active_tools = active_drag + "." + active_scroll + "." + active_inspect;
                 
                 plot.toolbar.active_drag = null;
                 plot.toolbar.active_scroll = null;
@@ -227,7 +252,7 @@ menu = []
 label = "select run id here"
 label_2 = "select ground truth id here"
 if not sv_db is None:
-    for idx in range(sv_db.get_num_runs() + 1):
+    for idx in range(100): #sv_db.get_num_runs() + 1
         if sv_db.run_exists(idx):
             text = sv_db.get_run_name(idx) + " - " + sv_db.get_run_date(idx) + " - " + sv_db.get_run_desc(idx)
             text += " - " + str(sv_db.get_num_calls(idx, min_score))
@@ -269,7 +294,7 @@ file_input.js_on_change("value", make_js_callback("""
 
 # render this document
 curdoc().add_root(row(
-                        gridplot([[l_plot, plot], [None, d_plot]]),
+                        grid([[l2_plot, l_plot, plot], [None, None, d_plot], [None, None, d2_plot]]),
                         column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
                                    max_elements_slider, reset_button, delete_button)
                         ))

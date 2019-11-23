@@ -1,5 +1,7 @@
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import FuncTickFormatter, TapTool, OpenURL
+from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet
+from bokeh.models.callbacks import CustomJS
+from bokeh.transform import dodge
 from MA import *
 import math
 
@@ -213,7 +215,10 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     "a": [],
                     "n": [],
                     "r": [],
-                    "q": []
+                    "q": [],
+                    "f": [],
+                    "t": [],
+                    "i": []
                 })
             sweeper = SortedSvJumpFromSql(params, sv_db, sv_db.get_run_jump_id(run_id), int(xs - w), int(ys - h),
                                           w*3, h*3)
@@ -231,6 +236,8 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     else:
                         idx = 3
                 
+                out_dicts[idx]["f"].append( jump.from_pos )
+                out_dicts[idx]["t"].append( jump.to_pos )
                 out_dicts[idx]["x"].append( jump.from_start_same_strand() - 0.5 )
                 out_dicts[idx]["y"].append( jump.to_start() - 0.5 )
                 out_dicts[idx]["w"].append( jump.from_start_same_strand() + jump.from_size() + 1 )
@@ -239,6 +246,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                 out_dicts[idx]["n"].append( jump.num_supp_nt() )
                 out_dicts[idx]["r"].append( jump.read_id )
                 out_dicts[idx]["q"].append( jump.query_distance() )
+                out_dicts[idx]["i"].append( jump.id )
                 read_ids.add( jump.read_id )
 
                 f = jump.from_pos
@@ -261,15 +269,15 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     else:
                         patch["x"].extend([f + 2.5, f - .5, f - .5, float("NaN")])
                         patch["y"].extend([t + .5, t - 2.5, t + .5, float("NaN")])
-                
-            plot.quad(left="x", bottom="y", right="w", top="h", fill_color="orange", line_color="orange", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover3")
-            plot.quad(left="x", bottom="y", right="w", top="h", fill_color="blue", line_color="blue", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[1]), name="hover3")
-            plot.quad(left="x", bottom="y", right="w", top="h", fill_color="grey", line_color="grey", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[2]), name="hover3")
-            plot.quad(left="x", bottom="y", right="w", top="h", fill_color="yellow", line_color="yellow", line_width=3,
-                      fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover3")
+            quads = []
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="orange", line_color="orange",
+                             line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover3"))
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="blue", line_color="blue",
+                                    line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[1]), name="hover3"))
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="grey", line_color="grey",
+                                line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[2]), name="hover3"))
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="yellow", line_color="yellow",
+                                    line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover3"))
             plot.patch(x="x", y="y", line_width=1, color="black", source=ColumnDataSource(patch))
             if len(read_ids) < max_num_ele:
                 params = libMA.ParameterSetManager()
@@ -277,48 +285,125 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                 jumps_from_seeds = libMA.SvJumpsFromSeeds(params, -1, sv_db, pack)
                 fm_index = FMIndex()
                 fm_index.load(index_prefix)
+                read_dict = {
+                    "center": [],
+                    "r_id": [],
+                    "size": [],
+                    "q": [],
+                    "r": [],
+                    "idx": [],
+                    "c": [],
+                    "f": [],
+                    "d": []
+                }
                 for read_id in read_ids:
                     read = sv_db.get_read(read_id)
                     segments = seeder.execute(fm_index, read)
                     seeds = libMA.Seeds()
                     jumps_from_seeds.cpp_module.execute_helper(segments, pack, fm_index, read, seeds)
-                    for seed in seeds:
-                        print(seed.start)
-                        # @todo continue here...
-
-                num_nt = w*3+h*3
-                if num_nt < max_num_ele:
-                    l_plot_nucs = {"y":[], "c":[], "i":[]}
-                    def append_nuc_type(dict_, nuc):
-                        if nuc == "A" or nuc =="a":
-                            dict_["c"].append("blue")
-                            dict_["i"].append("A")
-                        elif nuc == "C" or nuc =="c":
-                            dict_["c"].append("red")
-                            dict_["i"].append("C")
-                        elif nuc == "G" or nuc =="g":
-                            dict_["c"].append("green")
-                            dict_["i"].append("G")
-                        elif nuc == "T" or nuc =="t":
-                            dict_["c"].append("yellow")
-                            dict_["i"].append("T")
+                    for idx, seed in enumerate(sorted([x for x in seeds], key=lambda x: x.start)):
+                        read_dict["r_id"].append(str(read_id))
+                        if seed.on_forward_strand:
+                            read_dict["center"].append(seed.start_ref + seed.size/2)
+                            read_dict["c"].append("green")
+                            read_dict["r"].append(seed.start_ref)
                         else:
-                            dict_["c"].append("grey")
-                            dict_["i"].append(nuc)
-                    nuc_seq = pack.extract_from_to(int(ys - h), int(ye + h + 1))
-                    for y_add, nuc in enumerate(str(nuc_seq)):
-                        l_plot_nucs["y"].append(int(ys - h) + y_add + 0.5)
-                        append_nuc_type(l_plot_nucs, nuc)
-                    l_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
-                              source=ColumnDataSource(l_plot_nucs), name="hover4")
-                    d_plot_nucs = {"x":[], "c":[], "i":[]}
-                    nuc_seq = pack.extract_from_to(int(xs - w), int(xe + w + 1))
-                    for x_add, nuc in enumerate(str(nuc_seq)):
-                        d_plot_nucs["x"].append(int(xs - w) + x_add + 0.5)
-                        append_nuc_type(d_plot_nucs, nuc)
-                    d_plot.rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
-                              source=ColumnDataSource(d_plot_nucs), name="hover4")
-                    rendered_everything = True
+                            read_dict["center"].append(seed.start_ref - seed.size/2 + 1)
+                            read_dict["c"].append("purple")
+                            read_dict["r"].append(seed.start_ref - seed.size + 1)
+                        read_dict["size"].append(seed.size)
+                        read_dict["q"].append(seed.start)
+                        read_dict["idx"].append(idx)
+                        read_dict["d"].append(0)
+                        read_dict["f"].append(seed.on_forward_strand)
+                if len(read_dict["c"]) < max_num_ele:
+                    sorted_r_ids = [str(x) for x in sorted(list(read_ids), reverse=True)]
+                    l_plot[1].x_range.factors = sorted_r_ids
+                    l_plot[1].x_range.bounds = "auto"
+                    d_plot[1].y_range.factors = sorted_r_ids
+                    d_plot[1].y_range.bounds = "auto"
+                    read_source = ColumnDataSource(read_dict)
+                    l_plot[1].rect(x="r_id", y="center", width=1, height="size", fill_color="c",
+                                line_width=0, source=read_source, name="hover5")
+                    labels = LabelSet(x='r_id', y='center', text='idx', source=read_source,
+                                    render_mode='canvas', text_align="center", text_baseline="middle",
+                                    text_color="white")
+                    l_plot[1].add_layout(labels)
+                    d_plot[1].rect(y="r_id", x="center", height=1, width="size", fill_color="c", line_width=0,
+                                source=read_source, name="hover5")
+                    labels = LabelSet(x='center', y='r_id', text='idx', source=read_source,
+                                    render_mode='canvas', text_align="center", text_baseline="middle",
+                                    text_color="white")
+                    d_plot[1].add_layout(labels)
+
+                    num_nt = w*3+h*3
+                    if num_nt < max_num_ele:
+                        l_plot_nucs = {"y":[], "c":[], "i":[]}
+                        def append_nuc_type(dict_, nuc):
+                            if nuc == "A" or nuc =="a":
+                                dict_["c"].append("blue")
+                                dict_["i"].append("A")
+                            elif nuc == "C" or nuc =="c":
+                                dict_["c"].append("red")
+                                dict_["i"].append("C")
+                            elif nuc == "G" or nuc =="g":
+                                dict_["c"].append("green")
+                                dict_["i"].append("G")
+                            elif nuc == "T" or nuc =="t":
+                                dict_["c"].append("yellow")
+                                dict_["i"].append("T")
+                            else:
+                                dict_["c"].append("grey")
+                                dict_["i"].append(nuc)
+                        nuc_seq = pack.extract_from_to(int(ys - h), int(ye + h + 1))
+                        for y_add, nuc in enumerate(str(nuc_seq)):
+                            l_plot_nucs["y"].append(int(ys - h) + y_add + 0.5)
+                            append_nuc_type(l_plot_nucs, nuc)
+                        l_plot[0].rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
+                                source=ColumnDataSource(l_plot_nucs), name="hover4")
+                        d_plot_nucs = {"x":[], "c":[], "i":[]}
+                        nuc_seq = pack.extract_from_to(int(xs - w), int(xe + w + 1))
+                        for x_add, nuc in enumerate(str(nuc_seq)):
+                            d_plot_nucs["x"].append(int(xs - w) + x_add + 0.5)
+                            append_nuc_type(d_plot_nucs, nuc)
+                        d_plot[0].rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
+                                source=ColumnDataSource(d_plot_nucs), name="hover4")
+
+                        # the tapping callback
+                        plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
+                                                                   read_source=read_source),
+                                                         code="""
+                    for(var i = 0; i < srcs.length; i++)
+                    {
+                        src = srcs[i];
+                        for(var idx = 0; idx < src.data.a.length; idx++)
+                        {
+                            if(src.data.x[idx] <= cb_obj.x && src.data.w[idx] >= cb_obj.x &&
+                                src.data.y[idx] <= cb_obj.y && src.data.h[idx] >= cb_obj.y)
+                            {
+                                for(var j = 0; j < read_source.data.r_id.length; j++)
+                                    if(read_source.data.r_id[j] == src.data.r[idx].toString() &&
+                                        (   read_source.data.r[j] == src.data.f[idx] || 
+                                            read_source.data.r[j] == src.data.t[idx] || 
+                                            read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] || 
+                                            read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
+                                        )
+                                            )
+                                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                                    else
+                                        read_source.data.c[j] = read_source.data.f[j] ? "lightgreen" :
+                                                                                        "#c995c9";
+                                read_source.change.emit();
+                                return;
+                            }
+                        }
+                    }
+                    for(var j = 0; j < read_source.data.r_id.length; j++)
+                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                    read_source.change.emit();
+                                """))
+
+                        rendered_everything = True
         # the sv - boxes
         plot.quad(left="x", bottom="y", right="w", top="h", line_color="magenta", line_width=3, fill_alpha=0,
                   source=ColumnDataSource(accepted_boxes_data), name="hover2")
@@ -326,5 +411,6 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                source=ColumnDataSource(ground_plus_data), name="hover2")
         plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
                source=ColumnDataSource(accepted_plus_data), name="hover2")
+
 
     return rendered_everything
