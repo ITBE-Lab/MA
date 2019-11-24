@@ -217,6 +217,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     "q": [],
                     "f": [],
                     "t": [],
+                    "c": [],
                     "i": []
                 })
             sweeper = SortedSvJumpFromSql(params, sv_db, sv_db.get_run_jump_id(run_id), int(xs - w), int(ys - h),
@@ -227,13 +228,17 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                 if jump.switch_strand_known():
                     if jump.does_switch_strand():
                         idx = 0
+                        out_dicts[idx]["c"].append( "orange" )
                     else:
                         idx = 1
+                        out_dicts[idx]["c"].append( "blue" )
                 else:
                     if jump.from_known():
                         idx = 2
+                        out_dicts[idx]["c"].append( "lightgreen" )
                     else:
                         idx = 3
+                        out_dicts[idx]["c"].append( "yellow" )
                 
                 out_dicts[idx]["f"].append( jump.from_pos )
                 out_dicts[idx]["t"].append( jump.to_pos )
@@ -269,13 +274,13 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         patch["x"].extend([f + 2.5, f - .5, f - .5, float("NaN")])
                         patch["y"].extend([t + .5, t - 2.5, t + .5, float("NaN")])
             quads = []
-            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="orange", line_color="orange",
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
                              line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover3"))
-            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="blue", line_color="blue",
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
                                     line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[1]), name="hover3"))
-            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="grey", line_color="grey",
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
                                 line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[2]), name="hover3"))
-            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="yellow", line_color="yellow",
+            quads.append(plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
                                     line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover3"))
             plot.patch(x="x", y="y", line_width=1, color="black", source=ColumnDataSource(patch))
             if len(read_ids) < max_num_ele:
@@ -367,7 +372,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                                 dict_["c"].append("yellow")
                                 dict_["i"].append("T")
                             else:
-                                dict_["c"].append("grey")
+                                dict_["c"].append("lightgreen")
                                 dict_["i"].append(nuc)
                         nuc_seq = pack.extract_from_to(int(ys - h), int(ye + h + 1))
                         for y_add, nuc in enumerate(str(nuc_seq)):
@@ -387,6 +392,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
                                                                    read_source=read_source),
                                                          code="""
+                    var foud_one = false;
                     for(var i = 0; i < srcs.length; i++)
                     {
                         src = srcs[i];
@@ -395,6 +401,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                             if(src.data.x[idx] <= cb_obj.x && src.data.w[idx] >= cb_obj.x &&
                                 src.data.y[idx] <= cb_obj.y && src.data.h[idx] >= cb_obj.y)
                             {
+                                src.data.c[idx] = ["orange", "blue", "grey", "yellow"][i];
                                 for(var j = 0; j < read_source.data.r_id.length; j++)
                                     if(read_source.data.r_id[j][0] == src.data.r[idx].toString() &&
                                         (   read_source.data.r[j] == src.data.f[idx] || 
@@ -405,73 +412,103 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                                             )
                                         read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
                                     else
-                                        read_source.data.c[j] = read_source.data.f[j] ? "lightgreen" :
-                                                                                        "#c995c9";
-                                read_source.change.emit();
-                                return;
+                                        read_source.data.c[j] = "lightgrey";
+                                foud_one = true;
                             }
+                            else
+                                src.data.c[idx] = "lightgrey";
                         }
                     }
-                    for(var j = 0; j < read_source.data.r_id.length; j++)
-                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                    if(!foud_one)
+                    {
+                        for(var j = 0; j < read_source.data.r_id.length; j++)
+                            read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                        for(var i = 0; i < srcs.length; i++)
+                        {
+                            src = srcs[i];
+                            for(var idx = 0; idx < src.data.a.length; idx++)
+                                src.data.c[idx] = ["orange", "blue", "lightgreen", "yellow"][i];
+                        }
+                    }
                     read_source.change.emit();
+                    for(var i = 0; i < srcs.length; i++)
+                        srcs[i].change.emit();
                                 """))
                         # the tapping callback on seeds
                         code = """
-                    for(var i = 0; i < srcs.length; i++)
+        for(var i = 0; i < srcs.length; i++)
+            for(var idx = 0; idx < srcs[i].data.a.length; idx++)
+                srcs[i].data.c[idx] = ["orange", "blue", "lightgreen", "green"][i];
+        for(var read_id in range._mapping)
+        {
+            for(var col in range._mapping[read_id].mapping)
+            {
+                pos = range._mapping[read_id].mapping[col].value;
+                if(Math.abs(pos - cb_obj.y) <= 0.5)
+                {
+                    for(var j = 0; j < read_source.data.r_id.length; j++)
                     {
-                        src = srcs[i];
-                        for(var idx = 0; idx < src.data.a.length; idx++)
-                            src.data.c[idx] = "black"; //@todo contine here by adding: src.data.c
-                    }
-                    for(var read_id in range._mapping)
-                    {
-                        for(var col in range._mapping[read_id].mapping)
+                        if(read_source.data.r_id[j][0] == read_id &&
+                            Math.abs(read_source.data.center[j] - cb_obj.x) <= read_source.data.size[j]/2)
                         {
-                            pos = range._mapping[read_id].mapping[col].value;
-                            if(Math.abs(pos - cb_obj.y) <= 0.5)
+                            //console.log(read_id + " " + read_source.data.idx[j]);
+                            
+                            // find the appropriate jump
+                            
+                            for(var i = 0; i < srcs.length; i++)
                             {
-                                for(var j = 0; j < read_source.data.r_id.length; j++)
+                                src = srcs[i];
+                                for(var idx = 0; idx < src.data.a.length; idx++)
                                 {
-                                    if(read_source.data.r_id[j][0] == read_id &&
-                                       Math.abs(read_source.data.center[j] - cb_obj.x) <= read_source.data.size[j]/2)
-                                    {
-                                        console.log(read_id + " " + read_source.data.idx[j]);
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    return;
-                    for(var i = 0; i < srcs.length; i++)
-                    {
-                        src = srcs[i];
-                        for(var idx = 0; idx < src.data.a.length; idx++)
-                        {
-                            if(src.data.x[idx] <= cb_obj.x && src.data.w[idx] >= cb_obj.x &&
-                                src.data.y[idx] <= cb_obj.y && src.data.h[idx] >= cb_obj.y)
-                            {
-                                for(var j = 0; j < read_source.data.r_id.length; j++)
-                                    if(read_source.data.r_id[j][0] == src.data.r[idx].toString() &&
+                                    if(read_id == src.data.r[idx].toString() &&
                                         (   read_source.data.r[j] == src.data.f[idx] || 
                                             read_source.data.r[j] == src.data.t[idx] || 
                                             read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] || 
                                             read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
                                         )
-                                            )
-                                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                                      )
+                                        continue;
                                     else
-                                        read_source.data.c[j] = read_source.data.f[j] ? "lightgreen" :
-                                                                                        "#c995c9";
-                                read_source.change.emit();
-                                return;
+                                        src.data.c[idx] = "lightgrey";
+                                }
+                                src.change.emit();
                             }
+                            
+                            for(var j2 = 0; j2 < read_source.data.r_id.length; j2++)
+                            {
+                                if(j2 == j)
+                                    read_source.data.c[j2] = read_source.data.f[j] ? "green" : "purple";
+                                else
+                                    read_source.data.c[j2] = "lightgrey";
+                            }
+                            read_source.change.emit();
+                            return;
                         }
                     }
                     for(var j = 0; j < read_source.data.r_id.length; j++)
-                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                    {
+                        if(read_source.data.r_id[j][0] == read_id)
+                            read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                        else
+                            read_source.data.c[j] = "lightgrey";
+                    }
+                    // correct column but no single seed matches...
+                    for(var i = 0; i < srcs.length; i++)
+                    {
+                        src = srcs[i];
+                        for(var idx = 0; idx < src.data.a.length; idx++)
+                            if(read_id != src.data.r[idx].toString())
+                                src.data.c[idx] = "lightgrey";
+                        src.change.emit();
+                    }
                     read_source.change.emit();
+                    return;
+                }
+            }
+        }
+        for(var i = 0; i < srcs.length; i++)
+            srcs[i].change.emit();
+        return;
                         """
                         l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
                                                                         read_source=read_source),

@@ -101,6 +101,7 @@ l2_plot.xaxis.major_label_orientation = math.pi/2
 l2_plot.yaxis.axis_label = "Reference Position"
 l2_plot.xaxis.axis_label = "Read Id"
 
+
 # Remove default axis
 #l2_plot.xaxis.visible = False
 # Add custom axis
