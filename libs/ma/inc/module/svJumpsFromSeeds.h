@@ -94,30 +94,29 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
 
     void makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
                                         std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet,
-                                        std::shared_ptr<Seeds> pSeeds );
+                                        size_t uiLayer, std::shared_ptr<Seeds> pSeeds,
+                                        std::vector<size_t>* pvLayerOfSeeds );
 
 
     /// if pSeeds is not nullptr all computed seeds will be appended
-    std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments,
-                                                                      std::shared_ptr<Pack>
-                                                                          pRefSeq,
-                                                                      std::shared_ptr<FMIndex>
-                                                                          pFM_index,
-                                                                      std::shared_ptr<NucSeq>
-                                                                          pQuery,
-                                                                      std::shared_ptr<Seeds>
-                                                                          pSeeds );
-    inline void execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
-                                   std::shared_ptr<Pack>
-                                       pRefSeq,
-                                   std::shared_ptr<FMIndex>
-                                       pFM_index,
-                                   std::shared_ptr<NucSeq>
-                                       pQuery,
-                                   std::shared_ptr<Seeds>
-                                       pSeeds )
+    std::shared_ptr<ContainerVector<SvJump>>
+        EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<Pack> pRefSeq,
+                                 std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuery,
+                                 std::shared_ptr<Seeds> pSeeds, std::vector<size_t>* pvLayerOfSeeds );
+
+    inline std::vector<size_t> execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
+                                                  std::shared_ptr<Pack>
+                                                      pRefSeq,
+                                                  std::shared_ptr<FMIndex>
+                                                      pFM_index,
+                                                  std::shared_ptr<NucSeq>
+                                                      pQuery,
+                                                  std::shared_ptr<Seeds>
+                                                      pSeeds )
     {
-        execute_helper( pSegments, pRefSeq, pFM_index, pQuery, pSeeds );
+        std::vector<size_t> vLayerOfSeeds;
+        execute_helper( pSegments, pRefSeq, pFM_index, pQuery, pSeeds, &vLayerOfSeeds );
+        return vLayerOfSeeds;
     } // method
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,

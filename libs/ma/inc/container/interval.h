@@ -19,9 +19,9 @@ template <typename T> class Interval
 {
   public:
     /// @brief Start position of interval.
-    T iStart;
+    T iStart = 0;
     /// @brief Size of interval.
-    T iSize;
+    T iSize = 0;
     /**
      * @brief Creates a new Interval.
      */

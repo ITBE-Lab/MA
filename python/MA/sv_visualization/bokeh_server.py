@@ -6,7 +6,7 @@ from bokeh.models import Button, Slider, FuncTickFormatter
 from bokeh.plotting import figure, curdoc
 from bokeh.models.callbacks import CustomJS
 from bokeh.events import ButtonClick
-from bokeh.models.widgets import Dropdown, TextInput
+from bokeh.models.widgets import Dropdown, TextInput, CheckboxGroup
 from bokeh.models.tools import HoverTool
 from bokeh.models.tickers import FixedTicker
 from bokeh.models.axes import LinearAxis
@@ -26,6 +26,8 @@ def _decode(o):
     else:
         return o
 
+server_context = curdoc().session_context.server_context
+
 args = curdoc().session_context.request.arguments
 
 def args_get(name, convert, default):
@@ -44,6 +46,9 @@ render_area_factor = 1
 
 xs = args_get("xs", float, 0)
 ys = args_get("ys", float, 0)
+render_read_indices = args_get("render_read_indices", None, b'false').decode()
+x_range_link = args_get("x_range_link", None, b'false').decode()
+y_range_link = args_get("y_range_link", None, b'false').decode()
 run_id = args_get("run_id", int, -1)
 ground_truth_id = args_get("ground_truth_id", int, -1)
 min_score = args_get("min_score", float, 0)
@@ -54,8 +59,6 @@ def text_to_none(text):
     if text == "None":
         return None
     return text
-
-sv_db = None
 
 plot = figure(
             width=900,
@@ -145,6 +148,16 @@ plot.tools[5].name = "hover2"
 plot.tools[6].name = "hover3"
 plot.tools[7].name = "hover4"
 
+
+read_plot = figure(
+            width=900,
+            height=400,
+            tools=[
+                "pan", "box_zoom", 
+                "wheel_zoom", "save", "reset"
+            ]
+        )
+
 l = []
 for x in active_tools[2].split(","):
     if(x == "hover1"):
@@ -157,10 +170,26 @@ for x in active_tools[2].split(","):
         l.append(hover4)
 plot.toolbar.active_inspect = l
 
-hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q", "@q"), ("r", "@r"), ("l", "@size"), ("index", "@idx")],
+hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q, r, l", "@q, @r, @size"), ("index", "@idx"),
+                             ("reseeding-layer", "@layer")],
                    names=['hover5'], name="Hover reads")
 l2_plot.add_tools(hover5)
 d2_plot.add_tools(hover5)
+read_plot.add_tools(hover5)
+
+checkbox_group = CheckboxGroup(labels=["Render read indices", "Link read plot to x-range", "Link read plot to y-range"],
+                               active=[])
+if render_read_indices == "true":
+    checkbox_group.active.append(0) # Read Indices
+if x_range_link == "true":
+    # @todo this requires a reload from the server
+    checkbox_group.active.append(1) # x-range link
+    read_plot.x_range = plot.x_range
+elif y_range_link == "true":
+    # @todo this requires a reload from the server
+    # @todo y-range of the read plot should auto update if x-range is changed from other plot...
+    checkbox_group.active.append(2) # y-range-link
+    read_plot.x_range = plot.y_range
 
 redered_everything = True
 
@@ -169,22 +198,37 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
         json_info_file = json.loads(json_file.read(), object_hook=_decode)
     ref_genome = json_info_file["reference_path"] + "/ma/genome"
 
-    pack = Pack()
-    pack.load(ref_genome)
+    if not hasattr(server_context, "ref_genome"):
+        setattr(server_context, "ref_genome", None)
+        setattr(server_context, "pack", None)
+        setattr(server_context, "sv_db", None)
+        setattr(server_context, "dataset_name", None)
+    if server_context.ref_genome == ref_genome:
+        print("using cached pack")
+    else:
+        pack = Pack()
+        pack.load(ref_genome)
+        server_context.pack = pack
+        server_context.ref_genome = ref_genome
+    if server_context.dataset_name == dataset_name:
+        print("using cached sv_db")
+    else:
+        sv_db = SV_DB("/MAdata/sv_datasets/" + dataset_name + "/svs.db", "open")
+        server_context.sv_db = sv_db
+        server_context.dataset_name = dataset_name
 
-    xe = args_get("xe", float, pack.unpacked_size_single_strand)
-    ye = args_get("ye", float, pack.unpacked_size_single_strand)
+    xe = args_get("xe", float, server_context.pack.unpacked_size_single_strand)
+    ye = args_get("ye", float, server_context.pack.unpacked_size_single_strand)
 
     plot.x_range.start = xs
     plot.x_range.end = xe
     plot.y_range.start = ys
     plot.y_range.end = ye
 
-    sv_db = SV_DB("/MAdata/sv_datasets/" + dataset_name + "/svs.db", "open")
-
-    redered_everything = render_region(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye, pack, sv_db, run_id,
-                                        ground_truth_id, min_score, max_elements, dataset_name, active_tools,
-                                        json_info_file["reference_path"] + "/ma/genome")
+    redered_everything = render_region(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye,
+                                        server_context.pack, server_context.sv_db, run_id,
+                                        ground_truth_id, min_score, max_elements, dataset_name, active_tools, 
+                                        checkbox_group, read_plot, json_info_file["reference_path"] + "/ma/genome")
 else:
     xe = 0
     ye = 0
@@ -199,7 +243,8 @@ reset_button.js_on_event(ButtonClick, CustomJS(code="""
 def make_js_callback(condition):
     return CustomJS(args=dict(xr=plot.x_range, yr=plot.y_range, xs=xs, xe=xe, ys=ys, ye=ye,
                               run_id=run_id, min_score=min_score, plot=plot, max_elements=max_elements,
-                              ground_truth_id=ground_truth_id, dataset_name=dataset_name),
+                              ground_truth_id=ground_truth_id, checkbox_group=checkbox_group, 
+                              dataset_name=dataset_name),
                     code=condition + """
             {
                 if (typeof window.left_page_already !== 'undefined')
@@ -225,6 +270,7 @@ def make_js_callback(condition):
                 plot.toolbar.active_scroll = null;
                 plot.toolbar.active_tap = null;
                 plot.toolbar.tools = [];
+                debugger;
                 s = document.location.href.split("?")[0] + "?xs=" + xr.start +
                                                         "&xe=" + xr.end +
                                                         "&ys=" + yr.start +
@@ -234,6 +280,9 @@ def make_js_callback(condition):
                                                         "&dataset_name=" + dataset_name +
                                                         "&min_score=" + min_score +
                                                         "&ground_truth_id=" + ground_truth_id +
+                                                        "&render_read_indices=" + checkbox_group.active.includes(0) +
+                                                        "&x_range_link=" + checkbox_group.active.includes(1) +
+                                                        "&y_range_link=" + checkbox_group.active.includes(2) +
                                                         "&active_tools=" + active_tools;
                 //alert(s);
                 document.location.href = s;
@@ -264,11 +313,13 @@ plot.y_range.js_on_change('start', make_js_callback("""
 menu = []
 label = "select run id here"
 label_2 = "select ground truth id here"
-if not sv_db is None:
+if not server_context.sv_db is None:
     for idx in range(100): #sv_db.get_num_runs() + 1
-        if sv_db.run_exists(idx):
-            text = sv_db.get_run_name(idx) + " - " + sv_db.get_run_date(idx) + " - " + sv_db.get_run_desc(idx)
-            text += " - " + str(sv_db.get_num_calls(idx, min_score))
+        if server_context.sv_db.run_exists(idx):
+            text = server_context.sv_db.get_run_name(idx) + " - " + \
+                    server_context.sv_db.get_run_date(idx) + " - " + \
+                    server_context.sv_db.get_run_desc(idx)
+            text += " - " + str(server_context.sv_db.get_num_calls(idx, min_score))
             if idx == run_id:
                 label = text
             if idx == ground_truth_id:
@@ -284,8 +335,8 @@ ground_truth_id_dropdown.js_on_change("value", make_js_callback("""
         ground_truth_id = cb_obj.value;
     """))
 
-if not sv_db is None and sv_db.run_exists(run_id):
-    max_score_slider = sv_db.get_max_score(run_id)
+if not server_context.sv_db is None and server_context.sv_db.run_exists(run_id):
+    max_score_slider = server_context.sv_db.get_max_score(run_id)
 else:
     max_score_slider = 100
 score_slider = Slider(start=0, end=max_score_slider, 
@@ -309,5 +360,5 @@ file_input.js_on_change("value", make_js_callback("""
 curdoc().add_root(row(
                         grid([[l2_plot, l_plot, plot], [None, None, d_plot], [None, None, d2_plot]]),
                         column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
-                                   max_elements_slider, reset_button, delete_button)
+                                   max_elements_slider, checkbox_group, reset_button, delete_button, read_plot)
                         ))

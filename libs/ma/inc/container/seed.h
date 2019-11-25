@@ -35,7 +35,7 @@ class Seed : public Container, public Interval<nucSeqIndex>
 {
   public:
     ///@brief the beginning of the match on the reference
-    nucSeqIndex uiPosOnReference;
+    nucSeqIndex uiPosOnReference = 0;
     unsigned int uiAmbiguity;
     bool bOnForwStrand;
     nucSeqIndex uiDelta = 0;
@@ -96,6 +96,26 @@ class Seed : public Container, public Interval<nucSeqIndex>
      */
     inline nucSeqIndex end_ref( ) const
     {
+        return uiPosOnReference + size( );
+    } // function
+
+    /**
+     * @brief Returns the beginning of the seed on the reference.
+     */
+    inline nucSeqIndex start_ref_cons_rev( ) const
+    {
+        if(!bOnForwStrand)
+            return uiPosOnReference - iSize - 1;
+        return uiPosOnReference;
+    } // function
+
+    /**
+     * @brief Returns the end of the seed on the reference.
+     */
+    inline nucSeqIndex end_ref_cons_rev( ) const
+    {
+        if(!bOnForwStrand)
+            return uiPosOnReference - 1;
         return uiPosOnReference + size( );
     } // function
 

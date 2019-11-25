@@ -25,15 +25,16 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
     HashMapSeeding( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual nucSeqIndex getSeedSize( nucSeqIndex uiL1, nucSeqIndex uiL2 )
-    {
-        nucSeqIndex uiX = std::min( uiL1, uiL2 );
-        return std::min(std::max( (nucSeqIndex)3, (nucSeqIndex)std::sqrt( uiX )*2 ), (nucSeqIndex)19);
-    } // method
-
     virtual nucSeqIndex minSeedSize()
     {
-        return 6;
+        return 5;
+    } // method
+
+    virtual nucSeqIndex getSeedSize( nucSeqIndex uiL1, nucSeqIndex uiL2 )
+    {
+        return minSeedSize();
+        // nucSeqIndex uiX = std::max( uiL1, uiL2 );
+        // return std::min(std::max( (nucSeqIndex)5, (nucSeqIndex)std::sqrt( uiX ) ), (nucSeqIndex)19);
     } // method
 
     virtual std::unordered_multimap<std::string, size_t> getIndex( std::shared_ptr<NucSeq> pQ1,
