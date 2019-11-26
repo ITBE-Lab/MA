@@ -46,6 +46,7 @@ render_area_factor = 1
 xs = args_get("xs", float, 0)
 ys = args_get("ys", float, 0)
 read_plot_start = args_get("read_plot_start", float, None)
+selected_read_id = args_get("selected_read_id", int, -1)
 read_plot_end = args_get("read_plot_end", float, None)
 range_link = args_get("range_link", int, 0)
 run_id = args_get("run_id", int, -1)
@@ -98,9 +99,9 @@ l2_plot = figure(
             active_scroll="xwheel_zoom",
             toolbar_location=None
         )
-if not read_plot_start is None:
+if not read_plot_start is None and not math.isnan(read_plot_start):
     l2_plot.x_range.start = read_plot_start
-if not read_plot_end is None:
+if not read_plot_end is None and not math.isnan(read_plot_end):
     l2_plot.x_range.end = read_plot_end
 l2_plot.xaxis.major_label_orientation = math.pi/2
 l2_plot.yaxis.axis_label = "Reference Position"
@@ -150,6 +151,8 @@ read_plot = figure(
             ],
             active_scroll="wheel_zoom"
         )
+read_plot.yaxis.axis_label = "Read Position"
+read_plot.xaxis.axis_label = "Reference Position"
 
 l = []
 for x in active_tools[2].split(","):
@@ -163,7 +166,7 @@ for x in active_tools[2].split(","):
         l.append(hover4)
 plot.toolbar.active_inspect = l
 
-hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q, r, l", "@q, @r, @size"), ("index", "@idx"),
+hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q, r, l", "@q, @r, @l"), ("index", "@idx"),
                              ("reseeding-layer", "@layer")],
                    names=['hover5'], name="Hover reads")
 l2_plot.add_tools(hover5)
@@ -209,7 +212,8 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
     redered_everything = render_region(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye,
                                         server_context.pack, server_context.sv_db, run_id,
                                         ground_truth_id, min_score, max_elements, dataset_name, active_tools, 
-                                        checkbox_group, read_plot, json_info_file["reference_path"] + "/ma/genome")
+                                        checkbox_group, read_plot, selected_read_id,
+                                        json_info_file["reference_path"] + "/ma/genome")
 else:
     xe = 0
     ye = 0
@@ -225,13 +229,16 @@ def make_js_callback(condition):
     return CustomJS(args=dict(xr=plot.x_range, yr=plot.y_range, xs=xs, xe=xe, ys=ys, ye=ye,
                               run_id=run_id, min_score=min_score, plot=plot, max_elements=max_elements,
                               ground_truth_id=ground_truth_id, checkbox_group=checkbox_group,
-                              read_plot_range=l2_plot.x_range, dataset_name=dataset_name),
+                              read_plot_range=l2_plot.x_range, dataset_name=dataset_name, 
+                              selected_read_id=selected_read_id),
                     code=condition + """
             {
                 if (typeof window.left_page_already !== 'undefined')
                     return;
                 else
                     window.left_page_already = 1;
+                if (typeof window.selected_read_id == 'undefined')
+                    window.selected_read_id = selected_read_id;
                 var active_drag = "None";
                 if(plot.toolbar.tools[0].active)
                     active_drag = "pan";
@@ -264,6 +271,7 @@ def make_js_callback(condition):
                                                         "&range_link=" + checkbox_group.active +
                                                         "&read_plot_start=" + read_plot_range.start +
                                                         "&read_plot_end=" + read_plot_range.end +
+                                                        "&selected_read_id=" + window.selected_read_id +
                                                         "&active_tools=" + active_tools;
                 //alert(s);
                 document.location.href = s;

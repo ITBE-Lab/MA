@@ -48,7 +48,7 @@ def format(rgb):
                                                clamp(int(blue * 255)))
 
 def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, ground_truth_id, min_score, max_num_ele,
-                  dataset_name, active_tools, checkbox_group, read_plot, index_prefix):
+                  dataset_name, active_tools, checkbox_group, read_plot, selected_read_id, index_prefix):
     plot.quad(left=0, bottom=0, right=pack.unpacked_size_single_strand, top=pack.unpacked_size_single_strand, 
               fill_alpha=0, line_color="black", line_width=3)
     lengths = pack.contigLengths()
@@ -240,6 +240,9 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         idx = 3
                         out_dicts[idx]["c"].append( "yellow" )
                 
+                if selected_read_id != -1 and selected_read_id != jump.read_id:
+                    out_dicts[idx]["c"][-1] = "lightgrey"
+                
                 out_dicts[idx]["f"].append( jump.from_pos )
                 out_dicts[idx]["t"].append( jump.to_pos )
                 out_dicts[idx]["x"].append( jump.from_start_same_strand() - 0.5 )
@@ -295,6 +298,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     "size": [],
                     "q": [],
                     "r": [],
+                    "l": [],
                     "idx": [],
                     "c": [],
                     "f": [],
@@ -303,7 +307,23 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     "y": [],
                     "category": []
                 }
-                read_id_n_cols = []
+                # create a column data source for the read plot...
+                read_plot_dict = {
+                    "center": [],
+                    "r_id": [],
+                    "size": [],
+                    "q": [],
+                    "r": [],
+                    "l": [],
+                    "idx": [],
+                    "c": [],
+                    "f": [],
+                    "layer": [],
+                    "x": [],
+                    "y": [],
+                    "category": []
+                }
+                read_id_n_cols = {}
                 col_ids = []
                 all_col_ids = []
                 category_counter = 0
@@ -316,43 +336,57 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     seeds_n_idx = list(enumerate(sorted([(x, y) for x, y in zip(seeds, layer_of_seeds)], 
                                                         key=lambda x: x[0].start)))
                     for idx, (seed, layer) in sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref):
+                        seed_size = seed.size - 1
                         if seed.on_forward_strand:
-                            read_dict["center"].append(seed.start_ref + seed.size/2)
-                            read_dict["c"].append("green")
+                            read_dict["center"].append(seed.start_ref + seed_size/2)
+                            if selected_read_id != -1 and selected_read_id != read_id:
+                                read_dict["c"].append("lightgrey")
+                            else:
+                                read_dict["c"].append("green")
                             read_dict["r"].append(seed.start_ref)
-                            read_dict["x"].append([seed.start_ref, seed.start_ref+seed.size])
-                            curr_end = seed.start_ref + seed.size + 3
+                            read_dict["x"].append([seed.start_ref, seed.start_ref+seed_size])
+                            curr_end = seed.start_ref + seed_size
                             curr_start = seed.start_ref
                         else:
-                            read_dict["center"].append(seed.start_ref - seed.size/2 + 1)
-                            read_dict["c"].append("purple")
+                            read_dict["center"].append(seed.start_ref - seed_size/2 + 1)
+                            if selected_read_id != -1 and selected_read_id != read_id:
+                                read_dict["c"].append("lightgrey")
+                            else:
+                                read_dict["c"].append("purple")
                             read_dict["r"].append(seed.start_ref - seed.size + 1)
-                            read_dict["x"].append([seed.start_ref + 1, seed.start_ref - seed.size + 1])
-                            curr_end = seed.start_ref + 3
+                            read_dict["x"].append([seed.start_ref + 1, seed.start_ref - seed_size + 1])
+                            curr_end = seed.start_ref
                             curr_start = seed.start_ref - seed.size
                         curr_column = 0
                         while curr_column < len(end_column):
-                            if curr_start > end_column[curr_column]:
+                            if curr_start >= end_column[curr_column]:
                                 break
                             else:
                                 curr_column += 1
                         if curr_column >= len(end_column):
-                            read_id_n_cols.append( read_id )
                             end_column.append(0)
                             all_col_ids.append(curr_column + category_counter)
                         end_column[curr_column] = curr_end
-                        read_dict["r_id"].append( read_id )
-                        read_dict["size"].append(seed.size)
+                        read_dict["r_id"].append(read_id)
+                        read_dict["size"].append(seed_size)
+                        read_dict["l"].append(seed.size)
                         read_dict["q"].append(seed.start)
                         read_dict["y"].append([seed.start, seed.start+seed.size])
                         read_dict["idx"].append(idx)
                         read_dict["layer"].append(layer)
                         read_dict["f"].append(seed.on_forward_strand)
                         read_dict["category"].append(category_counter + curr_column)
-                    col_ids.append(category_counter)
+                        if selected_read_id == read_id:
+                            for key in read_dict.keys():
+                                read_plot_dict[key].append(read_dict[key][-1])
+                    if (len(end_column)-1)%2 == 0:
+                        # prevent forming of float if possible (to stay javascript compatible)
+                        curr_col_id = category_counter + (len(end_column)-1)//2
+                    else:
+                        curr_col_id = category_counter + (len(end_column)-1)/2
+                    col_ids.append(curr_col_id)
                     category_counter += len(end_column) + 2
-                    read_id_n_cols.append( -1 )
-                    read_id_n_cols.append( -1 )
+                    read_id_n_cols[curr_col_id] = read_id
                 if len(read_dict["c"]) < max_num_ele:
                     read_source = ColumnDataSource(read_dict)
                     l_plot[1].rect(x="category", y="center", width=1, height="size",
@@ -363,7 +397,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     l_plot[1].xaxis.formatter = FuncTickFormatter(
                         args={"read_id_n_cols":read_id_n_cols},
                         code="""
-                                if(tick < 0 || tick >= read_id_n_cols.length)
+                                if(!tick in read_id_n_cols)
                                     return "";
                                 return read_id_n_cols[tick];
                             """)
@@ -372,7 +406,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     d_plot[1].yaxis.formatter = FuncTickFormatter(
                         args={"read_id_n_cols":read_id_n_cols},
                         code="""
-                                if(tick < 0 || tick >= read_id_n_cols.length)
+                                if(!tick in read_id_n_cols)
                                     return "";
                                 return read_id_n_cols[tick];
                             """)
@@ -411,66 +445,53 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         d_plot[0].rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
                                 source=ColumnDataSource(d_plot_nucs), name="hover4")
 
-                        # create a column data soure for the read plot...
-                        read_plot_dict = {
-                            "center": [],
-                            "r_id": [],
-                            "size": [],
-                            "q": [],
-                            "r": [],
-                            "idx": [],
-                            "c": [],
-                            "f": [],
-                            "layer": [],
-                            "x": [],
-                            "y": [],
-                            "category": []
-                        }
                         read_plot_line = read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
                                                               source=ColumnDataSource(read_plot_dict), name="hover5")
                         # auto adjust y-range of read plot
+                        js_auto_adjust_y_range = """
+                            function auto_adjust(){
+                                if(checkbox_group.active == 0)
+                                {
+                                    read_plot.x_range.start = plot.x_range.start;
+                                    read_plot.x_range.end = plot.x_range.end;
+                                }
+                                if(checkbox_group.active == 1)
+                                {
+                                    read_plot.x_range.start = plot.y_range.start;
+                                    read_plot.x_range.end = plot.y_range.end;
+                                }
+                                read_plot.x_range.change.emit();
+
+                                var min_seed = 10000000;
+                                var max_seed = 0;
+                                for(var i = 0; i < read_plot_line.data.x.length; i++)
+                                {
+                                    if(
+                                        ( read_plot_line.data.x[i][0] >= read_plot.x_range.start &&
+                                        read_plot_line.data.x[i][0] <= read_plot.x_range.end )
+                                            ||
+                                        ( read_plot_line.data.x[i][1] >= read_plot.x_range.start &&
+                                        read_plot_line.data.x[i][1] <= read_plot.x_range.end )
+                                    )
+                                    {
+                                        min_seed = Math.min(min_seed, read_plot_line.data.y[i][0]);
+                                        min_seed = Math.min(min_seed, read_plot_line.data.y[i][1]);
+                                        max_seed = Math.max(max_seed, read_plot_line.data.y[i][0]);
+                                        max_seed = Math.max(max_seed, read_plot_line.data.y[i][1]);
+                                    } // if
+                                } // for
+
+                                var size = max_seed - min_seed;
+
+                                read_plot.y_range.start = min_seed - size/20;
+                                read_plot.y_range.end = max_seed + size/20;
+                                read_plot.y_range.change.emit();
+                            }
+                        """
                         plot.x_range.js_on_change('start', CustomJS(args=dict(checkbox_group=checkbox_group,
                                                                             read_plot=read_plot, plot=plot,
                                                                             read_plot_line=read_plot_line.data_source),
-                                                                        code="""
-                    if(checkbox_group.active >= 0) // x-axis link
-                    {
-                        if(checkbox_group.active == 0)
-                        {
-                            read_plot.x_range.start = plot.x_range.start;
-                            read_plot.x_range.end = plot.x_range.end;
-                        }
-                        if(checkbox_group.active == 1)
-                        {
-                            read_plot.x_range.start = plot.y_range.start;
-                            read_plot.x_range.end = plot.y_range.end;
-                        }
-                        read_plot.x_range.change.emit();
-
-                        var min_seed = 10000000;
-                        var max_seed = 0;
-                        for(var i = 0; i < read_plot_line.data.x.length; i++)
-                        {
-                            if(
-                                ( read_plot_line.data.x[i][0] >= read_plot.x_range.start &&
-                                  read_plot_line.data.x[i][0] <= read_plot.x_range.end )
-                                    ||
-                                ( read_plot_line.data.x[i][1] >= read_plot.x_range.start &&
-                                  read_plot_line.data.x[i][1] <= read_plot.x_range.end )
-                            )
-                            {
-                                min_seed = Math.min(min_seed, read_plot_line.data.y[i][0]);
-                                min_seed = Math.min(min_seed, read_plot_line.data.y[i][1]);
-                                max_seed = Math.max(max_seed, read_plot_line.data.y[i][0]);
-                                max_seed = Math.max(max_seed, read_plot_line.data.y[i][1]);
-                            } // if
-                        } // for
-
-                        read_plot.y_range.start = min_seed;
-                        read_plot.y_range.end = max_seed;
-                        read_plot.y_range.change.emit();
-                    }
-                                    """))
+                                                                    code=js_auto_adjust_y_range+"auto_adjust();"))
 
                         # the tapping callback on jumps
                         plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
@@ -517,10 +538,10 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     read_source.change.emit();
                     for(var i = 0; i < srcs.length; i++)
                         srcs[i].change.emit();
+                    window.selected_read_id = -1;
                                 """))
                         # the tapping callback on seeds
-                        code = """
-        debugger;
+                        code = js_auto_adjust_y_range+"""
         for(var data_list_name in read_plot_line.data)
             read_plot_line.data[data_list_name] = [];
         for(var i = 0; i < srcs.length; i++)
@@ -565,16 +586,18 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         for(var data_list_name in read_source.data)
                             read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j2]);
                 }
-                read_plot_line.change.emit();
                 read_source.change.emit();
+                read_plot_line.change.emit();
+                window.selected_read_id = read_source.data.r_id[j];
+                auto_adjust();
                 return;
             }
         }
         for(var outer_j = 0; outer_j < read_source.data.r_id.length; outer_j++)
         {
+            // correct column but no single seed matches...
             if( Math.abs(read_source.data.category[outer_j] - curr_y) <= 1/2)
             {
-                // correct column but no single seed matches...
                 for(var j = 0; j < read_source.data.r_id.length; j++)
                 {
                     if(read_source.data.r_id[j] == read_source.data.r_id[outer_j])
@@ -598,8 +621,10 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     src.change.emit();
                 }
                 read_source.change.emit();
-                read_plot.reset.emit();
+                //read_plot.reset.emit();
                 read_plot_line.change.emit();
+                auto_adjust();
+                window.selected_read_id = read_source.data.r_id[outer_j];
                 return;
             }
         }
@@ -607,8 +632,11 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
             srcs[i].change.emit();
         read_source.change.emit();
         read_plot_line.change.emit();
+        auto_adjust();
                         """
                         l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
+                                                                        checkbox_group=checkbox_group,
+                                                                        plot=plot,
                                                                         read_source=read_source,
                                                                         range=d_plot[1].y_range,
                                                                         read_plot_line=read_plot_line.data_source,
@@ -618,6 +646,8 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                                                               var curr_y = cb_obj.x;
                                                               """ + code))
                         d_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
+                                                                        checkbox_group=checkbox_group,
+                                                                        plot=plot,
                                                                         read_source=read_source,
                                                                         range=d_plot[1].y_range,
                                                                         read_plot_line=read_plot_line.data_source,
