@@ -1,4 +1,5 @@
-from render_region import render_region
+from renderer import Renderer
+from renderer.util import *
 import os.path
 import json
 from bokeh.layouts import column, row, grid
@@ -11,6 +12,7 @@ from bokeh.models.tools import HoverTool
 from bokeh.models.axes import LinearAxis
 from MA import *
 import math
+
 
 def _decode(o):
     if isinstance(o, str):
@@ -25,9 +27,11 @@ def _decode(o):
     else:
         return o
 
+
 server_context = curdoc().session_context.server_context
 
 args = curdoc().session_context.request.arguments
+
 
 def args_get(name, convert, default):
     if not args.get(name) is None:
@@ -38,8 +42,9 @@ def args_get(name, convert, default):
     else:
         return default
 
+
 dataset_name = args_get("dataset_name", None, b'minimal').decode()
-json_info_file = None # noop
+json_info_file = None  # noop
 
 render_area_factor = 1
 
@@ -53,52 +58,55 @@ run_id = args_get("run_id", int, -1)
 ground_truth_id = args_get("ground_truth_id", int, -1)
 min_score = args_get("min_score", float, 0)
 max_elements = args_get("max_elements", int, 2000)
-active_tools = args_get("active_tools", None, b"pan.wheel_zoom.hover1,hover2,hover3,hover4").decode().split(".")
+active_tools = args_get(
+    "active_tools", None, b"pan.wheel_zoom.hover1,hover2,hover3,hover4").decode().split(".")
+
 
 def text_to_none(text):
     if text == "None":
         return None
     return text
 
+
 plot = figure(
-            width=900,
-            height=900,
-            tools=[
-                "pan", "box_zoom", 
-                "wheel_zoom", "save"
-            ],
-            active_drag=text_to_none(active_tools[0]),
-            active_scroll=text_to_none(active_tools[1])
-        )
+    width=900,
+    height=900,
+    tools=[
+        "pan", "box_zoom",
+        "wheel_zoom", "save"
+    ],
+    active_drag=text_to_none(active_tools[0]),
+    active_scroll=text_to_none(active_tools[1])
+)
 plot.axis.visible = False
 l_plot = figure(
-            width=40,
-            height=900,
-            y_range=plot.y_range,
-            tools=["ypan"],
-            toolbar_location=None
-        )
+    width=40,
+    height=900,
+    y_range=plot.y_range,
+    tools=["ypan"],
+    toolbar_location=None
+)
 l_plot.axis.visible = False
 l_plot.grid.visible = False
 
 d_plot = figure(
-            width=900,
-            height=40,
-            x_range=plot.x_range,
-            tools=["xpan"],
-            toolbar_location=None
-        )
+    width=900,
+    height=40,
+    x_range=plot.x_range,
+    tools=["xpan"],
+    toolbar_location=None
+)
 d_plot.axis.visible = False
 d_plot.grid.visible = False
 
 l2_plot = figure(
-            width=300,
-            height=900,
-            y_range=plot.y_range,
-            tools=["xpan", "xwheel_zoom"],
-            active_scroll="xwheel_zoom",
-            toolbar_location=None
-        )
+    width=300,
+    height=900,
+    y_range=plot.y_range,
+    tools=["xpan", "xwheel_zoom"],
+    active_scroll="xwheel_zoom",
+    toolbar_location=None
+)
 if not read_plot_start is None and not math.isnan(read_plot_start):
     l2_plot.x_range.start = read_plot_start
 if not read_plot_end is None and not math.isnan(read_plot_end):
@@ -108,14 +116,14 @@ l2_plot.yaxis.axis_label = "Reference Position"
 l2_plot.xaxis.axis_label = "Read Id"
 
 d2_plot = figure(
-            width=900,
-            height=300,
-            x_range=plot.x_range,
-            y_range=l2_plot.x_range,
-            tools=["ypan", "ywheel_zoom"],
-            active_scroll="ywheel_zoom",
-            toolbar_location=None
-        )
+    width=900,
+    height=300,
+    x_range=plot.x_range,
+    y_range=l2_plot.x_range,
+    tools=["ypan", "ywheel_zoom"],
+    active_scroll="ywheel_zoom",
+    toolbar_location=None
+)
 d2_plot.xaxis.axis_label = "Reference Position"
 d2_plot.yaxis.axis_label = "Read Id"
 
@@ -143,14 +151,14 @@ plot.tools[7].name = "hover4"
 
 
 read_plot = figure(
-            width=900,
-            height=400,
-            tools=[
-                "pan", "box_zoom", 
-                "wheel_zoom", "save", "reset"
-            ],
-            active_scroll="wheel_zoom"
-        )
+    width=900,
+    height=400,
+    tools=[
+        "pan", "box_zoom",
+        "wheel_zoom", "save", "reset"
+    ],
+    active_scroll="wheel_zoom"
+)
 read_plot.yaxis.axis_label = "Read Position"
 read_plot.xaxis.axis_label = "Reference Position"
 
@@ -173,7 +181,8 @@ l2_plot.add_tools(hover5)
 d2_plot.add_tools(hover5)
 read_plot.add_tools(hover5)
 
-checkbox_group = RadioGroup(labels=["Link read plot to x-range", "Link read plot to y-range"], active=range_link)
+checkbox_group = RadioGroup(
+    labels=["Link read plot to x-range", "Link read plot to y-range"], active=range_link)
 
 redered_everything = True
 
@@ -185,6 +194,7 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
     if not hasattr(server_context, "ref_genome"):
         setattr(server_context, "ref_genome", None)
         setattr(server_context, "pack", None)
+        setattr(server_context, "fm_index", None)
         setattr(server_context, "sv_db", None)
         setattr(server_context, "dataset_name", None)
     if server_context.ref_genome == ref_genome:
@@ -192,12 +202,16 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
     else:
         pack = Pack()
         pack.load(ref_genome)
+        fm_index = FMIndex()
+        fm_index.load(ref_genome)
         server_context.pack = pack
         server_context.ref_genome = ref_genome
+        server_context.fm_index = fm_index
     if server_context.dataset_name == dataset_name:
         print("using cached sv_db")
     else:
-        sv_db = SV_DB("/MAdata/sv_datasets/" + dataset_name + "/svs.db", "open")
+        sv_db = SV_DB("/MAdata/sv_datasets/" +
+                      dataset_name + "/svs.db", "open")
         server_context.sv_db = sv_db
         server_context.dataset_name = dataset_name
 
@@ -209,11 +223,13 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
     plot.y_range.start = ys
     plot.y_range.end = ye
 
-    redered_everything = render_region(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye,
-                                        server_context.pack, server_context.sv_db, run_id,
-                                        ground_truth_id, min_score, max_elements, dataset_name, active_tools, 
-                                        checkbox_group, read_plot, selected_read_id,
-                                        json_info_file["reference_path"] + "/ma/genome")
+    renderer = Renderer(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye,
+                             server_context.pack, server_context.fm_index, server_context.sv_db, run_id,
+                             ground_truth_id, min_score, max_elements, dataset_name, active_tools,
+                             checkbox_group, read_plot, selected_read_id,
+                             json_info_file["reference_path"] + "/ma/genome")
+
+    redered_everything = renderer.render()
 else:
     xe = 0
     ye = 0
@@ -224,59 +240,17 @@ reset_button.js_on_event(ButtonClick, CustomJS(code="""
     document.location.href = document.location.href.split("?")[0];
 """))
 
+make_js_callback_file = js_file("reload_callback")
+
 
 def make_js_callback(condition):
     return CustomJS(args=dict(xr=plot.x_range, yr=plot.y_range, xs=xs, xe=xe, ys=ys, ye=ye,
                               run_id=run_id, min_score=min_score, plot=plot, max_elements=max_elements,
                               ground_truth_id=ground_truth_id, checkbox_group=checkbox_group,
-                              read_plot_range=l2_plot.x_range, dataset_name=dataset_name, 
+                              read_plot_range=l2_plot.x_range, dataset_name=dataset_name,
                               selected_read_id=selected_read_id),
-                    code=condition + """
-            {
-                if (typeof window.left_page_already !== 'undefined')
-                    return;
-                else
-                    window.left_page_already = 1;
-                if (typeof window.selected_read_id == 'undefined')
-                    window.selected_read_id = selected_read_id;
-                var active_drag = "None";
-                if(plot.toolbar.tools[0].active)
-                    active_drag = "pan";
-                if(plot.toolbar.tools[1].active)
-                    active_drag = "box_zoom";
-                var active_scroll = "None";
-                if(plot.toolbar.tools[2].active)
-                    active_scroll = "wheel_zoom";
-                var active_inspect = "";
-                for(var x = 4; x < 8; x++)
-                    if(plot.toolbar.tools[x].active)
-                        active_inspect += "," + plot.toolbar.tools[x].name;
+                    code=condition + make_js_callback_file)
 
-                var active_tools = active_drag + "." + active_scroll + "." + active_inspect;
-                
-                plot.toolbar.active_drag = null;
-                plot.toolbar.active_scroll = null;
-                plot.toolbar.active_tap = null;
-                plot.toolbar.tools = [];
-                debugger;
-                s = document.location.href.split("?")[0] + "?xs=" + xr.start +
-                                                        "&xe=" + xr.end +
-                                                        "&ys=" + yr.start +
-                                                        "&ye=" + yr.end +
-                                                        "&run_id=" + run_id +
-                                                        "&max_elements=" + max_elements +
-                                                        "&dataset_name=" + dataset_name +
-                                                        "&min_score=" + min_score +
-                                                        "&ground_truth_id=" + ground_truth_id +
-                                                        "&range_link=" + checkbox_group.active +
-                                                        "&read_plot_start=" + read_plot_range.start +
-                                                        "&read_plot_end=" + read_plot_range.end +
-                                                        "&selected_read_id=" + window.selected_read_id +
-                                                        "&active_tools=" + active_tools;
-                //alert(s);
-                document.location.href = s;
-            } // if or scope
-        """)
 
 # reset button
 delete_button = Button(label="Delete Dataset")
@@ -295,7 +269,7 @@ plot.y_range.js_on_change('start', make_js_callback("""
                 yr.start < ys - h * """ + str(render_area_factor) + """ ||
                 xr.end > xe + w * """ + str(render_area_factor) + """ ||
                 yr.end > ye + h * """ + str(render_area_factor) +
-                ( " " if redered_everything else " || w/4 > xr.end - xr.start || h/4 > yr.end - yr.start " ) + """
+    (" " if redered_everything else " || w/4 > xr.end - xr.start || h/4 > yr.end - yr.start ") + """
             )
     """))
 
@@ -303,12 +277,13 @@ menu = []
 label = "select run id here"
 label_2 = "select ground truth id here"
 if not server_context.sv_db is None:
-    for idx in range(100): #sv_db.get_num_runs() + 1
+    for idx in range(100):  # sv_db.get_num_runs() + 1
         if server_context.sv_db.run_exists(idx):
             text = server_context.sv_db.get_run_name(idx) + " - " + \
-                    server_context.sv_db.get_run_date(idx) + " - " + \
-                    server_context.sv_db.get_run_desc(idx)
-            text += " - " + str(server_context.sv_db.get_num_calls(idx, min_score))
+                server_context.sv_db.get_run_date(idx) + " - " + \
+                server_context.sv_db.get_run_desc(idx)
+            text += " - " + \
+                str(server_context.sv_db.get_num_calls(idx, min_score))
             if idx == run_id:
                 label = text
             if idx == ground_truth_id:
@@ -328,13 +303,13 @@ if not server_context.sv_db is None and server_context.sv_db.run_exists(run_id):
     max_score_slider = server_context.sv_db.get_max_score(run_id)
 else:
     max_score_slider = 100
-score_slider = Slider(start=0, end=max_score_slider, 
-                      value=min_score, step=.1, callback_policy = 'mouseup', title="min score")
+score_slider = Slider(start=0, end=max_score_slider,
+                      value=min_score, step=.1, callback_policy='mouseup', title="min score")
 score_slider.callback = make_js_callback("""
         min_score = cb_obj.value;
     """)
 
-max_elements_slider = Slider(start=1000, end=100000, value=max_elements, step=1000, callback_policy = 'mouseup',
+max_elements_slider = Slider(start=1000, end=100000, value=max_elements, step=1000, callback_policy='mouseup',
                              title="max render")
 max_elements_slider.callback = make_js_callback("""
         max_elements = cb_obj.value;
@@ -347,7 +322,7 @@ file_input.js_on_change("value", make_js_callback("""
 
 # render this document
 curdoc().add_root(row(
-                        grid([[l2_plot, l_plot, plot], [None, None, d_plot], [None, None, d2_plot]]),
-                        column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
-                                   max_elements_slider, checkbox_group, reset_button, delete_button, read_plot)
-                        ))
+    grid([[l2_plot, l_plot, plot], [None, None, d_plot], [None, None, d2_plot]]),
+    column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
+           max_elements_slider, checkbox_group, reset_button, delete_button, read_plot)
+))
