@@ -346,28 +346,12 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                 if len(read_dict["c"]) < max_num_ele:
                     sorted_r_ids = [(str(x), str(y)) for x, y in sorted(read_id_n_cols, reverse=True)]
                     l_plot[1].x_range.factors = sorted_r_ids
-                    l_plot[1].x_range.bounds = "auto"
                     d_plot[1].y_range.factors = sorted_r_ids
-                    d_plot[1].y_range.bounds = "auto"
                     read_source = ColumnDataSource(read_dict)
                     l_plot[1].rect(x='r_id', y="center", width=1, height="size",
                                     fill_color="c", line_width=0, source=read_source, name="hover5")
-                    labels1 = LabelSet(x='r_id', y='center', text='idx',
-                                    source=read_source, render_mode='css', text_align="center",
-                                    text_baseline="middle", text_color="white", angle=math.pi/2,
-                                    visible=0 in checkbox_group.active)
-                    l_plot[1].add_layout(labels1)
                     d_plot[1].rect(y='r_id', x="center", height=1, width="size",
-                                  fill_color="c", line_width=0, source=read_source, name="hover5")
-                    labels2 = LabelSet(x='center', y='r_id', text='idx',
-                                    source=read_source, render_mode='css', text_align="center",
-                                    text_baseline="middle", text_color="white", visible=0 in checkbox_group.active)
-                    d_plot[1].add_layout(labels2)
-
-                    def update_checkbox_group(attr, old, new):
-                        labels1.visible = 0 in checkbox_group.active
-                        labels2.visible = 0 in checkbox_group.active
-                    checkbox_group.on_change('active', update_checkbox_group)
+                                    fill_color="c", line_width=0, source=read_source, name="hover5")
 
                     num_nt = w*3+h*3
                     if num_nt < max_num_ele:
@@ -418,6 +402,49 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         }
                         read_plot_line = read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
                                                               source=ColumnDataSource(read_plot_dict), name="hover5")
+                        # auto adjust y-range of read plot
+                        plot.x_range.js_on_change('start', CustomJS(args=dict(checkbox_group=checkbox_group,
+                                                                            read_plot=read_plot, plot=plot,
+                                                                            read_plot_line=read_plot_line.data_source),
+                                                                        code="""
+                    if(checkbox_group.active >= 0) // x-axis link
+                    {
+                        if(checkbox_group.active == 0)
+                        {
+                            read_plot.x_range.start = plot.x_range.start;
+                            read_plot.x_range.end = plot.x_range.end;
+                        }
+                        if(checkbox_group.active == 1)
+                        {
+                            read_plot.x_range.start = plot.y_range.start;
+                            read_plot.x_range.end = plot.y_range.end;
+                        }
+                        read_plot.x_range.change.emit();
+
+                        var min_seed = 10000000;
+                        var max_seed = 0;
+                        for(var i = 0; i < read_plot_line.data.x.length; i++)
+                        {
+                            if(
+                                ( read_plot_line.data.x[i][0] >= read_plot.x_range.start &&
+                                  read_plot_line.data.x[i][0] <= read_plot.x_range.end )
+                                    ||
+                                ( read_plot_line.data.x[i][1] >= read_plot.x_range.start &&
+                                  read_plot_line.data.x[i][1] <= read_plot.x_range.end )
+                            )
+                            {
+                                min_seed = Math.min(min_seed, read_plot_line.data.y[i][0]);
+                                min_seed = Math.min(min_seed, read_plot_line.data.y[i][1]);
+                                max_seed = Math.max(max_seed, read_plot_line.data.y[i][0]);
+                                max_seed = Math.max(max_seed, read_plot_line.data.y[i][1]);
+                            } // if
+                        } // for
+
+                        read_plot.y_range.start = min_seed;
+                        read_plot.y_range.end = max_seed;
+                        read_plot.y_range.change.emit();
+                    }
+                                    """))
 
                         # the tapping callback on jumps
                         plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
@@ -467,8 +494,9 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                                 """))
                         # the tapping callback on seeds
                         code = """
+        debugger;
         for(var data_list_name in read_plot_line.data)
-            read_plot_line.data[data_list_name].length = 0;
+            read_plot_line.data[data_list_name] = [];
         for(var i = 0; i < srcs.length; i++)
             for(var idx = 0; idx < srcs[i].data.a.length; idx++)
                 srcs[i].data.c[idx] = ["orange", "blue", "lightgreen", "green"][i];
@@ -514,7 +542,12 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                                     read_source.data.c[j2] = read_source.data.f[j] ? "green" : "purple";
                                 else
                                     read_source.data.c[j2] = "lightgrey";
+                                // copy over to read viewer
+                                if(read_source.data.r_id[j][0] == read_source.data.r_id[j2][0])
+                                    for(var data_list_name in read_source.data)
+                                        read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j2]);
                             }
+                            read_plot_line.change.emit();
                             read_source.change.emit();
                             return;
                         }
@@ -525,6 +558,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         if(read_source.data.r_id[j][0] == read_id)
                         {
                             read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                            // copy over to read viewer
                             for(var data_list_name in read_source.data)
                                 read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j]);
                         }
@@ -555,6 +589,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                         """
                         l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in quads],
                                                                         read_source=read_source,
+                                                                        range=d_plot[1].y_range,
                                                                         read_plot_line=read_plot_line.data_source,
                                                                         read_plot=read_plot),
                                                               code="""

@@ -6,7 +6,7 @@ from bokeh.models import Button, Slider, FuncTickFormatter
 from bokeh.plotting import figure, curdoc
 from bokeh.models.callbacks import CustomJS
 from bokeh.events import ButtonClick
-from bokeh.models.widgets import Dropdown, TextInput, CheckboxGroup
+from bokeh.models.widgets import Dropdown, TextInput, RadioGroup
 from bokeh.models.tools import HoverTool
 from bokeh.models.tickers import FixedTicker
 from bokeh.models.axes import LinearAxis
@@ -46,9 +46,9 @@ render_area_factor = 1
 
 xs = args_get("xs", float, 0)
 ys = args_get("ys", float, 0)
-render_read_indices = args_get("render_read_indices", None, b'false').decode()
-x_range_link = args_get("x_range_link", None, b'false').decode()
-y_range_link = args_get("y_range_link", None, b'false').decode()
+read_plot_start = args_get("read_plot_start", float, None)
+read_plot_end = args_get("read_plot_end", float, None)
+range_link = args_get("range_link", int, 0)
 run_id = args_get("run_id", int, -1)
 ground_truth_id = args_get("ground_truth_id", int, -1)
 min_score = args_get("min_score", float, 0)
@@ -104,15 +104,9 @@ l2_plot.xaxis.major_label_orientation = math.pi/2
 l2_plot.yaxis.axis_label = "Reference Position"
 l2_plot.xaxis.axis_label = "Read Id"
 
+# @todo change from categorical to numerical axis and create custom ticks...
+l2_plot.x_range.bounds = "auto"
 
-# Remove default axis
-#l2_plot.xaxis.visible = False
-# Add custom axis
-# ticker = FixedTicker()
-# ticker.ticks = [1,2,3]
-# xaxis = LinearAxis(ticker=ticker)
-# l2_plot.add_layout(xaxis, 'below')
-# xaxis.formatter = FuncTickFormatter(code="return Math.floor(tick);")
 
 d2_plot = figure(
             width=900,
@@ -155,7 +149,8 @@ read_plot = figure(
             tools=[
                 "pan", "box_zoom", 
                 "wheel_zoom", "save", "reset"
-            ]
+            ],
+            active_scroll="wheel_zoom"
         )
 
 l = []
@@ -177,19 +172,7 @@ l2_plot.add_tools(hover5)
 d2_plot.add_tools(hover5)
 read_plot.add_tools(hover5)
 
-checkbox_group = CheckboxGroup(labels=["Render read indices", "Link read plot to x-range", "Link read plot to y-range"],
-                               active=[])
-if render_read_indices == "true":
-    checkbox_group.active.append(0) # Read Indices
-if x_range_link == "true":
-    # @todo this requires a reload from the server
-    checkbox_group.active.append(1) # x-range link
-    read_plot.x_range = plot.x_range
-elif y_range_link == "true":
-    # @todo this requires a reload from the server
-    # @todo y-range of the read plot should auto update if x-range is changed from other plot...
-    checkbox_group.active.append(2) # y-range-link
-    read_plot.x_range = plot.y_range
+checkbox_group = RadioGroup(labels=["Link read plot to x-range", "Link read plot to y-range"], active=range_link)
 
 redered_everything = True
 
@@ -243,8 +226,8 @@ reset_button.js_on_event(ButtonClick, CustomJS(code="""
 def make_js_callback(condition):
     return CustomJS(args=dict(xr=plot.x_range, yr=plot.y_range, xs=xs, xe=xe, ys=ys, ye=ye,
                               run_id=run_id, min_score=min_score, plot=plot, max_elements=max_elements,
-                              ground_truth_id=ground_truth_id, checkbox_group=checkbox_group, 
-                              dataset_name=dataset_name),
+                              ground_truth_id=ground_truth_id, checkbox_group=checkbox_group,
+                              read_plot_range=l2_plot.x_range, dataset_name=dataset_name),
                     code=condition + """
             {
                 if (typeof window.left_page_already !== 'undefined')
@@ -280,9 +263,9 @@ def make_js_callback(condition):
                                                         "&dataset_name=" + dataset_name +
                                                         "&min_score=" + min_score +
                                                         "&ground_truth_id=" + ground_truth_id +
-                                                        "&render_read_indices=" + checkbox_group.active.includes(0) +
-                                                        "&x_range_link=" + checkbox_group.active.includes(1) +
-                                                        "&y_range_link=" + checkbox_group.active.includes(2) +
+                                                        "&range_link=" + checkbox_group.active +
+                                                        "&read_plot_start=" + read_plot_range.start +
+                                                        "&read_plot_end=" + read_plot_range.end +
                                                         "&active_tools=" + active_tools;
                 //alert(s);
                 document.location.href = s;
