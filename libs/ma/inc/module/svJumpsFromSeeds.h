@@ -33,7 +33,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     const size_t uiMaxAmbiguitySv;
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
-    HashMapSeeding xHashMapSeeder;
     SeedLumping xSeedLumper;
     // @todo there should be a container for the current sequencer run;
     // this way this module would be free from keeping internal data and could be used for multiple instances in the
@@ -51,6 +50,10 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     Seed xDummySeed;
 
     double dExtraSeedingAreaFactor = 1.5;
+    // depends on sequencer technique
+    // lower -> less seed noise (via larger min size for seeds); worse breakpoint recognition
+    // higher -> more seed noise; better breakpoint recognition (via smaller seeds)
+    double dProbabilityForRandomMatch = 0.03;
 
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
@@ -62,7 +65,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
           bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
-          xHashMapSeeder( rParameters ),
           xSeedLumper( rParameters ),
           iSequencerId( iSequencerId ),
           pDb( pDb ),
@@ -86,6 +88,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * shall return a rectange (reference pos, query pos, width [on reference], height [on query])
      */
     Rectangle<nucSeqIndex> getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQSize, nucSeqIndex uiRSize );
+
+    nucSeqIndex getKMerSizeForRectangle(Rectangle<nucSeqIndex>& rRect);
 
     void computeSeeds( Rectangle<nucSeqIndex> xArea, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
                        std::shared_ptr<Seeds> rvRet );

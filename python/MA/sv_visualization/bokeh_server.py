@@ -8,7 +8,6 @@ from bokeh.models.callbacks import CustomJS
 from bokeh.events import ButtonClick
 from bokeh.models.widgets import Dropdown, TextInput, RadioGroup
 from bokeh.models.tools import HoverTool
-from bokeh.models.tickers import FixedTicker
 from bokeh.models.axes import LinearAxis
 from MA import *
 import math
@@ -95,18 +94,17 @@ l2_plot = figure(
             width=300,
             height=900,
             y_range=plot.y_range,
-            x_range=list(),
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
             toolbar_location=None
         )
+if not read_plot_start is None:
+    l2_plot.x_range.start = read_plot_start
+if not read_plot_end is None:
+    l2_plot.x_range.end = read_plot_end
 l2_plot.xaxis.major_label_orientation = math.pi/2
 l2_plot.yaxis.axis_label = "Reference Position"
 l2_plot.xaxis.axis_label = "Read Id"
-
-# @todo change from categorical to numerical axis and create custom ticks...
-l2_plot.x_range.bounds = "auto"
-
 
 d2_plot = figure(
             width=900,

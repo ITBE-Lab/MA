@@ -22,19 +22,22 @@ namespace libMA
 class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
 {
   public:
+    nucSeqIndex uiSeedSize = 5;
+
     HashMapSeeding( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual nucSeqIndex minSeedSize()
+    HashMapSeeding(  )
+    {} // constructor
+
+    virtual nucSeqIndex minSeedSize( )
     {
-        return 5;
+        return uiSeedSize;
     } // method
 
     virtual nucSeqIndex getSeedSize( nucSeqIndex uiL1, nucSeqIndex uiL2 )
     {
-        return minSeedSize();
-        // nucSeqIndex uiX = std::max( uiL1, uiL2 );
-        // return std::min(std::max( (nucSeqIndex)5, (nucSeqIndex)std::sqrt( uiX ) ), (nucSeqIndex)19);
+        return minSeedSize( );
     } // method
 
     virtual std::unordered_multimap<std::string, size_t> getIndex( std::shared_ptr<NucSeq> pQ1,
@@ -44,8 +47,8 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
 
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 );
 
-    virtual std::vector<std::shared_ptr<libMA::Seeds>> getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex,
-                                                                    std::vector<std::shared_ptr<NucSeq>> vIn )
+    virtual std::vector<std::shared_ptr<libMA::Seeds>>
+    getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex, std::vector<std::shared_ptr<NucSeq>> vIn )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         for( auto pNucSeq : vIn )

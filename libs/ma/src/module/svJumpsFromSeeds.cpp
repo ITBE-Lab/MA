@@ -54,8 +54,12 @@ Rectangle<nucSeqIndex> SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed
 void SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex> xArea, std::shared_ptr<NucSeq> pQuery,
                                      std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet )
 {
-    if( xHashMapSeeder.minSeedSize( ) > xArea.xXAxis.size( ) || xHashMapSeeder.minSeedSize( ) > xArea.xYAxis.size( ) )
+    if( getKMerSizeForRectangle( xArea ) > xArea.xXAxis.size( ) ||
+        getKMerSizeForRectangle( xArea ) > xArea.xYAxis.size( ) )
         return;
+    
+    HashMapSeeding xHashMapSeeder;
+    xHashMapSeeder.uiSeedSize = getKMerSizeForRectangle( xArea );
     // @todo this is inefficient:
     auto pQuerySegment = std::make_shared<NucSeq>( pQuery->fromTo( xArea.xYAxis.start( ), xArea.xYAxis.end( ) ) );
     auto pRef = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
@@ -133,6 +137,36 @@ std::shared_ptr<Seeds> SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex>& x
     return pvLumpedSeeds;
 } // method
 
+/** @brief Determine the appropriate k-mers size for a "rectangle"
+ * @detail The formula used over here is:
+ * 1 - t <= (1 - 1/4^k)^( (w-k+1)*(h-k+1) )
+ * where (1 - 1/4^k) is the probability that two k-sized nucleotide sequences do not match.
+ *	     (w-k+1)*(h-k+1) ) is the number of possible K-mer combinations within the rectangle.
+ */
+nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( Rectangle<nucSeqIndex>& rRect )
+{
+    auto w = rRect.xXAxis.size( ); // width of rectangle
+    auto h = rRect.xYAxis.size( ); // height of rectangle
+    auto &t = SvJumpsFromSeeds::dProbabilityForRandomMatch; // probabilty threshold
+
+    int64_t iDenominator = 4 * 4 * 4;
+    for( nucSeqIndex uiK = 3; uiK <= std::min( w, h ); uiK++ )
+    {
+        // p is the probability of NOT having random match in the rectange (wh, w).
+        // So, if p is small, then the probability that we have a random match is high.
+        // If p is large, the probabilty of having a random match is low.
+        double p = std::pow( 1.0 - ( 1.0 / ( (double)iDenominator ) ), ( w - uiK + 1 ) * ( h - uiK + 1 ) );
+        if( p >= 1 - t )
+            // The probabilty for a match of length uiK is now below 1 - t.
+            return uiK;
+        iDenominator *= 4;
+    } // for
+
+    // Give up (we cannot reach the required probabilty) and return an impossible k-mer size with respect to matching.
+    return std::min( w, h ) + 1;
+} // method
+
+
 void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
                                                       std::shared_ptr<Pack> pRefSeq,
                                                       std::shared_ptr<ContainerVector<SvJump>>& pRet, size_t uiLayer,
@@ -144,8 +178,8 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
         getPositionsForSeeds( rLast, rNext, pQuery->length( ), pRefSeq->uiUnpackedSizeForwardPlusReverse( ) );
 
     // check if there is enough space to reseed
-    if( xHashMapSeeder.minSeedSize( ) < xRectangle.xXAxis.size( ) &&
-        xHashMapSeeder.minSeedSize( ) < xRectangle.xYAxis.size( ) )
+    if( getKMerSizeForRectangle( xRectangle ) <= xRectangle.xXAxis.size( ) &&
+        getKMerSizeForRectangle( xRectangle ) <= xRectangle.xYAxis.size( ) )
     {
 #if 0
         if( !rLast.bOnForwStrand && !rNext.bOnForwStrand )

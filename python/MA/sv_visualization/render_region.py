@@ -1,5 +1,5 @@
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet
+from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet, FixedTicker
 from bokeh.models.callbacks import CustomJS
 from MA import *
 import math
@@ -300,10 +300,14 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                     "f": [],
                     "layer": [],
                     "x": [],
-                    "y": []
+                    "y": [],
+                    "category": []
                 }
                 read_id_n_cols = []
-                for read_id in read_ids:
+                col_ids = []
+                all_col_ids = []
+                category_counter = 0
+                for read_id in sorted(read_ids, reverse=True):
                     read = sv_db.get_read(read_id)
                     segments = seeder.execute(fm_index, read)
                     seeds = libMA.Seeds()
@@ -333,25 +337,46 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                             else:
                                 curr_column += 1
                         if curr_column >= len(end_column):
-                            read_id_n_cols.append( (read_id, curr_column) )
+                            read_id_n_cols.append( read_id )
                             end_column.append(0)
+                            all_col_ids.append(curr_column + category_counter)
                         end_column[curr_column] = curr_end
-                        read_dict["r_id"].append( (str(read_id), str(curr_column)) )
+                        read_dict["r_id"].append( read_id )
                         read_dict["size"].append(seed.size)
                         read_dict["q"].append(seed.start)
                         read_dict["y"].append([seed.start, seed.start+seed.size])
                         read_dict["idx"].append(idx)
                         read_dict["layer"].append(layer)
                         read_dict["f"].append(seed.on_forward_strand)
+                        read_dict["category"].append(category_counter + curr_column)
+                    col_ids.append(category_counter)
+                    category_counter += len(end_column) + 2
+                    read_id_n_cols.append( -1 )
+                    read_id_n_cols.append( -1 )
                 if len(read_dict["c"]) < max_num_ele:
-                    sorted_r_ids = [(str(x), str(y)) for x, y in sorted(read_id_n_cols, reverse=True)]
-                    l_plot[1].x_range.factors = sorted_r_ids
-                    d_plot[1].y_range.factors = sorted_r_ids
                     read_source = ColumnDataSource(read_dict)
-                    l_plot[1].rect(x='r_id', y="center", width=1, height="size",
+                    l_plot[1].rect(x="category", y="center", width=1, height="size",
                                     fill_color="c", line_width=0, source=read_source, name="hover5")
-                    d_plot[1].rect(y='r_id', x="center", height=1, width="size",
+                    d_plot[1].rect(y="category", x="center", height=1, width="size",
                                     fill_color="c", line_width=0, source=read_source, name="hover5")
+                    l_plot[1].xaxis.ticker = FixedTicker(ticks=col_ids)
+                    l_plot[1].xaxis.formatter = FuncTickFormatter(
+                        args={"read_id_n_cols":read_id_n_cols},
+                        code="""
+                                if(tick < 0 || tick >= read_id_n_cols.length)
+                                    return "";
+                                return read_id_n_cols[tick];
+                            """)
+                    l_plot[1].xgrid.ticker = FixedTicker(ticks=all_col_ids)
+                    d_plot[1].yaxis.ticker = FixedTicker(ticks=col_ids)
+                    d_plot[1].yaxis.formatter = FuncTickFormatter(
+                        args={"read_id_n_cols":read_id_n_cols},
+                        code="""
+                                if(tick < 0 || tick >= read_id_n_cols.length)
+                                    return "";
+                                return read_id_n_cols[tick];
+                            """)
+                    d_plot[1].ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
                     num_nt = w*3+h*3
                     if num_nt < max_num_ele:
@@ -398,7 +423,8 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                             "f": [],
                             "layer": [],
                             "x": [],
-                            "y": []
+                            "y": [],
+                            "category": []
                         }
                         read_plot_line = read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
                                                               source=ColumnDataSource(read_plot_dict), name="hover5")
@@ -463,7 +489,7 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
                             {
                                 src.data.c[idx] = ["orange", "blue", "grey", "yellow"][i];
                                 for(var j = 0; j < read_source.data.r_id.length; j++)
-                                    if(read_source.data.r_id[j][0] == src.data.r[idx].toString() &&
+                                    if(read_source.data.r_id[j] == src.data.r[idx] &&
                                         (   read_source.data.r[j] == src.data.f[idx] || 
                                             read_source.data.r[j] == src.data.t[idx] || 
                                             read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] || 
@@ -500,86 +526,81 @@ def render_region(plot, l_plot, d_plot, xs, xe, ys, ye, pack, sv_db, run_id, gro
         for(var i = 0; i < srcs.length; i++)
             for(var idx = 0; idx < srcs[i].data.a.length; idx++)
                 srcs[i].data.c[idx] = ["orange", "blue", "lightgreen", "green"][i];
-        for(var read_id in range._mapping)
+        for(var j = 0; j < read_source.data.r_id.length; j++)
         {
-            for(var col in range._mapping[read_id].mapping)
+            if( Math.abs(read_source.data.category[j] - curr_y) <= 1/2 &&
+                Math.abs(read_source.data.center[j] - curr_x) <= read_source.data.size[j]/2)
             {
-                pos = range._mapping[read_id].mapping[col].value;
-                if(Math.abs(pos - curr_y) <= 0.5)
+                //console.log(read_id + " " + read_source.data.idx[j]);
+                
+                // find the appropriate jump
+                
+                for(var i = 0; i < srcs.length; i++)
                 {
-                    for(var j = 0; j < read_source.data.r_id.length; j++)
+                    src = srcs[i];
+                    for(var idx = 0; idx < src.data.a.length; idx++)
                     {
-                        if(read_source.data.r_id[j][0] == read_id &&
-                            read_source.data.r_id[j][1] == col &&
-                            Math.abs(read_source.data.center[j] - curr_x) <= read_source.data.size[j]/2)
-                        {
-                            //console.log(read_id + " " + read_source.data.idx[j]);
-                            
-                            // find the appropriate jump
-                            
-                            for(var i = 0; i < srcs.length; i++)
-                            {
-                                src = srcs[i];
-                                for(var idx = 0; idx < src.data.a.length; idx++)
-                                {
-                                    if(read_id == src.data.r[idx].toString() &&
-                                        (   read_source.data.r[j] == src.data.f[idx] || 
-                                            read_source.data.r[j] == src.data.t[idx] || 
-                                            read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] || 
-                                            read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
-                                        )
-                                      )
-                                        continue;
-                                    else
-                                        src.data.c[idx] = "lightgrey";
-                                }
-                                src.change.emit();
-                            }
-                            
-                            for(var j2 = 0; j2 < read_source.data.r_id.length; j2++)
-                            {
-                                if(j2 == j)
-                                    read_source.data.c[j2] = read_source.data.f[j] ? "green" : "purple";
-                                else
-                                    read_source.data.c[j2] = "lightgrey";
-                                // copy over to read viewer
-                                if(read_source.data.r_id[j][0] == read_source.data.r_id[j2][0])
-                                    for(var data_list_name in read_source.data)
-                                        read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j2]);
-                            }
-                            read_plot_line.change.emit();
-                            read_source.change.emit();
-                            return;
-                        }
-                    }
-                    // correct column but no single seed matches...
-                    for(var j = 0; j < read_source.data.r_id.length; j++)
-                    {
-                        if(read_source.data.r_id[j][0] == read_id)
-                        {
-                            read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
-                            // copy over to read viewer
-                            for(var data_list_name in read_source.data)
-                                read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j]);
-                        }
+                        if(read_source.data.r_id[j] == src.data.r[idx] &&
+                            (   read_source.data.r[j] == src.data.f[idx] || 
+                                read_source.data.r[j] == src.data.t[idx] || 
+                                read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] || 
+                                read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
+                            )
+                            )
+                            continue;
                         else
-                            read_source.data.c[j] = "lightgrey";
+                            src.data.c[idx] = "lightgrey";
                     }
-                    for(var i = 0; i < srcs.length; i++)
-                    {
-                        src = srcs[i];
-                        for(var idx = 0; idx < src.data.a.length; idx++)
-                        {
-                            if(read_id != src.data.r[idx].toString())
-                                src.data.c[idx] = "lightgrey";
-                        }
-                        src.change.emit();
-                    }
-                    read_source.change.emit();
-                    read_plot.reset.emit();
-                    read_plot_line.change.emit();
-                    return;
+                    src.change.emit();
                 }
+                
+                for(var j2 = 0; j2 < read_source.data.r_id.length; j2++)
+                {
+                    if(j2 == j)
+                        read_source.data.c[j2] = read_source.data.f[j] ? "green" : "purple";
+                    else
+                        read_source.data.c[j2] = "lightgrey";
+                    // copy over to read viewer
+                    if(read_source.data.r_id[j] == read_source.data.r_id[j2])
+                        for(var data_list_name in read_source.data)
+                            read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j2]);
+                }
+                read_plot_line.change.emit();
+                read_source.change.emit();
+                return;
+            }
+        }
+        for(var outer_j = 0; outer_j < read_source.data.r_id.length; outer_j++)
+        {
+            if( Math.abs(read_source.data.category[outer_j] - curr_y) <= 1/2)
+            {
+                // correct column but no single seed matches...
+                for(var j = 0; j < read_source.data.r_id.length; j++)
+                {
+                    if(read_source.data.r_id[j] == read_source.data.r_id[outer_j])
+                    {
+                        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                        // copy over to read viewer
+                        for(var data_list_name in read_source.data)
+                            read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j]);
+                    }
+                    else
+                        read_source.data.c[j] = "lightgrey";
+                }
+                for(var i = 0; i < srcs.length; i++)
+                {
+                    src = srcs[i];
+                    for(var idx = 0; idx < src.data.a.length; idx++)
+                    {
+                        if(read_source.data.r_id[outer_j] != src.data.r[idx])
+                            src.data.c[idx] = "lightgrey";
+                    }
+                    src.change.emit();
+                }
+                read_source.change.emit();
+                read_plot.reset.emit();
+                read_plot_line.change.emit();
+                return;
             }
         }
         for(var i = 0; i < srcs.length; i++)
