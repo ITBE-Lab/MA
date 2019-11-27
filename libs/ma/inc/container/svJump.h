@@ -112,8 +112,7 @@ class SvJump : public Container
               /* bFromSeedStart = */ bFromSeedStart,
               /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
               /* iID */ -1,
-              /* iReadId */ iReadId
-          )
+              /* iReadId */ iReadId )
     {
 #if DEBUG_LEVEL > 0
         uiSeedAId = rA.uiId;
@@ -139,14 +138,13 @@ class SvJump : public Container
                   /* uiQueryFrom = */
                   bFromSeedStart ? 0 : rA.end( ) - 1,
                   /* uiQueryTo = */
-                  !bFromSeedStart ? qLen : rA.start( ),
+                  !bFromSeedStart ? qLen - 1 : rA.start( ),
                   /* bFromForward = */ rA.bOnForwStrand,
                   /* bToForward = */ rA.bOnForwStrand,
                   /* bFromSeedStart = */ bFromSeedStart,
                   /* uiNumSupportingNt = */ rA.size( ),
                   /* iID */ -1,
-                  /* iReadId */ iReadId
-          )
+                  /* iReadId */ iReadId )
     {
 #if DEBUG_LEVEL > 0
         uiSeedAId = rA.uiId;
@@ -210,6 +208,8 @@ class SvJump : public Container
 
     int64_t getSeedDirFuzziness( ) const
     {
+        if( !from_known( ) || !to_known( ) )
+            return query_distance( ) > uiSDFActivate ? (int64_t)uiSeedDirFuzziness : 0;
         return fuzziness( ) > uiSDFActivate ? (int64_t)uiSeedDirFuzziness : 0;
     }
 

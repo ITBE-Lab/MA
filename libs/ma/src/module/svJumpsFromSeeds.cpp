@@ -232,10 +232,10 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
     if( &rLast == &xDummySeed || &rNext == &xDummySeed )
     {
         // we have to insert a dummy jump if the seed is far enough from the end/start of the query
-        if( &rLast != &xDummySeed && rLast.start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, rLast, pQuery->length( ), false, pQuery->iId );
-        if( &rNext != &xDummySeed && rNext.end( ) + uiMinDistDummy <= pQuery->length( ) )
-            pRet->emplace_back( pSelectedSetting, rNext, pQuery->length( ), true, pQuery->iId );
+        if( &rNext != &xDummySeed && rNext.start( ) > uiMinDistDummy )
+            pRet->emplace_back( pSelectedSetting, rNext, pQuery->length( ), false, pQuery->iId );
+        if( &rLast != &xDummySeed && rLast.end( ) + uiMinDistDummy <= pQuery->length( ) )
+            pRet->emplace_back( pSelectedSetting, rLast, pQuery->length( ), true, pQuery->iId );
     } // if
     else
     {

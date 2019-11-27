@@ -64,8 +64,8 @@ def render_jumps(self):
             f_dir += "down"
 
         out_dicts[idx]["f_dir"].append(f_dir)
-        out_dicts[idx]["f"].append(jump.from_pos)
-        out_dicts[idx]["t"].append(jump.to_pos)
+        out_dicts[idx]["f"].append(jump.from_pos if jump.from_known() else "unknown")
+        out_dicts[idx]["t"].append(jump.to_pos if jump.to_known() else "unknown")
         out_dicts[idx]["x"].append(jump.from_start_same_strand())
         out_dicts[idx]["y"].append(jump.to_start())
         out_dicts[idx]["w"].append(
@@ -76,7 +76,10 @@ def render_jumps(self):
         out_dicts[idx]["r"].append(jump.read_id)
         out_dicts[idx]["q"].append(jump.query_distance())
         out_dicts[idx]["i"].append(jump.id)
-        out_dicts[idx]["fuzz"].append(jump.fuzziness())
+        if jump.from_known() and jump.to_known():
+            out_dicts[idx]["fuzz"].append(jump.fuzziness())
+        else:
+            out_dicts[idx]["fuzz"].append(jump.query_distance())
         self.read_ids.add(jump.read_id)
 
         f = jump.from_pos
