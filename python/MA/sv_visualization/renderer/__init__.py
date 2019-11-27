@@ -1,6 +1,7 @@
 class Renderer():
     def __init__(self, plot, l_plot, d_plot, xs, xe, ys, ye, pack, fm_index, sv_db, run_id, ground_truth_id, min_score,
-                 max_num_ele, dataset_name, active_tools, checkbox_group, read_plot, selected_read_id, index_prefix):
+                 max_num_ele, dataset_name, active_tools, checkbox_group, read_plot, selected_read_id, l_read_plot,
+                 d_read_plot, index_prefix):
         self.plot = plot
         self.l_plot = l_plot
         self.d_plot = d_plot
@@ -24,6 +25,10 @@ class Renderer():
         self.w = None
         self.h = None
         self.params = None
+        self.l_read_plot = l_read_plot
+        self.d_read_plot = d_read_plot
+        self.quads = []
+        self.read_ids = set()
         self.give_up_factor = 1000
 
     # imported methdos
@@ -31,3 +36,5 @@ class Renderer():
     from ._render_overview import render_overview
     from ._render_calls import render_calls
     from ._render_jumps import render_jumps
+    from ._render_reads import render_reads
+    from ._render_nucs import render_nucs

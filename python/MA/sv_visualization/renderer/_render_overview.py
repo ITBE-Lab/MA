@@ -7,7 +7,7 @@ from .util import *
 
 def render_overview(self):
     self.plot.grid.visible = False
-    div = int(math.sqrt(max_num_ele))
+    div = int(math.sqrt(self.max_num_ele))
     rect_vec = libMA.get_call_overview(self.sv_db, self.pack, self.run_id, self.min_score,
                                        int(self.xs - self.w),
                                        int(self.ys - self.h),
@@ -38,10 +38,10 @@ def render_overview(self):
     self.plot.quad(left="x", bottom="y", right="w", top="h", color="c", line_width=0, source=ColumnDataSource(cds),
               name="hover1")
 
-    url = "http://localhost:5006/bokeh_server?xs=@x&ys=@y&xe=@w&ye=@h&run_id=" + str(run_id) + \
-        "&min_score=" + str(min_score) + "&ground_truth_id=" + str(ground_truth_id) + "&dataset_name=" + \
-        dataset_name
-    taptool = plot.select(type=TapTool)
+    url = "http://localhost:5006/bokeh_server?xs=@x&ys=@y&xe=@w&ye=@h&run_id=" + str(self.run_id) + \
+        "&min_score=" + str(self.min_score) + "&ground_truth_id=" + str(self.ground_truth_id) + "&dataset_name=" + \
+        self.dataset_name
+    taptool = self.plot.select(type=TapTool)
     taptool.callback = OpenURL(url=url, same_tab=True)
 
     return False

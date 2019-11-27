@@ -13,21 +13,6 @@ from bokeh.models.axes import LinearAxis
 from MA import *
 import math
 
-
-def _decode(o):
-    if isinstance(o, str):
-        try:
-            return float(o)
-        except ValueError:
-            return o
-    elif isinstance(o, dict):
-        return {_decode(k): _decode(v) for k, v in o.items()}
-    elif isinstance(o, list):
-        return [_decode(v) for v in o]
-    else:
-        return o
-
-
 server_context = curdoc().session_context.server_context
 
 args = curdoc().session_context.request.arguments
@@ -83,7 +68,8 @@ l_plot = figure(
     width=40,
     height=900,
     y_range=plot.y_range,
-    tools=["ypan"],
+    tools=["ypan", "ywheel_zoom"],
+    active_scroll="ywheel_zoom",
     toolbar_location=None
 )
 l_plot.axis.visible = False
@@ -93,7 +79,8 @@ d_plot = figure(
     width=900,
     height=40,
     x_range=plot.x_range,
-    tools=["xpan"],
+    tools=["xpan", "xwheel_zoom"],
+    active_scroll="xwheel_zoom",
     toolbar_location=None
 )
 d_plot.axis.visible = False
@@ -132,13 +119,16 @@ hover1 = HoverTool(tooltips=[("from", "@f"), ("to", "@t"), ("#calls", "@i")], na
                    name="Hover heatmap")
 hover2 = HoverTool(tooltips=[("supp. nt", "@n"), ("coverage", "@c"), ("#reads", "@r"), ("score", "@s")],
                    names=['hover2'], name="Hover calls")
-hover3 = HoverTool(tooltips=[("supp. nt", "@n"), ("read id", "@r"), ("|query|", "@q"), ("from", "@f"), ("to", "@t")],
+hover3 = HoverTool(tooltips=[("supp. nt", "@n"), ("read id", "@r"), ("|query|", "@q"), ("from", "@f"), ("to", "@t"),
+                             ("fuzziness", "@fuzz nt @f_dir")],
                    names=['hover3'], name="Hover jumps")
 hover4 = HoverTool(tooltips="@i", names=['hover4'], name="Hover simple")
 plot.add_tools(hover1)
 plot.add_tools(hover2)
 plot.add_tools(hover3)
 plot.add_tools(hover4)
+l_plot.add_tools(hover4)
+d_plot.add_tools(hover4)
 
 plot.tools[0].name = "pan"
 plot.tools[1].name = "box_zoom"
@@ -155,12 +145,37 @@ read_plot = figure(
     height=400,
     tools=[
         "pan", "box_zoom",
-        "wheel_zoom", "save", "reset"
+        "wheel_zoom", "reset"
     ],
     active_scroll="wheel_zoom"
 )
-read_plot.yaxis.axis_label = "Read Position"
-read_plot.xaxis.axis_label = "Reference Position"
+read_plot.axis.visible = False
+read_plot.toolbar.logo = None
+l_read_plot = figure(
+    width=100,
+    height=400,
+    y_range=read_plot.y_range,
+    tools=["ypan", "ywheel_zoom"],
+    active_scroll="ywheel_zoom",
+    toolbar_location=None
+)
+l_read_plot.xaxis.visible = False
+l_read_plot.yaxis.axis_label = "Read Position"
+l_read_plot.grid.visible = False
+l_read_plot.add_tools(hover4)
+
+d_read_plot = figure(
+    width=900,
+    height=80,
+    x_range=read_plot.x_range,
+    tools=["xpan", "xwheel_zoom"],
+    active_scroll="xwheel_zoom",
+    toolbar_location=None
+)
+d_read_plot.yaxis.visible = False
+d_read_plot.grid.visible = False
+d_read_plot.xaxis.axis_label = "Reference Position"
+d_read_plot.add_tools(hover4)
 
 l = []
 for x in active_tools[2].split(","):
@@ -188,7 +203,7 @@ redered_everything = True
 
 if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
     with open("/MAdata/sv_datasets/" + dataset_name + "/info.json", "r") as json_file:
-        json_info_file = json.loads(json_file.read(), object_hook=_decode)
+        json_info_file = json.loads(json_file.read(), object_hook=decode)
     ref_genome = json_info_file["reference_path"] + "/ma/genome"
 
     if not hasattr(server_context, "ref_genome"):
@@ -224,10 +239,10 @@ if os.path.isfile("/MAdata/sv_datasets/" + dataset_name + "/info.json"):
     plot.y_range.end = ye
 
     renderer = Renderer(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye,
-                             server_context.pack, server_context.fm_index, server_context.sv_db, run_id,
-                             ground_truth_id, min_score, max_elements, dataset_name, active_tools,
-                             checkbox_group, read_plot, selected_read_id,
-                             json_info_file["reference_path"] + "/ma/genome")
+                        server_context.pack, server_context.fm_index, server_context.sv_db, run_id,
+                        ground_truth_id, min_score, max_elements, dataset_name, active_tools,
+                        checkbox_group, read_plot, selected_read_id, l_read_plot, d_read_plot,
+                        json_info_file["reference_path"] + "/ma/genome")
 
     redered_everything = renderer.render()
 else:
@@ -324,5 +339,6 @@ file_input.js_on_change("value", make_js_callback("""
 curdoc().add_root(row(
     grid([[l2_plot, l_plot, plot], [None, None, d_plot], [None, None, d2_plot]]),
     column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
-           max_elements_slider, checkbox_group, reset_button, delete_button, read_plot)
+           max_elements_slider, checkbox_group, reset_button, delete_button,
+           grid([[l_read_plot, read_plot], [None, d_read_plot]]))
 ))

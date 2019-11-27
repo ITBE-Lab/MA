@@ -43,3 +43,34 @@ def format(rgb):
 def js_file(name):
     with open("js/" + name + ".js", "r") as js_file:
         return js_file.read()
+
+def decode(o):
+    if isinstance(o, str):
+        try:
+            return float(o)
+        except ValueError:
+            return o
+    elif isinstance(o, dict):
+        return {decode(k): decode(v) for k, v in o.items()}
+    elif isinstance(o, list):
+        return [decode(v) for v in o]
+    else:
+        return o
+
+def append_nuc_type(dict_, nuc, pos, pos_key):
+    if nuc == "A" or nuc == "a":
+        dict_["c"].append("blue")
+        dict_["i"].append("A @" + str(pos))
+    elif nuc == "C" or nuc == "c":
+        dict_["c"].append("red")
+        dict_["i"].append("C @" + str(pos))
+    elif nuc == "G" or nuc == "g":
+        dict_["c"].append("green")
+        dict_["i"].append("G @" + str(pos))
+    elif nuc == "T" or nuc == "t":
+        dict_["c"].append("yellow")
+        dict_["i"].append("T @" + str(pos))
+    else:
+        dict_["c"].append("lightgreen")
+        dict_["i"].append(nuc)
+    dict_[pos_key].append(pos + 0.5)

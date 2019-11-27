@@ -6,6 +6,7 @@ import math
 from .util import *
 
 def render_calls(self):
+    rendered_everything = False
     self.params = ParameterSetManager()
     accepted_boxes_data = {
         "x": [],
