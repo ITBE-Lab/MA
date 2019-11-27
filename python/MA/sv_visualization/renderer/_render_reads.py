@@ -45,11 +45,18 @@ def render_reads(self):
     all_col_ids = []
     category_counter = 0
     l_plot_nucs = {} # dict of {"y": [], "c": [], "i": []}
+    initial_l_data = {"y": [0], "c": ["black"], "i": [""]}
     for read_id in sorted(self.read_ids, reverse=True):
         l_plot_nucs[read_id] = {"y": [], "c": [], "i": []}
         read = self.sv_db.get_read(read_id)
+        if self.selected_read_id == read_id:
+            initial_l_data["y"].clear()
+            initial_l_data["c"].clear()
+            initial_l_data["i"].clear()
         for y, nuc in enumerate(str(read)):
             append_nuc_type(l_plot_nucs[read_id], nuc, y, "y")
+            if self.selected_read_id == read_id:
+                append_nuc_type(initial_l_data, nuc, y, "y")
         segments = seeder.execute(self.fm_index, read)
         seeds = libMA.Seeds()
         layer_of_seeds = jumps_from_seeds.cpp_module.execute_helper(
@@ -137,6 +144,8 @@ def render_reads(self):
 
         read_plot_line = self.read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
                                         source=ColumnDataSource(read_plot_dict), name="hover5")
+        l_read_plot_data = self.l_read_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
+                                                 source=ColumnDataSource(initial_l_data), name="hover4")
         # auto adjust y-range of read plot
         js_auto_adjust_y_range = js_file("auto_adjust")
         self.plot.x_range.js_on_change('start', CustomJS(args=dict(checkbox_group=self.checkbox_group,
@@ -146,11 +155,12 @@ def render_reads(self):
 
         # the tapping callback on jumps
         self.plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                        read_source=read_source),
+                                                        read_source=read_source,
+                                                        l_plot_nucs=l_plot_nucs,
+                                                        read_plot_line=read_plot_line.data_source,
+                                                        l_read_plot_data=l_read_plot_data.data_source),
                                                 code=js_file("jump_tap")))
         # the tapping callback on seeds
-        l_read_plot_data = self.l_read_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
-                                                 source=ColumnDataSource({"y": [0], "c": ["black"], "i": [""]}), name="hover4")
         code = js_auto_adjust_y_range+js_file("seed_tap")
         self.l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
                                                                 checkbox_group=self.checkbox_group,

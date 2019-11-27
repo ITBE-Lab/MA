@@ -1,5 +1,14 @@
 for (var j = 0; j < read_source.data.r_id.length; j++)
     read_source.data.c[j] = "lightgrey";
+
+// reset read plot
+for (var data_list_name in read_plot_line.data)
+    read_plot_line.data[data_list_name] = [];
+// reset y-axis nucleotides in read plot
+for (var data_list_name in l_read_plot_data.data)
+    l_read_plot_data.data[data_list_name] = [];
+window.selected_read_id = -1;
+
 var found_one = false;
 for (var i = 0; i < srcs.length; i++)
 {
@@ -18,7 +27,20 @@ for (var i = 0; i < srcs.length; i++)
                         read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
                     )
                 )
+                {
                     read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                    for (var data_list_name in read_source.data)
+                        read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j]);
+
+                    // copy nucleotides over to read plot
+                    if (window.selected_read_id == -1)
+                    {
+                        window.selected_read_id = read_source.data.r_id[j];
+                        for (var data_list_name in l_read_plot_data.data)
+                            l_read_plot_data.data[data_list_name] =
+                                l_plot_nucs[read_source.data.r_id[j]][data_list_name];
+                    }
+                } // if
             found_one = true;
         }
         else
@@ -39,4 +61,5 @@ if (!found_one)
 read_source.change.emit();
 for (var i = 0; i < srcs.length; i++)
     srcs[i].change.emit();
-window.selected_read_id = -1;
+read_plot_line.change.emit();
+l_read_plot_data.change.emit();
