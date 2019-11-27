@@ -245,10 +245,10 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 #endif
                 auto pNewCluster = std::make_shared<SvCall>( pEdge );
 
-                size_t uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize - 1,
+                size_t uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize,
                                                                 pNewCluster->uiToStart );
                 size_t uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
-                                                              pNewCluster->uiToStart + pNewCluster->uiToSize - 1 );
+                                                              pNewCluster->uiToStart + pNewCluster->uiToSize );
                 assert( uiEnd >= uiStart );
                 // set the clusters y coodinate to the physical coords (we won't use the actual coords anyways)
                 // this is necessary, since we need to work with these coords when joining clusters
@@ -301,7 +301,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 #endif
                 // find the correct cluster for this edge
                 auto pCluster = xPointerVec.get( )[ xPointerVec.to_physical_coord(
-                    pEndJump->from_start_same_strand( ) + pEndJump->from_size( ) - 1, pEndJump->to_start( ) ) ];
+                    pEndJump->from_start_same_strand( ) + pEndJump->from_size( ), pEndJump->to_start( ) ) ];
                 assert( pCluster != nullptr );
                 assert( std::find( pCluster->vSupportingJumpIds.begin( ), pCluster->vSupportingJumpIds.end( ),
                                    pEndJump->iId ) != pCluster->vSupportingJumpIds.end( ) );
@@ -387,7 +387,7 @@ class ExactCompleteBipartiteSubgraphSweep
         {
             std::shared_ptr<SvJump> pJmp = rvEdges[ uiStart ];
             xSquashedY[ pJmp->to_start( ) ] = 0;
-            xSquashedY[ pJmp->sweep_end( ) ] = 0;
+            xSquashedY[ pJmp->sweep_end( ) + 1 ] = 0;
             vEdgesStart.push_back( pJmp );
             vEdgesEnd.push_back( pJmp );
             uiStart++;
@@ -429,12 +429,12 @@ class ExactCompleteBipartiteSubgraphSweep
 
                 // turn tail edge lines into squares
                 if( !vEdgesStart[ uiI ]->switch_strand_known( ) )
-                    pNewCluster->uiToSize = vEdgesStart[ uiI ]->from_size( ) + 1;
+                    pNewCluster->uiToSize = vEdgesStart[ uiI ]->from_size( );
 
                 // join with all overlapping clusters
                 size_t uiStart = xSquashedY[ vEdgesStart[ uiI ]->to_start( ) ];
                 size_t uiIdx = uiStart;
-                size_t uiEnd = xSquashedY[ vEdgesStart[ uiI ]->sweep_end( ) ];
+                size_t uiEnd = xSquashedY[ vEdgesStart[ uiI ]->sweep_end( ) + 1 ];
                 std::set<std::shared_ptr<SvCall>> xJoinedClusters;
                 while( uiIdx <= uiEnd )
                 {
@@ -449,7 +449,7 @@ class ExactCompleteBipartiteSubgraphSweep
 
                 // insert the newly computed cluster into the pointer vector and counter vector
                 uiIdx = xSquashedY[ pNewCluster->uiToStart ];
-                size_t uiEnd2 = xSquashedY[ pNewCluster->uiToStart + pNewCluster->uiToSize - 1 ];
+                size_t uiEnd2 = xSquashedY[ pNewCluster->uiToStart + pNewCluster->uiToSize + 1 ];
                 while( uiIdx <= uiEnd2 )
                 {
                     if( uiStart <= uiIdx && uiIdx <= uiEnd )
@@ -468,7 +468,7 @@ class ExactCompleteBipartiteSubgraphSweep
             else
             {
                 size_t uiStart = xSquashedY[ vEdgesEnd[ uiJ ]->to_start( ) ];
-                size_t uiEnd = xSquashedY[ vEdgesEnd[ uiJ ]->sweep_end( ) ];
+                size_t uiEnd = xSquashedY[ vEdgesEnd[ uiJ ]->sweep_end( ) + 1 ];
                 auto pCurrCluster = vSweepVec[ uiStart ].first;
                 assert( pCurrCluster != nullptr );
                 pCurrCluster->uiOpenEdges -= 1;

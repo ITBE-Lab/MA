@@ -187,7 +187,7 @@ class SvJump : public Container
     {
         double x = (double)std::max( dist( uiFrom, uiTo ), uiQueryTo - uiQueryFrom );
         assert( x >= 0 );
-        double h_min = 1;
+        double h_min = 0;
         return (nucSeqIndex)std::min(
             h, h_min + std::max( 0.0, x - ( uiTo >= uiFrom || uiQueryTo - uiQueryFrom >= uiFrom - uiTo ? s : s_neg ) ) *
                            m );
@@ -259,7 +259,7 @@ class SvJump : public Container
     nucSeqIndex to_size( ) const
     {
         if( !to_known( ) || !from_known( ) )
-            return 1;
+            return 0;
 
         return fuzziness( ) + getSeedDirFuzziness( );
     } // method
@@ -271,7 +271,7 @@ class SvJump : public Container
 
     int64_t sweep_end( ) const
     {
-        return this->switch_strand_known( ) ? to_end( ) - 1 : to_start( ) + from_size( );
+        return this->switch_strand_known( ) ? to_end( ) : to_start( ) + from_size( );
     } // method
 
     nucSeqIndex ref_distance( ) const

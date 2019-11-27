@@ -55,26 +55,22 @@ def render_jumps(self):
 
         f_dir = ""
         if not jump.from_fuzziness_is_rightwards():
-            f_offset = 1.5
             f_dir = "left-"
         else:
             f_dir = "right-"
-            f_offset = 0.5
         if not jump.to_fuzziness_is_downwards():
-            t_offset = -0.5
             f_dir += "up"
         else:
-            t_offset = 0.5
             f_dir += "down"
-        
+
         out_dicts[idx]["f_dir"].append(f_dir)
         out_dicts[idx]["f"].append(jump.from_pos)
         out_dicts[idx]["t"].append(jump.to_pos)
-        out_dicts[idx]["x"].append(jump.from_start_same_strand() - 0.5 + f_offset)
-        out_dicts[idx]["y"].append(jump.to_start() - 0.5 + t_offset)
+        out_dicts[idx]["x"].append(jump.from_start_same_strand())
+        out_dicts[idx]["y"].append(jump.to_start())
         out_dicts[idx]["w"].append(
-            jump.from_start_same_strand() + jump.from_size() + 0.5 + f_offset)
-        out_dicts[idx]["h"].append(jump.to_start() + jump.to_size() + 0.5 + t_offset)
+            jump.from_start_same_strand() + jump.from_size() + 1.0)
+        out_dicts[idx]["h"].append(jump.to_start() + jump.to_size() + 1.0)
         out_dicts[idx]["a"].append(jump.num_supp_nt() / 1000)
         out_dicts[idx]["n"].append(jump.num_supp_nt())
         out_dicts[idx]["r"].append(jump.read_id)
@@ -105,10 +101,10 @@ def render_jumps(self):
                     patch["x"].extend([f + 2.5, f - .5, f - .5, float("NaN")])
                     patch["y"].extend([t + .5, t - 2.5, t + .5, float("NaN")])
         else:
-            patch["x"].append([f + f_offset - 0.25, f + f_offset + 0.25])
-            patch["x"].append([f + f_offset - 0.25, f + f_offset + 0.25])
-            patch["y"].append([t + t_offset - 0.25, t + t_offset + 0.25])
-            patch["y"].append([t + t_offset + 0.25, t + t_offset - 0.25])
+            patch["x"].append([f + 0.25, f + 0.75])
+            patch["x"].append([f + 0.25, f + 0.75])
+            patch["y"].append([t + 0.25, t + 0.75])
+            patch["y"].append([t + 0.75, t + 0.25])
     self.quads.append(self.plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
                                 line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover3"))
     self.quads.append(self.plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
