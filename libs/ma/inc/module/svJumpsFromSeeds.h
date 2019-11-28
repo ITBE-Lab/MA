@@ -84,34 +84,82 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
 
 
     /**
+     * @brief computes area between two seeds
      * @details
-     * shall return a rectange (reference pos, query pos, width [on reference], height [on query])
+     * 1) For reseeding between two seeds we need the appropriate interval on query and reference.
+     * 2) For reseeding before/after a seed we need the appropiate rectangle as well.
+     *      The width of this rectangle will be its height * dExtraSeedingAreaFactor (@todo move to settings).
+     *      This case is triggered by passing xDummySeed as rLast or rNext.
+     *
+     * If the rectangle's width is more than xMaxSizeReseed (see settings) this will return
+     * two rectangles using case 2; one for each seed.
      */
-    Rectangle<nucSeqIndex> getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQSize, nucSeqIndex uiRSize );
+    std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>>
+    getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd, nucSeqIndex uiRSize );
 
+    /** @brief Determine the appropriate k-mers size for a "rectangle"
+     * @details The formula used over here is:
+     * 1 - t <= (1 - 1/4^k)^( (w-k+1)*(h-k+1) )
+     * where (1 - 1/4^k) is the probability that two k-sized nucleotide sequences do not match.
+     *	     (w-k+1)*(h-k+1) ) is the number of possible K-mer combinations within the rectangle.
+     */
     nucSeqIndex getKMerSizeForRectangle( Rectangle<nucSeqIndex>& rRect );
 
-    void computeSeeds( Rectangle<nucSeqIndex> xArea, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
-                       std::shared_ptr<Seeds> rvRet );
-    std::shared_ptr<Seeds> computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
-                                         std::shared_ptr<Pack> pRefSeq );
+    /**
+     * @brief returns the size at which all k-mer's on the reference interval of xArea are unique.
+     * @details
+     * Currently implemented inefficiently.
+     */
+    nucSeqIndex sampleKMerSizeFromRef( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<Pack> pRefSeq );
 
+    /**
+     * @brief computes all seeds within xArea.
+     * @details
+     * computes all SvJumpsFromSeeds::getKMerSizeForRectangle( xArea ) sized seeds within xArea and appends
+     * them to rvRet.
+     * @note This is a helper function. Use the other computeSeeds.
+     */
+    void computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
+                       std::shared_ptr<Seeds> rvRet );
+    /**
+     * @brief computes all seeds within the given areas.
+     * @details
+     * computes all seeds larger equal to SvJumpsFromSeeds::getKMerSizeForRectangle( xArea ) within xAreas.first and
+     * xAreas.second seperately.
+     */
+    std::shared_ptr<Seeds> computeSeeds( std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>>& xAreas,
+                                         std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq );
+
+    /**
+     * @brief computes the SV jumps between the two given seeds.
+     * @details
+     * Recursiveley computes additional seeds, of statistically relevant sizes, between rLast and rNext.
+     *
+     * pSeeds, pvLayerOfSeeds and pvRectanglesOut are ignored if they are nullptrs,
+     * otherwise the computed seeds, their layers and all reseeding rectangles are appended, respectiveley.
+     */
     void makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
                                         std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet,
                                         size_t uiLayer, std::shared_ptr<Seeds> pSeeds,
                                         std::vector<size_t>* pvLayerOfSeeds,
-                                        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut );
+                                        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut);
 
+    /**
+     * @brief computes all SV jumps between the given seeds.
+     * @details
+     * Filters the initial seeds by their distance to the next unique seed on query:
+     *      If a segment has multiple occurrences on the reference, discard all seeds that are located x times further
+     *      away (on reference) than the closest seed (to the next/last unique seed on query).
+     *
+     * Uses makeJumpsByReseedingRecursive().
+     */
+    std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute_helper(
+        std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<FMIndex> pFM_index,
+        std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Seeds> pSeeds, std::vector<size_t>* pvLayerOfSeeds,
+        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut );
 
-    /// if pSeeds is not nullptr all computed seeds will be appended
-    std::shared_ptr<ContainerVector<SvJump>>
-        EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<Pack> pRefSeq,
-                                 std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuery,
-                                 std::shared_ptr<Seeds> pSeeds, std::vector<size_t>* pvLayerOfSeeds,
-                                 std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut );
-
-    inline std::pair<std::vector<size_t>, std::vector<Rectangle<nucSeqIndex>>>
-        execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
+    inline std::tuple<std::vector<size_t>, std::vector<Rectangle<nucSeqIndex>>>
+    execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
                        std::shared_ptr<Pack>
                            pRefSeq,
                        std::shared_ptr<FMIndex>
@@ -124,7 +172,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
         std::vector<size_t> vLayerOfSeeds;
         std::vector<Rectangle<nucSeqIndex>> vRectangles;
         execute_helper( pSegments, pRefSeq, pFM_index, pQuery, pSeeds, &vLayerOfSeeds, &vRectangles );
-        return std::make_pair(vLayerOfSeeds, vRectangles);
+        return std::make_tuple( vLayerOfSeeds, vRectangles );
     } // method
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,

@@ -9,12 +9,14 @@
 
 using namespace libMA;
 
-Rectangle<nucSeqIndex> SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQSize,
-                                                               nucSeqIndex uiRSize )
+
+std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>>
+SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
+                                        nucSeqIndex uiRSize )
 {
     // seeds are overlapping on query -> rectange size zero
     if( rNext.start( ) < rLast.end( ) )
-        return Rectangle<nucSeqIndex>( 0, 0, 0, 0 );
+        return std::make_pair( Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 
     int64_t iLastRef; // inclusive
     int64_t iNextRef; // inclusive
@@ -22,12 +24,12 @@ Rectangle<nucSeqIndex> SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed
     if( &rLast == &xDummySeed )
     {
         if( rNext.bOnForwStrand )
-            iLastRef = std::max( (int64_t)0, (int64_t)rNext.start_ref( ) -
-                                                 ( int64_t )( 1 + rNext.start( ) * dExtraSeedingAreaFactor ) );
+            iLastRef = std::max( (int64_t)0, (int64_t)rNext.start_ref( ) - ( int64_t )( ( rNext.start( ) - uiQStart ) *
+                                                                                        dExtraSeedingAreaFactor ) );
         else
-            iLastRef =
-                std::min( (int64_t)uiRSize,
-                          (int64_t)rNext.start_ref( ) + ( int64_t )( rNext.start( ) * dExtraSeedingAreaFactor ) );
+            iLastRef = std::min( (int64_t)uiRSize,
+                                 (int64_t)rNext.start_ref( ) +
+                                     ( int64_t )( ( 1 + rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor ) );
     }
     else if( rLast.bOnForwStrand )
         iLastRef = (int64_t)rLast.end_ref( );
@@ -39,11 +41,11 @@ Rectangle<nucSeqIndex> SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed
         if( rLast.bOnForwStrand )
             iNextRef = std::min( (int64_t)uiRSize,
                                  (int64_t)rLast.end_ref( ) +
-                                     ( int64_t )( ( uiQSize - rLast.end( ) ) * dExtraSeedingAreaFactor ) );
+                                     ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor ) );
         else
-            iNextRef =
-                std::max( (int64_t)0, (int64_t)rLast.start_ref( ) -
-                                          ( int64_t )( 1 + ( uiQSize - rLast.end( ) ) * dExtraSeedingAreaFactor ) );
+            iNextRef = std::max(
+                (int64_t)0, (int64_t)rLast.start_ref( ) + 1 -
+                                ( int64_t )( rLast.size( ) + ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor ) );
     }
     else if( rNext.bOnForwStrand )
         iNextRef = (int64_t)rNext.start_ref( );
@@ -53,14 +55,21 @@ Rectangle<nucSeqIndex> SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed
     int64_t iRefStart = std::min( iLastRef, iNextRef );
     int64_t iRefEnd = std::max( iLastRef, iNextRef );
     if( iRefStart == iRefEnd )
-        return Rectangle<nucSeqIndex>( 0, 0, 0, 0 );
+        return std::make_pair( Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     int64_t iRefSize = iRefEnd - iRefStart;
-    return Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, rLast.end( ), (nucSeqIndex)iRefSize,
-                                   rNext.start( ) - rLast.end( ) );
+    if( iRefSize > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) && &rLast != &xDummySeed && &rNext != &xDummySeed )
+        return std::make_pair( getPositionsForSeeds( rLast, xDummySeed, rLast.end( ), rNext.start( ), uiRSize ).first,
+                               getPositionsForSeeds( xDummySeed, rNext, rLast.end( ), rNext.start( ), uiRSize ).first );
+
+    int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
+    int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
+    return std::make_pair( Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
+                                                   (nucSeqIndex)iRefSize, ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
+                           Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 } // method
 
 
-void SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex> xArea, std::shared_ptr<NucSeq> pQuery,
+void SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
                                      std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet )
 {
     if( getKMerSizeForRectangle( xArea ) > xArea.xXAxis.size( ) ||
@@ -105,29 +114,13 @@ void SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex> xArea, std::shared_p
     rvRet->append( pSeedsRev );
 } // method
 
-std::shared_ptr<Seeds> SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
-                                                       std::shared_ptr<Pack> pRefSeq )
+std::shared_ptr<Seeds>
+SvJumpsFromSeeds::computeSeeds( std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>>& xAreas,
+                                std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq )
 {
     auto pSeeds = std::make_shared<Seeds>( );
-    if( xArea.xXAxis.size( ) < (nucSeqIndex)pSelectedSetting->xMaxSizeReseed->get( ) )
-        computeSeeds( xArea, pQuery, pRefSeq, pSeeds );
-    else
-    {
-        return pSeeds;
-        // use slightly more than the query size as reference section length
-        auto uiRefSecLen = (nucSeqIndex)std::min( xArea.xYAxis.start( ) * dExtraSeedingAreaFactor,
-                                                  pSelectedSetting->xMaxSizeReseed->get( ) / 2.0 );
-        computeSeeds( Rectangle<nucSeqIndex>(
-                          xArea.xXAxis.start( ), xArea.xYAxis.start( ),
-                          std::min( uiRefSecLen, pRefSeq->uiUnpackedSizeForwardPlusReverse( ) - xArea.xXAxis.start( ) ),
-                          xArea.xYAxis.size( ) ),
-                      pQuery, pRefSeq, pSeeds );
-        computeSeeds( Rectangle<nucSeqIndex>( xArea.xXAxis.end( ) > uiRefSecLen ? xArea.xXAxis.end( ) - uiRefSecLen : 0,
-                                              xArea.xYAxis.start( ),
-                                              xArea.xXAxis.end( ) > uiRefSecLen ? uiRefSecLen : xArea.xXAxis.end( ),
-                                              xArea.xYAxis.size( ) ),
-                      pQuery, pRefSeq, pSeeds );
-    } // else
+    computeSeeds( xAreas.first, pQuery, pRefSeq, pSeeds );
+    computeSeeds( xAreas.second, pQuery, pRefSeq, pSeeds );
 
     if( pSeeds->size( ) == 0 )
         return pSeeds;
@@ -141,25 +134,18 @@ std::shared_ptr<Seeds> SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex>& x
     pvLumpedSeeds->erase( std::remove_if( pvLumpedSeeds->begin( ), pvLumpedSeeds->end( ),
                                           [&]( auto& rSeed ) { return rSeed.size( ) < uiMaxSeedSize; } ),
                           pvLumpedSeeds->end( ) );
-    // if( xArea.xXAxis.start( ) == 82431)
-    //    std::raise(SIGINT);
-    return pvLumpedSeeds;
+    // seeds that touch end of rectangle might not be maximally extended
+    return SeedExtender( ).execute( pvLumpedSeeds, pQuery, pRefSeq );
 } // method
 
-/** @brief Determine the appropriate k-mers size for a "rectangle"
- * @detail The formula used over here is:
- * 1 - t <= (1 - 1/4^k)^( (w-k+1)*(h-k+1) )
- * where (1 - 1/4^k) is the probability that two k-sized nucleotide sequences do not match.
- *	     (w-k+1)*(h-k+1) ) is the number of possible K-mer combinations within the rectangle.
- */
 nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( Rectangle<nucSeqIndex>& rRect )
 {
     auto w = rRect.xXAxis.size( ); // width of rectangle
     auto h = rRect.xYAxis.size( ); // height of rectangle
     auto& t = SvJumpsFromSeeds::dProbabilityForRandomMatch; // probabilty threshold
 
-    int64_t iDenominator = 4 * 4 * 4;
-    for( nucSeqIndex uiK = 3; uiK <= std::min( w, h ); uiK++ )
+    int64_t iDenominator = 4 * 4;
+    for( nucSeqIndex uiK = 2; uiK <= std::min( w, h ); uiK++ )
     {
         // p is the probability of NOT having random match in the rectange (wh, w).
         // So, if p is small, then the probability that we have a random match is high.
@@ -175,6 +161,36 @@ nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( Rectangle<nucSeqIndex>& r
     return std::min( w, h ) + 1;
 } // method
 
+nucSeqIndex SvJumpsFromSeeds::sampleKMerSizeFromRef( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<Pack> pRefSeq )
+{
+    if( pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.start( ) ) !=
+        pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.end( ) - 1 ) )
+        return 0;
+    auto pRefSection = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
+    Rectangle<nucSeqIndex> xRect( 0, 0, xArea.xXAxis.size( ), xArea.xXAxis.size( ) );
+    nucSeqIndex uiStaticsticalSize = getKMerSizeForRectangle( xRect );
+    nucSeqIndex uiSeedSize = uiStaticsticalSize;
+    for( ; uiSeedSize < xArea.xYAxis.size( ) && uiSeedSize < pRefSection->length( ); uiSeedSize++ )
+    {
+        std::set<std::string> xKMerSet;
+        bool bAllUnique = true;
+        for( nucSeqIndex uiPos = 0; uiPos <= pRefSection->length( ) - uiSeedSize; uiPos++ )
+        {
+            std::string sKMer = pRefSection->fromTo( uiPos, uiPos + uiSeedSize );
+            if( xKMerSet.find( sKMer ) != xKMerSet.end( ) )
+            {
+                bAllUnique = false;
+                break;
+            } // if
+            xKMerSet.insert( sKMer );
+        }
+        if( bAllUnique )
+            break;
+    } // while
+
+    return uiSeedSize - uiStaticsticalSize;
+} // method
+
 
 void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
                                                       std::shared_ptr<Pack> pRefSeq,
@@ -184,61 +200,43 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
                                                       std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut )
 {
     // returns a (reference pos, query pos, width [on reference], height [on query])
-    auto xRectangle =
-        getPositionsForSeeds( rLast, rNext, pQuery->length( ), pRefSeq->uiUnpackedSizeForwardPlusReverse( ) );
+    auto xRectangles =
+        getPositionsForSeeds( rLast, rNext, 0, pQuery->length( ), pRefSeq->uiUnpackedSizeForwardPlusReverse( ) );
     if( pvRectanglesOut != nullptr )
-        pvRectanglesOut->push_back( xRectangle );
-
-    // check if there is enough space to reseed
-    if( getKMerSizeForRectangle( xRectangle ) <= xRectangle.xXAxis.size( ) &&
-        getKMerSizeForRectangle( xRectangle ) <= xRectangle.xYAxis.size( ) )
     {
-#if 0
-        if( !rLast.bOnForwStrand && !rNext.bOnForwStrand )
-            std::cout << "rect: " << xRectangle.xXAxis.start( ) << ", " << xRectangle.xXAxis.end( ) << ", "
-                      << xRectangle.xYAxis.start( ) << ", " << xRectangle.xYAxis.end( ) << " rLast: " << rLast.start( )
-                      << ", " << rLast.start_ref( ) << ", " << rLast.size( ) << " rNext: " << rNext.start( )
-                      << ", " << rNext.start_ref( ) << ", " << rNext.size( ) << std::endl;
-#endif
-        // reseed and recursiveley call this function again
-        std::shared_ptr<Seeds> pvSeeds = computeSeeds( xRectangle, pQuery, pRefSeq );
-        // if( xRectangle.xXAxis.start( ) == 82431)
-        //    std::raise(SIGINT);
-        // if( pvSeeds->size( ) > 0 )
-        //{
-        //    if( !rLast.bOnForwStrand && !rNext.bOnForwStrand )
-        //        std::cout << "#";
-        //    else
-        //        std::cout << ".";
-        //} // if
-        std::sort( pvSeeds->begin( ), pvSeeds->end( ),
-                   []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
-        if( pSeeds != nullptr )
-            for( auto& rSeed : *pvSeeds )
-            {
-                pSeeds->push_back( rSeed );
-                pvLayerOfSeeds->push_back( uiLayer );
-            } // for
+        pvRectanglesOut->push_back( xRectangles.first );
+        pvRectanglesOut->push_back( xRectangles.second );
+    } // if
 
-        // this auto locks using the DB; seeds need to be sorted by query position
-        xCoverageInserter.insert( *pvSeeds, pQuery->length( ) );
+    // reseed and recursiveley call this function again
+    std::shared_ptr<Seeds> pvSeeds = computeSeeds( xRectangles, pQuery, pRefSeq );
 
-        if( pvSeeds->size( ) > 0 )
+    std::sort( pvSeeds->begin( ), pvSeeds->end( ),
+               []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
+    if( pSeeds != nullptr )
+        for( auto& rSeed : *pvSeeds )
         {
-            Seed* pCurr = &rLast;
-            for( auto& rSeed : *pvSeeds )
-            {
-                makeJumpsByReseedingRecursive( *pCurr, rSeed, pQuery, pRefSeq, pRet, uiLayer + 1, pSeeds,
-                                               pvLayerOfSeeds, pvRectanglesOut );
-                pCurr = &rSeed;
-            } // for
-            makeJumpsByReseedingRecursive( *pCurr, rNext, pQuery, pRefSeq, pRet, uiLayer + 1, pSeeds, pvLayerOfSeeds,
-                                           pvRectanglesOut );
+            pSeeds->push_back( rSeed );
+            pvLayerOfSeeds->push_back( uiLayer );
+        } // for
 
-            // we found at least one seed so we do not need to create a jump between rLast and rNext
-            return;
-        } // if
-        // else: we did not find any futher seeds in between rLast and rNext -> create the jump between those seeds
+    // this auto locks using the DB; seeds need to be sorted by query position
+    xCoverageInserter.insert( *pvSeeds, pQuery->length( ) );
+
+    if( pvSeeds->size( ) > 0 )
+    {
+        Seed* pCurr = &rLast;
+        for( auto& rSeed : *pvSeeds )
+        {
+            makeJumpsByReseedingRecursive( *pCurr, rSeed, pQuery, pRefSeq, pRet, uiLayer + 1, pSeeds, pvLayerOfSeeds,
+                                           pvRectanglesOut );
+            pCurr = &rSeed;
+        } // for
+        makeJumpsByReseedingRecursive( *pCurr, rNext, pQuery, pRefSeq, pRet, uiLayer + 1, pSeeds, pvLayerOfSeeds,
+                                       pvRectanglesOut );
+
+        // we found at least one seed so we do not need to create a jump between rLast and rNext
+        return;
     } // if
 
     // compute a SvJump and terminate the recursion

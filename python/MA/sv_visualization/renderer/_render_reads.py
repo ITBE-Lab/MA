@@ -1,6 +1,7 @@
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet, FixedTicker
 from bokeh.models.callbacks import CustomJS
+from bokeh.palettes import Plasma
 from MA import *
 import math
 from .util import *

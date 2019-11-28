@@ -438,6 +438,8 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
   public:
     SeedExtender( const ParameterSetManager& rParameters )
     {} // default constructor
+    SeedExtender( )
+    {} // default constructor
 
     // overload
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
