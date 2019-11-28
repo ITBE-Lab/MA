@@ -5,6 +5,7 @@ from MA import *
 import math
 from .util import *
 
+
 def render_reads(self):
     seeder = BinarySeeding(self.params)
     jumps_from_seeds = libMA.SvJumpsFromSeeds(
@@ -44,23 +45,37 @@ def render_reads(self):
     col_ids = []
     all_col_ids = []
     category_counter = 0
-    l_plot_nucs = {} # dict of {"y": [], "c": [], "i": []}
+    l_plot_nucs = {}  # dict of {"y": [], "c": [], "i": []}
+    read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": []}
     initial_l_data = {"y": [0], "c": ["black"], "i": [""]}
+    initial_rect_plot_data = {"l": [], "b": [], "t": [], "r": []}
     for read_id in sorted(self.read_ids, reverse=True):
         l_plot_nucs[read_id] = {"y": [], "c": [], "i": []}
+        read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": []}
         read = self.sv_db.get_read(read_id)
         if self.selected_read_id == read_id:
-            initial_l_data["y"].clear()
-            initial_l_data["c"].clear()
-            initial_l_data["i"].clear()
+            for value in initial_l_data.values():
+                value.clear()
+            for value in initial_rect_plot_data.values():
+                value.clear()
         for y, nuc in enumerate(str(read)):
             append_nuc_type(l_plot_nucs[read_id], nuc, y, "y")
             if self.selected_read_id == read_id:
                 append_nuc_type(initial_l_data, nuc, y, "y")
         segments = seeder.execute(self.fm_index, read)
         seeds = libMA.Seeds()
-        layer_of_seeds = jumps_from_seeds.cpp_module.execute_helper(
+        layer_of_seeds, rectangles = jumps_from_seeds.cpp_module.execute_helper(
             segments, self.pack, self.fm_index, read, seeds)
+        for rectangle in rectangles:
+            if self.selected_read_id == read_id:
+                initial_rect_plot_data["l"].append(rectangle.x_axis.start)
+                initial_rect_plot_data["b"].append(rectangle.y_axis.start)
+                initial_rect_plot_data["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
+                initial_rect_plot_data["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
+            read_plot_rects[read_id]["l"].append(rectangle.x_axis.start)
+            read_plot_rects[read_id]["b"].append(rectangle.y_axis.start)
+            read_plot_rects[read_id]["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
+            read_plot_rects[read_id]["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
         end_column = []
         seeds_n_idx = list(enumerate(sorted([(x, y) for x, y in zip(seeds, layer_of_seeds)],
                                             key=lambda x: x[0].start)))
@@ -73,7 +88,8 @@ def render_reads(self):
                 else:
                     read_dict["c"].append("green")
                 read_dict["r"].append(seed.start_ref)
-                read_dict["x"].append([seed.start_ref, seed.start_ref+seed.size])
+                read_dict["x"].append(
+                    [seed.start_ref, seed.start_ref+seed.size])
                 curr_end = seed.start_ref + seed_size + 1
                 curr_start = seed.start_ref
             else:
@@ -83,7 +99,8 @@ def render_reads(self):
                 else:
                     read_dict["c"].append("purple")
                 read_dict["r"].append(seed.start_ref - seed.size + 1)
-                read_dict["x"].append([seed.start_ref + 1, seed.start_ref - seed.size + 1])
+                read_dict["x"].append(
+                    [seed.start_ref + 1, seed.start_ref - seed.size + 1])
                 curr_end = seed.start_ref + 1
                 curr_start = seed.start_ref - seed.size
             curr_column = 0
@@ -142,56 +159,65 @@ def render_reads(self):
                 """)
         self.d_plot[1].ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
+        rect_read_plot_data = self.read_plot.quad(left="l", bottom="b", right="r", top="t", fill_color="grey",
+                                                  fill_alpha=0.2, line_width=0, name="hover6",
+                                                  source=ColumnDataSource(initial_rect_plot_data))
         read_plot_line = self.read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
-                                        source=ColumnDataSource(read_plot_dict), name="hover5")
+                                                   source=ColumnDataSource(read_plot_dict), name="hover5")
         l_read_plot_data = self.l_read_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
                                                  source=ColumnDataSource(initial_l_data), name="hover4")
         # auto adjust y-range of read plot
         js_auto_adjust_y_range = js_file("auto_adjust")
         self.plot.x_range.js_on_change('start', CustomJS(args=dict(checkbox_group=self.checkbox_group,
-                                                                    read_plot=self.read_plot, plot=self.plot,
-                                                                    read_plot_line=read_plot_line.data_source),
-                                                            code=js_auto_adjust_y_range+"auto_adjust();"))
+                                                                   read_plot=self.read_plot, plot=self.plot,
+                                                                   read_plot_line=read_plot_line.data_source),
+                                                         code=js_auto_adjust_y_range+"auto_adjust();"))
 
         # the tapping callback on jumps
         self.plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
                                                         read_source=read_source,
                                                         l_plot_nucs=l_plot_nucs,
                                                         read_plot_line=read_plot_line.data_source,
-                                                        l_read_plot_data=l_read_plot_data.data_source),
-                                                code=js_file("jump_tap")))
+                                                        l_read_plot_data=l_read_plot_data.data_source,
+                                                        rect_read_plot_data=rect_read_plot_data.data_source,
+                                                        read_plot_rects=read_plot_rects),
+                                              code=js_file("jump_tap")))
         # the tapping callback on seeds
         code = js_auto_adjust_y_range+js_file("seed_tap")
         self.l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                                checkbox_group=self.checkbox_group,
-                                                                plot=self.plot,
-                                                                read_source=read_source,
-                                                                range=self.d_plot[1].y_range,
-                                                                read_plot_line=read_plot_line.data_source,
-                                                                read_plot=self.read_plot,
-                                                                l_plot_nucs=l_plot_nucs,
-                                                                l_read_plot_data=l_read_plot_data.data_source),
-                                                    code="""
+                                                             checkbox_group=self.checkbox_group,
+                                                             plot=self.plot,
+                                                             read_source=read_source,
+                                                             range=self.d_plot[1].y_range,
+                                                             read_plot_line=read_plot_line.data_source,
+                                                             read_plot=self.read_plot,
+                                                             l_plot_nucs=l_plot_nucs,
+                                                             l_read_plot_data=l_read_plot_data.data_source,
+                                                             rect_read_plot_data=rect_read_plot_data.data_source,
+                                                             read_plot_rects=read_plot_rects),
+                                                   code="""
                                                 var curr_x = cb_obj.y;
                                                 var curr_y = cb_obj.x;
                                                 """ + code))
         self.d_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                                checkbox_group=self.checkbox_group,
-                                                                plot=self.plot,
-                                                                read_source=read_source,
-                                                                range=self.d_plot[1].y_range,
-                                                                read_plot_line=read_plot_line.data_source,
-                                                                read_plot=self.read_plot,
-                                                                l_plot_nucs=l_plot_nucs,
-                                                                l_read_plot_data=l_read_plot_data.data_source),
-                                                    code="""
+                                                             checkbox_group=self.checkbox_group,
+                                                             plot=self.plot,
+                                                             read_source=read_source,
+                                                             range=self.d_plot[1].y_range,
+                                                             read_plot_line=read_plot_line.data_source,
+                                                             read_plot=self.read_plot,
+                                                             l_plot_nucs=l_plot_nucs,
+                                                             l_read_plot_data=l_read_plot_data.data_source,
+                                                             rect_read_plot_data=rect_read_plot_data.data_source,
+                                                             read_plot_rects=read_plot_rects),
+                                                   code="""
                                                 var curr_x = cb_obj.x;
                                                 var curr_y = cb_obj.y;
                                                     """ + code))
 
         num_nt = self.w*3+self.h*3
         if num_nt < self.max_num_ele:
-            #render nucs in read plot
+            # render nucs in read plot
 
             # render nucs in sv plot
             return self.render_nucs()

@@ -195,6 +195,9 @@ hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q, r, l", "@q, @r, @l"), ("
 l2_plot.add_tools(hover5)
 d2_plot.add_tools(hover5)
 read_plot.add_tools(hover5)
+hover6 = HoverTool(tooltips=[("left", "@l"), ("bottom", "@b"), ("right", "@r"), ("top", "@t")],
+                   names=['hover6'], name="Hover rects")
+read_plot.add_tools(hover6)
 
 checkbox_group = RadioGroup(
     labels=["Link read plot to x-range", "Link read plot to y-range"], active=range_link)
