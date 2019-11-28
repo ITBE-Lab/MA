@@ -9,8 +9,8 @@ project("MA Lib" VERSION 1.1.1 DESCRIPTION "Core library of MA")
 # find_package( Boost 1.60.0 COMPONENTS python3 )
 
 # Get all .cpp files in the src folder
-file(GLOB MA_SRC
-    "src/*/*.cpp"
+file(GLOB_RECURSE MA_SRC
+    "src/*.cpp"
 ) # file
 
 # Define library MA as target
@@ -125,7 +125,7 @@ endif()
 if(BUILD_TESTING)
     # add tests for all cpp files in the tests folder
     # Get all .cpp files in the test folder
-    file(GLOB MA_CPP_TEST_SRC
+    file(GLOB_RECURSE MA_CPP_TEST_SRC
         "tests/*.cpp"
     ) # file
     foreach(file ${MA_CPP_TEST_SRC})
@@ -141,7 +141,7 @@ if(BUILD_TESTING)
         find_package(PythonInterp ${requested_python_version})
         if(PythonInterp_FOUND)
             # Get all .py files in the test folder
-            file(GLOB MA_PY_TEST_SRC
+            file(GLOB_RECURSE MA_PY_TEST_SRC
                 "tests/*.py"
             ) # file
             foreach(file ${MA_PY_TEST_SRC})

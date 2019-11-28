@@ -6,7 +6,7 @@
 #pragma once
 
 #include "container/segment.h"
-#include "container/svDb.h"
+#include "container/sv_db/svDb.h"
 #include "container/svJump.h"
 #include "module/binarySeeding.h"
 #include "module/hashMapSeeding.h"
@@ -44,7 +44,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     size_t uiNumSeedsEliminatedAmbiguityFilter = 0;
     size_t uiNumSeedsKeptAmbiguityFilter = 0;
 
-    SV_DB::ContigCovTable::CovInserter xCoverageInserter;
+    ContigCovTable::CovInserter xCoverageInserter;
 
     /// used to indicate that there is no seed for on of the parameters in the recursive call.
     Seed xDummySeed;
@@ -148,8 +148,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * @brief computes all SV jumps between the given seeds.
      * @details
      * Filters the initial seeds by their distance to the next unique seed on query:
-     *      If a segment has multiple occurrences on the reference, discard all seeds that are located x times further
-     *      away (on reference) than the closest seed (to the next/last unique seed on query).
+     *      Keeps only the seeds thats closest (on the reference) to the next/last unique seed on the query.
      *
      * Uses makeJumpsByReseedingRecursive().
      */

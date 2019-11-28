@@ -1,10 +1,10 @@
-#include "container/svDb.h"
+#include "container/sv_db/svDb.h"
 #include "module/combineOverlappingCalls.h"
 #include <pybind11/stl.h>
 
 using namespace libMA;
 
-SV_DB::PairedReadTable::PairedReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase,
+PairedReadTable::PairedReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase,
                                          std::shared_ptr<ReadTable>
                                              pReadTable )
     : TP_PAIRED_READ_TABLE( *pDatabase, // the database where the table resides

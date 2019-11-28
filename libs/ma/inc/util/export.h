@@ -163,7 +163,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/connectorPatternFilter.h"
 #include "module/sweepSvJumps.h"
 #include "util/default_parameters.h"
-#include "container/svDb.h"
+#include "container/sv_db/svDb.h"
 #include "container/svJump.h"
 #include "container/minimizer_index.h"
 
