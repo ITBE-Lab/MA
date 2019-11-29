@@ -1,0 +1,1 @@
+Files that represent SQL tables.

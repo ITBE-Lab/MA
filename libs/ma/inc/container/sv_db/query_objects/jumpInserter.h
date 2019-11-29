@@ -5,7 +5,8 @@
 namespace libMA
 {
 
-
+/**@brief Idea: Insertion of Jumps (...) into the database.
+ */
 class SvJumpInserter
 {
     // this is here so that it gets destructed after the transaction context
@@ -16,6 +17,9 @@ class SvJumpInserter
   public:
     const int64_t iSvJumpRunId;
 
+    /**@brief Inner helper class. Memories the coontext for a single read.
+     * @details COntext: Read ID, ID of current caller run, holds the table via shared pointer 
+     */
     class ReadContex
     {
       private:
@@ -45,16 +49,26 @@ class SvJumpInserter
         } // method
     }; // class
 
+    /**@brief Constructor 
+     * @param database and caller run id
+     */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId )
         : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvJumpRunId( iSvJumpRunId )
     {} // constructor
 
+    /**@brief Constructor 
+     * @param database
+     * @detail Extracts the caller run id from databse
+     */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, const std::string& rsSvCallerName, const std::string& rsSvCallerDesc )
         : pDB( pDB ),
           xTransactionContext( *pDB->pDatabase ),
           iSvJumpRunId( pDB->pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc ) )
     {} // constructor
 
+    
+    /**@brief OPen ths context for the read, which can be later used for inserting jumps.
+     */
     inline ReadContex readContext( int64_t iReadId )
     {
         return ReadContex( pDB->pSvJumpTable, iSvJumpRunId, iReadId );
@@ -62,6 +76,9 @@ class SvJumpInserter
 
 }; // class
 
+
+/**@brief Wraps a jump inserter, so that it can become part of a computational graph.
+ */
 class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
     std::shared_ptr<SV_DB> pDb;
