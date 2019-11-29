@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include "util/sqlite3.h"
+#include "db_sql.h"
 
 namespace libMA
 {

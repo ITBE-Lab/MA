@@ -19,4 +19,4 @@ set_property( TARGET util PROPERTY POSITION_INDEPENDENT_CODE ON)
 # location of all includes with the util library
 target_include_directories( util PUBLIC inc )
 
-target_link_libraries ( util LINK_PUBLIC CppSQLite3 )
+target_link_libraries ( util LINK_PUBLIC dbSQL )

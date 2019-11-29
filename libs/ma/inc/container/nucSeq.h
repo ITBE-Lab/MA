@@ -6,7 +6,7 @@
 #pragma once
 
 #include "container/seed.h"
-#include "util/sqlite3.h"
+#include "db_sql.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
