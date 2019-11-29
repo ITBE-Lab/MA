@@ -5,7 +5,6 @@
 namespace libMA
 {
 
-// @todo this does not make the process sufficiently parallel
 class AllNucSeqFromSql : public Module<NucSeq, true>
 {
     /// this wrapper is required so that the iterator is never copied

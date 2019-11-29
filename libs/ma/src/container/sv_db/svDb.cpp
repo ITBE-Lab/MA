@@ -37,7 +37,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> 
                                                  "AND sv_call_r_tree.maxY >= ? " // dim 3
                                                  "AND sv_call_r_tree.minY <= ? " // dim 3
                                                  "AND (supporting_nt*1.0)/coverage >= ? " );
-    return xQuery.scalar( iRunId, iRunId, uiX, uiX + uiW, uiY, uiY + uiH, dMinScore );
+    return xQuery.scalar( iRunId, iRunId, uiX, uiX + (uint32_t)uiW, uiY, uiY + (uint32_t)uiH, dMinScore );
 } // function
 
 uint32_t getNumJumpsInArea( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
@@ -60,8 +60,8 @@ uint32_t getNumJumpsInArea( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> pP
                                                  "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
                                                  "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos == ? ) "
                                                  "ORDER BY sort_pos_start" );
-    return xQuery.scalar( iRunId, uiX, uiX + uiW, std::numeric_limits<uint32_t>::max( ), uiY, uiY + uiH,
-                          std::numeric_limits<uint32_t>::max( ) );
+    return xQuery.scalar( iRunId, uiX, uiX + (uint32_t)uiW, std::numeric_limits<uint32_t>::max( ), uiY,
+                          uiY + (uint32_t)uiH, std::numeric_limits<uint32_t>::max( ) );
 } // function
 
 struct rect

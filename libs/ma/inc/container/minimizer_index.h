@@ -125,7 +125,7 @@ class Index
 		IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
-        pData = mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) );
+        pData = mm_idx_reader_read( xIndexReader.idx_rdr, (int)rParameters.getNumThreads( ) );
         if( ( xOptions.flag & MM_F_CIGAR ) && ( pData->flag & MM_I_NO_SEQ ) )
             throw std::runtime_error( "the prebuilt index doesn't contain sequences" );
         initOptions( );
@@ -133,7 +133,7 @@ class Index
         mm_idx_stat( pData );
 #endif
         // make sure that there are no multipart indices
-        if( mm_idx_reader_read( xIndexReader.idx_rdr, rParameters.getNumThreads( ) ) != 0 )
+        if( mm_idx_reader_read( xIndexReader.idx_rdr, (int)rParameters.getNumThreads( ) ) != 0 )
             throw std::runtime_error( "index comes in multiple parts" );
     } // constructor
 
@@ -161,7 +161,7 @@ class Index
         for( auto& sName : vContigsNames )
             name.push_back( sName.data( ) );
 
-        pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits, vContigs.size( ),
+        pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits, (int)vContigs.size( ),
                             &seq[ 0 ], &name[ 0 ] );
         initOptions( );
         mm_idx_stat( pData );
@@ -196,7 +196,7 @@ class Index
         {
             vRet.push_back( std::make_shared<libMA::Seeds>( ) );
             const char* sSeq = sQuery.c_str( );
-            const int iSize = sQuery.size( );
+            const int iSize = (int)sQuery.size( );
             // const char* seqs = (const char*)&pQuery->pxSequenceRef;
             mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a );
             if( a != NULL )

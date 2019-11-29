@@ -12,6 +12,7 @@
 #include <iostream>
 /// #endcond
 
+namespace libMA{
 /**
  * @brief A generic multipurpose Interval.
  */
@@ -201,3 +202,5 @@ template <typename T> class Rectangle
     Rectangle( T iStartX, T iStartY, T iSizeX, T iSizeY ) : xXAxis( iStartX, iSizeX ), xYAxis( iStartY, iSizeY )
     {} // constructor
 }; // class
+
+} // namespace

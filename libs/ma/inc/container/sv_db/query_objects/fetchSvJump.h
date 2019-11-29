@@ -5,7 +5,6 @@
 namespace libMA
 {
 
-// @todo does buffering in vector increase the speed here?
 class SortedSvJumpFromSql
 {
     const std::shared_ptr<Presetting> pSelectedSetting;

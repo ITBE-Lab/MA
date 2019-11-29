@@ -329,12 +329,13 @@ class Seeds : public Container
         return uiForw >= uiRev;
     } // method
 
+    /// @deprecated
     inline void mirror( nucSeqIndex uiReferenceLength, nucSeqIndex uiQueryLength )
     {
         for( Seed& rS : vContent )
         {
-            rS.uiPosOnReference = uiReferenceLength * 2 - rS.end_ref( ); // @todo check if this is still correct...
-            rS.iStart = uiQueryLength - rS.end( ); // @todo check if this is still correct...
+            rS.uiPosOnReference = uiReferenceLength * 2 - rS.end_ref( ); // check if this is still correct...
+            rS.iStart = uiQueryLength - rS.end( ); // check if this is still correct...
         } // for
     } // method
 
