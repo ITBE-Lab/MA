@@ -10,13 +10,13 @@
 using namespace libMA;
 
 
-std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>>
+std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>>
 SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
                                         nucSeqIndex uiRSize )
 {
     // seeds are overlapping on query -> rectange size zero
     if( rNext.start( ) < rLast.end( ) )
-        return std::make_pair( Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 
     int64_t iLastRef; // inclusive
     int64_t iNextRef; // inclusive
@@ -55,7 +55,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
     int64_t iRefStart = std::min( iLastRef, iNextRef );
     int64_t iRefEnd = std::max( iLastRef, iNextRef );
     if( iRefStart == iRefEnd )
-        return std::make_pair( Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     int64_t iRefSize = iRefEnd - iRefStart;
     if( iRefSize > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) && &rLast != &xDummySeed && &rNext != &xDummySeed )
         return std::make_pair( getPositionsForSeeds( rLast, xDummySeed, rLast.end( ), rNext.start( ), uiRSize ).first,
@@ -63,13 +63,13 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 
     int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
     int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
-    return std::make_pair( Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
+    return std::make_pair( libMA::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
                                                    (nucSeqIndex)iRefSize, ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
-                           Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+                           libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 } // method
 
 
-void SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
+void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
                                      std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet )
 {
     if( getKMerSizeForRectangle( xArea ) > xArea.xXAxis.size( ) ||
@@ -115,7 +115,7 @@ void SvJumpsFromSeeds::computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_
 } // method
 
 std::shared_ptr<Seeds>
-SvJumpsFromSeeds::computeSeeds( std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>>& xAreas,
+SvJumpsFromSeeds::computeSeeds( std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>>& xAreas,
                                 std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq )
 {
     auto pSeeds = std::make_shared<Seeds>( );
@@ -138,7 +138,7 @@ SvJumpsFromSeeds::computeSeeds( std::pair<Rectangle<nucSeqIndex>, Rectangle<nucS
     return SeedExtender( ).execute( pvLumpedSeeds, pQuery, pRefSeq );
 } // method
 
-nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( Rectangle<nucSeqIndex>& rRect )
+nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( libMA::Rectangle<nucSeqIndex>& rRect )
 {
     auto w = rRect.xXAxis.size( ); // width of rectangle
     auto h = rRect.xYAxis.size( ); // height of rectangle
@@ -161,13 +161,13 @@ nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( Rectangle<nucSeqIndex>& r
     return std::min( w, h ) + 1;
 } // method
 
-nucSeqIndex SvJumpsFromSeeds::sampleKMerSizeFromRef( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<Pack> pRefSeq )
+nucSeqIndex SvJumpsFromSeeds::sampleKMerSizeFromRef( libMA::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<Pack> pRefSeq )
 {
     if( pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.start( ) ) !=
         pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.end( ) - 1 ) )
         return 0;
     auto pRefSection = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
-    Rectangle<nucSeqIndex> xRect( 0, 0, xArea.xXAxis.size( ), xArea.xXAxis.size( ) );
+    libMA::Rectangle<nucSeqIndex> xRect( 0, 0, xArea.xXAxis.size( ), xArea.xXAxis.size( ) );
     nucSeqIndex uiStaticsticalSize = getKMerSizeForRectangle( xRect );
     nucSeqIndex uiSeedSize = uiStaticsticalSize;
     for( ; uiSeedSize < xArea.xYAxis.size( ) && uiSeedSize < pRefSection->length( ); uiSeedSize++ )
@@ -197,7 +197,7 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
                                                       std::shared_ptr<ContainerVector<SvJump>>& pRet, size_t uiLayer,
                                                       std::shared_ptr<Seeds> pSeeds,
                                                       std::vector<size_t>* pvLayerOfSeeds,
-                                                      std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut )
+                                                      std::vector<libMA::Rectangle<nucSeqIndex>>* pvRectanglesOut )
 {
     // returns a (reference pos, query pos, width [on reference], height [on query])
     auto xRectangles =
@@ -269,7 +269,7 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
                                   std::shared_ptr<Seeds>
                                       pSeeds,
                                   std::vector<size_t>* pvLayerOfSeeds,
-                                  std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut )
+                                  std::vector<libMA::Rectangle<nucSeqIndex>>* pvRectanglesOut )
 {
     AlignedMemoryManager xMemoryManager;
     auto pRet = std::make_shared<ContainerVector<SvJump>>( );
@@ -406,9 +406,9 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
     py::class_<Interval<nucSeqIndex>>( rxPyModuleId, "nucSeqInterval" )
         .def_readwrite( "start", &Interval<nucSeqIndex>::iStart )
         .def_readwrite( "size", &Interval<nucSeqIndex>::iSize );
-    py::class_<Rectangle<nucSeqIndex>>( rxPyModuleId, "nucSeqRectangle" )
-        .def_readwrite( "x_axis", &Rectangle<nucSeqIndex>::xXAxis )
-        .def_readwrite( "y_axis", &Rectangle<nucSeqIndex>::xYAxis );
+    py::class_<libMA::Rectangle<nucSeqIndex>>( rxPyModuleId, "nucSeqRectangle" )
+        .def_readwrite( "x_axis", &libMA::Rectangle<nucSeqIndex>::xXAxis )
+        .def_readwrite( "y_axis", &libMA::Rectangle<nucSeqIndex>::xYAxis );
     exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>>(
         rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) {
             x.def( "commit", &SvJumpsFromSeeds::commit ) //
