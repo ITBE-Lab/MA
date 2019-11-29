@@ -5,6 +5,11 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Include sub-projects.
+
+# Include the core library of MA
+message( "Include util ..." )
+add_subdirectory (util)
+
 # kswcpp is always compiled in the Release-mode because without
 # optimization it is too slow.
 message( "Include libkswcpp ..." )

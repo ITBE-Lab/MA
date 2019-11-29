@@ -1,5 +1,4 @@
 #include "util/sqlite3.h"
-#include "container/nucSeq.h"
 
 
 template <> std::string getSQLTypeName<std::string>( )
@@ -151,6 +150,8 @@ void CppSQLiteDBExtended::vCreateTable(
     execDML( sTableCreationStatement.c_str( ) );
 } // method
 
+#if 0
+#include "container/nucSeq.h"
 using namespace libMA;
 /** @brief SQLite interface usage example function
  */
@@ -212,4 +213,5 @@ int main( void )
         std::cout << "Catched general exception" << std::endl;
     }
 } // function
+#endif
 #endif

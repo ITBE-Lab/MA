@@ -10,7 +10,7 @@
 #include "container/alignment.h"
 #include "libpq-fe.h"
 #include "module/module.h"
-#include "util/exception.h"
+#include "exception.h"
 
 namespace libMA
 {

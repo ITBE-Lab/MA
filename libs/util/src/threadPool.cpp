@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 
-#include "util/threadPool.h"
+#include "threadPool.h"
 
 void itemWorker( int i, size_t tid, int j )
 {

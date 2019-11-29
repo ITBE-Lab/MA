@@ -18,8 +18,8 @@
 #include <vector>
 #include <cctype>
 
-#include "util/exception.h"
-#include "util/support.h"
+#include "exception.h"
+#include "support.h"
 /* Constructs the full file name for some prefix, suffix combination.
  * Returns by value for convenience purposes.
  */

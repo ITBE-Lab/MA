@@ -9,7 +9,7 @@
 #include "container/container.h"
 #include "util/default_parameters.h"
 #include "util/parameter.h"
-#include "util/threadPool.h"
+#include "threadPool.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #ifdef WITH_PYTHON

@@ -100,6 +100,25 @@ void exportExecutionContext( py::module& rxPyModuleId )
         .def_readwrite( "output_manager", &ExecutionContext::xOutputManager );
 } // function
 
+
+
+/**
+ * @brief pybind11 translator for AnnotatedException
+ */
+void translator( AnnotatedException const& x )
+{
+    PyErr_SetString( PyExc_RuntimeError, x.what( ) );
+}
+/**
+ * @brief pybind11 exporter for AnnotatedException
+ * @details
+ * @todo once AnnotatedException is unused remove this export
+ */
+void exportExceptions( py::module& rxPyModuleId )
+{
+    py::register_exception<AnnotatedException>( rxPyModuleId, "AnnotatedException" );
+} // function
+
 PYBIND11_MODULE( libMA, libMaModule )
 {
     DEBUG_3( std::cout.setf( std::ios::unitbuf ); )

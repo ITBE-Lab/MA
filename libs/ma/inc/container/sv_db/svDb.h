@@ -12,9 +12,9 @@
 #include "container/svJump.h"
 #include "module/fileReader.h"
 #include "module/module.h"
-#include "util/exception.h"
+#include "exception.h"
 #include "util/sqlite3.h"
-#include "util/system.h"
+#include "system.h"
 #include <chrono>
 #include <ctime>
 #include <iomanip>

@@ -8,7 +8,7 @@
 
 #include "container/segment.h"
 #include "module/module.h"
-#include "util/system.h"
+#include "system.h"
 
 namespace libMA
 {

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "util/debug.h"
+#include "debug.h"
 #include <CppSQLite3.h>
 #include <cassert>
 #include <iostream>

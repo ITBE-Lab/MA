@@ -7,9 +7,9 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
-#include "util/debug.h"
-#include "util/exception.h"
-#include "util/support.h"
+#include "debug.h"
+#include "exception.h"
+#include "support.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>

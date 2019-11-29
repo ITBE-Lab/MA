@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "util/exception.h"
+#include "exception.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <functional>

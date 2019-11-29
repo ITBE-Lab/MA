@@ -5,7 +5,7 @@
  */
 
 #include "module/stripOfConsideration.h"
-#include "util/system.h"
+#include "system.h"
 using namespace libMA;
 
 using namespace libMA::defaults;

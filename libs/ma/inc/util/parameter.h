@@ -1,9 +1,9 @@
 #pragma once
 
 #include "util/default_parameters.h"
-#include "util/exception.h"
-#include "util/exported.h"
-#include "util/support.h"
+#include "exception.h"
+#include "exported.h"
+#include "support.h"
 
 #if defined( __GNUC__ ) && ( __GNUC__ < 8 )
 #include <experimental/filesystem>

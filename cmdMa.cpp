@@ -29,7 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/dbWriter.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
-#include "util/debug.h"
+#include "debug.h"
 #include "util/execution-context.h"
 #include "util/export.h"
 #include "version.h"

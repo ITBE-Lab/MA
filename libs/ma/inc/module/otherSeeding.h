@@ -8,8 +8,8 @@
 
 #include "container/segment.h"
 #include "module/module.h"
-#include "util/system.h"
-#include "util/threadPool.h"
+#include "system.h"
+#include "threadPool.h"
 
 namespace libMA
 {

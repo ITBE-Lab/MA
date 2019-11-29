@@ -61,11 +61,3 @@ class AnnotatedException : public std::exception
         return sText.c_str( );
     } // method
 };
-
-#ifdef WITH_PYTHON
-/**
- * @brief Boost-python export function.
- * @ingroup export
- */
-void exportExceptions( py::module& rxPyModuleId );
-#endif
